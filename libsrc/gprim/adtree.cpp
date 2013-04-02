@@ -1702,9 +1702,9 @@ namespace netgen
 				   const float * bmax,
 				   Array<int> & pis) const
   {
-    static Array<inttn6> stack(10000);
-
-    stack.SetSize (10000);
+    // static Array<inttn6> stack(10000);
+    // stack.SetSize (10000);
+    ArrayMem<inttn6,10000> stack(10000);
     pis.SetSize(0);
 
     stack[0].node = root;
@@ -1717,7 +1717,6 @@ namespace netgen
 	int dir = stack[stacks].dir; 
 
 	stacks--;
-
 	if (node->pi != -1)
 	  {
 	    if (node->data[0] > bmax[0] || 
@@ -1728,7 +1727,9 @@ namespace netgen
 		node->data[5] < bmin[5])
 	      ;
 	    else
-	      pis.Append (node->pi);
+              {
+                pis.Append (node->pi);
+              }
 	  }
 
 	int ndir = (dir+1) % 6;
@@ -2112,6 +2113,18 @@ namespace netgen
 
 
 
+  Box3dTree :: Box3dTree (const Box<3> & abox)
+  {
+    boxpmin = abox.PMin();
+    boxpmax = abox.PMax();
+    float tpmin[6], tpmax[6];
+    for (int i = 0; i < 3; i++)
+      {
+	tpmin[i] = tpmin[i+3] = boxpmin(i);
+	tpmax[i] = tpmax[i+3] = boxpmax(i);
+      }
+    tree = new ADTree6 (tpmin, tpmax);
+  }
 
   Box3dTree :: Box3dTree (const Point<3> & apmin, const Point<3> & apmax)
   {

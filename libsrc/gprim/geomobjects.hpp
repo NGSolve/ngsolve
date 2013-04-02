@@ -239,6 +239,22 @@ namespace netgen
 	}
     }
 
+    template <typename T1, typename T2>
+    void Set (const IndirectArray<T1, T2> & points)
+    {
+      Set (points[points.Begin()]);
+      for (int i = points.Begin()+1; i < points.End(); i++)
+        Add (points[i]);
+    }
+
+    template <typename T1, typename T2>
+    void Add (const IndirectArray<T1, T2> & points)
+    {
+      for (int i = points.Begin(); i < points.End(); i++)
+        Add (points[i]);
+    }
+
+
     Point<D> Center () const 
     { 
       Point<D> c;

@@ -466,6 +466,7 @@ class Box3dTree
   ADTree6 * tree;
   Point<3> boxpmin, boxpmax;
 public:
+  Box3dTree (const Box<3> & abox);
   Box3dTree (const Point<3> & apmin, const Point<3> & apmax);
   ~Box3dTree ();
   void Insert (const Point<3> & bmin, const Point<3> & bmax, int pi);
