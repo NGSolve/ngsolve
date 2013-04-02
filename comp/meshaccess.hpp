@@ -25,9 +25,9 @@ namespace ngcomp
   using netgen::Ng_Point;
   using netgen::Ng_Node;
 
-  using netgen::Ng_GetPoint;
-  using netgen::Ng_GetElement;
-  using netgen::Ng_GetNode;
+  // using netgen::Ng_GetPoint;
+  // using netgen::Ng_GetElement;
+  // using netgen::Ng_GetNode;
 
 
   /**
@@ -69,7 +69,7 @@ namespace ngcomp
   }
 
 
-
+  enum VorB { VOL = 0, BND = 1 };
 
 
   /** 
@@ -86,6 +86,7 @@ namespace ngcomp
 
   class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler
   {
+    netgen::Ngx_Mesh * mesh;
 
     /// buffered global quantities:
     /// dimension of the domain. Set to -1 if no mesh is present
@@ -152,7 +153,7 @@ namespace ngcomp
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { 
-      Ng_Point pt = Ng_GetPoint (pi);
+      Ng_Point pt = mesh -> GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
     }
 
@@ -161,7 +162,7 @@ namespace ngcomp
     Vec<D> GetPoint (int pi) const
     { 
       Vec<D> p;
-      Ng_Point pt = Ng_GetPoint (pi);
+      Ng_Point pt = mesh -> GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
       return p;
     }
@@ -176,15 +177,31 @@ namespace ngcomp
 
     /// the sub-domain index of the element
     int GetElIndex (int elnr) const
-    { return Ng_GetElementIndex (elnr+1)-1; }
+    { 
+      switch (dim)
+        {
+        case 1: return mesh -> GetElementIndex<1>(elnr) - 1;
+        case 2: return mesh -> GetElementIndex<2>(elnr) - 1;
+        case 3: default:
+          return mesh -> GetElementIndex<3>(elnr) - 1;
+        }
+    }
 
     /// the boundary-condition index of the boundary element
-    int GetSElIndex (const int elnr) const
-    { return Ng_GetSurfaceElementIndex (elnr+1)-1; }
+    int GetSElIndex (int elnr) const
+    { 
+      switch (dim)
+        {
+        case 1: return mesh -> GetElementIndex<0>(elnr) - 1;
+        case 2: return mesh -> GetElementIndex<1>(elnr) - 1;
+        case 3: default:
+          return mesh -> GetElementIndex<2>(elnr) - 1;
+        }
+    }
 
     /// change sub-domain index (???) 
-    void SetElIndex (int elnr, int index) const
-    { Ng_SetElementIndex (elnr+1,index+1); }
+    // void SetElIndex (int elnr, int index) const
+    // { Ng_SetElementIndex (elnr+1,index+1); }
 
     /// the material of the element
     string GetElMaterial (int elnr) const
@@ -192,7 +209,7 @@ namespace ngcomp
 
     /// the material of the sub-domain
     string GetDomainMaterial (int domnr) const
-    { return Ng_GetDomainMaterial(domnr+1); }
+    { return Ng_GetDomainMaterial (domnr+1); }
       
 
     /// the boundary condition name of surface element
@@ -200,8 +217,8 @@ namespace ngcomp
     { return Ng_GetSurfaceElementBCName (selnr+1); }
 
     /// the boundary condition name of boundary condition number
-    string GetBCNumBCName (const int bcnr) const
-    { return Ng_GetBCNumBCName(bcnr); }
+    string GetBCNumBCName (int bcnr) const
+    { return Ng_GetBCNumBCName (bcnr); }
 
 
 
@@ -243,36 +260,23 @@ namespace ngcomp
 
     /// the topology of a domain - element
     /// experimental, not recommended for use yet
-    void GetTopologicElement (int elnr, TopologicElement & topel) const;
+    // void GetTopologicElement (int elnr, TopologicElement & topel) const;
 
-  
-
-    /*
-      So moechte ich es gern (JS):
-
-      Anstelle von GetFaceEdges (fanr, edges) etc macht man dann 
-      GetClosureNodes (NT_FACE, fanr, NodeSet (NT_EDGE), nodes);
-
-      und GetTopologicElement in 3D ruft
-      GetClosureNodes (NT_CELL, cell, NodeSet (NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL), nodes);
-    */
-    // void GetClosureNodes (NODE_TYPE nt, int nodenr, NODE_SET ns, Array<Node> & nodes);
 
     /**
        returns topology of a Netgen - element.  This is the new
        (2008), unified concept. The function returns a direct access
        to the Netgen mesh structure instead of copying point numbers
-       etc. The nasty 1-0 convertion is done on the fly.
+       etc. The nasty 1-0 conversion is done on the fly.
      */
-    Ng_Element GetElement (int elnr) const
+    Ng_Element GetElement (int elnr, bool boundary = 0) const
     {
-      switch (dim)
+      switch (dim-boundary)
 	{
-	case 1:	return Ng_GetElement<1> (elnr);
-	case 2: return Ng_GetElement<2> (elnr);
+	case 1:	return mesh -> GetElement<1> (elnr);
+	case 2: return mesh -> GetElement<2> (elnr);
 	case 3:
-        default: return Ng_GetElement<3> (elnr);
-          // default: throw Exception ("GetElement, illegal dimension");
+        default: return mesh -> GetElement<3> (elnr);
 	}
     }
 
@@ -286,11 +290,10 @@ namespace ngcomp
     {
       switch (dim)
 	{
-	case 1:	return Ng_GetElement<0> (elnr);
-	case 2: return Ng_GetElement<1> (elnr);
+	case 1:	return mesh -> GetElement<0> (elnr);
+	case 2: return mesh -> GetElement<1> (elnr);
 	case 3: 
-        default: return Ng_GetElement<2> (elnr);
-          // default: throw Exception ("GetSElement, illegal dimension");
+        default: return mesh -> GetElement<2> (elnr);
 	}
     }
 
@@ -300,7 +303,7 @@ namespace ngcomp
     template <int DIM>
     Ng_Element GetElement (int elnr) const
     {
-      return Ng_GetElement<DIM> (elnr);
+      return mesh -> GetElement<DIM> (elnr);
     }
 
     
@@ -312,7 +315,7 @@ namespace ngcomp
     template <int DIM>
     Ng_Node<DIM> GetNode (int nr) const
     {
-      return Ng_GetNode<DIM> (nr);
+      return mesh -> GetNode<DIM> (nr);
     }
 
     // von astrid
@@ -320,11 +323,13 @@ namespace ngcomp
 
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
-    void GetElPNums (int elnr, Array<int> & pnums) const;
+    void GetElPNums (int elnr, Array<int> & pnums) const
+    { pnums = ArrayObject (GetElement(elnr).points); }
 
     /// returns the points of a boundary element.
     /// vertex and possibly edge-midpoints
-    void GetSElPNums (int selnr, Array<int> & pnums) const;
+    void GetSElPNums (int selnr, Array<int> & pnums) const
+    { pnums = ArrayObject (GetSElement(selnr).points); }
 
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
@@ -374,9 +379,9 @@ namespace ngcomp
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
     /// point numbers of a 1D element
-    void GetSegmentPNums (int snr, Array<int> & pnums) const;
+    // void GetSegmentPNums (int snr, Array<int> & pnums) const;
     /// index of 1D element
-    int GetSegmentIndex (int snr) const;
+    // int GetSegmentIndex (int snr) const;
     
     /// number of facets of an element. 
     /// facets are edges (2D) or faces (3D)
@@ -479,17 +484,17 @@ namespace ngcomp
 			    bool build_searchtree,
 			    const Array<int> * const indices = NULL) const;
     int FindElementOfPoint (FlatVector<double> point,
-			    ngfem::IntegrationPoint & ip, 
+			    IntegrationPoint & ip, 
 			    bool build_searchtree,
-			    const int index) const;
+			    int index) const;
     int FindSurfaceElementOfPoint (FlatVector<double> point,
-				   ngfem::IntegrationPoint & ip, 
+				   IntegrationPoint & ip, 
 				   bool build_searchtree,
 				   const Array<int> * const indices = NULL) const;
     int FindSurfaceElementOfPoint (FlatVector<double> point,
-				   ngfem::IntegrationPoint & ip, 
+				   IntegrationPoint & ip, 
 				   bool build_searchtree,
-				   const int index) const;
+				   int index) const;
 
     /// is element straiht or curved ?
     bool IsElementCurved (int elnr) const
@@ -528,24 +533,17 @@ namespace ngcomp
     void SetHigherIntegrationOrder(int elnr);
     void UnSetHigherIntegrationOrder(int elnr);
 
-    void LoadMesh (const string & filename)
-    {
-      // Ng_LoadMesh (const_cast<char*> (filename.c_str()));
-      Ng_LoadMesh (filename.c_str());
-      UpdateBuffers();
-    }
-
-    void LoadMeshFromString(const string & str)
-    {
-      Ng_LoadMeshFromString(const_cast<char*>(str.c_str()));
-      UpdateBuffers();
-    }
-
+    void LoadMesh (const string & filename);
+    // void LoadMeshFromString(const string & str);
 
     // void PrecomputeGeometryData(int intorder);
 
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
+
+
+    
+    template <int DIMS, int DIMR> friend class Ng_ElementTransformation;
 
 
     MPI_Comm GetCommunicator () const { return ngs_comm; }

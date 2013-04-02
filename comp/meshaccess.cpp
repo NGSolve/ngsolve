@@ -16,10 +16,12 @@ namespace ngcomp
   
   
   template <int DIMS, int DIMR>
-  class NGS_DLL_HEADER Ng_ElementTransformation : public ElementTransformation
+  class Ng_ElementTransformation : public ElementTransformation
   {
-
+    const netgen::Ngx_Mesh * mesh;
   public:
+    Ng_ElementTransformation (const netgen::Ngx_Mesh * amesh) : mesh(amesh) { ; }
+
 
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
@@ -37,26 +39,25 @@ namespace ngcomp
       return DIMR;
     }
     
-    ///
     virtual bool Boundary() const
     {
       return DIMS < DIMR;
+    }
+
+    virtual bool BelongsToMesh (const void * mesh2) const 
+    {
+      return mesh == static_cast<const MeshAccess*> (mesh2) -> mesh;
     }
 
 
     virtual void GetSort (FlatArray<int> sort) const
     {
       int vnums[12];
-      if (DIMS < DIMR)
-	Ng_GetSurfaceElement (elnr+1, vnums);
-      else
-	{
-	  Ng_Element nel = netgen::Ng_GetElement<DIMS> (elnr);
-	  for (int j = 0; j  < nel.vertices.Size(); j++)
-	    vnums[j] = nel.vertices[j];
-	  // Ng_GetElement (elnr+1, &vnums[0], &np);
-	}
-    
+
+      Ng_Element nel = mesh -> GetElement<DIMS> (elnr);
+      for (int j = 0; j  < nel.vertices.Size(); j++)
+        vnums[j] = nel.vertices[j];
+
       switch (eltype)
 	{
 	case ET_TRIG:
@@ -100,28 +101,19 @@ namespace ngcomp
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
     {
-      if (DIMS < DIMR)
-	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
-      else
-	Ng_GetElementTransformation (elnr+1, &ip(0), 0, &dxdxi(0,0));
+      mesh -> ElementTransformation <DIMS,DIMR> (elnr, &ip(0), NULL, &dxdxi(0));
     }
     
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const
     {
-      if (DIMS < DIMR)
-	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), 0);
-      else
-	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), 0);
+      mesh -> ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), NULL);
     }
 
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, FlatMatrix<> dxdxi) const
     {
-      if (DIMS < DIMR)
-	Ng_GetSurfaceElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
-      else
-	Ng_GetElementTransformation (elnr+1, &ip(0), &point(0), &dxdxi(0,0));
+      mesh -> ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), &dxdxi(0));
     }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
@@ -137,16 +129,13 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
-      // static Timer t1 ("multipointjac", 3);
-      // RegionTimer reg(t1);
-
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
-      netgen::Ng_MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
-							 &ir[0](0), &ir[1](0)-&ir[0](0),
-							 &mir[0].Point()(0), 
-							 &mir[1].Point()(0)-&mir[0].Point()(0), 
-							 &mir[0].Jacobian()(0,0), 
-							 &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
+      mesh -> MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
+                                                      &ir[0](0), &ir[1](0)-&ir[0](0),
+                                                      &mir[0].Point()(0), 
+                                                      &mir[1].Point()(0)-&mir[0].Point()(0), 
+                                                      &mir[0].Jacobian()(0,0), 
+                                                      &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
 
       for (int i = 0; i < ir.Size(); i++)
 	mir[i].Compute();
@@ -164,6 +153,7 @@ namespace ngcomp
   MeshAccess :: MeshAccess ()
   {
     ngstd::testout = netgen::testout;
+    mesh = NULL;
     Ng_UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }
@@ -171,28 +161,62 @@ namespace ngcomp
 
   MeshAccess :: ~MeshAccess ()
   {
+    delete mesh;
     Ng_LoadGeometry("");
   }
 
+
+  void MeshAccess :: LoadMesh (const string & filename)
+  {
+    // Ng_LoadMesh (filename.c_str());
+    mesh = netgen::LoadMesh (filename);
+    UpdateBuffers();
+  }
+
+  /*
+  void MeshAccess :: LoadMeshFromString(const string & str)
+  {
+    Ng_LoadMeshFromString(const_cast<char*>(str.c_str()));
+    UpdateBuffers();
+  }
+  */
+
+
   void MeshAccess :: UpdateBuffers()
   {
-    dim = Ng_GetDimension();
-    if (dim == -1 || 
-	(MyMPI_GetNTasks() > 1 && MyMPI_GetId() == 0) )
-      // (ntasks > 1 && id == 0))
-      for (int i = 0; i < 4; i++)  
-        {
-          nnodes[i] = 0;
-          nelements[i] = 0;
-	  nnodes_cd[i] = 0;
-	  nelements_cd[i] = 0;
-        }
+    if (mesh == NULL)
+      {
+        for (int i = 0; i < 4; i++)  
+          {
+            nnodes[i] = 0;
+            nelements[i] = 0;
+            nnodes_cd[i] = 0;
+            nelements_cd[i] = 0;
+          }
+        dim = -1;
+
+        return;
+      }
+
+    dim = mesh -> GetDimension();
+    nlevels = mesh -> GetNLevels(); 
+
+    if (MyMPI_GetNTasks() > 1 && MyMPI_GetId() == 0)
+      {
+        for (int i = 0; i < 4; i++)  
+          {
+            nnodes[i] = 0;
+            nelements[i] = 0;
+            nnodes_cd[i] = 0;
+            nelements_cd[i] = 0;
+          }
+      }
     else
       {
 	for (int i = 0; i < 4; i++)  
 	  {
-	    nnodes[i] = Ng_GetNNodes(i);
-	    nelements[i] = Ng_GetNElements(i);
+	    nnodes[i] = mesh -> GetNNodes(i);
+	    nelements[i] = mesh -> GetNElements(i);
 	  }
 	for (int i = 0; i <= dim; i++)
 	  {
@@ -200,9 +224,6 @@ namespace ngcomp
 	    nelements_cd[i] = nelements[dim-i];
 	  }
       }
-
-    nlevels = Ng_GetNLevels(); 
-
 
     ndomains = -1;
     int ne = GetNE(); 
@@ -222,6 +243,7 @@ namespace ngcomp
   }
 
 
+#ifdef ABC
   void MeshAccess::GetTopologicElement (int elnr, TopologicElement & topel) const
   {
     int help[54];
@@ -262,16 +284,15 @@ namespace ngcomp
     topel.AddNode (Node (NT_FACE, elnr));
     */
   }
+#endif
 
 
-  void MeshAccess :: GetElPNums (int elnr, Array<int> & pnums) const
-  {
-    pnums = ArrayObject (GetElement(elnr).points);
-  }
-
-
+#ifdef ABC
   void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
   {
+    cout << "getsegpnums" << endl;
+    pnums = ArrayObject (mesh -> GetElement<1> (snr).points);
+    /*
     pnums.SetSize(3);
     int np;
     Ng_GetSegment (snr+1, &pnums[0], &np);
@@ -279,13 +300,17 @@ namespace ngcomp
 
     for (int i = 0; i < np; i++)
       pnums[i]--;
+    */
   }
 
 
   int MeshAccess :: GetSegmentIndex (int snr) const
   {
-    return Ng_GetSegmentIndex(snr+1);
+    cout << "getsegindex" << endl;
+    return mesh -> GetElementIndex<1> (snr);
+    //return Ng_GetSegmentIndex(snr+1);
   }
+#endif
 
 
   void MeshAccess :: 
@@ -301,13 +326,6 @@ namespace ngcomp
       ednums[i]--;
   }
 
-  /*
-    void MeshAccess :: 
-    GetSElEdges (int elnr, Array<int> & ednums) const
-    {
-    ednums = ArrayObject (GetSElement(elnr).edges);
-    }
-  */
   void MeshAccess :: 
   GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
   {
@@ -323,26 +341,11 @@ namespace ngcomp
   }
 
 
-
   void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
   {
-    // old routine: Slow !!!
-    /* 
-       int nel = GetNE();
-       int edges[8];
-       elnums.SetSize (0);
-       for (int i = 0; i < nel; i++)
-       {
-       int ned = Ng_GetElement_Edges (i+1, edges, 0);
-       for (int j = 0; j < ned; j++)
-       if (edges[j]-1 == enr)
-       elnums.Append (i);
-       }
-    */ 
-  
-    // fast (he)
     elnums.SetSize(0);
-    Array<int> pnums, velems0, velems1; 
+    ArrayMem<int,3> pnums;
+    ArrayMem<int,50> velems0, velems1; 
     GetEdgePNums(enr, pnums);
     GetVertexElements(pnums[0], velems0);
     GetVertexElements(pnums[1], velems1);
@@ -352,22 +355,11 @@ namespace ngcomp
       for (int j=0; j<velems1.Size(); j++) 
 	if (velems0[i] == velems1[j]) 
 	  {
-	    //  hope that this is a fine edge !! 
-	    // (run several tests and compared with old routine. seems ok)
 	    elnums.Append(velems0[i]);
 	    continue;
 	  }
-
-    // fast function should go into Netgen - part (JS)
   }
   
-  /*
-    void MeshAccess :: 
-    GetElFaces (int elnr, Array<int> & fnums) const
-    {
-    fnums = ArrayObject (GetElement(elnr).faces);
-    }
-  */
 
   void MeshAccess :: 
   GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const
@@ -449,19 +441,14 @@ namespace ngcomp
     pnums[0] -= 1;
     pnums[1] -= 1;
   }
-  
-  void MeshAccess :: GetSElPNums (int elnr, Array<int> & pnums) const
-  {
-    pnums = ArrayObject (GetSElement(elnr).points);
-  }
 
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {
     if (dim == 2)
-      fnums = ArrayObject (Ng_GetElement<2> (elnr).edges);
+      fnums = ArrayObject (mesh -> GetElement<2> (elnr).edges);
     else
-      fnums = ArrayObject (Ng_GetElement<3> (elnr).faces);
+      fnums = ArrayObject (mesh -> GetElement<3> (elnr).faces);
   } 
     
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
@@ -495,8 +482,6 @@ namespace ngcomp
 	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
       }
   }
-
-
 
   void MeshAccess::PushStatus (const char * str) const
   { 
@@ -543,71 +528,23 @@ namespace ngcomp
 
 
 
-  /*
-
-  void MeshAccess ::
-  GetElementTransformation (int elnr, ElementTransformation & eltrans) const
-  {
-  delete eltrans.specific;
-  if (GetDimension() == 2)
-  eltrans.specific = new Ng_ElementTransformation<2,2> ();
-  else
-  eltrans.specific = new Ng_ElementTransformation<3,3> ();
-
-
-  int elind = Ng_GetElementIndex (elnr+1)-1;
-  eltrans.SetElement (0, elnr, elind);
-  eltrans.SetElementType (GetElType(elnr));
-
-  if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-  eltrans.SetHigherIntegrationOrder();
-  else
-  eltrans.UnSetHigherIntegrationOrder();
-
-  eltrans.specific->SetElement (0, elnr, elind);
-  eltrans.specific->SetElementType (GetElType(elnr));
-  }
-
-
-
-  void MeshAccess ::
-  GetSurfaceElementTransformation (int elnr, ElementTransformation & eltrans) const
-  {
-  delete eltrans.specific;
-  if (GetDimension() == 2)
-  eltrans.specific = new Ng_ElementTransformation<1,2> ();
-  else
-  eltrans.specific = new Ng_ElementTransformation<2,3> ();
-
-
-  int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
-  eltrans.SetElement (1, elnr, elind);
-  eltrans.SetElementType (GetSElType(elnr));
-
-
-  eltrans.specific->SetElement (1, elnr, elind);
-  eltrans.specific->SetElementType (GetSElType(elnr));
-  }    
-  */
-
-
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
   {
     ElementTransformation * eltrans;
-
+    
     if (!boundary)
       {
 	switch (dim)
 	  {
-	  case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (); break;
-	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (); break;
-	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (); break;
+	  case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (mesh); break;
+	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (mesh); break;
+	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (mesh); break;
 	  default:
 	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
 	  }
 
-	int elind = Ng_GetElementIndex (elnr+1)-1;
+        int elind = GetElIndex (elnr);
 	eltrans->SetElement (0, elnr, elind);
 	eltrans->SetElementType (GetElType(elnr));
       
@@ -620,14 +557,14 @@ namespace ngcomp
       {
 	switch (dim)
 	  {
-	  case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (); break;
-	  case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (); break;
-	  case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (); break;
+	  case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (mesh); break;
+	  case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (mesh); break;
+	  case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (mesh); break;
 	  default:
 	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
 	  }
 
-	int elind = Ng_GetSurfaceElementIndex (elnr+1)-1;
+        int elind = GetSElIndex (elnr);
 	eltrans->SetElement (1, elnr, elind);
 	eltrans->SetElementType (GetSElType(elnr));
       }
@@ -737,9 +674,9 @@ namespace ngcomp
   int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 					IntegrationPoint & ip, 
 					bool build_searchtree,
-					const int index) const
+					int index) const
   {
-    Array<int> dummy(1);
+    ArrayMem<int,1> dummy(1);
     dummy[0] = index;
     return FindElementOfPoint(point,ip,build_searchtree,&dummy);
   }
@@ -751,36 +688,39 @@ namespace ngcomp
   {
     static Timer t("FindElementOfPonit");
     RegionTimer reg(t);
-    int elnr;
-    double lami[3];
-    if(indices != NULL && indices->Size()>0)
+
+
+    if (indices != NULL)
       {
-	int * dummy = new int[indices->Size()];
-	for(int i=0; i<indices->Size(); i++) dummy[i] = (*indices)[i]+1;
-
-	elnr = Ng_FindElementOfPoint (&point(0), lami, build_searchtree,dummy,indices->Size());
-
-	delete [] dummy;
+        switch (dim)
+          {
+          case 2:
+            return mesh -> FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
+                                                  &(*indices)[0],indices->Size());
+          case 3:
+            return mesh -> FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
+                                                  &(*indices)[0],indices->Size());
+          }
       }
     else
       {  
-	elnr = Ng_FindElementOfPoint (&point(0), lami, build_searchtree);
+        switch (dim)
+          {
+          case 2: return mesh -> FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
+          case 3: return mesh -> FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0);
+          }
       }
 
-    if (elnr == 0) return -1;
-
-    for (int k = 0; k < 3; k++) ip(k) = lami[k];
-
-    return elnr-1;
+    return -1;
   }
 
 
   int MeshAccess :: FindSurfaceElementOfPoint (FlatVector<double> point,
 					       IntegrationPoint & ip, 
 					       bool build_searchtree,
-					       const int index) const
+					       int index) const
   {
-    Array<int> dummy(1);
+    ArrayMem<int,1> dummy(1);
     dummy[0] = index;
     return FindSurfaceElementOfPoint(point,ip,build_searchtree,&dummy);
   }
@@ -903,20 +843,6 @@ namespace ngcomp
       }
   }
 
-  /*
-///// Added by Roman Stainko ....
-void MeshAccess::GetVertexElements( int vnr, Array<int>& elems) const
-{
-int nel = Ng_GetVertex_NElements( vnr+1 );
-elems.SetSize( nel );
-  
-Ng_GetVertex_Elements( vnr+1, &elems[0] );
-  
-for( int i=0; i<nel; i++ )
-elems[i]--;
- 
-}
-  */
 
 ///// Added by Roman Stainko ....
 void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
@@ -980,7 +906,6 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 
 #else
-
 
   int MeshAccess ::GetGlobalNodeNum (Node node) const  
   {
