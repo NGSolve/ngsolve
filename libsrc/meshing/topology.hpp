@@ -19,15 +19,15 @@ class MeshTopology
   bool buildedges;
   bool buildfaces;
 
-  MoveableArray<INDEX_2> edge2vert;
-  MoveableArray<INDEX_4> face2vert;
-  MoveableArray<int[12]> edges;
-  MoveableArray<int[6]> faces;
-  MoveableArray<int[4]> surfedges;
-  MoveableArray<int> segedges;
-  MoveableArray<int> surffaces;
-  MoveableArray<INDEX_2> surf2volelement;
-  MoveableArray<int> face2surfel;
+  Array<INDEX_2> edge2vert;
+  Array<INDEX_4> face2vert;
+  Array<int[12]> edges;
+  Array<int[6]> faces;
+  Array<int[4]> surfedges;
+  Array<int> segedges;
+  Array<int> surffaces;
+  Array<INDEX_2> surf2volelement;
+  Array<int> face2surfel;
   TABLE<ElementIndex,PointIndex::BASE> *vert2element;
   TABLE<int,PointIndex::BASE> *vert2surfelement;
   TABLE<int,PointIndex::BASE> *vert2segment;

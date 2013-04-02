@@ -86,8 +86,7 @@ AdFront3 :: ~AdFront3 ()
 
 void AdFront3 :: GetPoints (Array<Point<3> > & apoints) const
 {
-  for (PointIndex pi = PointIndex::BASE; 
-       pi < points.Size()+PointIndex::BASE; pi++)
+  for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
     
     apoints.Append (points[pi].P());
 }
@@ -106,7 +105,8 @@ PointIndex AdFront3 :: AddPoint (const Point<3> & p, PointIndex globind)
   else
     {
       points.Append (FrontPoint3 (p, globind));
-      return points.Size()-1+PointIndex::BASE;
+      return --points.End();
+      // return points.Size()-1+PointIndex::BASE;
     }
 }
 
@@ -301,9 +301,8 @@ void AdFront3 :: RebuildInternalTables ()
 
   int np = points.Size();
 
-  for (int i = PointIndex::BASE; 
-       i < np+PointIndex::BASE; i++)
-    points[i].cluster = i;
+  for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
+    points[pi].cluster = pi;
   
   NgProfiler::StopTimer (timer_a);	  
   NgProfiler::StartTimer (timer_b);	  
@@ -400,9 +399,8 @@ void AdFront3 :: RebuildInternalTables ()
     {
       for (int i = 1; i <= faces.Size(); i++)
 	faces.Elem(i).cluster = 1;
-      for (int i = PointIndex::BASE; 
-	   i < points.Size()+PointIndex::BASE; i++)
-	points[i].cluster = 1;
+      for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
+	points[pi].cluster = 1;
     }
 
   if (hashon) 
@@ -508,7 +506,6 @@ int AdFront3 :: GetLocals (int fstind,
 
   INDEX i, j;
   PointIndex pstind;
-  INDEX pi;
   Point3d midp, p0;
 
   //  static Array<int, PointIndex::BASE> invpindex;
@@ -591,7 +588,7 @@ int AdFront3 :: GetLocals (int fstind,
   for (i = 1; i <= locfaces.Size(); i++)
     for (j = 1; j <= locfaces.Get(i).GetNP(); j++)
       {
-	pi = locfaces.Get(i).PNum(j);
+	PointIndex pi = locfaces.Get(i).PNum(j);
 	invpindex[pi] = -1;
       }
 
@@ -599,7 +596,7 @@ int AdFront3 :: GetLocals (int fstind,
     {
       for (j = 1; j <= locfaces.Get(i).GetNP(); j++)
 	{
-	  pi = locfaces.Get(i).PNum(j);
+	  PointIndex pi = locfaces.Get(i).PNum(j);
 	  if (invpindex[pi] == -1)
 	    {
 	      pindex.Append (pi);
@@ -703,12 +700,12 @@ void AdFront3 :: GetGroup (int fi,
   invpindex.SetSize (points.Size());
   
 
-  for (i = 1; i <= points.Size(); i++)
+  for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
     if (points.Get(i).Valid())
       {
-	grouppoints.Append (points.Get(i).P());
-	pindex.Append (i);
-	invpindex.Elem(i) = pindex.Size();
+	grouppoints.Append (points[pi].P());
+	pindex.Append (pi);
+	invpindex[pi] = pindex.Size();
       }
 
   for (i = 1; i <= faces.Size(); i++)

@@ -22,7 +22,7 @@ public:
   virtual ~GeomSearch3d();
 
   ///
-  void Init (Array <FrontPoint3,PointIndex::BASE> *pointsi, Array <FrontFace> *facesi);
+  void Init (Array <FrontPoint3,PointIndex::BASE, PointIndex> *pointsi, Array <FrontFace> *facesi);
 
   ///get elements max extension
   void ElemMaxExt(Point3d& minp, Point3d& maxp, const MiniElement2d& elem);
@@ -47,7 +47,7 @@ public:
 private:
   
   Array <FrontFace> *faces; // Pointers to Arrays in Adfront
-  Array <FrontPoint3,PointIndex::BASE> *points;
+  Array <FrontPoint3,PointIndex::BASE, PointIndex> *points;
 
   Array <Array <int>*> hashtable;
 

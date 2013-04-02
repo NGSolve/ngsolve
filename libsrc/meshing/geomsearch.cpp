@@ -19,7 +19,7 @@ namespace netgen
       } 
   }
 
-  void GeomSearch3d :: Init (Array <FrontPoint3,PointIndex::BASE> *pointsi, Array <FrontFace> *facesi)
+  void GeomSearch3d :: Init (Array <FrontPoint3,PointIndex::BASE, PointIndex> *pointsi, Array <FrontFace> *facesi)
   {
     points = pointsi;
     faces = facesi;

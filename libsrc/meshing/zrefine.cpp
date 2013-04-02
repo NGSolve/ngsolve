@@ -147,11 +147,11 @@ namespace netgen
 	  
 	    for (j = 0; j <= 1; j++)
 	      {
-		int pi1 = el.PNum( (j+0) % 4 + 1);
-		int pi2 = el.PNum( (j+1) % 4 + 1);
-		int pi3 = el.PNum( (j+2) % 4 + 1);
-		int pi4 = el.PNum( (j+3) % 4 + 1);
-		int pi5 = el.PNum(5);
+		PointIndex pi1 = el.PNum( (j+0) % 4 + 1);
+		PointIndex pi2 = el.PNum( (j+1) % 4 + 1);
+		PointIndex pi3 = el.PNum( (j+2) % 4 + 1);
+		PointIndex pi4 = el.PNum( (j+3) % 4 + 1);
+		PointIndex pi5 = el.PNum(5);
 
 		INDEX_2 edge1(pi1, pi4);
 		INDEX_2 edge2(pi2, pi3);

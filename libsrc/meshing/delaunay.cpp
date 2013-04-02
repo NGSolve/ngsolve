@@ -266,7 +266,6 @@ namespace netgen
     Point3d tpmin, tpmax;
 
     tettree.GetIntersecting (newp, newp, treesearch);
-    
     double quot,minquot(1e20);
 
     for (int j = 0; j < treesearch.Size(); j++)
@@ -343,7 +342,6 @@ namespace netgen
     int changed = 1;
     int nstarti = 1, starti;
 
-
     while (changed)
       {
 	changed = 0;
@@ -417,9 +415,9 @@ namespace netgen
 
 		      INDEX_3 i3 = tempels.Get(helind).GetFace (k-1);
 
-		      const Point3d & p1 = mesh.Point ( PointIndex (i3.I1()));
-		      const Point3d & p2 = mesh.Point ( PointIndex (i3.I2()));
-		      const Point3d & p3 = mesh.Point ( PointIndex (i3.I3()));
+		      const Point3d & p1 = mesh.Point ( i3.I1());
+		      const Point3d & p2 = mesh.Point ( i3.I2());
+		      const Point3d & p3 = mesh.Point ( i3.I3());
 
 
 		      Vec3d v1(p1, p2);
@@ -444,7 +442,6 @@ namespace netgen
 		}
 	    }
       } // while (changed)
-
     //      (*testout) << "newels: " << endl;
     Array<Element> newels;
 
@@ -505,11 +502,10 @@ namespace netgen
 	  
 	for (int k = 0; k < 4; k++)
 	  tempels.Elem(celind)[k] = -1;
-
+        
 	((ADTree6&)tettree.Tree()).DeleteElement (celind);
 	freelist.Append (celind);
       }
-
 
     int hasclose = 0;
     for (int j = 1; j <= closesphere.GetArray().Size(); j++)
@@ -605,9 +601,6 @@ namespace netgen
 		  Array<DelaunayTet> & tempels,
 		  int oldnp, DelaunayTet & startel, Point3d & pmin, Point3d & pmax)
   {
-    int i, j, k;
-    const Point<3> * pp[4];
-
     Array<Point<3> > centers;
     Array<double> radi2;
   
@@ -616,17 +609,17 @@ namespace netgen
 
     // new: local box
     mesh.GetBox (pmax, pmin);   // lower bound for pmax, upper for pmin
-    for (i = 1; i <= adfront->GetNF(); i++)
+    for (int i = 1; i <= adfront->GetNF(); i++)
       {
 	const MiniElement2d & face = adfront->GetFace(i);
-	for (j = 0; j < face.GetNP(); j++)
+	for (int j = 0; j < face.GetNP(); j++)
 	  {
 	    pmin.SetToMin  (mesh.Point (face[j]));
 	    pmax.SetToMax  (mesh.Point (face[j]));
 	  }
       }
   
-    for (i = 0; i < mesh.LockedPoints().Size(); i++)
+    for (int i = 0; i < mesh.LockedPoints().Size(); i++)
       {
 	pmin.SetToMin (mesh.Point (mesh.LockedPoints()[i]));
 	pmax.SetToMax (mesh.Point (mesh.LockedPoints()[i]));
@@ -661,18 +654,18 @@ namespace netgen
     // flag points to use for Delaunay:
     BitArrayChar<PointIndex::BASE> usep(np);
     usep.Clear();
-    for (i = 1; i <= adfront->GetNF(); i++)
+    for (int i = 1; i <= adfront->GetNF(); i++)
       {
 	const MiniElement2d & face = adfront->GetFace(i);
-	for (j = 0; j < face.GetNP(); j++)
+	for (int j = 0; j < face.GetNP(); j++)
 	  usep.Set (face[j]);
       }
 
-    for (i = oldnp + PointIndex::BASE; 
+    for (int i = oldnp + PointIndex::BASE; 
 	 i < np + PointIndex::BASE; i++)
       usep.Set (i);
 
-    for (i = 0; i < mesh.LockedPoints().Size(); i++)
+    for (int i = 0; i < mesh.LockedPoints().Size(); i++)
       usep.Set (mesh.LockedPoints()[i]);
   
 
@@ -697,7 +690,7 @@ namespace netgen
 
 
     tpmin = tpmax = mesh.Point(startel[0]);
-    for (k = 1; k < 4; k++)
+    for (int k = 1; k < 4; k++)
       {
 	tpmin.SetToMin (mesh.Point (startel[k]));
 	tpmax.SetToMax (mesh.Point (startel[k]));
@@ -705,14 +698,11 @@ namespace netgen
     tpmax = tpmax + 0.01 * (tpmax - tpmin);
     tettree.Insert (tpmin, tpmax, 1);
 
-
     Point<3> pc;
 	  
-    for (k = 0; k < 4; k++)
-      {
-	pp[k] = &mesh.Point (startel[k]);
-      }
-  
+    const Point<3> * pp[4];
+    for (int k = 0; k < 4; k++)
+      pp[k] = &mesh.Point (startel[k]);
     CalcSphereCenter (&pp[0], pc);
     
     centers.Append (pc);
@@ -722,50 +712,50 @@ namespace netgen
     IndexSet insphere(mesh.GetNP());
     IndexSet closesphere(mesh.GetNP());
 
-
-
     // "random" reordering of points  (speeds a factor 3 - 5 !!!)
-
-    Array<int> mixed(np);
+    Array<PointIndex, PointIndex::BASE, PointIndex> mixed(np);
     int prims[] = { 11, 13, 17, 19, 23, 29, 31, 37 };
     int prim;
   
-    i = 0;
-    while (np % prims[i] == 0) i++;
-    prim = prims[i];
+    {
+      int i = 0;
+      while (np % prims[i] == 0) i++;
+      prim = prims[i];
+    }
 
-    for (i = 1; i <= np; i++)
-      mixed.Elem(i) = (prim * i) % np + PointIndex::BASE;
+    for (PointIndex pi = mesh.Points().Begin(); pi < mesh.Points().End()-4; pi++)
+      mixed[pi] = PointIndex ( (prim * pi) % np + PointIndex::BASE );
 
-    for (i = 1; i <= np; i++)
+    for (PointIndex pi = mesh.Points().Begin(); pi < mesh.Points().End()-4; pi++)
       {
-	if (i % 1000 == 0)
+	if (pi % 1000 == 0)
 	  {
-	    if (i % 10000 == 0)
+	    if (pi % 10000 == 0)
 	      PrintDot ('+');
 	    else
 	      PrintDot ('.');
 	  }
 
-	multithread.percent = 100.0 * i / np;
+	multithread.percent = 100.0 * pi / np;
 	if (multithread.terminate)
 	  break;
 
-	PointIndex newpi = mixed.Get(i);
+	PointIndex newpi = mixed[pi];
 
 	if (!usep.Test(newpi)) 
 	  continue;
 
 	cntp++;
 
-	const Point3d & newp = mesh.Point(newpi);
+	const MeshPoint & newp = mesh[newpi];
       
 	AddDelaunayPoint (newpi, newp, tempels, mesh,
 			  tettree, meshnb, centers, radi2, 
 			  connected, treesearch, freelist, list, insphere, closesphere);
+
       }
 
-    for (i = tempels.Size(); i >= 1; i--)
+    for (int i = tempels.Size(); i >= 1; i--)
       if (tempels.Get(i)[0] <= 0)
 	tempels.DeleteElement (i);
 
@@ -819,7 +809,7 @@ namespace netgen
       // improve delaunay - mesh by swapping !!!!
 
       Mesh tempmesh;
-      for (PointIndex pi = PointIndex::BASE; pi < mesh.GetNP()+PointIndex::BASE; pi++)
+      for (PointIndex pi = mesh.Points().Begin(); pi < mesh.Points().End(); pi++)
 	tempmesh.AddPoint (mesh[pi]);
       
       for (int i = 1; i <= tempels.Size(); i++)
@@ -874,8 +864,8 @@ namespace netgen
       
       //  for (i = mesh.GetNP() - 3; i <= mesh.GetNP(); i++)
       //    tempmesh.AddLockedPoint (i);
-      for (PointIndex pi = PointIndex::BASE; 
-	   pi < tempmesh.GetNP() + PointIndex::BASE; pi++)
+      for (PointIndex pi = tempmesh.Points().Begin();
+	   pi < tempmesh.Points().End(); pi++)
 	tempmesh.AddLockedPoint (pi);
       
       //    tempmesh.PrintMemInfo(cout);
@@ -1288,8 +1278,7 @@ namespace netgen
     INDEX_3_CLOSED_HASHTABLE<INDEX_2> faceht(100);   
   
     Element2d hel(TRIG);
-    for (PointIndex pi = PointIndex::BASE; 
-	 pi < mesh.GetNP()+PointIndex::BASE; pi++)
+    for (PointIndex pi = mesh.Points().Begin(); pi < mesh.Points().End(); pi++)
       {
 	faceht.SetSize (4 * elsonpoint[pi].Size());
 	for (int ii = 0; ii < elsonpoint[pi].Size(); ii++)

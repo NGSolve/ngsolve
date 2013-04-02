@@ -308,7 +308,7 @@ namespace netgen
 		if (el0.GetNP() != rel0.GetNP()) continue;
 
 
-		pmap = -1;
+		pmap = PointIndex (-1);
  
 		for (int k = 0; k < el0.GetNP(); k++)
 		  {

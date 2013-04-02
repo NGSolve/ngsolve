@@ -48,16 +48,6 @@ namespace netgen
     vert2surfelement = 0;
     vert2segment = 0;
     timestamp = -1;
-
-    edge2vert.SetName ("edge2vert");
-    face2vert.SetName ("face2vert");
-    edges.SetName ("el2edge");
-    faces.SetName ("el2face");
-    surfedges.SetName ("surfel2edge");
-    segedges.SetName ("segment2edge");
-    surffaces.SetName ("surfel2face");
-    surf2volelement.SetName ("surfel2el");
-    face2surfel.SetName ("face2surfel");
   }
 
   MeshTopology :: ~MeshTopology ()

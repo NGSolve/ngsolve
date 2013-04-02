@@ -126,7 +126,7 @@ void CutOffAndCombine (Mesh & mesh, const Mesh & othermesh)
     for (j = 1; j <= 3; j++)
       locked.Clear (mesh.OpenElement(i).PNum(j));
 
-  for (i = 1; i <= locked.Size(); i++)
+  for (PointIndex i (1); i <= locked.Size(); i++)
     if (locked.Test(i))
       {
 	mesh.AddLockedPoint (i);
@@ -135,7 +135,7 @@ void CutOffAndCombine (Mesh & mesh, const Mesh & othermesh)
 
 
   
-  Array<int> pmat(onp);
+  Array<PointIndex> pmat(onp);
 
   for (i = 1; i <= onp; i++)
     pmat.Elem(i) = mesh.AddPoint (othermesh.Point(i));

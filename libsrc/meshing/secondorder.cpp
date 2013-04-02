@@ -18,7 +18,7 @@ namespace netgen
     mesh.ComputeNVertices();
     mesh.SetNP(mesh.GetNV());
   
-    INDEX_2_HASHTABLE<int> between(mesh.GetNP() + 5);
+    INDEX_2_HASHTABLE<PointIndex> between(mesh.GetNP() + 5);
 
 
     bool thinlayers = 0;
@@ -235,18 +235,18 @@ namespace netgen
 	Array<int,PointIndex::BASE> identmap;
 	mesh.GetIdentifications().GetMap (i, identmap);
 
-	for (INDEX_2_HASHTABLE<int>::Iterator it = between.Begin();
+	for (INDEX_2_HASHTABLE<PointIndex>::Iterator it = between.Begin();
 	     it != between.End(); it++)
 	  {
 	      INDEX_2 i2;
-	      int newpi;
+	      PointIndex newpi;
 	      between.GetData (it, i2, newpi);
 	      INDEX_2 oi2(identmap.Get(i2.I1()),
 			  identmap.Get(i2.I2()));
 	      oi2.Sort();
 	      if (between.Used (oi2))
 		{
-		  int onewpi = between.Get(oi2);
+		  PointIndex onewpi = between.Get(oi2);
 		  mesh.GetIdentifications().Add (newpi, onewpi, i);
 		}
 	  }
@@ -288,7 +288,7 @@ namespace netgen
 	}
     */
 
-    for (INDEX_2_HASHTABLE<int>::Iterator it = between.Begin();
+    for (INDEX_2_HASHTABLE<PointIndex>::Iterator it = between.Begin();
 	 it != between.End(); it++)
       {
 	mesh.mlbetweennodes[between.GetData (it)] = between.GetHash(it);

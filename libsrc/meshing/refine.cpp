@@ -18,7 +18,7 @@ namespace netgen
     mesh.SetNP(mesh.GetNV());
 
 
-    INDEX_2_HASHTABLE<int> between(mesh.GetNP() + 5);
+    INDEX_2_HASHTABLE<PointIndex> between(mesh.GetNP() + 5);
       
     int oldne, oldns, oldnf;
 
@@ -87,7 +87,7 @@ namespace netgen
 	  case TRIG:
 	  case TRIG6:
 	    {
-	      ArrayMem<int,6> pnums(6);
+	      ArrayMem<PointIndex,6> pnums(6);
 	      ArrayMem<PointGeomInfo,6> pgis(6);
 
 	      static int betw[3][3] =
@@ -162,7 +162,7 @@ namespace netgen
 	  case QUAD6:
 	  case QUAD8:
 	    {
-	      ArrayMem<int,9> pnums(9);
+	      ArrayMem<PointIndex,9> pnums(9);
 	      ArrayMem<PointGeomInfo,9> pgis(9);
 
 	      static int betw[5][3] =
@@ -253,7 +253,7 @@ namespace netgen
 	  case TET:
 	  case TET10:
 	    {
-	     ArrayMem<int,10> pnums(10);
+	     ArrayMem<PointIndex,10> pnums(10);
 	     static int betw[6][3] =
 	     { { 1, 2, 5 },
 	       { 1, 3, 6 },
@@ -334,7 +334,7 @@ namespace netgen
           }
           case HEX:
           {
-	     ArrayMem<int,27> pnums(27);
+	     ArrayMem<PointIndex,27> pnums(27);
 	     static int betw[13][3] =
 	     { { 1, 2, 9 },
 	       { 3, 4, 10 },
@@ -384,10 +384,10 @@ namespace netgen
                  { 17, 20, 27 },
                };
 
-	     pnums = -1;
+	     pnums = PointIndex(-1);
 
 	     for (j = 1; j <= 8; j++)
-	     pnums.Elem(j) = el.PNum(j);
+               pnums.Elem(j) = el.PNum(j);
 
 
 	     for (j = 0; j < 13; j++)
@@ -460,7 +460,7 @@ namespace netgen
 	  }
 	  case PRISM:
           {
-	     ArrayMem<int,18> pnums(18);
+	     ArrayMem<PointIndex,18> pnums(18);
 	     static int betw[9][3] =
 	     { { 3, 1, 7 },
 	       { 1, 2, 8 },
@@ -494,9 +494,9 @@ namespace netgen
            };
 
 	     //int elrev = el.flags.reverse;
-	     pnums = -1;
-
-	     for (j = 1; j <= 6; j++)
+           pnums = PointIndex(-1);
+           
+           for (j = 1; j <= 6; j++)
 	     pnums.Elem(j) = el.PNum(j);
 	    // if (elrev)
 	    // swap (pnums.Elem(3), pnums.Elem(4));
@@ -594,14 +594,14 @@ namespace netgen
 	  for (int k = 1; k <= between.GetBagSize(j); k++)
 	    {
 	      INDEX_2 i2;
-	      int newpi;
+	      PointIndex newpi;
 	      between.GetData (j, k, i2, newpi);
 	      INDEX_2 oi2(identmap.Get(i2.I1()),
 			  identmap.Get(i2.I2()));
 	      oi2.Sort();
 	      if (between.Used (oi2))
 		{
-		  int onewpi = between.Get(oi2);
+		  PointIndex onewpi = between.Get(oi2);
 		  mesh.GetIdentifications().Add (newpi, onewpi, i);
 		}
 	    }
@@ -638,7 +638,7 @@ namespace netgen
 	  for (int j = 1; j <= between.GetBagSize(i); j++)
 	    {
 	      INDEX_2 parent;
-	      int child;
+	      PointIndex child;
 	      between.GetData (i, j, parent, child);
 	      can.Elem(child) = Center (can.Elem(parent.I1()),
 					can.Elem(parent.I2()));

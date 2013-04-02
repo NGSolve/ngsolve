@@ -94,7 +94,7 @@ namespace netgen
       {
 	if (meshbox.IsIn (npoints.Get(i)))
 	  {
-	    int gpnum = mesh.AddPoint (npoints.Get(i));
+	    PointIndex gpnum = mesh.AddPoint (npoints.Get(i));
 	    adfront->AddPoint (npoints.Get(i), gpnum);
 	    
 	    if (debugparam.slowchecks)
@@ -149,7 +149,7 @@ namespace netgen
       {
 	if (meshbox.IsIn (npoints.Get(i)))
 	  {
-	    int gpnum = mesh.AddPoint (npoints.Get(i));
+	    PointIndex gpnum = mesh.AddPoint (npoints.Get(i));
 	    adfront->AddPoint (npoints.Get(i), gpnum);
 	  }
       }  
