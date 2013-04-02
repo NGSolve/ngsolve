@@ -106,10 +106,15 @@ namespace ngcomp
     /// Reference - element (low order only)
     FiniteElement * point;
 
+    FiniteElement *dummy_tet, *dummy_prism, *dummy_pyramid, *dummy_hex;
+    FiniteElement *dummy_trig, *dummy_quad, *dummy_segm, *dummy_point;
+
     /// Evaluator for visualization (new style)
     DifferentialOperator * evaluator;
     /// Evaluator for visualization of boundary data
     DifferentialOperator * boundary_evaluator;
+    /// Evaluator for flux
+    DifferentialOperator * flux_evaluator;
 
     /// Evaluator for visualization (old style)
     BilinearFormIntegrator * integrator;
@@ -369,19 +374,23 @@ namespace ngcomp
 
 
     /// returns function-evaluator
-    const DifferentialOperator * GetEvaluator (bool boundary = false) const
+    const DifferentialOperator * GetEvaluator (bool vb = VOL) const
     { 
-      if (boundary)
+      if (vb == BND)
 	return boundary_evaluator; 
       else
 	return evaluator; 
     }
 
+    const DifferentialOperator * GetFluxEvaluator () const
+    {
+      return flux_evaluator;
+    }
 
     /// returns function-evaluator
-    const BilinearFormIntegrator * GetIntegrator (bool boundary = false) const
+    const BilinearFormIntegrator * GetIntegrator (bool vb = VOL) const
     { 
-      if (boundary)
+      if (vb == BND)
 	return boundary_integrator; 
       else
 	return integrator; 
