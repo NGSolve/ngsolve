@@ -21,11 +21,9 @@ class NGS_DLL_HEADER NedelecFESpace : public FESpace
   ///
   Array<ngstd::INT<2> > edgepoints;
   ///
-  // Array<int[2]> parentedges;
   Array<INT<2> > parentedges;
   ///
   Array<short int> finelevelofedge;
-
   ///
   Array<int> nelevel;
 
@@ -33,11 +31,6 @@ protected:
   bool discontinuous;
   
 public:
-  ///
-  /*
-  NedelecFESpace (const MeshAccess & ama,
-		  int aorder, int adim, bool acomplex, bool adiscontinuous = 0);
-  */
   ///
   NedelecFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
   ///

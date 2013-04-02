@@ -26,6 +26,7 @@ namespace ngcomp
   NedelecFESpace :: NedelecFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
     : FESpace (ama, flags)
   {
+    cout << "nelecfespace, flags = " << endl << flags << endl;
     name="NedelecFESpace(hcurl)";
     DefineDefineFlag("hcurl");
     // parse standard flags
@@ -46,6 +47,12 @@ namespace ngcomp
     order = 1;
 
     // Integrator for shape tester 
+
+    static ConstantCoefficientFunction one(1);
+    integrator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
+    boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one);
+
+    /*
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
@@ -61,11 +68,10 @@ namespace ngcomp
 	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
 	
       }
+    */
 
     discontinuous = flags.GetDefineFlag("discontinuous");
   }
-
-
 
                                     
   NedelecFESpace :: ~NedelecFESpace ()
@@ -88,16 +94,12 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-
-    int i, j, k;
     const MeshAccess & ma = GetMeshAccess();
     int ne = ma.GetNE();
     int nse = ma.GetNSE();
-    // int np = ma.GetNP();
     int ned = ma.GetNEdges();
     
     Array<int> pnums, enums;
-    
     
     int level = ma.GetNLevels();
     
@@ -115,37 +117,27 @@ namespace ngcomp
     
     int oldned = finelevelofedge.Size();
     finelevelofedge.SetSize(ned);
-    for (i = oldned; i < ned; i++)
-      finelevelofedge[i] = -1;
-    
-    for (i = 0; i < ne; i++)
-      {
-	ma.GetElEdges (i, enums);
-	for (j = 0; j < enums.Size(); j++)
-	  finelevelofedge[enums[j]] = level-1;
-      }
+    finelevelofedge.Range (oldned, ned) = -1;
 
-    for (i = 0; i < nse; i++)
-      {
-	ma.GetSElEdges (i, enums);
-	for (j = 0; j < enums.Size(); j++)
-	  finelevelofedge[enums[j]] = level-1;
-      }
-  
+    for (int i = 0; i < ne; i++)
+      finelevelofedge[ArrayObject(ma.GetElement(i).edges)] = level-1;
+
+    for (int i = 0; i < nse; i++)
+      finelevelofedge[ArrayObject(ma.GetSElement(i).edges)] = level-1;
+
 
     // generate edge points, and temporary hash table
-    // HashTable<INT<2>, int> * node2edge = new HashTable<INT<2>, int>(ned/2+1);
-    ClosedHashTable<INT<2>, int> * node2edge = new ClosedHashTable<INT<2>, int>(5*ned+10);
+    ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
 
     edgepoints.SetSize(0);
     
-    for (i = 0; i < ned; i++)
+    for (int i = 0; i < ned; i++)
       {
 	INT<2> edge;
 	ma.GetEdgePNums (i, edge[0], edge[1]);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
-	node2edge -> Set (edge, i);
+	node2edge.Set (edge, i);
 	edgepoints.Append (edge);
       }
 
@@ -153,14 +145,9 @@ namespace ngcomp
     
     // build edge hierarchy:
     parentedges.SetSize (ned);
-    for (i = 0; i < ned; i++)
-      {
-	parentedges[i][0] = -1;
-	parentedges[i][1] = -1;
-      }
-    
+    parentedges = INT<2> (-1,-1);
 
-    for (i = 0; i < ned; i++)
+    for (int i = 0; i < ned; i++)
       {
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
@@ -188,7 +175,7 @@ namespace ngcomp
 	    if (paedge[0] > paedge[1]) 
 	      Swap (paedge[0], paedge[1]);
 	    
-	    int paedgenr = node2edge->Get (paedge);
+	    int paedgenr = node2edge.Get (paedge);
 	    int orient = (paedge[0] == i2[0] || paedge[1] == i2[1]) ? 1 : 0;
 	    
 	    parentedges[i][0] = 2 * paedgenr + orient;
@@ -196,7 +183,7 @@ namespace ngcomp
 	else
 	  {
 	    // edge is splitting edge in middle of triangle:
-	    for (j = 1; j <= 2; j++)
+	    for (int j = 1; j <= 2; j++)
 	      {
 		INT<2> paedge1, paedge2;
 		if (j == 1)
@@ -221,11 +208,11 @@ namespace ngcomp
 		if ( paedge1[0] == -1 || paedge2[0] == -1 )
 		  continue;
 
-		if (node2edge->Used (paedge1) && node2edge->Used (paedge2))
+		if (node2edge.Used (paedge1) && node2edge.Used (paedge2))
 		  {
-		    paedgenr1 = node2edge->Get (paedge1);
+		    paedgenr1 = node2edge.Get (paedge1);
 		    orient1 = (paedge1[0] == i2[0] || paedge1[1] == i2[1]) ? 1 : 0;
-		    paedgenr2 = node2edge->Get (paedge2);
+		    paedgenr2 = node2edge.Get (paedge2);
 		    orient2 = (paedge2[0] == i2[0] || paedge2[1] == i2[1]) ? 1 : 0;
 		    
 		    parentedges[i][0] = 2 * paedgenr1 + orient1;	      
@@ -240,7 +227,7 @@ namespace ngcomp
 		    pa1[0] != pa2[1] && 
 		    pa1[1] != pa2[0] && 
 		    pa1[1] != pa2[1])
-		  for (j = 1; j <= 2; j++)
+		  for (int j = 1; j <= 2; j++)
 		    {
 		      INT<2> paedge1, paedge2;
 		      if (j == 1)
@@ -271,10 +258,10 @@ namespace ngcomp
 		      if ( paedge1[0] == -1 || paedge2[0] == -1 )
 			continue;
 		      
-		      if (node2edge->Used (paedge1) && node2edge->Used (paedge2))
+		      if (node2edge.Used (paedge1) && node2edge.Used (paedge2))
 			{
-			  paedgenr1 = node2edge->Get (paedge1);
-			  paedgenr2 = node2edge->Get (paedge2);
+			  paedgenr1 = node2edge.Get (paedge1);
+			  paedgenr2 = node2edge.Get (paedge2);
 			  parentedges[i][0] = 2 * paedgenr1 + orient1;	      
 			  parentedges[i][1] = 2 * paedgenr2 + orient2;	      
 			}
@@ -284,8 +271,8 @@ namespace ngcomp
 	    if (parentedges[i][0] == -1)
 	      {
 		// triangle split into quad+trig (from anisotropic pyramids)
-		for (j = 0; j < 2; j++)
-		  for (k = 0; k < 2; k++)
+		for (int j = 0; j < 2; j++)
+		  for (int k = 0; k < 2; k++)
 		    {
 		      INT<2> paedge (pa1[1-j], pa2[1-k]);
 		      int orientpa = 1;
@@ -294,9 +281,9 @@ namespace ngcomp
 			  Swap (paedge[0], paedge[1]);
 			  orientpa = 0;
 			}	
-		      if (pa1[j] == pa2[k] && node2edge->Used(paedge))
+		      if (pa1[j] == pa2[k] && node2edge.Used(paedge))
 			{
-			  int paedgenr = node2edge->Get (paedge);
+			  int paedgenr = node2edge.Get (paedge);
 			  parentedges[i][0] = 2 * paedgenr + orientpa;
 			}
 		    }
@@ -314,25 +301,8 @@ namespace ngcomp
       }
     
     
-    delete node2edge;
-    
     prol->Update();
-
     UpdateCouplingDofArray();
-
-    // FinalizeUpdate (lh);
-
-    //   (*testout) << "edges: " << endl;
-    //   for (i = 1; i <= ned; i++)
-    //     {
-    //       (*testout) << i << ": " << EdgePoint1(i) << ", " << EdgePoint2(i) << endl;
-    //     }
-
-    //   (*testout) << "parent edges: " << endl;
-    //   for (i = 1; i <= ned; i++)
-    //     {
-    //       (*testout) << i << ": " << parentedges.Get(i)[0] << ", " << parentedges.Get(i)[1] << endl;
-    //     }
   }
 
   void  NedelecFESpace :: UpdateCouplingDofArray ()
@@ -361,9 +331,16 @@ namespace ngcomp
   
   void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    GetMeshAccess().GetElEdges (elnr, dnums);
+    if (DefinedOn (ma.GetElIndex (elnr)))
+      ma.GetElEdges (elnr, dnums);
+    else
+      dnums.SetSize(0);
+
+    /*
+    ma.GetElEdges (elnr, dnums);
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
+    */
   }
 
 
@@ -381,32 +358,26 @@ namespace ngcomp
   void NedelecFESpace::TransformMat (int elnr, bool boundary,
 				     MAT & mat, TRANSFORM_TYPE tt) const
   {
-    int nd;
-    ArrayMem<int,12> enums, eorient;
-    LocalHeapMem<1000> lh("NedelecFEspace - transformmat");
-
-    if (boundary)
-      {
-	GetMeshAccess().GetSElEdges (elnr, enums, eorient);
-	nd = GetSFE (elnr, lh).GetNDof();
-      }
-    else
-      {
-	GetMeshAccess().GetElEdges (elnr, enums, eorient);
-	nd = GetFE (elnr, lh).GetNDof();
-      }
+    Ng_Element ngel = ma.GetElement(elnr, boundary);
+    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    
+    int ned = ElementTopology::GetNEdges (eltype);
+    const EDGE * edges = ElementTopology::GetEdges (eltype);
+    ArrayMem<int,12> eorient(ned);
+    for (int i = 0; i < ned; i++)
+      eorient[i] = 
+        ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+        ? 1 : -1;
 
     if (tt & TRANSFORM_MAT_LEFT)
-      for (int k = 0; k < dimension; k++)
-	for (int i = 0; i < nd; i++)
-	  for (int j = 0; j < mat.Width(); j++)
-	    mat(k+i*dimension, j) *= eorient[i];
+      for (int i = 0; i < ned; i++)
+        for (int k = 0; k < dimension; k++)
+          mat.Row(k+i*dimension) *= eorient[i];
 
     if (tt & TRANSFORM_MAT_RIGHT)
-      for (int l = 0; l < dimension; l++)
-	for (int i = 0; i < mat.Height(); i++)
-	  for (int j = 0; j < nd; j++)
-	    mat(i, l+j*dimension) *= eorient[j];
+      for (int j = 0; j < ned; j++)
+        for (int l = 0; l < dimension; l++)
+          mat.Col(l+j*dimension) *= eorient[j];
   }
 
 
@@ -414,9 +385,8 @@ namespace ngcomp
   void NedelecFESpace::TransformVec (int elnr, bool boundary,
 				     VEC & vec, TRANSFORM_TYPE tt) const
   {
+    /*
     int nd;
-    // int ena[12], eoa[12];
-    // Array<int> enums(12, ena), eorient(12, eoa);
     ArrayMem<int,12> enums, eorient;
     LocalHeapMem<1000> lh("NedelecFESpace - transformvec");
 
@@ -430,11 +400,25 @@ namespace ngcomp
 	GetMeshAccess().GetElEdges (elnr, enums, eorient);
 	nd = GetFE (elnr, lh).GetNDof();
       }
-  
+    */
+
+
+    Ng_Element ngel = boundary ? ma.GetSElement (elnr) : ma.GetElement(elnr);
+    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    
+    int ned = ElementTopology::GetNEdges (eltype);
+    const EDGE * edges = ElementTopology::GetEdges (eltype);
+    ArrayMem<int,12> eorient(ned);
+    for (int i = 0; i < ned; i++)
+      eorient[i] = 
+        ngel.vertices[edges[i][0]] < ngel.vertices[edges[i][1]]  
+        ? 1 : -1;
+
+
     if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL))
       {
 	for (int k = 0; k < dimension; k++)
-	  for (int i = 0; i < nd; i++)
+	  for (int i = 0; i < ned; i++)
 	    vec(k+i*dimension) *= eorient[i];
       }
   }
