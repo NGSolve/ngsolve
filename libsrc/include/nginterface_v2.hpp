@@ -15,6 +15,12 @@
 
 namespace netgen
 {
+
+
+
+
+
+
   class Ng_Element
   {
 
@@ -69,16 +75,6 @@ namespace netgen
     Ng_Faces faces;
   };
 
-
-
-
-  template <int DIM> 
-  DLL_HEADER int Ng_GetNElements ();
-
-  template <int DIM> 
-  DLL_HEADER Ng_Element Ng_GetElement (int nr);
-
-
   
   class Ng_Point
   {
@@ -87,8 +83,6 @@ namespace netgen
     double operator[] (int i)
     { return pt[i]; }
   };
-
-  DLL_HEADER Ng_Point Ng_GetPoint (int nr);
 
 
 
@@ -146,30 +140,84 @@ namespace netgen
 
 
     
-  template <int DIM>
-  DLL_HEADER Ng_Node<DIM> Ng_GetNode (int nr);
-  
-
-  template <int DIM>
-  DLL_HEADER int Ng_GetNNodes ();
 
 
 
 
 
-  /// Curved Elements:
-  /// xi..... DIM_EL local coordinates
-  /// sxi ... step xi
-  /// x ..... DIM_SPACE global coordinates
-  /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
-  template <int DIM_EL, int DIM_SPACE> 
-  DLL_HEADER void Ng_MultiElementTransformation (int elnr, int npts,
-                                                 const double * xi, size_t sxi,
-                                                 double * x, size_t sx,
-                                                 double * dxdxi, size_t sdxdxi);
-  
-  template <int DIM> 
-  DLL_HEADER int Ng_GetElementIndex (int nr);
+
+  class Ngx_Mesh
+  {
+  private:
+    class Mesh * mesh;
+    
+  public:
+    Ngx_Mesh(class Mesh * amesh);
+    virtual ~Ngx_Mesh();
+    
+    int GetDimension() const;
+    int GetNLevels() const;
+
+    int GetNElements (int dim) const;
+    int GetNNodes (int nt) const;
+
+    Ng_Point GetPoint (int nr) const;
+
+    template <int DIM> 
+    DLL_HEADER Ng_Element GetElement (int nr) const;
+
+    template <int DIM> 
+    DLL_HEADER int GetElementIndex (int nr) const;
+
+
+    /// Curved Elements:
+    /// elnr .. element nr
+    /// xi..... DIM_EL local coordinates
+    /// x ..... DIM_SPACE global coordinates 
+    /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
+    template <int DIM_EL, int DIM_SPACE> 
+    DLL_HEADER void ElementTransformation (int elnr,
+                                           const double * xi, 
+                                           double * x, 
+                                           double * dxdxi) const;
+
+
+    /// Curved Elements:
+    /// elnr .. element nr
+    /// npts .. number of points
+    /// xi..... DIM_EL local coordinates
+    /// sxi ... step xi
+    /// x ..... DIM_SPACE global coordinates
+    /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
+    template <int DIM_EL, int DIM_SPACE> 
+    DLL_HEADER void MultiElementTransformation (int elnr, int npts,
+                                                const double * xi, size_t sxi,
+                                                double * x, size_t sx,
+                                                double * dxdxi, size_t sdxdxi) const;
+
+
+    template <int DIM>
+    DLL_HEADER Ng_Node<DIM> GetNode (int nr);
+    
+    
+    template <int DIM>
+    DLL_HEADER int GetNNodes ();
+
+    // Find element of point, returns local coordinates
+    template <int DIM>
+    DLL_HEADER int FindElementOfPoint 
+    (double * p, double * lami,
+     bool build_searchtrees = false, 
+     int * const indices = NULL, int numind = 0);
+    
+  };
+
+
+
+  DLL_HEADER Ngx_Mesh * LoadMesh (const string & filename);
+
+
+
 }
 #endif
 
