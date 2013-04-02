@@ -662,6 +662,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 // tcl package dynamic load
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
+  MyMPI_SendCmd ("ngs_exit");
   pde.Reset(NULL);
   return TCL_OK;
 }
@@ -914,6 +915,11 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_solvepde" )
     {
       RunParallel (SolveBVP2, NULL);
+    }
+
+  else if ( message == "ngs_exit" )
+    {
+      pde.Reset(NULL);
     }
 
   return;
