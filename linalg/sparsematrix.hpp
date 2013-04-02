@@ -356,8 +356,8 @@ namespace ngla
 		  const Table<int> & colelements, bool symmetric)
       : SparseMatrixTM<TM> (size, rowelements, colelements, symmetric) { ; }
 
-    SparseMatrix (const MatrixGraph & agraph, bool stealgraph)
-      : SparseMatrixTM<TM> (agraph, stealgraph) { ; }
+    SparseMatrix (const MatrixGraph & agraph, bool stealgraph);
+    // : SparseMatrixTM<TM> (agraph, stealgraph) { ; }
 
     SparseMatrix (const SparseMatrix & amat)
       : SparseMatrixTM<TM> (amat) { ; }
@@ -514,13 +514,13 @@ namespace ngla
 	SparseMatrix<TM,TV,TV> (size, rowelements, rowelements, true)
     { ; }
 
-    SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
+    SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph);
+    /*
       : SparseMatrixTM<TM> (agraph, stealgraph), 
 	SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
 	SparseMatrix<TM,TV,TV> (agraph, stealgraph)
     { ; }
-
-
+    */
     SparseMatrixSymmetric (const SparseMatrixSymmetric & amat)
       : SparseMatrixTM<TM> (amat), 
 	SparseMatrixSymmetricTM<TM> (amat),

@@ -59,23 +59,16 @@ namespace ngla
       return pdata; 
     }
     
-    virtual BaseVector * Range (int begin, int end) const
-    {
-      return new S_BaseVectorPtr<TSCAL> (end-begin, es, pdata+begin*es);
-    }
-
-    virtual BaseVector * Range (IntRange range) const
-    {
-      return new S_BaseVectorPtr<TSCAL> (range.Size(), es, pdata+range.First()*es);
-    }
-
+    virtual BaseVector * Range (int begin, int end) const;
+    virtual BaseVector * Range (IntRange range) const;
 
     FlatVector<TSCAL> operator() (int i) const
     {
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    virtual BaseVector * CreateVector () const
+    virtual BaseVector * CreateVector () const;
+    /*
     {
       switch (es)
 	{
@@ -85,7 +78,7 @@ namespace ngla
 	}
       return new S_BaseVectorPtr<TSCAL> (this->size, es);
     }
-  
+    */
     virtual ostream & Print (ostream & ost) const
     {
       // return (ost << FV() << endl);
@@ -153,7 +146,7 @@ namespace ngla
       : S_BaseVectorPtr<TSCAL> (as, ES) 
     { ; }
 
-    virtual ~VVector() { ; }
+    // virtual ~VVector() { ; }
 
     VVector & operator= (TSCAL s1)
     {
