@@ -750,7 +750,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (GridFunction & agf, 
-				   DifferentialOperator * adiffop, int acomp)
+				   const DifferentialOperator * adiffop, int acomp)
     : gf(agf), diffop (adiffop), comp (acomp) 
   {
     ;
@@ -789,15 +789,30 @@ namespace ngcomp
     static Timer timer ("GFCoeffFunc::Eval-scal");
     RegionTimer reg (timer);
 
+    const ElementTransformation & trafo = ip.GetTransformation();
     
-    const int elnr = ip.GetTransformation().GetElementNr();
-    bool boundary = ip.GetTransformation().Boundary();
+    int elnr = trafo.GetElementNr();
+    bool boundary = trafo.Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+    const MeshAccess & ma = fes.GetMeshAccess();
 
-    if (!boundary)    
-      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex()))
-	{ result = 0.0; return;};
+    if (!trafo.BelongsToMesh (&ma))
+      {
+        IntegrationPoint rip;
+        int elnr = ma.FindElementOfPoint 
+          (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
+           rip, true);  // buildtree not yet threadsafe
+        const ElementTransformation & trafo2 = ma.GetTrafo(elnr, boundary, lh2);
+        return Evaluate (trafo2(rip, lh2), result);
+      }
+
+
+    if (!fes.DefinedOn (trafo.GetElementIndex(), boundary))
+      { 
+        result = 0.0; 
+        return;
+      }
     
     const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
     int dim = fes.GetDimension();
@@ -829,9 +844,11 @@ namespace ngcomp
 
     const FESpace & fes = gf.GetFESpace();
 
-    if (!boundary)    
-      if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex()))
-	{ result = 0.0; return;};
+    if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex(), boundary))
+      { 
+        result = 0.0; 
+        return;
+      }
     
     const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
     int dim = fes.GetDimension();
@@ -858,15 +875,25 @@ namespace ngcomp
     static Timer timer ("GFCoeffFunc::Eval-vec");
     RegionTimer reg (timer);
 
+    const ElementTransformation & trafo = ir.GetTransformation();
     
-    const int elnr = ir.GetTransformation().GetElementNr();
-    bool boundary = ir.GetTransformation().Boundary();
+    int elnr = trafo.GetElementNr();
+    bool boundary = trafo.Boundary();
 
     const FESpace & fes = gf.GetFESpace();
+
+    if (!trafo.BelongsToMesh ((void*)(&fes.GetMeshAccess())))
+      {
+        for (int i = 0; i < ir.Size(); i++)
+          Evaluate (ir[i], values.Row(i));
+        return;
+      }
     
-    if (!boundary)
-      if (!fes.DefinedOn(ir.GetTransformation().GetElementIndex())) 
-	{ values = 0.0; return;};
+    if (!fes.DefinedOn(trafo.GetElementIndex(), boundary)) 
+      { 
+        values = 0.0; 
+        return;
+      }
     
     const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
     int dim = fes.GetDimension();
@@ -1734,7 +1761,7 @@ namespace ngcomp
   VisualizeCoefficientFunction :: 
   VisualizeCoefficientFunction (const MeshAccess & ama,
 				const CoefficientFunction * acf)
-    : SolutionData ("coef", -1, false /* complex */),
+    : SolutionData ("coef", acf->Dimension(), false /* complex */),
       ma(ama), cf(acf), lh(100000, "viscoef-lh")
   { ; }
   
@@ -1747,8 +1774,12 @@ namespace ngcomp
 						 double lam1, double lam2, double lam3,
 						 double * values) 
   {
-    cout << "visualizecoef, getvalue (lam1,lam2,alm3) not implemented" << endl;
-    return false;
+    HeapReset hr(lh);
+    IntegrationPoint ip(lam1, lam2, lam3);
+    ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
+    BaseMappedIntegrationPoint & mip = trafo(ip, lh);
+    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    return true; 
   }
   
   bool VisualizeCoefficientFunction :: 
@@ -1756,8 +1787,12 @@ namespace ngcomp
 	    const double xref[], const double x[], const double dxdxref[],
 	    double * values) 
   {
-    cout << "visualizecoef, getvalue (xref) not implemented" << endl;
-    return false;
+    HeapReset hr(lh);
+    IntegrationPoint ip(xref[0],xref[1],xref[2]);
+    ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
+    BaseMappedIntegrationPoint & mip = trafo(ip, lh);
+    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    return true; 
   }
 
   bool VisualizeCoefficientFunction :: 
@@ -1782,7 +1817,8 @@ namespace ngcomp
     bool bound = ma.GetDimension() == 3;
     ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
-    values[0] = cf -> Evaluate (mip);
+    // values[0] = cf -> Evaluate (mip);
+    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     return true; 
   }
 
