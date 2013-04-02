@@ -794,10 +794,13 @@ namespace ngcomp
 		    const FlatVector<double> & elvec,
 		    const int cachecomp) 
   {
+    vec -> AddIndirect (dnums, elvec);
+    /*
     FlatVector<double> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	fv(dnums[k]) += elvec(k);
+    */
   }
   
   template <> void T_LinearForm<Complex>::
@@ -805,14 +808,14 @@ namespace ngcomp
 		    const FlatVector<Complex> & elvec,
 		    const int cachecomp) 
   {
+    vec -> AddIndirect (dnums, elvec);
+    /*
     FlatVector<Complex> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	fv(dnums[k]) += elvec(k);
+    */
   }
-
-
-
 
   template <typename TV>
   void T_LinearForm<TV> ::
@@ -830,24 +833,28 @@ namespace ngcomp
   SetElementVector (const Array<int> & dnums,
 		    const FlatVector<double> & elvec) 
   {
+    vec -> SetIndirect (dnums, elvec);
+    /*
     FlatVector<double> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	fv(dnums[k]) = elvec(k);
+    */
   }
   
   template <> void T_LinearForm<Complex>::
   SetElementVector (const Array<int> & dnums,
 		    const FlatVector<Complex> & elvec) 
   {
+    vec -> SetIndirect (dnums, elvec);
+    /*
     FlatVector<Complex> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	fv(dnums[k]) = elvec(k);
+    */
   }
   
-
-
 
 
   template <typename TV>
@@ -866,20 +873,26 @@ namespace ngcomp
   GetElementVector (const Array<int> & dnums,
 		    FlatVector<double> & elvec) const
   {
+    vec -> GetIndirect (dnums, elvec);
+    /*
     FlatVector<double> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	elvec(k)= fv(dnums[k]);
+    */
   }
   
   template <> void T_LinearForm<Complex>::
   GetElementVector (const Array<int> & dnums,
 		    FlatVector<Complex> & elvec) const
   {
+    vec -> GetIndirect (dnums, elvec);
+    /*
     FlatVector<Complex> fv = vec->FV();
     for (int k = 0; k < dnums.Size(); k++)
       if (dnums[k] != -1)
 	elvec(k)= fv(dnums[k]);
+    */
   }
   
 

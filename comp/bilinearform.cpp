@@ -15,12 +15,6 @@ namespace ngcomp
 
 
 
-
-
-
-
-
-
   BilinearForm :: 
   BilinearForm (const FESpace & afespace,
                 const string & aname,
@@ -652,7 +646,7 @@ namespace ngcomp
                           timer1.Start();
 
                           const FiniteElement & fel = fespace.GetFE (i, lh);
-                          ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+                          ElementTransformation & eltrans = ma.GetTrafo (i, VOL, lh);
                           ArrayMem<int, 50> idofs, idofs1, odofs;
                           Array<int> dnums(fel.GetNDof(), lh);
                           fespace.GetDofNrs (i, dnums);
@@ -788,17 +782,6 @@ namespace ngcomp
                                     }
 
 
-                                  /*
-                                  FlatMatrix<SCAL> a(sizeo, sizeo, lh);
-                                  FlatMatrix<SCAL> b(sizeo, sizei, lh);
-                                  FlatMatrix<SCAL> c(sizeo, sizei, lh);
-                                  FlatMatrix<SCAL> d(sizei, sizei, lh);
-                                  
-                                  a = sum_elmat.Rows(odofs).Cols(odofs);
-                                  b = sum_elmat.Rows(odofs).Cols(idofs);
-                                  c = Trans(sum_elmat.Rows(idofs).Cols(odofs));
-                                  d = sum_elmat.Rows(idofs).Cols(idofs);
-                                  */
                                   FlatMatrix<SCAL> 
                                     a = sum_elmat.Rows(odofs).Cols(odofs) | lh,
                                     b = sum_elmat.Rows(odofs).Cols(idofs) | lh,
@@ -834,8 +817,7 @@ namespace ngcomp
                                       LapackInverse (d);
                                       FlatMatrix<SCAL> he (sizei, sizeo, lh);
                                       he = 0.0;
-                                      LapackMultAddABt (d, c, -1, he);
-                                      // he = -1.0 * d * Trans(c);
+                                      he -= d * Trans(c) | Lapack;
                                       harmonicext ->AddElementMatrix(i,idnums,ednums,he);
                                       
                                       if (!symmetric)
@@ -954,9 +936,7 @@ namespace ngcomp
                     if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
                   
                     const FiniteElement & fel = fespace.GetFE (i, clh);
-                  
-                    // ma.GetElementTransformation (i, eltrans, clh);
-                    ElementTransformation & eltrans = ma.GetTrafo (i, 0, clh);
+                    ElementTransformation & eltrans = ma.GetTrafo (i, VOL, clh);
                     fespace.GetDofNrs (i, dnums);
                   
                     FlatVector<SCAL> sum_diag(dnums.Size()*fespace.GetDimension(), clh);
@@ -1036,7 +1016,7 @@ namespace ngcomp
                       
                       const FiniteElement & fel = fespace.GetSFE (i, lh);
                       
-                      ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
+                      ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
                       fespace.GetSDofNrs (i, dnums);
 
                       if(fel.GetNDof() != dnums.Size())
@@ -1159,8 +1139,8 @@ namespace ngcomp
                         if(fac==fnums[k]) facnr = k;
                       ma.GetElVertices (el, vnums);     
 
-                      ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
-                      ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+                      ElementTransformation & eltrans = ma.GetTrafo (el, VOL, lh);
+                      ElementTransformation & seltrans = ma.GetTrafo (i, BND, lh);
                       
                       fespace.GetDofNrs (el, dnums);
                       if(fel.GetNDof() != dnums.Size())
@@ -1932,6 +1912,12 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
                       fespace.GetDofNrs (i, dnums);
                       
+                      if(fel.GetNDof() != dnums.Size())
+                        {
+                          cout << "fel::GetNDof() = " << fel.GetNDof() << endl;
+                          cout << "dnums.Size() = " << dnums.Size() << endl;
+                        }
+
                       for (int j = 0; j < dnums.Size(); j++)
                         if (dnums[j] != -1)
                           useddof.Set (dnums[j]);
@@ -3645,46 +3631,20 @@ cout << "catch in AssembleBilinearform 2" << endl;
 
   void BilinearForm :: GalerkinProjection ()
   {
-    // old code:
-    /*
-      for (int i = GetNLevels()-1; i >= 1; i--)
-      {
-      ApplyFineMatrix afm (GetMatrix(i+1),
-      *GetFESpace().GetProlongation(),
-      i+1);
-                           
-      //      const_cast<BaseMatrix&> (GetMatrix(i)).MakeMatrixFromOperator (afm);
-      }
-    */
-
     const ngmg::Prolongation* prol = fespace.GetProlongation();
     SparseMatrix<double>* prolMat = NULL;
 
     if ( !low_order_bilinear_form )
-      /*
-        for( int i=GetNLevels()-1; i>0; i-- )
-        {
-        prolMat = prol->CreateProlongationMatrix( i ) ;
-
-        low_order_bilinear_form->GetMatrix( i-1 ) =
-        *( dynamic_cast< const BaseSparseMatrix& >( low_order_bilinear_form->GetMatrix( i ) ).Restrict
-        ( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
-        ( low_order_bilinear_form->GetMatrix( i-1 ) ) ) ) );
-        delete prolMat;
-        }
-        else
-      */
-      for( int i=GetNLevels()-1; i>0; i-- )
+      for (int i = GetNLevels()-1; i>0; i--)
         {
           prolMat = prol->CreateProlongationMatrix( i );
-             
+          
           GetMatrix( i-1 ) = 
             *( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
                Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
                                       ( GetMatrix( i-1 ) ) ) ) );
           delete prolMat;
         }
-      
   }
 
   
