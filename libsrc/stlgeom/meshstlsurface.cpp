@@ -30,19 +30,19 @@ static void STLFindEdges (STLGeometry & geom,
 
   PrintMessage(3,"Mesh Lines");
 
+  /*
   cout << geom.GetNLines() << " lines" << endl;
   double totnp = 0;
   for (int i = 1; i <= geom.GetNLines(); i++)
     totnp += geom.GetLine(i)->NP();
   cout << "avg np per line " << totnp/geom.GetNLines() << endl;
+  */
 
   for (int i = 1; i <= geom.GetNLines(); i++)
     {
       meshlines.Append(geom.GetLine(i)->Mesh(geom.GetPoints(), meshpoints, h, mesh)); 
       SetThreadPercent(100.0 * (double)i/(double)geom.GetNLines());
     }
-
-  NgProfiler::Print(stdout);
 
   geom.meshpoints.SetSize(0); //testing
   geom.meshlines.SetSize(0);  //testing
@@ -734,7 +734,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
       Render();
     }     
   
-  NgProfiler::Print(stdout);
+  // NgProfiler::Print(stdout);
   
   mesh.CalcSurfacesOfNode();
 }

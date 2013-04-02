@@ -1081,7 +1081,7 @@ void STLGeometry :: RestrictLocalH(class Mesh & mesh, double gh)
 	}
       
       PopStatus();
-      NgProfiler::Print(stdout);
+      // NgProfiler::Print(stdout);
     }
 
   if (stlparam.resthlinelengthenable)
