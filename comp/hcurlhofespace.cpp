@@ -73,8 +73,6 @@ namespace ngcomp
 	for (int i = 0; i < gradientdomains.Size(); i++)
 	  if (!graddomains[i])
 	    gradientdomains.Clear(i);
-	cout << endl << " ******* gradientdomains" << gradientdomains << endl;
-	
       }
     if (flags.NumListFlagDefined("gradientboundaries"))
       {
@@ -82,7 +80,6 @@ namespace ngcomp
 	for (int i = 0; i < gradientboundaries.Size(); i++)
 	  if (!gradbounds[i])
 	    gradientboundaries.Clear(i);
-	cout << endl << " ******* gradientboundaries" << gradientboundaries << endl;
       }
     
     if(flags.GetDefineFlag("nograds"))
@@ -94,16 +91,15 @@ namespace ngcomp
     fast_pfem = flags.GetDefineFlag ("fast");
     discontinuous = flags.GetDefineFlag ("discontinuous");
 
-
-    Flags loflags;
+    Flags loflags = flags;
     loflags.SetFlag ("order", 1);
+    /*
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
     if (discontinuous) loflags.SetFlag ("disontinuous");
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
-
-    
+    */
     low_order_space = new  NedelecFESpace (ma, loflags);
 
     if (low_order_space)
@@ -141,9 +137,15 @@ namespace ngcomp
       boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one); 
     
     if (ma.GetDimension() == 2)
-      evaluator = new T_DifferentialOperator<DiffOpIdEdge<2> >;
+      {
+        evaluator = new T_DifferentialOperator<DiffOpIdEdge<2> >;
+        flux_evaluator = new T_DifferentialOperator<DiffOpCurlEdge<2> >;
+      }
     else
-      evaluator = new T_DifferentialOperator<DiffOpIdEdge<3> >;
+      {
+        evaluator = new T_DifferentialOperator<DiffOpIdEdge<3> >;
+        flux_evaluator = new T_DifferentialOperator<DiffOpCurlEdge<3> >;
+      }
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace ()
@@ -891,11 +893,8 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      {
-	dnums.SetSize(0);
-	return;
-      }
+    dnums.SetSize(0);
+    if (!DefinedOn (ma.GetElIndex (elnr))) return;
 
     // ordering of shape functions
     // (1*e1),.. (1*e_ne)  
@@ -903,7 +902,6 @@ namespace ngcomp
     // p_n * el1, p_i * el1, ... , p_n * ne_n , p_i *el_ne 
 
     Ng_Element ngel = ma.GetElement (elnr);
-    dnums.SetSize(0);
      
       //Nedelec0
     if ( !discontinuous )
@@ -920,9 +918,6 @@ namespace ngcomp
         dnums += GetFaceDofs(ngel.faces[i]);  
         
     dnums += GetElementDofs (elnr); 
-    
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      dnums = -1;
   }
  
 
@@ -930,11 +925,9 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
-      {
-	dnums.SetSize(0);
-	return;
-      }
+    dnums.SetSize(0);
+    if (!DefinedOnBoundary (ma.GetSElIndex (selnr))) return;
+
     Array<int> vnums, ednums;
     int fnum; 
     int i, j;
@@ -943,24 +936,10 @@ namespace ngcomp
     ma.GetSElEdges (selnr, ednums);
     fnum = ma.GetSElFace (selnr); 
 
-    dnums.SetSize(0);
-
-    if(order <0) throw (" HCurlHighOrderFESpace :: GetSDofNrs() order < 0 "); 
-
     if ( !discontinuous )
       //Nedelec
       for (i = 0; i < ednums.Size(); i++) 
 	dnums.Append (ednums[i]);
-
-    /*
-    if(augmented==1) 
-      {
-	ma.GetSElVertices (selnr, vnums);
-
-	for(i=0;i< vnums.Size();i++) 
-	  dnums.Append(ned+vnums[i]); 
-      } 
-    */
     
     for (i = 0; i < ednums.Size(); i++)
       {
@@ -978,9 +957,6 @@ namespace ngcomp
 	for(j=first; j<next; j++) 
 	  dnums.Append(j);
       }
-    
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
-      dnums = -1;
   }
 
 
