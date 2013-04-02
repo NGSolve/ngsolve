@@ -28,33 +28,23 @@ namespace ngfem
     int elnr;
     /// material property
     int elindex;
-    /// element in R^dim
-    // int dim;
-    /// is it a boundary element ?
-    // bool boundary;
     /// geometry of element
     ELEMENT_TYPE eltype;
 
     bool higher_integration_order;
-
     /// is the element curved ?
     bool iscurved;
 
   public:
-    /// polymorphism: if specific is set, use it.
-    // ElementTransformation * specific;
     ///
-    ElementTransformation () { higher_integration_order = false; } // specific = NULL; }
+    ElementTransformation () { higher_integration_order = false; } 
     ///
     virtual ~ElementTransformation() { ; } // delete specific; }
     /// set data: is it a boundary, element number, and element index
-    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
+    virtual void SetElement (bool /* aboundary */, int aelnr, int aelindex)
     {
-      // boundary = Boundary();  // aboundary;
       elnr = aelnr;
       elindex = aelindex;
-      // if (specific) specific -> SetElement (aboundary, aelnr, aelindex);
-      // iscurved = false;
     }
     /// set geometric type of element
     void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
@@ -137,6 +127,8 @@ namespace ngfem
 
     /// return a mapped integration rule on localheap
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const = 0;
+
+    virtual bool BelongsToMesh (const void * mesh) const { return true; }
 
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }

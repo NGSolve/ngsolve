@@ -24,6 +24,8 @@ namespace ngfem
   public:
     // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };
     // enum { DIM_SPACE = TDOP::DIM_SPACE };
+
+    static string Name() { return "noname"; }
   
     /**
        Computes the B-matrix. 
@@ -161,6 +163,8 @@ namespace ngfem
   public:
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
+    ///
+    virtual string Name() const { return "noname"; }
     /// dimension of range
     virtual int Dim() const = 0;
     /// does it live on the boundary ?
@@ -340,7 +344,7 @@ namespace ngfem
   public:
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-
+    virtual string Name() const { return DIFFOP::Name(); }
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,

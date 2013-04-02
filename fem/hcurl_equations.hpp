@@ -104,6 +104,8 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
+    static string Name() { return "curl"; }
+
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -131,6 +133,8 @@ namespace ngfem
     enum { DIM_ELEMENT = 3 };
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
+
+    static string Name() { return "curl"; }
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -304,7 +308,6 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCAL;
       y = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh) * ((1.0/mip.GetJacobiDet()) * x);
     
     }

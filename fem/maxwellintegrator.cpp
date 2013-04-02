@@ -102,8 +102,14 @@ namespace ngfem
   template class CurlCurlEdgeIntegrator<2>;
   template class CurlCurlEdgeIntegrator<3>;
 
+  template class RobinEdgeIntegrator<2>;
+  template class RobinEdgeIntegrator<3>;
+
   template class SourceEdgeIntegrator<2>;
   template class SourceEdgeIntegrator<3>;
+
+  template class NeumannEdgeIntegrator<2>;
+  template class NeumannEdgeIntegrator<3>;
 
 
   namespace maxwellint {
