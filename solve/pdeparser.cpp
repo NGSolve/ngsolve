@@ -503,17 +503,22 @@ namespace ngsolve
 	      pde->SetMeshFileName(meshfile);
 	      if(!nomeshload)
 		{
-		  if (ifstream (meshfile.c_str()))
+                  if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-		      // Ng_LoadMesh (const_cast<char*> (meshfile.c_str()));
-                      pde->GetMeshAccess().LoadMesh (meshfile);
+                      //pde->GetMeshAccess().LoadMesh (meshfile);
+                      MeshAccess * ma = new MeshAccess;
+                      ma -> LoadMesh (meshfile);
+                      pde -> AddMeshAccess(ma);
 		    }
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-		      // Ng_LoadMesh (const_cast<char*> (scan->GetStringValueC()));
-                      pde->GetMeshAccess().LoadMesh (scan->GetStringValue());
+
+                      MeshAccess * ma = new MeshAccess;
+                      ma -> LoadMesh (scan->GetStringValue());
+                      pde -> AddMeshAccess(ma);
+                      // pde->GetMeshAccess().LoadMesh (scan->GetStringValue());
 		    }
 		}
 
@@ -1654,9 +1659,6 @@ namespace ngsolve
 			  //				   pde->GetMeshAccess(),
 			  //				   *integrator);
 			}
-
-		      // integrator -> SetFastIntegration (partflags.GetDefineFlag("fast"),
-		      // partflags.GetDefineFlag("checkfast"));
 
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 

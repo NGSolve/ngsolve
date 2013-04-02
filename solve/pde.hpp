@@ -64,7 +64,7 @@ namespace ngsolve
   class NGS_DLL_HEADER PDE
   {
     ///
-    MeshAccess ma;
+    Array<MeshAccess*> mas;
 
     ///
     string geometryfilename;
@@ -122,7 +122,7 @@ namespace ngsolve
 
   public:
     ///
-    PDE(); // MeshAccess & ama);
+    PDE();
     ///
     ~PDE();
 
@@ -148,13 +148,11 @@ namespace ngsolve
     void PrintMemoryUsage (ostream & ost);
 
     ///
-    const MeshAccess & GetMeshAccess() const { return ma; }
-
+    const MeshAccess & GetMeshAccess (int nr = 0) const  { return *mas[nr]; }
     ///
-    MeshAccess & GetMeshAccess() { return ma; }
-  
-
-
+    MeshAccess & GetMeshAccess (int nr = 0)  { return *mas[nr]; }
+    ///
+    void AddMeshAccess (MeshAccess * ma) { mas.Append (ma); }
     ///
     bool ConstantUsed (const string & aname) const;
     ///
