@@ -376,7 +376,6 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::eltype;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
-
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
 

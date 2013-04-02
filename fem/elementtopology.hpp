@@ -498,7 +498,7 @@ namespace ngfem
 
 
 
-
+  /*
   class TopologicElement
   {
     ELEMENT_TYPE et;
@@ -519,7 +519,7 @@ namespace ngfem
   };
 
   ostream & operator<< (ostream & ost, const TopologicElement & etop);
-
+  */
 
 
 

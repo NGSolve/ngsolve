@@ -686,6 +686,7 @@ namespace ngfem
 
 
 
+  template class PML_CurlCurlEdgeIntegrator<2>;
 
 
   namespace pml_cpp

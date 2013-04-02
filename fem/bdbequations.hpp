@@ -28,6 +28,8 @@ public:
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 1 };
   
+  static string Name() { return "grad"; }
+
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 

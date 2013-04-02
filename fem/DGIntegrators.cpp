@@ -943,6 +943,10 @@ namespace ngfem
       }
   };
 
+
+  template class DGFacet_NeumannBoundaryIntegrator<2>;
+  template class DGFacet_NeumannBoundaryIntegrator<3>;
+
 //convection:  
   static RegisterBilinearFormIntegrator<ConvectionIntegrator<2> > initconv_bf_inner_vol_2d ("convection", 2, 2);
   static RegisterBilinearFormIntegrator<ConvectionIntegrator<3> > initconv_bf_inner_vol_3d ("convection", 3, 3);

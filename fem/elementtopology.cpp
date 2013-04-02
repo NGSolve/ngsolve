@@ -483,6 +483,7 @@ namespace ngfem
     return ost;
   }
 
+  /*
   ostream & operator<< (ostream & ost, const TopologicElement & etop)
   {
     ost << ElementTopology::GetElementName(etop.GetType()) << endl;
@@ -491,7 +492,7 @@ namespace ngfem
       ost << etop.GetNode(i) << endl;
     return ost;
   }
-
+  */
 
 
   
