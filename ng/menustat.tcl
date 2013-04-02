@@ -402,7 +402,17 @@ set videoactive 0
 # .ngmenu.file add separator
 
 .ngmenu.file add command -label "Quit" -accelerator "<q>" \
-    -command { puts "Thank you for using $progname"; Ng_Exit; destroy . }
+    -command { 
+        puts "Thank you for using $progname"; 
+
+        if { [catch { unload libngsolve[info sharedlibextension] ngsolve } result ] } {
+#            puts "cannot unload ngsolve" 
+#            puts "error: $result"
+        } 
+
+        Ng_Exit; 
+        destroy . 
+    }
 # exit
 
 
