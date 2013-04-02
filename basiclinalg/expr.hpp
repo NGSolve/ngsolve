@@ -602,10 +602,14 @@ namespace ngbla
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
   };
-  
+
+  /*
   typedef int T_Lapack;
   static T_Lapack Lapack;
+  */
 
+  enum  T_Lapack { Lapack };
+  
   template <typename TA>
   LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
   {
