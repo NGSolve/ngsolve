@@ -72,8 +72,9 @@ namespace ngsolve
     CurvePointIntegrators.DeleteAll();
 
     Ng_ClearSolutionData ();
-
-
+    
+    for (int i = 0; i < mas.Size(); i++)
+      delete mas[i];
   }
 
   void PDE :: SavePDE (const string & filename)
@@ -331,7 +332,7 @@ namespace ngsolve
     if (coefficients.Used(name))
       return coefficients[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string ("CoefficientFunction '") + name + "' not defined\n");
   }
 
@@ -341,7 +342,7 @@ namespace ngsolve
     if (spaces.Used(name))
       return spaces[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("FESpace '") + name + "' not defined\n");
   }
 
@@ -351,7 +352,7 @@ namespace ngsolve
     if (gridfunctions.Used(name))
       return gridfunctions[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("GridFunction '") + name + "' not defined\n");
   }
 
@@ -361,7 +362,7 @@ namespace ngsolve
     if (bilinearforms.Used(name))
       return bilinearforms[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Bilinear-form '") + name + "' not defined\n");
   }
 
@@ -371,7 +372,7 @@ namespace ngsolve
     if (linearforms.Used(name))
       return linearforms[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Linear-form '") + name + "' not defined\n");
   }
 
@@ -381,7 +382,7 @@ namespace ngsolve
     if (preconditioners.Used(name))
       return preconditioners[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Preconditioner '") + name + "' not defined\n");
   }
 
@@ -391,7 +392,7 @@ namespace ngsolve
     if (numprocs.Used(name))
       return numprocs[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Numproc '") + name + "' not defined\n");
   }
 
@@ -401,7 +402,7 @@ namespace ngsolve
     if (coefficients.Used(name))
       return coefficients[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("CoefficientFunction '") + name + "' not defined\n");
   }
 
@@ -411,7 +412,7 @@ namespace ngsolve
     if (spaces.Used(name))
       return spaces[name]; 
     
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("FESpace '") + name + "' not defined\n");
   }
 
@@ -421,7 +422,7 @@ namespace ngsolve
     if (gridfunctions.Used(name))
       return gridfunctions[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Grid-function '") + name + "' not defined\n");
   }
 
@@ -431,7 +432,7 @@ namespace ngsolve
     if (bilinearforms.Used(name))
       return bilinearforms[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Bilinear-form '") + name + "' not defined\n");
   }
 
@@ -441,7 +442,7 @@ namespace ngsolve
     if (linearforms.Used(name))
       return linearforms[name]; 
 
-    if (opt) return 0;
+    if (opt) return NULL;
     throw Exception (string("Linear-form '") + name + "' not defined\n");
   }
 
@@ -451,10 +452,8 @@ namespace ngsolve
     if (preconditioners.Used(name))
       return preconditioners[name]; 
 
-    if (opt) return 0;
-    stringstream str;
-    str << "Preconditioner '" << name << "' not defined\n";
-    throw Exception (str.str());
+    if (opt) return NULL;
+    throw Exception (string("Preconditioner '") + name + "' not defined\n");
   }
 
   const NumProc * PDE :: 
@@ -463,10 +462,8 @@ namespace ngsolve
     if (numprocs.Used(name))
       return numprocs[name]; 
 
-    if (opt) return 0;
-    stringstream str;
-    str << "Numproc '" << name << "' not defined\n";
-    throw Exception (str.str());
+    if (opt) return NULL;
+    throw Exception (string("Numproc '") + name + "' not defined\n");
   }
 
 
@@ -561,23 +558,24 @@ namespace ngsolve
 
 
     meshtimer.Stop();
+    
+    for (int i = 0; i < mas.Size(); i++)
+      mas[i]->UpdateBuffers();   // update global mesh infos
 
-    ma.UpdateBuffers();   // update global mesh infos
+    cout << IM(1) << "Solve at level " << mas[0]->GetNLevels()-1
+	 << ", NE = " << mas[0]->GetNE() 
+	 << ", NP = " << mas[0]->GetNP() << endl;
+    
 
-    cout << IM(1) << "Solve at level " << ma.GetNLevels()-1
-	 << ", NE = " << ma.GetNE() 
-	 << ", NP = " << ma.GetNP() << endl;
-
-
-    AddVariable ("mesh.levels", ma.GetNLevels(), 6);
-    AddVariable ("mesh.ne", ma.GetNE(), 6);
-    AddVariable ("mesh.nv", ma.GetNV(), 6);
+    AddVariable ("mesh.levels", mas[0]->GetNLevels(), 6);
+    AddVariable ("mesh.ne", mas[0]->GetNE(), 6);
+    AddVariable ("mesh.nv", mas[0]->GetNV(), 6);
 
     // line-integrator curve points can only be built if
     // element-curving has been done
     for(int i=0; i<CurvePointIntegrators.Size(); i++)
       BuildLineIntegratorCurvePoints(*CurvePointIntegratorFilenames[i],
-				     ma,
+				     *mas[0],
 				     *CurvePointIntegrators[i]);
 		    
     t1.Stop();
@@ -805,7 +803,11 @@ namespace ngsolve
     Flags flags = hflags;
 
     FESpace * space = 0;
-    if (flags.GetDefineFlag ("vec")) 
+    
+    int meshnr = int (flags.GetNumFlag ("mesh", 1)) - 1;
+    const MeshAccess & ma = GetMeshAccess (meshnr);
+
+    if (flags.GetDefineFlag ("vec"))
       flags.SetFlag ("dim", ma.GetDimension());
     if (flags.GetDefineFlag ("tensor")) 
       flags.SetFlag ("dim", sqr (ma.GetDimension()));
@@ -814,52 +816,30 @@ namespace ngsolve
 
     string type = flags.GetStringFlag("type", "");
     
-    // if (type != "") // this should become standard
+    space = CreateFESpace (type, ma, flags);
+    
+    if (type == "compound" || flags.GetDefineFlag ("compound"))
       {
-	space = CreateFESpace (type, ma, flags);
-	/*
-	for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
-	  if (type == GetFESpaceClasses().GetFESpaces()[i]->name ||
-	      flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
-	    {
-	      space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
-	    }
-	*/
-
-	if (type == "compound" || flags.GetDefineFlag ("compound"))
-	  {
-	    const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
-	    cout << IM(1) << "   spaces = " << spacenames << endl;
-
-	    Array<FESpace*> cspaces (spacenames.Size());
-	    for (int i = 0; i < cspaces.Size(); i++)
-	      cspaces[i] = GetFESpace (spacenames[i]);
-
-	    space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
-	  }
-	if (!space) 
-	  {
-	    stringstream out;
-	    out << "unknown space type " << type << endl;
-	    out << "available types are" << endl;
-	    GetFESpaceClasses().Print (out);
-	    out << "compound\n" << endl;
-	    
-	    throw Exception (out.str());
-	  }
+        const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
+        cout << IM(1) << "   spaces = " << spacenames << endl;
+        
+        Array<FESpace*> cspaces (spacenames.Size());
+        for (int i = 0; i < cspaces.Size(); i++)
+          cspaces[i] = GetFESpace (spacenames[i]);
+        
+        space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
       }
-      /*
-    else
+    if (!space) 
       {
-	stringstream out;
-	out << "depreciated: please define fespace with -type=<typename>" << endl;
-	out << "available types are" << endl;
-	GetFESpaceClasses().Print (out);
-	out << "compound\n" << endl;
-
-	throw Exception (out.str());
+        stringstream out;
+        out << "unknown space type " << type << endl;
+        out << "available types are" << endl;
+        GetFESpaceClasses().Print (out);
+        out << "compound\n" << endl;
+	
+        throw Exception (out.str());
       }
-      */
+
     
     if (flags.NumListFlagDefined ("dirichletboundaries"))
       {
@@ -937,18 +917,21 @@ namespace ngsolve
 
     if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
       AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
-	
+    
+    if (addcf && gf->GetFESpace().GetFluxEvaluator())
+      {
+        const DifferentialOperator * diffop = gf->GetFESpace().GetFluxEvaluator();
+        string fluxname = diffop->Name() + "_" + name;
+        AddCoefficientFunction (fluxname, new GridFunctionCoefficientFunction(*gf, diffop));
+      }
+    
 
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(&gf->GetFESpace());
     if (cfe)
       {
-	int nsp = cfe->GetNSpaces();
-	for (int i = 0; i < nsp; i++)
+	for (int i = 0; i < cfe->GetNSpaces(); i++)
 	  {
-	    std::stringstream sstr;
-	    sstr << i+1;
-	    string nname(name+"."+sstr.str());
-	    
+            string nname = name + "." + ToString(i+1);
 	    AddGridFunction (nname, gf->GetComponent(i), addcf);
 	  }
       }

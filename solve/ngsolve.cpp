@@ -659,6 +659,15 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 }
 
 
+// tcl package dynamic load
+extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
+{
+  pde.Reset(NULL);
+  return TCL_OK;
+}
+
+
+
 namespace ngsolve { 
   // namespace bvp_cpp { extern int link_it; }
   namespace numprocee_cpp { extern int link_it; }

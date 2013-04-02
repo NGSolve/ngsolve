@@ -21,8 +21,8 @@ namespace ngsolve
   { ; }
 
   NumProc :: NumProc (PDE & apde, const Flags & flags, const int acallposition)
-    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde),     
-      callposition(acallposition) 
+    : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
+      pde(apde), callposition(acallposition) 
   {
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
@@ -239,7 +239,8 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      SetValues (pde.GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
+      // SetValues (pde.GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
+      SetValues (hgfu -> GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
     }
 
     ///
@@ -454,8 +455,8 @@ namespace ngsolve
   
     soldata.name = (char*)label.c_str();
     soldata.data = 0;
-    soldata.components = 1;
-    soldata.iscomplex = false;
+    soldata.components = cf -> Dimension();
+    soldata.iscomplex = cf -> IsComplex();
     soldata.draw_surface = true;
     soldata.draw_volume  = true; 
     soldata.dist = 1;
@@ -1426,7 +1427,7 @@ namespace ngsolve
     SCAL DoScal (LocalHeap & lh)
     {
       SCAL sum = 0;
-
+      cout << "np integrate,ne = " << ma.GetNE() << endl;
 #pragma omp parallel
       {
 	LocalHeap slh = lh.Split(), lh = slh;
