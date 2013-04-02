@@ -21,8 +21,34 @@ namespace ngfem
   extern int link_it_h1hofefo;
 }
 
+
+  /*
+namespace ngstd
+{
+
+  template <>
+  class BaseArrayObject<netgen::Ng_Element::Ng_Vertices,
+                        netgen::Ng_Element::Ng_Vertices> 
+  {
+  public:
+    typedef netgen::Ng_Element::Ng_Vertices T;
+    
+    const T & ar;
+    BaseArrayObject (const netgen::Ng_Element::Ng_Vertices & va) 
+      : ar(va) { ; }
+      const T & Spec() const { return static_cast<const T&>(ar); }
+      const T & Spec2() const { return static_cast<const T&> (ar); }
+  };
+
+}
+*/
+
+
 namespace ngcomp
 {
+
+
+
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -95,14 +121,17 @@ namespace ngcomp
     // low_order_space -> SetLowOrderSpace (true);
 
     if (ma.GetDimension() == 2)
-      evaluator = new T_DifferentialOperator<DiffOpId<2> >;
+      {
+        evaluator = new T_DifferentialOperator<DiffOpId<2> >;
+        flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
+        boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+      }
     else
-      evaluator = new T_DifferentialOperator<DiffOpId<3> >;
-
-    if (ma.GetDimension() == 2)
-      boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
-    else
-      boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+      {
+        evaluator = new T_DifferentialOperator<DiffOpId<3> >;
+        flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
+        boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+      }
 
     if (dimension > 1)
       {
@@ -166,6 +195,8 @@ namespace ngcomp
 	{
 	  Ng_Element ngel = ma.GetElement(i);
 	  used_vertex[ArrayObject(ngel.vertices)] = 1;
+          // used_vertex[BaseArrayObject<Ng_Element::Ng_Vertices>(ngel.vertices)] = 1;
+          // used_vertex[ngel.vertices] = 1;
 	  used_edge[ArrayObject(ngel.edges)] = 1;
 	  if (dim == 3) used_face[ArrayObject(ngel.faces)] = 1;
 	}
@@ -511,8 +542,7 @@ namespace ngcomp
           hofe2d->SetVertexNumber (j, ngel.vertices[j]);
         return *hofe2d;
       }
-
-
+    
     if (fixed_order && eltype == ET_TET && order <= 6)
       {
         H1HighOrderFiniteElementFO<3> * hofe3d = 0;
@@ -530,7 +560,6 @@ namespace ngcomp
           hofe3d->SetVertexNumber (j, ngel.vertices[j]);
         return *hofe3d;
       }
-
 
 
     try
@@ -560,14 +589,14 @@ namespace ngcomp
 	  {
 	  case 1:
 	    {
-	      hofe1d -> SetVertexNumbers (ngel.vertices);
+              hofe1d -> SetVertexNumbers (ngel.vertices);
 	      hofe1d -> SetOrderEdge (0, order_inner[elnr][0]);
 	      hofe1d -> ComputeNDof();
 	      return *hofe1d;
 	    }
 	  case 2:
 	    {
-	      hofe2d -> SetVertexNumbers (ngel.vertices);
+              hofe2d -> SetVertexNumbers (ngel.vertices);
 	      hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
 	      
 	      INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
@@ -578,7 +607,7 @@ namespace ngcomp
 	    }
 	  case 3: default:  
 	    {
-	      hofe3d -> SetVertexNumbers (ngel.vertices);
+              hofe3d -> SetVertexNumbers (ngel.vertices);
 	      hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 	      hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
 	      hofe3d -> SetOrderCell (order_inner[elnr]);
@@ -626,7 +655,6 @@ namespace ngcomp
       }
   
     Ng_Element ngel = ma.GetSElement(elnr);
-
     switch (ma.GetDimension())
       {
       case 1:
@@ -636,15 +664,15 @@ namespace ngcomp
 	}
       case 2:
 	{
-	  hofe1d -> SetVertexNumbers (ngel.vertices);
+          hofe1d -> SetVertexNumbers (ngel.vertices);
 	  hofe1d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 	  
 	  hofe1d -> ComputeNDof();
 	  return *hofe1d;
-	}
+          }
       case 3: default:
 	{
-	  hofe2d -> SetVertexNumbers (ngel.vertices);
+          hofe2d -> SetVertexNumbers (ngel.vertices);
 	  hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 	  hofe2d -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
 	  
