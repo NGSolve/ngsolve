@@ -612,7 +612,8 @@ namespace ngcomp
     virtual string Name () const { return "Mass-HDG"; }
   };
 
-
+  template class HDG_MassIntegrator<2>;
+  template class HDG_MassIntegrator<3>;
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<2> > initlap2 ("HDG_mass", 2, 1);
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<3> > initlap3 ("HDG_mass", 3, 1);
 

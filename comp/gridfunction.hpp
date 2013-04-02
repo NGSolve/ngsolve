@@ -48,19 +48,6 @@ namespace ngcomp
     virtual const BaseVector & GetVector (int comp = 0) const  { return *(vec[comp]); }
 
 
-    /*
-    operator BaseVector& () { return GetVector(); }
-    template <typename T> 
-    GridFunction & operator= (const VVecExpr<T> & v) { GetVector() = v; return *this; }
-    GridFunction & operator= (const BaseVector & v) { GetVector() = v; return *this; }
-    template <typename T> 
-    GridFunction & operator+= (const VVecExpr<T> & v) { GetVector() += v; return *this; }
-    GridFunction & operator+= (const BaseVector & v) { GetVector() += v; return *this; }
-    template <typename T> 
-    GridFunction & operator-= (const VVecExpr<T> & v) { GetVector() -= v; return *this; }
-    GridFunction & operator-= (const BaseVector & v) { GetVector() -= v; return *this; }
-    */
-
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
@@ -222,7 +209,8 @@ namespace ngcomp
     int comp;
   public:
     GridFunctionCoefficientFunction (GridFunction & agf, int acomp = 0);
-    GridFunctionCoefficientFunction (GridFunction & agf, DifferentialOperator * adiffop, int acomp = 0);
+    GridFunctionCoefficientFunction (GridFunction & agf, 
+                                     const DifferentialOperator * adiffop, int acomp = 0);
     
     virtual ~GridFunctionCoefficientFunction ();
     /// scalar valued or vector valued

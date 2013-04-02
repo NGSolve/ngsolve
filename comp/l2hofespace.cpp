@@ -420,9 +420,6 @@ namespace ngcomp
 
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
-    
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      dnums = -1;
   }
   
   void L2HighOrderFESpace :: 

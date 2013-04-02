@@ -42,7 +42,7 @@ namespace ngcomp
   void SetValues (const MeshAccess & ma, 
 		  const CoefficientFunction & coef,
 		  GridFunction & u,
-		  bool bound,
+		  bool vb,
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh);
   

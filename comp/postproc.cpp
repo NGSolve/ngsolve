@@ -377,8 +377,7 @@ namespace ngcomp
     int ne      = bound ? ma.GetNSE() : ma.GetNE();
     int dim     = fes.GetDimension();
 
-    const BilinearFormIntegrator & bli =
-      bound ? (*fes.GetBoundaryIntegrator()) : (*fes.GetIntegrator());
+    const BilinearFormIntegrator & bli = *fes.GetIntegrator(bound);
 
     if (&bli == NULL)
       throw Exception ("no integrator available");
@@ -418,7 +417,6 @@ namespace ngcomp
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
-	  
 
 	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
@@ -427,7 +425,7 @@ namespace ngcomp
 	  coef.Evaluate (mir, mfluxi);
 
 	  for (int j = 0; j < ir.GetNIP(); j++)
-	    mfluxi.Row(j) *= ir[j].Weight() * mir[j].GetMeasure();
+	    mfluxi.Row(j) *= mir[j].GetWeight();
 
 	  if (diffop)
 	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
@@ -459,10 +457,6 @@ namespace ngcomp
 	      fes.TransformMat (i, bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (i, bound, elflux, TRANSFORM_RHS);
 	      
-	      /*
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	      invelmat.Mult (elflux, elfluxi);
-	      */
 	      LapackInverse (elmat);
 	      elfluxi = elmat * elflux;
 	    }
