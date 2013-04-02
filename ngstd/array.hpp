@@ -36,8 +36,8 @@ namespace ngstd
   class BaseArrayObject
   {
   public:
-    const TA & Spec() const { return static_cast<const T&>(*this).Spec2 (); }
-    const TA & Spec2() const { return static_cast<const T&> (*this); }
+    BaseArrayObject() { ; }
+    const TA & Spec() const { return static_cast<const T&> (*this); }
   };
 
 
@@ -55,9 +55,8 @@ namespace ngstd
     const T & ar;
   public:
     AOWrapper (const T & aar) : ar(aar) { ; }
-    const T & Spec2() const { return ar; }
+    operator const T& () const { return ar; }
   };
-
 
   template <typename T>
   inline AOWrapper<T> ArrayObject (const T & ar)
@@ -349,7 +348,7 @@ namespace ngstd
 
   /// print array
   template <class T>
-  ostream & operator<< (ostream & s, const FlatArray<T> & a)
+  inline ostream & operator<< (ostream & s, const FlatArray<T> & a)
   {
     for (int i = 0; i < a.Size(); i++)
       s << i << ": " << a[i] << "\n";
@@ -618,10 +617,7 @@ namespace ngstd
     
       allocsize = nsize;
     }
-
   };
-
- 
 
 
   /**
