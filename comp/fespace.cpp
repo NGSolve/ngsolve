@@ -207,7 +207,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     segm = NULL;
     point = NULL;
 
+
+    dummy_tet = new DummyFE<ET_TET>();
+    dummy_pyramid = new DummyFE<ET_PYRAMID>();
+    dummy_prism = new DummyFE<ET_PRISM>();
+    dummy_hex = new DummyFE<ET_HEX>();
+    dummy_trig = new DummyFE<ET_TRIG>();
+    dummy_quad = new DummyFE<ET_QUAD>();
+    dummy_segm = new DummyFE<ET_SEGM>();
+    dummy_point = new DummyFE<ET_POINT>();
+
+
     evaluator = NULL;
+    flux_evaluator = NULL;
     boundary_evaluator = NULL;
     integrator = NULL;
     boundary_integrator = NULL;
@@ -265,7 +277,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_vertex = false;
     dirichlet_edge = false;
     dirichlet_face = false;
-    
+
     if (dirichlet_boundaries.Size())
       for (int i = 0; i < ma.GetNSE(); i++)
 	{
@@ -449,29 +461,45 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = 0;
+    FiniteElement * fe = NULL;
     
-    switch (ma.GetElType(elnr))
+    if (DefinedOn (ma.GetElIndex (elnr)))
       {
-      case ET_TET: fe = tet; break;
-      case ET_PYRAMID: fe = pyramid; break;
-      case ET_PRISM: fe = prism; break;
-      case ET_HEX: fe = hex; break;
-      case ET_TRIG: fe = trig; break;
-      case ET_QUAD: fe = quad; break;
-      case ET_SEGM: fe = segm; break;
-      default:
-        ;
+        switch (ma.GetElType(elnr))
+          {
+          case ET_TET: fe = tet; break;
+          case ET_PYRAMID: fe = pyramid; break;
+          case ET_PRISM: fe = prism; break;
+          case ET_HEX: fe = hex; break;
+          case ET_TRIG: fe = trig; break;
+          case ET_QUAD: fe = quad; break;
+          case ET_SEGM: fe = segm; break;
+          case ET_POINT: fe = point; break;
+          }
       }
+    else
+      {
+        switch (ma.GetElType(elnr))
+          {
+          case ET_TET: fe = dummy_tet; break;
+          case ET_PYRAMID: fe = dummy_pyramid; break;
+          case ET_PRISM: fe = dummy_prism; break;
+          case ET_HEX: fe = dummy_hex; break;
+          case ET_TRIG: fe = dummy_trig; break;
+          case ET_QUAD: fe = dummy_quad; break;
+          case ET_SEGM: fe = dummy_segm; break;
+          case ET_POINT: fe = dummy_point; break;
+          }
+      }
+
 
     if (!fe)
       {
-        stringstream str;
-        str << "FESpace " << GetClassName() 
-            << ", undefined eltype " 
-            << ElementTopology::GetElementName(ma.GetElType(elnr))
-            << ", order = " << order << endl;
-        throw Exception (str.str());
+        string str = string("FESpace ") + GetClassName() 
+          + ", undefined eltype " 
+          + ElementTopology::GetElementName(ma.GetElType(elnr))
+          + ", order = " + ToString (order) + "\n";
+        throw Exception (str);
       }
     
     return *fe;
@@ -652,7 +680,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < free_dofs.Size(); i++)
       if (free_dofs[i])
 	nfree++;
-    cout << "free dofs = " << nfree << endl;
   }
   
 
@@ -810,6 +837,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     definedon.SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
       definedon[i] = defon.Test(i) ? 1 : 0;
+
+    if (low_order_space)
+      low_order_space -> SetDefinedOn (defon);
   }
 
   void FESpace :: SetDefinedOnBoundary (const BitArray & defon)
@@ -817,11 +847,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     definedonbound.SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
       definedonbound[i] = defon.Test(i) ? 1 : 0;
+
+    if (low_order_space)
+      low_order_space -> SetDefinedOnBoundary (defon);
   }
 
   void FESpace :: SetDirichletBoundaries (const BitArray & dirbnds)
   {
     dirichlet_boundaries = dirbnds;
+    if (low_order_space)
+      low_order_space -> SetDirichletBoundaries (dirbnds);
   }
 
 
