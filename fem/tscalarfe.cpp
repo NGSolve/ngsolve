@@ -47,6 +47,8 @@ namespace ngfem
   void T_ScalarFiniteElement2<FEL,ET> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
+    static Timer t("evaluatetrans");
+    RegionTimer reg(t);
     /*
     Vec<DIM> pt;
     coefs = 0.0;
@@ -60,11 +62,11 @@ namespace ngfem
     */
 
     coefs = 0.0;
-    for (int i = 0; i < ir.GetNIP(); i+=MD<>::SIZE)
+    for (int i = 0; i < ir.GetNIP(); i+=MD<1>::SIZE)
       {
-        MD<> pt[DIM];
-        MD<> vali = 0.0;
-        for (int j = 0; j < MD<>::SIZE; j++)
+        MD<1> pt[DIM];
+        MD<1> vali = 0.0;
+        for (int j = 0; j < MD<1>::SIZE; j++)
           if (i+j < ir.GetNIP())
             {
               for (int k = 0; k < DIM; k++)
@@ -78,7 +80,7 @@ namespace ngfem
               vali[j] = 0;
             }
 
-	EvaluateShapeTrans<MD<> > eval(coefs, vali);
+	EvaluateShapeTrans<MD<1> > eval(coefs, vali);
         Cast().T_CalcShape (pt, eval); 
       }
   }
@@ -126,7 +128,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void T_ScalarFiniteElement2<FEL,ET> :: 
   CalcDShape (const IntegrationPoint & ip, 
-					     FlatMatrixFixWidth<DIM> dshape) const
+              FlatMatrixFixWidth<DIM> dshape) const
   {
     // AutoDiff<DIM> adp[DIM];
     Vec<DIM, AutoDiff<DIM> > adp;
