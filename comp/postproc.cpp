@@ -43,9 +43,7 @@ namespace ngcomp
 
     flux.GetVector() = 0.0;
 
-
     ProgressOutput progress (ma, "postprocessing element", ne);
-    int cnt = 0;
 
 #pragma omp parallel 
     {
@@ -56,15 +54,11 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
 	{
 	  HeapReset hr(lh);
-
-#pragma omp atomic
-	  cnt++;
-
-	  progress.Update (cnt);
+	  progress.Update ();
 
 	  int eldom = bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
 	  
-	  if(!domains[eldom]) continue;
+	  if (!domains[eldom]) continue;
 	  
 	  const FiniteElement & fel = fes.GetFE (i, bound, lh);
 	  const FiniteElement & felflux = fesflux.GetFE (i, bound, lh);
@@ -97,25 +91,17 @@ namespace ngcomp
 	  elflux = 0;
 	  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
 
-
-	      
-
 	  if (dimflux > 1)
 	    {
 	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
-	      bbli . Block() . CalcElementMatrix (felflux, eltrans, elmat, lh);
+	      bbli.Block().CalcElementMatrix (felflux, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
 	    
-	      FlatVector<SCAL> hv1(dnumsflux.Size(), lh);
-	      FlatVector<SCAL> hv2(dnumsflux.Size(), lh);
 	      for (int j = 0; j < dimflux; j++)
-		{
-		  hv1 = elflux.Slice (j, dimflux);
-		  invelmat.Mult (hv1, hv2);
-		  elfluxi.Slice(j, dimflux) = hv2;
-		}
+                invelmat.Mult (elflux.Slice (j, dimflux), 
+                               elfluxi.Slice (j, dimflux));
 	    }
 	  else
 	    {
@@ -144,25 +130,10 @@ namespace ngcomp
     progress.Done();
     
 #ifdef PARALLEL
-
     AllReduceDofData (cnti, MPI_SUM, fesflux.GetParallelDofs());
-
-    /*
-	 BaseVector & hv  = *( ( flux.GetVector() ).CreateVector()); 
-	 FlatVector<SCAL> fhv (dimflux*cnti.Size(),  &hv.FV<SCAL>()(0));
-	 
-	 hv.SetParallelStatus(DISTRIBUTED);
-	 for (int j=0; j< cnti.Size(); j++)
-	   fhv.Range(j*dimflux,(j+1)*dimflux)=cnti[j];
-         hv.Cumulate();
-	 for (int j=0; j< cnti.Size(); j++)
-	   cnti[j]=int (abs((fhv(j*dimflux))));
-    */
- 
     flux.GetVector().SetParallelStatus(DISTRIBUTED);
     flux.GetVector().Cumulate(); 	 
 #endif
-
 
     FlatVector<SCAL> fluxi(dimflux, clh);
     Array<int> dnumsflux(1);
@@ -361,18 +332,20 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void SetValues (const MeshAccess & ma, 
-		  const CoefficientFunction & coef,
+  void SetValues (const CoefficientFunction & coef,
 		  GridFunction & bu,
 		  bool bound,
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
   {
+    static Timer sv("timer setvalues"); RegionTimer r(sv);
+
     S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
-    ma.PushStatus ("setvalues");
-
     const FESpace & fes = u.GetFESpace();
+    const MeshAccess & ma = fes.GetMeshAccess();
+
+    ma.PushStatus ("setvalues");
 
     int ne      = bound ? ma.GetNSE() : ma.GetNE();
     int dim     = fes.GetDimension();
@@ -389,7 +362,6 @@ namespace ngcomp
 
     u.GetVector() = 0.0;
 
-    int cnt = 0;
     ProgressOutput progress (ma, "setvalues element", ma.GetNE());
 
 #pragma omp parallel 
@@ -400,10 +372,7 @@ namespace ngcomp
       for (int i = 0; i < ne; i++)
 	{
 	  HeapReset hr(lh);
-
-#pragma omp atomic
-	  cnt++;
-	  progress.Update (cnt);
+          progress.Update ();
 
 	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
 	    continue;
@@ -422,8 +391,8 @@ namespace ngcomp
 	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
 
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-	  coef.Evaluate (mir, mfluxi);
 
+	  coef.Evaluate (mir, mfluxi);
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    mfluxi.Row(j) *= mir[j].GetWeight();
 
@@ -439,15 +408,9 @@ namespace ngcomp
 		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
 	      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
 	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	      
-	      FlatVector<SCAL> hv1(dnums.Size(), lh);
-	      FlatVector<SCAL> hv2(dnums.Size(), lh);
+              
 	      for (int j = 0; j < dim; j++)
-		{
-		  hv1 = elflux.Slice (j, dim);
-		  invelmat.Mult (hv1, hv2);
-		  elfluxi.Slice(j, dim) = hv2;
-		}
+                invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
 	    }
 	  else
 	    {
@@ -456,9 +419,17 @@ namespace ngcomp
 
 	      fes.TransformMat (i, bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (i, bound, elflux, TRANSFORM_RHS);
-	      
-	      LapackInverse (elmat);
-	      elfluxi = elmat * elflux;
+              
+              if (dnums.Size() < 50)
+                {
+                  FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                  invelmat.Mult (elflux, elfluxi);
+                }
+              else
+                {
+                  LapackInverse (elmat);
+                  elfluxi = elmat * elflux;
+                }
 	    }
 	  
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
@@ -498,17 +469,16 @@ namespace ngcomp
     ma.PopStatus ();
   }
   
-  NGS_DLL_HEADER void SetValues (const MeshAccess & ma, 
-				 const CoefficientFunction & coef,
+  NGS_DLL_HEADER void SetValues (const CoefficientFunction & coef,
 				 GridFunction & u,
 				 bool bound,
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh)
   {
     if (u.GetFESpace().IsComplex())
-      SetValues<Complex> (ma, coef, u, bound, diffop, clh);
+      SetValues<Complex> (coef, u, bound, diffop, clh);
     else
-      SetValues<double> (ma, coef, u, bound, diffop, clh);
+      SetValues<double> (coef, u, bound, diffop, clh);
   }
 
 

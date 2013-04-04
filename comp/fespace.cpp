@@ -669,7 +669,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (!free_dofs.Size()) return;
 
-    ost << "ndof = << " << GetNDof() << endl;
+    ost << "ndof = " << GetNDof() << endl;
     int ntype[8] = { 0 };
     for (int i = 0; i < ctofdof.Size(); i++)
       ntype[ctofdof[i]]++;
