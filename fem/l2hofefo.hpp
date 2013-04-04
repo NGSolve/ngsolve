@@ -49,14 +49,6 @@ namespace ngfem
       ndof = L2HighOrderFEFO<ET, ORDER>::NDOF;
     }
 
-    /*
-    virtual void GetInternalDofs (Array<int> & idofs) const
-    {
-      idofs.SetSize(0);
-      idofs += IntRange (0, ndof);
-    }
-    */
-
 
     virtual void PrecomputeShapes (const IntegrationRule & ir) 
     {

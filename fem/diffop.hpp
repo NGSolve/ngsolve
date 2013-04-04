@@ -92,6 +92,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
+      cout << "ApplyTransIR::Base called, diffop = " << typeid(DOP).name() << endl;
       typedef typename TVY::TSCAL TSCAL;
 
       HeapReset hr(lh);
@@ -107,8 +108,7 @@ namespace ngfem
 
 
 
-
-
+    /*
     /// old style ???
     template <typename MIP, class TVX>
     static void Transform (const MIP & mip, TVX & x)
@@ -123,7 +123,6 @@ namespace ngfem
       ;
     }
 
-    /*
     /// old style
     template <typename FEL, class TVD, class TVY, int D>
     static void ApplyGrid (const FEL & fel, 

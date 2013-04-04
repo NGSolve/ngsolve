@@ -7,7 +7,6 @@ namespace ngfem
   void T_ScalarFiniteElement2<FEL,ET> :: 
   CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
   {
-    // double pt[DIM];
     Vec<DIM> pt;
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
     static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), shape); 
@@ -18,9 +17,7 @@ namespace ngfem
   double T_ScalarFiniteElement2<FEL,ET> :: 
   Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
   {
-    // double pt[DIM];
     Vec<DIM> pt;
-
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
   
     double sum = 0.0;
@@ -35,7 +32,6 @@ namespace ngfem
   void T_ScalarFiniteElement2<FEL,ET> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
   {
-    // double pt[DIM];
     Vec<DIM> pt;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -51,17 +47,43 @@ namespace ngfem
   void T_ScalarFiniteElement2<FEL,ET> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
-    // double pt[DIM];
+    /*
     Vec<DIM> pt;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
 
-	EvaluateShapeTrans eval(coefs, vals(i));
+	EvaluateShapeTrans<> eval(coefs, vals(i));
 	static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), eval); 
       }
+    */
+
+    coefs = 0.0;
+    for (int i = 0; i < ir.GetNIP(); i+=MD<>::SIZE)
+      {
+        MD<> pt[DIM];
+        MD<> vali = 0.0;
+        for (int j = 0; j < MD<>::SIZE; j++)
+          if (i+j < ir.GetNIP())
+            {
+              for (int k = 0; k < DIM; k++)
+                pt[k][j] = ir[i+j](k);
+              vali[j] = vals(i+j);
+            }
+          else
+            {
+              for (int k = 0; k < DIM; k++)
+                pt[k][j] = ir[i](k);
+              vali[j] = 0;
+            }
+
+	EvaluateShapeTrans<MD<> > eval(coefs, vali);
+        Cast().T_CalcShape (pt, eval); 
+      }
   }
+
+
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_ScalarFiniteElement2<FEL,ET> :: 

@@ -104,35 +104,33 @@ namespace ngfem
 
   
   /// todo
+  template <typename TSCAL>
   class EvaluateShapeTransElement
   {
     double & data;
-    const double & fac;
+    const TSCAL & fac;
   public:
-    /// todo
-    EvaluateShapeTransElement (double & adata, const double & afac) 
+    EvaluateShapeTransElement (double & adata, const TSCAL & afac) 
       : data(adata), fac(afac) { ; }
 
-    /// todo
-    void operator= (double ad) 
-    { 
-      data += ad * fac;
-    }
+    void operator= (const TSCAL & ad) 
+    { data += InnerProduct (ad, fac); }
   };
 
+  template <typename TSCAL = double>
   class EvaluateShapeTrans
   {
     double * coefs;
-    const double & fac;
+    const TSCAL & fac;
   public:
-    EvaluateShapeTrans (FlatVector<> acoefs, const double & afac)
+    EvaluateShapeTrans (FlatVector<> acoefs, const TSCAL & afac)
       : coefs(&acoefs(0)), fac(afac) { ; }
 
-    EvaluateShapeTrans (double * acoefs, const double & afac)
+    EvaluateShapeTrans (double * acoefs, const TSCAL & afac)
       : coefs(acoefs), fac(afac) { ; }
 
-    EvaluateShapeTransElement operator[] (int i) const
-    { return EvaluateShapeTransElement (coefs[i], fac); }
+    EvaluateShapeTransElement<TSCAL> operator[] (int i) const
+    { return EvaluateShapeTransElement<TSCAL> (coefs[i], fac); }
 
     const EvaluateShapeTrans Addr (int i) const
     { return EvaluateShapeTrans (coefs+i, fac); }
@@ -376,6 +374,7 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::eltype;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
 
@@ -397,7 +396,8 @@ namespace ngfem
                       FlatMatrixFixWidth<DIM> dshape) const;
 
 
-
+  private:
+    const FEL & Cast() const { return static_cast<const FEL&> (*this); }
   };
 
   template <typename TFA>
@@ -412,7 +412,8 @@ namespace ngfem
     ;
   }
   
-  inline void SetZero (EvaluateShapeTrans & shape, int first, int next)
+  template<typename TSCAL>
+  inline void SetZero (EvaluateShapeTrans<TSCAL> & shape, int first, int next)
   {
     ;
   }
