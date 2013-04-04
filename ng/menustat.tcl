@@ -136,7 +136,7 @@ loadinifile;
 .ngmenu.file add command -label "Load Mesh..." -accelerator "<l><m>" \
     -command {
 	set types {
-	    {"Mesh file"   {.vol}	} }
+	    {"Mesh file"   {.vol .vol.gz}	} }
 	set file [tk_getOpenFile -filetypes $types -defaultextension ".vol"]
 	if {$file != ""} {
 	    AddRecentMeshFile $file;

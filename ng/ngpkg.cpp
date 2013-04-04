@@ -213,8 +213,7 @@ namespace netgen
   {
     string filename (argv[1]);
 
-    if ( (strlen (filename.c_str()) > 4) &&
-	 strcmp (&filename[strlen (filename.c_str())-4], ".vol") != 0 )
+    if (filename.find(".vol") == string::npos) 
       {
 	return Ng_ImportMesh(clientData,interp,argc,argv);
       }
@@ -225,7 +224,8 @@ namespace netgen
     try
       {
         istream * infile;
-        if (filename.substr (filename.length()-3, 3) == ".gz")
+        // if (filename.substr (filename.length()-3, 3) == ".gz")
+        if (filename.find(".vol.gz") != string::npos)
           infile = new igzstream (filename.c_str());
         else
           infile = new ifstream (filename.c_str());
