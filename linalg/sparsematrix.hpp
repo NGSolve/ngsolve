@@ -397,45 +397,59 @@ namespace ngla
   
     ///
     // template<class TEL>
-    inline TVY RowTimesVector (int row, const FlatVector<TVX> & vec) const
+    inline TVY RowTimesVector (int row, const FlatVector<TVX> vec) const
     {
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
-
       /*
       int nj = firsti[row+1] - firsti[row];
-      const int * colpi = colnr+firsti[row];
-      const TM * datap = data+firsti[row];
+      const int * colpi = &colnr[0]+firsti[row];
+      const TM * datap = &data[0]+firsti[row];
       const TVX * vecp = vec.Addr(0);
     
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
-      for (int j = 0; j < nj; j++, colpi++, datap++)
-	sum += *datap * vecp[*colpi];
+      // for (int j = 0; j < nj; j++, colpi++, datap++)
+      // sum += *datap * vecp[*colpi];
+      for (int j = 0; j < nj; j++)
+	sum += datap[j] * vecp[colpi[j]];
       return sum;
       */
     }
 
     ///
-    void AddRowTransToVector (int row, TVY el, FlatVector<TVX> & vec) const
+    void AddRowTransToVector (int row, TVY el, FlatVector<TVX> vec) const
     {
       // cannot be optimized by the compiler, since hvec could alias
       // the matrix --> keyword 'restrict' will hopefully solve this problem
+
+      // size_t first = firsti[row];
+      // size_t last = firsti[row+1];
+      // for (size_t j = first; j < last; j++)
+      // vec(colnr[j]) += Trans(data[j]) * el;
+
+      /*
+      const int * colpi = &colnr[0];
+      const TM * datap = &data[0];
+      TVX * vecp = vec.Addr(0);
+      for (size_t j = first; j < last; j++)
+        vecp[colpi[j]] += Trans(datap[j]) * el; 
+      */
+
+      
       size_t first = firsti[row];
       size_t last = firsti[row+1];
-      for (size_t j = first; j < last; j++)
-	vec(colnr[j]) += Trans(data[j]) * el;
-      /*
-      int nj = firsti[row+1] - firsti[row];
-      const int * colpi = colnr+firsti[row];
-      const TM * datap = data+firsti[row];
       TVX * vecp = vec.Addr(0);
-      for (int j = 0; j < nj; j++, colpi++, datap++)
-	vecp[*colpi] += Trans(*datap) * el; 
-      */
+      int d = vec.Addr(1)-vec.Addr(0);
+      if (d == 1)
+        for (size_t j = first; j < last; j++)
+          vecp[colnr[j]] += Trans(data[j]) * el; 
+      else
+        for (size_t j = first; j < last; j++)
+          vecp[d*colnr[j]] += Trans(data[j]) * el; 
     }
 
 
@@ -615,7 +629,7 @@ namespace ngla
     using SparseMatrix<TM,TV,TV>::AddRowTransToVector;
 
 
-    TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> & vec) const
+    TV_COL RowTimesVectorNoDiag (int row, const FlatVector<TVX> vec) const
     {
       size_t last = firsti[row+1];
       size_t first = firsti[row];
@@ -630,41 +644,45 @@ namespace ngla
       return sum;
 
       /*
-      const int * colpi = colnr+firsti[row];
-      const TM * datap = data+firsti[row];
+      const int * colpi = &colnr[0]; // +firsti[row];
+      const TM * datap = &data[0]; // +firsti[row];
       const TVX * vecp = vec.Addr(0);
 
-      for (int j = first; j < last; j++, colpi++, datap++)
-	sum += *datap * vecp[*colpi];
+      // for (int j = first; j < last; j++, colpi++, datap++)
+      // sum += *datap * vecp[*colpi];
+      for (int j = first; j < last; j++)
+	sum += datap[j] * vecp[colpi[j]];
       return sum;
       */
     }
 
-    void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> & vec) const
+    void AddRowTransToVectorNoDiag (int row, TVY el, FlatVector<TVX> vec) const
     {
       size_t first = firsti[row];
       size_t last = firsti[row+1];
       if (first == last) return;
       if (this->colnr[last-1] == row) last--;
-
-      for (size_t j = first; j < last; j++)
-	vec(colnr[j]) += Trans(data[j]) * el;
-
+      
       /*
-	// hand tuning, no difference anymore
-      size_t last = firsti[row+1];
-      size_t first = firsti[row];
-      if (first == last) return;
-
-      if (colnr[last-1] == row) last--;
-
-      int nj = last - firsti[row];
-      const int * colpi = colnr+firsti[row];
-      const TM * datap = data+firsti[row];
-      TVX * vecp = vec.Addr(0);
-      for (int j = 0; j < nj; j++, colpi++, datap++)
-	vecp[*colpi] += Trans(*datap) * el;
+      for (size_t j = first; j < last; j++)
+        vec(colnr[j]) += Trans(data[j]) * el;
       */
+      /*
+      // hand tuning
+      const int * colpi = &colnr[0]; // +firsti[row];
+      const TM * datap = &data[0]; // +firsti[row];
+      TVX * vecp = vec.Addr(0);
+      for (size_t j = first; j < last; j++)
+	vecp[colpi[j]] += Trans(datap[j]) * el;
+      */
+      TVX * vecp = vec.Addr(0);
+      int d = vec.Addr(1)-vec.Addr(0);
+      if (d == 1)
+        for (size_t j = first; j < last; j++)
+          vecp[colnr[j]] += Trans(data[j]) * el;
+      else
+        for (size_t j = first; j < last; j++)
+          vecp[d*colnr[j]] += Trans(data[j]) * el;
     }
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
