@@ -146,7 +146,7 @@ namespace netgen
 
 
 
-  class Ngx_Mesh
+  DLL_HEADER class Ngx_Mesh
   {
   private:
     class Mesh * mesh;
@@ -164,10 +164,10 @@ namespace netgen
     Ng_Point GetPoint (int nr) const;
 
     template <int DIM> 
-    DLL_HEADER Ng_Element GetElement (int nr) const;
+    Ng_Element GetElement (int nr) const;
 
     template <int DIM> 
-    DLL_HEADER int GetElementIndex (int nr) const;
+    int GetElementIndex (int nr) const;
 
 
     /// Curved Elements:
@@ -176,12 +176,12 @@ namespace netgen
     /// x ..... DIM_SPACE global coordinates 
     /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
     template <int DIM_EL, int DIM_SPACE> 
-    DLL_HEADER void ElementTransformation (int elnr,
-                                           const double * xi, 
-                                           double * x, 
-                                           double * dxdxi) const;
-
-
+    void ElementTransformation (int elnr,
+                                const double * xi, 
+                                double * x, 
+                                double * dxdxi) const;
+    
+    
     /// Curved Elements:
     /// elnr .. element nr
     /// npts .. number of points
@@ -190,22 +190,22 @@ namespace netgen
     /// x ..... DIM_SPACE global coordinates
     /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
     template <int DIM_EL, int DIM_SPACE> 
-    DLL_HEADER void MultiElementTransformation (int elnr, int npts,
-                                                const double * xi, size_t sxi,
-                                                double * x, size_t sx,
-                                                double * dxdxi, size_t sdxdxi) const;
-
+    void MultiElementTransformation (int elnr, int npts,
+                                     const double * xi, size_t sxi,
+                                     double * x, size_t sx,
+                                     double * dxdxi, size_t sdxdxi) const;
+    
 
     template <int DIM>
-    DLL_HEADER Ng_Node<DIM> GetNode (int nr);
+    Ng_Node<DIM> GetNode (int nr);
     
     
     template <int DIM>
-    DLL_HEADER int GetNNodes ();
+    int GetNNodes ();
 
     // Find element of point, returns local coordinates
     template <int DIM>
-    DLL_HEADER int FindElementOfPoint 
+    int FindElementOfPoint 
     (double * p, double * lami,
      bool build_searchtrees = false, 
      int * const indices = NULL, int numind = 0);
