@@ -93,6 +93,7 @@ public:
   }
 
 
+  /*
   ///
   template <typename MIP, class TVX>
   static void Transform (const MIP & mip, TVX & x)
@@ -109,7 +110,6 @@ public:
     x = hx; 
   }
   
-  /*
   ///
   template <class TVD, class TVY>
   static void ApplyGrid (const FiniteElement & fel, 
@@ -266,7 +266,26 @@ public:
   }
 
 
+  // using DiffOp<DiffOpId<D, FEL> >::ApplyTransIR;
+  template <class MIR>
+  static void ApplyTransIR (const FiniteElement & fel, 
+                            const MIR & mir,
+                            FlatMatrix<double> x, FlatVector<double> y,
+                            LocalHeap & lh)
+  {
+    Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+  }
 
+  template <class MIR>
+  static void ApplyTransIR (const FiniteElement & fel, 
+                            const MIR & mir,
+                            FlatMatrix<Complex> x, FlatVector<Complex> y,
+                            LocalHeap & lh)
+  {
+    DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
+  }
+
+  /*
   template <typename MIP, class TVX>
   static void Transform (const MIP & mip, TVX & x)
   {
@@ -281,7 +300,6 @@ public:
     ; 
   }
 
-  /*
   template <class TVD, class TVY>
   static void ApplyGrid (const FiniteElement & fel, 
 			 const IntegrationRuleTP<D> & ir,
@@ -382,6 +400,32 @@ public:
 
 
 
+
+  // using DiffOp<DiffOpIdBoundary<D, FEL> >::ApplyTransIR;
+  template <class MIR>
+  static void ApplyTransIR (const FiniteElement & fel, const MIR & mir,
+                            FlatMatrix<double> x, FlatVector<double> y,
+                            LocalHeap & lh)
+  {
+    static Timer t("applytransir - bnd");
+    RegionTimer reg(t);
+
+    static_cast<const FEL&>(fel).
+      EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+  }
+
+  template <class MIR>
+  static void ApplyTransIR (const FiniteElement & fel, const MIR & mir,
+                            FlatMatrix<Complex> x, FlatVector<Complex> y,
+                            LocalHeap & lh)
+  { 
+    DiffOp<DiffOpIdBoundary<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
+    // static_cast<const FEL&>(fel).
+    // EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+  }
+  
+
+  /*
   template <typename MIP, class TVX>
   static void Transform (const MIP & mip, TVX & x)
   {
@@ -396,7 +440,6 @@ public:
     ; 
   }
 
-  /*
   template <typename AFEL, class TVD, class TVY>
   static void ApplyGrid (const AFEL & fel, 
 			 const IntegrationRuleTP<D-1> & ir,

@@ -138,9 +138,11 @@ namespace ngfem
    */
   template <ELEMENT_TYPE ET> 
   class NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
-					 public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
+                                        public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
 
-  {   
+  {
+  protected:
+    static Timer t;
   public:
     /// minimal constructor, orders will be set later
     H1HighOrderFE () { ; }

@@ -34,6 +34,9 @@ namespace ngfem
     if (DIM == 3) order = max (order, Max (order_cell));
   }
 
+  template <ELEMENT_TYPE et>
+  Timer H1HighOrderFE<et> :: t(string("timerh1hofe") + ElementTopology::GetElementName(et));
+
 
   /* *********************** Segment  **********************/
 
@@ -158,6 +161,7 @@ namespace ngfem
   template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
+    // RegionTimer reg(t);
     Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
 
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
@@ -400,7 +404,8 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    if (z == 1.) z -= 1e-10;
+    // if (z == 1.) z -= 1e-10;
+    z *= (1-1e-10);
 
     Tx xt = x / (1-z);
     Tx yt = y / (1-z);

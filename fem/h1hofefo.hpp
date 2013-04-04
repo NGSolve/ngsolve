@@ -38,7 +38,9 @@ namespace ngfem
   template <ELEMENT_TYPE ET, int ORDER> class H1HighOrderFEFO;
 
   template <ELEMENT_TYPE ET, int ORDER>
-  class T_H1HighOrderFiniteElementFO : public H1HighOrderFiniteElementFO<ET_trait<ET>::DIM>
+  class T_H1HighOrderFiniteElementFO : 
+    public H1HighOrderFiniteElementFO<ET_trait<ET>::DIM>,
+    public T_ScalarFiniteElement2< H1HighOrderFEFO<ET,ORDER>, ET >
   {
   protected:
     enum { DIM = ET_trait<ET>::DIM };
@@ -67,7 +69,7 @@ namespace ngfem
 
     // virtual void ComputeNDof();
     // virtual void GetInternalDofs (Array<int> & idofs) const;
-
+    /*
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
 
@@ -79,6 +81,7 @@ namespace ngfem
 
     virtual double Evaluate (const IntegrationPoint & ip, 
 			     FlatVector<double> x) const;
+    */
   };
 
 
@@ -124,7 +127,9 @@ namespace ngfem
      High order triangular finite element
   */
   template <int ORDER>
-  class H1HighOrderFEFO<ET_TET, ORDER> : public T_H1HighOrderFiniteElementFO<ET_TET, ORDER>
+  class H1HighOrderFEFO<ET_TET, ORDER> : 
+    public T_H1HighOrderFiniteElementFO<ET_TET, ORDER>,
+    public ET_trait<ET_TET> 
   {
     using T_H1HighOrderFiniteElementFO<ET_TET, ORDER>::ndof;
     using T_H1HighOrderFiniteElementFO<ET_TET, ORDER>::vnums; 
