@@ -129,6 +129,8 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
+      static Timer t("eltrans::multipointjacobian"); RegionTimer reg(t);
+      
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       mesh -> MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
                                                       &ir[0](0), &ir[1](0)-&ir[0](0),

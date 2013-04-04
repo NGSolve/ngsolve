@@ -39,8 +39,7 @@ namespace ngcomp
 
 
   extern NGS_DLL_HEADER 
-  void SetValues (const MeshAccess & ma, 
-		  const CoefficientFunction & coef,
+  void SetValues (const CoefficientFunction & coef,
 		  GridFunction & u,
 		  bool vb,
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
