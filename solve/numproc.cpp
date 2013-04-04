@@ -240,7 +240,7 @@ namespace ngsolve
 	hgfu = gfu->GetComponent(component);
 
       // SetValues (pde.GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
-      SetValues (hgfu -> GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
+      SetValues (*coef, *hgfu, boundary, 0, lh);
     }
 
     ///
