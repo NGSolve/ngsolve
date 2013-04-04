@@ -43,7 +43,7 @@ namespace ngbla
     ///
     NGS_DLL_HEADER void Factor (const FlatMatrix<T> & a);
     /// Multiply with the inverse of A 
-    NGS_DLL_HEADER void Mult (const FlatVector<TV> & x, FlatVector<TV> & y) const;
+    NGS_DLL_HEADER void Mult (FlatVector<TV> x, FlatVector<TV> y) const;
     /// Print factorization
     NGS_DLL_HEADER ostream & Print (ostream & ost) const;
 

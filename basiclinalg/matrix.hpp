@@ -191,9 +191,15 @@ namespace ngbla
       return FlatVector<T> (w, &data[i*size_t(w)]);
     }
 
+    /*
     const SliceVector<T> Col (int i) const
     {
       return SliceVector<T> (h, w, &data[i]);
+    }
+    */
+    const FlatVector<T> Col (int i) const
+    {
+      return FlatVector<T> (h, w, &data[i]);
     }
 
     const SliceVector<T> Diag () const

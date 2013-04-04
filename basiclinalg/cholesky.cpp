@@ -80,7 +80,7 @@ namespace ngbla
   
   template <class T>  
   void FlatCholeskyFactors<T> :: 
-  Mult (const FlatVector<TV> & x, FlatVector<TV> & y) const
+  Mult (FlatVector<TV> x, FlatVector<TV> y) const
   {
     TV sum, val;
     const T *pj;
