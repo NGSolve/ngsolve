@@ -146,7 +146,7 @@ namespace netgen
 
 
 
-  DLL_HEADER class Ngx_Mesh
+  class DLL_HEADER Ngx_Mesh
   {
   private:
     class Mesh * mesh;
