@@ -621,7 +621,7 @@ FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
   
 
   template class S_BaseVector<double>;
-  template class S_BaseVector<Complex>;
+  //template class S_BaseVector<Complex>;
   
   template class VFlatVector<double>;
   
