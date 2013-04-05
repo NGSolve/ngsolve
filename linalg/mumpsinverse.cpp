@@ -593,11 +593,14 @@ namespace ngla
 		  {
 		    int col = rowind[j];
 		    
+		    /*
 		    if (  (!inner && !cluster) ||
 			  (inner && (inner->Test(i) && inner->Test(col) ) ) ||
 			  (!inner && cluster &&
 			   ((*cluster)[i] == (*cluster)[col] 
 			    && (*cluster)[i] ))  )
+		    */
+		    if (loc2glob[i] != -1 && loc2glob[col] != -1)
 		      {
 			for (int l = 0; l < entrysize; l++ )
 			  for (int k = 0; k < entrysize; k++)
@@ -771,7 +774,7 @@ namespace ngla
 
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
     mumps_id.icntl[12]=1;  // 0..do use, 1..not using scalapck for root schur complement
-    mumps_id.icntl[13]=400; // memory increase (in %) due to error -9
+    mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
     mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
     mumps_id.icntl[28]=2;  // 0..auto, 2..parmetis
