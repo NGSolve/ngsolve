@@ -17,7 +17,9 @@ namespace ngfem
 
 
 
-  
+
+
+  /// a helper class for fixed order evaluation
   template <class REC, int N>
   class CEvalFO
   {
@@ -56,8 +58,6 @@ namespace ngfem
       CEvalFO<REC,N-1>::EvalScaledMult (x, y, c, values, p2, p3);
       values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*y*y * p3;
     }
-
-
   };
 
 
@@ -158,13 +158,6 @@ namespace ngfem
   class RecursivePolynomial
   {
   public:
-    template <int N, class S, class T>
-    ALWAYS_INLINE static void EvalFO (S x, T & values) 
-    {
-      S p1, p2;
-      CEvalFO<REC, N>::Eval (x, values, p1, p2);
-    }
-
 
     template <class S>
     ALWAYS_INLINE static void EvalNext (int i, S x, S & p1, S & p2)
@@ -182,12 +175,15 @@ namespace ngfem
       p1 = pnew;
     }
 
+
+  public:
+
+
     template <class S, class T>
     static void Eval (int n, S x, T & values) 
     {
       EvalMult (n, x, 1.0, values);
     }
-
 
     template <class S, class Sc, class T>
     static void EvalMult (int n, S x, Sc c, T & values) 
@@ -248,41 +244,6 @@ namespace ngfem
 	  EvalNext (i, x, p1, p2);
 	  values[i] = p1;
 	}
-
-      /*
-      const REC & pol = static_cast<const REC&> (*this);
-
-      if (n < 0) return;
-
-      switch (n)
-	{
-	case 0: EvalMultFO<0> (x, c, values); return;
-	case 1: EvalMultFO<1> (x, c, values); return;
-	case 2: EvalMultFO<2> (x, c, values); return;
-	case 3: EvalMultFO<3> (x, c, values); return;
-	case 4: EvalMultFO<4> (x, c, values); return;
-	case 5: EvalMultFO<5> (x, c, values); return;
-	case 6: EvalMultFO<6> (x, c, values); return;
-	case 7: EvalMultFO<7> (x, c, values); return;
-	default:
-	  S p1, p2, p3;
-	  CEvalFO<REC, 8>::EvalMult (pol, x, c, values, p1, p2);
-
-	  for (int i = 9; i <= n; i++)
-	    {
-	      p3 = p2; p2 = p1;
-	      p1 = (REC::A(i) * x + REC::B(i)) * p2 + REC::C(i) * p3;
-	      values[i] = p1;
-	    }
-	}
-      */
-    }
-
-    template <int N, class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T & values) 
-    {
-      S p1, p2;
-      CEvalFO<REC, N>::EvalMult (x, c, values, p1, p2);
     }
 
 
@@ -294,15 +255,6 @@ namespace ngfem
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
-
-    template <int N, class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T & values) 
-    {
-      S p1, p2;
-      CEvalFO<REC, N>::EvalScaled (x, y, values, p1, p2);
-    }
-
-
 
     template <class S, class Sy, class Sc, class T>
     static void EvalScaledMult (int n, S x, Sy y, Sc c, T & values)
@@ -349,33 +301,32 @@ namespace ngfem
 	  EvalScaledNext (i, x, y, p1, p2);
 	  values[i] = p1;
 	}
-      /*
-      const REC & pol = static_cast<const REC&> (*this);
+    }
 
-      if (n < 0) return;
 
-      switch (n)
-	{
-	case 0: EvalScaledMultFO<0> (x, y, c, values); return;
-	case 1: EvalScaledMultFO<1> (x, y, c, values); return;
-	case 2: EvalScaledMultFO<2> (x, y, c, values); return;
-	case 3: EvalScaledMultFO<3> (x, y, c, values); return;
-	case 4: EvalScaledMultFO<4> (x, y, c, values); return;
-	case 5: EvalScaledMultFO<5> (x, y, c, values); return;
-	case 6: EvalScaledMultFO<6> (x, y, c, values); return;
-	case 7: EvalScaledMultFO<7> (x, y, c, values); return;
-	default:
-	  S p1, p2, p3;
-	  CEvalFO<REC, 8>::EvalScaledMult (pol, x, y, c, values, p1, p2);
 
-	  for (int i = 9; i <= n; i++)
-	    {
-	      p3 = p2; p2 = p1;
-	      p1 = (REC::A(i) * x + REC::B(i) * y) * p2 + REC::C(i)*y*y * p3;
-	      values[i] = p1;
-	    }
-	}
-      */
+
+
+
+    template <int N, class S, class T>
+    ALWAYS_INLINE static void EvalFO (S x, T & values) 
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::Eval (x, values, p1, p2);
+    }
+
+    template <int N, class S, class Sc, class T>
+    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T & values) 
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::EvalMult (x, c, values, p1, p2);
+    }
+
+    template <int N, class S, class Sy, class T>
+    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T & values) 
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::EvalScaled (x, y, values, p1, p2);
     }
 
     template <int N, class S, class Sy, class Sc, class T>
@@ -387,6 +338,8 @@ namespace ngfem
   };
 
 
+
+  /* ******************** Legendre Polynomial ****************** */
 
   class LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
   {
@@ -400,19 +353,18 @@ namespace ngfem
     }
 
     template <class S>
-    static S P0(S x)  { return S(1.0); }
+    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
     template <class S>
-    static S P1(S x)  { return x; }
+    static ALWAYS_INLINE S P1(S x)  { return x; }
     
-    static double A (int i) { return 2.0-1.0/i; }
-    static double B (int i) { return 0; }
-    static double C (int i) { return 1.0/i-1.0; }
+    static ALWAYS_INLINE double A (int i) { return 2.0-1.0/i; }
+    static ALWAYS_INLINE double B (int i) { return 0; }
+    static ALWAYS_INLINE double C (int i) { return 1.0/i-1.0; }
   };
     
     
 
-
-
+  /* ******************** Jacobi Polynomial  (with fixed alpha, beta)  ************ */
 
   template <int al, int be>
   class JacobiPolynomialFix : public RecursivePolynomial<JacobiPolynomialFix<al,be> >
@@ -470,80 +422,14 @@ namespace ngfem
 
 
 
-
-
-
-
-
-
-
-  /**
-     Legendre polynomials P_i on (-1,1), 
-     up to order n --> n+1 values
-   
-     l P_l = (2 l - 1) x P_{l-1} - (l-1) P_{l-2}
-
-     P_0 = 1
-     P_1 = x
-     P_2 = -1/2 + 3/2 x^2
-  */
-  template <class S, class T>
-  inline void LegendrePolynomial1 (int n, S x, T & values)
-  {
-    S p1, p2;
-
-    if (n < 0) return;
-    values[0] = 1.0;
-    if (n < 1) return;
-    values[1] = x;
-    if (n < 2) return;
-    values[2] = p2 = 1.5 * sqr(x) - 0.5;
-    if (n < 3) return;
-    values[3] = p1 = ( (5.0/3.0) * p2 - (2.0/3.0)) * x;
-    if (n < 4) return;
-
-    for (int j=4; j < n; j+=2)
-      {
-	double invj = 1.0 / j;
-	p2 *= (invj-1);
-	p2 += (2-invj) * x * p1;
-	values[j] = p2; 
-
-	invj = 1.0 / (j+1);
-	p1 *= (invj-1);
-	p1 += (2-invj) * x * p2;
-	values[j+1] = p1; 
-      }
-
-    if (n % 2 == 0)
-      {
-	double invn = 1.0 / n;
-	values[n] = (2-invn)*x*p1 - (1-invn)*p2;
-      }
-
-    /*
-      S p1 = 1.0, p2 = 0.0, p3;
-
-      if (n >= 0)
-      values[0] = 1.0;
-
-      for (int j=1; j<=n; j++)
-      {
-      p3 = p2; p2 = p1;
-      p1 = ((2.0*j-1.0)*x*p2 - (j-1.0)*p3) / j;
-      values[j] = p1;
-      }
-    */
-  }
-
-
+  /*
   template <class S, class Sc, class T>
   inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
   {
     LegendrePolynomial leg;
     leg.EvalMult (n, x, c, values);
   }
-
+  */
 
 
 
@@ -684,279 +570,12 @@ namespace ngfem
 
 
 
-#ifdef V1
-  /**
-     c P_i 
-  */
-  template <class S, class Sc, class T>
-  inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
-  {
-    S p1, p2;
-
-    if (n < 0) return;
-    values[0] = c;
-    if (n < 1) return;
-    values[1] = c * x;
-    if (n < 2) return;
-    values[2] = p2 = c * (1.5 * sqr(x) - 0.5);
-    if (n < 3) return;
-    values[3] = p1 = ( (5.0/3.0) * p2 - (2.0/3.0) * c) * x;
-    if (n < 4) return;
-
-    for (int j=4; j < n; j+=2)
-      {
-	double invj = 1.0 / j;
-	p2 *= (invj-1);
-	p2 += (2-invj) * x * p1;
-	values[j] = p2; 
-
-	invj = 1.0 / (j+1);
-	p1 *= (invj-1);
-	p1 += (2-invj) * x * p2;
-	values[j+1] = p1; 
-      }
-
-    if (n % 2 == 0)
-      {
-	double invn = 1.0 / n;
-	values[n] = (2-invn)*x*p1 - (1-invn)*p2;
-      }
-
-    /*
-      S p1 = 1.0, p2 = 0.0, p3;
-
-      if (n >= 0)
-      values[0] = 1.0;
-
-      for (int j=1; j<=n; j++)
-      {
-      p3 = p2; p2 = p1;
-      p1 = ((2.0*j-1.0)*x*p2 - (j-1.0)*p3) / j;
-      values[j] = p1;
-      }
-    */
-  }
 
 
 
 
 
 
-
-  template <int n>
-  class LegendrePolynomialFO
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      LegendrePolynomialFO<n-1>::Eval (x, values);
-      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
-    }
-
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      LegendrePolynomialFO<n-1>::EvalMult (x, c, values);
-      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
-    }
-
-    template <class S, class Sy, class T>
-    static void EvalScaled (S x, Sy y, T & values)
-    {
-      LegendrePolynomialFO<n-1>::EvalScaled (x, y, values);
-      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * y*y * values[n-2];    
-    }
-
-    template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
-    {
-      LegendrePolynomialFO<n-1>::EvalScaledMult (x, y, c, values);
-      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * y*y * values[n-2];    
-    }
-
-  };
-
-
-    template <> class LegendrePolynomialFO<-1>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    { ; }
-
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    { ; }
-
-    template <class S, class Sy, class T>
-    static void EvalScaled (S x, S y, T & values)
-    { ; }
-
-    template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
-    { ; }
-  };
-
-  template <> class LegendrePolynomialFO<0>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      values[0] = 1;
-    }
-
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      values[0] = c;
-    }
-
-    template <class S, class Sy, class T>
-    static void EvalScaled (S x, Sy y, T & values)
-    { 
-      values[0] = 1;
-    }
-
-    template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
-    { 
-      values[0] = c;
-    }
-  };
-
-  template <> class LegendrePolynomialFO<1>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      values[0] = 1;
-      values[1] = x;
-    }
-
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      values[0] = c;
-      values[1] = c*x;
-    }
-
-    template <class S, class Sy, class T>
-    static void EvalScaled (S x, Sy y, T & values)
-    {
-      values[0] = 1;
-      values[1] = x;
-    }
-
-    template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (S x, Sy y, Sc c, T & values)
-    { 
-      values[0] = c;
-      values[1] = c*x;
-    }
-  };
-#endif
-
-
-
-
-
-#ifdef V1
-  template <int n, int alpha, int beta>
-  class JacobiPolynomialFO
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      JacobiPolynomialFO<n-1, alpha, beta>::Eval (x, values);
-      int i = n-1;
-      values[n] = 
-	1.0 / ( 2 * (i+1) * (i+alpha+beta+1) * (2*i+alpha+beta) ) *
-	( 
-	 ( (2*i+alpha+beta+1)*(alpha*alpha-beta*beta) + 
-	   (2*i+alpha+beta)*(2*i+alpha+beta+1)*(2*i+alpha+beta+2) * x) 
-	 * values[n-1]
-	 - 2*(i+alpha)*(i+beta) * (2*i+alpha+beta+2) 
-	 * values[n-2]
-	 );
-      // (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
-    }
-    /*
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      JacobiPolynomialFO<n-1>::EvalMult (x, c, values);
-      values[n] = (2.0*n-1)/n * x * values[n-1] - (n-1.0)/n * values[n-2];    
-    }
-    */
-  };
-
-
-  template <int alpha, int beta> class JacobiPolynomialFO<-1, alpha, beta>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    { ; }
-    /*
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    { ; }
-    */
-  };
-
-  template <int alpha, int beta> class JacobiPolynomialFO<0, alpha, beta>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      values[0] = 1;
-    }
-    /*
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      values[0] = c;
-    }
-    */
-  };
-
-  template <int alpha, int beta> class JacobiPolynomialFO<1, alpha, beta>
-  {
-  public:
-    template <class S, class T>
-    static void Eval (S x, T & values)
-    {
-      values[0] = 1;
-      values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
-    }
-    /*
-    template <class S, class Sc, class T>
-    static void EvalMult (S x, Sc c, T & values)
-    {
-      values[0] = c;
-      values[1] = c*x;
-    }
-    */
-  };
-#endif
-
-
-
-
-
-  // compute J_j^{2i+alpha0, beta} (x),  for i+j <= n
-
-  template <class S, class T>
-  void DubinerJacobiPolynomials1 (int n, S x, int alpha0, int beta, T & values)
-  {
-    for (int i = 0; i <= n; i++)
-      JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
-  }
 
 
   template <int n, int i, int alpha0, int beta>
@@ -1058,7 +677,7 @@ namespace ngfem
 
 
 
-
+#ifdef OLD
   template <int ALPHA0, int BETA, class S, class T>
   void DubinerJacobiPolynomials2 (int n, S x, T & values)
   {
@@ -1078,6 +697,32 @@ namespace ngfem
       default: DubinerJacobiPolynomials1 (n, x, ALPHA0, BETA, values);
       }
   }
+#endif
+
+
+
+
+
+  // compute J_j^{2i+alpha0, beta} (x),  for i+j <= n
+
+  template <class S, class T>
+  void DubinerJacobiPolynomials1 (int n, S x, int alpha0, int beta, T & values)
+  {
+    for (int i = 0; i <= n; i++)
+      JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
+  }
+
+
+  template <class S, class St, class T>
+  void DubinerJacobiPolynomialsScaled1 (int n, S x, St t, int alpha0, int beta, T & values)
+  {
+    for (int i = 0; i <= n; i++)
+      ScaledJacobiPolynomial (n-i, x, t, alpha0+2*i, beta, values.Row(i));
+  }
+
+
+
+
 
 
 
@@ -1162,46 +807,309 @@ namespace ngfem
 
 
 
-  template <class S, class St, class T>
-  void DubinerJacobiPolynomialsScaled1 (int n, S x, St t, int alpha0, int beta, T & values)
+
+
+
+
+
+
+
+  template <int ALPHA0, int BETA, int DIAG, int ORDER = DIAG>
+  class DubinerJacobiPolynomialsScaledDiag
   {
-    for (int i = 0; i <= n; i++)
-      ScaledJacobiPolynomial (n-i, x, t, alpha0+2*i, beta, values.Row(i));
-  }
+  public:
+    template<class S, class St, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values)
+    {
+      DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, t, help, values);
+      typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
+      
+      if (ORDER == 0)
+	help[DIAG-ORDER][0] = REC::P0(x);
+      else if (ORDER == 1)
+	{
+	  help[DIAG-ORDER][0] = REC::P1(x);
+	  help[DIAG-ORDER][1] = REC::P0(x);
+	}
+      else
+	{
+	  REC::EvalScaledNext (ORDER, x, t, help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
+	}
+      values(DIAG-ORDER, ORDER) = help[DIAG-ORDER][0];
+    }
+  };
 
+  template <int ALPHA0, int BETA, int DIAG>
+  class DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, DIAG, -1>
+  {
+  public:
+    template<class S, class St, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
+  };
 
-  
   
   template <int ALPHA0, int BETA, class S, class St, class T>
   void DubinerJacobiPolynomialsScaled (int n, S x, St t, T & values)
   {
-    switch (n)
+    S help[20][2];
+    if (n < 0) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 0>::Step (x, t, help, values);
+
+    if (n < 1) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 1>::Step (x, t, help, values);
+
+    if (n < 2) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 2>::Step (x, t, help, values);
+
+    if (n < 3) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 3>::Step (x, t, help, values);
+
+    if (n < 4) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 4>::Step (x, t, help, values);
+
+    if (n < 5) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 5>::Step (x, t, help, values);
+
+    if (n < 6) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 6>::Step (x, t, help, values);
+
+    if (n < 7) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 7>::Step (x, t, help, values);
+
+    if (n < 8) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 8>::Step (x, t, help, values);
+
+    if (n < 9) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 9>::Step (x, t, help, values);
+
+    if (n < 10) return;
+    DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, 10>::Step (x, t, help, values);
+
+    if (n < 11) return;
+
+    DubinerJacobiPolynomialsScaled1 (n, x, t, ALPHA0, BETA, values);
+  }
+
+
+
+
+
+
+
+
+
+
+  inline int TrigIndex(int i, int j, int n)
+  {
+    return j + i*(2*n+3-i)/2;
+  }
+
+
+
+  template <int ALPHA0, int BETA, int DIAG, int ORDER = DIAG>
+  class DubinerJacobiPolynomialsDiag_Linear
+  {
+  public:
+    template<class S, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values)
+    {
+      DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, help, values);
+      typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
+      
+      if (ORDER == 0)
+	help(DIAG-ORDER,0) *= REC::P0(x);
+      else if (ORDER == 1)
+	{
+	  help(DIAG-ORDER,1) = help(DIAG-ORDER,0);
+	  help(DIAG-ORDER,0) *= REC::P1(x) / REC::P0(x);
+	}
+      else
+	{
+	  REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	}
+      values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
+    }
+  };
+
+  template <int ALPHA0, int BETA, int DIAG>
+  class DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, DIAG, -1>
+  {
+  public:
+    template<class S, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values) {;}
+  };
+
+  
+  template<class S, class Thelp, class T>
+  void DubinerJacobiPolynomialsDiag_Linear1 (double alpha0, double beta0, 
+					     int diag, S x, Thelp & help, T & values)
+  {
+    for (int order = 0; order <= diag; order++)
       {
-      case 0: DubinerJacobiPolynomialsFO<0, 0, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 1: DubinerJacobiPolynomialsFO<1, 1, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 2: DubinerJacobiPolynomialsFO<2, 2, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 3: DubinerJacobiPolynomialsFO<3, 3, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 4: DubinerJacobiPolynomialsFO<4, 4, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 5: DubinerJacobiPolynomialsFO<5, 5, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 6: DubinerJacobiPolynomialsFO<6, 6, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 7: DubinerJacobiPolynomialsFO<7, 7, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      case 8: DubinerJacobiPolynomialsFO<8, 8, ALPHA0, BETA>::EvalScaled (x, t, values); break;
-      default: DubinerJacobiPolynomialsScaled1 (n, x, t, ALPHA0, BETA, values);
+	double al = alpha0 + 2*(diag-order);
+	double be = beta0;
+
+	if (order == 0)
+	  help(diag-order,0) *= 1; // REC::P0(x);
+	else if (order == 1)
+	  {
+	    help(diag-order,1) = help(diag-order,0);
+	    help(diag-order,0) *= 0.5 * (2*(al+1)+(al+be+2)*(x-1));
+	  }
+	else
+	  {
+	    // REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	    // S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+
+	    S p1 = help(diag-order,0);
+	    S p2 = help(diag-order,1);
+	    
+	    int i = order-1;
+	    S pnew =
+	      1.0 / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be) ) *
+	      ( 
+	       ( (2*i+al+be+1)*(al*al-be*be) + 
+		 (2*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) * x) 
+	       * p1
+	       - 2*(i+al)*(i+be) * (2*i+al+be+2) * p2
+	       );
+
+	    help(diag-order,0) = pnew;
+	    help(diag-order,1) = p1;
+	  }
+	values[TrigIndex(order,diag-order,help.Height()-1)] = help(diag-order,0);
+      
       }
   }
 
+  template <int ALPHA0, int BETA, class S, class Sy, class Sc, class T>
+  void DubinerJacobiPolynomials_Linear (int n, S x, Sy y, Sc c, T & values)
+  {
+    ArrayMem<S,40> hmem(2*(n+1));
+    FlatMatrixFixWidth<2,S> help(n+1, &hmem[0]);
+
+    LegendrePolynomial leg;
+    leg.EvalScaledMult (n, 2*y+x-1, 1-x, c, help.Col(0));
+
+    x = 2*x-1;
+    if (n >= 0) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 0>::Step (x, help, values);
+    if (n >= 1) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 1>::Step (x, help, values);
+    if (n >= 2) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 2>::Step (x, help, values);
+    if (n >= 3) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 3>::Step (x, help, values);
+    if (n >= 4) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 4>::Step (x, help, values);
+    if (n >= 5) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 5>::Step (x, help, values);
+    if (n >= 6) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 6>::Step (x, help, values);
+    if (n >= 7) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 7>::Step (x, help, values);
+    if (n >= 8) DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, 8>::Step (x, help, values);
+    
+    for (int i = 9; i <= n; i++)
+      DubinerJacobiPolynomialsDiag_Linear1 (ALPHA0, BETA, i, x, help, values);
+  }
+
+
+
+
+
+
+
+
+
+  template <int ALPHA0, int BETA, int DIAG, int ORDER = DIAG>
+  class DubinerJacobiPolynomialsScaledDiag_Linear
+  {
+  public:
+    template<class S, class St, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values)
+    {
+      DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, t, help, values);
+      typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
+      
+      if (ORDER == 0)
+	help(DIAG-ORDER,0) *= REC::P0(x);
+      else if (ORDER == 1)
+	{
+	  help(DIAG-ORDER,1) = help(DIAG-ORDER,0);
+	  help(DIAG-ORDER,0) *= REC::P1(x) / REC::P0(x);
+	}
+      else
+	{
+	  REC::EvalScaledNext (ORDER, x, t, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	}
+      values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
+    }
+  };
+
+  template <int ALPHA0, int BETA, int DIAG>
+  class DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, DIAG, -1>
+  {
+  public:
+    template<class S, class St, class Thelp, class T>
+    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
+  };
+
   
-  
+  template<class S, class St, class Thelp, class T>
+  void DubinerJacobiPolynomialsScaledDiag_Linear1 (double alpha0, double beta0, 
+						   int diag, S x, St t, Thelp & help, T & values)
+  {
+    for (int order = 0; order <= diag; order++)
+      {
+	double al = alpha0 + 2*(diag-order);
+	double be = beta0;
 
+	if (order == 0)
+	  help(diag-order,0) *= 1; // REC::P0(x);
+	else if (order == 1)
+	  {
+	    help(diag-order,1) = help(diag-order,0);
+	    help(diag-order,0) *= 0.5 * (2*(al+1)+(al+be+2)*(x-1));
+	  }
+	else
+	  {
+	    S p1 = help(diag-order,0);
+	    S p2 = help(diag-order,1);
+	    
+	    int i = order-1;
+	    S pnew =
+	      1.0 / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be) ) *
+	      ( 
+	       ( (2*i+al+be+1)*(al*al-be*be) * t + 
+		 (2*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) * x) 
+	       * p1
+	       - 2*(i+al)*(i+be) * (2*i+al+be+2) * t*t*p2
+	       );
 
+	    help(diag-order,0) = pnew;
+	    help(diag-order,1) = p1;
+	  }
+	values[TrigIndex(order,diag-order,help.Height()-1)] = help(diag-order,0);
+      
+      }
+  }
 
+  template <int ALPHA0, int BETA, class S, class Sy, class Sc, class St, class T>
+  void DubinerJacobiPolynomialsScaled_Linear (int n, S x, Sy y, St t, Sc c, T & values)
+  {
+    ArrayMem<S,40> hmem(2*(n+1));
+    FlatMatrixFixWidth<2,S> help(n+1, &hmem[0]);
 
+    LegendrePolynomial leg;
+    leg.EvalScaledMult (n, 2*y+x-1, t-x, c, help.Col(0));
 
+    x = 2*x-1;
+    if (n >= 0) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 0>::Step (x, t, help, values);
+    if (n >= 1) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 1>::Step (x, t, help, values);
+    if (n >= 2) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 2>::Step (x, t, help, values);
+    if (n >= 3) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 3>::Step (x, t, help, values);
+    if (n >= 4) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 4>::Step (x, t, help, values);
+    if (n >= 5) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 5>::Step (x, t, help, values);
+    if (n >= 6) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 6>::Step (x, t, help, values);
+    if (n >= 7) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 7>::Step (x, t, help, values);
+    if (n >= 8) DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, 8>::Step (x, t, help, values);
 
-
-
-
-
+    for (int i = 9; i <= n; i++)
+      DubinerJacobiPolynomialsScaledDiag_Linear1 (ALPHA0, BETA, i, x, t, help, values);
+  }
 
 
 
@@ -1218,41 +1126,15 @@ namespace ngfem
     template <class S, class Sc, class T>
     static void EvalMult (int n, S x, S y, Sc c, T & values)
     {
-      ArrayMem<S, 20> poly(n+1);
-      ArrayMem<S, 400> polx_mem( sqr(n+1) );
-      FlatMatrix<S> polx(n+1,n+1, &polx_mem[0]);
-
-      LegendrePolynomial leg;
-      leg.EvalScaledMult (n, 2*y+x-1, 1-x, c, poly);
-
-      DubinerJacobiPolynomials<1,0> (n, 2*x-1, polx);
-
-      for (int i = 0, ii = 0; i <= n; i++)
-	for (int j = 0; j <= n-i; j++)
-	  values[ii++] = poly[j] * polx(j, i);
+      DubinerJacobiPolynomials_Linear<1,0> (n, x, y, c, values);
     }
-
 
     template <class S, class St, class Sc, class T>
     static void EvalScaledMult (int n, S x, S y, St t, Sc c, T & values)
     {
-      ArrayMem<S, 20> poly(n+1);
-      ArrayMem<S, 400> polx_mem( sqr(n+1) );
-      FlatMatrix<S> polx(n+1,n+1, &polx_mem[0]);
-
-      LegendrePolynomial leg;
-      leg.EvalScaledMult (n, 2*y+x-1, t-x, c, poly);
-
-      DubinerJacobiPolynomialsScaled<1,0> (n, 2*x-1, t, polx);
-
-      for (int i = 0, ii = 0; i <= n; i++)
-	for (int j = 0; j <= n-i; j++)
-	  values[ii++] = poly[j] * polx(j, i);
+      DubinerJacobiPolynomialsScaled_Linear<1,0> (n, x, y, t, c, values);
     }
-
-
   };
-
 
 
 
@@ -1308,18 +1190,6 @@ namespace ngfem
       }
   }
 
-
-#ifdef USEDXXX
-  /**
-     Derived Legendre polynomials on (-1,1)
-     value[i] (x) = d/dx P_{i+1}
-  */
-  template <class S, class T>
-  inline void DerivedLegendrePolynomial (int n, S x, T & values)
-  {
-    GegenbauerPolynomial<S,T> (n, x, 1.5, values);
-  }
-#endif
 
 
 
