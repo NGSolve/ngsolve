@@ -1695,6 +1695,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (ma.GetNLevels() > ndlevel.Size())
       ndlevel.Append (cummulative_nd.Last());
 
+
+    
+    free_dofs.SetSize (GetNDof());
+    free_dofs.Clear();
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+	const BitArray & freedofsi = *spaces[i]->GetFreeDofs(false);
+	for (int j = 0; j < freedofsi.Size();j++)
+	  if (freedofsi.Test(j)) 
+	    free_dofs.Set(cummulative_nd[i]+j);
+      }
+    external_free_dofs.SetSize (GetNDof());
+    external_free_dofs.Clear();
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+	const BitArray & freedofsi = *spaces[i]->GetFreeDofs(true);
+	for (int j = 0; j < freedofsi.Size();j++)
+	  if (freedofsi.Test(j)) 
+	    external_free_dofs.Set(cummulative_nd[i]+j);
+      }
+    
+    
+
+
+
     prol -> Update();
 
     UpdateCouplingDofArray();

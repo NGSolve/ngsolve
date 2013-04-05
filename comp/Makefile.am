@@ -10,6 +10,7 @@ preconditioner.cpp vectorfacetfespace.cpp bddc.cpp hypre_precond.cpp
 
 libngcomp_la_LIBADD = $(top_builddir)/fem/libngfem.la \
 $(top_builddir)/linalg/libngla.la \
+$(top_builddir)/basiclinalg/libngbla.la \
 $(top_builddir)/parallel/libparallel.la \
 $(top_builddir)/multigrid/libngmg.la	\
 $(top_builddir)/ngstd/libngstd.la	\
