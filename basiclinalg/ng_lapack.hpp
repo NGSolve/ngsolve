@@ -1018,7 +1018,7 @@ namespace ngbla
     std::complex<double> vl=0.; 
   
     integer nvl = 1; 
-    std::complex<double> * vr ;
+    std::complex<double> * vr = NULL;
   
     std::complex<double> * work = new std::complex<double>[8*n]; 
     integer lwork = 8*n; 

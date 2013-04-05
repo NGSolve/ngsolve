@@ -78,18 +78,25 @@ namespace ngbla
     // MD (double d1, double d2) { data = _mm_set_pd(d2, d1); } 
 
     MD & operator*= (const MD & v2)
-    { data *= v2.data; return *this; }
+    { data = _mm_mul_pd (data, v2.data); return *this; }
 
     MD & operator+= (const MD & v2)
-    { data += v2.data; return *this; }
+    { data = _mm_add_pd (data, v2.data); return *this; }
 
     MD & operator-= (const MD & v2)
-    { data -= v2.data; return *this; }
+    { data = _mm_sub_pd (data, v2.data); return *this; }
     
     __m128d Data() const { return data; }
     double operator[] (int i) const { return ((const double*)&data)[i]; }
     double & operator[] (int i) { return ((double*)&data)[i]; }
   };
+
+#if defined(__INTEL_COMPILER) || defined(_WIN32)
+  inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd (a, b); }
+  inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd (a, b); }
+  inline __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd (a, b); }
+  inline __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd (a, b); }
+#endif
 
 #endif
 
@@ -190,7 +197,7 @@ namespace ngbla
   }
   
   template <int D>
-  inline double Sum (MD<D> a)
+  ALWAYS_INLINE inline double Sum (MD<D> a)
   {
     double sum = a[0];
     for (int j = 1; j < D; j++)
@@ -198,8 +205,15 @@ namespace ngbla
     return sum;
   }
 
+  ALWAYS_INLINE inline double Sum (MD<1> a)
+  {
+    return a[0];
+  }
+
+
+
   template <int D>
-  inline double InnerProduct (const MD<D> & a, const MD<D> & b)
+  ALWAYS_INLINE inline double InnerProduct (const MD<D> & a, const MD<D> & b)
   {
     return Sum(a*b);
   }
