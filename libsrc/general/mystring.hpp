@@ -67,7 +67,7 @@ public:
   int Find(const char *);
   int Find(const MyStr &);
   MyStr& operator = (const MyStr &);
-  friend MyStr operator + (const MyStr &, const MyStr &);
+  DLL_HEADER friend MyStr operator + (const MyStr &, const MyStr &);
   void operator += (const MyStr &);
   char* c_str();
   string cpp_string(void) const;
@@ -85,14 +85,14 @@ public:
   char& operator [] (unsigned int);
   char operator [] (unsigned int) const;
 
-  friend int operator == (const MyStr &, const MyStr &);
-  friend int operator < (const MyStr &, const MyStr &);
-  friend int operator <= (const MyStr &, const MyStr &);
-  friend int operator > (const MyStr &, const MyStr &);
-  friend int operator >= (const MyStr &, const MyStr &);
-  friend int operator != (const MyStr &, const MyStr &);
-  friend ostream& operator << (ostream &, const MyStr &);
-  friend istream& operator >> (istream &, MyStr &);
+  DLL_HEADER friend int operator == (const MyStr &, const MyStr &);
+  DLL_HEADER friend int operator < (const MyStr &, const MyStr &);
+  DLL_HEADER friend int operator <= (const MyStr &, const MyStr &);
+  DLL_HEADER friend int operator > (const MyStr &, const MyStr &);
+  DLL_HEADER friend int operator >= (const MyStr &, const MyStr &);
+  DLL_HEADER friend int operator != (const MyStr &, const MyStr &);
+  DLL_HEADER friend ostream& operator << (ostream &, const MyStr &);
+  DLL_HEADER friend istream& operator >> (istream &, MyStr &);
   static void SetToErrHandler(void (*)());
 private:
   MyStr(unsigned, int);
