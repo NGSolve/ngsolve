@@ -1,6 +1,6 @@
 // #define NO_PARALLEL_THREADS
 
-// #undef __SSE3__
+#undef __SSE3__
 
 
 // #include "bla.hpp"

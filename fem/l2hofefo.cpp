@@ -6,10 +6,8 @@
 
  
 #include <fem.hpp>
-#include <l2hofefo.hpp>
-
-
-#include "tscalarfe.cpp"
+#include "l2hofefo.hpp"
+#include "tscalarfe_impl.hpp"
 
 
 

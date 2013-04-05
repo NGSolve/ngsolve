@@ -13,7 +13,7 @@ recursive_pol_trig.cpp coefficient.cpp integrator.cpp		     \
 specialelement.cpp elementtopology.cpp intrule.cpp fastmat.cpp	     \
 finiteelement.cpp elementtransformation.cpp scalarfe.cpp	     \
 generic_recpol.cpp hdivfe.cpp recursive_pol.cpp hybridDG.cpp	     \
-DGIntegrators.cpp 
+DGIntegrators.cpp
 
 
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		      \
@@ -25,7 +25,8 @@ hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp	      \
 integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp  \
 recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	      \
 specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	      \
-tscalarfe.cpp hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp
+hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	      \
+hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp
 
 
 dist_data_DATA = dynamicmem.cpp

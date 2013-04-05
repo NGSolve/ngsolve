@@ -1,6 +1,10 @@
 #include <fem.hpp>
+#include <thdivfe_impl.hpp>
 #include <hdivhofe.hpp>
- 
+#include <hdivhofe_impl.hpp>
+#include <hdivhofefo.hpp>
+
+
 namespace ngfem
 {  
 
@@ -517,50 +521,6 @@ namespace ngfem
   }
 
 
-  /*
-  template <ELEMENT_TYPE ET>
-  void T_HDivHighOrderFiniteElement<ET> :: 
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    idofs.SetSize(0);
-    int base;
-    if (discontinuous)
-      {
-        base = 0;
-      }
-    else
-      {
-        if (DIM == 2)
-          {
-            base = ET_trait<ET>::N_EDGE;
-            for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-              base += order_edge[i];
-          }
-        else
-          {
-            base = ET_trait<ET>::N_FACE;
-            for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
-              {
-                INT<2> p = order_face[i];
-                if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-                  base += (p[0]*p[0]+3*p[0])/2;
-                else
-                  base +=  p[0]*p[1] + p[0] + p[1];
-              }
-          }
-      }
-    *testout << "hdiv - getinternal dofs: base = " << base << ", nodf = " << ndof << endl;
-    idofs += IntRange (base, ndof);
-  }
-  */
-
-
-
-
-
-
-
-
 
 
 
@@ -803,7 +763,7 @@ namespace ngfem
   // HDivHighOrderTet
   //------------------------------------------------------------------------
 
-
+  /*
   HDivHighOrderFE<ET_TET> :: HDivHighOrderFE (int aorder)
   {
     order_inner = INT<3>(aorder,aorder,aorder);
@@ -812,8 +772,10 @@ namespace ngfem
 
     ComputeNDof();
   }
+  */
 
 
+  /*
   void HDivHighOrderFE<ET_TET> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 4 ) 
@@ -841,9 +803,11 @@ namespace ngfem
     for(int i = 0; i < nf; i++)  
       dnums.Append(ii+i); 
   }                  
+  */
 
-
-
+  /*
+    // in the header 
+  
   template<typename Tx, typename TFA>  
   void  HDivHighOrderFE<ET_TET> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -945,7 +909,7 @@ namespace ngfem
           }
       }
   }
-
+  */
 
 
 
@@ -954,17 +918,6 @@ namespace ngfem
   //------------------------------------------------------------------------
   // HDivHighOrderPrism
   //------------------------------------------------------------------------
-
-
-  HDivHighOrderFE<ET_PRISM> :: HDivHighOrderFE (int aorder)
-  {
-    order_inner = INT<3> (aorder,aorder,aorder);
-
-    for (int i = 0; i < 5; i++)
-      order_face[i] = INT<2> (aorder,aorder);
-
-    ComputeNDof();
-  }
 
  
   
@@ -1333,6 +1286,12 @@ namespace ngfem
   }
 #endif
 
+
+
+#ifdef GONE_TO_THE_HEADER
+
+  //in the header, due to undefined reference problems (ICC)
+
   template<typename Tx, typename TFA>  
   void  HDivHighOrderFE<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -1502,9 +1461,11 @@ namespace ngfem
 
     if (ii != ndof) cout << "hdiv-prism: dofs missing, ndof = " << ndof << ", ii = " << ii << endl;
   }
-
+#endif
  
 
+
+  /*
   void HDivHighOrderFE<ET_PRISM> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 5 ) 
@@ -1549,7 +1510,8 @@ namespace ngfem
     for (int i=0; i<nf; i++)
       dnums.Append(i+base);
   }   
-  
+  */
+
 
   //------------------------------------------------------------------------
   // HDivHighOrderHex
@@ -1958,6 +1920,33 @@ namespace ngfem
   template class  HDivHighOrderFiniteElement<3>;
   template class  HDivHighOrderNormalFiniteElement<1>;
   template class  HDivHighOrderNormalFiniteElement<2>;
+
+  template class T_HDivHighOrderFiniteElement<ET_TET>;
+  template class T_HDivHighOrderFiniteElement<ET_PRISM>;
+
+
+  template class HDivHighOrderFE<ET_TRIG>;
+  template class HDivHighOrderFE<ET_QUAD>;
+
+  template class HDivHighOrderFE<ET_TET>;
+  template class HDivHighOrderFE<ET_PRISM>;
+
+  template class HDivHighOrderFE_Shape<ET_TET>;
+  template class HDivHighOrderFE_Shape<ET_PRISM>;
+
+  template class T_HDivFiniteElement<HDivHighOrderFE<ET_TRIG>, ET_TRIG>;
+  template class T_HDivFiniteElement<HDivHighOrderFE<ET_QUAD>, ET_QUAD>;
+  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TET>, ET_TET>;
+  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+
+
+
+  template class HDivHighOrderFEFO<ET_TRIG,1>;
+  template class HDivHighOrderFEFO<ET_TRIG,2>;
+  template class HDivHighOrderFEFO<ET_TRIG,3>;
+  template class HDivHighOrderFEFO<ET_TRIG,4>;
+  template class HDivHighOrderFEFO<ET_TRIG,5>;
+  template class HDivHighOrderFEFO<ET_TRIG,6>;
 
 }
 
