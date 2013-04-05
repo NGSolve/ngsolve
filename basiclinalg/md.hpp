@@ -15,8 +15,13 @@
 */
 
 
+
 #if defined(__SSE3__) || defined (__AVX__)
-#include <immintrin.h>
+      #ifndef WIN32
+            #include <immintrin.h>
+      #else
+            #include <intrin.h>
+      #endif
 #endif
 
 
@@ -65,6 +70,20 @@ namespace ngbla
 
 #ifdef __SSE3__
   
+
+#if defined(__INTEL_COMPILER) || defined(WIN32)
+  inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd (a, b); }
+  inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd (a, b); }
+  inline __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd (a, b); }
+  inline __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd (a, b); }
+  inline __m128d& operator*= (__m128d& a, __m128d b) { return a=_mm_mul_pd (a, b); }
+  inline __m128d& operator+= (__m128d& a, __m128d b) { return a=_mm_add_pd (a, b); }
+  inline __m128d& operator-= (__m128d& a, __m128d b) { return a=_mm_sub_pd (a, b); }
+#endif
+
+
+
+
   template <> class MD<2>
   {
     __m128d data;
@@ -78,26 +97,18 @@ namespace ngbla
     // MD (double d1, double d2) { data = _mm_set_pd(d2, d1); } 
 
     MD & operator*= (const MD & v2)
-    { data = _mm_mul_pd (data, v2.data); return *this; }
+    { /*data = _mm_mul_pd (data, v2.data);*/data*=v2.data; return *this; }
 
     MD & operator+= (const MD & v2)
-    { data = _mm_add_pd (data, v2.data); return *this; }
+    { /*data = _mm_add_pd (data, v2.data);*/data+=v2.data; return *this; }
 
     MD & operator-= (const MD & v2)
-    { data = _mm_sub_pd (data, v2.data); return *this; }
+    { /*data = _mm_sub_pd (data, v2.data);*/ data-=v2.data; return *this; }
     
     __m128d Data() const { return data; }
     double operator[] (int i) const { return ((const double*)&data)[i]; }
     double & operator[] (int i) { return ((double*)&data)[i]; }
   };
-
-#if defined(__INTEL_COMPILER) || defined(_WIN32)
-  inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd (a, b); }
-  inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd (a, b); }
-  inline __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd (a, b); }
-  inline __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd (a, b); }
-#endif
-
 #endif
 
   template <> class MD<1>
