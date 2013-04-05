@@ -34,6 +34,13 @@
 
 
 
+
+#ifdef __INTEL_COMPILER
+#pragma warning (disable:175)    // range check 
+#endif
+
+
+
 // performs range-checking
 // #define DEBUG
 
