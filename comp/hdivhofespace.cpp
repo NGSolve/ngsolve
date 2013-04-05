@@ -512,6 +512,7 @@ namespace ngcomp
 	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 
         hofe2d -> SetHODivFree (ho_div_free);
+        hofe2d -> SetOnlyHODiv (false);
         hofe2d -> ComputeNDof();
 	
 	return *hofe2d;
@@ -575,6 +576,7 @@ namespace ngcomp
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]);
 	hofe -> SetDiscontinuous(discont); 
         hofe -> SetHODivFree (ho_div_free);
+        hofe -> SetOnlyHODiv (false);
 	hofe -> ComputeNDof();
       }
     else // dim=3
@@ -597,6 +599,7 @@ namespace ngcomp
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]); // under construction
 	hofe -> SetDiscontinuous(discont); 
         hofe -> SetHODivFree (ho_div_free);
+        hofe -> SetOnlyHODiv (false);
 	hofe -> ComputeNDof();
       }
     return *fe;
