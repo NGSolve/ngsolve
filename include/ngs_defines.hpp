@@ -7,7 +7,7 @@
 /* Date:   21. Feb. 03                                                    */
 /**************************************************************************/
 
-#ifdef _WIN32
+#ifdef WIN32
 
 // This function or variable may be unsafe. Consider using _ftime64_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 #pragma warning(disable:4996)
@@ -29,6 +29,9 @@
 // needs to have dll-interface to be used by clients of class
 #pragma warning(disable:4251)
 // why does this apply to inline-only classes ????
+
+// size_t to int conversion:
+#pragma warning(disable:4267)
 
 #endif
 
