@@ -35,6 +35,7 @@ ngs_LDADD = libngsolve.la \
 	$(top_builddir)/fem/libngfem.la \
 	$(top_builddir)/parallel/libparallel.la \
 	$(top_builddir)/linalg/libngla.la \
+	$(top_builddir)/basiclinalg/libngbla.la		\
 	$(top_builddir)/ngstd/libngstd.la \
 	$(LAPACK_LIBS) \
         -L$(libdir) -lnglib -linterface 
