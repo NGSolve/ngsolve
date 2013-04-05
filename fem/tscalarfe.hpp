@@ -108,12 +108,12 @@ namespace ngfem
   class EvaluateShapeTransElement
   {
     double & data;
-    const TSCAL & fac;
+    TSCAL fac;
   public:
-    EvaluateShapeTransElement (double & adata, const TSCAL & afac) 
+    EvaluateShapeTransElement (double & adata, TSCAL afac) 
       : data(adata), fac(afac) { ; }
 
-    void operator= (const TSCAL & ad) 
+    ALWAYS_INLINE void operator= (const TSCAL & ad) 
     { data += InnerProduct (ad, fac); }
   };
 
@@ -121,12 +121,12 @@ namespace ngfem
   class EvaluateShapeTrans
   {
     double * coefs;
-    const TSCAL & fac;
+    TSCAL fac;
   public:
-    EvaluateShapeTrans (FlatVector<> acoefs, const TSCAL & afac)
+    EvaluateShapeTrans (FlatVector<> acoefs, TSCAL afac)
       : coefs(&acoefs(0)), fac(afac) { ; }
 
-    EvaluateShapeTrans (double * acoefs, const TSCAL & afac)
+    EvaluateShapeTrans (double * acoefs, TSCAL afac)
       : coefs(acoefs), fac(afac) { ; }
 
     EvaluateShapeTransElement<TSCAL> operator[] (int i) const

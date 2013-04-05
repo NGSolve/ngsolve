@@ -9,7 +9,7 @@
 #include "l2hofe.hpp"
 
 
-#include "tscalarfe.cpp"
+#include "tscalarfe_impl.hpp"
 
 
 namespace ngfem

@@ -14,8 +14,6 @@ namespace ngfem
 {
   
 
-#undef HDIV_OLD
-
   
 
 
@@ -62,8 +60,8 @@ public:
     return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
   }
   
-  virtual void GetFacetDofs(int i, Array<int> & dnums) const
-  { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
+  // virtual void GetFacetDofs(int i, Array<int> & dnums) const
+  // { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
 };
 
 
@@ -155,9 +153,7 @@ template <ELEMENT_TYPE ET> class HDivHighOrderFE;
 
 template <ELEMENT_TYPE ET>
 class T_HDivHighOrderFiniteElement 
-  : public HDivHighOrderFiniteElement<ET_trait<ET>::DIM>,
-    public T_HDivFiniteElement< HDivHighOrderFE<ET>, ET>
-    
+  : public HDivHighOrderFiniteElement<ET_trait<ET>::DIM>
 {
 protected:
   enum { DIM = ET_trait<ET>::DIM };
@@ -204,10 +200,47 @@ public:
 };
 
 
+template <ELEMENT_TYPE ET> class HDivHighOrderFE_Shape;
+
+/*
+template <ELEMENT_TYPE ET>
+class HDivHighOrderFE : public T_HDivHighOrderFiniteElement<ET>
+{
+public:
+  HDivHighOrderFE (int aorder);
+};
+*/
+
+
+template <ELEMENT_TYPE ET> 
+class NGS_DLL_HEADER HDivHighOrderFE : 
+  public T_HDivHighOrderFiniteElement< ET >,
+  public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET >
+{
+public:
+  /// minimal constructor, orders will be set later
+  HDivHighOrderFE () { ; }
+  
+  /// builds a functional element of order aorder.
+  HDivHighOrderFE (int aorder)
+    : T_HDivHighOrderFiniteElement<ET> (aorder) 
+  { 
+    /*
+    this -> order_inner = aorder;
+    for (int i = 0; i < ET_trait<ET>::NFACET; i++)
+      this -> order_face[i] = aorder;
+    */
+    this -> ComputeNDof();
+  }
+};
+
+
 
 
 template <>
-class HDivHighOrderFE<ET_TRIG> : public T_HDivHighOrderFiniteElement<ET_TRIG>
+class HDivHighOrderFE<ET_TRIG> : 
+  public T_HDivHighOrderFiniteElement<ET_TRIG>,
+  public T_HDivFiniteElement< HDivHighOrderFE<ET_TRIG>, ET_TRIG>
 {
 public:
   HDivHighOrderFE (int aorder);
@@ -222,7 +255,9 @@ public:
 ///
 
 template <>
-class HDivHighOrderFE<ET_QUAD> : public T_HDivHighOrderFiniteElement<ET_QUAD>
+class HDivHighOrderFE<ET_QUAD> :
+    public T_HDivHighOrderFiniteElement<ET_QUAD>,
+    public T_HDivFiniteElement< HDivHighOrderFE<ET_QUAD>, ET_QUAD>
 {
 public:
   HDivHighOrderFE (int aorder);
@@ -237,50 +272,49 @@ public:
 
 // template <class T_ORTHOPOL = TrigExtensionMonomial>
 template<> 
-class HDivHighOrderFE<ET_TET> : public T_HDivHighOrderFiniteElement<ET_TET>
+class HDivHighOrderFE_Shape<ET_TET> : public HDivHighOrderFE<ET_TET>
 {
    typedef TetShapesInnerLegendre T_INNERSHAPES;
    typedef TetShapesFaceLegendre T_FACESHAPES; 
 public:
+  /*
   HDivHighOrderFE () { ; }
-  HDivHighOrderFE (int aorder);
+  HDivHighOrderFE (int aorder)
+  {
+    order_inner = INT<3>(aorder,aorder,aorder);
+    for (int i = 0; i < 4; i++)
+      order_face[i] = INT<2>(aorder,aorder);
+
+    ComputeNDof();
+  }
+  */
+
+  // virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 
   /// compute shape
   template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx hx[], TFA & shape) const; 
+  inline void T_CalcShape (Tx hx[], TFA & shape) const;
 
-  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 
 // template <class T_ORTHOPOL = TrigExtensionMonomial>
 template<>
-class HDivHighOrderFE<ET_PRISM> : public T_HDivHighOrderFiniteElement<ET_PRISM>
+class HDivHighOrderFE_Shape<ET_PRISM> : public HDivHighOrderFE<ET_PRISM>
 {
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 public:
-  HDivHighOrderFE () { ; }
-  HDivHighOrderFE (int aorder);
-
-  /*
-  /// compute shape
-  virtual void CalcShape (const IntegrationPoint & ip,
-			  FlatMatrixFixWidth<3> shape) const;
-
-  /// compute Div of shape
-  virtual void CalcDivShape (const IntegrationPoint & ip,
-  			     FlatVector<> shape) const;
-  */
 
   /// compute shape
   template<typename Tx, typename TFA>  
-  void T_CalcShape (Tx hx[], TFA & shape) const; 
+  void T_CalcShape (Tx hx[], TFA & shape) const;
 
-  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
+  // virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 template<> 
-class HDivHighOrderFE<ET_HEX> : public HDivHighOrderFiniteElement<3>
+class HDivHighOrderFE<ET_HEX> : 
+    public HDivHighOrderFiniteElement<3>
 {
 public:
 

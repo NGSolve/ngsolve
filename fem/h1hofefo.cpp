@@ -8,7 +8,7 @@
 #include <fem.hpp>
 #include <h1hofefo.hpp>
 
-#include "tscalarfe.cpp"
+#include "tscalarfe_impl.hpp"
 
 
 namespace ngfem

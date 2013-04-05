@@ -216,8 +216,8 @@ namespace ngfem
     static int cnt = 0;
     if (cnt < 3)
       {
-	cout << IM(3) << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
-	if (cnt == 2) cout << IM(3) << "(further warnings supressed)" << endl;
+	cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+	if (cnt == 2) cout << "(further warnings supressed)" << endl;
 	cnt++;
       }
     FlatMatrix<double> mat(elx.Size(), lh);

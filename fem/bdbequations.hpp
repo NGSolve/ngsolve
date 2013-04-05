@@ -878,7 +878,6 @@ public:
 
 
 
-
 template <int N>
 class NGS_DLL_HEADER DVec  // : public DVecBase<N,T>
 {
@@ -919,8 +918,6 @@ public:
     if (N >= 6) coefs[5] = acoef6;
   }
     
-
-
 
   template <typename FEL, typename MIP, typename VEC>
   void GenerateVector (const FEL & fel, const MIP & mip,
@@ -967,7 +964,6 @@ public:
 	  }
   }  
 };
-
 
 
 
