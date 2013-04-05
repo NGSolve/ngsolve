@@ -92,7 +92,7 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      cout << "ApplyTransIR::Base called, diffop = " << typeid(DOP).name() << endl;
+      // cout << "ApplyTransIR::Base called, diffop = " << typeid(DOP).name() << endl;
       typedef typename TVY::TSCAL TSCAL;
 
       HeapReset hr(lh);

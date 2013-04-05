@@ -387,43 +387,43 @@ namespace ngfem
   {
     if (DIM == 2)
       {
-        if (only_ho_div){
-          if (ET == ET_TRIG)
-            ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
-          else
-          {
-            ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
-          }
-          return;
-        }
+        if (only_ho_div)
+	  {
+	    if (ET == ET_TRIG)
+	      ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
+	    else
+	      ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
+	    return;
+	  }
         else
-        {
-          ndof = ET_trait<ET>::N_EDGE;
-          
-          for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-            ndof += order_edge[i];
-          
-          if (ET == ET_TRIG)
-            {
-              if (order_inner[0] > 1)
-                { 
-                  if (ho_div_free)
-                    ndof += order_inner[0]*(order_inner[0]-1)/2;
-                  else
-                    ndof += order_inner[0]*order_inner[0]-1;
-                }
-            }
-          else
-            {  // quad
-              INT<2> p(order_inner[0], order_inner[1]);
+	  {
+	    ndof = ET_trait<ET>::N_EDGE;
+	    
+	    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
+	      ndof += order_edge[i];
+	    
+	    if (ET == ET_TRIG)
+	      {
+		if (order_inner[0] > 1)
+		  { 
+		    if (ho_div_free)
+		      ndof += order_inner[0]*(order_inner[0]-1)/2;
+		    else
+		      ndof += order_inner[0]*order_inner[0]-1;
+		  }
+	      }
+	    else
+	      {  // quad
+		INT<2> p(order_inner[0], order_inner[1]);
+		
+		int ni = ho_div_free
+		  ? p[0]*p[1] 
+		  : 2*p[0]*p[1] + p[0] + p[1];
+		
+		ndof += ni; 
+	      }
+	  }
 
-              int ni = ho_div_free
-                ? p[0]*p[1] 
-                : 2*p[0]*p[1] + p[0] + p[1];
-              
-              ndof += ni; 
-            }
-        }
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
           if (order_edge[i] > order)
@@ -525,7 +525,42 @@ namespace ngfem
 
 
 
+  template <ELEMENT_TYPE ET>
+  void T_HDivHighOrderFiniteElement<ET> :: 
+  GetFacetDofs(int i, Array<int> & dnums) const
+  {
+    dnums.SetSize(0);
+    dnums.Append (i);
 
+    int base = ET_trait<ET>::N_FACET;
+    for (int j = 0; j < ET_trait<ET>::N_FACET; j++)
+      {
+	int nf = 0;
+	switch (ElementTopology::GetFacetType(ET,j))
+	  {
+	  case ET_SEGM: nf = order_edge[j]; break;
+	    // case ET_TRIG: nf = (sqr (order_face[0])+3*order_face[0])/2; break;
+	  case ET_TRIG: nf = (order_face[j][0]+1)*(order_face[j][0]+2)/2-1; break;
+	  case ET_QUAD: nf = (order_face[j][0]+1)*(order_face[j][1]+1)-1; break;
+	  default:
+	    throw Exception("what kind of face is that ?");
+	  }
+	
+	if (i == j)
+	  {
+	    dnums += IntRange (base, base+nf);
+	    // cout << "i = " << i << ", dnums = " << dnums << endl;
+	    return;
+	  }
+	base += nf;
+      }
+    throw Exception("illegal facet index");
+  }
+
+
+
+
+  
 
 
 
@@ -535,6 +570,8 @@ namespace ngfem
   // HDivHighOrderTrig
   //------------------------------------------------------------------------
 
+  
+  /*
   HDivHighOrderFE<ET_TRIG> :: HDivHighOrderFE (int aorder)
   {
     order_inner = INT<3>(aorder,0,0);
@@ -564,86 +601,15 @@ namespace ngfem
     for(int i = 0; i < order_edge[fa]; i++)  
       dnums.Append(ii+i); 
   }                  
+  */
 
-
-
-  template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
-  {
-    if (only_ho_div && (order_inner[0] <= 1)) return;
-    Tx x = hx[0], y = hx[1];
-    Tx lami[3] = { x, y, 1-x-y };
-
-    ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
-	
-    int ii = 3; 
-    if (!only_ho_div){
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-      for (int i = 0; i < 3; i++)
-        {
-        int es = edges[i][0], ee = edges[i][1];
-        if (vnums[es] > vnums[ee])  swap (es, ee);
-
-        //Nedelec low order edge shape function 
-          shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
-
-        int p = order_edge[i]; 
-        //HO-Edge shapes (Gradient Fields)   
-        if(p > 0) //  && usegrad_edge[i]) 
-          { 
-            AutoDiff<2> xi = lami[ee] - lami[es]; 
-            AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
-            T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
-           
-            for(int j = 0; j < p; j++) 
-                shape[ii++] = Du<2> (adpol1[j]);
-          }
-        }   
-    }
-    else
-      ii = 0;
-    //Inner shapes (Face) 
-    int p = order_inner[0];      
-    if(p > 1) 
-      {
-	int fav[3] = { 0, 1, 2 }; 
-	//Sort vertices ... v(f0) < v(f1) < v(f2) 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
-
-	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
-	AutoDiff<2> eta = lami[fav[0]]; 
-
-        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
-	
-        if (!only_ho_div){
-        // rotated gradients:
-          for (int j = 0; j < p-1; j++)
-            for (int k = 0; k < p-1-j; k++, ii++)
-              shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
-        }
-        
-        if (!ho_div_free)
-          {
-            // other combination
-            for (int j = 0; j < p-1; j++)
-              for (int k = 0; k < p-1-j; k++, ii++)
-                shape[ii] = uDv_minus_vDu<2> (adpol2[k], adpol1[j]);
-            
-            // rec_pol * Nedelec0 
-            for (int j = 0; j < p-1; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu<2> (lami[fav[1]], lami[fav[2]], adpol2[j]);
-          }
-      }
-  }
 
   //------------------------------------------------------------------------
   // HDivHighOrderQuad
   //------------------------------------------------------------------------
 
 
-
+  /*
 
   HDivHighOrderFE<ET_QUAD> :: HDivHighOrderFE (int aorder)
   {
@@ -673,89 +639,7 @@ namespace ngfem
     for(int i = 0; i < order_edge[fa]; i++)  
       dnums.Append(ii+i); 
   } 
-  
-
-
-  template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
-  {
-
-    if (only_ho_div && (order_inner[0]<=1 && order_inner[1]<=1)) return;
-    Tx x = hx[0], y = hx[1];
-
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
-
-    int ii = 4;
-    ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
-
-    if (!only_ho_div){
-      // edges
-      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
-      for (int i = 0; i < 4; i++)
-        {
-        int p = order_edge[i]; 
-        int es = edges[i][0], ee = edges[i][1];
-        if (vnums[es] > vnums[ee]) swap (es, ee);
-
-        AutoDiff<2> xi  = sigma[ee]-sigma[es];
-        AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
-
-        // Nedelec0-shapes
-          shape[i] = uDv<2> (0.5 * lam_e, xi); 
-
-        // High Order edges ... Gradient fields 
-        // if(usegrad_edge[i])
-          {
-            T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
-            for (int j = 0; j < p; j++)
-              shape[ii++] = Du<2> (pol_xi[j] * lam_e);
-          }
-        }
-    }
-    else
-      ii = 0;
-    // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
-    INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
-    int fmax = 0; 
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax])
-	fmax = j;
-    
-    int f1 = (fmax+3)%4; 
-    int f2 = (fmax+1)%4; 
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1; 
-
-    AutoDiff<2> xi = sigma[fmax]-sigma[f1];  // in [-1,1]
-    AutoDiff<2> eta = sigma[fmax]-sigma[f2]; // in [-1,1]
-    
-    T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
-    T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-
-    if (!only_ho_div)
-    {    
-      //Gradient fields 
-      // if(usegrad_face[0])
-      for (int k = 0; k < p[0]; k++)
-        for (int j= 0; j < p[1]; j++)
-          shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
-    }
-
-    if (!ho_div_free)
-      {
-        //Rotation of Gradient fields 
-        for (int k = 0; k < p[0]; k++)
-          for (int j= 0; j < p[1]; j++)
-            shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
-        
-        //Missing ones 
-        for(int j = 0; j< p[0]; j++)
-          shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
-        
-        for(int j = 0; j < p[1]; j++)
-          shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
-      }
-  }
+  */
 
 
 
@@ -1833,39 +1717,7 @@ namespace ngfem
 
   }
 
-
-  void HDivHighOrderFE<ET_HEX> ::
-  GetInternalDofs (Array<int> & idofs) const
-  {
-    if (discontinuous)
-      {
-        idofs.SetSize(0);
-        for (int i=0; i<ndof; i++)
-          idofs.Append(i);
-        return ;
-      }
-    else 
-      {
-        idofs.SetSize (0);
-
-        //if(order_inner >= 2) // else no inner dofs
-        {
-          int base = 6; // low order
-      
-          // quad faces
-          for (int i=0; i<6; i++)
-            {
-              INT<2> p = order_face[i];
-              base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
-            }
-
-          for (int i=base; i<ndof; i++)
-            idofs.Append(i);
-        }
-        //(*testout) << "idofs = " << idofs << endl;
-      }
-  }
-
+  
   void HDivHighOrderFE<ET_HEX> :: GetFacetDofs(int fa, Array<int> & dnums) const 
   {
     if (fa >= 6 ) 
@@ -1893,7 +1745,7 @@ namespace ngfem
     for (int i=0; i<nf; i++)
       dnums.Append(base+i);
   }   
-  
+
 
   // template class HDivHighOrderHex<IntegratedLegendreMonomialExt>;
   // template class HDivHighOrderTet<IntegratedLegendreMonomialExt>;
@@ -1921,21 +1773,19 @@ namespace ngfem
   template class  HDivHighOrderNormalFiniteElement<1>;
   template class  HDivHighOrderNormalFiniteElement<2>;
 
+  template class T_HDivHighOrderFiniteElement<ET_TRIG>;
+  template class T_HDivHighOrderFiniteElement<ET_QUAD>;
   template class T_HDivHighOrderFiniteElement<ET_TET>;
   template class T_HDivHighOrderFiniteElement<ET_PRISM>;
 
 
 //  template class HDivHighOrderFE<ET_TRIG>;
 //  template class HDivHighOrderFE<ET_QUAD>;
-
   template class HDivHighOrderFE<ET_TET>;
   template class HDivHighOrderFE<ET_PRISM>;
 
-//  template class HDivHighOrderFE_Shape<ET_TET>;
-//  template class HDivHighOrderFE_Shape<ET_PRISM>;
-
-  template class T_HDivFiniteElement<HDivHighOrderFE<ET_TRIG>, ET_TRIG>;
-  template class T_HDivFiniteElement<HDivHighOrderFE<ET_QUAD>, ET_QUAD>;
+  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
+  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
   template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TET>, ET_TET>;
   template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
 
