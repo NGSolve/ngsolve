@@ -1925,14 +1925,14 @@ namespace ngfem
   template class T_HDivHighOrderFiniteElement<ET_PRISM>;
 
 
-  template class HDivHighOrderFE<ET_TRIG>;
-  template class HDivHighOrderFE<ET_QUAD>;
+//  template class HDivHighOrderFE<ET_TRIG>;
+//  template class HDivHighOrderFE<ET_QUAD>;
 
   template class HDivHighOrderFE<ET_TET>;
   template class HDivHighOrderFE<ET_PRISM>;
 
-  template class HDivHighOrderFE_Shape<ET_TET>;
-  template class HDivHighOrderFE_Shape<ET_PRISM>;
+//  template class HDivHighOrderFE_Shape<ET_TET>;
+//  template class HDivHighOrderFE_Shape<ET_PRISM>;
 
   template class T_HDivFiniteElement<HDivHighOrderFE<ET_TRIG>, ET_TRIG>;
   template class T_HDivFiniteElement<HDivHighOrderFE<ET_QUAD>, ET_QUAD>;
