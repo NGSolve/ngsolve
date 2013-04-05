@@ -30,7 +30,7 @@ protected:
 
   // bool augmented;
 
-  bool discontinuous;
+  // bool discontinuous;
   bool ho_div_free;
   bool only_ho_div;
 
@@ -38,7 +38,8 @@ protected:
 
 
 public:
-  HDivHighOrderFiniteElement () { ; }
+  HDivHighOrderFiniteElement () 
+    : ho_div_free(false), only_ho_div(false) { ; }
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype);
 
   void SetVertexNumbers (FlatArray<int> & avnums);
@@ -48,7 +49,7 @@ public:
   void SetOrderFace (FlatArray<INT<2> > & of);
   void SetOrderInner (INT<3> oi); 
 
-  void SetDiscontinuous (bool disc) { discontinuous = disc; };  
+  void SetDiscontinuous (bool disc) { ; } // discontinuous = disc; };  
   void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; only_ho_div = only_ho_div && !ho_div_free;};  
   void SetOnlyHODiv (bool aonly_ho_div) { only_ho_div = aonly_ho_div; ho_div_free = ho_div_free && !only_ho_div;};  
 
@@ -60,8 +61,8 @@ public:
     return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
   }
   
-  // virtual void GetFacetDofs(int i, Array<int> & dnums) const
-  // { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const
+  { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
 };
 
 
@@ -167,7 +168,7 @@ protected:
   using HDivHighOrderFiniteElement<DIM>::order_inner;
   using HDivHighOrderFiniteElement<DIM>::ho_div_free;
   using HDivHighOrderFiniteElement<DIM>::only_ho_div;
-  using HDivHighOrderFiniteElement<DIM>::discontinuous;
+  // using HDivHighOrderFiniteElement<DIM>::discontinuous;
 
 
   using HDivHighOrderFiniteElement<DIM>::vnums;
@@ -194,9 +195,12 @@ public:
 
     for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
     eltype = ET;
+
+    ComputeNDof();
   }
 
   virtual void ComputeNDof();
+  virtual void GetFacetDofs(int i, Array<int> & dnums) const;
 };
 
 
@@ -212,10 +216,11 @@ public:
 */
 
 
+
 template <ELEMENT_TYPE ET> 
 class NGS_DLL_HEADER HDivHighOrderFE : 
-  public T_HDivHighOrderFiniteElement< ET >,
-  public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET >
+    public T_HDivHighOrderFiniteElement< ET >,
+    public T_HDivFiniteElement< HDivHighOrderFE_Shape<ET>, ET >
 {
 public:
   /// minimal constructor, orders will be set later
@@ -223,75 +228,40 @@ public:
   
   /// builds a functional element of order aorder.
   HDivHighOrderFE (int aorder)
-    : T_HDivHighOrderFiniteElement<ET> (aorder) 
-  { 
-    /*
-    this -> order_inner = aorder;
-    for (int i = 0; i < ET_trait<ET>::NFACET; i++)
-      this -> order_face[i] = aorder;
-    */
-    this -> ComputeNDof();
-  }
+    : T_HDivHighOrderFiniteElement<ET> (aorder) { ; }
 };
-
 
 
 
 template <>
-class HDivHighOrderFE<ET_TRIG> : 
-  public T_HDivHighOrderFiniteElement<ET_TRIG>,
-  public T_HDivFiniteElement< HDivHighOrderFE<ET_TRIG>, ET_TRIG>
+class HDivHighOrderFE_Shape<ET_TRIG> : public HDivHighOrderFE<ET_TRIG>
 {
 public:
-  HDivHighOrderFE (int aorder);
 
-  /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
-  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
-///
 
 template <>
-class HDivHighOrderFE<ET_QUAD> :
-    public T_HDivHighOrderFiniteElement<ET_QUAD>,
-    public T_HDivFiniteElement< HDivHighOrderFE<ET_QUAD>, ET_QUAD>
+class HDivHighOrderFE_Shape<ET_QUAD> : public HDivHighOrderFE<ET_QUAD>
 {
 public:
-  HDivHighOrderFE (int aorder);
 
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[2], TFA & shape) const; 
 
-  virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
 
 
-
-// template <class T_ORTHOPOL = TrigExtensionMonomial>
 template<> 
 class HDivHighOrderFE_Shape<ET_TET> : public HDivHighOrderFE<ET_TET>
 {
    typedef TetShapesInnerLegendre T_INNERSHAPES;
    typedef TetShapesFaceLegendre T_FACESHAPES; 
 public:
-  /*
-  HDivHighOrderFE () { ; }
-  HDivHighOrderFE (int aorder)
-  {
-    order_inner = INT<3>(aorder,aorder,aorder);
-    for (int i = 0; i < 4; i++)
-      order_face[i] = INT<2>(aorder,aorder);
 
-    ComputeNDof();
-  }
-  */
-
-  // virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
-
-  /// compute shape
   template<typename Tx, typename TFA>  
   inline void T_CalcShape (Tx hx[], TFA & shape) const;
 
@@ -305,12 +275,11 @@ class HDivHighOrderFE_Shape<ET_PRISM> : public HDivHighOrderFE<ET_PRISM>
   typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
 public:
 
-  /// compute shape
   template<typename Tx, typename TFA>  
   void T_CalcShape (Tx hx[], TFA & shape) const;
 
-  // virtual void GetFacetDofs(int i, Array<int> & dnums) const; 
 };
+
 
 template<> 
 class HDivHighOrderFE<ET_HEX> : 
@@ -320,7 +289,7 @@ public:
 
   HDivHighOrderFE (int aorder);
   virtual void ComputeNDof();
-  virtual void GetInternalDofs (Array<int> & idofs) const;
+  // virtual void GetInternalDofs (Array<int> & idofs) const;
   
 
   /// compute shape
