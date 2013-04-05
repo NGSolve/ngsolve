@@ -564,22 +564,32 @@ namespace ngla
 
 
 
+  template class PardisoInverseTM<double>;
+  template class PardisoInverseTM<Complex>;
   template class PardisoInverse<double>;
   template class PardisoInverse<Complex>;
   template class PardisoInverse<double,Complex,Complex>;
 #if MAX_SYS_DIM >= 1
+  template class PardisoInverseTM<Mat<1,1,double> >;
+  template class PardisoInverseTM<Mat<1,1,Complex> >;
   template class PardisoInverse<Mat<1,1,double> >;
   template class PardisoInverse<Mat<1,1,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 2
+  template class PardisoInverseTM<Mat<2,2,double> >;
+  template class PardisoInverseTM<Mat<2,2,Complex> >;
   template class PardisoInverse<Mat<2,2,double> >;
   template class PardisoInverse<Mat<2,2,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 3
+  template class PardisoInverseTM<Mat<3,3,double> >;
+  template class PardisoInverseTM<Mat<3,3,Complex> >;
   template class PardisoInverse<Mat<3,3,double> >;
   template class PardisoInverse<Mat<3,3,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 4
+  template class PardisoInverseTM<Mat<4,4,double> >;
+  template class PardisoInverseTM<Mat<4,4,Complex> >;
   template class PardisoInverse<Mat<4,4,double> >;
   template class PardisoInverse<Mat<4,4,Complex> >;
 #endif
