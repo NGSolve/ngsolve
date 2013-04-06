@@ -94,7 +94,6 @@ namespace ngfem
     using H1HighOrderFiniteElement<DIM>::order_face;
     using H1HighOrderFiniteElement<DIM>::order_cell;
 
-
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_EDGE;
     using ET_trait<ET>::N_FACE;
@@ -108,17 +107,7 @@ namespace ngfem
 
     T_H1HighOrderFiniteElement () { ; }
 
-    T_H1HighOrderFiniteElement (int aorder) 
-    {
-      ndof = PolDimension (aorder);
-
-      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
-      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
-      if (DIM == 3) order_cell = aorder; 
-
-      order = aorder;
-    }
+    T_H1HighOrderFiniteElement (int aorder);
 
     virtual void ComputeNDof();
   };
@@ -132,13 +121,15 @@ namespace ngfem
 
 
   /**
-     High order finite elements for H1.
-     These are the actual finite element classes to be used.
-     Operations are inherited from T_ScalarFiniteElement2, and shape functions are provided by the shape template
+     High order finite elements for H1.  These are the actual finite
+     element classes to be used.  Operations are inherited from
+     T_ScalarFiniteElement2, and shape functions are provided by the
+     shape template
    */
   template <ELEMENT_TYPE ET> 
-  class NGS_DLL_HEADER H1HighOrderFE :  public T_H1HighOrderFiniteElement<ET>,
-                                        public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
+  class NGS_DLL_HEADER H1HighOrderFE : 
+    public T_H1HighOrderFiniteElement<ET>,
+    public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
 
   {
   protected:
@@ -154,115 +145,6 @@ namespace ngfem
 
 
 
-  /**
-     High order 0D finite element
-  */
-
-  template <> 
-  class H1HighOrderFE_Shape<ET_POINT> : public H1HighOrderFE<ET_POINT>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const
-    {
-      shape[0] = 1.0;
-    }
-  };
-
-
-
-  /**
-     High order segment finite element
-  */
-
-  template <> 
-  class H1HighOrderFE_Shape<ET_SEGM> : public H1HighOrderFE<ET_SEGM>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-
-  /**
-     High order triangular finite element
-  */
-  template <>
-  class H1HighOrderFE_Shape<ET_TRIG> : public H1HighOrderFE<ET_TRIG>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-
-  /**
-     High order quadrilateral finite element
-  */
-  template <>
-  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_QUAD> : public H1HighOrderFE<ET_QUAD>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
-  };
-
-
-  /**
-     High order tetrahedral finite element
-  */
-  template <>
-  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-
-  /** 
-      High order prismatic finite element
-  */
-  template <>
-  class H1HighOrderFE_Shape<ET_PRISM> : public H1HighOrderFE<ET_PRISM>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-
-
-  /**
-     High order hexahedral finite element
-  */
-  template <> 
-  class H1HighOrderFE_Shape<ET_HEX> : public H1HighOrderFE<ET_HEX>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-
-  /**
-     High order pyramid shape functions
-  */
-  template <> 
-  class H1HighOrderFE_Shape<ET_PYRAMID> : public H1HighOrderFE<ET_PYRAMID>
-  {
-  public:
-    /// generic shape function
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
 }
 
 

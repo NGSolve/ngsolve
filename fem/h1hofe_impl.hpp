@@ -12,6 +12,81 @@
 namespace ngfem
 {
 
+  template <> 
+  class H1HighOrderFE_Shape<ET_POINT> : public H1HighOrderFE<ET_POINT>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const
+    {
+      shape[0] = 1.0;
+    }
+  };
+
+  template <> 
+  class H1HighOrderFE_Shape<ET_SEGM> : public H1HighOrderFE<ET_SEGM>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[], TFA & shape) const;
+  };
+
+  template <>
+  class H1HighOrderFE_Shape<ET_TRIG> : public H1HighOrderFE<ET_TRIG>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[], TFA & shape) const;
+  };
+
+  template <>
+  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_QUAD> : public H1HighOrderFE<ET_QUAD>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const;
+  };
+
+
+  template <>
+  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
+  };
+
+  template <>
+  class H1HighOrderFE_Shape<ET_PRISM> : public H1HighOrderFE<ET_PRISM>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
+  };
+
+  template <> 
+  class H1HighOrderFE_Shape<ET_HEX> : public H1HighOrderFE<ET_HEX>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
+  };
+
+  template <> 
+  class H1HighOrderFE_Shape<ET_PYRAMID> : public H1HighOrderFE<ET_PYRAMID>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const; 
+  };
+
+
+
+
+
+
+
+
 
   /* *********************** Segment  **********************/
 
