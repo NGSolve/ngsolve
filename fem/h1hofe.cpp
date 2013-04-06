@@ -15,6 +15,22 @@ namespace ngfem
 {
 
   template <ELEMENT_TYPE ET>
+  T_H1HighOrderFiniteElement<ET> :: 
+  T_H1HighOrderFiniteElement (int aorder)
+  {
+    ndof = PolDimension (aorder);
+    
+    for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+    for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+    for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
+    if (DIM == 3) order_cell = aorder; 
+    
+    order = aorder;
+  }
+  
+
+
+  template <ELEMENT_TYPE ET>
   void T_H1HighOrderFiniteElement<ET> :: 
   ComputeNDof()
   {
@@ -37,7 +53,7 @@ namespace ngfem
 
 
   
-
+  /*
   template class H1HighOrderFiniteElement<0>;
   template class H1HighOrderFiniteElement<1>;
   template class H1HighOrderFiniteElement<2>;
@@ -52,7 +68,7 @@ namespace ngfem
   template NGS_DLL_HEADER class H1HighOrderFE<ET_PRISM>;
   template NGS_DLL_HEADER class H1HighOrderFE<ET_PYRAMID>;
   template NGS_DLL_HEADER class H1HighOrderFE<ET_HEX>;
- 
+  */
 
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
@@ -62,7 +78,6 @@ namespace ngfem
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
   template class T_ScalarFiniteElement2<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
-
 
   template class T_H1HighOrderFiniteElement<ET_POINT>;
   template class T_H1HighOrderFiniteElement<ET_SEGM>;

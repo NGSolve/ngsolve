@@ -10,7 +10,6 @@
 #include "tscalarfe.hpp"
 
 
-
 namespace ngfem
 {
 
@@ -25,11 +24,9 @@ namespace ngfem
     int vnums[8];
 
   public:
-    void SetVertexNumbers (FlatArray<int> & avnums)
-    {
-      for (int i = 0; i < avnums.Size(); i++)
-	vnums[i] = avnums[i];
-    }
+    template <typename TA> 
+    void SetVertexNumbers (const TA & avnums)
+    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
 
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
   };
@@ -66,41 +63,8 @@ namespace ngfem
       eltype = ET;
       order = ORDER;
     }
-
-    // virtual void ComputeNDof();
-    // virtual void GetInternalDofs (Array<int> & idofs) const;
-    /*
-    virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
-
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const;
-
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
-				   FlatMatrixFixWidth<DIM> dshape) const;
-
-    virtual double Evaluate (const IntegrationPoint & ip, 
-			     FlatVector<double> x) const;
-    */
   };
 
-
-
-  /**
-     High order segment finite element
-  */
-  /*
-    template <int ORDER> 
-    class H1HighOrderFE<ET_SEGM> : public T_H1HighOrderFiniteElement<ET_SEGM>
-    {
-    public:
-    H1HighOrderFE () { ; }
-    H1HighOrderFE (int aorder);
-
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[1], TFA & shape) const; 
-    };
-  */
 
   /**
      High order triangular finite element
@@ -147,8 +111,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[3], TFA & shape) const; 
   };
-
-
 
 }
 

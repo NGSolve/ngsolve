@@ -396,8 +396,12 @@ namespace ngfem
                       FlatMatrixFixWidth<DIM> dshape) const;
 
 
-  private:
-    const FEL & Cast() const { return static_cast<const FEL&> (*this); }
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[], TFA & shape) const
+    {
+      static_cast<const FEL*> (this) -> T_CalcShape (x, shape);
+    }
   };
 
   template <typename TFA>
