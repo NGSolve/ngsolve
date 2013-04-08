@@ -52,20 +52,23 @@ namespace ngcomp
 #include "meshaccess.hpp"
 #include "ngsobject.hpp"
 #include "fespace.hpp"
+
+#include "gridfunction.hpp"
+#include "bilinearform.hpp"
+#include "linearform.hpp"
+#include "preconditioner.hpp"
+#include "postproc.hpp"
+
+
 #include "hcurlhdivfes.hpp"
 #include "hdivfes.hpp"
 #include "h1hofespace.hpp"
 #include "l2hofespace.hpp"
-#include "gridfunction.hpp"
-#include "bilinearform.hpp"
-#include "linearform.hpp"
-#include "postproc.hpp"
 #include "hdivhofespace.hpp" 
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
 
-#include "preconditioner.hpp"
 // #include "bddc.hpp"
 #include "hypre_precond.hpp"
 

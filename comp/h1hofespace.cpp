@@ -538,8 +538,7 @@ namespace ngcomp
           case 6: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,6> (); break;
           }
     
-        for (int j = 0; j < 3; j++)
-          hofe2d->SetVertexNumber (j, ngel.vertices[j]);
+        hofe2d->SetVertexNumbers (ngel.vertices);
         return *hofe2d;
       }
     
@@ -556,66 +555,28 @@ namespace ngcomp
           case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
           }
     
-        for (int j = 0; j < 4; j++)
-          hofe3d->SetVertexNumber (j, ngel.vertices[j]);
+        hofe3d->SetVertexNumbers (ngel.vertices);
         return *hofe3d;
       }
 
 
     try
       {
-	H1HighOrderFiniteElement<1> * hofe1d = 0;
-	H1HighOrderFiniteElement<2> * hofe2d = 0;
-	H1HighOrderFiniteElement<3> * hofe3d = 0;
-	
         switch (eltype)
           {
-          case ET_TET:     hofe3d = new (lh) H1HighOrderFE<ET_TET> (); break;
-          case ET_PYRAMID: hofe3d = new (lh) H1HighOrderFE<ET_PYRAMID> (); break;
-          case ET_PRISM:   hofe3d = new (lh) H1HighOrderFE<ET_PRISM> (); break;
-          case ET_HEX:     hofe3d = new (lh) H1HighOrderFE<ET_HEX> ();  break;
-          case ET_TRIG:    hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
-          case ET_QUAD:    hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
-          case ET_SEGM:    hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
+          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
+
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
+
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
+          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
+          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
 
           default:
-            {
-              throw Exception (string ("H1HOFES::GetFE not supported for element") + 
-                               ElementTopology::GetElementName(eltype));
-            }
+            throw Exception ("illegal element in H1HoFeSpace::GetFE");
           }
-	
-	switch (ma.GetDimension())
-	  {
-	  case 1:
-	    {
-              hofe1d -> SetVertexNumbers (ngel.vertices);
-	      hofe1d -> SetOrderEdge (0, order_inner[elnr][0]);
-	      hofe1d -> ComputeNDof();
-	      return *hofe1d;
-	    }
-	  case 2:
-	    {
-              hofe2d -> SetVertexNumbers (ngel.vertices);
-	      hofe2d -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
-	      
-	      INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-	      hofe2d -> SetOrderFace (0, p);
-	      hofe2d -> SetNodalP2 (nodalp2);	      
-	      hofe2d -> ComputeNDof();
-	      return *hofe2d;
-	    }
-	  case 3: default:  
-	    {
-              hofe3d -> SetVertexNumbers (ngel.vertices);
-	      hofe3d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-	      hofe3d -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
-	      hofe3d -> SetOrderCell (order_inner[elnr]);
-	      hofe3d -> SetNodalP2 (nodalp2);
-	      hofe3d -> ComputeNDof();
-	      return *hofe3d;
-	    }
-	  }
       }
     catch (Exception & e)
       {
@@ -624,6 +585,53 @@ namespace ngcomp
       }
   }
  
+
+
+
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
+  {
+    Ng_Element ngel = ma.GetElement(elnr);
+
+    H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
+    
+    hofe -> SetVertexNumbers (ngel.vertices);
+    
+    switch (int(ET_trait<ET>::DIM))
+      {
+      case 1:
+        {
+          hofe -> SetOrderEdge (0, order_inner[elnr][0]);
+          break;
+        }
+
+      case 2:
+        {
+          hofe -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
+	  
+          INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+          hofe -> SetOrderFace (0, p);
+          break;
+        }
+
+      case 3: default:  
+        {
+          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+          hofe -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
+          hofe -> SetOrderCell (order_inner[elnr]);
+          break;
+        }
+      }
+
+    hofe -> ComputeNDof();
+    return *hofe;
+  }
+
+
+
+
+
+
  
 
 
@@ -641,6 +649,29 @@ namespace ngcomp
 	  }
       }
 
+    try
+      {
+        switch (ma.GetSElType(elnr))
+          {
+          case ET_POINT:   return T_GetFE<ET_POINT> (elnr, lh);
+          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
+
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
+
+          default:
+            throw Exception ("illegal element in H1HoFeSpace::GetSFE");
+          }
+      }
+    catch (Exception & e)
+      {
+        e.Append ("in H1HoFESpace::GetSElement\n");
+        throw;
+      }
+
+
+
+    /*
     H1HighOrderFiniteElement<0> * hofe0d = NULL;
     H1HighOrderFiniteElement<1> * hofe1d = NULL;
     H1HighOrderFiniteElement<2> * hofe2d = NULL;
@@ -653,7 +684,7 @@ namespace ngcomp
       case ET_QUAD: hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
       default: throw Exception ("H1HOFES::GetSFE not supported for element");
       }
-  
+
     Ng_Element ngel = ma.GetSElement(elnr);
     switch (ma.GetDimension())
       {
@@ -680,6 +711,42 @@ namespace ngcomp
 	  return *hofe2d;
 	}
       }
+    */
+  }
+
+
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
+  {
+    Ng_Element ngel = ma.GetSElement(elnr);
+
+    H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
+    
+    hofe -> SetVertexNumbers (ngel.vertices);
+    
+    switch (int(ET_trait<ET>::DIM))
+      {
+      case 1:
+        {
+          break;
+        }
+
+      case 2:
+        {
+          hofe -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
+          break;
+        }
+
+      case 3: default:  
+        {
+          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+	  hofe -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
+          break;
+        }
+      }
+
+    hofe -> ComputeNDof();
+    return *hofe;
   }
  
 
