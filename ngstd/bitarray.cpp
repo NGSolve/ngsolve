@@ -68,26 +68,23 @@ namespace ngstd
 
   void BitArray :: Invert ()
   {
-    int i;
     if (!size) return;
-    for (i = 0; i <= Addr (size); i++)
+    for (int i = 0; i <= Addr (size); i++)
       data[i] ^= 255;
   }
 
   void BitArray :: And (const BitArray & ba2)
   {
-    int i;
     if (!size) return;
-    for (i = 0; i <= Addr (size); i++)
+    for (int i = 0; i <= Addr (size); i++)
       data[i] &= ba2.data[i];
   }
 
 
   void BitArray :: Or (const BitArray & ba2)
   {
-    int i;
     if (!size) return;
-    for (i = 0; i <= Addr (size); i++)
+    for (int i = 0; i <= Addr (size); i++)
       data[i] |= ba2.data[i];
   }
 
