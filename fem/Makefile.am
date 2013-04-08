@@ -7,8 +7,8 @@ libngfem_la_LIBADD = $(top_builddir)/ngstd/libngstd.la \
 	$(top_builddir)/basiclinalg/libngbla.la $(LAPACK_LIBS)
 
 libngfem_la_SOURCES = bdbequations.cpp pml.cpp maxwellintegrator.cpp \
-hdiv_equations.cpp h1hofe.cpp l2hofe.cpp hcurlhofe.cpp hcurlfe.cpp   \
-vectorfacetfe.cpp hdivhofe.cpp l2hofefo.cpp h1hofefo.cpp	     \
+hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp hcurlhofe.cpp    \
+hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp l2hofefo.cpp h1hofefo.cpp \
 recursive_pol_trig.cpp coefficient.cpp integrator.cpp		     \
 specialelement.cpp elementtopology.cpp intrule.cpp fastmat.cpp	     \
 finiteelement.cpp elementtransformation.cpp scalarfe.cpp	     \
@@ -29,4 +29,3 @@ hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	      \
 hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
 
 
-dist_data_DATA = dynamicmem.cpp

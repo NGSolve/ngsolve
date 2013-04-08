@@ -3,6 +3,96 @@ namespace ngfem
 {
 
 
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
+  CalcShape (const IntegrationPoint & ip, 
+             FlatVector<> shape) const
+  {
+    Vec<DIM> pt;
+    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    FEL::T_CalcShape (&pt(0), shape); 
+  }
+
+
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  double T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
+  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+  {
+    // double pt[DIM];
+    Vec<DIM> pt;
+    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    
+    double sum = 0.0;
+    EvaluateShape eval(x, &sum); 
+    
+    FEL::T_CalcShape (&pt(0), eval); 
+    return sum;
+  }  
+    
+
+
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
+  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  {
+    // double pt[DIM];
+    Vec<DIM> pt;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
+	
+        vals(i) = 0.0;
+        EvaluateShape eval(coefs, &vals(i)); 
+        FEL::T_CalcShape (&pt(0), eval); 
+      }
+  }
+  
+
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
+  CalcDShape (const IntegrationPoint & ip, 
+              FlatMatrixFixWidth<DIM> dshape) const
+  {
+    // AutoDiff<DIM> adp[DIM];
+    Vec<DIM, AutoDiff<DIM> > adp;
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+    
+    DShapeAssign<DIM> ds(dshape); 
+    FEL::T_CalcShape (&adp(0), ds);
+  }
+  
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
+  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
+                    FlatMatrixFixWidth<DIM> dshape) const
+  {
+    // AutoDiff<DIM> adp[DIM];
+    Vec<DIM, AutoDiff<DIM> > adp;
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = sip.IP()(i);
+    
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
+    
+    DShapeAssign<DIM> ds(dshape); 
+    FEL::T_CalcShape (&adp(0), ds);
+  }
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
   template <class FEL, ELEMENT_TYPE ET>
   void T_ScalarFiniteElement2<FEL,ET> :: 
   CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const

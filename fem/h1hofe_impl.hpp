@@ -192,6 +192,7 @@ namespace ngfem
 
   /* *********************** Tetrahedron  **********************/
 
+  /*
   template <class Tx, class T>
   inline void LowEnergyVertexPolynomials3D  (int n, Tx x, T & values)
   {
@@ -204,8 +205,7 @@ namespace ngfem
       }
     values[0] = 1;
   }
-
-
+  */
 
 
   template<typename Tx, typename TFA>  
@@ -217,15 +217,8 @@ namespace ngfem
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
 
     // vertex shapes
-    if (!nodalp2)
-      for (int i = 0; i < 4; i++) shape[i] = lam[i];
-    else
-      for (int i = 0; i < 4; i++)
-	{
-	  // LowEnergyVertexPolynomials3D (order, 2*lam[i]-1, polx);
-	  // shape[i] = polx[order]; 
-	  shape[i] = 0.25*lam[i]*(2*lam[i]-1);
-	}
+    for (int i = 0; i < 4; i++) shape[i] = lam[i];
+
     int ii = 4; 
 
     // edge dofs

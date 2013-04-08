@@ -15,6 +15,43 @@ namespace ngfem
 
 
 
+  template <>
+  class HDivHighOrderFE_Shape<ET_TRIG> : public HDivHighOrderFE<ET_TRIG>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[2], TFA & shape) const; 
+  };
+
+  template <>
+  class HDivHighOrderFE_Shape<ET_QUAD> : public HDivHighOrderFE<ET_QUAD>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[2], TFA & shape) const; 
+  };
+
+  template<> 
+  class HDivHighOrderFE_Shape<ET_TET> : public HDivHighOrderFE<ET_TET>
+  {
+    typedef TetShapesInnerLegendre T_INNERSHAPES;
+    typedef TetShapesFaceLegendre T_FACESHAPES; 
+  public:
+    template<typename Tx, typename TFA>  
+    inline void T_CalcShape (Tx hx[], TFA & shape) const;
+  };
+
+  template<>
+  class HDivHighOrderFE_Shape<ET_PRISM> : public HDivHighOrderFE<ET_PRISM>
+  {
+    typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const;
+  };
+
+
+
 
 
 

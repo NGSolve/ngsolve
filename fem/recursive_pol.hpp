@@ -422,14 +422,12 @@ namespace ngfem
 
 
 
-  /*
   template <class S, class Sc, class T>
   inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
   {
     LegendrePolynomial leg;
     leg.EvalMult (n, x, c, values);
   }
-  */
 
 
 

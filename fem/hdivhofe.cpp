@@ -1747,27 +1747,6 @@ namespace ngfem
   }   
 
 
-  // template class HDivHighOrderHex<IntegratedLegendreMonomialExt>;
-  // template class HDivHighOrderTet<IntegratedLegendreMonomialExt>;
-  // template class HDivHighOrderPrism<IntegratedLegendreMonomialExt>;
-
-  /*
-    template class HDivHighOrderHex<TrigExtensionMonomial>;
-    template class HDivHighOrderTet<TrigExtensionMonomial>;
-    template class HDivHighOrderPrism<TrigExtensionMonomial>;
-  */
-
-  /*
-    template class HDivHighOrderHex<TrigExtensionMin>;
-    template class HDivHighOrderTet<TrigExtensionMin>;
-    template class HDivHighOrderPrism<TrigExtensionMin>;
-  */
-
-  //  template class HDivHighOrderHex<TrigExtensionOptimal>;
-  //  template class HDivHighOrderTet<TrigExtensionOptimal>;
-  //  template class HDivHighOrderPrism<TrigExtensionOptimal>;
-
-
   template class  HDivHighOrderFiniteElement<2>;
   template class  HDivHighOrderFiniteElement<3>;
   template class  HDivHighOrderNormalFiniteElement<1>;

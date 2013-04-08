@@ -59,7 +59,6 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      // dimspace = DIM;
       eltype = ET;
       order = ORDER;
     }

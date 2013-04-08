@@ -244,90 +244,41 @@ namespace ngfem
   public:
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
-    {
-      // double pt[DIM];
-      Vec<DIM> pt;
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-      FEL::T_CalcShape (&pt(0), shape); 
-    }
+			    FlatVector<> shape) const;
 
     virtual double
-    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
-    {
-      // double pt[DIM];
-      Vec<DIM> pt;
-      for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
 
-      double sum = 0.0;
-      EvaluateShape eval(x, &sum); 
 
-      FEL::T_CalcShape (&pt(0), eval); 
-      return sum;
-    }  
-    
     virtual void
-    Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
-    {
-      // double pt[DIM];
-      Vec<DIM> pt;
-      for (int i = 0; i < ir.GetNIP(); i++)
-	{
-	  for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-	  
-	  vals(i) = 0.0;
-	  EvaluateShape eval(coefs, &vals(i)); 
-	  FEL::T_CalcShape (&pt(0), eval); 
-	}
-    }
+    Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
+              FlatVector<double> vals) const;
+
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     FlatMatrixFixWidth<DIM> dshape) const;
+
+    
+    virtual void 
+    CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
+                      FlatMatrixFixWidth<DIM> dshape) const;
+
 
 
 
     static void CalcShapeStat (const IntegrationPoint & ip, 
                                FlatVector<> shape)
     {
-      // double pt[DIM];
       Vec<DIM> pt;
       for (int i = 0; i < DIM; i++) pt[i] = ip(i);
       FEL::T_CalcShape (&pt(0), shape); 
     }
     
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const
-    {
-      // AutoDiff<DIM> adp[DIM];
-      Vec<DIM, AutoDiff<DIM> > adp;
-      for (int i = 0; i < DIM; i++)
-        adp[i] = AutoDiff<DIM> (ip(i), i);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      FEL::T_CalcShape (&adp(0), ds);
-    }
-
     static void CalcDShapeStat (const IntegrationPoint & ip, 
 				FlatMatrixFixWidth<DIM> dshape)
     {
-      // AutoDiff<DIM> adp[DIM];
       Vec<DIM, AutoDiff<DIM> > adp;
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
-      
-      DShapeAssign<DIM> ds(dshape); 
-      FEL::T_CalcShape (&adp(0), ds);
-    }
-
-    virtual void 
-    CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
-                      FlatMatrixFixWidth<DIM> dshape) const
-    {
-      // AutoDiff<DIM> adp[DIM];
-      Vec<DIM, AutoDiff<DIM> > adp;
-      for (int i = 0; i < DIM; i++)
-        adp[i].Value() = sip.IP()(i);
-      
-      for (int i = 0; i < DIM; i++)
-        for (int j = 0; j < DIM; j++)
-          adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
       
       DShapeAssign<DIM> ds(dshape); 
       FEL::T_CalcShape (&adp(0), ds);
