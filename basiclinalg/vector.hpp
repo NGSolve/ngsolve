@@ -7,6 +7,7 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
+// #define FLATVECTOR_WITH_DIST
 
 namespace ngbla
 {
@@ -24,220 +25,11 @@ namespace ngbla
   extern void CheckVecRange(int s, int i, int j);
 
 
-#ifdef ABC
-  /**
-     A simple vector.
-     Has size and generic data-pointer. 
-     No memory allocation/deallocation. User must provide memory.
-  */
-  template <typename T = double>
-  class FlatVector : public CMCPMatExpr<FlatVector<T> > 
-  {
-  protected:
-    /// vector size
-    int s;
-    /// the data
-    T * data;
-  public:
-    /// element type
-    typedef T TELEM;
-    typedef T& TREF;
-    /// scalar of element type
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    /// element access is not linear
-
-    /// default constructor does nothing
-    FlatVector () { ; }
-    /// set size and mem
-    FlatVector (unsigned int as, T * adata) : s(as), data(adata) { ; }
-
-    /// set size and mem
-    FlatVector (unsigned int as, void * adata) : s(as), data(static_cast<TELEM*> (adata)) { ; }
-
-    /// put FlatVector over fixed size vector
-    template <int S>
-    FlatVector (const Vec<S,TSCAL> & v)
-      : s(v.Size()), data(const_cast<T*>(&v(0)))
-    { ; }
-
-    template <int S>
-    FlatVector (const FlatVec<S,TSCAL> & v)
-      : s(v.Size()), data(const_cast<T*>(&v(0)))
-    { ; }
-
-    /// allocate FlatVector on local heap
-    FlatVector (int as, LocalHeap & lh) 
-      : s(as), data((T*)lh.Alloc(s*sizeof(T))) { ; }
-
-    /// put FlatVector over systemvector
-    FlatVector (const SysVector<TSCAL> & sv)
-      : s(sv.Size()*sv.BlockSize() / mat_traits<T>::VDIM), 
-	data (sv(0))
-    {
-      ;
-    }
-
-    /// allocate and compute 
-    template<typename TB>
-    FlatVector (const LocalHeapExpr<TB> & m2) 
-    {
-      s = m2.A().Height();
-      LocalHeap & lh = m2.GetLocalHeap();
-      data = lh.Alloc<T> (s);
-
-      // does not copy FlatVectors and don't know why
-      // CMCPMatExpr<FlatVector<T> >::operator= (m2.A()); 
-
-      for (int j = 0; j < s; j++) data[j] = m2.A()(j);
-    }
-
-
-
-    /// assign memory for vector on local heap
-    void AssignMemory (int as, LocalHeap & lh) 
-    {
-      s = as;
-      data = (T*)lh.Alloc(s*sizeof(T));
-    }
-
-    /// assign memory for vector
-    void AssignMemory (int as, T * mem) 
-    {
-      s = as;
-      data = mem;
-    }
-
-    /// copy vector. sizes must match
-    const FlatVector & operator= (const FlatVector & v) const
-    {
-      for (int i = 0; i < s; i++)
-	data[i] = v(i);
-      return *this;
-    }
-
-    /// evaluate matrix expression
-    template<typename TB>
-    const FlatVector & operator= (const Expr<TB> & v) const
-    {
-      return CMCPMatExpr<FlatVector>::operator= (v);
-    }
-
-    /// assign constant value
-    const FlatVector & operator= (TSCAL scal) const
-    {
-      for (int i = 0; i < s; i++)
-	data[i] = scal; 
-      return *this;
-    }
-
-    template<typename TB>
-    const FlatVector & operator+= (const Expr<TB> & v) const
-    {
-      if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
-	  data[i] += v.Spec()(i);
-      else
-	for (int i = 0; i < s; i++)
-	  data[i] += v.Spec()(i,0);
-      return *this;
-    }
-
-    /// constant element access
-    TELEM & operator() (int i) const
-    {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
-      return data[i]; 
-    }
-
-    RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
-    { 
-      return RowsArrayExpr<FlatVector> (*this, rows);
-    }
-    
-    
-    /// element access. index j is ignored
-    TELEM & operator() (int i, int j) const
-    {
-#ifdef CHECK_RANGE 
-      CheckVecRange(s,i);
-#endif
-      return data[i]; 
-    }
-
-    /// constant element access
-    TELEM & operator[] (int i) const
-    {
-#ifdef CHECK_RANGE
-      CheckVecRange(s,i);
-#endif
-      return data[i]; 
-    }
-
-    // shape functions had a problem with icc v9.1
-    const CArray<T> Addr(int i) const
-    {
-      return CArray<T> (data+i); 
-    }
-
-    /*
-      T * const  Addr (int i) const    // const not respected by icc ???
-      {
-      return data+i;
-      }
-    */
-
-    /// sub-vector of size next-first, starting at first
-    const FlatVector<T> Range (int first, int next) const
-    { return FlatVector<T> (next-first, data+first); }
-
-    /// sub-vector given by range
-    const FlatVector<T> Range (IntRange range) const
-    { return FlatVector<T> (range.Next()-range.First(), data+range.First()); }
-
-
-    /// vector size
-    int Size () const { return s; }
-
-    /// vector is matrix of height size
-    int Height () const { return s; }
-
-    /// vector is matrix of with 1
-    int Width () const { return 1; }
-
-    /// take a slice of the vector. Take elements first+i * dist. 
-    SliceVector<T> Slice (int first, int dist)
-    {
-      return SliceVector<T> (s/dist, dist, data+first);
-    }
-
-    /// take a slice of the vector. Take elements first+i * dist. 
-    const SliceVector<T> Slice (int first, int dist) const
-    {
-      return SliceVector<T> (s/dist, dist, data+first);
-    }
-
-    /// access to data
-    const void * Data () const { return static_cast<const void*>(data); }
-    /// access to data
-    void * Data () { return static_cast<void*>(data); }
-
-
-    // new for SysVectors:
-    typedef FlatVector<T> TV_COL;
-    typedef double TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-  };
-#endif
-
-
-
 
   /**
-     NEW: A FlatVector becomes the old SliceVector ! 
-     overhead can be neglected !
+     new option: 
+     A FlatVector becomes the old SliceVector ! 
+     overhead can be neglected, but needs more testing, results are welcome ...
 
      A simple vector.
      Has size and generic data-pointer. 
@@ -249,8 +41,12 @@ namespace ngbla
   protected:
     /// vector size
     int size;
+#ifdef FLATVECTOR_WITH_DIST
     /// distance between entries
     int dist;
+#else
+    enum { dist = 1 };
+#endif
     /// the data
     T * data;
   public:
@@ -264,43 +60,75 @@ namespace ngbla
     /// default constructor does nothing
     FlatVector () { ; }
     /// set size and mem
-    FlatVector (unsigned int as, T * adata) : size(as), dist(1), data(adata) { ; }
+    FlatVector (unsigned int as, T * adata) : size(as), data(adata)
+    { 
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
+    }
 
+
+#ifdef FLATVECTOR_WITH_DIST
     /// set size and mem
     FlatVector (unsigned int as, int ad, T * adata) : size(as), dist(ad), data(adata) { ; }
+#endif
 
     /// set size and mem
-    FlatVector (unsigned int as, void * adata) : size(as), dist(1), data(static_cast<TELEM*> (adata)) { ; }
+    FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
+    {
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
+    }
 
     /// put FlatVector over fixed size vector
     template <int S>
     FlatVector (const Vec<S,TSCAL> & v)
-      : size(v.Size()), dist(1), data(const_cast<T*>(&v(0)))
-    { ; }
+      : size(v.Size()), data(const_cast<T*>(&v(0)))
+    { 
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
+    }
 
     template <int S>
     FlatVector (const FlatVec<S,TSCAL> & v)
-      : size(v.Size()), dist(1), data(const_cast<T*>(&v(0)))
-    { ; }
+      : size(v.Size()), data(const_cast<T*>(&v(0)))
+    { 
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
+    }
 
     /// allocate FlatVector on local heap
     FlatVector (int as, LocalHeap & lh) 
-      : size(as), dist(1), data(lh.Alloc<T> (as)) { ; }
+      : size(as), data(lh.Alloc<T> (as)) 
+    {
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
+    }
 
     /// put FlatVector over systemvector
     FlatVector (const SysVector<TSCAL> & sv)
-      : size(sv.Size()*sv.BlockSize() / mat_traits<T>::VDIM), dist(1),
+      : size(sv.Size()*sv.BlockSize() / mat_traits<T>::VDIM), 
 	data (sv(0))
     {
-      ;
+#ifdef FLATVECTOR_WITH_DIST
+      dist = 1;
+#endif
     }
+
+
 
     /// allocate and compute 
     template<typename TB>
     FlatVector (const LocalHeapExpr<TB> & m2) 
     {
       size = m2.A().Height();
+#ifdef FLATVECTOR_WITH_DIST
       dist = 1;
+#endif
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (size);
 
@@ -314,7 +142,9 @@ namespace ngbla
     void AssignMemory (int as, LocalHeap & lh) 
     {
       size = as;
+#ifdef FLATVECTOR_WITH_DIST
       dist = 1;
+#endif
       data = lh.Alloc<T>(size);
     }
 
@@ -322,7 +152,9 @@ namespace ngbla
     void AssignMemory (int as, T * mem) 
     {
       size = as;
+#ifdef FLATVECTOR_WITH_DIST
       dist = 1;
+#endif
       data = mem;
     }
 
@@ -407,13 +239,20 @@ namespace ngbla
       }
     */
 
+
     /// sub-vector of size next-first, starting at first
+#ifdef FLATVECTOR_WITH_DIST
     const FlatVector<T> Range (int first, int next) const
     { return FlatVector<T> (next-first, dist, data+dist*first); }
+#else
+    const FlatVector<T> Range (int first, int next) const
+    { return FlatVector<T> (next-first, data+dist*first); }
+#endif
+
 
     /// sub-vector given by range
     const FlatVector<T> Range (IntRange range) const
-    { return FlatVector<T> (range.Next()-range.First(), dist, data+dist*range.First()); }
+    { return Range (range.First(), range.Next()); }
 
 
     /// vector size
@@ -425,40 +264,22 @@ namespace ngbla
     /// vector is matrix of with 1
     int Width () const { return 1; }
     
-    /*
-    /// take a slice of the vector. Take elements first+i * dist. 
-    SliceVector<T> Slice (int first, int dist)
-    {
-      return SliceVector<T> (s/dist, dist, data+first);
-    }
 
+#ifdef FLATVECTOR_WITH_DIST
     /// take a slice of the vector. Take elements first+i * dist. 
-    const SliceVector<T> Slice (int first, int dist) const
-    {
-      return SliceVector<T> (s/dist, dist, data+first);
-    }
-    /// take a slice of the vector. Take elements first+i * dist. 
-    SliceVector<T> Slice (int first, int dist) const
-    {
-      return SliceVector<T> (s/dist, dist, data+first);
-    }
-    */
-
-    /// take a slice of the vector. Take elements first+i * dist. 
-    FlatVector Slice (int first, int dist2) const
+    const FlatVector Slice (int first, int dist2) const
     {
       return FlatVector(size/dist2, dist*dist2, data+dist*first);
     }
-
-
-
-    /// access to data
-    // const void * Data () const { return static_cast<const void*>(data); }
-    /// access to data
-    // void * Data () { return static_cast<void*>(data); }
+#else
+    /// take a slice of the vector. Take elements first+i * dist. 
+    const SliceVector<T> Slice (int first, int dist2) const
+    {
+      return SliceVector<T> (size/dist, dist*dist2, data+first);
+    }
+#endif
 
     void * Data () const { return data; }
-
 
     // new for SysVectors:
     typedef FlatVector<T> TV_COL;
@@ -1326,19 +1147,6 @@ namespace ngbla
       return *this;
     }
 
-    /*
-    template<typename TB>
-    const SliceVector & operator= (const Expr<TB> & v) const
-    {
-      if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
-	  data[i*dist] = v.Spec()(i);
-      else
-	for (int i = 0; i < s; i++)
-	  data[i*dist] = v.Spec()(i,0);
-      return *this;
-    }
-    */
 
     template<typename TB>
     const SliceVector & operator+= (const Expr<TB> & v) const

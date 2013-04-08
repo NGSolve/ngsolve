@@ -1657,50 +1657,6 @@ namespace ngbla
   template <int H, int W, typename T, typename TINV>
   inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
   {
-    /*
-      switch (H)
-      {
-      case 1:
-	{
-	  cout << "mat 1 inv, should not be called" << endl;
-	  inv(0,0) = 1.0 / m(0,0);
-	  return;
-	}
-      case 2:
-	{
-	  cout << "mat 2 inv, should not be called" << endl;
-	  T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
-	  inv(0,0) = idet * m(1,1);
-	  inv(0,1) = -idet * m(0,1);
-	  inv(1,0) = -idet * m(1,0);
-	  inv(1,1) = idet * m(0,0);
-	  return;
-	}
-      case 3:
-	{
-	  cout << "mat 3 inv, should not be called" << endl;
-	  T h0 = m(4)*m(8)-m(5)*m(7);
-	  T h1 = m(5)*m(6)-m(3)*m(8);
-	  T h2 = m(3)*m(7)-m(4)*m(6);
-	  T det = m(0) * h0 + m(1) * h1 + m(2) * h2;
-	  T idet = 1.0 / det;
-
-	  inv(0,0) =  idet * h0; 
-	  inv(0,1) = -idet * (m(1) * m(8) - m(2) * m(7));
-	  inv(0,2) =  idet * (m(1) * m(5) - m(2) * m(4));
-	
-	  inv(1,0) =  idet * h1; 
-	  inv(1,1) =  idet * (m(0) * m(8) - m(2) * m(6));
-	  inv(1,2) = -idet * (m(0) * m(5) - m(2) * m(3));
-	
-	  inv(2,0) =  idet * h2; 
-	  inv(2,1) = -idet * (m(0) * m(7) - m(1) * m(6));
-	  inv(2,2) =  idet * (m(0) * m(4) - m(1) * m(3));
-	  return;
-	}
-      default:
-	{
-    */
     FlatMatrix<T> fm(m);
     FlatMatrix<T> finv(inv);
     CalcInverse (fm, finv);

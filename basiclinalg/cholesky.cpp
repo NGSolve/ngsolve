@@ -77,7 +77,9 @@ namespace ngbla
     delete [] diag;
   }
   */
+
   
+  /*  gone to the header
   template <class T>  
   void FlatCholeskyFactors<T> :: 
   Mult (FlatVector<TV> x, FlatVector<TV> y) const
@@ -113,6 +115,7 @@ namespace ngbla
 	  y(j) -= pj[j] * val;
       }
   }
+  */
   
   template <class T>
   ostream & FlatCholeskyFactors<T> :: Print (ostream & ost) const
