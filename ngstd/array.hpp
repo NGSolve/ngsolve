@@ -629,28 +629,25 @@ namespace ngstd
   template <class T, int S> 
   class ArrayMem : public Array<T>
   {
-    T mem[S];                     // should be best, but calls trivial default constructor 
-                                  // now ok with major compilers ?
-    
-    // char mem[S*sizeof(T)];     // avoids calling the array default-constructor (icc)
-    // double mem[(S*sizeof(T)+7) / 8];   // alignment (on ia64 machines)
+    T mem[S];    
 
     using Array<T>::size;
+    using Array<T>::allocsize;
     using Array<T>::data;
     using Array<T>::ownmem;
 
   public:
     /// Generate array of logical and physical size asize
     explicit ArrayMem(int asize = 0)    
-      : Array<T> (S, static_cast<T*> (static_cast<void*>(&mem[0])))
+      : Array<T> (S, mem)
     {
       size = asize;
       if (asize > S)
         {
           data = new T[asize];
+          allocsize = size;
           ownmem = 1;
         }
-      // this->SetSize (asize);
     }
 
     /// copies from Array a2
