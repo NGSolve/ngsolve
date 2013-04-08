@@ -186,21 +186,23 @@ namespace ngbla
     /// the width
     int Width () const throw() { return w; }
 
+
     const FlatVector<T> Row (int i) const
     {
       return FlatVector<T> (w, &data[i*size_t(w)]);
     }
 
-    /*
-    const SliceVector<T> Col (int i) const
-    {
-      return SliceVector<T> (h, w, &data[i]);
-    }
-    */
+#ifdef FLATVECTOR_WITH_DIST
     const FlatVector<T> Col (int i) const
     {
       return FlatVector<T> (h, w, &data[i]);
     }
+#else
+    const SliceVector<T> Col (int i) const
+    {
+      return SliceVector<T> (h, w, &data[i]);
+    }
+#endif
 
     const SliceVector<T> Diag () const
     {

@@ -3,18 +3,6 @@
 namespace ngbla
 {
 
-
-  void test()
-  {
-    Matrix<Complex> a, b, c;
- 
-    LapackMult (a, b, c);
-    LapackMult (Trans(a), b, c);
-    LapackMult (a, Trans(b), c);
-  }
-
-
-  
   inline double abs (double a)
   {
     return std::fabs(a);
@@ -50,18 +38,15 @@ namespace ngbla
 
 
   template <class T2>
-  // void T_CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
   void T_CalcInverse (FlatMatrix<T2> inv)
   {
     // Gauss - Jordan - algorithm
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
     // int n = m.Height();
+
     int n = inv.Height();
 
     ngstd::Array<int> p(n);   // pivot-permutation
-
-    // inv = m;
-
     for (int j = 0; j < n; j++) p[j] = j;
     
     for (int j = 0; j < n; j++)
@@ -149,8 +134,6 @@ namespace ngbla
 			    const BitArray & used,
 			    LocalHeap & lh)
   {
-    // cout << "Calc SchurComplement" << endl;
-
     HeapReset hr(lh);
 
     int n = a.Height(), n_used = 0, n_unused = 0;
@@ -161,7 +144,6 @@ namespace ngbla
     FlatMatrix<> hb1(n_unused, n_used, lh);
     FlatMatrix<> b2(n_used, n_unused, lh);
     FlatMatrix<> c(n_unused, n_unused, lh);
-    FlatMatrix<> hc(n_unused, n_unused, lh);
 
     //(*testout) << "used = " << endl << used << endl;
     int cnt_usedi = 0;
@@ -184,24 +166,10 @@ namespace ngbla
 	if (used[i]) cnt_usedi++;
       }
     
-    /*
-    (*testout) << "Schur, a = " << endl << a << endl;
-    (*testout) << "Schur, s = " << endl << s << endl;
-    (*testout) << "Schur, b1 = " << endl << b1 << endl;
-    (*testout) << "Schur, b2 = " << endl << b2 << endl;
-    (*testout) << "Schur, c = " << endl << c << endl;
-    */
 
     LapackInverse (c);
-
-    // LapackMult (c, b1, hb1);
     hb1 = c * b1 | Lapack;
-
-    // LapackMultAddAB (b2, hb1, -1, s);
     s -= b2 * hb1 | Lapack;
-
-    // (*testout) << "Schur, cinv = " << endl << c << endl;
-    // (*testout) << "Schur = " << endl << s << endl;
   }
 
 
