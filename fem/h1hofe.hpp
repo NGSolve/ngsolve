@@ -8,91 +8,39 @@
 /*********************************************************************/
 
 
-#include "tscalarfe.hpp"
-
-
 namespace ngfem
 {
 
-  /**
-     High order finite elements for H^1
-  */
-  template<int DIM>
-  class H1HighOrderFiniteElement : virtual public ScalarFiniteElement<DIM>
-  {
-  public:
-    /// global vertex numbers for shape orientation
-    int vnums[8];
-    /// order of internal shapes (3d only)
-    INT<3> order_cell;
-    /// order of face shapes / internal in 2d
-    INT<2> order_face[6];
-    /// order of edge shapes
-    int order_edge[12];
 
-    using ScalarFiniteElement<DIM>::eltype;
 
-    bool nodalp2;  // 
 
-  public:
-    H1HighOrderFiniteElement () 
-      : nodalp2(false) { ; }
 
-    /// assignes vertex numbers
-    template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
 
-    /// assign vertex number
-    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-
-    /// set anisotropic cell order
-    void SetOrderCell (INT<3> oi)  { order_cell = oi; }
-
-    /// set isotropic or anisotropic face orders
-    template <typename TA>
-    void SetOrderFace (const TA & of)
-    { for (int i = 0; i < of.Size(); i++) order_face[i] = of[i]; }
-
-    /// set anisotropic face order for face nr
-    void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
-
-    /// set edge orders
-    template <typename TA>
-    void SetOrderEdge (const TA & oe)
-    { for (int i = 0; i < oe.Size(); i++) order_edge[i] = oe[i]; }
-
-    /// set edge order for edge nr
-    void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
-
-    void SetNodalP2 (bool anp2) { nodalp2 = anp2; }
-
-    /// high order elements need extra configuration. update ndof and order
-    virtual void ComputeNDof () = 0;
-  };
+  /// default shape function engine for high order h1-elements
+  template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
 
 
 
   /**
-     Barton-Nackman base class for H1 - high order finite elements
-  */
-  template <ELEMENT_TYPE ET>
-  class T_H1HighOrderFiniteElement : 
-    public H1HighOrderFiniteElement<ET_trait<ET>::DIM>, 
-    public ET_trait<ET> 
+     High order finite elements for H1.  These are the actual finite
+     element classes to be used.  
+     shape functions are provided by the shape template
+   */
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape> 
+  class NGS_DLL_HEADER H1HighOrderFE : 
+    public T_ScalarFiniteElement2< TSHAPES<ET>, ET >,
+    public ET_trait<ET>
   {
   protected:
+
     enum { DIM = ET_trait<ET>::DIM };
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
 
-    using H1HighOrderFiniteElement<DIM>::vnums;
-    using H1HighOrderFiniteElement<DIM>::order_edge;
-    using H1HighOrderFiniteElement<DIM>::order_face;
-    using H1HighOrderFiniteElement<DIM>::order_cell;
 
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_EDGE;
@@ -103,44 +51,88 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ET_trait<ET>::PolBubbleDimension;
 
-  public:
 
-    T_H1HighOrderFiniteElement () { ; }
+    int vnums[N_VERTEX];
 
-    T_H1HighOrderFiniteElement (int aorder);
+    /// order of edge shapes
+    int order_edge[N_EDGE];
 
-    virtual void ComputeNDof();
-  };
+    /// order of face shapes
+    INT<2> order_face[N_FACE];
 
+    /// order of internal shapes (3d only)
+    INT<3> order_cell;
 
-
-
-
-  /// shape function engine for high order h1-elements
-  template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
-
-
-  /**
-     High order finite elements for H1.  These are the actual finite
-     element classes to be used.  Operations are inherited from
-     T_ScalarFiniteElement2, and shape functions are provided by the
-     shape template
-   */
-  template <ELEMENT_TYPE ET> 
-  class NGS_DLL_HEADER H1HighOrderFE : 
-    public T_H1HighOrderFiniteElement<ET>,
-    public T_ScalarFiniteElement2< H1HighOrderFE_Shape<ET>, ET >
-
-  {
-  protected:
-    static Timer t;
   public:
     /// minimal constructor, orders will be set later
     H1HighOrderFE () { ; }
 
     /// builds a functional element of order aorder.
     H1HighOrderFE (int aorder)
-      : T_H1HighOrderFiniteElement<ET> (aorder) { ; }
+    { 
+      ndof = PolDimension (aorder);
+      
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
+      if (DIM == 3) order_cell = aorder; 
+      
+      order = aorder;
+    }
+
+
+
+    /// assignes vertex numbers
+    template <typename TA> 
+    void SetVertexNumbers (const TA & avnums)
+    { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
+
+    /// assign vertex number
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+
+    /// set edge orders
+    template <typename TA>
+    void SetOrderEdge (const TA & oe)
+    { for (int i = 0; i < N_EDGE; i++) order_edge[i] = oe[i]; }
+
+    /// set edge order for edge nr
+    void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
+
+
+    /// set isotropic or anisotropic face orders
+    template <typename TA>
+    void SetOrderFace (const TA & of)
+    { for (int i = 0; i < N_FACE; i++) order_face[i] = of[i]; }
+
+    /// set anisotropic face order for face nr
+    void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+
+
+    /// set anisotropic cell order
+    void SetOrderCell (INT<3> oi)  { order_cell = oi; }
+
+
+
+
+    void ComputeNDof()
+    {
+      ndof = N_VERTEX;
+      
+      for (int i = 0; i < N_EDGE; i++)
+        ndof += order_edge[i] - 1;
+      
+      for (int i = 0; i < N_FACE; i++)
+        ndof += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
+      
+      if (DIM == 3)
+        ndof += ::ngfem::PolBubbleDimension (ET, order_cell);
+      
+      order = 1;
+      for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);
+      for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
+      if (DIM == 3) order = max (order, Max (order_cell));
+    }
+
   };
 
 

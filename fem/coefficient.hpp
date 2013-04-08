@@ -40,14 +40,13 @@ namespace ngfem
       return Evaluate (ip);
     }
 
-
     template <typename SCAL>
     inline SCAL T_Evaluate (const BaseMappedIntegrationPoint & ip) const
-    {
-      return SCAL (Evaluate (ip));
+    { 
+      return SCAL (Evaluate (ip));    // used by PML : AutoDiff<complex>
     }
 
-
+    /*
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const
     {
       return Evaluate(ip);
@@ -65,6 +64,7 @@ namespace ngfem
     virtual double EvaluateDeri (const BaseMappedIntegrationPoint & ip,
 				 const complex<double> & t) const
     { return EvaluateDeri(ip,t.real()); }
+    */
 
 
     virtual double EvaluateConst () const
