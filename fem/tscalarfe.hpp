@@ -239,7 +239,7 @@ namespace ngfem
     T_ScalarFiniteElement ()
       : ScalarFiniteElement<DIM> (ET, NDOF, ORDER) { ; }
 
-    virtual ~T_ScalarFiniteElement() { ; }
+    virtual ~T_ScalarFiniteElement();
 
   public:
 
@@ -325,6 +325,7 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::eltype;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
+    virtual ~T_ScalarFiniteElement2();
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;

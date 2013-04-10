@@ -2,6 +2,11 @@
 namespace ngfem
 {
 
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElement ()
+  {
+    ;
+  }
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
   void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
@@ -89,9 +94,11 @@ namespace ngfem
 
 
 
-
-
-
+  template <class FEL, ELEMENT_TYPE ET>
+  T_ScalarFiniteElement2<FEL,ET> :: ~T_ScalarFiniteElement2 ()
+  {
+    ;
+  }
 
   template <class FEL, ELEMENT_TYPE ET>
   void T_ScalarFiniteElement2<FEL,ET> :: 

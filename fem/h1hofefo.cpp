@@ -193,7 +193,19 @@ namespace ngfem
 
 
 
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,1>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,2>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,3>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,4>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,5>, ET_TRIG>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TRIG,6>, ET_TRIG>;
 
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,1>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,2>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,3>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,4>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,5>, ET_TET>;
+  template class T_ScalarFiniteElement2<H1HighOrderFEFO<ET_TET,6>, ET_TET>;
 
 
 
@@ -216,14 +228,6 @@ namespace ngfem
   template class T_H1HighOrderFiniteElementFO<ET_TET,5>;
   template class T_H1HighOrderFiniteElementFO<ET_TET,6>;
 
-
-
-  template class H1HighOrderFEFO<ET_TRIG,1>;
-  template class H1HighOrderFEFO<ET_TRIG,2>;
-  template class H1HighOrderFEFO<ET_TRIG,3>;
-  template class H1HighOrderFEFO<ET_TRIG,4>;
-  template class H1HighOrderFEFO<ET_TRIG,5>; 
-  template class H1HighOrderFEFO<ET_TRIG,6>;
 
   int link_it_h1hofefo;
 }

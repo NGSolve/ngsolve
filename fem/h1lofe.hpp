@@ -188,11 +188,12 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,ET_TRIG,3,1>
+  class FE_Trig1 : public T_ScalarFiniteElement2<FE_Trig1,ET_TRIG>
   {
   public:
+    FE_Trig1() { ndof = 3; order = 1;}
     template<typename Tx, typename TFA>  
-    inline static void T_CalcShape (Tx x[2], TFA & shape)
+    inline void T_CalcShape (Tx x[2], TFA & shape) const
     {
       shape[0] = x[0];
       shape[1] = x[1];      

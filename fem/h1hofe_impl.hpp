@@ -12,15 +12,13 @@
 namespace ngfem
 {
 
+
   template <> 
   class H1HighOrderFE_Shape<ET_POINT> : public H1HighOrderFE<ET_POINT>
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const
-    {
-      shape[0] = 1.0;
-    }
+    void T_CalcShape (Tx hx[], TFA & shape) const;
   };
 
   template <> 
@@ -85,6 +83,13 @@ namespace ngfem
 
 
 
+  /* *********************** Point  **********************/
+
+  template<typename Tx, typename TFA>  
+  void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (Tx x[], TFA & shape) const
+  {
+    shape[0] = 1.0;
+  }
 
 
 
@@ -102,7 +107,7 @@ namespace ngfem
 
     LegendrePolynomial::EvalMult (order_edge[0]-2, 
 				  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape.Addr(2));
-
+    
   }
 
   /* *********************** Triangle  **********************/
@@ -367,7 +372,6 @@ namespace ngfem
 
 
   /* *********************** Hex  **********************/
-
 
   template<typename Tx, typename TFA>  
   void  H1HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const

@@ -13,7 +13,7 @@ recursive_pol_trig.cpp coefficient.cpp integrator.cpp		     \
 specialelement.cpp elementtopology.cpp intrule.cpp fastmat.cpp	     \
 finiteelement.cpp elementtransformation.cpp scalarfe.cpp	     \
 generic_recpol.cpp hdivfe.cpp recursive_pol.cpp hybridDG.cpp	     \
-DGIntegrators.cpp
+DGIntegrators.cpp diffop.cpp
 
 
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		      \
