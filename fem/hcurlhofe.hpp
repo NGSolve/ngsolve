@@ -160,7 +160,7 @@ namespace ngfem
   };
 
 
-
+  
   template <ELEMENT_TYPE ET> class HCurlHighOrderFE_Shape;
 
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES = HCurlHighOrderFE_Shape>

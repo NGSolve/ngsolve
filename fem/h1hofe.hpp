@@ -12,10 +12,6 @@ namespace ngfem
 {
 
 
-
-
-
-
   /// default shape function engine for high order h1-elements
   template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
@@ -51,7 +47,7 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ET_trait<ET>::PolBubbleDimension;
 
-
+    /// global vertex numbers used of edge/face orientation
     int vnums[N_VERTEX];
 
     /// order of edge shapes
@@ -79,8 +75,6 @@ namespace ngfem
       
       order = aorder;
     }
-
-
 
     /// assignes vertex numbers
     template <typename TA> 
@@ -111,9 +105,7 @@ namespace ngfem
     /// set anisotropic cell order
     void SetOrderCell (INT<3> oi)  { order_cell = oi; }
 
-
-
-
+    /// compute the element space dimension
     void ComputeNDof()
     {
       ndof = N_VERTEX;
@@ -132,6 +124,7 @@ namespace ngfem
       for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
       if (DIM == 3) order = max (order, Max (order_cell));
     }
+
 
   };
 

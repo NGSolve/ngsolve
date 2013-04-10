@@ -46,7 +46,7 @@ namespace ngfem
 
 
   template class T_ScalarFiniteElement<FE_Trig0,ET_TRIG,1,0>;
-  template class T_ScalarFiniteElement<FE_Trig1,ET_TRIG,3,1>;
+  template class T_ScalarFiniteElement2<FE_Trig1,ET_TRIG>;
   template class T_ScalarFiniteElement<FE_Trig2,ET_TRIG,6,2>;
   template class T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG,6,2>;
   template class T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG,3,1>;

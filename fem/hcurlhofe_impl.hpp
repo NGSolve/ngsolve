@@ -12,77 +12,16 @@
 namespace ngfem
 {
 
-
   // declaration of the shapes ...
 
-  template <> class HCurlHighOrderFE_Shape<ET_SEGM>:  public HCurlHighOrderFE<ET_SEGM>
+  
+  template <ELEMENT_TYPE ET> 
+  class HCurlHighOrderFE_Shape :  public HCurlHighOrderFE<ET>
   {
   public:
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[2], TFA & shape) const; 
   };
-
-  template <> class HCurlHighOrderFE_Shape<ET_TRIG> : public HCurlHighOrderFE<ET_TRIG>
-  {
-    typedef TrigShapesInnerLegendre T_INNERSHAPES; 
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const; 
-  };
-
-  template <> class HCurlHighOrderFE_Shape<ET_QUAD> : public HCurlHighOrderFE<ET_QUAD>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const; 
-  };
-
-  template <> class HCurlHighOrderFE_Shape<ET_TET> : public HCurlHighOrderFE<ET_TET>
-  {
-    typedef TetShapesFaceLegendre T_FACESHAPES; 
-    typedef TetShapesInnerLegendre T_INNERSHAPES; 
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
-  };
-
-  template <> class HCurlHighOrderFE_Shape<ET_HEX> : public HCurlHighOrderFE<ET_HEX>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
-  };
-
-  template <> class HCurlHighOrderFE_Shape<ET_PRISM> : public HCurlHighOrderFE<ET_PRISM>
-  {
-    typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
-  };
-
-  /// A pyramidal high order H(curl) element
-  template <> class HCurlHighOrderFE_Shape<ET_PYRAMID> : public HCurlHighOrderFE<ET_PYRAMID>
-  {
-    typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[3], TFA & shape) const; 
-  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -92,8 +31,8 @@ namespace ngfem
   // HCurlHighOrderSegm
   //------------------------------------------------------------------------
 
-
-  template<typename Tx, typename TFA>  
+  
+  template<> template<typename Tx, typename TFA>  
   void HCurlHighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx hx[1], TFA & shape) const
   {
     Tx x = hx[0];
@@ -127,7 +66,7 @@ namespace ngfem
   // HCurlHighOrderTrig
   //------------------------------------------------------------------------
   
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void HCurlHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
@@ -166,7 +105,7 @@ namespace ngfem
 	AutoDiff<2> xi  = lam[fav[2]]-lam[fav[1]];
 	AutoDiff<2> eta = lam[fav[0]]; 
 
-	T_INNERSHAPES::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
 	
 	// gradients:
 	if(usegrad_face[0])
@@ -191,7 +130,7 @@ namespace ngfem
   //------------------------------------------------------------------------
   
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  HCurlHighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
@@ -268,8 +207,8 @@ namespace ngfem
   //------------------------------------------------------------------------
  
 
-  template<typename Tx, typename TFA>  
-  void  HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  template<> template<typename Tx, typename TFA>  
+  void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[4] = { x, y, z, 1-x-y-z };
@@ -312,7 +251,7 @@ namespace ngfem
           AutoDiff<3> eta = lam[fav[0]]; // lo 
           AutoDiff<3> zeta = lam[vop];   // lz 
           
-          T_FACESHAPES::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
+          TetShapesFaceLegendre::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
           
           // gradients 
           if (usegrad_face[i])
@@ -333,7 +272,7 @@ namespace ngfem
     
     int p = order_cell[0]; 
     
-    T_INNERSHAPES::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
+    TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
     
     //gradient fields 
     if(usegrad_cell)
@@ -362,9 +301,11 @@ namespace ngfem
   //                   Prism
   //------------------------------------------------------------------------
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  HCurlHighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
+    typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;
+
     Tx x = hx[0], y = hx[1], z = hx[2];
 
     AutoDiff<3> lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
@@ -563,7 +504,7 @@ namespace ngfem
   //------------------------------------------------------------------------
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void HCurlHighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
@@ -692,9 +633,11 @@ namespace ngfem
   //------------------------------------------------------------------------
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  HCurlHighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
+    typedef TrigShapesInnerLegendre T_TRIGFACESHAPES;  
+
     Tx x = hx[0], y = hx[1], z = hx[2];
 
     if(z.Value()==1.) z.Value() -=1.e-8; 
