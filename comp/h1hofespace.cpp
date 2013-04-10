@@ -10,38 +10,10 @@
 
 #include <comp.hpp>
 #include <multigrid.hpp> 
-#include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 
 
 using namespace ngmg; 
-
-namespace ngfem
-{
-  extern int link_it_h1hofefo;
-}
-
-
-  /*
-namespace ngstd
-{
-
-  template <>
-  class BaseArrayObject<netgen::Ng_Element::Ng_Vertices,
-                        netgen::Ng_Element::Ng_Vertices> 
-  {
-  public:
-    typedef netgen::Ng_Element::Ng_Vertices T;
-    
-    const T & ar;
-    BaseArrayObject (const netgen::Ng_Element::Ng_Vertices & va) 
-      : ar(va) { ; }
-      const T & Spec() const { return static_cast<const T&>(ar); }
-      const T & Spec2() const { return static_cast<const T&> (ar); }
-  };
-
-}
-*/
 
 
 namespace ngcomp
@@ -132,7 +104,6 @@ namespace ngcomp
         flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
         boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
       }
-
     if (dimension > 1)
       {
 	evaluator = new BlockDifferentialOperator (*evaluator, dimension);
@@ -558,7 +529,6 @@ namespace ngcomp
         hofe3d->SetVertexNumbers (ngel.vertices);
         return *hofe3d;
       }
-
 
     try
       {
