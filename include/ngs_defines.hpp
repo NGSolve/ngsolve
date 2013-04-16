@@ -60,10 +60,5 @@
 #endif
 
 
-// use Cholesky-Factors for block smoother
-// undef = band - Cholesky, usually faster and less mem
-// define only for special needs (mixed smoother)
-// #define SYMCHOLESKY
-
 
 #endif
