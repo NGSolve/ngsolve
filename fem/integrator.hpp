@@ -651,44 +651,6 @@ namespace ngfem
 
 
 
-  /*
-  // returns coef * Identity-matrix
-  class RegularizationBilinearFormIntegrator : public BilinearFormIntegrator
-  {
-    CoefficientFunction * coef;
-  public:
-    RegularizationBilinearFormIntegrator (CoefficientFunction * acoef)
-      : coef(acoef)
-    { ; }
-
-    virtual bool BoundaryForm () const { return 0; }
-    virtual int DimFlux () const { return 1; }
-    virtual int DimElement () const { return 3; }
-    virtual int DimSpace () const { return 3; }
-
-    virtual void
-    CalcElementMatrix (const FiniteElement & fel,
-		       const ElementTransformation & eltrans, 
-		       FlatMatrix<double> & elmat,
-		       LocalHeap & lh) const
-    {
-      int ndof = fel.GetNDof();
-
-      elmat = 0;
-      MappedIntegrationPoint<3,3> mip (GetIntegrationRules().SelectIntegrationRule (fel.ElementType(), 0)[0], 
-				       eltrans);
-      double val = Evaluate (*coef, mip);
-      elmat = 0;
-      for (int i = 0; i < ndof; i++)
-	elmat(i,i) = val;
-    }
-
-    virtual string Name () const { return "Regularization"; }
-  };
-  */  
-
-
-
 
   class NGS_DLL_HEADER BlockBilinearFormIntegrator : public BilinearFormIntegrator
   {

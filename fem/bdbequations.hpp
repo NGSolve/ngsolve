@@ -407,8 +407,8 @@ public:
                             FlatMatrix<double> x, FlatVector<double> y,
                             LocalHeap & lh)
   {
-    static Timer t("applytransir - bnd");
-    RegionTimer reg(t);
+    // static Timer t("applytransir - bnd");
+    // RegionTimer reg(t);
 
     static_cast<const FEL&>(fel).
       EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
