@@ -14,6 +14,26 @@
 namespace ngfem
 {
 
+  /*
+  template <ELEMENT_TYPE ET, int ORDER>
+  T_H1HighOrderFiniteElementFO<ET,ORDER> ::
+  ~T_H1HighOrderFiniteElementFO ()
+  {
+    ;
+  }
+
+  template <int ORDER>
+  H1HighOrderFEFO<ET_TRIG, ORDER> :: ~H1HighOrderFEFO()
+  { ; }
+
+  template <int ORDER>
+  H1HighOrderFEFO<ET_TET, ORDER> :: ~H1HighOrderFEFO()
+  { ; }
+  */
+
+
+
+
   template <int ORDER, int I = ORDER>
   class TrigProduct
   {
@@ -214,19 +234,23 @@ namespace ngfem
   template class H1HighOrderFiniteElementFO<2>;
   template class H1HighOrderFiniteElementFO<3>;
 
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,1>;
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,2>;
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,3>;
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,4>;
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,5>;
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG,6>;
+  /*
+  template class T_H1HighOrderFiniteElementFO<ET_TRIG>;
+  template class T_H1HighOrderFiniteElementFO<ET_TET>;
+  */
+  template class H1HighOrderFEFO<ET_TRIG,1>;
+  template class H1HighOrderFEFO<ET_TRIG,2>;
+  template class H1HighOrderFEFO<ET_TRIG,3>;
+  template class H1HighOrderFEFO<ET_TRIG,4>;
+  template class H1HighOrderFEFO<ET_TRIG,5>;
+  template class H1HighOrderFEFO<ET_TRIG,6>;
 
-  template class T_H1HighOrderFiniteElementFO<ET_TET,1>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET,2>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET,3>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET,4>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET,5>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET,6>;
+  template class H1HighOrderFEFO<ET_TET,1>;
+  template class H1HighOrderFEFO<ET_TET,2>;
+  template class H1HighOrderFEFO<ET_TET,3>;
+  template class H1HighOrderFEFO<ET_TET,4>;
+  template class H1HighOrderFEFO<ET_TET,5>;
+  template class H1HighOrderFEFO<ET_TET,6>;
 
 
   int link_it_h1hofefo;

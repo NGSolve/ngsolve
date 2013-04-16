@@ -144,10 +144,8 @@ namespace ngfem
   void T_ScalarFiniteElement2<FEL,ET> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
-    static Timer t("evaluatetrans");
-    RegionTimer reg(t);
+    // static Timer t("evaluatetrans"); RegionTimer reg(t);
     
-
     Vec<DIM> pt;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -169,7 +167,7 @@ namespace ngfem
 	static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), eval); 
       }
     */
-
+    
     /*
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i+=MD<2>::SIZE)
@@ -190,7 +188,8 @@ namespace ngfem
               vali[j] = 0;
             }
 	EvaluateShapeTrans<MD<2> > eval(coefs, vali);
-        Cast().T_CalcShape (pt, eval); 
+	static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
+        // Cast().T_CalcShape (pt, eval); 
       }
     */
   }

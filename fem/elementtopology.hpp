@@ -532,6 +532,7 @@ namespace ngfem
     enum { N_VERTEX = 1 };
     enum { N_EDGE = 0 };
     enum { N_FACE = 0 };
+    enum { N_CELL = 0 };
     enum { N_FACET = 0 };
 
     static int PolDimension (int order) { return 1; }
@@ -603,6 +604,7 @@ namespace ngfem
     enum { N_VERTEX = 2 };
     enum { N_EDGE = 1 };
     enum { N_FACE = 0 };
+    enum { N_CELL = 0 };
     enum { N_FACET = 2 };
 
     static int PolDimension (int order) { return order+1; }
@@ -660,6 +662,7 @@ namespace ngfem
     enum { N_VERTEX = 3 };
     enum { N_EDGE = 3 };
     enum { N_FACE = 1 };
+    enum { N_CELL = 0 };
     enum { N_FACET = 3 };
 
     // static int PolDimension (int order) { return (order+1)*(order+2)/2; }
@@ -747,6 +750,7 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 4 };
     enum { N_FACE = 1 };
+    enum { N_CELL = 0 };
     enum { N_FACET = 4 };
 
 
@@ -842,6 +846,7 @@ namespace ngfem
     enum { N_VERTEX = 4 };
     enum { N_EDGE = 6 };
     enum { N_FACE = 4 };
+    enum { N_CELL = 1 };
     enum { N_FACET = 4 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+3)/6; }
@@ -937,6 +942,7 @@ namespace ngfem
     enum { N_VERTEX = 6 };
     enum { N_EDGE = 9 };
     enum { N_FACE = 5 };
+    enum { N_CELL = 1 };
     enum { N_FACET = 5 };
 
     static int PolDimension (int order) { return (order+1)*(order+2)*(order+1)/2; }
@@ -1036,6 +1042,7 @@ namespace ngfem
     enum { N_VERTEX = 5 };
     enum { N_EDGE = 8 };
     enum { N_FACE = 5 };
+    enum { N_CELL = 1 };
     enum { N_FACET = 5 };
 
     static ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
@@ -1132,6 +1139,7 @@ namespace ngfem
     enum { N_VERTEX = 8 };
     enum { N_EDGE = 12 };
     enum { N_FACE = 6 };
+    enum { N_CELL = 1 };
     enum { N_FACET = 6 };
 
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }

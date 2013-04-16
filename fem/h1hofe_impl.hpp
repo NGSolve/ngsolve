@@ -13,32 +13,8 @@ namespace ngfem
 {
 
 
-  template <> 
-  class H1HighOrderFE_Shape<ET_POINT> : public H1HighOrderFE<ET_POINT>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
-  };
-
-  template <> 
-  class H1HighOrderFE_Shape<ET_SEGM> : public H1HighOrderFE<ET_SEGM>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <>
-  class H1HighOrderFE_Shape<ET_TRIG> : public H1HighOrderFE<ET_TRIG>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <>
-  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_QUAD> : public H1HighOrderFE<ET_QUAD>
+  template <ELEMENT_TYPE ET> 
+  class H1HighOrderFE_Shape : public H1HighOrderFE<ET>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -46,37 +22,6 @@ namespace ngfem
   };
 
 
-  template <>
-  class NGS_DLL_HEADER H1HighOrderFE_Shape<ET_TET> : public H1HighOrderFE<ET_TET>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-  template <>
-  class H1HighOrderFE_Shape<ET_PRISM> : public H1HighOrderFE<ET_PRISM>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-  template <> 
-  class H1HighOrderFE_Shape<ET_HEX> : public H1HighOrderFE<ET_HEX>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
-
-  template <> 
-  class H1HighOrderFE_Shape<ET_PYRAMID> : public H1HighOrderFE<ET_PYRAMID>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const; 
-  };
 
 
 
@@ -85,7 +30,7 @@ namespace ngfem
 
   /* *********************** Point  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     shape[0] = 1.0;
@@ -95,7 +40,7 @@ namespace ngfem
 
   /* *********************** Segment  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[2] = { x[0], 1-x[0] };
@@ -112,7 +57,7 @@ namespace ngfem
 
   /* *********************** Triangle  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
@@ -148,7 +93,7 @@ namespace ngfem
 
   /* *********************** Quadrilateral  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
@@ -213,7 +158,7 @@ namespace ngfem
   */
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     // RegionTimer reg(t);
@@ -251,9 +196,9 @@ namespace ngfem
 	  ii += (p-2)*(p-1)/2;
 	}
 
-    if (order_cell[0] >= 4)
+    if (order_cell[0][0] >= 4)
       ii += TetShapesInnerLegendre::
-	Calc (order_cell[0], 
+	Calc (order_cell[0][0], 
 	      lam[0]-lam[3], lam[1], lam[2], 
 	      shape.Addr(ii) );
   }
@@ -263,7 +208,7 @@ namespace ngfem
 
   /* *********************** Prism  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  H1HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
@@ -352,17 +297,17 @@ namespace ngfem
 	}
     
     // volume dofs:
-    if (order_cell[0] > 2 && order_cell[2] > 1)
+    INT<3> p = order_cell[0];
+    if (p[0] > 2 && p[2] > 1)
       {
-	INT<3> p = order_cell;
 	int nf = (p[0]-1)*(p[0]-2)/2;
 	ArrayMem<Tx,20> pol_trig(nf);
 
 	DubinerBasis::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
-	LegendrePolynomial::EvalMult (order_cell[2]-2, 2*z-1, z*(1-z), polz);
+	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
-	  for (int k = 0; k < order_cell[2]-1; k++)
+	  for (int k = 0; k < p[2]-1; k++)
 	    shape[ii++] = pol_trig[i] * polz[k];
       }
   }
@@ -373,7 +318,7 @@ namespace ngfem
 
   /* *********************** Hex  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  H1HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
   { 
     Tx x = hx[0], y = hx[1], z = hx[2];
@@ -428,17 +373,18 @@ namespace ngfem
 	}
     
     // volume dofs:
-    if (order_cell[0] >= 2 && order_cell[1] >= 2 && order_cell[2] >= 2)
+    INT<3> p = order_cell[0];
+    if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
       {
-	LegendrePolynomial::EvalMult (order_cell[0]-2, 2*x-1, x*(1-x), polx);
-	LegendrePolynomial::EvalMult (order_cell[1]-2, 2*y-1, y*(1-y), poly);
-	LegendrePolynomial::EvalMult (order_cell[2]-2, 2*z-1, z*(1-z), polz);
+	LegendrePolynomial::EvalMult (p[0]-2, 2*x-1, x*(1-x), polx);
+	LegendrePolynomial::EvalMult (p[1]-2, 2*y-1, y*(1-y), poly);
+	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
-	for (int i = 0; i < order_cell[0]-1; i++)
-	  for (int j = 0; j < order_cell[1]-1; j++)
+	for (int i = 0; i < p[0]-1; i++)
+	  for (int j = 0; j < p[1]-1; j++)
 	    {
 	      Tx pxy = polx[i] * poly[j];
-	      for (int k = 0; k < order_cell[2]-1; k++)
+	      for (int k = 0; k < p[2]-1; k++)
 		shape[ii++] = pxy * polz[k];
 	    }
       }
@@ -446,7 +392,7 @@ namespace ngfem
 
   /* ******************************** Pyramid  ************************************ */
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  H1HighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
@@ -552,14 +498,14 @@ namespace ngfem
       }
 
     
-    if (order_cell[0] >= 3)
+    if (order_cell[0][0] >= 3)
       {
-	LegendrePolynomial::EvalMult (order_cell[0]-2, 2*xt-1, xt*(1-xt), polx);
-	LegendrePolynomial::EvalMult (order_cell[0]-2, 2*yt-1, yt*(1-yt), poly);
+	LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*xt-1, xt*(1-xt), polx);
+	LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*yt-1, yt*(1-yt), poly);
 
 	Tx pz = z*(1-z)*(1-z);
 	
-	for(int k = 0; k <= order_cell[0]-3; k++)
+	for(int k = 0; k <= order_cell[0][0]-3; k++)
 	  {
 	    for(int i = 0; i <= k; i++)
 	      { 

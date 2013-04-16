@@ -24,7 +24,8 @@ namespace ngfem
      shape functions are provided by the shape template
    */
 
-  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape> 
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape> 
   class NGS_DLL_HEADER H1HighOrderFE : 
     public T_ScalarFiniteElement2< TSHAPES<ET>, ET >,
     public ET_trait<ET>
@@ -41,6 +42,7 @@ namespace ngfem
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_EDGE;
     using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::N_CELL;
     using ET_trait<ET>::FaceType;
     using ET_trait<ET>::GetEdgeSort;
     using ET_trait<ET>::GetFaceSort;
@@ -48,16 +50,16 @@ namespace ngfem
     using ET_trait<ET>::PolBubbleDimension;
 
     /// global vertex numbers used of edge/face orientation
-    int vnums[N_VERTEX];
+    Vec<N_VERTEX, int> vnums;
 
     /// order of edge shapes
-    int order_edge[N_EDGE];
+    Vec<N_EDGE, int> order_edge; 
 
     /// order of face shapes
-    INT<2> order_face[N_FACE];
+    Vec<N_FACE, INT<2> > order_face; 
 
     /// order of internal shapes (3d only)
-    INT<3> order_cell;
+    Vec<N_CELL, INT<3> > order_cell;
 
   public:
     /// minimal constructor, orders will be set later
@@ -71,7 +73,7 @@ namespace ngfem
       for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
       for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
       for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
-      if (DIM == 3) order_cell = aorder; 
+      if (DIM == 3) order_cell[0] = aorder; 
       
       order = aorder;
     }
@@ -103,7 +105,7 @@ namespace ngfem
 
 
     /// set anisotropic cell order
-    void SetOrderCell (INT<3> oi)  { order_cell = oi; }
+    void SetOrderCell (INT<3> oi)  { order_cell[0] = oi; }
 
     /// compute the element space dimension
     void ComputeNDof()
@@ -117,12 +119,12 @@ namespace ngfem
         ndof += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
       
       if (DIM == 3)
-        ndof += ::ngfem::PolBubbleDimension (ET, order_cell);
+        ndof += ::ngfem::PolBubbleDimension (ET, order_cell[0]);
       
       order = 1;
       for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);
       for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
-      if (DIM == 3) order = max (order, Max (order_cell));
+      if (DIM == 3) order = max (order, Max (order_cell[0]));
     }
 
 

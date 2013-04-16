@@ -173,118 +173,65 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
-		LocalHeap & lh) const 
-    {
-      cerr << "DifferentialOperator::CalcMatrix called for base class" << endl;
-    }
+		LocalHeap & lh) const;
 
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
-	   LocalHeap & lh) const
-    {
-      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, mip, mat, lh);
-      flux = mat * x;
-    }
+	   LocalHeap & lh) const;
 
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<Complex> x, 
 	   FlatVector<Complex> flux,
-	   LocalHeap & lh) const
-    {
-      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, mip, mat, lh);
-      flux = mat * x;
-    }
+	   LocalHeap & lh) const;
 
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
-	   LocalHeap & lh) const
-    {
-      for (int i = 0; i < mir.Size(); i++)
-	Apply (fel, mir[i], x, flux.Row(i), lh);
-    }
+	   LocalHeap & lh) const;
 
     virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<Complex> x, 
 	   FlatMatrix<Complex> flux,
-	   LocalHeap & lh) const
-    {
-      for (int i = 0; i < mir.Size(); i++)
-	Apply (fel, mir[i], x, flux.Row(i), lh);
-    }
-
-
-
+	   LocalHeap & lh) const;
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
-		LocalHeap & lh) const 
-    {
-      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, mip, mat, lh);
-      flux = mat * x;
-    }
-
+		LocalHeap & lh) const;
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<Complex> flux,
 		FlatVector<Complex> x, 
-		LocalHeap & lh) const 
-    {
-      FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
-      CalcMatrix (fel, mip, mat, lh);
-      flux = mat * x;
-    }
-
+		LocalHeap & lh) const;
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<double> flux,
 		FlatVector<double> x, 
-		LocalHeap & lh) const 
-    {
-      FlatVector<double> hx(x.Size(), lh);
-      x = 0.0;
-      for (int i = 0; i < mir.Size(); i++)
-	{
-	  ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-	  x += hx;
-	}
-    }
+		LocalHeap & lh) const;
 
     virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<Complex> flux,
 		FlatVector<Complex> x, 
-		LocalHeap & lh) const 
-    {
-      FlatVector<Complex> hx(x.Size(), lh);
-      x = 0.0;
-      for (int i = 0; i < mir.Size(); i++)
-	{
-	  ApplyTrans (fel, mir[i], flux.Row(i), hx, lh);
-	  x += hx;
-	}
-    }
+		LocalHeap & lh) const;
   };
+
 
 
   class BlockDifferentialOperator : public DifferentialOperator
@@ -307,22 +254,7 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
-		LocalHeap & lh) const 
-    {
-      FlatMatrix<double> mat1(diffop.Dim(), fel.GetNDof(), lh);
-      diffop.CalcMatrix (fel, mip, mat1, lh);
-      mat = 0;
-      
-      if (comp == -1)
-	for (int i = 0; i < mat1.Height(); i++)
-	  for (int j = 0; j < mat1.Width(); j++)
-	    for (int k = 0; k < dim; k++)
-	      mat(dim*i+k, dim*j+k) = mat1(i,j);
-      else
-	for (int i = 0; i < mat1.Height(); i++)
-	  for (int j = 0; j < mat1.Width(); j++)
-	    mat(dim*i+comp, dim*j+comp) = mat1(i,j);
-    }
+		LocalHeap & lh) const;
 
   };
 
@@ -349,13 +281,6 @@ namespace ngfem
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
-    /*
-    {
-      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
-    }
-    */
 
     virtual void
     Apply (const FiniteElement & bfel,
@@ -363,13 +288,6 @@ namespace ngfem
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
-    /*
-    {
-      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      DIFFOP::Apply (bfel, mip, x, flux, lh);
-    }
-    */
 
     virtual void
     Apply (const FiniteElement & bfel,
@@ -377,13 +295,6 @@ namespace ngfem
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const;
-    /*
-    {
-      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-	static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-      DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
-    }
-    */
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
@@ -391,13 +302,6 @@ namespace ngfem
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
-    /*
-    {
-      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      DIFFOP::ApplyTrans (bfel, mip, flux, x, lh);
-    }    
-    */
   };
 
 
