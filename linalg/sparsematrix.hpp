@@ -443,10 +443,13 @@ namespace ngla
       size_t first = firsti[row];
       size_t last = firsti[row+1];
       TVX * vecp = vec.Addr(0);
+      const int * colpi = &colnr[0];
+      const TM * datap = &data[0];
+
       int d = vec.Addr(1)-vec.Addr(0);
       if (d == 1)
         for (size_t j = first; j < last; j++)
-          vecp[colnr[j]] += Trans(data[j]) * el; 
+          vecp[colpi[j]] += Trans(datap[j]) * el; 
       else
         for (size_t j = first; j < last; j++)
           vecp[d*colnr[j]] += Trans(data[j]) * el; 
