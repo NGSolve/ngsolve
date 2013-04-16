@@ -105,6 +105,7 @@ namespace ngbla
      Trait to obtain vector and scalar types for given matrix types.
      Is specified for double, Complex, AutoDiff<doube>, AutoDiff<Complex>
   */
+
   template <class T>
   class mat_traits
   {
@@ -149,6 +150,19 @@ namespace ngbla
     typedef int TV_COL;
     typedef int TV_ROW;
     enum { HEIGHT = 1 };
+    enum { WIDTH = 1 };
+    enum { IS_COMPLEX = 0 };
+  };
+
+  template <int D>
+  class mat_traits<INT<D> >
+  {
+  public:
+    typedef int TELEM;
+    typedef int TSCAL;
+    typedef int TV_COL;
+    typedef int TV_ROW;
+    enum { HEIGHT = D };
     enum { WIDTH = 1 };
     enum { IS_COMPLEX = 0 };
   };
