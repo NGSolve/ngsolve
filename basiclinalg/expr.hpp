@@ -155,7 +155,7 @@ namespace ngbla
   };
 
   template <int D>
-  class mat_traits<INT<D> >
+  class mat_traits<ngstd::INT<D> >
   {
   public:
     typedef int TELEM;
