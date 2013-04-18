@@ -214,7 +214,7 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS"
+				PreprocessorDefinitions="WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -303,10 +303,11 @@
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="WIN32;noLAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
 				OpenMP="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -489,6 +490,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\diffop.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\elementtopology.cpp"
 					>
 				</File>
@@ -510,6 +515,10 @@
 				</File>
 				<File
 					RelativePath="..\fem\h1hofefo.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\h1lofe.cpp"
 					>
 				</File>
 				<File
@@ -895,6 +904,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\basiclinalg\md.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\basiclinalg\ng_lapack.hpp"
 					>
 				</File>
@@ -963,6 +976,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\h1hofe_impl.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\h1hofefo.hpp"
 					>
 				</File>
@@ -992,6 +1009,10 @@
 				</File>
 				<File
 					RelativePath="..\fem\hdivhofe.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\hdivhofe_impl.hpp"
 					>
 				</File>
 				<File
@@ -1043,7 +1064,15 @@
 					>
 				</File>
 				<File
+					RelativePath="..\fem\thdivfe_impl.hpp"
+					>
+				</File>
+				<File
 					RelativePath="..\fem\tscalarfe.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\fem\tscalarfe_impl.hpp"
 					>
 				</File>
 				<File
@@ -1328,7 +1357,7 @@
 	<Globals>
 		<Global
 			Name="HPC_Debug"
-			Value="&#65279;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay /&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
+			Value="&#65279;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay&gt;NGSolve&lt;/ProjectNameDisplay&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
 		/>
 	</Globals>
 </VisualStudioProject>
