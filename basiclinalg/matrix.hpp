@@ -135,7 +135,7 @@ namespace ngbla
     */
 
     /// copy contents
-    const FlatMatrix & operator= (const FlatMatrix & m) throw()
+    const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
       int hw = h*w;
       for (int i = 0; i < hw; i++)
@@ -144,7 +144,7 @@ namespace ngbla
     }
 
     /// assign constant
-    FlatMatrix & operator= (TSCAL s) throw()
+    const FlatMatrix & operator= (TSCAL s) const 
     {
       int hw = h*w;
       for (int i = 0; i < hw; i++)
