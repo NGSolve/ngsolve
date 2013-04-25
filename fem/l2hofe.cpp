@@ -244,6 +244,26 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
+  void L2HighOrderFE<ET,SHAPES> :: 
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const
+  {
+    int classnr =  ET_trait<ET>::GetClassNr (vnums);
+    
+    PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
+    if (pre)
+      // vals = pre->shapes * coefs;
+      coefs = Trans(pre->shapes)*values;
+    else
+      T_ScalarFiniteElement2< SHAPES<ET>, ET > :: EvaluateTrans (ir, values, coefs);
+  }
+
+
+
+
+
+
+
 
   template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET> class SHAPES>
   void L2HighOrderFE<ET,SHAPES> :: 
