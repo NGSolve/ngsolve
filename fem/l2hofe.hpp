@@ -193,9 +193,9 @@ namespace ngfem
     virtual void PrecomputeShapes (const IntegrationRule & ir);
 
     virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
+    virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
 
     virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
-
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
 
     virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
