@@ -740,8 +740,9 @@ public:
     RegionTimer reg (timer);
 
     // const FEL & fel = static_cast<const FEL&> (bfel);
-    int ndof = fel.GetNDof ();
+    // int ndof = fel.GetNDof ();
     
+    /*
     ely = 0;
     
     Vec<DIM_DMAT,TSCAL> hv1;
@@ -762,6 +763,23 @@ public:
 
 	ely += mip.GetWeight() * hely;
       }     
+    */
+
+    const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+    MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
+    
+    FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv1(ir.GetNIP(), lh);
+    FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv2(ir.GetNIP(), lh);
+
+    DIFFOP::ApplyIR (fel, mir, elx, hv1, lh);
+
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+	dmatop.Apply (fel, mir[i], hv1.Row(i), hv2.Row(i), lh);       
+        hv2.Row(i) *= mir[i].GetWeight();
+      }
+
+    DIFFOP::ApplyTransIR (fel, mir, hv2, ely, lh);    
   }
 
 

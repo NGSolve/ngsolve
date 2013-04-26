@@ -52,10 +52,11 @@ public:
     y = sip.GetJacobian() * hv;
   }
 
+  using DiffOp<DiffOpIdHDiv<D, FEL> >::ApplyIR;
 
   template <typename AFEL, class MIR>
   static void ApplyIR (const AFEL & fel, const MIR & mir,
-		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       const FlatVector<double> x, FlatMatrix<double> y,
 		       LocalHeap & lh)
   {
     static_cast<const FEL&>(fel).Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
