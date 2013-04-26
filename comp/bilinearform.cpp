@@ -323,27 +323,22 @@ namespace ngcomp
         
         if (timing)
           {
-            clock_t starttime;
-            double time;
+            Timer timer("bftimer");
 
-            starttime = clock();
-          
             BaseVector & vecf = *mats.Last()->CreateVector();
             BaseVector & vecu = *mats.Last()->CreateVector();
           
             vecu = 1;
-            int steps = 0;
             do
               {
+                timer.Start();
                 vecf = (*mats.Last()) * vecu;
-                steps++;
-                time = double(clock() - starttime) / CLOCKS_PER_SEC;
+                timer.Stop();
               }
-            while (time < 2.0);
+            while (timer.GetTime() < 2.0);
           
-            cout << " 1 application takes " << time / steps
+            cout << " 1 application takes " << timer.GetTime() / timer.GetCounts()
                  << " seconds" << endl;
-
           }
 
 
