@@ -236,6 +236,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete low_order_space;
     delete boundary_evaluator;
     delete evaluator;
+    delete flux_evaluator;
     delete integrator;
     delete boundary_integrator;
     delete prol;
@@ -248,6 +249,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete quad;
     delete segm;
     delete point;
+
+    delete dummy_tet;
+    delete dummy_pyramid;
+    delete dummy_prism;
+    delete dummy_hex;
+    delete dummy_trig;
+    delete dummy_quad;
+    delete dummy_segm;
+    delete dummy_point;
 
     delete element_coloring;
     delete paralleldofs;
