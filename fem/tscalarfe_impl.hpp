@@ -145,7 +145,6 @@ namespace ngfem
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
     // static Timer t("evaluatetrans"); RegionTimer reg(t);
-    
     Vec<DIM> pt;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -167,7 +166,6 @@ namespace ngfem
 	static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), eval); 
       }
     */
-    
     /*
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i+=MD<2>::SIZE)

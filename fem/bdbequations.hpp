@@ -62,9 +62,11 @@ public:
     y = Trans (mip.GetJacobianInverse()) * hv;
   }
 
+  using DiffOp<DiffOpGradient<D, FEL> >::ApplyIR;
+  
   template <class MIR>
   static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       const FlatVector<double> x, FlatMatrix<double> y,
 		       LocalHeap & lh)
   {
     FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
@@ -247,9 +249,12 @@ public:
     y(0) = Cast(fel).Evaluate(mip.IP(), x);
   }
 
+
+  using DiffOp<DiffOpId<D, FEL> >::ApplyIR;
+
   template <class MIR>
   static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-		       const FlatVector<double> & x, FlatMatrix<double> & y,
+		       const FlatVector<double> x, FlatMatrix<double> y,
 		       LocalHeap & lh)
   {
     Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
