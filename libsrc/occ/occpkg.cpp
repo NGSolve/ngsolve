@@ -21,7 +21,7 @@ extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern NetgenGeometry * ng_geometry;
+  extern AutoPtr<NetgenGeometry> ng_geometry;
   extern AutoPtr<Mesh> mesh;
  
   char * err_needsoccgeometry = (char*) "This operation needs an OCC geometry";
@@ -55,7 +55,7 @@ namespace netgen
   {
 #ifdef OCCGEOMETRY
     int showvolume;
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+	OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
 
     showvolume = atoi (Tcl_GetVar (interp, "::occoptions.showvolumenr", 0));
 
@@ -119,7 +119,7 @@ namespace netgen
 		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
 
     static char buf[1000];
     buf[0] = 0;
@@ -149,7 +149,7 @@ namespace netgen
 		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
 
     stringstream str;
     if (argc >= 2)
@@ -568,7 +568,7 @@ namespace netgen
 	   return TCL_ERROR;
     }
 
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
     if (!occgeometry)
     {
       Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
@@ -941,7 +941,7 @@ namespace netgen
 
   VisualScene * OCCGeometryRegister :: GetVisualScene (const NetgenGeometry * geom) const
   {
-    OCCGeometry * geometry = dynamic_cast<OCCGeometry*> (ng_geometry);
+    OCCGeometry * geometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
     if (geometry)
       {
 	vsoccgeom.SetGeometry (geometry);
