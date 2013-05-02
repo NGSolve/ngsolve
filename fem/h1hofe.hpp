@@ -25,9 +25,11 @@ namespace ngfem
    */
 
   template <ELEMENT_TYPE ET, 
-            template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape> 
+            template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape,
+            class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> > 
+
   class NGS_DLL_HEADER H1HighOrderFE : 
-    public T_ScalarFiniteElement2< TSHAPES<ET>, ET >,
+    public T_ScalarFiniteElement2< TSHAPES<ET>, ET, BASE>,
     public ET_trait<ET>
   {
   protected:
@@ -119,7 +121,7 @@ namespace ngfem
         ndof += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
       
       if (DIM == 3)
-        ndof += ::ngfem::PolBubbleDimension (ET, order_cell[0]);
+        ndof += PolBubbleDimension (order_cell[0]);
       
       order = 1;
       for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);

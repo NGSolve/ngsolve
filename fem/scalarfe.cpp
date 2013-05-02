@@ -17,8 +17,6 @@
 namespace ngfem
 {
   
-  using namespace ngfem;
-
 
   template <int D>
   void ScalarFiniteElement<D> ::
@@ -271,5 +269,116 @@ namespace ngfem
   template class ScalarFiniteElement<1>;
   template class ScalarFiniteElement<2>;
   template class ScalarFiniteElement<3>;
+
+
+
+
+
+
+
+
+  template <int D>
+  void DGFiniteElement<D>:: 
+  GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    IntegrationRule ir(eltype, 2*order);
+    VectorMem<50> shape(ndof);
+    mass = 0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        this -> CalcShape (ir[i], shape);
+        for (int j = 0; j < ndof; j++)
+          mass(j) += ir[i].Weight() * sqr (shape(j));
+      }
+  }
+
+
+  template <int D>
+  void DGFiniteElement<D>:: 
+  CalcTraceMatrix (int facet, FlatMatrix<> trace) const
+  {
+    ELEMENT_TYPE ftype = ElementTopology::GetFacetType (eltype, facet);
+    Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
+    const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
+
+    DGFiniteElement<1> * facetfe1 = NULL;
+    DGFiniteElement<2> * facetfe2 = NULL;
+    switch (ftype)
+      {
+      case ET_SEGM : facetfe1 = new L2HighOrderFE<ET_SEGM> (order); break;
+      case ET_TRIG : facetfe2 = new L2HighOrderFE<ET_TRIG> (order); break;
+      case ET_QUAD : facetfe2 = new L2HighOrderFE<ET_QUAD> (order); break;
+      default:
+	;
+      }
+
+    int ndof_facet = trace.Height();
+    Vector<> shape(ndof);
+    Vector<> fshape(ndof_facet);
+    Vector<> norms(ndof_facet);
+
+    trace = 0.0;
+    norms = 0.0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+	if (D == 2)
+	  facetfe1 -> CalcShape (ir[i], fshape);
+	else
+	  facetfe2 -> CalcShape (ir[i], fshape);
+
+	this -> CalcShape (f2el (facet, ir[i]), shape);
+
+	trace += ir[i].Weight() * fshape * Trans (shape);
+	for (int j = 0; j < norms.Size(); j++)
+	  norms(j) += ir[i].Weight() * sqr (fshape(j));
+      }
+
+    for (int j = 0; j < fshape.Size(); j++)
+      trace.Row(j) /= norms(j);
+
+    delete facetfe1;
+    delete facetfe2;
+  }
+
+
+  template <int D>
+  void DGFiniteElement<D>:: 
+  CalcGradientMatrix (FlatMatrix<> gmat) const
+  {
+    IntegrationRule ir (eltype, 2*order);
+
+    Vector<> shape(ndof);
+    MatrixFixWidth<D> dshape(ndof);
+    Vector<> norms(ndof);
+    
+    gmat = 0.0;
+    norms = 0.0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+	this -> CalcShape (ir[i], shape);
+	this -> CalcDShape (ir[i], dshape);
+        
+        for (int j = 0; j < ndof; j++)
+          for (int k = 0; k < ndof; k++)
+            for (int l = 0; l < D; l++)
+              gmat(k*D+l, j) += ir[i].Weight() * dshape(j,l) * shape(k);
+
+	for (int j = 0; j < norms.Size(); j++)
+	  norms(j) += ir[i].Weight() * sqr (shape(j));
+      }
+    for (int j = 0; j < ndof; j++)
+      gmat.Rows(D*j, D*(j+1)) /= norms(j);
+  }
+
+
+
+
+
+  template class DGFiniteElement<1>;
+  template class DGFiniteElement<2>;
+  template class DGFiniteElement<3>;
+
+
+
 }
 

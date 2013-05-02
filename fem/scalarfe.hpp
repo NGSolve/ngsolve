@@ -157,6 +157,91 @@ namespace ngfem
   };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  template<int D>
+  class DGFiniteElement : public ScalarFiniteElement<D>
+  {
+  protected:
+    int vnums[8];  
+
+    using ScalarFiniteElement<D>::ndof;
+    using ScalarFiniteElement<D>::order;
+    using ScalarFiniteElement<D>::eltype;
+
+  public:
+    /// global vertex numbers define ordering of vertices
+    template <typename TA>
+    void SetVertexNumbers (const TA & avnums)
+    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
+
+    /// assign vertex number
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+    virtual void SetOrder (INT<D> p) = 0;
+    virtual void ComputeNDof() = 0;
+
+
+    virtual void PrecomputeTrace () = 0; 
+    virtual void PrecomputeGrad () = 0;
+
+    void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
+    void CalcGradientMatrix (FlatMatrix<> gmat) const;
+
+    virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+
+    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
+    {
+      Matrix<> gmat(D*grad.Height(), coefs.Size());
+      CalcGradientMatrix (gmat);
+      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+      vgrad = gmat * coefs;
+    }
+
+    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
+    {
+      Matrix<> gmat(D*grad.Height(), coefs.Size());
+      CalcGradientMatrix (gmat);
+      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+      coefs = Trans (gmat) * vgrad;
+    }
+
+    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+    {
+      Matrix<> trace(fcoefs.Size(), coefs.Size());
+      CalcTraceMatrix(facet, trace);
+      fcoefs = trace * coefs;
+    }
+
+    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    {
+      Matrix<> trace(fcoefs.Size(), coefs.Size());
+      CalcTraceMatrix(facet, trace);
+      coefs = Trans (trace) * fcoefs;
+    }
+  };
+  
+
+
+
+
+
+
 }
 
 #endif
