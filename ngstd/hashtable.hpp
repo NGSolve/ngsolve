@@ -48,6 +48,23 @@ namespace ngstd
       for (int j = 0; j < N; j++) 
 	i[j] = in2.i[j]; 
     }
+
+    template <int N2>
+    INT (const INT<N2> & in2)
+    {
+      if (N2 <= N)
+        {
+          for (int j = 0; j < N2; j++)
+            i[j] = in2[j];
+          for (int j = N2; j < N; j++)
+            i[j] = 0;
+        }
+      else
+        {
+          for (int j = 0; j < N; j++)
+            i[j] = in2[j];
+        }
+    }
   
     /// all ints equal ?
     bool operator== (const INT & in2) const
