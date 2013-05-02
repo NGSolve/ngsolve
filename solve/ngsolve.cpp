@@ -675,7 +675,7 @@ namespace ngsolve {
 }
 namespace ngfem {
   namespace bdbequations_cpp { extern int link_it; }
-  extern int link_it_h1hofefo;
+  // extern int link_it_h1hofefo;
 }
 
 namespace ngcomp {
@@ -815,7 +815,7 @@ int NGSolve_Init (Tcl_Interp * interp)
   // trick for forcing linking static libs
   // ngsolve::bvp_cpp::link_it = 0;
   ngfem::bdbequations_cpp::link_it = 0;
-  ngfem::link_it_h1hofefo = 0;
+  // ngfem::link_it_h1hofefo = 0;
   ngsolve::numprocee_cpp::link_it = 0;
 
 
