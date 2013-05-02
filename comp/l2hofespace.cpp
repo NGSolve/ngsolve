@@ -18,7 +18,7 @@ To do: *Internal External Dofs (eliminate internal)
 
 
 #include <../fem/l2hofe.hpp>
-#include <../fem/l2hofefo.hpp>
+// #include <../fem/l2hofefo.hpp>
 
 
 using namespace ngmg;
@@ -268,9 +268,26 @@ namespace ngcomp
 	  }
         */
 
+        switch (eltype)
+          {
+          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
+
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
+            
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, lh);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, lh);
+          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, lh);
+          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, lh);
+            
+          default:
+            throw Exception ("illegal element in L2HoFeSpace::GetFE");
+          }
+        
+#ifdef OLD
 	if (ma.GetDimension() == 2)
 	  {
-	    L2HighOrderFiniteElement<2> * fe2d = 0;
+	    DGFiniteElement<2> * fe2d = 0;
 
             Ng_Element ngel = ma.GetElement<2> (elnr);
 
@@ -290,7 +307,7 @@ namespace ngcomp
 	
 	else
 	  {
-	    L2HighOrderFiniteElement<3> * fe3d = 0;
+	    DGFiniteElement<3> * fe3d = 0;
             Ng_Element ngel = ma.GetElement<3> (elnr);
 
 	    // switch (ma.GetElType(elnr))
@@ -316,6 +333,7 @@ namespace ngcomp
 	    fe3d -> ComputeNDof(); 
             return *fe3d;
           }
+#endif
       } 
     catch (Exception & e)
       {
@@ -325,15 +343,27 @@ namespace ngcomp
       }
   }
 
-
+  
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
+  {
+    Ng_Element ngel = ma.GetElement<ET_trait<ET>::DIM>(elnr);
+    L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
+    
+    hofe -> SetVertexNumbers (ngel.vertices);
+    hofe -> SetOrder (order_inner[elnr]);
+    hofe -> ComputeNDof();
+    
+    return *hofe;
+  }
 
 
 
 
   const FiniteElement & L2HighOrderFESpace :: GetFacetFE (int fnr, LocalHeap & lh) const
   {
-    L2HighOrderFiniteElement<1> * fe1d = 0;
-    L2HighOrderFiniteElement<2> * fe2d = 0;
+    DGFiniteElement<1> * fe1d = 0;
+    DGFiniteElement<2> * fe2d = 0;
 
     ArrayMem<int,4> vnums;
     ma.GetFacetPNums (fnr, vnums);
@@ -555,7 +585,7 @@ namespace ngcomp
   {
     if (ma.GetDimension() == 2)
       {
-	L2HighOrderFiniteElement<1> * fe1d = 0;
+	DGFiniteElement<1> * fe1d = 0;
 	
 	Ng_Element ngel = ma.GetElement<1> (elnr);
 
@@ -573,7 +603,7 @@ namespace ngcomp
       }
     else
       {
-	L2HighOrderFiniteElement<2> * fe2d = 0;
+	DGFiniteElement<2> * fe2d = 0;
 	
 	Ng_Element ngel = ma.GetElement<2> (elnr);
 	

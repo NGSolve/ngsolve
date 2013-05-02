@@ -63,6 +63,9 @@ namespace ngcomp
     virtual int GetNDofLevel (int level) const;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    template <ELEMENT_TYPE ET>
+    const FiniteElement & T_GetFE (int elnr, LocalHeap & lh) const;
+
     ///
     virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
     ///
