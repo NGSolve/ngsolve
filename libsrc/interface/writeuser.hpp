@@ -77,7 +77,8 @@ void WriteGmsh2Format (const Mesh & mesh,
 // Added OpenFOAM 1.5+ Mesh Export support
 extern 
 void WriteOpenFOAM15xFormat (const Mesh & mesh, 
-                             const string & casename);
+                             const string & casename,
+							 const bool compressed);
 
 
 extern

@@ -45,7 +45,7 @@ namespace netgen
 
 
 
-   static void WriteOpenFOAM15xBanner(ofstream & outfile)
+   static void WriteOpenFOAM15xBanner(ostream * outfile)
    {
       static char FOAMversion[4] = "1.5";
       static char spaces[40];
@@ -53,10 +53,10 @@ namespace netgen
       memset(spaces, ' ', 40);
       spaces[38 - strlen(FOAMversion)] = '\0';
       
-      outfile << 
+      *outfile << 
               "/*--------------------------------*- C++ -*----------------------------------*\\\n";
 
-      outfile <<
+      *outfile <<
               "| =========                 |                                                 |\n"
               "| \\\\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |\n"
               "|  \\\\    /   O peration     | Version:  " << FOAMversion << spaces << "|\n"
@@ -68,17 +68,17 @@ namespace netgen
 
 
 
-   static void WriteOpenFOAM15xDividerStart(ofstream & outfile)
+   static void WriteOpenFOAM15xDividerStart(ostream * outfile)
    {
-      outfile  <<
+      *outfile  <<
                "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n";
    }
 
 
 
-   static void WriteOpenFOAM15xDividerEnd(ofstream & outfile)
+   static void WriteOpenFOAM15xDividerEnd(ostream * outfile)
    {
-      outfile <<
+      *outfile <<
               "// ************************************************************************* //\n";
    }
 
@@ -281,11 +281,11 @@ namespace netgen
 
 
 
-   static void WriteNeighbourFile (ofstream & outfile)
+   static void WriteNeighbourFile (ostream * outfile)
    {
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
-      outfile << "FoamFile \n"
+      *outfile << "FoamFile \n"
               << "{ \n"
               << "    version     2.0; \n"
               << "    format      ascii; \n"
@@ -296,30 +296,30 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << "\n\n";
+      *outfile << "\n\n";
 
       int nneighbours = neighbour_celllist.Size();
 
-      outfile << nneighbours << "\n";
+      *outfile << nneighbours << "\n";
 
-      outfile << "(\n";
+      *outfile << "(\n";
 
       // Write the neighbour cells to file
       for(int i = 1; i <= neighbour_celllist.Size(); i++)
       {
-         outfile << neighbour_celllist.Elem(i) - 1 << "\n";
+         *outfile << neighbour_celllist.Elem(i) - 1 << "\n";
       }
-      outfile << ")\n\n";
+      *outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
 
 
-   static void WriteOwnerFile (ofstream & outfile)
+   static void WriteOwnerFile (ostream * outfile)
    {
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
-      outfile << "FoamFile \n"
+      *outfile << "FoamFile \n"
               << "{ \n"
               << "    version     2.0; \n"
               << "    format      ascii; \n"
@@ -330,39 +330,39 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << "\n\n";
+      *outfile << "\n\n";
 
       int nowners = owner_celllist.Size() + surfelem_lists.Size();
 
-      outfile << nowners << "\n";
+      *outfile << nowners << "\n";
 
-      outfile << "(\n";
+      *outfile << "(\n";
 
       // Write the owners of the internal cells to file
       for(int i = 1; i <= owner_celllist.Size(); i++)
       {
-         outfile << owner_celllist.Elem(i) - 1 << "\n";
+         *outfile << owner_celllist.Elem(i) - 1 << "\n";
       }
 
       // Write the owners of the boundary cells to file
       // (Written in order of ascending boundary condition numbers)
       for(int i = 1; i <= surfelem_lists.Size(); i++)
       {
-         outfile << surfelem_lists.Elem(i).I2() - 1 << "\n";
+         *outfile << surfelem_lists.Elem(i).I2() - 1 << "\n";
       }
-      outfile << ")\n\n";
+      *outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
 
 
-   static void WriteFacesFile (ofstream & outfile, const Mesh & mesh)
+   static void WriteFacesFile (ostream * outfile, const Mesh & mesh)
    {
       const MeshTopology& meshtopo = mesh.GetTopology();
 
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
-      outfile << "FoamFile \n"
+      *outfile << "FoamFile \n"
               << "{ \n"
               << "    version     2.0; \n"
               << "    format      ascii; \n"
@@ -373,13 +373,13 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << "\n\n";
+      *outfile << "\n\n";
 
       int nfaces = owner_facelist.Size() + surfelem_lists.Size();
 
-      outfile << nfaces << "\n";
+      *outfile << nfaces << "\n";
 
-      outfile << "(\n";
+      *outfile << "(\n";
 
       // Array to hold the indices of the points of each face to 
       // flip if required 
@@ -420,14 +420,14 @@ namespace netgen
             }
          }
 
-         outfile << facepnts.Size();
-         outfile << "(";
+         *outfile << facepnts.Size();
+         *outfile << "(";
          for(int j = 1; j <= facepnts.Size(); j++)
          {
-            outfile << facepnts.Elem(j)-1;
-            if(j != facepnts.Size()) outfile << " ";
+            *outfile << facepnts.Elem(j)-1;
+            if(j != facepnts.Size()) *outfile << " ";
          }
-         outfile << ")\n";
+         *outfile << ")\n";
       }
 
       // Now append the faces of the surface elements (written in 
@@ -463,29 +463,29 @@ namespace netgen
             }
          }
 
-         outfile << facepnts.Size();
-         outfile << "(";
+         *outfile << facepnts.Size();
+         *outfile << "(";
          for(int j = 1; j <= facepnts.Size(); j++)
          {
-            outfile << facepnts.Elem(j)-1;
-            if(j != facepnts.Size()) outfile << " ";
+            *outfile << facepnts.Elem(j)-1;
+            if(j != facepnts.Size()) *outfile << " ";
          }
-         outfile << ")\n";
+         *outfile << ")\n";
       }
 
-      outfile << ")\n\n";
+      *outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
 
  
-   static void WritePointsFile (ofstream & outfile, const Mesh & mesh)
+   static void WritePointsFile (ostream * outfile, const Mesh & mesh)
    {
       int np = mesh.GetNP();
 
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
-      outfile << "FoamFile \n"
+      *outfile << "FoamFile \n"
               << "{ \n"
               << "    version     2.0; \n"
               << "    format      ascii; \n"
@@ -496,40 +496,40 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << "\n\n";
+      *outfile << "\n\n";
 
       // Number of points in the following list
-      outfile << np << "\n";
+      *outfile << np << "\n";
 
-      outfile.precision(6);
-      outfile.setf (ios::fixed, ios::floatfield);
-      outfile.setf (ios::showpoint);
+      outfile->precision(6);
+      outfile->setf (ios::fixed, ios::floatfield);
+      outfile->setf (ios::showpoint);
 
       // Coordinate list starts here
-      outfile << "(\n";
+      *outfile << "(\n";
 
       for(int i = 1; i <= np; i++)
       {
          const Point3d & p = mesh.Point(i);
 
          // Write coordinates to file
-         outfile << "(";
-         outfile << p.X() << " ";
-         outfile << p.Y() << " ";
-         outfile << p.Z();
-         outfile << ")\n";
+         *outfile << "(";
+         *outfile << p.X() << " ";
+         *outfile << p.Y() << " ";
+         *outfile << p.Z();
+         *outfile << ")\n";
       }
-      outfile << ")\n\n";
+      *outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
 
 
-   static void WriteBoundaryFile (ofstream & outfile)
+   static void WriteBoundaryFile (ostream * outfile)
    {
       // Write the OpenFOAM standard banner and dividers, etc...
       WriteOpenFOAM15xBanner(outfile);
-      outfile << "FoamFile \n"
+      *outfile << "FoamFile \n"
               << "{ \n"
               << "    version     2.0; \n"
               << "    format      ascii; \n"
@@ -540,7 +540,7 @@ namespace netgen
               << "} \n";
       WriteOpenFOAM15xDividerStart(outfile);
 
-      outfile << "\n";
+      *outfile << "\n";
 
 
       Array<INDEX_3> bcarray;
@@ -570,8 +570,8 @@ namespace netgen
 
       bcarray.SetSize(ind);
 
-      outfile << bcarray.Size() << "\n";
-      outfile << "(\n";
+      *outfile << bcarray.Size() << "\n";
+      *outfile << "(\n";
 
       int startface = 0;
 
@@ -579,7 +579,7 @@ namespace netgen
       {
          startface = owner_celllist.Size() + bcarray.Elem(i).I3();
 
-         outfile << "    patch" << bcarray.Elem(i).I1() << "\n"
+         *outfile << "    patch" << bcarray.Elem(i).I1() << "\n"
                  << "    {\n"
                  << "        type            patch;\n"
                  << "        physicalType    patch;\n"
@@ -588,13 +588,13 @@ namespace netgen
                  << "    }\n";
       }
 
-      outfile << ")\n\n";
+      *outfile << ")\n\n";
       WriteOpenFOAM15xDividerEnd(outfile);
    }
 
 
 
-   void WriteOpenFOAM15xFormat (const Mesh & mesh, const string & casename)
+   void WriteOpenFOAM15xFormat (const Mesh & mesh, const string & casename, const bool compressed)
    {
       bool error = false;
       char casefiles[256];
@@ -659,16 +659,59 @@ namespace netgen
       // owner
       // neighbour
       // boundary
-      sprintf(casefiles, "%s/constant/polyMesh/points", casename.c_str());
-      ofstream outfile_pnts(casefiles);
-      sprintf(casefiles, "%s/constant/polyMesh/faces", casename.c_str()); 
-      ofstream outfile_faces(casefiles);
-      sprintf(casefiles, "%s/constant/polyMesh/owner", casename.c_str()); 
-      ofstream outfile_own(casefiles);
-      sprintf(casefiles, "%s/constant/polyMesh/neighbour", casename.c_str()); 
-      ofstream outfile_nei(casefiles);
+	  ostream *outfile_pnts;
+	  ostream *outfile_faces;
+	  ostream *outfile_own;
+	  ostream *outfile_nei;
+	  ostream *outfile_bnd;
+
+	  if(compressed)
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/points.gz", casename.c_str());
+		  outfile_pnts = new ogzstream(casefiles);
+	  }
+	  else
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/points", casename.c_str());
+		  outfile_pnts = new ofstream(casefiles);
+	  }
+
+	  if(compressed)
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/faces.gz", casename.c_str());
+		  outfile_faces = new ogzstream(casefiles);
+	  }
+	  else
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/faces", casename.c_str());
+		  outfile_faces = new ofstream(casefiles);
+	  }
+
+	  if(compressed)
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/owner.gz", casename.c_str()); 
+		  outfile_own = new ogzstream(casefiles);
+	  }
+	  else
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/owner", casename.c_str()); 
+		  outfile_own = new ofstream(casefiles);
+	  }
+
+	  if(compressed)
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/neighbour.gz", casename.c_str());
+		  outfile_nei = new ogzstream(casefiles);
+	  }
+	  else
+	  {
+		  sprintf(casefiles, "%s/constant/polyMesh/neighbour", casename.c_str());
+		  outfile_nei = new ofstream(casefiles);
+	  }
+
+	  // Note... the boundary file is not compressed
       sprintf(casefiles, "%s/constant/polyMesh/boundary", casename.c_str()); 
-      ofstream outfile_bnd(casefiles);
+      outfile_bnd = new ofstream(casefiles);
 
       ResetTime();
 
@@ -682,11 +725,11 @@ namespace netgen
 
 
       // Write the "owner" file
-      if(outfile_own.good() && !error)
+      if(outfile_own->good() && !error)
       {
          cout << "Writing the owner file: ";
          WriteOwnerFile(outfile_own);
-         outfile_own.close();
+         delete outfile_own;
          cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
@@ -697,11 +740,11 @@ namespace netgen
 
 
       // Write the "neighbour" file
-      if(outfile_nei.good() && !error)
+      if(outfile_nei->good() && !error)
       {
          cout << "Writing the neighbour file: ";
          WriteNeighbourFile(outfile_nei);
-         outfile_nei.close();
+         delete outfile_nei;
          cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
@@ -712,11 +755,11 @@ namespace netgen
 
 
       // Write the "faces" file
-      if(outfile_faces.good() && !error)
+      if(outfile_faces->good() && !error)
       {
          cout << "Writing the faces file: ";
          WriteFacesFile(outfile_faces, mesh);
-         outfile_faces.close();
+         delete outfile_faces;
          cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
@@ -727,11 +770,11 @@ namespace netgen
 
 
       // Write the "points" file
-      if(outfile_pnts.good() && !error)
+      if(outfile_pnts->good() && !error)
       {
          cout << "Writing the points file: ";
          WritePointsFile(outfile_pnts,mesh);
-         outfile_pnts.close();
+         delete outfile_pnts;
          cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else
@@ -742,11 +785,11 @@ namespace netgen
 
 
       // Write the "boundary" file
-      if(outfile_bnd.good() && !error)
+      if(outfile_bnd->good() && !error)
       {
          cout << "Writing the boundary file: ";
          WriteBoundaryFile(outfile_bnd);
-         outfile_bnd.close();
+         delete outfile_bnd;
          cout << "Done! (Time Elapsed = " << GetTime() << " sec)\n";
       }
       else

@@ -249,6 +249,8 @@ loadmeshinifile;
 	    set file [file nativename [tk_chooseDirectory -title "Elmer Mesh Export - Select Directory"]]
         } elseif { $exportfiletype == "OpenFOAM 1.5+ Format"} {
 	    set file [file nativename [tk_chooseDirectory -title "OpenFOAM 1.5+ Mesh Export - Select Case Directory"]]
+        } elseif { $exportfiletype == "OpenFOAM 1.5+ Compressed"} {
+	    set file [file nativename [tk_chooseDirectory -title "OpenFOAM 1.5+ Mesh Export - Select Case Directory"]]
         } else {
 #	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {$extension} }" ]
 	    set file [tk_getSaveFile  -filetypes "{ \"$exportfiletype\" {*}}" ]
