@@ -94,14 +94,14 @@ namespace ngfem
 
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  T_ScalarFiniteElement2<FEL,ET> :: ~T_ScalarFiniteElement2 ()
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  T_ScalarFiniteElement2<FEL,ET,BASE> :: ~T_ScalarFiniteElement2 ()
   {
     ;
   }
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
   {
     Vec<DIM> pt;
@@ -110,8 +110,8 @@ namespace ngfem
   }
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  double T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  double T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
   {
     Vec<DIM> pt;
@@ -125,8 +125,8 @@ namespace ngfem
   }  
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
   {
     Vec<DIM> pt;
@@ -140,8 +140,8 @@ namespace ngfem
       }
   }
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
     // static Timer t("evaluatetrans"); RegionTimer reg(t);
@@ -194,8 +194,8 @@ namespace ngfem
 
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const
   {
     Vec<DIM, AutoDiff<DIM> > adp;
@@ -212,8 +212,8 @@ namespace ngfem
   }
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const
   {
     Vec<DIM, AutoDiff<DIM> > adp;
@@ -230,8 +230,8 @@ namespace ngfem
       }
   }
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   CalcDShape (const IntegrationPoint & ip, 
               FlatMatrixFixWidth<DIM> dshape) const
   {
@@ -244,8 +244,8 @@ namespace ngfem
   }
 
 
-  template <class FEL, ELEMENT_TYPE ET>
-  void T_ScalarFiniteElement2<FEL,ET> :: 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    FlatMatrixFixWidth<DIM> dshape) const
   {

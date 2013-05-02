@@ -317,12 +317,14 @@ namespace ngfem
      Barton and Nackman Trick for elements with non-static CalcShape method
   */
 
-  template <class FEL, ELEMENT_TYPE ET>
-  class NGS_DLL_HEADER T_ScalarFiniteElement2 : virtual public ScalarFiniteElement<ET_trait<ET>::DIM>
+  template <class FEL, ELEMENT_TYPE ET, class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> >
+  class NGS_DLL_HEADER T_ScalarFiniteElement2 : virtual public BASE
   {
   public:
     enum { DIM = ET_trait<ET>::DIM };
-    using ScalarFiniteElement<DIM>::eltype;
+    using BASE::eltype;
+    using BASE::ndof;
+    using BASE::order;
 
     T_ScalarFiniteElement2 () { eltype = ET; }
     virtual ~T_ScalarFiniteElement2();
