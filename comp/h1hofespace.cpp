@@ -496,6 +496,7 @@ namespace ngcomp
 	  }
       }
 
+    /*
     if (fixed_order && eltype == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -529,6 +530,7 @@ namespace ngcomp
         hofe3d->SetVertexNumbers (ngel.vertices);
         return *hofe3d;
       }
+    */
 
     try
       {

@@ -370,8 +370,8 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    L2HighOrderFiniteElement<1> * fe1d = 0;
-    L2HighOrderFiniteElement<2> * fe2d = 0;
+    DGFiniteElement<1> * fe1d = 0;
+    DGFiniteElement<2> * fe2d = 0;
 
     switch (ma.GetSElType(selnr))
       {
