@@ -358,7 +358,7 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
-                                      int order); // , bool compute_mapping, LocalHeap & lh);
+                                      int order, LocalHeap * lh = NULL);
 
     // tensor product rule for a facet
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
