@@ -244,7 +244,7 @@ namespace ngstd
       return *this;
     }
 
-    /// copies pointers
+    /// assigns memory from local heap
     const FlatArray & Assign (TSIZE asize, LocalHeap & lh)
     {
       size = asize;
@@ -463,6 +463,16 @@ namespace ngstd
     {
       if (nallocsize > allocsize)
         ReSize (nallocsize);
+    }
+
+    /// assigns memory from local heap
+    const Array & Assign (TSIZE asize, LocalHeap & lh)
+    {
+      if (ownmem) delete [] data;
+      size = allocsize = asize;
+      data = lh.Alloc<T> (asize);
+      ownmem = false;
+      return *this;
     }
 
     /// Add element at end of array. reallocation if necessary.
