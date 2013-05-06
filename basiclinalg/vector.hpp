@@ -19,6 +19,7 @@ namespace ngbla
   template <class T> class FlatVector;
   template <class T> class Vector;
   template <class T> class SliceVector;
+  template <int DIST, typename T> class FixSliceVector;
 
 
   extern void CheckVecRange(int s, int i);
@@ -1123,6 +1124,12 @@ namespace ngbla
     /// SV from FlatVector
     SliceVector (FlatVector<T> fv)
       : s(fv.Size()), dist(&fv(1)-&fv(0)), data((T*)fv.Data()) { ; }
+    
+    ///
+    template <int D>
+    SliceVector (FixSliceVector<D,T> fsv)
+      : s(fsv.Size()), dist(D), data(&fsv(0)) { ; }
+
 
     /// evaluates matrix expression
     template<typename TB>
