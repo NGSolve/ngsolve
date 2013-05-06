@@ -845,7 +845,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order) // , bool compute_mapping, LocalHeap & lh)
+                                             int order, LocalHeap * lh)
   {
     cout << "intruletp<1>: nothing here" << endl;
   }
@@ -853,7 +853,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order) // , bool compute_mapping, LocalHeap & lh)
+                                             int order, LocalHeap * lh)
   {
     int nip = 0;
 
@@ -870,7 +870,11 @@ namespace ngfem
           for (int i = 0; i < 3; i++) isort[sort[i]] = i;
           
           nip = irx->GetNIP() * iry->GetNIP();
-	  SetSize(nip);
+
+          if (lh)
+            Assign (nip, *lh);
+          else
+            SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
@@ -993,7 +997,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order) // , bool compute_mapping, LocalHeap & lh)
+                                             int order, LocalHeap * lh)
   {
     int nip = 0;
 
