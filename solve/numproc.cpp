@@ -179,16 +179,12 @@ namespace ngsolve
   class NumProcSetValues : public NumProc
   {
   protected:
-    ///
     GridFunction * gfu;
-    ///
     CoefficientFunction * coef;
-    ///
     bool boundary;
-    ///
     bool coarsegridonly;
-    ///
     int component;
+    bool print;
   public:
     ///
     NumProcSetValues (PDE & apde, const Flags & flags)
@@ -199,6 +195,7 @@ namespace ngsolve
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
+      print = flags.GetDefineFlag ("print");
 
       if (flags.NumFlagDefined ("component"))
 	{
@@ -239,8 +236,9 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      // SetValues (pde.GetMeshAccess(), *coef, *hgfu, boundary, 0, lh);
       SetValues (*coef, *hgfu, boundary, 0, lh);
+      if (print) 
+        *testout << "setvalues result:" << endl << hgfu->GetVector() << endl;
     }
 
     ///

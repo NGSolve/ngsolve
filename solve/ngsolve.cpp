@@ -718,6 +718,7 @@ int NGSolve_Init (Tcl_Interp * interp)
     omp_set_num_threads (1);
 #endif
   cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " thread(s)" << endl;
+  // cout << "OpenMP Version " << _OPENMP << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
 #endif
   
