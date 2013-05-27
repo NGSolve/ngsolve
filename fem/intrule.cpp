@@ -847,7 +847,20 @@ namespace ngfem
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
                                              int order, LocalHeap * lh)
   {
-    cout << "intruletp<1>: nothing here" << endl;
+    irx = &SelectIntegrationRule (ET_SEGM, order);
+    int nip = irx->GetNIP();
+
+    SetSize(nip);
+    dxdxi_duffy.SetSize(nip);
+
+    for (int i = 0; i < irx->GetNIP(); i++)
+      {
+        (*this)[i] = IntegrationPoint ((*irx)[i](0), 0, 0, 
+                                       (*irx)[i].Weight());
+      }
+        
+    for (int i = 0; i < nip; i++)
+      dxdxi_duffy[i] = 1;
   }
 
 
@@ -939,10 +952,6 @@ namespace ngfem
           nip = irx->GetNIP() * iry->GetNIP();
 
 	  SetSize(nip);
-	  /*
-          xi.SetSize(nip);
-          weight.SetSize(nip);
-	  */
           dxdxi_duffy.SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
@@ -950,11 +959,6 @@ namespace ngfem
               {
 		(*this)[ii] = IntegrationPoint ((*irx)[i1](0), (*iry)[i2](0), 0, 
 						(*irx)[i1].Weight()*(*iry)[i2].Weight());
-		/*
-                xi[ii](0) = (*irx)[i1](0);
-                xi[ii](1) = (*iry)[i2](0);
-                weight[ii] = (*irx)[i1].Weight()*(*iry)[i2].Weight();
-		*/
               }
         
           Mat<2> id;
@@ -968,27 +972,11 @@ namespace ngfem
         }
       default:
         {
-	  /*
-          stringstream str;
-          str<< "IntegratonRuleTP not available for element type " 
-             << ElementTopology::GetElementName(eltrans.GetElementType()) << endl;
-          throw Exception (str.str());
-	  */
           throw Exception (ToString("IntegratonRuleTP not available for element type ") +
 			   ElementTopology::GetElementName(eltrans.GetElementType()) + "\n");
         }
 
       }
-
-    /*
-    if (compute_mapping && !eltrans.Boundary())
-      {
-        x.SetSize(nip);
-        dxdxi.SetSize(nip);
-        // eltrans.CalcMultiPointJacobian ( *this, x, dxdxi, lh);
-	throw Exception ("intruleTP comput_mapping currently not available");
-      }
-    */
   }
 
 

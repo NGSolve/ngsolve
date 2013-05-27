@@ -361,7 +361,7 @@ namespace ngfem
 	case ET_TRIG: return trig_faces;
 	case ET_QUAD: return quad_faces;
         
-	case ET_SEGM:
+	case ET_SEGM: return NULL;
 	default:
 	  break;
 	}

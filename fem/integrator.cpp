@@ -453,8 +453,6 @@ namespace ngfem
 	       FlatVector<double> & ely,
 	       LocalHeap & lh) const
   {
-    // cerr << "applybtrans mappedIR - base class" << endl;
-
     FlatVector<> hv(ely.Size(), lh);
     ely = 0.0;
     for (int l = 0; l < mir.Size(); l++)
@@ -1218,12 +1216,12 @@ double BlockBilinearFormIntegrator ::
   {
     int mincomp = 0;
     int maxcomp = dim-1;
-    if (comp >= 0)
-      mincomp = maxcomp = comp;
+    if (comp >= 0) mincomp = maxcomp = comp;
 
     FlatMatrix<double> selx(mir.Size(), elx.Width()/dim, lh);
     FlatVector<double> sely(ely.Size()/dim, lh);
-    ely = 0.0;
+
+    if (comp >= 0) ely = 0.0;
 
     for (int j = mincomp; j <= maxcomp; j++)
       {
@@ -1231,14 +1229,9 @@ double BlockBilinearFormIntegrator ::
 	  selx.Col(i) = elx.Col(dim*i+j);
 
 	bfi.ApplyBTrans (fel, mir, selx, sely, lh);
-	ely.Slice(j, dim) += sely;
-	/*
-	for (int i = 0; i < sely.Size(); i++)
-	  ely(dim*i+j) = sely(i);
-	*/
+
+        ely.Slice(j, dim) = sely;
       }
-
-
   }
   
 

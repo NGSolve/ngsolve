@@ -69,6 +69,18 @@ namespace ngfem
 
   //------------------------------------------------------------
   template <>
+  class FacetFE<ET_SEGM> : public FacetFiniteElement_Family<ET_SEGM>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShapeFNr (int fnr, Tx x[2], TFA & shape) const
+    {
+      shape[0] = 1.0;
+    }
+  };
+
+
+  template <>
   class FacetFE<ET_TRIG> : public FacetFiniteElement_Family<ET_TRIG>
   {
   public:

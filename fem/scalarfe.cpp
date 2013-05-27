@@ -301,10 +301,12 @@ namespace ngfem
     Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
     const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
 
-    DGFiniteElement<1> * facetfe1 = NULL;
-    DGFiniteElement<2> * facetfe2 = NULL;
+    ScalarFiniteElement<0> * facetfe0 = NULL;
+    ScalarFiniteElement<1> * facetfe1 = NULL;
+    ScalarFiniteElement<2> * facetfe2 = NULL;
     switch (ftype)
       {
+      case ET_POINT : facetfe0 = new FE_Point; break;
       case ET_SEGM : facetfe1 = new L2HighOrderFE<ET_SEGM> (order); break;
       case ET_TRIG : facetfe2 = new L2HighOrderFE<ET_TRIG> (order); break;
       case ET_QUAD : facetfe2 = new L2HighOrderFE<ET_QUAD> (order); break;
@@ -321,10 +323,12 @@ namespace ngfem
     norms = 0.0;
     for (int i = 0; i < ir.Size(); i++)
       {
-	if (D == 2)
-	  facetfe1 -> CalcShape (ir[i], fshape);
-	else
-	  facetfe2 -> CalcShape (ir[i], fshape);
+	if (D == 1) 
+          facetfe0 -> CalcShape (ir[i], fshape);
+	else if (D == 2) 
+          facetfe1 -> CalcShape (ir[i], fshape);
+	else            
+          facetfe2 -> CalcShape (ir[i], fshape);
 
 	this -> CalcShape (f2el (facet, ir[i]), shape);
 
@@ -336,6 +340,7 @@ namespace ngfem
     for (int j = 0; j < fshape.Size(); j++)
       trace.Row(j) /= norms(j);
 
+    delete facetfe0;
     delete facetfe1;
     delete facetfe2;
   }

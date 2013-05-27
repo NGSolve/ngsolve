@@ -35,7 +35,6 @@ namespace ngfem
     for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
       {
         int classnr =  ET_trait<ET>::GetFacetClassNr (f, vnums);
-        
         if (precomp_trace.Used (INT<2> (order, classnr)))
           continue;
         
@@ -43,13 +42,13 @@ namespace ngfem
         int nf;
         switch (etfacet)
           {
+          case ET_POINT: nf = 1; break;
           case ET_SEGM: nf = order+1; break;
           case ET_TRIG: nf = (order+1)*(order+2)/2; break;
           case ET_QUAD: nf = sqr(order+1); break;
           default: nf = 0;
           }
-        
-        
+
         Matrix<> * trace = new Matrix<>(nf, ndof);
         DGFiniteElement<DIM>::CalcTraceMatrix (f, *trace);
         precomp_trace.Set (INT<2> (order, classnr), trace);

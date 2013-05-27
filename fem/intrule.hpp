@@ -533,13 +533,17 @@ namespace ngfem
 
       switch (facettype)
 	{
+	case ET_POINT:
+	  {
+	    ipvol = Vec<3> (points (fnr) );
+	    break;
+	  }
+
 	case ET_SEGM:
 	  {
 	    FlatVec<3> p1 = points (edges[fnr][0]);
 	    FlatVec<3> p2 = points (edges[fnr][1]);
 
-	    // Vec<3> volp = p2 + ipfac(0) * (p1-p2);
-	    // ipvol = volp;
 	    ipvol = Vec<3> (p2 + ipfac(0) * (p1-p2));
 	    break;
 	  }
@@ -549,8 +553,6 @@ namespace ngfem
 	    FlatVec<3> p1 = points(faces[fnr][1]);
 	    FlatVec<3> p2 = points(faces[fnr][2]);
 
-            // for (int j = 0; j < 3; j++)
-	    //   ipvol(j) = p2[j] + ipfac(0)*(p0[j]-p2[j]) + ipfac(1)*(p1[j]-p2[j]);
 	    ipvol = Vec<3> (p2 + ipfac(0) * (p0-p2) + ipfac(1)*(p1-p2));
 	    break;
 	  }
@@ -560,8 +562,6 @@ namespace ngfem
 	    FlatVec<3> p1 = points(faces[fnr][1]);
 	    FlatVec<3> p2 = points(faces[fnr][3]);
 
-            // for (int j = 0; j < 3; j++)
-	    //  ipvol(j) = p0[j] + ipfac(0)*(p1[j]-p0[j]) + ipfac(1)*(p2[j]-p0[j]);
 	    ipvol = Vec<3> (p0 + ipfac(0) * (p1-p0) + ipfac(1)*(p2-p0));
 	    break;
 	  }
