@@ -447,10 +447,13 @@ namespace ngcomp
   // some utility for Facets
   void MeshAccess :: GetElFacets (int elnr, Array<int> & fnums) const
   {
-    if (dim == 2)
-      fnums = ArrayObject (mesh -> GetElement<2> (elnr).edges);
-    else
-      fnums = ArrayObject (mesh -> GetElement<3> (elnr).faces);
+    switch (dim)
+      {
+      case 1: fnums = ArrayObject (mesh -> GetElement<1> (elnr).vertices); break;
+      case 2: fnums = ArrayObject (mesh -> GetElement<2> (elnr).edges); break;
+      default:
+        fnums = ArrayObject (mesh -> GetElement<3> (elnr).faces);
+      }
   } 
     
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
@@ -466,10 +469,12 @@ namespace ngcomp
 
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
-    if (dim == 2)
-      GetEdgePNums(fnr, pnums);
-    else
-      GetFacePNums(fnr, pnums);
+    switch (dim)
+      {
+      case 1: pnums.SetSize(1); pnums[0] = fnr; break;
+      case 2: GetEdgePNums(fnr, pnums); break;
+      case 3: GetFacePNums(fnr, pnums); break;
+      }
   }
 
   ELEMENT_TYPE MeshAccess :: GetFacetType (int fnr) const
@@ -584,6 +589,7 @@ namespace ngcomp
   
   double MeshAccess :: ElementVolume (int elnr) const
   {
+    static FE_Segm0 segm0;
     static FE_Trig0 trig0;
     static FE_Quad0 quad0;
     static FE_Tet0 tet0;
@@ -594,6 +600,7 @@ namespace ngcomp
     const FiniteElement * fe = NULL;
     switch (GetElType (elnr))
       {
+      case ET_SEGM: fe = &segm0; break;
       case ET_TRIG: fe = &trig0; break;
       case ET_QUAD: fe = &quad0; break;
       case ET_TET: fe = &tet0; break;
@@ -611,7 +618,14 @@ namespace ngcomp
     ElementTransformation & trans = GetTrafo (elnr, false, lh);
     ConstantCoefficientFunction ccf(1);
 
-    if (GetDimension() == 2)
+    if (GetDimension() == 1)
+      {
+	SourceIntegrator<1> si (&ccf);
+	FlatVector<> elvec(fe->GetNDof(), lh);
+	si.CalcElementVector (*fe, trans, elvec, lh);
+	return elvec(0);
+      }
+    else if (GetDimension() == 2)
       {
 	SourceIntegrator<2> si (&ccf);
 	FlatVector<> elvec(fe->GetNDof(), lh);

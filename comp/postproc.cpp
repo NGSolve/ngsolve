@@ -395,11 +395,18 @@ namespace ngcomp
 	  coef.Evaluate (mir, mfluxi);
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    mfluxi.Row(j) *= mir[j].GetWeight();
+          *testout << "setvalues, mfluxi = " << endl << mfluxi << endl;
+          if (diffop)  *testout << "use diffop" << endl;
+          else *testout << "use bfli" << endl;
+
+          *testout << "type of bli = " << typeid(bli).name() << endl;
 
 	  if (diffop)
 	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
 	  else
 	    bli.ApplyBTrans (fel, mir, mfluxi, elflux, lh);
+
+          *testout << "after applybtrans = " << endl << elflux << endl;
 
 	  if (dim > 1)
 	    {
@@ -431,6 +438,8 @@ namespace ngcomp
                   elfluxi = elmat * elflux;
                 }
 	    }
+
+          *testout << "result solve " << endl << elfluxi << endl;
 	  
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 

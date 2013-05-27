@@ -115,15 +115,14 @@ namespace ngcomp
     if (low_order_space)
       low_order_space -> Update(lh);
 
-    // number of facets
     nel = ma.GetNE();
-    nfa = ma.GetNFacets(); // (ma.GetDimension() == 2 ? ma.GetNEdges() : ma.GetNFaces()); 
+    nfa = ma.GetNFacets(); 
     
     int p = 0; 
     if(!var_order) p = order; 
     
     order_facet.SetSize(nfa);
-    order_facet = INT<2> (p,p);
+    order_facet = p;
 
     fine_facet.SetSize(nfa);
     fine_facet = 0; 
@@ -132,8 +131,6 @@ namespace ngcomp
         
     for (int i = 0; i < nel; i++)
       {
-	INT<3> el_orders = ma.GetElOrders(i); 
-
 	ELEMENT_TYPE eltype=ma.GetElType(i); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
@@ -145,6 +142,8 @@ namespace ngcomp
 	    
 	    if(var_order)
 	      {
+                INT<3> el_orders = ma.GetElOrders(i); 
+
 		const EDGE * edges = ElementTopology::GetEdges (eltype);
 		for(int j=0; j<fanums.Size(); j++)
 		  for(int k=0;k<2;k++)
@@ -163,6 +162,8 @@ namespace ngcomp
 	    
 	    if(var_order) 
 	      {
+                INT<3> el_orders = ma.GetElOrders(i); 
+
 		ma.GetElVertices (i, vnums);
 		const FACE * faces = ElementTopology::GetFaces (eltype);
 		for(int j=0;j<elfaces.Size();j++)
@@ -206,8 +207,18 @@ namespace ngcomp
     
     first_facet_dof.SetSize(nfa+1); 
     first_facet_dof = nfa;
-      
-    if (ma.GetDimension() == 2)
+
+
+    if (ma.GetDimension() == 1)
+      {
+        for (int i = 0; i < nfa; i++)
+          {
+            first_facet_dof[i] = ndof;
+            ndof ++;
+          }
+        first_facet_dof[nfa] = ndof;
+      }
+    else if (ma.GetDimension() == 2)
       {
         for (int i = 0; i < nfa; i++)
           {
@@ -315,13 +326,14 @@ namespace ngcomp
   // ------------------------------------------------------------------------
   const FiniteElement & FacetFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+    FacetVolumeFiniteElement<1> * fe1d = NULL;
     FacetVolumeFiniteElement<2> * fe2d = NULL;
     FacetVolumeFiniteElement<3> * fe3d = NULL;;
 
     switch (ma.GetElType(elnr))
       {
       case ET_POINT:   break;
-      case ET_SEGM:    break;
+      case ET_SEGM:    fe1d = new (lh) FacetFE<ET_SEGM> (); break;
       case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
       case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
       case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
@@ -330,7 +342,7 @@ namespace ngcomp
       case ET_HEX:     fe3d = new (lh) FacetFE<ET_HEX> (); break;
       }
 
-    if (!fe2d && !fe3d)
+    if (!fe2d && !fe3d && !fe1d)
       {
         stringstream str;
         str << "FacetFESpace " << GetClassName() 
@@ -350,7 +362,15 @@ namespace ngcomp
     for (int j = 0; j < fanums.Size(); j++)
       order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
     
-    if (ma.GetDimension() == 2)
+
+    if (ma.GetDimension() == 1)
+      {
+        fe1d -> SetVertexNumbers (vnums);
+        fe1d -> SetOrder (order_fa);
+        fe1d -> ComputeNDof();
+        return *fe1d;
+      }
+    else if (ma.GetDimension() == 2)
       {
         fe2d -> SetVertexNumbers (vnums);
         fe2d -> SetOrder (order_fa);
@@ -612,8 +632,10 @@ namespace ngcomp
     virtual string Name () const { return "Mass-HDG"; }
   };
 
+  template class HDG_MassIntegrator<1>;
   template class HDG_MassIntegrator<2>;
   template class HDG_MassIntegrator<3>;
+  static RegisterBilinearFormIntegrator<HDG_MassIntegrator<1> > initlap1 ("HDG_mass", 1, 1);
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<2> > initlap2 ("HDG_mass", 2, 1);
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<3> > initlap3 ("HDG_mass", 3, 1);
 
