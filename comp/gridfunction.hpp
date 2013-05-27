@@ -204,12 +204,12 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    GridFunction & gf;
+    const GridFunction & gf;
     const DifferentialOperator * diffop;
     int comp;
   public:
-    GridFunctionCoefficientFunction (GridFunction & agf, int acomp = 0);
-    GridFunctionCoefficientFunction (GridFunction & agf, 
+    GridFunctionCoefficientFunction (const GridFunction & agf, int acomp = 0);
+    GridFunctionCoefficientFunction (const GridFunction & agf, 
                                      const DifferentialOperator * adiffop, int acomp = 0);
     
     virtual ~GridFunctionCoefficientFunction ();
@@ -288,6 +288,8 @@ namespace ngcomp
                                     const double * dxdxref, int sdxdxref,
                                     double * values, int svalues);
 
+
+    virtual bool GetSegmentValue (int segnr, double xref, double * values);
 
     virtual int GetNumMultiDimComponents ()
     {

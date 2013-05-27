@@ -66,6 +66,43 @@ namespace ngcomp
     if (dimension > 1)
       integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
 
+
+
+    switch (ma.GetDimension())
+      {
+      case 1:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<1> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<1> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<1> >;
+          break;
+        }
+      case 2:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<2> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+          break;
+        }
+      case 3:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<3> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+          break;
+        }
+      }
+    if (dimension > 1)
+      {
+	evaluator = new BlockDifferentialOperator (*evaluator, dimension);
+	boundary_evaluator = 
+	  new BlockDifferentialOperator (*boundary_evaluator, dimension);
+      }
+
+
+
+
+
     all_dofs_together = flags.GetDefineFlag ("all_dofs_together");
 
     Flags loflags;
@@ -185,6 +222,9 @@ namespace ngcomp
 	INT<3> pi = order_inner[i]; 
 	switch (ma.GetElType(i))
 	  {
+	  case ET_SEGM:
+	    ndof += pi[0]+1;
+	    break;
 	  case ET_TRIG:
 	    ndof += (pi[0]+1)*(pi[0]+2)/2 ;
 	    break;
@@ -370,6 +410,7 @@ namespace ngcomp
 
     switch (vnums.Size())
       {
+      case 1: return *new (lh) FE_Point();
       case 2: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
       case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
       case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;

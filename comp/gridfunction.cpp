@@ -742,14 +742,14 @@ namespace ngcomp
 
 
   GridFunctionCoefficientFunction :: 
-  GridFunctionCoefficientFunction (GridFunction & agf, int acomp)
+  GridFunctionCoefficientFunction (const GridFunction & agf, int acomp)
     : gf(agf), diffop (NULL), comp (acomp) 
   {
     diffop = gf.GetFESpace().GetEvaluator();
   }
 
   GridFunctionCoefficientFunction :: 
-  GridFunctionCoefficientFunction (GridFunction & agf, 
+  GridFunctionCoefficientFunction (const GridFunction & agf, 
 				   const DifferentialOperator * adiffop, int acomp)
     : gf(agf), diffop (adiffop), comp (acomp) 
   {
@@ -1533,6 +1533,34 @@ namespace ngcomp
 
 
 
+  template <class SCAL>
+  bool VisualizeGridFunction<SCAL> ::
+  GetSegmentValue (int segnr, double xref, double * values)
+  {
+    if (ma.GetDimension() != 1) return false;
+
+    HeapReset hr(lh);
+
+    const FESpace & fes = gf->GetFESpace();
+    const DifferentialOperator * eval = fes.GetEvaluator (VOL);
+    FlatVector<> fvvalues (eval->Dim(), values);
+
+    const FiniteElement & fel = fes.GetFE (segnr, VOL, lh);
+    Array<int> dnums(fel.GetNDof(), lh);
+    fes.GetDofNrs (segnr, dnums);
+
+    FlatVector<> elvec(fes.GetDimension()*dnums.Size(), lh);
+    gf->GetElementVector (dnums, elvec);
+    
+    const ElementTransformation & trafo = ma.GetTrafo (segnr, VOL, lh);
+    IntegrationPoint ip (xref);
+
+    *testout << "getsegvalue, elvec = " << endl << elvec << endl;
+    eval -> Apply (fel, trafo(ip, lh), elvec, fvvalues, lh);
+    *testout << "values = " << endl << fvvalues << endl;
+
+    return true;
+  }
 
 
 

@@ -318,9 +318,6 @@ namespace ngcomp
       return mesh -> GetNode<DIM> (nr);
     }
 
-    // von astrid
-    // int GetElNV (int elnr) const;
-
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
     void GetElPNums (int elnr, Array<int> & pnums) const
@@ -396,7 +393,14 @@ namespace ngcomp
     ELEMENT_TYPE GetFacetType (int fnr) const;
     /// elements connected to facet
     void GetFacetElements (int fnr, Array<int> & elnums) const
-    { (dim == 2) ? GetEdgeElements(fnr, elnums) : GetFaceElements(fnr, elnums); }    
+    {
+      switch (dim)
+        {
+        case 1: GetVertexElements (fnr, elnums); break;
+        case 2: GetEdgeElements (fnr, elnums); break;
+        case 3: GetFaceElements (fnr, elnums); break;
+        }
+    }
 
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;
     /// element order stored in Netgen

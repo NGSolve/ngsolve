@@ -92,17 +92,29 @@ namespace ngcomp
     low_order_space = new NodalFESpace (ma, loflags);
     // low_order_space -> SetLowOrderSpace (true);
 
-    if (ma.GetDimension() == 2)
+    switch (ma.GetDimension())
       {
-        evaluator = new T_DifferentialOperator<DiffOpId<2> >;
-        flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
-        boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
-      }
-    else
-      {
-        evaluator = new T_DifferentialOperator<DiffOpId<3> >;
-        flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
-        boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+      case 1:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<1> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<1> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<1> >;
+          break;
+        }
+      case 2:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<2> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+          break;
+        }
+      case 3:
+        {
+          evaluator = new T_DifferentialOperator<DiffOpId<3> >;
+          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
+          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+          break;
+        }
       }
     if (dimension > 1)
       {
@@ -146,8 +158,8 @@ namespace ngcomp
     
     int dim = ma.GetDimension();
     int nv = ma.GetNV();
-    int ned = ma.GetNEdges();
-    int nfa = (dim == 2) ? 0 : ma.GetNFaces();
+    int ned = (dim <= 1) ? 0 : ma.GetNEdges();
+    int nfa = (dim <= 2) ? 0 : ma.GetNFaces();
     int ne = ma.GetNE();
     int nse = ma.GetNSE();
     
@@ -168,7 +180,7 @@ namespace ngcomp
 	  used_vertex[ArrayObject(ngel.vertices)] = 1;
           // used_vertex[BaseArrayObject<Ng_Element::Ng_Vertices>(ngel.vertices)] = 1;
           // used_vertex[ngel.vertices] = 1;
-	  used_edge[ArrayObject(ngel.edges)] = 1;
+	  if (dim >= 2) used_edge[ArrayObject(ngel.edges)] = 1;
 	  if (dim == 3) used_face[ArrayObject(ngel.faces)] = 1;
 	}
 
@@ -181,7 +193,7 @@ namespace ngcomp
 	  ma.GetSElEdges (i, eledges);		
 	  
 	  for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
-	  for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
+	  if (dim >= 2) for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
 	  if (dim == 3) used_face[ma.GetSElFace(i)] = 1; 
 	}
 
@@ -335,8 +347,8 @@ namespace ngcomp
   {
     int dim = ma.GetDimension();
     int nv = ma.GetNV();
-    int ned = ma.GetNEdges();
-    int nfa = (dim == 2) ? 0 : ma.GetNFaces();
+    int ned = (dim <= 1) ? 0 : ma.GetNEdges();
+    int nfa = (dim <= 2) ? 0 : ma.GetNFaces();
     int ne = ma.GetNE();
 
     ndof = nv;
@@ -747,8 +759,9 @@ namespace ngcomp
 
     dnums = ArrayObject (ngel.vertices);
 
-    for (int i = 0; i < ngel.edges.Size(); i++)
-      dnums += GetEdgeDofs (ngel.edges[i]);
+    if (ma.GetDimension() >= 2)
+      for (int i = 0; i < ngel.edges.Size(); i++)
+        dnums += GetEdgeDofs (ngel.edges[i]);
 
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
