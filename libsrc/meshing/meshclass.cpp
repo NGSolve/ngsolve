@@ -1618,24 +1618,22 @@ namespace netgen
                   }      
               }
           }
-
-        for (int i = 0; i < segments.Size(); i++)
-          {
-            const Segment & seg = segments[i];
-            for (int j = 1; j <= 2; j++)
-              {
-                PointIndex hi = (j == 1) ? seg[0] : seg[1];
-
-                if (points[hi].Type() == INNERPOINT ||
-                    points[hi].Type() == SURFACEPOINT)
-                  points[hi].SetType(EDGEPOINT);
-              }
-          }
-
-
-        for (int i = 0; i < lockedpoints.Size(); i++)
-          points[lockedpoints[i]].SetType(FIXEDPOINT);
       }
+
+    for (int i = 0; i < segments.Size(); i++)
+      {
+        const Segment & seg = segments[i];
+        for (int j = 1; j <= 2; j++)
+          {
+            PointIndex hi = (j == 1) ? seg[0] : seg[1];
+            if (points[hi].Type() == INNERPOINT ||
+                points[hi].Type() == SURFACEPOINT)
+              points[hi].SetType(EDGEPOINT);
+          }
+      }
+    
+    for (int i = 0; i < lockedpoints.Size(); i++)
+      points[lockedpoints[i]].SetType(FIXEDPOINT);
 
 
     /*
@@ -3214,13 +3212,6 @@ namespace netgen
 
     //  FindOpenElements();
     timestamp = NextTimeStamp();
-
-    /*
-      (*testout) << "compress, done" << endl
-      << "np = " << points.Size()
-      << "ne = " << volelements.Size() << ", type.size = " << eltyps.Size()
-      <<  "volelements = " << volelements << endl;
-    */
   }
 
 

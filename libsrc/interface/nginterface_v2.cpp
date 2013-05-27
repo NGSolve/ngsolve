@@ -51,7 +51,7 @@ namespace netgen
   {
     switch (dim)
       {
-      case 0: return mesh -> GetNV();
+      case 0: return 0; // mesh -> GetNV();
       case 1: return mesh -> GetNSeg();
       case 2: return mesh -> GetNSE();
       case 3: return mesh -> GetNE();
@@ -421,7 +421,13 @@ namespace netgen
                               double * x,
                               double * dxdxi) const
   {
-    cout << "1D not supported" << endl;
+    Point<3> xg;
+    Vec<3> dx;
+
+    mesh->GetCurvedElements().CalcSegmentTransformation (xi[0], elnr, xg, dx);
+    
+    if (x) x[0] = xg(0);
+    if (dxdxi) dxdxi[0] = dx(0);
   }
 
 
@@ -486,7 +492,8 @@ namespace netgen
                                    double * x, size_t sx,
                                    double * dxdxi, size_t sdxdxi) const
   {
-    cout << "1D not supported" << endl;
+    for (int i = 0; i < npts; i++)
+      ElementTransformation<1,1> (elnr, xi + i*sxi, x+i*sx, dxdxi+i*sdxdxi);
   }
 
 

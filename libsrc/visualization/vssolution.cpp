@@ -37,6 +37,7 @@ namespace netgen
   {
     surfellist = 0;
     linelist = 0;
+    element1dlist = 0;
     clipplanelist_scal = 0;
     clipplanelist_vec = 0;
     isolinelist = 0;
@@ -554,10 +555,13 @@ namespace netgen
     glColor3f (0.0f, 0.0f, 0.0f);
     glDisable (GL_LINE_SMOOTH);
 
+    if (vispar.drawedges)
+      {
+        glCallList (element1dlist);
+      }
 
     if (vispar.drawoutline && !numisolines)
       {
-	// change for Martin
 	SetClippingPlane ();
 	glDepthMask(GL_FALSE); 
         glCallList (linelist);
@@ -763,7 +767,11 @@ namespace netgen
         surfellinetimestamp = max2 (solutiontimestamp, mesh->GetTimeStamp());
       }
 
-  
+
+    if (vispar.drawedges)
+      Draw1DElements();
+
+
 
     if (mesh->GetTimeStamp() > surface_vector_timestamp ||
         solutiontimestamp > surface_vector_timestamp ||
@@ -1078,8 +1086,56 @@ namespace netgen
     clipplanetimestamp = max2 (vispar.clipping.timestamp, solutiontimestamp);
   }
   
+  void  VisualSceneSolution :: Draw1DElements ()
+  {
+    if (element1dlist)
+      glDeleteLists (element1dlist, 1);
+ 
+    element1dlist = glGenLists (1);
+    glNewList (element1dlist, GL_COMPILE);
+
+    int npt = (1 << subdivisions) + 1;
+    Array<double> pref(npt), values(npt);
+    Array<Point<3> > points(npt);
+
+    const SolData * sol = NULL;
+    if (scalfunction != -1) sol = soldata[scalfunction];
+
+    int ncomp = 0;
+    if (sol) ncomp = sol->components;
+    Array<double> mvalues(ncomp);
 
 
+    for (int i = 0; i < npt; i++)
+      pref[i] = double(i) / (npt-1);
+
+    for (SegmentIndex i = 0; i < mesh -> GetNSeg(); i++)
+      {
+        // mesh->GetCurvedElements().
+        // CalcMultiPointSegmentTransformation (&pref, i, &points, NULL);
+        // const Segment & seg = mesh -> LineSegment(i);
+        for (int j = 0; j < npt; j++)
+          mesh->GetCurvedElements().
+            CalcSegmentTransformation (pref[j], i, points[j]);
+        if (sol)
+          {
+            for (int j = 0; j < npt; j++)
+              {
+                sol->solclass->GetSegmentValue (i, pref[j], &mvalues[0]);
+                values[j] = ExtractValue (sol, scalcomp, &mvalues[0]);
+                points[j](1) += scaledeform * values[j];
+              }
+          }
+
+        glBegin (GL_LINE_STRIP);
+        for (int i = 0; i < npt; i++)
+          glVertex3dv (points[i]);
+        glEnd();
+      }
+
+    glEndList ();
+  }
+  
   void  VisualSceneSolution :: DrawSurfaceElements ()
   {
     static int timer = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements");

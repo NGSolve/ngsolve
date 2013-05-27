@@ -727,10 +727,19 @@ int Ng_FindSurfaceElementOfPoint (double * p, double * lami, int build_searchtre
 
 int Ng_IsElementCurved (int ei)
 {
+  switch (mesh->GetDimension())
+    {
+    case 1: return mesh->GetCurvedElements().IsSegmentCurved (ei-1);
+    case 2: return mesh->GetCurvedElements().IsSurfaceElementCurved (ei-1);
+    case 3: return mesh->GetCurvedElements().IsElementCurved (ei-1);
+    }
+  return 0;
+  /*
   if (mesh->GetDimension() == 2)
     return mesh->GetCurvedElements().IsSurfaceElementCurved (ei-1);
   else
     return mesh->GetCurvedElements().IsElementCurved (ei-1);
+  */
 }
 
 
@@ -1604,25 +1613,46 @@ void Ng_GetEdge_Vertices (int ednr, int * vert)
 
 int Ng_GetNVertexElements (int vnr)
 {
-  if (mesh->GetDimension() == 3)
-    return mesh->GetTopology().GetVertexElements(vnr).Size();
-  else
-    return mesh->GetTopology().GetVertexSurfaceElements(vnr).Size();
+  switch (mesh->GetDimension())
+    {
+    case 3:
+      return mesh->GetTopology().GetVertexElements(vnr).Size();
+    case 2:
+      return mesh->GetTopology().GetVertexSurfaceElements(vnr).Size();
+    case 1:
+      {
+        int cnt = 0;
+        for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
+          if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) cnt++;
+        return cnt;
+      }
+    }
 }
 
 void Ng_GetVertexElements (int vnr, int * els)
 {
-  if (mesh->GetDimension() == 3)
+  switch (mesh->GetDimension())
     {
-      FlatArray<ElementIndex> ia = mesh->GetTopology().GetVertexElements(vnr);
-      for (int i = 0; i < ia.Size(); i++)
-	els[i] = ia[i]+1;
-    }
-  else
-    {
-      FlatArray<int> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
-      for (int i = 0; i < ia.Size(); i++)
-	els[i] = ia[i];
+    case 3:
+      {
+        FlatArray<ElementIndex> ia = mesh->GetTopology().GetVertexElements(vnr);
+        for (int i = 0; i < ia.Size(); i++) els[i] = ia[i]+1;
+        break;
+      }
+    case 2:
+      {
+        FlatArray<int> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+        for (int i = 0; i < ia.Size(); i++) els[i] = ia[i];
+        break;
+      }
+    case 1:
+      {
+        int cnt = 0;
+        for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
+          if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) 
+            els[cnt++] = i+1;
+        break;
+      }
     }
 }
 
