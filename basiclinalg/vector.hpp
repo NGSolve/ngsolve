@@ -276,7 +276,7 @@ namespace ngbla
     /// take a slice of the vector. Take elements first+i * dist. 
     const SliceVector<T> Slice (int first, int dist2) const
     {
-      return SliceVector<T> (size/dist, dist*dist2, data+first);
+      return SliceVector<T> (size/dist2, dist*dist2, data+first);
     }
 #endif
 
