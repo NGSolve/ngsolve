@@ -1760,6 +1760,7 @@ namespace ngfem
 
 
 
+  static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<1> > initlap1 ("HDG_laplace", 1, 2);
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<2> > initlap2 ("HDG_laplace", 2, 2);
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<3> > initlap3 ("HDG_laplace", 3, 2);
 

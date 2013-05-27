@@ -32,7 +32,7 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
-    FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+    FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -44,7 +44,7 @@ namespace ngfem
          FlatVector<Complex> flux,
          LocalHeap & lh) const
   {
-    FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+    FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -79,9 +79,9 @@ namespace ngfem
               FlatVector<double> x, 
               LocalHeap & lh) const 
   {
-    FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+    FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    flux = mat * x;
+    x = Trans(mat) * flux;
   }
   
   
@@ -92,9 +92,9 @@ namespace ngfem
               FlatVector<Complex> x, 
               LocalHeap & lh) const 
   {
-    FlatMatrix<> mat(Dim(), fel.GetNDof(), lh);
+    FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
-    flux = mat * x;
+    x = Trans(mat) * flux;
   }
   
   
