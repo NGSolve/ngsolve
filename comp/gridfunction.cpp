@@ -1555,9 +1555,7 @@ namespace ngcomp
     const ElementTransformation & trafo = ma.GetTrafo (segnr, VOL, lh);
     IntegrationPoint ip (xref);
 
-    *testout << "getsegvalue, elvec = " << endl << elvec << endl;
     eval -> Apply (fel, trafo(ip, lh), elvec, fvvalues, lh);
-    *testout << "values = " << endl << fvvalues << endl;
 
     return true;
   }
