@@ -16,7 +16,13 @@ namespace ngfem
 
 
 
-
+  template <>
+  class L2HighOrderFE_Shape<ET_POINT> : public L2HighOrderFE<ET_POINT>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx x[], TFA & shape) const;
+  };
 
   template <>
   class L2HighOrderFE_Shape<ET_SEGM> : public L2HighOrderFE<ET_SEGM>
@@ -81,6 +87,16 @@ namespace ngfem
 
 
 
+
+  /* *********************** Point  **********************/
+  
+
+  template<typename Tx, typename TFA>  
+  void L2HighOrderFE_Shape<ET_POINT> ::
+  T_CalcShape (Tx x[], TFA & shape) const
+  {
+    shape[0] = 1.0;
+  }
 
 
 

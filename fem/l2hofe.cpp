@@ -239,6 +239,12 @@ namespace ngfem
     DGFiniteElement<ET_trait<ET>::DIM>::GetDiagMassMatrix (mass);
   }
 
+  template <> void L2HighOrderFE<ET_POINT> :: 
+  GetDiagMassMatrix (FlatVector<> mass) const
+  {
+    mass(0) = 1;
+  }
+
   template <> void L2HighOrderFE<ET_SEGM> :: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
@@ -258,7 +264,7 @@ namespace ngfem
 
 
 
-
+  template NGS_DLL_HEADER class L2HighOrderFE<ET_POINT>;
   template NGS_DLL_HEADER class L2HighOrderFE<ET_SEGM>;
   template NGS_DLL_HEADER class L2HighOrderFE<ET_TRIG>;
   template NGS_DLL_HEADER class L2HighOrderFE<ET_QUAD>;
@@ -268,6 +274,7 @@ namespace ngfem
   template NGS_DLL_HEADER class L2HighOrderFE<ET_HEX>;
  
 
+  template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   template class T_ScalarFiniteElement2<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
