@@ -27,7 +27,7 @@ void WriteDiffPackFormat (const Mesh & mesh,
   double scale = 1;
 
   ofstream outfile(filename.c_str());
-
+  outfile.precision(14);
 
 
   if (mesh.GetDimension() == 3)
@@ -97,13 +97,13 @@ void WriteDiffPackFormat (const Mesh & mesh,
         {
           const Point3d & p = mesh.Point(i);
 
-          outfile.width(4);
+          outfile.width(12);
           outfile << i << "  (";
-          outfile.width(10);
+          outfile.width(16);
           outfile << p.X()/scale << ", ";
-          outfile.width(9);
+          outfile.width(16);
           outfile << p.Y()/scale << ", ";
-          outfile.width(9);
+          outfile.width(16);
           outfile << p.Z()/scale << ") ";
 	 
 	  if(mesh[PointIndex(i)].Type() != INNERPOINT) 
@@ -211,14 +211,14 @@ void WriteDiffPackFormat (const Mesh & mesh,
       outfile.precision(6);
       outfile.setf (ios::fixed, ios::floatfield);
       outfile.setf (ios::showpoint);
-
+      const Element2d & eldummy = mesh.SurfaceElement((int)1);
       outfile << "\n\n"
 	"Finite element mesh (GridFE):\n\n"
 	"  Number of space dim. =  2\n"
 	"  Number of elements   =  " << nse << "\n"
 	"  Number of nodes      =  " << np << "\n\n"
 	"  All elements are of the same type : dpTRUE\n"
-	"  Max number of nodes in an element: 3\n"
+	"  Max number of nodes in an element: "<<eldummy.GetNP()<<"\n"
 	"  Only one subdomain               : dpFALSE\n"
 	"  Lattice data                     ? 0\n\n\n\n";
       
@@ -249,11 +249,11 @@ void WriteDiffPackFormat (const Mesh & mesh,
         {
           const Point3d & p = mesh.Point(i);
 
-          outfile.width(4);
+          outfile.width(12);
           outfile << i << "  (";
-          outfile.width(10);
+          outfile.width(16);
           outfile << p.X()/scale << ", ";
-          outfile.width(9);
+          outfile.width(16);
           outfile << p.Y()/scale << ", ";
 	 
 	  if(mesh[PointIndex(i)].Type() != INNERPOINT) 
@@ -296,16 +296,28 @@ void WriteDiffPackFormat (const Mesh & mesh,
       for (i = 1; i <= nse; i++)
         {
           const Element2d & el = mesh.SurfaceElement(i);
-          outfile.width(5);
-          outfile << i << "  ElmT3n2D ";
-          outfile.width(4);
+          outfile.width(12);
+          if(eldummy.GetNP()==3)
+            outfile << i << "  ElmT3n2D ";
+          else
+            outfile << i << "  ElmT6n2D ";
+          outfile.width(12);
           outfile << el.GetIndex() << "    ";
-	  outfile.width(8);
+	  outfile.width(16);
 	  outfile << el.PNum(1);
-	  outfile.width(8);
-	  outfile << el.PNum(3);
-	  outfile.width(8);
+	  outfile.width(16);
 	  outfile << el.PNum(2);
+	  outfile.width(16);
+	  outfile << el.PNum(3);
+          if(eldummy.GetNP()==6)
+            {
+	     outfile.width(16);
+	     outfile << el.PNum(6);
+	     outfile.width(16);
+	     outfile << el.PNum(4);
+	     outfile.width(16);
+	     outfile << el.PNum(5);
+            }
           outfile << "\n";
         }
     }
