@@ -574,23 +574,19 @@ namespace ngfem
       return GetFace(0);
     }
     */
-    /*
+
     template <typename TVN>
     static int GetClassNr (const TVN & vnums)
     {
-      int classnr = 0;
-      int sort[3] = { 0, 1 };
-      if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); classnr += 1; }
-      return classnr;
+      return 0;
     }
 
     template <typename TVN>
     static int GetFacetClassNr (int facet, const TVN & vnums)
     {
-      return facet;
+      return 0;
     } 
 
-    */
   };
 
 

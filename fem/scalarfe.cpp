@@ -378,7 +378,7 @@ namespace ngfem
 
 
 
-
+  template class DGFiniteElement<0>;
   template class DGFiniteElement<1>;
   template class DGFiniteElement<2>;
   template class DGFiniteElement<3>;
