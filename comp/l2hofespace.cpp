@@ -410,7 +410,7 @@ namespace ngcomp
 
     switch (vnums.Size())
       {
-      case 1: return *new (lh) FE_Point();
+      case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0); 
       case 2: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
       case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
       case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
