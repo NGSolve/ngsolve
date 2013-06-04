@@ -34,7 +34,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET, 
-            template <ELEMENT_TYPE ET> class SHAPES = L2HighOrderFE_Shape,
+            template <ELEMENT_TYPE ET2> class SHAPES = L2HighOrderFE_Shape,
             class BASE = DGFiniteElement<ET_trait<ET>::DIM> > 
   class NGS_DLL_HEADER L2HighOrderFE :  
     public T_ScalarFiniteElement2<SHAPES<ET>, ET, BASE >,
