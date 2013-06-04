@@ -46,13 +46,17 @@ namespace ngfem
       {
 	IntegrationPoint ip1 = ip;
 	IntegrationPoint ip2 = ip;
-	((double*) ip1.Point()) [i] -= eps;
-	((double*) ip2.Point()) [i] += eps;
+        ip1(i) -= eps;
+        ip2(i) += eps;
+	// ((double*) ip1.Point()) [i] -= eps;
+	// ((double*) ip2.Point()) [i] += eps;
 	CalcShape (ip1, shape1);
 	CalcShape (ip2, shape2);
 
-	((double*) ip1.Point()) [i] -= eps;
-	((double*) ip2.Point()) [i] += eps;
+        ip1(i) -= eps;
+        ip2(i) += eps;
+	// ((double*) ip1.Point()) [i] -= eps;
+	// ((double*) ip2.Point()) [i] += eps;
 	CalcShape (ip1, shape3);
 	CalcShape (ip2, shape4);
 
@@ -176,8 +180,11 @@ namespace ngfem
       {
 	IntegrationPoint ip1 = ip;
 	IntegrationPoint ip2 = ip;
-	((double*) ip1.Point()) [i] -= eps;
-	((double*) ip2.Point()) [i] += eps;
+        
+        ip1(i) -= eps;
+        ip2(i) += eps;
+	// ((double*) ip1.Point()) [i] -= eps;
+	// ((double*) ip2.Point()) [i] += eps;
 
 	CalcDShape (ip1, dshape1);
 	CalcDShape (ip2, dshape2);
