@@ -1586,12 +1586,15 @@ namespace ngbla
 
   /// Print matrix-expr
   template<typename T>
-  std::ostream & operator<< (std::ostream & s, const Expr<T> & v)
-  {
+  ostream & operator<< (ostream & s, const Expr<T> & v)
+  { 
+    int width = s.width();
+    if (width == 0) width = 8;
+    s.width(0);
     for (int i = 0; i < v.Height(); i++)
       {
 	for (int j = 0 ; j < v.Width(); j++)
-	  s << " " << setw(7) << v.Spec()(i,j);
+	  s << " " << setw(width-1) << v.Spec()(i,j);
 	s << endl;
       }
     return s;
