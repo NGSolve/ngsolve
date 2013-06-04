@@ -85,10 +85,11 @@ namespace ngla
     int entrysize;
     ///
     const ParallelDofs * paralleldofs;
-  public:
+
     ///
     BaseVector ();
 
+  public:
     ///
     virtual ~BaseVector ();
 

@@ -24,16 +24,17 @@ namespace ngla
   protected:
     const ParallelDofs * paralleldofs;
 
-  public:
+  protected:
     /// 
     BaseMatrix ();
     /// 
     // BaseMatrix (const BaseMatrix & amat);
     //
     BaseMatrix (ParallelDofs * aparalleldofs); 
+
+  public:
     /// 
     virtual ~BaseMatrix ();
-  
     /// virtual function must be overloaded
     virtual int VHeight() const;
 
@@ -119,7 +120,8 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;
     
-    
+  private:
+    BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }
   };
 
 
