@@ -280,6 +280,11 @@ namespace ngbla
     }
 #endif
 
+    FlatMatrix<T> AsMatrix (int h, int w)
+    {
+      return FlatMatrix<T> (h,w, data);
+    }
+
     void * Data () const { return data; }
 
     // new for SysVectors:
