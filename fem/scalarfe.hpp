@@ -20,7 +20,7 @@ namespace ngfem
   {
   public:
     /// empty constructor
-    ScalarFiniteElement () { ; } // dimspace = D; }
+    ScalarFiniteElement () { ; } 
     /// provides type, number of dofs, maximal order of shapes
     ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
