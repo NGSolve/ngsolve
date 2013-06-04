@@ -95,7 +95,7 @@ namespace ngfem
     ///
     void SetNr (int anr) { nr = anr; }
     ///
-    const double * Point () const { return pi; }
+    // const double * Point () const { return pi; }
     ///
     int Size() const { return 3; }
     ///
@@ -112,6 +112,9 @@ namespace ngfem
 
     /// global number of ip
     int IPNr () const { return -1; }
+
+    FlatVec<3, double> Point() { return &pi[0]; }
+    FlatVec<3, const double> Point() const { return &pi[0]; }
   public:
     int & FacetNr() { return facetnr; }
     int FacetNr() const { return facetnr; }
