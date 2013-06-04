@@ -13,8 +13,11 @@ namespace ngfem
   CalcShape (const IntegrationPoint & ip, 
              FlatVector<> shape) const
   {
+    /*
     Vec<DIM> pt;
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    */
+    Vec<DIM> pt = ip.Point();
     FEL::T_CalcShape (&pt(0), shape); 
   }
 
@@ -23,10 +26,11 @@ namespace ngfem
   double T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
   Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
   {
-    // double pt[DIM];
+    /*
     Vec<DIM> pt;
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    
+    */
+    Vec<DIM> pt = ip.Point();
     double sum = 0.0;
     EvaluateShape eval(x, &sum); 
     

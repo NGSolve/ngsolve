@@ -187,7 +187,6 @@ public:
     mat =  Trans (mip.GetJacobianInverse ()) * 
       Trans (fel.GetDShape(mip.IP(),lh));
 
-    int i;
     double cx = mip.GetPoint()(0);
     if (cx == 0) cx = 1e-10;
     for (int i = 0; i < mat.Width(); i++)
@@ -289,44 +288,6 @@ public:
   {
     DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
   }
-
-  /*
-  template <typename MIP, class TVX>
-  static void Transform (const MIP & mip, TVX & x)
-  {
-    // do nothing
-    ; 
-  }
-
-  template <typename MIP, class TVX>
-  static void TransformT (const MIP & mip, TVX & x)
-  {
-    // do nothing
-    ; 
-  }
-
-  template <class TVD, class TVY>
-  static void ApplyGrid (const FiniteElement & fel, 
-			 const IntegrationRuleTP<D> & ir,
-			 const TVY & hv, 
-			 TVD & dvecs, 
-			 LocalHeap & lh)
-  {
-    FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    Cast(fel).EvaluateShapeGrid (ir, hv, dvec, lh);
-  }
-
-
-  template <class TVD, class TVY>
-  static void ApplyTransGrid (const FiniteElement & fel, 
-			      const IntegrationRuleTP<D> & ir,
-			      const TVD & dvecs, 
-			      TVY & hv, LocalHeap & lh)
-  {
-    FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    Cast(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
-  }
-  */
 };
 
 
