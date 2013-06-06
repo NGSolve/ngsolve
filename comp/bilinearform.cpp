@@ -3634,10 +3634,17 @@ cout << "catch in AssembleBilinearform 2" << endl;
         {
           prolMat = prol->CreateProlongationMatrix( i );
           
+          /*
           GetMatrix( i-1 ) = 
             *( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
                Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
                                       ( GetMatrix( i-1 ) ) ) ) );
+          */
+          mats[i-1] =
+            ( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
+               Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
+                                      ( GetMatrix( i-1 ) ) ) ) );
+
           delete prolMat;
         }
   }
