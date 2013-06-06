@@ -352,7 +352,7 @@ namespace ngfem
 
 
 
-
+template class HDivFiniteElement<1>;
 
 
 
