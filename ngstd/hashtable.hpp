@@ -17,7 +17,7 @@ namespace ngstd
   class INT
   {
     /// data
-    int i[N];
+    int i[(N>0)?N:1];
 
   public:
     ///
