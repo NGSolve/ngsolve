@@ -453,7 +453,7 @@ namespace netgen
 	  {
 	    // Martin 
 	    // orig:
-	    // glCallList (clipplanelist_scal);
+	    glCallList (clipplanelist_scal);
 
 	    // transparent experiments
 	    // see http://wiki.delphigl.com/index.php/Blenden
@@ -475,7 +475,8 @@ namespace netgen
 	    */
 
 
-
+	    /*
+	      // latest transparent version ...
 	    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);   
 	    glEnable(GL_BLEND); 
 	    glEnable(GL_DEPTH_TEST);
@@ -495,7 +496,7 @@ namespace netgen
 	    // glCallList (clipplanelist_scal);
 	    glEnable(GL_DEPTH_TEST);
 	    glDisable(GL_BLEND); 
-
+	    */
 	    // end test
 	  } 
 	if (clipsolution == 2)
