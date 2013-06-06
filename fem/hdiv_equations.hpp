@@ -45,6 +45,7 @@ public:
                      const TVX & x, TVY & y,
                      LocalHeap & lh) 
   {
+    HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
       
     Vec<D,TSCAL> hv = Trans (static_cast<const FEL&>(fel).GetShape(sip.IP(), lh)) * x;
@@ -74,6 +75,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
+    HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
 
     Vec<D,TSCAL> hv = Trans (sip.GetJacobian()) * x;
