@@ -16,7 +16,7 @@ namespace ngfem
      Provides shape functions and derivaties.
   */
   template <int D>
-  class NGS_DLL_HEADER ScalarFiniteElement : public FiniteElement
+  class ScalarFiniteElement : public FiniteElement
   {
   public:
     /// empty constructor
@@ -28,10 +28,10 @@ namespace ngfem
     { ; }
 
     /// destructor
-    virtual ~ScalarFiniteElement () { ; }
+    NGS_DLL_HEADER virtual ~ScalarFiniteElement () { ; }
 
     /// the name
-    virtual string ClassName() const { return "ScalarFiniteElement"; }
+    NGS_DLL_HEADER virtual string ClassName() const { return "ScalarFiniteElement"; }
 
     /**
        returns shape functions in point ip.
@@ -59,15 +59,15 @@ namespace ngfem
 
 
     /// compute shape
-    virtual void CalcShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const = 0;
   
     /// compute dshape, matrix: ndof x spacedim
-    virtual void CalcDShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<D> dshape) const;
 
     /// compute dshape, matrix: ndof x spacedim
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
 				   FlatMatrixFixWidth<D> dshape) const;
 
 
@@ -85,7 +85,7 @@ namespace ngfem
     }
 
     /// compute dshape, matrix: ndof x (spacedim spacedim)
-    virtual void CalcDDShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
 			      FlatMatrix<> ddshape) const;
 
 
@@ -94,63 +94,63 @@ namespace ngfem
        Evaluates function in integration point ip.
        Vector x provides coefficient vector.
      */
-    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<> x) const;
+    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, FlatVector<> x) const;
 
     /**
        Evaluates gradient in integration point ip.
        Vector x provides coefficient vector.
      */
-    virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
+    NGS_DLL_HEADER virtual Vec<D> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
 
     
     /**
        Evaluate function in points of integrationrule ir.
        Vector x provides coefficient vector.
      */
-    virtual void Evaluate (const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
 
     /**
        Evaluate gradient in points of integrationrule ir.
        Vector x provides coefficient vector.
      */
-    virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<D> values) const;
+    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<D> values) const;
 
 
     /**
        Evaluate function in points of integrationrule ir, transpose operation.
        Vector x provides coefficient vector.
      */
-    virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
 
 
     /**
        Evaluate gradient in points of integrationrule ir, transpose operation.
        Vector x provides coefficient vector.
      */
-    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
 
 
 
     /// old style
-    virtual void EvaluateShapeGrid (const IntegrationRuleTP<D> & ir,
+    NGS_DLL_HEADER virtual void EvaluateShapeGrid (const IntegrationRuleTP<D> & ir,
 				    const FlatVector<double> coefs,
 				    FlatVector<double> gridvalues,
 				    LocalHeap & lh) const;
 			
     /// old style	  
-    virtual void EvaluateShapeGridTrans (const IntegrationRuleTP<D> & ir,
+    NGS_DLL_HEADER virtual void EvaluateShapeGridTrans (const IntegrationRuleTP<D> & ir,
 					 const FlatVector<double> gridvalues,
 					 FlatVector<double> coefs,
 					 LocalHeap & lh) const;
 			
     /// old style	  
-    virtual void EvaluateDShapeGrid (const IntegrationRuleTP<D> & ir,
+    NGS_DLL_HEADER virtual void EvaluateDShapeGrid (const IntegrationRuleTP<D> & ir,
 				     const FlatVector<double> coefs,
 				     FlatMatrixFixWidth<D> gridvalues,
 				     LocalHeap & lh) const;
 			
     /// old style	  
-    virtual void EvaluateDShapeGridTrans (const IntegrationRuleTP<D> & ir,
+    NGS_DLL_HEADER virtual void EvaluateDShapeGridTrans (const IntegrationRuleTP<D> & ir,
 					  const FlatMatrixFixWidth<D> gridvalues,
 					  FlatVector<double> coefs,
 					  LocalHeap & lh) const;
@@ -193,19 +193,19 @@ namespace ngfem
 
     /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-    virtual void SetOrder (INT<D> p) = 0;
-    virtual void ComputeNDof() = 0;
+    NGS_DLL_HEADER virtual void SetOrder (INT<D> p) = 0;
+    NGS_DLL_HEADER virtual void ComputeNDof() = 0;
 
 
-    virtual void PrecomputeTrace () = 0; 
-    virtual void PrecomputeGrad () = 0;
+    NGS_DLL_HEADER virtual void PrecomputeTrace () = 0; 
+    NGS_DLL_HEADER virtual void PrecomputeGrad () = 0;
 
-    void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
-    void CalcGradientMatrix (FlatMatrix<> gmat) const;
+    NGS_DLL_HEADER void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
+    NGS_DLL_HEADER void CalcGradientMatrix (FlatMatrix<> gmat) const;
 
-    virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
 
-    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
+    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
     {
       Matrix<> gmat(D*grad.Height(), coefs.Size());
       CalcGradientMatrix (gmat);
@@ -213,7 +213,7 @@ namespace ngfem
       vgrad = gmat * coefs;
     }
 
-    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
+    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
     {
       Matrix<> gmat(D*grad.Height(), coefs.Size());
       CalcGradientMatrix (gmat);
@@ -221,14 +221,14 @@ namespace ngfem
       coefs = Trans (gmat) * vgrad;
     }
 
-    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
       Matrix<> trace(fcoefs.Size(), coefs.Size());
       CalcTraceMatrix(facet, trace);
       fcoefs = trace * coefs;
     }
 
-    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
     {
       Matrix<> trace(fcoefs.Size(), coefs.Size());
       CalcTraceMatrix(facet, trace);
