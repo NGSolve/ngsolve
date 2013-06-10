@@ -48,6 +48,7 @@ namespace ngfem
   class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,ET_SEGM,2,1>
   {
   public:
+    NGS_DLL_HEADER FE_Segm1() { ; };
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx x[1], TFA & shape) 
     {
@@ -60,6 +61,7 @@ namespace ngfem
   class FE_Segm2 : public T_ScalarFiniteElement<FE_Segm2,ET_SEGM,3,2>
   {
   public:
+        NGS_DLL_HEADER  FE_Segm2() { ; };
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
