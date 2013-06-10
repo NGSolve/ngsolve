@@ -160,6 +160,7 @@ namespace ngfem
   class DifferentialOperator
   {
   public:
+    NGS_DLL_HEADER DifferentialOperator() { ; }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
@@ -273,6 +274,7 @@ namespace ngfem
     enum { DIM         = DIFFOP::DIM };
 
   public:
+        NGS_DLL_HEADER T_DifferentialOperator() { ; }
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
