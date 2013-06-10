@@ -318,7 +318,7 @@ namespace ngfem
   */
 
   template <class FEL, ELEMENT_TYPE ET, class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> >
-  class NGS_DLL_HEADER T_ScalarFiniteElement2 : virtual public BASE
+  class T_ScalarFiniteElement2 : virtual public BASE
   {
   public:
     enum { DIM = ET_trait<ET>::DIM };
