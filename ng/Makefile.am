@@ -42,7 +42,7 @@ ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  \
 ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl \
 occgeom.tcl acisgeom.tcl netgen.ocf
 
-netgen_LDFLAGS = -rdynamic 
+# netgen_LDFLAGS = -rdynamic 
 # -static
 
 

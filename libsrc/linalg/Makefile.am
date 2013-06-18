@@ -6,4 +6,4 @@ libla_la_SOURCES = densemat.cpp polynomial.cpp bfgs.cpp linopt.cpp linsearch.cpp
 
 #  vector.cpp
 
-libla_la_LDFLAGS = -rdynamic
+# libla_la_LDFLAGS = -rdynamic
