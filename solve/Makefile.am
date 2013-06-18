@@ -24,7 +24,8 @@ $(top_builddir)/basiclinalg/libngbla.la		\
 $(top_builddir)/multigrid/libngmg.la		\
 $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
-libngsolve_la_LDFLAGS = -avoid-version -rdynamic
+libngsolve_la_LDFLAGS = -avoid-version
+#  -rdynamic
 
 
 
