@@ -30,6 +30,7 @@ recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	      \
 specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	      \
 hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	      \
 hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp \
-diffop_impl.hpp
+diffop_impl.hpp hcurlhofe_impl.hpp
+
 
 
