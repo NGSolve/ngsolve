@@ -20,9 +20,9 @@ namespace ngfem
   {
   public:
     /// empty constructor
-    ScalarFiniteElement () { ; } 
+    NGS_DLL_HEADER ScalarFiniteElement () { ; } 
     /// provides type, number of dofs, maximal order of shapes
-    ScalarFiniteElement (ELEMENT_TYPE aeltype, 
+    NGS_DLL_HEADER ScalarFiniteElement (ELEMENT_TYPE aeltype, 
 			 int andof = 0, int aorder = 0)
       : FiniteElement (aeltype, andof, aorder) 
     { ; }
@@ -31,7 +31,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual ~ScalarFiniteElement () { ; }
 
     /// the name
-    NGS_DLL_HEADER virtual string ClassName() const { return "ScalarFiniteElement"; }
+    virtual string ClassName() const { return "ScalarFiniteElement"; }
 
     /**
        returns shape functions in point ip.
@@ -205,7 +205,7 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
 
-    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
+    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
     {
       Matrix<> gmat(D*grad.Height(), coefs.Size());
       CalcGradientMatrix (gmat);
@@ -213,7 +213,7 @@ namespace ngfem
       vgrad = gmat * coefs;
     }
 
-    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
+    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
     {
       Matrix<> gmat(D*grad.Height(), coefs.Size());
       CalcGradientMatrix (gmat);
@@ -221,14 +221,14 @@ namespace ngfem
       coefs = Trans (gmat) * vgrad;
     }
 
-    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
       Matrix<> trace(fcoefs.Size(), coefs.Size());
       CalcTraceMatrix(facet, trace);
       fcoefs = trace * coefs;
     }
 
-    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
     {
       Matrix<> trace(fcoefs.Size(), coefs.Size());
       CalcTraceMatrix(facet, trace);

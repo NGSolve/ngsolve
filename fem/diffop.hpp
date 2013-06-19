@@ -19,7 +19,7 @@ namespace ngfem
      Operations can be applied for one integration point, or for the whole integration rule at once.
   */
   template<class DOP>
-  class NGS_DLL_HEADER DiffOp
+  class DiffOp
   {
   public:
     // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };
@@ -166,66 +166,66 @@ namespace ngfem
     ///
     virtual string Name() const { return "noname"; }
     /// dimension of range
-    virtual int Dim() const = 0;
+    NGS_DLL_HEADER virtual int Dim() const = 0;
     /// does it live on the boundary ?
     virtual bool Boundary() const { return false; }
     /// calculates the matrix
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
 	   FlatVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationRule & mir,
 	   FlatVector<Complex> x, 
 	   FlatMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatVector<Complex> flux,
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
 		FlatMatrix<Complex> flux,
@@ -241,7 +241,7 @@ namespace ngfem
     int dim;
     int comp;
   public:
-    BlockDifferentialOperator (const DifferentialOperator & adiffop, 
+    NGS_DLL_HEADER BlockDifferentialOperator (const DifferentialOperator & adiffop, 
 			       int adim, int acomp = -1)
       : diffop(adiffop), dim(adim), comp(acomp) { ; }
 
@@ -251,7 +251,7 @@ namespace ngfem
 
 
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double> mat, 
@@ -278,27 +278,27 @@ namespace ngfem
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
