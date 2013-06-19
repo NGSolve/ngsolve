@@ -33,7 +33,7 @@ namespace ngstd
   {
     ostream & ost;
     bool active;
-    static bool glob_active;
+    NGS_DLL_HEADER static bool glob_active;
     double trunc;
   public:
     NGSOStream (ostream & aost, bool aactive)
