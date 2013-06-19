@@ -2129,9 +2129,9 @@ namespace ngfem
   class ConvertJacobi
   {
     typedef double d2[2];
-    static Array<d2*> coefs_increasealpha;
-    static Array<d2*> coefs_reducealpha;
-    static Array<d2*> coefs_reducealphafac;
+    NGS_DLL_HEADER static Array<d2*> coefs_increasealpha;
+    NGS_DLL_HEADER static Array<d2*> coefs_reducealpha;
+    NGS_DLL_HEADER static Array<d2*> coefs_reducealphafac;
 
   public:
     ConvertJacobi ();
