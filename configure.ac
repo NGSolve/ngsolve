@@ -1,4 +1,4 @@
-AC_INIT([ngsolve],[5.1-dev],[])
+AC_INIT([ngsolve],[5.2-dev],[])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -6,7 +6,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
 
 AC_PROG_CXX
-
+AX_CXX_COMPILE_STDCXX_11
 AC_OPENMP
 CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 

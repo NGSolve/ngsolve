@@ -49,6 +49,8 @@ namespace ngfem
     /// sub-array
     const DShapeAssign Addr (int i) const
     { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
+    const DShapeAssign operator+ (int i) const
+    { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
   };
 
 
@@ -98,6 +100,8 @@ namespace ngfem
     /// get sub-vector
     const EvaluateShape Addr (int i) const
     { return EvaluateShape (coefs+i, sum); } 
+    const EvaluateShape operator+ (int i) const
+    { return EvaluateShape (coefs+i, sum); } 
   };
 
 
@@ -133,6 +137,8 @@ namespace ngfem
     { return EvaluateShapeTransElement<TSCAL> (coefs[i], fac); }
 
     const EvaluateShapeTrans Addr (int i) const
+    { return EvaluateShapeTrans (coefs+i, fac); }
+    const EvaluateShapeTrans operator+ (int i) const
     { return EvaluateShapeTrans (coefs+i, fac); }
   };
 
@@ -175,6 +181,8 @@ namespace ngfem
 
     const EvaluateDShape Addr (int i) const
     { return EvaluateDShape (coefs+i, sum); }
+    const EvaluateDShape operator+ (int i) const
+    { return EvaluateDShape (coefs+i, sum); }
   };
 
 
@@ -214,6 +222,8 @@ namespace ngfem
     { return EvaluateDShapeTransElement<DIM> (coefs[i], fac); }
 
     const EvaluateDShapeTrans Addr (int i) const
+    { return EvaluateDShapeTrans (coefs+i, fac); }
+    const EvaluateDShapeTrans operator+ (int i) const
     { return EvaluateDShapeTrans (coefs+i, fac); }
   };
 

@@ -96,7 +96,10 @@ namespace ngsolve
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
     lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", ""));
     gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-    pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""), 1);
+    if (flags.StringFlagDefined("preconditioner"))
+      pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
+    else
+      pre = NULL;
     maxsteps = int(flags.GetNumFlag ("maxsteps", 200));
     prec = flags.GetNumFlag ("prec", 1e-12);
     tau = flags.GetNumFlag ("tau", 1);

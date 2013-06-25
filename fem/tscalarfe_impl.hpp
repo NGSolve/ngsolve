@@ -110,7 +110,7 @@ namespace ngfem
   {
     Vec<DIM> pt;
     for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    T_CalcShape (&pt(0), shape); 
+    T_CalcShape (&pt(0), shape);
   }
 
 

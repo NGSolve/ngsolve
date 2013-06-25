@@ -76,7 +76,6 @@ namespace ngstd
     ist = &aist;
     ReadNext();
     res_type = ParseExpression ();
-    // cout << "resulttype: dim = " << res_type.vecdim << ", complex = " << res_type.iscomplex << endl;
   }
 
 
@@ -924,7 +923,6 @@ namespace ngstd
   EvalFunction::ResultType EvalFunction :: ParseExpression ()
   {
     ResultType result = ParseExpression2 ();
-
     if (GetToken() == COMMA)
       {
 	ReadNext();   // ','
@@ -1000,8 +998,10 @@ namespace ngstd
 	      break;
 	    }
 	  default:
-	    return result;
-	  }
+            {
+              return result;
+            }
+          }
       }
     return result;
   }
@@ -1238,21 +1238,20 @@ namespace ngstd
     // skip whitespaces
     do
       {
-	if (!ist -> good())
-	  {
-	    token = END;
-	    return;
-	  }
-	if (ist -> eof())
+	if (!ist->good() || ist->eof())
 	  {
 	    token = END;
 	    return;
 	  }
 	(*ist).get(ch);
+	if (!ist->good() || ist->eof())
+	  {
+	    token = END;
+	    return;
+	  }
       }
     while (isspace(ch));
-  
-  
+    
     switch (ch)
       {
       case '*': case '/': 

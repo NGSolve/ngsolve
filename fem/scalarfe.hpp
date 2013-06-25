@@ -37,7 +37,7 @@ namespace ngfem
        returns shape functions in point ip.
        returns stored values for valid ip.IPNr(), else computes values
     */
-    const FlatVector<> GetShape (const IntegrationPoint & ip, 
+    FlatVector<> GetShape (const IntegrationPoint & ip, 
 				 LocalHeap & lh) const
     {
       FlatVector<> shape(ndof, lh);
@@ -128,32 +128,6 @@ namespace ngfem
        Vector x provides coefficient vector.
      */
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
-
-
-
-    /// old style
-    NGS_DLL_HEADER virtual void EvaluateShapeGrid (const IntegrationRuleTP<D> & ir,
-				    const FlatVector<double> coefs,
-				    FlatVector<double> gridvalues,
-				    LocalHeap & lh) const;
-			
-    /// old style	  
-    NGS_DLL_HEADER virtual void EvaluateShapeGridTrans (const IntegrationRuleTP<D> & ir,
-					 const FlatVector<double> gridvalues,
-					 FlatVector<double> coefs,
-					 LocalHeap & lh) const;
-			
-    /// old style	  
-    NGS_DLL_HEADER virtual void EvaluateDShapeGrid (const IntegrationRuleTP<D> & ir,
-				     const FlatVector<double> coefs,
-				     FlatMatrixFixWidth<D> gridvalues,
-				     LocalHeap & lh) const;
-			
-    /// old style	  
-    NGS_DLL_HEADER virtual void EvaluateDShapeGridTrans (const IntegrationRuleTP<D> & ir,
-					  const FlatMatrixFixWidth<D> gridvalues,
-					  FlatVector<double> coefs,
-					  LocalHeap & lh) const;
   };
 
 
@@ -179,7 +153,7 @@ namespace ngfem
   class DGFiniteElement : public ScalarFiniteElement<D>
   {
   protected:
-    int vnums[8];  
+    int vnums[1<<D];  
 
     using ScalarFiniteElement<D>::ndof;
     using ScalarFiniteElement<D>::order;
@@ -205,35 +179,11 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
 
-    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
-    {
-      Matrix<> gmat(D*grad.Height(), coefs.Size());
-      CalcGradientMatrix (gmat);
-      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
-      vgrad = gmat * coefs;
-    }
+    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const;
+    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const;
 
-    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
-    {
-      Matrix<> gmat(D*grad.Height(), coefs.Size());
-      CalcGradientMatrix (gmat);
-      FlatVector<> vgrad(gmat.Height(), &grad(0,0));
-      coefs = Trans (gmat) * vgrad;
-    }
-
-    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
-    {
-      Matrix<> trace(fcoefs.Size(), coefs.Size());
-      CalcTraceMatrix(facet, trace);
-      fcoefs = trace * coefs;
-    }
-
-    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
-    {
-      Matrix<> trace(fcoefs.Size(), coefs.Size());
-      CalcTraceMatrix(facet, trace);
-      coefs = Trans (trace) * fcoefs;
-    }
+    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
+    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
   };
   
 

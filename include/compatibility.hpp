@@ -29,3 +29,13 @@ namespace ngcomp
   
 
 #endif
+
+
+
+#define L2HighOrderFiniteElement DGFiniteElement
+
+
+
+
+
+
