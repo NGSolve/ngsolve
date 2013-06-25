@@ -48,15 +48,11 @@ namespace ngfem
 	IntegrationPoint ip2 = ip;
         ip1(i) -= eps;
         ip2(i) += eps;
-	// ((double*) ip1.Point()) [i] -= eps;
-	// ((double*) ip2.Point()) [i] += eps;
 	CalcShape (ip1, shape1);
 	CalcShape (ip2, shape2);
 
         ip1(i) -= eps;
         ip2(i) += eps;
-	// ((double*) ip1.Point()) [i] -= eps;
-	// ((double*) ip2.Point()) [i] += eps;
 	CalcShape (ip1, shape3);
 	CalcShape (ip2, shape4);
 
@@ -183,8 +179,6 @@ namespace ngfem
         
         ip1(i) -= eps;
         ip2(i) += eps;
-	// ((double*) ip1.Point()) [i] -= eps;
-	// ((double*) ip2.Point()) [i] += eps;
 
 	CalcDShape (ip1, dshape1);
 	CalcDShape (ip2, dshape2);
@@ -198,77 +192,6 @@ namespace ngfem
 
 
 
-
-  template<int D>
-  void ScalarFiniteElement<D> ::
-  EvaluateShapeGrid (const IntegrationRuleTP<D> & ir,
-		     const FlatVector<double> coefs,
-		     FlatVector<double> gridvalues,
-		     LocalHeap & lh) const
-  {
-    gridvalues = 0;
-    void * heapp = lh.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	gridvalues(i) = InnerProduct (coefs, GetShape(ir[i], lh));
-	lh.CleanUp (heapp);
-      }
-  }
-
-		
-  template<int D>		  
-  void ScalarFiniteElement<D> ::
-  EvaluateShapeGridTrans (const IntegrationRuleTP<D> & ir,
-			  const FlatVector<double> gridvalues,
-			  FlatVector<double> coefs,
-			  LocalHeap & lh) const
-  {
-    coefs = 0.0;
-    void * heapp = lh.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	coefs += gridvalues(i) * GetShape(ir[i], lh);
-	lh.CleanUp (heapp);
-      }
-  }
-				  
-
-
-  template<int D>
-  void ScalarFiniteElement<D> ::
-  EvaluateDShapeGrid (const IntegrationRuleTP<D> & ir,
-		      const FlatVector<double> coefs,
-		      FlatMatrixFixWidth<D> gridvalues,
-		      LocalHeap & lh) const
-  {
-    void * heapp = lh.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	Vec<D> v = Trans (GetDShape(ir[i], lh)) * coefs;
-        gridvalues.Row(i) = v;
-
-	lh.CleanUp (heapp);
-      }
-  }
-		
-  template<int D>		  
-  void ScalarFiniteElement<D> ::
-  EvaluateDShapeGridTrans (const IntegrationRuleTP<D> & ir,
-			   const FlatMatrixFixWidth<D> gridvalues,
-			   FlatVector<double> coefs,
-			   LocalHeap & lh) const
-  {
-    coefs = 0.0;
-    FlatVector<> v(D, lh);
-    void * heapp = lh.GetPointer();
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	for (int j = 0; j < D; j++)
-	  v(j) = gridvalues(i,j);
-	coefs += GetDShape(ir[i], lh) * v;
-	lh.CleanUp (heapp);
-      }
-  }
 				  
 
 
@@ -383,14 +306,48 @@ namespace ngfem
   }
 
 
-
+  template <int D>
+  void DGFiniteElement<D>:: 
+  GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const
+  {
+    Matrix<> gmat(D*grad.Height(), coefs.Size());
+    CalcGradientMatrix (gmat);
+    FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+    vgrad = gmat * coefs;
+  }
+  
+  template <int D>
+  void DGFiniteElement<D>:: 
+  GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const 
+  {
+    Matrix<> gmat(D*grad.Height(), coefs.Size());
+    CalcGradientMatrix (gmat);
+    FlatVector<> vgrad(gmat.Height(), &grad(0,0));
+    coefs = Trans (gmat) * vgrad;
+  }
+  
+  template <int D>
+  void DGFiniteElement<D>:: 
+  GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
+  {
+    Matrix<> trace(fcoefs.Size(), coefs.Size());
+    CalcTraceMatrix(facet, trace);
+    fcoefs = trace * coefs;
+  }
+  
+  template <int D>
+  void DGFiniteElement<D>:: 
+  GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+  {
+    Matrix<> trace(fcoefs.Size(), coefs.Size());
+    CalcTraceMatrix(facet, trace);
+    coefs = Trans (trace) * fcoefs;
+  }
+  
 
   template class DGFiniteElement<0>;
   template class DGFiniteElement<1>;
   template class DGFiniteElement<2>;
   template class DGFiniteElement<3>;
-
-
-
 }
 

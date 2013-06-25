@@ -902,10 +902,10 @@ namespace ngcomp
 	      creator.Add (nv+i, GetEdgeDofs(i));
 
 	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+i, GetFaceDofs(i));
+	      creator.Add(nv+ned+i, GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+nfa+i, GetElementDofs(i));
+	      creator.Add (nv+ned+nfa+i, GetElementDofs(i));
 	    
 	    break; 
 

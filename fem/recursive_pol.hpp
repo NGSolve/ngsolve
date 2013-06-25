@@ -180,13 +180,13 @@ namespace ngfem
 
 
     template <class S, class T>
-    static void Eval (int n, S x, T & values) 
+    static void Eval (int n, S x, T && values) 
     {
       EvalMult (n, x, 1.0, values);
     }
 
     template <class S, class Sc, class T>
-    static void EvalMult (int n, S x, Sc c, T & values) 
+    static void EvalMult (int n, S x, Sc c, T && values) 
     {
       S p1, p2;
 
@@ -251,13 +251,13 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    static void EvalScaled (int n, S x, Sy y, T & values)
+    static void EvalScaled (int n, S x, Sy y, T && values)
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (int n, S x, Sy y, Sc c, T & values)
+    static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
       S p1, p2;
 
@@ -347,7 +347,7 @@ namespace ngfem
     LegendrePolynomial () { ; }
 
     template <class S, class T>
-    inline LegendrePolynomial (int n, S x, T & values)
+    inline LegendrePolynomial (int n, S x, T && values)
     {
       Eval (n, x, values);
     }

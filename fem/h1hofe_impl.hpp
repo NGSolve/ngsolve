@@ -75,7 +75,7 @@ namespace ngfem
 	  LegendrePolynomial::
             EvalScaledMult (order_edge[i]-2, 
                             lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                            lam[e[0]]*lam[e[1]], shape.Addr(ii));
+                            lam[e[0]]*lam[e[1]], shape+ii); // .Addr(ii));
 	  ii += order_edge[i]-1;
 	}
 

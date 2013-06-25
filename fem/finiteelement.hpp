@@ -11,55 +11,6 @@
 namespace ngfem
 {
 
-  /*
-    Finite Element Definitions
-  */
-
-
-  /**
-     Define the degree of freedom.
-     The dof is the nr_on_node'th dof on the Node node.
-     On the element level, node corresponds to the local number, and it is global number on the mesh level.
-     Dof-concept is not yet used very consistently
-  */
-
-  /*
-  class Dof
-  {
-  public:
-    /// the node
-    Node node;
-    /// which number on that node
-    int nr_on_node;
-
-  public:
-    /// empty constructor
-    Dof () { ; }
-
-    /// initialize 
-    Dof (Node anode, int anr_on_node)
-      : node(anode), nr_on_node(anr_on_node) { ; }
-  
-    /// copy constructor
-    Dof (const Dof & d2)
-    { node = d2.node; nr_on_node = d2.nr_on_node; }
-
-    /// the node of the dof
-    const Node & GetNode() const { return node; }
-
-    /// dof number on node
-    int GetNrOnNode () const { return nr_on_node; }
-  };
-
-  /// output dof
-  inline ostream & operator<< (ostream & ost, const Dof & dof)
-  {
-    ost << dof.GetNode() << "," << dof.GetNrOnNode();
-    return ost;
-  }
-  */
-
-
   /** 
       Base class finite element.
       Represents a reference element.

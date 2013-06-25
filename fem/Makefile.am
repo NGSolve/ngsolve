@@ -2,7 +2,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 
 lib_LTLIBRARIES = libngfem.la
 
-libngfem_la_LDFLAGS = -avoid-version
 libngfem_la_LIBADD = $(top_builddir)/ngstd/libngstd.la \
 	$(top_builddir)/basiclinalg/libngbla.la $(LAPACK_LIBS)
 
@@ -32,5 +31,7 @@ hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	      \
 hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp \
 diffop_impl.hpp hcurlhofe_impl.hpp
 
+
+libngfem_la_LDFLAGS = -avoid-version
 
 

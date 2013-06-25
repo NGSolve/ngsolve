@@ -229,16 +229,10 @@ namespace ngbla
 
     // shape functions had a problem with icc v9.1
     const CArray<T> Addr(int i) const
-    {
-      return CArray<T> (data+i*dist); 
-    }
+    { return CArray<T> (data+i*dist); }
 
-    /*
-      T * const  Addr (int i) const    // const not respected by icc ???
-      {
-      return data+i;
-      }
-    */
+    const CArray<T> operator+(int i) const
+    { return CArray<T> (data+i*dist); }
 
 
     /// sub-vector of size next-first, starting at first
