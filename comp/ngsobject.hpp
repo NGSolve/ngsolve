@@ -97,9 +97,51 @@ protected:
 
 
 
+  
+  
+  template <template <class T> class Object, class Base, int ACTDIM, typename ... ARG>
+  class TCreateVecObjectS {
+  public:
+    static Base * Create (int dim, bool iscomplex, ARG & ... arg)
+    {
+      if (dim == ACTDIM) 
+        {
+          if (iscomplex)
+            return new Object<Vec<ACTDIM,Complex> > (arg...);
+          else
+            return new Object<Vec<ACTDIM,double> > (arg...);
+        }
+      else return TCreateVecObjectS<Object, Base, ACTDIM-1, ARG...>::Create(dim, iscomplex, arg...);
+    }
+  };
+  
+  template <template <class T> class Object, class Base, typename ... ARG>
+  class TCreateVecObjectS<Object, Base, 1, ARG...> {
+  public:
+    static Base * Create (int dim, bool iscomplex, ARG & ... arg)
+    { 
+      if (dim == 1) 
+        {
+          if (iscomplex)
+            return new Object<Complex> (arg...);
+          else
+            return new Object<double> (arg...);
+        }
+      throw Exception ("illegal CreateVecObject, dim = "
+                       + ToString(dim) + '\n');
+    }
+  };
+  
+  template <template <class T> class Object, class Base, typename ... ARG>
+  Base * CreateVecObject (int dim, bool iscomplex, ARG && ... arg)
+  {
+    return TCreateVecObjectS<Object, Base, 12, ARG...>::Create (dim, iscomplex, arg ...);
+  }
+  
 
 
 
+  /*
 template <template <class T> class Object, class Base, class SCAL, class ARG, int ACTDIM>
 class TCreateVecObjectS {
   Base * Create (int dim, ARG & arg)
@@ -165,7 +207,7 @@ Base * CreateVecObject (int dim, bool iscomplex, ARG & arg, ARG2 & arg2, ARG3 & 
     return TCreateVecObject3S<Object, Base, Complex, ARG, ARG2, ARG3, 8>::Create (dim, arg, arg2, arg3);
 }
 
-
+  */
 
 
 template <template <class T, class TV> class Object, class Base, class SCAL, 

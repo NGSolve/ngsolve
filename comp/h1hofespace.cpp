@@ -637,11 +637,11 @@ namespace ngcomp
       {
         switch (ma.GetSElType(elnr))
           {
-          case ET_POINT:   return T_GetFE<ET_POINT> (elnr, lh);
-          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
+          case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
+          case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
 
-          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, lh);
-          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, lh);
+          case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, lh);
+          case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, lh);
 
           default:
             throw Exception ("illegal element in H1HoFeSpace::GetSFE");

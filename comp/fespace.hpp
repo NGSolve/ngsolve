@@ -66,7 +66,7 @@ namespace ngcomp
     bool print; 
 
     /// prolongation operators between multigrid levels
-    ngmg::Prolongation *prol;
+    ngmg::Prolongation * prol = NULL;
     /// highest multigrid-level for which Update was called (memory allocation)
     int level_updated;
 
@@ -90,41 +90,48 @@ namespace ngcomp
 
   
     /// Reference - element (low order only)
-    FiniteElement * tet;
+    FiniteElement * tet = NULL;
     /// Reference - element (low order only)
-    FiniteElement * prism;
+    FiniteElement * prism = NULL;
     /// Reference - element (low order only) 
-    FiniteElement * pyramid;
+    FiniteElement * pyramid = NULL;
     /// Reference - element (low order only)
-    FiniteElement * hex;
+    FiniteElement * hex = NULL;
     /// Reference - element (low order only)
-    FiniteElement * trig;
+    FiniteElement * trig = NULL;
     /// Reference - element (low order only)
-    FiniteElement * quad;
+    FiniteElement * quad = NULL;
     /// Reference - element (low order only)
-    FiniteElement * segm;
+    FiniteElement * segm = NULL;
     /// Reference - element (low order only)
-    FiniteElement * point;
+    FiniteElement * point = NULL;
 
-    FiniteElement *dummy_tet, *dummy_prism, *dummy_pyramid, *dummy_hex;
-    FiniteElement *dummy_trig, *dummy_quad, *dummy_segm, *dummy_point;
+
+    FiniteElement * dummy_tet = new DummyFE<ET_TET>();
+    FiniteElement * dummy_pyramid = new DummyFE<ET_PYRAMID>();
+    FiniteElement * dummy_prism = new DummyFE<ET_PRISM>();
+    FiniteElement * dummy_hex = new DummyFE<ET_HEX>();
+    FiniteElement * dummy_trig = new DummyFE<ET_TRIG>();
+    FiniteElement * dummy_quad = new DummyFE<ET_QUAD>();
+    FiniteElement * dummy_segm = new DummyFE<ET_SEGM>();
+    FiniteElement * dummy_point = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    DifferentialOperator * evaluator;
+    DifferentialOperator * evaluator = NULL; 
     /// Evaluator for visualization of boundary data
-    DifferentialOperator * boundary_evaluator;
+    DifferentialOperator * boundary_evaluator = NULL;
     /// Evaluator for flux
-    DifferentialOperator * flux_evaluator;
+    DifferentialOperator * flux_evaluator = NULL;
 
     /// Evaluator for visualization (old style)
-    BilinearFormIntegrator * integrator;
+    BilinearFormIntegrator * integrator = NULL;
     /// Evaluator for visualization of boundary data
-    BilinearFormIntegrator * boundary_integrator;
+    BilinearFormIntegrator * boundary_integrator = NULL;
 
 
 
     /// if non-zero, pointer to low order space
-    FESpace * low_order_space;
+    FESpace * low_order_space = NULL;
     ///
     // bool is_low_order_space;
 
@@ -140,10 +147,10 @@ namespace ngcomp
     Array<int> directfaceclusters;
     Array<int> directelementclusters;
 
-    Table<int> * element_coloring;
+    Table<int> * element_coloring = NULL;
     Array<COUPLING_TYPE> ctofdof;
 
-    ParallelDofs * paralleldofs;
+    ParallelDofs * paralleldofs = NULL;
   
   public:
     /**
