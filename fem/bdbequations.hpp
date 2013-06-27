@@ -76,9 +76,6 @@ public:
 	Vec<D> hv = grad.Row(i);
 	grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
       }
-
-    // for  (int i = 0; i < mir.Size(); i++)
-    //   grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * Vec<D> (grad.Row(i));
   }
 
 
@@ -95,46 +92,7 @@ public:
   }
 
 
-  /*
-  ///
-  template <typename MIP, class TVX>
-  static void Transform (const MIP & mip, TVX & x)
-  {
-    Vec<D> hx = Trans (mip.GetJacobianInverse()) * x;
-    x = hx; 
-  }
 
-  ///
-  template <typename MIP, class TVX>
-  static void TransformT (const MIP & mip, TVX & x)
-  {
-    Vec<D> hx = mip.GetJacobianInverse() * x;
-    x = hx; 
-  }
-  
-  ///
-  template <class TVD, class TVY>
-  static void ApplyGrid (const FiniteElement & fel, 
-			 const IntegrationRuleTP<D> & ir,
-			 const TVY & hv, 
-			 TVD & dvecs, 
-			 LocalHeap & lh)
-  {
-    FlatMatrix<double> dmat(dvecs.Size(), D, const_cast<double*> (&dvecs[0](0)));
-    Cast(fel).EvaluateDShapeGrid (ir, hv, dmat, lh);
-  }
-
-  ///
-  template <class TVD, class TVY>
-  static void ApplyTransGrid (const FiniteElement & fel, 
-			      const IntegrationRuleTP<D> & ir,
-			      const TVD & dvecs, 
-			      TVY & hv, LocalHeap & lh)
-  {
-    FlatMatrix<double> dmat(dvecs.Size(), D, const_cast<double*> (&dvecs[0](0)));
-    Cast(fel).EvaluateDShapeGridTrans (ir, dmat, hv, lh);
-  }
-  */
 };
 
 
@@ -389,45 +347,6 @@ public:
     // static_cast<const FEL&>(fel).
     // EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
   }
-  
-
-  /*
-  template <typename MIP, class TVX>
-  static void Transform (const MIP & mip, TVX & x)
-  {
-    // do nothing
-    ; 
-  }
-
-  template <typename MIP, class TVX>
-  static void TransformT (const MIP & mip, TVX & x)
-  {
-    // do nothing
-    ; 
-  }
-
-  template <typename AFEL, class TVD, class TVY>
-  static void ApplyGrid (const AFEL & fel, 
-			 const IntegrationRuleTP<D-1> & ir,
-			 const TVY & hv, 
-			 TVD & dvecs, 
-			 LocalHeap & lh)
-  {
-    FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    static_cast<const FEL&>(fel).EvaluateShapeGrid (ir, hv, dvec, lh);
-  }
-
-
-  template <typename AFEL, class TVD, class TVY>
-  static void ApplyTransGrid (const AFEL & fel, 
-			      const IntegrationRuleTP<D-1> & ir,
-			      const TVD & dvecs, 
-			      TVY & hv, LocalHeap & lh)
-  {
-    FlatVector<double> dvec(dvecs.Size(), const_cast<double*> (&dvecs[0](0)));
-    static_cast<const FEL&>(fel).EvaluateShapeGridTrans (ir, dvec, hv, lh);
-  }
-  */
 };
 
 
