@@ -190,43 +190,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  delete defon[i];
       }
     
-
-    
-    prol = NULL;
     level_updated = -1;
 
-    low_order_space = NULL;
     // is_low_order_space = false;
-
-    tet = NULL;
-    pyramid = NULL;
-    prism = NULL;
-    hex = NULL;
-    trig = NULL;
-    quad = NULL;
-    segm = NULL;
-    point = NULL;
-
-
-    dummy_tet = new DummyFE<ET_TET>();
-    dummy_pyramid = new DummyFE<ET_PYRAMID>();
-    dummy_prism = new DummyFE<ET_PRISM>();
-    dummy_hex = new DummyFE<ET_HEX>();
-    dummy_trig = new DummyFE<ET_TRIG>();
-    dummy_quad = new DummyFE<ET_QUAD>();
-    dummy_segm = new DummyFE<ET_SEGM>();
-    dummy_point = new DummyFE<ET_POINT>();
-
-
-    evaluator = NULL;
-    flux_evaluator = NULL;
-    boundary_evaluator = NULL;
-    integrator = NULL;
-    boundary_integrator = NULL;
-
-    element_coloring = NULL;
-    paralleldofs = NULL;
-
     ctofdof.SetSize(0);
   }
 
@@ -268,7 +234,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     if (print)
       {
-	*testout << "Update FESpace, type = " << typeid(*this).name() << endl;
+ 	*testout << "Update FESpace, type = " << typeid(*this).name() << endl;
 	*testout << "name = " << name << endl;
       }
 

@@ -714,19 +714,19 @@ namespace ngcomp
 	throw e;
       }    
   }
-
+ 
 
 
   GridFunction * CreateGridFunction (const FESpace * space,
 				     const string & name, const Flags & flags)
   {
     GridFunction * gf = 
-      CreateVecObject  <T_GridFunction, GridFunction, const FESpace, const string, const Flags>
+      CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
        space->IsComplex(), *space, name, flags);
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
-
+    
     return gf;
   }
 

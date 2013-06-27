@@ -92,7 +92,7 @@ namespace ngcomp
 	AssembleIndependent(clh);
 	return;
       }
-    
+
     try
       {
 	ma.PushStatus ("Assemble Vector");
@@ -166,7 +166,7 @@ namespace ngcomp
 		  hasskeletoninner = true;
 	    }
 	  }
-	  
+
 	if (print)
 	  {
 	    *testout << " LINEARFORM TEST:" << endl;
@@ -227,7 +227,6 @@ namespace ngcomp
 		      
 		  ArrayMem<int, 20> dnums;
 		  fespace.GetDofNrs (i, dnums);
-
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (parts[j] -> SkeletonForm()) continue;
@@ -282,7 +281,7 @@ namespace ngcomp
 		  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
 		  Array<int> dnums (fel.GetNDof(), lh);
 		  fespace.GetSDofNrs (i, dnums);
-	      
+
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (parts[j] -> SkeletonForm()) continue;
@@ -315,8 +314,6 @@ namespace ngcomp
 	  }//end of hasbound
 	
 
-
-	   
 	if(hasskeletoninner)
 	{
 	  cout << "\rInnerFacetIntegrators not known - cannot handle it yet" << endl;	  
@@ -912,7 +909,7 @@ namespace ngcomp
     */
 
     LinearForm * lf = 
-      CreateVecObject  <T_LinearForm, LinearForm, const FESpace, const string, const Flags>
+      CreateVecObject  <T_LinearForm, LinearForm> // , const FESpace, const string, const Flags>
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), space->IsComplex(), *space, name, flags);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));

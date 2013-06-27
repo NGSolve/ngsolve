@@ -617,13 +617,13 @@ namespace ngcomp
                       innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
                   }
                 
-                for (int icol = 0; icol < ncolors; icol++)
-                  {
 #pragma omp parallel 
+                {
+                  for (int icol = 0; icol < ncolors; icol++)
                     {
                       LocalHeap lh = clh.Split();
                       int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
-
+                      
 #pragma omp for schedule(dynamic)
                       for (int ii = 0; ii < nec; ii++)
                         {
