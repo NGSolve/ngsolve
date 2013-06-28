@@ -49,10 +49,10 @@ define linearform f -fespace=v
 # source coef_force_z -comp=1
 neumann coef_surface_force_z -comp=3
 
-
 # define system matrix. robin adds penalty terms to the x,y, and z-components
 define bilinearform a -fespace=v -symmetric  -eliminate_internal -linearform=f
 elasticity E nu
+
 
 # use either a direct factorization, or a multigrid preconditioner.
 # for problems smaller than 10000 nodes, the direct one is usually faster,

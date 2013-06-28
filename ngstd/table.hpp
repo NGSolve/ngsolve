@@ -183,6 +183,23 @@ template <class T>
 	}
     }
 
+    void Add (int blocknr, const Array<int> & dofs)
+    {
+      switch (mode)
+	{
+	case 1:
+	  if (blocknr+1 > nd) nd = blocknr+1; 
+	  break;
+	case 2:
+	  cnt[blocknr]+=dofs.Size();
+	  break;
+	case 3:
+	  for (int j = 0; j < dofs.Size(); j++)
+	    (*table)[blocknr][cnt[blocknr]+j] = dofs[j];
+	  cnt[blocknr]+=dofs.Size();
+	  break;
+	}
+    }
   };
 
   class BitArray;
