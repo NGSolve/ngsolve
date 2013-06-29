@@ -74,11 +74,11 @@ namespace ngcomp
     if (!visual) return;
 
     /*
-    for (int i = 0; i < compgfs.Size(); i++)
+      for (int i = 0; i < compgfs.Size(); i++)
       {
-	stringstream child_name;
-	child_name << given_name << "_" << i+1;
-	compgfs[i] -> Visualize (child_name.str());
+      stringstream child_name;
+      child_name << given_name << "_" << i+1;
+      compgfs[i] -> Visualize (child_name.str());
       }
     */
 
@@ -699,8 +699,8 @@ namespace ngcomp
 
 	// const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
 	// if (cfe)
-	  for (int i = 0; i < compgfs.Size(); i++)
-	    compgfs[i]->Update();
+	for (int i = 0; i < compgfs.Size(); i++)
+	  compgfs[i]->Update();
       }
     catch (exception & e)
       {
@@ -978,7 +978,9 @@ namespace ngcomp
   { 
     static Timer t("visgf::GetValue");
     RegionTimer reg(t);
-
+    
+    try
+      {
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
@@ -1037,6 +1039,13 @@ namespace ngcomp
       }
 
     return true; 
+   }
+    catch (Exception & e)
+      {
+        cout << "GetValue caught exception" << endl
+             << e.What();
+        return false;
+      }
   }
 
 
@@ -1047,7 +1056,9 @@ namespace ngcomp
   { 
     static Timer t("visgf::GetValue2");
     RegionTimer reg(t);
-
+    
+    try
+      {
     if (!bfi3d.Size()) return 0;
     if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
@@ -1113,6 +1124,13 @@ namespace ngcomp
       }
 
     return true; 
+ }
+    catch (Exception & e)
+      {
+        cout << "GetValue 2 caught exception" << endl
+             << e.What();
+        return false;
+      }
   }
 
 
@@ -1188,7 +1206,7 @@ namespace ngcomp
             
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
 	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
-	    
+
 	    for (int k = 0; k < npts; k++)
 	      for (int i = 0; i < components; i++)
 		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
@@ -1243,57 +1261,70 @@ namespace ngcomp
     static Timer t("visgf::GetSurfValue");
     RegionTimer reg(t);
 
-    if (!bfi2d.Size()) return 0;
-    if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
-    bool bound = (ma.GetDimension() == 3);
-    const FESpace & fes = gf->GetFESpace();
-
-    int dim = fes.GetDimension();
-
-    HeapReset hr(lh);
-    const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
-
-    ArrayMem<int, 100> dnums;
-    fes.GetDofNrs (elnr, bound, dnums);
-
-    FlatVector<SCAL> elu (dnums.Size() * dim, lh);
-
-    if(gf->GetCacheBlockSize() == 1)
+    try
       {
-        gf->GetElementVector (multidimcomponent, dnums, elu);
-      }
-    else
-      {
-        FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
-        //gf->GetElementVector (multidimcomponent, dnums, elu2);
-        gf->GetElementVector (0, dnums, elu2);
-        for(int i=0; i<elu.Size(); i++)
-          elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
-      }
 
-    fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
+	if (!bfi2d.Size()) return 0;
+	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
-    ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
-    if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
+	bool bound = (ma.GetDimension() == 3);
+	const FESpace & fes = gf->GetFESpace();
 
-    IntegrationPoint ip(lam1, lam2, 0, 0);
-    ip.FacetNr() = facetnr;
+	int dim = fes.GetDimension();
 
-    BaseMappedIntegrationPoint & mip = eltrans(ip, lh);
-    for(int j = 0; j < bfi2d.Size(); j++)
-      {
-	FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-	bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
-	
-	for (int i = 0; i < components; i++)
+	HeapReset hr(lh);
+	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
+
+	ArrayMem<int, 100> dnums;
+	fes.GetDofNrs (elnr, bound, dnums);
+
+	FlatVector<SCAL> elu (dnums.Size() * dim, lh);
+
+	if(gf->GetCacheBlockSize() == 1)
 	  {
-	    if(j == 0) values[i] = 0;
-	    values[i] += ((double*)(void*)&flux(0))[i];
+	    gf->GetElementVector (multidimcomponent, dnums, elu);
 	  }
-      }
+	else
+	  {
+	    FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
+	    //gf->GetElementVector (multidimcomponent, dnums, elu2);
+	    gf->GetElementVector (0, dnums, elu2);
+	    for(int i=0; i<elu.Size(); i++)
+	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
+	  }
 
-    return true;
+	fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
+
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+	if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
+
+	IntegrationPoint ip(lam1, lam2, 0, 0);
+	ip.FacetNr() = facetnr;
+
+	BaseMappedIntegrationPoint & mip = eltrans(ip, lh);
+	for(int j = 0; j < bfi2d.Size(); j++)
+	  {
+	    FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
+	    bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
+	
+	    for (int i = 0; i < components; i++)
+	      {
+		if(j == 0) values[i] = 0;
+		values[i] += ((double*)(void*)&flux(0))[i];
+	      }
+	  }
+
+	return true;
+      }
+    catch (Exception & e)
+      {
+        cout << "GetSurfaceValue caught exception" << endl
+             << e.What();
+
+        return 0;
+      }
+      
   }
 
 
@@ -1610,9 +1641,9 @@ namespace ngcomp
     double vol;
 
     /*
-    int ndomains;
-    if(bfi3d.Size()) ndomains = ma.GetNDomains();
-    else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
+      int ndomains;
+      if(bfi3d.Size()) ndomains = ma.GetNDomains();
+      else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
     */
 
     Array<double> posx;
@@ -1849,8 +1880,8 @@ namespace ngcomp
   }
 
   bool VisualizeCoefficientFunction ::  GetSurfValue (int selnr, int facetnr, 
-			       const double xref[], const double x[], const double dxdxref[],
-			       double * values)
+						      const double xref[], const double x[], const double dxdxref[],
+						      double * values)
   {
     cout << "visualizecoef, getsurfvalue (xref) not implemented" << endl;
     return false;
