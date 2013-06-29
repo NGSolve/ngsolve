@@ -585,8 +585,8 @@ namespace ngbla
 
     SymExpr (const T & aa) : a(aa) { ; }
 
-    TELEM operator() (int i) const { return a(i); }
-    TELEM operator() (int i, int j) const { return a(i,j); }
+    ALWAYS_INLINE TELEM operator() (int i) const { return a(i); }
+    ALWAYS_INLINE TELEM operator() (int i, int j) const { return a(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
     enum { IS_LINEAR = T::IS_LINEAR };
@@ -727,7 +727,7 @@ namespace ngbla
 
 
     template<typename TB>
-    T & operator+= (const Expr<TB> & v)
+    ALWAYS_INLINE T & operator+= (const Expr<TB> & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -778,14 +778,14 @@ namespace ngbla
     }
 
     template <typename TA, typename TB>
-    T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    ALWAYS_INLINE T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 1.0);
       return Spec();
     }
 
     template <typename TA, typename TB>
-    T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    ALWAYS_INLINE T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
       return Spec();
@@ -794,7 +794,7 @@ namespace ngbla
 
 
     template<typename TB>
-    T & operator+= (const Expr<SymExpr<TB> > & v)
+    ALWAYS_INLINE T & operator+= (const Expr<SymExpr<TB> > & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -828,7 +828,7 @@ namespace ngbla
     */
 
     template<typename TB>
-    MatExpr<T> & operator-= (const Expr<TB> & v)
+    ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -933,21 +933,21 @@ namespace ngbla
     }
 
     template<typename TB>
-    const T & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const T & operator+= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
 
     template<typename TB>
-    const T & operator+= (const Expr<SymExpr<TB> > & v) const
+    ALWAYS_INLINE const T & operator+= (const Expr<SymExpr<TB> > & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
 
     template<typename TB>
-    const T & operator-= (const Expr<TB> & v) const
+    ALWAYS_INLINE const T & operator-= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator-= (v);
       return Spec();
@@ -1150,8 +1150,8 @@ namespace ngbla
 
     ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-    TELEM operator() (int i) const { return s * a(i); }
-    TELEM operator() (int i, int j) const { return s * a(i,j); }
+    ALWAYS_INLINE TELEM operator() (int i) const { return s * a(i); }
+    ALWAYS_INLINE TELEM operator() (int i, int j) const { return s * a(i,j); }
 
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
