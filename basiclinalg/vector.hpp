@@ -183,7 +183,7 @@ namespace ngbla
     }
 
     template<typename TB>
-    const FlatVector & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < size; i++)
@@ -384,7 +384,7 @@ namespace ngbla
     }
 
     template<typename TB>
-    const FlatVector & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < size; i++)
@@ -953,7 +953,7 @@ namespace ngbla
 
 
   template<int S, typename TB>
-  Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
+  ALWAYS_INLINE inline Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
   {
     for (int i = 0; i < S; i++)
       v(i) += v2.Spec()(i,0);
@@ -1024,7 +1024,7 @@ namespace ngbla
     }
 
     template<typename TB>
-    const FlatVec & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const FlatVec & operator+= (const Expr<TB> & v) const
     {
       for (int i = 0; i < S; i++)
 	data[i] += v.Spec()(i,0);
@@ -1155,7 +1155,7 @@ namespace ngbla
 
 
     template<typename TB>
-    const SliceVector & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < s; i++)
@@ -1334,7 +1334,7 @@ namespace ngbla
 
 
     template<typename TB>
-    const FixSliceVector & operator+= (const Expr<TB> & v) const
+    ALWAYS_INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < s; i++)
