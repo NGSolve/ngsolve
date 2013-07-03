@@ -454,6 +454,7 @@ namespace ngsolve
     soldata.name = (char*)label.c_str();
     soldata.data = 0;
     soldata.components = cf -> Dimension();
+    if (cf->IsComplex()) soldata.components *= 2;
     soldata.iscomplex = cf -> IsComplex();
     soldata.draw_surface = true;
     soldata.draw_volume  = true; 
