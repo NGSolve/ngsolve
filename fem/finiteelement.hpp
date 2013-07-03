@@ -67,10 +67,11 @@ namespace ngfem
   {
   protected:
     /// pointers to the components
-    ArrayMem<const FiniteElement*,10> fea;
+    // ArrayMem<const FiniteElement*,10> fea;
+    FlatArray<const FiniteElement*> fea;
   public:
     /// initialize with pointers to components, copy pointers
-    CompoundFiniteElement (Array<const FiniteElement*> & afea);
+    CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
 
     /// number of components
     int GetNComponents() const { return fea.Size(); }
