@@ -69,7 +69,20 @@ namespace ngcomp
   }
 
 
-  enum VorB { VOL = 0, BND = 1 };
+  enum VorB { VOL, BND };
+  inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
+
+  class ElementId
+  {
+    VorB vb;
+    int nr;
+  public:
+    ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
+    int Nr() const { return nr; }
+    bool IsVolume() const { return vb == VOL; }
+    bool IsBoundary() const { return vb == BND; }
+  };
+  
 
 
   /** 
@@ -136,6 +149,10 @@ namespace ngcomp
     /// number of boundary elements
     int GetNSE() const { return nelements_cd[1]; }  
 
+    /// number of volume or boundary elements
+    int GetNE(VorB vb) const { return (vb == VOL) ? GetNE() : GetNSE(); }
+
+
     /// number of edges in the whole mesh
     int GetNEdges() const { return nnodes[1]; }     
 
@@ -175,6 +192,10 @@ namespace ngcomp
     ELEMENT_TYPE GetSElType (int elnr) const
     { return ConvertElementType (GetSElement(elnr).GetType()); }
 
+    ELEMENT_TYPE GetElType (ElementId ei) const
+    { return ConvertElementType (GetElement(ei).GetType()); }
+
+
     /// the sub-domain index of the element
     int GetElIndex (int elnr) const
     { 
@@ -198,6 +219,13 @@ namespace ngcomp
           return mesh -> GetElementIndex<2>(elnr) - 1;
         }
     }
+
+    int GetElIndex (ElementId ei) const
+    {
+      if (ei.IsVolume()) return GetElIndex (ei.Nr());
+      else return GetSElIndex (ei.Nr());
+    }
+
 
     /// change sub-domain index (???) 
     // void SetElIndex (int elnr, int index) const
@@ -280,6 +308,21 @@ namespace ngcomp
 	}
     }
 
+    Ng_Element GetElement (ElementId ei) const
+    {
+      int hdim = dim;
+      if (ei.IsBoundary()) hdim--;
+      switch (hdim)
+	{
+	case 1:	return mesh -> GetElement<1> (ei.Nr());
+	case 2: return mesh -> GetElement<2> (ei.Nr());
+	case 3:
+        default: return mesh -> GetElement<3> (ei.Nr());
+	}
+
+    }
+
+
     /**
        returns topology of a Netgen - element.  This is the new
        (2008), unified concept. The function returns a direct access
@@ -327,6 +370,10 @@ namespace ngcomp
     /// vertex and possibly edge-midpoints
     void GetSElPNums (int selnr, Array<int> & pnums) const
     { pnums = ArrayObject (GetSElement(selnr).points); }
+
+    void GetElPNums (ElementId ei, Array<int> & pnums) const
+    { pnums = ArrayObject (GetElement(ei).points); }
+
 
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
@@ -476,6 +523,11 @@ namespace ngcomp
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
     ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
+    
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, LocalHeap & lh) const
+    {
+      return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
+    }
 
 
     // (old style optimization)

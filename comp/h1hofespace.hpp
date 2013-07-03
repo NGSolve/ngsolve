@@ -82,7 +82,9 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;

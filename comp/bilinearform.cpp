@@ -3484,7 +3484,7 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                  *space, name, flags);
           }
         else
-          bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm, const FESpace, const string, const Flags>
+          bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
             (space->GetDimension(), space->IsComplex(), *space, name, flags);
           /*
           CreateSymMatObject3 (bf, T_BilinearFormSymmetric, 
@@ -3494,9 +3494,14 @@ cout << "catch in AssembleBilinearform 2" << endl;
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
-        CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
-                             space->GetDimension(), space->IsComplex(),   
-                             *space, name, flags);
+        bf = CreateSymMatObject<T_BilinearFormDiagonal, BilinearForm> //, const FESpace, const string, const Flags>
+          (space->GetDimension(), space->IsComplex(), *space, name, flags);
+        
+        /*
+          CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
+          space->GetDimension(), space->IsComplex(),   
+          *space, name, flags);
+          */
       }
     else
       {
@@ -3556,9 +3561,14 @@ cout << "catch in AssembleBilinearform 2" << endl;
                                  *space, name, flags);
           }
         else
+          bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
+            (space->GetDimension(), space->IsComplex(), *space, name, flags);
+        
+        /*
           CreateSymMatObject3 (bf, T_BilinearForm, 
-                               space->GetDimension(), space->IsComplex(),   
-                               *space, name, flags);
+          space->GetDimension(), space->IsComplex(),   
+          *space, name, flags);
+          */
       }
 
     return bf;

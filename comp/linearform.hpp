@@ -59,7 +59,7 @@ namespace ngcomp
 
     virtual LinearFormIntegrator * GetIntegrator (int i) 
     {
-      return parts[i]; 
+      return parts[i];
     }
 
     ///
@@ -70,7 +70,9 @@ namespace ngcomp
 
 
     void SetIndependent (int aindependent = true)
-    { independent = aindependent; }
+    { 
+      independent = aindependent; 
+    }
 
 
     ///
@@ -102,21 +104,21 @@ namespace ngcomp
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
 
-    virtual void AddElementVector (const Array<int> & dnums,
-				   const FlatVector<double> & elvec,
-				   const int cachecomp = -1);
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<double> & elvec);
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<double> & elvec) const;
+    virtual void AddElementVector (FlatArray<int> dnums,
+                                   FlatVector<double> elvec,
+				   int cachecomp = -1);
+    virtual void SetElementVector (FlatArray<int> dnums,
+				   FlatVector<double> elvec);
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<double> elvec) const;
 
-    virtual void AddElementVector (const Array<int> & dnums,
-				   const FlatVector<Complex> & elvec,
-				   const int cachecomp = -1);
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<Complex> & elvec);
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<Complex> & elvec) const;
+    virtual void AddElementVector (FlatArray<int> dnums,
+				   FlatVector<Complex> elvec,
+				   int cachecomp = -1);
+    virtual void SetElementVector (FlatArray<int> dnums,
+                                   FlatVector<Complex> elvec);
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<Complex> elvec) const;
 
 
 
@@ -146,13 +148,13 @@ namespace ngcomp
     virtual void AllocateVector () = 0;
 
     ///
-    virtual void AddElementVector (const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec,
-				   const int cachecomp = -1) = 0;
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<SCAL> & elvec) = 0;
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<SCAL> & elvec) const = 0;
+    virtual void AddElementVector (FlatArray<int> dnums,
+                                   FlatVector<SCAL> elvec,
+                                   int cachecomp = -1) = 0;
+    virtual void SetElementVector (FlatArray<int> dnums,
+                                   FlatVector<SCAL> elvec) = 0;
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<SCAL> elvec) const = 0;
 
     ///
     virtual void Assemble (LocalHeap & lh);
@@ -192,13 +194,13 @@ namespace ngcomp
     virtual void CleanUpLevel();
 
     ///
-    virtual void AddElementVector (const Array<int> & dnums,
-				   const FlatVector<TSCAL> & elvec,
-				   const int cachecomp = -1);
-    virtual void SetElementVector (const Array<int> & dnums,
-				   const FlatVector<TSCAL> & elvec);
-    virtual void GetElementVector (const Array<int> & dnums,
-				   FlatVector<TSCAL> & elvec) const;
+    virtual void AddElementVector (FlatArray<int> dnums,
+				   FlatVector<TSCAL> elvec,
+                                   int cachecomp = -1) override;
+    virtual void SetElementVector (FlatArray<int> dnums,
+                                   FlatVector<TSCAL> elvec) override;
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<TSCAL> elvec) const override;
   };
 
 
