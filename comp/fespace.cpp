@@ -226,6 +226,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_point;
 
     delete element_coloring;
+    delete selement_coloring;
     delete paralleldofs;
   }
   
@@ -367,71 +368,88 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (print)
       *testout << "coloring ... " << flush;
 
-    Array<int> col(ma.GetNE());
-    col = -1;
-    bool found;
-    int maxcolor = 0;
 
-
-    int basecol = 0;
-    Array<unsigned int> mask(GetNDof());
-    
-    do
+    for (auto vb = VOL; vb <= BND; vb++)
       {
-	mask = 0;
-	found = false;
-	
-	for (int i = 0; i < ma.GetNE(); i++)
-	  {
-	    if (col[i] >= 0) continue;
-	    GetDofNrs (i, dnums);	
+        Array<int> col(ma.GetNE(vb));
+        col = -1;
+        bool found;
+        int maxcolor = 0;
+        
+        int basecol = 0;
+        Array<unsigned int> mask(GetNDof());
+    
+        do
+          {
+            mask = 0;
+            found = false;
+            
+            for (int i = 0; i < ma.GetNE(vb); i++)
+              {
+                ElementId ei(vb, i);
 
-	    unsigned check = 0;
-	    for (int j = 0; j < dnums.Size(); j++)
-	      if (dnums[j] != -1)
-		check |= mask[dnums[j]];
+                if (col[i] >= 0) continue;
+                GetDofNrs (ei, dnums);	
 
-	    if (check != UINT_MAX) // 0xFFFFFFFF)
-	      {
-		found = true;
-		unsigned checkbit = 1;
-		int color = basecol;
-		while (check & checkbit)
-		  {
-		    color++;
-		    checkbit *= 2;
-		  }
-		// *testout << "set color = " << color << endl;
-		col[i] = color;
-		if (color > maxcolor) maxcolor = color;
+                unsigned check = 0;
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (dnums[j] != -1)
+                    check |= mask[dnums[j]];
+
+                if (check != UINT_MAX) // 0xFFFFFFFF)
+                  {
+                    found = true;
+                    unsigned checkbit = 1;
+                    int color = basecol;
+                    while (check & checkbit)
+                      {
+                        color++;
+                        checkbit *= 2;
+                      }
+                    // *testout << "set color = " << color << endl;
+                    col[i] = color;
+                    if (color > maxcolor) maxcolor = color;
 		
-		for  (int j = 0; j < dnums.Size(); j++)
-		  if (dnums[j] != -1)
-		    mask[dnums[j]] |= checkbit;
-	      }
-	  }
-	
-	basecol += 8*sizeof(unsigned int); // 32;
+                    for  (int j = 0; j < dnums.Size(); j++)
+                      if (dnums[j] != -1)
+                        mask[dnums[j]] |= checkbit;
+                  }
+              }
+            
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+        while (found);
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+        for (int i = 0; i < ma.GetNE(vb); i++)
+          cntcol[col[i]]++;
+
+        if (vb == VOL)
+          {
+            delete element_coloring;
+            element_coloring = new Table<int> (cntcol);
+            cntcol = 0;
+            for (int i = 0; i < ma.GetNE(); i++)
+              (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
+          }
+        else
+          {
+            delete selement_coloring;
+            selement_coloring = new Table<int> (cntcol);
+            cntcol = 0;
+            for (int i = 0; i < ma.GetNSE(); i++)
+              (*selement_coloring)[col[i]][cntcol[col[i]]++] = i;
+          }
+
+
+        if (print)
+          *testout << "needed " << maxcolor+1 << " colors" 
+                   << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
-    while (found);
 
-    // int color = maxcolor+1;
-
-    Array<int> cntcol(maxcolor+1);
-    cntcol = 0;
-    for (int i = 0; i < ma.GetNE(); i++)
-      cntcol[col[i]]++;
-
-    delete element_coloring;
-    element_coloring = new Table<int> (cntcol);
-    cntcol = 0;
-    for (int i = 0; i < ma.GetNE(); i++)
-      (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
 
     level_updated = ma.GetNLevels();
-    
-    if (print)
-      *testout << "needed " << maxcolor+1 << " colors" << endl;
   }
 
 
@@ -479,6 +497,35 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     return *fe;
+  }
+
+  void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    Array<int> dnums;
+    GetDofNrs (ei, dnums);
+    dranges.SetSize(0);
+    for (int i = 0; i < dnums.Size(); i++)
+      dranges.Append (IntRange (dnums[i], dnums[i]+1));
+  }
+
+  FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
+  {
+    // ArrayMem<IntRange,40> dranges;
+    Array<IntRange> dranges(40, lh);
+    dranges.SetSize(0);
+    GetDofRanges (ei, dranges);
+    int nd = 0;
+    for (int i = 0; i < dranges.Size(); i++) nd += dranges[i].Size();
+    
+    FlatArray<int> dnums(nd, lh);
+    for (int i = 0, cnt = 0; i < dranges.Size(); i++)
+      for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
+        if (dranges[i].First() != -1)
+          dnums[cnt++] = j;
+        else
+          dnums[cnt++] = -1;
+
+    return dnums;
   }
 
   /*
@@ -1102,6 +1149,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  void NodalFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize(0);
+    if (!DefinedOn (ma.GetElIndex (ei))) return;
+
+    ArrayMem<int,27> pnums;
+    ma.GetElPNums (ei, pnums);
+
+    if (order == 1)
+      { // Ng-mesh may be second order, but FE space is 1st order
+	int np = pnums.Size();
+	switch (ma.GetElType(ei))
+	  {
+	  case ET_TET: np = 4; break;
+	  case ET_TRIG: np = 3; break;
+	  case ET_QUAD: np = 4; break;
+	  case ET_PRISM: np = 6; break;
+          default:
+            ;
+	  }
+	if (pnums.Size() > np) pnums.SetSize (np);
+      }
+
+    for (int i = 0; i < pnums.Size(); i++)
+      dranges.Append (IntRange (pnums[i], pnums[i]+1));
+  }
 
 
 
@@ -1775,7 +1848,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
+    // ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
+    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetFE(elnr, lh);
     return *new (lh) CompoundFiniteElement (fea);
@@ -1871,7 +1945,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
+    // ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
+    FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetSFE(elnr, lh);
     return *new (lh) CompoundFiniteElement (fea);

@@ -87,51 +87,51 @@ namespace ngcomp
 
 
     ///
-    virtual void GetElementVector (const FlatArray<int> & dnums,
-				   FlatVector<double> & elvec) const
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<double> elvec) const
     { vec[0] -> GetIndirect (dnums, elvec); }
       
     ///
-    virtual void SetElementVector (const FlatArray<int> & dnums,
-				   const FlatVector<double> & elvec) 
+    virtual void SetElementVector (FlatArray<int> dnums,
+				   FlatVector<double> elvec) 
     { vec[0] -> SetIndirect (dnums, elvec); }
 
 
     ///
     virtual void GetElementVector (int comp,
-				   const FlatArray<int> & dnums,
-				   FlatVector<double> & elvec) const 
+				   FlatArray<int> dnums,
+				   FlatVector<double> elvec) const 
     { vec[comp] -> GetIndirect (dnums, elvec); }
 
 
     ///
     virtual void SetElementVector (int comp,
-				   const FlatArray<int> & dnums,
-				   const FlatVector<double> & elvec) 
+				   FlatArray<int> dnums,
+				   FlatVector<double> elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
     ///
-    virtual void GetElementVector (const FlatArray<int> & dnums,
-				   FlatVector<Complex> & elvec) const
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<Complex> elvec) const
     { vec[0] -> GetIndirect (dnums, elvec); }
       
     ///
-    virtual void SetElementVector (const FlatArray<int> & dnums,
-				   const FlatVector<Complex> & elvec) 
+    virtual void SetElementVector (FlatArray<int> dnums,
+				   FlatVector<Complex> elvec) 
     { vec[0] -> SetIndirect (dnums, elvec); }
 
 
     ///
     virtual void GetElementVector (int comp,
-				   const FlatArray<int> & dnums,
-				   FlatVector<Complex> & elvec) const 
+				   FlatArray<int> dnums,
+				   FlatVector<Complex> elvec) const 
     { vec[comp] -> GetIndirect (dnums, elvec); }
 
 
     ///
     virtual void SetElementVector (int comp,
-				   const FlatArray<int> & dnums,
-				   const FlatVector<Complex> & elvec) 
+				   FlatArray<int> dnums,
+				   FlatVector<Complex> elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
 

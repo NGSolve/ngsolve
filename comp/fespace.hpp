@@ -132,8 +132,6 @@ namespace ngcomp
 
     /// if non-zero, pointer to low order space
     FESpace * low_order_space = NULL;
-    ///
-    // bool is_low_order_space;
 
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
@@ -148,6 +146,7 @@ namespace ngcomp
     Array<int> directelementclusters;
 
     Table<int> * element_coloring = NULL;
+    Table<int> * selement_coloring = NULL;
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs = NULL;
@@ -178,7 +177,8 @@ namespace ngcomp
     /// highest level where update/finalize was called
     int GetLevelUpdated() const { return level_updated; }
 
-    const Table<int> & ElementColoring() const { return *element_coloring; }
+    const Table<int> & ElementColoring(VorB vb = VOL) const 
+    { return (vb == VOL) ? *element_coloring : *selement_coloring; }
 
     /// print report to stream
     virtual void PrintReport (ostream & ost);
@@ -205,6 +205,12 @@ namespace ngcomp
     }
 
     /// returns finite element. 
+    const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const
+    {
+      return ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh);
+    }
+
+    /// returns finite element. 
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
 
     /// get dof-nrs of the element
@@ -219,7 +225,19 @@ namespace ngcomp
 	GetDofNrs (elnr, dnums);
     }
 
+    /// get dof-nrs of domain or boundary element elnr
+    void GetDofNrs (ElementId ei, Array<int> & dnums) const
+    {
+      if (ei.IsBoundary())
+	GetSDofNrs (ei.Nr(), dnums);
+      else
+	GetDofNrs (ei.Nr(), dnums);
+    }
 
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+
+    FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
+    
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
@@ -228,6 +246,7 @@ namespace ngcomp
     
     /// get dof-nrs of the element of certain coupling type
     void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;
+
 
     /// get dofs on nr'th node of type nt.
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;
@@ -354,6 +373,13 @@ namespace ngcomp
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const;
 
+
+    template < class T >
+    void TransformVec (ElementId ei,
+		       const T & vec, TRANSFORM_TYPE type) const
+    {
+      TransformVec (ei.Nr(), ei.IsBoundary(), vec, type);
+    }
   
 
     virtual void VTransformMR (int elnr, bool boundary,
@@ -443,6 +469,30 @@ namespace ngcomp
 
 
 
+  template <typename T>
+  inline void IterateElements (const FESpace & fes, 
+                               VorB vb, 
+                               LocalHeap & clh, 
+                               const T & func)
+  {
+    const Table<int> & element_coloring = fes.ElementColoring(vb);
+    
+#pragma omp parallel 
+    {
+      LocalHeap lh = clh.Split();
+      for (int col = 0; col < element_coloring.Size(); col++)
+        {
+          FlatArray<int> elscol = element_coloring[col];
+
+#pragma omp for schedule(dynamic)
+          for (int i = 0; i < elscol.Size(); i++)
+            {
+              HeapReset hr(lh);
+              func (ElementId(vb, elscol[i]), lh);
+            }
+        }
+    }
+  }
 
 
 
@@ -478,6 +528,8 @@ namespace ngcomp
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
   
   
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;

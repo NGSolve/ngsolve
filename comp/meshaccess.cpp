@@ -580,13 +580,6 @@ namespace ngcomp
   }
 
 
-
-
-
-
-
-
-  
   double MeshAccess :: ElementVolume (int elnr) const
   {
     static FE_Segm0 segm0;
