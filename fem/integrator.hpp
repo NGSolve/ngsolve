@@ -15,6 +15,9 @@ namespace ngfem
   */
 
 
+  enum FORM_TYPE { VOLUME_FORM, BOUNDARY_FORM, SKELETON_FORM, CURVE_FORM };
+
+
   /**
      Base class for linear-form and bilinear-form integrators.
      Provides integration order, restriction to subdomains
@@ -63,6 +66,12 @@ namespace ngfem
 
     /// integrates just on the skeleton, standard is NO
     virtual bool SkeletonForm () const {return 0;} 
+
+    virtual bool VolumeForm () const
+    {
+      if (BoundaryForm() || SkeletonForm() || IntegrationAlongCurve()) return false;
+      return true;
+    }
 
     /// Is Integrator defined on this sub-domain ?
     bool DefinedOn (int mat) const;

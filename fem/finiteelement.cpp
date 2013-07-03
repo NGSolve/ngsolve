@@ -15,8 +15,7 @@
 namespace ngfem
 {
 
-
-  CompoundFiniteElement ::  CompoundFiniteElement (Array<const FiniteElement*> & afea)
+  CompoundFiniteElement ::  CompoundFiniteElement (FlatArray<const FiniteElement*> afea)
     : FiniteElement (), fea(afea)
   {
     if (fea.Size() && fea[0])
