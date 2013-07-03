@@ -108,6 +108,7 @@ namespace ngstd
   {
     int first, next;
   public: 
+    IntRange () { ; }
     IntRange (int f, int n) : first(f), next(n) {;} 
     int First() const { return first; }
     int Next() const { return next; }
