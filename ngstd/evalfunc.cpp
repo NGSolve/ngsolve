@@ -346,7 +346,7 @@ namespace ngstd
 	    stack[stacksize] = tan (stack[stacksize]);
 	    break;
 	  case ATAN:
-	    stack[stacksize] = atan ( CheckReal (stack[stacksize]) );
+	    stack[stacksize] = atan (stack[stacksize] );
 	    break;
 	  case ATAN2:
 	    stack[stacksize-1] = atan2( CheckReal (stack[stacksize-1]),
