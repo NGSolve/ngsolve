@@ -710,18 +710,18 @@ namespace ngcomp
     
     switch (int(ET_trait<ET>::DIM))
       {
-      case 1:
+      case 0:
         {
           break;
         }
 
-      case 2:
+      case 1:
         {
           hofe -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
           break;
         }
 
-      case 3: default:  
+      case 2: default:  
         {
           hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
 	  hofe -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
@@ -902,10 +902,10 @@ namespace ngcomp
 	      creator.Add (nv+i, GetEdgeDofs(i));
 
 	    for (int i = 0; i < nfa; i++)
-	      creator.Add(nv+i, GetFaceDofs(i));
+	      creator.Add(nv+ned+i, GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
-	      creator.Add (nv+nfa+i, GetElementDofs(i));
+	      creator.Add (nv+ned+nfa+i, GetElementDofs(i));
 	    
 	    break; 
 
