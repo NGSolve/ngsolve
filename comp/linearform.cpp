@@ -242,8 +242,8 @@ namespace ngcomp
                  ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
                  
                  /*
-                 Array<int> dnums(fel.GetNDof(), lh);
-                 fespace.GetDofNrs (ei, dnums);
+                   Array<int> dnums(fel.GetNDof(), lh);
+                   fespace.GetDofNrs (ei, dnums);
                  */
                  FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
 
@@ -290,7 +290,6 @@ namespace ngcomp
 	  {
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
-	    // ElementTransformation eltrans, seltrans;
 	    Array<int> fnums, elnums, vnums;
 	    //Schleife fuer Facet-Integrators: 
 #pragma omp for	      
@@ -318,8 +317,6 @@ namespace ngcomp
 		  
 		  const FiniteElement & fel = fespace.GetFE (el, lh);
 		
-		  // ma.GetElementTransformation (el, eltrans);
-		  // ma.GetSurfaceElementTransformation (i, seltrans);
 		  ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
 		  ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
 

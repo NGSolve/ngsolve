@@ -444,8 +444,8 @@ namespace ngcomp
 					LocalHeap & lh, 
 					bool reallocate = 0);
     ///
-    virtual void AddElementMatrix (const Array<int> & dnums1,
-				   const Array<int> & dnums2,
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+                                   FlatArray<int> dnums2,
 				   const FlatMatrix<SCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh) = 0;
@@ -525,8 +525,8 @@ namespace ngcomp
     virtual void CleanUpLevel();
 
     ///
-    virtual void AddElementMatrix (const Array<int> & dnums1,
-				   const Array<int> & dnums2,
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
 				   const FlatMatrix<TSCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh);
@@ -573,8 +573,8 @@ namespace ngcomp
 
     virtual BaseVector * CreateVector() const;
 
-    virtual void AddElementMatrix (const Array<int> & dnums1,
-				   const Array<int> & dnums2,
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
 				   const FlatMatrix<TSCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh);
@@ -618,8 +618,8 @@ namespace ngcomp
     virtual void AllocateMatrix ();
     virtual BaseVector * CreateVector() const;
 
-    virtual void AddElementMatrix (const Array<int> & dnums1,
-				   const Array<int> & dnums2,
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
 				   const FlatMatrix<TSCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh);
@@ -726,11 +726,11 @@ namespace ngcomp
     virtual void AllocateMatrix ();
     virtual BaseVector * CreateVector() const;
     
-    virtual void AddElementMatrix (const Array<int> & dnums1,
-				  const Array<int> & dnums2,
-				  const FlatMatrix<SCAL> & elmat,
-				  bool inner_element, int elnr,
-				  LocalHeap & lh);    
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+                                   FlatArray<int> dnums2,
+                                   const FlatMatrix<SCAL> & elmat,
+                                   bool inner_element, int elnr,
+                                   LocalHeap & lh);    
   };
   
   

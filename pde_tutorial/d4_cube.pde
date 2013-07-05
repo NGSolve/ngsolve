@@ -2,7 +2,7 @@ geometry = cube.geo
 mesh = cube.vol
 
 
-define constant heapsize = 100000000
+define constant heapsize = 1000000
 # define constant geometryorder = 1
 # define constant refinep = 1 
 

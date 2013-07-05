@@ -1454,7 +1454,6 @@ public:
       {
 	IntegrationRule ir(fel.ElementType(), IntegrationOrder(fel));
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
-
 	FlatMatrixFixWidth<DIM_DMAT, TSCAL> dvecs(ir.GetNIP(), lh);
 	dvecop.GenerateVectorIR (fel, mir, dvecs, lh);
         for (int i = 0; i < ir.GetNIP(); i++)

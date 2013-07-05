@@ -152,6 +152,8 @@ namespace ngcomp
     ParallelDofs * paralleldofs = NULL;
   
   public:
+    Vec<4,int> vefc_dofblocks = 2;
+
     /**
        Constructor.
        Used flags are: \\
@@ -285,6 +287,15 @@ namespace ngcomp
         return DefinedOnBoundary (index);
       else
         return DefinedOn (index);
+    }
+
+    bool DefinedOn (ElementId id) const
+    {
+      int idx = ma.GetElIndex (id);
+      if (id.IsBoundary())
+        return DefinedOnBoundary (idx);
+      else
+        return DefinedOn (idx);
     }
 
     ///
@@ -480,6 +491,8 @@ namespace ngcomp
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
+
+      // lh.ClearValues();
       for (int col = 0; col < element_coloring.Size(); col++)
         {
           FlatArray<int> elscol = element_coloring[col];
@@ -491,6 +504,7 @@ namespace ngcomp
               func (ElementId(vb, elscol[i]), lh);
             }
         }
+      // cout << "lh, used size = " << lh.UsedSize() << endl;
     }
   }
 
@@ -530,7 +544,6 @@ namespace ngcomp
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
-  
   
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
     virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
@@ -712,16 +725,6 @@ namespace ngcomp
     ///
     virtual int GetNDofLevel (int level) const { return ndlevel[level]; }
 
-    /*
-    // returns start and end points of dofs corresponding to space "spacenr"
-    // first space: spacenr = 0
-    int GetStorageStart(int spacenr) const
-    { return cummulative_nd[spacenr]; }
-    ///
-    int GetStorageEnd(int spacenr) const
-    { return cummulative_nd[spacenr+1]; }
-    */
-
     IntRange GetRange (int spacenr) const
     { 
       return IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]);
@@ -746,6 +749,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     template <class MAT> NGS_DLL_HEADER
     void TransformMat (int elnr, bool boundary,

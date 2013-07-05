@@ -188,7 +188,7 @@ namespace ngfem
       }
 	
     det = Det (dxdxi);
-    dxidx = Inv (dxdxi);
+    // dxidx = Inv (dxdxi);
   }
 
   
@@ -280,7 +280,7 @@ namespace ngfem
       }
     
     det = Det (dxdxi);
-    dxidx = Inv (dxdxi);
+    // dxidx = Inv (dxdxi);
   }
 
 
@@ -403,7 +403,7 @@ namespace ngfem
       }
 	
     det = Det (dxdxi);
-    dxidx = Inv (dxdxi);
+    // dxidx = Inv (dxdxi);
   }
 
 

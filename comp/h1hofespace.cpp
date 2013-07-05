@@ -88,7 +88,6 @@ namespace ngcomp
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
     low_order_space = new NodalFESpace (ma, loflags);
-    // low_order_space -> SetLowOrderSpace (true);
 
     switch (ma.GetDimension())
       {
@@ -133,6 +132,8 @@ namespace ngcomp
       }
 
     prol = new LinearProlongation(*this);
+
+    vefc_dofblocks = Vec<4,int> (1,1,1,1);
   }
 
 
@@ -589,10 +590,8 @@ namespace ngcomp
 
       case 2:
         {
-          hofe -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
-	  
-          INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-          hofe -> SetOrderFace (0, p);
+          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)] );
+          hofe -> SetOrderFace (0, order_inner[elnr]);
           break;
         }
 
@@ -650,50 +649,6 @@ namespace ngcomp
         e.Append ("in H1HoFESpace::GetSElement\n");
         throw;
       }
-
-
-
-    /*
-    H1HighOrderFiniteElement<0> * hofe0d = NULL;
-    H1HighOrderFiniteElement<1> * hofe1d = NULL;
-    H1HighOrderFiniteElement<2> * hofe2d = NULL;
-
-    switch (ma.GetSElType(elnr))
-      {
-      case ET_POINT: hofe0d = new (lh) H1HighOrderFE<ET_POINT> (); break;
-      case ET_SEGM: hofe1d = new (lh) H1HighOrderFE<ET_SEGM> (); break;
-      case ET_TRIG: hofe2d = new (lh) H1HighOrderFE<ET_TRIG> (); break;
-      case ET_QUAD: hofe2d = new (lh) H1HighOrderFE<ET_QUAD> (); break;
-      default: throw Exception ("H1HOFES::GetSFE not supported for element");
-      }
-
-    Ng_Element ngel = ma.GetSElement(elnr);
-    switch (ma.GetDimension())
-      {
-      case 1:
-	{
-	  hofe0d -> ComputeNDof();
-	  return *hofe0d;
-	}
-      case 2:
-	{
-          hofe1d -> SetVertexNumbers (ngel.vertices);
-	  hofe1d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-	  
-	  hofe1d -> ComputeNDof();
-	  return *hofe1d;
-          }
-      case 3: default:
-	{
-          hofe2d -> SetVertexNumbers (ngel.vertices);
-	  hofe2d -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-	  hofe2d -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
-	  
-	  hofe2d  -> ComputeNDof();
-	  return *hofe2d;
-	}
-      }
-    */
   }
 
 
@@ -774,11 +729,11 @@ namespace ngcomp
   {
     dranges.SetSize(0);
 
-    if (!DefinedOn (ma.GetElIndex (ei))) return;
+    if (!DefinedOn (ei)) return;
     Ng_Element ngel = ma.GetElement(ei);
 
     for (int i = 0; i < ngel.vertices.Size(); i++)
-      dranges.Append (IntRange (ngel.vertices[i], ngel.vertices[i]+1));
+      dranges.Append (ngel.vertices[i]);
          
     if (ma.GetDimension() >= 2)
       for (int i = 0; i < ngel.edges.Size(); i++)

@@ -48,7 +48,7 @@ namespace ngfem
 	    cout << "A,det<0" << endl;
 	    (*testout) << "A,det<0" << endl;
 	  }
-	dxidx = Inv (dxdxi);
+	// dxidx = Inv (dxdxi);
       }
     else
       {
@@ -66,12 +66,6 @@ namespace ngfem
 	    normalvec(0) = -dxdxi(1,0) / det;
 	    normalvec(1) = dxdxi(0,0) / det;
 	  }
-	
-	Mat<S,S> ata, iata;
-	
-	ata = Trans (dxdxi) * dxdxi;
-	iata = Inv (ata);
-	dxidx = iata * Trans (dxdxi);
       }
     this->measure = fabs (det);
   }

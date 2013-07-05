@@ -488,7 +488,7 @@ namespace ngcomp
     }
 
 
-    virtual void AddElementMatrix (const Array<int> & dnums,
+    virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<SCAL> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh);
@@ -536,7 +536,7 @@ namespace ngcomp
 
   template <class SCAL, class TV>
   void BDDCPreconditioner<SCAL, TV> ::
-  AddElementMatrix (const Array<int> & dnums,
+  AddElementMatrix (FlatArray<int> dnums,
 		    const FlatMatrix<SCAL> & elmat,
 		    bool inner_element, int elnr,
 		    LocalHeap & lh)

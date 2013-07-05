@@ -187,8 +187,6 @@ namespace ngfem
     /// Jacobi matrix
     Mat<DIMR,DIMS,SCAL> dxdxi;
     /// (pseudo)inverse of Jacobi matrix
-    Mat<DIMS,DIMR,SCAL> dxidx;
-    /// Jacobian 
     SCAL det;
     /// for boundary points
     Vec<DIMR,SCAL> normalvec;
@@ -224,7 +222,7 @@ namespace ngfem
       if (DIMS == DIMR)
 	{
 	  det = Det (dxdxi);
-	  dxidx = Inv (dxdxi);
+	  // dxidx = Inv (dxdxi);
 	  normalvec = TSCAL(0.0);
 	  tangentialvec = TSCAL(0.0);
 	}
@@ -250,11 +248,10 @@ namespace ngfem
 	      normalvec = 1.0;
 	    }
 	
-	  Mat<DIMS,DIMS,SCAL> ata, iata;
-	
-	  ata = Trans (dxdxi) * dxdxi;
-	  iata = Inv (ata);
-	  dxidx = iata * Trans (dxdxi);
+	  // Mat<DIMS,DIMS,SCAL> ata, iata;
+	  // ata = Trans (dxdxi) * dxdxi;
+	  // iata = Inv (ata);
+	  // dxidx = iata * Trans (dxdxi);
 	  tangentialvec = TSCAL(0.0);
 	}
       this->measure = fabs (det);
@@ -266,7 +263,20 @@ namespace ngfem
     ///
     SCAL GetJacobiDet() const { return det; }
     ///
-    const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
+    // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
+    const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
+    { 
+      if (DIMS == DIMR)
+        return Inv (dxdxi);
+      else
+        {
+	  Mat<DIMS,DIMS,SCAL> ata, iata;
+	  ata = Trans (dxdxi) * dxdxi;
+	  iata = Inv (ata);
+	  return (iata * Trans (dxdxi));
+        }
+    }
+
     ///
     const Vec<DIMR,SCAL> GetNV () const { return normalvec; }
     /// 

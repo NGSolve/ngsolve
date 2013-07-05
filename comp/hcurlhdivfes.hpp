@@ -52,6 +52,9 @@ public:
   ///
   virtual int GetNDofLevel (int level) const;
 
+  /// 
+  virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+
   ///
   virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///

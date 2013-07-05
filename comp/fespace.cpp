@@ -388,7 +388,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 ElementId ei(vb, i);
 
+                if (!DefinedOn (ei)) continue;
                 if (col[i] >= 0) continue;
+
                 GetDofNrs (ei, dnums);	
 
                 unsigned check = 0;
@@ -499,8 +501,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *fe;
   }
 
+
   void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
+    cout << "getdofrangs called for fespace " << GetClassName() << endl;
     Array<int> dnums;
     GetDofNrs (ei, dnums);
     dranges.SetSize(0);
@@ -510,8 +514,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
   {
-    // ArrayMem<IntRange,40> dranges;
-    Array<IntRange> dranges(40, lh);
+    Vec<4,int> nnodes = ElementTopology::GetNNodes (ma.GetElType (ei));
+    Array<IntRange> dranges(InnerProduct (nnodes, vefc_dofblocks), lh);
     dranges.SetSize(0);
     GetDofRanges (ei, dranges);
     int nd = 0;
@@ -519,46 +523,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     FlatArray<int> dnums(nd, lh);
     for (int i = 0, cnt = 0; i < dranges.Size(); i++)
-      for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
+      {
         if (dranges[i].First() != -1)
-          dnums[cnt++] = j;
+          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
+            dnums[cnt++] = j;
         else
-          dnums[cnt++] = -1;
+          for (int j = dranges[i].First(); j < dranges[i].Next(); j++)
+            dnums[cnt++] = -1;
+      }
 
     return dnums;
   }
 
-  /*
-  void FESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
-  {
-    TopologicElement topel;
-    ma.GetTopologicElement (elnr, topel);
-
-    LocalHeapMem<10003> lh("FESpace - GetDofNrs");
-    ArrayMem<Dof, 100> dofs;
-
-    GetFE (elnr, lh) . GetDofs(dofs);
-
-    dnums.SetSize(dofs.Size());
-
-    for (int i = 0; i < dofs.Size(); i++)
-      {
-        Node gn = topel.GlobalNode (dofs[i].GetNode());
-        int nr_on_node = dofs[i].GetNrOnNode();
-
-        if (nr_on_node < lodofs_per_node[gn.GetType()])
-          dnums[i] = 
-            first_lodof[gn.GetType()] + 
-            lodofs_per_node[gn.GetType()] * gn.GetNodeNr() +
-            nr_on_node;
-
-        else
-
-          dnums[i] = first_hodofs[gn.GetType()][gn.GetNodeNr()] + 
-            nr_on_node - lodofs_per_node[gn.GetType()];
-      }
-  }
-  */
 
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
@@ -566,7 +542,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ctofdof.Size()==0) //this is the standard case if the FESpace does not specify anything.
       return WIREBASKET_DOF;
     if (dof >= ctofdof.Size()) throw Exception("FESpace::GetDofCouplingType out of range. Did you set up ctofdof?");
-      return ctofdof[dof];
+    return ctofdof[dof];
   }
 
   /// get coupling types of dofs
@@ -1080,6 +1056,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
 	boundary_integrator = new BlockBilinearFormIntegrator (*boundary_integrator, dimension);  
       }
+
+    if (order == 1) 
+      vefc_dofblocks = Vec<4> (1,0,0,0);
+    else
+      vefc_dofblocks = Vec<4> (1,1,1,1);
   }
 
   NodalFESpace :: ~NodalFESpace ()
@@ -1688,6 +1669,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // Array<const Prolongation*> prols;
     // prol = new CompoundProlongation (this, prols);
     prol = new CompoundProlongation (this);
+
+    vefc_dofblocks = 0;
   }
 
 
@@ -1714,6 +1697,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < spaces.Size(); i++)
       hprol -> AddProlongation (spaces[i]->GetProlongation());
     prol = hprol;
+
+    vefc_dofblocks = 0;
+    for (int i = 0; i < spaces.Size(); i++)
+      vefc_dofblocks += spaces[i] -> vefc_dofblocks;
   }
 
 
@@ -1721,6 +1708,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     spaces.Append (fes);
     dynamic_cast<CompoundProlongation*> (prol) -> AddProlongation (fes->GetProlongation());
+    vefc_dofblocks += fes -> vefc_dofblocks;
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -1934,6 +1922,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   
 
+  void CompoundFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+        int osize = dranges.Size();
+        Array<IntRange> hdranges(dranges.AllocSize()-osize, &dranges[osize]);
+        hdranges.SetSize(0);
+	spaces[i]->GetDofRanges (ei, hdranges);
+        int nsize = osize + hdranges.Size();
+        dranges.SetSize (nsize);
+
+        for (int j = osize; j < nsize; j++)
+          if (dranges[j].First() != -1)
+            dranges[j] = dranges[j]+cummulative_nd[i];
+      }
+  }
 
 
 

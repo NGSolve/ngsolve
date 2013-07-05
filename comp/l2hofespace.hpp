@@ -72,6 +72,8 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetFacetFE (int fnr, LocalHeap & lh) const;
 
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;

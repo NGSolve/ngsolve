@@ -479,6 +479,19 @@ namespace ngcomp
   }
 
 
+  void L2HighOrderFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize(0);
+
+    if (!ei.IsVolume()) return;
+    if (!DefinedOn (ma.GetElIndex (ei))) return;
+    
+    if (!all_dofs_together)
+      dranges.Append (ei.Nr());
+    dranges.Append (GetElementDofs(ei.Nr()));
+  }
+
+
   void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);

@@ -96,13 +96,6 @@ namespace ngcomp
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
 
-    ///
-    int GetFirstFaceDof(int i) const {return(first_face_dof[i]);} ;  
-    ///
-    int GetFirstEdgeDof(int i) const {return(first_edge_dof[i]);} ; 
-    ///
-    int GetFirstElementDof(int i) const {return(first_element_dof[i]);} ; 
-    ///
     void UpdateDofTables ();
     ///
     virtual void UpdateCouplingDofArray();    

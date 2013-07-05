@@ -46,6 +46,7 @@ namespace ngfem
 
       RegionTimer reg (timer);
 
+
       const CompoundFiniteElement & cfel = 
         dynamic_cast<const CompoundFiniteElement&> (fel);
       const ScalarFiniteElement<D> & fel_l2 = 
