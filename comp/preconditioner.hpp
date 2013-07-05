@@ -72,12 +72,12 @@ namespace ngcomp
 
     virtual void InitLevel () { ; }
     virtual void FinalizeLevel () { ; }
-    virtual void AddElementMatrix (const Array<int> & dnums,
+    virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<double> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh) { ; }
 
-    virtual void AddElementMatrix (const Array<int> & dnums,
+    virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<Complex> & elmat,
 				   bool inner_element, int elnr,
 				   LocalHeap & lh) { ; }

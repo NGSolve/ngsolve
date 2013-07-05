@@ -72,6 +72,7 @@ namespace ngcomp
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     IntRange GetFacetDofs (int nr) const
     { 

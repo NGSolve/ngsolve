@@ -109,6 +109,7 @@ namespace ngstd
     int first, next;
   public: 
     IntRange () { ; }
+    IntRange (int f) : first(f), next(f+1) {;} 
     IntRange (int f, int n) : first(f), next(n) {;} 
     int First() const { return first; }
     int Next() const { return next; }
@@ -465,6 +466,13 @@ namespace ngstd
       if (nallocsize > allocsize)
         ReSize (nallocsize);
     }
+
+    /// Change physical size. Keeps logical size. Keeps contents.
+    TSIZE AllocSize () const
+    {
+      return allocsize;
+    }
+
 
     /// assigns memory from local heap
     const Array & Assign (TSIZE asize, LocalHeap & lh)

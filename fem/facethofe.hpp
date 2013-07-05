@@ -11,6 +11,10 @@
 
 namespace ngfem
 {
+
+
+
+
   
   template <ELEMENT_TYPE ET> class FacetFE;
 
@@ -37,7 +41,7 @@ namespace ngfem
     { 
       eltype = ET;
     }
-    
+
     virtual void ComputeNDof() 
     {
       ndof = 0;
@@ -129,7 +133,7 @@ namespace ngfem
 
       INT<4> f = GetFaceSort (fnr, vnums);
       int p = facet_order[fnr];
-
+      
       DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
     }
   };

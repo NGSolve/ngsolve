@@ -95,6 +95,14 @@ namespace ngcomp
         boundary_integrator =
 	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
+
+    switch (ma.GetDimension())
+      {
+      case 1: vefc_dofblocks = Vec<4,int> (2,0,0,0); break;
+      case 2: vefc_dofblocks = Vec<4,int> (0,2,0,0); break;
+      case 3: default:
+        vefc_dofblocks = Vec<4,int> (0,0,2,0);
+      }
   }
 
   
@@ -452,6 +460,26 @@ namespace ngcomp
   }
 
 
+  void FacetFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize(0);
+
+    if (!DefinedOn (ma.GetElIndex (ei))) return;
+    Ng_Element ngel = ma.GetElement(ei);
+    
+    if (ma.GetDimension() == 2)
+      for (int i = 0; i < ngel.edges.Size(); i++)
+        {
+          dranges.Append (ngel.edges[i]);
+          dranges.Append (GetFacetDofs(ngel.edges[i]));
+        }
+    else
+      for (int i = 0; i < ngel.faces.Size(); i++)
+        {
+          dranges.Append (ngel.faces[i]);
+          dranges.Append (GetFacetDofs(ngel.faces[i]));
+        }
+  }
 
   // ------------------------------------------------------------------------
   void FacetFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const

@@ -328,6 +328,17 @@ namespace ngcomp
     return nelevel[level];
   }
 
+
+  void NedelecFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize (0);
+    if (!DefinedOn (ei)) return;
+
+    Ng_Element ngel = ma.GetElement(ei);
+    for (int i = 0; i < ngel.edges.Size(); i++)
+      dranges.Append (ngel.edges[i]);
+  }
+
   
   void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {

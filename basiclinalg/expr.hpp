@@ -316,7 +316,7 @@ namespace ngbla
   template <> class mat_prod_type<double,Complex> { public: typedef Complex TMAT; };
   template <> class mat_prod_type<Complex,double> { public: typedef Complex TMAT; };
   template <> class mat_prod_type<Complex,Complex> { public: typedef Complex TMAT; };
-
+  template <> class mat_prod_type<int,int> { public: typedef int TMAT; };
   template <int D, typename TA, typename TB>
   class mat_prod_type<AutoDiff<D, TA>, TB> 
   { public: typedef AutoDiff<D, typename mat_prod_type<TA,TB>::TMAT> TMAT; };
@@ -1042,6 +1042,7 @@ namespace ngbla
 
     TELEM operator() (int i) const { return a(i)+b(i); }
     TELEM operator() (int i, int j) const { return a(i,j)+b(i,j); }
+    // auto operator() (int i, int j) const -> decltype(a(0,0)+b(0,0)) { return a(i,j)+b(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
 
@@ -1452,11 +1453,11 @@ namespace ngbla
 
   /* ************************* InnerProduct ********************** */
 
-
   inline double InnerProduct (double a, double b) {return a * b;}
   inline Complex InnerProduct (Complex a, Complex b) {return a * b;}
   inline Complex InnerProduct (double a, Complex b) {return a * b;}
   inline Complex InnerProduct (Complex a, double b) {return a * b;}
+  inline int InnerProduct (int a, int b) {return a * b;}
 
 
   /**

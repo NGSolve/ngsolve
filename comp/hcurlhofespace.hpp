@@ -90,6 +90,8 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
     ///
+    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
+
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
@@ -109,9 +111,9 @@ namespace ngcomp
     ///
     SparseMatrix<double> * CreateGradient() const; 
  
-    int GetFirstEdgeDof(int e) const { return first_edge_dof[e]; }; 
-    int GetFirstFaceDof(int f) const { return first_face_dof[f]; }; 
-    int GetFirstCellDof(int c) const { return first_inner_dof[c]; }; 
+    // int GetFirstEdgeDof(int e) const { return first_edge_dof[e]; }; 
+    // int GetFirstFaceDof(int f) const { return first_face_dof[f]; }; 
+    // int GetFirstCellDof(int c) const { return first_inner_dof[c]; }; 
 
     INT<2> GetFaceOrder(const int i) {return order_face[i];}
   
@@ -146,20 +148,17 @@ namespace ngcomp
 
     IntRange GetEdgeDofs (int nr) const
     {
-      return IntRange (first_edge_dof[nr], 
-                       first_edge_dof[nr+1]);
+      return IntRange (first_edge_dof[nr], first_edge_dof[nr+1]);
     }
 
     IntRange GetFaceDofs (int nr) const
     {
-      return IntRange (first_face_dof[nr], 
-                       first_face_dof[nr+1]);
+      return IntRange (first_face_dof[nr], first_face_dof[nr+1]);
     }
 
     IntRange GetElementDofs (int nr) const
     {
-      return IntRange (first_inner_dof[nr], 
-                       first_inner_dof[nr+1]);
+      return IntRange (first_inner_dof[nr], first_inner_dof[nr+1]);
     }
   };
 

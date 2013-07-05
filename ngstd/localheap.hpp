@@ -147,6 +147,18 @@ namespace ngstd
       size_t size_of_piece = freemem / pieces;
       return LocalHeap (p + i * size_of_piece, size_of_piece, name);
     }
+
+    void ClearValues ()
+    {
+      for (size_t i = 0; i < totsize; i++) data[i] = 47;
+    }
+
+    size_t UsedSize ()
+    {
+      for (size_t i = totsize-1; i >= 0; i--)
+        if (data[i] != 47) return i;
+      return 0;
+    }
   };
 
 

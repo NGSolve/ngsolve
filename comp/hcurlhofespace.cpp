@@ -146,6 +146,8 @@ namespace ngcomp
         evaluator = new T_DifferentialOperator<DiffOpIdEdge<3> >;
         flux_evaluator = new T_DifferentialOperator<DiffOpCurlEdge<3> >;
       }
+
+    vefc_dofblocks = Vec<4,int> (0,2,1,1);
   }
   
   HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace ()
@@ -890,6 +892,29 @@ namespace ngcomp
   {
     return ndof;
   }
+
+  void HCurlHighOrderFESpace :: 
+  GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize(0);
+    if (!DefinedOn (ei)) return;
+
+    Ng_Element ngel = ma.GetElement(ei);
+
+    for (int i = 0; i < ngel.edges.Size(); i++)
+      dranges.Append (ngel.edges[i]);
+         
+    for (int i = 0; i < ngel.edges.Size(); i++)
+      dranges += GetEdgeDofs (ngel.edges[i]);
+
+    if (ma.GetDimension() == 3)
+      for (int i = 0; i < ngel.faces.Size(); i++)
+        dranges += GetFaceDofs (ngel.faces[i]);
+
+    if (ei.IsVolume())
+      dranges += GetElementDofs (ei.Nr());
+  }
+
 
   void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
@@ -2545,8 +2570,8 @@ namespace ngcomp
 	  {
 	    cnts[i] = 2;  // vertices-nedelec
 	    int l = first_edge_dof[i]; 
-	    for( int k = fesh1.GetFirstEdgeDof(i); k< fesh1.GetFirstEdgeDof(i+1); 
-		 k++, l++)
+            IntRange edofs = fesh1.GetEdgeDofs(i);
+	    for( int k = edofs.First(); k < edofs.Next(); k++, l++)
 	      cnts[l] = 1;
 	  }
       }
@@ -2556,8 +2581,8 @@ namespace ngcomp
 	if(fine_face[i])
 	  {
 	    int l= first_face_dof[i]; 
-	    for (int k = fesh1.GetFirstFaceDof(i); k<fesh1.GetFirstFaceDof(i+1); 
-		 k++, l++) 
+            IntRange fdofs = fesh1.GetFaceDofs(i);
+	    for (int k = fdofs.First(); k < fdofs.Next(); k++, l++) 
 	      cnts[l] = 1;
 	  }
       }
@@ -2565,8 +2590,8 @@ namespace ngcomp
     for(int i=0; i<ne; i++)
       {
 	int l= first_inner_dof[i]; 
-	for (int k = fesh1.GetFirstElementDof(i); k<fesh1.GetFirstElementDof(i+1); 
-	     k++, l++) 
+        IntRange edofs = fesh1.GetElementDofs(i);
+	for (int k = edofs.First(); k < edofs.Next(); k++, l++) 
 	  cnts[l] = 1; 
       }
   
@@ -2597,9 +2622,9 @@ namespace ngcomp
 	      }
 	   
 	    int l = first_edge_dof[i]; 
-
-	    for( int k = fesh1.GetFirstEdgeDof(i); k< fesh1.GetFirstEdgeDof(i+1); 
-		 k++, l++)
+            
+            IntRange edofs = fesh1.GetEdgeDofs(i);
+	    for( int k = edofs.First(); k < edofs.Next(); k++, l++)
 	      {
 		grad.CreatePosition(l,k); 
 		grad(l,k)=1.; 
@@ -2612,8 +2637,8 @@ namespace ngcomp
 	if(fine_face[i])
 	  {
 	    int l= first_face_dof[i]; 
-	    for (int k = fesh1.GetFirstFaceDof(i); k<fesh1.GetFirstFaceDof(i+1); 
-		 k++, l++) 
+            IntRange fdofs = fesh1.GetFaceDofs(i);
+	    for (int k = fdofs.First(); k < fdofs.Next(); k++, l++) 
 	      {
 		grad.CreatePosition(l,k); 
 		grad(l,k)=1.;
@@ -2624,8 +2649,8 @@ namespace ngcomp
     for(int i=0; i<ne; i++)
       {
 	int l= first_inner_dof[i]; 
-	for (int k = fesh1.GetFirstElementDof(i); k<fesh1.GetFirstElementDof(i+1); 
-	     k++, l++) 
+        IntRange edofs = fesh1.GetElementDofs(i);
+	for (int k = edofs.First(); k < edofs.Next(); k++, l++) 
 	  {
 	    grad.CreatePosition(l,k); 
 	    grad(l,k)=1.;

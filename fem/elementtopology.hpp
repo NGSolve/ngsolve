@@ -20,9 +20,9 @@ namespace ngfem
      Possible are ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
   */
   enum ELEMENT_TYPE { ET_POINT = 0, ET_SEGM = 1,
-		      ET_TRIG = 10, ET_QUAD = 11, 
-		      ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
-
+                      ET_TRIG = 10, ET_QUAD = 11, 
+                      ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
+  
 
 
 
@@ -152,7 +152,21 @@ namespace ngfem
     }
 
 
-
+    static Vec<4,int> GetNNodes (ELEMENT_TYPE et)
+    {
+      switch (et)
+        {
+        case ET_POINT  : return Vec<4,int> (1,0,0,0);
+        case ET_SEGM   : return Vec<4,int> (2,1,0,0);
+        case ET_TRIG   : return Vec<4,int> (3,3,1,0);
+        case ET_QUAD   : return Vec<4,int> (4,4,1,0);
+        case ET_TET    : return Vec<4,int> (4,6,4,1);
+        case ET_PYRAMID : return Vec<4,int> (5,8,5,1);
+        case ET_PRISM  : return Vec<4,int> (6,9,5,1);
+        case ET_HEX    : return Vec<4,int> (8,12,6,1);
+        }
+      return 0;
+    }
 
     /// returns number of nodes of type nt
     static int GetNNodes (ELEMENT_TYPE et, NODE_TYPE nt)

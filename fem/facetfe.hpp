@@ -17,9 +17,9 @@ namespace ngfem
   template <int D>
   class NGS_DLL_HEADER FacetVolumeFiniteElement;
   
-  
+
   template <int D>
-  class FacetFEFacet : virtual public ScalarFiniteElement<D>
+  class FacetFEFacet : public ScalarFiniteElement<D>
   {
     int fnr;
     const FacetVolumeFiniteElement<D> & fe;
@@ -27,7 +27,10 @@ namespace ngfem
     FacetFEFacet (int afnr,
 		  const FacetVolumeFiniteElement<D> & afe,
 		  ELEMENT_TYPE aeltype, int andof, int aorder)
-      : ScalarFiniteElement<D> (aeltype, andof, aorder), fnr(afnr), fe(afe) { ; }
+      : ScalarFiniteElement<D> (aeltype, andof, aorder), fnr(afnr), fe(afe) 
+    { 
+      ; // cout << "created facetfefacet" << endl;
+    }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
@@ -36,6 +39,7 @@ namespace ngfem
     }
   };
 
+  
   
 
   template <int D>
@@ -74,28 +78,19 @@ namespace ngfem
       for (int i = 1; i < ao.Size(); i++)
 	order = max(order, ao[i]);
     }
-    
+
+    // virtual const ScalarFiniteElement<D> & Facet (int fnr) const = 0;
+
     FacetFEFacet<D> Facet (int fnr) const 
     { 
       return FacetFEFacet<D> (fnr, *this, eltype, 
 			      GetFacetDofs(fnr).Size(), facet_order[fnr]); 
     }
 
+
     virtual void CalcFacetShapeVolIP (int fnr, const IntegrationPoint & ip, 
 				      FlatVector<> shape) const = 0;
 
-
-
-    /*
-      // please use Facet(k).CalcShape (ip, shape)   instead
-      // ip .. vol point
-      // shape .. size is facet.ndof
-
-    void CalcFacetShape(int fnr, const IntegrationPoint & ip, FlatVector<> shape) const;
-    void EvaluateFacet (int fnr, const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
-    void EvaluateFacetTrans (int fnr, const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
-    void SelectFacet (int afn) const { facetnr = afn; }
-    */
 
 
     IntRange GetFacetDofs(int fnr) const
