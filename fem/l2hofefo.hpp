@@ -7,8 +7,9 @@
 /* Date:   Apr. 2009                                                 */
 /*********************************************************************/
 
-#include "tscalarfe.hpp"
-#include "l2hofe.hpp"
+
+// #include "tscalarfe_impl.hpp"
+// #include "l2hofe_impl.hpp"
 
 
 namespace ngfem
@@ -19,16 +20,44 @@ namespace ngfem
   */
 
 
-  template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO;
+  template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO_Shapes;
 
+  /*
   template <ELEMENT_TYPE ET, int ORDER>
   class T_L2HighOrderFiniteElementFO : 
     public L2HighOrderFiniteElement<ET_trait<ET>::DIM>,
     public T_ScalarFiniteElement2< L2HighOrderFEFO<ET,ORDER>, ET >,
     public ET_trait<ET> 
+  */
+
+
+
+
+
+  template <ELEMENT_TYPE ET, int ORDER,
+            typename BASE = L2HighOrderFE<ET, L2HighOrderFEFO_Shapes<ET,ORDER> > >
+
+  class L2HighOrderFEFO : public BASE
   {
   protected:
-    typedef L2HighOrderFEFO<ET,ORDER> SHAPES;
+    using BASE::T_IMPL;
+    using BASE::T_SHAPES;
+    typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
+
+
+    /*
+  template <ELEMENT_TYPE ET, int ORDER,
+            typename BASE = T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET,ORDER>, ET, L2HighOrderFE<ET> > >
+  
+  class L2HighOrderFEFO : public BASE
+  {
+
+  protected:
+    // using BASE::T_IMPL;
+    // using BASE::T_SHAPES;
+    typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
+    */
+
 
     enum { DIM = ET_trait<ET>::DIM };
 
@@ -36,17 +65,17 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
 
-    using L2HighOrderFiniteElement<DIM>::vnums;
+    using DGFiniteElement<DIM>::vnums;
 
   public:
 
-    T_L2HighOrderFiniteElementFO () 
+    L2HighOrderFEFO () 
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
       eltype = ET;
       order = ORDER;
-      ndof = L2HighOrderFEFO<ET, ORDER>::NDOF;
+      ndof = SHAPES::NDOF;
     }
 
 
@@ -75,7 +104,7 @@ namespace ngfem
       if (pre)
 	vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
       else
-	T_ScalarFiniteElement2< SHAPES, ET > :: Evaluate (ir, coefs, vals);
+        this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
@@ -86,8 +115,11 @@ namespace ngfem
       if (pre)
 	coefs = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
       else
-	T_ScalarFiniteElement2< SHAPES, ET > :: EvaluateGradTrans (ir, values, coefs);
+        BASE::T_IMPL:: EvaluateGradTrans (ir, values, coefs);
     }
+
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const { ; }
+
   };
 
 
@@ -97,10 +129,10 @@ namespace ngfem
      High order triangular finite element
   */
   template <int ORDER>
-  class L2HighOrderFEFO<ET_TRIG, ORDER> : public T_L2HighOrderFiniteElementFO<ET_TRIG, ORDER>
+  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER> : public L2HighOrderFEFO<ET_TRIG, ORDER>
   {
-    using T_L2HighOrderFiniteElementFO<ET_TRIG, ORDER>::ndof;
-    using T_L2HighOrderFiniteElementFO<ET_TRIG, ORDER>::vnums; 
+    using L2HighOrderFEFO<ET_TRIG, ORDER>::ndof;
+    using L2HighOrderFEFO<ET_TRIG, ORDER>::vnums; 
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
     typedef TrigShapesInnerLegendre T_TRIGSHAPES;

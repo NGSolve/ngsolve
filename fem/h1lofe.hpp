@@ -13,7 +13,7 @@ namespace ngfem
 {
 
   template <ELEMENT_TYPE ET>
-  class ScalarDummyFE : public T_ScalarFiniteElement<ScalarDummyFE<ET>,ET,0,0>
+  class ScalarDummyFE : public T_ScalarFiniteElementFO<ScalarDummyFE<ET>,ET,0,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -22,7 +22,7 @@ namespace ngfem
   };
 
 
-  class FE_Point : public T_ScalarFiniteElement<FE_Point,ET_POINT,1,0>
+  class FE_Point : public T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -34,7 +34,7 @@ namespace ngfem
 
 
   ///
-  class FE_Segm0 : public T_ScalarFiniteElement<FE_Segm0,ET_SEGM,1,0>
+  class FE_Segm0 : public T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -45,7 +45,7 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm1 : public T_ScalarFiniteElement<FE_Segm1,ET_SEGM,2,1>
+  class FE_Segm1 : public T_ScalarFiniteElementFO<FE_Segm1,ET_SEGM,2,1>
   {
   public:
     NGS_DLL_HEADER FE_Segm1() { ; };
@@ -58,7 +58,7 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm2 : public T_ScalarFiniteElement<FE_Segm2,ET_SEGM,3,2>
+  class FE_Segm2 : public T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>
   {
   public:
         NGS_DLL_HEADER  FE_Segm2() { ; };
@@ -74,7 +74,7 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm2HB : public T_ScalarFiniteElement<FE_Segm2HB,ET_SEGM,3,2>
+  class FE_Segm2HB : public T_ScalarFiniteElementFO<FE_Segm2HB,ET_SEGM,3,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -90,7 +90,7 @@ namespace ngfem
 
 
   ///
-  class FE_Segm1L2 : public T_ScalarFiniteElement<FE_Segm1L2,ET_SEGM,2,1>
+  class FE_Segm1L2 : public T_ScalarFiniteElementFO<FE_Segm1L2,ET_SEGM,2,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -102,7 +102,7 @@ namespace ngfem
   }; 
 
   ///
-  class FE_Segm2L2 :public T_ScalarFiniteElement<FE_Segm2L2,ET_SEGM,3,2>
+  class FE_Segm2L2 :public T_ScalarFiniteElementFO<FE_Segm2L2,ET_SEGM,3,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -117,7 +117,7 @@ namespace ngfem
   }; 
 
   ///
-  class FE_NcSegm1 :public T_ScalarFiniteElement<FE_NcSegm1,ET_SEGM,1,1>
+  class FE_NcSegm1 :public T_ScalarFiniteElementFO<FE_NcSegm1,ET_SEGM,1,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -128,7 +128,7 @@ namespace ngfem
   }; 
 
   /// potential space for Nedelec IIb
-  class FE_Segm3Pot :public T_ScalarFiniteElement<FE_Segm3Pot,ET_SEGM,4,3>
+  class FE_Segm3Pot :public T_ScalarFiniteElementFO<FE_Segm3Pot,ET_SEGM,4,3>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -147,7 +147,7 @@ namespace ngfem
 
   /// segment of fixed order
   template <int ORDER>
-  class FE_TSegmL2 : public T_ScalarFiniteElement<FE_TSegmL2<ORDER>, ET_SEGM, ORDER+1, ORDER>
+  class FE_TSegmL2 : public T_ScalarFiniteElementFO<FE_TSegmL2<ORDER>, ET_SEGM, ORDER+1, ORDER>
   {
     // static IPDataArray ipdata;
   public:
@@ -179,18 +179,19 @@ namespace ngfem
   /* ***************************** Trig Elements *************************************** */
 
   ///
-  class FE_Trig0 : public T_ScalarFiniteElement<FE_Trig0,ET_TRIG,1,0>
+  class FE_Trig0 : public T_ScalarFiniteElement<FE_Trig0,ET_TRIG>
   {
   public:
+    FE_Trig0() { ndof = 1; order = 0; }
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[2], TFA & shape) 
+    inline void T_CalcShape (Tx x[2], TFA & shape) const
     {
       shape[0] = 1;
     }
   }; 
 
   ///
-  class FE_Trig1 : public T_ScalarFiniteElement2<FE_Trig1,ET_TRIG>
+  class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,ET_TRIG>
   {
   public:
     FE_Trig1() { ndof = 3; order = 1;}
@@ -205,11 +206,12 @@ namespace ngfem
 
 
   ///
-  class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,ET_TRIG,6,2>
+  class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,ET_TRIG>
   {
   public:
+    FE_Trig2() { ndof = 6; order = 2;}
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    inline void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -224,11 +226,12 @@ namespace ngfem
     }
   }; 
 
-  class FE_Trig2HB : public T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG,6,2>
+  class FE_Trig2HB : public T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG>
   {
   public:
+    FE_Trig2HB() { ndof = 6; order = 2;}
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    inline void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -245,7 +248,7 @@ namespace ngfem
 
 
 
-  class FE_NcTrig1 : public T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG,3,1>
+  class FE_NcTrig1 : public T_ScalarFiniteElementFO<FE_NcTrig1,ET_TRIG,3,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -267,7 +270,7 @@ namespace ngfem
   /* ***************************** Quad *************************************** */
 
 
-  class FE_Quad0 : public T_ScalarFiniteElement<FE_Quad0,ET_QUAD,1,0>
+  class FE_Quad0 : public T_ScalarFiniteElementFO<FE_Quad0,ET_QUAD,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -279,7 +282,7 @@ namespace ngfem
 
 
   /// quad of order 1
-  class FE_Quad1 : public T_ScalarFiniteElement<FE_Quad1,ET_QUAD,4,1>
+  class FE_Quad1 : public T_ScalarFiniteElementFO<FE_Quad1,ET_QUAD,4,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -297,7 +300,7 @@ namespace ngfem
 
 
   /// quad or order 2
-  class FE_Quad2 : public T_ScalarFiniteElement<FE_Quad2,ET_QUAD,9,2>
+  class FE_Quad2 : public T_ScalarFiniteElementFO<FE_Quad2,ET_QUAD,9,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -322,7 +325,7 @@ namespace ngfem
   }; 
 
 
-  class FE_Quad2aniso :  public T_ScalarFiniteElement<FE_Quad2aniso,ET_QUAD,6,2>
+  class FE_Quad2aniso :  public T_ScalarFiniteElementFO<FE_Quad2aniso,ET_QUAD,6,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -347,7 +350,7 @@ namespace ngfem
 
 
   ///
-  class FE_Tet0 : public T_ScalarFiniteElement<FE_Tet0,ET_TET,1,0>
+  class FE_Tet0 : public T_ScalarFiniteElementFO<FE_Tet0,ET_TET,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -359,7 +362,7 @@ namespace ngfem
 
 
   ///
-  class FE_Tet1 : public T_ScalarFiniteElement<FE_Tet1,ET_TET,4,1>
+  class FE_Tet1 : public T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -378,7 +381,7 @@ namespace ngfem
 
 
   ///
-  class FE_Tet2 : public T_ScalarFiniteElement<FE_Tet2,ET_TET,10,2>
+  class FE_Tet2 : public T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -406,7 +409,7 @@ namespace ngfem
 
 
   ///
-  class FE_Tet2HB : public T_ScalarFiniteElement<FE_Tet2HB,ET_TET,10,2>
+  class FE_Tet2HB : public T_ScalarFiniteElementFO<FE_Tet2HB,ET_TET,10,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -433,7 +436,7 @@ namespace ngfem
 
 
 
-  class FE_NcTet1 : public T_ScalarFiniteElement<FE_NcTet1,ET_TET,4,1>
+  class FE_NcTet1 : public T_ScalarFiniteElementFO<FE_NcTet1,ET_TET,4,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -455,7 +458,7 @@ namespace ngfem
   /* ***************************** Prism *********************************** */
 
   ///
-  class FE_Prism0 : public T_ScalarFiniteElement<FE_Prism0,ET_PRISM,1,0>
+  class FE_Prism0 : public T_ScalarFiniteElementFO<FE_Prism0,ET_PRISM,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -466,7 +469,7 @@ namespace ngfem
   };
 
   ///
-  class FE_Prism1 : public T_ScalarFiniteElement<FE_Prism1,ET_PRISM,6,1>
+  class FE_Prism1 : public T_ScalarFiniteElementFO<FE_Prism1,ET_PRISM,6,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -487,7 +490,7 @@ namespace ngfem
 
 
   ///
-  class FE_Prism2 : public T_ScalarFiniteElement<FE_Prism2,ET_PRISM,18,2>
+  class FE_Prism2 : public T_ScalarFiniteElementFO<FE_Prism2,ET_PRISM,18,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -524,7 +527,7 @@ namespace ngfem
 
 
   /// prism, order P2 in plane and P1 in z direction
-  class FE_Prism2aniso : public T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM,12,2>
+  class FE_Prism2aniso : public T_ScalarFiniteElementFO<FE_Prism2aniso,ET_PRISM,12,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -554,7 +557,7 @@ namespace ngfem
 
 
 
-  class FE_Prism2HBaniso : public T_ScalarFiniteElement<FE_Prism2HBaniso,ET_PRISM,12,2>
+  class FE_Prism2HBaniso : public T_ScalarFiniteElementFO<FE_Prism2HBaniso,ET_PRISM,12,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -590,7 +593,7 @@ namespace ngfem
   /* ***************************** Hex *********************************** */
 
   /// P0 hex element
-  class FE_Hex0 : public T_ScalarFiniteElement<FE_Hex0,ET_HEX,1,0>
+  class FE_Hex0 : public T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -601,7 +604,7 @@ namespace ngfem
   };
 
   /// trilinear hex element
-  class FE_Hex1 : public T_ScalarFiniteElement<FE_Hex1,ET_HEX,8,1>
+  class FE_Hex1 : public T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -629,7 +632,7 @@ namespace ngfem
   /* ***************************** Pyramid *********************************** */
 
   ///
-  class FE_Pyramid0 : public T_ScalarFiniteElement<FE_Pyramid0,ET_PYRAMID,1,0>
+  class FE_Pyramid0 : public T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -641,7 +644,7 @@ namespace ngfem
 
 
   ///
-  class FE_Pyramid1 : public T_ScalarFiniteElement<FE_Pyramid1,ET_PYRAMID,5,1>
+  class FE_Pyramid1 : public T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>
   {
   public:
     template<typename Tx, typename TFA>  

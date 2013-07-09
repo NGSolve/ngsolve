@@ -15,8 +15,6 @@
 namespace ngfem
 {
 
-
-
   template <ELEMENT_TYPE ET> class L2HighOrderFE_Shape;
 
   template <int DIM>
@@ -34,23 +32,25 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET, 
-            template <ELEMENT_TYPE ET2> class SHAPES = L2HighOrderFE_Shape,
-            class BASE = DGFiniteElement<ET_trait<ET>::DIM> > 
-  class L2HighOrderFE :  
-    public T_ScalarFiniteElement2<SHAPES<ET>, ET, BASE >,
-    public ET_trait<ET>
+            class SHAPES = L2HighOrderFE_Shape<ET>,
+            class BASE = T_ScalarFiniteElement<SHAPES, ET, DGFiniteElement<ET_trait<ET>::DIM> > >
+
+  class L2HighOrderFE : public BASE, public ET_trait<ET>
   { 
   protected:
-    enum { DIM = ET_trait<ET>::DIM };
+    typedef BASE T_IMPL;
+    typedef SHAPES T_SHAPES;
+
+    // enum { DIM = ET_trait<ET>::DIM };
+    using ET_trait<ET>::DIM;
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::PolDimension;
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
     using ScalarFiniteElement<DIM>::eltype;
     using DGFiniteElement<DIM>::vnums;
 
-
-    using ET_trait<ET>::N_VERTEX;
-    using ET_trait<ET>::PolDimension;
 
     INT<DIM> order_inner; 
 
@@ -64,21 +64,21 @@ namespace ngfem
     static TPRECOMP_GRAD precomp_grad;
 
   public:
-     NGS_DLL_HEADER L2HighOrderFE () 
+    NGS_DLL_HEADER L2HighOrderFE () 
     { 
       eltype = ET; 
     }
 
-     NGS_DLL_HEADER L2HighOrderFE (int aorder)
+    NGS_DLL_HEADER L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       eltype = ET;
-
+      
       order = aorder;
       order_inner = aorder;
       ndof = PolDimension (aorder);
     }
-
+    
     /// global vertex numbers define ordering of vertices
     template <typename TA>
     void SetVertexNumbers (const TA & avnums)

@@ -11,7 +11,7 @@
 namespace ngfem
 {
 
-
+  
   /// default shape function engine for high order h1-elements
   template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
@@ -26,11 +26,10 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape,
-            class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> > 
-
-  class H1HighOrderFE : 
-    public T_ScalarFiniteElement2< TSHAPES<ET>, ET, BASE>,
-    public ET_trait<ET>
+            class BASE = T_ScalarFiniteElement< TSHAPES<ET>, ET> >
+            
+  class H1HighOrderFE : public BASE, 
+                        public ET_trait<ET>
   {
   protected:
 

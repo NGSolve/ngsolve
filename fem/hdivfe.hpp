@@ -138,20 +138,6 @@ namespace ngfem
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 #endif

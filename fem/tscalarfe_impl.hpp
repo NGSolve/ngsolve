@@ -1,151 +1,325 @@
+#ifndef FILE_TSCALARFE_IMPL
+#define FILE_TSCALARFE_IMPL
+
+
 
 namespace ngfem
 {
 
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElement ()
+
+  /**
+     Extracts and assigns gradient from autodiff.
+   */
+  template <int DIM>
+  class DShapeElement
+  {
+    FlatVec<DIM> data;
+  public:
+    /// A reference to the destination
+    DShapeElement (FlatVec<DIM> adata) : data(adata) { ; }
+
+    /// Assign gradient values
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        data(i) = ad.DValue(i); 
+    }
+  };
+
+
+  /**
+     Assign gradients from generic shape functions
+   */
+  template <int DIM>
+  class DShapeAssign
+  {
+    FlatMatrixFixWidth<DIM> dshape;
+  public:
+    /// Initialize with gradient matrix
+    DShapeAssign (FlatMatrixFixWidth<DIM> mat) : dshape(mat) { ; }
+
+    /// i-th component of gradient matrix
+    DShapeElement<DIM> operator[] (int i) const
+    { return DShapeElement<DIM> (dshape.Row(i)); }
+
+    /// sub-array
+    const DShapeAssign Addr (int i) const
+    { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
+    const DShapeAssign operator+ (int i) const
+    { return DShapeAssign (dshape.Rows(i, dshape.Height())); }
+  };
+
+
+
+
+
+  
+
+  /**
+     Evaluate shape 
+   */
+  class EvaluateShapeElement
+  {
+    double coef;
+    double * sum;
+  public:
+    /// initialize with coefficient and sum-reference
+    EvaluateShapeElement (double acoef, double * asum)
+      : coef(acoef), sum(asum) { ; }
+
+    /// add up
+    void operator= (double val) 
+    {
+      *sum += coef * val;
+    }
+  };
+
+  class EvaluateShapeSlave
+  {
+    const double * coefs;
+    double * sum;
+  public:
+    /// initialize with coefficient vector and value for the sum
+    EvaluateShapeSlave (const double * acoefs, double * asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    /// does the computation for i-th element
+    EvaluateShapeElement operator[] (int i) const
+    { return EvaluateShapeElement (coefs[i], sum); }
+
+    /// get sub-vector
+    const EvaluateShapeSlave Addr (int i) const
+    { return EvaluateShapeSlave (coefs+i, sum); } 
+    const EvaluateShapeSlave operator+ (int i) const
+    { return EvaluateShapeSlave (coefs+i, sum); } 
+  };
+
+
+  /**
+     Computes function value from generic shape functions
+   */
+  class EvaluateShape
+  {
+    const double * coefs;
+    double sum;
+  public:
+    /// initialize with coefficient vector and value for the sum
+    EvaluateShape (FlatVector<> acoefs)
+      : coefs(&acoefs(0)), sum(0.0) { ; }
+    
+    /// does the computation for i-th element
+    EvaluateShapeElement operator[] (int i)
+    { return EvaluateShapeElement (coefs[i], &sum); }
+
+    double Sum() const { return sum; }
+
+    /// get sub-vector
+    const EvaluateShapeSlave Addr (int i) // const
+    { return EvaluateShapeSlave (coefs+i, &sum); } 
+    const EvaluateShapeSlave operator+ (int i) // const
+    { return EvaluateShapeSlave (coefs+i, &sum); } 
+  };
+
+
+
+
+
+
+  
+  /// todo
+  template <typename TSCAL>
+  class EvaluateShapeTransElement
+  {
+    double & data;
+    TSCAL fac;
+  public:
+    EvaluateShapeTransElement (double & adata, TSCAL afac) 
+      : data(adata), fac(afac) { ; }
+
+    ALWAYS_INLINE void operator= (const TSCAL & ad) 
+    { data += InnerProduct (ad, fac); }
+  };
+
+  template <typename TSCAL = double>
+  class EvaluateShapeTrans
+  {
+    double * coefs;
+    TSCAL fac;
+  public:
+    EvaluateShapeTrans (FlatVector<> acoefs, TSCAL afac)
+      : coefs(&acoefs(0)), fac(afac) { ; }
+
+    EvaluateShapeTrans (double * acoefs, TSCAL afac)
+      : coefs(acoefs), fac(afac) { ; }
+
+    EvaluateShapeTransElement<TSCAL> operator[] (int i) const
+    { return EvaluateShapeTransElement<TSCAL> (coefs[i], fac); }
+
+    const EvaluateShapeTrans Addr (int i) const
+    { return EvaluateShapeTrans (coefs+i, fac); }
+    const EvaluateShapeTrans operator+ (int i) const
+    { return EvaluateShapeTrans (coefs+i, fac); }
+  };
+
+
+
+
+
+
+
+
+  
+  template <int DIM>
+  class EvaluateDShapeElement
+  {
+    double data;
+    Vec<DIM> & sum;
+  public:
+    EvaluateDShapeElement (double adata, Vec<DIM> & asum) : data(adata), sum(asum) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        sum(i) += ad.DValue(i) * data;
+    }
+  };
+
+  template <int DIM>
+  class EvaluateDShape
+  {
+    double * coefs;
+    Vec<DIM> & sum;
+  public:
+    EvaluateDShape (FlatVector<> acoefs, Vec<DIM> & asum)
+      : coefs(&acoefs(0)), sum(asum) { ; }
+
+    EvaluateDShape (double * acoefs, Vec<DIM> & asum)
+      : coefs(acoefs), sum(asum) { ; }
+
+    EvaluateDShapeElement<DIM> operator[] (int i) const
+    { return EvaluateDShapeElement<DIM> (coefs[i], sum); }
+
+    const EvaluateDShape Addr (int i) const
+    { return EvaluateDShape (coefs+i, sum); }
+    const EvaluateDShape operator+ (int i) const
+    { return EvaluateDShape (coefs+i, sum); }
+  };
+
+
+
+
+
+  
+  
+  template <int DIM>
+  class EvaluateDShapeTransElement
+  {
+    double & data;
+    const Vec<DIM> & fac;
+  public:
+    EvaluateDShapeTransElement (double & adata, const Vec<DIM> & afac) : data(adata), fac(afac) { ; }
+    void operator= (AutoDiff<DIM> ad) 
+    { 
+      for (int i = 0; i < DIM; i++) 
+        data += ad.DValue(i) * fac(i);
+    }
+  };
+
+  /// todo
+  template <int DIM>
+  class EvaluateDShapeTrans
+  {
+    double * coefs;
+    const Vec<DIM> & fac;
+  public:
+    EvaluateDShapeTrans (FlatVector<> acoefs, const Vec<DIM> & afac)
+      : coefs(&acoefs(0)), fac(afac) { ; }
+
+    EvaluateDShapeTrans (double * acoefs, const Vec<DIM> & afac)
+      : coefs(acoefs), fac(afac) { ; }
+
+    EvaluateDShapeTransElement<DIM> operator[] (int i) const
+    { return EvaluateDShapeTransElement<DIM> (coefs[i], fac); }
+
+    const EvaluateDShapeTrans Addr (int i) const
+    { return EvaluateDShapeTrans (coefs+i, fac); }
+    const EvaluateDShapeTrans operator+ (int i) const
+    { return EvaluateDShapeTrans (coefs+i, fac); }
+  };
+
+
+
+
+  template <typename TFA>
+  inline void SetZero (TFA & shape, int first, int next)
+  {
+    for (int i = first; i < next; i++)
+      shape[i] = 0.0;
+  }
+  
+  inline void SetZero (EvaluateShape & shape, int first, int next)  { ; }
+  inline void SetZero (EvaluateShapeSlave & shape, int first, int next)  { ; }
+  
+  template<typename TSCAL>
+  inline void SetZero (EvaluateShapeTrans<TSCAL> & shape, int first, int next)
   {
     ;
   }
 
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
-  CalcShape (const IntegrationPoint & ip, 
-             FlatVector<> shape) const
-  {
-    /*
-    Vec<DIM> pt;
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    */
-    Vec<DIM> pt = ip.Point();
-    FEL::T_CalcShape (&pt(0), shape); 
-  }
+
+
+
+
 
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  double T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
-  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
-  {
-    /*
-    Vec<DIM> pt;
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    */
-    Vec<DIM> pt = ip.Point();
-    double sum = 0.0;
-    EvaluateShape eval(x, &sum); 
-    
-    FEL::T_CalcShape (&pt(0), eval); 
-    return sum;
-  }  
-    
-
-
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
-  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
-  {
-    // double pt[DIM];
-    Vec<DIM> pt;
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-        for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-	
-        vals(i) = 0.0;
-        EvaluateShape eval(coefs, &vals(i)); 
-        FEL::T_CalcShape (&pt(0), eval); 
-      }
-  }
-  
-
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
-  CalcDShape (const IntegrationPoint & ip, 
-              FlatMatrixFixWidth<DIM> dshape) const
-  {
-    // AutoDiff<DIM> adp[DIM];
-    Vec<DIM, AutoDiff<DIM> > adp;
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-    
-    DShapeAssign<DIM> ds(dshape); 
-    FEL::T_CalcShape (&adp(0), ds);
-  }
-  
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  void T_ScalarFiniteElement<FEL,ET,NDOF,ORDER> ::
-  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
-                    FlatMatrixFixWidth<DIM> dshape) const
-  {
-    // AutoDiff<DIM> adp[DIM];
-    Vec<DIM, AutoDiff<DIM> > adp;
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = sip.IP()(i);
-    
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = sip.GetJacobianInverse()(i,j);
-    
-    DShapeAssign<DIM> ds(dshape); 
-    FEL::T_CalcShape (&adp(0), ds);
-  }
-  
-
-
-
-
-
-
-
-
-
-  template <class FEL, ELEMENT_TYPE ET, class BASE>
-  T_ScalarFiniteElement2<FEL,ET,BASE> :: ~T_ScalarFiniteElement2 ()
+  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElementFO ()
   {
     ;
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  T_ScalarFiniteElement<FEL,ET,BASE> :: ~T_ScalarFiniteElement ()
+  {
+    ;
+  }
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
   {
-    Vec<DIM> pt;
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
+    Vec<DIM> pt = ip.Point();
     T_CalcShape (&pt(0), shape);
   }
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  double T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  double T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
   {
-    Vec<DIM> pt;
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-  
-    double sum = 0.0;
-    EvaluateShape eval(x, &sum); 
-  
+    Vec<DIM> pt = ip.Point();
+
+    EvaluateShape eval(x); 
     T_CalcShape (&pt(0), eval); 
-    return sum;
+    return eval.Sum();
   }  
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
   {
-    Vec<DIM> pt;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-      
-	vals(i) = 0.0;
-	EvaluateShape eval(coefs, &vals(i)); 
+        Vec<DIM> pt = ir[i].Point();
+
+	EvaluateShape eval(coefs);
         T_CalcShape (&pt(0), eval); 
+        vals(i) = eval.Sum();
       }
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
     // static Timer t("evaluatetrans"); RegionTimer reg(t);
@@ -199,7 +373,7 @@ namespace ngfem
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const
   {
     Vec<DIM, AutoDiff<DIM> > adp;
@@ -217,7 +391,7 @@ namespace ngfem
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const
   {
     Vec<DIM, AutoDiff<DIM> > adp;
@@ -235,7 +409,7 @@ namespace ngfem
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDShape (const IntegrationPoint & ip, 
               FlatMatrixFixWidth<DIM> dshape) const
   {
@@ -249,7 +423,7 @@ namespace ngfem
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement2<FEL,ET,BASE> :: 
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    FlatMatrixFixWidth<DIM> dshape) const
   {
@@ -265,3 +439,7 @@ namespace ngfem
     T_CalcShape (&adp(0), ds);
   }
 }
+
+
+
+#endif
