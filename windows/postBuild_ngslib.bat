@@ -77,11 +77,11 @@ REM *** Copy the Lapack libraries to the bin folder ***
 if /i "%BUILD_TYPE%"=="Release_Lapack" (
 if /i "%BUILD_ARCH%"=="x64"	(
 		echo Copying Lapack x64 dlls and gfortran runtime libraries
-		xcopy "%PROJ_DIR%..\..\..\ext_libs\Lapack\lib\x64\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+		xcopy "%PROJ_DIR%..\..\ext_libs\Lapack\lib\x64\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
 )
 if /i "%BUILD_ARCH%"=="win32" (
 		echo Copying Lapack win32 dlls and gfortran runtimes libraries
-		xcopy "%PROJ_DIR%..\..\..\ext_libs\Lapack\lib\x86\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+		xcopy "%PROJ_DIR%..\..\ext_libs\Lapack\lib\x86\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
 )	
 )
 
