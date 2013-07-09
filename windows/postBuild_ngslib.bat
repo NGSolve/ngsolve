@@ -71,6 +71,7 @@ xcopy "%NGSOLVE_INCROOT%\linalg\*.hpp" "%INSTALL_FOLDER%\include\linalg\" /i /d 
 xcopy "%NGSOLVE_INCROOT%\fem\*.hpp" "%INSTALL_FOLDER%\include\fem\" /i /d /y
 xcopy "%NGSOLVE_INCROOT%\comp\*.hpp" "%INSTALL_FOLDER%\include\comp\" /i /d /y
 xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.hpp" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
+xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.h" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
 
 REM *** Copy the Lapack libraries to the bin folder ***
 if /i "%BUILD_TYPE%"=="Release_Lapack" (
