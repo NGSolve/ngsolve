@@ -2380,6 +2380,9 @@ namespace netgen
   void VisualSceneSolution :: 
   GetMinMax (int funcnr, int comp, double & minv, double & maxv) const
   {
+    static int timer1 = NgProfiler::CreateTimer ("getminmax, vol");
+    static int timer2 = NgProfiler::CreateTimer ("getminmax, surf");
+
 #ifdef PARALLEL
     if (id == 0)
       {
@@ -2403,10 +2406,14 @@ namespace netgen
 
         if (sol->draw_volume)
           {
+	    NgProfiler::RegionTimer reg1 (timer1);
+
             int ne = mesh->GetNE();
-            for (int i = 0; i < ne; i++)
+#pragma omp parallel for
+            for (int i = 0; i < ne; i++) 
               {
                 bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
+#pragma omp critical(getminmaxvol)
                 if (considerElem)
                   {
                     if (val > maxv || !hasit) maxv = val;
@@ -2417,6 +2424,8 @@ namespace netgen
           }
         if (sol->draw_surface)
           {
+	    NgProfiler::RegionTimer reg2 (timer2);
+
             int nse = mesh->GetNSE();
             for (int i = 0; i < nse; i++)
               {
