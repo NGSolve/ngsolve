@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="NGSolve"
+	Name="libngsolve"
 	ProjectGUID="{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}"
 	RootNamespace="NGSolve"
 	Keyword="Win32Proj"
@@ -213,8 +213,8 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
-				PreprocessorDefinitions="WIN32;LAPACK;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -237,10 +237,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="lapack_win32.lib blas_win32.lib nginterface.lib tcl85.lib libcpmt.lib"
+				AdditionalDependencies="nginterface.lib tcl85.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\lapack-blas\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x86&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -302,7 +302,7 @@
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
 				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -327,10 +327,366 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="nginterface.lib tcl85.lib libcpmt.lib"
+				AdditionalDependencies="nginterface.lib tcl85.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl-64\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x64&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_Lapack|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="2"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="1"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="nginterface.lib tcl85.lib libopenblas.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x86&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\Lapack\lib\x86&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_Lapack|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="2"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="nginterface.lib tcl85.lib libopenblas.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x64&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\Lapack\lib\x64&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_MKL|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="2"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;;&quot;$(MKL_ROOT)\compiler\include&quot;;&quot;$(MKL_ROOT)\mkl\lib\include&quot;"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="1"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="nginterface.lib tcl85.lib mkl_intel_c_dll.lib mkl_intel_thread_dll.lib mkl_core_dll.lib libiomp5md.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x86&quot;;&quot;$(MKL_ROOT)\compiler\lib\ia32&quot;;&quot;$(MKL_ROOT)\mkl\lib\ia32&quot;"
+				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="&quot;$(ProjectDir)\postBuild_ngsolve.bat&quot; &quot;$(ProjectName)&quot; &quot;$(TargetFileName)&quot; &quot;$(ConfigurationName)&quot; &quot;$(PlatformName)&quot; &quot;$(ProjectDir)&quot; &quot;libngsolve&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_MKL|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			CharacterSet="2"
+			WholeProgramOptimization="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="false"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\include&quot;;&quot;$(SolutionDir)..\fem&quot;;&quot;$(NETGENDIR)\..\include&quot;;&quot;$(MKL_ROOT)\compiler\include&quot;;&quot;$(MKL_ROOT)\mkl\lib\include&quot;"
+				PreprocessorDefinitions="WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				EnableEnhancedInstructionSet="0"
+				OpenMP="true"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+				CompileAs="0"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				AdditionalDependencies="nginterface.lib tcl85.lib mkl_intel_lp64_dll.lib mkl_intel_thread_dll.lib mkl_core_dll.lib libiomp5md.lib"
+				OutputFile="$(OutDir)\libngsolve.dll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x64&quot;;&quot;$(MKL_ROOT)\mkl\lib\intel64&quot;;&quot;$(MKL_ROOT)\compiler\lib\intel64&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -514,10 +870,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\fem\h1hofefo.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\fem\h1lofe.cpp"
 					>
 				</File>
@@ -555,10 +907,6 @@
 				</File>
 				<File
 					RelativePath="..\fem\l2hofe.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\fem\l2hofefo.cpp"
 					>
 				</File>
 				<File
@@ -1034,6 +1382,27 @@
 				<File
 					RelativePath="..\fem\l2hofefo.hpp"
 					>
+					<FileConfiguration
+						Name="Release|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release_Lapack|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release_MKL|x64"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\fem\pml.hpp"
@@ -1357,7 +1726,7 @@
 	<Globals>
 		<Global
 			Name="HPC_Debug"
-			Value="&#65279;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay&gt;NGSolve&lt;/ProjectNameDisplay&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
+			Value="&#65279;&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;Properties xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot;&gt;&lt;ProjectNameDisplay&gt;libngsolve&lt;/ProjectNameDisplay&gt;&lt;CollapseAdvanced&gt;true&lt;/CollapseAdvanced&gt;&lt;ApplicationPlatform&gt;x86&lt;/ApplicationPlatform&gt;&lt;/Properties&gt;"
 		/>
 	</Globals>
 </VisualStudioProject>
