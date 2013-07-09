@@ -976,28 +976,45 @@ namespace ngcomp
 						double lam1, double lam2, double lam3,
 						double * values) 
   { 
+    /*
     static Timer t("visgf::GetValue");
+    static Timer t1("visgf::GetValue 1");
+    static Timer t2("visgf::GetValue 2");
+    static Timer t3("visgf::GetValue 3");
+    static Timer t4("visgf::GetValue 3");
+    static Timer t5("visgf::GetValue 3");
     RegionTimer reg(t);
-    
+    t.AddFlops (1);
+    */
+
     try
       {
-    if (!bfi3d.Size()) return 0;
-    if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	LocalHeapMem<100000> lh("visgf::getvalue");
 
-    const FESpace & fes = gf->GetFESpace();
+	if (!bfi3d.Size()) return 0;
+	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	
+	const FESpace & fes = gf->GetFESpace();
 
-    int dim     = fes.GetDimension();
+	int dim     = fes.GetDimension();
 
-    if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
-      return false;
+	if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
+	  return false;
 
-    cache_elnr = -1;
-    if (cache_elnr != elnr || cache_bound)
-      {
-	lh.CleanUp();
+	// t1.Start();
+	HeapReset hr(lh);
+	
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+	const FiniteElement & fel = fes.GetFE (elnr, lh);
 
+	Array<int> dnums (fel.GetNDof(), lh);
 	fes.GetDofNrs (elnr, dnums);
-	elu.AssignMemory (dnums.Size() * dim, lh);
+
+	// t1.Stop();
+	// t2.Start();
+
+
+	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
 	if(gf->GetCacheBlockSize() == 1)
 	  {
@@ -1014,32 +1031,32 @@ namespace ngcomp
 
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
 
-	cache_elnr = elnr;
-	cache_bound = 0;
-      }
+	// t2.Stop();
+	// t3.Start();
 
-    HeapReset hr(lh);
-    ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
-    const FiniteElement & fel = fes.GetFE (elnr, lh);
+	IntegrationPoint ip(lam1, lam2, lam3, 0);
+	MappedIntegrationPoint<3,3> mip (ip, eltrans);
 
-    IntegrationPoint ip(lam1, lam2, lam3, 0);
-    MappedIntegrationPoint<3,3> sip (ip, eltrans);
+	// t3.Stop();
+	// t4.Start();
 
-    for(int j = 0; j < bfi3d.Size(); j++)
-      {
-	HeapReset hr(lh);
-	FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
-	bfi3d[j]->CalcFlux (fel, sip, elu, flux, applyd, lh);
-
-	for (int i = 0; i < components; i++)
+	for(int j = 0; j < bfi3d.Size(); j++)
 	  {
-	    if(j == 0) values[i] = 0;
-	    values[i] += ((double*)(void*)&flux(0))[i];
+	    HeapReset hr(lh);
+	    FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
+	    bfi3d[j]->CalcFlux (fel, mip, elu, flux, applyd, lh);
+	    
+	    for (int i = 0; i < components; i++)
+	      {
+		if(j == 0) values[i] = 0;
+		values[i] += ((double*)(void*)&flux(0))[i];
+	      }
 	  }
+	
+	// t4.Stop();
+	return true; 
       }
-
-    return true; 
-   }
+    
     catch (Exception & e)
       {
         cout << "GetValue caught exception" << endl

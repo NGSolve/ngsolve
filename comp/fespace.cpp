@@ -452,6 +452,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     level_updated = ma.GetNLevels();
+
+    cout << "finalize, timing = " << timing << endl;
+    if (timing) Timing();
   }
 
 
@@ -504,7 +507,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
-    cout << "getdofrangs called for fespace " << GetClassName() << endl;
+    // cout << "getdofrangs called for fespace " << GetClassName() << endl;
     Array<int> dnums;
     GetDofNrs (ei, dnums);
     dranges.SetSize(0);
@@ -1159,8 +1162,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      }
 	  }
       }
-
-    if (timing) Timing();
   }
 
   int NodalFESpace :: GetNDofLevel (int level) const
