@@ -1,12 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NGSolve", "NGSolve.vcproj", "{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}"
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libngsolve", "NGSolve.vcproj", "{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}"
 EndProject
 Global
+	GlobalSection(IntelOptPkgProperties) = preSolution
+		LoadPackage = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		Release_Lapack|Win32 = Release_Lapack|Win32
+		Release_Lapack|x64 = Release_Lapack|x64
+		Release_MKL|Win32 = Release_MKL|Win32
+		Release_MKL|x64 = Release_MKL|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
@@ -15,6 +22,14 @@ Global
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Debug|Win32.Build.0 = Debug|Win32
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Debug|x64.ActiveCfg = Debug|x64
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Debug|x64.Build.0 = Debug|x64
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_Lapack|Win32.ActiveCfg = Release_Lapack|Win32
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_Lapack|Win32.Build.0 = Release_Lapack|Win32
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_Lapack|x64.ActiveCfg = Release_Lapack|x64
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_Lapack|x64.Build.0 = Release_Lapack|x64
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_MKL|Win32.ActiveCfg = Release_MKL|Win32
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_MKL|Win32.Build.0 = Release_MKL|Win32
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_MKL|x64.ActiveCfg = Release_MKL|x64
+		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release_MKL|x64.Build.0 = Release_MKL|x64
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release|Win32.ActiveCfg = Release|Win32
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release|Win32.Build.0 = Release|Win32
 		{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}.Release|x64.ActiveCfg = Release|x64
