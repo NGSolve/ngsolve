@@ -17,6 +17,7 @@ set BUILD_ARCH=%~4
 set PROJ_DIR=%~5
 set LIB_NAME=%~6
 
+
 REM *** Change these Folders if required ***
 REM Check if the environment variable NETGENDIR exists, 
 REM and use it as the installation folder
@@ -74,6 +75,24 @@ xcopy "%NGSOLVE_INCROOT%\linalg\*.hpp" "%INSTALL_FOLDER%\include\linalg\" /i /d 
 xcopy "%NGSOLVE_INCROOT%\fem\*.hpp" "%INSTALL_FOLDER%\include\fem\" /i /d /y
 xcopy "%NGSOLVE_INCROOT%\comp\*.hpp" "%INSTALL_FOLDER%\include\comp\" /i /d /y
 xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.hpp" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
+xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.h" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
+
+REM *** Copy the NgSolve pde tutorials to the install folder ***
+echo Copying pde tutorials
+xcopy "%PROJ_DIR%..\pde_tutorial" "%INSTALL_FOLDER%\pde_tutorial\" /i /d /y /e
+
+REM *** Copy the Lapack libraries to the bin folder ***
+if /i "%BUILD_TYPE%"=="Release_Lapack" (
+if /i "%BUILD_ARCH%"=="x64"	(
+		echo Copying Lapack x64 dlls and gfortran runtime libraries
+		xcopy "%PROJ_DIR%..\..\ext_libs\Lapack\lib\x64\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+)
+if /i "%BUILD_ARCH%"=="win32" (
+		echo Copying Lapack win32 dlls and gfortran runtimes libraries
+		xcopy "%PROJ_DIR%..\..\ext_libs\Lapack\lib\x86\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+)	
+)
+
 
 
 REM *** Done with the installation routine ***
