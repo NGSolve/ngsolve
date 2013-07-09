@@ -29,6 +29,23 @@ namespace ngsolve
     constant_table_for_FEM = &constants;
 
     AddVariable ("timing.level", 0.0, 6);
+
+
+    time_t now = time(0);
+    tm * lt = localtime (&now);
+    stringstream date;
+    date << 1900+lt->tm_year
+         << "-" << setw(2) << setfill('0') << lt->tm_mon 
+         << "-" << setw(2) << lt-> tm_mday;
+    AddStringConstant ("date", date.str());
+
+    stringstream time;
+    time << setw(2) << lt->tm_hour
+         << ":" << setw(2) << setfill('0') << lt->tm_min 
+         << ":" << setw(2) << lt-> tm_sec;
+    AddStringConstant ("time", time.str());
+
+
     tcl_interpreter = NULL;
   }
   
@@ -703,6 +720,9 @@ namespace ngsolve
           }
         
 	AddVariable ("timing.level", WallTime()-starttime, 6);
+        if (bf) AddVariable (string("timing.bf.")+bf->GetName(), bf->GetTimer().GetTime(), 6);
+        if (lf) AddVariable (string("timing.lf.")+lf->GetName(), lf->GetTimer().GetTime(), 6);
+        if (np) AddVariable (string("timing.np.")+np->GetName(), np->GetTimer().GetTime(), 6);
       }
 
 
