@@ -1,4 +1,5 @@
 #include <solve.hpp>
+#include <ctime>
 
 /*
 #include <tcl.h>
@@ -1492,7 +1493,10 @@ namespace ngsolve
       if (filename.length() && (MyMPI_GetId() == 0) )
 	{
 	  filename = pde.GetDirectory() + dirslash + filename;
-	  outfile = new ofstream (filename.c_str());
+          if (!flags.GetDefineFlag ("append"))
+            outfile = new ofstream (filename.c_str());
+          else
+            outfile = new ofstream (filename.c_str(), ios_base::app);
 	}
       else
 	outfile = 0;
@@ -1500,7 +1504,7 @@ namespace ngsolve
       output_vars = flags.GetStringListFlag ("variables");
       // cout << "variables = " << endl << output_vars;
 
-      if (outfile)
+      if (outfile && !flags.GetDefineFlag("append"))
 	{
 	  *outfile << "# ";
 	  for (int i = 0; i < output_vars.Size(); i++)
@@ -1523,6 +1527,8 @@ namespace ngsolve
 	"\nRequired flags:\n"						\
 	"-filename=<name>\n"						\
 	"    specify the filename\n"					\
+	"-append\n"                                                     \
+	"    append to file\n"                                          \
 	"-variables=[var1,var2...]\n"					\
 	"    variables for output\n";					
     }
@@ -1531,11 +1537,20 @@ namespace ngsolve
     {
       for (int i = 0; i < output_vars.Size(); i++)
 	{
-	  double val = -1e99;
-	  if (pde.ConstantUsed (output_vars[i])) val = pde.GetConstant(output_vars[i]);
-	  if (pde.VariableUsed (output_vars[i])) val = pde.GetVariable(output_vars[i]);
-	  cout << IM(3) << output_vars[i] << " = " << val << endl;
-	  if (outfile) *outfile << val << " ";
+	  if (pde.StringConstantUsed (output_vars[i]))
+            {
+              string sval = pde.GetStringConstant(output_vars[i]);
+              cout << IM(3) << output_vars[i] << " = " << sval << endl;
+              if (outfile) *outfile << sval << " ";
+            }
+          else
+            {
+              double val = -1e99;
+              if (pde.ConstantUsed (output_vars[i])) val = pde.GetConstant(output_vars[i]);
+              if (pde.VariableUsed (output_vars[i])) val = pde.GetVariable(output_vars[i]);
+              cout << IM(3) << output_vars[i] << " = " << val << endl;
+              if (outfile) *outfile << val << " ";
+            }
 	}
       if (outfile) *outfile << endl;
     }
