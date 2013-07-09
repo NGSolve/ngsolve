@@ -330,7 +330,7 @@
 				AdditionalDependencies="nginterface.lib tcl85.lib"
 				OutputFile="$(OutDir)\libngsolve.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\..\ext_libs\tcl\lib\x64&quot;"
+				AdditionalLibraryDirectories="&quot;$(NETGENDIR)\..\lib&quot;;&quot;$(SolutionDir)..\..\ext_libs\tcl\lib\x64&quot;"
 				IgnoreDefaultLibraryNames="nafxcw.lib;libcpmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
