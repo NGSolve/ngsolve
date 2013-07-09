@@ -161,6 +161,15 @@ namespace ngstd
 #endif
     }
 
+    static double GetTime (const string & name)
+    {
+      for (int i = SIZE-1; i >= 0; i--)
+        if (names[i] == name)
+          return GetTime (i);
+      return 0;
+    }
+
+
     static long int GetCounts (int nr)
     {
       return counts[nr];
