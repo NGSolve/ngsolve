@@ -203,8 +203,7 @@ public:
 			      MAT & mat, LocalHeap & lh)
   {
     Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
-
-    mat = Trans(Cast(fel).GetShape (mip.IP(), lh)) * scaled_nv;
+    mat = scaled_nv * Trans(Cast(fel).GetShape (mip.IP(), lh));
     /*
     mat =  (1.0/mip.GetJacobiDet())*
       Trans(static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) 
