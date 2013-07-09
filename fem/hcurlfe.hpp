@@ -29,13 +29,6 @@ namespace ngfem
   };
 
 
-  template <> class DIM_CURL_TRAIT<1>
-  {
-  public:
-    enum { DIM = 0 };  // should be 0; set to 1 to make gcc34 feel ok
-  };
-
-
   /**
      H(Curl) finite element of dimension D
   */

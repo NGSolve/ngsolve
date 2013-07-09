@@ -90,9 +90,6 @@ public:
     Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
     y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
   }
-
-
-
 };
 
 
@@ -1401,7 +1398,7 @@ public:
   NeumannIntegrator (Array<CoefficientFunction*> & coeffs);
   virtual ~NeumannIntegrator ();
   ///  
-  virtual bool BoundaryForm () const { return 1; }
+  virtual bool BoundaryForm () const { return true; }
   ///
   virtual string Name () const { return "Neumann"; }
 };

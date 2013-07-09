@@ -59,7 +59,7 @@ namespace ngfem
   template <int ORDER>
   class H1HighOrderFEFO<ET_TRIG, ORDER> : 
     public H1HighOrderFiniteElementFO<2>,
-    public T_ScalarFiniteElement2< H1HighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG >,
+    public T_ScalarFiniteElement< H1HighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG >,
     public ET_trait<ET_TET> 
   {
     using ScalarFiniteElement<2>::ndof;
@@ -91,7 +91,7 @@ namespace ngfem
   template <int ORDER>
   class H1HighOrderFEFO<ET_TET, ORDER> : 
     public H1HighOrderFiniteElementFO<3>,
-    public T_ScalarFiniteElement2< H1HighOrderFEFO<ET_TET,ORDER>, ET_TET>,
+    public T_ScalarFiniteElement< H1HighOrderFEFO<ET_TET,ORDER>, ET_TET>,
     public ET_trait<ET_TET> 
   {
     using H1HighOrderFiniteElementFO<3>::vnums; 

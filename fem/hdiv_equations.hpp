@@ -31,26 +31,30 @@ public:
   enum { DIM_ELEMENT = D };
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 0 };
+
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
+
     
-  template <typename AFEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
   {
-    mat = (1.0/sip.GetJacobiDet()) * 
-      (sip.GetJacobian() * Trans (static_cast<const FEL&> (fel).GetShape(sip.IP(), lh)));
+    mat = (1.0/mip.GetJacobiDet()) * 
+      (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
   }
     
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void Apply (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void Apply (const AFEL & fel, const MIP & mip,
                      const TVX & x, TVY & y,
                      LocalHeap & lh) 
   {
     HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
       
-    Vec<D,TSCAL> hv = Trans (static_cast<const FEL&>(fel).GetShape(sip.IP(), lh)) * x;
-    hv *= (1.0/sip.GetJacobiDet());
-    y = sip.GetJacobian() * hv;
+    Vec<D,TSCAL> hv = Trans (Cast(fel).GetShape(mip.IP(), lh)) * x;
+    hv *= (1.0/mip.GetJacobiDet());
+    y = mip.GetJacobian() * hv;
   }
 
   using DiffOp<DiffOpIdHDiv<D, FEL> >::ApplyIR;
@@ -60,7 +64,7 @@ public:
 		       const FlatVector<double> x, FlatMatrix<double> y,
 		       LocalHeap & lh)
   {
-    static_cast<const FEL&>(fel).Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
+    Cast(fel).Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
     for (int i = 0; i < mir.Size(); i++)
       {
 	Vec<D> hy = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian() * y.Row(i);
@@ -70,17 +74,17 @@ public:
 
 
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
     HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
 
-    Vec<D,TSCAL> hv = Trans (sip.GetJacobian()) * x;
-    hv *= (1.0/sip.GetJacobiDet());
-    y = static_cast<const FEL&>(fel).GetShape(sip.IP(),lh) * hv;
+    Vec<D,TSCAL> hv = Trans (mip.GetJacobian()) * x;
+    hv *= (1.0/mip.GetJacobiDet());
+    y = Cast(fel).GetShape(mip.IP(),lh) * hv;
   }
 };
 
@@ -98,44 +102,44 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 1 };
 
-  template <typename AFEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
   {
     
-    mat = 1.0/sip.GetJacobiDet() *
-      Trans (static_cast<const FEL&>(fel).GetDivShape(sip.IP(), lh));
+    mat = 1.0/mip.GetJacobiDet() *
+      Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
   }
 
-  template <typename AFEL, typename SIP>
-  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               FlatVector<double> & mat, LocalHeap & lh)
   {
-    mat = 1.0/sip.GetJacobiDet() * 
-      (static_cast<const FEL&>(fel).GetDivShape(sip.IP(), lh));
+    mat = 1.0/mip.GetJacobiDet() * 
+      (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
   }
 
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void Apply (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void Apply (const AFEL & fel, const MIP & mip,
                      const TVX & x, TVY & y,
                      LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
       
-    Vec<DIM,TSCAL> hv = Trans (static_cast<const FEL&>(fel).GetDivShape(sip.IP(), lh)) * x;
-    y = (1.0/sip.GetJacobiDet()) * hv;
+    Vec<DIM,TSCAL> hv = Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh)) * x;
+    y = (1.0/mip.GetJacobiDet()) * hv;
   }
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
     Vec<DIM,TSCAL> hv = x;
-    hv *= (1.0/sip.GetJacobiDet());
-    y = static_cast<const FEL&>(fel).GetDivShape(sip.IP(),lh) * hv;
+    hv *= (1.0/mip.GetJacobiDet());
+    y = static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh) * hv;
   }
 };
 
@@ -153,29 +157,29 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 0 };
 
-  template <typename AFEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat =  (1.0/sip.GetJacobiDet())*
-      Trans(static_cast<const FEL&> (fel).GetShape (sip.IP(), lh));
+    mat =  (1.0/mip.GetJacobiDet())*
+      Trans(static_cast<const FEL&> (fel).GetShape (mip.IP(), lh));
   }
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void Apply (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void Apply (const AFEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh)
   {
-    y = (1.0/sip.GetJacobiDet())*
-      (Trans (static_cast<const FEL&> (fel).GetShape (sip.IP(), lh)) * x);
+    y = (1.0/mip.GetJacobiDet())*
+      (Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x);
   }
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = static_cast<const FEL&> (fel).GetShape (sip.IP(), lh)*((1.0/sip.GetJacobiDet())* x);
+    y = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)*((1.0/mip.GetJacobiDet())* x);
   }
 };
 
@@ -191,29 +195,37 @@ public:
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 0 };
 
-  template <typename AFEL, typename SIP, typename MAT>
-  static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
+
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    mat =  (1.0/sip.GetJacobiDet())*
-      Trans(static_cast<const FEL&> (fel).GetShape (sip.IP(), lh)) 
-      * Trans (sip.GetNV());;
+    Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+
+    mat = Trans(Cast(fel).GetShape (mip.IP(), lh)) * scaled_nv;
+    /*
+    mat =  (1.0/mip.GetJacobiDet())*
+      Trans(static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) 
+      * Trans (mip.GetNV());
+      */
   }
 
-  template <typename AFEL, typename SIP, class TVX, class TVY> 
-  static void Apply (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY> 
+  static void Apply (const AFEL & fel, const MIP & mip,
 		     const TVX & x, TVY & y,
 		     LocalHeap & lh)
   {
-    y = ( (1.0/sip.GetJacobiDet())*(InnerProduct (static_cast<const FEL&> (fel).GetShape (sip.IP(), lh), x) )) * sip.GetNV();
+    y = ( (1.0/mip.GetJacobiDet())*(InnerProduct (Cast(fel).GetShape (mip.IP(), lh), x) )) * mip.GetNV();
   }
 
-  template <typename AFEL, typename SIP, class TVX, class TVY>
-  static void ApplyTrans (const AFEL & fel, const SIP & sip,
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh)
   {
-    y = ((1.0/sip.GetJacobiDet())* InnerProduct (x, sip.GetNV()) ) * static_cast<const FEL&> (fel).GetShape (sip.IP(), lh);
+    y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetShape (mip.IP(), lh);
   }
 };
 

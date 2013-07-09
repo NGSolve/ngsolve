@@ -24,10 +24,6 @@ namespace ngfem
 
 
 
-
-
-
-
   /* *********************** Point  **********************/
 
   template<> template<typename Tx, typename TFA>  
