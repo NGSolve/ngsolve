@@ -462,9 +462,24 @@ namespace ngcomp
 
   void FacetFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
+    if (highest_order_dc)
+      {
+        // not optimal, needs reordering of dofs ...
+        Array<int> dnums;
+        if (ei.IsVolume())
+          GetDofNrs (ei.Nr(), dnums);
+        else
+          GetSDofNrs (ei.Nr(), dnums);
+        dranges.SetSize (0);
+        for (int j = 0; j < dnums.Size(); j++)
+          dranges.Append (dnums[j]);
+        return;
+      }
+
+
     dranges.SetSize(0);
 
-    if (!DefinedOn (ma.GetElIndex (ei))) return;
+    if (!DefinedOn (ei)) return;
     Ng_Element ngel = ma.GetElement(ei);
     
     if (ma.GetDimension() == 2)

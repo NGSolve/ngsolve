@@ -44,89 +44,80 @@ namespace ngcomp
     flux.GetVector() = 0.0;
 
     ProgressOutput progress (ma, "postprocessing element", ne);
-
-#pragma omp parallel 
-    {
-      LocalHeap lh = clh.Split();
-      Array<int> dnums, dnumsflux;
-
-#pragma omp for 
-      for (int i = 0; i < ne; i++)
-	{
-	  HeapReset hr(lh);
-	  progress.Update ();
-
-	  int eldom = bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
-	  
-	  if (!domains[eldom]) continue;
-	  
-	  const FiniteElement & fel = fes.GetFE (i, bound, lh);
-	  const FiniteElement & felflux = fesflux.GetFE (i, bound, lh);
-	  
-	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh);
-
-          fes.GetDofNrs (i, bound, dnums);
-	  fesflux.GetDofNrs (i, bound, dnumsflux);
-	  
-	  FlatVector<SCAL> elu(dnums.Size() * dim, lh);
-	  FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
-	  FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
-	  FlatVector<SCAL> fluxi(dimfluxvec, lh);
-	  
-	  u.GetElementVector (dnums, elu);
-	  fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
-
-	  IntegrationRule ir(fel.ElementType(), 
-			     max(fel.Order(),felflux.Order())+felflux.Order());
-
-
-	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
-	  
-	  bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
-	  
-	  for (int j = 0; j < ir.GetNIP(); j++)
-	    mfluxi.Row(j) *= mir[j].GetWeight();
-	  
-	  elflux = 0;
-	  fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
-
-	  if (dimflux > 1)
-	    {
-	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-	      const BlockBilinearFormIntegrator & bbli = 
-		dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
-	      bbli.Block().CalcElementMatrix (felflux, eltrans, elmat, lh);
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	    
-	      for (int j = 0; j < dimflux; j++)
-                invelmat.Mult (elflux.Slice (j, dimflux), 
-                               elfluxi.Slice (j, dimflux));
-	    }
-	  else
-	    {
-	      FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
-	      fluxbli.CalcElementMatrix (felflux, eltrans, elmat, lh);
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-	      invelmat.Mult (elflux, elfluxi);
-	    }
-	  
-	  fesflux.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
-	  
-	  
-#pragma omp critical(fluxprojetadd)
-	  {
-	    flux.GetElementVector (dnumsflux, elflux);
-	    elfluxi += elflux;
-	    flux.SetElementVector (dnumsflux, elfluxi);
-	    
-	    for (int j = 0; j < dnumsflux.Size(); j++)
-	      cnti[dnumsflux[j]]++;
-	  }
-	}
-    }
     
-    // cout << "\rpostprocessing element " << ne << "/" << ne << endl;
+    IterateElements 
+      (fesflux, VorB(bound), clh, 
+       [&] (ElementId ei, LocalHeap & lh)
+       {
+         HeapReset hr(lh);
+         progress.Update ();
+
+         int eldom = ma.GetElIndex (ei);
+	  
+         if (!domains[eldom]) return;;
+	 
+         const FiniteElement & fel = fes.GetFE (ei, lh);
+         const FiniteElement & felflux = fesflux.GetFE (ei, lh);
+	 
+         ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+
+         FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
+         FlatArray<int> dnumsflux = fesflux.GetDofNrs (ei, lh);
+         
+         FlatVector<SCAL> elu(dnums.Size() * dim, lh);
+         FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
+         FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
+         FlatVector<SCAL> fluxi(dimfluxvec, lh);
+	 
+         u.GetElementVector (dnums, elu);
+         fes.TransformVec (ei, elu, TRANSFORM_SOL);
+         
+         IntegrationRule ir(fel.ElementType(), 
+                            max(fel.Order(),felflux.Order())+felflux.Order());
+         
+
+         BaseMappedIntegrationRule & mir = eltrans(ir, lh);
+         FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
+	 
+         bli.CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
+	 
+         for (int j = 0; j < ir.GetNIP(); j++)
+           mfluxi.Row(j) *= mir[j].GetWeight();
+         
+         elflux = 0;
+         fluxbli.ApplyBTrans (felflux, mir, mfluxi, elflux, lh);
+         
+         if (dimflux > 1)
+           {
+             FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+             const BlockBilinearFormIntegrator & bbli = 
+               dynamic_cast<const BlockBilinearFormIntegrator&> (fluxbli);
+             bbli.Block().CalcElementMatrix (felflux, eltrans, elmat, lh);
+             FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+             
+             for (int j = 0; j < dimflux; j++)
+               invelmat.Mult (elflux.Slice (j, dimflux), 
+                              elfluxi.Slice (j, dimflux));
+           }
+         else
+           {
+             FlatMatrix<SCAL> elmat(dnumsflux.Size(), lh);
+             fluxbli.CalcElementMatrix (felflux, eltrans, elmat, lh);
+             FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+             invelmat.Mult (elflux, elfluxi);
+           }
+         
+         fesflux.TransformVec (ei, elfluxi, TRANSFORM_SOL);
+	  
+	  
+         flux.GetElementVector (dnumsflux, elflux);
+         elfluxi += elflux;
+         flux.SetElementVector (dnumsflux, elfluxi);
+	 
+         for (int j = 0; j < dnumsflux.Size(); j++)
+           cnti[dnumsflux[j]]++;
+       });
+    
     progress.Done();
     
 #ifdef PARALLEL
@@ -439,99 +430,6 @@ namespace ngcomp
 
     progress.Done();
 
-
-
-
-
-    /*
-    ProgressOutput progress (ma, "setvalues element", ma.GetNE());
-
-#pragma omp parallel 
-    {
-      LocalHeap lh = clh.Split();
-
-#pragma omp for 
-      for (int i = 0; i < ne; i++)
-	{
-	  HeapReset hr(lh);
-          progress.Update ();
-
-	  if (bound && !fes.IsDirichletBoundary(ma.GetSElIndex(i)))
-	    continue;
-
-	  const FiniteElement & fel = bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-	  Array<int> dnums(fel.GetNDof(), lh);
-	  
-	  ElementTransformation & eltrans = ma.GetTrafo (i, bound, lh); 
-	  fes.GetDofNrs (i, bound, dnums);
-
-	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
-	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
-	  FlatVector<SCAL> fluxi(dimflux, lh);
-
-	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
-	  FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
-
-	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
-
-	  coef.Evaluate (mir, mfluxi);
-	  for (int j = 0; j < ir.GetNIP(); j++)
-	    mfluxi.Row(j) *= mir[j].GetWeight();
-
-	  if (diffop)
-	    diffop -> ApplyTrans (fel, mir, mfluxi, elflux, lh);
-	  else
-	    bli.ApplyBTrans (fel, mir, mfluxi, elflux, lh);
-
-	  if (dim > 1)
-	    {
-	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
-	      const BlockBilinearFormIntegrator & bbli = 
-		dynamic_cast<const BlockBilinearFormIntegrator&> (bli);
-	      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
-	      FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-              
-	      for (int j = 0; j < dim; j++)
-                invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
-	    }
-	  else
-	    {
-	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
-	      bli.CalcElementMatrix (fel, eltrans, elmat, lh);
-
-	      fes.TransformMat (i, bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
-	      fes.TransformVec (i, bound, elflux, TRANSFORM_RHS);
-              
-              if (dnums.Size() < 50)
-                {
-                  FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
-                  invelmat.Mult (elflux, elfluxi);
-                }
-              else
-                {
-                  LapackInverse (elmat);
-                  elfluxi = elmat * elflux;
-                }
-	    }
-
-          *testout << "result solve " << endl << elfluxi << endl;
-	  
-	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
-
-#pragma omp critical(fluxprojetadd)
-	  {
-	    u.GetElementVector (dnums, elflux);
-	    elfluxi += elflux;
-	    u.SetElementVector (dnums, elfluxi);
-	    
-	    for (int j = 0; j < dnums.Size(); j++)
-	      cnti[dnums[j]]++;
-	  }
-	}
-    }
-
-    progress.Done();
-    */
     
 #ifdef PARALLEL
     AllReduceDofData (cnti, MPI_SUM, fes.GetParallelDofs());
@@ -603,18 +501,17 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
+        ElementId ei(VorB(bound),i);
+
 	HeapReset hr(lh);
 	ma.SetThreadPercentage ( 100.0*i / ne );
 
-	int eldom = 
-	  bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
+	int eldom = ma.GetElIndex(ei);
+        // bound ? ma.GetSElIndex(i) : ma.GetElIndex(i);
 	
-	if (!domains[eldom])
-	  continue;
+	if (!domains[eldom]) continue;
 
-	const FiniteElement & fel = 
-	  bound ? fes.GetSFE(i, lh) : fes.GetFE (i, lh);
-
+	const FiniteElement & fel = fes.GetFE(ei, lh);
 	const FiniteElement & felflux = 
 	  (bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh));
 
@@ -643,15 +540,10 @@ namespace ngcomp
 	flux.GetElementVector (dnumsflux, elflux);
 	fesflux.TransformVec (i, bound, elflux, TRANSFORM_SOL);
 
-	/*
-	const IntegrationRule & ir = 
-	  SelectIntegrationRule(felflux.ElementType(), 2*felflux.Order());
-	*/
 	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 
 	FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 	FlatMatrix<SCAL> mfluxi2(ir.GetNIP(), dimfluxvec, lh);
-	
 	
 	BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	bli.CalcFlux (fel, mir, elu, mfluxi, 1, lh);
@@ -770,7 +662,6 @@ namespace ngcomp
     for (int i = 0; i < ne; i++)
       {
 	HeapReset hr (lh);
-	
 	ma.SetThreadPercentage ( 100.0*i / ne );
 
 	int eldom = 
@@ -922,11 +813,6 @@ namespace ngcomp
 
 	double elerr = 0;
 
-	/*
-	const IntegrationRule & ir = 
-	  GetIntegrationRules().SelectIntegrationRule(fel1.ElementType(), 
-						      2*fel1.Order()+3);
-	*/
 	IntegrationRule ir(fel1.ElementType(), 2*fel1.Order()+3);
 	double det = 0;
 	

@@ -59,7 +59,6 @@ namespace ngcomp
 #include "preconditioner.hpp"
 #include "postproc.hpp"
 
-
 #include "hcurlhdivfes.hpp"
 #include "hdivfes.hpp"
 #include "h1hofespace.hpp"

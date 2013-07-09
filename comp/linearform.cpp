@@ -240,11 +240,6 @@ namespace ngcomp
 
                  const FiniteElement & fel = fespace.GetFE(ei, lh);
                  ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                 
-                 /*
-                   Array<int> dnums(fel.GetNDof(), lh);
-                   fespace.GetDofNrs (ei, dnums);
-                 */
                  FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
 
                  for (int j = 0; j < parts.Size(); j++)

@@ -18,7 +18,7 @@ To do: *Internal External Dofs (eliminate internal)
 
 
 #include <../fem/l2hofe.hpp>
-// #include <../fem/l2hofefo.hpp>
+#include <../fem/l2hofefo.hpp>
 
 
 using namespace ngmg;
@@ -118,6 +118,14 @@ namespace ngcomp
       {
         low_order_space = new ElementFESpace (ma, loflags);
         prol = new ElementProlongation (*static_cast<ElementFESpace*> (low_order_space));
+      }
+
+    switch (ma.GetDimension())
+      {
+      case 1: vefc_dofblocks = Vec<4,int> (0,2,0,0); break;
+      case 2: vefc_dofblocks = Vec<4,int> (0,0,2,0); break;
+      case 3: default:
+        vefc_dofblocks = Vec<4,int> (0,0,0,2);
       }
   }
 
@@ -285,19 +293,20 @@ namespace ngcomp
               }
           }
 
-        /*
 	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
 	  {
-	    L2HighOrderFiniteElement<2> * hofe2d = 0;
+	    DGFiniteElement<2> * hofe2d = 0;
 	    switch (order)
 	      {
 	      case 0: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
 	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
+                /*
 	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
 	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
 	      case 4: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
 	      case 5: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
 	      case 6: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
+                */
 	      }
 	    
 	    Ng_Element ngel = ma.GetElement<2> (elnr);
@@ -306,7 +315,6 @@ namespace ngcomp
 
 	    return *hofe2d;
 	  }
-        */
 
         switch (eltype)
           {

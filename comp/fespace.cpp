@@ -697,7 +697,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cout << endl << "timing ..." << endl;
     
     starttime = WallTime();
-    
     steps = 0;
     do
       {
@@ -707,7 +706,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 #pragma omp for
 	  for (int i = 0; i < ma.GetNE(); i++)
 	    {
-	      ArrayMem<int,100> dnums;
+              ArrayMem<int,100> dnums;
 	      GetDofNrs (i, dnums);
 	    }
 	}
@@ -717,6 +716,30 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (time < 5.0);
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
+
+
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+#pragma omp parallel
+        {
+	  LocalHeap &clh = lh, lh = clh.Split();
+#pragma omp for
+	  for (int i = 0; i < ma.GetNE(); i++)
+	    {
+              HeapReset hr(lh);
+	      /* FlatArray<int> dnums = */ GetDofNrs (ElementId (VOL, i), lh);
+	    }
+	}
+	steps++;
+	time = WallTime()-starttime;
+      }
+    while (time < 5.0);
+    
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
+
+
 
 
 
@@ -745,7 +768,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     starttime = WallTime();
-    
     steps = 0;
     do
       {
@@ -761,6 +783,25 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
 
+    // ***************************
+
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (int i = 0; i < ma.GetNE(); i++)
+	  {
+            HeapReset hr(lh);
+	    /* FlatArray<int> dnums = */ GetDofNrs (ElementId(VOL, i), lh);
+	  }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 5.0);
+    
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
+
+    // ***************************
 
 
     starttime = WallTime();
@@ -1924,18 +1965,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
+    dranges.SetSize (0);
     for (int i = 0; i < spaces.Size(); i++)
       {
         int osize = dranges.Size();
+
         Array<IntRange> hdranges(dranges.AllocSize()-osize, &dranges[osize]);
         hdranges.SetSize(0);
 	spaces[i]->GetDofRanges (ei, hdranges);
         int nsize = osize + hdranges.Size();
-        dranges.SetSize (nsize);
 
-        for (int j = osize; j < nsize; j++)
-          if (dranges[j].First() != -1)
-            dranges[j] = dranges[j]+cummulative_nd[i];
+        dranges.SetSize (nsize);
+        for (int j = 0; j < hdranges.Size(); j++)
+          if (hdranges[j].First() != -1)
+            dranges[osize+j] = hdranges[j]+cummulative_nd[i];
       }
   }
 
