@@ -446,8 +446,8 @@ namespace ngcomp
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
-				   const FlatMatrix<SCAL> & elmat,
-				   bool inner_element, int elnr,
+                                   FlatMatrix<SCAL> elmat,
+				   ElementId id, 
 				   LocalHeap & lh) = 0;
 
     virtual void ApplyElementMatrix(const BaseVector & x,
@@ -527,8 +527,8 @@ namespace ngcomp
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-				   const FlatMatrix<TSCAL> & elmat,
-				   bool inner_element, int elnr,
+				   FlatMatrix<TSCAL> elmat,
+				   ElementId id, 
 				   LocalHeap & lh);
 
     virtual void ApplyElementMatrix(const BaseVector & x,
@@ -575,8 +575,8 @@ namespace ngcomp
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-				   const FlatMatrix<TSCAL> & elmat,
-				   bool inner_element, int elnr,
+                                   FlatMatrix<TSCAL> elmat,
+				   ElementId id, 
 				   LocalHeap & lh);
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
@@ -620,8 +620,8 @@ namespace ngcomp
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
-				   const FlatMatrix<TSCAL> & elmat,
-				   bool inner_element, int elnr,
+				   FlatMatrix<TSCAL> elmat,
+				   ElementId id, 
 				   LocalHeap & lh);
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
@@ -728,8 +728,8 @@ namespace ngcomp
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
-                                   const FlatMatrix<SCAL> & elmat,
-                                   bool inner_element, int elnr,
+                                   FlatMatrix<SCAL> elmat,
+                                   ElementId id, 
                                    LocalHeap & lh);    
   };
   

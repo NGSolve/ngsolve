@@ -737,14 +737,17 @@ namespace ngcomp
          
     if (ma.GetDimension() >= 2)
       for (int i = 0; i < ngel.edges.Size(); i++)
-        dranges += GetEdgeDofs (ngel.edges[i]);
+        if (GetEdgeDofs (ngel.edges[i]).Size())
+          dranges += GetEdgeDofs (ngel.edges[i]);
 
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
-        dranges += GetFaceDofs (ngel.faces[i]);
+        if (GetFaceDofs (ngel.faces[i]).Size())
+          dranges += GetFaceDofs (ngel.faces[i]);
 
     if (ei.IsVolume())
-      dranges += GetElementDofs (ei.Nr());
+      if (GetElementDofs (ei.Nr()).Size())
+        dranges += GetElementDofs (ei.Nr());
   }
 
 

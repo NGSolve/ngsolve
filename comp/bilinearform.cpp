@@ -861,7 +861,7 @@ namespace ngcomp
                      if (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
                       
-                     AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+                     AddElementMatrix (dnums, dnums, sum_elmat, ei, lh);
                           
                      for (int j = 0; j < preconditioners.Size(); j++)
                        preconditioners[j] -> 
@@ -1066,7 +1066,7 @@ namespace ngcomp
                       
 #pragma omp critical (addelmatboundary)
                       {
-                        AddElementMatrix (dnums, dnums, sumelmat, 0, i, lh);
+                        AddElementMatrix (dnums, dnums, sumelmat, ElementId (BND, i), lh);
                       }
                       
                       for (int j = 0; j < preconditioners.Size(); j++)
@@ -1189,7 +1189,7 @@ namespace ngcomp
                           //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
 #pragma omp critical(addelemfacbnd)
                           {
-                            AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+                            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                           }
                         }//end for (numintegrators)
                     }//end for nse                  
@@ -1341,7 +1341,7 @@ namespace ngcomp
 
 #pragma omp critical(addelemfacin)
                           {
-                            AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+                            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                           }
                         }
                     }
@@ -1394,7 +1394,7 @@ namespace ngcomp
                       if (dnums[j] != -1)
                         useddof.Set (dnums[j]);
                     
-                    AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                   }
                   
                   assembledspecialelements = true;
@@ -1418,7 +1418,7 @@ namespace ngcomp
                 for (int i = 0; i < ndof; i++)
                   {
                     dnums[0] = i; 
-                    AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
+                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
                   }
               }
             if (unuseddiag != 0)
@@ -1429,7 +1429,7 @@ namespace ngcomp
                   if (!useddof.Test (i))
                     {
                       dnums[0] = i;
-                      AddElementMatrix (dnums, dnums, elmat, 0, i, clh);
+                      AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
                     }
               }
 
@@ -1603,11 +1603,6 @@ namespace ngcomp
   ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & clh) const
   {
     if (!eliminate_internal) return;
-
-    /*
-      if (!linearform)
-      throw Exception ("ComputeInternal needs a linear-form");
-    */
 
     static Timer timer ("Compute Internal");
     RegionTimer reg (timer);
@@ -2072,7 +2067,7 @@ namespace ngcomp
 
 
 
-                      AddElementMatrix (dnums, dnums, sum_elmat, 1, i, lh);
+                      AddElementMatrix (dnums, dnums, sum_elmat, ElementId(VOL,i), lh);
 
                       for (int j = 0; j < preconditioners.Size(); j++)
                         preconditioners[j] -> 
@@ -2156,7 +2151,7 @@ namespace ngcomp
                   
 #pragma omp critical (addelmatboundary)
                   {
-                    AddElementMatrix (dnums, dnums, sum_elmat, 0, i, lh);
+                    AddElementMatrix (dnums, dnums, sum_elmat, ElementId(BND,i), lh);
                     
                     for (int j = 0; j < preconditioners.Size(); j++)
                       preconditioners[j] -> 
@@ -2184,7 +2179,7 @@ namespace ngcomp
             FlatMatrix<SCAL> elmat;
             el.Assemble (elmat, lh);
           
-            AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
           }
       
       
@@ -2200,7 +2195,7 @@ namespace ngcomp
             for (int i = 0; i < ndof; i++)
               {
                 dnums[0] = i; 
-                AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
               }
           }
         if (unuseddiag != 0)
@@ -2211,7 +2206,7 @@ namespace ngcomp
               if (!useddof.Test (i))
                 {
                   dnums[0] = i;
-                  AddElementMatrix (dnums, dnums, elmat, 0, i, lh);
+                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                 }
           }
       
@@ -2749,8 +2744,8 @@ namespace ngcomp
   void T_BilinearForm<TM,TV>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<TSCAL> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<TSCAL> elmat,
+                    ElementId id,
                     LocalHeap & lh) 
   {
     BaseMatrix * hmat = this->mats.Last();
@@ -2931,8 +2926,8 @@ namespace ngcomp
   void T_BilinearFormSymmetric<TM,TV> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<TSCAL> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<TSCAL> elmat,
+                    ElementId id, 
                     LocalHeap & lh) 
   {
     BaseMatrix * hmat = this->mats.Last();
@@ -3128,8 +3123,8 @@ namespace ngcomp
   void T_BilinearFormDiagonal<TM> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<TSCAL> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<TSCAL> elmat,
+                    ElementId id, 
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
@@ -3157,8 +3152,8 @@ namespace ngcomp
   template <> void T_BilinearFormDiagonal<double>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<double> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<double> elmat,
+                    ElementId id, 
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
@@ -3178,8 +3173,8 @@ namespace ngcomp
   template <> void T_BilinearFormDiagonal<Complex>::
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<Complex> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<Complex> elmat,
+                    ElementId id, 
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
@@ -3727,12 +3722,12 @@ namespace ngcomp
   void ElementByElement_BilinearForm<SCAL> :: 
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
-                    const FlatMatrix<SCAL> & elmat,
-                    bool inner_element, int elnr,
+                    FlatMatrix<SCAL> elmat,
+                    ElementId id,
                     LocalHeap & lh)
   {
-    int nr = elnr;
-    if (!inner_element) nr += this->ma.GetNE();
+    int nr = id.Nr();
+    if (id.IsBoundary()) nr += this->ma.GetNE();
     dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()) . AddElementMatrix (nr, dnums1, dnums2, elmat);
   }
   
