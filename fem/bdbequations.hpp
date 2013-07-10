@@ -37,7 +37,7 @@ public:
   template <typename MIP, typename MAT>
   static void GenerateMatrix (const FiniteElement & fel, 
 			      const MIP & mip,
-			      MAT & mat, LocalHeap & lh)
+			      MAT && mat, LocalHeap & lh)
   {
     mat = Trans (mip.GetJacobianInverse ()) * 
       Trans (Cast(fel).GetDShape(mip.IP(),lh));
@@ -45,7 +45,7 @@ public:
 
   static void GenerateMatrix (const FiniteElement & fel, 
                               const MappedIntegrationPoint<D,D> & mip,
-			      FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
+			      FlatMatrixFixHeight<D> && mat, LocalHeap & lh)
   {
     Cast(fel).CalcMappedDShape (mip, mat.Trans());
   }
@@ -53,7 +53,7 @@ public:
   ///
   template <typename MIP, class TVX, class TVY>
   static void Apply (const FiniteElement & fel, const MIP & mip,
-		     const TVX & x, TVY & y,
+		     const TVX & x, TVY && y,
 		     LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
