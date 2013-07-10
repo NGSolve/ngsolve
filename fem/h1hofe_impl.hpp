@@ -71,7 +71,7 @@ namespace ngfem
 	  LegendrePolynomial::
             EvalScaledMult (order_edge[i]-2, 
                             lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                            lam[e[0]]*lam[e[1]], shape+ii); // .Addr(ii));
+                            lam[e[0]]*lam[e[1]], shape+ii);
 	  ii += order_edge[i]-1;
 	}
 
@@ -82,7 +82,7 @@ namespace ngfem
 
 	DubinerBasis::EvalMult (p-3, 
                                 lam[f[0]], lam[f[1]], 
-                                lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+                                lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
   }
 
@@ -111,7 +111,7 @@ namespace ngfem
         Tx lam_e = lam[e[0]]+lam[e[1]];
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
-	LegendrePolynomial::EvalMult (p-2, xi, bub, shape.Addr(ii));
+	LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
 	ii += p-1;
       }    
     
@@ -126,7 +126,7 @@ namespace ngfem
 	Tx bub = 1.0/16 * (1-xi*xi)*(1-eta*eta);
 
 	ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
-	LegendrePolynomial::EvalMult(p[0]-2, xi, bub,   polxi);
+	LegendrePolynomial::EvalMult(p[0]-2, xi, bub, polxi);
 	LegendrePolynomial::Eval(p[1]-2, eta, poleta);
 	
 	for (int k = 0; k <= p[0]-2; k++)
@@ -175,7 +175,7 @@ namespace ngfem
 
 	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
 					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-					      lam[e[0]]*lam[e[1]], shape.Addr(ii));
+					      lam[e[0]]*lam[e[1]], shape+ii);
 	  ii += order_edge[i]-1;
 	}
 
@@ -188,7 +188,7 @@ namespace ngfem
           
 	  int p = order_face[i][0];
 	  DubinerBasis::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-					lam[f[0]]*lam[f[1]]*lam[f[2]], shape.Addr(ii));
+					lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
 
@@ -196,7 +196,7 @@ namespace ngfem
       ii += TetShapesInnerLegendre::
 	Calc (order_cell[0][0], 
 	      lam[0]-lam[3], lam[1], lam[2], 
-	      shape.Addr(ii) );
+	      shape+ii);
   }
 
 
@@ -215,8 +215,7 @@ namespace ngfem
     for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
 
     // vertex shapes
-    for (int i = 0; i < 6; i++)
-      shape[i] = lam[i] * muz[i];
+    for (int i = 0; i < 6; i++) shape[i] = lam[i] * muz[i];
 
     int ii = 6;
 

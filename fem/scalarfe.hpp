@@ -38,7 +38,7 @@ namespace ngfem
        returns stored values for valid ip.IPNr(), else computes values
     */
     FlatVector<> GetShape (const IntegrationPoint & ip, 
-				 LocalHeap & lh) const
+                           LocalHeap & lh) const
     {
       FlatVector<> shape(ndof, lh);
       CalcShape (ip, shape);
@@ -60,18 +60,17 @@ namespace ngfem
 
     /// compute shape
     NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const = 0;
+                                           FlatVector<> shape) const = 0;
   
     /// compute dshape, matrix: ndof x spacedim
     NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<D> dshape) const;
+                                            FlatMatrixFixWidth<D> dshape) const;
 
     /// compute dshape, matrix: ndof x spacedim
-    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-				   FlatMatrixFixWidth<D> dshape) const;
-
-
-
+    NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+                                   FlatMatrixFixWidth<D> dshape) const;
+    
 
     /**
        returns second derivatives in point ip.
@@ -86,7 +85,7 @@ namespace ngfem
 
     /// compute dshape, matrix: ndof x (spacedim spacedim)
     NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
-			      FlatMatrix<> ddshape) const;
+                                             FlatMatrix<> ddshape) const;
 
 
 
