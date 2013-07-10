@@ -127,6 +127,8 @@ namespace ngfem
        Vector x provides coefficient vector.
      */
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
+
+    NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<D> > orders) const { ; }
   };
 
 

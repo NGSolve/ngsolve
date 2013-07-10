@@ -452,8 +452,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     level_updated = ma.GetNLevels();
-
-    cout << "finalize, timing = " << timing << endl;
     if (timing) Timing();
   }
 

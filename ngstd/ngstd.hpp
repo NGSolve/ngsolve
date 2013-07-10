@@ -111,6 +111,7 @@ namespace ngstd
 #include "evalfunc.hpp"
 #include "autodiff.hpp"
 #include "autodiffdiff.hpp"
+#include "polorder.hpp"
 #include "stringops.hpp"
 #include "profiler.hpp"
 #include "statushandler.hpp"

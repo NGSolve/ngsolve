@@ -146,14 +146,6 @@ namespace ngfem
     ;
   }
 
-  void BilinearFormIntegrator ::
-  AssembleElementMatrix (const FiniteElement & fel,
-			 const ElementTransformation & eltrans, 
-			 FlatMatrix<double> & elmat,
-			 LocalHeap & lh) const
-  {
-    throw Exception ("AssembleElementMatrix<double> not overloaded");
-  }
 
   void BilinearFormIntegrator ::
   CalcElementMatrix (const FiniteElement & fel,
@@ -1306,7 +1298,7 @@ double BlockBilinearFormIntegrator ::
 
   
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
+  CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				    const FiniteElement & bfel_master_element,				    
 				    const FiniteElement & bfel_slave,
 				    const ElementTransformation & eltrans_master, 
@@ -1324,7 +1316,7 @@ double BlockBilinearFormIntegrator ::
   
 
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
+  CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				    const FiniteElement & bfel_master_element,				    
 				    const FiniteElement & bfel_slave,
 				    const ElementTransformation & eltrans_master, 
@@ -1337,10 +1329,10 @@ double BlockBilinearFormIntegrator ::
 				    LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi.AssembleElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
-					 eltrans_master, eltrans_master_element, eltrans_slave,
-					 ip_master, ip_master_element, ip_slave,
-					 rmat, lh);
+    bfi.CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
+                                     eltrans_master, eltrans_master_element, eltrans_slave,
+                                     ip_master, ip_master_element, ip_slave,
+                                     rmat, lh);
     elmat.AssignMemory(rmat.Height(), rmat.Width(), lh);
     elmat = factor * rmat;
   }
@@ -1348,14 +1340,14 @@ double BlockBilinearFormIntegrator ::
   
 
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
-				    const FiniteElement & bfel_slave,
-				    const ElementTransformation & eltrans_master, 
-				    const ElementTransformation & eltrans_slave,
-				    const IntegrationPoint & ip_master,
-				    const IntegrationPoint & ip_slave,
-				    FlatMatrix<double> & elmat,
-				    LocalHeap & lh) const
+  CalcElementMatrixIndependent (const FiniteElement & bfel_master,
+                                const FiniteElement & bfel_slave,
+                                const ElementTransformation & eltrans_master, 
+                                const ElementTransformation & eltrans_slave,
+                                const IntegrationPoint & ip_master,
+                                const IntegrationPoint & ip_slave,
+                                FlatMatrix<double> & elmat,
+                                LocalHeap & lh) const
   {
     throw Exception ("ComplexBilinearFormIntegrator: cannot assemble double matrix");
   }
@@ -1363,17 +1355,17 @@ double BlockBilinearFormIntegrator ::
 
 
   void ComplexBilinearFormIntegrator :: 
-  AssembleElementMatrixIndependent (const FiniteElement & bfel_master,
+  CalcElementMatrixIndependent (const FiniteElement & bfel_master,
 				    const FiniteElement & bfel_slave,
-				    const ElementTransformation & eltrans_master, 
-				    const ElementTransformation & eltrans_slave,
-				    const IntegrationPoint & ip_master,
-				    const IntegrationPoint & ip_slave,
-				    FlatMatrix<Complex> & elmat,
-				    LocalHeap & lh) const
+                                const ElementTransformation & eltrans_master, 
+                                const ElementTransformation & eltrans_slave,
+                                const IntegrationPoint & ip_master,
+                                const IntegrationPoint & ip_slave,
+                                FlatMatrix<Complex> & elmat,
+                                LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi.AssembleElementMatrixIndependent(bfel_master,bfel_slave,
+    bfi.CalcElementMatrixIndependent(bfel_master,bfel_slave,
 					 eltrans_master, eltrans_slave,
 					 ip_master, ip_slave,
 					 rmat, lh);
@@ -1812,37 +1804,24 @@ double BlockBilinearFormIntegrator ::
 
 
 
-
-  void  LinearFormIntegrator ::
-  CalcElementVector (const FiniteElement & fel,
-		     const ElementTransformation & eltrans, 
-		     FlatVector<Complex> & elvec,
-		     LocalHeap & lh) const
-  {
-    FlatVector<double> rvec(elvec.Size(), lh);
-    CalcElementVector (fel, eltrans, rvec, lh);
-    elvec = rvec;
-  }
-
-
-
   void LinearFormIntegrator ::
-  AssembleElementVector (const FiniteElement & fel,
+  CalcElementVector (const FiniteElement & fel,
 			 const ElementTransformation & eltrans, 
 			 FlatVector<double> & elvec,
 			 LocalHeap & lh) const
   { 
-    cerr << "LinearFormIntegrator::AssembleElementVector: base class called" << endl;
+    cerr << "LinearFormIntegrator::CalcElementVector: base class called" << endl;
   }
   
-  void  LinearFormIntegrator ::
-  AssembleElementVector (const FiniteElement & fel,
-			 const ElementTransformation & eltrans, 
-			 FlatVector<Complex> & elvec,
-			 LocalHeap & lh) const
+
+  void LinearFormIntegrator ::
+  CalcElementVector (const FiniteElement & fel,
+                     const ElementTransformation & eltrans, 
+                     FlatVector<Complex> & elvec,
+                     LocalHeap & lh) const
   {
     FlatVector<double> rvec(elvec.Size(), lh);
-    AssembleElementVector (fel, eltrans, rvec, lh);
+    CalcElementVector (fel, eltrans, rvec, lh);
     elvec = rvec;
   }
 
@@ -1931,19 +1910,19 @@ double BlockBilinearFormIntegrator ::
 
 
   void CompoundLinearFormIntegrator ::  
-  AssembleElementVectorIndependent (const FiniteElement & gfel,
-				    const BaseMappedIntegrationPoint & s_mip,
-				    const BaseMappedIntegrationPoint & g_mip,
-				    FlatVector<double> & elvec,
-				    LocalHeap & lh,
-				    const bool curveint) const
+  CalcElementVectorIndependent (const FiniteElement & gfel,
+                                const BaseMappedIntegrationPoint & s_mip,
+                                const BaseMappedIntegrationPoint & g_mip,
+                                FlatVector<double> & elvec,
+                                LocalHeap & lh,
+                                const bool curveint) const
   {
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (gfel);
 
     int i;
     FlatVector<double> vec1;
-    lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    lfi.CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
     elvec.AssignMemory (fel.GetNDof(), lh);
     elvec = 0;
@@ -1957,18 +1936,18 @@ double BlockBilinearFormIntegrator ::
   }
 
   void CompoundLinearFormIntegrator ::  
-  AssembleElementVectorIndependent (const FiniteElement & gfel,
-				    const BaseMappedIntegrationPoint & s_mip,
-				    const BaseMappedIntegrationPoint & g_mip,
-				    FlatVector<Complex> & elvec,
-				    LocalHeap & lh,
-				    const bool curveint) const
+  CalcElementVectorIndependent (const FiniteElement & gfel,
+                                const BaseMappedIntegrationPoint & s_mip,
+                                const BaseMappedIntegrationPoint & g_mip,
+                                FlatVector<Complex> & elvec,
+                                LocalHeap & lh,
+                                const bool curveint) const
   {
     const CompoundFiniteElement & fel =
       dynamic_cast<const CompoundFiniteElement&> (gfel);
 
     FlatVector<Complex> vec1;
-    lfi.AssembleElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    lfi.CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
     elvec.AssignMemory (fel.GetNDof(), lh);
     elvec = 0;
