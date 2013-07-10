@@ -12,7 +12,7 @@
 // #include <parallel.hpp>
 #include <visual.hpp>
 
-
+#include <limits>
 
 namespace netgen
 {
@@ -2409,18 +2409,31 @@ namespace netgen
 	    NgProfiler::RegionTimer reg1 (timer1);
 
             int ne = mesh->GetNE();
-#pragma omp parallel for
+            double hmax = -numeric_limits<double>::max();
+            double hmin = numeric_limits<double>::max();
+
+#pragma omp parallel for reduction (max : hmax) reduction (min : hmin)
             for (int i = 0; i < ne; i++) 
               {
                 bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
-#pragma omp critical(getminmaxvol)
                 if (considerElem)
                   {
-                    if (val > maxv || !hasit) maxv = val;
-                    if (val < minv || !hasit) minv = val;
-                    hasit = true;
+                    /*
+#pragma omp critical(getminmaxvol)
+                    {
+                      if (val > maxv || !hasit) maxv = val;
+                      if (val < minv || !hasit) minv = val;
+                      hasit = true;
+                    }
+                    */
+                    if (val > hmax) hmax = val;
+                    if (val < hmin) hmin = val;
                   }
               }
+
+            maxv = hmax;
+            minv = hmin;
+            // cout << "maxv = " << maxv << " =?= " << hmax << endl;
           }
         if (sol->draw_surface)
           {
@@ -2436,8 +2449,8 @@ namespace netgen
 
                 if (considerElem)
                   {
-                    if (val > maxv || !hasit) maxv = val;
-                    if (val < minv || !hasit) minv = val;
+                    if (val > maxv) maxv = val;
+                    if (val < minv) minv = val;
                     hasit = true;
                   }
               }
