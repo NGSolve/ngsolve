@@ -1485,7 +1485,7 @@ public:
 
 
   virtual void
-  CalcElementVectorIndependent (const FiniteElement & gfel, 
+  AssembleElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseMappedIntegrationPoint & s_mip,
 				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<double> & elvec,
@@ -1496,7 +1496,7 @@ public:
   }
 
   virtual void
-  CalcElementVectorIndependent (const FiniteElement & gfel, 
+  AssembleElementVectorIndependent (const FiniteElement & gfel, 
 				    const BaseMappedIntegrationPoint & s_mip,
 				    const BaseMappedIntegrationPoint & g_mip,
 				    FlatVector<Complex> & elvec,
