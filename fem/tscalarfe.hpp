@@ -50,6 +50,8 @@ namespace ngfem
                       FlatMatrixFixWidth<DIM> dshape) const;
 
 
+    virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
+
   protected:
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[], TFA & shape) const

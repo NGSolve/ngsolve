@@ -443,7 +443,7 @@ namespace ngcomp
 			Vec<3> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1); tv(2) = tangent(2);
 			s_sip.SetTV(tv);
-			parts[j]->AssembleElementVectorIndependent(*fel,
+			parts[j]->CalcElementVectorIndependent(*fel,
 								   s_sip,
 								   g_sip,
 								   elvec,clh,true);
@@ -455,7 +455,7 @@ namespace ngcomp
 			Vec<2> tv;
 			tv(0) = tangent(0); tv(1) = tangent(1);
 			s_sip.SetTV(tv);
-			parts[j]->AssembleElementVectorIndependent(*fel,
+			parts[j]->CalcElementVectorIndependent(*fel,
 								   s_sip,
 								   g_sip,
 								   elvec,clh,true);
@@ -619,14 +619,14 @@ namespace ngcomp
 		      {
 			MappedIntegrationPoint<2,3> s_sip(ip,seltrans);
 			MappedIntegrationPoint<3,3> g_sip(gip,geltrans);
-			parts[k] -> AssembleElementVectorIndependent
+			parts[k] -> CalcElementVectorIndependent
 			  (gfel,s_sip,g_sip,elvec,lh);
 		      }
 		    else if(geltrans.SpaceDim() == 2)
 		      {
 			MappedIntegrationPoint<1,2> s_sip(ip,seltrans);
 			MappedIntegrationPoint<2,2> g_sip(gip,geltrans);
-			parts[k] -> AssembleElementVectorIndependent
+			parts[k] -> CalcElementVectorIndependent
 			  (gfel,s_sip,g_sip,elvec,lh);
 		      }
 

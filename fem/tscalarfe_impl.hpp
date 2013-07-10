@@ -2,7 +2,6 @@
 #define FILE_TSCALARFE_IMPL
 
 
-
 namespace ngfem
 {
 
@@ -437,6 +436,35 @@ namespace ngfem
       
     DShapeAssign<DIM> ds(dshape); 
     T_CalcShape (&adp(0), ds);
+  }
+
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  GetPolOrders (FlatArray<PolOrder<DIM> > orders) const
+  {
+    PolOrder<DIM> po[DIM];
+
+    switch (ET)
+      {
+      case ET_TRIG:
+        po[0] = INT<DIM> (1,1); 
+        po[1] = INT<DIM> (1,1); 
+        break;
+      case ET_QUAD:
+        po[0] = INT<DIM> (1,0); 
+        po[1] = INT<DIM> (0,1); 
+        break;
+
+      default:
+        for (int i = 0; i < DIM; i++)
+          for (int j = 0; j < DIM; j++)
+            po[i](j) = 1;
+      }
+
+    T_CalcShape (&po[0], orders);
+    cout << "orders = " << endl << orders << endl;
+    // does not work for tensor productelements: order cancelation for lam_e
   }
 }
 

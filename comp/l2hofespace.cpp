@@ -293,7 +293,7 @@ namespace ngcomp
               }
           }
 
-	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
+	if (ma.GetElType(elnr) == ET_TRIG && order <= 1)
 	  {
 	    DGFiniteElement<2> * hofe2d = 0;
 	    switch (order)

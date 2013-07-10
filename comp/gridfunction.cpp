@@ -976,16 +976,16 @@ namespace ngcomp
 						double lam1, double lam2, double lam3,
 						double * values) 
   { 
-    /*
     static Timer t("visgf::GetValue");
+    /*
     static Timer t1("visgf::GetValue 1");
     static Timer t2("visgf::GetValue 2");
     static Timer t3("visgf::GetValue 3");
     static Timer t4("visgf::GetValue 3");
     static Timer t5("visgf::GetValue 3");
+    */
     RegionTimer reg(t);
     t.AddFlops (1);
-    */
 
     try
       {
