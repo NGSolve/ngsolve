@@ -2397,7 +2397,8 @@ namespace netgen
     // bool considerElem;
 
     bool hasit = false;
-    minv = 0; maxv = 1;
+    minv = numeric_limits<double>::max();
+    maxv = -numeric_limits<double>::max();
 
     if ((ntasks == 1) || (id > 0))
       if (funcnr != -1)
@@ -2409,8 +2410,8 @@ namespace netgen
 	    NgProfiler::RegionTimer reg1 (timer1);
 
             int ne = mesh->GetNE();
-            double hmax = -numeric_limits<double>::max();
-            double hmin = numeric_limits<double>::max();
+            double hmax = maxv; 
+            double hmin = minv; 
 
 #pragma omp parallel for reduction (max : hmax) reduction (min : hmin)
             for (int i = 0; i < ne; i++) 
