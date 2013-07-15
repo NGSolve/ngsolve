@@ -230,9 +230,6 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::Restrict");
     }
 
-    //virtual void AllReduceHO () const = 0;
-
-
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const
     {
 
@@ -256,7 +253,6 @@ namespace ngla
 					 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    // DynamicMem<TM> data;
     Array<TM, size_t> data;
     VFlatVector<typename mat_traits<TM>::TSCAL> asvec;
     TM nul;

@@ -803,7 +803,7 @@ namespace ngbla
     }
 
     /// initialize with values
-    Vec (TSCAL scal)
+    Vec (const TELEM & scal)
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
@@ -852,7 +852,7 @@ namespace ngbla
   
 
     /// assign scalar value
-    Vec & operator= (TSCAL scal)
+    Vec & operator= (const TELEM & scal)
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
