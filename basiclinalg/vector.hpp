@@ -228,11 +228,14 @@ namespace ngbla
     }
 
     // shape functions had a problem with icc v9.1
-    const CArray<T> Addr(int i) const
-    { return CArray<T> (data+i*dist); }
-
+    // const CArray<T> Addr(int i) const { return CArray<T> (data+i*dist); }
+    T * Addr(int i) const { return data+i*dist; }
+    /*
     const CArray<T> operator+(int i) const
     { return CArray<T> (data+i*dist); }
+    */
+
+    T * operator+(int i) const { return data+i*dist; }
 
 
     /// sub-vector of size next-first, starting at first
@@ -418,13 +421,20 @@ namespace ngbla
       return RowsArrayExpr<FlatVector> (*this, rows);
     }
 
-
+    /*
     // shape functions had a problem with icc v9.1
+    Vec<S,T> * Addr(int i) const
+    {
+      return static_cast<Vec<S,T>*> ((void*) (data+i*S)); 
+    }
+    */
 
+    /*
     const CArray<Vec<S,T> > Addr(int i) const
     {
       return CArray<Vec<S,T> > (static_cast<Vec<S,T>*> ((void*) (data+i*S))); 
     }
+    */
     /*
     const CArray<T> Addr(int i) const
     {
@@ -793,7 +803,7 @@ namespace ngbla
     }
 
     /// initialize with values
-    Vec (const TSCAL & scal)
+    Vec (TSCAL scal)
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
@@ -1401,11 +1411,12 @@ namespace ngbla
       return data[i*DIST]; 
     }
 
+    /*
     TELEM * Addr (int i) const
     {
       return data+i*DIST;
     }
-
+    */
 
     /// vector size
     int Size () const { return s; }

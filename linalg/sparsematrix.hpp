@@ -341,8 +341,8 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV_ROW TVX;
     typedef TV_COL TVY;
-    typedef typename mat_scale_type<TVX,Complex>::TMAT TVXC;
-    typedef typename mat_scale_type<TVY,Complex>::TMAT TVYC;
+    // typedef typename mat_scale_type<TVX,Complex>::TMAT TVXC;
+    // typedef typename mat_scale_type<TVY,Complex>::TMAT TVYC;
 
     ///
     SparseMatrix (int as, int max_elsperrow)
@@ -444,17 +444,17 @@ namespace ngla
       
       size_t first = firsti[row];
       size_t last = firsti[row+1];
-      TVX * vecp = vec.Addr(0);
+      // TVX * vecp = vec.Addr(0);
       const int * colpi = &colnr[0];
       const TM * datap = &data[0];
 
-      int d = vec.Addr(1)-vec.Addr(0);
-      if (d == 1)
+      // int d = vec.Addr(1)-vec.Addr(0);
+      // if (d == 1)
         for (size_t j = first; j < last; j++)
-          vecp[colpi[j]] += Trans(datap[j]) * el; 
-      else
-        for (size_t j = first; j < last; j++)
-          vecp[d*colnr[j]] += Trans(data[j]) * el; 
+          vec[colpi[j]] += Trans(datap[j]) * el; 
+        // else
+        // for (size_t j = first; j < last; j++)
+        // vec[d*colnr[j]] += Trans(data[j]) * el; 
     }
 
 
@@ -680,14 +680,14 @@ namespace ngla
       for (size_t j = first; j < last; j++)
 	vecp[colpi[j]] += Trans(datap[j]) * el;
       */
-      TVX * vecp = vec.Addr(0);
-      int d = vec.Addr(1)-vec.Addr(0);
-      if (d == 1)
-        for (size_t j = first; j < last; j++)
-          vecp[colnr[j]] += Trans(data[j]) * el;
-      else
-        for (size_t j = first; j < last; j++)
-          vecp[d*colnr[j]] += Trans(data[j]) * el;
+      // TVX * vecp = vec.Addr(0);
+      // int d = vec.Addr(1)-vec.Addr(0);
+      // if (d == 1)
+      for (size_t j = first; j < last; j++)
+        vec[colnr[j]] += Trans(data[j]) * el;
+        // else
+        // for (size_t j = first; j < last; j++)
+        // vecp[d*colnr[j]] += Trans(data[j]) * el;
     }
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);

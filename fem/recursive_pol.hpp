@@ -47,16 +47,16 @@ namespace ngfem
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaled (x, y, values, p2, p3);
-      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*y*y * p3;
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*(y*y) * p3;
     }
 
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaledMult (x, y, c, values, p2, p3);
-      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*y*y * p3;
+      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*(y*y) * p3;
     }
   };
 
@@ -160,19 +160,66 @@ namespace ngfem
   public:
 
     template <class S>
-    ALWAYS_INLINE static void EvalNext (int i, S x, S & p1, S & p2)
+    ALWAYS_INLINE static S EvalNext (int i, S x, S & p1, S & p2)
     {
-      S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
-      p2 = p1;
-      p1 = pnew;
+      switch (i)
+        {
+        case 0: return p1 = REC::P0(x);
+        case 1:
+          {
+            p2 = p1;
+            return p1 = REC::P1(x);
+          }
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+                p2 = p1;
+                return p1 = pnew;
+              }
+            else
+              {
+                S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+                p2 = p1;
+                return p1 = pnew;
+              }
+          }
+        }
     }
+
+
+    template <class S, class Sc>
+    ALWAYS_INLINE static S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = c * REC::P0(x);
+        case 1:
+          {
+            p2 = p1;
+            return p1 = c* REC::P1(x);
+          }
+        default: return EvalNext (i, x, p1, p2);
+        }
+    }
+
 
     template <class S, class Sy>
     ALWAYS_INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
     {
-      S pnew = (REC::A(i) * x + REC::B(i) * y) * p1 + REC::C(i) * y*y*p2;
-      p2 = p1;
-      p1 = pnew;
+      if (REC::ZERO_B)
+        {
+          S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      else
+        {
+          S pnew = (REC::A(i) * x + REC::B(i) * y) * p1 + REC::C(i) * (y*y)*p2;
+          p2 = p1;
+          p1 = pnew;
+        }
     }
 
 
@@ -192,52 +239,49 @@ namespace ngfem
 
       if (n < 0) return;
 
+      /*
       values[0] = p2 = c * REC::P0(x);
       if (n < 1) return;
-
+      
       values[1] = p1 = c * REC::P1(x);
       if (n < 2) return;
+      */
 
-      EvalNext(2, x, p1, p2);
-      values[2] = p1;
+      values[0] = EvalNextMult(0, x, c, p1, p2);
+      if (n < 1) return;
+
+      values[1] = EvalNextMult(1, x, c, p1, p2);
+      if (n < 2) return;
+
+      values[2] = EvalNext(2, x, p1, p2);
       if (n < 3) return;
 
-      EvalNext(3, x, p1, p2);
-      values[3] = p1;
+      values[3] = EvalNext(3, x, p1, p2);
       if (n < 4) return;
 
-      EvalNext(4, x, p1, p2);
-      values[4] = p1;
+      values[4] = EvalNext(4, x, p1, p2);
       if (n < 5) return;
 
-      EvalNext(5, x, p1, p2);
-      values[5] = p1;
+      values[5] = EvalNext(5, x, p1, p2);
       if (n < 6) return;
 
-      EvalNext(6, x, p1, p2);
-      values[6] = p1;
+      values[6] = EvalNext(6, x, p1, p2);
       if (n < 7) return;
-
-      EvalNext(7, x, p1, p2);
-      values[7] = p1;
+     
+      values[7] = EvalNext(7, x, p1, p2);
       if (n < 8) return;
 
-      EvalNext(8, x, p1, p2);
-      values[8] = p1;
+      values[8] = EvalNext(8, x, p1, p2);
       if (n < 9) return;
 
-      EvalNext(9, x, p1, p2);
-      values[9] = p1;
+      values[9] = EvalNext(9, x, p1, p2);
       if (n < 10) return;
 
-      EvalNext(10, x, p1, p2);
-      values[10] = p1;
+      values[10] = EvalNext(10, x, p1, p2);
       if (n < 11) return;
 
-      EvalNext(11, x, p1, p2);
-      values[11] = p1;
+      values[11] = EvalNext(11, x, p1, p2);
       if (n < 12) return;
-
 
       for (int i = 12; i <= n; i++)
 	{	
@@ -309,7 +353,7 @@ namespace ngfem
 
 
     template <int N, class S, class T>
-    ALWAYS_INLINE static void EvalFO (S x, T & values) 
+    ALWAYS_INLINE static void EvalFO (S x, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::Eval (x, values, p1, p2);
@@ -335,6 +379,8 @@ namespace ngfem
       S p1, p2;
       CEvalFO<REC, N>::EvalScaledMult (x, y, c, values, p1, p2);
     }
+
+    enum { ZERO_B = 0 };
   };
 
 
@@ -360,6 +406,7 @@ namespace ngfem
     static ALWAYS_INLINE double A (int i) { return 2.0-1.0/i; }
     static ALWAYS_INLINE double B (int i) { return 0; }
     static ALWAYS_INLINE double C (int i) { return 1.0/i-1.0; }
+    enum { ZERO_B = 1 };
   };
     
     
@@ -378,7 +425,8 @@ namespace ngfem
       Eval (n, x, values);
     }
 
-
+    // typedef RecursivePolynomial<JacobiPolynomialFix<al,be> > BASE;
+    // using BASE::EvalFO;
     
     template <class S>
     static ALWAYS_INLINE S P0(S x) { return S(1.0); }
@@ -572,23 +620,25 @@ namespace ngfem
 
 
 
-
-
-
-
   template <int n, int i, int alpha0, int beta>
   class DubinerJacobiPolynomialsFO
   {
   public:
     template <class S, class T>
-    static void Eval (S x, T & values)
+    static void Eval (S x, T && values)
     {
       DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::Eval (x, values);
-      // JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
 
-      JacobiPolynomialFix<alpha0+2*i, beta> jac;
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::Eval (x, values.Row(i), p1, p2);
+
+      // why not ???
+      // JacobiPolynomialFix<alpha0+2*i, beta>::EvalFO<n-i> (x, values.Row(i));
+
+
+      // typedef JacobiPolynomialFix<alpha0+2*i, beta> JAC;
+      // JAC::EvalFO<n-i> (x, values.Row(i));
+      // JacobiPolynomialFix<1,2>::EvalFO<n-i> (hx, hmat.Row(i));
     }
 
 
@@ -601,9 +651,7 @@ namespace ngfem
       JacobiPolynomialFix<alpha0+2*i, beta> jac;
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaled (x, t, values.Row(i), p1, p2);
-    }
-
-    
+    }    
   };
   
   template <int n, int alpha0, int beta>
@@ -619,9 +667,6 @@ namespace ngfem
   };
   
   
-
-
-
 
 
   template <int n, int i, int alpha0, int beta>
@@ -1116,19 +1161,19 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    static void Eval (int n, S x, S y, T & values)
+    static void Eval (int n, S x, S y, T && values)
     {
       EvalMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sc, class T>
-    static void EvalMult (int n, S x, S y, Sc c, T & values)
+    static void EvalMult (int n, S x, S y, Sc c, T && values)
     {
       DubinerJacobiPolynomials_Linear<1,0> (n, x, y, c, values);
     }
 
     template <class S, class St, class Sc, class T>
-    static void EvalScaledMult (int n, S x, S y, St t, Sc c, T & values)
+    static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
     {
       DubinerJacobiPolynomialsScaled_Linear<1,0> (n, x, y, t, c, values);
     }

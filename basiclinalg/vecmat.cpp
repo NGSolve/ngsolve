@@ -2,6 +2,7 @@
 
 namespace ngbla
 {
+
   void CheckMatRange(int h, int w, int i)
   {
     if (i < 0 || i > h*w)

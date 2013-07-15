@@ -57,7 +57,6 @@ public:
 		     LocalHeap & lh) 
   {
     typedef typename TVX::TSCAL TSCAL;
-
     Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
     y = Trans (mip.GetJacobianInverse()) * hv;
   }

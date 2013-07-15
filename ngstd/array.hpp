@@ -271,8 +271,9 @@ namespace ngstd
     const CArray<T> Addr (int pos)
     { return CArray<T> (data+pos); }
 
-    const CArray<T> operator+ (int pos)
-    { return CArray<T> (data+pos); }
+    // const CArray<T> operator+ (int pos)
+    // { return CArray<T> (data+pos); }
+    T * operator+ (int pos) { return data+pos; }
 
     /*
     // icc does not like this version

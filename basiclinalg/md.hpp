@@ -257,6 +257,7 @@ namespace ngbla
   };
 
 
+  /*
   template <int D>
   class mat_scale_type<MD<D>,double> 
   { 
@@ -269,7 +270,7 @@ namespace ngbla
   class mat_prod_type<MD<D>,double> {public: typedef MD<D> TMAT;};
   template <int D>
   class mat_prod_type<double, MD<D> > {public: typedef MD<D> TMAT;};
-
+  */
   
 }
 #endif

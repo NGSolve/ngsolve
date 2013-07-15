@@ -19,6 +19,7 @@ namespace ngstd
     INT<DIM> order;
 
   public:
+
     typedef int TELEM;
     typedef int TSCAL;
     typedef int TV_COL;
@@ -26,7 +27,7 @@ namespace ngstd
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
     enum { IS_COMPLEX = 0 };
-    
+
   public:
     PolOrder (INT<DIM> ao) : order(ao) { ; }
     PolOrder (double d) : order(0) { ; }

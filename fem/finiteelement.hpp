@@ -37,7 +37,7 @@ namespace ngfem
 
   public:
     /// make the class virtual
-    virtual ~FiniteElement () { ; }
+    virtual ~FiniteElement () = 0;
 
     /// Number of degrees-of-freedom
     int GetNDof () const { return ndof; }
@@ -49,10 +49,10 @@ namespace ngfem
     ELEMENT_TYPE ElementType() const { return eltype; }
 
     /// the name of the element family
-    virtual string ClassName() const { return "FiniteElement"; }
+    virtual string ClassName() const;
 
     /// precomputes shape for integrationrule
-    virtual void PrecomputeShapes (const IntegrationRule & ir) { ; }
+    virtual void PrecomputeShapes (const IntegrationRule & ir);
   };
 
  

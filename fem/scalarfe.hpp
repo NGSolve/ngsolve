@@ -27,11 +27,11 @@ namespace ngfem
       : FiniteElement (aeltype, andof, aorder) 
     { ; }
 
-    /// destructor
-    NGS_DLL_HEADER virtual ~ScalarFiniteElement () { ; }
-
+    // destructor
+    NGS_DLL_HEADER virtual ~ScalarFiniteElement () = 0;
+    
     /// the name
-    virtual string ClassName() const { return "ScalarFiniteElement"; }
+    virtual string ClassName() const;
 
     /**
        returns shape functions in point ip.
@@ -128,7 +128,7 @@ namespace ngfem
      */
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D> values, FlatVector<> coefs) const;
 
-    NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<D> > orders) const { ; }
+    NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<D> > orders) const;
   };
 
 

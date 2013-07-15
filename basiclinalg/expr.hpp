@@ -290,7 +290,7 @@ namespace ngbla
   template <> class mat_from_vecs<Complex,Complex> { typedef Complex TMAT; };
 
 
-
+  /*
   /// matrix type of product
   template <typename TA, typename TB>
   class mat_prod_type
@@ -305,12 +305,10 @@ namespace ngbla
     typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
   };
   
-  /*
-    template <int S, typename T> class mat_prod_type<double, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
-    template <int S, typename T> class mat_prod_type<Complex, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
-    template <int S, typename T> class mat_prod_type<double, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
-    template <int S, typename T> class mat_prod_type<Complex, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
-  */
+//    template <int S, typename T> class mat_prod_type<double, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
+//    template <int S, typename T> class mat_prod_type<Complex, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
+//    template <int S, typename T> class mat_prod_type<double, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
+//    template <int S, typename T> class mat_prod_type<Complex, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
 
   template <> class mat_prod_type<double,double> { public: typedef double TMAT; };
   template <> class mat_prod_type<double,Complex> { public: typedef Complex TMAT; };
@@ -396,7 +394,7 @@ namespace ngbla
   template <int D, typename TA, int E, typename TB>
   class mat_scale_type<AutoDiff<D, TA>, AutoDiff<E,TB> > 
   { public: typedef AutoDiff<D, typename mat_scale_type<TA,TB>::TMAT> TMAT; };
-
+*/
 
 
 
@@ -1033,16 +1031,16 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    typedef typename mat_sum_type<typename TA::TELEM,
-				  typename TB::TELEM>::TMAT TELEM;
+    // typedef typename mat_sum_type<typename TA::TELEM,
+    // typename TB::TELEM>::TMAT TELEM;
     // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
     SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    TELEM operator() (int i) const { return a(i)+b(i); }
-    TELEM operator() (int i, int j) const { return a(i,j)+b(i,j); }
-    // auto operator() (int i, int j) const -> decltype(a(0,0)+b(0,0)) { return a(i,j)+b(i,j); }
+    auto operator() (int i) const -> decltype(a(i)+b(i)) { return a(i)+b(i); }
+    auto operator() (int i, int j) const -> decltype(a(i,j)+b(i,j)) { return a(i,j)+b(i,j); }
+
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
 
@@ -1073,15 +1071,15 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    typedef typename mat_sum_type<typename TA::TELEM,
-				  typename TB::TELEM>::TMAT TELEM;
+    // typedef typename mat_sum_type<typename TA::TELEM,
+    // typename TB::TELEM>::TMAT TELEM;
     // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
     SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    TELEM operator() (int i) const { return a(i)-b(i); }
-    TELEM operator() (int i, int j) const { return a(i,j)-b(i,j); }
+    auto operator() (int i) const -> decltype(a(i)-b(i)) { return a(i)-b(i); }
+    auto operator() (int i, int j) const -> decltype(a(i,j)-b(i,j)) { return a(i,j)-b(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
   };
@@ -1112,12 +1110,12 @@ namespace ngbla
   {
     const TA & a;
   public:
-    typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TELEM TELEM;
 
     MinusExpr (const TA & aa) : a(aa) { ; }
 
-    TELEM operator() (int i) const { return -a(i); }
-    TELEM operator() (int i, int j) const { return -a(i,j); }
+    auto operator() (int i) const -> decltype(-a(i)) { return -a(i); }
+    auto operator() (int i, int j) const -> decltype(-a(i,j)) { return -a(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
 
@@ -1145,14 +1143,14 @@ namespace ngbla
     const TA & a;
     TS s;
   public:
-    typedef typename mat_scale_type<typename TA::TELEM, TS>::TMAT TELEM;
-    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    // typedef typename mat_scale_type<typename TA::TELEM, TS>::TMAT TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
     enum { IS_LINEAR = TA::IS_LINEAR };
 
     ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-    ALWAYS_INLINE TELEM operator() (int i) const { return s * a(i); }
-    ALWAYS_INLINE TELEM operator() (int i, int j) const { return s * a(i,j); }
+    ALWAYS_INLINE auto operator() (int i) const -> decltype(s*a(i)) { return s * a(i); }
+    ALWAYS_INLINE auto operator() (int i, int j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
 
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
@@ -1195,27 +1193,28 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    typedef typename mat_prod_type<typename TA::TELEM, 
-				   typename TB::TELEM>::TMAT TELEM;
-    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    // typedef typename mat_prod_type<typename TA::TELEM, 
+    // typename TB::TELEM>::TMAT TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
     MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    TELEM operator() (int i) const { return operator()(i,0); }  //   TELEM(TSCAL(0)); }  JS, 310508
-    TELEM operator() (int i, int j) const
+    auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
+    { return operator()(i,0); }  
+
+    auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
     { 
       int wa = a.Width();
-      TELEM sum;
+
       if (wa >= 1)
 	{
-	  sum = a(i,0) * b(0,j);
+	  auto sum = a(i,0) * b(0,j);
 	  for (int k = 1; k < wa; k++)
 	    sum += a(i,k) * b(k,j);
+          return sum;
 	}
-      else
-	sum = TSCAL(0);
-    
-      return sum;
+
+      return decltype(a(0,0)*b(0,0)) (0);
     }
 
     const TA & A() const { return a; }
@@ -1251,15 +1250,15 @@ namespace ngbla
   {
     const TA & a;
   public:
-    typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TELEM TELEM;
 
     TransExpr (const TA & aa) : a(aa) { ; }
 
     int Height() const { return a.Width(); }
     int Width() const { return a.Height(); }
 
-    TELEM operator() (int i, int j) const { return Trans (a(j,i)); }
-    TELEM operator() (int i) const { return 0; }
+    auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
+    auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
 
     enum { IS_LINEAR = 0 };
 
@@ -1463,16 +1462,23 @@ namespace ngbla
   /**
      Inner product
   */
+  /*
   template <class TA, class TB>
   inline 
   // typename TA::TSCAL 
   typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT
   InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
+  */
+
+  template <class TA, class TB>
+  inline auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
+    -> decltype (InnerProduct(a.Spec()(0), b.Spec()(0)))
   {
-    typedef typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT TSCAL;
+    // typedef typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT TSCAL;
     // typedef typename TA::TSCAL TSCAL;
     
-    if (a.Height() == 0) return TSCAL(0);
+    typedef decltype (InnerProduct(a.Spec()(0), b.Spec()(0))) TSCAL;
+    if (a.Height() == 0) return 0; // TSCAL(0);
 
     TSCAL sum = InnerProduct (a.Spec()(0), b.Spec()(0));
     for (int i = 1; i < a.Height(); i++)

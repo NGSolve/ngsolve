@@ -19,7 +19,7 @@ namespace ngstd
     name = aname;
   }
 
-  void LocalHeap :: ThrowException() throw (LocalHeapOverflow)
+  void LocalHeap :: ThrowException() // throw (LocalHeapOverflow)
   {
     cout << "allocated: " << (p-data) << endl;
     cout << "throw LocalHeapOverflow, totsize = "<< totsize << endl;

@@ -1065,7 +1065,8 @@ namespace ngla
       hy(order[i]) = fx(i);
 
     TVX hv;
-    TVX * hhy = hy.Addr(0);
+    // TVX * hhy = hy.Addr(0);
+    FlatVector<TVX> hhy = hy;
 
     const TM * hlfact = &lfact[0];
     const TM * hdiag = &diag[0];
@@ -1160,8 +1161,8 @@ namespace ngla
 
     TVX hv;
 
-    TVX * hhy = hy.Addr(0);
-
+    // TVX * hhy = hy.Addr(0);
+    FlatVector<TVX> hhy = hy;
 
 
 

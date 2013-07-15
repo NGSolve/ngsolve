@@ -374,6 +374,7 @@ public:
 	
         HeapReset hr1(lh);
 	
+        FlatMatrixFixHeight<DIM_DMAT, double> bmatr (ndof * DIM, lh);
         FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
 	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat (ndof * DIM, lh);
 
@@ -397,13 +398,14 @@ public:
               {
                 HeapReset hr(lh);
 
-                DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
-                // dmatop.GenerateMatrix (fel, mir[i], dmat, lh);
+                // DIFFOP::GenerateMatrix (fel, mir[i], bmat, lh);
+                DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
+
 		dmat = dmats[i];
                 dmat *= mir[i].GetWeight();
 
-		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmat;
-		bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmat; 
+		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmatr;
+		bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmatr; 
               }
             
             if (DMATOP::SYMMETRIC)
