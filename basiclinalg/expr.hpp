@@ -106,6 +106,14 @@ namespace ngbla
      Is specified for double, Complex, AutoDiff<doube>, AutoDiff<Complex>
   */
 
+
+
+
+
+
+
+
+
   template <class T>
   class mat_traits
   {
@@ -274,6 +282,7 @@ namespace ngbla
   };
 
 
+  /*
   /// matrix type from column and row vectors
   template <typename TV_COL, typename TV_ROW>
   class mat_from_vecs
@@ -288,6 +297,11 @@ namespace ngbla
   template <> class mat_from_vecs<double,Complex> { typedef Complex TMAT; };
   template <> class mat_from_vecs<Complex,double> { typedef Complex TMAT; };
   template <> class mat_from_vecs<Complex,Complex> { typedef Complex TMAT; };
+  */
+
+
+
+
 
 
   /*
@@ -525,6 +539,9 @@ namespace ngbla
     int Height() const { return Spec().T::Height(); }
     int Width() const { return Spec().T::Width(); }
 
+    // ALWAYS_INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
+    // ALWAYS_INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
+
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
     SubMatrixExpr<T>
@@ -578,13 +595,13 @@ namespace ngbla
   {
     const T & a;
   public:
-    typedef typename T::TELEM TELEM;
-    typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+    // typedef typename T::TELEM TELEM;
+    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
     SymExpr (const T & aa) : a(aa) { ; }
 
-    ALWAYS_INLINE TELEM operator() (int i) const { return a(i); }
-    ALWAYS_INLINE TELEM operator() (int i, int j) const { return a(i,j); }
+    ALWAYS_INLINE auto operator() (int i) const -> decltype (a(i)) { return a(i); }
+    ALWAYS_INLINE auto operator() (int i, int j) const -> decltype (a(i,j)){ return a(i,j); }
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
     enum { IS_LINEAR = T::IS_LINEAR };
@@ -1215,6 +1232,7 @@ namespace ngbla
 	}
 
       return decltype(a(0,0)*b(0,0)) (0);
+      // return 0;
     }
 
     const TA & A() const { return a; }
@@ -1230,7 +1248,6 @@ namespace ngbla
   operator* (const Expr<TA> & a, const Expr<TB> & b)
   {
     return MultExpr<TA, TB> (a.Spec(), b.Spec());
-    // (static_cast <const TA&> (a), static_cast <const TB&> (b));
   }
 
 

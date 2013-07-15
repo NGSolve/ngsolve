@@ -192,7 +192,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     level_updated = -1;
 
-    // is_low_order_space = false;
+
+    point = NULL;
+    segm = NULL;
+    trig = NULL;
+    quad = NULL;
+    tet = NULL;
+    prism = NULL;
+    pyramid = NULL;
+    hex = NULL;
+    
+    dummy_tet = new DummyFE<ET_TET>();
+    dummy_pyramid = new DummyFE<ET_PYRAMID>();
+    dummy_prism = new DummyFE<ET_PRISM>();
+    dummy_hex = new DummyFE<ET_HEX>();
+    dummy_trig = new DummyFE<ET_TRIG>();
+    dummy_quad = new DummyFE<ET_QUAD>();
+    dummy_segm = new DummyFE<ET_SEGM>();
+    dummy_point = new DummyFE<ET_POINT>();
+
+    evaluator = NULL; 
+    boundary_evaluator = NULL;
+    flux_evaluator = NULL;
+
+    integrator = NULL;
+    boundary_integrator = NULL;
+    low_order_space = NULL;
+
+
+    element_coloring = NULL;
+    selement_coloring = NULL;
+    paralleldofs = NULL;
+
+    vefc_dofblocks = 2;
+
     ctofdof.SetSize(0);
   }
 
