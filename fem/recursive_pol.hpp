@@ -25,7 +25,7 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::Eval (x, values, p2, p3);
@@ -34,7 +34,7 @@ namespace ngfem
 
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalMult (x, c, values, p2, p3);
@@ -43,7 +43,7 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaled (x, y, values, p2, p3);
@@ -66,20 +66,20 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (S x, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void Eval (S x, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & /* p1 */, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
     };
@@ -90,26 +90,26 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = c * REC::P0(x);
       }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & /* p2 */) 
+      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = c * REC::P0(x);
       }
@@ -121,28 +121,28 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (S x, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = REC::P0(x);
       values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (S x, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = c * REC::P0(x);
       values[1] = p1 = c * REC::P1(x);
     }
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = REC::P0(x);
       values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T & values, S & p1, S & p2) 
+    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = c * REC::P0(x);
       values[1] = p1 = c * REC::P1(x);
@@ -360,21 +360,21 @@ namespace ngfem
     }
 
     template <int N, class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T & values) 
+    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalMult (x, c, values, p1, p2);
     }
 
     template <int N, class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T & values) 
+    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalScaled (x, y, values, p1, p2);
     }
 
     template <int N, class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMultFO (S x, Sy y, Sc c,T & values) 
+    ALWAYS_INLINE static void EvalScaledMultFO (S x, Sy y, Sc c,T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalScaledMult (x, y, c, values, p1, p2);
@@ -420,7 +420,7 @@ namespace ngfem
     JacobiPolynomialFix () { ; }
 
     template <class S, class T>
-    inline JacobiPolynomialFix (int n, S x, T & values)
+    inline JacobiPolynomialFix (int n, S x, T && values)
     {
       Eval (n, x, values);
     }
@@ -471,7 +471,7 @@ namespace ngfem
 
 
   template <class S, class Sc, class T>
-  inline void LegendrePolynomialMult (int n, S x, Sc c , T & values)
+  inline void LegendrePolynomialMult (int n, S x, Sc c , T && values)
   {
     LegendrePolynomial leg;
     leg.EvalMult (n, x, c, values);
@@ -481,7 +481,7 @@ namespace ngfem
 
 
   template <class S, class T>
-  inline void JacobiPolynomial (int n, S x, double alpha, double beta, T & values)
+  inline void JacobiPolynomial (int n, S x, double alpha, double beta, T && values)
   {
     S p1 = 1.0, p2 = 0.0, p3;
 
@@ -510,7 +510,7 @@ namespace ngfem
 
 
   template <class S, class Sc, class T>
-  inline void JacobiPolynomialMult (int n, S x, double alpha, double beta, Sc c, T & values)
+  inline void JacobiPolynomialMult (int n, S x, double alpha, double beta, Sc c, T && values)
   {
     S p1 = c, p2 = 0.0, p3;
 
@@ -541,7 +541,7 @@ namespace ngfem
 
 
   template <class S, class St, class T>
-  inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T & values)
+  inline void ScaledJacobiPolynomial (int n, S x, St t, double alpha, double beta, T && values)
   {
     /*
       S p1 = 1.0, p2 = 0.0, p3;
@@ -577,7 +577,7 @@ namespace ngfem
 
 
   template <class S, class St, class Sc, class T>
-  inline void ScaledJacobiPolynomialMult (int n, S x, St t, double alpha, double beta, Sc c, T & values)
+  inline void ScaledJacobiPolynomialMult (int n, S x, St t, double alpha, double beta, Sc c, T && values)
   {
     /*
       S p1 = 1.0, p2 = 0.0, p3;
@@ -643,7 +643,7 @@ namespace ngfem
 
 
     template <class S, class St, class T>
-    static void EvalScaled (S x, St t, T & values)
+    static void EvalScaled (S x, St t, T && values)
     {
       DubinerJacobiPolynomialsFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
       // JacobiPolynomialFO<n-i, alpha0+2*i, beta>::Eval (x, values.Row(i));
@@ -659,10 +659,10 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    static void Eval (S x, T & values)
+    static void Eval (S x, T && values)
     { ; }
     template <class S, class St, class T>
-    static void EvalScaled (S x, St t, T & values)
+    static void EvalScaled (S x, St t, T && values)
     { ; }
   };
   
@@ -674,7 +674,7 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    static S Eval (S x, T & values)
+    static S Eval (S x, T && values)
     {
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::Eval (x, values);
       S p1, p2;
@@ -684,7 +684,7 @@ namespace ngfem
 
 
     template <class S, class St, class T>
-    static S EvalScaled (S x, St t, T & values)
+    static S EvalScaled (S x, St t, T && values)
     {
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
       S p1, p2;
@@ -698,10 +698,10 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    static S Eval (S x, T & values)
+    static S Eval (S x, T && values)
     { return 1.0; }
     template <class S, class St, class T>
-    static S EvalScaled (S x, St t, T & values)
+    static S EvalScaled (S x, St t, T && values)
     { return 1.0; }
   };
 
@@ -722,7 +722,7 @@ namespace ngfem
 
 #ifdef OLD
   template <int ALPHA0, int BETA, class S, class T>
-  void DubinerJacobiPolynomials2 (int n, S x, T & values)
+  void DubinerJacobiPolynomials2 (int n, S x, T && values)
   {
     switch (n)
       {
@@ -749,7 +749,7 @@ namespace ngfem
   // compute J_j^{2i+alpha0, beta} (x),  for i+j <= n
 
   template <class S, class T>
-  void DubinerJacobiPolynomials1 (int n, S x, int alpha0, int beta, T & values)
+  void DubinerJacobiPolynomials1 (int n, S x, int alpha0, int beta, T && values)
   {
     for (int i = 0; i <= n; i++)
       JacobiPolynomial (n-i, x, alpha0+2*i, beta, values.Row(i));
@@ -757,7 +757,7 @@ namespace ngfem
 
 
   template <class S, class St, class T>
-  void DubinerJacobiPolynomialsScaled1 (int n, S x, St t, int alpha0, int beta, T & values)
+  void DubinerJacobiPolynomialsScaled1 (int n, S x, St t, int alpha0, int beta, T && values)
   {
     for (int i = 0; i <= n; i++)
       ScaledJacobiPolynomial (n-i, x, t, alpha0+2*i, beta, values.Row(i));
@@ -804,7 +804,7 @@ namespace ngfem
 
   
   template <int ALPHA0, int BETA, class S, class T>
-  void DubinerJacobiPolynomials (int n, S x, T & values)
+  void DubinerJacobiPolynomials (int n, S x, T && values)
   {
     S help[20][2];
     if (n < 0) return;
@@ -892,7 +892,7 @@ namespace ngfem
 
   
   template <int ALPHA0, int BETA, class S, class St, class T>
-  void DubinerJacobiPolynomialsScaled (int n, S x, St t, T & values)
+  void DubinerJacobiPolynomialsScaled (int n, S x, St t, T && values)
   {
     S help[20][2];
     if (n < 0) return;
@@ -1189,7 +1189,7 @@ namespace ngfem
 
 
   template <class S, class T>
-  inline void GegenbauerPolynomial (int n, S x, double lam, T & values)
+  inline void GegenbauerPolynomial (int n, S x, double lam, T && values)
   {
     S p1 = 1.0, p2 = 0.0, p3;
 
@@ -1215,7 +1215,7 @@ namespace ngfem
      WARNING: is not \int P_i
   */
   template <class S, class T>
-  inline void IntegratedLegendrePolynomial (int n, S x, T & values)
+  inline void IntegratedLegendrePolynomial (int n, S x, T && values)
   {
     S p1 = -1.0;
     S p2 = 0.0; 
@@ -1252,7 +1252,7 @@ namespace ngfem
   */
 
   template <class S, class T>
-  inline void HermitePolynomial (int n, S x, T & values)
+  inline void HermitePolynomial (int n, S x, T && values)
   {
     S p1, p2, p3;
   
@@ -1444,7 +1444,7 @@ namespace ngfem
      E_i(x,y) = P_i(x/t) * t^i 
   */ 
   template <class Sx, class St, class T>
-  inline void ScaledLegendrePolynomial (int n, Sx x, St t, T & values)
+  inline void ScaledLegendrePolynomial (int n, Sx x, St t, T && values)
   {
     // St tt = t*t;
     St tt = sqr(t);
@@ -1539,7 +1539,7 @@ namespace ngfem
      E_i(x,y) = c * P_i(x/t) * t^i 
   */ 
   template <class Sx, class St, class Sc, class T>
-  inline void ScaledLegendrePolynomialMult (int n, Sx x, St t, Sc c, T & values)
+  inline void ScaledLegendrePolynomialMult (int n, Sx x, St t, Sc c, T && values)
   {
     St tt = sqr(t);
     Sx p1, p2;
@@ -1598,7 +1598,7 @@ namespace ngfem
 
 
   template <class T> 
-  inline void DiffScaledLegendrePolynomial (int n, double x, double t, T & values)
+  inline void DiffScaledLegendrePolynomial (int n, double x, double t, T && values)
   {
     ArrayMem<AutoDiff<2>,10> ad_values(n+1);
     AutoDiff<2> ad_x(x, 0);
