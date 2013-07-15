@@ -62,6 +62,8 @@ namespace ngstd
       result(i) = a(i)+b(i);
     return result;
   }
+  template <int DIM>  
+  inline PolOrder<DIM> operator- (PolOrder<DIM> a)  { return a; }
 
   // currently the best opinion ...
   template <int DIM>  
