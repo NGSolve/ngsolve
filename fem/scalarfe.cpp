@@ -17,6 +17,23 @@
 namespace ngfem
 {
   
+  template <int D>
+  ScalarFiniteElement<D> :: ~ScalarFiniteElement () 
+  { ; }
+
+  template <int D>
+  string ScalarFiniteElement<D> :: ClassName() const 
+  {
+    return "ScalarFiniteElement"; 
+  }
+
+  template <int D>
+  void ScalarFiniteElement<D> :: 
+  GetPolOrders (FlatArray<PolOrder<D> > orders) const
+  {
+    throw Exception (string ("GetPolOrders not implemnted for element") + ClassName());
+  }
+
 
   template <int D>
   void ScalarFiniteElement<D> ::

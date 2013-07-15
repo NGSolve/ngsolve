@@ -455,6 +455,16 @@ namespace ngfem
         po[0] = INT<DIM> (1,0); 
         po[1] = INT<DIM> (0,1); 
         break;
+      case ET_TET:
+        po[0] = INT<DIM> (1,1,1); 
+        po[1] = INT<DIM> (1,1,1); 
+        po[2] = INT<DIM> (1,1,1); 
+        break;
+      case ET_PRISM:
+        po[0] = INT<DIM> (1,1,0); 
+        po[1] = INT<DIM> (1,1,0); 
+        po[2] = INT<DIM> (0,0,1); 
+        break;
 
       default:
         for (int i = 0; i < DIM; i++)
@@ -463,8 +473,7 @@ namespace ngfem
       }
 
     T_CalcShape (&po[0], orders);
-    cout << "orders = " << endl << orders << endl;
-    // does not work for tensor productelements: order cancelation for lam_e
+    // does not work for old tensor productelements: order cancelation for lam_e
   }
 }
 

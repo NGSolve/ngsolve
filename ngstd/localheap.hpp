@@ -88,7 +88,7 @@ namespace ngstd
     }
 
     /// allocates size bytes of memory from local heap
-    void * Alloc (size_t size) throw (LocalHeapOverflow)
+    void * Alloc (size_t size) // throw (LocalHeapOverflow)
     {
       char * oldp = p;
     
@@ -104,7 +104,7 @@ namespace ngstd
 
     /// allocates size objects of type T on local heap
     template <typename T>
-    T * Alloc (size_t size) throw (LocalHeapOverflow)
+    T * Alloc (size_t size) // throw (LocalHeapOverflow)
     {
       char * oldp = p;
       size *= sizeof (T);
@@ -121,7 +121,7 @@ namespace ngstd
 
   private:
     ///
-    NGS_DLL_HEADER void ThrowException() throw (LocalHeapOverflow);
+    NGS_DLL_HEADER void ThrowException(); //  throw (LocalHeapOverflow);
 
   public:
     /// free memory (dummy function)

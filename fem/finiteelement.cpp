@@ -14,6 +14,21 @@
 
 namespace ngfem
 {
+  
+  FiniteElement :: ~FiniteElement () { ; }
+
+
+  string FiniteElement :: ClassName() const
+  {
+    return "FiniteElement"; 
+  }
+
+  void FiniteElement :: 
+  PrecomputeShapes (const IntegrationRule & ir) 
+  {
+    ;
+  }
+
 
   CompoundFiniteElement ::  CompoundFiniteElement (FlatArray<const FiniteElement*> afea)
     : FiniteElement (), fea(afea)

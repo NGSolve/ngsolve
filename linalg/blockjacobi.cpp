@@ -525,8 +525,8 @@ namespace ngla
 	int bs = blocktable[i].Size();
 	if (!bs) continue;
 
-	FlatVector<TVX> hx(bs, hxmax.Addr(0));
-	FlatVector<TVX> hy(bs, hymax.Addr(0));
+	FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
+	FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
 
 	for (int j = 0; j < bs; j++)
 	  hx(j) = fx(blocktable[i][j]);

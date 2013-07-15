@@ -753,6 +753,8 @@ namespace ngfem
     } 
   };
 
+  // ******************** QUAD ***********************************
+  
   template<> class ET_trait<ET_QUAD>
   {
   public:
@@ -793,6 +795,34 @@ namespace ngfem
     }
 
 
+    template <typename Tx, typename TVN>
+    static Tx XiEdge (int i, Tx hx[], const TVN & vnums)
+    {
+      INT<2> e = GetEdgeSort (i, vnums);
+      int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      Tx xi = 0;
+      for (int j = 0; j < 2; j++)
+        {
+          int edir = vi[e[1]][j] - vi[e[0]][j];
+          if (edir == 1) { xi = 2*hx[j]-1; break; }
+          if (edir == -1) { xi = 1-2*hx[j]; break; }
+        }
+      return xi;
+    }
+
+    template <typename Tx>
+    static Tx LamEdge (int i, Tx hx[])
+    {
+      switch (i)
+        {
+        case 0: return 1-hx[1];
+        case 1: return hx[1];
+        case 2: return 1-hx[0];
+        case 3: default: return hx[0];
+        }
+    }
+ 
+
     static INT<4> GetFace (int /* i */ )
     {
       static const int face[] = 
@@ -824,6 +854,26 @@ namespace ngfem
       return f;
     }
 
+    template <typename Tx, typename TVN>
+    static Vec<2,Tx> XiFace (int /* i */, Tx hx[], const TVN & vnums)
+    {
+      INT<4> f = GetFaceSort (0, vnums); 
+      int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      Tx xi = 0, eta = 0;
+      for (int j = 0; j < 2; j++)
+        {
+          int edir = vi[f[0]][j] - vi[f[1]][j];
+          if (edir == 1) { xi = 2*hx[j]-1; break; }
+          if (edir == -1) { xi = 1-2*hx[j]; break; }
+        }
+      for (int j = 0; j < 2; j++)
+        {
+          int edir = vi[f[0]][j] - vi[f[3]][j];
+          if (edir == 1) { eta = 2*hx[j]-1; break; }
+          if (edir == -1) { eta = 1-2*hx[j]; break; }
+        }
+      return Vec<2,Tx> (xi, eta);
+    }
 
     template <typename TVN>
     static int GetClassNr (const TVN & vnums)

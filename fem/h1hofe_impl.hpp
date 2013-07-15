@@ -47,7 +47,7 @@ namespace ngfem
     INT<2> e = GetEdgeSort (0, vnums);
 
     LegendrePolynomial::EvalMult (order_edge[0]-2, 
-				  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape.Addr(2));
+				  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
     
   }
 
@@ -94,9 +94,7 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1];
     Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
-    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
-
     // vertex shapes
     for(int i=0; i < N_VERTEX; i++) shape[i] = lam[i]; 
     int ii = 4;
@@ -105,29 +103,25 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       {
 	int p = order_edge[i];
-        INT<2> e = GetEdgeSort (i, vnums);	  
-        
-        Tx xi = sigma[e[1]]-sigma[e[0]]; 
-        Tx lam_e = lam[e[0]]+lam[e[1]];
-        Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
+        Tx xi = ET_trait<ET_QUAD>::XiEdge(i, hx, vnums);
+        Tx lam_e = ET_trait<ET_QUAD>::LamEdge(i, hx);
+
+        Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
 	ii += p-1;
       }    
     
-
+    // element dofs
     INT<2> p = order_face[0];
     if (p[0] >= 2 && p[1] >= 2)
       {
-        INT<4> f = GetFaceSort (0, vnums);  // vnums[f[0]] > vnums[f[1]] > vnums[f[3]]
+        Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 
-	Tx xi  = sigma[f[0]]-sigma[f[1]]; 
-	Tx eta = sigma[f[0]]-sigma[f[3]]; 
-	Tx bub = 1.0/16 * (1-xi*xi)*(1-eta*eta);
-
+	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
 	ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
-	LegendrePolynomial::EvalMult(p[0]-2, xi, bub, polxi);
-	LegendrePolynomial::Eval(p[1]-2, eta, poleta);
+	LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub, polxi);
+	LegendrePolynomial::Eval(p[1]-2, xi(1), poleta);
 	
 	for (int k = 0; k <= p[0]-2; k++)
 	  for (int j = 0; j <= p[1]-2; j++)
@@ -138,26 +132,10 @@ namespace ngfem
 
   /* *********************** Tetrahedron  **********************/
 
-  /*
-  template <class Tx, class T>
-  inline void LowEnergyVertexPolynomials3D  (int n, Tx x, T & values)
-  {
-    JacobiPolynomial (n, x, 1, -1, values);
-    Tx sum = 0.0;
-    for (int i = 1; i <= n; i++)
-      {
-	sum += (2.0*i+1)/(i+1) * values[i];
-	values[i] = 1.0/(i*(i+2)) * sum;
-      }
-    values[0] = 1;
-  }
-  */
-
 
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    // RegionTimer reg(t);
     Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
 
     ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
@@ -230,7 +208,7 @@ namespace ngfem
 	  Tx bub = lam[e[0]]*lam[e[1]]*muz[e[1]];
 
 	  LegendrePolynomial::
-	    EvalScaledMult (order_edge[i]-2, xi, eta, bub, shape.Addr(ii));
+	    EvalScaledMult (order_edge[i]-2, xi, eta, bub, shape+ii);
 	  ii += order_edge[i]-1;
 	}
     
@@ -243,7 +221,7 @@ namespace ngfem
 	  LegendrePolynomial::
 	    EvalMult (order_edge[i]-2, 
 		      muz[e[1]]-muz[e[0]], 
-		      muz[e[0]]*muz[e[1]]*lam[e[1]], shape.Addr(ii));
+		      muz[e[0]]*muz[e[1]]*lam[e[1]], shape+ii);
 
 	  ii += order_edge[i]-1;
 	}
@@ -261,7 +239,7 @@ namespace ngfem
 	  Tx bub = lam[0]*lam[1]*lam[2]*muz[f[2]];
 	  
 	  DubinerBasis::
-	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape.Addr(ii));
+	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape+ii);
 
 	  ii += (p-2)*(p-1)/2; 
 	}
@@ -342,7 +320,7 @@ namespace ngfem
 	  Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	  
-	  LegendrePolynomial::EvalMult (p-2, xi, bub, shape.Addr(ii));
+	  LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
 	  ii += p-1;
 	}
      
@@ -425,7 +403,7 @@ namespace ngfem
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
 	  
 	  LegendrePolynomial::
-	    EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape.Addr(ii));
+	    EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape+ii);
 	  ii += p-1;
 	}
     
@@ -441,7 +419,7 @@ namespace ngfem
 	  Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
 	  
 	  LegendrePolynomial::
-	    EvalScaledMult (p-2, xi, lam_e, bub, shape.Addr(ii));
+	    EvalScaledMult (p-2, xi, lam_e, bub, shape+ii);
 	  ii += p-1;
 	}
 
@@ -465,7 +443,7 @@ namespace ngfem
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
 
 	  DubinerBasis::
-	    EvalMult (p-3, bary[f[0]], bary[f[1]], bub, shape.Addr(ii));
+	    EvalMult (p-3, bary[f[0]], bary[f[1]], bub, shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
     
@@ -496,7 +474,7 @@ namespace ngfem
     if (order_cell[0][0] >= 3)
       {
 	LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*xt-1, xt*(1-xt), polx);
-	LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*yt-1, yt*(1-yt), poly);
+        LegendrePolynomial::EvalMult (order_cell[0][0]-2, 2*yt-1, yt*(1-yt), poly);
 
 	Tx pz = z*(1-z)*(1-z);
 	

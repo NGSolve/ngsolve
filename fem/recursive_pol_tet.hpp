@@ -5,7 +5,7 @@ namespace ngfem
   {
   public:
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
       int ii = 0, i, j, k;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1), polz(n+1);

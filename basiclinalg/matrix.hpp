@@ -542,7 +542,7 @@ namespace ngbla
     }
 
     /// copy contents
-    FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) throw()
+    FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
     {
       for (int i = 0; i < h*W; i++)
         data[i] = m(i);
@@ -1236,6 +1236,61 @@ namespace ngbla
     for (int i = 0; i < H*W; i++)
       s << " " << setw(7) << m(i);
     return s;
+  }
+
+
+
+  template <int H, int W, typename T>
+  inline auto Trans (const Mat<H,W,T> & mat)
+    -> Mat<W,H,decltype(Trans(mat(0,0)))>
+  {
+    Mat<W,H,decltype(Trans(mat(0,0)))> res;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        res(j,i) = mat(i,j);
+    return res;
+  }
+
+  template <int H, int W, int W2, typename T1, typename T2>
+  inline auto operator* (const Mat<H,W,T1> & mat1, const Mat<W,W2,T2> & mat2) 
+    -> Mat<H,W2,decltype(mat1(0,0)*mat2(0,0))>
+  {
+    typedef decltype(mat1(0,0)*mat2(0)) TRES;
+    Mat<H,W2,TRES> res;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W2; j++)
+        {
+          TRES sum(0);
+          for (int k = 0; k < W; k++)
+            sum += mat1(i,k) * mat2(k,j);
+          res(i,j) = sum;
+        }
+    return res;
+  }
+
+
+  template <int H, int W, int W2, typename T1, typename T2>
+  inline auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
+    -> Vec<H, decltype(mat(0,0)*vec(0))>
+  {
+    typedef decltype(mat(0,0)*vec(0)) TRES;
+    Vec<H, TRES> res = TRES(0);
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        res(i) += mat(i,j) * vec(j);
+    return res;
+  }
+
+  template <int H, int W, typename T1, typename T2>
+  inline auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
+    -> Vec<H, decltype(mat(0,0)*vec(0))>
+  {
+    typedef decltype(mat(0,0)*vec(0)) TRES;
+    Vec<H, TRES> res = TRES(0);
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        res(i) += mat(i,j) * vec(j);
+    return res;
   }
 
 

@@ -1,8 +1,5 @@
 // #define NO_PARALLEL_THREADS
 
-#undef __SSE3__
-
-
 // #include "bla.hpp"
 #ifdef __SSE3__
 #include <emmintrin.h>
@@ -569,23 +566,97 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
   */
 
 
+
+
+
+
+
+
+
+  class SSEComplex
+  {
+    __m128d data;
+  public:
+    SSEComplex (__m128d d) { data = d; }
+    SSEComplex (double r) { data = _mm_set1_pd (r); }
+    SSEComplex (Complex a) { data = _mm_set_pd(a.imag(), a.real()); }
+
+    double real()
+    {
+      double hd; 
+      _mm_store_sd (&hd, data);
+      return hd;
+    }
+    double imag()
+    {
+      double hd; 
+      _mm_storeh_pd (&hd, data);
+      return hd;
+    }
+
+    operator Complex() const
+    { 
+      Complex h;
+      _mm_storeu_pd ((double*)&h, data);
+      return h;
+    }
+    __m128d Data() const { return data; }
+    __m128d & Data() { return data; }
+  };
+
+
+  inline SSEComplex operator+ (SSEComplex a, SSEComplex b)
+  {
+    return a.Data() + b.Data();
+  }
+
+  inline SSEComplex operator+= (SSEComplex & a, SSEComplex b)
+  {
+    return a.Data() += b.Data();
+  }
+
+  inline SSEComplex operator* (SSEComplex a, SSEComplex b)
+  {
+    SSEComplex ar = a.real();
+    SSEComplex ai = a.imag();
+    SSEComplex rb = _mm_shuffle_pd (b.Data(), b.Data(), 1);
+
+    return _mm_addsub_pd ( ar.Data()*b.Data(),  
+                           ai.Data()*rb.Data() );
+  }
+
+  template <int M>
+  inline SSEComplex Scal (SSEComplex * pa, SSEComplex * pb)
+  {
+    SSEComplex sum = 0;
+    for (int i = 0; i < M; i++)
+      sum += pa[i] * pb[i];
+    return sum;
+  }
+
+
   template <int M> 
   void FastMat (int n, Complex * pa, Complex * pb, Complex * pc)
   {
+    static Timer timer ("Fastmat, complex", 2);
+    RegionTimer reg (timer);
+    timer.AddFlops (double(M)*n*n/2);
+    
     Complex * hpa = pa;
-
     for (int i = 0; i < n; i++)
       {
-	Complex * hpb = pb;
+        Complex * hpb = pb;
 	Complex * hpc = pc+n*i;
 
 	for (int j = 0; j < i; j++)
 	  {
+            /*
 	    Complex sum = *hpc;
-	  
 	    for (int k = 0; k < M; k++)
 	      sum += hpa[k] * hpb[k];
-	  
+            */
+            
+            Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
 	    *hpc = sum;
 	    pc[i+n*j] = sum;
 
@@ -593,11 +664,12 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	    hpc++;
 	  }
 
+        /*
 	Complex sum = *hpc;
-      
 	for (int k = 0; k < M; k++)
 	  sum += hpa[k] * hpb[k];
-      
+        */
+        Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
 	*hpc = sum;
 
 	hpa += M;

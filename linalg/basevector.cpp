@@ -558,7 +558,7 @@ S_BaseVector<SCAL> & S_BaseVector<SCAL> :: operator= (double s)
 template <class SCAL>
 FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
 {
-  return FlatVector<SCAL> (size * entrysize, Memory());
+  return FlatVector<double> (size * entrysize, Memory());
   /*
   FlatVector<SCAL> fv = FVScal();
   return FlatVector<SCAL> (fv.Size() * sizeof(SCAL)/sizeof(double),

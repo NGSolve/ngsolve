@@ -1089,9 +1089,10 @@ namespace ngla
 	    const BitArray * inner,
 	    const Array<int> * cluster) const
   {
-    static int timer = NgProfiler::CreateTimer ("SparseMatrixSymmetric::MultAdd2");
-    NgProfiler::RegionTimer reg (timer);
-    
+    static Timer timer("SparseMatrixSymmetric::MultAdd2");
+    RegionTimer reg (timer);
+    timer.AddFlops (this->NZE());
+   
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();
 
