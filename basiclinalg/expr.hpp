@@ -693,10 +693,84 @@ namespace ngbla
     enum { IS_LINEAR = 1 };
 
     void Dump (ostream & ost) const { ost << "Matrix"; }
+
+
+
+    /*
+    template<typename TOP, typename TB>
+    T & Assign (const Expr<TB> & v)
+    {
+#ifdef CHECK_RANGE
+      if (Height() != v.Height() || Width() != v.Width())
+	{
+	  throw MatrixNotFittingException ("operator=", 
+					   Height(), Width(),
+					   v.Height(), v.Width());
+	}
+#endif
+
+      if (TB::IS_LINEAR)
+	{
+	  if (T::IS_LINEAR)
+	    {
+	      int hw = Expr<T>::Height() * Expr<T>::Width();
+	      for (int i = 0; i < hw; i++)
+		TOP()(Spec()(i),v.Spec()(i));
+	    }
+	  else
+	    {
+	      int h = Expr<T>::Height();
+	      int w = Expr<T>::Width();
+	      for (int i = 0, k = 0; i < h; i++)
+		for (int j = 0; j < w; j++, k++)
+		  TOP() (Spec()(i,j), v.Spec()(k));
+	    }
+	}
+      else
+	{
+	  int h = Expr<T>::Height();
+	  int w = Expr<T>::Width();
+
+	  if (T::IS_LINEAR)
+	    for (int i = 0, k = 0; i < h; i++)
+	      for (int j = 0; j < w; j++, k++)
+		TOP() (Spec()(k), v.Spec()(i,j));
+	  else
+	    for (int i = 0; i < h; i++)
+	      for (int j = 0; j < w; j++)
+		TOP() (Spec()(i,j), v.Spec()(i,j));
+	}
+      return Spec();
+    }
+
+
+    class As 
+    {
+    public:
+      template <typename T1, typename T2> 
+      void operator() (T1 && v1, const T2 & v2) { v1 = v2; }
+    };
+    class AsAdd 
+    {
+    public:
+      template <typename T1, typename T2> 
+      void operator() (T1 && v1, const T2 & v2) { v1 += v2; }
+    };
+    class AsSub 
+    {
+    public:
+      template <typename T1, typename T2> 
+      void operator() (T1 && v1, const T2 & v2) { v1 -= v2; }
+    };
+    */
 	
+
     template<typename TB>
     T & operator= (const Expr<TB> & v)
     {
+      // Assign<As> (v);
+      // return Spec();
+
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	{
@@ -744,6 +818,9 @@ namespace ngbla
     template<typename TB>
     ALWAYS_INLINE T & operator+= (const Expr<TB> & v)
     {
+    // Assign<AsAdd> (v);
+    // return Spec();
+
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	throw MatrixNotFittingException ("operator+=", 
@@ -845,6 +922,9 @@ namespace ngbla
     template<typename TB>
     ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
     {
+      // Assign<AsSub> (v);
+      // return Spec();
+
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	throw MatrixNotFittingException ("operator-=", 

@@ -654,7 +654,8 @@ namespace ngfem
       Tx y = hx[1];
       Tx z = hx[2];
 
-      if (z == 1) z -= 1e-10;
+      // if (z == 1) z -= 1e-10;
+      z -= 1e-10;
 
       shape[0] = (1-z-x)*(1-z-y) / (1-z);
       shape[1] = x*(1-z-y) / (1-z);

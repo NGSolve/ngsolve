@@ -9,8 +9,7 @@ libngbla_la_LIBADD = $(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS)
 # libngbla_la_LIBADD += -lgmp -lgmpxx
 
 include_HEADERS = bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp \
-vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h \
-md.hpp
+vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h
 
 libngbla_la_LDFLAGS = -avoid-version 
 

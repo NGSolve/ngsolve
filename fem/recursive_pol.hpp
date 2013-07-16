@@ -165,6 +165,28 @@ namespace ngfem
       switch (i)
         {
         case 0: return p1 = REC::P0(x);
+        case 1: return p1 = REC::P1(x);
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                p1 *= REC::C(i);
+                p1 += REC::A(i) * x * p2;
+                return p1;
+              }
+            else
+              {
+                p1 *= REC::C(i);
+                p1 += (REC::A(i) * x + REC::B(i)) * p2;
+                return p1;
+              }
+          }
+        }
+
+      /*
+      switch (i)
+        {
+        case 0: return p1 = REC::P0(x);
         case 1:
           {
             p2 = p1;
@@ -186,6 +208,7 @@ namespace ngfem
               }
           }
         }
+      */
     }
 
 
@@ -195,11 +218,7 @@ namespace ngfem
       switch (i)
         {
         case 0: return p1 = c * REC::P0(x);
-        case 1:
-          {
-            p2 = p1;
-            return p1 = c* REC::P1(x);
-          }
+        case 1: return p1 = c * REC::P1(x);
         default: return EvalNext (i, x, p1, p2);
         }
     }
@@ -250,43 +269,44 @@ namespace ngfem
       values[0] = EvalNextMult(0, x, c, p1, p2);
       if (n < 1) return;
 
-      values[1] = EvalNextMult(1, x, c, p1, p2);
+      values[1] = EvalNextMult(1, x, c, p2, p1);
       if (n < 2) return;
 
       values[2] = EvalNext(2, x, p1, p2);
       if (n < 3) return;
 
-      values[3] = EvalNext(3, x, p1, p2);
+      values[3] = EvalNext(3, x, p2, p1);
       if (n < 4) return;
 
       values[4] = EvalNext(4, x, p1, p2);
       if (n < 5) return;
 
-      values[5] = EvalNext(5, x, p1, p2);
+      values[5] = EvalNext(5, x, p2, p1);
       if (n < 6) return;
 
       values[6] = EvalNext(6, x, p1, p2);
       if (n < 7) return;
      
-      values[7] = EvalNext(7, x, p1, p2);
+      values[7] = EvalNext(7, x, p2, p1);
       if (n < 8) return;
 
       values[8] = EvalNext(8, x, p1, p2);
       if (n < 9) return;
 
-      values[9] = EvalNext(9, x, p1, p2);
+      values[9] = EvalNext(9, x, p2, p1);
       if (n < 10) return;
 
       values[10] = EvalNext(10, x, p1, p2);
       if (n < 11) return;
 
-      values[11] = EvalNext(11, x, p1, p2);
+      values[11] = EvalNext(11, x, p2, p1);
       if (n < 12) return;
 
-      for (int i = 12; i <= n; i++)
+      for (int i = 12; i <= n; i+=2)
 	{	
-	  EvalNext (i, x, p1, p2);
-	  values[i] = p1;
+	  values[i] = EvalNext (i, x, p1, p2);
+          if (i == n) break;
+	  values[i+1] = EvalNext (i+1, x, p2, p1);
 	}
     }
 
@@ -486,9 +506,9 @@ namespace ngfem
     S p1 = 1.0, p2 = 0.0, p3;
 
     if (n >= 0) 
-      p2 = values[0] = 1.0;
+      values[0] = p2 = 1.0;
     if (n >= 1) 
-      p1 = values[1] = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
+      values[1] = p1 = 0.5 * (2*(alpha+1)+(alpha+beta+2)*(x-1));
 
     for (int i  = 1; i < n; i++)
       {
@@ -788,6 +808,7 @@ namespace ngfem
 	}
       else
 	{
+          Swap (help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
 	  REC::EvalNext (ORDER, x, help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
 	}
       values(DIAG-ORDER, ORDER) = help[DIAG-ORDER][0];
@@ -968,6 +989,7 @@ namespace ngfem
 	}
       else
 	{
+          Swap (help(DIAG-ORDER,0), help(DIAG-ORDER,1));
 	  REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
 	}
       values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
