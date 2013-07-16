@@ -50,6 +50,9 @@
 #endif
 
 
+#define INLINE __attribute__ ((__always_inline__)) inline
+
+
 #ifdef PARALLEL
 #include <unistd.h>  // for usleep (only for parallel)
 #endif

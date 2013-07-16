@@ -51,81 +51,81 @@ namespace ngfem
 
 
 
-
-  
+ 
 
   /**
      Evaluate shape 
    */
+  template <typename TSCAL>
   class EvaluateShapeElement
   {
     double coef;
-    double * sum;
+    TSCAL * sum;
   public:
     /// initialize with coefficient and sum-reference
-    EvaluateShapeElement (double acoef, double * asum)
+    EvaluateShapeElement (double acoef, TSCAL * asum)
       : coef(acoef), sum(asum) { ; }
 
     /// add up
-    void operator= (double val) 
+    void operator= (TSCAL val) 
     {
       *sum += coef * val;
     }
   };
 
+  template <typename TSCAL>
   class EvaluateShapeSlave
   {
     const double * coefs;
-    double * sum;
+    TSCAL * sum;
   public:
     /// initialize with coefficient vector and value for the sum
     EvaluateShapeSlave (const double * acoefs, double * asum)
       : coefs(acoefs), sum(asum) { ; }
 
     /// does the computation for i-th element
-    EvaluateShapeElement operator[] (int i) const
-    { return EvaluateShapeElement (coefs[i], sum); }
+    EvaluateShapeElement<TSCAL> operator[] (int i) const
+    { return EvaluateShapeElement<TSCAL> (coefs[i], sum); }
 
     /// get sub-vector
-    const EvaluateShapeSlave Addr (int i) const
-    { return EvaluateShapeSlave (coefs+i, sum); } 
-    const EvaluateShapeSlave operator+ (int i) const
-    { return EvaluateShapeSlave (coefs+i, sum); } 
+    const EvaluateShapeSlave<TSCAL> Addr (int i) const
+    { return EvaluateShapeSlave<TSCAL> (coefs+i, sum); } 
+    const EvaluateShapeSlave<TSCAL> operator+ (int i) const
+    { return EvaluateShapeSlave<TSCAL> (coefs+i, sum); } 
   };
 
 
   /**
      Computes function value from generic shape functions
    */
+  template <typename TSCAL = double>
   class EvaluateShape
   {
     const double * coefs;
-    double sum;
+    TSCAL sum;
   public:
     /// initialize with coefficient vector and value for the sum
     EvaluateShape (FlatVector<> acoefs)
       : coefs(&acoefs(0)), sum(0.0) { ; }
     
     /// does the computation for i-th element
-    EvaluateShapeElement operator[] (int i)
-    { return EvaluateShapeElement (coefs[i], &sum); }
+    EvaluateShapeElement<TSCAL> operator[] (int i)
+    { return EvaluateShapeElement<TSCAL> (coefs[i], &sum); }
 
-    double Sum() const { return sum; }
+    TSCAL Sum() const { return sum; }
 
     /// get sub-vector
-    const EvaluateShapeSlave Addr (int i) // const
-    { return EvaluateShapeSlave (coefs+i, &sum); } 
-    const EvaluateShapeSlave operator+ (int i) // const
-    { return EvaluateShapeSlave (coefs+i, &sum); } 
+    const EvaluateShapeSlave<TSCAL> Addr (int i) // const
+    { return EvaluateShapeSlave<TSCAL> (coefs+i, &sum); } 
+    const EvaluateShapeSlave<TSCAL> operator+ (int i) // const
+    { return EvaluateShapeSlave<TSCAL> (coefs+i, &sum); } 
   };
 
 
 
 
 
-
   
-  /// todo
   template <typename TSCAL>
   class EvaluateShapeTransElement
   {
@@ -255,8 +255,10 @@ namespace ngfem
       shape[i] = 0.0;
   }
   
-  inline void SetZero (EvaluateShape & shape, int first, int next)  { ; }
-  inline void SetZero (EvaluateShapeSlave & shape, int first, int next)  { ; }
+  template <typename TSCAL>
+  inline void SetZero (EvaluateShape<TSCAL> & shape, int first, int next)  { ; }
+  template <typename TSCAL>
+  inline void SetZero (EvaluateShapeSlave<TSCAL> & shape, int first, int next)  { ; }
   
   template<typename TSCAL>
   inline void SetZero (EvaluateShapeTrans<TSCAL> & shape, int first, int next)
@@ -297,7 +299,7 @@ namespace ngfem
   {
     Vec<DIM> pt = ip.Point();
 
-    EvaluateShape eval(x); 
+    EvaluateShape<> eval(x); 
     T_CalcShape (&pt(0), eval); 
     return eval.Sum();
   }  
@@ -311,7 +313,7 @@ namespace ngfem
       {
         Vec<DIM> pt = ir[i].Point();
 
-	EvaluateShape eval(coefs);
+	EvaluateShape<> eval(coefs);
         T_CalcShape (&pt(0), eval); 
         vals(i) = eval.Sum();
       }
@@ -321,7 +323,8 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
-    // static Timer t("evaluatetrans"); RegionTimer reg(t);
+    static Timer t("evaluatetrans"); RegionTimer reg(t);
+
     Vec<DIM> pt;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -343,13 +346,15 @@ namespace ngfem
 	static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), eval); 
       }
     */
+    
     /*
+    enum { D = 2 };
     coefs = 0.0;
-    for (int i = 0; i < ir.GetNIP(); i+=MD<2>::SIZE)
+    for (int i = 0; i < ir.GetNIP(); i += D)
       { 
-        MD<2> pt[DIM];
-        MD<2> vali = 0.0;
-        for (int j = 0; j < MD<2>::SIZE; j++)
+        MD<D> pt[DIM];
+        MD<D> vali = 0.0;
+        for (int j = 0; j < D; j++)
 	  if (i+j < ir.GetNIP())
             {
               for (int k = 0; k < DIM; k++)
@@ -362,7 +367,7 @@ namespace ngfem
                 pt[k][j] = ir[i](k);
               vali[j] = 0;
             }
-	EvaluateShapeTrans<MD<2> > eval(coefs, vali);
+	EvaluateShapeTrans<MD<D> > eval(coefs, vali);
 	static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
         // Cast().T_CalcShape (pt, eval); 
       }
