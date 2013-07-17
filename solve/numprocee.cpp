@@ -212,7 +212,12 @@ namespace ngsolve
 
     filename = flags.GetStringFlag ("filename","");
     if (filename.length() && MyMPI_GetId() == 0)
-      file = new ofstream (filename.c_str());
+      {
+        if (!flags.GetDefineFlag ("append"))
+          file = new ofstream (filename.c_str());
+        else
+          file = new ofstream (filename.c_str(), ios_base::app);
+      }
     else
       file = 0;
   }
