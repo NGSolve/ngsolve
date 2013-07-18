@@ -12,8 +12,5 @@
 
 namespace ngfem
 {
-  template NGS_DLL_HEADER class H1HighOrderFE<ET_POINT>;
-  template NGS_DLL_HEADER class H1HighOrderFE<ET_SEGM>;
-  template NGS_DLL_HEADER class H1HighOrderFE<ET_TRIG>;
-  template NGS_DLL_HEADER class H1HighOrderFE<ET_QUAD>;
+  template NGS_DLL_HEADER class H1HighOrderFE<ET_PYRAMID>;
 }
