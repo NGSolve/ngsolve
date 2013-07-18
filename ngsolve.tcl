@@ -22,6 +22,12 @@ if { [catch { NGS_GetData } ] == 0 } {
 		for { set l 1 } { $l <= $solve } { incr l } { NGS_SolvePDE $l }
 		NGS_PrintTiming
 		puts "Thank you for using $progname/NGSolve"; 
+                
+                if { [catch { unload libngsolve[info sharedlibextension] ngsolve } result ] } {
+                    puts "cannot unload ngsolve" 
+                    puts "error: $result"
+                } 
+
 		Ng_Exit; 
 		destroy .
 		exit
