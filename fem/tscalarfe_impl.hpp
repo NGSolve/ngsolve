@@ -1,7 +1,7 @@
 #ifndef FILE_TSCALARFE_IMPL
 #define FILE_TSCALARFE_IMPL
 
-
+ 
 namespace ngfem
 {
 
@@ -63,11 +63,11 @@ namespace ngfem
     TSCAL * sum;
   public:
     /// initialize with coefficient and sum-reference
-    EvaluateShapeElement (double acoef, TSCAL * asum)
+    INLINE EvaluateShapeElement (double acoef, TSCAL * asum)
       : coef(acoef), sum(asum) { ; }
 
     /// add up
-    void operator= (TSCAL val) 
+    INLINE void operator= (TSCAL val) 
     {
       *sum += coef * val;
     }
@@ -80,11 +80,11 @@ namespace ngfem
     TSCAL * sum;
   public:
     /// initialize with coefficient vector and value for the sum
-    EvaluateShapeSlave (const double * acoefs, double * asum)
+    INLINE EvaluateShapeSlave (const double * acoefs, TSCAL * asum)
       : coefs(acoefs), sum(asum) { ; }
 
     /// does the computation for i-th element
-    EvaluateShapeElement<TSCAL> operator[] (int i) const
+    INLINE EvaluateShapeElement<TSCAL> operator[] (int i) const
     { return EvaluateShapeElement<TSCAL> (coefs[i], sum); }
 
     /// get sub-vector
@@ -299,9 +299,15 @@ namespace ngfem
   {
     Vec<DIM> pt = ip.Point();
 
+    double sum = 0;
+    T_CalcShape (&pt(0), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
+    return sum;
+
+    /*
     EvaluateShape<> eval(x); 
     T_CalcShape (&pt(0), eval); 
     return eval.Sum();
+    */
   }  
 
 
@@ -330,48 +336,10 @@ namespace ngfem
     for (int i = 0; i < ir.GetNIP(); i++)
       {
 	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-
+        
 	EvaluateShapeTrans<> eval(coefs, vals(i));
         T_CalcShape (&pt(0), eval); 
       }
-
-    /*
-    Vec<DIM,MD<1> > pt;
-    coefs = 0.0;
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-
-	EvaluateShapeTrans<MD<1> > eval(coefs, MD<1> (vals(i)) );
-	static_cast<const FEL*> (this) -> T_CalcShape (&pt(0), eval); 
-      }
-    */
-    
-    /*
-    enum { D = 2 };
-    coefs = 0.0;
-    for (int i = 0; i < ir.GetNIP(); i += D)
-      { 
-        MD<D> pt[DIM];
-        MD<D> vali = 0.0;
-        for (int j = 0; j < D; j++)
-	  if (i+j < ir.GetNIP())
-            {
-              for (int k = 0; k < DIM; k++)
-                pt[k][j] = ir[i+j](k);
-              vali[j] = vals(i+j);
-            }
-          else
-            {
-              for (int k = 0; k < DIM; k++)
-                pt[k][j] = ir[i](k);
-              vali[j] = 0;
-            }
-	EvaluateShapeTrans<MD<D> > eval(coefs, vali);
-	static_cast<const FEL*> (this) -> T_CalcShape (pt, eval); 
-        // Cast().T_CalcShape (pt, eval); 
-      }
-    */
   }
 
 

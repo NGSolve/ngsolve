@@ -7,12 +7,46 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+
 namespace ngfem
 {
 
   /*
     Recursive Polynomials
   */
+
+
+
+  // Use Lambda function with square-bracket assignment
+
+  template <typename FUNC>
+  class SBLambdaElement
+  {
+    FUNC f;
+    int i;
+  public:
+    INLINE SBLambdaElement (FUNC af, int hi) : f(af), i(hi) { ; }
+    template <typename VAL>
+    INLINE VAL operator= (VAL v) { f(i, v); return v; }
+  };
+
+  template <typename FUNC>
+  class Class_SBLambda
+  {
+    FUNC func;
+    int offset;
+  public:
+    INLINE Class_SBLambda (FUNC f, int ao = 0) : func(f), offset(ao) { ; }
+    INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
+    INLINE Class_SBLambda<FUNC> operator+ (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
+  };
+
+  template <typename FUNC> 
+  INLINE const Class_SBLambda<FUNC> SBLambda (FUNC f)
+  {
+    return Class_SBLambda<FUNC> (f);
+  }
+    
 
 
 
@@ -182,33 +216,6 @@ namespace ngfem
               }
           }
         }
-
-      /*
-      switch (i)
-        {
-        case 0: return p1 = REC::P0(x);
-        case 1:
-          {
-            p2 = p1;
-            return p1 = REC::P1(x);
-          }
-        default:
-          {
-            if (REC::ZERO_B)
-              {
-                S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
-                p2 = p1;
-                return p1 = pnew;
-              }
-            else
-              {
-                S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
-                p2 = p1;
-                return p1 = pnew;
-              }
-          }
-        }
-      */
     }
 
 
@@ -241,6 +248,33 @@ namespace ngfem
         }
     }
 
+    template <class S, class Sy>
+    ALWAYS_INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = REC::P0(x);
+        case 1: return p1 = REC::P1(x);
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                p1 *= REC::C(i) *y*y;
+                p1 += REC::A(i) * x * p2;
+                return p1;
+              }
+            else
+              {
+                p1 *= REC::C(i);
+                p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+                return p1;
+              }
+          }
+        }
+    }
+
+
+
 
   public:
 
@@ -258,20 +292,12 @@ namespace ngfem
 
       if (n < 0) return;
 
-      /*
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-      
-      values[1] = p1 = c * REC::P1(x);
-      if (n < 2) return;
-      */
-
       values[0] = EvalNextMult(0, x, c, p1, p2);
       if (n < 1) return;
 
       values[1] = EvalNextMult(1, x, c, p2, p1);
       if (n < 2) return;
-
+      /*
       values[2] = EvalNext(2, x, p1, p2);
       if (n < 3) return;
 
@@ -301,13 +327,15 @@ namespace ngfem
 
       values[11] = EvalNext(11, x, p2, p1);
       if (n < 12) return;
-
-      for (int i = 12; i <= n; i+=2)
+      */
+      int i = 2;
+      for ( ; i < n; i+=2)
 	{	
 	  values[i] = EvalNext (i, x, p1, p2);
-          if (i == n) break;
 	  values[i+1] = EvalNext (i+1, x, p2, p1);
 	}
+      if (i <= n)
+        values[i] = EvalNext (i, x, p1, p2);
     }
 
 
@@ -405,15 +433,192 @@ namespace ngfem
 
 
 
-  /* ******************** Legendre Polynomial ****************** */
 
-  class LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
+
+
+
+  // P_i = ( (a_i x + b_i) P_{i-1} + c_i P_{i-2} ) / d_i
+  template<class REC>
+  class RecursivePolynomialNonStatic
   {
   public:
-    LegendrePolynomial () { ; }
+
+    ALWAYS_INLINE void ABC (int i, double & a, double & b, double & c) const   
+    {
+      a = static_cast<const REC&>(*this).A(i);
+      b = static_cast<const REC&>(*this).B(i);
+      c = static_cast<const REC&>(*this).C(i); 
+      double d = 1.0 / static_cast<const REC&>(*this).D(i);
+      a *= d; b *= d; c *= d;
+    }
+
+    template <class S>
+    ALWAYS_INLINE S EvalNext (int i, S x, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = static_cast<const REC&>(*this).P0(x);
+        case 1: return p1 = static_cast<const REC&>(*this).P1(x);
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                p1 *= static_cast<const REC&>(*this).C(i);
+                p1 += static_cast<const REC&>(*this).A(i) * x * p2;
+                p1 *= 1.0 / static_cast<const REC&>(*this).D(i);
+                return p1;
+              }
+            else
+              {
+                double a, b, c;
+                static_cast<const REC&> (*this).ABC (i, a, b, c);
+                
+                p1 *= c;
+                p1 += (a * x + b) * p2;
+                return p1;
+              }
+          }
+        }
+    }
+
+
+    template <class S, class Sc>
+    ALWAYS_INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = c * static_cast<const REC&>(*this).P0(x);
+        case 1: return p1 = c * static_cast<const REC&>(*this).P1(x);
+        default: return EvalNext (i, x, p1, p2);
+        }
+    }
+
+
+    template <class S, class Sy>
+    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
+    {
+      if (REC::ZERO_B)
+        {
+          S pnew = static_cast<const REC&>(*this).A(i) * x * p1 + static_cast<const REC&>(*this).C(i) * (y*y)*p2;
+          pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+          p2 = p1;
+          p1 = pnew;
+        }
+      else
+        {
+          S pnew = (static_cast<const REC&>(*this).A(i) * x + static_cast<const REC&>(*this).B(i) * y) * p1 + static_cast<const REC&>(*this).C(i) * (y*y)*p2;
+          pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+          p2 = p1;
+          p1 = pnew;
+        }
+    }
+
+
+  public:
+
 
     template <class S, class T>
-    inline LegendrePolynomial (int n, S x, T && values)
+    INLINE void Eval (int n, S x, T && values) 
+    {
+      EvalMult (n, x, 1.0, values);
+    }
+
+    template <class S, class Sc, class T>
+    INLINE void EvalMult (int n, S x, Sc c, T && values) 
+    {
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = EvalNextMult(0, x, c, p1, p2);
+      if (n < 1) return;
+
+      values[1] = EvalNextMult(1, x, c, p2, p1);
+      if (n < 2) return;
+
+      for (int i = 2; i <= n; i+=2)
+	{	
+	  values[i] = EvalNext (i, x, p1, p2);
+          if (i == n) break;
+	  values[i+1] = EvalNext (i+1, x, p2, p1);
+	}
+    }
+
+
+
+    template <class S, class Sy, class T>
+    void EvalScaled (int n, S x, Sy y, T && values)
+    {
+      EvalScaledMult (n, x, y, 1.0, values);
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
+    {
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * static_cast<const REC&>(*this).P0(x);
+      if (n < 1) return;
+
+      values[1] = p1 = c * static_cast<const REC&>(*this).P1(x);
+      if (n < 2) return;
+
+      EvalScaledNext(2, x, y, p1, p2);
+      values[2] = p1;
+      if (n < 3) return;
+
+      EvalScaledNext(3, x, y, p1, p2);
+      values[3] = p1;
+      if (n < 4) return;
+
+      EvalScaledNext(4, x, y, p1, p2);
+      values[4] = p1;
+      if (n < 5) return;
+
+      EvalScaledNext(5, x, y, p1, p2);
+      values[5] = p1;
+      if (n < 6) return;
+
+      EvalScaledNext(6, x, y, p1, p2);
+      values[6] = p1;
+      if (n < 7) return;
+
+      EvalScaledNext(7, x, y, p1, p2);
+      values[7] = p1;
+      if (n < 8) return;
+
+      EvalScaledNext(8, x, y, p1, p2);
+      values[8] = p1;
+
+      for (int i = 9; i <= n; i++)
+	{	
+	  EvalScaledNext (i, x, y, p1, p2);
+	  values[i] = p1;
+	}
+    }
+
+    enum { ZERO_B = 0 };
+  };
+
+
+
+
+
+
+
+
+
+  /* ******************** Legendre Polynomial ****************** */
+
+  class LegendrePolynomial_Old : public RecursivePolynomial<LegendrePolynomial_Old>
+  {
+  public:
+    LegendrePolynomial_Old () { ; }
+
+    template <class S, class T>
+    inline LegendrePolynomial_Old (int n, S x, T && values)
     {
       Eval (n, x, values);
     }
@@ -429,6 +634,34 @@ namespace ngfem
     enum { ZERO_B = 1 };
   };
     
+
+  class LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
+  {
+    static Array< double[2] > coefs;
+    
+  public:
+    LegendrePolynomial () { ; }
+
+    template <class S, class T>
+    inline LegendrePolynomial (int n, S x, T && values)
+    { 
+      Eval (n, x, values);
+    }
+
+    static void Calc (int n);
+
+    template <class S>
+    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    template <class S>
+    static ALWAYS_INLINE S P1(S x)  { return x; }
+    
+    static ALWAYS_INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
+    static ALWAYS_INLINE double B (int i) { return 0; }
+    static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    enum { ZERO_B = 1 };
+  };
+
+
     
 
   /* ******************** Jacobi Polynomial  (with fixed alpha, beta)  ************ */
@@ -460,6 +693,102 @@ namespace ngfem
     static ALWAYS_INLINE double C (int i) 
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
   };
+
+
+
+  class JacobiPolynomial2 : public RecursivePolynomialNonStatic<JacobiPolynomial2>
+  {
+    double al, be;
+  public:
+    JacobiPolynomial2 (double a, double b) : al(a), be(b) { ; }
+
+    template <class S, class T>
+    inline JacobiPolynomial2 (int n, S x, double alpha, double beta, T && values)
+      : al(alpha), be(beta)
+    {
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    ALWAYS_INLINE S P0(S x) const { return S(1.0); }
+    template <class S>
+    ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+      
+    ALWAYS_INLINE double A (int i) const
+    { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    ALWAYS_INLINE double B (int i) const
+    { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    ALWAYS_INLINE double C (int i) const
+    { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    ALWAYS_INLINE double D (int i) const { return 1; }
+  };
+
+
+
+
+  class JacobiPolynomial3 : public RecursivePolynomialNonStatic<JacobiPolynomial3>
+  {
+    double al, be;
+    Vec<4> pola;
+    Vec<4> polc;
+    Vec<4> pold;
+    Vec<2> polb;
+  public:
+    JacobiPolynomial3 (double a, double b) : al(a), be(b) 
+    { 
+      ;
+    }
+
+    template <class S, class T>
+    inline JacobiPolynomial3 (int n, S x, double alpha, double beta, T && values)
+      : al(alpha), be(beta)
+    {
+      double ab = al+be;
+      // A(i) = ( pola(3) i^3 + pola(2) i^2 + pola(1) i + pola(0) )  / pold
+      // ...
+
+      pola(0) = ab*(ab+1)*(ab+2);
+      pola(1) = 6*ab*ab+12*ab+4;
+      pola(2) = 12*ab+12;
+      pola(3) = 8;
+
+      polb(0) = (ab+1)*(al*al-be*be);
+      polb(1) = 2*(al*al-be*be);
+
+      polc(0) = -2*al*be*(ab+2);
+      polc(1) = -2*ab*(ab+2)-4*al*be;
+      polc(2) = -6*ab-4;
+      polc(3) = -4;
+
+      pold(0) = 2*(ab+1)*ab;
+      pold(1) = 2*ab*ab+8*ab+4;
+      pold(2) = 6*ab+8;
+      pold(3) = 4;
+
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    ALWAYS_INLINE S P0(S x) const { return S(1.0); }
+    template <class S>
+    ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+
+    ALWAYS_INLINE double A (int i) const
+    { i--; return ( pola(0) + i * (pola(1) + i * (pola(2) + i * pola(3))) ); }
+    ALWAYS_INLINE double B (int i) const
+    { i--; return ( polb(0) + i * polb(1) ); }
+    ALWAYS_INLINE double C (int i) const
+    { i--; return ( polc(0) + i * (polc(1) + i * (polc(2) + i * polc(3))) ); }
+
+    ALWAYS_INLINE double D (int i) const
+    { i--; return ( pold(0) + i * (pold(1) + i * (pold(2) + i * pold(3))) ); }
+  };
+
+
+
+
+
+
 
 
 

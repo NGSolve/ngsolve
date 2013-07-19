@@ -8,8 +8,8 @@
 #include <fem.hpp>
 #include "l2hofe.hpp"
 
-#include "l2hofe_impl.hpp"
-#include "tscalarfe_impl.hpp"
+#include <l2hofe_impl.hpp>
+#include <tscalarfe_impl.hpp>
 
 
 namespace ngfem

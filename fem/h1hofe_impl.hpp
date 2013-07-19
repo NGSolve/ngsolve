@@ -89,6 +89,8 @@ namespace ngfem
 
   /* *********************** Quadrilateral  **********************/
 
+
+
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -119,13 +121,24 @@ namespace ngfem
         Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
+        
+        /*
 	ArrayMem<Tx,20> polxi(order+1), poleta(order+1);
+        
 	LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub, polxi);
 	LegendrePolynomial::Eval(p[1]-2, xi(1), poleta);
 	
 	for (int k = 0; k <= p[0]-2; k++)
 	  for (int j = 0; j <= p[1]-2; j++)
 	    shape[ii++] = polxi[k] * poleta[j];
+        */
+
+        LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub,
+          SBLambda ([&](int i, Tx val)
+                    {  
+                      LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
+                      ii += p[1]-1;
+                    }));
       }
   }
 
