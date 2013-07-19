@@ -38,7 +38,7 @@ namespace ngstd
     size_t totsize;
     bool owner;
     const char * name;
-
+    enum { ALIGN = 32 };
   public:
     /// Allocate one block of size asize.
     NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname);
@@ -72,7 +72,7 @@ namespace ngstd
     {
       p = data;
       // p += (16 - (long(p) & 15) );
-      p += (16 - (size_t(p) & 15) );
+      p += (ALIGN - (size_t(p) & (ALIGN-1) ) );
     }
 
     /// returns heap-pointer
@@ -93,7 +93,7 @@ namespace ngstd
       char * oldp = p;
     
       // 16 byte allignment
-      size += (16 - size % 16);
+      size += (ALIGN - size % ALIGN);
       p += size;
 
       if ( size_t(p - data) >= totsize )
@@ -110,7 +110,7 @@ namespace ngstd
       size *= sizeof (T);
 
       // 16 byte allignment
-      size += (16 - size % 16);
+      size += (ALIGN - size % ALIGN);
       p += size;
 
       if ( size_t(p - data) >= totsize )
