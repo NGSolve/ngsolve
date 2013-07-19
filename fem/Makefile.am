@@ -5,16 +5,16 @@ lib_LTLIBRARIES = libngfem.la
 libngfem_la_LIBADD = $(top_builddir)/ngstd/libngstd.la \
 	$(top_builddir)/basiclinalg/libngbla.la $(LAPACK_LIBS)
 
-libngfem_la_SOURCES = bdbequations.cpp pml.cpp maxwellintegrator.cpp \
-hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp hcurlhofe.cpp    \
-hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp \
-recursive_pol_trig.cpp coefficient.cpp integrator.cpp		     \
-specialelement.cpp elementtopology.cpp intrule.cpp fastmat.cpp	     \
-finiteelement.cpp elementtransformation.cpp scalarfe.cpp	     \
-generic_recpol.cpp hdivfe.cpp recursive_pol.cpp hybridDG.cpp	     \
-DGIntegrators.cpp diffop.cpp l2hofefo.cpp
+libngfem_la_SOURCES = bdbequations.cpp pml.cpp maxwellintegrator.cpp  \
+hdiv_equations.cpp h1hofe.cpp h1hofe_tet.cpp h1hofe_prism.cpp	      \
+h1hofe_pyramid.cpp h1hofe_hex.cpp h1lofe.cpp l2hofe.cpp hcurlhofe.cpp \
+hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp     \
+coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
+intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp   \
+scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp	      \
+hybridDG.cpp DGIntegrators.cpp diffop.cpp l2hofefo.cpp
 
-#  h1hofefo.cpp
+#  h1hofefo.cpp 
 
 # 
 

@@ -9,7 +9,41 @@
 #include <fem.hpp>
 namespace ngfem
 {
-  using namespace ngfem;
+
+  Array< double[2] > LegendrePolynomial :: coefs;
+
+  void LegendrePolynomial :: Calc (int n)
+  {
+    if (coefs.Size() > n) return;
+
+#pragma omp critical (calclegendre)
+    {
+      if (coefs.Size() <= n)
+        {
+          coefs.SetSize (n+1);
+          
+          coefs[0][0] = 1;
+          coefs[1][1] = 1;
+          for (int i = 2; i <= n; i++)
+            {
+              coefs[i][0] = (2.0*i-1)/i;
+              coefs[i][1] = (1.0-i)/i;
+            }
+        }
+    }
+  }
+
+
+  class InitRecPol
+  {
+  public:
+    InitRecPol()
+    {
+      LegendrePolynomial::Calc(1000);
+    }
+  };
+
+  InitRecPol init;
 
 
 #ifdef OLD

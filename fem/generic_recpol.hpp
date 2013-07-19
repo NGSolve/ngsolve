@@ -47,39 +47,38 @@ namespace ngfem
       S v1, v2, v3;
 
       if (n < 0) return;
-      v2 = values[0] = coefs[0][0];
+      values[0] = v2 = coefs[0][0];
 
       if (n == 0) return;
-      v1 = values[1] = (coefs[1][0] + coefs[1][1] * x) * values[0];
-
+      values[1] = v1 = (coefs[1][0] + coefs[1][1] * x) * v2;
       /*
       // hat nichts gebracht
       int i;
       for (i = 2; i < n; i+=2)
-      {
-      v2 *= coefs[i][2];
-      v2 += (coefs[i][0] + coefs[i][1] * x) * v1;
-      values[i] = v2;
-
-      v1 *= coefs[i+1][2];
-      v1 += (coefs[i+1][0] + coefs[i+1][1] * x) * v2;
-      values[i+1] = v1;
-      }
+        {
+          v2 *= coefs[i][2];
+          v2 += (coefs[i][0] + coefs[i][1] * x) * v1;
+          values[i] = v2;
+          
+          v1 *= coefs[i+1][2];
+          v1 += (coefs[i+1][0] + coefs[i+1][1] * x) * v2;
+          values[i+1] = v1;
+        }
 
       if (i <= n)
-      {
-      v2 *= coefs[i][2];
-      v2 += (coefs[i][0] + coefs[i][1] * x) * v1;
-      values[i] = v2;
-      }
+        {
+          v2 *= coefs[i][2];
+          v2 += (coefs[i][0] + coefs[i][1] * x) * v1;
+          values[i] = v2;
+        }
       */
-    
       for (int i = 2; i <= n; i++)
 	{
 	  v3 = v2; v2 = v1;
 	  v1 = (coefs[i][0] + coefs[i][1] * x) * v2 + coefs[i][2] * v3;
 	  values[i] = v1;
 	}
+
     }
 
 
