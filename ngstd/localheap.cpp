@@ -17,6 +17,7 @@ namespace ngstd
     p = data;
     owner = 1;
     name = aname;
+    CleanUp();   // align pointer
   }
 
   void LocalHeap :: ThrowException() // throw (LocalHeapOverflow)
