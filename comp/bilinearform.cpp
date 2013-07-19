@@ -160,8 +160,10 @@ namespace ngcomp
     int ndof = fespace.GetNDof();
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
+    int nf = GetMeshAccess().GetNFacets();
     const Array<SpecialElement*> & specialelements = fespace.GetSpecialElements();
-    
+    int nspe = specialelements.Size();
+
     Array<int> dnums;
     Array<int> fnums; //facets of one element
     Array<int> elnums; //elements neighbouring one facet
@@ -186,30 +188,6 @@ namespace ngcomp
                 creator.Add (i, dnums[j]);
           }
         
-        if (fespace.UsesDGCoupling())
-          //add dofs of neighbour elements as well
-          for (int i = 0; i < ne; i++)
-            {
-              nbelems.SetSize(0);
-              ma.GetElFacets(i,fnums);
-
-              for (int j=0; j<fnums.Size();j++)
-                {
-                  ma.GetFacetElements(fnums[j],elnums);
-                  for (int k=0; k<elnums.Size(); k++)
-                    if(elnums[k]!=i) nbelems.Append(elnums[k]);
-                }
-
-              for (int k=0;k<nbelems.Size();k++){
-                int elnr=nbelems[k];
-                if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
-                fespace.GetDofNrs (elnr, dnums);
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    creator.Add (i, dnums[j]);
-              }
-            }
-
         for (int i = 0; i < nse; i++)
           {
             if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
@@ -229,6 +207,26 @@ namespace ngcomp
               if (dnums[j] != -1)
                 creator.Add (ne+nse+i, dnums[j]);
           }
+
+        if (fespace.UsesDGCoupling())
+          //add dofs of neighbour elements as well
+          for (int i = 0; i < nf; i++)
+            {
+              nbelems.SetSize(0);
+              ma.GetFacetElements(i,elnums);
+              for (int k=0; k<elnums.Size(); k++)
+                nbelems.Append(elnums[k]);
+
+              for (int k=0;k<nbelems.Size();k++){
+                int elnr=nbelems[k];
+                if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
+                fespace.GetDofNrs (elnr, dnums);
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (dnums[j] != -1)
+                    creator.Add (ne+nse+nspe+i, dnums[j]);
+              }
+            }
+
       }
 
     MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
