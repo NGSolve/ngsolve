@@ -319,9 +319,15 @@ namespace ngfem
       {
         Vec<DIM> pt = ir[i].Point();
 
+        double sum = 0;
+        T_CalcShape (&pt(0), SBLambda ( [&](int i, double val) { sum += coefs(i)*val; } ));
+        vals(i) = sum;
+
+        /*
 	EvaluateShape<> eval(coefs);
         T_CalcShape (&pt(0), eval); 
         vals(i) = eval.Sum();
+        */
       }
   }
 
@@ -331,14 +337,16 @@ namespace ngfem
   {
     static Timer t("evaluatetrans"); RegionTimer reg(t);
 
-    Vec<DIM> pt;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-        
+        Vec<DIM> pt = ir[i].Point();
+        double vali = vals(i);
+        T_CalcShape (&pt(0), SBLambda ( [&](int i, double shape) { coefs(i) += vali*shape; } ));
+        /*
 	EvaluateShapeTrans<> eval(coefs, vals(i));
         T_CalcShape (&pt(0), eval); 
+        */
       }
   }
 
