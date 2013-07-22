@@ -372,7 +372,7 @@ namespace ngfem
       EvalScaledNext(4, x, y, p1, p2);
       values[4] = p1;
       if (n < 5) return;
-
+      
       EvalScaledNext(5, x, y, p1, p2);
       values[5] = p1;
       if (n < 6) return;
@@ -461,18 +461,17 @@ namespace ngfem
         case 1: return p1 = static_cast<const REC&>(*this).P1(x);
         default:
           {
+            double a,b,c;
+            static_cast<const REC&> (*this).ABC (i, a, b, c);
+            
             if (REC::ZERO_B)
               {
-                p1 *= static_cast<const REC&>(*this).C(i);
-                p1 += static_cast<const REC&>(*this).A(i) * x * p2;
-                p1 *= 1.0 / static_cast<const REC&>(*this).D(i);
+                p1 *= c;
+                p1 += a*x*p2;
                 return p1;
               }
             else
               {
-                double a, b, c;
-                static_cast<const REC&> (*this).ABC (i, a, b, c);
-                
                 p1 *= c;
                 p1 += (a * x + b) * p2;
                 return p1;
