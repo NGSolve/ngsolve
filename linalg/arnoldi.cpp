@@ -16,7 +16,7 @@ namespace ngla
 {
   
   template <typename SCAL>
-  void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, Array<BaseVector*> & hevecs) const
+  void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, Array<BaseVector*> & hevecs, const BaseMatrix * pre) const
   { 
     BaseVector & hv  = *a.CreateVector();
     BaseVector & hv2 = *a.CreateVector();
@@ -34,7 +34,17 @@ namespace ngla
 
     BaseMatrix & mat_shift = *a.CreateMatrix();
     mat_shift.AsVector() = a.AsVector() - shift*b.AsVector();  
-    BaseMatrix * inv = mat_shift.InverseMatrix (freedofs);	  
+    BaseMatrix * inv = NULL;
+    if (!pre)
+      inv = mat_shift.InverseMatrix (freedofs);
+    else
+      {
+        GMRESSolver<double> * itso
+          = new GMRESSolver<double> (mat_shift, *pre);
+        itso->SetPrintRates(1);
+        itso->SetMaxSteps(2000);
+        inv = itso;
+      }
 
     hv.SetRandom();
     hv.SetParallelStatus (CUMULATED);
