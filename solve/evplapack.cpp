@@ -21,11 +21,13 @@ namespace ngsolve
     BilinearForm * bfm;
 
     GridFunction * gfu;
+    Preconditioner * pre;
     int num;
 
     double prec, shift;
     bool print;
 
+    string eigenoutstr;
     enum SOLVER { DENSE, ARNOLDI };
     ///
     SOLVER solver;
@@ -62,8 +64,11 @@ namespace ngsolve
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
     bfm = pde.GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
     gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""),1);
     num = int(flags.GetNumFlag ("num", 500));
     shift = flags.GetNumFlag ("shift",-1.); 
+
+    eigenoutstr = flags.GetStringFlag ("eigenout","eigen.out"); 
 
     solver = ARNOLDI;
     if (flags.GetDefineFlag("dense")) solver = DENSE;
@@ -91,7 +96,7 @@ namespace ngsolve
     else
       {
         cout << "real evp" << endl;
-        Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix());
+        Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), bfa->GetFESpace().GetFreeDofs() );
         arnoldi.SetShift (1);
 
         int nev = gfu->GetMultiDim();
@@ -99,7 +104,15 @@ namespace ngsolve
         // for (int i = 0; i  < nev; i++)
         // evecs[i] = &gfu->GetVector(i);
         Array<Complex> lam(nev);
-        arnoldi.Calc (num, lam, nev, evecs);
+        if (pre)
+          arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+        else
+          arnoldi.Calc (num, lam, nev, evecs, 0);
+
+        ofstream eigenout(eigenoutstr.c_str());
+        for (int i = 0; i < lam.Size(); ++i)
+          eigenout << lam[i].real() << "\t" << lam[i].imag() << endl;
+
         for (int i = 0; i < nev; i++)
           gfu->GetVector(i) = *evecs[i];
         cout << "lam = " << endl << lam << endl;
