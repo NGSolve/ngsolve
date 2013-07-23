@@ -2208,6 +2208,53 @@ namespace ngsolve
   };
 
 
+  class NumProcAssembleLinearization : public NumProc
+  {
+  protected:
+    BilinearForm * bf;
+    GridFunction * gfu;
+
+  public:
+    NumProcAssembleLinearization (PDE & apde, const Flags & flags)
+      : NumProc (apde)
+    {
+      bf = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    }
+    
+    virtual ~NumProcAssembleLinearization() {};		
+    
+    virtual void Do(LocalHeap & lh)
+    {
+      BaseVector & vecu = gfu -> GetVector();
+      cout << " assemble linearization:" << endl;
+      bf -> AssembleLinearization(vecu, lh);
+    }
+    
+    virtual string GetClassName () const
+    {
+      return "NumProcAssembleLinearization";
+    }
+
+
+
+    static void PrintDoc (ostream & ost)
+    {
+      ost <<
+        "\n\nNumproc AssembleLinearization:\n" \
+        "--------------------------\n" \
+        "Assembles Bilinearform depending on a gridfunction \n"\
+        "\nFlags:\n"\
+        " -bilinearform=<name>\n"\
+        "      bilinearform that depends on gridfunction\n"\
+        " -gridfunction\n"\
+        "      gridfunction (the argument of the linearization)\n";
+    }
+  
+  };
+
+
+
 
 
   class NumProcTclMenu : public NumProc
@@ -3185,7 +3232,7 @@ namespace ngsolve
 
   static RegisterNumProc<NumProcLoadSolution2> npload ("loadgridfunction2");
   static RegisterNumProc<NumProcSaveSolution2> npsave ("savegridfunction2");
-  
+  static RegisterNumProc<NumProcAssembleLinearization> npassnonl ("assemblelinearization");
 
   namespace numproc_cpp
   {
