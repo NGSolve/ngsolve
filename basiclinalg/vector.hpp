@@ -198,7 +198,7 @@ namespace ngbla
     TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
-      CheckVecRange(s,i);
+      CheckVecRange(size,i);
 #endif
       return data[i*dist]; 
     }
@@ -213,7 +213,7 @@ namespace ngbla
     TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE 
-      CheckVecRange(s,i);
+      CheckVecRange(size,i);
 #endif
       return data[i*dist]; 
     }
@@ -222,7 +222,7 @@ namespace ngbla
     TELEM & operator[] (int i) const
     {
 #ifdef CHECK_RANGE
-      CheckVecRange(s,i);
+      CheckVecRange(size,i);
 #endif
       return data[i*dist]; 
     }

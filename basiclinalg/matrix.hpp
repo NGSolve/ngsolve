@@ -542,7 +542,7 @@ namespace ngbla
     }
 
     /// copy contents
-    FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
+    const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
     {
       for (int i = 0; i < h*W; i++)
         data[i] = m(i);
