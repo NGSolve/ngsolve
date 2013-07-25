@@ -25,7 +25,7 @@ namespace ngbla
     /// inverse diagonal
     T * diag;
   public:
-    typedef typename mat_traits<T>::TV_COL TV;
+    // typedef typename mat_traits<T>::TV_COL TV;
     /// Factor the matrix A
     FlatCholeskyFactors (const FlatMatrix<T> & a, T * data)
     {
@@ -43,9 +43,14 @@ namespace ngbla
     ///
     NGS_DLL_HEADER void Factor (const FlatMatrix<T> & a);
     /// Multiply with the inverse of A 
-    NGS_DLL_HEADER void Mult (SliceVector<TV> x, SliceVector<TV> y) const
+    template <typename TV1, typename TV2>
+    // NGS_DLL_HEADER void Mult (SliceVector<TV> x, SliceVector<TV> y) const
+    NGS_DLL_HEADER void Mult (TV1 && x, TV2 && y) const
     {   
-      TV sum, val;
+      // TV sum, val;
+      // decltype (y(0)) sum, val;
+
+
       const T *pj;
 
       for (int i = 0; i < n; i++)
@@ -53,7 +58,7 @@ namespace ngbla
       
       for (int i = 0; i < n; i++)
         {
-          sum = y(i);
+          auto sum = y(i);
           
           pj = PRow(i);
           for (int j = 0; j < i; ++j)
@@ -64,14 +69,14 @@ namespace ngbla
       
       for (int i = 0; i < n; i++)
         {
-          sum = diag[i] * y(i);
+          auto sum = diag[i] * y(i);
           y(i) = sum;
       }
       
       for (int i = n-1; i >= 0; i--)
         {
           pj = PRow(i);
-          val = y(i);
+          auto val = y(i);
           for (int j = 0; j < i; ++j)
             y(j) -= pj[j] * val;
         }
