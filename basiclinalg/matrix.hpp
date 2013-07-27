@@ -1102,11 +1102,11 @@ namespace ngbla
       return data[i]; 
     }
 
-    /// the height
     int Height () const throw() { return h; }
-
-    /// the width
     int Width () const throw() { return w; }
+    int DistRow () const { return distr; }
+    int DistCol () const { return distc; }
+    T * Data () const { return data; }
 
     /*
     const DoubleSliceMatrix Rows (int first, int next) const

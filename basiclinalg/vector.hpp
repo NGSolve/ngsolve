@@ -282,7 +282,7 @@ namespace ngbla
       return FlatMatrix<T> (h,w, data);
     }
 
-    void * Data () const { return data; }
+    T * Data () const { return data; }
 
     // new for SysVectors:
     typedef FlatVector<T> TV_COL;
@@ -1240,11 +1240,14 @@ namespace ngbla
 
     /// vector size
     int Size () const { return s; }
-
+    int Dist () const { return dist; }
     /// vector is a matrix of hight size
     int Height () const { return s; }
     /// vector is a matrix of width 1
     int Width () const { return 1; }
+
+    T * Data () const { return data; }
+
 
     const SliceVector<T> Range (int first, int next) const
     {
