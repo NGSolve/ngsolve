@@ -1,8 +1,11 @@
 if { [catch { load liboccvis[info sharedlibextension] Ng_OCC } result ] } {
     # puts "cannot load occ" 
     # puts "error: $result"
+}
 
-    # dummy 
+
+if { [catch { Ng_OCCCommand isoccgeometryloaded }] } {
+    # dummy 	
     proc rebuildoccdialog { } { }
 } {
     puts "OCC module loaded"
