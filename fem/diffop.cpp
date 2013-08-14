@@ -183,4 +183,6 @@ namespace ngfem
   template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
   template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
 
+  template class T_DifferentialOperator<DiffOpIdVecHDivBoundary<2> >;
+  template class T_DifferentialOperator<DiffOpIdVecHDivBoundary<3> >;  
 }
