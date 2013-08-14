@@ -589,13 +589,13 @@ namespace ngcomp
     int cnt;
     bool done_called;
   public:
-    ProgressOutput (const MeshAccess & ama,
+    NGS_DLL_HEADER ProgressOutput (const MeshAccess & ama,
 		    string atask, int atotal);
-    ~ProgressOutput ();
+    NGS_DLL_HEADER ~ProgressOutput ();
 
-    void Update ();
-    void Update (int nr);
-    void Done();
+    NGS_DLL_HEADER void Update ();
+    NGS_DLL_HEADER void Update (int nr);
+    NGS_DLL_HEADER void Done();
   };
 
 
