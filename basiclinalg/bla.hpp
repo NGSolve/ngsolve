@@ -1,14 +1,12 @@
 #ifndef FILE_NGBLA
 #define FILE_NGBLA
 
-#ifdef USE_BLAS
-
-extern "C"
-{
-  // #include <cblas.h>
-#include <mkl_cblas.h>
-}
-#endif
+// #ifdef USE_BLAS
+// extern "C"
+// {
+// #include <mkl_cblas.h>
+// }
+// #endif
 
 
 #include <ngstd.hpp>
@@ -55,7 +53,7 @@ namespace ngstd
 #include "cholesky.hpp"
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"
-// #include "md.hpp"
+#include "tensor.hpp"
 
 namespace ngbla
 {
