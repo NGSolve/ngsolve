@@ -20,7 +20,7 @@ namespace ngfem
     FE_RTTrig0();
     ///
     virtual ~FE_RTTrig0();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
@@ -38,6 +38,7 @@ namespace ngfem
     ///
     virtual ~FE_RTTrig0plus();
     ///
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
   };
@@ -56,7 +57,7 @@ namespace ngfem
     FE_BDMTrig1();
     ///
     virtual ~FE_BDMTrig1();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
@@ -82,7 +83,7 @@ namespace ngfem
   public:
 
     HDivNormalSegm0 ();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
 			    FlatVector<> shape) const;
@@ -304,6 +305,8 @@ namespace ngfem
     ///
     virtual ~FE_RTQuad0();
     ///
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
 

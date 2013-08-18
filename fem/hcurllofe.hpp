@@ -38,6 +38,7 @@ namespace ngfem
     FE_NedelecSegm1();
     ///
     virtual ~FE_NedelecSegm1();
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<1> shape) const;
@@ -56,6 +57,7 @@ namespace ngfem
     FE_NedelecSegm2();
     ///
     virtual ~FE_NedelecSegm2();
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<1> shape) const;
@@ -75,6 +77,7 @@ namespace ngfem
     FE_NedelecSegm3();
     ///
     virtual ~FE_NedelecSegm3();
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<1> shape) const;
@@ -175,6 +178,9 @@ namespace ngfem
     FE_TNedelecQuad();
     ///
     virtual ~FE_TNedelecQuad();
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+    
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
@@ -555,7 +561,7 @@ namespace ngfem
     FE_NedelecTet3NoGrad();
     virtual ~FE_NedelecTet3NoGrad();
 
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
 
@@ -589,6 +595,7 @@ namespace ngfem
     FE_NedelecHex1(); 
     ///
     virtual ~FE_NedelecHex1(); 
+    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
                             FlatMatrixFixWidth<3> shape) const; 
@@ -673,6 +680,7 @@ static Matrix<> trans3;
     FE_TNedelecPrism2();
     ///
     virtual ~FE_TNedelecPrism2();
+    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
@@ -706,6 +714,7 @@ static Matrix<> trans3;
     FE_Trig3Pot();
     ///
     virtual ~FE_Trig3Pot();
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -750,6 +759,7 @@ static Matrix<> trans_trig;
     ///
     virtual ~FE_TNedelecPrism3();
     ///
+    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
 
@@ -816,6 +826,8 @@ static Matrix<> trans_trig;
     FE_TNedelecPrism3NoGrad();
     ///
     virtual ~FE_TNedelecPrism3NoGrad();
+    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
@@ -873,6 +885,8 @@ static Matrix<> trans;
     FE_NedelecPyramid1();
     ///
     virtual ~FE_NedelecPyramid1();
+    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
@@ -915,6 +929,8 @@ static Matrix<> trans;
     FE_NedelecPyramid2();
     ///
     virtual ~FE_NedelecPyramid2();
+    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;
@@ -940,6 +956,8 @@ static Matrix<> trans;
   public:
     FE_Quad3();
     virtual ~FE_Quad3();
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;
     virtual void CalcDShape (const IntegrationPoint & ip, 
@@ -978,6 +996,9 @@ static Matrix<> trans;
     FE_NedelecPyramid3();
     ///
     virtual ~FE_NedelecPyramid3();
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const;

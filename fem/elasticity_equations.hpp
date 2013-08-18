@@ -147,7 +147,7 @@ namespace ngfem
 
   /// 2D plane strain, and 3D
   template <int DIM>
-  class ElasticityDMat : public DMatOp<ElasticityDMat<DIM> >
+  class ElasticityDMat : public DMatOp<ElasticityDMat<DIM>,DIM*(DIM+1)/2>
   {
   public:
     CoefficientFunction * coefe;
@@ -158,6 +158,10 @@ namespace ngfem
     ElasticityDMat (CoefficientFunction * acoefe,
 		    CoefficientFunction * acoefnu) 
       : coefe(acoefe), coefnu(acoefnu) { ; }
+
+    template <typename SCAL>
+    static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
+
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -183,7 +187,8 @@ namespace ngfem
 
   ///
   template <int DIM>
-  class OrthotropicElasticityDMat : public DMatOp<OrthotropicElasticityDMat<DIM> >
+  class OrthotropicElasticityDMat : public DMatOp<OrthotropicElasticityDMat<DIM>,
+                                                  DIM*(DIM+1)/2>
   {
   public:
     CoefficientFunction * coefE1; // Young's moduli
@@ -210,6 +215,9 @@ namespace ngfem
       : coefE1(acoefE1), coefE2(acoefE2), coefE3(acoefE3),
 	coefnu12(acoefnu12), coefnu13(acoefnu13), coefnu23(acoefnu23),
 	coefG12(acoefG12), coefG13(acoefG13), coefG23(acoefG23) { ; }
+
+    template <typename SCAL>
+    static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -250,7 +258,8 @@ namespace ngfem
 
   /// Orthotropic Elasticity DMat with Cylindrical Coordinates
   template <int DIM>
-  class OrthotropicCylElasticityDMat : public DMatOp<OrthotropicElasticityDMat<DIM> >
+  class OrthotropicCylElasticityDMat : public DMatOp<OrthotropicElasticityDMat<DIM>,
+                                                     DIM*(DIM+1)/2>
   {
   public:
     CoefficientFunction * coefE1; // Young's moduli
@@ -279,6 +288,11 @@ namespace ngfem
       : coefE1(acoefE1), coefE2(acoefE2), coefE3(acoefE3),
 	coefnu12(acoefnu12), coefnu13(acoefnu13), coefnu23(acoefnu23),
 	coefG12(acoefG12), coefG13(acoefG13), coefG23(acoefG23), coefUseCyl(acoefUseCyl) { ; }
+
+
+    // template <typename SCAL>
+    // static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
+
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -357,7 +371,7 @@ namespace ngfem
 
 
   ///
-  class PlaneStressDMat : public DMatOp<PlaneStressDMat>
+  class PlaneStressDMat : public DMatOp<PlaneStressDMat,3>
   {
     CoefficientFunction * coefe;
     CoefficientFunction * coefnu;

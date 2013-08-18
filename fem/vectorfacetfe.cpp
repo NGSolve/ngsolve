@@ -214,6 +214,7 @@ namespace ngfem
   VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype) :
     HCurlFiniteElement<D>(aeltype, -1, -1)
   {
+    eltype = aeltype;
     for ( int i = 0; i < 8; i++ )
       vnums[i] = -1;
     for ( int i = 0; i < 6; i++ )

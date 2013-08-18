@@ -23,7 +23,7 @@ namespace ngfem
     int vnums[8];
 
     INT<2> order_inner;
-    using HCurlFiniteElement<D>::eltype;
+    // using HCurlFiniteElement<D>::eltype;
     using HCurlFiniteElement<D>::order;
  
   public:
@@ -63,6 +63,7 @@ namespace ngfem
     VectorFacetFacetSegm (int aorder=0);
 
     virtual void ComputeNDof();
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -87,7 +88,7 @@ namespace ngfem
   public:
     VectorFacetFacetTrig (int aorder=0);
     virtual void ComputeNDof();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
@@ -110,7 +111,7 @@ namespace ngfem
   public:
     VectorFacetFacetQuad (int aorder=0);
     virtual void ComputeNDof();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const;
@@ -134,7 +135,9 @@ namespace ngfem
     INT<2> facet_order[6]; 
     int first_facet_dof[7];
     bool highest_order_dc;
-    using HCurlFiniteElement<D>::eltype;
+
+    ELEMENT_TYPE eltype;
+    // using HCurlFiniteElement<D>::eltype;
     using HCurlFiniteElement<D>::order;
   
   public:
@@ -142,6 +145,7 @@ namespace ngfem
     { highest_order_dc=false; }
 
     VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype);
+    virtual ELEMENT_TYPE ElementType() const { return eltype; }
 
     void SetHighestOrderDC(bool set){highest_order_dc=set;}
     void SetVertexNumbers (FlatArray<int> & avnums);
@@ -232,7 +236,7 @@ namespace ngfem
   public:
     VectorFacetVolumeHex() : VectorFacetVolumeFiniteElement<3>(ET_HEX) { ; };
     virtual void ComputeNDof();
-   
+    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }   
     virtual void CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const;
 //     virtual int GetNExtraShapes( int facet) const {return 2*(2*facet_order[facet][0]+3);};
 //     virtual void CalcExtraShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> xshape) const;    

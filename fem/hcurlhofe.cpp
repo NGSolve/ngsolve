@@ -30,7 +30,7 @@ namespace ngfem
     if (DIM == 3) usegrad_cell = 1;
 
     for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
-    eltype = ET;
+    // eltype = ET;
   }
 
   
@@ -42,8 +42,12 @@ namespace ngfem
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);
 
+    /*
     HCurlShapeAssign<DIM> ds(shape); 
     static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
+    */
+    T_CalcShape (adp, SBLambda ([&](int i, HCurl_Shape<DIM> s) 
+                                { shape.Row(i) = s; }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES>
@@ -53,10 +57,14 @@ namespace ngfem
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);
-
+    
+    /*
     HCurlCurlShapeAssign<DIM> ds(shape); 
     static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-  }
+    */
+    T_CalcShape (adp, SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
+                                { shape.Row(i) = s; }));
+  } 
 
   template <ELEMENT_TYPE ET, typename SHAPES>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
@@ -72,8 +80,13 @@ namespace ngfem
       for (int j = 0; j < DIM; j++)
         adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
+    /*
     HCurlShapeAssign<DIM> ds(shape); 
     static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
+    */
+    T_CalcShape (adp, SBLambda ([&](int i, HCurl_Shape<DIM> s) 
+                                { shape.Row(i) = s; }));
+
   }
 
   /// compute curl of shape
@@ -99,8 +112,13 @@ namespace ngfem
 	  for (int j = 0; j < DIM; j++)
 	    adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
+        /*
 	HCurlCurlShapeAssign<DIM> ds(curlshape); 
 	static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
+        */
+        T_CalcShape (adp, SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
+                                    { curlshape.Row(i) = s; }));
+
       }
   }
   

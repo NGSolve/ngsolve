@@ -19,7 +19,7 @@ namespace ngfem
   class HCurlHighOrderFiniteElement : public HCurlFiniteElement<D> 
   {
   protected:
-    int vnums[8]; 
+    int vnums[1<<D]; 
     int order_edge[12];
     INT<2> order_face[6];
     INT<3> order_cell;
@@ -99,7 +99,7 @@ namespace ngfem
     using HCurlFiniteElement<DIM>::DIM_CURL;
     using HCurlFiniteElement<DIM>::ndof;
     using HCurlFiniteElement<DIM>::order;
-    using HCurlFiniteElement<DIM>::eltype;
+    // using HCurlFiniteElement<DIM>::eltype;
     // using HCurlFiniteElement<DIM>::dimspace;
 
     using HCurlHighOrderFiniteElement<DIM>::vnums;
@@ -132,12 +132,20 @@ namespace ngfem
     {
       for (int i = 0; i < N_VERTEX; i++)
         vnums[i] = i;
-      eltype = ET;
+      // eltype = ET;
     }
 
     T_HCurlHighOrderFiniteElement (int aorder);
 
     virtual void ComputeNDof();
+
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[2], TFA & shape) const
+    { 
+      static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
+    }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
                             FlatMatrixFixWidth<DIM> shape) const;

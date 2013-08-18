@@ -158,7 +158,7 @@ namespace ngfem
 
     using ScalarFiniteElement<D>::ndof;
     using ScalarFiniteElement<D>::order;
-    using ScalarFiniteElement<D>::eltype;
+    // using ScalarFiniteElement<D>::eltype;
 
   public:
     /// global vertex numbers define ordering of vertices

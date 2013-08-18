@@ -83,7 +83,7 @@ namespace ngfem
   {
   public:
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
     
@@ -99,7 +99,7 @@ namespace ngfem
       return ii;
     }
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static void CalcSplitted (int n, Sx x, Sy y, Sz z, T & val1, T & val2)
+    static void CalcSplitted (int n, Sx x, Sy y, Sz z, T && val1, T && val2)
     {
       Sx bub1 = sqr (1-y-z) - sqr (x); 
       ScaledLegendrePolynomialMult (n-3, x, 1-y-z, bub1, val1);
@@ -126,7 +126,7 @@ namespace ngfem
   {
   public:
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
       int ii = 0;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);
@@ -149,7 +149,7 @@ namespace ngfem
   {
   public:
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
       int nd = Calc1 (n, x, y, z, values);
       ArrayMem<Sx, 100> hvalues(nd);
@@ -182,7 +182,7 @@ namespace ngfem
     }
   
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc1 (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc1 (int n, Sx x, Sy y, Sz z, T && values)
     {
       int nd = Calc2 (n, x, y, z, values);
       ArrayMem<Sx, 100> hvalues(nd);
@@ -215,7 +215,7 @@ namespace ngfem
     }
 
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc2 (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc2 (int n, Sx x, Sy y, Sz z, T && values)
     {
       Sx * hp = &values[0];
       int nd = Calc3 (n, x, y, z, hp);
@@ -255,7 +255,7 @@ namespace ngfem
 
 
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc3 (int n, Sx x, Sy y, Sz z, T & values)
+    static int Calc3 (int n, Sx x, Sy y, Sz z, T && values)
     {
       int ii = 0;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1);

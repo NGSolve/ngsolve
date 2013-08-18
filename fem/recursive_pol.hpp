@@ -39,6 +39,7 @@ namespace ngfem
     INLINE Class_SBLambda (FUNC f, int ao = 0) : func(f), offset(ao) { ; }
     INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
     INLINE Class_SBLambda<FUNC> operator+ (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
+    INLINE Class_SBLambda<FUNC> Addr (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
   };
 
   template <typename FUNC> 
@@ -659,6 +660,35 @@ namespace ngfem
     static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
     enum { ZERO_B = 1 };
   };
+
+
+  class IntegratedLegendrePolynomial : public RecursivePolynomial<IntegratedLegendrePolynomial>
+  {
+    // static Array< double[2] > coefs;
+    
+  public:
+    IntegratedLegendrePolynomial () { ; }
+
+    template <class S, class T>
+    inline IntegratedLegendrePolynomial (int n, S x, T && values)
+    { 
+      Eval (n, x, values);
+    }
+
+    static void Calc (int n);
+
+    template <class S>
+    static ALWAYS_INLINE S P0(S x)  { return S(-1.0); }
+    template <class S>
+    static ALWAYS_INLINE S P1(S x)  { return x; }
+    
+    static ALWAYS_INLINE double A (int i) { return (2*i-3)/double(i); }
+    static ALWAYS_INLINE double B (int i) { return 0; }
+    static ALWAYS_INLINE double C (int i) { return -(i-3.0)/i; }
+    enum { ZERO_B = 1 };
+  };
+
+
 
 
     
@@ -1565,7 +1595,7 @@ namespace ngfem
      WARNING: is not \int P_i
   */
   template <class S, class T>
-  inline void IntegratedLegendrePolynomial (int n, S x, T && values)
+  inline void IntegratedLegendrePolynomial_Old (int n, S x, T && values)
   {
     S p1 = -1.0;
     S p2 = 0.0; 
@@ -2254,7 +2284,7 @@ namespace ngfem
     }
 
     template <class Sx, class Sy, class T>
-    inline static int CalcScaled (int n, Sx x, Sy y, T & values)
+    inline static int CalcScaled (int n, Sx x, Sy y, T && values)
     {
       Sy fy = y*y;
       Sx p3 = 0;
@@ -2273,7 +2303,7 @@ namespace ngfem
 
 
     template <int n, class Sx, class Sy, class T>
-    inline static int CalcScaled (Sx x, Sy y, T & values)
+    inline static int CalcScaled (Sx x, Sy y, T && values)
     {
       Sy fy = y*y;
       Sx p3 = 0;
@@ -2295,7 +2325,7 @@ namespace ngfem
 
 
     template <class Sx, class Sy, class T>
-    inline static int CalcTrigExt (int n, Sx x, Sy y, T & values)
+    inline static int CalcTrigExt (int n, Sx x, Sy y, T && values)
     {
       Sy fy = (1-y)*(1-y);
       Sx p3 = 0;
@@ -2313,7 +2343,7 @@ namespace ngfem
     }
 
     template <class Sx, class Sy, class Sf, class T>
-    inline static int CalcTrigExtMult (int n, Sx x, Sy y, Sf fac, T & values)
+    inline static int CalcTrigExtMult (int n, Sx x, Sy y, Sf fac, T && values)
     {
       Sy fy = (1-y)*(1-y);
       Sx p3 = 0;
@@ -2336,7 +2366,7 @@ namespace ngfem
 
 
     template <class T>
-    inline static int CalcTrigExtDeriv (int n, double x, double y, T & values)
+    inline static int CalcTrigExtDeriv (int n, double x, double y, T && values)
     {
       double fy = (1-y)*(1-y);
       double p3 = 0, p3x = 0, p3y = 0;
@@ -2370,7 +2400,7 @@ namespace ngfem
       for (int j=2; j<=n; j++)
 	{
 	  p3=p2; p2=p1;
-	  p1=( (2*j-3) * x * p2 - (j-3) * p3) / j;
+	  p1=( (2*j-3)/double(j) * x * p2 - (j-3)/double(j) * p3); //  / double(j);
 	  values[j-2] = p1;
 	}
       return n-1;
@@ -2395,7 +2425,7 @@ namespace ngfem
 
 
     template <class T>
-    inline static int CalcDeriv (int n, double x, T & values)
+    inline static int CalcDeriv (int n, double x, T && values)
     {
       double p1 = 1.0, p2 = 0.0, p3;
 

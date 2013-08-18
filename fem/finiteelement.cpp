@@ -35,7 +35,7 @@ namespace ngfem
   {
     if (fea.Size() && fea[0])
       {
-	eltype = fea[0]->ElementType();
+	// eltype = fea[0]->ElementType();
 	ndof = 0;
 	order = 0;
 	for (int i = 0; i < fea.Size(); i++)
@@ -55,7 +55,7 @@ namespace ngfem
 	cout << "WARNING: CompoundFE, undefined components" << endl;
 	ndof = 0;
 	order = 0;
-	eltype = ET_TRIG;
+	// eltype = ET_TRIG;
       }
   }
 

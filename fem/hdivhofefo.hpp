@@ -45,7 +45,7 @@ namespace ngfem
 
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
-    using HDivFiniteElement<DIM>::eltype;
+    // using HDivFiniteElement<DIM>::eltype;
     // using HDivFiniteElement<DIM>::dimspace;
 
     using HDivHighOrderFiniteElementFO<DIM>::vnums;
@@ -70,8 +70,8 @@ namespace ngfem
 	vnums[i] = i;
       ho_div_free = false;
       only_ho_div = false;
-      // dimspace = DIM;
-      eltype = ET;
+      // dimspasce = DIM;
+      // eltype = ET;
       order = ORDER;
     }
   };
@@ -95,6 +95,8 @@ namespace ngfem
 
   public:
     HDivHighOrderFEFO () { ; }
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
     virtual void ComputeNDof()
     {

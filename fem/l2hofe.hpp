@@ -48,7 +48,7 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    using ScalarFiniteElement<DIM>::eltype;
+    // using ScalarFiniteElement<DIM>::eltype;
     using DGFiniteElement<DIM>::vnums;
 
 
@@ -66,13 +66,13 @@ namespace ngfem
   public:
     NGS_DLL_HEADER L2HighOrderFE () 
     { 
-      eltype = ET; 
+      // eltype = ET; 
     }
 
     NGS_DLL_HEADER L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
-      eltype = ET;
+      // eltype = ET;
       
       order = aorder;
       order_inner = aorder;
