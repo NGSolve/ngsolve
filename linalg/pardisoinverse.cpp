@@ -437,8 +437,8 @@ namespace ngla
 			    reinterpret_cast<double *>(&matrix[0]),
 			    &rowstart[0], &indices[0],
 			    NULL, &nrhs, params, &msglevel,
-			    static_cast<double *>(fx.Data()), 
-			    static_cast<double *>(fy.Data()), &error );
+			    static_cast<double *>((void*)fx.Data()), 
+			    static_cast<double *>((void*)fy.Data()), &error );
       }
 
     if ( error != 0 )
