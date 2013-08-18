@@ -19,6 +19,19 @@ using namespace ngmg;
 namespace ngcomp
 {
 
+
+  class Ngs_Element : public Ng_Element
+  {
+  public:
+    Ngs_Element (const Ng_Element & el) : Ng_Element(el) { ; }
+    auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
+    auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
+    auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
+  };
+
+
+
+
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -168,19 +181,17 @@ namespace ngcomp
     used_face.SetSize(nfa); 
     used_vertex.SetSize(nv); 
 
-    used_edge = 0; 
-    used_face = 0; 
-    used_vertex = 0; 
+    used_edge = false; 
+    used_face = false; 
+    used_vertex = false; 
     
     for (int i = 0; i < ne; i++)
       if (DefinedOn (ma.GetElIndex (i))) 
 	{
-	  Ng_Element ngel = ma.GetElement(i);
-	  used_vertex[ArrayObject(ngel.vertices)] = 1;
-          // used_vertex[BaseArrayObject<Ng_Element::Ng_Vertices>(ngel.vertices)] = 1;
-          // used_vertex[ngel.vertices] = 1;
-	  if (dim >= 2) used_edge[ArrayObject(ngel.edges)] = 1;
-	  if (dim == 3) used_face[ArrayObject(ngel.faces)] = 1;
+	  Ngs_Element ngel = ma.GetElement(i);
+	  used_vertex[ngel.Vertices()] = true;
+	  if (dim >= 2) used_edge[ngel.Edges()] = true;
+	  if (dim == 3) used_face[ngel.Faces()] = true;
 	}
 
 
@@ -524,6 +535,7 @@ namespace ngcomp
         hofe2d->SetVertexNumbers (ngel.vertices);
         return *hofe2d;
       }
+
     
     if (fixed_order && eltype == ET_TET && order <= 6)
       {
@@ -542,6 +554,34 @@ namespace ngcomp
         return *hofe3d;
       }
     */
+
+    if (fixed_order && eltype == ET_TET)
+      {
+        switch (order)
+          {
+          case 1: return *(new (lh) H1HighOrderFEFO<ET_TET,1>())
+              -> SetVertexNumbers(ngel.vertices);
+          case 2: return *(new (lh) H1HighOrderFEFO<ET_TET,2>())
+              -> SetVertexNumbers(ngel.vertices);
+          case 3: return *(new (lh) H1HighOrderFEFO<ET_TET,3>())
+              -> SetVertexNumbers(ngel.vertices);
+          case 4: return *(new (lh) H1HighOrderFEFO<ET_TET,4>())
+              -> SetVertexNumbers(ngel.vertices);
+            /*
+          case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
+          case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
+          case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
+          case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
+          case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
+            */
+          }
+        // hofe3d->SetVertexNumbers (ngel.vertices);
+        // return *hofe3d;
+      }
+
+
+
+
 
     try
       {
@@ -574,7 +614,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ng_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma.GetElement(elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -590,15 +630,15 @@ namespace ngcomp
 
       case 2:
         {
-          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)] );
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()] );
           hofe -> SetOrderFace (0, order_inner[elnr]);
           break;
         }
 
       case 3: default:  
         {
-          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-          hofe -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+          hofe -> SetOrderFace (order_face[ngel.Faces()]);
           hofe -> SetOrderCell (order_inner[elnr]);
           break;
         }
@@ -655,7 +695,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
   {
-    Ng_Element ngel = ma.GetSElement(elnr);
+    Ngs_Element ngel = ma.GetSElement(elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -670,13 +710,13 @@ namespace ngcomp
 
       case 1:
         {
-          hofe -> SetOrderEdge ( order_edge[ArrayObject(ngel.edges)] );
+          hofe -> SetOrderEdge ( order_edge[ngel.Edges()] );
           break;
         }
 
       case 2: default:  
         {
-          hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
+          hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
 	  hofe -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
           break;
         }
