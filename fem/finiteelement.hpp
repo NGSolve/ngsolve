@@ -21,7 +21,7 @@ namespace ngfem
   {
   protected:
     /// element geometry (trig, quad, ...)
-    ELEMENT_TYPE eltype;
+    // ELEMENT_TYPE eltype;
     /// number of degrees of freedom
     int ndof;
     /// polynomial order
@@ -32,7 +32,7 @@ namespace ngfem
 
     /// constructor
     FiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : eltype(aeltype), ndof(andof), order(aorder)
+      : /* eltype(aeltype), */ ndof(andof), order(aorder)
     { ; }
 
   public:
@@ -46,7 +46,7 @@ namespace ngfem
     int Order () const { return order; }
 
     /// geometry of element
-    ELEMENT_TYPE ElementType() const { return eltype; }
+    virtual ELEMENT_TYPE ElementType() const = 0; //  { return eltype; }
 
     /// the name of the element family
     virtual string ClassName() const;
@@ -73,6 +73,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
 
+    virtual ELEMENT_TYPE ElementType() const { return fea[0]->ElementType(); }
     /// number of components
     int GetNComponents() const { return fea.Size(); }
 
@@ -104,6 +105,7 @@ namespace ngfem
   public:
     DummyFE ()
       : FiniteElement(ET, 0, 0) { ; }
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
   };
 
 }

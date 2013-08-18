@@ -33,20 +33,23 @@ public:
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 
-  ///
+  /// 
+
   template <typename MIP, typename MAT>
   static void GenerateMatrix (const FiniteElement & fel, 
 			      const MIP & mip,
 			      MAT && mat, LocalHeap & lh)
   {
+    static Timer t("DiffOpGrad::GenMatrix - general"); RegionTimer reg(t);
     mat = Trans (mip.GetJacobianInverse ()) * 
       Trans (Cast(fel).GetDShape(mip.IP(),lh));
   }
 
   static void GenerateMatrix (const FiniteElement & fel, 
                               const MappedIntegrationPoint<D,D> & mip,
-			      FlatMatrixFixHeight<D> && mat, LocalHeap & lh)
+			      FlatMatrixFixHeight<D> mat, LocalHeap & lh)
   {
+    static Timer t("DiffOpGrad::GenMatrix"); RegionTimer reg(t);
     Cast(fel).CalcMappedDShape (mip, mat.Trans());
   }
 
@@ -395,7 +398,7 @@ public:
 
 /// diagonal tensor, all values are the same
 template <int DIM>
-class DiagDMat : public DMatOp<DiagDMat<DIM> >
+class DiagDMat : public DMatOp<DiagDMat<DIM>,DIM>
 {
   CoefficientFunction * coef;
 public:
@@ -405,17 +408,15 @@ public:
 
   DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
 
+  template <typename SCAL>
+  static DiagMat<DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
+
   template <typename FEL, typename MIP, typename MAT>
   void GenerateMatrix (const FEL & fel, const MIP & mip,
 		       MAT & mat, LocalHeap & lh) const
   {
     typedef typename MAT::TSCAL TRESULT;
     TRESULT val = coef -> T_Evaluate<TRESULT> (mip);
-    /*
-    mat = TRESULT(0);
-    for (int i = 0; i < DIM; i++)
-      mat(i, i) = val;
-    */
     mat = val * Id<DIM>();
   }  
 
@@ -423,6 +424,8 @@ public:
   void GenerateMatrixIR (const FEL & fel, const MIR & mir,
 			 const FlatArray<MAT> & mats, LocalHeap & lh) const
   {
+    static Timer t("DiagDMat::GenMatrixIR"); RegionTimer reg(t);
+
     typedef typename MAT::TSCAL TRESULT;
     FlatMatrix<TRESULT> vals(mir.IR().GetNIP(), 1, lh);
     coef -> Evaluate (mir, vals);
@@ -481,7 +484,7 @@ class OrthoDMat
 {
 };
 
-template <> class OrthoDMat<1> : public DMatOp<OrthoDMat<1> >
+template <> class OrthoDMat<1> : public DMatOp<OrthoDMat<1>,1>
 {
   CoefficientFunction * coef;
 public:
@@ -512,7 +515,7 @@ public:
 };
 
 
-template <> class OrthoDMat<2>: public DMatOp<OrthoDMat<2> >
+template <> class OrthoDMat<2>: public DMatOp<OrthoDMat<2>,2>
 {
   CoefficientFunction * coef1;
   CoefficientFunction * coef2;
@@ -564,7 +567,7 @@ public:
   }
 };
 
-template <> class OrthoDMat<3> : public DMatOp<OrthoDMat<3> >
+template <> class OrthoDMat<3> : public DMatOp<OrthoDMat<3>,3>
 {
   CoefficientFunction * coef1;
   CoefficientFunction * coef2;
@@ -645,11 +648,11 @@ public:
 
 /// full symmetric tensor
 template <int N> 
-class SymDMat : public DMatOp<SymDMat<N> >
+class SymDMat : public DMatOp<SymDMat<N>,0>
 {
 };
 
-template <> class SymDMat<1> : public DMatOp<SymDMat<1> >
+template <> class SymDMat<1> : public DMatOp<SymDMat<1>,1>
 {
   CoefficientFunction * coef;
 public:
@@ -666,7 +669,7 @@ public:
 };
 
 
-template <> class SymDMat<2> : public DMatOp<SymDMat<2> >
+template <> class SymDMat<2> : public DMatOp<SymDMat<2>,3>
 {
   CoefficientFunction * coef00;
   CoefficientFunction * coef01;
@@ -690,7 +693,7 @@ public:
   }  
 };
 
-template <> class SymDMat<3> : public DMatOp<SymDMat<3> >
+template <> class SymDMat<3> : public DMatOp<SymDMat<3>,6>
 {
   CoefficientFunction * coef00;
   CoefficientFunction * coef10;
@@ -734,7 +737,7 @@ public:
 
 ///
 template <int DIM>
-class NormalDMat : public DMatOp<NormalDMat<DIM> >
+class NormalDMat : public DMatOp<NormalDMat<DIM>,DIM>
 {
   CoefficientFunction * coef;
 public:
@@ -932,7 +935,7 @@ public:
 
 /// DMat for rot.-sym. Laplace operator
 template <int DIM>
-class RotSymLaplaceDMat : public DMatOp<RotSymLaplaceDMat<DIM> >
+class RotSymLaplaceDMat : public DMatOp<RotSymLaplaceDMat<DIM>,DIM>
 {
   CoefficientFunction * coef;
 public:

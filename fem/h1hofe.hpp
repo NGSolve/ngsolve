@@ -37,7 +37,7 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    using ScalarFiniteElement<DIM>::eltype;
+    // using ScalarFiniteElement<DIM>::eltype;
 
 
     using ET_trait<ET>::N_VERTEX;

@@ -32,6 +32,8 @@ namespace ngfem
       ; // cout << "created facetfefacet" << endl;
     }
 
+    virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {
@@ -50,7 +52,8 @@ namespace ngfem
     int facet_order[6]; 
     int first_facet_dof[7];
 
-    using FiniteElement::eltype;
+    ELEMENT_TYPE eltype;
+    // using FiniteElement::eltype;
     using FiniteElement::ndof;
     using FiniteElement::order;
 

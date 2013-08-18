@@ -63,7 +63,7 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    using ScalarFiniteElement<DIM>::eltype;
+    // using ScalarFiniteElement<DIM>::eltype;
 
     using DGFiniteElement<DIM>::vnums;
 
@@ -73,12 +73,12 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      eltype = ET;
+      // eltype = ET;
       order = ORDER;
       ndof = SHAPES::NDOF;
     }
 
-
+    
     virtual void PrecomputeShapes (const IntegrationRule & ir) 
     {
       int classnr =  ET_trait<ET>::GetClassNr (vnums);

@@ -12,9 +12,9 @@ hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp     \
 coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
 intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp   \
 scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp	      \
-hybridDG.cpp DGIntegrators.cpp diffop.cpp l2hofefo.cpp
+hybridDG.cpp DGIntegrators.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp 
 
-#  h1hofefo.cpp 
+#  
 
 # 
 

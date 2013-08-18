@@ -9,8 +9,8 @@ namespace ngfem
   class AD2Vec : public Vec<DIM>
   {
   public:
-    AD2Vec (double d) { (*this) = d; }
-    AD2Vec (AutoDiff<DIM> ad)
+    INLINE AD2Vec (double d) : Vec<DIM> (d) { ; }
+    INLINE AD2Vec (AutoDiff<DIM> ad)
     {
       for (int j = 0; j < DIM; j++)
         (*this)(j) = ad.DValue(j);

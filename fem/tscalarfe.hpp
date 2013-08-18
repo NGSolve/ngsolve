@@ -22,12 +22,14 @@ namespace ngfem
   public:
     enum { DIM = ET_trait<ET>::DIM };
 
-    using BASE::eltype;
+    // using BASE::eltype;
     using BASE::ndof;
     using BASE::order;
 
-    T_ScalarFiniteElement () { eltype = ET; }
+    T_ScalarFiniteElement () { /* eltype = ET; */ }
     virtual ~T_ScalarFiniteElement();
+
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const;

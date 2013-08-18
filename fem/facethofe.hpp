@@ -42,6 +42,8 @@ namespace ngfem
       eltype = ET;
     }
 
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+
     virtual void ComputeNDof() 
     {
       ndof = 0;

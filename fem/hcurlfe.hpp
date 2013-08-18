@@ -388,6 +388,24 @@ namespace ngfem
 
 
 
+  template <int DIM>
+  class HCurl_Shape : public Vec<DIM>
+  {
+  public:
+    template <typename T>
+    HCurl_Shape (T shape) : Vec<DIM>(shape.Value()) { ; }
+    // operator Vec<DIM> () const { return vec; }
+  };
+
+  template <int DIM>
+  class HCurl_CurlShape : public Vec<DIM_CURL_TRAIT<DIM>::DIM>
+  {
+  public:
+    template <typename T>
+    HCurl_CurlShape (T shape) 
+      : Vec<DIM_CURL_TRAIT<DIM>::DIM> (shape.CurlValue()) { ; }
+  };
+
 
 
 
@@ -412,7 +430,8 @@ namespace ngfem
     virtual ~T_HCurlFiniteElement() { ; }
 
   public:
-
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
                             FlatMatrixFixWidth<DIM> shape) const
     {

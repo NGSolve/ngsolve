@@ -32,7 +32,11 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 		double * __restrict__ pb, 
 		double * __restrict__ pc)
   {
-    /*
+    static Timer timer (string("Fastmat, M = ")+ToString(M), 2);
+    RegionTimer reg (timer);
+    timer.AddFlops (double(M)*n*n/2);
+
+    /* 
     for (int i = 0; i < n; i++)
       for (int j = 0; j <= i; j++)
 	{

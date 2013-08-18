@@ -228,7 +228,7 @@ namespace ngfem
   void DGFiniteElement<D>:: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
-    IntegrationRule ir(eltype, 2*order);
+    IntegrationRule ir(this->ElementType(), 2*order);
     VectorMem<50> shape(ndof);
     mass = 0;
     for (int i = 0; i < ir.Size(); i++)
@@ -244,8 +244,8 @@ namespace ngfem
   void DGFiniteElement<D>:: 
   CalcTraceMatrix (int facet, FlatMatrix<> trace) const
   {
-    ELEMENT_TYPE ftype = ElementTopology::GetFacetType (eltype, facet);
-    Facet2ElementTrafo f2el(eltype, FlatArray<int> (8, const_cast<int*> (vnums)) );
+    ELEMENT_TYPE ftype = ElementTopology::GetFacetType (this->ElementType(), facet);
+    Facet2ElementTrafo f2el(this->ElementType(), FlatArray<int> (8, const_cast<int*> (vnums)) );
     const IntegrationRule & ir = SelectIntegrationRule (ftype, 2*order);
 
     ScalarFiniteElement<0> * facetfe0 = NULL;
@@ -297,7 +297,7 @@ namespace ngfem
   void DGFiniteElement<D>:: 
   CalcGradientMatrix (FlatMatrix<> gmat) const
   {
-    IntegrationRule ir (eltype, 2*order);
+    IntegrationRule ir (this->ElementType(), 2*order);
 
     Vector<> shape(ndof);
     MatrixFixWidth<D> dshape(ndof);

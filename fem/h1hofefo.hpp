@@ -15,55 +15,20 @@ namespace ngfem
      High order finite elements for H^1 of fixed order
   */
 
-  template<int DIM>
-  class H1HighOrderFiniteElementFO : virtual public ScalarFiniteElement<DIM>
-  {
-  public:
-    int vnums[8];
-
-  public:
-    template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
-
-    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-  };
-
-
   template <ELEMENT_TYPE ET, int ORDER> class H1HighOrderFEFO;
-
-  /*
-  template <ELEMENT_TYPE ET>
-  class T_H1HighOrderFiniteElementFO : 
-    public H1HighOrderFiniteElementFO<ET_trait<ET>::DIM>
-  {
-  protected:
-    enum { DIM = ET_trait<ET>::DIM };
-
-    using ScalarFiniteElement<DIM>::eltype;
-    using H1HighOrderFiniteElementFO<DIM>::vnums;
-
-  public:
-
-    T_H1HighOrderFiniteElementFO () 
-    {
-    }
-
-  };
-  */
-
 
   /**
      High order triangular finite element
   */
   template <int ORDER>
   class H1HighOrderFEFO<ET_TRIG, ORDER> : 
-    public H1HighOrderFiniteElementFO<2>,
     public T_ScalarFiniteElement< H1HighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG >,
-    public ET_trait<ET_TET> 
+    public ET_trait<ET_TRIG> 
   {
     using ScalarFiniteElement<2>::ndof;
-    using H1HighOrderFiniteElementFO<2>::vnums; 
+    using ScalarFiniteElement<2>::order;    
+
+    int vnums[3];
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
     typedef TrigShapesInnerLegendre T_TRIGSHAPES;
@@ -75,9 +40,16 @@ namespace ngfem
     {
       order = ORDER;
       ndof = NDOF; 
-      eltype = ET_TRIG;
+      // eltype = ET_TRIG;
       for (int i = 0; i < ET_trait<ET_TRIG>::N_VERTEX; i++) 
         vnums[i] = i;
+    }
+
+    template <typename TA> 
+    H1HighOrderFEFO<ET_TRIG, ORDER> * SetVertexNumbers (const TA & avnums)
+    { 
+      for (int i = 0; i < 3; i++) vnums[i] = avnums[i]; 
+      return this;
     }
 
     template<typename Tx, typename TFA>  
@@ -90,12 +62,12 @@ namespace ngfem
   */
   template <int ORDER>
   class H1HighOrderFEFO<ET_TET, ORDER> : 
-    public H1HighOrderFiniteElementFO<3>,
     public T_ScalarFiniteElement< H1HighOrderFEFO<ET_TET,ORDER>, ET_TET>,
     public ET_trait<ET_TET> 
   {
-    using H1HighOrderFiniteElementFO<3>::vnums; 
+    int vnums[4];
     using ScalarFiniteElement<3>::ndof;
+    using ScalarFiniteElement<3>::order;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
@@ -109,9 +81,16 @@ namespace ngfem
     {
       order = ORDER; 
       ndof = NDOF; 
-      eltype = ET_TET;
+      // eltype = ET_TET;
       for (int i = 0; i < ET_trait<ET_TET>::N_VERTEX; i++)
 	vnums[i] = i;
+    }
+
+    template <typename TA> 
+    H1HighOrderFEFO<ET_TET, ORDER> * SetVertexNumbers (const TA & avnums)
+    { 
+      for (int i = 0; i < 4; i++) vnums[i] = avnums[i]; 
+      return this;
     }
 
     // ~H1HighOrderFEFO ();

@@ -147,7 +147,7 @@ namespace ngfem
     template <typename AFEL>
     static void GenerateMatrix (const AFEL & fel, 
 				const MappedIntegrationPoint<3,3> & mip,
-				FlatMatrixFixHeight<3> & mat, LocalHeap & lh)
+				FlatMatrixFixHeight<3> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat.Trans());
     }

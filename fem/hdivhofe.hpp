@@ -54,7 +54,7 @@ namespace ngfem
   
     int EdgeOrientation (int enr) const
     {
-      const EDGE * edges = ElementTopology::GetEdges (this->eltype);
+      const EDGE * edges = ElementTopology::GetEdges (this->ElementType());
       return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
     }
   
@@ -94,7 +94,7 @@ namespace ngfem
 
     int EdgeOrientation (int enr) const
     {
-      const EDGE * edges = ElementTopology::GetEdges (this->eltype);
+      const EDGE * edges = ElementTopology::GetEdges (this->ElementType());
       return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
     }
   
@@ -108,6 +108,7 @@ namespace ngfem
 
     HDivHighOrderNormalSegm (int aorder);
     virtual void ComputeNDof();
+    virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
@@ -122,7 +123,7 @@ namespace ngfem
 
     HDivHighOrderNormalTrig (int aorder);
     virtual void ComputeNDof();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
                             FlatVector<> shape) const;
@@ -136,7 +137,7 @@ namespace ngfem
 
     HDivHighOrderNormalQuad (int aorder);
     virtual void ComputeNDof();
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
                             FlatVector<> shape) const;
@@ -158,7 +159,7 @@ namespace ngfem
   
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
-    using HDivFiniteElement<DIM>::eltype;
+    // using HDivFiniteElement<DIM>::eltype;
 
     using HDivHighOrderFiniteElement<DIM>::order_edge;
     using HDivHighOrderFiniteElement<DIM>::order_face;
@@ -176,7 +177,7 @@ namespace ngfem
       : HDivHighOrderFiniteElement<DIM> (ET)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
-      eltype = ET;
+      // eltype = ET;
     }
 
     T_HDivHighOrderFiniteElement (int aorder) 
@@ -191,10 +192,11 @@ namespace ngfem
       order_inner = aorder;
 
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
-      eltype = ET;
+      // eltype = ET;
 
       ComputeNDof();
     }
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
 
     virtual void ComputeNDof();
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
@@ -229,6 +231,8 @@ namespace ngfem
 
     HDivHighOrderFE (int aorder);
     virtual void ComputeNDof();
+    virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
+
     // virtual void GetInternalDofs (Array<int> & idofs) const;
   
 

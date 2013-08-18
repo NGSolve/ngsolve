@@ -458,6 +458,9 @@ namespace ngfem
     { 
       // ipdata.DeleteAll(); 
     }
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
@@ -991,6 +994,8 @@ namespace ngfem
       // ipdata.DeleteAll(); 
     }
 
+    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<2> shape) const
@@ -1452,6 +1457,9 @@ namespace ngfem
       // ipdata.DeleteAll(); 
     }
     ///
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {
@@ -2662,7 +2670,7 @@ namespace ngfem
     { 
       // ipdata.DeleteAll(); 
     }
-
+    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const
@@ -3259,6 +3267,7 @@ namespace ngfem
       // ipdata.DeleteAll();
     }
 
+    virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatMatrixFixWidth<3> shape) const
@@ -4173,6 +4182,9 @@ namespace ngfem
     { 
       // ipdata.DeleteAll(); 
     }
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
@@ -4358,6 +4370,9 @@ namespace ngfem
       // ipdata.DeleteAll(); 
     }
     ///
+
+    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    FlatVector<> shape) const
     {
