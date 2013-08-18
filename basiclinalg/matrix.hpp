@@ -434,32 +434,99 @@ namespace ngbla
   };
 
 
-  /*
-  template <class TB> ALWAYS_INLINE
-  Mat<3,3,double> operator+= (class Mat<3,3,double> & m, const Expr<TB> & exp)
-  {
-    m(0,0) += exp.Spec()(0,0);
-    m(0,1) += exp.Spec()(0,1);
-    m(0,2) += exp.Spec()(0,2);
-    m(1,0) += exp.Spec()(1,0);
-    m(1,1) += exp.Spec()(1,1);
-    m(1,2) += exp.Spec()(1,2);
-    m(2,0) += exp.Spec()(2,0);
-    m(2,1) += exp.Spec()(2,1);
-    m(2,2) += exp.Spec()(2,2);
-    return m;
-  }
 
-  template <class TB> ALWAYS_INLINE
-  Mat<2,2,double> operator+= (class Mat<2,2,double> & m, const Expr<TB> & exp)
-  {
-    m(0,0) += exp.Spec()(0,0);
-    m(0,1) += exp.Spec()(0,1);
-    m(1,0) += exp.Spec()(1,0);
-    m(1,1) += exp.Spec()(1,1);
-    return m;
-  }
+
+
+
+
+  /**
+     A diagonal matrix of fixed size.
   */
+  template <int H, typename T = double>
+  class DiagMat : public MatExpr<DiagMat<H,T> >
+  {
+    T data[(H>0) ? H : 1];
+  public:
+    typedef T TELEM;
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    typedef Vec<H, typename mat_traits<T>::TV_COL> TV_COL;
+    typedef Vec<H, typename mat_traits<T>::TV_ROW> TV_ROW;
+    enum { HEIGHT = H };
+    enum { WIDTH  = H };
+
+    /// do not initialize 
+    DiagMat () { ; }
+
+    /// copy matrix
+    DiagMat (const DiagMat & m) 
+      : MatExpr<DiagMat> ()
+    {
+      (*this) = m;
+    }
+
+    /// assign values
+    template<typename TB>
+    DiagMat (const Expr<TB> & m)
+    {
+      (*this) = m;
+    }
+
+    /// fill with scalar
+    DiagMat (TSCAL s) throw()    
+    {
+      for (int i = 0; i < H; i++)
+        data[i] = s;
+    }
+
+    /// assign values
+    template<typename TB>
+    DiagMat & operator= (const Expr<TB> & m)
+    {
+      for (int i = 0; i < H; i++)
+        data[i] = m.Spec()(i,i);
+      return *this;
+    }
+
+    /// copy matrix
+    DiagMat & operator= (const DiagMat & m) throw()
+    {
+      for (int i = 0; i < H; i++)
+        data[i] = m.data[i];
+      return *this;
+    }
+ 
+    /// fill values
+    DiagMat & operator= (TSCAL s) throw()
+    {
+      for (int i = 0; i < H; i++)
+        data[i] = s;
+      return *this;
+    }
+
+    /// linear access
+    TELEM & operator() (int i) { return data[i]; }
+    /// access element
+    // TELEM & operator() (int i, int j) { return (i==j) ? data[i] : 0; }
+    /// linear access
+    TELEM operator() (int i) const { return data[i]; }
+    TELEM operator[] (int i) const { return data[i]; }
+    /// access element
+    TELEM operator() (int i, int j) const { return (i==j) ? data[i] : 0; }
+
+    /// the height
+    int Height () const throw() { return H; }
+    /// the width
+    int Width () const throw() { return H; }
+    
+    enum { IS_LINEAR = 0 };
+  };
+
+
+
+
+
+
+
 
 
 
@@ -835,6 +902,18 @@ namespace ngbla
     {
       return SliceVector<T> (w, H, &data[i]);
     }
+
+
+    SubMatrixExpr<FlatMatrixFixHeight,true>
+    Rows (int first, int next)
+    { 
+      return SubMatrixExpr<FlatMatrixFixHeight,true> (*this, first, 0, next-first, Width()); 
+    }
+    SubMatrixExpr<FlatMatrixFixHeight,true>
+    Rows (IntRange range) 
+    { 
+      return Rows (range.First(), range.Next());
+    }
     
     /*
     const DoubleSliceMatrix<T> Rows (int first, int next) const
@@ -867,7 +946,7 @@ namespace ngbla
 
 
     enum { IS_LINEAR = 0 };
-    //  static bool IsLinear() { return false; }
+    enum { COL_MAJOR = 1 }; 
   };
 
 

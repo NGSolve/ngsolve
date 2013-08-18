@@ -11,10 +11,12 @@
 #include <gmpxx.h>
 #endif
 
+
 namespace ngbla
 {
 
   template <int H, int W, typename T> class Mat;
+  template <int H, typename T> class DiagMat;
   template <int S, typename T> class Vec;
 
 
@@ -471,7 +473,7 @@ namespace ngbla
 
   template <class TA> class RowsArrayExpr;
   template <class TA> class ColsArrayExpr;
-  template <class TA> class SubMatrixExpr;
+  template <class TA, bool CM = false> class SubMatrixExpr;
 
 
 
@@ -539,13 +541,13 @@ namespace ngbla
     int Height() const { return Spec().T::Height(); }
     int Width() const { return Spec().T::Width(); }
 
-    // ALWAYS_INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
-    // ALWAYS_INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
+    // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
+    // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
 
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
     SubMatrixExpr<T>
-    Rows (int first, int next) 
+    Rows (int first, int next)
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
     }
@@ -690,7 +692,8 @@ namespace ngbla
     using Expr<T>::Height;
     using Expr<T>::Width;
 
-    enum { IS_LINEAR = 1 };
+    enum { IS_LINEAR = 1 };  // row-major continuous storage (dist=width)
+    enum { COL_MAJOR = 0 };  // matrix is stored col-major
 
     void Dump (ostream & ost) const { ost << "Matrix"; }
 
@@ -779,6 +782,16 @@ namespace ngbla
 					   v.Height(), v.Width());
 	}
 #endif
+      if (T::COL_MAJOR)
+        {
+	  int h = Expr<T>::Height();
+	  int w = Expr<T>::Width();
+
+          for (int j = 0; j < w; j++)
+            for (int i = 0; i < h; i++)
+              Spec()(i,j) = v.Spec()(i,j);
+          return Spec();
+        }
 
       if (TB::IS_LINEAR)
 	{
@@ -863,7 +876,7 @@ namespace ngbla
     }
 
     template <typename TA, typename TB>
-    T & operator= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod) 
+    T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 0.0);
       return Spec();
@@ -1290,9 +1303,6 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    // typedef typename mat_prod_type<typename TA::TELEM, 
-    // typename TB::TELEM>::TMAT TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
     MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
@@ -1321,6 +1331,34 @@ namespace ngbla
     int Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
+
+
+  template <int H, typename SCALA, class TB> class MultExpr<DiagMat<H,SCALA>,TB> 
+    : public Expr<MultExpr<DiagMat<H,SCALA>,TB> >
+  {
+    const DiagMat<H,SCALA> & a;
+    const TB & b;
+  public:
+
+    MultExpr (const DiagMat<H,SCALA> & aa, const TB & ab) : a(aa), b(ab) { ; }
+
+    auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
+    { return a[i] * b(i); }  
+
+    auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
+    { 
+      return a[i] * b(i,j);
+    }
+
+    const DiagMat<H,SCALA> & A() const { return a; }
+    const TB & B() const { return b; }
+    int Height() const { return a.Height(); }
+    int Width() const { return b.Width(); }
+    enum { IS_LINEAR = 0 };
+  };
+
+
+
 
 
   template <typename TA, typename TB>
@@ -1359,7 +1397,7 @@ namespace ngbla
 
     enum { IS_LINEAR = 0 };
 
-    const TA & A() { return a; }
+    const TA & A() const { return a; }
   };
 
 
@@ -1377,14 +1415,15 @@ namespace ngbla
   /**
      RowsArray
   */
-  template <class TA> class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
+  template <class TA, bool CM> 
+  class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
   {
     TA & a;
     int first_row, first_col;
     int height, width;
   public:
-    typedef typename TA::TELEM TELEM;
-    typedef typename TA::TSCAL TSCAL;
+    // typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TSCAL TSCAL;
 
     SubMatrixExpr (TA & aa, int fr, int fc, int ah, int aw) 
       : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
@@ -1392,12 +1431,13 @@ namespace ngbla
     int Height() const { return height; }
     int Width() const { return width; }
 
-    TELEM & operator() (int i, int j) { return a(i+first_row, j+first_col); }
-    TELEM & operator() (int i) { return a(i+first_row); }
-    const TELEM & operator() (int i, int j) const { return a(i+first_row, j+first_col); }
-    const TELEM & operator() (int i) const { return a(i+first_row); }
+    auto operator() (int i, int j) -> decltype(a(0,0)) { return a(i+first_row, j+first_col); }
+    auto operator() (int i) -> decltype(a(0)) { return a(i+first_row); }
+    auto operator() (int i, int j) const -> decltype(a(0,0)) { return a(i+first_row, j+first_col); }
+    auto operator() (int i) const -> decltype(a(0)) { return a(i+first_row); }
 
     enum { IS_LINEAR = 0 };
+    enum { COL_MAJOR = TA::COL_MAJOR };
 
     template<typename TB>
     const SubMatrixExpr & operator= (const Expr<TB> & m) 
@@ -1549,40 +1589,33 @@ namespace ngbla
 
   /* ************************* InnerProduct ********************** */
 
+
   inline double InnerProduct (double a, double b) {return a * b;}
   inline Complex InnerProduct (Complex a, Complex b) {return a * b;}
   inline Complex InnerProduct (double a, Complex b) {return a * b;}
   inline Complex InnerProduct (Complex a, double b) {return a * b;}
   inline int InnerProduct (int a, int b) {return a * b;}
 
-
   /**
      Inner product
-  */
-  /*
-  template <class TA, class TB>
-  inline 
-  // typename TA::TSCAL 
-  typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT
-  InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
   */
 
   template <class TA, class TB>
   inline auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
     -> decltype (InnerProduct(a.Spec()(0), b.Spec()(0)))
   {
-    // typedef typename mat_prod_type<typename TA::TSCAL, typename TB::TSCAL>::TMAT TSCAL;
-    // typedef typename TA::TSCAL TSCAL;
-    
-    typedef decltype (InnerProduct(a.Spec()(0), b.Spec()(0))) TSCAL;
-    if (a.Height() == 0) return 0; // TSCAL(0);
+    if (a.Height() == 0) return 0; 
 
-    TSCAL sum = InnerProduct (a.Spec()(0), b.Spec()(0));
+    auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
     for (int i = 1; i < a.Height(); i++)
       sum += InnerProduct (a.Spec()(i), b.Spec()(i));
-
     return sum;
   }
+
+
+
+
+
 
 
   /* **************************** Trace **************************** */
