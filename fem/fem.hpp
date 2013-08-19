@@ -49,7 +49,7 @@ namespace ngfem
 
 #include "elementtransformation.hpp"
 
-#include "h1lofe.hpp"
+// #include "h1lofe.hpp"
 // #include "h1hofe.hpp"
 // #include "l2hofe.hpp"
 

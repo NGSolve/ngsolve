@@ -15,7 +15,7 @@
 namespace ngfem
 {
   
-  FiniteElement :: ~FiniteElement () { ; }
+  // FiniteElement :: ~FiniteElement () { ; }
 
 
   string FiniteElement :: ClassName() const

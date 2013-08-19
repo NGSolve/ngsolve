@@ -16,22 +16,30 @@ namespace ngfem
         (*this)(j) = ad.DValue(j);
     }
   };
-  
 
 
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElementFO ()
+  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: T_ScalarFiniteElementFO ()
   {
-    ;
+    this->ndof = NDOF; 
+    this->order = ORDER; 
   }
+
+  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
+  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElementFO ()
+  { ; }
+
 
   /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
+  inline T_ScalarFiniteElement<FEL,ET,BASE> :: T_ScalarFiniteElement ()
+  { ; }
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
   T_ScalarFiniteElement<FEL,ET,BASE> :: ~T_ScalarFiniteElement ()
-  {
-    ;
-  }
+  { ; }
   */
+
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 

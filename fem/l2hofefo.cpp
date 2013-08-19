@@ -17,14 +17,6 @@ namespace ngfem
   template <int ORDER>
   PrecomputedShapesContainer<PrecomputedScalShapes<2> > L2HighOrderFEFO_Shapes<ET_TRIG, ORDER>::precomp;
 
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE () 
-  { ; }
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: ~L2HighOrderFE () 
-  { ; }
-
-
   template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
   template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
 

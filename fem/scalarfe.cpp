@@ -13,14 +13,17 @@
 
 
 #include <fem.hpp>
+#include "h1lofe.hpp"
 #include "l2hofe.hpp"
 
 namespace ngfem
 {
-  
+
+  /*
   template <int D>
   ScalarFiniteElement<D> :: ~ScalarFiniteElement () 
   { ; }
+  */
 
   template <int D>
   string ScalarFiniteElement<D> :: ClassName() const 

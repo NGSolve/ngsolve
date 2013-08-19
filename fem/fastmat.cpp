@@ -1,6 +1,3 @@
-// #define NO_PARALLEL_THREADS
-
-// #include "bla.hpp"
 #ifdef __SSE3__
 #include <emmintrin.h>
 #include <pmmintrin.h>
@@ -576,6 +573,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 
 
 
+#ifdef __SSE3__
 
   class SSEComplex
   {
@@ -637,6 +635,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
       sum += pa[i] * pb[i];
     return sum;
   }
+#endif
 
 
   template <int M> 
@@ -654,13 +653,15 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 
 	for (int j = 0; j < i; j++)
 	  {
-            /*
+
+#ifdef __SSE3___            
+            Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
+#else
 	    Complex sum = *hpc;
 	    for (int k = 0; k < M; k++)
 	      sum += hpa[k] * hpb[k];
-            */
-            
-            Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
+#endif
+
 	    *hpc = sum;
 	    pc[i+n*j] = sum;
 
@@ -668,12 +669,14 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
 	    hpc++;
 	  }
 
-        /*
+#ifdef __SSE3___            
+        Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
+#else
 	Complex sum = *hpc;
 	for (int k = 0; k < M; k++)
 	  sum += hpa[k] * hpb[k];
-        */
-        Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
+#endif
+
 	*hpc = sum;
 
 	hpa += M;

@@ -9,6 +9,8 @@
 */
 
 #include <comp.hpp>
+#include "../fem/h1lofe.hpp"
+
 
 namespace ngcomp
 {
@@ -588,7 +590,7 @@ namespace ngcomp
     static FE_Tet0 tet0;
     static FE_Prism0 prism0;
     static FE_Pyramid0 pyramid0;
-    static FE_Hex0 hex0;
+    FE_Hex0 hex0;
   
     const FiniteElement * fe = NULL;
     switch (GetElType (elnr))
@@ -599,7 +601,7 @@ namespace ngcomp
       case ET_TET: fe = &tet0; break;
       case ET_PYRAMID: fe = &pyramid0; break;
       case ET_PRISM: fe = &prism0; break;
-      case ET_HEX: fe = &hex0; break;
+	// case ET_HEX: fe = &hex0; break;
       default:
 	{
 	  cerr << "ElementVolume not implemented for el " << GetElType(elnr) << endl;

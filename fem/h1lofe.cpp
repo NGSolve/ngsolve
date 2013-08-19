@@ -6,21 +6,43 @@
 
  
 #include <fem.hpp>
+#include "h1lofe.hpp"
 #include <tscalarfe_impl.hpp>
 
 
 namespace ngfem
 {
+  FE_Pyramid1 :: FE_Pyramid1 () { ; }
+  FE_Hex0 :: FE_Hex0() { ; }
+  FE_Hex0 :: ~FE_Hex0() { ; }
+  FE_Hex1 :: FE_Hex1() { ; }
 
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_POINT>,ET_POINT,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_SEGM>,ET_SEGM,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_TRIG>,ET_TRIG,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_QUAD>,ET_QUAD,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_TET>,ET_TET,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_PRISM>,ET_PRISM,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
-  template class T_ScalarFiniteElementFO<ScalarDummyFE<ET_HEX>,ET_HEX,0,0>;
 
+  template <ELEMENT_TYPE ET>
+  ScalarDummyFE<ET> :: ScalarDummyFE() { ; }
+  template <ELEMENT_TYPE ET>
+  ScalarDummyFE<ET> :: ~ScalarDummyFE() { ; }
+
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_POINT>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_SEGM>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_TRIG>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_QUAD>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_TET>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_PRISM>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_PYRAMID>;
+  template class NGS_DLL_HEADER ScalarDummyFE<ET_HEX>;
+
+
+  /*
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_POINT>,ET_POINT,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_SEGM>,ET_SEGM,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_TRIG>,ET_TRIG,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_QUAD>,ET_QUAD,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_TET>,ET_TET,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_PRISM>,ET_PRISM,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
+  template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_HEX>,ET_HEX,0,0>;
+  */
 
   
   template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
@@ -69,9 +91,9 @@ namespace ngfem
   template class  T_ScalarFiniteElementFO<FE_Prism2HBaniso,ET_PRISM,12,2>;
 
 
-  template class  T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>;
-  template class  T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>;
+  // template class T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>;
+  // template class T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>;
 
   template class  T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>;
-  template class  T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
+  // template class  T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
 }

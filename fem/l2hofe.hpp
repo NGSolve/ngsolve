@@ -65,18 +65,8 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER L2HighOrderFE ();
-    NGS_DLL_HEADER L2HighOrderFE (int aorder)
-    {
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
-      // eltype = ET;
-      
-      order = aorder;
-      order_inner = aorder;
-      ndof = PolDimension (aorder);
-    }
-    
+    NGS_DLL_HEADER L2HighOrderFE (int aorder);
     NGS_DLL_HEADER ~L2HighOrderFE ();
-    NGS_DLL_HEADER void SomeThing ();
     
     /// global vertex numbers define ordering of vertices
     template <typename TA>

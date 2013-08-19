@@ -28,16 +28,16 @@ namespace ngfem
     { ; }
 
     // destructor
-    NGS_DLL_HEADER virtual ~ScalarFiniteElement () = 0;
+    // NGS_DLL_HEADER virtual ~ScalarFiniteElement () = 0;
     
     /// the name
-    virtual string ClassName() const;
+    NGS_DLL_HEADER virtual string ClassName() const;
 
     /**
        returns shape functions in point ip.
        returns stored values for valid ip.IPNr(), else computes values
     */
-    FlatVector<> GetShape (const IntegrationPoint & ip, 
+    INLINE FlatVector<> GetShape (const IntegrationPoint & ip, 
                            LocalHeap & lh) const
     {
       FlatVector<> shape(ndof, lh);
@@ -49,7 +49,7 @@ namespace ngfem
        returns derivatives in point ip.
        returns stored values for valid ip.IPNr(), else computes values
     */
-    const FlatMatrixFixWidth<D> 
+    INLINE const FlatMatrixFixWidth<D> 
     GetDShape (const IntegrationPoint & ip, LocalHeap & lh) const
     {
       FlatMatrixFixWidth<D> dshape(ndof, lh);
