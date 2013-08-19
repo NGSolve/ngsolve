@@ -37,7 +37,7 @@ namespace ngfem
 
   public:
     /// make the class virtual
-    virtual ~FiniteElement () = 0;
+    virtual ~FiniteElement () { ; }
 
     /// Number of degrees-of-freedom
     int GetNDof () const { return ndof; }

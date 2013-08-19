@@ -13,7 +13,7 @@ namespace ngfem
 
   
   /// default shape function engine for high order h1-elements
-  template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
+  template <ELEMENT_TYPE ET> class NGS_DLL_HEADER H1HighOrderFE_Shape;
 
 
 
@@ -64,20 +64,12 @@ namespace ngfem
 
   public:
     /// minimal constructor, orders will be set later
-    NGS_DLL_HEADER H1HighOrderFE (); // { ; }
+    NGS_DLL_HEADER H1HighOrderFE (); 
 
     /// builds a functional element of order aorder.
-    NGS_DLL_HEADER H1HighOrderFE (int aorder)
-    { 
-      ndof = PolDimension (aorder);
-      
-      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
-      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
-      if (DIM == 3) order_cell[0] = aorder; 
-      
-      order = aorder;
-    }
+    NGS_DLL_HEADER H1HighOrderFE (int aorder);
+
+    virtual NGS_DLL_HEADER ~H1HighOrderFE ();
 
     /// assignes vertex numbers
     template <typename TA> 

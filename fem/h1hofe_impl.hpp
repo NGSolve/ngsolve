@@ -16,7 +16,28 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES,
             class BASE>
   H1HighOrderFE<ET,TSHAPES,BASE> :: H1HighOrderFE() { ; }
+  
+  
+  template <ELEMENT_TYPE ET, 
+	    template <ELEMENT_TYPE ET2> class TSHAPES,
+	    class BASE>
+  H1HighOrderFE<ET,TSHAPES,BASE> :: H1HighOrderFE (int aorder)
+  { 
+    ndof = PolDimension (aorder);
+    
+    for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+    for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+    for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
+    if (DIM == 3) order_cell[0] = aorder; 
+    
+    order = aorder;
+  }
 
+  template <ELEMENT_TYPE ET, 
+	    template <ELEMENT_TYPE ET2> class TSHAPES,
+	    class BASE>
+  H1HighOrderFE<ET,TSHAPES,BASE> :: ~H1HighOrderFE() { ; }
+  
 
   template <ELEMENT_TYPE ET> 
   class H1HighOrderFE_Shape : public H1HighOrderFE<ET>
@@ -25,7 +46,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[], TFA & shape) const;
   };
-
+  
 
 
 

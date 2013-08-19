@@ -12,14 +12,6 @@
 namespace ngfem
 {
 
-  template <ELEMENT_TYPE ET>
-  class ScalarDummyFE : public T_ScalarFiniteElementFO<ScalarDummyFE<ET>,ET,0,0>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
-    { ; }
-  };
 
 
   class FE_Point : public T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>
@@ -61,7 +53,7 @@ namespace ngfem
   class FE_Segm2 : public T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>
   {
   public:
-        NGS_DLL_HEADER  FE_Segm2() { ; };
+    NGS_DLL_HEADER  FE_Segm2() { ; };
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[1], TFA & shape) 
     {
@@ -598,6 +590,8 @@ namespace ngfem
   class FE_Hex0 : public T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>
   {
   public:
+    NGS_DLL_HEADER FE_Hex0();
+    NGS_DLL_HEADER virtual ~FE_Hex0();
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -609,6 +603,7 @@ namespace ngfem
   class FE_Hex1 : public T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>
   {
   public:
+    NGS_DLL_HEADER FE_Hex1();
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
@@ -649,6 +644,8 @@ namespace ngfem
   class FE_Pyramid1 : public T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>
   {
   public:
+    NGS_DLL_HEADER FE_Pyramid1 ();
+
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {

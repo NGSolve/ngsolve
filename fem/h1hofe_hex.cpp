@@ -12,5 +12,5 @@
 
 namespace ngfem
 {
-  template class H1HighOrderFE<ET_HEX>;
+  template class DLL_HEADER H1HighOrderFE<ET_HEX>;
 }

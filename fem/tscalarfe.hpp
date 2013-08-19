@@ -26,8 +26,8 @@ namespace ngfem
     using BASE::ndof;
     using BASE::order;
 
-    T_ScalarFiniteElement () { /* eltype = ET; */ }
-    virtual ~T_ScalarFiniteElement() = 0;
+    // T_ScalarFiniteElement () { ; }
+    // virtual ~T_ScalarFiniteElement();
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
 
@@ -63,24 +63,34 @@ namespace ngfem
   };
 
 
-  template <class FEL, ELEMENT_TYPE ET, class BASE>
-  inline T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  ~T_ScalarFiniteElement() { ; }
-
-
-
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
   class T_ScalarFiniteElementFO : public T_ScalarFiniteElement<FEL,ET>
   {
   public:
-    T_ScalarFiniteElementFO () 
+    T_ScalarFiniteElementFO ();
+    /*
     {
       this->ndof = NDOF; 
       this->order = ORDER; 
     }
-
+    */
     virtual ~T_ScalarFiniteElementFO ();
   };
+
+
+
+
+  template <ELEMENT_TYPE ET>
+  class ScalarDummyFE : public T_ScalarFiniteElementFO<ScalarDummyFE<ET>,ET,0,0>
+  {
+  public:
+    NGS_DLL_HEADER ScalarDummyFE();
+    NGS_DLL_HEADER virtual ~ScalarDummyFE();
+    template<typename Tx, typename TFA>  
+    static void T_CalcShape (Tx x[1], TFA & shape) 
+    { ; }
+  };
+
 
 }
 
