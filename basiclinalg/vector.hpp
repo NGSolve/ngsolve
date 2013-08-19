@@ -49,7 +49,7 @@ namespace ngbla
     enum { dist = 1 };
 #endif
     /// the data
-    T * data;
+    T * __restrict data;
   public:
     /// element type
     typedef T TELEM;

@@ -11,12 +11,12 @@ namespace ngla
 {
 
   template <class TVR, class TVC>
-  class Real2ComplexMatrix : public BaseMatrix
+  class NGS_DLL_HEADER Real2ComplexMatrix : public BaseMatrix
   {
     const BaseMatrix * realmatrix;
     VVector<TVR> hx, hy;
   public:
-    Real2ComplexMatrix (const BaseMatrix * arealmatrix = 0);
+    NGS_DLL_HEADER Real2ComplexMatrix (const BaseMatrix * arealmatrix = 0);
     void SetMatrix (const BaseMatrix * arealmatrix);
     const BaseMatrix & GetMatrix () const { return *realmatrix; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -29,7 +29,7 @@ namespace ngla
   ////////////////////////////////////////////////////////////////////////////////
   // added 08/19/2003
   template <class TVR>
-  class Sym2NonSymMatrix : public BaseMatrix
+  class NGS_DLL_HEADER Sym2NonSymMatrix : public BaseMatrix
   {
     const BaseMatrix * base;
     VVector<TVR> hx, hy;
@@ -46,7 +46,7 @@ namespace ngla
   ////////////////////////////////////////////////////////////////////////////////
   // added 09/02/2003
   template <class TVSMALL, class TVBIG>
-  class Small2BigNonSymMatrix : public BaseMatrix
+  class NGS_DLL_HEADER Small2BigNonSymMatrix : public BaseMatrix
   {
     const BaseMatrix * base;
     VVector<TVSMALL> hx1, hx2, hy1, hy2;

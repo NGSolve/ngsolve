@@ -85,7 +85,7 @@ namespace ngla
     int GetSteps () const
     { return steps; }
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
+    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
     ///
     virtual BaseVector * CreateVector () const;
 
@@ -118,13 +118,13 @@ namespace ngla
       : KrylovSpaceSolver (aa, ac) { ; }
 
     ///
-    virtual void Mult (const BaseVector & v, BaseVector & prod) const;
+    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const;
   };
 
 
   /// The BiCGStab solver
   template <class IPTYPE>
-  class BiCGStabSolver : public KrylovSpaceSolver
+  class NGS_DLL_HEADER BiCGStabSolver : public KrylovSpaceSolver
   {
   public:
     typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
@@ -149,7 +149,7 @@ namespace ngla
 
   //   Simple iteration solver
   template <class IPTYPE>
-  class SimpleIterationSolver : public KrylovSpaceSolver
+  class NGS_DLL_HEADER SimpleIterationSolver : public KrylovSpaceSolver
   {
   public:
     typedef typename SCAL_TRAIT<IPTYPE>::SCAL SCAL;
@@ -200,7 +200,7 @@ namespace ngla
 
   /// The quasi-minimal residual (QMR) solver
   template <class IPTYPE>
-  class QMRSolver : public KrylovSpaceSolver
+  class NGS_DLL_HEADER QMRSolver : public KrylovSpaceSolver
   {
     int status;
     const BaseMatrix * c2;
@@ -312,7 +312,7 @@ namespace ngla
 
   //  QMR solver for non-symmetric matrices
 
-  class QMRSolver : public CGSolver
+  class NGS_DLL_HEADER QMRSolver : public CGSolver
   {
   int status;
   ///

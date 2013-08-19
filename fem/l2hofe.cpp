@@ -39,17 +39,28 @@ namespace ngfem
   }
 
 
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE () 
+  { ; }
+
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: ~L2HighOrderFE () 
+  { ; }
+
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  void L2HighOrderFE<ET,SHAPES,BASE> :: SomeThing () 
+  { ; }
 
 
-
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_POINT>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_SEGM>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_TRIG>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_QUAD>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_TET>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_PRISM>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_PYRAMID>;
-  template NGS_DLL_HEADER class L2HighOrderFE<ET_HEX>;
+  template class L2HighOrderFE<ET_POINT>;
+  template class L2HighOrderFE<ET_SEGM>;
+  template class L2HighOrderFE<ET_TRIG,L2HighOrderFE_Shape<ET_TRIG>,
+                               T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> > >;
+  template class L2HighOrderFE<ET_QUAD>;
+  template class L2HighOrderFE<ET_TET>;
+  template class L2HighOrderFE<ET_PRISM>;
+  template class L2HighOrderFE<ET_PYRAMID>;
+  template class L2HighOrderFE<ET_HEX>;
  
   /*
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
@@ -62,6 +73,15 @@ namespace ngfem
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<3> >;
   */
 
+
+
+
+
+
+
+  template <int order>
+  MyTrig<order> :: MyTrig() { ; }
+  template class MyTrig<2>;
   
 } // namespace
 

@@ -14,7 +14,7 @@ namespace ngla
      Lanczos Eigen system calculation
   */ 
 
-  class EigenSystem
+  class NGS_DLL_HEADER EigenSystem
   {
     ///
     const BaseMatrix *a, *c;

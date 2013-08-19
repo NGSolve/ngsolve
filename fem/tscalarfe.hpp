@@ -27,7 +27,7 @@ namespace ngfem
     using BASE::order;
 
     T_ScalarFiniteElement () { /* eltype = ET; */ }
-    virtual ~T_ScalarFiniteElement();
+    virtual ~T_ScalarFiniteElement() = 0;
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
 
@@ -63,7 +63,9 @@ namespace ngfem
   };
 
 
-
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  inline T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  ~T_ScalarFiniteElement() { ; }
 
 
 

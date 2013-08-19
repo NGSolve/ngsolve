@@ -29,12 +29,12 @@ class BlockAllocator
   int nels;
 public:
   /// Create BlockAllocator for elements of size asize
-  BlockAllocator (unsigned int asize, unsigned int ablocks = 100);
+  NGS_DLL_HEADER BlockAllocator (unsigned int asize, unsigned int ablocks = 100);
   /// Delete all memeory
-  ~BlockAllocator ();
+  NGS_DLL_HEADER ~BlockAllocator ();
 
   /// Return pointer to new element
-  void * Alloc ();
+  NGS_DLL_HEADER void * Alloc ();
   /*
   {
     nels++;
@@ -49,7 +49,7 @@ public:
 
 
   /// Send memory to free-list
-  void Free (void * p);
+  NGS_DLL_HEADER void Free (void * p);
   /*
   {
     nels--;
@@ -61,9 +61,9 @@ public:
   /// number of allocated elements
   int NumElements () { return nels; }
 
-  void Print (ostream * ost) const;
+  NGS_DLL_HEADER void Print (ostream * ost) const;
 private:
-  void * Alloc2 ();
+  NGS_DLL_HEADER void * Alloc2 ();
 };
 
 

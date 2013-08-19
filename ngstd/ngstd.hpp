@@ -29,7 +29,24 @@
 
 #else
    #define DLL_HEADER 
-   #define NGS_DLL_HEADER 
+// #define NGS_DLL_HEADER 
+
+
+/*
+   #ifdef NGINTERFACE_EXPORTS
+      #define DLL_HEADER   __declspec(dllexport)
+   #else
+      #define DLL_HEADER   __declspec(dllimport)
+   #endif
+*/
+
+   #ifdef NGS_EXPORTS
+      #define NGS_DLL_HEADER   __attribute__ ((visibility ("default")))
+   #else
+      #define NGS_DLL_HEADER
+   #endif
+
+
 #endif
 
 

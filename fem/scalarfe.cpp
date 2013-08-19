@@ -13,6 +13,7 @@
 
 
 #include <fem.hpp>
+#include "l2hofe.hpp"
 
 namespace ngfem
 {

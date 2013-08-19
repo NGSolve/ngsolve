@@ -64,11 +64,7 @@ namespace ngfem
     static TPRECOMP_GRAD precomp_grad;
 
   public:
-    NGS_DLL_HEADER L2HighOrderFE () 
-    { 
-      // eltype = ET; 
-    }
-
+    NGS_DLL_HEADER L2HighOrderFE ();
     NGS_DLL_HEADER L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
@@ -78,6 +74,9 @@ namespace ngfem
       order_inner = aorder;
       ndof = PolDimension (aorder);
     }
+    
+    NGS_DLL_HEADER ~L2HighOrderFE ();
+    NGS_DLL_HEADER void SomeThing ();
     
     /// global vertex numbers define ordering of vertices
     template <typename TA>
@@ -116,6 +115,14 @@ namespace ngfem
 
 
 
+  template <int order>
+  class MyTrig
+  {
+  public:
+    // __attribute__ ((visibility ("default")))
+    NGS_DLL_HEADER MyTrig();
+  };
+  
 
 
 }

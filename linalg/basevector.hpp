@@ -18,8 +18,8 @@ namespace ngla
   template <class SCAL> class S_BaseVector;
 
 
-  class ComplexConjugate;
-  class ComplexConjugate2;
+  class NGS_DLL_HEADER ComplexConjugate;
+  class NGS_DLL_HEADER ComplexConjugate2;
 
   template<class IPTYPE>
   class SCAL_TRAIT

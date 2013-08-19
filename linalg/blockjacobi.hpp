@@ -13,7 +13,7 @@ namespace ngla
   /**
      Base class for Block - Jacobi and Block Gauss Seidel smoother.
   */
-  class BaseBlockJacobiPrecond : virtual public BaseMatrix
+  class DLL_HEADER BaseBlockJacobiPrecond : virtual public BaseMatrix
   {
   public:
     // enum COARSE_TYPE { NO_COARSE = 0, USER_COARSE = 1, DIRECT_COARSE = 2, SMOOTHING_COARSE = 3 };
@@ -103,8 +103,8 @@ namespace ngla
      The blocks are specified by a table container
   */
   template <class TM, class TV_ROW, class TV_COL>
-  class BlockJacobiPrecond : virtual public BaseBlockJacobiPrecond,
-			     virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
+  class  DLL_HEADER BlockJacobiPrecond : virtual public BaseBlockJacobiPrecond,
+                                         virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
     /// a reference to the matrix
@@ -297,7 +297,7 @@ namespace ngla
 
   ///
   template <class TM, class TV>
-  class BlockJacobiPrecondSymmetric : 
+  class NGS_DLL_HEADER BlockJacobiPrecondSymmetric : 
     virtual public BaseBlockJacobiPrecond,
     virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
@@ -320,7 +320,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
   
     ///
-    BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
+    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
 				 Table<int> & ablocktable);
     
     /*

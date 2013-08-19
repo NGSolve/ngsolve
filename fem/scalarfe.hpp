@@ -180,11 +180,11 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
 
-    virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const;
-    virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const;
+    NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const;
 
-    virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
-    virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
+    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
   };
   
 

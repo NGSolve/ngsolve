@@ -7,6 +7,7 @@
 /*********************************************************************/
 
 #include <fem.hpp>    
+#include <hcurlhofe.hpp>
 #include <hcurlhofe_impl.hpp>
 
 
@@ -213,9 +214,22 @@ namespace ngfem
   }
 
 
-  template class  HCurlHighOrderFiniteElement<1>;
-  template class  HCurlHighOrderFiniteElement<2>;
-  template class  HCurlHighOrderFiniteElement<3>; 
+  template class HCurlHighOrderFiniteElement<1>;
+  template class HCurlHighOrderFiniteElement<2>;
+  template class HCurlHighOrderFiniteElement<3>; 
+
+  /*
+  template class T_HCurlHighOrderFiniteElement<ET_TET, HCurlHighOrderFE_Shape<ET_TET> >;
+  template class T_HCurlHighOrderFiniteElement<ET_PRISM, HCurlHighOrderFE_Shape<ET_PRISM> >;
+  template class T_HCurlHighOrderFiniteElement<ET_PYRAMID, HCurlHighOrderFE_Shape<ET_PYRAMID> >;
+  template class T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX> >;
+  */
+
+
+
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES>
+  HCurlHighOrderFE<ET,TSHAPES> :: 
+  HCurlHighOrderFE () { ; }
 
   template class HCurlHighOrderFE<ET_SEGM>;
   template class HCurlHighOrderFE<ET_TRIG>;

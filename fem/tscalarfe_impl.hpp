@@ -25,12 +25,13 @@ namespace ngfem
     ;
   }
 
+  /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   T_ScalarFiniteElement<FEL,ET,BASE> :: ~T_ScalarFiniteElement ()
   {
     ;
   }
-
+  */
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
