@@ -16,10 +16,8 @@ To do: *Internal External Dofs (eliminate internal)
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-
 #include <../fem/l2hofe.hpp>
 #include <../fem/l2hofefo.hpp>
-
 
 using namespace ngmg;
 

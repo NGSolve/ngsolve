@@ -195,7 +195,7 @@ namespace ngstd
     /// the size
     TSIZE size;
     /// the data
-    T * data;
+    T * __restrict data;
   public:
 
     /// initialize array 

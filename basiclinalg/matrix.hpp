@@ -39,7 +39,7 @@ namespace ngbla
     /// the width
     int w;
     /// the data
-    T * data;
+    T * __restrict data;
   public:
 
     /// element type
@@ -547,7 +547,7 @@ namespace ngbla
   {
   protected:
     /// the data
-    T * data;
+    T *  __restrict data;
     /// the height
     int h;
   public:
@@ -768,7 +768,7 @@ namespace ngbla
   {
   protected:
     /// the data
-    T * data;
+    T * __restrict data;
     /// the width
     int w;
   public:
@@ -1018,7 +1018,7 @@ namespace ngbla
     /// the distance
     int dist;
     /// the data
-    T * data;
+    T * __restrict data;
   public:
 
     /// element type

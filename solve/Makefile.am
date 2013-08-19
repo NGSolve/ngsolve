@@ -41,8 +41,6 @@ ngs_LDADD = libngsolve.la \
 	$(LAPACK_LIBS) \
         -L$(libdir) -lnglib -linterface 
 
-
-
 include_HEADERS = solve.hpp pde.hpp numproc.hpp
 
 

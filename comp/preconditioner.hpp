@@ -249,7 +249,7 @@ namespace ngcomp
 
 
   ///
-  class ComplexPreconditioner : public Preconditioner
+  class NGS_DLL_HEADER ComplexPreconditioner : public Preconditioner
   {
   protected:
     ///

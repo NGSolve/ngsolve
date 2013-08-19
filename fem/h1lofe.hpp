@@ -472,6 +472,8 @@ namespace ngfem
   class FE_Prism1 : public T_ScalarFiniteElementFO<FE_Prism1,ET_PRISM,6,1>
   {
   public:
+    NGS_DLL_HEADER FE_Prism1() { ; }
+
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {

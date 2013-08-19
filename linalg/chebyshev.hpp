@@ -13,7 +13,7 @@ namespace ngla
   /**
      Chebyshev iteraion
   */ 
-  class ChebyshevIteration : public BaseMatrix
+  class NGS_DLL_HEADER ChebyshevIteration : public BaseMatrix
   {
   protected:
     ///

@@ -33,7 +33,7 @@ namespace ngfem
   public:
     // HCurlHighOrderFiniteElement (ELEMENT_TYPE aeltype);
     HCurlHighOrderFiniteElement () { discontinuous = false; }
-
+    
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
     void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
     void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
@@ -128,15 +128,15 @@ namespace ngfem
 
   public:
 
-    T_HCurlHighOrderFiniteElement () 
+    NGS_DLL_HEADER T_HCurlHighOrderFiniteElement () 
     {
       for (int i = 0; i < N_VERTEX; i++)
         vnums[i] = i;
       // eltype = ET;
     }
 
-    T_HCurlHighOrderFiniteElement (int aorder);
-
+    NGS_DLL_HEADER T_HCurlHighOrderFiniteElement (int aorder);
+    
     virtual void ComputeNDof();
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
@@ -175,8 +175,8 @@ namespace ngfem
   class HCurlHighOrderFE : public T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET> >
   {
   public:
-    HCurlHighOrderFE () { ; }
-    HCurlHighOrderFE (int aorder) 
+    NGS_DLL_HEADER HCurlHighOrderFE (); //  { ; }
+    NGS_DLL_HEADER HCurlHighOrderFE (int aorder) 
       : T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET> > (aorder)
     {
       this->ComputeNDof();

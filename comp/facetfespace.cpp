@@ -2,6 +2,7 @@
 #include <comp.hpp>
 #include <fem.hpp> 
 
+#include "../fem/l2hofe.hpp"
 #include "../fem/facethofe.hpp"
 
 namespace ngcomp

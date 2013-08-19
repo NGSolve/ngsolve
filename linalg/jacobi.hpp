@@ -82,7 +82,7 @@ namespace ngla
 
   /// A Jaboci preconditioner for symmetric sparse matrices
   template <class TM, class TV>
-  class JacobiPrecondSymmetric : public JacobiPrecond<TM,TV,TV>
+  class NGS_DLL_HEADER JacobiPrecondSymmetric : public JacobiPrecond<TM,TV,TV>
   {
   public:
     typedef TV TVX;

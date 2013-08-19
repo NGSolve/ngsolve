@@ -6,6 +6,7 @@
 
  
 #include <fem.hpp>
+#include "l2hofe.hpp"
 #include "l2hofefo.hpp"
 #include "l2hofe_impl.hpp"
 #include <tscalarfe_impl.hpp>
@@ -15,6 +16,17 @@ namespace ngfem
 
   template <int ORDER>
   PrecomputedShapesContainer<PrecomputedScalShapes<2> > L2HighOrderFEFO_Shapes<ET_TRIG, ORDER>::precomp;
+
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE () 
+  { ; }
+  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
+  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: ~L2HighOrderFE () 
+  { ; }
+
+
+  template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
+  template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
 
   template class L2HighOrderFEFO<ET_TRIG,0>;
   template class L2HighOrderFEFO<ET_TRIG,1>;

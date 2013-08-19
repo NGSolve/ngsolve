@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -fvisibility=hidden
 
 lib_LTLIBRARIES = libngstd.la
 

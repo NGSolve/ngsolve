@@ -1337,7 +1337,7 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
     }
 }
   
-
+ 
   
   template class CGSolver<double>;
   template class CGSolver<Complex>;

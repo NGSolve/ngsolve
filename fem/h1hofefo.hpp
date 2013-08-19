@@ -36,7 +36,7 @@ namespace ngfem
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
-    H1HighOrderFEFO () 
+    NGS_DLL_HEADER H1HighOrderFEFO () 
     {
       order = ORDER;
       ndof = NDOF; 
@@ -77,7 +77,7 @@ namespace ngfem
 
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
-    H1HighOrderFEFO () 
+    NGS_DLL_HEADER H1HighOrderFEFO () 
     {
       order = ORDER; 
       ndof = NDOF; 
