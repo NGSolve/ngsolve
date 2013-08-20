@@ -615,7 +615,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -696,7 +696,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetSElement(elnr);
+    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
