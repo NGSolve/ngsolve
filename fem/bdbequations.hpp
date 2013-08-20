@@ -40,7 +40,7 @@ namespace ngfem
 				const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      static Timer t("DiffOpGrad::GenMatrix - general"); RegionTimer reg(t);
+      // static Timer t("DiffOpGrad::GenMatrix - general"); RegionTimer reg(t);
       mat = Trans (mip.GetJacobianInverse ()) * 
 	Trans (Cast(fel).GetDShape(mip.IP(),lh));
     }
@@ -49,7 +49,7 @@ namespace ngfem
 				const MappedIntegrationPoint<D,D> & mip,
 				FlatMatrixFixHeight<D> mat, LocalHeap & lh)
     {
-      static Timer t("DiffOpGrad::GenMatrix"); RegionTimer reg(t);
+      // static Timer t("DiffOpGrad::GenMatrix"); RegionTimer reg(t);
       Cast(fel).CalcMappedDShape (mip, mat.Trans());
     }
 
