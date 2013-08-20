@@ -16,5 +16,10 @@ namespace ngstd
   MPI_Comm ngs_comm;
 #endif
 
+
+
+  template class Array<int,int>;
+
+
 }
 

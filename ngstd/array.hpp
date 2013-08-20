@@ -614,7 +614,8 @@ namespace ngstd
   private:
 
     /// resize array, at least to size minsize. copy contents
-    void ReSize (TSIZE minsize)
+    void ReSize (TSIZE minsize);
+    /*
     {
       TSIZE nsize = 2 * allocsize;
       if (nsize < minsize) nsize = minsize;
@@ -638,8 +639,38 @@ namespace ngstd
     
       allocsize = nsize;
     }
+    */
   };
 
+  /// resize array, at least to size minsize. copy contents
+  template <class T, class TSIZE> 
+  void Array<T,TSIZE> :: ReSize (TSIZE minsize)
+  {
+    TSIZE nsize = 2 * allocsize;
+    if (nsize < minsize) nsize = minsize;
+    
+    if (data)
+        {
+          T * p = new T[nsize];
+	
+          TSIZE mins = (nsize < size) ? nsize : size; 
+          memcpy (p, data, mins * sizeof(T));
+
+          if (ownmem) delete [] data;
+          ownmem = 1;
+          data = p;
+        }
+      else
+        {
+          data = new T[nsize];
+          ownmem = 1;
+        }
+    
+      allocsize = nsize;
+  }
+
+  extern template class Array<int,int>;
+  
 
   /**
      Array with static and dynamic memory management.
