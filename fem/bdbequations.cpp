@@ -7,40 +7,19 @@
 /*  
    Finite Element Integrators 
 */
-  
+
+#define FILE_BDBEQUATIONS_CPP
+
+
 #include <fem.hpp>
+#include <diffop_impl.hpp>
+
+
+
+
   
 namespace ngfem
 { 
-
-  template <int D, typename FEL>  MassIntegrator<D,FEL> :: 
-  MassIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
-  { ; }
-
-  template <int D, typename FEL>  MassIntegrator<D, FEL> :: 
-  MassIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (coeffs)
-  { ; }
-
-  template <int D, typename FEL>  MassIntegrator<D, FEL> :: ~MassIntegrator () { ; }
-
-
-
-
-  template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
-  LaplaceIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-  { ; }
-
-  template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
-  LaplaceIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (coeffs)
-  { ; }
-
-  template <int D, typename FEL> LaplaceIntegrator<D,FEL> ::
-  ~LaplaceIntegrator ()
-  { ; }
 
 
   template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
@@ -52,98 +31,6 @@ namespace ngfem
   RotSymLaplaceIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
   { ; }
-
-
-
-
-  
-  template <int D, typename FEL> RobinIntegrator<D,FEL> ::
-  RobinIntegrator (CoefficientFunction * coeff)
-    : BASE(DiagDMat<1> (coeff))
-  { ; }
-
-  template <int D, typename FEL> RobinIntegrator<D,FEL> ::
-  RobinIntegrator (Array<CoefficientFunction*> & coeffs)
-    : BASE(coeffs)
-  { ; }
-
-  template <int D, typename FEL> RobinIntegrator<D,FEL> :: 
-  ~RobinIntegrator () 
-  { ; }
-
-
-
-
-
-
-
-
-  template <int D, typename FEL> SourceIntegrator<D,FEL> ::
-  SourceIntegrator (CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (DVec<1> (coeff))
-  { ; }
-
-  template <int D, typename FEL> SourceIntegrator<D,FEL> ::
-  SourceIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (coeffs)
-  { ; }
-  
-  template <int D, typename FEL>  SourceIntegrator<D,FEL> :: 
-  ~SourceIntegrator () 
-  { ; }
-
-
-
-
-
-  template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
-  NeumannIntegrator (CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeff))
-  { ; }
-
-  template <int D, typename FEL> NeumannIntegrator<D,FEL> ::
-  NeumannIntegrator (Array<CoefficientFunction*> & coeffs)
-    : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeffs))
-  { ; }
-
-  template <int D, typename FEL> NeumannIntegrator<D,FEL> :: 
-  ~NeumannIntegrator () 
-  { ; }
-
-
-
-
-
-  template class MassIntegrator<1>;
-  template class MassIntegrator<2>;
-  template class MassIntegrator<3>;
-
-  template class LaplaceIntegrator<1>;
-  template class LaplaceIntegrator<2>;
-  template class LaplaceIntegrator<3>;
-
-  template class RotSymLaplaceIntegrator<2>;
-  template class RotSymLaplaceIntegrator<3>;
-
-  template class LaplaceBoundaryIntegrator<2>;
-  template class LaplaceBoundaryIntegrator<3>;
-
-
-  template class RobinIntegrator<1>;
-  template class RobinIntegrator<2>;
-  template class RobinIntegrator<3>;
-
-
-  template class SourceIntegrator<1>;
-  template class SourceIntegrator<2>;
-  template class SourceIntegrator<3>;
-
-  template class NeumannIntegrator<1>;
-  template class NeumannIntegrator<2>;
-  template class NeumannIntegrator<3>;
-
-
-
 
 
   // standard integratos:

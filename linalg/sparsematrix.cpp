@@ -8,6 +8,8 @@
    bilinear-form and linear-form integrators
 */
 
+#define FILE_SPARSEMATRIX_CPP
+
 #include <la.hpp>
 
 namespace ngla
@@ -631,6 +633,7 @@ namespace ngla
   }
 
 
+#ifdef NONE
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (int as, int max_elsperrow)
@@ -645,7 +648,6 @@ namespace ngla
     */
     data.SetSize (nze);
   }
-
 
 
   template <class TM>
@@ -670,26 +672,15 @@ namespace ngla
     : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
       nul(TSCAL(0))
   { 
-    /*
-    data.Alloc (nze);
-    data.SetName ("sparse matrix");
-    */
     data.SetSize (nze);
   }
-
 
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
-    : // BaseMatrix(),
-      BaseSparseMatrix (agraph, stealgraph), 
-      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+    : BaseSparseMatrix (agraph, stealgraph), 
       nul(TSCAL(0))
   { 
-    /*
-    data.Alloc (nze);
-    data.SetName ("sparse matrix");
-    */
     data.SetSize (nze);
     FindSameNZE();
   }
@@ -697,18 +688,14 @@ namespace ngla
   template <class TM>
   SparseMatrixTM<TM> ::
   SparseMatrixTM (const SparseMatrixTM & amat)
-    : // BaseMatrix(amat),
-      BaseSparseMatrix (amat), 
-      // S_BaseMatrix<typename mat_traits<TM>::TSCAL> (),
+    : BaseSparseMatrix (amat), 
       nul(TSCAL(0)) 
   { 
-    /*
-    data.Alloc (nze);
-    data.SetName ("sparse matrix");
-    */
     data.SetSize(nze);
     AsVector() = amat.AsVector(); 
   }
+#endif
+
 
   template <class TM>
   SparseMatrixTM<TM> :: ~SparseMatrixTM ()
@@ -1401,10 +1388,11 @@ namespace ngla
 
 
 
-
   template class SparseMatrix<double>;
   template class SparseMatrix<Complex>;
   template class SparseMatrix<double, Complex, Complex>;
+
+
 
 
 #if MAX_SYS_DIM >= 1

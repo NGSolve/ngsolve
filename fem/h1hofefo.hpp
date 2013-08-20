@@ -99,6 +99,55 @@ namespace ngfem
     void T_CalcShape (Tx x[3], TFA & shape) const; 
   };
 
+
+
+
+
+
+
+
+
+
+
+
+#ifdef FILE_H1HOFEFO_CPP
+#define H1HOFEFO_EXTERN
+#else
+#define H1HOFEFO_EXTERN extern
+#endif
+
+
+
+
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,1>, ET_TRIG>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,2>, ET_TRIG>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,3>, ET_TRIG>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,4>, ET_TRIG>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,5>, ET_TRIG>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,6>, ET_TRIG>;
+
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,1>, ET_TET>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,2>, ET_TET>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,3>, ET_TET>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,4>, ET_TET>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,5>, ET_TET>;
+  H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,6>, ET_TET>;
+
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,1>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,2>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,3>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,4>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,5>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TRIG,6>;
+
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,1>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,2>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,3>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,4>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,5>;
+  H1HOFEFO_EXTERN template class H1HighOrderFEFO<ET_TET,6>;
+
+
 }
 
 

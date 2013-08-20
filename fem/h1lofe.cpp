@@ -4,6 +4,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+#define FILE_H1LOFE_CPP
  
 #include <fem.hpp>
 #include "h1lofe.hpp"
@@ -12,12 +13,51 @@
 
 namespace ngfem
 {
-  FE_Pyramid1 :: FE_Pyramid1 () { ; }
-  FE_Hex0 :: FE_Hex0() { ; }
+  FE_Point :: ~FE_Point() { ; }
+
+  FE_Segm0 :: ~FE_Segm0() { ; }
+  FE_Segm1 :: ~FE_Segm1() { ; }
+  FE_Segm2 :: ~FE_Segm2() { ; }
+
+  
+  FE_Segm2HB :: ~FE_Segm2HB() { ; }
+  FE_Segm1L2 :: ~FE_Segm1L2() { ; }
+  FE_Segm2L2 :: ~FE_Segm2L2() { ; }
+  FE_NcSegm1 :: ~FE_NcSegm1() { ; }
+  FE_Segm3Pot :: ~FE_Segm3Pot() { ; }
+  
+  FE_Trig0 :: ~FE_Trig0() { ; }
+  FE_Trig1 :: ~FE_Trig1() { ; }
+  FE_Trig2 :: ~FE_Trig2() { ; }
+  FE_Trig2HB :: ~FE_Trig2HB() { ; }
+  FE_NcTrig1 :: ~FE_NcTrig1() { ; }
+
+  FE_Quad0 :: ~FE_Quad0() { ; }
+  FE_Quad1 :: ~FE_Quad1() { ; }
+  FE_Quad2 :: ~FE_Quad2() { ; }
+  FE_Quad2aniso :: ~FE_Quad2aniso() { ; }
+
+  FE_Tet0 :: ~FE_Tet0() { ; }
+  FE_Tet1 :: ~FE_Tet1() { ; }
+
+  FE_Tet2 :: ~FE_Tet2() { ; }
+  FE_Tet2HB :: ~FE_Tet2HB() { ; }
+  FE_NcTet1 :: ~FE_NcTet1() { ; }
+  
+  FE_Prism0 :: ~FE_Prism0() { ; }
+  FE_Prism1 :: ~FE_Prism1() { ; }
+  FE_Prism2 :: ~FE_Prism2() { ; }
+  FE_Prism2aniso :: ~FE_Prism2aniso() { ; }
+  FE_Prism2HBaniso :: ~FE_Prism2HBaniso() { ; }
+  
   FE_Hex0 :: ~FE_Hex0() { ; }
-  FE_Hex1 :: FE_Hex1() { ; }
+  FE_Hex1 :: ~FE_Hex1() { ; }
+
+  FE_Pyramid0 :: ~FE_Pyramid0() { ; }
+  FE_Pyramid1 :: ~FE_Pyramid1() { ; }
 
 
+  /*
   template <ELEMENT_TYPE ET>
   ScalarDummyFE<ET> :: ScalarDummyFE() { ; }
   template <ELEMENT_TYPE ET>
@@ -31,7 +71,7 @@ namespace ngfem
   template class NGS_DLL_HEADER ScalarDummyFE<ET_PRISM>;
   template class NGS_DLL_HEADER ScalarDummyFE<ET_PYRAMID>;
   template class NGS_DLL_HEADER ScalarDummyFE<ET_HEX>;
-
+  */
 
   /*
   template class NGS_DLL_HEADER T_ScalarFiniteElementFO<ScalarDummyFE<ET_POINT>,ET_POINT,0,0>;
@@ -45,7 +85,8 @@ namespace ngfem
   */
 
   
-  template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
+  /*
+  // template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
   template class T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>;
   template class T_ScalarFiniteElementFO<FE_Segm1,ET_SEGM,2,1>;
   template class T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>;
@@ -96,4 +137,5 @@ namespace ngfem
 
   template class  T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>;
   // template class  T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
+  */
 }

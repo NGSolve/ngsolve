@@ -8,9 +8,12 @@
 /* 
    Finite Element Integrators for Maxwell equations
 */
- 
+
+#define FILE_HCURL_EQUATIONS_CPP 
 
 #include <fem.hpp>
+#include <diffop_impl.hpp>
+
 int link_maxwellintegrator;
 
   

@@ -17,7 +17,7 @@ namespace ngfem
     }
   };
 
-
+  /*
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
   T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: T_ScalarFiniteElementFO ()
   {
@@ -28,7 +28,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
   T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElementFO ()
   { ; }
-
+  */
 
   /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
