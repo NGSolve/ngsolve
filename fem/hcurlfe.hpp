@@ -513,6 +513,19 @@ namespace ngfem
 				     const HCurlFiniteElement<D> & hcurlfe,
 				     FlatMatrix<> gradient);
 
+
+  
+
+#ifdef FILE_HCURLFE_CPP
+#define HCURLFE_EXTERN
+#else
+#define HCURLFE_EXTERN extern
+#endif
+  
+  HCURLFE_EXTERN template class HCurlFiniteElement<1>;
+  HCURLFE_EXTERN template class HCurlFiniteElement<2>;
+  HCURLFE_EXTERN template class HCurlFiniteElement<3>;
+
 }
 
 

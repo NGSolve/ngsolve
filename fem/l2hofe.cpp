@@ -4,6 +4,8 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+#define FILE_L2HOFE_CPP
+
 
 #include <fem.hpp>
 #include "l2hofe.hpp"
@@ -39,11 +41,11 @@ namespace ngfem
   }
 
 
-
+  /*
   template class L2HighOrderFE<ET_POINT>;
   template class L2HighOrderFE<ET_SEGM>;
-  template class L2HighOrderFE<ET_TRIG>;
-  template class L2HighOrderFE<ET_QUAD>;
+  // template class L2HighOrderFE<ET_TRIG>;
+  // template class L2HighOrderFE<ET_QUAD>;
   template class L2HighOrderFE<ET_TET>;
   template class L2HighOrderFE<ET_PRISM>;
   template class L2HighOrderFE<ET_PYRAMID>;
@@ -51,22 +53,13 @@ namespace ngfem
  
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
+  // template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
+  // template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<3> >;
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<3> >;
   template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<3> >;
-
-
-
-
-
-
-
-  template <int order>
-  MyTrig<order> :: MyTrig() { ; }
-  template class MyTrig<2>;
+  */
   
 } // namespace
 

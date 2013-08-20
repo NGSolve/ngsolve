@@ -9,6 +9,8 @@
    Maxwell equations
 */
 
+#define FILE_HCURLFE_CPP
+
 #include <fem.hpp>
 #include "hcurllofe.hpp"
 #include "hdivlofe.hpp"
@@ -339,11 +341,11 @@ namespace ngfem
       }
   }
   
-
+  /*
   template class HCurlFiniteElement<1>;
   template class HCurlFiniteElement<2>;
   template class HCurlFiniteElement<3>;
-
+  */
 
   /*
     Input: Matrix a, H <= W

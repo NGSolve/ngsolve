@@ -4,6 +4,8 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+#define FILE_L2HOFEFO_CPP
+
  
 #include <fem.hpp>
 #include "l2hofe.hpp"
@@ -17,15 +19,7 @@ namespace ngfem
   template <int ORDER>
   PrecomputedShapesContainer<PrecomputedScalShapes<2> > L2HighOrderFEFO_Shapes<ET_TRIG, ORDER>::precomp;
 
-  template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
-  template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
 
-  template class L2HighOrderFEFO<ET_TRIG,0>;
-  template class L2HighOrderFEFO<ET_TRIG,1>;
-  template class L2HighOrderFEFO<ET_TRIG,2>;
-  template class L2HighOrderFEFO<ET_TRIG,3>;
-
-  
 
   /*
   template <int ORDER>

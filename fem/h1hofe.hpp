@@ -64,12 +64,22 @@ namespace ngfem
 
   public:
     /// minimal constructor, orders will be set later
-    NGS_DLL_HEADER H1HighOrderFE (); 
+    NGS_DLL_HEADER H1HighOrderFE () { ; } 
 
     /// builds a functional element of order aorder.
-    NGS_DLL_HEADER H1HighOrderFE (int aorder);
+    NGS_DLL_HEADER H1HighOrderFE (int aorder)
+    { 
+      ndof = PolDimension (aorder);
+      
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
+      if (DIM == 3) order_cell[0] = aorder; 
+      
+      order = aorder;
+    }
 
-    virtual NGS_DLL_HEADER ~H1HighOrderFE ();
+    virtual NGS_DLL_HEADER ~H1HighOrderFE () { ; }
 
     /// assignes vertex numbers
     template <typename TA> 
@@ -123,7 +133,42 @@ namespace ngfem
 
   };
 
+  
 
+
+
+
+
+
+
+
+
+
+#ifdef FILE_H1HOFE_CPP
+#define H1HOFE_EXTERN
+#else
+#define H1HOFE_EXTERN extern
+#endif
+  
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_POINT>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_SEGM>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_TRIG>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_QUAD>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_PRISM>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_PYRAMID>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_HEX>;
+
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
+
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
+
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
 
 }
 

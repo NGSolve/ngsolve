@@ -4,6 +4,7 @@
 /* Date:   24. Nov. 2009                                             */
 /*********************************************************************/
 
+
  
 #include <fem.hpp>
 #include "diffop_impl.hpp"
@@ -163,7 +164,7 @@ namespace ngfem
 
 
 
-
+  /*
   template class T_DifferentialOperator<DiffOpId<1> >;
   template class T_DifferentialOperator<DiffOpId<2> >;
   template class T_DifferentialOperator<DiffOpId<3> >;
@@ -182,5 +183,7 @@ namespace ngfem
 
   template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
   template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
+  */
+
 
 }

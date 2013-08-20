@@ -27,6 +27,8 @@ namespace ngfem
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   typename L2HighOrderFE<ET,SHAPES,BASE>::TPRECOMP_GRAD L2HighOrderFE<ET,SHAPES,BASE>::precomp_grad(40);
 
+
+  /*
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE () 
   { ; }
@@ -41,10 +43,10 @@ namespace ngfem
     ndof = PolDimension (aorder);
   }
 
-
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: ~L2HighOrderFE () 
   { ; }
+  */
 
 
 

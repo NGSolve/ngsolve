@@ -164,6 +164,24 @@ namespace ngfem
 
   };
 
+
+
+
+#ifdef FILE_L2HOFEFO_CPP
+#define L2HOFEFO_EXTERN
+#else
+#define L2HOFEFO_EXTERN extern
+#endif
+
+  
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
+
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,0>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,1>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
+
 }
 
 

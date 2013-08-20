@@ -190,9 +190,21 @@ namespace ngfem
 
 
 
+#ifdef FILE_SCALARFE_CPP
+#define SCALARFE_EXTERN
+#else
+#define SCALARFE_EXTERN extern
+#endif
 
+  SCALARFE_EXTERN template class ScalarFiniteElement<0>;
+  SCALARFE_EXTERN template class ScalarFiniteElement<1>;
+  SCALARFE_EXTERN template class ScalarFiniteElement<2>;
+  SCALARFE_EXTERN template class ScalarFiniteElement<3>;
 
-
+  SCALARFE_EXTERN template class DGFiniteElement<0>;
+  SCALARFE_EXTERN template class DGFiniteElement<1>;
+  SCALARFE_EXTERN template class DGFiniteElement<2>;
+  SCALARFE_EXTERN template class DGFiniteElement<3>;
 }
 
 #endif

@@ -9,7 +9,7 @@
    Finite Element Definitions
 */
 
-
+#define FILE_SCALARFE_CPP
 
 
 #include <fem.hpp>
@@ -216,11 +216,6 @@ namespace ngfem
 				  
 
 
-  template class ScalarFiniteElement<0>;
-  template class ScalarFiniteElement<1>;
-  template class ScalarFiniteElement<2>;
-  template class ScalarFiniteElement<3>;
-
 
 
 
@@ -366,9 +361,5 @@ namespace ngfem
   }
   
 
-  template class DGFiniteElement<0>;
-  template class DGFiniteElement<1>;
-  template class DGFiniteElement<2>;
-  template class DGFiniteElement<3>;
 }
 

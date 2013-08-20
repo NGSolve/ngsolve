@@ -1,9 +1,11 @@
 /*********************************************************************/
-/* File:   h1hofe.cpp                                                */
-/* Author: Start                                                      */
+/* File:   h1hofefo.cpp                                              */
+/* Author: Start                                                     */
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
+
+#define FILE_H1HOFEFO_CPP
  
 #include <fem.hpp>
 #include <h1hofefo.hpp>
@@ -13,26 +15,6 @@
 
 namespace ngfem
 {
-
-  /*
-  template <ELEMENT_TYPE ET, int ORDER>
-  T_H1HighOrderFiniteElementFO<ET,ORDER> ::
-  ~T_H1HighOrderFiniteElementFO ()
-  {
-    ;
-  }
-
-  template <int ORDER>
-  H1HighOrderFEFO<ET_TRIG, ORDER> :: ~H1HighOrderFEFO()
-  { ; }
-
-  template <int ORDER>
-  H1HighOrderFEFO<ET_TET, ORDER> :: ~H1HighOrderFEFO()
-  { ; }
-  */
-
-
-
 
   template <int ORDER, int I = ORDER>
   class TrigProduct
@@ -211,41 +193,6 @@ namespace ngfem
 
 
 
-
-
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,1>, ET_TRIG>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,2>, ET_TRIG>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,3>, ET_TRIG>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,4>, ET_TRIG>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,5>, ET_TRIG>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,6>, ET_TRIG>;
-
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,1>, ET_TET>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,2>, ET_TET>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,3>, ET_TET>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,4>, ET_TET>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,5>, ET_TET>;
-  template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TET,6>, ET_TET>;
-
-
-
-  /*
-  template class T_H1HighOrderFiniteElementFO<ET_TRIG>;
-  template class T_H1HighOrderFiniteElementFO<ET_TET>;
-  */
-  template class H1HighOrderFEFO<ET_TRIG,1>;
-  template class H1HighOrderFEFO<ET_TRIG,2>;
-  template class H1HighOrderFEFO<ET_TRIG,3>;
-  template class H1HighOrderFEFO<ET_TRIG,4>;
-  template class H1HighOrderFEFO<ET_TRIG,5>;
-  template class H1HighOrderFEFO<ET_TRIG,6>;
-
-  template class H1HighOrderFEFO<ET_TET,1>;
-  template class H1HighOrderFEFO<ET_TET,2>;
-  template class H1HighOrderFEFO<ET_TET,3>;
-  template class H1HighOrderFEFO<ET_TET,4>;
-  template class H1HighOrderFEFO<ET_TET,5>;
-  template class H1HighOrderFEFO<ET_TET,6>;
 
 
   int link_it_h1hofefo;

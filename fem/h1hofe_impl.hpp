@@ -12,11 +12,11 @@
 namespace ngfem
 {
 
+  /*
   template <ELEMENT_TYPE ET, 
             template <ELEMENT_TYPE ET2> class TSHAPES,
             class BASE>
   H1HighOrderFE<ET,TSHAPES,BASE> :: H1HighOrderFE() { ; }
-  
   
   template <ELEMENT_TYPE ET, 
 	    template <ELEMENT_TYPE ET2> class TSHAPES,
@@ -37,6 +37,8 @@ namespace ngfem
 	    template <ELEMENT_TYPE ET2> class TSHAPES,
 	    class BASE>
   H1HighOrderFE<ET,TSHAPES,BASE> :: ~H1HighOrderFE() { ; }
+  */
+
   
 
   template <ELEMENT_TYPE ET> 

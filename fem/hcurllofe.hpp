@@ -23,6 +23,35 @@ namespace ngfem
   };
 
 
+
+  
+#ifdef FILE_HCURLFE_CPP
+#define HCURLFE_EXTERN
+#else
+#define HCURLFE_EXTERN extern
+#endif
+  
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_POINT>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_SEGM>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_TRIG>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_QUAD>;
+
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_TET>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_PRISM>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_PYRAMID>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_HEX>;
+
+
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_POINT>,ET_POINT,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_SEGM>,ET_SEGM,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_TRIG>,ET_TRIG,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_QUAD>,ET_QUAD,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_TET>,ET_TET,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_PRISM>,ET_PRISM,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_HEX>,ET_HEX,0,0>;
+
+
   /* **************************** Segm Elements *************** */
 
 
