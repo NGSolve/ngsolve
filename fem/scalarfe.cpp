@@ -212,6 +212,47 @@ namespace ngfem
   }
 
 
+  template<int D>
+  void ScalarFiniteElement<D> :: CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
+                                                    FlatMatrix<> ddshape) const
+  {
+    int nd = GetNDof();
+
+    double eps = 1e-7;
+    MatrixFixWidth<D> dshape1(nd), dshape2(nd);
+    const ElementTransformation & eltrans = mip.GetTransformation();
+
+    for (int i = 0; i < D; i++)
+      {
+	IntegrationPoint ip1 = mip.IP();
+	IntegrationPoint ip2 = mip.IP();
+        ip1(i) -= eps;
+        ip2(i) += eps;
+        MappedIntegrationPoint<D,D> mip1(ip1, eltrans);
+        MappedIntegrationPoint<D,D> mip2(ip2, eltrans);
+
+	CalcMappedDShape (mip1, dshape1);
+	CalcMappedDShape (mip2, dshape2);
+
+        ddshape.Cols(D*i,D*(i+1)) = (0.5/eps) * (dshape2-dshape1);
+      }  
+
+    for (int j = 0; j < D; j++)
+      {
+        for (int k = 0; k < nd; k++)
+          for (int l = 0; l < D; l++)
+            dshape1(k,l) = ddshape(k, l*D+j);
+        
+        dshape2 = dshape1 * mip.GetJacobianInverse();
+        
+        for (int k = 0; k < nd; k++)
+          for (int l = 0; l < D; l++)
+            ddshape(k, l*D+j) = dshape2(k,l);
+      }
+    
+  }
+
+
 
 				  
 
