@@ -367,11 +367,8 @@ public:
 
     try
       {
-        // const FEL & fel = *static_cast<const FEL*> (&bfel);
 	int ndof = fel.GetNDof();
-        
 	elmat = 0;
-	
 
         enum { BLOCK = 2 * (12 / DIM_DMAT + 1) };
 	
@@ -388,13 +385,11 @@ public:
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
 
         typedef decltype (DMATOP::GetMatrixType(TSCAL(0))) TDMAT;
-        // Mat<DIM_DMAT,DIM_DMAT, TSCAL> dmat;
-        // TDMAT dmat;
 	
         const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-        FlatArray<TDMAT>dmats(ir.GetNIP(), lh);
+        FlatArray<TDMAT> dmats(ir.GetNIP(), lh);
 	dmatop.GenerateMatrixIR (fel, mir, dmats, lh);
 
         int i = 0;
@@ -409,7 +404,6 @@ public:
                 
 		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmatr;
                 bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmatr; 
-                // bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = mir[i].GetWeight() * bmatr; 
               }
             
             if (DMATOP::SYMMETRIC)
@@ -418,9 +412,6 @@ public:
               elmat += Trans (bbmat) * bdbmat; 
           } 
 
-        // static Timer t2("bdbintegrator, block2");
-        // t2.Start();
-
         for ( ; i < ir.GetNIP()-1; i+=2)
           {
             HeapReset hr(lh);
@@ -428,23 +419,21 @@ public:
             DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
             TDMAT dmat = mir[i].GetWeight() * dmats[i];
 
-	    bmat2.Rows(0,DIM_DMAT) = bmatr;
+            bmat2.Rows(0,DIM_DMAT) = bmatr;
             dbmat2.Rows(0,DIM_DMAT) = dmat * bmatr;
-            // dbmat2.Rows(0,DIM_DMAT) = mir[i].GetWeight() * bmatr;
 
             DIFFOP::GenerateMatrix (fel, mir[i+1], bmatr, lh);
             dmat = mir[i+1].GetWeight() * dmats[i+1];
 
-	    bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmatr;
+            bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmatr;
             dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmatr;
-            // dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = mir[i+1].GetWeight() * bmatr;
             
             if (DMATOP::SYMMETRIC)
               FastMat<2*DIM_DMAT> (elmat.Height(), & dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
             else
               elmat += Trans (bmat2) * dbmat2;
           } 
-        // t2.Stop();
+
         for ( ; i < ir.GetNIP(); i++)
           {
             HeapReset hr(lh);
@@ -454,7 +443,6 @@ public:
 
             bmat1 = bmatr;
             dbmat1 = dmat * bmatr;
-            // dbmat1 = mir[i].GetWeight() * bmatr;
             
             if (DMATOP::SYMMETRIC)
               // elmat += Symmetric (Trans (dbmat) * bmat);

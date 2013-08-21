@@ -87,6 +87,9 @@ namespace ngfem
     NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
                                              FlatMatrix<> ddshape) const;
 
+    /// compute dshape, matrix: ndof x (spacedim spacedim)
+    NGS_DLL_HEADER virtual void CalcMappedDDShape (const MappedIntegrationPoint<D,D> & mip, 
+                                                   FlatMatrix<> ddshape) const;
 
 
     /**
