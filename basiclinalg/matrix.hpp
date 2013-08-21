@@ -903,13 +903,12 @@ namespace ngbla
       return SliceVector<T> (w, H, &data[i]);
     }
 
-
-    SubMatrixExpr<FlatMatrixFixHeight,true>
+    SubMatrixExpr<FlatMatrixFixHeight>
     Rows (int first, int next)
     { 
-      return SubMatrixExpr<FlatMatrixFixHeight,true> (*this, first, 0, next-first, Width()); 
+      return SubMatrixExpr<FlatMatrixFixHeight> (*this, first, 0, next-first, Width()); 
     }
-    SubMatrixExpr<FlatMatrixFixHeight,true>
+    SubMatrixExpr<FlatMatrixFixHeight>
     Rows (IntRange range) 
     { 
       return Rows (range.First(), range.Next());

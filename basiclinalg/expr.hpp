@@ -473,9 +473,7 @@ namespace ngbla
 
   template <class TA> class RowsArrayExpr;
   template <class TA> class ColsArrayExpr;
-  template <class TA, bool CM = false> class SubMatrixExpr;
-
-
+  template <class TA> class SubMatrixExpr;
 
 
 #ifdef USE_GMP
@@ -1412,19 +1410,13 @@ namespace ngbla
 
   /* ************************* SubMatrix ************************ */
 
-  /**
-     RowsArray
-  */
-  template <class TA, bool CM> 
+  template <class TA> 
   class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
   {
     TA & a;
     int first_row, first_col;
     int height, width;
   public:
-    // typedef typename TA::TELEM TELEM;
-    // typedef typename TA::TSCAL TSCAL;
-
     SubMatrixExpr (TA & aa, int fr, int fc, int ah, int aw) 
       : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
 
