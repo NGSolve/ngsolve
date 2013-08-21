@@ -760,18 +760,18 @@ namespace ngcomp
     else if (ma.GetDimension() == 3) 
 
       {
-        Ng_Element ngel = ma.GetElement<3> (elnr);
+        Ngs_Element ngel = ma.GetElement<3> (elnr);
 
 	HCurlHighOrderFiniteElement<3> * hofe = 
 	  static_cast<HCurlHighOrderFiniteElement<3>*> (fe);
 
         hofe -> SetVertexNumbers (ngel.vertices);
 
-        hofe -> SetOrderEdge (order_edge[ArrayObject(ngel.edges)]);
-        hofe -> SetUseGradEdge (usegrad_edge[ArrayObject(ngel.edges)]);
+        hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+        hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
 
-        hofe -> SetOrderFace (order_face[ArrayObject(ngel.faces)]);
-        hofe -> SetUseGradFace (usegrad_face[ArrayObject(ngel.faces)]);
+        hofe -> SetOrderFace (order_face[ngel.Faces()]);
+        hofe -> SetUseGradFace (usegrad_face[ngel.Faces()]);
 
 	hofe -> SetOrderCell (order_inner[elnr]);
 	hofe -> SetUseGradCell (usegrad_cell[elnr]); 
@@ -899,7 +899,7 @@ namespace ngcomp
     dranges.SetSize(0);
     if (!DefinedOn (ei)) return;
 
-    Ng_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma.GetElement(ei);
 
     for (int i = 0; i < ngel.edges.Size(); i++)
       dranges.Append (ngel.edges[i]);

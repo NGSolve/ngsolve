@@ -85,6 +85,18 @@ namespace ngcomp
   
 
 
+  class Ngs_Element : public Ng_Element
+  {
+  public:
+    Ngs_Element (const Ng_Element & el) : Ng_Element(el) { ; }
+    auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
+    auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
+    auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
+  };
+
+
+  
+
   /** 
       Access to mesh topology and geometry.
 
@@ -297,7 +309,7 @@ namespace ngcomp
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 conversion is done on the fly.
      */
-    Ng_Element GetElement (int elnr, bool boundary = 0) const
+    Ngs_Element GetElement (int elnr, bool boundary = 0) const
     {
       switch (dim-boundary)
 	{
@@ -308,7 +320,7 @@ namespace ngcomp
 	}
     }
 
-    Ng_Element GetElement (ElementId ei) const
+    Ngs_Element GetElement (ElementId ei) const
     {
       int hdim = dim;
       if (ei.IsBoundary()) hdim--;
@@ -329,7 +341,7 @@ namespace ngcomp
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 convertion is done on the fly.
      */
-    Ng_Element GetSElement (int elnr) const
+    Ngs_Element GetSElement (int elnr) const
     {
       switch (dim)
 	{
@@ -344,7 +356,7 @@ namespace ngcomp
        returns element of compile-time fixed dimension
      */
     template <int DIM>
-    Ng_Element GetElement (int elnr) const
+    Ngs_Element GetElement (int elnr) const
     {
       return mesh -> GetElement<DIM> (elnr);
     }
@@ -600,6 +612,7 @@ namespace ngcomp
 
     
     template <int DIMS, int DIMR> friend class Ng_ElementTransformation;
+    template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
     MPI_Comm GetCommunicator () const { return ngs_comm; }
