@@ -21,16 +21,6 @@ namespace ngcomp
 {
 
 
-  class Ngs_Element : public Ng_Element
-  {
-  public:
-    Ngs_Element (const Ng_Element & el) : Ng_Element(el) { ; }
-    auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
-    auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
-    auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
-  };
-
-
 
 
   H1HighOrderFESpace ::  

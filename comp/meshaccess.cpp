@@ -29,11 +29,7 @@ namespace ngcomp
     {
       elnr = aelnr;
       elindex = aelindex;
-
-      if (DIMS < DIMR)
-	iscurved = Ng_IsSurfaceElementCurved (elnr+1);
-      else
-	iscurved = Ng_IsElementCurved (elnr+1);
+      iscurved = true;
     }
 
     virtual int SpaceDim () const
@@ -146,6 +142,153 @@ namespace ngcomp
     }
   };
   
+
+
+
+
+
+
+
+
+
+  
+  template <int DIMS, int DIMR>
+  class Ng_ConstElementTransformation : public ElementTransformation
+  {
+    const netgen::Ngx_Mesh * mesh;
+    Vec<DIMR> p0;
+    Mat<DIMR,DIMS> mat;
+  public:
+    Ng_ConstElementTransformation (const netgen::Ngx_Mesh * amesh) 
+      : mesh(amesh) 
+    { ; }
+
+    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
+    {
+      elnr = aelnr;
+      elindex = aelindex;
+      iscurved = false;
+
+      Vec<DIMS> pref = 0.0;
+      mesh -> ElementTransformation <DIMS,DIMR> (elnr, &pref(0), &p0(0), &mat(0));
+    }
+
+    virtual int SpaceDim () const
+    {
+      return DIMR;
+    }
+    
+    virtual bool Boundary() const
+    {
+      return DIMS < DIMR;
+    }
+
+    virtual bool BelongsToMesh (const void * mesh2) const 
+    {
+      return mesh == static_cast<const MeshAccess*> (mesh2) -> mesh;
+    }
+
+
+    virtual void GetSort (FlatArray<int> sort) const
+    {
+      int vnums[12];
+
+      Ng_Element nel = mesh -> GetElement<DIMS> (elnr);
+      for (int j = 0; j  < nel.vertices.Size(); j++)
+        vnums[j] = nel.vertices[j];
+
+      switch (eltype)
+	{
+	case ET_TRIG:
+	  for (int i = 0; i < 3; i++) sort[i] = i;
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]]
+	  break; 
+
+	case ET_TET:
+	  for (int i = 0; i < 4; i++) sort[i] = i;
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
+	  if (vnums[sort[0]] > vnums[sort[2]]) Swap (sort[0], sort[2]);
+	  if (vnums[sort[1]] > vnums[sort[3]]) Swap (sort[1], sort[3]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+
+	  // vnums[sort[0]] < vnums[sort[1]] < vnums[sort[2]] < vnums[sort[3]]
+	  break; 
+
+	case ET_PRISM:
+	  for (int i = 0; i < 6; i++) sort[i] = i;
+
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+	  if (vnums[sort[1]] > vnums[sort[2]]) Swap (sort[1], sort[2]);
+	  if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
+        
+	  if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	  if (vnums[sort[4]] > vnums[sort[5]]) Swap (sort[4], sort[5]);
+	  if (vnums[sort[3]] > vnums[sort[4]]) Swap (sort[3], sort[4]);
+	  break;
+
+	default:
+	  throw Exception ("undefined eltype in ElementTransformation::GetSort()\n");
+	}
+      
+    }
+
+
+    virtual void CalcJacobian (const IntegrationPoint & ip,
+			       FlatMatrix<> dxdxi) const
+    {
+      dxdxi = mat;
+    }
+    
+    virtual void CalcPoint (const IntegrationPoint & ip,
+			    FlatVector<> point) const
+    {
+      point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+    }
+
+    virtual void CalcPointJacobian (const IntegrationPoint & ip,
+				    FlatVector<> point, FlatMatrix<> dxdxi) const
+    {
+      point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+      dxdxi = mat;
+    }
+
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    {
+      return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
+    }
+
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    {
+      return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }    
+
+    virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
+					 BaseMappedIntegrationRule & bmir) const
+    {
+      MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+
+      for (int i = 0; i < ir.Size(); i++)
+        {
+          const IntegrationPoint & ip = ir[i];
+          mir[i].Point() = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+          mir[i].Jacobian() = mat;
+          mir[i].Compute();
+        }
+    }
+  };
+  
+
+
+
+
+
+
+
+
 
 
 
@@ -544,14 +687,29 @@ namespace ngcomp
     
     if (!boundary)
       {
-	switch (dim)
-	  {
-	  case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (mesh); break;
-	  case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (mesh); break;
-	  case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (mesh); break;
-	  default:
-	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-	  }
+        if (Ng_IsElementCurved (elnr+1))
+          {
+            switch (dim)
+              {
+              case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (mesh); break;
+              case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (mesh); break;
+              case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (mesh); break;
+              default:
+                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+              }
+          }
+        else
+          {
+            switch (dim)
+              {
+              case 1: eltrans = new (lh) Ng_ConstElementTransformation<1,1> (mesh); break;
+              case 2: eltrans = new (lh) Ng_ConstElementTransformation<2,2> (mesh); break;
+              case 3: eltrans = new (lh) Ng_ConstElementTransformation<3,3> (mesh); break;
+              default:
+                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+              }
+          }
+          
 
         int elind = GetElIndex (elnr);
 	eltrans->SetElement (0, elnr, elind);
@@ -564,15 +722,29 @@ namespace ngcomp
       }
     else
       {
-	switch (dim)
-	  {
-	  case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (mesh); break;
-	  case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (mesh); break;
-	  case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (mesh); break;
-	  default:
-	    throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-	  }
-
+        if (Ng_IsSurfaceElementCurved (elnr+1))
+          {
+            switch (dim)
+              {
+              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (mesh); break;
+              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (mesh); break;
+              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (mesh); break;
+              default:
+                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+              }
+          }
+        else
+          {
+            switch (dim)
+              {
+              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (mesh); break;
+              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (mesh); break;
+              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (mesh); break;
+              default:
+                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+              }
+          }
+        
         int elind = GetSElIndex (elnr);
 	eltrans->SetElement (1, elnr, elind);
 	eltrans->SetElementType (GetSElType(elnr));
