@@ -197,7 +197,6 @@ namespace ngfem
 #define SCALARFE_EXTERN
 #else
 #define SCALARFE_EXTERN extern
-#endif
 
   SCALARFE_EXTERN template class ScalarFiniteElement<0>;
   SCALARFE_EXTERN template class ScalarFiniteElement<1>;
@@ -208,6 +207,8 @@ namespace ngfem
   SCALARFE_EXTERN template class DGFiniteElement<1>;
   SCALARFE_EXTERN template class DGFiniteElement<2>;
   SCALARFE_EXTERN template class DGFiniteElement<3>;
+
+#endif
 }
 
 #endif

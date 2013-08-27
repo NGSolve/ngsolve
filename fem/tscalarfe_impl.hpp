@@ -1,21 +1,64 @@
+#ifdef JS
+#include "../gold/tscalarfe_impl.hpp"
+#endif
+
+
+
+
 #ifndef FILE_TSCALARFE_IMPL
 #define FILE_TSCALARFE_IMPL
+
+
+
+
+namespace ngbla
+{
+
+  template <int DIM>
+  class AD2Vec : public MatExpr<AD2Vec<DIM> >
+  {
+    AutoDiff<DIM> ad;
+  public:
+    INLINE AD2Vec (double d) : ad(d) { ; }
+    INLINE AD2Vec (AutoDiff<DIM> aad) : ad(aad) { ; }
+    INLINE double operator() (int i) const { return ad.DValue(i); }
+    INLINE double operator() (int i, int j) const { return ad.DValue(i); }
+    INLINE AutoDiff<DIM> Data() const { return ad; }
+  };
+
+}
+
+
 
  
 namespace ngfem
 {
 
+  /*
   template <int DIM>
   class AD2Vec : public Vec<DIM>
   {
   public:
-    INLINE AD2Vec (double d) : Vec<DIM> (d) { ; }
+    // INLINE AD2Vec (double d) : Vec<DIM> (d) { ; }
     INLINE AD2Vec (AutoDiff<DIM> ad)
     {
       for (int j = 0; j < DIM; j++)
         (*this)(j) = ad.DValue(j);
     }
   };
+  */
+
+  /*
+  template <int DIM>
+  class AD2Vec : public FlatVec<DIM>
+  {
+  public: 
+    INLINE AD2Vec (AutoDiff<DIM> ad)
+      : FlatVec<DIM> (&ad.DValue(0)) { ; }
+  };
+  */
+
+
 
   /*
   template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
@@ -137,8 +180,13 @@ namespace ngfem
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);
 
+    /*
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AD2Vec<DIM> shape)
                                     { dshape.Row(i) = shape; }));
+    */
+    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                                    { shape.StoreGradient (&dshape(i,0)) ; }));
+    
   }
 
 
@@ -155,8 +203,8 @@ namespace ngfem
       for (int j = 0; j < DIM; j++)
 	adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
-    T_CalcShape (&adp(0), SBLambda ([&] (int i, AD2Vec<DIM> shape)
-                                    { dshape.Row(i) = shape; }));
+    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                                    { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 
 
