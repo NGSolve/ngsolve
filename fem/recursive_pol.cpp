@@ -34,12 +34,44 @@ namespace ngfem
   }
 
 
+  int JacobiPolynomialAlpha :: maxn;
+  int JacobiPolynomialAlpha :: maxalpha;
+  Array< Vec<3> > JacobiPolynomialAlpha :: coefs;
+
+
+  void JacobiPolynomialAlpha :: Calc (int n, int alpha)
+  {
+    if (coefs.Size() < (n+1)*(alpha+1))
+      {
+        coefs.SetSize (3* (n+1)*(alpha+1));
+
+        for (int a = 0; a <= alpha; a++)
+          {
+            for (int i = 1; i <= n; i++)
+              {
+                coefs[a*(n+1)+i][0] = CalcA (i, a, 0);
+                coefs[a*(n+1)+i][1] = CalcB (i, a, 0);
+                coefs[a*(n+1)+i][2] = CalcC (i, a, 0);
+              }
+            // ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+            double al = a, be = 0;
+            coefs[a*(n+1)+1][0] = 0.5 * (al+be+2);
+            coefs[a*(n+1)+1][1] = 0.5 * (2*(al+1)-(al+be+2));
+          }
+
+        maxn = n;
+        maxalpha = alpha;
+      }
+  }
+
+
   class InitRecPol
   {
   public:
     InitRecPol()
     {
       LegendrePolynomial::Calc(1000);
+      JacobiPolynomialAlpha::Calc(100,100); 
     }
   };
 
