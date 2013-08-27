@@ -73,6 +73,13 @@ public:
   /// returns partial derivative
   SCAL DValue (int i) const throw() { return dval[i]; }
 
+  ///
+  void StoreGradient (SCAL * p) const 
+  {
+    for (int i = 0; i < D; i++)
+      p[i] = dval[i];
+  }
+
   /// access value
   SCAL & Value() throw() { return val; }
 
@@ -385,3 +392,5 @@ AutoDiff<D,SCAL> log (AutoDiff<D,SCAL> x)
 }
 
 #endif
+
+
