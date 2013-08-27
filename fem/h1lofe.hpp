@@ -480,7 +480,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
-      shape[0] = 1;
+      shape[0] = Tx(1);
     }
   };
 
@@ -621,7 +621,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static void T_CalcShape (Tx hx[3], TFA & shape) 
     {
-      shape[0] = 1;
+      shape[0] = Tx(1);
     }
   };
 

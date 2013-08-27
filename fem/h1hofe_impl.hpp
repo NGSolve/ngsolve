@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 #include "h1hofe.hpp"
+#include <recpol.hpp>
 
 namespace ngfem
 {
@@ -57,7 +58,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
 
 
@@ -108,9 +109,9 @@ namespace ngfem
       {
         INT<4> f = GetFaceSort (0, vnums);
 
-	DubinerBasis::EvalMult (p-3, 
-                                lam[f[0]], lam[f[1]], 
-                                lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	DubinerBasis3::EvalMult (p-3, 
+				 lam[f[0]], lam[f[1]], 
+				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
   }
 
@@ -206,8 +207,8 @@ namespace ngfem
 	  int vop = 6 - f[0] - f[1] - f[2];  	
           
 	  int p = order_face[i][0];
-	  DubinerBasis::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
-					lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	  DubinerBasis3::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+					 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
 
@@ -279,7 +280,7 @@ namespace ngfem
 	  
 	  Tx bub = lam[0]*lam[1]*lam[2]*muz[f[2]];
 	  
-	  DubinerBasis::
+	  DubinerBasis3::
 	    EvalMult (p-3, lam[f[0]], lam[f[1]], bub, shape+ii);
 
 	  ii += (p-2)*(p-1)/2; 
@@ -317,7 +318,7 @@ namespace ngfem
 	int nf = (p[0]-1)*(p[0]-2)/2;
 	ArrayMem<Tx,20> pol_trig(nf);
 
-	DubinerBasis::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
+	DubinerBasis3::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
 	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
@@ -371,7 +372,7 @@ namespace ngfem
 	  INT<2> p = order_face[i];
           INT<4> f = GetFaceSort (i, vnums);	  
 
-	  Tx lam_f = 0;
+	  Tx lam_f = 0.0;
 	  for (int j = 0; j < 4; j++) lam_f += lam[f[j]];
           
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
@@ -483,7 +484,7 @@ namespace ngfem
 
 	  Tx bub = lam_face * bary[f[0]]*bary[f[1]]*bary[f[2]];
 
-	  DubinerBasis::
+	  DubinerBasis3::
 	    EvalMult (p-3, bary[f[0]], bary[f[1]], bub, shape+ii);
 	  ii += (p-2)*(p-1)/2;
 	}
