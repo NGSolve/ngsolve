@@ -3,10 +3,11 @@
 #include <fem.hpp> 
 
 #include "../fem/l2hofe.hpp"
+#include "../fem/diffop_impl.hpp"
 #include "../fem/facethofe.hpp"
 
 namespace ngcomp
-{
+{ 
 
 
   FacetFESpace ::  FacetFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
@@ -633,6 +634,7 @@ namespace ngcomp
 
 
 
+
   /// Identity
   template <int D>
   class DiffOpIdHDG : public DiffOp<DiffOpIdHDG<D> >
@@ -655,12 +657,12 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       mat = 0.0;
       if (facetnr < 0)
-        mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
+	mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
       else
         mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
           fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);
     }
-  };
+  }; 
 
 
   template <int D>
@@ -676,13 +678,13 @@ namespace ngcomp
     virtual string Name () const { return "Mass-HDG"; }
   };
 
+
   template class HDG_MassIntegrator<1>;
   template class HDG_MassIntegrator<2>;
   template class HDG_MassIntegrator<3>;
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<1> > initlap1 ("HDG_mass", 1, 1);
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<2> > initlap2 ("HDG_mass", 2, 1);
   static RegisterBilinearFormIntegrator<HDG_MassIntegrator<3> > initlap3 ("HDG_mass", 3, 1);
-
 
 
   HybridDGFESpace :: HybridDGFESpace (const MeshAccess & ama, 
@@ -722,11 +724,13 @@ namespace ngcomp
       {
 	// integrator = new HDG_MassIntegrator<2> (&one);
         boundary_integrator = new RobinIntegrator<2> (&one);
+	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>;
       }
     else
       {
         // integrator = new HDG_MassIntegrator<3> (&one);
         boundary_integrator = new RobinIntegrator<3> (&one);
+	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>;
       }
     boundary_integrator = new CompoundBilinearFormIntegrator (*boundary_integrator, 1);
   }
