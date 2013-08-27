@@ -238,13 +238,13 @@ namespace ngcomp
     Array<const BilinearFormIntegrator *> bfi3d;
     bool applyd;
     //
-    int cache_elnr;
-    bool cache_bound;
+    // int cache_elnr;
+    // bool cache_bound;
     LocalHeap lh;
     // ElementTransformation eltrans;
-    const FiniteElement * fel;
-    Array<int> dnums;
-    FlatVector<SCAL> elu;
+    // const FiniteElement * fel;
+    // Array<int> dnums;
+    // FlatVector<SCAL> elu;
 
   public:
     VisualizeGridFunction (const MeshAccess & ama,

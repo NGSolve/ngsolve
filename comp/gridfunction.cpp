@@ -926,7 +926,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(10000013, "VisualizedGridFunction 2"), fel(NULL)
+      applyd(aapplyd), lh(10000013, "VisualizedGridFunction 2")
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -949,7 +949,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), cache_elnr(-1), lh(10000002, "VisualizeGridFunction"), fel(NULL)
+      applyd(aapplyd), lh(10000002, "VisualizeGridFunction")
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);
@@ -1076,23 +1076,25 @@ namespace ngcomp
     
     try
       {
-    if (!bfi3d.Size()) return 0;
-    if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
-
-
-    const FESpace & fes = gf->GetFESpace();
-
-    int dim     = fes.GetDimension();
-
-    if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
-
-    cache_elnr = -1;
-    if (cache_elnr != elnr || cache_bound)
-      {
+	if (!bfi3d.Size()) return 0;
+	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	
+	
+	const FESpace & fes = gf->GetFESpace();
+	
+	int dim     = fes.GetDimension();
+	
+	if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
+	
 	lh.CleanUp();
+
+	const FiniteElement * fel = &fes.GetFE (elnr, lh);
+
+	Array<int> dnums(fel->GetNDof(), lh);
 	fes.GetDofNrs (elnr, dnums);
-    
-	elu.AssignMemory (dnums.Size() * dim, lh);
+
+	FlatVector<SCAL> elu (fel->GetNDof() * dim, lh);
+
 	if(gf->GetCacheBlockSize() == 1)
 	  {
 	    gf->GetElementVector (multidimcomponent, dnums, elu);
@@ -1106,42 +1108,37 @@ namespace ngcomp
 	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
 	  }
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
-
-	fel = &fes.GetFE (elnr, lh);
-
-	cache_elnr = elnr;
-	cache_bound = 0;
-      }
-
-    HeapReset hr(lh);
-
-    Vec<3> vx;
-    Mat<3,3> mdxdxref;
-    for (int i = 0; i < 3; i++)
-      {
-	vx(i) = x[i];
-	for (int j = 0; j < 3; j++)
-	  mdxdxref(i,j) = dxdxref[3*i+j];
-      }
-
-    ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
-    IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
-    MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
-
-    for(int j = 0; j < bfi3d.Size(); j++)
-      {
-	FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
-	bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
-
-	for (int i = 0; i < components; i++)
+	
+	
+	HeapReset hr(lh);
+	
+	Vec<3> vx;
+	Mat<3,3> mdxdxref;
+	for (int i = 0; i < 3; i++)
 	  {
-	    if(j == 0) values[i] = 0;
-	    values[i] += ((double*)(void*)&flux(0))[i];
+	    vx(i) = x[i];
+	    for (int j = 0; j < 3; j++)
+	      mdxdxref(i,j) = dxdxref[3*i+j];
 	  }
+	
+	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+	IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
+	MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
+	
+	for(int j = 0; j < bfi3d.Size(); j++)
+	  {
+	    FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
+	    bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
+	    
+	    for (int i = 0; i < components; i++)
+	      {
+		if(j == 0) values[i] = 0;
+		values[i] += ((double*)(void*)&flux(0))[i];
+	      }
+	  }
+	
+	return true; 
       }
-
-    return true; 
- }
     catch (Exception & e)
       {
         cout << "GetValue 2 caught exception" << endl
@@ -1173,11 +1170,13 @@ namespace ngcomp
 	
         HeapReset hr(lh);
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+	const FiniteElement * fel = &fes.GetFE (elnr, lh);
+
+
+	Array<int> dnums(fel->GetNDof(), lh);
+	FlatVector<SCAL> elu (fel->GetNDof() * dim, lh);
 
 	fes.GetDofNrs (elnr, dnums);
-	fel = &fes.GetFE (elnr, lh);
-        
-        elu.AssignMemory (dnums.Size() * dim, lh);
 
         if(gf->GetCacheBlockSize() == 1)
           {
@@ -1367,33 +1366,30 @@ namespace ngcomp
 
         int dim     = fes.GetDimension();
 
-        if (cache_elnr != elnr || !cache_bound)
-          {
-            lh.CleanUp();
+	lh.CleanUp();
 
-	    fes.GetDofNrs (elnr, bound, dnums);
-	    fel = &fes.GetFE (elnr, bound, lh);
-            elu.AssignMemory (dnums.Size() * dim, lh);
+	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
+	
+	Array<int> dnums(fel->GetNDof(), lh);
+	FlatVector<SCAL> elu (fel->GetNDof()*dim, lh);
 
-            if(gf->GetCacheBlockSize() == 1)
-              {
-                gf->GetElementVector (multidimcomponent, dnums, elu);
-              }
-            else
-              {
-                FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
-                //gf->GetElementVector (multidimcomponent, dnums, elu2);
-                gf->GetElementVector (0, dnums, elu2);
-                for(int i=0; i<elu.Size(); i++)
-                  elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
-              }
-
-            fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
-
-            cache_elnr = elnr;
-            cache_bound = 1;
-          }
-
+	fes.GetDofNrs (elnr, bound, dnums);
+	
+	if(gf->GetCacheBlockSize() == 1)
+	  {
+	    gf->GetElementVector (multidimcomponent, dnums, elu);
+	  }
+	else
+	  {
+	    FlatVector<SCAL> elu2(dnums.Size()*dim*gf->GetCacheBlockSize(),lh);
+	    //gf->GetElementVector (multidimcomponent, dnums, elu2);
+	    gf->GetElementVector (0, dnums, elu2);
+	    for(int i=0; i<elu.Size(); i++)
+	      elu[i] = elu2[i*gf->GetCacheBlockSize()+multidimcomponent];
+	  }
+	
+	fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
+	
 	HeapReset hr(lh);
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
         if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
@@ -1491,7 +1487,7 @@ namespace ngcomp
 	fes.GetDofNrs (elnr, bound, dnums);
 	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
 
-        elu.AssignMemory (dnums.Size() * dim, lh);
+        FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
         if(gf->GetCacheBlockSize() == 1)
           {
