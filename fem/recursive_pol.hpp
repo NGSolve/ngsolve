@@ -360,6 +360,7 @@ namespace ngfem
       if (n < 1) return;
 
       values[1] = p1 = c * REC::P1(x);
+      /*
       if (n < 2) return;
 
       EvalScaledNext(2, x, y, p1, p2);
@@ -388,8 +389,8 @@ namespace ngfem
 
       EvalScaledNext(8, x, y, p1, p2);
       values[8] = p1;
-
-      for (int i = 9; i <= n; i++)
+      */
+      for (int i = 2; i <= n; i++)
 	{	
 	  EvalScaledNext (i, x, y, p1, p2);
 	  values[i] = p1;
@@ -563,6 +564,8 @@ namespace ngfem
       if (n < 1) return;
 
       values[1] = p1 = c * static_cast<const REC&>(*this).P1(x);
+
+      /*
       if (n < 2) return;
 
       EvalScaledNext(2, x, y, p1, p2);
@@ -591,8 +594,9 @@ namespace ngfem
 
       EvalScaledNext(8, x, y, p1, p2);
       values[8] = p1;
+      */
 
-      for (int i = 9; i <= n; i++)
+      for (int i = 2; i <= n; i++)
 	{	
 	  EvalScaledNext (i, x, y, p1, p2);
 	  values[i] = p1;
@@ -813,6 +817,68 @@ namespace ngfem
     { i--; return ( pold(0) + i * (pold(1) + i * (pold(2) + i * pold(3))) ); }
   };
 
+
+
+
+
+
+
+  class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>
+  {
+  public:
+    static Array< Vec<3> > coefs;
+    int alpha;
+
+    static int maxn, maxalpha;
+    int offset;
+  public:
+    JacobiPolynomialAlpha (int a) : alpha(a) 
+    { 
+      offset = alpha*(maxn+1);
+    }
+
+    template <class S, class T>
+    inline JacobiPolynomialAlpha (int n, S x, int a, T && values)
+      : alpha(a)
+    { 
+      offset = alpha*(maxn+1);
+      Eval (n, x, values);
+    }
+
+    static void Calc (int n, int maxalpha);
+
+    template <class S>
+    INLINE S P0(S x) const { return S(1.0); }
+    template <class S>
+    INLINE S P1(S x) const 
+    { 
+      return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+    }
+    
+    INLINE double A (int i) const { return coefs[offset+i][0]; } 
+    INLINE double B (int i) const { return coefs[offset+i][1]; } 
+    INLINE double C (int i) const { return coefs[offset+i][2]; } 
+
+    INLINE void ABC (int i, double & a, double & b, double & c) const   
+    {
+      a = A(i);
+      b = B(i);
+      c = C(i);
+    }
+
+    enum { ZERO_B = 0 };
+
+
+    static double CalcA (int i, double al, double be) 
+    { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    static double CalcB (int i, double al, double be)
+    { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    static double CalcC (int i, double al, double be)
+    { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+
+    INLINE double D (int i) const { return 1; }
+
+  };
 
 
 
@@ -1338,6 +1404,7 @@ namespace ngfem
       DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, help, values);
       typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
       
+
       if (ORDER == 0)
 	help(DIAG-ORDER,0) *= REC::P0(x);
       else if (ORDER == 1)
@@ -1351,6 +1418,30 @@ namespace ngfem
 	  REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
 	}
       values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
+
+
+      /*
+	 .// hat aber nichts gebracht ...
+      if (ORDER == 0)
+	help(DIAG-ORDER,0) *= REC::P0(x);
+      else if (ORDER == 1)
+	{
+	  // help(DIAG-ORDER,1) = help(DIAG-ORDER,0);
+	  help(DIAG-ORDER,1) = REC::P1(x) / REC::P0(x) * help(DIAG-ORDER,0);
+	}
+      else
+	{
+          // Swap (help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	  if ( ((DIAG-ORDER) % 2) == 0 )
+	    REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	  else
+	    REC::EvalNext (ORDER, x, help(DIAG-ORDER,1), help(DIAG-ORDER,0));
+	}
+      if ( (DIAG-ORDER) % 2 )
+	values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,1);
+      else
+	values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
+      */
     }
   };
 
@@ -1556,6 +1647,49 @@ namespace ngfem
     static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
     {
       DubinerJacobiPolynomialsScaled_Linear<1,0> (n, x, y, t, c, values);
+    }
+  };
+
+
+
+
+
+
+  class DubinerBasis3
+  {
+  public:
+    template <class S, class T>
+    static void Eval (int n, S x, S y, T && values)
+    {
+      LegendrePolynomial leg;
+      int ii = 0;
+      leg.EvalScaled (n, y-(1-x-y), 1-x, 
+         SBLambda ([&] (int i, S val)
+                   {
+                     JacobiPolynomialAlpha jac(1+2*i);
+                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
+                     ii += n-i+1;
+                   }));
+    }
+
+    template <class S, class Sc, class T>
+    static void EvalMult (int n, S x, S y, Sc c, T && values)
+    {
+      EvalScaledMult (n, x, y, 1, c, values);
+    }
+
+    template <class S, class St, class Sc, class T>
+    static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
+    {
+      LegendrePolynomial leg;
+      int ii = 0;
+      leg.EvalScaledMult (n, y-(1-x-y), t-x, c,
+         SBLambda ([&] (int i, S val)
+                   {
+                     JacobiPolynomialAlpha jac(1+2*i);
+                     jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);
+                     ii += n-i+1;
+                   }));
     }
   };
 
