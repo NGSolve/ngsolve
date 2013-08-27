@@ -106,6 +106,23 @@ namespace ngfem
     virtual void ComputeNDof () = 0;
   };
 
+
+
+
+#ifdef FILE_FACETHOFE_CPP
+#define FACETHOFE_EXTERN
+#else
+#define FACETHOFE_EXTERN extern
+#endif
+
+  FACETHOFE_EXTERN template class FacetVolumeFiniteElement<1>;
+  FACETHOFE_EXTERN template class FacetVolumeFiniteElement<2>;
+  FACETHOFE_EXTERN template class FacetVolumeFiniteElement<3>;
+
+  FACETHOFE_EXTERN template class FacetFEFacet<1>;
+  FACETHOFE_EXTERN template class FacetFEFacet<2>;
+  FACETHOFE_EXTERN template class FacetFEFacet<3>;
+
 }
 
 
