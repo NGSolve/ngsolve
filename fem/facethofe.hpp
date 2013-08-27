@@ -72,6 +72,36 @@ namespace ngfem
     }
   };
 
+  template <ELEMENT_TYPE ET>
+  class FacetFE : public FacetFiniteElement_Family<ET>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShapeFNr (int fnr, Tx x[ET_trait<ET>::DIM], TFA & shape) const;
+  };
+
+
+#ifdef FILE_FACETHOFE_CPP
+#else
+  extern template class FacetFE<ET_SEGM>;
+  extern template class FacetFE<ET_TRIG>;
+  extern template class FacetFE<ET_QUAD>;
+  extern template class FacetFE<ET_TET>;
+  extern template class FacetFE<ET_HEX>;
+  extern template class FacetFE<ET_PRISM>;
+  extern template class FacetFE<ET_PYRAMID>;
+
+  extern template class FacetFiniteElement_Family<ET_SEGM>;
+  extern template class FacetFiniteElement_Family<ET_TRIG>;
+  extern template class FacetFiniteElement_Family<ET_QUAD>;
+  extern template class FacetFiniteElement_Family<ET_TET>;
+  extern template class FacetFiniteElement_Family<ET_HEX>;
+  extern template class FacetFiniteElement_Family<ET_PRISM>;
+  extern template class FacetFiniteElement_Family<ET_PYRAMID>;
+
+#endif
+
+  /*
 
   //------------------------------------------------------------
   template <>
@@ -84,7 +114,6 @@ namespace ngfem
       shape[0] = 1.0;
     }
   };
-
 
   template <>
   class FacetFE<ET_TRIG> : public FacetFiniteElement_Family<ET_TRIG>
@@ -101,7 +130,6 @@ namespace ngfem
       LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape);
     }
   };
-
 
 
   // --------------------------------------------------------
@@ -139,7 +167,6 @@ namespace ngfem
       DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
     }
   };
-
 
 
   // --------------------------------------------------------
@@ -257,6 +284,11 @@ namespace ngfem
     }
 
   };
+
+  */
+
+
+
 
 }
 
