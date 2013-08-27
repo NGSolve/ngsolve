@@ -145,4 +145,11 @@ namespace ngstd
 }
 
 
+
+#ifdef JS
+#include <ngstd_js.hpp>
+#endif
+
+
+
 #endif
