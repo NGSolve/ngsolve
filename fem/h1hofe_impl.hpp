@@ -8,7 +8,6 @@
 /*********************************************************************/
 
 #include "h1hofe.hpp"
-#include <recpol.hpp>
 
 namespace ngfem
 {
