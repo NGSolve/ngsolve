@@ -12,6 +12,9 @@
 
 #include <la.hpp>
 
+#include <bitonic.hpp>
+
+
 namespace ngla
 {
 
@@ -111,6 +114,7 @@ namespace ngla
 				bool symmetric)
   {
     static Timer timer("MatrixGraph");
+    static Timer timers("MatrixGraph - sorting");
     RegionTimer reg (timer);
 
     bool includediag = (&rowelements == &colelements);
@@ -289,10 +293,13 @@ namespace ngla
 	  }
       } 
 
+    timers.Start();
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
+      // BitonicSort<1> (GetRowIndices(i));
       QuickSort (GetRowIndices(i));
+    timers.Stop();
 
     colnr[nze] = 0;
 
