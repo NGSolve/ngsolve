@@ -39,6 +39,8 @@ namespace ngfem
   }
 
 
+
+#ifdef UNSUPPORTED
   template <int D>
   void ScalarFiniteElement<D> ::
   CalcDShape (const IntegrationPoint & ip, 
@@ -83,7 +85,8 @@ namespace ngfem
 	    -1/(12*eps) * (shape4(j) - shape3(j));
       }
   }
-
+#endif 
+ 
   /*
     a ( eps - (-eps) ) + b ( 2 eps - (-2eps) )  = 1
     a ( eps^3 - (-eps)^3) + b ( 8 eps^3 - -8 eps^3 ) = 0
@@ -95,6 +98,7 @@ namespace ngfem
     a = 2 / 3 eps
   */
 
+  /*
   /// compute dshape, matrix: ndof x spacedim
   template<int D>
   void ScalarFiniteElement<D> :: 
@@ -108,6 +112,28 @@ namespace ngfem
         dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
       }
   }
+  */
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+                    SliceMatrix<> dshape) const
+  {
+    CalcDShape (mip.IP(), dshape);
+    for (int i = 0; i < dshape.Height(); i++)
+      {
+        Vec<D> hv = dshape.Row(i);
+        dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
+      }
+  }
+ 
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  CalcDShape (const IntegrationPoint & ip, 
+	      const std::function<void(int,Vec<D>)> & callback) const
+  {
+    cout << "ScalarFE<D>::CalcMappedDShape(callback) not implemented" << endl;
+  }  
 
 
   template<int D>

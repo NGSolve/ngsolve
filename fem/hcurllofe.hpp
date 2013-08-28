@@ -747,8 +747,10 @@ static Matrix<> trans3;
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
+			    SliceVector<> shape) const;
 			  
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     SliceMatrix<> dshape) const;
   }; 
 
 
@@ -988,9 +990,9 @@ static Matrix<> trans;
     virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
+			    SliceVector<> shape) const;
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const;
+			     SliceMatrix<> dshape) const;
   }; 
 
 

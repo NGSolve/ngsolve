@@ -83,9 +83,30 @@ namespace ngfem
       typedef typename MAT::TSCAL TSCAL;
 
       HeapReset hr(lh);
-
       int nd = fel.GetNDof();
 
+      mat = TSCAL(0);
+      static_cast<const FEL &>(fel).
+	CalcDShape (mip.IP(),
+		    [&](int i, Vec<3> gradref)
+		    {
+		      Vec<3,TSCAL> grad = 
+			Trans (mip.GetJacobianInverse ()) * gradref;
+
+		      mat(0, 3*i  ) = grad(0);
+		      mat(1, 3*i+1) = grad(1);
+		      mat(2, 3*i+2) = grad(2);
+		      
+		      mat(3, 3*i  ) = grad(1);
+		      mat(3, 3*i+1) = grad(0);
+		      
+		      mat(4, 3*i  ) = grad(2);
+		      mat(4, 3*i+2) = grad(0);
+			    
+		      mat(5, 3*i+1) = grad(2);
+		      mat(5, 3*i+2) = grad(1);
+		    });
+      /*
       FlatMatrixFixHeight<3,TSCAL> grad (nd, lh);
       grad =  Trans (mip.GetJacobianInverse ()) * 
 	Trans (fel.GetDShape(mip.IP(),lh));
@@ -106,10 +127,11 @@ namespace ngfem
 	  mat(5, DIM*i+1) = grad(2, i);
 	  mat(5, DIM*i+2) = grad(1, i);
 	}
+      */
     }
 
 
-
+#ifdef SERVICE
     template <typename AFEL, typename MAT>
     static void GenerateMatrix (const AFEL & fel, 
 				const MappedIntegrationPoint<3,3> & mip,
@@ -120,6 +142,26 @@ namespace ngfem
       int nd = fel.GetNDof();
       HeapReset hr(lh);
 
+      mat = TSCAL(0);
+      static_cast<const FEL &>(fel).
+	CalcMappedDShape (mip,
+			  [&](int i, Vec<3> grad)
+			  {
+			    mat(0, 3*i  ) = grad(0);
+			    mat(1, 3*i+1) = grad(1);
+			    mat(2, 3*i+2) = grad(2);
+			    
+			    mat(3, 3*i  ) = grad(1);
+			    mat(3, 3*i+1) = grad(0);
+			    
+			    mat(4, 3*i  ) = grad(2);
+			    mat(4, 3*i+2) = grad(0);
+			    
+			    mat(5, 3*i+1) = grad(2);
+			    mat(5, 3*i+2) = grad(1);
+			  });
+
+      /*
       FlatMatrixFixWidth<3> grad (nd, lh);
       static_cast<const FEL &>(fel).CalcMappedDShape (mip, grad);
 
@@ -139,8 +181,9 @@ namespace ngfem
 	  mat(5, DIM*i+1) = grad(i, 2);
 	  mat(5, DIM*i+2) = grad(i, 1);
 	}
+      */
     }
-
+#endif
   };
 
 

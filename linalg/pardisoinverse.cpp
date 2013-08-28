@@ -462,6 +462,9 @@ namespace ngla
     Matrix<> tx(2, compressed_height);
     if (compressed)
       tx = Trans (hx.Rows(compress));
+      // tx = Trans (hx).Cols(compress));
+    // for (int i = 0; i < compress.Size(); i++)
+    // tx.Col(i) = hx.Row(compress[i]);
     else
       tx = Trans (hx);
 

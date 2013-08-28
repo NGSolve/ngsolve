@@ -38,7 +38,7 @@ namespace ngfem
        returns stored values for valid ip.IPNr(), else computes values
     */
     INLINE FlatVector<> GetShape (const IntegrationPoint & ip, 
-                           LocalHeap & lh) const
+				  LocalHeap & lh) const
     {
       FlatVector<> shape(ndof, lh);
       CalcShape (ip, shape);
@@ -60,17 +60,49 @@ namespace ngfem
 
     /// compute shape
     NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
-                                           FlatVector<> shape) const = 0;
+                                           SliceVector<> shape) const = 0;
+
   
     /// compute dshape, matrix: ndof x spacedim
-    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
-                                            FlatMatrixFixWidth<D> dshape) const;
+    NGS_DLL_HEADER 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     SliceMatrix<> dshape) const = 0;
+    
+
+    NGS_DLL_HEADER 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     const std::function<void(int,Vec<D>)> & callback) const;
+    
+
 
     /// compute dshape, matrix: ndof x spacedim
     NGS_DLL_HEADER 
     virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-                                   FlatMatrixFixWidth<D> dshape) const;
-    
+                                   SliceMatrix<> dshape) const;
+
+    INLINE void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+				  FlatMatrix<> dshape) const
+    {
+      CalcMappedDShape (mip, SliceMatrix<> (dshape));
+    }
+
+    INLINE void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
+				  FlatMatrixFixWidth<D> dshape) const
+    {
+      CalcMappedDShape (mip, SliceMatrix<> (dshape));
+    }
+
+
+    template <typename ANY_MIP, typename ANY_MAT>
+    INLINE void CalcMappedDShape (const ANY_MIP & mip, ANY_MAT && mat) const
+    {
+      CalcDShape (mip.IP(), 
+		  [&](int i, Vec<3> gradref)
+		  { mat.Row(i) = Trans(mip.GetJacobianInverse()) * gradref; });
+    }
+
+
+
 
     /**
        returns second derivatives in point ip.

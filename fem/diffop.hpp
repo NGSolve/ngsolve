@@ -105,45 +105,6 @@ namespace ngfem
 	  y += hy;
 	}
     }
-
-
-
-    /*
-    /// old style ???
-    template <typename MIP, class TVX>
-    static void Transform (const MIP & mip, TVX & x)
-    {
-      ;
-    }
-
-    /// old style ???
-    template <typename MIP, class TVX>
-    static void TransformT (const MIP & mip, TVX & x)
-    {
-      ;
-    }
-
-    /// old style
-    template <typename FEL, class TVD, class TVY, int D>
-    static void ApplyGrid (const FEL & fel, 
-			   const IntegrationRuleTP<D> & ir,
-			   const TVY & hv, 
-			   TVD & dvecs, 
-			   LocalHeap & lh)
-    {
-      ;
-    }
-
-    /// old style
-    template <typename FEL, class TVD, class TVY, int D>
-    static void ApplyTransGrid (const FEL & fel, 
-				const IntegrationRuleTP<D> & ir,
-				const TVD & dvecs, 
-				TVY & hv, LocalHeap & lh)
-    {
-      ;
-    }
-    */
   };
 
 
@@ -170,10 +131,11 @@ namespace ngfem
     /// does it live on the boundary ?
     virtual bool Boundary() const { return false; }
     /// calculates the matrix
+
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		FlatMatrix<double> mat, 
+		FlatMatrix<double> mat,             // should be col major !!!
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -278,12 +240,13 @@ namespace ngfem
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
+    /*
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
-
+    */
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
