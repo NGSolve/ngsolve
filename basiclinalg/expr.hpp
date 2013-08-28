@@ -646,10 +646,6 @@ namespace ngbla
     int Width() const { return a.Width(); }
   };
 
-  /*
-  typedef int T_Lapack;
-  static T_Lapack Lapack;
-  */
 
   enum  T_Lapack { Lapack };
   
