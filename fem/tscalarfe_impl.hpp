@@ -86,7 +86,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcShape (const IntegrationPoint & ip, FlatVector<> shape) const
+  CalcShape (const IntegrationPoint & ip, SliceVector<> shape) const
   {
     Vec<DIM> pt = ip.Point();
     T_CalcShape (&pt(0), shape);
@@ -174,7 +174,29 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDShape (const IntegrationPoint & ip, 
-              FlatMatrixFixWidth<DIM> dshape) const
+	      const std::function<void(int,Vec<DIM>)> & callback) const
+  {
+    Vec<DIM, AutoDiff<DIM> > adp;
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+      
+    // DShapeAssign<DIM> ds(dshape); 
+    // T_CalcShape (&adp(0), ds);
+
+
+    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                                    {
+				      Vec<DIM> v;
+				      shape.StoreGradient (&v(0));
+				      callback (i,v);
+				    }));
+  }
+
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcDShape (const IntegrationPoint & ip, 
+              SliceMatrix<> dshape) const
   {
     Vec<DIM, AutoDiff<DIM> > adp;
     for (int i = 0; i < DIM; i++)
