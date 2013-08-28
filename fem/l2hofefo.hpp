@@ -89,7 +89,7 @@ namespace ngfem
       for (int i = 0; i < ir.GetNIP(); i++)
 	{
 	  this->CalcShape (ir[i], pre->shapes.Row(i));
-	  this->CalcDShape (ir[i], dshapes);
+	  this->CalcDShape (ir[i], FlatMatrix<> (dshapes));
 	  pre->dshapes.Rows (DIM*i, DIM*(i+1)) = Trans (dshapes);
 	}
 

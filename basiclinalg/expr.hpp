@@ -474,6 +474,8 @@ namespace ngbla
   template <class TA> class RowsArrayExpr;
   template <class TA> class ColsArrayExpr;
   template <class TA> class SubMatrixExpr;
+  template <class TA> class RowExpr;
+  template <class TA> class ColExpr;
 
 
 #ifdef USE_GMP
@@ -543,6 +545,18 @@ namespace ngbla
     // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
 
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
+
+
+    RowExpr<T> Row (int r) const
+    {
+      return RowExpr<T> (static_cast<T&> (*this), r);
+    }
+
+    ColExpr<T> Col (int r) const
+    {
+      return RowExpr<T> (static_cast<T&> (*this), r);
+    }
+
 
     SubMatrixExpr<T>
     Rows (int first, int next)
@@ -1072,25 +1086,25 @@ namespace ngbla
       return (*this) *= (1.0/s);
     }
 
-    SubMatrixExpr<T>
+    SubMatrixExpr<const T>
     Rows (int first, int next) const
     { 
-      return SubMatrixExpr<T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
+      return SubMatrixExpr<const T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
     }
 
-    SubMatrixExpr<T>
+    SubMatrixExpr<const T>
     Cols (int first, int next) const
     { 
-      return SubMatrixExpr<T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
+      return SubMatrixExpr<const T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
     }
 
-    SubMatrixExpr<T>
+    SubMatrixExpr<const T>
     Rows (IntRange range) const
     { 
       return Rows (range.First(), range.Next());
     }
 
-    SubMatrixExpr<T>
+    SubMatrixExpr<const T>
     Cols (IntRange range) const
     { 
       return Cols (range.First(), range.Next());
@@ -1379,7 +1393,7 @@ namespace ngbla
   /**
      Transpose of Matrix-expr
   */
-  template <class TA> class TransExpr : public Expr<TransExpr<TA> >
+  template <class TA> class TransExpr : public MatExpr<TransExpr<TA> >
   {
     const TA & a;
   public:
@@ -1387,12 +1401,22 @@ namespace ngbla
 
     TransExpr (const TA & aa) : a(aa) { ; }
 
+    /*
+    template<typename TB>
+    const TransExpr & operator= (const Expr<TB> & v) const
+    {
+      const_cast<TransExpr*> (this) -> MatExpr<TransExpr<TA>>::operator= (v);
+      return *this;
+    }
+    */
+
     int Height() const { return a.Width(); }
     int Width() const { return a.Height(); }
 
     auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
     auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
-
+    auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
+    auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
 
     const TA & A() const { return a; }
@@ -1440,6 +1464,37 @@ namespace ngbla
   };
 
 
+  template <class TA> 
+  class RowExpr : public MatExpr<RowExpr<TA> >
+  {
+    TA & a;
+    int row;
+  public:
+    RowExpr (TA & aa, int r)
+      : a(aa), row(r) { ; }
+
+    int Height() const { return 1; }
+    int Width() const { return a.Width(); }
+
+    auto operator() (int i, int j) -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (int i) -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (int i, int j) const -> decltype(a(0,0)) { return a(row,i); }
+    auto operator() (int i) const -> decltype(a(0,0)) { return a(row,i); }
+
+    enum { IS_LINEAR = 0 };
+    
+    template<typename TB>
+    const RowExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<RowExpr<TA> >::operator= (m);
+      return *this;
+    }
+  };
+
+
+
+
+
 
   /* ************************* RowsArray ************************ */
 
@@ -1468,6 +1523,7 @@ namespace ngbla
     TREF operator() (int i, int j) const { return a(rows[i], j); }
     TREF operator() (int i) const { return a(rows[i]); }
 
+    auto Row (int i) const -> decltype (a.Rows(rows[i])) { return a.Row(rows[i]); }
 
     enum { IS_LINEAR = 0 };
 

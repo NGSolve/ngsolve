@@ -51,7 +51,7 @@ namespace ngfem
 				const MappedIntegrationPoint<D,D> & mip,
 				FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat.Trans());
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, Trans(mat));
     }
 
 
@@ -149,7 +149,7 @@ namespace ngfem
 				const MappedIntegrationPoint<3,3> & mip,
 				FlatMatrixFixHeight<3> mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat.Trans());
+      static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, Trans(mat));
     }
 
 

@@ -201,26 +201,34 @@ namespace ngbla
 #endif
 
 
+#ifndef LAPACK
+  template void CalcInverse (FlatMatrix<Complex> inv);
+#endif
+
+
+
   template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv);
   template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv);
   template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv);
   template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv);
-
-
-#ifndef LAPACK
-  template void CalcInverse (FlatMatrix<Complex> inv);
-#endif
 
   template void CalcInverse (FlatMatrix<Mat<1,1,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<2,2,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<3,3,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<4,4,Complex> > inv);
+
+
+
+#if MAX_SYS_DIM >= 5
+  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv);
+
   template void CalcInverse (FlatMatrix<Mat<5,5,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<6,6,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<7,7,Complex> > inv);
   template void CalcInverse (FlatMatrix<Mat<8,8,Complex> > inv);
+#endif
+
 }

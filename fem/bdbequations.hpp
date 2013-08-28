@@ -35,6 +35,15 @@ namespace ngfem
 
     /// 
 
+
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcMappedDShape (mip, Trans (mat));
+    }
+
+    /*
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MIP & mip,
@@ -43,6 +52,9 @@ namespace ngfem
       // static Timer t("DiffOpGrad::GenMatrix - general"); RegionTimer reg(t);
       mat = Trans (mip.GetJacobianInverse ()) * 
 	Trans (Cast(fel).GetDShape(mip.IP(),lh));
+
+      // Cast(fel).CalcDShape (mip.IP(), [&](int i, Vec<3> gradref)
+      // { mat.Col(i) = Trans(mip.GetJacobianInverse()) * gradref; });
     }
 
     static void GenerateMatrix (const FiniteElement & fel, 
@@ -52,6 +64,16 @@ namespace ngfem
       // static Timer t("DiffOpGrad::GenMatrix"); RegionTimer reg(t);
       Cast(fel).CalcMappedDShape (mip, mat.Trans());
     }
+
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MappedIntegrationPoint<D,D> & mip,
+				SliceMatrixColMajor<> mat, LocalHeap & lh)
+    {
+      // static Timer t("DiffOpGrad::SliceMatrixColMajor"); RegionTimer reg(t);
+      Cast(fel).CalcMappedDShape (mip, Trans (mat));
+    }
+    */
+
 
     ///
     template <typename MIP, class TVX, class TVY>
@@ -179,6 +201,7 @@ namespace ngfem
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      // cout << "diffop id, gen matrix, mat = " << typeid(mat).name() << endl;
       mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
     }
 
@@ -186,8 +209,16 @@ namespace ngfem
 				const MappedIntegrationPoint<D,D> & mip,
 				FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
     {
-      Cast(fel).CalcShape (mip.IP(), FlatVector<> (fel.GetNDof(), &mat(0,0)));
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0)); // FlatVector<> (fel.GetNDof(), &mat(0,0)));
     }
+
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MappedIntegrationPoint<D,D> & mip,
+				SliceMatrixColMajor<> mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+    }
+
 
 
     template <typename MIP, class TVX, class TVY>
@@ -424,21 +455,12 @@ namespace ngfem
     void GenerateMatrixIR (const FEL & fel, const MIR & mir,
 			   const FlatArray<MAT> & mats, LocalHeap & lh) const
     {
-      static Timer t("DiagDMat::GenMatrixIR"); RegionTimer reg(t);
-
       typedef typename MAT::TSCAL TRESULT;
       FlatMatrix<TRESULT> vals(mir.IR().GetNIP(), 1, lh);
       coef -> Evaluate (mir, vals);
     
       for (int j = 0; j < mir.IR().GetNIP(); j++)
-	{
-	  mats[j] = vals(j,0) * Id<DIM>();
-	  /*
-	    mats[j] = TRESULT(0.0);
-	    for (int i = 0; i < DIM; i++)
-	    mats[j](i, i) = vals(j,0);
-	  */
-	}
+	mats[j] = vals(j,0) * Id<DIM>();
     }  
 
     template <typename FEL, class VECX, class VECY>
@@ -1493,7 +1515,6 @@ namespace ngfem
 #else
 #define BDBEQUATIONS_EXTERN extern
 #endif
-
 
 
 

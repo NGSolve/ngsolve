@@ -127,6 +127,9 @@ template <int M> NGS_DLL_HEADER
 void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
 
 template <int M> NGS_DLL_HEADER
+void FastMat (int n, Complex * ba, double * pb, Complex * pc);
+
+template <int M> NGS_DLL_HEADER
 void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
   
 
@@ -145,7 +148,7 @@ void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double
    HCurlFiniteElement, FE_Trig1, ...)
  */
 template <class DIFFOP, class DMATOP, class FEL = FiniteElement>
-class T_BDBIntegrator : public virtual BilinearFormIntegrator
+class T_BDBIntegrator : public BilinearFormIntegrator
 {
 protected:
   DMATOP dmatop;
@@ -374,14 +377,14 @@ public:
 	
         HeapReset hr1(lh);
 	
-        FlatMatrixFixHeight<DIM_DMAT, double> bmatr (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat1 (ndof * DIM, lh);
+        // FlatMatrixFixHeight<DIM_DMAT, double> bmatr (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT, double> bmat1 (ndof * DIM, lh);
 	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat1 (ndof * DIM, lh);
 
-        FlatMatrixFixHeight<2*DIM_DMAT, TSCAL> bmat2 (ndof * DIM, lh);
+        FlatMatrixFixHeight<2*DIM_DMAT, double> bmat2 (ndof * DIM, lh);
 	FlatMatrixFixHeight<2*DIM_DMAT, TSCAL> dbmat2 (ndof * DIM, lh);
 	
-        FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bbmat (ndof * DIM, lh);
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
 
         typedef decltype (DMATOP::GetMatrixType(TSCAL(0))) TDMAT;
@@ -398,12 +401,10 @@ public:
             for (int i2 = 0; i2 < BLOCK; i++, i2++)
               {
                 HeapReset hr(lh);
-
-                DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
+		
+		DIFFOP::GenerateMatrix (fel, mir[i], bbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT), lh);
 		TDMAT dmat = mir[i].GetWeight() * dmats[i];
-                
-		bbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = bmatr;
-                bdbmat.Rows(i2*DIM_DMAT, (i2+1)*DIM_DMAT) = dmat * bmatr; 
+		bdbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT) = dmat * bbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT);
               }
             
             if (DMATOP::SYMMETRIC)
@@ -416,18 +417,31 @@ public:
           {
             HeapReset hr(lh);
 
+	    /*
             DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
             TDMAT dmat = mir[i].GetWeight() * dmats[i];
 
             bmat2.Rows(0,DIM_DMAT) = bmatr;
             dbmat2.Rows(0,DIM_DMAT) = dmat * bmatr;
+	    */
 
+            DIFFOP::GenerateMatrix (fel, mir[i], bmat2.Rows(0,DIM_DMAT), lh);
+            TDMAT dmat = mir[i].GetWeight() * dmats[i];
+            dbmat2.Rows(0,DIM_DMAT) = dmat * bmat2.Rows(0,DIM_DMAT);
+
+	    /*
             DIFFOP::GenerateMatrix (fel, mir[i+1], bmatr, lh);
             dmat = mir[i+1].GetWeight() * dmats[i+1];
 
             bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmatr;
             dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmatr;
-            
+            */
+
+            DIFFOP::GenerateMatrix (fel, mir[i+1], bmat2.Rows(DIM_DMAT,2*DIM_DMAT), lh);
+            dmat = mir[i+1].GetWeight() * dmats[i+1];
+            dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmat2.Rows(DIM_DMAT,2*DIM_DMAT);
+
+
             if (DMATOP::SYMMETRIC)
               FastMat<2*DIM_DMAT> (elmat.Height(), & dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
             else
@@ -438,11 +452,10 @@ public:
           {
             HeapReset hr(lh);
 
-            DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
+            DIFFOP::GenerateMatrix (fel, mir[i], bmat1, lh);
             TDMAT dmat = mir[i].GetWeight() * dmats[i];
 
-            bmat1 = bmatr;
-            dbmat1 = dmat * bmatr;
+            dbmat1 = dmat * bmat1;
             
             if (DMATOP::SYMMETRIC)
               // elmat += Symmetric (Trans (dbmat) * bmat);
@@ -730,35 +743,8 @@ public:
 			     void * precomputed,
 			     LocalHeap & lh) const
   {
-    static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<") 
-			+ typeid(TSCAL).name() + ">" + Name(), 2);
-    RegionTimer reg (timer);
-
-    // const FEL & fel = static_cast<const FEL&> (bfel);
-    // int ndof = fel.GetNDof ();
-    
-    /*
-    ely = 0;
-    
-    Vec<DIM_DMAT,TSCAL> hv1;
-    Vec<DIM_DMAT,TSCAL> hv2;
-    
-    FlatVector<TSCAL> hely (ndof*DIM, lh);
-    const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
-    MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
-
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-	HeapReset hr (lh);
-	const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip = mir[i];
-
-	DIFFOP::Apply (fel, mip, elx, hv1, lh);
-	dmatop.Apply (fel, mip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel, mip, hv2, hely, lh);
-
-	ely += mip.GetWeight() * hely;
-      }     
-    */
+    // static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<") + typeid(TSCAL).name() + ">" + Name(), 2);
+    // RegionTimer reg (timer);
 
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
     MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);

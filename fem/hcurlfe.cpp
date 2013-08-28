@@ -465,7 +465,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
+			    SliceVector<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -482,7 +482,7 @@ namespace ngfem
     }
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<2> dshape) const
+			     SliceMatrix<> dshape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -2730,8 +2730,14 @@ namespace ngfem
     ;
   }
 
+  void FE_Trig3Pot :: CalcDShape (const IntegrationPoint & ip, 
+				  SliceMatrix<> dshape) const
+  {
+    cerr << "calcdshape not implemnted" << endl;
+  }
+
   void FE_Trig3Pot :: CalcShape (const IntegrationPoint & ip, 
-				 FlatVector<> shape) const
+				 SliceVector<> shape) const
 				 
   {
     double x = ip.Point()[0];
@@ -4189,7 +4195,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
+			    SliceVector<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -4231,7 +4237,7 @@ namespace ngfem
 
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const
+			     SliceMatrix<> dshape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -4376,7 +4382,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
+			    SliceVector<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -4392,6 +4398,11 @@ namespace ngfem
       shape(ii++) = fac * y * (1-y) * (1-x);
     }
 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     SliceMatrix<> dshape) const
+    {
+      cerr << "shape not implemented" << endl;
+    }
     ///
     // virtual const Array<IPData> & GetIPData () const { return ipdata; }
   };
@@ -4411,7 +4422,7 @@ namespace ngfem
   }
 
   void FE_Quad3 :: CalcShape (const IntegrationPoint & ip, 
-			      FlatVector<> shape) const
+			      SliceVector<> shape) const
     
   {
     double x = ip(0);
@@ -4437,7 +4448,7 @@ namespace ngfem
 
 
   void FE_Quad3 :: CalcDShape (const IntegrationPoint & ip, 
-			       FlatMatrixFixWidth<2> dshape) const
+			       SliceMatrix<> dshape) const
     
   {
     double x = ip(0);

@@ -1659,12 +1659,12 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    static void Eval (int n, S x, S y, T && values)
+    INLINE static void Eval (int n, S x, S y, T && values)
     {
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaled (n, y-(1-x-y), 1-x, 
-         SBLambda ([&] (int i, S val)
+         SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
@@ -1673,18 +1673,18 @@ namespace ngfem
     }
 
     template <class S, class Sc, class T>
-    static void EvalMult (int n, S x, S y, Sc c, T && values)
+    INLINE static void EvalMult (int n, S x, S y, Sc c, T && values)
     {
       EvalScaledMult (n, x, y, 1, c, values);
     }
 
     template <class S, class St, class Sc, class T>
-    static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
+    INLINE static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
     {
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaledMult (n, y-(1-x-y), t-x, c,
-         SBLambda ([&] (int i, S val)
+         SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);

@@ -1133,6 +1133,11 @@ namespace ngbla
     /// SV from FlatVector
     SliceVector (FlatVector<T> fv)
       : s(fv.Size()), dist(&fv(1)-&fv(0)), data((T*)fv.Data()) { ; }
+
+    /// SV from FlatVector
+    template <int D>
+    SliceVector (Vec<D,T> & fv)
+      : s(D), dist(&fv(1)-&fv(0)), data(&fv(0)) { ; }
     
     ///
     template <int D>
@@ -1231,6 +1236,9 @@ namespace ngbla
 #endif
       return data[i*dist]; 
     }
+
+    SliceVector<T> operator+(int i) const { return SliceVector<T> (s-i, dist, data+i*dist); }
+
 
     TELEM * Addr (int i) const
     {

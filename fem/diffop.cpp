@@ -16,7 +16,6 @@ namespace ngfem
 
 
 
-
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
@@ -25,7 +24,8 @@ namespace ngfem
   {
     cerr << "DifferentialOperator::CalcMatrix called for base class" << endl;
   }
-  
+
+
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,

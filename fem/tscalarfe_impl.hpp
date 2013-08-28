@@ -1,5 +1,5 @@
 #ifdef JS
-#include "../gold/tscalarfe_impl.hpp"
+#include "/home/joachim/ngsolve/ngsolve/gold/tscalarfe_impl.hpp"
 #endif
 
 
@@ -55,7 +55,7 @@ namespace ngfem
   public: 
     INLINE AD2Vec (AutoDiff<DIM> ad)
       : FlatVec<DIM> (&ad.DValue(0)) { ; }
-  };
+      };
   */
 
 
@@ -206,6 +206,29 @@ namespace ngfem
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
   }
+
+
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+		    SliceMatrix<> dshape) const
+  {
+    Vec<DIM, AutoDiff<DIM> > adp;   
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = mip.IP()(i);
+      
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+	adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
+
+    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                                    { shape.StoreGradient (&dshape(i,0)) ; }));
+  }
+
+
+
+
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>

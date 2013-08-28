@@ -12,33 +12,6 @@
 namespace ngfem
 {
 
-  /*
-  template <ELEMENT_TYPE ET, 
-            template <ELEMENT_TYPE ET2> class TSHAPES,
-            class BASE>
-  H1HighOrderFE<ET,TSHAPES,BASE> :: H1HighOrderFE() { ; }
-  
-  template <ELEMENT_TYPE ET, 
-	    template <ELEMENT_TYPE ET2> class TSHAPES,
-	    class BASE>
-  H1HighOrderFE<ET,TSHAPES,BASE> :: H1HighOrderFE (int aorder)
-  { 
-    ndof = PolDimension (aorder);
-    
-    for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
-    for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-    for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
-    if (DIM == 3) order_cell[0] = aorder; 
-    
-    order = aorder;
-  }
-
-  template <ELEMENT_TYPE ET, 
-	    template <ELEMENT_TYPE ET2> class TSHAPES,
-	    class BASE>
-  H1HighOrderFE<ET,TSHAPES,BASE> :: ~H1HighOrderFE() { ; }
-  */
-
   
 
   template <ELEMENT_TYPE ET> 
@@ -57,7 +30,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (Tx x[], TFA & shape) const
   {
-    shape[0] = Tx(1.0);
+    shape[0] = 1.0;
   }
 
 
@@ -162,7 +135,7 @@ namespace ngfem
         */
 
         LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub,
-          SBLambda ([&](int i, Tx val)
+          SBLambda ([&](int i, Tx val) ALWAYS_INLINE
                     {  
                       LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
                       ii += p[1]-1;
@@ -178,8 +151,6 @@ namespace ngfem
   void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
-
-    ArrayMem<Tx, 20> polx(order+1), poly(order+1), polz(order+1); 
 
     // vertex shapes
     for (int i = 0; i < 4; i++) shape[i] = lam[i];

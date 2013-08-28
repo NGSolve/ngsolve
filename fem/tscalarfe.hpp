@@ -30,9 +30,9 @@ namespace ngfem
     virtual ~T_ScalarFiniteElement() { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
-
+    
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const;
+			    SliceVector<> shape) const;
     
     virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
     
@@ -44,11 +44,18 @@ namespace ngfem
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<DIM> dshape) const;
+			     SliceMatrix<> dshape) const;
     
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & sip, 
-			   FlatMatrixFixWidth<DIM> dshape) const;
-    
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     const std::function<void(int,Vec<DIM>)> & callback) const;
+
+    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+				   FlatMatrixFixWidth<DIM> dshape) const;
+
+    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+				   SliceMatrix<> dshape) const;
+
+
     virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     
   protected:
