@@ -15,6 +15,8 @@
 namespace ngla
 {
 
+
+
   BaseVector :: BaseVector ()
     : paralleldofs (NULL) 
   {
@@ -210,8 +212,24 @@ namespace ngla
       }
   */
 
-  void BaseVector :: GetIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<double> & v) const 
+
+
+
+  template<>
+  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const
+  {
+    FlatVector<Complex> fv = FVScal();
+    return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
+                                reinterpret_cast<Complex*> (&fv(0)));
+  }
+
+
+
+
+
+  template<>
+  void S_BaseVector<double> :: GetIndirect (const FlatArray<int> & ind, 
+					    const FlatVector<double> & v) const 
   { 
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
@@ -221,28 +239,50 @@ namespace ngla
 	sv(i) = lsv(ind[i]);
       else
 	sv(i) = -1.0;
+  }
+  
+  template<>
+  void S_BaseVector<double> :: GetIndirect (const FlatArray<int> & ind, 
+					    const FlatVector<Complex> & v) const 
+  { 
+    FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
+    FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
 
-    /*
-      FlatVector<double> fv = FVDouble();
-      int es = EntrySize();
-      int ii = 0;
-      for (int i = 0; i < ind.Size(); i++)
+    for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-      {
-      int base = es * ind[i];
-      for (int j = 0; j < es; j++)
-      v[ii++] = fv[base++];
-      }
+	sv(i) = lsv(ind[i]);
       else
-      {
-      for (int j = 0; j < es; j++)
-      v[ii++] = 0;
-      }
+	sv(i) = -1.0;
+    /*
+    FlatVector<Complex> fv = FVComplex();
+    int es = EntrySize() / 2;
+    int ii = 0;
+    for (int i = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+	{
+	  int base = es * ind[i];
+	  for (int j = 0; j < es; j++)
+	    v[ii++] = fv[base++];
+	}
+      else
+	{
+	  for (int j = 0; j < es; j++)
+	    v[ii++] = 0;
+	}
     */
   }
   
-  void BaseVector :: GetIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<Complex> & v) const 
+
+  template<>
+  void S_BaseVector<Complex> :: GetIndirect (const FlatArray<int> & ind, 
+					     const FlatVector<double> & v) const 
+  { 
+    throw Exception ("BaseVector<Complex>::GetIndirect<double> called");
+  }
+  
+  template<>
+  void S_BaseVector<Complex> :: GetIndirect (const FlatArray<int> & ind, 
+					     const FlatVector<Complex> & v) const 
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
@@ -261,6 +301,13 @@ namespace ngla
 	}
   }
   
+
+
+
+
+
+
+
   void BaseVector :: SetIndirect (const FlatArray<int> & ind, 
 				  const FlatVector<double> & v) 
   { 
@@ -549,11 +596,14 @@ namespace ngla
   }
 
   //template <> 
+  /*
   Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
   {
     return ngbla::InnerProduct (FVScal(), 
                                 dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
+  */
+
 
   template <class SCAL>
   FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
@@ -574,22 +624,13 @@ namespace ngla
 
 
 
-
-  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const throw()
+  template<>
+  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const
   {
     FlatVector<Complex> fv = FVScal();
     return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
                                reinterpret_cast<double*> (&fv(0)));
   }
-
-
-  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
-  {
-    FlatVector<Complex> fv = FVScal();
-    return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
-                                reinterpret_cast<Complex*> (&fv(0)));
-  }
-
 
 
 
