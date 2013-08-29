@@ -145,10 +145,10 @@ namespace ngfem {
 	  double sum21 = pc[n*(i+1)+j];
 	  double sum22 = pc[n*(i+1)+j+1];
 
-	  double * lpa1 = pa + i * M;
-	  double * lpa2 = pa + (i+1) * M;
-	  double * lpb1 = pb + j * M;
-	  double * lpb2 = pb + (j+1) * M;
+	  double * lpa1 = pa + i * M2;
+	  double * lpa2 = pa + (i+1) * M2;
+	  double * lpb1 = pb + j * M2;
+	  double * lpb2 = pb + (j+1) * M2;
 	  
 	  for (int k = 0; k < M-1; k+=2)
 	    {
@@ -179,8 +179,8 @@ namespace ngfem {
 	  {
 	    double sum = pc[n*i+j];
 	    
-	    double * lpa = pa + i * M;
-	    double * lpb = pb + j * M;
+	    double * lpa = pa + i * M2;
+	    double * lpb = pb + j * M2;
 	    
 	    for (int k = 0; k < M; k++)
 	      sum += lpa[k] * lpb[k];
@@ -645,12 +645,12 @@ namespace ngfem {
 	  sum11 = sum12 = sum21 = sum22 = _mm_setzero_pd();
 	  sum31 = sum32 = sum41 = sum42 = _mm_setzero_pd();
 
-	  double * lpa1 = pa + i * M;
-	  double * lpa2 = pa + (i+1) * M;
-	  double * lpa3 = pa + (i+2) * M;
-	  double * lpa4 = pa + (i+3) * M;
-	  double * lpb1 = pb + j * M;
-	  double * lpb2 = pb + (j+1) * M;
+	  double * lpa1 = pa + i * M2;
+	  double * lpa2 = pa + (i+1) * M2;
+	  double * lpa3 = pa + (i+2) * M2;
+	  double * lpa4 = pa + (i+3) * M2;
+	  double * lpb1 = pb + j * M2;
+	  double * lpb2 = pb + (j+1) * M2;
 	  
 	  for (int k = 0; k < M-1; k+=2)
 	    {
@@ -660,7 +660,7 @@ namespace ngfem {
 	      a3 = _mm_load_pd(lpa3+k);
 	      b1 = _mm_load_pd(lpb1+k);
 
-	      if (M % 2) // only 8-byte alignment of matrix rows
+	      if (M2 % 2) // only 8-byte alignment of matrix rows
 		{
 		  a2 = _mm_loadu_pd(lpa2+k);
 		  a4 = _mm_loadu_pd(lpa4+k);
@@ -736,8 +736,8 @@ namespace ngfem {
 	  {
 	    double sum = pc[n*i+j];
 	    
-	    double * lpa = pa + i * M;
-	    double * lpb = pb + j * M;
+	    double * lpa = pa + i * M2;
+	    double * lpb = pb + j * M2;
 	    
 	    for (int k = 0; k < M; k++)
 	      sum += lpa[k] * lpb[k];
@@ -971,14 +971,15 @@ namespace ngfem {
     RegionTimer reg (timer);
     timer.AddFlops (double(M)*n*n/2);
     
-    Complex * hpa = pa;
     for (int i = 0; i < n; i++)
       {
-        Complex * hpb = pb;
+	Complex * hpa = pa + i*M2;
 	Complex * hpc = pc+n*i;
 
 	for (int j = 0; j < i; j++)
 	  {
+	    Complex * hpb = pb + j*M2;
+	
 
 #ifdef __SSE3___            
             Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
@@ -995,6 +996,7 @@ namespace ngfem {
 	    hpc++;
 	  }
 
+	Complex * hpb = pb + i*M2;
 #ifdef __SSE3___            
         Complex sum = *hpc + Scal<M> ((SSEComplex*)hpa, (SSEComplex*)hpb);
 #else
@@ -1020,14 +1022,15 @@ namespace ngfem {
     RegionTimer reg (timer);
     timer.AddFlops (double(M)*n*n/2);
     
-    Complex * hpa = pa;
     for (int i = 0; i < n; i++)
       {
-        double * hpb = pb;
+	Complex * hpa = pa + i * M2;
 	Complex * hpc = pc+n*i;
 
 	for (int j = 0; j < i; j++)
 	  {
+	    double * hpb = pb + j * M2;
+
 	    Complex sum = *hpc;
 	    for (int k = 0; k < M; k++)
 	      sum += hpa[k] * hpb[k];
@@ -1039,6 +1042,7 @@ namespace ngfem {
 	    hpc++;
 	  }
 
+	double * hpb = pb + i * M2;
 	Complex sum = *hpc;
 	for (int k = 0; k < M; k++)
 	  sum += hpa[k] * hpb[k];
