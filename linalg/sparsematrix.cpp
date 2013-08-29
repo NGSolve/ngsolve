@@ -12,7 +12,7 @@
 
 #include <la.hpp>
 
-#include <bitonic.hpp>
+// #include <bitonic.hpp>
 
 
 namespace ngla
