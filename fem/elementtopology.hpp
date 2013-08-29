@@ -1286,8 +1286,9 @@ namespace ngfem
 
   };
 
-
-  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<1> & order)
+  
+  template <typename T>
+  INLINE int PolBubbleDimension (ELEMENT_TYPE ET, INT<1,T> order)
   {
     switch (ET)
       {
@@ -1296,7 +1297,8 @@ namespace ngfem
       }
   }
 
-  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<2> & order)
+  template <typename T>
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, INT<2,T> order)
   {
     switch (ET)
       {
@@ -1306,7 +1308,8 @@ namespace ngfem
       }
   }
 
-  inline int PolBubbleDimension (ELEMENT_TYPE ET, const INT<3> & order)
+  template <typename T>
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, INT<3,T> order)
   {
     switch (ET)
       {

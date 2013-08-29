@@ -4,6 +4,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#define FILE_FINITEELEMENT_CPP
 
 /* 
    Finite Element Definitions
@@ -60,11 +61,4 @@ namespace ngfem
   }
 
 
-  template class DummyFE<ET_SEGM>;
-  template class DummyFE<ET_TRIG>;
-  template class DummyFE<ET_QUAD>;
-  template class DummyFE<ET_TET>;
-  template class DummyFE<ET_PRISM>;
-  template class DummyFE<ET_PYRAMID>;
-  template class DummyFE<ET_HEX>;
 }
