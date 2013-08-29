@@ -12,7 +12,6 @@
 
 namespace ngmg
 {
-  using namespace ngmg;
 
   Prolongation :: Prolongation()
   {
