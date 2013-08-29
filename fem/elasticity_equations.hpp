@@ -83,7 +83,6 @@ namespace ngfem
       typedef typename MAT::TSCAL TSCAL;
 
       HeapReset hr(lh);
-      int nd = fel.GetNDof();
 
       mat = TSCAL(0);
       static_cast<const FEL &>(fel).
@@ -107,6 +106,7 @@ namespace ngfem
 		      mat(5, 3*i+2) = grad(1);
 		    });
       /*
+      int nd = fel.GetNDof();
       FlatMatrixFixHeight<3,TSCAL> grad (nd, lh);
       grad =  Trans (mip.GetJacobianInverse ()) * 
 	Trans (fel.GetDShape(mip.IP(),lh));

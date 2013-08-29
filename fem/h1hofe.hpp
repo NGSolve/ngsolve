@@ -54,13 +54,13 @@ namespace ngfem
     Vec<N_VERTEX, int> vnums;
 
     /// order of edge shapes
-    Vec<N_EDGE, int> order_edge; 
+    Vec<N_EDGE, short> order_edge; 
 
     /// order of face shapes
-    Vec<N_FACE, INT<2> > order_face; 
+    Vec<N_FACE, INT<2,short> > order_face; 
 
     /// order of internal shapes (3d only)
-    Vec<N_CELL, INT<3> > order_cell;
+    Vec<N_CELL, INT<3,short> > order_cell;
 
   public:
     /// minimal constructor, orders will be set later
@@ -125,9 +125,9 @@ namespace ngfem
         ndof += PolBubbleDimension (order_cell[0]);
       
       order = 1;
-      for (int i = 0; i < N_EDGE; i++) order = max(order, order_edge[i]);
-      for (int i = 0; i < N_FACE; i++) order = max(order, Max (order_face[i])); 
-      if (DIM == 3) order = max (order, Max (order_cell[0]));
+      for (int i = 0; i < N_EDGE; i++) order = max(order, int(order_edge[i]));
+      for (int i = 0; i < N_FACE; i++) order = max(order, int(Max (order_face[i]))); 
+      if (DIM == 3) order = max (order, int(Max (order_cell[0])));
     }
 
 
@@ -169,8 +169,6 @@ namespace ngfem
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
-
-  // H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
 }
 
 
