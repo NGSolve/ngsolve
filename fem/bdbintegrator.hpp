@@ -8,6 +8,8 @@
 /*********************************************************************/
 
 
+
+
 namespace ngfem
 {
 
@@ -123,13 +125,13 @@ public:
 #define __restrict__ __restrict
 #endif
 
-template <int M> NGS_DLL_HEADER
+  template <int M, int M2 = M> NGS_DLL_HEADER
 void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
 
-template <int M> NGS_DLL_HEADER
+template <int M, int M2 = M> NGS_DLL_HEADER
 void FastMat (int n, Complex * ba, double * pb, Complex * pc);
 
-template <int M> NGS_DLL_HEADER
+template <int M, int M2 = M> NGS_DLL_HEADER
 void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
   
 
@@ -381,11 +383,13 @@ public:
         FlatMatrixFixHeight<DIM_DMAT, double> bmat1 (ndof * DIM, lh);
 	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat1 (ndof * DIM, lh);
 
-        FlatMatrixFixHeight<2*DIM_DMAT, double> bmat2 (ndof * DIM, lh);
-	FlatMatrixFixHeight<2*DIM_DMAT, TSCAL> dbmat2 (ndof * DIM, lh);
+	enum { ROUNDUP2 = (DIM_DMAT*2+3) & (-4) };
+        FlatMatrixFixHeight<ROUNDUP2, double> bmat2 (ndof * DIM, lh);
+	FlatMatrixFixHeight<ROUNDUP2, TSCAL> dbmat2 (ndof * DIM, lh);
 	
-        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double> bbmat (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL> bdbmat (ndof * DIM, lh);
+	enum { ROUNDUP = (DIM_DMAT*BLOCK+3) & (-4) };
+        FlatMatrixFixHeight<ROUNDUP, double> bbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<ROUNDUP, TSCAL> bdbmat (ndof * DIM, lh);
 
         typedef decltype (DMATOP::GetMatrixType(TSCAL(0))) TDMAT;
 	
@@ -402,50 +406,34 @@ public:
               {
                 HeapReset hr(lh);
 		
-		DIFFOP::GenerateMatrix (fel, mir[i], bbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT), lh);
+		IntRange rows (i2*DIM_DMAT, (i2+1)*DIM_DMAT);
+		DIFFOP::GenerateMatrix (fel, mir[i], bbmat.Rows(rows), lh);
 		TDMAT dmat = mir[i].GetWeight() * dmats[i];
-		bdbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT) = dmat * bbmat.Rows(i2*DIM_DMAT,(i2+1)*DIM_DMAT);
+		bdbmat.Rows(rows) = dmat * bbmat.Rows(rows);
               }
             
             if (DMATOP::SYMMETRIC)
-              FastMat<DIM_DMAT*BLOCK> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
+              FastMat<DIM_DMAT*BLOCK,ROUNDUP> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
             else
-              elmat += Trans (bbmat) * bdbmat; 
+              elmat += Trans (bbmat.Rows(0,DIM_DMAT*BLOCK)) * bdbmat.Rows(DIM_DMAT*BLOCK); 
           } 
 
         for ( ; i < ir.GetNIP()-1; i+=2)
           {
             HeapReset hr(lh);
 
-	    /*
-            DIFFOP::GenerateMatrix (fel, mir[i], bmatr, lh);
-            TDMAT dmat = mir[i].GetWeight() * dmats[i];
-
-            bmat2.Rows(0,DIM_DMAT) = bmatr;
-            dbmat2.Rows(0,DIM_DMAT) = dmat * bmatr;
-	    */
-
             DIFFOP::GenerateMatrix (fel, mir[i], bmat2.Rows(0,DIM_DMAT), lh);
             TDMAT dmat = mir[i].GetWeight() * dmats[i];
             dbmat2.Rows(0,DIM_DMAT) = dmat * bmat2.Rows(0,DIM_DMAT);
-
-	    /*
-            DIFFOP::GenerateMatrix (fel, mir[i+1], bmatr, lh);
-            dmat = mir[i+1].GetWeight() * dmats[i+1];
-
-            bmat2.Rows(DIM_DMAT,2*DIM_DMAT) = bmatr;
-            dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmatr;
-            */
 
             DIFFOP::GenerateMatrix (fel, mir[i+1], bmat2.Rows(DIM_DMAT,2*DIM_DMAT), lh);
             dmat = mir[i+1].GetWeight() * dmats[i+1];
             dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmat2.Rows(DIM_DMAT,2*DIM_DMAT);
 
-
             if (DMATOP::SYMMETRIC)
-              FastMat<2*DIM_DMAT> (elmat.Height(), & dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
+              FastMat<2*DIM_DMAT,ROUNDUP2> (elmat.Height(), & dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
             else
-              elmat += Trans (bmat2) * dbmat2;
+              elmat += Trans (bmat2.Rows(0,2*DIM_DMAT)) * dbmat2.Rows(2*DIM_DMAT);
           } 
 
         for ( ; i < ir.GetNIP(); i++)
