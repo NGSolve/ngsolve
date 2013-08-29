@@ -400,7 +400,7 @@ namespace ngcomp
 	    }
 	  else
 	    {
-	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
+	      FlatMatrix<double> elmat(dnums.Size(), lh);
 	      bli.CalcElementMatrix (fel, eltrans, elmat, lh);
 
 	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
@@ -408,7 +408,7 @@ namespace ngcomp
               
               if (dnums.Size() < 50)
                 {
-                  FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                  FlatCholeskyFactors<double> invelmat(elmat, lh);
                   invelmat.Mult (elflux, elfluxi);
                 }
               else
