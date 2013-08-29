@@ -13,44 +13,45 @@ namespace ngstd
 
 
   /// N integers
-  template <int N>
+  template <int N, typename T = int>
   class INT
   {
     /// data
-    int i[(N>0)?N:1];
+    T i[(N>0)?N:1];
 
   public:
     ///
     INT () { }
 
     /// init all
-    INT (int ai1)
+    INT (T ai1)
     { 
       for (int j = 0; j < N; j++) { i[j] = ai1; }
     }
 
     /// init i[0], i[1]
-    INT (int ai1, int ai2)
+    INT (T ai1, T ai2)
     { i[0] = ai1; i[1] = ai2; }
 
     /// init i[0], i[1], i[2]
-    INT (int ai1, int ai2, int ai3)
+    INT (T ai1, T ai2, T ai3)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; }
 
     /// init i[0], i[1], i[2]
-    INT (int ai1, int ai2, int ai3, int ai4)
+    INT (T ai1, T ai2, T ai3, T ai4)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; i[3] = ai4; }
 
-
+    /*
     /// copy constructor
-    INT (const INT & in2)
+    INT (const INT<N,T2> & in2)
     { 
       for (int j = 0; j < N; j++) 
 	i[j] = in2.i[j]; 
     }
+    */
 
-    template <int N2>
-    INT (const INT<N2> & in2)
+    template <int N2, typename T2>
+    INT (const INT<N2,T2> & in2)
     {
       if (N2 <= N)
         {
@@ -84,30 +85,31 @@ namespace ngstd
     }
 
     /// access
-    int & operator[] (int j)
+    T & operator[] (int j)
     { return i[j]; }
 
     /// access
-    const int & operator[] (int j) const
+    const T & operator[] (int j) const
     { return i[j]; }
 
-    void SetAll (int value)
+    void SetAll (T value)
     {
       for (int j = 0; j < N; j++)
 	i[j] = value;
     }
 
-    INT<N> & operator= (int value)
+    INT<N,T> & operator= (T value)
     {
       for (int j = 0; j < N; j++)
 	i[j] = value;
       return *this;
     }
 
-    INT<N> & operator= (INT<N> v2)
+    template <typename T2>
+    INT<N,T> & operator= (INT<N,T2> v2)
     {
       for (int j = 0; j < N; j++)
-	i[j] = v2.i[j];
+	i[j] = v2[j];
       return *this;
     }
   };
@@ -129,8 +131,8 @@ namespace ngstd
   }
 
   /// Print integers
-  template <int N>
-  inline ostream & operator<<(ostream  & s, const INT<N> & i2)
+  template <int N, typename T>
+  inline ostream & operator<<(ostream  & s, const INT<N,T> & i2)
   {
     for (int j = 0; j < N; j++)
       s << i2[j] << " ";
@@ -168,11 +170,11 @@ namespace ngstd
 
   // using ngstd::max;
 
-  template <int D>
-  inline int Max (const INT<D> & i)
+  template <int D, typename T>
+  inline T Max (const INT<D,T> & i)
   {
     if (D == 0) return 0;
-    int m = i[0];
+    T m = i[0];
     for (int j = 1; j < D; j++)
       if (i[j] > m) m = i[j];
     return m;
