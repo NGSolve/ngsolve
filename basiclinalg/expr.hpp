@@ -111,11 +111,7 @@ namespace ngbla
 
 
 
-
-
-
-
-
+  /*
   template <class T>
   class mat_traits
   {
@@ -135,34 +131,30 @@ namespace ngbla
     ///
     enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
+  */
 
+  template <class T>  class mat_traits;
 
-  // some compiler thinks it needs Mat<int>...
-  template <>
-  class mat_traits<Mat<1,1,int> >
+  template <class T>
+  class mat_traits
   {
   public:
-    typedef int TELEM;
-    typedef int TSCAL;
-    typedef int TV_COL;
-    typedef int TV_ROW;
+    /// matrix element
+    typedef T TELEM;
+    /// field of matrix element
+    typedef T TSCAL;
+    /// type of column vector
+    typedef T TV_COL;
+    /// type of row vector
+    typedef T TV_ROW;
+    /// matrix height
     enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
+    /// matrix with
+    enum { WIDTH  = 1  };
+    ///
     enum { IS_COMPLEX = 0 };
   };
 
-  template <>
-  class mat_traits<int>
-  {
-  public:
-    typedef int TELEM;
-    typedef int TSCAL;
-    typedef int TV_COL;
-    typedef int TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
 
   template <int D>
   class mat_traits<ngstd::INT<D> >
@@ -173,33 +165,6 @@ namespace ngbla
     typedef int TV_COL;
     typedef int TV_ROW;
     enum { HEIGHT = D };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
-
-
-  template <>
-  class mat_traits<double>
-  {
-  public:
-    typedef double TELEM;
-    typedef double TSCAL;
-    typedef double TV_COL;
-    typedef double TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
-
-  template <>
-  class mat_traits<float>
-  {
-  public:
-    typedef float TELEM;
-    typedef float TSCAL;
-    typedef float TV_COL;
-    typedef float TV_ROW;
-    enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
     enum { IS_COMPLEX = 0 };
   };
@@ -217,6 +182,7 @@ namespace ngbla
     enum { IS_COMPLEX = 1 };
   };
 
+
   template <int D, typename SCAL>
   class mat_traits<AutoDiff<D,SCAL> >
   {
@@ -230,187 +196,11 @@ namespace ngbla
     enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
 
-  template <int D>
-  class mat_traits<AutoDiffDiff<D> >
-  {
-  public:
-    typedef AutoDiffDiff<D> TELEM;
-    typedef AutoDiffDiff<D> TSCAL;
-    typedef AutoDiffDiff<D> TV_COL;
-    typedef AutoDiffDiff<D> TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = false };
-  };
-
-
-  template <>
-  class mat_traits<const int>
-  {
-  public:
-    typedef int TELEM;
-    typedef int TSCAL;
-    typedef int TV_COL;
-    typedef int TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
-
-  template <>
-  class mat_traits<const double>
-  {
-  public:
-    typedef double TELEM;
-    typedef double TSCAL;
-    typedef double TV_COL;
-    typedef double TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
-
-  template <>
-  class mat_traits<const Complex>
-  {
-  public:
-    typedef Complex TELEM;
-    typedef Complex TSCAL;
-    typedef Complex TV_COL;
-    typedef Complex TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 1 };
-  };
-
-
-  /*
-  /// matrix type from column and row vectors
-  template <typename TV_COL, typename TV_ROW>
-  class mat_from_vecs
-  {
-    enum { HEIGHT = mat_traits<TV_COL>::HEIGHT };
-    enum { WIDTH  = mat_traits<TV_ROW>::HEIGHT };
-    typedef typename mat_from_vecs<typename TV_COL::TELEM, typename TV_ROW::TELEM>::TMAT TELEM;
-    typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
-  };
-
-  template <> class mat_from_vecs<double,double> { typedef double TMAT; };
-  template <> class mat_from_vecs<double,Complex> { typedef Complex TMAT; };
-  template <> class mat_from_vecs<Complex,double> { typedef Complex TMAT; };
-  template <> class mat_from_vecs<Complex,Complex> { typedef Complex TMAT; };
-  */
 
 
 
 
 
-
-  /*
-  /// matrix type of product
-  template <typename TA, typename TB>
-  class mat_prod_type
-  {
-  public:
-    enum { HEIGHT = mat_traits<TA>::HEIGHT };
-    enum { WIDTH  = mat_traits<TB>::WIDTH };
-    
-    typedef typename mat_prod_type<typename mat_traits<TA>::TELEM, 
-				   typename mat_traits<TB>::TELEM>::TMAT TELEM;
-    
-    typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
-  };
-  
-//    template <int S, typename T> class mat_prod_type<double, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
-//    template <int S, typename T> class mat_prod_type<Complex, Vec<S,T> > { public: typedef Vec<S,T> TMAT; };
-//    template <int S, typename T> class mat_prod_type<double, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
-//    template <int S, typename T> class mat_prod_type<Complex, const FlatVec<S,T> > { public: typedef Vec<S,T> TMAT; };
-
-  template <> class mat_prod_type<double,double> { public: typedef double TMAT; };
-  template <> class mat_prod_type<double,Complex> { public: typedef Complex TMAT; };
-  template <> class mat_prod_type<Complex,double> { public: typedef Complex TMAT; };
-  template <> class mat_prod_type<Complex,Complex> { public: typedef Complex TMAT; };
-  template <> class mat_prod_type<int,int> { public: typedef int TMAT; };
-  template <int D, typename TA, typename TB>
-  class mat_prod_type<AutoDiff<D, TA>, TB> 
-  { public: typedef AutoDiff<D, typename mat_prod_type<TA,TB>::TMAT> TMAT; };
-
-  template <int D, typename TA, typename TB>
-  class mat_prod_type<TB, AutoDiff<D, TA> > 
-  { public: typedef AutoDiff<D, typename mat_prod_type<TA,TB>::TMAT> TMAT; };
-
-  template <int D, typename TA, int E, typename TB>
-  class mat_prod_type<AutoDiff<D, TA>, AutoDiff<E,TB> > 
-  { public: typedef AutoDiff<D, typename mat_prod_type<TA,TB>::TMAT> TMAT; };
-
-
-
-  /// matrix type of sum (important for double+Complex)
-  template <typename TA, typename TB>
-  class mat_sum_type
-  {
-  public:
-    enum { HEIGHT = mat_traits<TA>::HEIGHT };
-    enum { WIDTH  = mat_traits<TA>::WIDTH };
-    typedef typename mat_sum_type<typename TA::TELEM, 
-				  typename TB::TELEM>::TMAT TELEM;
-    typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
-  };
-
-  template <> class mat_sum_type<float,float> { public: typedef float TMAT; };
-  template <> class mat_sum_type<double,double> { public: typedef double TMAT; };
-  template <> class mat_sum_type<double,Complex> { public: typedef Complex TMAT; };
-  template <> class mat_sum_type<Complex,double> { public: typedef Complex TMAT; };
-  template <> class mat_sum_type<Complex,Complex> { public: typedef Complex TMAT; };
-
-  template <int D, typename TA, typename TB>
-  class mat_sum_type<AutoDiff<D, TA>, TB> 
-  { public: typedef AutoDiff<D, typename mat_sum_type<TA,TB>::TMAT> TMAT; };
-
-
-  template <int D, typename TA, typename TB>
-  class mat_sum_type<TB, AutoDiff<D, TA> > 
-  { public: typedef AutoDiff<D, typename mat_sum_type<TA,TB>::TMAT> TMAT; };
-
-
-  template <int D, typename TA, int E, typename TB>
-  class mat_sum_type<AutoDiff<D, TA>, AutoDiff<E,TB> > 
-  { public: typedef AutoDiff<D, typename mat_sum_type<TA,TB>::TMAT> TMAT; };
-
-
-
-
-
-
-
-  /// matrix type of scale
-  template <typename TM, typename TS>
-  class mat_scale_type
-  {
-  public:
-    enum { HEIGHT = mat_traits<TM>::HEIGHT };
-    enum { WIDTH  = mat_traits<TM>::WIDTH };
-    typedef typename mat_scale_type<typename TM::TELEM, TS>::TMAT TELEM;
-    typedef Mat<HEIGHT,WIDTH,TELEM> TMAT;
-  };
-
-  template <> class mat_scale_type<double,double> { public: typedef double TMAT; };
-  template <> class mat_scale_type<double,Complex> { public: typedef Complex TMAT; };
-  template <> class mat_scale_type<Complex,double> { public: typedef Complex TMAT; };
-  template <> class mat_scale_type<Complex,Complex> { public: typedef Complex TMAT; };
-
-  template <int D, typename TA, typename TB>
-  class mat_scale_type<TB, AutoDiff<D, TA> > 
-  { public: typedef AutoDiff<D, TA> TMAT; };
-
-  template <int D, typename TA, typename TB>
-  class mat_scale_type<AutoDiff<D, TA>, TB> 
-  { public: typedef AutoDiff<D, TA> TMAT; };
-
-  template <int D, typename TA, int E, typename TB>
-  class mat_scale_type<AutoDiff<D, TA>, AutoDiff<E,TB> > 
-  { public: typedef AutoDiff<D, typename mat_scale_type<TA,TB>::TMAT> TMAT; };
-*/
 
 
 
@@ -477,25 +267,6 @@ namespace ngbla
   template <class TA> class RowExpr;
   template <class TA> class ColExpr;
 
-
-#ifdef USE_GMP
-
-  template <>
-  class mat_traits<mpq_class>
-  {
-  public:
-    typedef mpq_class TELEM;
-    typedef mpq_class TSCAL;
-    typedef mpq_class TV_COL;
-    typedef mpq_class TV_ROW;
-    enum { HEIGHT = 1 };
-    enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
-  };
-
-  template <> class mat_prod_type<mpq_class,mpq_class> { public: typedef mpq_class TMAT; };
-
-#endif
 
 
 
@@ -600,6 +371,16 @@ namespace ngbla
 
 
 
+
+
+
+
+
+
+
+
+
+
   /**
      Caller knows that matrix expression is a symmetric matrix.
      Thus, only one half of the matrix needs to be computed.
@@ -609,8 +390,6 @@ namespace ngbla
   {
     const T & a;
   public:
-    // typedef typename T::TELEM TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
 
     SymExpr (const T & aa) : a(aa) { ; }
 
@@ -1019,6 +798,8 @@ namespace ngbla
 
 
 
+
+
   /**
      The base class for matrices.
      Constant-Means-Constat-Pointer
@@ -1149,9 +930,7 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    // typedef typename mat_sum_type<typename TA::TELEM,
-    // typename TB::TELEM>::TMAT TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
     SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
@@ -1189,9 +968,7 @@ namespace ngbla
     const TA & a;
     const TB & b;
   public:
-    // typedef typename mat_sum_type<typename TA::TELEM,
-    // typename TB::TELEM>::TMAT TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
 
     SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
@@ -1261,8 +1038,7 @@ namespace ngbla
     const TA & a;
     TS s;
   public:
-    // typedef typename mat_scale_type<typename TA::TELEM, TS>::TMAT TELEM;
-    // typedef typename mat_traits<TELEM>::TSCAL TSCAL;
+
     enum { IS_LINEAR = TA::IS_LINEAR };
 
     ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
@@ -1516,8 +1292,12 @@ namespace ngbla
       TELEM & operator() (int i) const { return a(rows[i]); }
     */
 
+    /*
     TREF operator() (int i, int j) const { return a(rows[i], j); }
     TREF operator() (int i) const { return a(rows[i]); }
+    */
+    auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
+    auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
 
     auto Row (int i) const -> decltype (a.Rows(rows[i])) { return a.Row(rows[i]); }
 
@@ -1918,8 +1698,6 @@ namespace ngbla
      Calculates the determinant of a Matrix.
   */
   template <class T>
-  // inline typename T::TSCAL Det (const MatExpr<T> & m)
-  // inline typename mat_traits<typename T::TELEM>::TSCAL Det (const MatExpr<T> & m)
   inline typename T::TELEM Det (const MatExpr<T> & m)
   {
     const T & sm = m.Spec();
@@ -1945,8 +1723,8 @@ namespace ngbla
 	  cerr << "general det not implemented" << endl;
 	}
       }
-    // return typename mat_traits<typename T::TELEM>::TSCAL (0);  // typename T::TSCAL(0);
-    return typename T::TELEM (0);  // typename T::TSCAL(0);
+
+    return typename T::TELEM (0);  
   }
 }
 

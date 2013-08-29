@@ -342,8 +342,8 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     typedef Vec<H, typename mat_traits<T>::TV_COL> TV_COL;
     typedef Vec<W, typename mat_traits<T>::TV_ROW> TV_ROW;
-    enum { HEIGHT = H };
-    enum { WIDTH  = W };
+    // enum { HEIGHT = H };
+    // enum { WIDTH  = W };
 
     /// do not initialize 
     Mat () throw () { ; }
@@ -433,6 +433,25 @@ namespace ngbla
 
   };
 
+  template <int H, int W, typename T>
+  class mat_traits<Mat<H,W,T>>
+  {
+  public:
+    /// matrix element
+    typedef T TELEM;
+    /// field of matrix element
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    /// type of column vector
+    typedef typename Mat<H,W,T>::TV_COL TV_COL;
+    /// type of row vector
+    typedef typename Mat<H,W,T>::TV_ROW TV_ROW;
+    /// matrix height
+    enum { HEIGHT = H };
+    /// matrix with
+    enum { WIDTH  = W  };
+    ///
+    enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
+  };
 
 
 
