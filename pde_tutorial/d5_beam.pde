@@ -38,7 +38,7 @@ define coefficient coef_surface_force_z
 0, 1e5, 
 
 
-define fespace v -type=h1ho -dim=3 -order=1 -dirichlet=[1]
+define fespace v -type=h1ho -dim=3 -order=4 -dirichlet=[1]
 define fespace vp -type=h1ho -dim=6  -order=3
 
 define gridfunction u -fespace=v
