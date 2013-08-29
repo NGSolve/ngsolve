@@ -34,6 +34,8 @@ namespace ngfem {
   }
   */
 
+
+#ifdef __AVX__
   INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
   {
     __m256d hsum1 = _mm256_hadd_pd (v1, v2);
@@ -46,7 +48,7 @@ namespace ngfem {
 					   _mm256_extractf128_pd (hsum1, 1), 0));
     return hsum;
   }
-    
+#endif
 
 
   template <int M, int M2> NGS_DLL_HEADER
