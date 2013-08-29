@@ -6,11 +6,10 @@
 #include <../fem/hcurllofe.hpp> 
 #include <multigrid.hpp>
 
+extern template class ngla::VFlatVector<double>;
 
 namespace ngcomp 
 {
-  using namespace ngcomp; 
-  
 
   HCurlHighOrderFESpace ::  
   HCurlHighOrderFESpace (const MeshAccess & ama, const Flags & aflags, bool parseflags)
