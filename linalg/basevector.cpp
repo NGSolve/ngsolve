@@ -148,11 +148,11 @@ namespace ngla
   }
 
   /*
-  BaseVector * BaseVector :: CreateVector ( const Array<int> * procs ) const
-  {
+    BaseVector * BaseVector :: CreateVector ( const Array<int> * procs ) const
+    {
     cout << "Create vec called for base class" << endl;
     return 0;
-  }
+    }
   */
 
   void BaseVector :: SetRandom () 
@@ -163,51 +163,51 @@ namespace ngla
   }
   
   /*  
-  template<int S>
-  void BaseVector :: GetIndirect (const Array<int> & ind, 
-				  FlatVector< Vec<S,double> > & v) const 
-  { 
-    FlatVector<double> fv = FVDouble();
-    if(EntrySize() != S)
+      template<int S>
+      void BaseVector :: GetIndirect (const Array<int> & ind, 
+      FlatVector< Vec<S,double> > & v) const 
+      { 
+      FlatVector<double> fv = FVDouble();
+      if(EntrySize() != S)
       throw Exception("BaseVector::GetIndirect() wrong dimensions");
 
-    //int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+      //int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-	{
-	  int base = S * ind[i];
-	  for (int j = 0; j < S; j++)
-	    v[i](j) = fv[base++];
-	}
+      {
+      int base = S * ind[i];
+      for (int j = 0; j < S; j++)
+      v[i](j) = fv[base++];
+      }
       else
-	{
-	  for (int j = 0; j < S; j++)
-	    v[i](j) = 0;
-	}
-  }
+      {
+      for (int j = 0; j < S; j++)
+      v[i](j) = 0;
+      }
+      }
 
-  template<int S>
-  void BaseVector :: GetIndirect (const Array<int> & ind, 
-				  FlatVector< Vec<S,Complex> > & v) const 
-  { 
-    FlatVector<Complex> fv = FVComplex();
-    if(EntrySize() != 2*S)
+      template<int S>
+      void BaseVector :: GetIndirect (const Array<int> & ind, 
+      FlatVector< Vec<S,Complex> > & v) const 
+      { 
+      FlatVector<Complex> fv = FVComplex();
+      if(EntrySize() != 2*S)
       throw Exception("BaseVector::GetIndirect() wrong dimensions");
 
-    //int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+      //int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-	{
-	  int base = S * ind[i];
-	  for (int j = 0; j < S; j++)
-	    v[i](j) = fv[base++];
-	}
+      {
+      int base = S * ind[i];
+      for (int j = 0; j < S; j++)
+      v[i](j) = fv[base++];
+      }
       else
-	{
-	  for (int j = 0; j < S; j++)
-	    v[i](j) = 0;
-	}
-  }
+      {
+      for (int j = 0; j < S; j++)
+      v[i](j) = 0;
+      }
+      }
   */
 
   void BaseVector :: GetIndirect (const FlatArray<int> & ind, 
@@ -223,21 +223,21 @@ namespace ngla
 	sv(i) = -1.0;
 
     /*
-    FlatVector<double> fv = FVDouble();
-    int es = EntrySize();
-    int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+      FlatVector<double> fv = FVDouble();
+      int es = EntrySize();
+      int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-	{
-	  int base = es * ind[i];
-	  for (int j = 0; j < es; j++)
-	    v[ii++] = fv[base++];
-	}
+      {
+      int base = es * ind[i];
+      for (int j = 0; j < es; j++)
+      v[ii++] = fv[base++];
+      }
       else
-	{
-	  for (int j = 0; j < es; j++)
-	    v[ii++] = 0;
-	}
+      {
+      for (int j = 0; j < es; j++)
+      v[ii++] = 0;
+      }
     */
   }
   
@@ -272,18 +272,18 @@ namespace ngla
 	lsv(ind[i]) = sv(i);
 
     /*
-    FlatVector<double> fv = FVDouble();
-    int es = EntrySize();
-    int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+      FlatVector<double> fv = FVDouble();
+      int es = EntrySize();
+      int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-	{
-	  int base = es * ind[i];
-	  for (int j = 0; j < es; j++)
-	    fv[base++] = v[ii++];
-	}
+      {
+      int base = es * ind[i];
+      for (int j = 0; j < es; j++)
+      fv[base++] = v[ii++];
+      }
       else
-	ii += es;
+      ii += es;
     */
   }
 
@@ -305,38 +305,38 @@ namespace ngla
   }
 
   /*
-  template<int S>
-  void BaseVector :: AddIndirect (const Array<int> & ind, 
-				  const FlatVector< Vec<S,double> > & v) 
-  { 
+    template<int S>
+    void BaseVector :: AddIndirect (const Array<int> & ind, 
+    const FlatVector< Vec<S,double> > & v) 
+    { 
     FlatVector<double> fv = FVDouble();
     int es = EntrySize();
     
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
-	{
-	  int base = es * ind[i];
-	  for (int j = 0; j < es; j++)
-	    fv[base++] += v[i](j);
-	}
-   }
+    if (ind[i] != -1)
+    {
+    int base = es * ind[i];
+    for (int j = 0; j < es; j++)
+    fv[base++] += v[i](j);
+    }
+    }
 
-  template<int S>
-  void BaseVector :: AddIndirect (const Array<int> & ind, 
-				  const FlatVector< Vec<S,Complex> > & v)
-  { 
+    template<int S>
+    void BaseVector :: AddIndirect (const Array<int> & ind, 
+    const FlatVector< Vec<S,Complex> > & v)
+    { 
     FlatVector<Complex> fv = FVComplex();
     if(EntrySize() != 2*S)
-      throw Exception("BaseVector::AddIndirect() wrong dimensions");
+    throw Exception("BaseVector::AddIndirect() wrong dimensions");
 
     for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
-	{
-	  int base = S * ind[i];
-	  for (int j = 0; j < S; j++)
-	    fv[base++] += v[i](j);
-	}
-  }
+    if (ind[i] != -1)
+    {
+    int base = S * ind[i];
+    for (int j = 0; j < S; j++)
+    fv[base++] += v[i](j);
+    }
+    }
   */  
 
   void BaseVector :: AddIndirect (const FlatArray<int> & ind, 
@@ -349,18 +349,18 @@ namespace ngla
       if (ind[i] != -1)
 	lsv(ind[i]) += sv(i);
     /*
-    FlatVector<double> fv = FVDouble();
-    int es = EntrySize();
-    int ii = 0;
-    for (int i = 0; i < ind.Size(); i++)
+      FlatVector<double> fv = FVDouble();
+      int es = EntrySize();
+      int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
       if (ind[i] != -1)
-	{
-	  int base = es * ind[i];
-	  for (int j = 0; j < es; j++)
-	    fv[base++] += v[ii++];
-	}
+      {
+      int base = es * ind[i];
+      for (int j = 0; j < es; j++)
+      fv[base++] += v[ii++];
+      }
       else
-	ii += es;
+      ii += es;
     */
   }
 
@@ -389,124 +389,124 @@ namespace ngla
   
 
   /*
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<2,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<3,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<4,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<5,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<6,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<7,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<8,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<9,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<10,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<11,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<12,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<13,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<14,double> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<15,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<2,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<3,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<4,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<5,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<6,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<7,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<8,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<9,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<10,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<11,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<12,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<13,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<14,double> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<15,double> > & v) const;
 
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<2,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<3,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<4,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<5,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<6,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<7,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<8,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<9,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<10,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<11,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<12,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<13,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<14,Complex> > & v) const;
-  template void BaseVector::GetIndirect(const Array<int> & ind, 
-					   FlatVector< Vec<15,Complex> > & v) const;
-
-
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<2,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<3,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<4,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<5,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<6,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<7,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<8,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<9,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<10,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<11,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<12,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<13,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<14,Complex> > & v) const;
+    template void BaseVector::GetIndirect(const Array<int> & ind, 
+    FlatVector< Vec<15,Complex> > & v) const;
 
 
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<2,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<3,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<4,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<5,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<6,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<7,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<8,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<9,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<10,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<11,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<12,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<13,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<14,double> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<15,double> > & v);
 
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<2,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<3,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<4,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<5,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<6,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<7,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<8,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<9,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<10,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<11,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<12,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<13,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<14,Complex> > & v);
-  template void BaseVector::AddIndirect(const Array<int> & ind, 
-					   const FlatVector< Vec<15,Complex> > & v);
+
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<2,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<3,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<4,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<5,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<6,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<7,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<8,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<9,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<10,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<11,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<12,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<13,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<14,double> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<15,double> > & v);
+
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<2,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<3,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<4,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<5,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<6,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<7,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<8,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<9,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<10,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<11,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<12,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<13,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<14,Complex> > & v);
+    template void BaseVector::AddIndirect(const Array<int> & ind, 
+    const FlatVector< Vec<15,Complex> > & v);
   */
 
 
@@ -514,31 +514,31 @@ namespace ngla
 
 
 
-/**
-   Decision between double or Complex
- */
+  /**
+     Decision between double or Complex
+  */
 
-/*
-template <class SCAL>
-S_BaseVector<SCAL> :: S_BaseVector () throw()
-{ 
-  ;
-}
+  /*
+    template <class SCAL>
+    S_BaseVector<SCAL> :: S_BaseVector () throw()
+    { 
+    ;
+    }
 
-template <class SCAL>
-S_BaseVector<SCAL> :: ~S_BaseVector () throw()
-{ 
-  ;
-}
-*/
+    template <class SCAL>
+    S_BaseVector<SCAL> :: ~S_BaseVector () throw()
+    { 
+    ;
+    }
+  */
 
 
-template <class SCAL>
-S_BaseVector<SCAL> & S_BaseVector<SCAL> :: operator= (double s)
-{
-  SetScalar (s);
-  return *this;
-}
+  template <class SCAL>
+  S_BaseVector<SCAL> & S_BaseVector<SCAL> :: operator= (double s)
+  {
+    SetScalar (s);
+    return *this;
+  }
 
 
   template <class SCAL>
@@ -555,40 +555,40 @@ S_BaseVector<SCAL> & S_BaseVector<SCAL> :: operator= (double s)
                                 dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
 
-template <class SCAL>
-FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
-{
-  return FlatVector<double> (size * entrysize, Memory());
-  /*
-  FlatVector<SCAL> fv = FVScal();
-  return FlatVector<SCAL> (fv.Size() * sizeof(SCAL)/sizeof(double),
-			   reinterpret_cast<double*> (&fv(0)));
-  */
-}
+  template <class SCAL>
+  FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
+  {
+    return FlatVector<double> (size * entrysize, Memory());
+    /*
+      FlatVector<SCAL> fv = FVScal();
+      return FlatVector<SCAL> (fv.Size() * sizeof(SCAL)/sizeof(double),
+      reinterpret_cast<double*> (&fv(0)));
+    */
+  }
 
-template <class SCAL>
-FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
-{
-  throw Exception ("FVComplex called for real vector");
-}
-
-
+  template <class SCAL>
+  FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
+  {
+    throw Exception ("FVComplex called for real vector");
+  }
 
 
-FlatVector<double> S_BaseVector<Complex> :: FVDouble () const throw()
-{
-  FlatVector<Complex> fv = FVScal();
-  return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
-			     reinterpret_cast<double*> (&fv(0)));
-}
 
 
-FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
-{
-  FlatVector<Complex> fv = FVScal();
-  return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
-			      reinterpret_cast<Complex*> (&fv(0)));
-}
+  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const throw()
+  {
+    FlatVector<Complex> fv = FVScal();
+    return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
+                               reinterpret_cast<double*> (&fv(0)));
+  }
+
+
+  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
+  {
+    FlatVector<Complex> fv = FVScal();
+    return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
+                                reinterpret_cast<Complex*> (&fv(0)));
+  }
 
 
 
@@ -621,7 +621,7 @@ FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const throw()
   
 
   template class S_BaseVector<double>;
-  //template class S_BaseVector<Complex>;
+  // template class S_BaseVector<Complex>;
   
   template class VFlatVector<double>;
   
