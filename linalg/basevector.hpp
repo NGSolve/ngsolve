@@ -227,10 +227,10 @@ namespace ngla
     virtual BaseVector * Range (int begin, int end) const;
     virtual BaseVector * Range (IntRange range) const;
 
-    void GetIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<double> & v) const;
-    void GetIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<Complex> & v) const;
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<double> & v) const = 0;
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<Complex> & v) const = 0;
     void SetIndirect (const FlatArray<int> & ind, 
 		      const FlatVector<double> & v);
     void SetIndirect (const FlatArray<int> & ind, 
@@ -240,7 +240,7 @@ namespace ngla
     void AddIndirect (const FlatArray<int> & ind, 
 		      const FlatVector<Complex> & v);
 
-
+    /*
 
     template<int S>
     void GetIndirect (const Array<int> & ind, 
@@ -316,7 +316,7 @@ namespace ngla
 	      fv[base++] += v[i](j);
 	  }
     }
-  
+    */
   
     virtual void Cumulate () const;
     virtual void Distribute() const;
@@ -353,6 +353,9 @@ namespace ngla
   /**
      Decision between double or Complex
   */
+
+
+
   template <class SCAL>
   class NGS_DLL_HEADER S_BaseVector : virtual public BaseVector
   {
@@ -363,19 +366,56 @@ namespace ngla
     S_BaseVector & operator= (double s);
 
     virtual SCAL InnerProduct (const BaseVector & v2) const;
-    /*
-    {
-      return ngbla::InnerProduct (FVScal(), 
-				  dynamic_cast<const S_BaseVector&>(v2).FVScal());
-    }
-    */
+
     virtual FlatVector<double> FVDouble () const;
     virtual FlatVector<Complex> FVComplex () const;
 
     virtual FlatVector<SCAL> FVScal () const
     {
-      return FlatVector<SCAL> (size * entrysize, Memory());
+      return FlatVector<SCAL> (size * entrysize * sizeof(double)/sizeof(SCAL), 
+			       Memory());
     }
+
+
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<double> & v) const;
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<Complex> & v) const;
+
+  };
+
+
+
+  /*
+  template <class SCAL>
+  class NGS_DLL_HEADER S_BaseVector;
+
+
+  template <>
+  class NGS_DLL_HEADER S_BaseVector<double> : virtual public BaseVector
+  {
+  public:
+    S_BaseVector () throw () { ; }
+    virtual ~S_BaseVector() { ; }
+
+    S_BaseVector & operator= (double s);
+
+    virtual double InnerProduct (const BaseVector & v2) const;
+
+    virtual FlatVector<double> FVDouble () const;
+    virtual FlatVector<Complex> FVComplex () const;
+
+    virtual FlatVector<double> FVScal () const
+    {
+      return FlatVector<double> (size * entrysize, Memory());
+    }
+
+
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<double> & v) const;
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<Complex> & v) const;
+
   };
 
 
@@ -389,21 +429,21 @@ namespace ngla
     ~S_BaseVector () { ; }
 
     virtual Complex InnerProduct (const BaseVector & v2) const;
-    /*
-    {
-      return ngbla::InnerProduct (FVScal(), 
-				  dynamic_cast<const S_BaseVector&>(v2).FVScal());
-    }
-    */
+
     virtual FlatVector<double> FVDouble () const throw();
     virtual FlatVector<Complex> FVComplex () const throw();
     virtual FlatVector<Complex> FVScal () const throw() 
     {
       return FlatVector<Complex> (size * entrysize/2, Memory());
     }
+
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<double> & v) const;
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<Complex> & v) const;
   };
 
-
+  */
 
 
 

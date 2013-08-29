@@ -432,7 +432,7 @@ namespace ngla
 
         clock_t prevtime = clock();
 
-	
+#pragma omp parallel for	
 	for (int i = 0; i < blocktable.Size(); i++)
 	  {
             if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)

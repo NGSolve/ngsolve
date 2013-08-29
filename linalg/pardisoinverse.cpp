@@ -152,7 +152,7 @@ namespace ngla
     //    no init in MKL PARDISO
 #else
 
-    int retvalue;
+    integer retvalue;
 #ifdef USE_PARDISO400
     double dparm[64]; 
     integer solver = 0;
