@@ -776,7 +776,7 @@ namespace ngbla
   class Vec : public MatExpr<Vec<S,T> > // , protected BaseVec
   {
     /// the values
-    T data[(S>0)?S:1];
+    T data[S];
   public:
     /// type of the elements
     typedef T TELEM;
@@ -937,6 +937,46 @@ namespace ngbla
     { return FlatVector<T> (next-first, data+first); }
   };
 
+
+  template <typename T>
+  class Vec<0,T>  : public MatExpr<Vec<0,T> > 
+  {
+  public:
+    Vec () { ; }
+    Vec (T d) { ; }
+    template<typename TB>
+    Vec (const Expr<TB> & v) {;}
+
+    template<typename TB>
+    Vec & operator= (const Expr<TB> & v) { return *this;}
+
+    T & operator[] (int i) const  { return *(T*)(NULL); }
+    T & operator() (int i) const  { return *(T*)(NULL); }
+    T & operator() (int i, int j) const  { return *(T*)(NULL); }
+  };
+
+
+
+
+  template <int S, typename T>
+  class mat_traits<Vec<S,T>>
+  {
+  public:
+    /// matrix element
+    typedef T TELEM;
+    /// field of matrix element
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    /// type of column vector
+    typedef Vec<S, typename mat_traits<T>::TV_COL> TV_COL;
+    /// a vec is a S times 1 matrix, the according row vector
+    typedef Vec<1, typename mat_traits<T>::TV_ROW> TV_ROW;
+    /// matrix height
+    enum { HEIGHT = S };
+    /// matrix with
+    enum { WIDTH  = 1  };
+    ///
+    enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
+  };
 
 
 
