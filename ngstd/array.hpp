@@ -425,7 +425,7 @@ namespace ngstd
       ownmem = 0;
     }
 
-
+    
     /// array copy 
     explicit Array (const Array<T> & a2)
       : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
@@ -454,6 +454,9 @@ namespace ngstd
     {
       if (ownmem) delete [] data;
     }
+
+    /// we tell the compiler that there is no need for deleting the array ..
+    void NothingToDelete () { ownmem = false; }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
     void SetSize(TSIZE nsize)

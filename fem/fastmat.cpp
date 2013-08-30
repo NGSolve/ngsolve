@@ -6,6 +6,17 @@
 #include <fem.hpp>
 
 
+/*
+  
+Computes C += A B^t
+with (M) and slice (M2) of A and B is given at compile-time
+compute only lower left triangle of C
+
+This is the most expensive operation in element matrix calculation.
+
+*/
+
+
 #ifdef WIN32
 #define __restrict__ __restrict
 #endif
@@ -1083,6 +1094,8 @@ namespace ngfem {
 
 
   // roundup
+  template NGS_DLL_HEADER void FastMat<1,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<3,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<2,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<6,8> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<26,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
@@ -1159,6 +1172,8 @@ namespace ngfem {
   template NGS_DLL_HEADER void FastMat<48,48> (int n, Complex * pa, double * pb, Complex * pc);
 
   // roundup
+  template NGS_DLL_HEADER void FastMat<1,4> (int n, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3,4> (int n, Complex * pa, double * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<2,4> (int n, Complex * pa, double * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<6,8> (int n, Complex * pa, double * pb, Complex * pc);
 

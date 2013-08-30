@@ -68,7 +68,7 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const = 0;
     
-
+    
     NGS_DLL_HEADER 
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<D>)> & callback) const;
@@ -80,27 +80,17 @@ namespace ngfem
     virtual void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
                                    SliceMatrix<> dshape) const;
 
-    INLINE void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-				  FlatMatrix<> dshape) const
-    {
-      CalcMappedDShape (mip, SliceMatrix<> (dshape));
-    }
 
-    INLINE void CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-				  FlatMatrixFixWidth<D> dshape) const
+    /*
+    template <typename ANY_MIP, typename T>
+    INLINE void CalcMappedDShape (const ANY_MIP & mip, MatExpr<T> & mat) const
     {
-      CalcMappedDShape (mip, SliceMatrix<> (dshape));
-    }
-
-
-    template <typename ANY_MIP, typename ANY_MAT>
-    INLINE void CalcMappedDShape (const ANY_MIP & mip, ANY_MAT && mat) const
-    {
+      cout << "calc dshape from any matrix, type = " << typeid(T).name() << endl;
       CalcDShape (mip.IP(), 
 		  [&](int i, Vec<3> gradref)
 		  { mat.Row(i) = Trans(mip.GetJacobianInverse()) * gradref; });
     }
-
+    */
 
 
 

@@ -135,7 +135,14 @@ template <int M, int M2 = M> NGS_DLL_HEADER
 void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
   
 
-
+template <int H, int DIST, typename T1, typename T2, typename T3>
+void FastMat (FlatMatrixFixHeight<H,T1,DIST> a,
+              FlatMatrixFixHeight<H,T2,DIST> b,
+              FlatMatrix<T3> c)
+{
+  FastMat<H,DIST> (a.Width(), &a(0,0), &b(0,0), &c(0,0));
+}
+              
 
 
 
@@ -378,22 +385,25 @@ public:
         enum { BLOCK = 2 * (12 / DIM_DMAT + 1) };
 	
         HeapReset hr1(lh);
-	
-        // FlatMatrixFixHeight<DIM_DMAT, double> bmatr (ndof * DIM, lh);
-        FlatMatrixFixHeight<DIM_DMAT, double> bmat1 (ndof * DIM, lh);
-	FlatMatrixFixHeight<DIM_DMAT, TSCAL> dbmat1 (ndof * DIM, lh);
 
-	enum { ROUNDUP2 = (DIM_DMAT*2+3) & (-4) };
-        FlatMatrixFixHeight<ROUNDUP2, double> bmat2 (ndof * DIM, lh);
-	FlatMatrixFixHeight<ROUNDUP2, TSCAL> dbmat2 (ndof * DIM, lh);
-	
 	enum { ROUNDUP = (DIM_DMAT*BLOCK+3) & (-4) };
-        FlatMatrixFixHeight<ROUNDUP, double> bbmat (ndof * DIM, lh);
-        FlatMatrixFixHeight<ROUNDUP, TSCAL> bdbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, double, ROUNDUP> bbmat (ndof * DIM, lh);
+        FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL, ROUNDUP> bdbmat (ndof * DIM, lh);
 
+	enum { ROUNDUP1 = (DIM_DMAT+3) & (-4) };
+        FlatMatrixFixHeight<DIM_DMAT, double, ROUNDUP1> bmat1 (ndof * DIM, &bbmat(0,0));
+	FlatMatrixFixHeight<DIM_DMAT, TSCAL, ROUNDUP1> dbmat1 (ndof * DIM, &bdbmat(0,0));
+        
+        enum { ROUNDUP2 = (DIM_DMAT*2+3) & (-4) };
+        FlatMatrixFixHeight<2*DIM_DMAT,double, ROUNDUP2> bmat2 (ndof * DIM, &bbmat(0,0));
+	FlatMatrixFixHeight<2*DIM_DMAT, TSCAL, ROUNDUP2> dbmat2 (ndof * DIM, &bdbmat(0,0));
+	
         typedef decltype (DMATOP::GetMatrixType(TSCAL(0))) TDMAT;
 	
-        const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+        // const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
+        IntegrationRule ir(fel.ElementType(), 
+                           GetIntegrationOrder(fel,eltrans.HigherIntegrationOrderSet()));
+
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
         FlatArray<TDMAT> dmats(ir.GetNIP(), lh);
@@ -402,18 +412,23 @@ public:
         int i = 0;
         for (int i1 = 0; i1 < ir.GetNIP() / BLOCK; i1++)
           {
-            for (int i2 = 0; i2 < BLOCK; i++, i2++)
+            for (int i2 = 0; i2 < BLOCK; i2++)
               {
                 HeapReset hr(lh);
-		
 		IntRange rows (i2*DIM_DMAT, (i2+1)*DIM_DMAT);
-		DIFFOP::GenerateMatrix (fel, mir[i], bbmat.Rows(rows), lh);
-		TDMAT dmat = mir[i].GetWeight() * dmats[i];
+		DIFFOP::GenerateMatrix (fel, mir[i+i2], bbmat.Rows(rows), lh);
+              }
+            for (int i2 = 0; i2 < BLOCK; i2++)
+              {
+		IntRange rows (i2*DIM_DMAT, (i2+1)*DIM_DMAT);
+		TDMAT dmat = mir[i+i2].GetWeight() * dmats[i+i2];
 		bdbmat.Rows(rows) = dmat * bbmat.Rows(rows);
               }
-            
+
+            i += BLOCK;
+
             if (DMATOP::SYMMETRIC)
-              FastMat<DIM_DMAT*BLOCK,ROUNDUP> (elmat.Height(), &bdbmat(0,0), &bbmat(0,0), &elmat(0,0));
+              FastMat (bdbmat, bbmat, elmat);
             else
               elmat += Trans (bbmat.Rows(0,DIM_DMAT*BLOCK)) * bdbmat.Rows(DIM_DMAT*BLOCK); 
           } 
@@ -423,15 +438,16 @@ public:
             HeapReset hr(lh);
 
             DIFFOP::GenerateMatrix (fel, mir[i], bmat2.Rows(0,DIM_DMAT), lh);
+            DIFFOP::GenerateMatrix (fel, mir[i+1], bmat2.Rows(DIM_DMAT,2*DIM_DMAT), lh);
+
             TDMAT dmat = mir[i].GetWeight() * dmats[i];
             dbmat2.Rows(0,DIM_DMAT) = dmat * bmat2.Rows(0,DIM_DMAT);
 
-            DIFFOP::GenerateMatrix (fel, mir[i+1], bmat2.Rows(DIM_DMAT,2*DIM_DMAT), lh);
             dmat = mir[i+1].GetWeight() * dmats[i+1];
             dbmat2.Rows(DIM_DMAT,2*DIM_DMAT) = dmat * bmat2.Rows(DIM_DMAT,2*DIM_DMAT);
 
             if (DMATOP::SYMMETRIC)
-              FastMat<2*DIM_DMAT,ROUNDUP2> (elmat.Height(), & dbmat2(0,0), &bmat2(0,0), &elmat(0,0));
+              FastMat (dbmat2, bmat2, elmat);
             else
               elmat += Trans (bmat2.Rows(0,2*DIM_DMAT)) * dbmat2.Rows(2*DIM_DMAT);
           } 
@@ -447,7 +463,7 @@ public:
             
             if (DMATOP::SYMMETRIC)
               // elmat += Symmetric (Trans (dbmat) * bmat);
-              FastMat<DIM_DMAT> (elmat.Height(), &dbmat1(0,0), &bmat1(0,0), &elmat(0,0));
+              FastMat (dbmat1, bmat1, elmat);
             else
               elmat += Trans (bmat1) * dbmat1;
           } 
@@ -458,6 +474,8 @@ public:
               for (int j = 0; j < i; j++)
                 elmat(j,i) = elmat(i,j);
           }
+
+        ir.NothingToDelete();
       }
 
     catch (Exception & e)
@@ -798,12 +816,11 @@ public:
   }
 
 
-
-  IntegrationRule GetIntegrationRule (const FiniteElement & fel, 
-				      const bool use_higher_integration_order = false) const
+  int GetIntegrationOrder (const FiniteElement & fel, 
+                           const bool use_higher_integration_order = false) const
   {
     int order = 2 * fel.Order();
-
+    
     ELEMENT_TYPE et = fel.ElementType();
 
     if (et == ET_TET || et == ET_TRIG || et == ET_SEGM)
@@ -816,13 +833,16 @@ public:
       order = integration_order;
 
     if(use_higher_integration_order && higher_integration_order > order)
-      {
-	//(*testout) << "changing order " << order << " to " << higher_integration_order << endl;
-	order = higher_integration_order;
-      }
-      
-    // return SelectIntegrationRule (et, order);
-    return IntegrationRule (et, order);
+      order = higher_integration_order;
+    
+    return order;
+  }
+
+
+  IntegrationRule GetIntegrationRule (const FiniteElement & fel, 
+				      const bool use_higher_integration_order = false) const
+  {
+    return IntegrationRule (fel.ElementType(), GetIntegrationOrder(fel, use_higher_integration_order));
   }
 
 

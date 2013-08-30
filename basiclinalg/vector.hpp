@@ -53,7 +53,7 @@ namespace ngbla
   public:
     /// element type
     typedef T TELEM;
-    typedef T& TREF;
+    // typedef T& TREF;
     /// scalar of element type
     typedef typename mat_traits<T>::TSCAL TSCAL;
     enum { IS_LINEAR = 0 };
