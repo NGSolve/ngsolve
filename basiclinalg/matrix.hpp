@@ -9,11 +9,11 @@
 
 namespace ngbla
 {
-
+  
   template <int H, int W, typename T> class Mat;
   template <typename T> class SliceMatrix;
+  template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
-
 
   ///
   extern void CheckMatRange(int h, int w, int i);
@@ -21,17 +21,15 @@ namespace ngbla
   extern void CheckMatRange(int h, int w, int i, int j);
 
 
-  // compatibility (for a while)
-  // #define VRange Rows
-  // #define HRange Cols
 
   /**
      A simple matrix.
      Has height, width and data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double>
-  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
+  template <typename T, ORDERING ORD>
+  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
+                     // class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
   {
   protected:
     /// the height
@@ -44,34 +42,32 @@ namespace ngbla
 
     /// element type
     typedef T TELEM;
-    typedef T& TREF;
+    // typedef T& TREF;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    FlatMatrix () throw () { ; }
+    FlatMatrix () { ; }
   
     /// set height, width, and mem
-    FlatMatrix (int ah, int aw, T * adata) throw ()
+    FlatMatrix (int ah, int aw, T * adata) 
       : h(ah), w(aw), data(adata) { ; }
   
     /// set height = width, and mem
-    FlatMatrix (int ah, T * adata) throw()
+    FlatMatrix (int ah, T * adata) 
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    FlatMatrix (int ah, int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
-    // : h(ah), w(aw), data((T*)lh.Alloc(ah*aw*sizeof(T))) { ; }
+    FlatMatrix (int ah, int aw, LocalHeap & lh) 
       : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
-    FlatMatrix (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
-    // : h(ah), w(ah), data((T*)lh.Alloc(ah*ah*sizeof(T))) { ; }
+    FlatMatrix (int ah, LocalHeap & lh) 
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
     FlatMatrix (const FlatMatrix & m) throw () 
-      : CMCPMatExpr<FlatMatrix> (), h(m.h), w(m.w) , data(m.data)
+      : h(m.h), w(m.w) , data(m.data)
     { ; }
   
     /// allocate and compute 
@@ -98,15 +94,15 @@ namespace ngbla
       : h(H), w(W), data(const_cast<T*>(&m(0,0)))
     { ; }
 
-    /// do nothing 
-    ~FlatMatrix () throw() { ; }
+    // do nothing 
+    // ~FlatMatrix () throw() { ; }
 
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, LocalHeap & lh)  // throw (LocalHeapOverflow)
+    void AssignMemory (int ah, int aw, LocalHeap & lh)  
     {
       h = ah;
       w = aw;
-      data = (T*)lh.Alloc(h*w*sizeof(T));
+      data = lh.Alloc<T>(h*w);
     }
   
     /// set size, and assign mem
@@ -125,30 +121,17 @@ namespace ngbla
       return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
-    /*
-    template <typename TA, typename TB>
-    const FlatMatrix & operator= (const LapackProduct<TA, TB> & prod) const
-    {
-      LapackMult (prod.A(), prod.B(), *this);
-      return *this;
-    }
-    */
-
     /// copy contents
     const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
-      int hw = h*w;
-      for (int i = 0; i < hw; i++)
-        data[i] = m(i);
+      for (int i = 0; i < h*w; i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
     const FlatMatrix & operator= (TSCAL s) const 
     {
-      int hw = h*w;
-      for (int i = 0; i < hw; i++)
-        data[i] = s; 
+      for (int i = 0; i < h*w; i++) data[i] = s; 
       return *this;
     }
 
@@ -181,10 +164,10 @@ namespace ngbla
     }
 
     /// the height
-    int Height () const throw() { return h; }
+    int Height () const { return h; }
 
     /// the width
-    int Width () const throw() { return w; }
+    int Width () const { return w; }
 
 
     const FlatVector<T> Row (int i) const
@@ -231,6 +214,11 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
+
+    operator SliceMatrix<T> () const
+    {
+      return SliceMatrix<T> (h, w, w, data);
+    }
   };
 
 
@@ -240,8 +228,8 @@ namespace ngbla
   /**
      A Matrix class with memory allocation/deallocation
   */
-  template <typename T = double>
-  class Matrix : public FlatMatrix<T>
+  template <typename T, ORDERING ORD>
+  class Matrix : public FlatMatrix<T,ORD>
   {
   public:
 
@@ -251,7 +239,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// default constructor
-    Matrix () throw () : FlatMatrix<T> (0, 0) { ; }
+    Matrix () : FlatMatrix<T> (0, 0) { ; }
 
     /// allocate matrix of size ah * ah
     Matrix (int ah) : FlatMatrix<T> (ah, new T[size_t(ah)*size_t(ah)]) { ; }
@@ -363,9 +351,9 @@ namespace ngbla
     }
 
     /// fill with scalar
-    Mat (TSCAL s) throw()     // explicit removed JS, Aug '07
+    Mat (TSCAL s) 
     {
-      for (int i = 0; i < H*W; i++)
+      for (int i = 0; i < H*W; i++) 
         data[i] = s;
     }
 
@@ -378,7 +366,7 @@ namespace ngbla
     }
 
     /// copy matrix
-    Mat & operator= (const Mat & m) throw()
+    Mat & operator= (const Mat & m) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = m.data[i];
@@ -386,7 +374,7 @@ namespace ngbla
     }
  
     /// fill values
-    Mat & operator= (TSCAL s) throw()
+    Mat & operator= (TSCAL s) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = s;
@@ -403,9 +391,9 @@ namespace ngbla
     const TELEM & operator() (int i, int j) const { return data[i*W+j]; }
 
     /// the height
-    int Height () const throw() { return H; }
+    int Height () const { return H; }
     /// the width
-    int Width () const throw() { return W; }
+    int Width () const { return W; }
 
     ///
     const FlatVec<W,T> Row (int i) 
@@ -561,8 +549,9 @@ namespace ngbla
      A Matrix with width known at compile time
      No memory allocation/deallocation. User must provide memory.
   */
-  template <int W, typename T = double>
-  class FlatMatrixFixWidth : public CMCPMatExpr<FlatMatrixFixWidth<W,T> >
+  template <int W, typename T = double, int DIST = W>
+  class FlatMatrixFixWidth : 
+    public CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST>>
   {
   protected:
     /// the data
@@ -572,44 +561,42 @@ namespace ngbla
   public:
     /// entry type
     typedef T TELEM;
-    typedef T& TREF;
     /// scalar type of entry
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
+    enum { IS_LINEAR = (W == DIST) }; 
+
     /// nothing done in default constructor
-    FlatMatrixFixWidth () throw() { ; }
+    FlatMatrixFixWidth () { ; }
   
     /// set height and mem
     FlatMatrixFixWidth (int ah, T * adata) throw()
       : data(adata), h(ah) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixWidth (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
-      : data((T*)lh.Alloc(ah*W*sizeof(T))), h(ah) { ; }
+    FlatMatrixFixWidth (int ah, LocalHeap & lh) 
+      : data(lh.Alloc<T>(ah*DIST)), h(ah) { ; }
   
     /// copy constructor. copies pointers, not contents
-    FlatMatrixFixWidth (const FlatMatrixFixWidth & m) throw()
-      : CMCPMatExpr<FlatMatrixFixWidth> (), data(m.data), h(m.h)
+    FlatMatrixFixWidth (const FlatMatrixFixWidth & m)
+      : data(m.data), h(m.h)
     { ; }
 
     /// copy constructor. copies pointers, not contents
-    FlatMatrixFixWidth (const FlatMatrix<TSCAL> & m) throw()
+    FlatMatrixFixWidth (const FlatMatrix<TSCAL> & m) 
       : data(const_cast<T*> (&m(0))), h(m.Height())
     { ; }
 
     template <int H>
-    FlatMatrixFixWidth (const Mat<H,W,TSCAL> & m) throw()
+    FlatMatrixFixWidth (const Mat<H,W,TSCAL> & m) 
       : data(const_cast<T*>(&m(0,0))), h(H)
     { ; }  
 
-    /// do nothing 
-    ~FlatMatrixFixWidth () throw() { ; }
-
     /// set size, and assign mem
-    void AssignMemory (int ah, LocalHeap & lh) // throw (LocalHeapOverflow)
+    void AssignMemory (int ah, LocalHeap & lh) 
     {
       h = ah;
-      data = (T*)lh.Alloc(h*W*sizeof(T));
+      data = lh.Alloc<T> (h*DIST);
     }
   
     /// set size, and assign mem
@@ -630,16 +617,28 @@ namespace ngbla
     /// copy contents
     const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
     {
-      for (int i = 0; i < h*W; i++)
-        data[i] = m(i);
+      if (W == DIST)
+        for (int i = 0; i < h*W; i++)
+          data[i] = m(i);
+      else
+        for (int i = 0; i < h; i++)
+          for (int j = 0; j < W; j++)
+            (*this)(i,j) = m(i,j);
+        
       return *this;
     }
 
     /// assign constant
     FlatMatrixFixWidth & operator= (TSCAL s) throw()
     {
-      for (int i = 0; i < h*W; i++)
-        data[i] = s; 
+      if (W == DIST)
+        for (int i = 0; i < h*W; i++)
+          data[i] = s; 
+      else
+        for (int i = 0; i < h; i++)
+          for (int j = 0; j < W; j++)
+            (*this)(i,j) = s;
+        
       return *this;
     }
 
@@ -666,7 +665,7 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckMatRange(h,W,i,j);
 #endif
-      return data[i*W+j]; 
+      return data[i*DIST+j]; 
     }
 
     /// the height
@@ -684,22 +683,22 @@ namespace ngbla
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
-    const FixSliceVector<W,T> Col (int i) const
+    const FixSliceVector<DIST,T> Col (int i) const
     {
-      return FixSliceVector<W,T> (h, &data[i]);
+      return FixSliceVector<DIST,T> (h, &data[i]);
     }
 
-    using CMCPMatExpr<FlatMatrixFixWidth<W,T> >::Rows;
-    using CMCPMatExpr<FlatMatrixFixWidth<W,T> >::Cols;
+    using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Rows;
+    using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Cols;
 
     const FlatMatrixFixWidth Rows (int first, int next) const
     {
-      return FlatMatrixFixWidth (next-first, data+first*W);
+      return FlatMatrixFixWidth (next-first, data+first*DIST);
     }
 
     const SliceMatrix<T> Cols (int first, int next) const
     {
-      return SliceMatrix<T> (h, next-first, W, data+first);
+      return SliceMatrix<T> (h, next-first, DIST, data+first);
     }
 
     const FlatMatrixFixWidth Rows (IntRange range) const
@@ -714,7 +713,7 @@ namespace ngbla
 
     operator SliceMatrix<T> () const
     {
-      return SliceMatrix<T> (h, W, W, data);
+      return SliceMatrix<T> (h, W, DIST, data);
     }
   };
 
@@ -782,105 +781,6 @@ namespace ngbla
 
 
 
-  template <typename T = double>
-  class SliceMatrixColMajor : public CMCPMatExpr<SliceMatrixColMajor<T> >
-  {
-  protected:
-    /// the height
-    int h;
-    /// the width
-    int w;
-    /// the distance
-    int dist;
-    /// the data
-    T * __restrict data;
-  public:
-
-    /// element type
-    typedef T TELEM;
-    /// scalar type of elements (double or Complex)
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
-    enum { COL_MAJOR = 1 }; 
-
-
-    /// set height, width, and mem
-    SliceMatrixColMajor (int ah, int aw, int adist, T * adata) throw ()
-      : h(ah), w(aw), dist(adist), data(adata) { ; }
-
-    /// assign contents
-    template<typename TB>
-    const SliceMatrixColMajor & operator= (const Expr<TB> & m) const
-    {
-      return CMCPMatExpr<SliceMatrixColMajor>::operator= (m);
-    }
-
-    /// assign constant
-    const SliceMatrixColMajor & operator= (TSCAL s) const throw()
-    {
-      for (int i = 0; i < w; i++)
-        for (int j = 0; j < h; j++)
-          data[i*dist+j] = s;
-      return *this;
-    }
-
-    /// access operator
-    TELEM & operator() (int i, int j) const
-    {
-      return data[j*dist+i]; 
-    }
-
-    /// access operator, linear access
-    TELEM & operator() (int i) const
-    {
-      return data[i]; 
-    }
-
-    /// the height
-    int Height () const throw() { return h; }
-
-    /// the width
-    int Width () const throw() { return w; }
-
-    /// 
-    int Dist () const throw() { return dist; }
-
-
-    const FlatVector<T> Col (int i) const
-    {
-      return FlatVector<T> (h, &data[i*size_t(dist)]);
-    }
-
-    const SliceVector<T> Row (int i) const
-    {
-      return SliceVector<T> (w, dist, &data[i]);
-    }
-
-
-    /*
-    const SliceMatrix Rows (int first, int next) const
-    {
-      return SliceMatrix (next-first, w, dist, data+first*dist);
-    }
-
-    const SliceMatrix<T> Cols (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, dist, data+first);
-    }
-
-    const SliceMatrix Rows (IntRange range) const
-    {
-      return Rows (range.First(), range.Next());
-    }
-
-    const SliceMatrix<T> Cols (IntRange range) const
-    {
-      return Cols (range.First(), range.Next());
-    }
-    */
-  };
-
-
   
 
 
@@ -889,8 +789,8 @@ namespace ngbla
      No memory allocation/deallocation. User must provide memory.
      Matrix is stored colum-wise
   */
-  template <int H, typename T = double>
-  class FlatMatrixFixHeight : public MatExpr<FlatMatrixFixHeight<H,T> >
+  template <int H, typename T = double, int SLICE = H>
+  class FlatMatrixFixHeight : public MatExpr<FlatMatrixFixHeight<H,T,SLICE> >
   {
   protected:
     /// the data
@@ -904,16 +804,15 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// 
-    FlatMatrixFixHeight () throw()
-      : data(0), w(0) { ; }
+    FlatMatrixFixHeight () : data(0), w(0) { ; }
   
     /// set height and mem
-    FlatMatrixFixHeight (int aw, T * adata) throw()
+    FlatMatrixFixHeight (int aw, T * adata) 
       : data(adata), w(aw) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixHeight (int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
-      : data((T*)lh.Alloc(aw*H*sizeof(T))), w(aw) { ; }
+    FlatMatrixFixHeight (int aw, LocalHeap & lh) 
+      : data(lh.Alloc<T>(aw*SLICE)), w(aw) { ; }
   
     /// copy constructor. copies pointers, not contents
     FlatMatrixFixHeight (const FlatMatrixFixHeight & m)
@@ -921,14 +820,14 @@ namespace ngbla
     { ; }
   
 
-    /// do nothing 
-    ~FlatMatrixFixHeight () throw() { ; }
-
+    // do nothing 
+    // ~FlatMatrixFixHeight () throw() { ; }
+    
     /// set size, and assign mem
-    void AssignMemory (int aw, LocalHeap & lh) // throw (LocalHeapOverflow)
+    void AssignMemory (int aw, LocalHeap & lh) 
     {
       w = aw;
-      data = (T*)lh.Alloc(w*H*sizeof(T));
+      data = (T*)lh.Alloc(w*SLICE*sizeof(T));
     }
   
     /// set size, and assign mem
@@ -952,16 +851,28 @@ namespace ngbla
     /// copy contents
     FlatMatrixFixHeight & operator= (const FlatMatrixFixHeight & m)
     {
-      for (int i = 0; i < w*H; i++)
-        data[i] = m(i);
+      if (H == SLICE)
+        for (int i = 0; i < w*H; i++)
+          data[i] = m(i);
+      else
+        for (int j = 0; j < w; j++)
+          for (int i = 0; i < H; i++)
+            (*this)(i,j) = m(i,j);
+      
       return *this;
     }
 
     /// assign constant
     FlatMatrixFixHeight & operator= (TSCAL s)
     {
-      for (int i = 0; i < w*H; i++)
-        data[i] = s; 
+      if (H == SLICE)
+        for (int i = 0; i < w*H; i++)
+          data[i] = s; 
+      else
+        for (int j = 0; j < w; j++)
+          for (int i = 0; i < H; i++)
+            (*this)(i,j) = s;
+        
       return *this;
     }
 
@@ -989,7 +900,7 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckMatRange(H,w,i,j);
 #endif
-      return data[i+j*H]; 
+      return data[i+j*SLICE]; 
     }
 
 
@@ -1008,7 +919,7 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckMatRange(H,w,i,j);
 #endif
-      return data[i+j*H]; 
+      return data[i+j*SLICE]; 
     }
 
 
@@ -1026,67 +937,20 @@ namespace ngbla
 
     const SliceVector<T> Row (int i) const
     {
-      return SliceVector<T> (w, H, &data[i]);
+      return SliceVector<T> (w, SLICE, &data[i]);
     }
 
-
-    /*
-    SubMatrixExpr<FlatMatrixFixHeight>
-    Rows (int first, int next)
-    { 
-      return SubMatrixExpr<FlatMatrixFixHeight> (*this, first, 0, next-first, Width()); 
-    }
-
-    SubMatrixExpr<FlatMatrixFixHeight>
-    Rows (IntRange range) 
-    { 
-      return Rows (range.First(), range.Next());
-    }
-    */
 
     const SliceMatrixColMajor<T>
     Rows (int first, int next)
     { 
-      return SliceMatrixColMajor<T> (next-first, w, H, data+first);
+      return SliceMatrixColMajor<T> (next-first, w, SLICE, data+first);
     }
 
     auto Rows (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
     { 
       return Rows (range.First(), range.Next());
     }
-
-    
-    /*
-    const DoubleSliceMatrix<T> Rows (int first, int next) const
-    {
-      return DoubleSliceMatrix<T> (next-first, w, 1, H, data+first);
-    }
-
-    const FlatMatrixFixHeight<H,T> Cols (int first, int next) const
-    {
-      return FlatMatrixFixHeight<H,T> (next-first, data+first*H);
-    }
-
-    const DoubleSliceMatrix<T> Rows (IntRange range) const
-    {
-      return Rows (range.First(), range.Next());
-    }
-
-    const FlatMatrixFixHeight<H,T> Cols (IntRange range) const
-    {
-      return Cols (range.First(), range.Next());
-    }
-    */
-
-
-    /*
-      -> global function Trans
-    const FlatMatrixFixWidth<H,T> Trans () const
-    {
-      return FlatMatrixFixWidth<H,T> (w, data);
-    }
-    */
-    
 
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = 1 }; 
@@ -1173,7 +1037,8 @@ namespace ngbla
     /// set height, width, and mem
     SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
-  
+
+    /*
     SliceMatrix (const FlatMatrix<T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
     { ; }
@@ -1182,6 +1047,7 @@ namespace ngbla
     SliceMatrix (const FlatMatrixFixWidth<W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
     { ; }
+    */
 
     template<int H, int W>
     SliceMatrix (Mat<H,W,T> & mat)
@@ -1291,6 +1157,108 @@ namespace ngbla
 
 
 
+  template <typename T = double>
+  class SliceMatrixColMajor : public CMCPMatExpr<SliceMatrixColMajor<T> >
+  {
+  protected:
+    /// the height
+    int h;
+    /// the width
+    int w;
+    /// the distance
+    int dist;
+    /// the data
+    T * __restrict data;
+  public:
+
+    /// element type
+    typedef T TELEM;
+    /// scalar type of elements (double or Complex)
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    enum { IS_LINEAR = 0 };
+    enum { COL_MAJOR = 1 }; 
+
+
+    /// set height, width, and mem
+    SliceMatrixColMajor (int ah, int aw, int adist, T * adata) throw ()
+      : h(ah), w(aw), dist(adist), data(adata) { ; }
+
+    /// assign contents
+    template<typename TB>
+    const SliceMatrixColMajor & operator= (const Expr<TB> & m) const
+    {
+      return CMCPMatExpr<SliceMatrixColMajor>::operator= (m);
+    }
+
+    /// assign constant
+    const SliceMatrixColMajor & operator= (TSCAL s) const throw()
+    {
+      for (int i = 0; i < w; i++)
+        for (int j = 0; j < h; j++)
+          data[i*dist+j] = s;
+      return *this;
+    }
+
+    /// access operator
+    TELEM & operator() (int i, int j) const
+    {
+      return data[j*dist+i]; 
+    }
+
+    /// access operator, linear access
+    TELEM & operator() (int i) const
+    {
+      return data[i]; 
+    }
+
+    /// the height
+    int Height () const throw() { return h; }
+
+    /// the width
+    int Width () const throw() { return w; }
+
+    /// 
+    int Dist () const throw() { return dist; }
+
+
+    const FlatVector<T> Col (int i) const
+    {
+      return FlatVector<T> (h, &data[i*size_t(dist)]);
+    }
+
+    const SliceVector<T> Row (int i) const
+    {
+      return SliceVector<T> (w, dist, &data[i]);
+    }
+
+
+    /*
+    const SliceMatrix Rows (int first, int next) const
+    {
+      return SliceMatrix (next-first, w, dist, data+first*dist);
+    }
+
+    const SliceMatrix<T> Cols (int first, int next) const
+    {
+      return SliceMatrix<T> (h, next-first, dist, data+first);
+    }
+
+    const SliceMatrix Rows (IntRange range) const
+    {
+      return Rows (range.First(), range.Next());
+    }
+
+    const SliceMatrix<T> Cols (IntRange range) const
+    {
+      return Cols (range.First(), range.Next());
+    }
+    */
+  };
+
+
+
+
+
 
   template <typename T = double>
   class DoubleSliceMatrix : public CMCPMatExpr<DoubleSliceMatrix<T> >
@@ -1385,7 +1353,6 @@ namespace ngbla
 
 
 
-
   INLINE 
   const SliceMatrix<double> Trans (SliceMatrixColMajor<double> mat)
   {
@@ -1398,17 +1365,18 @@ namespace ngbla
     return SliceMatrix<Complex> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
   }
 
-  template <int H>
-  INLINE const FlatMatrixFixWidth<H,double> Trans (FlatMatrixFixHeight<H,double> mat)
+  template <int H, int DIST>
+  INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
   {
-    return FlatMatrixFixWidth<H,double> (mat.Width(), &mat(0,0));
+    return FlatMatrixFixWidth<H,double,DIST> (mat.Width(), &mat(0,0));
   }
 
-  template <int H>
-  INLINE const FlatMatrixFixWidth<H,Complex> Trans (FlatMatrixFixHeight<H,Complex> mat)
+  template <int H, int DIST>
+  INLINE const FlatMatrixFixWidth<H,Complex,DIST> Trans (FlatMatrixFixHeight<H,Complex,DIST> mat)
   {
-    return FlatMatrixFixWidth<H,Complex> (mat.Width(), &mat(0,0));
+    return FlatMatrixFixWidth<H,Complex,DIST> (mat.Width(), &mat(0,0));
   }
+
 
 
 
@@ -1452,15 +1420,17 @@ namespace ngbla
     typedef Vec<H, double> TV_ROW;
     enum { HEIGHT = H };
     enum { WIDTH  = H };
-    // static bool IsLinear() { return 0; }
     enum { IS_LINEAR = 0 };
 
-    /// do not initialize 
+    /// nothing to do 
     Id () { ; }
 
     ///
     double operator() (int i) const
-    { cerr << "id, linear access" << endl; return 0; }
+    {
+      static_assert (true, "linear access of id");
+      cerr << "id, linear access" << endl; return 0;
+    }
     ///
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
 
@@ -1559,6 +1529,68 @@ namespace ngbla
         res(i) += mat(i,j) * vec(j);
     return res;
   }
+
+
+
+
+  //
+  //  Can we put a SliceMatrix over a matrix ? 
+  //
+
+  template <typename TMAT, typename T = double>
+  class Is_Sliceable { public: enum { VAL = false };  };
+
+  template <typename T>
+  class Is_Sliceable<SliceMatrix<T>,T> { public: enum { VAL = true };  };
+  
+  template <typename T>
+  class Is_Sliceable<FlatMatrix<T>,T> { public: enum { VAL = true };  };
+  
+  template <typename T>
+  class Is_Sliceable<Matrix<T>,T> { public: enum { VAL = true };  };
+  
+  template <int W, typename T, int DIST>
+  class Is_Sliceable<FlatMatrixFixWidth<W,T,DIST>,T> { public: enum { VAL = true };  };
+
+
+  template <typename TMAT, typename T>
+  class Is_Sliceable<const TMAT, T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
+  template <typename TMAT, typename T>
+  class Is_Sliceable<TMAT&,T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
+
+
+
+  template <int IsIt, typename TMAT>
+  class slicetype
+  {
+  public:
+    typedef TMAT & TYPE;
+  };
+  
+  template <typename TMAT>
+  class slicetype<1,TMAT>
+  {
+  public:
+    typedef SliceMatrix<typename TMAT::TELEM> TYPE;
+  };
+
+
+  //
+  // if possible, a slicematrix is returned
+  // if not, we return a reference to the orginal matrix
+  // 
+  
+  template <typename T, typename TMAT>
+  auto SliceIfPossible (TMAT & mat) -> typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE
+  {
+    // cout << "type(tmat) = " << typeid(TMAT).name() << endl;
+    // cout << "sliceable = " << Is_Sliceable<TMAT,T>::VAL << endl;
+    // cout << "return type = " << typeid (typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE).name() << endl;
+    return mat;
+  }
+
+  
+
 
 
 }

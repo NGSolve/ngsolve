@@ -14,6 +14,12 @@
 
 namespace ngbla
 {
+  
+  // not yet functional
+  enum ORDERING { ColMajor, RowMajor };
+
+  template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
   template <int H, int W, typename T> class Mat;
   template <int H, typename T> class DiagMat;
@@ -1279,7 +1285,7 @@ namespace ngbla
     FlatArray<int> rows;
   public:
     typedef typename TA::TELEM TELEM;
-    typedef typename TA::TREF TREF;
+    // typedef typename TA::TREF TREF;
     typedef typename TA::TSCAL TSCAL;
 
     RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
@@ -1565,9 +1571,6 @@ namespace ngbla
 
   /* **************************** Inverse *************************** */
 
-  template <typename T> class FlatMatrix;
-  template <typename T> class Matrix;
-  template <int H, int W, typename T> class Mat;
 
 
   /// Calculate inverse. Gauss elimination with row pivoting

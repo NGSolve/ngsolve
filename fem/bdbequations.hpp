@@ -17,6 +17,11 @@ namespace ngfem
   */
 
 
+
+
+  
+
+
   /// Gradient operator of dimension D
   template <int D, typename FEL = ScalarFiniteElement<D> >
   class DiffOpGradient : public DiffOp<DiffOpGradient<D, FEL> >
@@ -33,15 +38,36 @@ namespace ngfem
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
 
-    /// 
 
 
     template <typename MIP, typename MAT>
-    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      Cast(fel).CalcMappedDShape (mip, Trans (mat));
+      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
     }
+
+    // calc gradient for any matrix and mip
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix2 (const FiniteElement & fel, 
+				const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      mat = Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ();
+    }
+
+    // calc gradient for slicematrix and real mip (optimized)
+    static void GenerateMatrix2 (const FiniteElement & fel, 
+                                const MappedIntegrationPoint<D,D> & mip,
+				SliceMatrix<> mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcMappedDShape (mip, mat);
+    }
+
+
+
+
 
     /*
     template <typename MIP, typename MAT>
