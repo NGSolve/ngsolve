@@ -171,6 +171,17 @@ namespace ngstd
   }
 
   template <typename T>
+  inline void MyMPI_AllGather (T d, FlatArray<T> recv, MPI_Comm comm)
+  {
+    static Timer t("dummy - AllGather");
+    RegionTimer r(t);
+
+    MPI_Allgather (&d, 1, MyGetMPIType<T>(), 
+		   &recv[0], 1, MyGetMPIType<T>(), comm);
+  }
+
+
+  template <typename T>
   inline void MyMPI_AllToAll (FlatArray<T> send, FlatArray<T> recv, MPI_Comm comm)
   {
     static Timer t("dummy - AlltoAll");
