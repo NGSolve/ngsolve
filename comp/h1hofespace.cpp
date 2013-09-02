@@ -47,7 +47,10 @@ namespace ngcomp
     DefineDefineFlag("wb_withedges");
     if (parseflags) CheckFlags(flags);
 
-    wb_loedge = flags.GetDefineFlag("wb_withedges");  
+    wb_loedge = ma.GetDimension() == 3;
+    if (flags.GetDefineFlag("wb_withedges")) wb_loedge = true;
+    if (flags.GetDefineFlag("wb_withoutedges")) wb_loedge = false;
+
     
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
@@ -452,29 +455,20 @@ namespace ngcomp
       else
 	ctofdof[i] = UNUSED_DOF;
 
-    if (ma.GetDimension() != 3)
+
+    
+    for (int edge = 0; edge < ma.GetNEdges(); edge++)
       {
-	for (int edge = 0; edge < ma.GetNEdges(); edge++)
-	  {
-	    IntRange range = GetEdgeDofs (edge);
-	    ctofdof.Range(range) = INTERFACE_DOF;
-	    if (wb_loedge && (range.Size() > 0))
-	      ctofdof[range.First()] = WIREBASKET_DOF;
-	  }
+	IntRange range = GetEdgeDofs (edge);
+	ctofdof.Range(range) = INTERFACE_DOF;
+	if (wb_loedge && (range.Size() > 0))
+	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
-    else
-      {
-	for (int edge = 0; edge < ma.GetNEdges(); edge++)
-	  {
-	    IntRange range = GetEdgeDofs (edge);
-	    ctofdof[range] = INTERFACE_DOF;
-	    if (range.Size() > 0)
-	      ctofdof[range.First()] = WIREBASKET_DOF;
-	  }
-	
-	for (int face = 0; face < ma.GetNFaces(); face++)
-	  ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
-      }
+
+
+    if (ma.GetDimension() == 3)
+      for (int face = 0; face < ma.GetNFaces(); face++)
+	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
 
     for (int el = 0; el < ma.GetNE(); el ++)
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;

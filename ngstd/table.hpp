@@ -183,7 +183,7 @@ template <class T>
 	}
     }
 
-    void Add (int blocknr, const Array<int> & dofs)
+    void Add (int blocknr, const FlatArray<int> & dofs)
     {
       switch (mode)
 	{
@@ -215,7 +215,7 @@ template <class T>
       : TableCreator<int>(acnt),takedofs(atakedofs) { };
     void Add (int blocknr, const int & data);
     void Add (int blocknr, IntRange range);
-    void Add (int blocknr, const Array<int> & dofs);
+    void Add (int blocknr, const FlatArray<int> & dofs);
   };
 
 

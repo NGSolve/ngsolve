@@ -45,7 +45,9 @@ namespace ngla
        table 
      */
     ParallelDofs (MPI_Comm acomm, Table<int> * adist_procs, 
-		  int dim = 1, bool iscomplex = false)
+		  int dim = 1, bool iscomplex = false);
+
+    /*
       : comm(acomm), dist_procs(adist_procs)
     {
       int ntasks = MyMPI_GetNTasks(comm);
@@ -128,6 +130,7 @@ namespace ngla
 	  MPI_Type_commit (&mpi_t[dest]);
 	}
     }
+    */
     
     virtual ~ParallelDofs()  
     { 
@@ -172,6 +175,8 @@ namespace ngla
 	m = min2(procs[j], m);
       return m;
     }
+
+    void EnumerateGlobally (const BitArray * freedofs, Array<int> & globnum, int & num_glob_dofs) const;
 
 
     template <typename T>

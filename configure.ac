@@ -93,7 +93,7 @@ AC_ARG_ENABLE([MKLpardiso],
 AC_ARG_ENABLE([mumps],
         [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-L/usr/local/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib   -lscalapack -lmpi_f90 -lgfortran"])] 
+        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib -lptesmumps -lptscotch -lptscotcherr  /usr/local/lib/libscalapack-2.0.2.a -lparmetis  -lmetis -lgfortran -lmpi_f77"])]
         )
 # -lgfortran
 #         [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib -lptesmumps -lptscotch -lptscotcherr  /usr/local/lib/libscalapack.a  /usr/local/lib/blacs_MPI-LINUX-0.a  /usr/local/lib/blacsCinit_MPI-LINUX-0.a  /usr/local/lib/blacs_MPI-LINUX-0-fake.a -lparmetis  -lmetis -lgfortran -lmpi_f77"])]
@@ -127,8 +127,9 @@ AC_ARG_ENABLE([vt],
         [CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"]
         )       
 
+
 echo "creating compiler wrapper ngscxx"
-echo "$CXX -I. $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS" > ngscxx
+echo "$CXX -I. $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
 chmod a+x ngscxx 
 
 define([svnversion], esyscmd([sh -c "svnversion|tr -d '\n'"]))dnl

@@ -468,8 +468,14 @@ namespace ngla
 
    // consistent enumeration (new version)
     
+    Array<int> global_nums;
+    int num_glob_dofs;
+    pardofs -> EnumerateGlobally (inner, global_nums, num_glob_dofs);
+
     int ndof = pardofs->GetNDofLocal();
-    
+
+
+    /*
     Array<int> global_nums(ndof);
     global_nums = -1;
     int num_master_dofs = 0;
@@ -495,7 +501,8 @@ namespace ngla
 	global_nums[i] += first_master_dof[id];
     
     ScatterDofData (global_nums, *pardofs);
-
+    */
+    
 
     // copy to old variables ...
     num_globdofs = num_glob_dofs;
@@ -505,6 +512,8 @@ namespace ngla
 	select.Append (row);
     
     
+    /*
+      // test dofs, only for ParallelMeshDofs
     const ParallelMeshDofs & pmdofs = dynamic_cast<const ParallelMeshDofs&> (*pardofs);
     for (int row = 0; row < ndof; row++)
       if (!inner || inner->Test(row))
@@ -518,6 +527,7 @@ namespace ngla
 	    pmdofs.GetMeshAccess().GetDistantProcs (node, procs);
 	    cout << "procs = " << procs << endl;
 	  }
+    */
 
 
     entrysize = mat_traits<TM>::HEIGHT; 
@@ -726,11 +736,13 @@ namespace ngla
 
     VT_OFF();
 
+
     /*
     *testout << "mumps matrix: n = " << num_globdofs << ", nz = " << nze << endl;
     for (int i = 0; i < nze; i++)
       *testout << "a(" << row_indices[i] << "," << col_indices[i] << ") = " << matrix[i] << endl;
       */
+
     
     mumps_id.job = JOB_INIT; 
     mumps_id.par = (ntasks == 1) ? 1 : 0;
