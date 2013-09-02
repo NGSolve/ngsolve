@@ -816,7 +816,114 @@ namespace netgen
       SurfaceElement(i+1).SetPartition(epart[i+GetNE()] + 1);
     for (int i = 0; i < GetNSeg(); i++)
       LineSegment(i+1).SetPartition(epart[i+GetNE()+GetNSE()] + 1);
+
+
+
+    if (GetDimension() == 3)
+      {
+	
+	// surface elements attached to volume elements
+	Array<bool, PointIndex::BASE> boundarypoints (GetNP());
+	boundarypoints = false;
+	
+	for (SurfaceElementIndex sei = 0; sei < GetNSE(); sei++)
+	  {
+	    const Element2d & el = (*this)[sei];
+	    for (int j = 0; j < el.GetNP(); j++)
+	      boundarypoints[el[j]] = true;
+	  }
+	// Build Pnt2Element table, boundary points only
+	Array<int, PointIndex::BASE> cnt(GetNP());
+	cnt = 0;
+	for (ElementIndex ei = 0; ei < GetNE(); ei++)
+	  {
+	    const Element & el = (*this)[ei];
+	    for (int j = 0; j < el.GetNP(); j++)
+	      if (boundarypoints[el[j]])
+		cnt[el[j]]++;
+	  }
+	TABLE<ElementIndex, PointIndex::BASE> pnt2el(cnt);
+	cnt = 0;
+	for (ElementIndex ei = 0; ei < GetNE(); ei++)
+	  {
+	    const Element & el = (*this)[ei];
+	    for (int j = 0; j < el.GetNP(); j++)
+	      if (boundarypoints[el[j]])
+		pnt2el.Add (el[j], ei);
+	  }
+	
+	for (SurfaceElementIndex sei = 0; sei < GetNSE(); sei++)
+	  {
+	    Element2d & sel = (*this)[sei];
+	    PointIndex pi1 = sel[0];
+	    FlatArray<ElementIndex> els = pnt2el[pi1];
+	    
+	    sel.SetPartition (-1);
+	    
+	    for (int j = 0; j < els.Size(); j++)
+	      {
+		const Element & el = (*this)[els[j]];
+		
+		bool hasall = true;
+		
+		for (int k = 0; k < sel.GetNP(); k++)
+		  {
+		    bool haspi = false;
+		    for (int l = 0; l < el.GetNP(); l++)
+		      if (sel[k] == el[l])
+			haspi = true;
+
+		    if (!haspi) hasall = false;
+		  }
+		
+		if (hasall)
+		  {
+		    sel.SetPartition (el.GetPartition());
+		    break;
+		  }
+	      }
+	    if (sel.GetPartition() == -1)
+	      cerr << "no volume element found" << endl;
+	  }
+
+
+	for (SegmentIndex si = 0; si < GetNSeg(); si++)
+	  {
+	    Segment & sel = (*this)[si];
+	    PointIndex pi1 = sel[0];
+	    FlatArray<ElementIndex> els = pnt2el[pi1];
+	    
+	    sel.SetPartition (-1);
+	    
+	    for (int j = 0; j < els.Size(); j++)
+	      {
+		const Element & el = (*this)[els[j]];
+		
+		bool haspi[9] = { false };  // max surfnp
+		
+		for (int k = 0; k < 2; k++)
+		  for (int l = 0; l < el.GetNP(); l++)
+		    if (sel[k] == el[l])
+		      haspi[k] = true;
+		
+		bool hasall = true;
+		for (int k = 0; k < sel.GetNP(); k++)
+		  if (!haspi[k]) hasall = false;
+		
+		if (hasall)
+		  {
+		    sel.SetPartition (el.GetPartition());
+		    break;
+		  }
+	      }
+	    if (sel.GetPartition() == -1)
+	      cerr << "no volume element found" << endl;
+	  }
+	
+	
+      }
   }
+
 #endif
 
 
