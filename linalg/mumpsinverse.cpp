@@ -505,6 +505,7 @@ namespace ngla
 	select.Append (row);
     
     
+    /*
     const ParallelMeshDofs & pmdofs = dynamic_cast<const ParallelMeshDofs&> (*pardofs);
     for (int row = 0; row < ndof; row++)
       if (!inner || inner->Test(row))
@@ -518,7 +519,7 @@ namespace ngla
 	    pmdofs.GetMeshAccess().GetDistantProcs (node, procs);
 	    cout << "procs = " << procs << endl;
 	  }
-
+    */
 
     entrysize = mat_traits<TM>::HEIGHT; 
     iscomplex = mat_traits<TM>::IS_COMPLEX;
