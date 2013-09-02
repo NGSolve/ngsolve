@@ -2,7 +2,7 @@ AM_CPPFLAGS =  -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(S
 
 lib_LTLIBRARIES = libngla.la
 
-libngla_la_SOURCES = basematrix.cpp basevector.cpp blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp sparsematrix.cpp special_matrix.cpp superluinverse.cpp mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp
+libngla_la_SOURCES = basematrix.cpp basevector.cpp blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp sparsematrix.cpp special_matrix.cpp superluinverse.cpp mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp
 
 libngla_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la 
 

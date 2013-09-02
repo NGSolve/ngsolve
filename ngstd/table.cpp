@@ -157,7 +157,7 @@ namespace ngstd
 	TableCreator<int>::Add(blocknr,i);
   }  
   
-  void FilteredTableCreator::Add (int blocknr, const Array<int> & dofs)
+  void FilteredTableCreator::Add (int blocknr, const FlatArray<int> & dofs)
   {
     for (int i = 0; i < dofs.Size(); i++)
       if (!takedofs||takedofs->Test(dofs[i]))
