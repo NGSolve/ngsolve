@@ -93,7 +93,7 @@ AC_ARG_ENABLE([MKLpardiso],
 AC_ARG_ENABLE([mumps],
         [AC_HELP_STRING([--enable-mumps],[enable sparse direct solver MUMPS])],
         [AC_SUBST([MUMPS_INCLUDES], ["-DUSE_MUMPS"])]
-        [AC_SUBST([MUMPS_LIBS], ["-L/usr/local/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib   -lscalapack -lmpi_f90 -lgfortran"])] 
+        [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib -lptesmumps -lptscotch -lptscotcherr  /usr/local/lib/libscalapack-2.0.2.a -lparmetis  -lmetis -lgfortran -lmpi_f77"])]
         )
 # -lgfortran
 #         [AC_SUBST([MUMPS_LIBS], ["-L/opt/mumps/lib -ldmumps -lzmumps -lmumps_common -lpord -L/home/joachim/Downloads/scotch_5.1.12_esmumps/lib -lptesmumps -lptscotch -lptscotcherr  /usr/local/lib/libscalapack.a  /usr/local/lib/blacs_MPI-LINUX-0.a  /usr/local/lib/blacsCinit_MPI-LINUX-0.a  /usr/local/lib/blacs_MPI-LINUX-0-fake.a -lparmetis  -lmetis -lgfortran -lmpi_f77"])]

@@ -174,6 +174,42 @@ namespace ngla
     }
 
 
+    void EnumerateGlobally (const BitArray * freedofs, 
+			    Array<int> & global_nums,
+			    int & num_glob_dofs) const
+    {
+      int ntasks = MyMPI_GetNTasks(comm);
+      int id = MyMPI_GetId(comm);
+      
+      global_nums.SetSize(ndof);
+      global_nums = -1;
+      int num_master_dofs = 0;
+      for (int i = 0; i < ndof; i++)
+	if (IsMasterDof (i) && (!freedofs || (freedofs && freedofs->Test(i))))
+	  global_nums[i] = num_master_dofs++;
+      
+      Array<int> first_master_dof(ntasks);
+      MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
+		     &first_master_dof[0], 1, MPI_INT, 
+		     GetCommunicator());
+      
+      num_glob_dofs = 0;
+      for (int i = 0; i < ntasks; i++)
+	{
+	  int cur = first_master_dof[i];
+	  first_master_dof[i] = num_glob_dofs;
+	  num_glob_dofs += cur;
+	}
+      
+      for (int i = 0; i < ndof; i++)
+	if (global_nums[i] != -1)
+	  global_nums[i] += first_master_dof[id];
+      
+      ScatterDofData (global_nums); 
+    }
+    
+
+
     template <typename T>
     void ReduceDofData (FlatArray<T> data, MPI_Op op) const;
 
