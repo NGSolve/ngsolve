@@ -394,7 +394,6 @@ namespace ngfem
   T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1];
-    cout << "x = " << x << ", y = " << y << endl;
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
     INT<4> f = GetFaceSort (0, vnums);  
