@@ -29,20 +29,38 @@ namespace ngfem
   public:
 
     VectorFacetFacetFiniteElement ()
-    // : FiniteElement(),
-      : order_inner( INT<2>(0,0) )
+      : order_inner (0)
     {
       for ( int i = 0; i < 8; i++ )
 	vnums[i] = -1;
     }
 
-    VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype);
+    VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype)
+      : HCurlFiniteElement<D> (-1, -1)
+                                  // : FiniteElement (aeltype, -1, -1 )
+    {
+      for (int i=0; i<8; i++) vnums[i] = -1; 
+      order_inner = -1;
+    }
 
-    void SetVertexNumbers (FlatArray<int> & avnums);
+    INLINE void SetVertexNumbers (FlatArray<int> & avnums)
+    {
+      for ( int i = 0; i < avnums.Size(); i++ ) vnums[i] = avnums[i];
+    }
 
-    void SetOrder (int o);
+    INLINE void SetOrder (int aorder)
+    {
+      order = aorder;
+      order_inner = aorder;
+      ComputeNDof();
+    }
   
-    void SetOrder (INT<2> oi);
+    INLINE void SetOrder (INT<2> oi)
+    {
+      order = max2 (oi[0], oi[1]);
+      order_inner = oi;
+      ComputeNDof();
+    }
 
     virtual void ComputeNDof () = 0; 
 

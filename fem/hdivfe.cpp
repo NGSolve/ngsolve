@@ -17,6 +17,12 @@
 
 namespace ngfem
 {
+
+  template <int D>
+  string  HDivFiniteElement<D> :: ClassName() const
+  {
+    return "HDivFiniteElement"; 
+  }
   
   template <int D>
   void HDivFiniteElement<D> ::
@@ -218,7 +224,7 @@ template class HDivFiniteElement<1>;
 
 
   FE_RTTrig0 :: FE_RTTrig0()
-    : HDivFiniteElement<2> (ET_TRIG, 3, 1)
+    : HDivFiniteElement<2> (3, 1)
   {
     ;
   }
@@ -264,7 +270,7 @@ template class HDivFiniteElement<1>;
   // Array<HDivFiniteElement<2>::IPData> FE_RTTrig0plus::ipdata;
   
   FE_RTTrig0plus :: FE_RTTrig0plus()
-    : HDivFiniteElement<2> (ET_TRIG, 3, 1)
+    : HDivFiniteElement<2> (3, 1)
   {
     // CalcIPData(ipdata);
   }
@@ -299,7 +305,7 @@ template class HDivFiniteElement<1>;
   Matrix<> FE_BDMTrig1::trans(6);
   
   FE_BDMTrig1 :: FE_BDMTrig1()
-    : HDivFiniteElement<2> (ET_TRIG, 6, 1)
+    : HDivFiniteElement<2> (6, 1)
   {
     Orthogonalize();
     // CalcIPData(ipdata);
@@ -377,7 +383,7 @@ template class HDivFiniteElement<1>;
 
 
   HDivNormalSegm0 :: HDivNormalSegm0()
-    : HDivNormalFiniteElement<1> (ET_SEGM, 1, 0)
+    : HDivNormalFiniteElement<1> (1, 0)
   {
     ;
   }
@@ -405,10 +411,7 @@ template class HDivFiniteElement<1>;
   // Array<HDivFiniteElement<2>::IPData> FE_RTQuad0::ipdata;
 
 FE_RTQuad0 :: FE_RTQuad0()
-  : HDivFiniteElement<2> (ET_QUAD, 4, 1)
-{
-  // CalcIPData(ipdata);
-}
+  : HDivFiniteElement<2> (4, 1) {; }
 
 FE_RTQuad0 :: ~FE_RTQuad0()
 {
@@ -435,7 +438,7 @@ CalcShape (const IntegrationPoint & ip,
 Matrix<> FE_BDMTet1::trans(12);
 
 FE_BDMTet1 :: FE_BDMTet1()
-  : HDivFiniteElement<3> (ET_TET, 12, 1)
+  : HDivFiniteElement<3> (12, 1)
 {
   Orthogonalize();
   // CalcIPData(ipdata);

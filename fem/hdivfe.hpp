@@ -22,20 +22,17 @@ namespace ngfem
 
   public:
     ///
-    HDivFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (aeltype, andof, aorder) { ; } 
+    INLINE HDivFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) { ; } 
 
     ///
-    HDivFiniteElement () 
-    {
-      ;
-    }
+    INLINE HDivFiniteElement () { ; }
 
     ///
     virtual ~HDivFiniteElement () { ; }
 
     /// 
-    virtual string ClassName() const {return "HDivFiniteElement";}
+    virtual string ClassName() const;
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
@@ -55,16 +52,16 @@ namespace ngfem
 
 
 
-    const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
-					    LocalHeap & lh) const
+    INLINE const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip,
+                                                   LocalHeap & lh) const
     {
       FlatMatrixFixWidth<DIM> shape(ndof, lh);
       CalcShape (ip, shape);
       return shape;
     }
 
-    const FlatVector<> GetDivShape (const IntegrationPoint & ip,
-				    LocalHeap & lh) const
+    INLINE const FlatVector<> GetDivShape (const IntegrationPoint & ip,
+                                           LocalHeap & lh) const
     {
       FlatVector<> divshape(ndof, lh);
       CalcDivShape (ip, divshape);
@@ -115,8 +112,8 @@ namespace ngfem
 
   public:
     ///
-    HDivNormalFiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : FiniteElement (aeltype, andof, aorder){;}
+    HDivNormalFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder){;}
 
     ///
     virtual ~HDivNormalFiniteElement () { ; }

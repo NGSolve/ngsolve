@@ -16,7 +16,7 @@ namespace ngfem
   template <int D>
   HDivHighOrderFiniteElement<D> ::
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype)
-    : HDivFiniteElement<D> (aeltype, -1, -1)
+    : HDivFiniteElement<D> (-1, -1)
   {
     for (int i = 0; i < 8; i++)
       vnums[i] = i;
@@ -85,8 +85,8 @@ namespace ngfem
   //------------------------------------------------------------------------
   template <int D>
   HDivHighOrderNormalFiniteElement<D> ::
-  HDivHighOrderNormalFiniteElement (ELEMENT_TYPE aeltype)
-    : HDivNormalFiniteElement<D> (aeltype, -1, -1)
+  HDivHighOrderNormalFiniteElement ()
+    : HDivNormalFiniteElement<D> (-1, -1)
   {
     for (int i = 0; i < 4; i++)
       vnums[i] = i;
@@ -120,7 +120,7 @@ namespace ngfem
   //------------------------------------------------------------------------
   template <class T_ORTHOPOL>
   HDivHighOrderNormalSegm<T_ORTHOPOL> :: HDivHighOrderNormalSegm (int aorder)
-    : HDivHighOrderNormalFiniteElement<1>(ET_SEGM)
+    : HDivHighOrderNormalFiniteElement<1>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();
@@ -172,7 +172,7 @@ namespace ngfem
   //------------------------------------------------------------------------
   template <class T_ORTHOPOL>
   HDivHighOrderNormalQuad<T_ORTHOPOL> :: HDivHighOrderNormalQuad (int aorder)
-    : HDivHighOrderNormalFiniteElement<2>(ET_QUAD)
+    : HDivHighOrderNormalFiniteElement<2>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();
@@ -253,7 +253,7 @@ namespace ngfem
 
   template <class T_ORTHOPOL>
   HDivHighOrderNormalTrig<T_ORTHOPOL> :: HDivHighOrderNormalTrig (int aorder)
-    : HDivHighOrderNormalFiniteElement<2>(ET_TRIG)
+    : HDivHighOrderNormalFiniteElement<2>()
   {
     order_inner = INT<2>(aorder,aorder);
     ComputeNDof();

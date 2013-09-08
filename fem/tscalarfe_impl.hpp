@@ -34,55 +34,6 @@ namespace ngbla
 namespace ngfem
 {
 
-  /*
-  template <int DIM>
-  class AD2Vec : public Vec<DIM>
-  {
-  public:
-    // INLINE AD2Vec (double d) : Vec<DIM> (d) { ; }
-    INLINE AD2Vec (AutoDiff<DIM> ad)
-    {
-      for (int j = 0; j < DIM; j++)
-        (*this)(j) = ad.DValue(j);
-    }
-  };
-  */
-
-  /*
-  template <int DIM>
-  class AD2Vec : public FlatVec<DIM>
-  {
-  public: 
-    INLINE AD2Vec (AutoDiff<DIM> ad)
-      : FlatVec<DIM> (&ad.DValue(0)) { ; }
-      };
-  */
-
-
-
-  /*
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: T_ScalarFiniteElementFO ()
-  {
-    this->ndof = NDOF; 
-    this->order = ORDER; 
-  }
-
-  template <class FEL, ELEMENT_TYPE ET, int NDOF, int ORDER>
-  T_ScalarFiniteElementFO<FEL,ET,NDOF,ORDER> :: ~T_ScalarFiniteElementFO ()
-  { ; }
-  */
-
-  /*
-  template <class FEL, ELEMENT_TYPE ET, class BASE>
-  inline T_ScalarFiniteElement<FEL,ET,BASE> :: T_ScalarFiniteElement ()
-  { ; }
-
-  template <class FEL, ELEMENT_TYPE ET, class BASE>
-  T_ScalarFiniteElement<FEL,ET,BASE> :: ~T_ScalarFiniteElement ()
-  { ; }
-  */
-
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 

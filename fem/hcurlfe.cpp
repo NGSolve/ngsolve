@@ -447,19 +447,10 @@ namespace ngfem
   
   class FE_Trig3EdgeBubble : public ScalarFiniteElement<2>
   {
-    // Array<IPData> ipdata;
-    
   public:
     ///
     FE_Trig3EdgeBubble()
-      : ScalarFiniteElement<2> (ET_TRIG, 6, 3) 
-    { ; } // CalcIPData(ET_TRIG, ipdata); }
-
-    ///
-    virtual ~FE_Trig3EdgeBubble() 
-    { 
-      // ipdata.DeleteAll(); 
-    }
+      : ScalarFiniteElement<2> (6, 3) { ; } 
 
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
@@ -604,17 +595,7 @@ namespace ngfem
   // Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm1::ipdata;
 
   FE_NedelecSegm1 :: FE_NedelecSegm1()
-    : HCurlFiniteElement<1>(ET_SEGM, NDOF, 0)
-  {
-    // CalcIPData(ipdata);
-    // controldestruction.NewControl(&ipdatadestructed);
-  }
-  
-  FE_NedelecSegm1 :: ~FE_NedelecSegm1()
-  {
-    // if(!ipdatadestructed)
-    // ipdata.DeleteAll();
-  }
+    : HCurlFiniteElement<1>(NDOF, 0) { ; }
   
   void FE_NedelecSegm1 :: 
   CalcShape (const IntegrationPoint & ip, 
@@ -627,23 +608,11 @@ namespace ngfem
 
 
 
-
-
   // Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm2::ipdata;
 
   FE_NedelecSegm2 :: FE_NedelecSegm2()
-    : HCurlFiniteElement<1>(ET_SEGM, NDOF, 1)
-  {
-    // CalcIPData(ipdata);
-    // controldestruction.NewControl(&ipdatadestructed);
-  }
+    : HCurlFiniteElement<1>(NDOF, 1)  { ; }
   
-  FE_NedelecSegm2 :: ~FE_NedelecSegm2()
-  {
-    // if(!ipdatadestructed)
-    // ipdata.DeleteAll();
-  }
-
   void FE_NedelecSegm2 :: 
   CalcShape (const IntegrationPoint & ip, 
 	     FlatMatrixFixWidth<1> shape) const
@@ -661,17 +630,9 @@ namespace ngfem
   // Array<HCurlFiniteElement<1>::IPData> FE_NedelecSegm3::ipdata;
 
   FE_NedelecSegm3 :: FE_NedelecSegm3()
-    : HCurlFiniteElement<1>(ET_SEGM, 3, 2)
-  {
-    // CalcIPData(ipdata);
-    // controldestruction.NewControl(&ipdatadestructed);
-  }
+    : HCurlFiniteElement<1>(3, 2)
+  { ; }
 
-  FE_NedelecSegm3 :: ~FE_NedelecSegm3()
-  {
-    // if(!ipdatadestructed)
-    // ipdata.DeleteAll();
-  }
 
   void FE_NedelecSegm3 :: 
   CalcShape (const IntegrationPoint & ip, 
@@ -987,7 +948,7 @@ namespace ngfem
 
     ///
     FE_TFaceTest()
-      : HDivFiniteElement<2> (ET_QUAD, NDOF, MAXORDER)
+      : HDivFiniteElement<2> (NDOF, MAXORDER)
     { ; }
 
     ///
@@ -1054,7 +1015,7 @@ namespace ngfem
 
   template <int ORDER, int ZORDER>
   FE_TNedelecQuad<ORDER,ZORDER> :: FE_TNedelecQuad()
-    : HCurlFiniteElement<2>(ET_QUAD, NDOF, MAXORDER)
+    : HCurlFiniteElement<2>(NDOF, MAXORDER)
   {
     // if (!ipdata.Size())
     Orthogonalize();
@@ -1446,19 +1407,10 @@ namespace ngfem
 
   class FE_Tet3EdgeBubble : public ScalarFiniteElement<3>
   {
-    // Array<IPData> ipdata;
-    
   public:
     ///
     FE_Tet3EdgeBubble()
-      : ScalarFiniteElement<3> (ET_TET, 12, 3) 
-    { ; } // CalcIPData(ET_TET, ipdata); }
-    ///
-    virtual ~FE_Tet3EdgeBubble() 
-    { 
-      // ipdata.DeleteAll(); 
-    }
-    ///
+      : ScalarFiniteElement<3> (12, 3) { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
 
@@ -1906,11 +1858,9 @@ namespace ngfem
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecHex1::ipdata;
   
   FE_NedelecHex1 :: FE_NedelecHex1()
-    : HCurlFiniteElement<3> (ET_HEX, 12, 1)
+    : HCurlFiniteElement<3> (12, 1)
   {
     order++;
-    // CalcIPData(ipdata);
-    // controldestruction.NewControl(&ipdatadestructed);
   }
 
   FE_NedelecHex1 :: ~FE_NedelecHex1()
@@ -1962,7 +1912,7 @@ namespace ngfem
   Mat<FE_NedelecTet3NoGrad::NFACEDOF> FE_NedelecTet3NoGrad::trans3;
 
   FE_NedelecTet3NoGrad :: FE_NedelecTet3NoGrad()
-    : HCurlFiniteElement<3> (ET_TET, NDOF, 2)
+    : HCurlFiniteElement<3> (NDOF, 2)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -2295,7 +2245,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism2<ZORDER> :: FE_TNedelecPrism2()
-    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (NDOF, MAXORDER)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -2664,7 +2614,7 @@ namespace ngfem
 
     ///
     FE_TVolTest3()
-      : HDivFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
+      : HDivFiniteElement<3> (NDOF, MAXORDER)
     { ; }
 
     ///
@@ -2720,7 +2670,7 @@ namespace ngfem
 
 
   FE_Trig3Pot :: FE_Trig3Pot()
-    : ScalarFiniteElement<2> (ET_TRIG, 10, 3)
+    : ScalarFiniteElement<2> (10, 3)
   {
     ;
   }
@@ -2782,7 +2732,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism3<ZORDER> :: FE_TNedelecPrism3()
-    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (NDOF, MAXORDER)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -3266,7 +3216,7 @@ namespace ngfem
 
     ///
     FE_TVolTest3NoGrad()
-      : HDivFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
+      : HDivFiniteElement<3> (NDOF, MAXORDER)
     { ; }
 
     ///
@@ -3330,7 +3280,7 @@ namespace ngfem
 
   template <int ZORDER>
   FE_TNedelecPrism3NoGrad<ZORDER> :: FE_TNedelecPrism3NoGrad()
-    : HCurlFiniteElement<3> (ET_PRISM, NDOF, MAXORDER)
+    : HCurlFiniteElement<3> (NDOF, MAXORDER)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -3808,7 +3758,7 @@ namespace ngfem
   Matrix<> FE_NedelecPyramid1::trans(8);
 
   FE_NedelecPyramid1 :: FE_NedelecPyramid1()
-    : HCurlFiniteElement<3> (ET_PYRAMID, 8, 3)
+    : HCurlFiniteElement<3> (8, 3)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -3914,7 +3864,7 @@ namespace ngfem
   Matrix<> FE_NedelecPyramid2::trans2(NEDGEDOF);
 
   FE_NedelecPyramid2 :: FE_NedelecPyramid2()
-    : HCurlFiniteElement<3> (ET_PYRAMID, NDOF, 2)
+    : HCurlFiniteElement<3> (NDOF, 2)
   {
     // if (!ipdata.Size())
       Orthogonalize();
@@ -4178,21 +4128,13 @@ namespace ngfem
 
   class FE_Pyramid3RefEdgeBubble : public ScalarFiniteElement<3>
   {
-    // Array<IPData> ipdata;
-    
   public:
     ///
     FE_Pyramid3RefEdgeBubble()
-      : ScalarFiniteElement<3> (ET_PYRAMID, 16, 3) 
-    { ; } 
-    ///
-    virtual ~FE_Pyramid3RefEdgeBubble() 
-    { 
-      // ipdata.DeleteAll(); 
-    }
+      : ScalarFiniteElement<3> (16, 3) { ; } 
 
     virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
-
+    
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const
@@ -4370,7 +4312,7 @@ namespace ngfem
   public:
     ///
     FE_Pyramid3RefFaceBubble()
-      : ScalarFiniteElement<3> (ET_PYRAMID, 4, 3) 
+      : ScalarFiniteElement<3> (4, 3) 
     { ; } 
     ///
     virtual ~FE_Pyramid3RefFaceBubble() 
@@ -4411,7 +4353,7 @@ namespace ngfem
 
 
   FE_Quad3 :: FE_Quad3()
-    : ScalarFiniteElement<2> (ET_QUAD, 16, 3)
+    : ScalarFiniteElement<2> (16, 3)
   {
     ;
   }
@@ -4495,7 +4437,7 @@ namespace ngfem
 
 
   FE_NedelecPyramid3 :: FE_NedelecPyramid3()
-    : HCurlFiniteElement<3> (ET_PYRAMID, NDOF, 3)
+    : HCurlFiniteElement<3> (NDOF, 3)
   {
     // if (!ipdata.Size())
       Orthogonalize();

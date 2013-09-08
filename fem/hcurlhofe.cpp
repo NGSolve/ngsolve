@@ -6,144 +6,21 @@
 /* AutoDiff - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
 
+
+#define FILE_HCURLHOFE_CPP
+
+
 #include <fem.hpp>    
 #include <hcurlhofe.hpp>
+#include <thcurlfe_impl.hpp>
 #include <hcurlhofe_impl.hpp>
 
 
 namespace ngfem
 {
 
-  /*******************************************/
-  /* T_HCurlHOFiniteElement                  */
-  /*******************************************/
-
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
-  T_HCurlHighOrderFiniteElement (int aorder)
-  {
-    for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-    for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
-    if (DIM == 3) order_cell = aorder;
-
-    for(int i = 0; i < N_EDGE; i++) usegrad_edge[i] = 1;
-    for(int i=0; i < N_FACE; i++) usegrad_face[i] = 1;
-    if (DIM == 3) usegrad_cell = 1;
-
-    for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
-    // eltype = ET;
-  }
-
-  
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM> shape) const
-  {    
-    AutoDiff<DIM> adp[DIM];
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    /*
-    HCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-    */
-    T_CalcShape (adp, SBLambda ([&](int i, HCurl_Shape<DIM> s) 
-                                { shape.Row(i) = s; }));
-  }
-
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  void T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
-  CalcCurlShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM_CURL> shape) const
-  {  
-    AutoDiff<DIM> adp[DIM];
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-    
-    /*
-    HCurlCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-    */
-    T_CalcShape (adp, SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                { shape.Row(i) = s; }));
-  } 
-
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  void T_HCurlHighOrderFiniteElement<ET, SHAPES> :: 
-  CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                   FlatMatrixFixWidth<DIM> shape) const
-  {
-    AutoDiff<DIM> adp[DIM];
-
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = mip.IP()(i);
-
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
-
-    /*
-    HCurlShapeAssign<DIM> ds(shape); 
-    static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-    */
-    T_CalcShape (adp, SBLambda ([&](int i, HCurl_Shape<DIM> s) 
-                                { shape.Row(i) = s; }));
-
-  }
-
-  /// compute curl of shape
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
-  CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                       FlatMatrixFixWidth<DIM_CURL> curlshape) const
-  { 
-    if (DIM == 2)
-      {
-        // not yet tested
-        CalcCurlShape (mip.IP(), curlshape);
-        curlshape /= mip.GetJacobiDet();        
-      }
-    else
-      {
-	AutoDiff<DIM> adp[DIM];
-	
-	for (int i = 0; i < DIM; i++)
-	  adp[i].Value() = mip.IP()(i);
-	
-	for (int i = 0; i < DIM; i++)
-	  for (int j = 0; j < DIM; j++)
-	    adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
-
-        /*
-	HCurlCurlShapeAssign<DIM> ds(curlshape); 
-	static_cast<const SHAPES*> (this) -> T_CalcShape (adp, ds);
-        */
-        T_CalcShape (adp, SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                    { curlshape.Row(i) = s; }));
-
-      }
-  }
-  
-  /*
-  template <ELEMENT_TYPE ET>
-  Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
-  T_HCurlHighOrderFiniteElement<ET> :: 
-  EvaluateCurlShape (const IntegrationPoint & ip, 
-                     FlatVector<double> x,
-                     LocalHeap & lh) const
-  {
-    AutoDiff<DIM> adp[DIM];
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    HCurlEvaluateCurl<DIM> ds(x); 
-    static_cast<const HCurlHighOrderFE<ET>*> (this) -> T_CalcShape (adp, ds);
-    return ds.Sum();
-  }
-  */
-
-  template <ELEMENT_TYPE ET, typename SHAPES>
-  void T_HCurlHighOrderFiniteElement<ET,SHAPES> :: 
-  ComputeNDof()
+  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES, typename BASE>
+  void HCurlHighOrderFE<ET,TSHAPES,BASE> :: ComputeNDof()
   {
     ndof = N_EDGE;
 
@@ -195,7 +72,7 @@ namespace ngfem
 
     order = 0; // max(order_edges,order_face,order_cell);  
     for (int i = 0; i < N_EDGE; i++)
-      order = max (order, order_edge[i]);
+      order = max (order, int (order_edge[i]));
 
     for(int i=0; i < N_FACE; i++) 
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
@@ -218,19 +95,6 @@ namespace ngfem
   template class HCurlHighOrderFiniteElement<2>;
   template class HCurlHighOrderFiniteElement<3>; 
 
-  /*
-  template class T_HCurlHighOrderFiniteElement<ET_TET, HCurlHighOrderFE_Shape<ET_TET> >;
-  template class T_HCurlHighOrderFiniteElement<ET_PRISM, HCurlHighOrderFE_Shape<ET_PRISM> >;
-  template class T_HCurlHighOrderFiniteElement<ET_PYRAMID, HCurlHighOrderFE_Shape<ET_PYRAMID> >;
-  template class T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX> >;
-  */
-
-
-
-  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES>
-  HCurlHighOrderFE<ET,TSHAPES> :: 
-  HCurlHighOrderFE () { ; }
-
   template class HCurlHighOrderFE<ET_SEGM>;
   template class HCurlHighOrderFE<ET_TRIG>;
   template class HCurlHighOrderFE<ET_QUAD>;
@@ -238,4 +102,5 @@ namespace ngfem
   template class HCurlHighOrderFE<ET_HEX>;
   template class HCurlHighOrderFE<ET_PRISM>;
   template class HCurlHighOrderFE<ET_PYRAMID>;
+
 }

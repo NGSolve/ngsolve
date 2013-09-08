@@ -20,16 +20,12 @@ namespace ngfem
   {
   public:
     /// empty constructor
-    NGS_DLL_HEADER ScalarFiniteElement () { ; } 
+    INLINE NGS_DLL_HEADER ScalarFiniteElement () { ; } 
     /// provides type, number of dofs, maximal order of shapes
-    NGS_DLL_HEADER ScalarFiniteElement (ELEMENT_TYPE aeltype, 
-			 int andof = 0, int aorder = 0)
-      : FiniteElement (aeltype, andof, aorder) 
+    INLINE NGS_DLL_HEADER ScalarFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) 
     { ; }
 
-    // destructor
-    // NGS_DLL_HEADER virtual ~ScalarFiniteElement () = 0;
-    
     /// the name
     NGS_DLL_HEADER virtual string ClassName() const;
 
@@ -59,8 +55,9 @@ namespace ngfem
 
 
     /// compute shape
-    NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
-                                           SliceVector<> shape) const = 0;
+    NGS_DLL_HEADER 
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            SliceVector<> shape) const = 0;
 
   
     /// compute dshape, matrix: ndof x spacedim
@@ -183,7 +180,6 @@ namespace ngfem
 
     using ScalarFiniteElement<D>::ndof;
     using ScalarFiniteElement<D>::order;
-    // using ScalarFiniteElement<D>::eltype;
 
   public:
     /// global vertex numbers define ordering of vertices

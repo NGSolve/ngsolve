@@ -10,44 +10,6 @@
 namespace ngfem
 {
 
-  template <int D>
-  VectorFacetFacetFiniteElement<D> ::
-  VectorFacetFacetFiniteElement (int dim, ELEMENT_TYPE aeltype) 
-    : HCurlFiniteElement<D> (aeltype, -1, -1)
-  // : FiniteElement (aeltype, -1, -1 )
-  {
-    for (int i=0; i<8; i++)
-      vnums[i] = -1; 
-    order_inner = INT<2> (-1, -1);
-  }
-
-  template <int D>
-  void VectorFacetFacetFiniteElement<D> ::
-  SetVertexNumbers (FlatArray<int> & avnums)
-  {
-    for ( int i = 0; i < avnums.Size(); i++ )
-      vnums[i] = avnums[i];
-  }
-
-  template <int D>
-  void VectorFacetFacetFiniteElement<D> ::
-  SetOrder (int aorder)
-  {
-    order = aorder;
-    order_inner = INT<2> (aorder, aorder);
-    ComputeNDof();
-  }
-
-  template <int D>  
-  void VectorFacetFacetFiniteElement<D> ::
-  SetOrder (INT<2> oi)
-  {
-    order = max2 (oi[0], oi[1]);
-    order_inner = oi;
-    ComputeNDof();
-  }
-
-
 
 
   /* **************************** Facet Segm ********************************* */
@@ -211,8 +173,8 @@ namespace ngfem
 
   template <int D>
   VectorFacetVolumeFiniteElement<D> :: 
-  VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype) :
-    HCurlFiniteElement<D>(aeltype, -1, -1)
+  VectorFacetVolumeFiniteElement (ELEMENT_TYPE aeltype) 
+    : HCurlFiniteElement<D>(-1, -1)
   {
     eltype = aeltype;
     for ( int i = 0; i < 8; i++ )

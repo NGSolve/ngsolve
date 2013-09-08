@@ -82,7 +82,7 @@ namespace ngfem
 
   public:
     ///
-    HDivHighOrderNormalFiniteElement (ELEMENT_TYPE aeltype);
+    HDivHighOrderNormalFiniteElement ();
 
 
     void SetVertexNumbers (FlatArray<int> & avnums);

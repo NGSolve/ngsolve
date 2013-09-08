@@ -31,8 +31,8 @@ namespace ngfem
     FiniteElement () { ; }
 
     /// constructor
-    FiniteElement (ELEMENT_TYPE aeltype, int andof, int aorder)
-      : /* eltype(aeltype), */ ndof(andof), order(aorder)
+    FiniteElement (int andof, int aorder)
+      : ndof(andof), order(aorder)
     { ; }
 
   public:
@@ -103,8 +103,7 @@ namespace ngfem
   class DummyFE : public FiniteElement
   {
   public:
-    DummyFE ()
-      : FiniteElement(ET, 0, 0) { ; }
+    INLINE DummyFE () : FiniteElement(0, 0) { ; }
     virtual ELEMENT_TYPE ElementType() const { return ET; }
   };
 
