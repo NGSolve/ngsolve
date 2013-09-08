@@ -1136,6 +1136,7 @@ namespace ngla
   {
     static Timer timer("SparseCholesky::MultAdd");
     RegionTimer reg (timer);
+    timer.AddFlops (2.0*lfact.Size());
 
     int n = Height();
     

@@ -762,17 +762,21 @@ namespace ngla
     mumps_id.irn_loc = row_indices.Addr(0);
     mumps_id.jcn_loc = col_indices.Addr(0);
 
+
     mumps_id.icntl[0]=-1; 
     mumps_id.icntl[1]=-1; 
     mumps_id.icntl[2]=-1; 
     mumps_id.icntl[3]=1;
 
-    /*
-    mumps_id.icntl[0]= 6; 
-    mumps_id.icntl[1]= 0; 
-    mumps_id.icntl[2]= 6; 
-    mumps_id.icntl[3]= 1;
-    */
+    if (getenv ("MUMPSMSG"))
+      {
+	int level = atoi (getenv("MUMPSMSG"));
+	mumps_id.icntl[0]= 6; 
+	mumps_id.icntl[1]= 6; 
+	mumps_id.icntl[2]= 6; 
+	mumps_id.icntl[3]= level;
+      }
+
 
     /*
     // mumps_id.icntl[7]=7;   // BUG (??) 0..min deg, 3..scotch 5..metis, 7..default
