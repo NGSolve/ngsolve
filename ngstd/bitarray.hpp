@@ -105,6 +105,7 @@ public:
   /// copy from ba2
   NGS_DLL_HEADER BitArray & operator= (const BitArray & ba2);
 
+  int NumSet () const;
 private:
   ///
   unsigned char Mask (int i) const

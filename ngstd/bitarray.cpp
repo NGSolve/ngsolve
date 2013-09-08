@@ -112,5 +112,12 @@ namespace ngstd
     return s;
   }
 
-
+  int BitArray :: NumSet () const
+  {
+    int cnt = 0;
+    for (int i = 0; i < Size(); i++)
+      if (Test(i)) cnt++;
+    return cnt;
+  }
+  
 }
