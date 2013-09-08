@@ -62,7 +62,6 @@ namespace ngstd
 	fclose(prof);
       }
 
-
     /*
     if (getenv ("NGSPROFILE"))
       {
