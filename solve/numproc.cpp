@@ -1493,6 +1493,7 @@ namespace ngsolve
       if (filename.length() && (MyMPI_GetId() == 0) )
 	{
 	  filename = pde.GetDirectory() + dirslash + filename;
+	  cout << "NP WriteFile: outputfile is " << filename << endl;
           if (!flags.GetDefineFlag ("append"))
             outfile = new ofstream (filename.c_str());
           else
