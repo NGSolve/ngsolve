@@ -925,7 +925,7 @@ namespace ngcomp
     // (p_t)*tang_e1, ... p_t*tang_ne
     // p_n * el1, p_i * el1, ... , p_n * ne_n , p_i *el_ne 
 
-    Ng_Element ngel = ma.GetElement (elnr);
+    Ngs_Element ngel = ma.GetElement (elnr);
      
       //Nedelec0
     if ( !discontinuous )

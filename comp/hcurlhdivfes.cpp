@@ -334,7 +334,7 @@ namespace ngcomp
     dranges.SetSize (0);
     if (!DefinedOn (ei)) return;
 
-    Ng_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma.GetElement(ei);
     for (int i = 0; i < ngel.edges.Size(); i++)
       dranges.Append (ngel.edges[i]);
   }
@@ -369,7 +369,7 @@ namespace ngcomp
   void NedelecFESpace::TransformMat (int elnr, bool boundary,
 				     MAT & mat, TRANSFORM_TYPE tt) const
   {
-    Ng_Element ngel = ma.GetElement(elnr, boundary);
+    Ngs_Element ngel = ma.GetElement(elnr, boundary);
     ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -414,7 +414,7 @@ namespace ngcomp
     */
 
 
-    Ng_Element ngel = boundary ? ma.GetSElement (elnr) : ma.GetElement(elnr);
+    Ngs_Element ngel = boundary ? ma.GetSElement (elnr) : ma.GetElement(elnr);
     ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
     
     int ned = ElementTopology::GetNEdges (eltype);

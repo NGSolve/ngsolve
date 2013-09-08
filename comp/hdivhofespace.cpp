@@ -507,7 +507,7 @@ namespace ngcomp
 	  case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
 	  }
 	
-	Ng_Element ngel = ma.GetElement<2> (elnr);
+	Ngs_Element ngel = ma.GetElement<2> (elnr);
 	for (int j = 0; j < 3; j++)
 	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 
@@ -621,7 +621,7 @@ namespace ngcomp
 	  case 6: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,6> (); break;
 	  }
 	
-	Ng_Element ngel = ma.GetElement<2> (elnr);
+	Ngs_Element ngel = ma.GetElement<2> (elnr);
 	for (int j = 0; j < 3; j++)
 	  hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 

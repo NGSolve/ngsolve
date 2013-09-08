@@ -244,7 +244,7 @@ namespace ngcomp
 	    for(int k=0;k<dim;k++)
 	      if(points[edges[j][0]][k] != points[edges[j][1]][k])
 		{ 
-		  order_edge[eledges[j]] = max2(order_edge[eledges[j]],el_orders[k]);
+		  order_edge[eledges[j]] = max2(int(order_edge[eledges[j]]),el_orders[k]);
 		  k=dim; 
 		}
 	  }
@@ -485,7 +485,7 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    Ng_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma.GetElement(elnr);
     ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
@@ -733,7 +733,7 @@ namespace ngcomp
 	return;
       }
     
-    Ng_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma.GetElement(elnr);
 
     dnums = ArrayObject (ngel.vertices);
 
@@ -755,7 +755,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!DefinedOn (ei)) return;
-    Ng_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma.GetElement(ei);
 
     for (int i = 0; i < ngel.vertices.Size(); i++)
       dranges.Append (ngel.vertices[i]);
@@ -811,7 +811,7 @@ namespace ngcomp
 	return;
       }
 
-    Ng_Element ngel = ma.GetSElement(elnr);
+    Ngs_Element ngel = ma.GetSElement(elnr);
 
     dnums = ArrayObject (ngel.vertices);
 
@@ -955,7 +955,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ng_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma.GetElement(i);
 		for (int j = 0; j < ngel.faces.Size(); j++)
 		  creator.Add (nv+ngel.faces[j], GetElementDofs(i));
 	      }
@@ -1014,7 +1014,7 @@ namespace ngcomp
 	    
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ng_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma.GetElement(i);
 		for (int j = 0; j < ngel.vertices.Size(); j++)
 		  creator.Add (ngel.vertices[j], GetElementDofs(i));
 	      }
@@ -1036,7 +1036,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ng_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma.GetElement(i);
 		for (int j = 0; j < ngel.faces.Size(); j++)
 		  creator.Add (nv+ned+ngel.faces[j], GetElementDofs(i));
 	      }
@@ -1109,7 +1109,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ng_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma.GetElement(i);
 		for (int j = 0; j < ngel.vertices.Size(); j++)
 		  creator.Add (ngel.vertices[j], GetElementDofs(i));
 	      }
@@ -1154,7 +1154,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		Ng_Element ngel = ma.GetElement (i);
+		Ngs_Element ngel = ma.GetElement (i);
 		int rep[8];
 		      
 		for (int k = 0; k < ngel.vertices.Size(); k++)

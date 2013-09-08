@@ -482,7 +482,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!DefinedOn (ei)) return;
-    Ng_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma.GetElement(ei);
     
     if (ma.GetDimension() == 2)
       for (int i = 0; i < ngel.edges.Size(); i++)

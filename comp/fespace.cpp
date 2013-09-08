@@ -294,7 +294,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  int ind = ma.GetSElIndex (i);
 	  if (dirichlet_boundaries.Test(ind))
 	    {
-	      Ng_Element ngel = ma.GetSElement(i);
+	      Ngs_Element ngel = ma.GetSElement(i);
 	      for (int j = 0; j < ngel.vertices.Size(); j++)
 		dirichlet_vertex[ngel.vertices[j]] = true;
 	      
