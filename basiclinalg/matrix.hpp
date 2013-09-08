@@ -1087,7 +1087,7 @@ namespace ngbla
     */
 
     /// assign constant
-    SliceMatrix & operator= (TSCAL s) throw()
+    const SliceMatrix & operator= (TSCAL s) const
     {
       for (int i = 0; i < h; i++)
         for (int j = 0; j < w; j++)
