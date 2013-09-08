@@ -16,12 +16,14 @@
 namespace ngfem
 {
   
-  // FiniteElement :: ~FiniteElement () { ; }
-
-
   string FiniteElement :: ClassName() const
   {
     return "FiniteElement"; 
+  }
+
+  void FiniteElement :: Print (ostream & ost) const
+  {
+    ost << "Finite Element, ndof = " << ndof << endl;
   }
 
   void FiniteElement :: 
@@ -60,5 +62,11 @@ namespace ngfem
       }
   }
 
-
+  void CompoundFiniteElement :: Print (ostream & ost) const
+  {
+    ost << "CompoundFiniteElement" << endl;
+    for (int i = 0; i < GetNComponents(); i++)
+      (*this)[i].Print (ost);
+  }
 }
+
