@@ -79,6 +79,19 @@ namespace ngfem
     ComputeNDof();
   }
 
+  template <int D>
+  void HDivHighOrderFiniteElement<D> :: Print (ostream & ost) const
+  {
+    ELEMENT_TYPE et = this->ElementType();
+    ost << "HDivHighOrderFiniteElement<" << ElementTopology::GetElementName(et) << ">:" << endl;
+    if (D == 2)
+      for (int j = 0; j < ElementTopology::GetNEdges(et); j++)
+	ost << "order_edge[" << j << "] = " << order_edge[j] << endl;
+    else
+      for (int j = 0; j < ElementTopology::GetNFaces(et); j++)
+	ost << "order_face[" << j << "] = " << order_face[j] << endl;
+  }
+
 
   //------------------------------------------------------------------------
   // HDivHighOrderNormalFiniteElement
