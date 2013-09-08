@@ -638,6 +638,8 @@ namespace ngcomp
                          cout << "fel:GetNDof() = " << fel.GetNDof() << endl;
                          cout << "dnums.Size() = " << dnums.Size() << endl;
 
+			 *testout << "Info from finite element: " << endl;
+			 fel.Print (*testout);
                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
                          (*testout) << "dnums.Size() = " << dnums.Size() << endl;
                          (*testout) << "dnums = " << dnums << endl;
