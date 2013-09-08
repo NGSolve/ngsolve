@@ -53,6 +53,9 @@ namespace ngfem
 
     /// precomputes shape for integrationrule
     virtual void PrecomputeShapes (const IntegrationRule & ir);
+    
+    ///
+    virtual void Print (ostream & ost) const;
   };
 
  
@@ -91,6 +94,8 @@ namespace ngfem
 
     /// the name of the element family
     virtual string ClassName() const { return "CompoundFiniteElement"; }
+
+    virtual void Print (ostream & ost) const;
   };
 
 
