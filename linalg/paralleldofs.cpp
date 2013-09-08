@@ -11,6 +11,7 @@
 
 #include <la.hpp>
 
+#ifdef PARALLEL
 
 namespace ngla
 {
@@ -140,3 +141,5 @@ namespace ngla
   }
 
 }
+
+#endif
