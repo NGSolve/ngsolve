@@ -161,6 +161,11 @@ namespace ngbla
     enum { IS_COMPLEX = 0 };
   };
 
+  template <class T>
+  class mat_traits<const T> : public mat_traits<T> { };
+  template <class T>
+  class mat_traits<T&> : public mat_traits<T> { };
+
 
   template <int D>
   class mat_traits<ngstd::INT<D> >
@@ -347,18 +352,15 @@ namespace ngbla
       return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
     }
 
-    SubMatrixExpr<T>
-    Rows (IntRange range) 
+    auto Rows (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
     { 
       return Rows (range.First(), range.Next());
     }
 
-    SubMatrixExpr<T>
-    Cols (IntRange range)
+    auto Cols (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
     { 
       return Cols (range.First(), range.Next());
     }
-
 
 
     RowsArrayExpr<T>
@@ -399,10 +401,10 @@ namespace ngbla
 
     SymExpr (const T & aa) : a(aa) { ; }
 
-    ALWAYS_INLINE auto operator() (int i) const -> decltype (a(i)) { return a(i); }
-    ALWAYS_INLINE auto operator() (int i, int j) const -> decltype (a(i,j)){ return a(i,j); }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    INLINE auto operator() (int i) const -> decltype (a(i)) { return a(i); }
+    INLINE auto operator() (int i, int j) const -> decltype (a(i,j)){ return a(i,j); }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
     enum { IS_LINEAR = T::IS_LINEAR };
     void Dump (ostream & ost) const
     { ost << "Sym ("; a.Dump(ost); ost << ")"; }
@@ -435,7 +437,7 @@ namespace ngbla
   enum  T_Lapack { Lapack };
   
   template <typename TA>
-  LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
+  INLINE LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
   {
     return LapackExpr<TA> (a.Spec());
   }
@@ -450,15 +452,15 @@ namespace ngbla
     const TA & a;
     LocalHeap * lh;
   public:
-    LocalHeapExpr (const TA & aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
-    const TA & A() const { return a; }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
-    LocalHeap & GetLocalHeap() const { return *lh; }
+    INLINE LocalHeapExpr (const TA & aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
+    INLINE const TA & A() const { return a; }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
+    INLINE LocalHeap & GetLocalHeap() const { return *lh; }
   };
   
   template <typename TA>
-  LocalHeapExpr<TA> operator| (const Expr<TA> & a, LocalHeap & lh)
+  INLINE LocalHeapExpr<TA> operator| (const Expr<TA> & a, LocalHeap & lh)
   {
     return LocalHeapExpr<TA> (a.Spec(), lh);
   }
@@ -492,7 +494,7 @@ namespace ngbla
 
 
 
-    /*
+
     template<typename TOP, typename TB>
     T & Assign (const Expr<TB> & v)
     {
@@ -504,6 +506,18 @@ namespace ngbla
 					   v.Height(), v.Width());
 	}
 #endif
+
+      if (T::COL_MAJOR)
+        {
+	  int h = Expr<T>::Height();
+	  int w = Expr<T>::Width();
+
+          for (int j = 0; j < w; j++)
+            for (int i = 0; i < h; i++)
+              TOP()(Spec()(i,j), v.Spec()(i,j));
+          return Spec();
+        }
+
 
       if (TB::IS_LINEAR)
 	{
@@ -558,15 +572,15 @@ namespace ngbla
       template <typename T1, typename T2> 
       void operator() (T1 && v1, const T2 & v2) { v1 -= v2; }
     };
-    */
 	
 
     template<typename TB>
     T & operator= (const Expr<TB> & v)
     {
-      // Assign<As> (v);
-      // return Spec();
+      Assign<As> (v);
+      return Spec();
 
+      /*
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	{
@@ -618,15 +632,17 @@ namespace ngbla
 		Spec()(i,j) = v.Spec()(i,j);
 	}
       return Spec();
+      */
     }
 
 
     template<typename TB>
     ALWAYS_INLINE T & operator+= (const Expr<TB> & v)
     {
-    // Assign<AsAdd> (v);
-    // return Spec();
+      Assign<AsAdd> (v);
+      return Spec();
 
+      /*
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	throw MatrixNotFittingException ("operator+=", 
@@ -666,6 +682,7 @@ namespace ngbla
 		Spec()(i,j) += v.Spec()(i,j);
 	}
       return Spec();
+      */
     }
 
     template <typename TA, typename TB>
@@ -728,9 +745,10 @@ namespace ngbla
     template<typename TB>
     ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
     {
-      // Assign<AsSub> (v);
-      // return Spec();
+      Assign<AsSub> (v);
+      return Spec();
 
+      /*
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
 	throw MatrixNotFittingException ("operator-=", 
@@ -769,6 +787,7 @@ namespace ngbla
 		Spec()(i,j) -= v.Spec()(i,j);
 	}
       return Spec();
+      */
     }
 
 
@@ -952,7 +971,7 @@ namespace ngbla
   };
 
   template <typename TA, typename TB>
-  inline SumExpr<TA, TB>
+  INLINE SumExpr<TA, TB>
   operator+ (const Expr<TA> & a, const Expr<TB> & b)
   {
     return SumExpr<TA, TB> (a.Spec(), b.Spec());
@@ -987,7 +1006,7 @@ namespace ngbla
 
 
   template <typename TA, typename TB>
-  inline SubExpr<TA, TB>
+  INLINE SubExpr<TA, TB>
   operator- (const Expr<TA> & a, const Expr<TB> & b)
   {
     return SubExpr<TA, TB> (a.Spec(), b.Spec());
@@ -1049,31 +1068,31 @@ namespace ngbla
 
     ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
-    ALWAYS_INLINE auto operator() (int i) const -> decltype(s*a(i)) { return s * a(i); }
-    ALWAYS_INLINE auto operator() (int i, int j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
+    INLINE auto operator() (int i) const -> decltype(s*a(i)) { return s * a(i); }
+    INLINE auto operator() (int i, int j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
 
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
     void Dump (ostream & ost) const
     { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
   };
 
   template <typename TA>
-  inline ScaleExpr<TA, double> 
+  INLINE ScaleExpr<TA, double> 
   operator* (double b, const Expr<TA> & a)
   {
     return ScaleExpr<TA, double> (a.Spec(), b);
   }
 
   template <typename TA>
-  inline ScaleExpr<TA, Complex> 
+  INLINE ScaleExpr<TA, Complex> 
   operator* (Complex b, const Expr<TA> & a)
   {
     return ScaleExpr<TA, Complex> (a.Spec(), b);
   }
 
   template <int D, typename TAD, typename TA>
-  inline ScaleExpr<TA, AutoDiff<D,TAD> > 
+  INLINE ScaleExpr<TA, AutoDiff<D,TAD> > 
   operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
   {
     return ScaleExpr<TA, AutoDiff<D,TAD> > (a.Spec(), b );
@@ -1203,7 +1222,7 @@ namespace ngbla
 
   /// Transpose 
   template <typename TA>
-  inline TransExpr<TA>
+  INLINE TransExpr<TA>
   Trans (const Expr<TA> & a)
   {
     return TransExpr<TA> (a.Spec());
@@ -1284,24 +1303,14 @@ namespace ngbla
     const TA & a;
     FlatArray<int> rows;
   public:
-    typedef typename TA::TELEM TELEM;
-    // typedef typename TA::TREF TREF;
-    typedef typename TA::TSCAL TSCAL;
+    // typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TSCAL TSCAL;
 
     RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
 
     int Height() const { return rows.Size(); }
     int Width() const { return a.Width(); }
 
-    /*
-      TELEM & operator() (int i, int j) const { return a(rows[i], j); }
-      TELEM & operator() (int i) const { return a(rows[i]); }
-    */
-
-    /*
-    TREF operator() (int i, int j) const { return a(rows[i], j); }
-    TREF operator() (int i) const { return a(rows[i]); }
-    */
     auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
     auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
 
@@ -1332,16 +1341,22 @@ namespace ngbla
     const TA & a;
     FlatArray<int> cols;
   public:
-    typedef typename TA::TELEM TELEM;
-    typedef typename TA::TSCAL TSCAL;
+    // typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TSCAL TSCAL;
 
     ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
 
     int Height() const { return a.Height(); }
     int Width() const { return cols.Size(); }
 
-    TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
-    TELEM & operator() (int i) const { return a(i, cols[0]); }
+    // auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
+    // auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
+
+    // TELEM & operator() (int i, int j) const { return a(i, cols[j]); }
+    // TELEM & operator() (int i) const { return a(i, cols[0]); }
+
+    auto operator() (int i, int j) const -> decltype(a(i,cols[j])) { return a(i, cols[j]); }
+    auto operator() (int i) const -> decltype(a(i,cols[0])) { return a(i, cols[0]); }
 
     enum { IS_LINEAR = 0 };
 
@@ -1378,16 +1393,16 @@ namespace ngbla
   {
     const TA & a;
   public:
-    typedef typename TA::TELEM TELEM;
-    typedef typename TA::TSCAL TSCAL;
+    // typedef typename TA::TELEM TELEM;
+    // typedef typename TA::TSCAL TSCAL;
 
     ConjExpr (const TA & aa) : a(aa) { ; }
 
     int Height() const { return a.Height(); }
     int Width() const { return a.Width(); }
  
-    TELEM operator() (int i, int j) const { return Conj(a(i,j)); }
-    TELEM operator() (int i) const { return Conj(a(i)); }
+    auto operator() (int i, int j) const -> decltype(Conj(a(i,j))) { return Conj(a(i,j)); }
+    auto operator() (int i) const -> decltype(Conj(a(i))) { return Conj(a(i)); }
 
     enum { IS_LINEAR = 0 };
   };
@@ -1455,10 +1470,10 @@ namespace ngbla
      Calculates the trace of a matrix expression.
   */
   template <class TA>
-  inline typename TA::TELEM Trace (const Expr<TA> & a)
+  inline auto Trace (const Expr<TA> & a) -> decltype (a.Spec()(0,0))
   {
-    typedef typename TA::TELEM TELEM;
-    TELEM sum = 0;
+    // typedef typename TA::TELEM TELEM;
+    decltype (a.Spec()(0,0)) sum = 0;
     for (int i = 0; i < Height(a); i++)
       sum += a.Spec()(i,i);
     return sum;
@@ -1478,7 +1493,7 @@ namespace ngbla
   }
 
   template<int D, typename SCAL>
-  inline double L2Norm2 (const AutoDiff<D,SCAL> & x) throw()
+  inline double L2Norm2 (const AutoDiff<D,SCAL> & x) 
   {
     return L2Norm2(x.Value());
   }
@@ -1487,7 +1502,6 @@ namespace ngbla
   template <class TA>
   inline double L2Norm2 (const Expr<TA> & v)
   {
-    // typedef typename TA::TSCAL TSCAL;
     double sum = 0;
     if (TA::IS_LINEAR)
       for (int i = 0; i < v.Height()*v.Width(); i++)
