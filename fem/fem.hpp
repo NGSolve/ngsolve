@@ -55,6 +55,7 @@ namespace ngfem
 
 #include "hdivfe.hpp"
 #include "hcurlfe.hpp"
+#include "thcurlfe.hpp"
 
 #include "hdivhofe.hpp"
 #include "hcurlhofe.hpp" 

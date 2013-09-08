@@ -16,7 +16,9 @@ namespace ngfem
      Barton and Nackman Trick for elements with non-static CalcShape method
   */
 
-  template <class FEL, ELEMENT_TYPE ET, class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> >
+  template <class FEL, ELEMENT_TYPE ET, 
+            class BASE = ScalarFiniteElement<ET_trait<ET>::DIM> >
+
   class T_ScalarFiniteElement : public BASE   
   {
   public:
@@ -76,7 +78,7 @@ namespace ngfem
       this->ndof = NDOF; 
       this->order = ORDER; 
     }
-    virtual ~T_ScalarFiniteElementFO () { ; }
+    // virtual ~T_ScalarFiniteElementFO () { ; }
   };
 
 

@@ -13,12 +13,3 @@
 #include <h1hofe_impl.hpp>
 #include <tscalarfe_impl.hpp>
 
-/*
-namespace ngfem
-{
-  template class H1HighOrderFE<ET_POINT>;
-  template class H1HighOrderFE<ET_SEGM>;
-  template class H1HighOrderFE<ET_TRIG>;
-  template class H1HighOrderFE<ET_QUAD>;
-}
-*/

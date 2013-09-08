@@ -536,8 +536,48 @@ namespace ngfem
   ostream & operator<< (ostream & ost, const TopologicElement & etop);
   */
 
+  template <int D> class DIM_trait { };
+
+  template <> class DIM_trait<0>
+  {
+  public:
+    enum { MAX_VERTEX = 1 };
+    enum { MAX_EDGE = 0 };
+    enum { MAX_FACE = 0 };
+    enum { MAX_CELL = 0 };
+  };
+
+  template <> class DIM_trait<1>
+  {
+  public:
+    enum { MAX_VERTEX = 2 };
+    enum { MAX_EDGE = 1 };
+    enum { MAX_FACE = 0 };
+    enum { MAX_CELL = 0 };
+  };
+
+  template <> class DIM_trait<2>
+  {
+  public:
+    enum { MAX_VERTEX = 4 };
+    enum { MAX_EDGE = 4 };
+    enum { MAX_FACE = 1 };
+    enum { MAX_CELL = 0 };
+  };
+
+  template <> class DIM_trait<3>
+  {
+  public:
+    enum { MAX_VERTEX = 8 };
+    enum { MAX_EDGE = 12 };
+    enum { MAX_FACE = 6 };
+    enum { MAX_CELL = 1 };
+  };
 
 
+
+
+  
   template <int ET> class ET_trait { };
 
   template<> class ET_trait<ET_POINT>

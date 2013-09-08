@@ -26,8 +26,8 @@ namespace ngfem
   public:
     FacetFEFacet (int afnr,
 		  const FacetVolumeFiniteElement<D> & afe,
-		  ELEMENT_TYPE aeltype, int andof, int aorder)
-      : ScalarFiniteElement<D> (aeltype, andof, aorder), fnr(afnr), fe(afe) 
+		  int andof, int aorder)
+      : ScalarFiniteElement<D> (andof, aorder), fnr(afnr), fe(afe) 
     { 
       ; // cout << "created facetfefacet" << endl;
     }
@@ -59,8 +59,6 @@ namespace ngfem
     int facet_order[6]; 
     int first_facet_dof[7];
 
-    ELEMENT_TYPE eltype;
-    // using FiniteElement::eltype;
     using FiniteElement::ndof;
     using FiniteElement::order;
 
@@ -89,11 +87,9 @@ namespace ngfem
 	order = max(order, ao[i]);
     }
 
-    // virtual const ScalarFiniteElement<D> & Facet (int fnr) const = 0;
-
     FacetFEFacet<D> Facet (int fnr) const 
     { 
-      return FacetFEFacet<D> (fnr, *this, eltype, 
+      return FacetFEFacet<D> (fnr, *this, 
 			      GetFacetDofs(fnr).Size(), facet_order[fnr]); 
     }
 

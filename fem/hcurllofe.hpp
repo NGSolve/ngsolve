@@ -66,7 +66,7 @@ namespace ngfem
     ///
     FE_NedelecSegm1();
     ///
-    virtual ~FE_NedelecSegm1();
+    // virtual ~FE_NedelecSegm1();
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -85,7 +85,7 @@ namespace ngfem
     ///
     FE_NedelecSegm2();
     ///
-    virtual ~FE_NedelecSegm2();
+    // virtual ~FE_NedelecSegm2();
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
@@ -105,7 +105,7 @@ namespace ngfem
   ///
     FE_NedelecSegm3();
     ///
-    virtual ~FE_NedelecSegm3();
+    // virtual ~FE_NedelecSegm3();
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 

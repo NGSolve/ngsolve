@@ -19,8 +19,8 @@ namespace ngfem
   class HCurlHighOrderFiniteElement : public HCurlFiniteElement<D> 
   {
   protected:
-    int vnums[1<<D]; 
-    int order_edge[12];
+    int vnums[DIM_trait<D>::MAX_VERTEX]; 
+    INT<DIM_trait<D>::MAX_EDGE, short> order_edge;
     INT<2> order_face[6];
     INT<3> order_cell;
 
@@ -72,7 +72,7 @@ namespace ngfem
     { usegrad_cell = ugc; }
 
     void SetDiscontinuous ( bool adiscont ) { discontinuous = adiscont; }
-    virtual void ComputeNDof () = 0;
+    virtual void ComputeNDof() = 0;
   };
 
 
@@ -84,106 +84,104 @@ namespace ngfem
   // template <ELEMENT_TYPE ET> class HCurlHighOrderFE;
   
 
-  /**
-     HCurlHighOrderFE of shape ET.
-     provides access functions, shape funcitons are provided by CalcShape template
-  */
-  template <ELEMENT_TYPE ET, typename SHAPES> //  = HCurlHighOrderFE<ET> >
-  class T_HCurlHighOrderFiniteElement 
-    : public HCurlHighOrderFiniteElement<ET_trait<ET>::DIM>, public ET_trait<ET> 
-
-  {
-  protected:
-    enum { DIM = ET_trait<ET>::DIM };
-  
-    using HCurlFiniteElement<DIM>::DIM_CURL;
-    using HCurlFiniteElement<DIM>::ndof;
-    using HCurlFiniteElement<DIM>::order;
-    // using HCurlFiniteElement<DIM>::eltype;
-    // using HCurlFiniteElement<DIM>::dimspace;
-
-    using HCurlHighOrderFiniteElement<DIM>::vnums;
-    using HCurlHighOrderFiniteElement<DIM>::order_edge;
-    using HCurlHighOrderFiniteElement<DIM>::order_face;
-    using HCurlHighOrderFiniteElement<DIM>::order_cell;
-
-    using HCurlHighOrderFiniteElement<DIM>::usegrad_edge;
-    using HCurlHighOrderFiniteElement<DIM>::usegrad_face;
-    using HCurlHighOrderFiniteElement<DIM>::usegrad_cell;
-
-    using HCurlHighOrderFiniteElement<DIM>::discontinuous;
-
-
-    using ET_trait<ET>::N_VERTEX;
-    using ET_trait<ET>::N_EDGE;
-    using ET_trait<ET>::N_FACE;
-    using ET_trait<ET>::FaceType;
-    using ET_trait<ET>::GetEdgeSort;
-    using ET_trait<ET>::GetFaceSort;
-
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-
-    // typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-    // typedef TrigShapesInnerJacobi T_TRIGSHAPES;
-
-  public:
-
-    NGS_DLL_HEADER T_HCurlHighOrderFiniteElement () 
-    {
-      for (int i = 0; i < N_VERTEX; i++)
-        vnums[i] = i;
-      // eltype = ET;
-    }
-
-    NGS_DLL_HEADER T_HCurlHighOrderFiniteElement (int aorder);
-    
-    virtual void ComputeNDof();
-
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
-
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const
-    { 
-      static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
-    }
-
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatMatrixFixWidth<DIM> shape) const;
-
-    virtual void CalcCurlShape (const IntegrationPoint & ip, 
-                                FlatMatrixFixWidth<DIM_CURL> curlshape) const;
-
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                                  FlatMatrixFixWidth<DIM> shape) const;
-
-    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                                      FlatMatrixFixWidth<DIM_CURL> curlshape) const;
-
-    /*
-      virtual Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
-      EvaluateCurlShape (const IntegrationPoint & ip, 
-      FlatVector<double> x,
-      LocalHeap & lh) const;
-    */
-  };
-
 
   
   template <ELEMENT_TYPE ET> class HCurlHighOrderFE_Shape;
 
-  template <ELEMENT_TYPE ET, template <ELEMENT_TYPE ET2> class TSHAPES = HCurlHighOrderFE_Shape>
-  class HCurlHighOrderFE : public T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET> >
+  template <ELEMENT_TYPE ET, 
+            template <ELEMENT_TYPE ET2> class TSHAPES = HCurlHighOrderFE_Shape,
+            typename BASE = HCurlHighOrderFiniteElement<ET_trait<ET>::DIM> >
+
+  class HCurlHighOrderFE : 
+    public T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET>, BASE>,
+    public ET_trait<ET>
   {
+  protected:
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::N_CELL;
+    using ET_trait<ET>::FaceType;
+
+    enum { DIM = ET_trait<ET>::DIM };
+    
+    using BASE::vnums;
+    using BASE::order_edge;
+    using BASE::order_face;    
+    using BASE::order_cell;
+    using BASE::usegrad_edge;
+    using BASE::usegrad_face;
+    using BASE::usegrad_cell;
+
+    using BASE::ndof;
+    using BASE::order;
+
+    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
   public:
-    NGS_DLL_HEADER HCurlHighOrderFE (); //  { ; }
-    NGS_DLL_HEADER HCurlHighOrderFE (int aorder) 
-      : T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET> > (aorder)
+    INLINE HCurlHighOrderFE () { ; } 
+
+    INLINE HCurlHighOrderFE (int aorder) 
     {
+      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
+      if (DIM == 3) order_cell = aorder;
+      
+      for(int i = 0; i < N_EDGE; i++) usegrad_edge[i] = 1;
+      for(int i=0; i < N_FACE; i++) usegrad_face[i] = 1;
+      if (DIM == 3) usegrad_cell = 1;
+      
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
+      
       this->ComputeNDof();
     }
+
+    
+    virtual void ComputeNDof();
+
   };
 
   
+
+
+
+
+
+#ifdef FILE_HCURLHOFE_CPP
+#define HCURLHOFE_EXTERN
+#else
+#define HCURLHOFE_EXTERN extern
+
+  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<1>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<2>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<3>; 
+  
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_SEGM>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TRIG>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_QUAD>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TET>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_PRISM>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_PYRAMID>;
+  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_HEX>;
+
+
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_SEGM, HCurlHighOrderFE_Shape<ET_SEGM>, HCurlHighOrderFiniteElement<1>>;
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_TRIG, HCurlHighOrderFE_Shape<ET_TRIG>, HCurlHighOrderFiniteElement<2>>;
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_QUAD, HCurlHighOrderFE_Shape<ET_QUAD>, HCurlHighOrderFiniteElement<2>>;
+
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_TET, HCurlHighOrderFE_Shape<ET_TET>, HCurlHighOrderFiniteElement<3>>;
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_PRISM, HCurlHighOrderFE_Shape<ET_PRISM>, HCurlHighOrderFiniteElement<3>>;
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_PYRAMID, HCurlHighOrderFE_Shape<ET_PYRAMID>, HCurlHighOrderFiniteElement<3>>;
+  HCURLHOFE_EXTERN template class 
+  T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX>, HCurlHighOrderFiniteElement<3>>;
+#endif
   
 }
 

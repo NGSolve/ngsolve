@@ -41,14 +41,12 @@ namespace ngfem
     typedef BASE T_IMPL;
     typedef SHAPES T_SHAPES;
 
-    // enum { DIM = ET_trait<ET>::DIM };
     using ET_trait<ET>::DIM;
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::PolDimension;
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    // using ScalarFiniteElement<DIM>::eltype;
     using DGFiniteElement<DIM>::vnums;
 
 
@@ -64,8 +62,8 @@ namespace ngfem
     static TPRECOMP_GRAD precomp_grad;
 
   public:
-    NGS_DLL_HEADER L2HighOrderFE () { ; }
-    NGS_DLL_HEADER L2HighOrderFE (int aorder)
+    INLINE L2HighOrderFE () { ; }
+    INLINE L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       order = aorder;
@@ -76,7 +74,7 @@ namespace ngfem
     
     /// global vertex numbers define ordering of vertices
     template <typename TA>
-    void SetVertexNumbers (const TA & avnums)
+    INLINE void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
     /// different orders in differnt directions
