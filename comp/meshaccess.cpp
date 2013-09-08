@@ -52,7 +52,7 @@ namespace ngcomp
     {
       int vnums[12];
 
-      Ng_Element nel = mesh -> GetElement<DIMS> (elnr);
+      Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
       for (int j = 0; j  < nel.vertices.Size(); j++)
         vnums[j] = nel.vertices[j];
 
@@ -193,7 +193,7 @@ namespace ngcomp
     {
       int vnums[12];
 
-      Ng_Element nel = mesh -> GetElement<DIMS> (elnr);
+      Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
       for (int j = 0; j  < nel.vertices.Size(); j++)
         vnums[j] = nel.vertices[j];
 

@@ -273,7 +273,7 @@ namespace ngcomp
   {
     try
       { 
-        Ng_Element ngel = ma.GetElement(elnr);
+        Ngs_Element ngel = ma.GetElement(elnr);
         ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
         
         if (!DefinedOn (ma.GetElIndex (elnr)))
@@ -307,7 +307,7 @@ namespace ngcomp
                 */
 	      }
 	    
-	    Ng_Element ngel = ma.GetElement<2> (elnr);
+	    Ngs_Element ngel = ma.GetElement<2> (elnr);
 	    for (int j = 0; j < 3; j++)
 	      hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 
@@ -335,7 +335,7 @@ namespace ngcomp
 	  {
 	    DGFiniteElement<2> * fe2d = 0;
 
-            Ng_Element ngel = ma.GetElement<2> (elnr);
+            Ngs_Element ngel = ma.GetElement<2> (elnr);
 
 	    switch (ConvertElementType (ngel.GetType()))
 	      {
@@ -354,7 +354,7 @@ namespace ngcomp
 	else
 	  {
 	    DGFiniteElement<3> * fe3d = 0;
-            Ng_Element ngel = ma.GetElement<3> (elnr);
+            Ngs_Element ngel = ma.GetElement<3> (elnr);
 
 	    // switch (ma.GetElType(elnr))
 	    switch (ConvertElementType (ngel.GetType()))
@@ -393,7 +393,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ng_Element ngel = ma.GetElement<ET_trait<ET>::DIM>(elnr);
+    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM>(elnr);
     L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
     
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -647,7 +647,7 @@ namespace ngcomp
       {
 	DGFiniteElement<1> * fe1d = 0;
 	
-	Ng_Element ngel = ma.GetElement<1> (elnr);
+	Ngs_Element ngel = ma.GetElement<1> (elnr);
 
 	switch (ConvertElementType (ngel.GetType()))
 	  {
@@ -665,7 +665,7 @@ namespace ngcomp
       {
 	DGFiniteElement<2> * fe2d = 0;
 	
-	Ng_Element ngel = ma.GetElement<2> (elnr);
+	Ngs_Element ngel = ma.GetElement<2> (elnr);
 	
 	switch (ConvertElementType (ngel.GetType()))
 	  {

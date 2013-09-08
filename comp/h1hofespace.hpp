@@ -24,15 +24,16 @@ namespace ngcomp
     Array<int> first_face_dof;
     Array<int> first_element_dof;
 
-
+    typedef int TORDER;
+    
     /// relative order to mesh-order
     int rel_order; 
     bool var_order; 
     bool fixed_order;
     bool wb_loedge;
-    Array<int> order_edge;
-    Array<INT<2> > order_face;
-    Array<INT<3> > order_inner;
+    Array<TORDER> order_edge;
+    Array<INT<2,TORDER> > order_face;
+    Array<INT<3,TORDER> > order_inner;
     Array<bool> used_vertex; 
     Array<bool> used_edge; 
     Array<bool> used_face; 

@@ -21,7 +21,7 @@ namespace ngfem
 
 namespace ngcomp
 {
-  using netgen::Ng_Element;
+  // using netgen::Ng_Element;
   using netgen::Ng_Point;
   using netgen::Ng_Node;
 
@@ -85,10 +85,10 @@ namespace ngcomp
   
 
 
-  class Ngs_Element : public Ng_Element
+  class Ngs_Element : public netgen::Ng_Element
   {
   public:
-    Ngs_Element (const Ng_Element & el) : Ng_Element(el) { ; }
+    Ngs_Element (const netgen::Ng_Element & el) : netgen::Ng_Element(el) { ; }
     auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
     auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
     auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
