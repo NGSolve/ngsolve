@@ -30,7 +30,7 @@ namespace ngfem
 
 
   void VectorFacetFacetSegm :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrixFixWidth<1> shape) const
+					  SliceMatrix<> shape) const
   {
     AutoDiff<1> x (ip(0),0);
     ArrayMem<double, 10>  polx(order_inner[0]+1);
@@ -64,7 +64,7 @@ namespace ngfem
   }
 
   void VectorFacetFacetTrig :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrixFixWidth<2> shape) const
+					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -130,7 +130,7 @@ namespace ngfem
 
   /// compute shape
   void VectorFacetFacetQuad :: CalcShape (const IntegrationPoint & ip, 
-					  FlatMatrixFixWidth<2> shape) const
+					  SliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -188,7 +188,7 @@ namespace ngfem
 
   template <int D>
   void  VectorFacetVolumeFiniteElement<D>::
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<D> shape) const
+  CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {
     cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
   }
@@ -309,7 +309,7 @@ namespace ngfem
 
 
   void VectorFacetVolumeTrig ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     shape = 0.0;
     int first = first_facet_dof[fanr];
@@ -389,7 +389,7 @@ namespace ngfem
   //--------------------------------------------------
 
   void VectorFacetVolumeQuad ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     shape = 0.0;
 
@@ -465,7 +465,7 @@ namespace ngfem
 
 
   void VectorFacetVolumeTet ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     shape = 0.0;
 
@@ -560,7 +560,7 @@ namespace ngfem
 
 
   void VectorFacetVolumePrism ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
@@ -747,7 +747,7 @@ namespace ngfem
   // --------------------------------------------
 
   void VectorFacetVolumeHex ::
-  CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
   {
     cout << "VectorFacetVolumeHex::CalcShape not implemented!" << endl;
     exit(0);
@@ -771,7 +771,7 @@ namespace ngfem
 
 
   void VectorFacetVolumePyramid ::
-  CalcShape ( const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<3> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
   {
     cout << "error in VectorFacetVolumePyramid::CalcShape: not implemented!" << endl;
     exit(0);

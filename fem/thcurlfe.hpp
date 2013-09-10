@@ -41,16 +41,16 @@ namespace ngfem
     }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatMatrixFixWidth<DIM> shape) const;
+                            SliceMatrix<> shape) const;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-                                FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+                                SliceMatrix<> curlshape) const;
 
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                                  FlatMatrixFixWidth<DIM> shape) const;
+                                  SliceMatrix<> shape) const;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                                      FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+                                      SliceMatrix<> curlshape) const;
 
     /*
       virtual Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
@@ -72,7 +72,7 @@ namespace ngfem
   {
     FlatVec<DIM> data;
   public:
-    HCurlShapeElement (FlatVec<DIM> adata) : data(adata) { ; }
+    HCurlShapeElement (FlatVector<> adata) : data(adata.Data()) { ; }
 
     template <typename F1>
     void operator= (F1 form1)  { data = form1.Value(); }
@@ -83,8 +83,10 @@ namespace ngfem
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
     FlatVec<DIM_CURL> data;
+    // FlatVector<> data;
   public:
-    HCurlCurlShapeElement (FlatVec<DIM_CURL> adata) : data(adata) { ; }
+    // HCurlCurlShapeElement (FlatVec<DIM_CURL> adata) : data(adata) { ; }
+    HCurlCurlShapeElement (FlatVector<> adata) : data(adata.Data()) { ; }
 
     template <typename F1>
     void operator= (F1 form1)  { data = form1.CurlValue(); }
@@ -110,9 +112,9 @@ namespace ngfem
   template <int DIM>
   class HCurlShapeAssign
   {
-    FlatMatrixFixWidth<DIM> shape; 
+    SliceMatrix<> shape; 
   public:
-    HCurlShapeAssign (FlatMatrixFixWidth<DIM> mat) : shape(mat) { ; }
+    HCurlShapeAssign (SliceMatrix<> mat) : shape(mat) { ; }
 
     HCurlShapeElement<DIM> operator[] (int i) const
     { return HCurlShapeElement<DIM> (shape.Row(i)); }
@@ -122,9 +124,9 @@ namespace ngfem
   class HCurlCurlShapeAssign
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
-    FlatMatrixFixWidth<DIM_CURL> cshape; 
+    SliceMatrix<> cshape; 
   public:
-    HCurlCurlShapeAssign (FlatMatrixFixWidth<DIM_CURL> mat) : cshape(mat) { ; }
+    HCurlCurlShapeAssign (SliceMatrix<> mat) : cshape(mat) { ; }
 
     HCurlCurlShapeElement<DIM> operator[] (int i) const 
     { return HCurlCurlShapeElement<DIM> (cshape.Row(i)); }
@@ -193,7 +195,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatMatrixFixWidth<DIM> shape) const
+                            SliceMatrix<> shape) const
     {
       AutoDiff<DIM> adp[DIM];
       for (int i = 0; i < DIM; i++)
@@ -205,7 +207,7 @@ namespace ngfem
 
     virtual void
     CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                     FlatMatrixFixWidth<DIM> shape) const
+                     SliceMatrix<> shape) const
     {
       AutoDiff<DIM> adp[DIM];
       
@@ -222,7 +224,7 @@ namespace ngfem
 
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-                                FlatMatrixFixWidth<DIM_CURL> curlshape) const
+                                SliceMatrix<> curlshape) const
     {
       AutoDiff<DIM> adp[DIM];
       for (int i = 0; i < DIM; i++)
@@ -234,7 +236,7 @@ namespace ngfem
 
     virtual void
     CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                         FlatMatrixFixWidth<DIM_CURL> curlshape) const
+                         SliceMatrix<> curlshape) const
     {
       AutoDiff<DIM> adp[DIM];
 

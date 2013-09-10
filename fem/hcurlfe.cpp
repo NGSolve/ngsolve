@@ -28,7 +28,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcCurlShape (const IntegrationPoint & ip, 
-		 FlatMatrixFixWidth<DIM_CURL> curlshape) const
+		 SliceMatrix<> curlshape) const
   {
     if (DIM == 1) return;
     double eps = 1e-6;  
@@ -123,7 +123,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                   FlatMatrixFixWidth<DIM> shape) const
+                   SliceMatrix<> shape) const
   {
     CalcShape (mip.IP(), shape);
     Mat<DIM> trans = Trans (mip.GetJacobianInverse());
@@ -138,7 +138,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                       FlatMatrixFixWidth<DIM_CURL> curlshape) const
+                       SliceMatrix<> curlshape) const
   {
     CalcCurlShape (mip.IP(), curlshape);
     if (DIM == 2)
@@ -599,7 +599,7 @@ namespace ngfem
   
   void FE_NedelecSegm1 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<1> shape) const
+	     SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     shape (0,0) = 1;
@@ -615,7 +615,7 @@ namespace ngfem
   
   void FE_NedelecSegm2 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<1> shape) const
+	     SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     shape (0,0) = 1;
@@ -636,7 +636,7 @@ namespace ngfem
 
   void FE_NedelecSegm3 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<1> shape) const
+	     SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     shape (0,0) = 1;
@@ -1033,7 +1033,7 @@ namespace ngfem
   template <int ORDER, int ZORDER>
   void FE_TNedelecQuad<ORDER,ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<2> shape) const
+	     SliceMatrix<> shape) const
   {
     int i, j;
     shape = 0.0; //!
@@ -1871,7 +1871,7 @@ namespace ngfem
 
   void FE_NedelecHex1 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<3> shape) const
+	     SliceMatrix<> shape) const
   {
     double x = ip(0);
     double y = ip(1);
@@ -1929,7 +1929,7 @@ namespace ngfem
 
   void FE_NedelecTet3NoGrad :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<3> shape) const
+	     SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     FlatMatrixFixWidth<3> tet1shape(6, &shape(0,0));
@@ -2264,7 +2264,7 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism2<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<3> shape) const
+	     SliceMatrix<> shape) const
   {
     int i, j;
 
@@ -2751,7 +2751,7 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism3<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<3> shape) const
+	     SliceMatrix<> shape) const
   {
 
     shape = 0.0; //!
@@ -3299,7 +3299,7 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism3NoGrad<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<3> shape) const
+	     SliceMatrix<> shape) const
   {
     int i, j;
 
@@ -3774,7 +3774,7 @@ namespace ngfem
 
 
   void FE_NedelecPyramid1 :: CalcShape (const IntegrationPoint & ip, 
-					FlatMatrixFixWidth<3> shape) const
+					SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     Mat<8,3> hshape;
@@ -3881,7 +3881,7 @@ namespace ngfem
 
 
   void FE_NedelecPyramid2 :: CalcShape (const IntegrationPoint & ip, 
-					FlatMatrixFixWidth<3> shape) const
+					SliceMatrix<> shape) const
   {
     Mat<NDOF,3> hshape;
     Mat<8,3> shape1;
@@ -4454,7 +4454,7 @@ namespace ngfem
 
 
   void FE_NedelecPyramid3 :: CalcShape (const IntegrationPoint & ip, 
-					FlatMatrixFixWidth<3> shape) const
+					SliceMatrix<> shape) const
   {
     shape = 0.0; //!
     Mat<NDOF,3> hshape;

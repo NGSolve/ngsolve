@@ -55,19 +55,19 @@ namespace ngfem
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<DIM> shape) const = 0;
+			    SliceMatrix<> shape) const = 0;
   
     /// compute curl of shape, default: numerical diff
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+				SliceMatrix<> curlshape) const;
 
     /// compute shape
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  FlatMatrixFixWidth<DIM> shape) const;
-
+				  SliceMatrix<> shape) const;
+    
     /// compute curl of shape
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				      FlatMatrixFixWidth<DIM_CURL> curlshape) const;
+				      SliceMatrix<> curlshape) const;
 
 
     ///
