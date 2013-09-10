@@ -38,6 +38,31 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
+
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+    }
+
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      mat = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * mip.GetJacobianInverse();
+    }
+
+    template <typename AFEL>
+    static void GenerateMatrix2 (const AFEL & fel, 
+                                 const MappedIntegrationPoint<3,3> & mip,
+                                 SliceMatrix<> mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);
+    }
+
+    /*
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -53,6 +78,7 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mip, Trans(mat));
     }
+    */
 
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
@@ -136,22 +162,31 @@ namespace ngfem
 
     static string Name() { return "curl"; }
 
+
+
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+    }
+
     template <typename AFEL, typename MIP, typename MAT>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+    static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
     {
       mat = (1.0/mip.GetJacobiDet())
-	* (mip.GetJacobian() * Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)));
+        * (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * Trans(mip.GetJacobian()));
     }
 
     template <typename AFEL>
-    static void GenerateMatrix (const AFEL & fel, 
-				const MappedIntegrationPoint<3,3> & mip,
-				FlatMatrixFixHeight<3> mat, LocalHeap & lh)
+    static void GenerateMatrix2 (const AFEL & fel, 
+                                 const MappedIntegrationPoint<3,3> & mip,
+                                 SliceMatrix<> mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, Trans(mat));
+      static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat);
     }
-
 
 
     template <typename AFEL, typename MIP, class TVX, class TVY>

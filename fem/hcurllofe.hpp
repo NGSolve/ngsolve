@@ -70,7 +70,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<1> shape) const;
+			    SliceMatrix<> shape) const;
   };
 
 
@@ -89,7 +89,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<1> shape) const;
+			    SliceMatrix<> shape) const;
   };
 
 
@@ -109,7 +109,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_SEGM; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<1> shape) const;
+			    SliceMatrix<> shape) const;
   };
 
 
@@ -212,7 +212,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const;
+			    SliceMatrix<> shape) const;
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<2> shape) const;
@@ -592,7 +592,7 @@ namespace ngfem
 
     virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 FlatMatrixFixWidth<3> curlshape) const;
@@ -627,7 +627,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_HEX; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            FlatMatrixFixWidth<3> shape) const; 
+                            SliceMatrix<> shape) const; 
   }; 
 
 
@@ -712,7 +712,7 @@ static Matrix<> trans3;
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
@@ -792,7 +792,7 @@ static Matrix<> trans_trig;
     ///
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
@@ -861,7 +861,7 @@ static Matrix<> trans_trig;
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
@@ -920,7 +920,7 @@ static Matrix<> trans;
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<3> shape) const;
@@ -964,7 +964,7 @@ static Matrix<> trans;
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<3> shape) const;
@@ -1032,7 +1032,7 @@ static Matrix<> trans;
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     virtual void CalcShape1 (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<3> shape) const;

@@ -14,7 +14,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  CalcShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM> shape) const
+  CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {    
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
@@ -26,7 +26,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES,BASE> :: 
-  CalcCurlShape (const IntegrationPoint & ip, FlatMatrixFixWidth<DIM_CURL> shape) const
+  CalcCurlShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {  
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
@@ -39,7 +39,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                   FlatMatrixFixWidth<DIM> shape) const
+                   SliceMatrix<> shape) const
   {
     AutoDiff<DIM> adp[DIM];
 
@@ -59,13 +59,16 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                       FlatMatrixFixWidth<DIM_CURL> curlshape) const
+                       SliceMatrix<> curlshape) const
   { 
     if (DIM == 2)
       {
         // not yet tested
         CalcCurlShape (mip.IP(), curlshape);
         curlshape /= mip.GetJacobiDet();        
+        // MatrixFixWidth<DIM_CURL> hmat(curlshape.Height());
+        // CalcCurlShape (mip.IP(), hmat);
+        // curlshape = 1.0/mip.GetJacobiDet() * hmat;
       }
     else
       {
