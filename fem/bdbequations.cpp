@@ -16,16 +16,16 @@
 
 
 
-
   
 namespace ngfem
 { 
 
-
+  /*
   template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
   LaplaceBoundaryIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
   { ; }
+  */
 
   template <int D, typename FEL> RotSymLaplaceIntegrator<D,FEL> ::
   RotSymLaplaceIntegrator (CoefficientFunction * coeff)
@@ -46,7 +46,16 @@ namespace ngfem
   static RegisterBilinearFormIntegrator<RobinIntegrator<1> > initrobin1 ("robin", 1, 1);
   static RegisterBilinearFormIntegrator<RobinIntegrator<2> > initrobin2 ("robin", 2, 1);
   static RegisterBilinearFormIntegrator<RobinIntegrator<3> > initrobin3 ("robin", 3, 1);
-  
+
+
+  static RegisterBilinearFormIntegrator<LaplaceBoundaryIntegrator<2> > initlb2 ("laplaceboundary", 2, 1);
+  static RegisterBilinearFormIntegrator<LaplaceBoundaryIntegrator<3> > initlb3 ("laplaceboundary", 3, 1);
+  /*
+      GetIntegrators().AddBFIntegrator ("laplaceboundary", 2, 1,
+					LaplaceBoundaryIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("laplaceboundary", 3, 1,
+					LaplaceBoundaryIntegrator<3>::Create);
+  */
 
   static RegisterLinearFormIntegrator<SourceIntegrator<1> > initsource1 ("source", 1, 1);
   static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
@@ -56,6 +65,16 @@ namespace ngfem
   static RegisterLinearFormIntegrator<NeumannIntegrator<2> > initneumann2 ("neumann", 2, 1);
   static RegisterLinearFormIntegrator<NeumannIntegrator<3> > initneumann3 ("neumann", 3, 1);
 
+
+  static RegisterBilinearFormIntegrator<ElasticityIntegrator<2> > initelast2 ("elasticity", 2, 2);
+  static RegisterBilinearFormIntegrator<ElasticityIntegrator<3> > initelast3 ("elasticity", 3, 2);
+
+  /*
+      GetIntegrators().AddBFIntegrator ("elasticity", 2, 2,
+					ElasticityIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("elasticity", 3, 2,
+					ElasticityIntegrator<3>::Create);
+  */
 
 
   namespace bdbequations_cpp
@@ -80,42 +99,12 @@ namespace ngfem
 					OrthoLaplaceIntegrator<3>::Create);
       
 
-      /*
-      GetIntegrators().AddBFIntegrator ("divdiv", 2, 1,
-					DivDivIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("curlcurl", 2, 1,
-					CurlCurlIntegrator<>::Create);
-      GetIntegrators().AddBFIntegrator ("curlcurl", 3, 1,
-					CurlCurl3dIntegrator<>::Create);
-      */
-
-
-      GetIntegrators().AddBFIntegrator ("laplaceboundary", 2, 1,
-					LaplaceBoundaryIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("laplaceboundary", 3, 1,
-					LaplaceBoundaryIntegrator<3>::Create);
-      /*
-      GetIntegrators().AddBFIntegrator ("normalrobin", 2, 1,
-					NormalRobinIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("normalrobin", 3, 1,
-					NormalRobinIntegrator<3>::Create);
-      */      
-      GetIntegrators().AddBFIntegrator ("elasticity", 2, 2,
-					ElasticityIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("elasticity", 3, 2,
-					ElasticityIntegrator<3>::Create);
-      
-      // GetIntegrators().AddBFIntegrator ("orthoelasticity", 2, 9,
-      // OrthotropicElasticityIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthoelasticity", 3, 9,
 					OrthotropicElasticityIntegrator<3>::Create);
       
-      // GetIntegrators().AddBFIntegrator ("orthocylelasticity", 2, 10,
-      // OrthotropicCylElasticityIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthocylelasticity", 3, 10,
 					OrthotropicCylElasticityIntegrator<3>::Create);
       
-
       GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
 				       GradSourceIntegrator<3>::Create); 
 
@@ -130,3 +119,4 @@ namespace ngfem
   }
  
 }
+

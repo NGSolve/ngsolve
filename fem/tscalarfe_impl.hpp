@@ -75,7 +75,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
-    static Timer t("evaluatetrans"); RegionTimer reg(t);
+    // static Timer t("evaluatetrans"); RegionTimer reg(t);
 
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -163,6 +163,7 @@ namespace ngfem
   }
 
 
+  /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
@@ -179,7 +180,7 @@ namespace ngfem
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
   }
-
+  */
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -199,6 +200,16 @@ namespace ngfem
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+		    SliceMatrix<> dshape) const
+  {
+    // static Timer t("tscalarfe, calcmappeddshape(ir)"); RegionTimer reg(t);
+    for (int i = 0; i < mir.Size(); i++)
+      T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
+  }
 
 
 

@@ -51,12 +51,15 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
 
+    /*
     virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 				   FlatMatrixFixWidth<DIM> dshape) const;
-
+    */
     virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
+    virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
+				   SliceMatrix<> dshape) const;
 
     virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     

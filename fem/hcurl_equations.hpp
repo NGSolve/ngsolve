@@ -366,9 +366,12 @@ namespace ngfem
   class CurlCurlEdgeIntegrator 
     : public T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
   {
+    typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    CurlCurlEdgeIntegrator (CoefficientFunction * coeff);
-    CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
+    CurlCurlEdgeIntegrator (CoefficientFunction * coeff) 
+      : BASE(DiagDMat<DIM_CURL_TRAIT<D>::DIM>(coeff)) { ; }
+    CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : BASE(coeffs) { ; }
   
     virtual string Name () const { return "CurlCurlEdge"; }
   };
@@ -428,10 +431,11 @@ namespace ngfem
   class MassEdgeIntegrator 
     : public T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL>
   {
+    typedef  T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> BASE;
   public:
     ///
-    MassEdgeIntegrator (CoefficientFunction * coeff);
-    MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
+    MassEdgeIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D>(coeff)) { ; }
+    MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
     ///
     virtual string Name () const { return "MassEdge"; }
   };
@@ -717,6 +721,12 @@ namespace ngfem
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
 
+
+  HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
+  HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;
+
+  HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<2>;
+  HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<3>;
 
 }
 

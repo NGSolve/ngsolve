@@ -66,39 +66,15 @@ namespace ngfem
     }
 
 
-
-
-
-    /*
-    template <typename MIP, typename MAT>
-    static void GenerateMatrix (const FiniteElement & fel, 
-				const MIP & mip,
-				MAT && mat, LocalHeap & lh)
+    using DiffOp<DiffOpGradient<D, FEL> > :: GenerateMatrixIR;
+    template <typename MAT>
+    static void GenerateMatrixIR (const FiniteElement & fel, 
+                                  const MappedIntegrationRule<3,3> & mir,
+                                  MAT & mat, LocalHeap & lh)
     {
-      // static Timer t("DiffOpGrad::GenMatrix - general"); RegionTimer reg(t);
-      mat = Trans (mip.GetJacobianInverse ()) * 
-	Trans (Cast(fel).GetDShape(mip.IP(),lh));
-
-      // Cast(fel).CalcDShape (mip.IP(), [&](int i, Vec<3> gradref)
-      // { mat.Col(i) = Trans(mip.GetJacobianInverse()) * gradref; });
+      // static Timer t("diffopgrad::GetMatIR"); RegionTimer reg(t);      
+      Cast(fel).CalcMappedDShape (mir, Trans(mat));
     }
-
-    static void GenerateMatrix (const FiniteElement & fel, 
-				const MappedIntegrationPoint<D,D> & mip,
-				FlatMatrixFixHeight<D> mat, LocalHeap & lh)
-    {
-      // static Timer t("DiffOpGrad::GenMatrix"); RegionTimer reg(t);
-      Cast(fel).CalcMappedDShape (mip, mat.Trans());
-    }
-
-    static void GenerateMatrix (const FiniteElement & fel, 
-				const MappedIntegrationPoint<D,D> & mip,
-				SliceMatrixColMajor<> mat, LocalHeap & lh)
-    {
-      // static Timer t("DiffOpGrad::SliceMatrixColMajor"); RegionTimer reg(t);
-      Cast(fel).CalcMappedDShape (mip, Trans (mat));
-    }
-    */
 
 
     ///
@@ -1085,18 +1061,16 @@ namespace ngfem
   class NGS_DLL_HEADER LaplaceIntegrator 
     : public T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
   {
+    typedef T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> BASE;
+    
   public:
     ///
-    LaplaceIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-    { ; }
+    LaplaceIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D> (coeff)) { ; }
 
-    LaplaceIntegrator (Array<CoefficientFunction*> & coeffs)
-      : T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (coeffs)
-    { ; }
-      
+    LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
+    
     virtual ~LaplaceIntegrator () { ; }
-
+    
     virtual string Name () const { return "Laplace"; }
   };
 
@@ -1107,15 +1081,18 @@ namespace ngfem
   class LaplaceBoundaryIntegrator 
     : public T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL>
   {
+    typedef T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> BASE;
   public:
     ///
-    LaplaceBoundaryIntegrator (CoefficientFunction * coeff);
+    LaplaceBoundaryIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D>(coeff)) { ; }
+    LaplaceBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
+    /*
+      static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+      {
       return new LaplaceBoundaryIntegrator (coeffs[0]);
-    }
-
+      }
+    */
     ///
     virtual string Name () const { return "Laplace-Boundary"; }
   };
@@ -1543,7 +1520,6 @@ namespace ngfem
 #endif
 
 
-
   BDBEQUATIONS_EXTERN template class MassIntegrator<1>;
   BDBEQUATIONS_EXTERN template class MassIntegrator<2>;
   BDBEQUATIONS_EXTERN template class MassIntegrator<3>;
@@ -1585,7 +1561,6 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<1> >;
   BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<2> >;
   BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<3> >;
-
 
 
 
