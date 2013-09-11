@@ -252,11 +252,11 @@ namespace ngfem
     template <class S, class Sy>
     ALWAYS_INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
     {
-      switch (i)
+      // switch (i)
         {
-        case 0: return p1 = REC::P0(x);
-        case 1: return p1 = REC::P1(x);
-        default:
+          // case 0: return p1 = REC::P0(x);
+          // case 1: return p1 = REC::P1(x);
+          // default:
           {
             if (REC::ZERO_B)
               {
@@ -266,7 +266,7 @@ namespace ngfem
               }
             else
               {
-                p1 *= REC::C(i);
+                p1 *= REC::C(i) *y*y;
                 p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
                 return p1;
               }
@@ -298,37 +298,7 @@ namespace ngfem
 
       values[1] = EvalNextMult(1, x, c, p2, p1);
       if (n < 2) return;
-      /*
-      values[2] = EvalNext(2, x, p1, p2);
-      if (n < 3) return;
 
-      values[3] = EvalNext(3, x, p2, p1);
-      if (n < 4) return;
-
-      values[4] = EvalNext(4, x, p1, p2);
-      if (n < 5) return;
-
-      values[5] = EvalNext(5, x, p2, p1);
-      if (n < 6) return;
-
-      values[6] = EvalNext(6, x, p1, p2);
-      if (n < 7) return;
-     
-      values[7] = EvalNext(7, x, p2, p1);
-      if (n < 8) return;
-
-      values[8] = EvalNext(8, x, p1, p2);
-      if (n < 9) return;
-
-      values[9] = EvalNext(9, x, p2, p1);
-      if (n < 10) return;
-
-      values[10] = EvalNext(10, x, p1, p2);
-      if (n < 11) return;
-
-      values[11] = EvalNext(11, x, p2, p1);
-      if (n < 12) return;
-      */
       int i = 2;
       for ( ; i < n; i+=2)
 	{	
@@ -341,8 +311,6 @@ namespace ngfem
 
 
 
-
-
     template <class S, class Sy, class T>
     static void EvalScaled (int n, S x, Sy y, T && values)
     {
@@ -352,6 +320,8 @@ namespace ngfem
     template <class S, class Sy, class Sc, class T>
     static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
+      // 54855278 bytes libngfem.so
+      // 4.55795 sec d4
       S p1, p2;
 
       if (n < 0) return;
@@ -360,41 +330,85 @@ namespace ngfem
       if (n < 1) return;
 
       values[1] = p1 = c * REC::P1(x);
-      /*
-      if (n < 2) return;
 
-      EvalScaledNext(2, x, y, p1, p2);
-      values[2] = p1;
-      if (n < 3) return;
-
-      EvalScaledNext(3, x, y, p1, p2);
-      values[3] = p1;
-      if (n < 4) return;
-
-      EvalScaledNext(4, x, y, p1, p2);
-      values[4] = p1;
-      if (n < 5) return;
-      
-      EvalScaledNext(5, x, y, p1, p2);
-      values[5] = p1;
-      if (n < 6) return;
-
-      EvalScaledNext(6, x, y, p1, p2);
-      values[6] = p1;
-      if (n < 7) return;
-
-      EvalScaledNext(7, x, y, p1, p2);
-      values[7] = p1;
-      if (n < 8) return;
-
-      EvalScaledNext(8, x, y, p1, p2);
-      values[8] = p1;
-      */
       for (int i = 2; i <= n; i++)
 	{	
 	  EvalScaledNext (i, x, y, p1, p2);
 	  values[i] = p1;
 	}
+
+
+      /*
+      // 54710961 bytes libngfem.so
+      // 4.73713 sec d4
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      p1 = c * REC::P1(x);
+
+      for (int i = 1; i <= n; i++)
+	{	
+	  values[i] = p1;
+	  EvalScaledNext (i+1, x, y, p1, p2);
+	}
+      */
+
+
+      /* 
+        // 54763104 bytes libngfem.so
+        // 4.62 sec
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      int i = 1;
+      p1 = c * REC::P1(x);
+      while (1)
+        {
+          values[i] = p1;
+          i++;
+          if (i > n) break;
+	  EvalScaledNext (i, x, y, p1, p2);          
+        }
+      */
+
+      /*  
+          // 55426878 bytes libngfem.so
+          // 4.72 sec
+      S p1, p2;
+      int i;
+      if (n % 2 == 0)
+        { 
+          values[0] = p2 = c * REC::P0(x);
+          p1 = c * REC::P1(x);
+          EvalScaledNext2(2, x, y, p2, p1);
+          i = 1;
+        }
+      else
+        { // odd
+          p1 = c * REC::P0(x);
+          p2 = c * REC::P1(x);
+          i = 0;
+        }
+      if (n <= 0) return;
+      
+      while (1)
+	{	
+          values[i] = p1;
+          values[i+1] = p2;
+          i += 2;
+          if (i > n) break;
+	  EvalScaledNext2 (i, x, y, p1, p2);
+	  EvalScaledNext2 (i+1, x, y, p2, p1);
+	}
+      */
     }
 
 

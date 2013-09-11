@@ -90,11 +90,11 @@ namespace ngfem
       if (order==0) order++;
   }
 
-
+  /*
   template class HCurlHighOrderFiniteElement<1>;
   template class HCurlHighOrderFiniteElement<2>;
   template class HCurlHighOrderFiniteElement<3>; 
-
+  */
   template class HCurlHighOrderFE<ET_SEGM>;
   template class HCurlHighOrderFE<ET_TRIG>;
   template class HCurlHighOrderFE<ET_QUAD>;

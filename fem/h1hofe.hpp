@@ -28,8 +28,8 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape,
             class BASE = T_ScalarFiniteElement< TSHAPES<ET>, ET> >
             
-  class H1HighOrderFE : public BASE, 
-                        public ET_trait<ET>
+
+  class H1HighOrderFE : public BASE, public ET_trait<ET>
   {
   protected:
 
@@ -37,8 +37,6 @@ namespace ngfem
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    // using ScalarFiniteElement<DIM>::eltype;
-
 
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_EDGE;
@@ -64,10 +62,10 @@ namespace ngfem
 
   public:
     /// minimal constructor, orders will be set later
-    NGS_DLL_HEADER H1HighOrderFE () { ; } 
+    INLINE H1HighOrderFE () { ; } 
 
     /// builds a functional element of order aorder.
-    NGS_DLL_HEADER H1HighOrderFE (int aorder)
+    INLINE H1HighOrderFE (int aorder)
     { 
       ndof = PolDimension (aorder);
       
@@ -79,7 +77,7 @@ namespace ngfem
       order = aorder;
     }
 
-    virtual NGS_DLL_HEADER ~H1HighOrderFE () { ; }
+    // virtual NGS_DLL_HEADER ~H1HighOrderFE () { ; }
 
     /// assignes vertex numbers
     template <typename TA> 
