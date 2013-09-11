@@ -88,7 +88,15 @@ namespace ngcomp
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///
+    template <ELEMENT_TYPE ET>
+    const FiniteElement & T_GetFE (int elnr, LocalHeap & lh) const;
+
+    ///
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    ///
+    template <ELEMENT_TYPE ET>
+    const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
+
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
