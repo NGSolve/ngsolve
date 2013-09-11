@@ -889,7 +889,6 @@ namespace ngbla
   {
     const TA & a;
   public:
-    enum { IS_LINEAR = TA::IS_LINEAR };
     MinusExpr (const TA & aa) : a(aa) { ; }
 
     auto operator() (int i) const -> decltype(-a(i)) { return -a(i); }
