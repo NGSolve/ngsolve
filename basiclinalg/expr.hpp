@@ -579,60 +579,6 @@ namespace ngbla
     {
       Assign<As> (v);
       return Spec();
-
-      /*
-#ifdef CHECK_RANGE
-      if (Height() != v.Height() || Width() != v.Width())
-	{
-	  throw MatrixNotFittingException ("operator=", 
-					   Height(), Width(),
-					   v.Height(), v.Width());
-	}
-#endif
-      if (T::COL_MAJOR)
-        {
-	  int h = Expr<T>::Height();
-	  int w = Expr<T>::Width();
-
-          for (int j = 0; j < w; j++)
-            for (int i = 0; i < h; i++)
-              Spec()(i,j) = v.Spec()(i,j);
-          return Spec();
-        }
-
-      if (TB::IS_LINEAR)
-	{
-	  if (T::IS_LINEAR)
-	    {
-	      int hw = Expr<T>::Height() * Expr<T>::Width();
-	      for (int i = 0; i < hw; i++)
-		Spec()(i) = v.Spec()(i);
-	    }
-	  else
-	    {
-	      int h = Expr<T>::Height();
-	      int w = Expr<T>::Width();
-	      for (int i = 0, k = 0; i < h; i++)
-		for (int j = 0; j < w; j++, k++)
-		  Spec()(i,j) = v.Spec()(k);
-	    }
-	}
-      else
-	{
-	  int h = Expr<T>::Height();
-	  int w = Expr<T>::Width();
-
-	  if (T::IS_LINEAR)
-	    for (int i = 0, k = 0; i < h; i++)
-	      for (int j = 0; j < w; j++, k++)
-		Spec()(k) = v.Spec()(i,j);
-	  else
-	    for (int i = 0; i < h; i++)
-	      for (int j = 0; j < w; j++)
-		Spec()(i,j) = v.Spec()(i,j);
-	}
-      return Spec();
-      */
     }
 
 
@@ -641,49 +587,17 @@ namespace ngbla
     {
       Assign<AsAdd> (v);
       return Spec();
-
-      /*
-#ifdef CHECK_RANGE
-      if (Height() != v.Height() || Width() != v.Width())
-	throw MatrixNotFittingException ("operator+=", 
-					 Height(), Width(),
-					 v.Height(), v.Width());
-#endif
-
-      if (TB::IS_LINEAR)
-	{
-	  if (T::IS_LINEAR)
-	    {
-	      int hw = Height() * Width(); 
-	      for (int i = 0; i < hw; i++)
-		Spec()(i) += v.Spec()(i);
-	    }
-	  else
-	    {
-	      int h = Height();
-	      int w = Width();
-	      for (int i = 0, k = 0; i < h; i++)
-		for (int j = 0; j < w; j++, k++)
-		  Spec()(i,j) += v.Spec()(k);
-	    }
-	}
-      else
-	{
-	  int h = Height();
-	  int w = Width();
-
-	  if (T::IS_LINEAR)
-	    for (int i = 0, k = 0; i < h; i++)
-	      for (int j = 0; j < w; j++, k++)
-		Spec()(k) += v.Spec()(i,j);
-	  else
-	    for (int i = 0; i < h; i++)
-	      for (int j = 0; j < w; j++)
-		Spec()(i,j) += v.Spec()(i,j);
-	}
-      return Spec();
-      */
     }
+
+    template<typename TB>
+    ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
+    {
+      Assign<AsSub> (v);
+      return Spec();
+    }
+
+
+
 
     template <typename TA, typename TB>
     T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
@@ -705,6 +619,9 @@ namespace ngbla
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
       return Spec();
     }
+
+
+
 
 
 
@@ -731,64 +648,6 @@ namespace ngbla
       return Spec();
     }
 
-
-    /*
-    MatExpr<T> & operator+= (double scal)
-    {
-      int hw = Height() * Width();
-      for (int i = 0; i < hw; i++)
-	Spec()(i) += scal;
-      return *this;
-    }
-    */
-
-    template<typename TB>
-    ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
-    {
-      Assign<AsSub> (v);
-      return Spec();
-
-      /*
-#ifdef CHECK_RANGE
-      if (Height() != v.Height() || Width() != v.Width())
-	throw MatrixNotFittingException ("operator-=", 
-					 Height(), Width(),
-					 v.Height(), v.Width());
-#endif
-      if (TB::IS_LINEAR)
-	{
-	  if (T::IS_LINEAR)
-	    {
-	      int hw = Height() * Width(); 
-	      for (int i = 0; i < hw; i++)
-		Spec()(i) -= v.Spec()(i);
-	    }
-	  else
-	    {
-	      int h = Height();
-	      int w = Width();
-	      for (int i = 0, k = 0; i < h; i++)
-		for (int j = 0; j < w; j++, k++)
-		  Spec()(i,j) -= v.Spec()(k);
-	    }
-	}
-      else
-	{
-	  int h = Height();
-	  int w = Width();
-
-	  if (T::IS_LINEAR)
-	    for (int i = 0, k = 0; i < h; i++)
-	      for (int j = 0; j < w; j++, k++)
-		Spec()(k) -= v.Spec()(i,j);
-	  else
-	    for (int i = 0; i < h; i++)
-	      for (int j = 0; j < w; j++)
-		Spec()(i,j) -= v.Spec()(i,j);
-	}
-      return Spec();
-      */
-    }
 
 
     template <class SCAL2>
@@ -1030,8 +889,7 @@ namespace ngbla
   {
     const TA & a;
   public:
-    // typedef typename TA::TELEM TELEM;
-
+    enum { IS_LINEAR = TA::IS_LINEAR };
     MinusExpr (const TA & aa) : a(aa) { ; }
 
     auto operator() (int i) const -> decltype(-a(i)) { return -a(i); }
@@ -1041,7 +899,6 @@ namespace ngbla
 
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
-
 
   template <typename TA>
   inline MinusExpr<TA>
@@ -1063,7 +920,6 @@ namespace ngbla
     const TA & a;
     TS s;
   public:
-
     enum { IS_LINEAR = TA::IS_LINEAR };
 
     ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
@@ -1155,9 +1011,7 @@ namespace ngbla
     { return a[i] * b(i); }  
 
     auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
-    { 
-      return a[i] * b(i,j);
-    }
+    { return a[i] * b(i,j); }
 
     const DiagMat<H,SCALA> & A() const { return a; }
     const TB & B() const { return b; }
@@ -1165,9 +1019,6 @@ namespace ngbla
     int Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
-
-
-
 
 
   template <typename TA, typename TB>
@@ -1194,18 +1045,7 @@ namespace ngbla
   {
     const TA & a;
   public:
-    // typedef typename TA::TELEM TELEM;
-
     TransExpr (const TA & aa) : a(aa) { ; }
-
-    /*
-    template<typename TB>
-    const TransExpr & operator= (const Expr<TB> & v) const
-    {
-      const_cast<TransExpr*> (this) -> MatExpr<TransExpr<TA>>::operator= (v);
-      return *this;
-    }
-    */
 
     int Height() const { return a.Width(); }
     int Width() const { return a.Height(); }
