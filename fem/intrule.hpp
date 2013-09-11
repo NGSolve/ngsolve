@@ -322,18 +322,18 @@ namespace ngfem
        Obtains a reference to the precomputed integration rule
     */
     NGS_DLL_HEADER IntegrationRule (ELEMENT_TYPE eltype, int order);
+    
+    IntegrationRule (int asize, IntegrationPoint * pip)
+      : Array<IntegrationPoint> (asize, pip) { ; }
 
 
     NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
-    {
-      throw Exception ("should not call copy-constructor of ir\n");
-    }
+      : Array<IntegrationPoint> (ir2.Size(), &ir2[0])
+    { ; }
 
     NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
       : Array<IntegrationPoint> (asize, lh)
-    {
-      ;
-    }
+    { ; }
 
     NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
 
@@ -348,6 +348,11 @@ namespace ngfem
 
     /// number of integration points
     int GetNIP() const { return Size(); }
+
+    IntegrationRule Range (int first, int next) const
+    {
+      return IntegrationRule (next-first, &(*this)[first]);
+    }
   };
 
   inline ostream & operator<< (ostream & ost, const IntegrationRule & ir)
@@ -777,7 +782,7 @@ namespace ngfem
   class NGS_DLL_HEADER BaseMappedIntegrationRule 
   { 
   protected:
-    const IntegrationRule & ir;
+    IntegrationRule ir;
     const ElementTransformation & eltrans;
     char * baseip;
     int incr;
@@ -785,7 +790,7 @@ namespace ngfem
   public:
     BaseMappedIntegrationRule (const IntegrationRule & air,
 			       const ElementTransformation & aeltrans)
-      : ir(air), eltrans(aeltrans) { ; }
+      : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
 
     int Size() const { return ir.Size(); }
     const IntegrationRule & IR() const { return ir; }
@@ -798,7 +803,7 @@ namespace ngfem
   template <int DIM_ELEMENT, int DIM_SPACE>
   class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
   {
-    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > sips;
+    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > mips;
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & aeltrans, 
@@ -808,25 +813,46 @@ namespace ngfem
 			   const ElementTransformation & eltrans, 
 			   int dummy,
 			   LocalHeap & lh)
-      : BaseMappedIntegrationRule (ir, eltrans), sips(ir.GetNIP(), lh)
+      : BaseMappedIntegrationRule (ir, eltrans), mips(ir.GetNIP(), lh)
     {
-      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&sips[0]);
-      incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+    }
+
+    MappedIntegrationRule (const IntegrationRule & air, 
+			   const ElementTransformation & aeltrans, 
+                           FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > amips)
+      : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
+    {
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
     }
     
     MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
     { 
-      return sips[i]; 
+      return mips[i]; 
+    }
+
+    MappedIntegrationRule Range(int first, int next)
+    {
+      return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
   };
 
+
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & ir)
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      ost << ir[i] << endl;
+    return ost;
+  }
+
+
+
+
 #define SpecificIntegrationPoint MappedIntegrationPoint 
-  /*
-#define BaseSpecificIntegrationPoint BaseMappedIntegrationPoint 
-#define DimSpecificIntegrationPoint DimMappedIntegrationPoint 
-  */
-
-
 
 }
 

@@ -41,6 +41,16 @@ namespace ngfem
       ;
     }
 
+    /// tbd
+    template <typename FEL, typename MIR, typename MAT>
+    static void GenerateMatrixIR (const FEL & fel, const MIR & mir,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      for (int i = 0; i < mir.Size(); i++)
+        DOP::GenerateMatrix (fel, mir[i], mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT), lh);
+    }
+
+
     /**
        Applies the B-matrix.
        Computes matrix-vector product with the B-matrix
@@ -203,10 +213,10 @@ namespace ngfem
     int dim;
     int comp;
   public:
-    NGS_DLL_HEADER BlockDifferentialOperator (const DifferentialOperator & adiffop, 
+    BlockDifferentialOperator (const DifferentialOperator & adiffop, 
 			       int adim, int acomp = -1)
       : diffop(adiffop), dim(adim), comp(acomp) { ; }
-
+    
     /// dimension of range
     virtual int Dim() const { return dim*diffop.Dim(); }
     virtual bool Boundary() const { return diffop.Boundary(); }
@@ -236,7 +246,7 @@ namespace ngfem
     enum { DIM         = DIFFOP::DIM };
 
   public:
-        NGS_DLL_HEADER T_DifferentialOperator() { ; }
+    NGS_DLL_HEADER T_DifferentialOperator() { ; }
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }

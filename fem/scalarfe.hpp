@@ -78,6 +78,12 @@ namespace ngfem
                                    SliceMatrix<> dshape) const;
 
 
+    NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
+                                   SliceMatrix<> dshapes) const;
+
+
+
     /*
     template <typename ANY_MIP, typename T>
     INLINE void CalcMappedDShape (const ANY_MIP & mip, MatExpr<T> & mat) const

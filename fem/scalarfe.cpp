@@ -126,6 +126,18 @@ namespace ngfem
         dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
       }
   }
+
+
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
+                    SliceMatrix<> dshapes) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
+  }
+
  
   template<int D>
   void ScalarFiniteElement<D> :: 

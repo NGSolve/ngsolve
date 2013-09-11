@@ -446,20 +446,23 @@ namespace ngfem
   class ElasticityIntegrator 
     : public T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> >
   {
+    typedef T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
-    ///
     ElasticityIntegrator (CoefficientFunction * coefe,
 			  CoefficientFunction * coefnu)
-      : T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> > 
-    (ElasticityDMat<D> (coefe, coefnu))
+      : BASE(ElasticityDMat<D> (coefe, coefnu))
     { ; }
-  
+
+    ElasticityIntegrator (Array<CoefficientFunction*> & coeffs)
+      : BASE(ElasticityDMat<D> (coeffs[0], coeffs[1]))
+    { ; }
+
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new ElasticityIntegrator (coeffs[0], coeffs[1]);
     }
-
-
+    */
 
     ///
     virtual string Name () const { return "Elasticity"; }

@@ -164,13 +164,15 @@ namespace ngfem
   MappedIntegrationRule (const IntegrationRule & ir, 
 			 const ElementTransformation & aeltrans, 
 			 LocalHeap & lh)
-    : BaseMappedIntegrationRule (ir, aeltrans), sips(ir.GetNIP(), lh)
+    : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
-    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&sips[0]);
-    incr = (char*)(void*)(&sips[1]) - (char*)(void*)(&sips[0]);
+    // static Timer t ("mapped-IR"); RegionTimer reg(t);
+
+    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+    incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
 
     for (int i = 0; i < ir.GetNIP(); i++)
-      new (&sips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
+      new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
 
     eltrans.CalcMultiPointJacobian (ir, *this);
   }

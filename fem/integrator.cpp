@@ -134,7 +134,11 @@ namespace ngfem
       return curve_ips.Size();
   }
   
-
+  void Integrator :: SetFileName(const string & filename)
+  {
+    cerr << "SetFileName not defined for Integrator base class" << endl;
+  }
+  
 
   BilinearFormIntegrator :: BilinearFormIntegrator () throw()
   {

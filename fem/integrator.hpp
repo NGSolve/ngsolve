@@ -172,10 +172,7 @@ namespace ngfem
     virtual int CacheComp(void) const
     { return cachecomp; }
 
-    virtual void SetFileName(const string & filename)
-    {
-      cerr << "SetFileName not defined for Integrator base class" << endl;
-    }
+    virtual void SetFileName(const string & filename);
   };
 
 

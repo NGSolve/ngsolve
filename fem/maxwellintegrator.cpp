@@ -19,6 +19,7 @@ int link_maxwellintegrator;
   
 namespace ngfem
 {
+  /*
   template <int D, typename FEL>
   CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>
@@ -29,7 +30,6 @@ namespace ngfem
   CurlCurlEdgeIntegrator<D,FEL> :: CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> (coeffs)
   { ; }
-  
 
 
   template <int D, typename FEL>
@@ -41,8 +41,8 @@ namespace ngfem
   MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (coeffs)
   { ; }
+  */
   
-
 
   CurlCurlBoundaryEdgeIntegrator ::
   CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
@@ -99,11 +99,6 @@ namespace ngfem
 
 
 
-  template class MassEdgeIntegrator<2>;
-  template class MassEdgeIntegrator<3>;
-
-  template class CurlCurlEdgeIntegrator<2>;
-  template class CurlCurlEdgeIntegrator<3>;
 
   template class RobinEdgeIntegrator<2>;
   template class RobinEdgeIntegrator<3>;
@@ -157,29 +152,13 @@ namespace ngfem
 					MassEdgeOrthoIntegrator<2>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 3, 3,
 					MassEdgeOrthoIntegrator<3>::Create);
-      /*
-      GetIntegrators().AddBFIntegrator ("robinedge", 3, 1,
-					RobinEdgeIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("robinedge", 2, 1,
-					RobinEdgeIntegrator<2>::Create);      
-      */
+
       GetIntegrators().AddBFIntegrator ("massedgeanisotropic", 3, 6,
 					MassEdgeAnisotropicIntegrator<3>::Create);
 
-      /*
-      GetIntegrators().AddLFIntegrator ("neumannedge", 3, 3,
-					NeumannEdgeIntegrator<3>::Create);
-      GetIntegrators().AddLFIntegrator ("neumannedge", 2, 2,
-					NeumannEdgeIntegrator<2>::Create);
-      */
       GetIntegrators().AddLFIntegrator ("curlboundaryedge", 3, 1,
 					CurlBoundaryEdgeIntegrator<>::Create);
-      /*
-      GetIntegrators().AddLFIntegrator ("curledge", 2, 1,
-					CurlEdgeIntegrator<2>::Create); 
-      GetIntegrators().AddLFIntegrator ("curledge", 3, 3,
-					CurlEdgeIntegrator<3>::Create);
-      */
+
       GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 3, 1,
 					TangentialSourceEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 2, 1,
