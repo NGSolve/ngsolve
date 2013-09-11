@@ -8,7 +8,7 @@ bin_PROGRAMS = ngs
 
 libngsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
 numproc.cpp evplapack.cpp hyperbolic.cpp  \
-nptests.cpp numprocee.cpp pde.cpp pdeparser.cpp
+numprocee.cpp pde.cpp pdeparser.cpp
 
 if NGSGUI
   libngsolve_la_SOURCES += ngsolve.cpp shapetester.cpp
