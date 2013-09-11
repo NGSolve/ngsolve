@@ -125,25 +125,38 @@ public:
 #define __restrict__ __restrict
 #endif
 
-  template <int M, int M2 = M> NGS_DLL_HEADER
-void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
-
-template <int M, int M2 = M> NGS_DLL_HEADER
-void FastMat (int n, Complex * ba, double * pb, Complex * pc);
-
-template <int M, int M2 = M> NGS_DLL_HEADER
-void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
+  /*
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
   
+  template <int M, int M2 = M> NGS_DLL_HEADER
+  void FastMat (int n, Complex * ba, double * pb, Complex * pc);
+  
+  template <int M, int M2 = M> NGS_DLL_HEADER
+  void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
+  */
 
-template <int H, int DIST, typename T1, typename T2, typename T3>
-void FastMat (FlatMatrixFixHeight<H,T1,DIST> a,
-              FlatMatrixFixHeight<H,T2,DIST> b,
-              FlatMatrix<T3> c)
-{
-  FastMat<H,DIST> (a.Width(), &a(0,0), &b(0,0), &c(0,0));
-}
-              
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
 
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, Complex * ba, double * pb, Complex * pc);
+
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, Complex * ba, Complex * pb, Complex * pc);
+
+
+  
+  
+  template <int H, int DIST, typename T1, typename T2, typename T3>
+  void FastMat (FlatMatrixFixHeight<H,T1,DIST> a,
+                FlatMatrixFixHeight<H,T2,DIST> b,
+                FlatMatrix<T3> c)
+  {
+    FastMat<H> (a.Width(), DIST, &a(0,0), &b(0,0), &c(0,0));
+  }
+  
+  
 
 
  
