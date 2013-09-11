@@ -339,7 +339,7 @@ namespace ngfem
       }
   }
   
-
+  template class HCurlFiniteElement<0>;
   template class HCurlFiniteElement<1>;
   template class HCurlFiniteElement<2>;
   template class HCurlFiniteElement<3>;

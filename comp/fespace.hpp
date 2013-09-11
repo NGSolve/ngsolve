@@ -432,6 +432,30 @@ namespace ngcomp
 
     bool timing;
     void Timing () const;
+
+    
+  protected:
+    template <template <ELEMENT_TYPE ET> class FE>
+    void SetDummyFE ()
+    {
+      delete dummy_tet;
+      delete dummy_pyramid;
+      delete dummy_prism;
+      delete dummy_hex;
+      delete dummy_trig;
+      delete dummy_quad;
+      delete dummy_segm;
+      delete dummy_point;
+      dummy_tet = new FE<ET_TET>();
+      dummy_pyramid = new FE<ET_PYRAMID>();
+      dummy_prism = new FE<ET_PRISM>();
+      dummy_hex = new FE<ET_HEX>();
+      dummy_trig = new FE<ET_TRIG>();
+      dummy_quad = new FE<ET_QUAD>();
+      dummy_segm = new FE<ET_SEGM>();
+      dummy_point = new FE<ET_POINT>();
+    }
+
   };
 
 

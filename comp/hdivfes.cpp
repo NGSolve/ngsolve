@@ -51,6 +51,8 @@ namespace ngcomp
     trig    = new FE_RTTrig0;
     segm    = new HDivNormalSegm0;
     
+    SetDummyFE<HDivDummyFE> ();
+
     if (ma.GetDimension() == 2)
     {
       Array<CoefficientFunction*> coeffs(1);
