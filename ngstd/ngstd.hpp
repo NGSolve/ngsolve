@@ -114,6 +114,7 @@ namespace ngstd
 #include "templates.hpp"
 #include "exception.hpp"
 #include "localheap.hpp"
+#include "profiler.hpp"
 
 #include "array.hpp"
 #include "table.hpp"
@@ -130,7 +131,6 @@ namespace ngstd
 #include "autodiffdiff.hpp"
 #include "polorder.hpp"
 #include "stringops.hpp"
-#include "profiler.hpp"
 #include "statushandler.hpp"
 
 #include "mpiwrapper.hpp"
