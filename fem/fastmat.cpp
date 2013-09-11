@@ -62,15 +62,16 @@ namespace ngfem {
 #endif
 
 
-  template <int M, int M2> NGS_DLL_HEADER
-  void FastMat (int n, Complex * ba, Complex *  pb, Complex * pc);
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, Complex * ba, Complex *  pb, Complex * pc);
 
-  template <int M, int M2> NGS_DLL_HEADER
-  void FastMat (int n, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
   
   
-  template <int M, int M2> 
+  template <int M> 
   void FastMat (int n, 
+                int M2,
                 double * __restrict__ pa, 
 		double * __restrict__ pb, 
 		double * __restrict__ pc)
@@ -975,8 +976,8 @@ namespace ngfem {
 #endif
 
 
-  template <int M, int M2> 
-  void FastMat (int n, Complex * pa, Complex * pb, Complex * pc)
+  template <int M> 
+  void FastMat (int n, int M2, Complex * pa, Complex * pb, Complex * pc)
   {
     static Timer timer ("Fastmat, complex", 2);
     RegionTimer reg (timer);
@@ -1026,8 +1027,8 @@ namespace ngfem {
 
 
 
-  template <int M, int M2> 
-  void FastMat (int n, Complex * pa, double * pb, Complex * pc)
+  template <int M> 
+  void FastMat (int n, int M2, Complex * pa, double * pb, Complex * pc)
   {
     static Timer timer ("Fastmat, complex-double", 2);
     RegionTimer reg (timer);
@@ -1071,86 +1072,86 @@ namespace ngfem {
 
 
 
-  template NGS_DLL_HEADER void FastMat<1,1> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<2,2> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<3,3> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<4,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<5,5> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<6,6> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<7,7> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<8,8> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<9,9> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<10,10> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<1> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<2> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<3> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<4> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<5> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<6> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<7> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<8> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<9> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<10> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
 
 
 
-  template NGS_DLL_HEADER void FastMat<25,25> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<26,26> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<27,27> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<28,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<29,29> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<30,30> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<40,40> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<25> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<26> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<27> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<29> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<30> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<40> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
 
-
+  /*
   // roundup
-  template NGS_DLL_HEADER void FastMat<1,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<1,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<2,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<2,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<3,4> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<3,8> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<3,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<4,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<6,8> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<6,12> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<6,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<6,36> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<8,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<12,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<12,36> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<24,36> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<26,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<27,28> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<29,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<30,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<1,4> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<1,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<2,4> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<2,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<3,4> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<3,8> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<3,32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<4,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<6,8> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<6,12> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<6,32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<6,36> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<8,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<12,32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<12,36> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<24,36> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<26,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<27,28> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<29,32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<30,32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  */
+
+
+
+  template NGS_DLL_HEADER void FastMat<12> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<18> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<24> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<36> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<48> (int n, int M2, double * __restrict__  pa, double * __restrict__  pb, double * __restrict__  pc);
 
 
 
 
-  template NGS_DLL_HEADER void FastMat<12,12> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<18,18> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<24,24> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<32,32> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<36,36> (int n, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
-  template NGS_DLL_HEADER void FastMat<48,48> (int n, double * __restrict__  pa, double * __restrict__  pb, double * __restrict__  pc);
+  template NGS_DLL_HEADER void FastMat<1> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<2> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<4> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<5> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<9> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
 
 
+  template NGS_DLL_HEADER void FastMat<25> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<26> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<27> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<28> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<29> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<30> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
 
 
-  template NGS_DLL_HEADER void FastMat<1,1> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<2,2> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<3,3> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<4,4> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<5,5> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,6> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<9,9> (int n, Complex * pa, Complex * pb, Complex * pc);
-
-
-  template NGS_DLL_HEADER void FastMat<25,25> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<26,26> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<27,27> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<28,28> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<29,29> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<30,30> (int n, Complex * pa, Complex * pb, Complex * pc);
-
-
-  template NGS_DLL_HEADER void FastMat<12,12> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<18,18> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<24,24> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<32,32> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<36,36> (int n, Complex * pa, Complex * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<48,48> (int n, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<12> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<18> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<24> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<32> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<36> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<48> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
 
 
 
@@ -1159,54 +1160,56 @@ namespace ngfem {
 
 
 
-  template NGS_DLL_HEADER void FastMat<1,1> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<2,2> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<3,3> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<4,4> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<5,5> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,6> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<9,9> (int n, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<1> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<2> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<4> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<5> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<8> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<9> (int n, int M2, Complex * pa, double * pb, Complex * pc);
 
 
-  template NGS_DLL_HEADER void FastMat<25,25> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<26,26> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<27,27> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<28,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<29,29> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<30,30> (int n, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<25> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<26> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<27> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<29> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<30> (int n, int M2, Complex * pa, double * pb, Complex * pc);
 
 
-  template NGS_DLL_HEADER void FastMat<12,12> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<18,18> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<24,24> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<32,32> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<36,36> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<48,48> (int n, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<12> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<18> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<24> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<36> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<48> (int n, int M2, Complex * pa, double * pb, Complex * pc);
 
+  /*
   // roundup
-  template NGS_DLL_HEADER void FastMat<1,4> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<1,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<2,4> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<2,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<3,4> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<3,8> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<3,32> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<4,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,8> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,12> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,32> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<6,36> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<8,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<12,32> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<12,36> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<24,36> (int n, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<1,4> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<1,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<2,4> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<2,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3,4> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3,8> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<3,32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<4,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6,8> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6,12> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6,32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<6,36> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<8,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<12,32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<12,36> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<24,36> (int n, int M2, Complex * pa, double * pb, Complex * pc);
 
-  template NGS_DLL_HEADER void FastMat<25,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<26,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<27,28> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<29,32> (int n, Complex * pa, double * pb, Complex * pc);
-  template NGS_DLL_HEADER void FastMat<30,32> (int n, Complex * pa, double * pb, Complex * pc);
-
+  template NGS_DLL_HEADER void FastMat<25,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<26,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<27,28> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<29,32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<30,32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  */
 
 
 
