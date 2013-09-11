@@ -27,7 +27,7 @@ namespace ngfem
     using BASE::ndof;
     using BASE::order;
 
-    using BASE::discontinuous;
+    // using BASE::xx_discontinuous;
 
   public:
 
