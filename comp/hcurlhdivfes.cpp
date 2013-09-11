@@ -43,6 +43,8 @@ namespace ngcomp
     segm    = new FE_NedelecSegm1;
     hex     = new FE_NedelecHex1; 
 
+    SetDummyFE<HCurlDummyFE> ();
+
     prol = new EdgeProlongation (*this);
     order = 1;
 

@@ -218,7 +218,10 @@ namespace ngfem
 
 
 
-template class HDivFiniteElement<1>;
+  template class HDivFiniteElement<0>;
+  template class HDivFiniteElement<1>;
+  template class HDivFiniteElement<2>;
+  template class HDivFiniteElement<3>;
 
   
 
