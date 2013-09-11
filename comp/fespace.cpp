@@ -458,23 +458,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
         for (int i = 0; i < ma.GetNE(vb); i++)
-          cntcol[col[i]]++;
+          if (DefinedOn (ElementId(vb,i))) 
+            cntcol[col[i]]++;
 
         if (vb == VOL)
           {
             delete element_coloring;
             element_coloring = new Table<int> (cntcol);
             cntcol = 0;
-            for (int i = 0; i < ma.GetNE(); i++)
-              (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
+            for (int i = 0; i < ma.GetNE(vb); i++)
+              if (DefinedOn (ElementId(vb,i))) 
+                (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
           }
         else
           {
             delete selement_coloring;
             selement_coloring = new Table<int> (cntcol);
             cntcol = 0;
-            for (int i = 0; i < ma.GetNSE(); i++)
-              (*selement_coloring)[col[i]][cntcol[col[i]]++] = i;
+            for (int i = 0; i < ma.GetNE(vb); i++)
+              if (DefinedOn (ElementId(vb,i))) 
+                (*selement_coloring)[col[i]][cntcol[col[i]]++] = i;
           }
 
 
