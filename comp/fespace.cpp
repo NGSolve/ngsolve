@@ -1117,6 +1117,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     point = new FE_Point;
 
+    SetDummyFE<ScalarDummyFE> ();
+
+
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
@@ -1505,6 +1508,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 6;
     }
 
+    SetDummyFE<ScalarDummyFE> ();
 
     if (ma.GetDimension() == 2)
     {

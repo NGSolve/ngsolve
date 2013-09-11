@@ -10,6 +10,16 @@
 namespace ngfem
 {
 
+  template <ELEMENT_TYPE ET>
+  class HDivDummyFE : public HDivFiniteElement<ET_trait<ET>::DIM>
+  {
+  public:
+    HDivDummyFE() : HDivFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
+    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    virtual void CalcShape (const IntegrationPoint & ip, 
+			    FlatMatrixFixWidth<ET_trait<ET>::DIM> shape) const { ; }
+  };
+
 
   ///
   class FE_RTTrig0 : public HDivFiniteElement<2>
