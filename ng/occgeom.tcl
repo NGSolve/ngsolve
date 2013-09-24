@@ -203,7 +203,8 @@ proc occdialog { } {
 	    occdialogbuildtree
 
 	    set hlist [$w.mtre subwidget hlist]
-
+            $hlist configure -selectforeground black
+            $hlist configure -selectbackground grey
 
 	    set solname {""}
 
