@@ -11,7 +11,6 @@ set oldmousey 0
 # use this one for Togl 2.0
 # if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true -create init  -display draw -reshape reshape  }] } {    
 
-
 if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect true }] } {    puts "no OpenGL" 
 } {
     #
@@ -104,11 +103,11 @@ bind . <Shift-Down> { Ng_MouseMove 0 0 0 10 move; redraw }
 bind . <Control-Up> { Ng_MouseMove 0 0 0 -10 zoom; redraw }
 bind . <Control-Down> { Ng_MouseMove 0 0 0 10 zoom; redraw }
 
-bind all <Button-4> \
+bind . <Button-4> \
    {event generate [focus -displayof %W] <MouseWheel> -delta  120}
 
- bind all <Button-5> \
+bind . <Button-5> \
    {event generate [focus -displayof %W] <MouseWheel> -delta -120}
 
-bind all <MouseWheel> { Ng_MouseMove 0 0 0 [expr {%D/-5}] zoom; redraw }
+bind . <MouseWheel> { Ng_MouseMove 0 0 0 [expr {%D/-5}] zoom; redraw }
 
