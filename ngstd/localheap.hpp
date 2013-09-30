@@ -155,7 +155,7 @@ namespace ngstd
 
     size_t UsedSize ()
     {
-      for (size_t i = totsize-1; i >= 0; i--)
+      for (size_t i = totsize-1; i != 0; i--)
         if (data[i] != 47) return i;
       return 0;
     }

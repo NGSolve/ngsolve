@@ -40,7 +40,7 @@ namespace ngfem
   protected:
     typedef BASE T_IMPL;
     typedef SHAPES T_SHAPES;
-
+    
     using ET_trait<ET>::DIM;
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::PolDimension;

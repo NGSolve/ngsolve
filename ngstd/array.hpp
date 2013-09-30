@@ -56,6 +56,8 @@ namespace ngstd
   public:
     AOWrapper (const T & aar) : ar(aar) { ; }
     operator const T& () const { return ar; }
+    int Size() { return ar.Size(); }
+    auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
   };
 
   template <typename T>
@@ -424,16 +426,26 @@ namespace ngstd
       allocsize = asize; 
       ownmem = 0;
     }
-
     
     /// array copy 
-    explicit Array (const Array<T> & a2)
-      : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : 0)
+    explicit Array (const Array & a2)
+      : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : NULL)
     {
       allocsize = size;
       ownmem = 1;
       for (int i = 0; i < size; i++)
         (*this)[i] = a2[i];
+    }
+
+    template <typename TA, typename TA2>
+    explicit Array (const BaseArrayObject<TA,TA2> & a2)
+      : FlatArray<T,TSIZE> (a2.Spec().Size(), 
+                            a2.Spec().Size() ? new T[a2.Spec().Size()] : NULL)
+    {
+      allocsize = size;
+      ownmem = 1;
+      for (int i = 0; i < size; i++)
+        (*this)[i] = a2.Spec()[i];
     }
 
     /// array merge-copy
@@ -910,6 +922,36 @@ namespace ngstd
   }
 
 
+
+
+
+  template <typename T>
+  INLINE T xxxRemoveRef (const T & x)
+  {
+    return x;
+  }
+
+  template <class TA1, class TA2> 
+  class SumArray : public BaseArrayObject<SumArray<TA1,TA2>>
+  {
+    const TA1 & a1;
+    const TA2 & a2;
+  public:
+    SumArray (const TA1 & aa1, const TA2 & aa2) : a1(aa1), a2(aa2) { ; }
+    int Size() const { return a1.Size()+a2.Size(); }
+    auto operator[] (int i) const -> decltype (xxxRemoveRef (a1[0])) 
+    {
+      return (i < a1.Size()) ? a1[i] : a2[i-a1.Size()];
+    }
+  };
+
+  template <class TA1, class TA2> 
+  SumArray<TA1,TA2> operator+ (const BaseArrayObject<TA1> & a1,
+                               const BaseArrayObject<TA2> & a2)
+  {
+    return SumArray<TA1,TA2> (a1.Spec(), a2.Spec());
+  }
+                               
 }
 
 

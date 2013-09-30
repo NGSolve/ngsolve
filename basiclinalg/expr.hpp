@@ -352,12 +352,14 @@ namespace ngbla
       return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
     }
 
-    auto Rows (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
+    SubMatrixExpr<T>
+    Rows (IntRange range) 
     { 
       return Rows (range.First(), range.Next());
     }
 
-    auto Cols (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
+    SubMatrixExpr<T>
+    Cols (IntRange range) 
     { 
       return Cols (range.First(), range.Next());
     }
@@ -945,7 +947,7 @@ namespace ngbla
   {
     return ScaleExpr<TA, Complex> (a.Spec(), b);
   }
-
+  
   template <int D, typename TAD, typename TA>
   INLINE ScaleExpr<TA, AutoDiff<D,TAD> > 
   operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
@@ -985,7 +987,9 @@ namespace ngbla
           return sum;
 	}
 
-      return decltype(a(0,0)*b(0,0)) (0);
+      decltype (a(0,0)*b(0,0)) sum (0);
+      return sum;
+      // return decltype(a(0,0)*b(0,0)) (0);
       // return 0;
     }
 

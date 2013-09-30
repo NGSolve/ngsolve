@@ -947,7 +947,8 @@ namespace ngbla
       return SliceMatrixColMajor<T> (next-first, w, SLICE, data+first);
     }
 
-    auto Rows (IntRange range) -> decltype (this->Rows (range.First(), range.Next()))
+    const SliceMatrixColMajor<T>    
+    Rows (IntRange range) // -> decltype (this->Rows (range.First(), range.Next()))
     { 
       return Rows (range.First(), range.Next());
     }

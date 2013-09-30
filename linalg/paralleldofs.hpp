@@ -31,6 +31,9 @@ namespace ngla
     
     /// dof 2 procs
     Table<int> * dist_procs;
+
+    /// all procs with connected dofs
+    Array<int> all_dist_procs;
     
     /// mpi-datatype to send exchange dofs
     Array<MPI_Datatype> mpi_t;
@@ -144,6 +147,9 @@ namespace ngla
 
     FlatArray<int> GetDistantProcs (int dof) const
     { return (*dist_procs)[dof]; }
+
+    FlatArray<int> GetDistantProcs () const
+    { return all_dist_procs; }
 
     bool IsMasterDof ( int localdof ) const
     { return ismasterdof.Test(localdof); }

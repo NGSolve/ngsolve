@@ -1,10 +1,3 @@
-#ifdef JS
-#include "/home/joachim/ngsolve/ngsolve/gold/tscalarfe_impl.hpp"
-#endif
-
-
-
-
 #ifndef FILE_TSCALARFE_IMPL
 #define FILE_TSCALARFE_IMPL
 
