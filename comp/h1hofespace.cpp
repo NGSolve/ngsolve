@@ -604,7 +604,8 @@ namespace ngcomp
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
     hofe -> SetVertexNumbers (ngel.vertices);
-    
+    // Array<int> vnums = mesh.GetElementVertices (elnr);
+
     switch (int(ET_trait<ET>::DIM))
       {
       case 1:

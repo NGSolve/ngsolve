@@ -100,6 +100,10 @@ namespace ngla
 			    mpi_type, &mpi_t[dest]);
 	  MPI_Type_commit (&mpi_t[dest]);
 	}
+
+      for (int i = 0; i < ntasks; i++)
+        if (IsExchangeProc (i))
+          all_dist_procs.Append (i);
     }
 
 

@@ -42,7 +42,7 @@ namespace ngcomp
 
   void Preconditioner :: Test () const
   {
-    cout << "Compute eigenvalues" << endl;
+    cout << IM(1) << "Compute eigenvalues" << endl;
     const BaseMatrix & amat = GetAMatrix();
     const BaseMatrix & pre = GetMatrix();
     int eigenretval;
@@ -56,9 +56,9 @@ namespace ngcomp
         eigen.SetPrecision(1e-15);
         eigenretval = eigen.Calc();
         eigen.PrintEigenValues (*testout);
-        (cout) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
-        (cout) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
-        (cout) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
+        cout << IM(1) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
+        cout << IM(1) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
+        cout << IM(1) << " Condition   " << eigen.MaxEigenValue()/eigen.EigenValue(1) << endl; 
         (*testout) << " Min Eigenvalue : "  << eigen.EigenValue(1) << endl; 
         (*testout) << " Max Eigenvalue : " << eigen.MaxEigenValue() << endl; 
         

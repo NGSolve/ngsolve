@@ -1896,6 +1896,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (int i = 0; i < ctofdof.Size(); i++)
           if (ctofdof[i] & LOCAL_DOF)
             external_free_dofs.Clear(i);
+
+
+        if (print)
+          (*testout) << "compound fespace freedofs:" << endl
+                     << free_dofs << endl;
+
       }
   }
 

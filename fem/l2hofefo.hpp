@@ -40,8 +40,8 @@ namespace ngfem
   class L2HighOrderFEFO : public BASE
   {
   protected:
-    using BASE::T_IMPL;
-    using BASE::T_SHAPES;
+    using typename BASE::T_IMPL;
+    using typename BASE::T_SHAPES;
     typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
 
 

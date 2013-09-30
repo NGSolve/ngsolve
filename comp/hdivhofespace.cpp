@@ -150,23 +150,11 @@ namespace ngcomp
 
   }
   
-  HDivHighOrderFESpace:: ~HDivHighOrderFESpace ()
+  HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
   {
     ;
   }
 
-  /*
-  FESpace * HDivHighOrderFESpace ::
-  Create (const MeshAccess & ma, const Flags & flags)
-  {
-    int order = int (flags.GetNumFlag("order",0));
-
-    if (order < 0) 
-      return new RaviartThomasFESpace (ma, flags, true);
-    else
-      return new HDivHighOrderFESpace (ma, flags, true);
-  }
-  */
 
   void HDivHighOrderFESpace :: Update(LocalHeap & lh)
   {

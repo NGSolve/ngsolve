@@ -736,17 +736,16 @@ namespace ngla
 
     VT_OFF();
 
-
     /*
     *testout << "mumps matrix: n = " << num_globdofs << ", nz = " << nze << endl;
+    *testout << "loc2glob = " << loc2glob << endl;
     for (int i = 0; i < nze; i++)
       *testout << "a(" << row_indices[i] << "," << col_indices[i] << ") = " << matrix[i] << endl;
       */
-
     
     mumps_id.job = JOB_INIT; 
     mumps_id.par = (ntasks == 1) ? 1 : 0;
-    mumps_id.sym = symmetric ? 1 : 0;
+    mumps_id.sym = symmetric ? 2 : 0;    // 1 .. spd, 2 .. general symmetric
     //mumps_id.comm_fortran=USE_COMM_WORLD;
     mumps_id.comm_fortran = MPI_Comm_c2f (ngs_comm);
 

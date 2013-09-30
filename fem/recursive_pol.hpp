@@ -1678,7 +1678,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaled (n, y-(1-x-y), 1-x, 
-         SBLambda ([&] (int i, S val) ALWAYS_INLINE
+           SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
@@ -1698,7 +1698,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaledMult (n, y-(1-x-y), t-x, c,
-         SBLambda ([&] (int i, S val) ALWAYS_INLINE
+            SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);
