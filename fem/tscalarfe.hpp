@@ -33,35 +33,35 @@ namespace ngfem
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
-    virtual void CalcShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const;
     
-    virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
     
-    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
     
-    virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const;
-    virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
+    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const;
+    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
 
-    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
 
-    virtual void CalcDShape (const IntegrationPoint & ip, 
+    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const;
-    
+/*    
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
-
+                       */
     /*
     virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 				   FlatMatrixFixWidth<DIM> dshape) const;
     */
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
-    virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
+    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
-    virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
+    NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     
   protected:
     template<typename Tx, typename TFA>  
