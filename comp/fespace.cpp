@@ -218,6 +218,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     integrator = NULL;
     boundary_integrator = NULL;
     low_order_space = NULL;
+    prol = NULL;
 
 
     element_coloring = NULL;
