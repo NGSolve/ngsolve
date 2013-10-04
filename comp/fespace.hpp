@@ -66,7 +66,7 @@ namespace ngcomp
     bool print; 
 
     /// prolongation operators between multigrid levels
-    ngmg::Prolongation * prol = NULL;
+    ngmg::Prolongation * prol;// = NULL;
     /// highest multigrid-level for which Update was called (memory allocation)
     int level_updated;
 
@@ -100,11 +100,11 @@ namespace ngcomp
     /// Reference - element (low order only)
     FiniteElement * trig; // = NULL;
     /// Reference - element (low order only)
-    FiniteElement * quad = NULL;
+    FiniteElement * quad;// = NULL;
     /// Reference - element (low order only)
-    FiniteElement * segm = NULL;
+    FiniteElement * segm;// = NULL;
     /// Reference - element (low order only)
-    FiniteElement * point = NULL;
+    FiniteElement * point;// = NULL;
 
 
     FiniteElement * dummy_tet; //  = new DummyFE<ET_TET>();
