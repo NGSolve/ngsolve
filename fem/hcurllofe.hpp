@@ -18,7 +18,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
+    static void T_CalcShape (Tx *x, TFA & shape) 
     { ; }
   };
 
