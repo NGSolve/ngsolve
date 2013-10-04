@@ -11,7 +11,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
-#include "../fem/h1hofefo.hpp"
+//#include "../fem/h1hofefo.hpp"
 
 
 using namespace ngmg; 
@@ -539,7 +539,7 @@ namespace ngcomp
         return *hofe3d;
       }
     */
-
+    /*
     if (fixed_order && eltype == ET_TET)
       {
         switch (order)
@@ -552,17 +552,18 @@ namespace ngcomp
               -> SetVertexNumbers(ngel.vertices);
           case 4: return *(new (lh) H1HighOrderFEFO<ET_TET,4>())
               -> SetVertexNumbers(ngel.vertices);
-            /*
-          case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
-          case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
-          case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
-          case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
-          case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
-            */
+            
+          //case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
+          //case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
+          //case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
+          //case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
+          //case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
+            
           }
         // hofe3d->SetVertexNumbers (ngel.vertices);
         // return *hofe3d;
       }
+      */
 
 
 
