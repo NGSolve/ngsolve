@@ -138,7 +138,7 @@ namespace ngfem
       CalcMappedDShape (mir[i], dshapes.Cols(i*D,(i+1)*D));
   }
 
- 
+ /*
   template<int D>
   void ScalarFiniteElement<D> :: 
   CalcDShape (const IntegrationPoint & ip, 
@@ -146,7 +146,7 @@ namespace ngfem
   {
     cout << "ScalarFE<D>::CalcMappedDShape(callback) not implemented" << endl;
   }  
-
+  */
 
   template<int D>
   double ScalarFiniteElement<D> :: 
