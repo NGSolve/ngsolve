@@ -18,7 +18,8 @@ namespace ngfem
 {
 
 
-
+/*
+  // sollten eigentlich rein ...
   template <> inline void L2HighOrderFE<ET_POINT> :: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
@@ -39,7 +40,7 @@ namespace ngfem
       for (int iy = 0; iy <= order-ix; iy++, ii++)
         mass(ii) = 1.0 / ( (2*iy+1) * (2*ix+2*iy+2));
   }
-
+*/
 
   /*
   template class L2HighOrderFE<ET_POINT>;
