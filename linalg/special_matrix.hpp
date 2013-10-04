@@ -11,7 +11,7 @@ namespace ngla
 {
 
   template <class TVR, class TVC>
-  class NGS_DLL_HEADER Real2ComplexMatrix : public BaseMatrix
+  class Real2ComplexMatrix : public BaseMatrix
   {
     const BaseMatrix * realmatrix;
     VVector<TVR> hx, hy;
