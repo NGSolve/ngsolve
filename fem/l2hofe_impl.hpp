@@ -294,7 +294,8 @@ namespace ngfem
   template <> 
   class L2HighOrderFE_Shape<ET_TRIG> : public L2HighOrderFE<ET_TRIG>
   {
-  public:
+        
+  public:        
     template<typename Tx, typename TFA> 
     void T_CalcShape (Tx x[], TFA & shape) const;
   };
