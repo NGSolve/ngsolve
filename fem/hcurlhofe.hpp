@@ -47,7 +47,9 @@ namespace ngfem
     INT<2> order_face[6];
     INT<3> order_cell;
 
-    bool usegrad_edge[N_EDGE]; 
+    
+    //bool usegrad_edge[N_EDGE]; 
+    INT<N_EDGE, bool> usegrad_edge;
     bool usegrad_face[6]; 
     bool usegrad_cell; 
 
