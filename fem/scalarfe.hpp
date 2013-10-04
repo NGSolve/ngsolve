@@ -20,9 +20,9 @@ namespace ngfem
   {
   public:
     /// empty constructor
-    INLINE NGS_DLL_HEADER ScalarFiniteElement () { ; } 
+    INLINE ScalarFiniteElement () { ; } 
     /// provides type, number of dofs, maximal order of shapes
-    INLINE NGS_DLL_HEADER ScalarFiniteElement (int andof, int aorder)
+    INLINE ScalarFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) 
     { ; }
 
@@ -65,11 +65,11 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const = 0;
     
-    
+/*    
     NGS_DLL_HEADER 
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<D>)> & callback) const;
-    
+  */  
 
 
     /// compute dshape, matrix: ndof x spacedim
