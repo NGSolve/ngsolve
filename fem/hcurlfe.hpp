@@ -33,7 +33,7 @@ namespace ngfem
      H(Curl) finite element of dimension D
   */
   template <int D>
-  class NGS_DLL_HEADER HCurlFiniteElement : public FiniteElement
+  class HCurlFiniteElement : public FiniteElement
   {
 
   public:
