@@ -52,7 +52,7 @@ namespace ngfem
   
 
   template <int D>
-  class NGS_DLL_HEADER FacetVolumeFiniteElement : public FiniteElement
+  class FacetVolumeFiniteElement : public FiniteElement
   {
   protected:
     int vnums[8];
