@@ -1,7 +1,7 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
-#include <unistd.h>
+//#include <unistd.h>
 
 
 
