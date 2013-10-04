@@ -653,7 +653,7 @@ namespace ngfem
   };
     
 
-  class LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
+  class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
   {
     static Array< double[2] > coefs;
     
