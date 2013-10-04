@@ -114,7 +114,7 @@ namespace ngfem
       }
   }
 
-
+  /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDShape (const IntegrationPoint & ip, 
@@ -135,7 +135,7 @@ namespace ngfem
 				      callback (i,v);
 				    }));
   }
-
+  */
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
@@ -212,7 +212,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   GetPolOrders (FlatArray<PolOrder<DIM> > orders) const
   {
-    PolOrder<DIM> po[DIM];
+    Vec<DIM,PolOrder<DIM>> po;
 
     switch (ET)
       {
