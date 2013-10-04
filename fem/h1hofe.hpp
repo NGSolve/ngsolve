@@ -13,7 +13,7 @@ namespace ngfem
 
   
   /// default shape function engine for high order h1-elements
-  template <ELEMENT_TYPE ET> class NGS_DLL_HEADER H1HighOrderFE_Shape;
+  template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
 
 
