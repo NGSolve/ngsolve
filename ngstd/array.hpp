@@ -684,7 +684,7 @@ namespace ngstd
       allocsize = nsize;
   }
 
-  extern template class Array<int,int>;
+  //extern template class Array<int,int>;
   
 
   /**
