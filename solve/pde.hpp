@@ -122,7 +122,7 @@ namespace ngsolve
 
   public:
     ///
-    NGS_DLL_HEADER PDE();
+    PDE();
     ///
     ~PDE();
 
