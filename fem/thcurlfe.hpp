@@ -197,19 +197,19 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceMatrix<> shape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      Vec<DIM,AutoDiff<DIM>> adp;//[DIM];
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
       
       HCurlShapeAssign<DIM> ds(shape); 
-      FEL::T_CalcShape (adp, ds);
+      FEL::T_CalcShape (&adp(0), ds);
     }
 
     virtual void
     CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                      SliceMatrix<> shape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      Vec<DIM,AutoDiff<DIM>> adp;
       
       for (int i = 0; i < DIM; i++)
         adp[i].Value() = mip.IP()(i);
@@ -219,26 +219,26 @@ namespace ngfem
           adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
       
       HCurlShapeAssign<DIM> ds(shape); 
-      FEL::T_CalcShape (adp, ds);
+      FEL::T_CalcShape (&adp(0), ds);
     }
 
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 SliceMatrix<> curlshape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      Vec<DIM,AutoDiff<DIM>> adp;
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
 
       HCurlCurlShapeAssign<DIM> ds(curlshape); 
-      FEL::T_CalcShape (adp, ds);
+      FEL::T_CalcShape (&adp(0), ds);
     }
 
     virtual void
     CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                          SliceMatrix<> curlshape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      Vec<DIM,AutoDiff<DIM>> adp;
 
       for (int i = 0; i < DIM; i++)
         adp[i].Value() = mip.IP()(i);
@@ -248,7 +248,7 @@ namespace ngfem
           adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
 
       HCurlCurlShapeAssign<DIM> ds(curlshape); 
-      FEL::T_CalcShape (adp, ds);
+      FEL::T_CalcShape (&adp(0), ds);
     }
 
     virtual Vec <DIM_CURL>
@@ -256,12 +256,12 @@ namespace ngfem
                        FlatVector<double> x,
                        LocalHeap & lh) const
     {
-      AutoDiff<DIM> adp[DIM];
+      Vec<DIM,AutoDiff<DIM>> adp;
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
       
       HCurlEvaluateCurl<DIM> ds(x); 
-      FEL::T_CalcShape (adp, ds);
+      FEL::T_CalcShape (&adp(0), ds);
       return ds.Sum();
     }
 
