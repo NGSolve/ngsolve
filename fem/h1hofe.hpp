@@ -167,6 +167,9 @@ namespace ngfem
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
+
+  // H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
+  // H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
 }
 
 

@@ -312,9 +312,21 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    static void EvalScaled (int n, S x, Sy y, T && values)
+    INLINE static void EvalScaled (int n, S x, Sy y, T && values)
     {
       EvalScaledMult (n, x, y, 1.0, values);
+    }
+
+    template <class S, class Sy, class T>
+    INLINE static void EvalScaled2Assign (int n, S x, Sy y, T && values)
+    {
+      EvalScaledMult2Assign (n, x, y, 1.0, values);
+    }
+
+    template <class S, class Sy, class T>
+    INLINE static void EvalScaled1Assign (int n, S x, Sy y, T && values)
+    {
+      EvalScaledMult1Assign (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
@@ -358,7 +370,7 @@ namespace ngfem
       */
 
 
-      /* 
+      /*
         // 54763104 bytes libngfem.so
         // 4.62 sec
       S p1, p2;
@@ -410,6 +422,123 @@ namespace ngfem
 	}
       */
     }
+
+
+    template <class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
+    {
+      // 54855278 bytes libngfem.so
+      // 4.55795 sec d4
+      S p1(0), p2(0);
+      for (int i = 0; i <= n; i++)
+	{	
+          if (i == 0)
+            p1 = c * REC::P0(x);
+          else if (i == 1)
+            {
+              p2 = c * REC::P0(x);
+              p1 = c * REC::P1(x);
+            }
+          else
+            EvalScaledNext (i, x, y, p1, p2);
+	  values[i] = p1;
+	}
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult2Assign (int n, S x, Sy y, Sc c, T && values)
+    {
+      /*
+      // 54855278 bytes libngfem.so
+      // 4.55795 sec d4
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      values[1] = p1 = c * REC::P1(x);
+
+      for (int i = 2; i <= n; i++)
+	{	
+	  EvalScaledNext (i, x, y, p1, p2);
+	  values[i] = p1;
+	}
+      */
+
+      /*
+      // 54710961 bytes libngfem.so
+      // 4.73713 sec d4
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      p1 = c * REC::P1(x);
+
+      for (int i = 1; i <= n; i++)
+	{	
+	  values[i] = p1;
+	  EvalScaledNext (i+1, x, y, p1, p2);
+	}
+      */
+
+
+        // 54763104 bytes libngfem.so
+        // 4.62 sec
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      int i = 1;
+      p1 = c * REC::P1(x);
+      while (1)
+        {
+          values[i] = p1;
+          i++;
+          if (i > n) break;
+	  EvalScaledNext (i, x, y, p1, p2);          
+        }
+
+
+      /*  
+          // 55426878 bytes libngfem.so
+          // 4.72 sec
+      S p1, p2;
+      int i;
+      if (n % 2 == 0)
+        { 
+          values[0] = p2 = c * REC::P0(x);
+          p1 = c * REC::P1(x);
+          EvalScaledNext2(2, x, y, p2, p1);
+          i = 1;
+        }
+      else
+        { // odd
+          p1 = c * REC::P0(x);
+          p2 = c * REC::P1(x);
+          i = 0;
+        }
+      if (n <= 0) return;
+      
+      while (1)
+	{	
+          values[i] = p1;
+          values[i+1] = p2;
+          i += 2;
+          if (i > n) break;
+	  EvalScaledNext2 (i, x, y, p1, p2);
+	  EvalScaledNext2 (i+1, x, y, p2, p1);
+	}
+      */
+    }
+
 
 
 
@@ -1677,7 +1806,7 @@ namespace ngfem
     {
       LegendrePolynomial leg;
       int ii = 0;
-      leg.EvalScaled (n, y-(1-x-y), 1-x, 
+      leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
            SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
@@ -1697,7 +1826,7 @@ namespace ngfem
     {
       LegendrePolynomial leg;
       int ii = 0;
-      leg.EvalScaledMult (n, y-(1-x-y), t-x, c,
+      leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
             SBLambda ([&] (int i, S val) ALWAYS_INLINE
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
