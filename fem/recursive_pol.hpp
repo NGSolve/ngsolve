@@ -330,14 +330,13 @@ namespace ngfem
     }
 
     template <class S, class Sy, class Sc, class T>
-    static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
+    INLINE static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
       // 54855278 bytes libngfem.so
       // 4.55795 sec d4
       S p1, p2;
 
       if (n < 0) return;
-
       values[0] = p2 = c * REC::P0(x);
       if (n < 1) return;
 
@@ -691,13 +690,13 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    void EvalScaled (int n, S x, Sy y, T && values)
+    INLINE void EvalScaled (int n, S x, Sy y, T && values)
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
-    void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
+    INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
       S p1, p2;
 

@@ -764,16 +764,37 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer("SparseMatrix::MultAdd");
-    RegionTimer reg (timer);
-    timer.AddFlops (this->nze);
+    // static Timer timer("SparseMatrix::MultAdd");
+    // RegionTimer reg (timer);
+    // timer.AddFlops (this->nze);
 
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
     
+    /*
     int h = this->Height();
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
+    */
+
+    /*
+    int h = this->Height();
+#pragma omp parallel for
+    for (int i = 0; i < h; i++)
+      fy(i) += s * RowTimesVector (i, fx);
+    */
+
+
+    // #pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      int num = omp_get_num_threads();
+      int n = this -> Height();
+      IntRange range (long(n)*tid/num, min (long(n), long(n)*(tid+1)/num));
+
+      for (int i = range.First(); i < range.Next(); i++)
+	fy(i) += s * RowTimesVector (i, fx);
+    }
   }
   
 
@@ -974,8 +995,8 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
-    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
-    RegionTimer reg (timer);
+    // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
+    // RegionTimer reg (timer);
 
     ArrayMem<int, 50> map(dnums.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;

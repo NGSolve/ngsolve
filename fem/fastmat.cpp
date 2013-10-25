@@ -1,6 +1,6 @@
-#ifdef __SSE3__
-#include <emmintrin.h>
-#include <pmmintrin.h>
+#if defined(__SSE3__) || defined(__AVX__)
+#include <immintrin.h>
+// #include <pmmintrin.h>
 #endif
 
 #include <fem.hpp>
