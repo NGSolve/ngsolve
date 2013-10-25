@@ -494,6 +494,13 @@ namespace ngcomp
   {
     static Timer mattimer("Matrix assembling");
 
+    static Timer mattimer1("Matrix assembling part 1");
+    static Timer mattimerclear("Matrix assembling - clear matrix");
+    static Timer mattimer1a("Matrix assembling part 1a");
+    static Timer mattimer2("Matrix assembling part 2");
+    static Timer mattimer_vol("Matrix assembling vol");
+    static Timer mattimer_bound("Matrix assembling bound");
+
     static Timer timer1 ("Matrix assembling - 1", 3);
     static Timer timer2 ("Matrix assembling - 2", 3);
     static Timer timer3 ("Matrix assembling - 3", 3);
@@ -504,6 +511,7 @@ namespace ngcomp
 
     RegionTimer reg (mattimer);
 
+    mattimer1.Start();
     // check if integrators fit to space
     for (int i = 0; i < NumIntegrators(); i++)
       if (parts[i] -> BoundaryForm())
@@ -530,13 +538,14 @@ namespace ngcomp
                 parts[i] -> CheckElement (fespace.GetFE(j, clh));
             }
         }
-    
+    mattimer1.Stop();    
     
     try
       {
         if (!MixedSpaces())
-        
+	  
           {
+	    mattimer1a.Start();
             ma.PushStatus ("Assemble Matrix");
  
             int ndof = fespace.GetNDof();
@@ -547,8 +556,10 @@ namespace ngcomp
             int nse = ma.GetNSE();
             int nf = ma.GetNFacets();
 
+	    mattimerclear.Start();
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
+	    mattimerclear.Stop();
 
             bool hasbound = false;
             bool hasinner = false;
@@ -590,9 +601,11 @@ namespace ngcomp
             for (int j = 0; j < preconditioners.Size(); j++)
               preconditioners[j] -> InitLevel();
 
+	    mattimer1a.Stop();
 
             if (hasinner && !diagonal)
               {
+		RegionTimer reg(mattimer_vol);
                 ProgressOutput progress (ma, "assemble element", ma.GetNE());
 
 
@@ -620,7 +633,7 @@ namespace ngcomp
                    {
                      int i = ei.Nr();
                           
-                     HeapReset hr (lh);
+                     // HeapReset hr (lh);
                           
                      if (elmat_ev) 
                        *testout << " Assemble Element " << ei.Nr() << endl;  
@@ -968,6 +981,7 @@ namespace ngcomp
 
             if (hasbound)
               {
+		RegionTimer reg(mattimer_bound);
                 ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
 
                 int cnt = 0;
@@ -1080,6 +1094,8 @@ namespace ngcomp
 
               }//endof hasbound
 
+
+	    RegionTimer reg(mattimer2);
             if (hasskeletonbound)
               {
                 int cnt = 0;          
@@ -1182,7 +1198,7 @@ namespace ngcomp
                               (*testout) << "lami = " << endl << lami << endl;
 #endif
                               // << "evecs = " << endl << evecs << endl;
-                            }
+                            } 
 
                           //                    for(int k=0; k<elmat.Height(); k++)
                           //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)

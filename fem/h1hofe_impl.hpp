@@ -148,7 +148,7 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
+  INLINE void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
 
@@ -162,7 +162,6 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-
 	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
 					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 					      lam[e[0]]*lam[e[1]], shape+ii);

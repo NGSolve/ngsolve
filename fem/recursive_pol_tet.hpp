@@ -7,19 +7,32 @@ namespace ngfem
     template <typename Sx, typename Sy, typename Sz, typename T>
     static int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
-      int ii = 0, i, j, k;
-      ArrayMem<Sx, 20> polx(n+1), poly(n+1), polz(n+1);
-    
-      ScaledLegendrePolynomial (n-4, x, 1-y-z, polx);
-      ScaledLegendrePolynomial (n-4, 2*y - (1-z) , (1-z),poly);  //SZ (1-z)-1, poly);
-      LegendrePolynomial (n-4, 2*z-1, polz);
+      ArrayMem<Sx, 20> polx(n+1), poly(n+1); //, polz(n+1);
+ 
       Sx bub = (1-x-y-z) * (1+x-y-z) * y * z ; 
-  
-      for (i = 0; i <= n-4; i++)
-	for (j = 0; j <= n-4-i; j++)
-	  for (k = 0; k <= n-4-i-j; k++)
-	    values[ii++] = bub * polx[i] * poly[j] * polz[k];
-    
+
+      LegendrePolynomial::EvalScaledMult (n-4, x, 1-y-z, bub, polx);
+      LegendrePolynomial::EvalScaled (n-4, 2*y - (1-z) , (1-z),poly);  //SZ (1-z)-1, poly);
+      
+      // ScaledLegendrePolynomial (n-4, x, 1-y-z, polx);
+      // ScaledLegendrePolynomial (n-4, 2*y - (1-z) , (1-z),poly);  //SZ (1-z)-1, poly);
+      // LegendrePolynomial (n-4, 2*z-1, polz);
+
+      /*
+       int ii = 0;
+      for (int i = 0; i <= n-4; i++)
+	for (int j = 0; j <= n-4-i; j++)
+	  for (int k = 0; k <= n-4-i-j; k++)
+	    values[ii++] = polx[i] * poly[j] * polz[k];
+      */
+
+      int ii = 0;
+      for (int i = 0; i <= n-4; i++)
+	for (int j = 0; j <= n-4-i; j++)
+	  {
+	    LegendrePolynomial::EvalMult (n-4-i-j, 2*z-1, polx[i]*poly[j], values+ii);
+	    ii += n-3-i-j;
+	  }
       return ii;
     }
 
