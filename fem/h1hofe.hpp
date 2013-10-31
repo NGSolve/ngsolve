@@ -147,7 +147,6 @@ namespace ngfem
 #else
 #define H1HOFE_EXTERN extern
 #endif
-
   H1HOFE_EXTERN template class H1HighOrderFE<ET_POINT>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_SEGM>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_TRIG>;
