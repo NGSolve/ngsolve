@@ -101,7 +101,6 @@ namespace ngstd
 #ifdef USE_TIMEOFDAY
     static void StartTimer (int nr) 
     { 
-      /*
       timeval time;
       gettimeofday (&time, 0);
       // starttimes[nr] = time.tv_sec + 1e-6 * time.tv_usec;
@@ -109,19 +108,16 @@ namespace ngstd
       tottimes[nr] -= time.tv_sec + 1e-6 * time.tv_usec;
       counts[nr]++; 
       VT_USER_START (const_cast<char*> (names[nr].c_str())); 
-      */
     }
 
     static void StopTimer (int nr) 
     { 
-      /*
       timeval time;
       gettimeofday (&time, 0);
       // tottimes[nr] += time.tv_sec + 1e-6 * time.tv_usec - starttimes[nr];
 #pragma omp atomic
       tottimes[nr] += time.tv_sec + 1e-6 * time.tv_usec;
       VT_USER_END (const_cast<char*> (names[nr].c_str())); 
-      */
     }
   
 #else

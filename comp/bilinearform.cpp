@@ -2303,7 +2303,7 @@ namespace ngcomp
                 hasbound = true;
             else
               if (bfi.SkeletonForm())
-                hasskeletoninner = true;
+                hasskeletoninner = true; 
               else
                 hasinner = true;
           }
@@ -2320,6 +2320,26 @@ namespace ngcomp
 
                 if (hasinner)
                   {
+                    RegionTimer reg (timervol);
+
+		    LocalHeap clh (lh_size*omp_get_num_threads(), "biform-AddMatrix - Heap");
+		    IterateElements 
+		      (fespace, VOL, clh, 
+		       [&] (ElementId ei, LocalHeap & lh)
+		       
+		       {
+			 if (!fespace.DefinedOn (ei)) return;
+			 
+			 const FiniteElement & fel = fespace.GetFE (ei, lh);
+			 ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+			 Array<int> dnums (fel.GetNDof(), lh);
+			 fespace.GetDofNrs (ei, dnums);
+			 
+			 ApplyElementMatrix(x,y,val,dnums,eltrans, ei.Nr(),0,cnt,lh,&fel);
+		       });
+
+		    /*
+
                     RegionTimer reg (timervol);
 #pragma omp parallel
                     {
@@ -2340,6 +2360,7 @@ namespace ngcomp
                           ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
                         }
                     }
+		    */
                   }
 
                         
@@ -2825,26 +2846,30 @@ namespace ngcomp
             if (type == 1 && !bfi.BoundaryForm()) continue;
             
             
-            static Timer elementtimer ("Element matrix application");
-            elementtimer.Start();
-            
+            // static Timer elementtimer ("Element matrix application");
+            // elementtimer.Start();
+
             if (this->precompute)
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
+	    // elvecy = 0.0;
 
-
-            elementtimer.Stop();
+            // elementtimer.Stop();
             
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
+
+	    if (type == 1)
 #pragma omp critical(addapply)
-            {
-              y.AddIndirect (dnums, elvecy);
-            }
+	      {
+		y.AddIndirect (dnums, elvecy);
+	      }
+	    else
+	      y.AddIndirect (dnums, elvecy);  // coloring	      
           }
       }
     else if (type == 2)

@@ -92,7 +92,7 @@ namespace ngfem
   
     template <class MIR>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-			 const FlatVector<double> x, FlatMatrix<double> y,
+			 const FlatVector<double> x, FlatMatrixFixWidth<D,double> y,
 			 LocalHeap & lh)
     {
       FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
