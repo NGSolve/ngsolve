@@ -33,7 +33,7 @@ namespace ngla
   class ParallelMatrix : public BaseMatrix
   {
     const BaseMatrix & mat;
-    const ParallelDofs & pardofs;
+    // const ParallelDofs & pardofs;
   public:
     ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs);
     // : mat(*amat), pardofs(*apardofs) 
@@ -55,7 +55,7 @@ namespace ngla
     virtual int VHeight() const;
     virtual int VWidth() const;
 
-    virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
+    // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
 
 
     virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;

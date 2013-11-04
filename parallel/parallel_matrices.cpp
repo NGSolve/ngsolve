@@ -29,7 +29,7 @@ namespace ngla
     // consistent enumeration
     
     int ndof = pardofs->GetNDofLocal();
-    
+
     Array<int> global_nums(ndof);
     global_nums = -1;
     int num_master_dofs = 0;
@@ -37,10 +37,12 @@ namespace ngla
       if (pardofs -> IsMasterDof (i) && (!subset || (subset && subset->Test(i))))
 	global_nums[i] = num_master_dofs++;
     
+
     Array<int> first_master_dof(ntasks);
     MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
 		   &first_master_dof[0], 1, MPI_INT, 
 		   pardofs -> GetCommunicator());
+
     
     int num_glob_dofs = 0;
     for (int i = 0; i < ntasks; i++)
@@ -55,6 +57,7 @@ namespace ngla
 	global_nums[i] += first_master_dof[id];
 
     pardofs -> ScatterDofData (global_nums);
+
 
     /*
     cout << "TESTING" << endl;
@@ -330,7 +333,7 @@ namespace ngla
   }
 
   ParallelMatrix :: ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs)
-    : mat(*amat), pardofs(*apardofs) 
+    : BaseMatrix(apardofs), mat(*amat)
   { 
     const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);
 #ifdef USE_MUMPS
@@ -362,13 +365,13 @@ namespace ngla
 
   BaseMatrix * ParallelMatrix :: CreateMatrix () const
   {
-    return new ParallelMatrix (mat.CreateMatrix(), &pardofs);
+    return new ParallelMatrix (mat.CreateMatrix(), paralleldofs);
   }
 
   BaseVector * ParallelMatrix :: CreateVector () const
   {
     if (dynamic_cast<const SparseMatrix<double>*> (&mat))
-      return new ParallelVVector<double> (mat.Height(), &pardofs);
+      return new ParallelVVector<double> (mat.Height(), paralleldofs);
 
     cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
 	 << typeid(mat).name()
@@ -417,10 +420,10 @@ namespace ngla
 
 #ifdef USE_MUMPS
     if (mat.GetInverseType() == MUMPS)
-      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, &pardofs, symmetric);
+      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, paralleldofs, symmetric);
     else 
 #endif
-      return new MasterInverse<TM> (*dmat, subset, &pardofs);
+      return new MasterInverse<TM> (*dmat, subset, paralleldofs);
     
   }
 
