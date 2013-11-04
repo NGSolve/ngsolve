@@ -27,6 +27,35 @@ namespace ngbla
 namespace ngfem
 {
 
+  template <int DIM> 
+  INLINE Vec<DIM, AutoDiff<DIM>> Ip2Ad (const IntegrationPoint & ip)
+  {
+    Vec<DIM, AutoDiff<DIM> > adp;
+    for (int i = 0; i < DIM; i++)
+      adp[i] = AutoDiff<DIM> (ip(i), i);
+    return adp;
+  }
+
+  
+  template <int DIM> 
+  INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
+  {
+    Vec<DIM, AutoDiff<DIM> > adp;
+
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = mip.IP()(i);
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
+    
+    return adp;
+  }
+
+
+
+
+
+
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
@@ -68,8 +97,6 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
   {
-    // static Timer t("evaluatetrans"); RegionTimer reg(t);
-
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -84,11 +111,9 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < DIM; j++)
-	  adp[j] = AutoDiff<DIM> (ir[i](j), j);
+        Vec<DIM, AutoDiff<DIM> > adp = ir[i]; // Ip2Ad<DIM> (ir[i]);
 
         Vec<DIM> sum = 0.0;
         T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
@@ -102,13 +127,10 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp;
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < DIM; j++)
-	  adp[j] = AutoDiff<DIM> (ir[i](j), j);
-
+        Vec<DIM, AutoDiff<DIM> > adp = ir[i];  // Ip2Ad<DIM> (ir[i]);
         T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                         { coefs(j) += InnerProduct (vals.Row(i), shape); }));
       }
@@ -142,17 +164,9 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               SliceMatrix<> dshape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp;
-    for (int i = 0; i < DIM; i++)
-      adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    /*
-    T_CalcShape (&adp(0), SBLambda ([&] (int i, AD2Vec<DIM> shape)
-                                    { dshape.Row(i) = shape; }));
-    */
+    Vec<DIM, AutoDiff<DIM> > adp = ip; 
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
-    
   }
 
 
@@ -181,13 +195,7 @@ namespace ngfem
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    SliceMatrix<> dshape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp;   
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = mip.IP()(i);
-      
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-	adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
+    Vec<DIM, AutoDiff<DIM> > adp = Mip2Ad(mip);
 
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
@@ -199,12 +207,9 @@ namespace ngfem
   CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mir, 
 		    SliceMatrix<> dshape) const
   {
-    // static Timer t("tscalarfe, calcmappeddshape(ir)"); RegionTimer reg(t);
     for (int i = 0; i < mir.Size(); i++)
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
   }
-
-
 
 
 

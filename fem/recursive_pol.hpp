@@ -281,13 +281,13 @@ namespace ngfem
 
 
     template <class S, class T>
-    static void Eval (int n, S x, T && values) 
+    INLINE static void Eval (int n, S x, T && values) 
     {
       EvalMult (n, x, 1.0, values);
     }
 
     template <class S, class Sc, class T>
-    static void EvalMult (int n, S x, Sc c, T && values) 
+    INLINE static void EvalMult (int n, S x, Sc c, T && values) 
     {
       S p1, p2;
 
@@ -1057,7 +1057,7 @@ namespace ngfem
 
 
   template <class S, class Sc, class T>
-  inline void LegendrePolynomialMult (int n, S x, Sc c , T && values)
+  INLINE void LegendrePolynomialMult (int n, S x, Sc c , T && values)
   {
     LegendrePolynomial leg;
     leg.EvalMult (n, x, c, values);

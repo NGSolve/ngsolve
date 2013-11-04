@@ -119,6 +119,18 @@ namespace ngfem
     int & FacetNr() { return facetnr; }
     int FacetNr() const { return facetnr; }
 
+
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiff<DIM>> () const
+    {
+      Vec<DIM, AutoDiff<DIM> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM> (pi[i], i);
+      return adp;
+    }
+    
+
+
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
   };

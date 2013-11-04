@@ -1052,8 +1052,7 @@ namespace ngfem
                   for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
                     {
                       double z = (*irz)[i3](0);
-                    
-                      Mat<3> trans3, trans, hmat;
+                      Mat<3> trans3; 
                     
                       // hex -> tet transform
                       trans3(0,0) = 1;
