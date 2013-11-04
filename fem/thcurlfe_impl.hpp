@@ -16,11 +16,13 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {    
+    /*
     AutoDiff<DIM> adp[DIM];
     for (int i = 0; i < DIM; i++)
       adp[i] = AutoDiff<DIM> (ip(i), i);
-
-    T_CalcShape (adp, SBLambda ([&](int i, HCurl_Shape<DIM> s) 
+    */
+    Vec<DIM, AutoDiff<DIM> > adp = ip; 
+    T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
                                 { shape.Row(i) = s; }));
   }
 
