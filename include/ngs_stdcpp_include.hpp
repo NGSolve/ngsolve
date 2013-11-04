@@ -40,18 +40,20 @@
 
 #ifdef __INTEL_COMPILER
 #define ALWAYS_INLINE __forceinline
-// gcc compiler 
+#define INLINE __forceinline
 #else
 #ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
+#define INLINE __attribute__ ((__always_inline__)) inline
 #else
 #define ALWAYS_INLINE
+#define INLINE inline
 #endif
 #endif
 
 
 //#define INLINE __attribute__ ((__always_inline__)) inline
-#define INLINE inline
+//#define INLINE inline
 
 #ifdef PARALLEL
 #include <unistd.h>  // for usleep (only for parallel)
