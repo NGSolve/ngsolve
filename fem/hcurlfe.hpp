@@ -423,7 +423,7 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             FlatMatrixFixWidth<DIM> shape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      AutoDiff<DIM> adp[DIM?DIM:1];
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
       
@@ -435,7 +435,7 @@ namespace ngfem
     CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                      FlatMatrixFixWidth<DIM> shape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      AutoDiff<DIM> adp[DIM?DIM:1];
       
       for (int i = 0; i < DIM; i++)
         adp[i].Value() = mip.IP()(i);
@@ -452,7 +452,7 @@ namespace ngfem
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 FlatMatrixFixWidth<DIM_CURL> curlshape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      AutoDiff<DIM> adp[DIM?DIM:1];
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
 
@@ -464,7 +464,7 @@ namespace ngfem
     CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                          FlatMatrixFixWidth<DIM_CURL> curlshape) const
     {
-      AutoDiff<DIM> adp[DIM];
+      AutoDiff<DIM> adp[DIM?DIM:1];
 
       for (int i = 0; i < DIM; i++)
         adp[i].Value() = mip.IP()(i);
@@ -482,7 +482,7 @@ namespace ngfem
                        FlatVector<double> x,
                        LocalHeap & lh) const
     {
-      AutoDiff<DIM> adp[DIM];
+      AutoDiff<DIM> adp[DIM?DIM:1];
       for (int i = 0; i < DIM; i++)
         adp[i] = AutoDiff<DIM> (ip(i), i);
       
