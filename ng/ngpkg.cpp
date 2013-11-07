@@ -2236,12 +2236,12 @@ namespace netgen
     double tmp = context->width * context->height * 255.0 * 255.0;
     double Ypsnr = psnr( context->coded_frame->error[0] / tmp );
     double quality = context->coded_frame->quality/(double)FF_QP2LAMBDA;
-    char pict_type = av_get_pict_type_char(context->coded_frame->pict_type);
+    char pict_type = av_get_picture_type_char(context->coded_frame->pict_type);
     cout << "video: frame=" << count_frames << " type=" << pict_type;
     cout << " size=" << bytes << " PSNR(Y)=" << Ypsnr << " dB q=" << (float)quality << endl;
   }
 
-
+ 
 
   static int Ng_VideoClip (struct Togl * togl,
                            int argc, tcl_const char *argv[])
@@ -2320,7 +2320,8 @@ namespace netgen
 
         // Init codec context etc.:
         //--------------------------
-        context = avcodec_alloc_context();
+        // context = avcodec_alloc_context();
+	context = avcodec_alloc_context3(codec);
 
         context->bit_rate = bitrate;
         context->width = nx;
@@ -2331,7 +2332,8 @@ namespace netgen
         context->pix_fmt = PIX_FMT_YUV420P;
         context->flags |= CODEC_FLAG_PSNR;
 
-        if( avcodec_open( context, codec ) < 0 ) {
+        // if( avcodec_open( context, codec ) < 0 ) {
+	if( avcodec_open2( context, codec, NULL) < 0 ) {
           cout << "can't open codec" << endl;
           avcodec_close( context );
           av_free( context );
