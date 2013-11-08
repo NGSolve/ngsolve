@@ -794,16 +794,16 @@ namespace ngbla
     enum { WIDTH  = 1 };
 
     /// constructor, no initialization
-    Vec () { ; }
+    INLINE Vec () { ; }
     /// copy vector
-    Vec (const Vec & v) : MatExpr<Vec> ()
+    INLINE Vec (const Vec & v) : MatExpr<Vec> ()
     {
       for (int i = 0; i < S; i++)
 	data[i] = v.data[i];
     }
 
     /// initialize with values
-    Vec (const TELEM & scal)
+    INLINE Vec (const TELEM & scal)
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
@@ -811,20 +811,20 @@ namespace ngbla
 
     /// initialize with expression
     template<typename TB>
-    Vec (const Expr<TB> & v)
+    INLINE Vec (const Expr<TB> & v)
     {
       (*this) = v;
     }
 
     /// initialize zeroth and first elements
-    Vec (const T & s1, const T & s2)
+    INLINE Vec (const T & s1, const T & s2)
     {
       data[0] = s1;
       data[1] = s2;
     }
 
     /// initialize zeroth, first, and second elements
-    Vec (const T & s1, const T & s2, const T & s3)
+    INLINE Vec (const T & s1, const T & s2, const T & s3)
     {
       data[0] = s1;
       data[1] = s2;
@@ -832,7 +832,7 @@ namespace ngbla
     }
 
     /// initialize zeroth, first, and second elements
-    Vec (const T & s1, const T & s2, const T & s3, const T & s4)
+    INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4)
     {
       data[0] = s1;
       data[1] = s2;
@@ -843,7 +843,7 @@ namespace ngbla
 
   
     /// copy vector
-    Vec & operator= (const Vec & v)
+    INLINE Vec & operator= (const Vec & v)
     {
       for (int i = 0; i < S; i++)
 	data[i] = v.data[i];
@@ -852,7 +852,7 @@ namespace ngbla
   
 
     /// assign scalar value
-    Vec & operator= (const TELEM & scal)
+    INLINE Vec & operator= (const TELEM & scal)
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
@@ -861,7 +861,7 @@ namespace ngbla
 
     /// assign expression
     template<typename TB>
-    Vec & operator= (const Expr<TB> & v)
+    INLINE Vec & operator= (const Expr<TB> & v)
     {
       for (int i = 0; i < S; i++)
 	data[i] = v.Spec()(i,0);
@@ -869,7 +869,7 @@ namespace ngbla
     }
 
     /// access vector
-    TELEM & operator() (int i) 
+    INLINE TELEM & operator() (int i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -878,7 +878,7 @@ namespace ngbla
     }
 
     /// access vector
-    const TELEM & operator() (int i) const 
+    INLINE const TELEM & operator() (int i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -888,7 +888,7 @@ namespace ngbla
 
 
     /// access vector
-    TELEM & operator[] (int i) 
+    INLINE TELEM & operator[] (int i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -897,7 +897,7 @@ namespace ngbla
     }
 
     /// access vector
-    const TELEM & operator[] (int i) const 
+    INLINE const TELEM & operator[] (int i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -906,7 +906,7 @@ namespace ngbla
     }
 
     /// access vector
-    TELEM & operator() (int i, int j) 
+    INLINE TELEM & operator() (int i, int j) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -915,7 +915,7 @@ namespace ngbla
     }
 
     /// access vector
-    const TELEM & operator() (int i, int j) const 
+    INLINE const TELEM & operator() (int i, int j) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -924,16 +924,16 @@ namespace ngbla
     }
 
     /// vector size
-    int Size () const { return S; }
+    INLINE int Size () const { return S; }
     /// corresponding matrix height
-    int Height () const { return S; }
+    INLINE int Height () const { return S; }
     /// corresponding matrix with
-    int Width () const { return 1; }
+    INLINE int Width () const { return 1; }
 
-    const FlatVector<const T> Range(int first, int next) const
+    INLINE const FlatVector<const T> Range(int first, int next) const
     { return FlatVector<const T> (next-first, data+first); }
 
-    const FlatVector<T> Range(int first, int next) 
+    INLINE const FlatVector<T> Range(int first, int next) 
     { return FlatVector<T> (next-first, data+first); }
   };
 
@@ -1042,14 +1042,14 @@ namespace ngbla
     enum { WIDTH  = 1 };
 
     /// constructor, no initialization
-    FlatVec (T * adata) : data(adata) { ; }
+    INLINE FlatVec (T * adata) : data(adata) { ; }
 
     /// constructor, no initialization
-    FlatVec (Vec<S,T> & v2) : data(&v2(0)) { ; }
+    INLINE FlatVec (Vec<S,T> & v2) : data(&v2(0)) { ; }
 
 
     /// copy vector
-    const FlatVec & operator= (const FlatVec & v) const
+    INLINE const FlatVec & operator= (const FlatVec & v) const
     {
       for (int i = 0; i < S; i++)
 	data[i] = v.data[i];
@@ -1057,7 +1057,7 @@ namespace ngbla
     }
 
     /// assign scalar value
-    const FlatVec & operator= (TSCAL scal) const
+    INLINE const FlatVec & operator= (TSCAL scal) const
     {
       for (int i = 0; i < S; i++)
 	data[i] = scal;
@@ -1066,7 +1066,7 @@ namespace ngbla
 
     /// assign expression
     template<typename TB>
-    const FlatVec & operator= (const Expr<TB> & v) const
+    INLINE const FlatVec & operator= (const Expr<TB> & v) const
     {
       for (int i = 0; i < S; i++)
 	data[i] = v.Spec()(i,0);
@@ -1074,7 +1074,7 @@ namespace ngbla
     }
 
     template<typename TB>
-    ALWAYS_INLINE const FlatVec & operator+= (const Expr<TB> & v) const
+    INLINE const FlatVec & operator+= (const Expr<TB> & v) const
     {
       for (int i = 0; i < S; i++)
 	data[i] += v.Spec()(i,0);
@@ -1082,7 +1082,7 @@ namespace ngbla
     }
 
     /// access vector
-    TELEM & operator() (int i) const 
+    INLINE TELEM & operator() (int i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -1091,7 +1091,7 @@ namespace ngbla
     }
 
     /// access vector
-    TELEM & operator[] (int i) const 
+    INLINE TELEM & operator[] (int i) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -1100,7 +1100,7 @@ namespace ngbla
     }
 
     /// access vector
-    TELEM & operator() (int i, int j) const 
+    INLINE TELEM & operator() (int i, int j) const 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(S,i);
@@ -1108,15 +1108,15 @@ namespace ngbla
       return data[i]; 
     }
 
-    const FlatVector<T> Range(int first, int next) const
+    INLINE const FlatVector<T> Range(int first, int next) const
     { return FlatVector<T> (next-first, data+first); }
 
     /// vector size
-    int Size () const { return S; }
+    INLINE int Size () const { return S; }
     /// corresponding matrix height
-    int Height () const { return S; }
+    INLINE int Height () const { return S; }
     /// corresponding matrix with
-    int Width () const { return 1; }
+    INLINE int Width () const { return 1; }
   };
 
   /// output vector.
