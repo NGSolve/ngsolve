@@ -385,6 +385,7 @@ namespace ngfem
     // ArrayMem<Vec<D>, 100> x;
     // ArrayMem<Mat<D,D>, 100> dxdxi;
     ArrayMem<Mat<D,D>, 100> dxdxi_duffy;
+    Mat<D,D> dxdxi_permute;
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
@@ -410,6 +411,7 @@ namespace ngfem
     // Vec<D> & GetPoint(int i) const { return x[i]; }
     // Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
     Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
+    Mat<D,D> GetPermutationJacobian() const { return dxdxi_permute; }
   };
 
 

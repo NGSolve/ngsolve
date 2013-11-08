@@ -1034,8 +1034,9 @@ namespace ngfem
           for (int k = 0; k < 3; k++)
             for (int l = 0; l < 3; l++)
               trans2(l,k) = dlamdx[sort[l]][k];
-        
-        
+	  
+	  dxdxi_permute = trans2;
+
           // tet permutation plus hex -> tet mapping
           dxdxi_duffy.SetSize(nip);
 
