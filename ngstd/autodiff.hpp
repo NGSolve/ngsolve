@@ -30,11 +30,11 @@ public:
 
 
   /// elements are undefined
-  ALWAYS_INLINE AutoDiff  () throw() { }; 
+  INLINE AutoDiff  () throw() { }; 
   // { val = 0; for (int i = 0; i < D; i++) dval[i] = 0; }  // !
 
   /// copy constructor
-  ALWAYS_INLINE AutoDiff  (const AutoDiff & ad2) throw()
+  INLINE AutoDiff  (const AutoDiff & ad2) throw()
   {
     val = ad2.val;
     for (int i = 0; i < D; i++)
@@ -42,7 +42,7 @@ public:
   }
 
   /// initial object with constant value
-  ALWAYS_INLINE AutoDiff  (SCAL aval) throw()
+  INLINE AutoDiff  (SCAL aval) throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -50,7 +50,7 @@ public:
   }
 
   /// init object with (val, e_diffindex)
-  ALWAYS_INLINE AutoDiff  (SCAL aval, int diffindex)  throw()
+  INLINE AutoDiff  (SCAL aval, int diffindex)  throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -59,7 +59,7 @@ public:
   }
 
   /// assign constant value
-  ALWAYS_INLINE AutoDiff & operator= (SCAL aval) throw()
+  INLINE AutoDiff & operator= (SCAL aval) throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -68,26 +68,26 @@ public:
   }
 
   /// returns value
-  SCAL Value() const throw() { return val; }
+  INLINE SCAL Value() const throw() { return val; }
   
   /// returns partial derivative
-  SCAL DValue (int i) const throw() { return dval[i]; }
+  INLINE SCAL DValue (int i) const throw() { return dval[i]; }
 
   ///
-  void StoreGradient (SCAL * p) const 
+  INLINE void StoreGradient (SCAL * p) const 
   {
     for (int i = 0; i < D; i++)
       p[i] = dval[i];
   }
 
   /// access value
-  SCAL & Value() throw() { return val; }
+  INLINE SCAL & Value() throw() { return val; }
 
   /// accesses partial derivative 
-  SCAL & DValue (int i) throw() { return dval[i]; }
+  INLINE SCAL & DValue (int i) throw() { return dval[i]; }
 
 
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator+= (const SCAL & y) throw()
+  INLINE AutoDiff<D,SCAL> & operator+= (const SCAL & y) throw()
   {
     val += y;
     return *this;
@@ -95,7 +95,7 @@ public:
 
 
   /// 
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator+= (const AutoDiff<D,SCAL> & y) throw()
+  INLINE AutoDiff<D,SCAL> & operator+= (const AutoDiff<D,SCAL> & y) throw()
   {
     val += y.val;
     for (int i = 0; i < D; i++)
