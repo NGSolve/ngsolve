@@ -485,7 +485,7 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 	  pointtree->GetIntersecting (pmin, pmax, pintersect);
 	  
 	  if (pintersect.Size() > 1)
-	    PrintError("too many close points");
+            PrintError("too many close points");
 	  int foundpos = -1;
 	  if (pintersect.Size())
 	    foundpos = pintersect[0];
