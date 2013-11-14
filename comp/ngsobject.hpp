@@ -84,6 +84,7 @@ namespace ngcomp
     const Timer & GetTimer () const { return timer; }
 
     bool SkipCleanUp () { return skipCleanUp; }
+    void SetSkipCleanUp (bool skip = true) { skipCleanUp=skip; }
 
   protected:
     void DefineStringFlag (const char* s); // , const char* val="");
