@@ -160,6 +160,8 @@ namespace netgen
     Vec<3> ex, ey, ez;
     Point<3> p1;
 
+    mutable class RefinementSTLGeometry * ref; 
+    
   public:
     int edgesfound;
     int surfacemeshed;
