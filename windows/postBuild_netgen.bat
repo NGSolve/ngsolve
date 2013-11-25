@@ -92,6 +92,32 @@ xcopy "%NETGEN_NGSINC%\general\dynamicmem.hpp" "%INSTALL_FOLDER%\include\" /i /d
 xcopy "%NETGEN_NGSINC%\general\ngexception.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
 xcopy "%NETGEN_NGSINC%\visualization\soldata.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
 
+echo Installing external dependencies
+if /i "%BUILD_ARCH%" == "x64" (   
+   xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x64\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
+   xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x64\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\bin\x64\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tcl8.5" "%INSTALL_FOLDER%\lib\tcl8.5" /i /d /y /e /q
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tix8.4.3" "%INSTALL_FOLDER%\lib\tix8.4.3" /i /d /y /e /q
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tk8.5" "%INSTALL_FOLDER%\lib\tk8.5" /i /d /y /e /q
+   REM if errorlevel 1 goto externalInstallFailed
+)   
+
+if /i "%BUILD_ARCH%" == "win32" (   
+   xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x86\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
+   xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x86\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\bin\x86\*.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tcl8.5" "%INSTALL_FOLDER%\lib\tcl8.5" /i /d /y /e /q
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tix8.4.3" "%INSTALL_FOLDER%\lib\tix8.4.3" /i /d /y /e /q
+   xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tk8.5" "%INSTALL_FOLDER%\lib\tk8.5" /i /d /y /e /q
+   REM if errorlevel 1 goto externalInstallFailed
+)
+
+echo Copying tutorials
+xcopy "%PROJ_DIR%..\tutorials" "%INSTALL_FOLDER%\tutorials\" /i /d /y /e
+
+
+
 REM *** Done with the installation routine ***
 
 REM *** Clean up the build directory by deleting the OBJ files ***
@@ -116,6 +142,9 @@ echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying the %PROJ_NAME% 
 exit 1
 :LibInstallFailed
 echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying %LIB_NAME%.lib or %LIB_NAME%.h into install folder!!!
+exit 1
+:externalInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying external dependencies to install folder!!!
 exit 1
 
 :BuildEventOK

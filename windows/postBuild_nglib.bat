@@ -68,6 +68,10 @@ echo Installing %PROJ_NAME%.lib: Completed OK!!
 REM *** Copy the include file nglib.h into the install folder ***
 echo Installing %PROJ_NAME%.h into %INSTALL_FOLDER%\include ....
 xcopy "%NGLIB_LIBINC%\%PROJ_NAME%.h" "%INSTALL_FOLDER%\include\" /i /d /y
+echo  "%NGLIB_LIBINC%\..\libsrc\include\nginterface.hpp"
+xcopy "%NGLIB_LIBINC%\..\libsrc\include\nginterface.h" "%INSTALL_FOLDER%\include\" /i /d /y
+xcopy "%NGLIB_LIBINC%\..\libsrc\include\nginterface_v2.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
+xcopy "%NGLIB_LIBINC%\..\libsrc\visualization\soldata.hpp" "%INSTALL_FOLDER%\include\" /i /d /y
 if errorlevel 1 goto LibInstallFailed
 echo Installing %PROJ_NAME%.h: Completed OK!!
 
