@@ -45,7 +45,7 @@ namespace ngbla
     /// Multiply with the inverse of A 
     template <typename TV1, typename TV2>
     // NGS_DLL_HEADER void Mult (SliceVector<TV> x, SliceVector<TV> y) const
-    NGS_DLL_HEADER void Mult (TV1 && x, TV2 && y) const
+    void Mult (TV1 && x, TV2 && y) const
     {   
       // TV sum, val;
       // decltype (y(0)) sum, val;
