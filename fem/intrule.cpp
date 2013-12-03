@@ -1132,6 +1132,8 @@ namespace ngfem
             for (int l = 0; l < 2; l++)
               trans2(l,k) = dlamdx[sort[l]][k];
           trans2(2,2) = 1.0;
+
+	  dxdxi_permute = trans2;
         
           // prism permutation plus hex -> tet mapping
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)

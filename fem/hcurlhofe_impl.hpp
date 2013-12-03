@@ -109,10 +109,19 @@ namespace ngfem
 	
 	// gradients:
 	if(usegrad_face[0])
-	  for (int j = 0; j < p-1; j++)
-	    for (int k = 0; k < p-1-j; k++, ii++)
-              shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
-
+          {
+            DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                     SBLambda ([&](int nr, AutoDiff<2> val)
+                                               {
+                                                 shape[ii++] = Du<2> (val);
+                                               }));
+            /*
+            for (int j = 0; j < p-1; j++)
+              for (int k = 0; k < p-1-j; k++, ii++)
+                shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
+            */
+          }
 	// other combination
 	for (int j = 0; j < p-1; j++)
 	  for (int k = 0; k < p-1-j; k++, ii++)
@@ -164,8 +173,33 @@ namespace ngfem
               shape[ii++] = Du<2> (pol_xi[j]);
 	  }
       }
+
+
+
      
     INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
+
+
+    if (usegrad_face[0] && p[0] >= 1 && p[1] >= 1)
+      {
+        Vec<2,AutoDiff<2>> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
+	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
+        
+        LegendrePolynomial::EvalMult(p[0]-1, xi(0), bub,
+              SBLambda ([&](int i, Tx val) // ALWAYS_INLINE // clang
+                    {  
+                      LegendrePolynomial::EvalMult (p[1]-1, xi(1), val, 
+                                                    SBLambda([&](int i2, AutoDiff<2> v2)
+                                                             {
+                                                               shape[ii++] = Du<2> (v2);
+                                                             }));
+                    }));
+      }
+
+
+
+
+
     int fmax = 0; 
     for (int j = 1; j < 4; j++)
       if (vnums[j] > vnums[fmax])
@@ -180,12 +214,14 @@ namespace ngfem
     
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-    
+
+    /*
     //Gradient fields 
     if(usegrad_face[0])
       for (int k = 0; k < p[0]; k++)
 	for (int j= 0; j < p[1]; j++)
           shape[ii++] = Du<2> (pol_xi[k]*pol_eta[j]);
+    */
 
     //Rotation of Gradient fields 
     for (int k = 0; k < p[0]; k++)
@@ -255,10 +291,19 @@ namespace ngfem
           
           // gradients 
           if (usegrad_face[i])
-            for (int j = 0; j <= p-2; j++)
-              for (int k = 0; k <= p-2-j; k++, ii++)
-                shape[ii] = Du<3> (adpol1[j] * adpol2[k]);
-          
+            {
+              DubinerBasis3::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
+                                             lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                             SBLambda ([&](int nr, AutoDiff<3> val)
+                                                       {
+                                                         shape[ii++] = Du<3> (val);
+                                                       }));
+              /*
+              for (int j = 0; j <= p-2; j++)
+                for (int k = 0; k <= p-2-j; k++, ii++)
+                  shape[ii] = Du<3> (adpol1[j] * adpol2[k]);
+              */
+            }
           // other combination
           for (int j = 0; j <= p-2; j++)
             for (int k = 0; k <= p-2-j; k++, ii++)
@@ -311,6 +356,9 @@ namespace ngfem
     AutoDiff<3> lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
 
+    AutoDiff<3> sigma[6];
+    for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
+
     ArrayMem<AutoDiff<3>,20> adpolxy1(order+3),adpolxy2(order+3); 
     ArrayMem<AutoDiff<3>,20> adpolz(order+3);   
 
@@ -334,10 +382,12 @@ namespace ngfem
               for(int j = 0; j <= p-1; j++)
               shape[ii++] = Du<3> (adpolxy1[j] * muz[e[1]]);
 	    */
+            Tx xi = lam[e[1]]-lam[e[0]]; 
+            Tx eta = lam[e[0]]+lam[e[1]]; 
+            Tx bub = lam[e[0]]*lam[e[1]]*muz[e[1]];
+
 	    LegendrePolynomial::
-	      EvalScaledMult (order_edge[i]-1, 
-                              lam[e[1]]-lam[e[0]], lam[e[1]]+lam[e[0]], 
-                              lam[e[0]]*lam[e[1]]*muz[e[1]], adpolxy1);
+	      EvalScaledMult (order_edge[i]-1, xi, eta, bub, adpolxy1);
 	    for(int j = 0; j <= p-1; j++)
               shape[ii++] = Du<3> (adpolxy1[j]);
 	  }
@@ -379,17 +429,33 @@ namespace ngfem
 
 	INT<4> fav = GetFaceSort (i, vnums);
 
+        {
+          // gradients 
+          if (usegrad_face[i])
+            {
+              DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                       lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
+                                       SBLambda ([&](int nr, AutoDiff<3> val)
+                                                 {
+                                                   shape[ii++] = Du<3> (val);
+                                                 }));
+            }
+        }
+
+
 	AutoDiff<3> xi = lam[fav[2]]-lam[fav[1]];
 	AutoDiff<3> eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
 	
 	T_TRIGFACESHAPES::CalcSplitted(p+1,xi,eta,adpolxy1,adpolxy2); 
-
+        /*
 	if(usegrad_face[i])
 	  // gradient-fields =>  \nabla( adpolxy1*adpolxy2*muz )
 	  for (int j = 0; j <= p-2; j++)
 	    for (int k = 0; k <= p-2-j; k++)
               shape[ii++] = Du<3> (adpolxy1[j]*adpolxy2[k] * muz[fav[2]]);
-	
+        */
+
+
 	// rotations of grad-fields => grad(uj)*vk*w -  uj*grad(vk)*w 
 	for (int j = 0; j <= p-2; j++)
 	  for (int k = 0; k <= p-2-j; k++)
@@ -405,7 +471,33 @@ namespace ngfem
     for (int i = 2; i < 5; i++)
       {
 	INT<2> p = order_face[i];
-	 
+        INT<4> f = GetFaceSort (i, vnums);	  
+
+        {
+          Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+          Tx eta = sigma[f[0]] - sigma[f[3]];
+        
+          Tx scalexi = 1.0, scaleeta = 1.0;
+          if (f[0] / 3 == f[1] / 3)  
+            scalexi = lam[f[0]]+lam[f[1]];  // xi is horizontal
+          else
+            scaleeta = lam[f[0]]+lam[f[3]];
+          
+          Tx bub = (1.0/16)*(scaleeta*scaleeta-eta*eta)*(scalexi*scalexi-xi*xi);
+          LegendrePolynomial::EvalScaled     (p[0]-1, xi, scalexi, adpolxy1);
+          LegendrePolynomial::EvalScaledMult (p[1]-1, eta, scaleeta, bub, adpolz);
+
+          
+          if(usegrad_face[i])
+            {
+              // Gradientfields nabla(polxy*polz) 
+              for (int k = 0; k <= p[0]-1; k++)
+                for (int j = 0; j <= p[1]-1; j++)
+                  shape[ii++] = Du<3> (adpolxy1[k] * adpolz[j]);
+            }
+        }
+        
+
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)
 	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
@@ -419,7 +511,9 @@ namespace ngfem
 	int pp = int(max2(p[0],p[1]))+1;
 	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
 	T_ORTHOPOL::Calc(pp,zeta,adpolz); 
-
+        
+        
+        /*
 	if(usegrad_face[i])
 	  {
 	    // Gradientfields nabla(polxy*polz) 
@@ -432,7 +526,8 @@ namespace ngfem
 		for (int k = 0; k <= p[1]-1; k++)
                   shape[ii++] = Du<3> (adpolxy1[k] * adpolz[j]);
 	  }
-	  
+        */
+
 	// Rotations of GradFields => nabla(polxy)*polz - polxy*nabla(polz)
 	if (vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) 
 	  for (int k = 0; k <= p[0]-1; k++)
@@ -464,15 +559,33 @@ namespace ngfem
     
     if(order_cell[0] > 1 && order_cell[2] > 0) 
       {
+        INT<3> p = order_cell[0];
+        if (usegrad_cell && p[0] > 1 && p[2] > 0)
+          {
+            // gradientfields
+            int nf = (p[0]-0)*(p[0]-1)/2;
+            ArrayMem<Tx,20> pol_trig(nf);
+            
+            DubinerBasis3::EvalMult (p[0]-2, x, y, x*y*(1-x-y),pol_trig);
+            LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), adpolz);
+            
+            for (int i = 0; i < nf; i++)
+              for (int k = 0; k <= p[2]-1; k++)
+                shape[ii++] = Du<3> (pol_trig[i] * adpolz[k]);
+          }
+
+
 	T_TRIGFACESHAPES::CalcSplitted(order_cell[0]+1,x-y,1-x-y,adpolxy1,adpolxy2);
 	T_ORTHOPOL::Calc(order_cell[2]+1,2*z-1,adpolz); 
 	
+        /*
 	// gradientfields
 	if(usegrad_cell)
 	  for(int i=0;i<=order_cell[0]-2;i++)
 	    for(int j=0;j<=order_cell[0]-2-i;j++)
 	      for(int k=0;k<=order_cell[2]-1;k++)
                 shape[ii++] = Du<3> (adpolxy1[i]*adpolxy2[j]*adpolz[k]);
+        */
 
 	// Rotations of gradientfields
 	for(int i=0;i<=order_cell[0]-2;i++)
@@ -547,10 +660,30 @@ namespace ngfem
     for (int i = 0; i<6; i++)
       {
 	INT<2> p = order_face[i];
-	
+
 	AutoDiff<3> lam_f = 0;
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
+
+        {
+          INT<4> f = GetFaceSort (i, vnums);	  
+          Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+          Tx eta = sigma[f[0]] - sigma[f[3]];
+        
+          Tx bub = lam_f*(1.0/16)*(1.0-eta*eta)*(1.0-xi*xi);
+          LegendrePolynomial::Eval     (p[0]-1, xi, pol_xi);
+          LegendrePolynomial::EvalMult (p[1]-1, eta, bub, pol_eta);
+          
+          if(usegrad_face[i])
+            {
+              // Gradientfields nabla(polxy*polz) 
+              for (int k = 0; k <= p[0]-1; k++)
+                for (int j = 0; j <= p[1]-1; j++)
+                  shape[ii++] = Du<3> (pol_xi[k] * pol_eta[j]);
+            }
+        }
+
+	
 	
 	int qmax = 0;
 	for (int j = 1; j < 4; j++)
@@ -572,13 +705,15 @@ namespace ngfem
     
 	T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
 	T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
-	
+
+        /*
 	//Gradient fields 
 	if(usegrad_face[i])
 	  for (int k = 0; k < p[0]; k++)
 	    for (int j= 0; j < p[1]; j++)
               shape[ii++] = Du<3> (lam_f * pol_xi[k] * pol_eta[j]);
-	
+        */
+
 	//Rotation of Gradient fields 
 	for (int k = 0; k < p[0]; k++)
 	  for (int j= 0; j < p[1]; j++)
@@ -591,18 +726,42 @@ namespace ngfem
 	for(int j = 0; j < p[1];j++) 
           shape[ii++] = wuDv_minus_wvDu<3> (0.5, xi, pol_eta[j]*lam_f); 
       }
+
+
+    
+    {
+    INT<3> p = order_cell[0];
+    if(usegrad_cell)
+      if (p[0] >= 1 && p[1] >= 1 && p[2] >= 1)
+        {
+          LegendrePolynomial::EvalMult (p[0]-1, 2*x-1, x*(1-x), pol_xi);
+          LegendrePolynomial::EvalMult (p[1]-1, 2*y-1, y*(1-y), pol_eta);
+          LegendrePolynomial::EvalMult (p[2]-1, 2*z-1, z*(1-z), pol_zeta);
+          
+          for (int i = 0; i < p[0]; i++)
+            for (int j = 0; j < p[1]; j++)
+              {
+                Tx pxy = pol_xi[i] * pol_eta[j];
+                for (int k = 0; k < p[2]; k++)
+                  shape[ii++] = Du<3> (pxy * pol_zeta[k]);
+              }
+        }
+    }
+
     
     // Element-based shapes
     T_ORTHOPOL::Calc(order_cell[0]+1,2*x-1,pol_xi);
     T_ORTHOPOL::Calc(order_cell[1]+1,2*y-1,pol_eta);
     T_ORTHOPOL::Calc(order_cell[2]+1,2*z-1,pol_zeta); 
     
+    /*
     //Gradient fields
     if(usegrad_cell)
       for (int i=0; i<order_cell[0]; i++)
 	for(int j=0; j<order_cell[1]; j++) 
 	  for(int k=0; k<order_cell[2]; k++)
             shape[ii++] = Du<3> (pol_xi[i] * pol_eta[j] * pol_zeta[k]);
+    */
 
     //Rotations of gradient fields
     for (int i=0; i<order_cell[0]; i++)

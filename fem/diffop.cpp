@@ -15,16 +15,16 @@ namespace ngfem
 {
 
 
-
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
               FlatMatrix<double> mat, 
               LocalHeap & lh) const 
   {
-    cerr << "DifferentialOperator::CalcMatrix called for base class" << endl;
+    cerr << "DifferentialOperator::CalcMatrix called for base class, type = " 
+         << typeid(*this).name()
+         << endl;
   }
-
 
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
@@ -33,6 +33,7 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
+    cout << "called base class apply, type = " << typeid(*this).name() << endl;
     FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
@@ -45,6 +46,7 @@ namespace ngfem
          FlatVector<Complex> flux,
          LocalHeap & lh) const
   {
+    cout << "called base class apply, complex" << endl;
     FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
@@ -80,6 +82,7 @@ namespace ngfem
               FlatVector<double> x, 
               LocalHeap & lh) const 
   {
+    cout << "called base class apply trans" << endl;
     FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
@@ -93,6 +96,7 @@ namespace ngfem
               FlatVector<Complex> x, 
               LocalHeap & lh) const 
   {
+    cout << "called base class apply trans, complex" << endl;
     FlatMatrix<> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
@@ -160,7 +164,32 @@ namespace ngfem
   }
   
 
-
+  void BlockDifferentialOperator ::
+  Apply (const FiniteElement & fel,
+         const BaseMappedIntegrationPoint & mip,
+         FlatVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    FlatVector<> hx(fel.GetNDof(), lh);
+    FlatVector<> hflux(diffop.Dim(), lh);
+    
+    if (comp == -1)
+      {
+        for (int k = 0; k < dim; k++)
+          {
+            hx = x.Slice(k, dim);
+            diffop.Apply(fel, mip, hx, hflux, lh);
+            flux.Slice(k,dim) = hflux;
+          }
+      }
+    else
+      {
+        hx = x.Slice(comp, dim);
+        diffop.Apply(fel, mip, hx, hflux, lh);
+        flux.Slice(comp,dim) = hflux;
+      }
+  }
 
 
 

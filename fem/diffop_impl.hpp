@@ -24,8 +24,6 @@ namespace ngfem
   }
   */
 
-
-
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
