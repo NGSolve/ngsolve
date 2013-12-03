@@ -836,6 +836,28 @@ namespace ngfem
 
 
 
+  class ChebyPolynomial : public RecursivePolynomial<ChebyPolynomial>
+  {
+  public:
+    ChebyPolynomial () { ; }
+
+    template <class S, class T>
+    inline ChebyPolynomial (int n, S x, T && values)
+    { 
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    template <class S>
+    static ALWAYS_INLINE S P1(S x)  { return x; }
+    
+    static ALWAYS_INLINE double A (int i) { return 2; } 
+    static ALWAYS_INLINE double B (int i) { return 0; }
+    static ALWAYS_INLINE double C (int i) { return -1; }
+    enum { ZERO_B = 1 };
+  };
+
 
     
 
@@ -1806,7 +1828,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
-           SBLambda ([&] (int i, S val) ALWAYS_INLINE
+            SBLambda ([&] (int i, S val) // ALWAYS_INLINE clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
@@ -1826,7 +1848,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
-            SBLambda ([&] (int i, S val) ALWAYS_INLINE
+          SBLambda ([&] (int i, S val) // ALWAYS_INLINE  // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);

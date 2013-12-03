@@ -229,6 +229,13 @@ namespace ngfem
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
 
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
+	   FlatVector<double> x, 
+	   FlatVector<double> flux,
+	   LocalHeap & lh) const;
   };
 
 
@@ -250,6 +257,7 @@ namespace ngfem
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
+    
     /*
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
@@ -257,6 +265,7 @@ namespace ngfem
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
     */
+
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
