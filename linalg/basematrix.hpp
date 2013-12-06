@@ -30,7 +30,7 @@ namespace ngla
     /// 
     // BaseMatrix (const BaseMatrix & amat);
     //
-    BaseMatrix (ParallelDofs * aparalleldofs); 
+    BaseMatrix (const ParallelDofs * aparalleldofs); 
 
   public:
     /// 
