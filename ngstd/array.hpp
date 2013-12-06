@@ -448,6 +448,18 @@ namespace ngstd
         (*this)[i] = a2.Spec()[i];
     }
 
+    Array (std::initializer_list<T> list) 
+      : FlatArray<T,TSIZE> (list.size(), 
+                            list.size() ? new T[list.size()] : NULL)
+    {
+      allocsize = size;
+      ownmem = 1;
+      int cnt = 0;
+      for (auto i = list.begin(); i < list.end(); i++, cnt++)
+        data[cnt] = *i;
+    }
+    
+
     /// array merge-copy
     explicit Array (const Array<T> & a2, const Array<T> & a3)
       : FlatArray<T,TSIZE> (a2.Size()+a3.Size(), 
