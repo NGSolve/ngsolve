@@ -498,7 +498,7 @@ namespace ngbla
 
 
     template<typename TOP, typename TB>
-    T & Assign (const Expr<TB> & v)
+    INLINE T & Assign (const Expr<TB> & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -577,7 +577,7 @@ namespace ngbla
 	
 
     template<typename TB>
-    T & operator= (const Expr<TB> & v)
+    INLINE T & operator= (const Expr<TB> & v)
     {
       Assign<As> (v);
       return Spec();
@@ -585,14 +585,14 @@ namespace ngbla
 
 
     template<typename TB>
-    ALWAYS_INLINE T & operator+= (const Expr<TB> & v)
+    INLINE T & operator+= (const Expr<TB> & v)
     {
       Assign<AsAdd> (v);
       return Spec();
     }
 
     template<typename TB>
-    ALWAYS_INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
+    INLINE MatExpr<T> & operator-= (const Expr<TB> & v)
     {
       Assign<AsSub> (v);
       return Spec();
