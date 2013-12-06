@@ -258,11 +258,13 @@ namespace ngfem
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
     
+    /*
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double> mat, 
 		LocalHeap & lh) const;
+    */
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
