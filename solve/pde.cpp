@@ -44,8 +44,6 @@ namespace ngsolve
          << ":" << setw(2) << setfill('0') << lt->tm_min 
          << ":" << setw(2) << lt-> tm_sec;
     AddStringConstant ("time", time.str());
-
-
     tcl_interpreter = NULL;
   }
   
@@ -502,7 +500,8 @@ namespace ngsolve
 #ifdef _OPENMP
     if (constants.Used ("numthreads"))
       omp_set_num_threads (int (constants["numthreads"]));
-
+    else
+      AddConstant ("numthreads", omp_get_max_threads());      
     heapsize *= omp_get_max_threads();
 #endif
     
