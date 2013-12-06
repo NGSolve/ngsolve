@@ -2623,9 +2623,9 @@ namespace ngcomp
       flags2.SetFlag("complex");
     flags2.SetFlag("order", order+1);
     flags2.SetFlag("relorder", rel_order+1); 
-    flags2.SetFlag("orderinner",uniform_order_inner+1); 
-    flags2.SetFlag("orderface",uniform_order_face+1); 
-    flags2.SetFlag("orderedge",uniform_order_edge+1); 
+    // flags2.SetFlag("orderinner",uniform_order_inner+1); 
+    // flags2.SetFlag("orderface",uniform_order_face+1); 
+    // flags2.SetFlag("orderedge",uniform_order_edge+1); 
     flags2.SetFlag ("orderquad", -1);
     flags2.SetFlag ("ordertrig", -1);  
     flags2.SetFlag("variableorder",var_order); 
@@ -2635,7 +2635,7 @@ namespace ngcomp
     // if the following three flags are set -> relorder is used 
     flags2.SetFlag("relorder",rel_order+1);
     flags2.SetFlag("order",order+1); 
-    flags2.SetFlag("variableorder"); 
+    // flags2.SetFlag("variableorder"); 
     
     /* 
        if(var_order)
@@ -2654,7 +2654,8 @@ namespace ngcomp
     // flags2.SetFlag ("orderquad", -1);
     // flags2.SetFlag ("ordertrig", -1);  
     // flags2.SetFlag("variableorder",var_order); 
-    
+
+    *testout << "Flags for h1space: " << endl << flags2 << endl;
     H1HighOrderFESpace  fesh1(ma, flags2); 
 
     BitArray h1def(ma.GetNDomains());
@@ -2679,6 +2680,7 @@ namespace ngcomp
 
     LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
     fesh1.Update(lh);
+    fesh1.FinalizeUpdate(lh);
      
     int ned = ma.GetNEdges(); 
     // int nv  = ma.GetNV(); 
@@ -2759,6 +2761,7 @@ namespace ngcomp
 	    int l = first_edge_dof[i]; 
             
             IntRange edofs = fesh1.GetEdgeDofs(i);
+
 	    for( int k = edofs.First(); k < edofs.Next(); k++, l++)
 	      {
 		grad.CreatePosition(l,k); 
