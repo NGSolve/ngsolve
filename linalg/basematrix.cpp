@@ -18,7 +18,7 @@ namespace ngla
     ;
   }
 
-  BaseMatrix :: BaseMatrix (ParallelDofs * const aparalleldofs)
+  BaseMatrix :: BaseMatrix (const ParallelDofs * const aparalleldofs)
     : paralleldofs ( aparalleldofs )
   {     
     ;
