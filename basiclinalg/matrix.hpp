@@ -1566,6 +1566,8 @@ template <typename T>
   class Is_Sliceable<const TMAT, T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
   template <typename TMAT, typename T>
   class Is_Sliceable<TMAT&,T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
+  template <typename TMAT, typename T>
+  class Is_Sliceable<TMAT&&,T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
 
 
 
@@ -1573,7 +1575,7 @@ template <typename T>
   class slicetype
   {
   public:
-    typedef TMAT & TYPE;
+    typedef const TMAT & TYPE;
   };
   
   template <typename TMAT>
@@ -1590,7 +1592,7 @@ template <typename T>
   // 
   
   template <typename T, typename TMAT>
-  auto SliceIfPossible (TMAT & mat) -> typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE
+  auto SliceIfPossible (const TMAT & mat) -> typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE
   {
     // cout << "type(tmat) = " << typeid(TMAT).name() << endl;
     // cout << "sliceable = " << Is_Sliceable<TMAT,T>::VAL << endl;
