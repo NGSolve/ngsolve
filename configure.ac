@@ -44,7 +44,7 @@ AM_CONDITIONAL([NGSGUI], [test x$guion = xtrue])
 
 if test a$guion = atrue ; then
 # Tcl configuration:
-TEA_INIT([3.6])
+TEA_INIT([3.9])
 TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG 
 TEA_PUBLIC_TCL_HEADERS
