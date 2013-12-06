@@ -2321,8 +2321,12 @@ namespace ngcomp
                 if (hasinner)
                   {
                     RegionTimer reg (timervol);
-
+#ifdef _OPENMP
 		    LocalHeap clh (lh_size*omp_get_num_threads(), "biform-AddMatrix - Heap");
+#else
+		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
+#endif
+
 		    IterateElements 
 		      (fespace, VOL, clh, 
 		       [&] (ElementId ei, LocalHeap & lh)
