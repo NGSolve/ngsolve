@@ -771,11 +771,9 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
     
-    /*
     int h = this->Height();
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
-    */
 
     /*
     int h = this->Height();
@@ -785,6 +783,7 @@ namespace ngla
     */
 
 
+    /*
     // #pragma omp parallel
     {
       int tid = omp_get_thread_num();
@@ -795,6 +794,7 @@ namespace ngla
       for (int i = range.First(); i < range.Next(); i++)
 	fy(i) += s * RowTimesVector (i, fx);
     }
+    */
   }
   
 
