@@ -10,7 +10,6 @@
 namespace ngfem
 {
 
-  /*
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
@@ -22,7 +21,6 @@ namespace ngfem
 	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
       DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
   }
-  */
 
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
