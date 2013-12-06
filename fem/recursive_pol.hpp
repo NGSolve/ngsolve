@@ -1091,7 +1091,7 @@ namespace ngfem
   template <class S, class T>
   inline void JacobiPolynomial (int n, S x, double alpha, double beta, T && values)
   {
-    S p1 = 1.0, p2 = 0.0, p3;
+    S p1 = S(1.0), p2 = S(0.0), p3;
 
     if (n >= 0) 
       values[0] = p2 = 1.0;
@@ -1827,7 +1827,8 @@ namespace ngfem
     {
       LegendrePolynomial leg;
       int ii = 0;
-      leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
+      // leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
+      leg.EvalScaled (n, y-(1-x-y), 1-x, 
             SBLambda ([&] (int i, S val) // ALWAYS_INLINE clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
@@ -1848,7 +1849,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
-          SBLambda ([&] (int i, S val) // ALWAYS_INLINE  // clang
+          SBLambda ([&] (int i, S val) ALWAYS_INLINE  // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);
