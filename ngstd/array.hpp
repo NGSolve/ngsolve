@@ -240,6 +240,13 @@ namespace ngstd
       return *this;
     }
 
+    const FlatArray & operator= (const std::function<T(int)> & func) const
+    {
+      for (TSIZE i = 0; i < size; i++)
+        data[i] = func(i);
+      return *this;
+    }
+
     /// copies pointers
     const FlatArray & Assign (const FlatArray & a2)
     {
@@ -474,7 +481,7 @@ namespace ngstd
     }
 
     /// if responsible, deletes memory
-    ~Array()
+    INLINE ~Array()
     {
       if (ownmem) delete [] data;
     }
@@ -590,6 +597,13 @@ namespace ngstd
     Array & operator= (const T & val)
     {
       FlatArray<T,TSIZE>::operator= (val);
+      return *this;
+    }
+
+    Array & operator= (const std::function<T(int)> & func) 
+    {
+      for (TSIZE i = 0; i < size; i++)
+        data[i] = func(i);
       return *this;
     }
 
