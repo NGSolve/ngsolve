@@ -1507,6 +1507,9 @@ namespace ngcomp
                      double * values, int svalues)
   {
     static Timer t("visgf::GetMultiSurfValue");
+    static Timer ta("visgf::GetMultiSurfValue a");
+    static Timer tb("visgf::GetMultiSurfValue b");
+    static Timer tc("visgf::GetMultiSurfValue c");
     RegionTimer reg(t);
 
     try
@@ -1518,7 +1521,7 @@ namespace ngcomp
 	
         const FESpace & fes = gf->GetFESpace();
         int dim = fes.GetDimension();
-
+        
         
         HeapReset hr(lh);
 
@@ -1545,7 +1548,7 @@ namespace ngcomp
         fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
 
         if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
-
+        
 	SliceMatrix<> mvalues(npts, components, svalues, values);
 	mvalues = 0;
 
@@ -1555,7 +1558,7 @@ namespace ngcomp
 	    ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
 	    ir[i].FacetNr() = facetnr;
 	  }
-
+        
         if (bound)
           {
 	    MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
@@ -1582,6 +1585,7 @@ namespace ngcomp
           }
         else
           {
+            ta.Start();
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
 
 	    for (int k = 0; k < npts; k++)
@@ -1591,6 +1595,7 @@ namespace ngcomp
 		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
 	      }
 
+            ta.Stop();
             bool isdefined = false;
 	    for(int j = 0; j < bfi2d.Size(); j++)
 	      {
@@ -1598,7 +1603,9 @@ namespace ngcomp
                 isdefined = true;
 
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
+                tc.Start();
 		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+                tc.Stop();
 
 		for (int k = 0; k < npts; k++)
 		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
