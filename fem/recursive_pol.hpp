@@ -783,7 +783,7 @@ namespace ngfem
 
   class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
   {
-    static Array< double[2] > coefs;
+    static Array< Vec<2> > coefs;
     
   public:
     LegendrePolynomial () { ; }
@@ -1287,7 +1287,7 @@ namespace ngfem
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::Eval (x, values);
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalMult (x, power, values.Row(i), p1, p2);
-      return power * (1-x)/2;
+      return power * (1.0-x)*0.5;
     }
 
 
@@ -1297,7 +1297,7 @@ namespace ngfem
       S power = DubinerJacobiPolynomialsPowFO<n, i-1, alpha0, beta>::EvalScaled (x, t, values);
       S p1, p2;
       CEvalFO<JacobiPolynomialFix<alpha0+2*i, beta>, n-i>::EvalScaledMult (x, t, power, values.Row(i), p1, p2);
-      return power * (1-x)/2;
+      return power * (1.0-x)*0.5;
     }
   };
   

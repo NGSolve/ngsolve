@@ -476,6 +476,9 @@ namespace ngfem
       }
   }
 
+
+  ostream & operator<< (ostream & ost, ELEMENT_TYPE et);
+
   ostream & operator<< (ostream & ost, const Node & node);
 
   /**

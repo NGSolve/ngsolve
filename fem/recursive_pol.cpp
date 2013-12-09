@@ -10,7 +10,7 @@
 namespace ngfem
 {
 
-  Array< double[2] > LegendrePolynomial :: coefs;
+  Array< Vec<2> > LegendrePolynomial :: coefs;
 
   void LegendrePolynomial :: Calc (int n)
   {

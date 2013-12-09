@@ -58,9 +58,6 @@ namespace ngfem
       return (vnums[edges[enr][1]] > vnums[edges[enr][0]]) ? 1 : -1;
     }
   
-    virtual void GetFacetDofs(int i, Array<int> & dnums) const
-    { *testout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
-
 
     virtual void Print (ostream & ost) const;
   };

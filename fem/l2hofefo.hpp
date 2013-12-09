@@ -22,16 +22,6 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO_Shapes;
 
-  /*
-  template <ELEMENT_TYPE ET, int ORDER>
-  class T_L2HighOrderFiniteElementFO : 
-    public L2HighOrderFiniteElement<ET_trait<ET>::DIM>,
-    public T_ScalarFiniteElement2< L2HighOrderFEFO<ET,ORDER>, ET >,
-    public ET_trait<ET> 
-  */
-
-
-
 
 
   template <ELEMENT_TYPE ET, int ORDER,
@@ -45,26 +35,10 @@ namespace ngfem
     typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
 
 
-    /*
-  template <ELEMENT_TYPE ET, int ORDER,
-            typename BASE = T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET,ORDER>, ET, L2HighOrderFE<ET> > >
-  
-  class L2HighOrderFEFO : public BASE
-  {
-
-  protected:
-    // using BASE::T_IMPL;
-    // using BASE::T_SHAPES;
-    typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
-    */
-
-
     enum { DIM = ET_trait<ET>::DIM };
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
-    // using ScalarFiniteElement<DIM>::eltype;
-
     using DGFiniteElement<DIM>::vnums;
 
   public:
@@ -73,12 +47,11 @@ namespace ngfem
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
 	vnums[i] = i;
-      // eltype = ET;
       order = ORDER;
       ndof = SHAPES::NDOF;
     }
 
-    
+    /*
     virtual void PrecomputeShapes (const IntegrationRule & ir) 
     {
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
@@ -95,6 +68,7 @@ namespace ngfem
 
       SHAPES::precomp.Add (classnr, order, ir.GetNIP(), pre);
     }
+    */
 
     void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
     {
@@ -118,8 +92,17 @@ namespace ngfem
         BASE::T_IMPL:: EvaluateGradTrans (ir, values, coefs);
     }
 
-    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const { ; }
+    /*
+    NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const 
+    { 
+      cout << "L2HighOrderFEFO::GetTrace not available" << endl;
+    }
 
+    NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
+    { 
+      cout << "L2HighOrderFEFO::GetTraceTrans not available" << endl;
+    }
+    */
   };
 
 
@@ -134,11 +117,7 @@ namespace ngfem
     using L2HighOrderFEFO<ET_TRIG, ORDER>::ndof;
     using L2HighOrderFEFO<ET_TRIG, ORDER>::vnums; 
 
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    typedef TrigShapesInnerLegendre T_TRIGSHAPES;
-
   public:
-    static PrecomputedShapesContainer<PrecomputedScalShapes<2> > precomp;
 
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
@@ -181,6 +160,11 @@ namespace ngfem
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,1>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,4>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,6>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,7>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,8>;
 
 }
 

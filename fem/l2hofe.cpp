@@ -18,7 +18,6 @@ namespace ngfem
 {
 
 
-/*
   // sollten eigentlich rein ...
   template <> inline void L2HighOrderFE<ET_POINT> :: 
   GetDiagMassMatrix (FlatVector<> mass) const
@@ -40,27 +39,7 @@ namespace ngfem
       for (int iy = 0; iy <= order-ix; iy++, ii++)
         mass(ii) = 1.0 / ( (2*iy+1) * (2*ix+2*iy+2));
   }
-*/
 
-  /*
-  template class L2HighOrderFE<ET_POINT>;
-  template class L2HighOrderFE<ET_SEGM>;
-  // template class L2HighOrderFE<ET_TRIG>;
-  // template class L2HighOrderFE<ET_QUAD>;
-  template class L2HighOrderFE<ET_TET>;
-  template class L2HighOrderFE<ET_PRISM>;
-  template class L2HighOrderFE<ET_PYRAMID>;
-  template class L2HighOrderFE<ET_HEX>;
- 
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
-  // template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
-  // template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<3> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<3> >;
-  template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<3> >;
-  */
   
 } // namespace
 

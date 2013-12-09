@@ -55,8 +55,6 @@ namespace ngfem
 
 
 
-
-
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, SliceVector<> shape) const

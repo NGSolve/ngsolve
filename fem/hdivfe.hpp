@@ -80,6 +80,9 @@ namespace ngfem
 	}
     }
 
+    virtual void GetFacetDofs(int i, Array<int> & dnums) const
+    { cout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
+
 
   protected:
 
