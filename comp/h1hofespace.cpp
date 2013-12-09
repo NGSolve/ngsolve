@@ -449,14 +449,22 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
 
+
+    ctofdof.Range(0,ma.GetNV()) = [&] (int i)
+      { return (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF; };
+
+    /*
+    for (int i = 0; i < ma.GetNV(); i++)
+      ctofdof[i] = (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF;
+    */
+
+    /*
     for (int i = 0; i < ma.GetNV(); i++)
       if (used_vertex[i])
 	ctofdof[i] = WIREBASKET_DOF;
       else
 	ctofdof[i] = UNUSED_DOF;
-
-
-    
+    */
     for (int edge = 0; edge < ma.GetNEdges(); edge++)
       {
 	IntRange range = GetEdgeDofs (edge);
@@ -464,7 +472,6 @@ namespace ngcomp
 	if (wb_loedge && (range.Size() > 0))
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
-
 
     if (ma.GetDimension() == 3)
       for (int face = 0; face < ma.GetNFaces(); face++)

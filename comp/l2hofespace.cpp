@@ -17,6 +17,7 @@ To do: *Internal External Dofs (eliminate internal)
 #include <multigrid.hpp>
 
 #include <../fem/l2hofe.hpp>
+#include <../fem/l2hofe_impl.hpp>
 #include <../fem/l2hofefo.hpp>
 
 using namespace ngmg;
@@ -280,6 +281,7 @@ namespace ngcomp
           {
             switch (eltype)
               {
+              case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); break;
               case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); break;
               case ET_TRIG:    return * new (lh) ScalarDummyFE<ET_TRIG> (); break;
               case ET_QUAD:    return * new (lh) ScalarDummyFE<ET_QUAD> (); break;
@@ -287,24 +289,23 @@ namespace ngcomp
               case ET_PYRAMID: return * new (lh) ScalarDummyFE<ET_PYRAMID> (); break;
               case ET_PRISM:   return * new (lh) ScalarDummyFE<ET_PRISM> (); break;
               case ET_HEX:     return * new (lh) ScalarDummyFE<ET_HEX> (); break;
-              case ET_POINT:   break;
               }
           }
 
-	if (ma.GetElType(elnr) == ET_TRIG && order <= 1)
+	if (ma.GetElType(elnr) == ET_TRIG && order <= 8)
 	  {
 	    DGFiniteElement<2> * hofe2d = 0;
 	    switch (order)
 	      {
 	      case 0: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
 	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
-                /*
 	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
 	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
 	      case 4: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
 	      case 5: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
 	      case 6: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
-                */
+	      case 7: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,7> (); break;
+	      case 8: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,8> (); break;
 	      }
 	    
 	    Ngs_Element ngel = ma.GetElement<2> (elnr);
@@ -329,57 +330,6 @@ namespace ngcomp
           default:
             throw Exception ("illegal element in L2HoFeSpace::GetFE");
           }
-        
-#ifdef OLD
-	if (ma.GetDimension() == 2)
-	  {
-	    DGFiniteElement<2> * fe2d = 0;
-
-            Ngs_Element ngel = ma.GetElement<2> (elnr);
-
-	    switch (ConvertElementType (ngel.GetType()))
-	      {
-	      case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-	      case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-	      default:
-		;
-	      }
-
-	    fe2d -> SetVertexNumbers (ngel.vertices);
-	    fe2d -> SetOrder (INT<2> (order_inner[elnr][0], order_inner[elnr][1]));
-	    fe2d -> ComputeNDof(); 
-            return *fe2d;
-	  }
-	
-	else
-	  {
-	    DGFiniteElement<3> * fe3d = 0;
-            Ngs_Element ngel = ma.GetElement<3> (elnr);
-
-	    // switch (ma.GetElType(elnr))
-	    switch (ConvertElementType (ngel.GetType()))
-	      {
-	      case ET_TET:     fe3d = new (lh) L2HighOrderFE<ET_TET> (); break;
-	      case ET_PYRAMID: fe3d = new (lh) L2HighOrderFE<ET_PYRAMID> (); break;
-	      case ET_PRISM:   fe3d = new (lh) L2HighOrderFE<ET_PRISM> (); break;
-	      case ET_HEX:     fe3d = new (lh) L2HighOrderFE<ET_HEX> (); break;
-	      default:
-		{
-		  stringstream str;
-		  str << "L2HighOrderFESpace " << GetClassName() 
-		      << ", undefined eltype " 
-		      << ElementTopology::GetElementName(ma.GetElType(elnr))
-		      << ", order = " << order << endl;
-		  throw Exception (str.str());
-		}
-	      }
-	    
-	    fe3d -> SetVertexNumbers (ngel.vertices);
-	    fe3d -> SetOrder(order_inner[elnr]); 
-	    fe3d -> ComputeNDof(); 
-            return *fe3d;
-          }
-#endif
       } 
     catch (Exception & e)
       {
@@ -458,9 +408,10 @@ namespace ngcomp
     
     switch (ma.GetSElType(elnr))
       {
-      case ET_SEGM: fe = new DummyFE<ET_SEGM>; break;
-      case ET_TRIG: fe = new DummyFE<ET_TRIG>; break;
-      case ET_QUAD: fe = new DummyFE<ET_QUAD>; break;
+      case ET_POINT: fe = new DummyFE<ET_POINT>; break;
+      case ET_SEGM:  fe = new DummyFE<ET_SEGM>; break;
+      case ET_TRIG:  fe = new DummyFE<ET_TRIG>; break;
+      case ET_QUAD:  fe = new DummyFE<ET_QUAD>; break;
 
       default:
 	stringstream str;
@@ -472,7 +423,6 @@ namespace ngcomp
 
     return *fe;
   }
- 
 
   int L2HighOrderFESpace :: GetNDof () const
   {
@@ -505,11 +455,7 @@ namespace ngcomp
 
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
-    int first = first_element_dof[elnr];
-    int neldofs = first_element_dof[elnr+1] - first;
-
-    for (int j = 0; j < neldofs; j++)
-      dnums.Append (first+j);
+    dnums += GetElementDofs(elnr);
   }
   
   void L2HighOrderFESpace :: 

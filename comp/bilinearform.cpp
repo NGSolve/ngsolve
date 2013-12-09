@@ -2286,7 +2286,7 @@ namespace ngcomp
     if (!MixedSpaces())
 
       {
-        int ne = ma.GetNE();
+        // int ne = ma.GetNE();
       
         bool hasbound = false;
         bool hasinner = false;
