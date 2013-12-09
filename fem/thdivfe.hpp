@@ -21,6 +21,38 @@ namespace ngfem
   }
 
 
+  // rotated gradient
+  template <int DIM> class DuRot;
+
+  template <> class DuRot<2>
+  {
+
+  public:
+    const AutoDiff<2> & u;
+
+    DuRot (const AutoDiff<2> & au)
+      : u(au) { ; }
+
+    Vec<2> Value () const
+    {
+      Vec<2> val;
+      val(0) = u.DValue(1);
+      val(1) = -u.DValue(0);
+      return val;
+    }
+
+    /*
+    Vec<DIM_CURL> CurlValue () const
+    {
+      return Vec<DIM> (0.0);
+    }
+    */
+  };
+
+
+
+
+
   template <int DIM>
   class uDvDw_Cyclic
   {
@@ -83,7 +115,98 @@ namespace ngfem
 
 
 
+  template <int DIM> class THDiv2Shape
+  {
+  public:
+    INLINE operator Vec<DIM> () { return 0.0; }
+  };
 
+
+  template <> class THDiv2Shape<2>
+  {
+    Vec<2> data;
+  public:
+    INLINE THDiv2Shape (Du<2> uv)
+    {
+      data = Vec<2> (uv.u.DValue(1), -uv.u.DValue(0));
+    }
+    
+    INLINE THDiv2Shape (uDv<2> uv)
+    {
+      data = Vec<2> (-uv.u.Value()*uv.v.DValue(1), 
+                     uv.u.Value()*uv.v.DValue(0));
+    }
+
+    INLINE THDiv2Shape (const uDv_minus_vDu<2> & uv) 
+    { 
+      data(0) = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
+      data(1) =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+    }
+
+    INLINE THDiv2Shape (const wuDv_minus_wvDu<2> & uv) 
+    { 
+      data[0] = -uv.u.Value() * uv.v.DValue(1) + uv.u.DValue(1) * uv.v.Value();
+      data[1] =  uv.u.Value() * uv.v.DValue(0) - uv.u.DValue(0) * uv.v.Value();
+      data[0] *= uv.w.Value();
+      data[1] *= uv.w.Value();
+    }
+
+    
+    INLINE operator Vec<2> () { return data; }
+  };
+
+
+  template <> class THDiv2Shape<3>
+  {
+    Vec<3> data;
+  public:
+
+    INLINE THDiv2Shape (const uDvDw_Cyclic<3> & uvw) 
+    { 
+      AutoDiff<3> hv =
+        uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u) +
+        uvw.w.Value() * Cross (uvw.u, uvw.v);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    INLINE THDiv2Shape (const Du_Cross_Dv<3> & uv) 
+    { 
+      AutoDiff<3> hv = Cross (uv.u, uv.v);
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    INLINE THDiv2Shape (const wDu_Cross_Dv<3> & uvw) 
+    { 
+      AutoDiff<3> hv = Cross (uvw.u, uvw.v);
+      for (int i = 0; i < 3; i++)
+        data[i] = uvw.w.Value() * hv.DValue(i);
+    }
+
+
+    INLINE THDiv2Shape (const uDvDw_minus_DuvDw<3> & uvw) 
+    { 
+      AutoDiff<3> hv =
+        uvw.u.Value() * Cross (uvw.v, uvw.w) +
+        uvw.v.Value() * Cross (uvw.w, uvw.u);
+
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+    INLINE THDiv2Shape (const curl_uDvw_minus_Duvw<3> & uvw) 
+    { 
+      AutoDiff<3> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
+      for (int i = 0; i < 3; i++)
+        data[i] = hv.DValue(i);
+    }
+
+
+    INLINE operator Vec<3> () { return data; }
+  };
 
 
 
@@ -95,7 +218,16 @@ namespace ngfem
     double * data;
   public:
     HDivShapeElement (double * adata) : data(adata) { ; }
-    
+
+    void operator= (THDiv2Shape<DIM> hd2vec)
+    {
+      Vec<DIM> v = hd2vec;
+      for (int j = 0; j < DIM; j++)
+        data[j] = v(j);
+    }
+
+
+    /*
     void operator= (const Du<DIM> & uv) 
     {
       data[0] =  uv.u.DValue(1);
@@ -122,7 +254,7 @@ namespace ngfem
       data[1] *= uv.w.Value();
     }
 
-
+    
     void operator= (const uDvDw_Cyclic<DIM> & uvw) 
     { 
       AutoDiff<3> hv =
@@ -165,6 +297,7 @@ namespace ngfem
       for (int i = 0; i < 3; i++)
         data[i] = hv.DValue(i);
     }
+    */
   };
 
 
@@ -185,6 +318,13 @@ namespace ngfem
     HDivEvaluateShapeElement (const double * acoefs, Vec<DIM> & asum)
       : coefs(acoefs), sum(asum) { ; }
 
+
+    void operator= (THDiv2Shape<DIM> hd2vec)
+    {
+      sum += *coefs * Vec<DIM> (hd2vec);
+    }
+
+    /*
     void operator= (const Du<DIM> & uv) 
     {
       sum(0) += *coefs * uv.u.DValue(1);
@@ -254,6 +394,7 @@ namespace ngfem
         sum(i) += (*coefs) * hv.DValue(i);
 
     }
+    */
   };
 
 

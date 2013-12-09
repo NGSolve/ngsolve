@@ -10,31 +10,18 @@ namespace ngfem
   public:
     /// compute shape functions in factored form $\varphi_{ij} = u_i v_j$
     template <typename Sx, typename Sy, typename T>
-    static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)
+    INLINE static void CalcSplitted (int n, Sx x, Sy y, T & val1, T & val2)
     {
       LegendrePolynomial leg;
 
       Sx bub1 = (1-x-y)*(1+x-y);
-      // ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 
       leg.EvalScaledMult (n-3, x, 1-y, bub1, val1); 
-
-      //LegendrePolynomialMult (n-3, 2*y-1, y, val2);
       leg.EvalMult (n-3, 2*y-1, y, val2);
-
-      /*
-	ScaledLegendrePolynomial (n-3, x, 1-y, val1); 
-	for (int i = 0; i <= n-3; i++)
-	val1[i] *= bub1;
-
-	LegendrePolynomial (n-3, 2*y-1, val2);
-	for (int i = 0; i <= n-3; i++)
-	val2[i] *= y;
-      */
     }
 
 
     template <int n, typename Sx, typename Sy, typename T>
-    static void CalcSplitted (Sx x, Sy y, T & val1, T & val2)
+    INLINE static void CalcSplitted (Sx x, Sy y, T & val1, T & val2)
     {
       Sx bub1 = (1-x-y)*(1+x-y);
       // ScaledLegendrePolynomialMult (n-3, x, 1-y, bub1, val1); 

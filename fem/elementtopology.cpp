@@ -13,8 +13,13 @@
 
 namespace ngfem
 {
-  using namespace ngfem;
 
+
+  ostream & operator<< (ostream & ost, ELEMENT_TYPE et)
+  {
+    ost << ElementTopology::GetElementName (et);
+    return ost;
+  }
 
   const char * ElementTopology :: GetElementName (ELEMENT_TYPE et)
   {

@@ -64,6 +64,9 @@ public:
 		       const FlatVector<double> x, FlatMatrix<double> y,
 		       LocalHeap & lh)
   {
+    static Timer t("ApplyIR - HDivfe");
+    RegionTimer reg(t);
+
     Cast(fel).Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
     for (int i = 0; i < mir.Size(); i++)
       {

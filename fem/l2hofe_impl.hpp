@@ -28,26 +28,6 @@ namespace ngfem
   typename L2HighOrderFE<ET,SHAPES,BASE>::TPRECOMP_GRAD L2HighOrderFE<ET,SHAPES,BASE>::precomp_grad(40);
 
 
-  /*
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE () 
-  { ; }
-
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: L2HighOrderFE (int aorder) 
-  {
-    for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
-    
-    order = aorder;
-    order_inner = aorder;
-    ndof = PolDimension (aorder);
-  }
-
-  template <ELEMENT_TYPE ET, class SHAPES, class BASE>
-  NGS_DLL_HEADER L2HighOrderFE<ET,SHAPES,BASE> :: ~L2HighOrderFE () 
-  { ; }
-  */
-
 
 
 
@@ -130,7 +110,6 @@ namespace ngfem
       BASE :: Evaluate (ir, coefs, vals);
   }
 
-
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const
@@ -143,13 +122,6 @@ namespace ngfem
     else
       BASE :: EvaluateTrans (ir, values, coefs);
   }
-
-
-
-
-
-
-
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
@@ -166,7 +138,6 @@ namespace ngfem
       else
 	BASE :: EvaluateGrad (ir, coefs, values);
     }
-
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
@@ -273,8 +244,16 @@ namespace ngfem
 
 
 
+  template <ELEMENT_TYPE ET> 
+  class L2HighOrderFE_Shape : public L2HighOrderFE<ET>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    void T_CalcShape (Tx hx[], TFA & shape) const;
+  };
 
 
+  /*
   template <>
   class L2HighOrderFE_Shape<ET_POINT> : public L2HighOrderFE<ET_POINT>
   {
@@ -339,7 +318,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx x[], TFA & shape) const;
   };
-
+  */
 
 
 
@@ -351,7 +330,7 @@ namespace ngfem
   /* *********************** Point  **********************/
   
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_POINT> ::
   T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -363,7 +342,7 @@ namespace ngfem
   /* *********************** Segment  **********************/
   
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_SEGM> ::
   T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -377,7 +356,7 @@ namespace ngfem
   /* *********************** Triangle  **********************/
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TRIG> ::
   T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -390,7 +369,7 @@ namespace ngfem
 
   /* *********************** Quad  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_QUAD> ::
   T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -416,7 +395,7 @@ namespace ngfem
 
   /* *********************** Tet  **********************/
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TET> ::
   T_CalcShape (Tx x[], TFA & shape) const
   {
@@ -464,7 +443,7 @@ namespace ngfem
 
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void  L2HighOrderFE_Shape<ET_PRISM> ::
   T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -513,7 +492,7 @@ namespace ngfem
   /* *********************** Pyramid  **********************/
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_PYRAMID> :: 
   T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -554,7 +533,7 @@ namespace ngfem
   /* *********************** Hex  **********************/
 
 
-  template<typename Tx, typename TFA>  
+  template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
     Tx x = hx[0], y = hx[1], z = hx[2];

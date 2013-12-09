@@ -70,7 +70,8 @@ namespace ngfem
       order_inner = aorder;
       ndof = PolDimension (aorder);
     }
-    NGS_DLL_HEADER ~L2HighOrderFE () { ; }
+
+    virtual NGS_DLL_HEADER ~L2HighOrderFE () { ; }
     
     /// global vertex numbers define ordering of vertices
     template <typename TA>

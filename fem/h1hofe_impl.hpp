@@ -135,7 +135,7 @@ namespace ngfem
         */
 
         LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub,
-            SBLambda ([&](int i, Tx val) // ALWAYS_INLINE // clang
+          SBLambda ([&](int i, Tx val) ALWAYS_INLINE // clang
                     {  
                       LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
                       ii += p[1]-1;

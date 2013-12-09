@@ -56,15 +56,28 @@ namespace ngfem
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
 	    FlatMatrixFixWidth<DIM> vals) const
   {    
-    AutoDiff<DIM> adp[DIM];
+    static Timer t("HDivFE - evaluate IR");
+    t.AddFlops (ir.GetNIP()* this->GetNDof());
+    RegionTimer reg(t);
+    
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	for (int j = 0; j < DIM; j++)
-	  adp[j] = AutoDiff<DIM> (ir[i](j), j);
+        Vec<DIM, AutoDiff<DIM> > adp = ir[i]; 
 	
+        /*
 	HDivEvaluateShape<DIM> ds(coefs);
-	static_cast<const FEL*> (this) -> T_CalcShape (adp, ds);
+	static_cast<const FEL*> (this) -> T_CalcShape (&adp(0), ds);
 	vals.Row(i) = ds.Sum(); 
-      }
+        */
+
+        Vec<DIM> sum = 0;
+        static_cast<const FEL*> (this) -> 
+                                  T_CalcShape (&adp(0), SBLambda([&] (int j, THDiv2Shape<DIM> vshape)
+                                                                 {
+                                                                   sum += coefs(j) * Vec<DIM> (vshape);
+                                                                 }));
+    vals.Row(i) = sum;
+    
   }
+}
 }

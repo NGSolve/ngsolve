@@ -26,7 +26,8 @@ namespace ngfem
   {
   protected:
     ///
-    Array< double[3] > coefs;
+    // Array< double[3] > coefs;
+    Array< Vec<3> > coefs;
   
   public:
     /// init coefficient array

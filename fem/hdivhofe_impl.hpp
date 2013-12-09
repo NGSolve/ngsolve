@@ -59,46 +59,43 @@ namespace ngfem
   void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     if (only_ho_div && (order_inner[0] <= 1)) return;
-    Tx x = hx[0], y = hx[1];
-    Tx lami[3] = { x, y, 1-x-y };
+
+    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
 
     ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
-    if (!only_ho_div){
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
-      for (int i = 0; i < 3; i++)
-        {
-        int es = edges[i][0], ee = edges[i][1];
-        if (vnums[es] > vnums[ee])  swap (es, ee);
+    if (!only_ho_div)
+      {
+        for (int i = 0; i < 3; i++)
+          {
+            INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
 
-        //Nedelec low order edge shape function 
-          shape[i] = uDv_minus_vDu<2> (lami[es], lami[ee]);
+            //Nedelec low order edge shape function 
+            shape[i] = uDv_minus_vDu<2> (lami[e[0]], lami[e[1]]);
 
-        int p = order_edge[i]; 
-        //HO-Edge shapes (Gradient Fields)   
-        if(p > 0) //  && usegrad_edge[i]) 
-          { 
-            AutoDiff<2> xi = lami[ee] - lami[es]; 
-            AutoDiff<2> eta = 1 - lami[ee] - lami[es]; 
-            T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, adpol1); 
-           
-            for(int j = 0; j < p; j++) 
-                shape[ii++] = Du<2> (adpol1[j]);
-          }
-        }   
-    }
+            int p = order_edge[i]; 
+            //HO-Edge shapes (Gradient Fields)   
+            if(p > 0) //  && usegrad_edge[i]) 
+              { 
+                AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
+                AutoDiff<2> eta = 1 - lami[e[1]] - lami[e[0]]; 
+                T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, 
+                                        SBLambda([&](int i, AutoDiff<2> v)
+                                                 {
+                                                   shape[ii++] = Du<2>(v);
+                                                 }));
+              }
+          }   
+      }
     else
       ii = 0;
+
     //Inner shapes (Face) 
     int p = order_inner[0];      
     if(p > 1) 
       {
-	int fav[3] = { 0, 1, 2 }; 
-	//Sort vertices ... v(f0) < v(f1) < v(f2) 
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
-	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
-	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  
+        INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
 	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
 	AutoDiff<2> eta = lami[fav[0]]; 

@@ -45,13 +45,10 @@ namespace ngfem
 
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
-    // using HDivFiniteElement<DIM>::eltype;
-    // using HDivFiniteElement<DIM>::dimspace;
 
     using HDivHighOrderFiniteElementFO<DIM>::vnums;
     using HDivHighOrderFiniteElementFO<DIM>::ho_div_free;
     using HDivHighOrderFiniteElementFO<DIM>::only_ho_div;
-
 
     using ET_trait<ET>::N_VERTEX;
     using ET_trait<ET>::N_EDGE;
@@ -70,8 +67,6 @@ namespace ngfem
 	vnums[i] = i;
       ho_div_free = false;
       only_ho_div = false;
-      // dimspasce = DIM;
-      // eltype = ET;
       order = ORDER;
     }
   };
@@ -115,9 +110,15 @@ namespace ngfem
       idofs += IntRange (3*(ORDER+1), ndof);
     }
 
+    virtual void GetFacetDofs(int i, Array<int> & dnums) const
+    {
+      dnums.SetSize (0);
+      dnums += i;
+      dnums += 3+IntRange (i*ORDER,(i+1)*ORDER);
+    }
 
 
-    template<typename Tx, typename TFA>  
+    template<typename Tx, typename TFA>   
     void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       if (only_ho_div && (ORDER <= 1)) return;
