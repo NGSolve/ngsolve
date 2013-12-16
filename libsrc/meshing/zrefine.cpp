@@ -708,9 +708,10 @@ namespace netgen
 	      }
 	  }
 
+        mesh.RebuildSurfaceElementLists();
 	PrintMessage (5, "Surface elements done, NSE = ", mesh.GetNSE());
-
       }
+    
   }
 
 
