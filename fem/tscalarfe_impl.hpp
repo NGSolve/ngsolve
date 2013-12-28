@@ -37,20 +37,6 @@ namespace ngfem
   }
 
   
-  template <int DIM> 
-  INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
-  {
-    Vec<DIM, AutoDiff<DIM> > adp;
-
-    for (int i = 0; i < DIM; i++)
-      adp[i].Value() = mip.IP()(i);
-    for (int i = 0; i < DIM; i++)
-      for (int j = 0; j < DIM; j++)
-        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
-    
-    return adp;
-  }
-
 
 
 

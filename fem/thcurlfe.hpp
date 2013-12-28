@@ -52,6 +52,12 @@ namespace ngfem
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                       SliceMatrix<> curlshape) const;
 
+    virtual Vec <DIM_CURL>
+    EvaluateCurlShape (const IntegrationPoint & ip, 
+                       FlatVector<double> x,
+                       LocalHeap & lh) const;
+
+
     /*
       virtual Vec <DIM_CURL_TRAIT<ET_trait<ET>::DIM>::DIM>
       EvaluateCurlShape (const IntegrationPoint & ip, 

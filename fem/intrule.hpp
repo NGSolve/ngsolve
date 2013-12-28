@@ -289,6 +289,22 @@ namespace ngfem
         }
     }
 
+
+    INLINE operator Vec<DIMS, AutoDiff<DIMR,TSCAL>> () const
+    {
+      Vec<DIMS, AutoDiff<DIMR, TSCAL> > adp;
+      
+      for (int i = 0; i < DIMS; i++)
+        adp[i].Value() = this->IP()(i);
+      for (int i = 0; i < DIMS; i++)
+        for (int j = 0; j < DIMR; j++)
+          adp[i].DValue(j) = GetJacobianInverse()(i,j);
+      
+      return adp;
+    }
+
+
+
     ///
     const Vec<DIMR,SCAL> GetNV () const { return normalvec; }
     /// 
@@ -305,6 +321,22 @@ namespace ngfem
     void CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2, Mat<2> & ddx3) const; 
     void CalcHesse (Mat<3> & ddx1, Mat<3> & ddx2, Mat<3> & ddx3) const;
   };
+
+
+  template <int DIM> 
+  INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
+  {
+    Vec<DIM, AutoDiff<DIM> > adp;
+
+    for (int i = 0; i < DIM; i++)
+      adp[i].Value() = mip.IP()(i);
+    for (int i = 0; i < DIM; i++)
+      for (int j = 0; j < DIM; j++)
+        adp[i].DValue(j) = mip.GetJacobianInverse()(i,j);
+    
+    return adp;
+  }
+
 
 
   template <int DIMS, int DIMR, typename SCAL> 
@@ -414,8 +446,7 @@ namespace ngfem
     Mat<D,D> GetPermutationJacobian() const { return dxdxi_permute; }
   };
 
-
-
+  
 
   /**
      Computes Gaussean integration.
