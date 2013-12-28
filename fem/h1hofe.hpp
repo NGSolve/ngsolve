@@ -48,17 +48,19 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ET_trait<ET>::PolBubbleDimension;
 
+    typedef unsigned char TORDER;
+
     /// global vertex numbers used of edge/face orientation
     Vec<N_VERTEX, int> vnums;
 
     /// order of edge shapes
-    Vec<N_EDGE, short> order_edge; 
+    Vec<N_EDGE, TORDER> order_edge; 
 
     /// order of face shapes
-    Vec<N_FACE, INT<2,short> > order_face; 
+    Vec<N_FACE, INT<2,TORDER> > order_face; 
 
     /// order of internal shapes (3d only)
-    Vec<N_CELL, INT<3,short> > order_cell;
+    Vec<N_CELL, INT<3,TORDER> > order_cell;
 
   public:
     /// minimal constructor, orders will be set later

@@ -334,7 +334,6 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       { 
 	int p = order_edge[i]; 
-
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec low order edge shape function 
@@ -344,12 +343,13 @@ namespace ngfem
 	if (p > 0 && usegrad_edge[i]) 
 	  {     
 	    LegendrePolynomial::
-	      EvalScaledMult (order_edge[i]-1, 
+	      EvalScaledMult (p-1, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      lam[e[0]]*lam[e[1]], adpol1);
-	    
-	    for(int j = 0; j < p; j++) 	      
-              shape[ii++] = Du<3> (adpol1[j]);
+			      lam[e[0]]*lam[e[1]], 
+                              SBLambda ([&](int i, AutoDiff<3> val)
+                                        {
+                                          shape[ii++] = Du<3> (val);
+                                        }));
 	  }
       }
 
@@ -377,12 +377,8 @@ namespace ngfem
                                                        {
                                                          shape[ii++] = Du<3> (val);
                                                        }));
-              /*
-              for (int j = 0; j <= p-2; j++)
-                for (int k = 0; k <= p-2-j; k++, ii++)
-                  shape[ii] = Du<3> (adpol1[j] * adpol2[k]);
-              */
             }
+
           // other combination
           for (int j = 0; j <= p-2; j++)
             for (int k = 0; k <= p-2-j; k++, ii++)
@@ -395,28 +391,30 @@ namespace ngfem
 
     
     int p = order_cell[0]; 
-    
-    TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
-    
-    //gradient fields 
-    if(usegrad_cell)
-      for (int i = 0; i <= p-3; i++)
-	for (int j = 0; j <= p-3-i; j++)
-	  for (int k = 0; k <= p-3-i-j; k++)
-            shape[ii++] = Du<3> (adpol1[i] * adpol2[j] * adpol3[k]);
-
-    // other combinations
-    for (int i = 0; i <= p-3; i++)
-      for (int j = 0; j <= p-3-i; j++)
-	for (int k = 0; k <= p-3-i-j; k++)
-          { // not Sabine's original ...
-            shape[ii++] = uDv_minus_vDu<3> (adpol1[i], adpol2[j] * adpol3[k]);
-            shape[ii++] = uDv_minus_vDu<3> (adpol1[i] * adpol3[k], adpol2[j]);
-          }
-       
-    for (int j= 0; j <= p-3; j++)
-      for (int k = 0; k <= p-3-j; k++)
-        shape[ii++] = wuDv_minus_wvDu<3> (lam[0], lam[3], adpol2[j] * adpol3[k]);
+    if (p >= 3)
+      {
+        TetShapesInnerLegendre::CalcSplitted(p+1, x-(1-x-y-z), y, z,adpol1, adpol2, adpol3 );
+        
+        //gradient fields 
+        if(usegrad_cell)
+          for (int i = 0; i <= p-3; i++)
+            for (int j = 0; j <= p-3-i; j++)
+              for (int k = 0; k <= p-3-i-j; k++)
+                shape[ii++] = Du<3> (adpol1[i] * adpol2[j] * adpol3[k]);
+        
+        // other combinations
+        for (int i = 0; i <= p-3; i++)
+          for (int j = 0; j <= p-3-i; j++)
+            for (int k = 0; k <= p-3-i-j; k++)
+              { // not Sabine's original ...
+                shape[ii++] = uDv_minus_vDu<3> (adpol1[i], adpol2[j] * adpol3[k]);
+                shape[ii++] = uDv_minus_vDu<3> (adpol1[i] * adpol3[k], adpol2[j]);
+              }
+        
+        for (int j= 0; j <= p-3; j++)
+          for (int k = 0; k <= p-3-j; k++)
+            shape[ii++] = wuDv_minus_wvDu<3> (lam[0], lam[3], adpol2[j] * adpol3[k]);
+      }
   }
 
 

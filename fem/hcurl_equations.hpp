@@ -194,10 +194,9 @@ namespace ngfem
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCAL;
-
-      Vec<3,TSCAL> hx;
-      hx = static_cast<const FEL&>(fel).EvaluateCurlShape (mip.IP(), x, lh);
+      // typedef typename TVX::TSCAL TSCAL;
+      // Vec<3,TSCAL> hx;
+      auto hx = static_cast<const FEL&>(fel).EvaluateCurlShape (mip.IP(), x, lh);
       y = (1.0/mip.GetJacobiDet()) * (mip.GetJacobian() * hx);
     }
 
