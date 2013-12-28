@@ -76,7 +76,7 @@ namespace ngfem
 			 LocalHeap & lh)
     {
       for (int i = 0; i < mir.Size(); i++)
-	Apply (fel, mir[i], x, y.Row(i), lh);
+        DOP::Apply (fel, mir[i], x, y.Row(i), lh);
     }
 
 
