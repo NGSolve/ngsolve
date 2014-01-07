@@ -891,59 +891,55 @@ namespace ngfem
                              (1-xt)*yt,z}; 
         
        
-    const EDGE * edges = ElementTopology::GetEdges (ET_PYRAMID);
-    
-    ArrayMem<AutoDiff<3>, 20> pol_xi(order+2), pol_eta(order+2), pol_zeta(order+2),pol2_zeta(order+2); 
+    ArrayMem<AutoDiff<3>, 20> pol_xi(order+2), pol_eta(order+2), pol_zeta(order+2);
     
     int ii =8; 
  
     // horizontal edges incl. Nedelec 0
     for (int i = 0; i < 4; i++)
       {
-	int es = edges[i][0], ee = edges[i][1]; 
-	if (vnums[es] > vnums[ee]) swap (es, ee);
+        int p = order_edge[i];
+        INT<2> e = GetEdgeSort (i, vnums);	  
 	
-	AutoDiff<3> xi  = sigma[ee] - sigma[es];   
-	// AutoDiff<3> lam_e = lami[ee] + lami[es];
-	AutoDiff<3> lam_t = lambda[ee] + lambda[es]; 
-	
+	AutoDiff<3> xi  = sigma[e[1]] - sigma[e[0]];   
+	AutoDiff<3> lam_t = lambda[e[1]] + lambda[e[0]]; 
+        
         shape[i] = uDv<3> (0.5 * (1-z)*(1-z)*lam_t, xi);
 
 	if(usegrad_edge[i])
 	  {
-	    // T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, xi*(1-z), z, pol_xi);
-
+            AutoDiff<3> bub = 0.25*(1-xi*xi)*(1-z)*(1-z)*lam_t;
 	    LegendrePolynomial::
-	      EvalScaledMult (order_edge[i]-1, 
-			      xi*(1-z), 1-z, 
-			      (1-xi*xi)*(1-z)*(1-z), pol_xi);
-
-	    for(int j = 0; j < order_edge[i]; j++)
-              shape[ii++] = Du<3> (pol_xi[j]*lam_t);
+	      EvalScaledMult (p-1,
+			      xi*(1-z), 1-z, bub,
+                              SBLambda ([&](int i, AutoDiff<3> val)
+                                        {
+                                          shape[ii++] = Du<3>(val);
+                                        }));
 	  }
       }
     
     // vertical edges incl. Nedelec 0  
     for(int i = 4; i < 8; i++)
       {
-	int es = edges[i][0], ee = edges[i][1]; 
-	
-	if (vnums[es] > vnums[ee]) swap (es, ee);
+        int p = order_edge[i];
+        INT<2> e = GetEdgeSort (i, vnums);	  
 
-        shape[i] = uDv_minus_vDu<3> (lami[es], lami[ee]);
+        shape[i] = uDv_minus_vDu<3> (lami[e[0]], lami[e[1]]);
 
 	if (usegrad_edge[i])
 	  {
-	    /*
-              T_ORTHOPOL::CalcTrigExt (order_edge[i]+1, lami[ee]-lami[es],  
-              1-lami[es]-lami[ee], pol_xi);
-	    */
+            Tx xi = lami[e[1]]-lami[e[0]]; 
+            Tx lam_e = lami[e[0]]+lami[e[1]];
+            Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
+
 	    LegendrePolynomial::
-	      EvalScaledMult (order_edge[i]-1, lami[ee]-lami[es], lami[es]+lami[ee], 
-			      lami[ee]*lami[es],
-			      pol_xi);
-	    for(int j = 0; j < order_edge[i]; j++)
-	      shape[ii++] = Du<3> (pol_xi[j]);
+	      EvalScaledMult (p-1,
+                              xi, lam_e, bub, 
+                              SBLambda ([&](int i, AutoDiff<3> val)
+                                        {
+                                          shape[ii++] = Du<3>(val);
+                                        }));
 	  }
       }
 
@@ -963,19 +959,30 @@ namespace ngfem
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 
 	  if(vnums[faces[i][fav[1]]] > vnums[faces[i][fav[2]]]) swap(fav[1],fav[2]);
 	  if(vnums[faces[i][fav[0]]] > vnums[faces[i][fav[1]]]) swap(fav[0],fav[1]); 	
-	 
+
+	  if(usegrad_face[i])
+            {
+              Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
+              DubinerBasis3::
+                EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
+                          SBLambda ([&](int nr, AutoDiff<3> val)
+                                    {
+                                      shape[ii++] = Du<3> (val);
+                                    }));
+            }
+
 	  T_TRIGFACESHAPES::CalcSplitted(p+1, bary[fav[2]]-bary[fav[1]], 
 					 bary[fav[0]],pol_xi,pol_eta);
 	  
 	  for(int j=0;j<=p-2;j++) pol_eta[j] *= lam_face;  
-	  
+          /*
 	  // phi = pol_xi * pol_eta * lam_face; 
 	  // Type 1: Gradient Functions 
 	  if(usegrad_face[i])
 	    for(int j=0;j<= p-2; j++)
 	      for(int k=0;k<=p-2-j; k++)
                 shape[ii++] = Du<3> (pol_xi[j] * pol_eta[k]);
-
+          */
 	  // Type 2:  
 	  for(int j=0;j<= p-2; j++)
 	    for(int k=0;k<=p-2-j; k++)
@@ -993,12 +1000,28 @@ namespace ngfem
 	int px = order_face[4][0];
 	int py = order_face[4][0]; // SZ-Attentione 
 	int p = max2(px, py);
-	int pp = p+1;
 
 	AutoDiff<3> fac = 1.0;
-	for (int k = 1; k <= p; k++)
-	  fac *= (1-z);
-	
+	for (int k = 1; k <= p+1; k++) fac *= (1-z);
+
+	INT<4> f = GetFaceSort (4, vnums);	  
+	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
+	Tx eta = sigma[f[0]] - sigma[f[3]];
+
+        if (usegrad_face[4])
+          {
+            // Type 1: Gradient-fields 
+            
+            LegendrePolynomial::
+              EvalMult (px-1, xi, fac*0.25*(1-xi*xi), pol_xi);
+            LegendrePolynomial::
+              EvalMult (py-1, eta, 0.25*(1-eta*eta), pol_eta);
+
+            for (int k = 0; k <= px-1; k++) 
+              for (int j = 0; j <= py-1; j++, ii++) 
+                shape[ii] = Du<3> (pol_xi[k] * pol_eta[j]);
+          }
+        
 	int fmax = 0;
 	for (int l=1; l<4; l++) 
 	  if (vnums[l] > vnums[fmax]) fmax = l;  
@@ -1006,35 +1029,26 @@ namespace ngfem
 	int f1 = (fmax+3)%4;
 	int f2 = (fmax+1)%4; 
 	if(vnums[f1]>vnums[f2]) swap(f1,f2);  // fmax > f2 > f1 
-        
- 	AutoDiff<3> xi  = sigma[fmax] - sigma[f2]; 
-	AutoDiff<3> eta = sigma[fmax] - sigma[f1];
-	
-	pol_eta[pp-1] = 0; //!
-	pol_xi[pp-1] = 0;  //!
 
-	T_ORTHOPOL::Calc (pp+2, xi, pol_xi);	
-	T_ORTHOPOL::Calc (pp+2, eta, pol_eta);
-	
-	for(int k=0;k<pp;k++) pol_eta[k] = fac*pol_eta[k]; 
+ 	xi  = sigma[fmax] - sigma[f2]; 
+	eta = sigma[fmax] - sigma[f1];
 
-	// Type 1: Gradient-fields 
-	if (usegrad_face[4])
-	  for (int k = 0; k <= px-1; k++) 
-	    for (int j = 0; j <= py-1; j++, ii++) 
-              shape[ii] = Du<3> (pol_xi[k] * pol_eta[j]);
+	T_ORTHOPOL::Calc (px-1, xi, pol_xi);	
+	T_ORTHOPOL::Calc (py-1, eta, pol_eta);
+	
+	for(int k = 0; k < py; k++) pol_eta[k] *= fac;
 
 	// Type 2: 
 	for (int k = 0; k < px; k++) 
-	  for (int j = 0; j < py; j++, ii++) 
-            shape[ii] = uDv_minus_vDu<3> (pol_eta[j], pol_xi[k]);
+	  for (int j = 0; j < py; j++) 
+            shape[ii++] = uDv_minus_vDu<3> (pol_eta[j], pol_xi[k]);
 
 	// Type 3:
-	for (int k=0; k< px; k++,ii++)
-          shape[ii] = uDv<3> (0.5*pol_xi[k]*fac, eta);
+	for (int k = 0; k < px; k++)
+          shape[ii++] = uDv<3> (0.5*pol_xi[k]*fac, eta);
 
-	for (int k=0; k< py; k++,ii++)
-          shape[ii] = uDv<3> (0.5*pol_eta[k]*fac, xi);  // shouldn't there be a  *fac  ????
+	for (int k = 0; k < py; k++)
+          shape[ii++] = uDv<3> (0.5*pol_eta[k] /* *fac */, xi); 
       }
 
 
@@ -1046,25 +1060,23 @@ namespace ngfem
 	// v_j = L_j+2(2yt-1) 
 	// w_k = z * (1-z)^(k+2)  with 0 <= i,j <= k, 0<= k <= p-2  
 	
-	T_ORTHOPOL::Calc (pp+3, 2*xt-1, pol_xi);
-	T_ORTHOPOL::Calc (pp+3, 2*yt-1, pol_eta);		
+	LegendrePolynomial::EvalMult (pp-1, 2*xt-1, xt*(1-xt), pol_xi);
+        LegendrePolynomial::EvalMult (pp-1, 2*yt-1, yt*(1-yt), pol_eta);
+	// T_ORTHOPOL::Calc (pp+3, 2*xt-1, pol_xi);
+	// T_ORTHOPOL::Calc (pp+3, 2*yt-1, pol_eta);		
 		
 	pol_zeta[0] = z*(1-z)*(1-z);
 	for (int k=1;k<=pp-2;k++) 
 	  pol_zeta[k] = (1-z)*pol_zeta[k-1];
 
-	// This one includes constant and linear polynomial
-	AutoDiff<3> zz = 2*z-1; 
-	IntegratedLegendrePolynomial (pp, zz, pol2_zeta); 
-	
-
-	// --> Attention: Use Integrated Legendre also for H^1
 	if(usegrad_cell)
 	  {
 	    for(int k=0;k<= pp-2;k++)
-	      for(int i=0;i<=k;i++)
-		for(int j=0;j<=k;j++,ii++)
-                  shape[ii] = Du<3> (pol_xi[i]*pol_eta[j]*pol_zeta[k]);
+              {
+                for(int i=0;i<=k;i++)
+                  for(int j=0;j<=k;j++)
+                    shape[ii++] = Du<3> (pol_xi[i]*pol_eta[j]*pol_zeta[k]);
+              }
 	  }
 	
 	// Type 2a: l.i. combinations of grad-terms   
