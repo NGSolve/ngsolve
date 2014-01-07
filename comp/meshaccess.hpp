@@ -111,7 +111,7 @@ namespace ngcomp
 
   class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler
   {
-    netgen::Ngx_Mesh * mesh;
+    netgen::Ngx_Mesh mesh;
 
     /// buffered global quantities:
     /// dimension of the domain. Set to -1 if no mesh is present
@@ -182,7 +182,7 @@ namespace ngcomp
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { 
-      Ng_Point pt = mesh -> GetPoint (pi);
+      Ng_Point pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
     }
 
@@ -191,7 +191,7 @@ namespace ngcomp
     Vec<D> GetPoint (int pi) const
     { 
       Vec<D> p;
-      Ng_Point pt = mesh -> GetPoint (pi);
+      Ng_Point pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
       return p;
     }
@@ -213,10 +213,10 @@ namespace ngcomp
     { 
       switch (dim)
         {
-        case 1: return mesh -> GetElementIndex<1>(elnr) - 1;
-        case 2: return mesh -> GetElementIndex<2>(elnr) - 1;
+        case 1: return mesh.GetElementIndex<1>(elnr) - 1;
+        case 2: return mesh.GetElementIndex<2>(elnr) - 1;
         case 3: default:
-          return mesh -> GetElementIndex<3>(elnr) - 1;
+          return mesh.GetElementIndex<3>(elnr) - 1;
         }
     }
 
@@ -225,10 +225,10 @@ namespace ngcomp
     { 
       switch (dim)
         {
-        case 1: return mesh -> GetElementIndex<0>(elnr) - 1;
-        case 2: return mesh -> GetElementIndex<1>(elnr) - 1;
+        case 1: return mesh.GetElementIndex<0>(elnr) - 1;
+        case 2: return mesh.GetElementIndex<1>(elnr) - 1;
         case 3: default:
-          return mesh -> GetElementIndex<2>(elnr) - 1;
+          return mesh.GetElementIndex<2>(elnr) - 1;
         }
     }
 
@@ -313,10 +313,10 @@ namespace ngcomp
     {
       switch (dim-boundary)
 	{
-	case 1:	return mesh -> GetElement<1> (elnr);
-	case 2: return mesh -> GetElement<2> (elnr);
+	case 1:	return mesh.GetElement<1> (elnr);
+	case 2: return mesh.GetElement<2> (elnr);
 	case 3:
-        default: return mesh -> GetElement<3> (elnr);
+        default: return mesh.GetElement<3> (elnr);
 	}
     }
 
@@ -326,10 +326,10 @@ namespace ngcomp
       if (ei.IsBoundary()) hdim--;
       switch (hdim)
 	{
-	case 1:	return mesh -> GetElement<1> (ei.Nr());
-	case 2: return mesh -> GetElement<2> (ei.Nr());
+	case 1:	return mesh.GetElement<1> (ei.Nr());
+	case 2: return mesh.GetElement<2> (ei.Nr());
 	case 3:
-        default: return mesh -> GetElement<3> (ei.Nr());
+        default: return mesh.GetElement<3> (ei.Nr());
 	}
 
     }
@@ -345,10 +345,10 @@ namespace ngcomp
     {
       switch (dim)
 	{
-	case 1:	return mesh -> GetElement<0> (elnr);
-	case 2: return mesh -> GetElement<1> (elnr);
+	case 1:	return mesh.GetElement<0> (elnr);
+	case 2: return mesh.GetElement<1> (elnr);
 	case 3: 
-        default: return mesh -> GetElement<2> (elnr);
+        default: return mesh.GetElement<2> (elnr);
 	}
     }
 
@@ -358,7 +358,7 @@ namespace ngcomp
     template <int DIM>
     Ngs_Element GetElement (int elnr) const
     {
-      return mesh -> GetElement<DIM> (elnr);
+      return mesh.GetElement<DIM> (elnr);
     }
 
     
@@ -370,7 +370,7 @@ namespace ngcomp
     template <int DIM>
     Ng_Node<DIM> GetNode (int nr) const
     {
-      return mesh -> GetNode<DIM> (nr);
+      return mesh.GetNode<DIM> (nr);
     }
 
     /// returns the points of an element.
@@ -390,14 +390,18 @@ namespace ngcomp
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
     { vnums = ArrayObject (GetElement(elnr).vertices); }
+    
+    ///
+    void GetElVertices (ElementId ei, Array<int> & vnums) const
+    { vnums = GetElement(ei).Vertices(); }
 
     /// returns the vertices of a boundary element
     void GetSElVertices (int selnr, Array<int> & vnums) const
-    { vnums = ArrayObject (GetSElement(selnr).vertices); }
+    { vnums = GetSElement(selnr).Vertices(); }
 
     /// returns the edges of an element
     void GetElEdges (int elnr, Array<int> & ednums) const
-    { ednums = ArrayObject (GetElement(elnr).edges); }
+    { ednums = GetElement(elnr).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
@@ -411,7 +415,7 @@ namespace ngcomp
 
     /// returns the faces of an element
     void GetElFaces (int elnr, Array<int> & fnums) const
-    { fnums = ArrayObject (GetElement(elnr).faces); }
+    { fnums = GetElement(elnr).Faces(); }
 
     // returns face numbers and face orientation of an element. (old style function)
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;

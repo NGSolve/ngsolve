@@ -199,7 +199,7 @@ namespace ngcomp
 	order_face = INT<2> (p,p);
 	usegrad_face = 0; 
       } 
-     
+
     usegrad_edge = 0;                                
     usegrad_cell = 0; 
 
@@ -349,7 +349,15 @@ namespace ngcomp
       order_edge = uniform_order_edge; 
     if(uniform_order_face>-1 && dim == 3) 
       order_face = INT<2> (uniform_order_face, uniform_order_face);
-	
+    /*
+    Array<int> pnums;
+    for (int i = 0; i < order_face.Size(); i++)
+      {
+	ma.GetFacePNums (i,pnums);  
+        if (pnums.Size()==4)
+          order_face[i] = uniform_order_face+1;
+      }
+    */
     // order of FINE FACES and EDGES for savety reasons set to 0 
     for(int i=0;i<order_edge.Size();i++) 
       if(!fine_edge[i]) order_edge[i] = 0;  
@@ -360,8 +368,6 @@ namespace ngcomp
 
     UpdateDofTables(); 
     UpdateCouplingDofArray();
-
-    if (timing) Timing();    
   }
 		
   void HCurlHighOrderFESpace :: UpdateDofTables()
@@ -1088,35 +1094,20 @@ namespace ngcomp
     dnums.SetSize(0);
     if (!DefinedOnBoundary (ma.GetSElIndex (selnr))) return;
 
-    Array<int> vnums, ednums;
-    int fnum; 
-    int i, j;
-    int first,next; 
-
+    ArrayMem<int,4> ednums;
     ma.GetSElEdges (selnr, ednums);
-    fnum = ma.GetSElFace (selnr); 
+    int fnum = ma.GetSElFace (selnr); 
 
     if ( !discontinuous )
       //Nedelec
-      for (i = 0; i < ednums.Size(); i++) 
+      for (int i = 0; i < ednums.Size(); i++) 
 	dnums.Append (ednums[i]);
     
-    for (i = 0; i < ednums.Size(); i++)
-      {
-	first = first_edge_dof[ednums[i]];
-	next = first_edge_dof[ednums[i]+1]; 
-	for (j = first; j <next; j++)
-	  dnums.Append (j);
-      }
+    for (int i = 0; i < ednums.Size(); i++)
+      dnums += GetEdgeDofs (ednums[i]);
 
     if(first_face_dof.Size()>1)		       
-      {
-	// inner = normal + bubbles 
-	first = first_face_dof[fnum];
-	next = first_face_dof[fnum+1]; 
-	for(j=first; j<next; j++) 
-	  dnums.Append(j);
-      }
+      dnums += GetFaceDofs (fnum);
   }
 
 
@@ -1142,33 +1133,26 @@ namespace ngcomp
   void HCurlHighOrderFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    if ( discontinuous ) return;
+    if (discontinuous) return;
 
     dnums.Append(ednr);
-    int first = first_edge_dof[ednr];
-    int next = first_edge_dof[ednr+1]; 
-    for (int j = first; j <next; j++)
-      dnums.Append (j);
+    dnums += GetEdgeDofs(ednr);
   }
 
   void HCurlHighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
-    if ( discontinuous ) return;
+    if (discontinuous) 
+      {
+        dnums.SetSize(0);
+        return;
+      }
 
-    int first = first_face_dof[fanr];
-    int next = first_face_dof[fanr+1]; 
-    for (int j = first; j <next; j++)
-      dnums.Append (j);
+    dnums = GetFaceDofs (fanr);
   }
 
   void HCurlHighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
-    int first = first_inner_dof[elnr];
-    int next = first_inner_dof[elnr+1]; 
-    for (int j = first; j <next; j++)
-      dnums.Append (j);  
+    dnums = GetElementDofs (elnr);
   }
 
 

@@ -114,6 +114,9 @@ namespace ngcomp
     static Timer timer("Vector assembling");
     static Timer timer1("Vector assembling 1", 2);
     static Timer timer2("Vector assembling 2", 2);
+    static Timer timer2a("Vector assembling 2a", 2);
+    static Timer timer2b("Vector assembling 2b", 2);
+    static Timer timer2c("Vector assembling 2c", 2);
     static Timer timer3("Vector assembling 3", 2);
     RegionTimer reg (timer);
 
@@ -148,17 +151,18 @@ namespace ngcomp
             }
           else
             {
-              for (int j = 0; j < ma.GetNE(); j++)
+              if (parts[i] -> SkeletonForm()) 
+                { 
+                  throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+                }
+              else
                 {
-                  HeapReset hr(clh);
-		  if (parts[i] -> SkeletonForm()) 
-		  { 
-		    throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
-		  }else
-		  {
-		    if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-		      parts[i] -> CheckElement (fespace.GetFE(j, clh));
-		  }
+                  for (int j = 0; j < ma.GetNE(); j++)
+                    {
+                      HeapReset hr(clh);
+                      if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+                        parts[i] -> CheckElement (fespace.GetFE(j, clh));
+                    }
                 }
             }
 
@@ -233,21 +237,26 @@ namespace ngcomp
                [&] (ElementId ei, LocalHeap & lh)
                {
                  RegionTimer reg2 (timer2);
+                 timer2a.Start();
                  progress.Update ();
 
                  const FiniteElement & fel = fespace.GetFE(ei, lh);
                  const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                 FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                 // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                 Array<int> dnums (fel.GetNDof(), lh);
+                 fespace.GetDofNrs (ei, dnums);
+                 timer2a.Stop();
 
                  for (int j = 0; j < parts.Size(); j++)
                    {
                      if (!parts[j] -> VolumeForm()) continue;
                      if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
-		     
                      int elvec_size = fel.GetNDof()*fespace.GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
                      
+		     timer2b.Start();
                      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
+                     timer2b.Stop();
                      
                      if (printelvec)
                        {
@@ -258,9 +267,10 @@ namespace ngcomp
                                   << "element-index = " << eltrans.GetElementIndex() << endl
                                   << "elvec = " << endl << elvec << endl;
                        }
-                     
+                     timer2c.Start();
                      fespace.TransformVec (ei, elvec, TRANSFORM_RHS);
                      AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+                     timer2c.Stop();
                    }
                });
           }

@@ -3,6 +3,8 @@
 
 namespace ngcomp {
 
+  NGS_Object :: ~NGS_Object () { ; }
+
   void NGS_Object :: DefineStringFlag(const char* s) //, const char* val) 
   {
     if (flaglist.StringFlagDefined(s))
@@ -113,5 +115,23 @@ int NGS_Object :: CheckFlags(const Flags& flags)
 
   return ret; // number of undefined flags
 }
+
+
+string NGS_Object :: GetClassName () const
+{
+  return typeid(*this).name();
+}
+
+void NGS_Object :: PrintReport (ostream & ost)
+{
+  ost << typeid(*this).name();
+}
+
+
+void NGS_Object :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+{
+  cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
+}
+
  
 } // namespace

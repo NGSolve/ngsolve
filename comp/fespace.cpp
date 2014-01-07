@@ -497,7 +497,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     FiniteElement * fe = NULL;
     
-    if (DefinedOn (ma.GetElIndex (elnr)))
+    if (DefinedOn (ElementId (VOL, elnr)))
       {
         switch (ma.GetElType(elnr))
           {
@@ -526,14 +526,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
       }
 
-
     if (!fe)
       {
-        string str = string("FESpace ") + GetClassName() 
-          + ", undefined eltype " 
-          + ElementTopology::GetElementName(ma.GetElType(elnr))
-          + ", order = " + ToString (order) + "\n";
-        throw Exception (str);
+        Exception ex;
+        ex << "FESpace" << GetClassName() << ", undefined eltype " 
+           << ElementTopology::GetElementName(ma.GetElType(elnr))
+           << ", order = " << ToString (order) << "\n";
+        throw ex;
       }
     
     return *fe;
@@ -732,7 +731,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     int steps;
     LocalHeap lh (100000, "FESpace - Timing");
 
-    cout << endl << "timing ..." << endl;
+    cout << endl << "timing fespace " << GetName() 
+         << (low_order_space ? "" : " low-order")
+         << " ..." << endl;
     
     starttime = WallTime();
     steps = 0;
@@ -751,10 +752,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	steps++;
 	time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
-
 
     starttime = WallTime();
     steps = 0;
@@ -773,7 +773,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	steps++;
 	time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
 
@@ -799,9 +799,54 @@ lot of new non-zero entries in the matrix!\n" << endl;
         steps++;
         time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+
+
+
+
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+#pragma omp parallel for
+        for (int i = 0; i < ma.GetNE(); i++)
+          {
+	    /* Ng_Element ngel = */ ma.GetElement(i);
+          }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 2.0);
+    
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+
+
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+#pragma omp parallel
+        {
+	  LocalHeap &clh = lh, lh = clh.Split();
+#pragma omp for
+          for (int i = 0; i < ma.GetNE(); i++)
+            {
+              HeapReset hr(lh);
+              /* ElementTransformation & trafo = */ ma.GetTrafo(i, VOL, lh);
+            }
+        }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 2.0);
+    
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
+
+
+
+
 
 
 
@@ -817,7 +862,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         steps++;
         time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
 
@@ -835,9 +880,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
         steps++;
         time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
+    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh)" << endl;
 
     // ***************************
 
@@ -854,7 +899,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         steps++;
         time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE" << endl;
 
@@ -865,15 +910,32 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         for (int i = 0; i < ma.GetNE(); i++)
           {
-	    // Ng_Element ngel = 
-	    ma.GetElement(i);
+	    /* Ng_Element ngel = */ ma.GetElement(i);
           }
         steps++;
         time = WallTime()-starttime;
       }
-    while (time < 5.0);
+    while (time < 2.0);
     
     cout << 1e9 * time / (ma.GetNE()*steps) << " ns per Get - Ng_Element" << endl;
+
+
+    starttime = WallTime();
+    steps = 0;
+    do
+      {
+        for (int i = 0; i < ma.GetNE(); i++)
+          {
+            HeapReset hr(lh);
+            /* ElementTransformation & trafo = */ ma.GetTrafo(i, VOL, lh);
+          }
+        steps++;
+        time = WallTime()-starttime;
+      }
+    while (time < 2.0);
+    
+    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetTrafo" << endl;
+
   }
 
 
@@ -1212,29 +1274,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
-    dranges.SetSize(0);
-    if (!DefinedOn (ma.GetElIndex (ei))) return;
-
-    ArrayMem<int,27> pnums;
-    ma.GetElPNums (ei, pnums);
-
-    if (order == 1)
-      { // Ng-mesh may be second order, but FE space is 1st order
-	int np = pnums.Size();
-	switch (ma.GetElType(ei))
-	  {
-	  case ET_TET: np = 4; break;
-	  case ET_TRIG: np = 3; break;
-	  case ET_QUAD: np = 4; break;
-	  case ET_PRISM: np = 6; break;
-          default:
-            ;
-	  }
-	if (pnums.Size() > np) pnums.SetSize (np);
+    if (!DefinedOn (ei)) 
+      {
+        dranges.SetSize(0);
+        return;
       }
 
+    ArrayMem<int,27> pnums;
+
+    if (order == 1)
+      ma.GetElVertices(ei, pnums);
+    else
+      ma.GetElPNums (ei, pnums);
+
+    dranges.SetSize(pnums.Size());
     for (int i = 0; i < pnums.Size(); i++)
-      dranges.Append (IntRange (pnums[i], pnums[i]+1));
+      dranges[i] = IntRange (pnums[i], pnums[i]+1);
   }
 
 
@@ -1242,25 +1297,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
  
   void NodalFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    ma.GetElPNums (elnr, dnums);
-
     if (order == 1)
-      { // Ng-mesh may be second order, but FE space is 1st order
-	int np = dnums.Size();
-	switch (ma.GetElType(elnr))
-	  {
-	  case ET_TET: np = 4; break;
-	  case ET_TRIG: np = 3; break;
-	  case ET_QUAD: np = 4; break;
-	  case ET_PRISM: np = 6; break;
-          default:
-            ;
-	  }
-	if (dnums.Size() > np) dnums.SetSize (np);
-      }
+      ma.GetElVertices (elnr, dnums);
+    else
+      ma.GetElPNums (elnr, dnums);
 
-    if (!DefinedOn (ma.GetElIndex (elnr)))
-      dnums = -1;
+    if (!DefinedOn (ElementId (VOL, elnr))) dnums = -1;
   }
 
 
@@ -1510,20 +1552,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     }
 
     SetDummyFE<ScalarDummyFE> ();
+    static ConstantCoefficientFunction one(1);
 
     if (ma.GetDimension() == 2)
-    {
-      integrator = 
-          new MassIntegrator<2> (new ConstantCoefficientFunction(1));
-      boundary_integrator = 0;
-    }
+      {
+        integrator = new MassIntegrator<2> (&one);
+        boundary_integrator = 0;
+      }
     else
-    {
-      integrator = 
-          new MassIntegrator<3> (new ConstantCoefficientFunction(1));
-      boundary_integrator = 0;
-    }
-
+      {
+        integrator = new MassIntegrator<3> (&one);
+        boundary_integrator = 0;
+      }
+    
     if (dimension > 1)
       integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
   }
@@ -1747,13 +1788,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineStringListFlag("spaces");
     if (parseflags) CheckFlags(flags);
     
-    // Array<const Prolongation*> prols;
-    // prol = new CompoundProlongation (this, prols);
     prol = new CompoundProlongation (this);
-
     vefc_dofblocks = 0;
   }
-
 
 
 
@@ -1767,13 +1804,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineStringListFlag("spaces");
     if(parseflags) CheckFlags(flags);
     
-    /*
-    Array<const Prolongation*> prols(spaces.Size());
-    for (int i = 0; i < spaces.Size(); i++)
-      prols[i] = spaces[i]->GetProlongation();
-    prol = new CompoundProlongation (this, prols);
-    */
-
     CompoundProlongation * hprol = new CompoundProlongation (this);
     for (int i = 0; i < spaces.Size(); i++)
       hprol -> AddProlongation (spaces[i]->GetProlongation());
@@ -1805,7 +1835,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     cummulative_nd[0] = 0;
     for (int i = 0; i < spaces.Size(); i++)
       {
-	// const_cast<FESpace*> (spaces[i])->Update(lh);
 	spaces[i] -> Update(lh);
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
@@ -1923,7 +1952,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    // ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetFE(elnr, lh);
@@ -1945,7 +1973,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dnums.Append (-1);
       }
   }
-
 
   void CompoundFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -1975,8 +2002,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  else
 	    dnums.Append (-1);
       }
-
   }
+
   void CompoundFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
@@ -2032,13 +2059,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
-
-
-
   const FiniteElement & CompoundFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    // ArrayMem<const FiniteElement*, 10> fea(spaces.Size());
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
     for (int i = 0; i < fea.Size(); i++)
       fea[i] = &spaces[i]->GetSFE(elnr, lh);

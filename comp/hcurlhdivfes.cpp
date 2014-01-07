@@ -26,7 +26,6 @@ namespace ngcomp
   NedelecFESpace :: NedelecFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
     : FESpace (ama, flags)
   {
-    cout << "nelecfespace, flags = " << endl << flags << endl;
     name="NedelecFESpace(hcurl)";
     DefineDefineFlag("hcurl");
     // parse standard flags

@@ -200,7 +200,6 @@ namespace ngcomp
 		     int component)// = 0)
   {
     static Timer t("CalcPointFlux");
-    static Timer t2("CalcPointFlux - findpoint");
     RegionTimer reg(t);
 
     HeapReset hr(lh);
@@ -221,8 +220,6 @@ namespace ngcomp
       }
     else
       {
-	RegionTimer reg2(t2);
-    
       	if(domains.Size() > 0)
 	  elnr = ma.FindElementOfPoint(point,ip,false,&domains);
 	else

@@ -44,7 +44,7 @@ namespace ngcomp
 
     virtual bool BelongsToMesh (const void * mesh2) const 
     {
-      return mesh == static_cast<const MeshAccess*> (mesh2) -> mesh;
+      return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
     }
 
 
@@ -169,8 +169,20 @@ namespace ngcomp
       elindex = aelindex;
       iscurved = false;
 
-      Vec<DIMS> pref = 0.0;
-      mesh -> ElementTransformation <DIMS,DIMR> (elnr, &pref(0), &p0(0), &mat(0));
+      if (eltype == ET_TET)
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
+          // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
+          p0 = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[3]));
+          mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
+          mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
+          mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
+        }
+      else
+        {
+          Vec<DIMS> pref = 0.0;
+          mesh -> ElementTransformation <DIMS,DIMR> (elnr, &pref(0), &p0(0), &mat(0));
+        }
     }
 
     virtual int SpaceDim () const
@@ -185,7 +197,7 @@ namespace ngcomp
 
     virtual bool BelongsToMesh (const void * mesh2) const 
     {
-      return mesh == static_cast<const MeshAccess*> (mesh2) -> mesh;
+      return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
     }
 
 
@@ -308,7 +320,7 @@ namespace ngcomp
 
   MeshAccess :: ~MeshAccess ()
   {
-    delete mesh;
+    // delete mesh;
     Ng_LoadGeometry("");
   }
 
@@ -316,7 +328,8 @@ namespace ngcomp
   void MeshAccess :: LoadMesh (const string & filename)
   {
     // Ng_LoadMesh (filename.c_str());
-    mesh = netgen::LoadMesh (filename);
+    // mesh = netgen::LoadMesh (filename);
+    mesh.LoadMesh (filename);
     UpdateBuffers();
   }
 
@@ -331,7 +344,7 @@ namespace ngcomp
 
   void MeshAccess :: UpdateBuffers()
   {
-    if (mesh == NULL)
+    if (!mesh.Valid())
       {
         for (int i = 0; i < 4; i++)  
           {
@@ -345,8 +358,8 @@ namespace ngcomp
         return;
       }
 
-    dim = mesh -> GetDimension();
-    nlevels = mesh -> GetNLevels(); 
+    dim = mesh.GetDimension();
+    nlevels = mesh.GetNLevels(); 
 
     if (MyMPI_GetNTasks() > 1 && MyMPI_GetId() == 0)
       {
@@ -362,8 +375,8 @@ namespace ngcomp
       {
 	for (int i = 0; i < 4; i++)  
 	  {
-	    nnodes[i] = mesh -> GetNNodes(i);
-	    nelements[i] = mesh -> GetNElements(i);
+	    nnodes[i] = mesh.GetNNodes(i);
+	    nelements[i] = mesh.GetNElements(i);
 	  }
 	for (int i = 0; i <= dim; i++)
 	  {
@@ -594,10 +607,10 @@ namespace ngcomp
   {
     switch (dim)
       {
-      case 1: fnums = ArrayObject (mesh -> GetElement<1> (elnr).vertices); break;
-      case 2: fnums = ArrayObject (mesh -> GetElement<2> (elnr).edges); break;
+      case 1: fnums = ArrayObject (mesh.GetElement<1> (elnr).vertices); break;
+      case 2: fnums = ArrayObject (mesh.GetElement<2> (elnr).edges); break;
       default:
-        fnums = ArrayObject (mesh -> GetElement<3> (elnr).faces);
+        fnums = ArrayObject (mesh.GetElement<3> (elnr).faces);
       }
   } 
     
@@ -683,6 +696,8 @@ namespace ngcomp
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
   {
+    // static Timer t("GetTrafo"); RegionTimer reg(t);
+
     ElementTransformation * eltrans;
     
     if (!boundary)
@@ -691,9 +706,9 @@ namespace ngcomp
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (mesh); break;
-              case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (mesh); break;
-              case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (mesh); break;
+              case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (&mesh); break;
+              case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (&mesh); break;
+              case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (&mesh); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
@@ -702,18 +717,17 @@ namespace ngcomp
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ConstElementTransformation<1,1> (mesh); break;
-              case 2: eltrans = new (lh) Ng_ConstElementTransformation<2,2> (mesh); break;
-              case 3: eltrans = new (lh) Ng_ConstElementTransformation<3,3> (mesh); break;
+              case 1: eltrans = new (lh) Ng_ConstElementTransformation<1,1> (&mesh); break;
+              case 2: eltrans = new (lh) Ng_ConstElementTransformation<2,2> (&mesh); break;
+              case 3: eltrans = new (lh) Ng_ConstElementTransformation<3,3> (&mesh); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
           }
-          
 
+	eltrans->SetElementType (GetElType(elnr));
         int elind = GetElIndex (elnr);
 	eltrans->SetElement (0, elnr, elind);
-	eltrans->SetElementType (GetElType(elnr));
       
 	if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
 	  eltrans->SetHigherIntegrationOrder();
@@ -726,9 +740,9 @@ namespace ngcomp
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (mesh); break;
-              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (mesh); break;
-              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (mesh); break;
+              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (&mesh); break;
+              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (&mesh); break;
+              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (&mesh); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
@@ -737,9 +751,9 @@ namespace ngcomp
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (mesh); break;
-              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (mesh); break;
-              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (mesh); break;
+              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (&mesh); break;
+              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (&mesh); break;
+              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (&mesh); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
@@ -878,19 +892,19 @@ namespace ngcomp
         switch (dim)
           {
           case 2:
-            return mesh -> FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
-                                                  &(*indices)[0],indices->Size());
+            return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
+                                               &(*indices)[0],indices->Size());
           case 3:
-            return mesh -> FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
-                                                  &(*indices)[0],indices->Size());
+            return mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
+                                               &(*indices)[0],indices->Size());
           }
       }
     else
       {  
         switch (dim)
           {
-          case 2: return mesh -> FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
-          case 3: return mesh -> FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0);
+          case 2: return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
+          case 3: return mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0);
           }
       }
 
