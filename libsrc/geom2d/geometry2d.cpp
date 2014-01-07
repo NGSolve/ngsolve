@@ -436,8 +436,7 @@ namespace netgen
     infile >> numdomains;
     materials.SetSize(numdomains) ;
     maxh.SetSize ( numdomains ) ;
-    for ( int i = 0; i < numdomains; i++)
-      maxh[i] = 1000;
+    maxh = 1e99;
 
     TestComment ( infile );
 
@@ -467,7 +466,7 @@ namespace netgen
 	if (infile.good())
 	  infile.putback (ch);
 	 
-	maxh[domainnr-1] = flags.GetNumFlag ( "maxh", 1000);
+	maxh[domainnr-1] = flags.GetNumFlag ( "maxh", 1e99);
       }
     return;
   }

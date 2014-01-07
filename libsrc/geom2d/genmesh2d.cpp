@@ -249,7 +249,6 @@ namespace netgen
 	  double useh = h;
 	  if (hl > 0) useh = min2 (h, hl);
 	  if (hr > 0) useh = min2 (h, hr);
-
 	  Partition(GetSpline(i), mp, useh, elto0, mesh2d, searchtree, i+1);	    
 	}
       else
