@@ -1196,7 +1196,7 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    const SliceMatrixColMajor & operator= (const Expr<TB> & m) const
+    INLINE const SliceMatrixColMajor & operator= (const Expr<TB> & m) const
     {
       return CMCPMatExpr<SliceMatrixColMajor>::operator= (m);
     }
