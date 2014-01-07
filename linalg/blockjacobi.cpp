@@ -431,14 +431,19 @@ namespace ngla
 	  // data[i].Alloc (memneed[i]);
 
         clock_t prevtime = clock();
-
+        int cnt = 0;
 #pragma omp parallel for	
 	for (int i = 0; i < blocktable.Size(); i++)
 	  {
+#pragma omp atomic
+            cnt++;
             if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
               {
-                cout << "\rBuilding block " << i << flush;
-                prevtime = clock();
+#pragma omp critical(buildingblockupdate) 
+                {
+                  cout << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
+                  prevtime = clock();
+                }
               }
 
 	    int bs = blocktable[i].Size();
@@ -462,7 +467,8 @@ namespace ngla
 	  }
       }
 
-    cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
+    cout << "\rBuilding block " << blocktable.Size() << "/" << blocktable.Size() << endl;
+    // cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
   }
 
 
