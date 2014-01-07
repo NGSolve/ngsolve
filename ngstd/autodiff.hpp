@@ -80,6 +80,12 @@ public:
       p[i] = dval[i];
   }
 
+  INLINE void LoadGradient (const SCAL * p) 
+  {
+    for (int i = 0; i < D; i++)
+      dval[i] = p[i];
+  }
+
   /// access value
   INLINE SCAL & Value() throw() { return val; }
 

@@ -8,6 +8,10 @@
 
 namespace ngstd
 {
+  Exception :: Exception ()
+  { 
+    ;
+  }
 
   Exception :: Exception (const string & s) 
     : what(s)
@@ -24,14 +28,16 @@ namespace ngstd
   Exception :: ~Exception () 
   { ; }
 
-  void Exception :: Append (const string & s)
+  Exception & Exception :: Append (const string & s)
   { 
     what += s; 
+    return *this;
   }
 
-  void Exception :: Append (const char * s)
+  Exception & Exception :: Append (const char * s)
   { 
     what += s; 
+    return *this;
   }
 
 

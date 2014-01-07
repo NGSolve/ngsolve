@@ -70,7 +70,11 @@ namespace ngstd
     numflags.DeleteAll();
     defflags.DeleteAll();
     for(int i=0; i<strlistflags.Size(); i++)
-      delete strlistflags[i];
+      {
+        // for (int j = 0; j < strlistflags[i]->Size(); j++)
+        // delete [] (*strlistflags[i])[j];
+        delete strlistflags[i];
+      }
     strlistflags.DeleteAll();
     for(int i=0; i<numlistflags.Size(); i++)
       delete numlistflags[i];
@@ -407,6 +411,7 @@ namespace ngstd
 		  }
 		*chp = 0;
 		SetFlag (name, strs);
+                delete [] hstr;
 	      }
 	  }
       }

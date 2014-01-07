@@ -213,9 +213,9 @@ template <class T>
       : TableCreator<int>(), takedofs(atakedofs) { };
     FilteredTableCreator(int acnt, const BitArray* atakedofs)
       : TableCreator<int>(acnt),takedofs(atakedofs) { };
-    void Add (int blocknr, const int & data);
+    void Add (int blocknr, int data);
     void Add (int blocknr, IntRange range);
-    void Add (int blocknr, const FlatArray<int> & dofs);
+    void Add (int blocknr, FlatArray<int> dofs);
   };
 
 
