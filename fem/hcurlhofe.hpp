@@ -132,11 +132,6 @@ namespace ngfem
 #else
 #define HCURLHOFE_EXTERN extern
 
-  /*
-  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<1>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<2>;
-  HCURLHOFE_EXTERN template class HCurlHighOrderFiniteElement<3>; 
-  */
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_SEGM>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TRIG>;
