@@ -201,7 +201,7 @@ namespace ngfem
 
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       // cout << "diffop id, gen matrix, mat = " << typeid(mat).name() << endl;
       mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
@@ -1523,6 +1523,9 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class MassIntegrator<1>;
   BDBEQUATIONS_EXTERN template class MassIntegrator<2>;
   BDBEQUATIONS_EXTERN template class MassIntegrator<3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpId<1>, DiagDMat<1>, ScalarFiniteElement<1>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpId<2>, DiagDMat<1>, ScalarFiniteElement<2>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpId<3>, DiagDMat<1>, ScalarFiniteElement<3>>;
 
   BDBEQUATIONS_EXTERN template class LaplaceIntegrator<1>;
   BDBEQUATIONS_EXTERN template class LaplaceIntegrator<2>;
@@ -1538,14 +1541,24 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class RobinIntegrator<1>;
   BDBEQUATIONS_EXTERN template class RobinIntegrator<2>;
   BDBEQUATIONS_EXTERN template class RobinIntegrator<3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdBoundary<1>, DiagDMat<1>, ScalarFiniteElement<0>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdBoundary<2>, DiagDMat<1>, ScalarFiniteElement<1>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdBoundary<3>, DiagDMat<1>, ScalarFiniteElement<2>>;
 
   BDBEQUATIONS_EXTERN template class SourceIntegrator<1>;
   BDBEQUATIONS_EXTERN template class SourceIntegrator<2>;
   BDBEQUATIONS_EXTERN template class SourceIntegrator<3>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpId<1>, DVec<1>, ScalarFiniteElement<1>>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpId<2>, DVec<1>, ScalarFiniteElement<2>>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpId<3>, DVec<1>, ScalarFiniteElement<3>>;
+
 
   BDBEQUATIONS_EXTERN template class NeumannIntegrator<1>;
   BDBEQUATIONS_EXTERN template class NeumannIntegrator<2>;
   BDBEQUATIONS_EXTERN template class NeumannIntegrator<3>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundary<1>, DVec<1>, ScalarFiniteElement<0>>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundary<2>, DVec<1>, ScalarFiniteElement<1>>;
+  BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundary<3>, DVec<1>, ScalarFiniteElement<2>>;
 
 
 
