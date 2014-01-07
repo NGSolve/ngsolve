@@ -22,8 +22,6 @@ namespace ngfem
   class DiffOp
   {
   public:
-    // enum { DIM_ELEMENT = TDOP::DIM_ELEMENT };
-    // enum { DIM_SPACE = TDOP::DIM_SPACE };
 
     static string Name() { return "noname"; }
   
@@ -61,7 +59,6 @@ namespace ngfem
 		       LocalHeap & lh)
     {
       typedef typename TVY::TSCAL TSCAL;
-
       HeapReset hr(lh);
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
@@ -216,7 +213,9 @@ namespace ngfem
     BlockDifferentialOperator (const DifferentialOperator & adiffop, 
 			       int adim, int acomp = -1)
       : diffop(adiffop), dim(adim), comp(acomp) { ; }
-    
+
+    virtual ~BlockDifferentialOperator ();
+
     /// dimension of range
     virtual int Dim() const { return dim*diffop.Dim(); }
     virtual bool Boundary() const { return diffop.Boundary(); }

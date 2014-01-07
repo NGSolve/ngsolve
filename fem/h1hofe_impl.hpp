@@ -475,7 +475,6 @@ namespace ngfem
 
 	LegendrePolynomial::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
 	LegendrePolynomial::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
-
 	for (int k = 0; k < p[0]-1; k++) 
 	  for (int j = 0; j < p[1]-1; j++) 
 	    shape[ii++] = polx[k] * poly[j] * fac; 
