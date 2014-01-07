@@ -387,10 +387,20 @@ namespace ngmg
         // res = f - (*mat) * u;    
         smoother->PreSmoothResiduum (level, u, f, res, smoothingsteps);
 
+        BaseVector & ref_cres = *res.Range(0,cres.Size());
+        BaseVector & ref_cu = *u.Range(0,cw.Size());
+
+        /*
         cres = *res.Range (0, cres.Size());
         cw = (*cpre) * cres;
-
         *(u.Range (0, cw.Size())) += cw;
+        */
+        cres = ref_cres;
+        cw = (*cpre) * cres;
+        ref_cu += cw;
+
+        delete &ref_cu;
+        delete &ref_cres;
 
         smoother->PostSmooth (level, u, f, smoothingsteps);
       }
