@@ -329,9 +329,9 @@ namespace ngbla
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
 
-    RowExpr<T> Row (int r) const
+    RowExpr<const T> Row (int r) const
     {
-      return RowExpr<T> (static_cast<T&> (*this), r);
+      return RowExpr<const T> (static_cast<const T&> (*this), r);
     }
 
     ColExpr<T> Col (int r) const
