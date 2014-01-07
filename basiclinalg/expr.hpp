@@ -709,66 +709,66 @@ namespace ngbla
     // enum { IS_LINEAR = 1 };
 
     template<typename TB>
-    const T & operator= (const Expr<TB> & v) const
+    INLINE const T & operator= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator= (v);
       return Spec();
     }
 
     template<typename TB>
-    ALWAYS_INLINE const T & operator+= (const Expr<TB> & v) const
+    INLINE const T & operator+= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
 
     template<typename TB>
-    ALWAYS_INLINE const T & operator+= (const Expr<SymExpr<TB> > & v) const
+    INLINE const T & operator+= (const Expr<SymExpr<TB> > & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator+= (v);
       return Spec();
     }
 
     template<typename TB>
-    ALWAYS_INLINE const T & operator-= (const Expr<TB> & v) const
+    INLINE const T & operator-= (const Expr<TB> & v) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator-= (v);
       return Spec();
     }
 
     template <class SCAL2>
-    const T & operator*= (const SCAL2 & s) const
+    INLINE const T & operator*= (const SCAL2 & s) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator*= (s);
       return Spec();
     }
 
     template <class SCAL2>
-    const T & operator/= (const SCAL2 & s) const 
+    INLINE const T & operator/= (const SCAL2 & s) const 
     {
       return (*this) *= (1.0/s);
     }
 
     SubMatrixExpr<const T>
-    Rows (int first, int next) const
+    INLINE Rows (int first, int next) const
     { 
       return SubMatrixExpr<const T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
     }
 
     SubMatrixExpr<const T>
-    Cols (int first, int next) const
+    INLINE Cols (int first, int next) const
     { 
       return SubMatrixExpr<const T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
     }
 
     SubMatrixExpr<const T>
-    Rows (IntRange range) const
+    INLINE Rows (IntRange range) const
     { 
       return Rows (range.First(), range.Next());
     }
 
     SubMatrixExpr<const T>
-    Cols (IntRange range) const
+    INLINE Cols (IntRange range) const
     { 
       return Cols (range.First(), range.Next());
     }
