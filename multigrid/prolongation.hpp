@@ -56,11 +56,10 @@ namespace ngmg
     ///
     LinearProlongation(const FESpace & aspace)
       : ma(aspace.GetMeshAccess()), space(aspace) { ; }
-
-    ///
-    virtual ~LinearProlongation() { ; }
-  
-    ///
+    
+    virtual ~LinearProlongation(); 
+    
+                      ///
     virtual void Update () 
     { 
       if (ma.GetNLevels() > nvlevel.Size())
@@ -175,8 +174,7 @@ namespace ngmg
     ElementProlongation(const ElementFESpace & aspace)
       : ma(aspace.GetMeshAccess()), space(aspace) { ; }
     ///
-    virtual ~ElementProlongation()
-    { ; }
+    virtual ~ElementProlongation();
   
     ///
     virtual void Update ()
