@@ -6,6 +6,25 @@
 namespace ngfem
 {
 
+  template <int DIM>
+  class HCurl_Shape : public Vec<DIM>
+  {
+  public:
+    template <typename T>
+    HCurl_Shape (T shape) : Vec<DIM>(shape.Value()) { ; }
+  };
+
+  template <int DIM>
+  class HCurl_CurlShape : public Vec<DIM_CURL_TRAIT<DIM>::DIM>
+  {
+  public:
+    template <typename T>
+    HCurl_CurlShape (T shape) 
+      : Vec<DIM_CURL_TRAIT<DIM>::DIM> (shape.CurlValue()) { ; }
+  };
+
+
+
   
   /*******************************************/
   /* T_HCurlHOFiniteElement                  */
@@ -18,9 +37,9 @@ namespace ngfem
   {    
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
-                                { shape.Row(i) = s; }));
+                                    { shape.Row(i) = s; }));
   }
-
+  
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES,BASE> :: 
   CalcCurlShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
@@ -35,7 +54,7 @@ namespace ngfem
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                    SliceMatrix<> shape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp = Mip2Ad(mip);
+    Vec<DIM, AutoDiff<DIM> > adp = mip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
                                 { shape.Row(i) = s; }));
   }
@@ -52,7 +71,7 @@ namespace ngfem
       }
     else
       {
-        Vec<DIM, AutoDiff<DIM> > adp = Mip2Ad(mip);
+        Vec<DIM, AutoDiff<DIM> > adp = mip; // Mip2Ad(mip);
         T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
                                         { curlshape.Row(i) = s; }));
       }
