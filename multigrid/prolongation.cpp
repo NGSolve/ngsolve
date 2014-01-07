@@ -24,6 +24,7 @@ namespace ngmg
   }
 
 
+  LinearProlongation :: ~LinearProlongation() { ; }
 
 
   SparseMatrix< double >* LinearProlongation :: CreateProlongationMatrix( int finelevel ) const
@@ -345,12 +346,14 @@ namespace ngmg
     {
     ;
     }
+  */
 
     ElementProlongation :: ~ElementProlongation()
     {
-    ;
+      ;
     }
-  
+
+  /*
     void ElementProlongation :: Update ()
     {
     ;
