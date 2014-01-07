@@ -14,7 +14,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  class HCurlDummyFE : public T_HCurlFiniteElement<HCurlDummyFE<ET>,ET,0,0>
+  class HCurlDummyFE : public T_HCurlFiniteElementFO<HCurlDummyFE<ET>,ET,0,0>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -42,14 +42,14 @@ namespace ngfem
   HCURLFE_EXTERN template class HCurlDummyFE<ET_HEX>;
 
 
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_POINT>,ET_POINT,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_SEGM>,ET_SEGM,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_TRIG>,ET_TRIG,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_QUAD>,ET_QUAD,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_TET>,ET_TET,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_PRISM>,ET_PRISM,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
-  HCURLFE_EXTERN template class T_HCurlFiniteElement<HCurlDummyFE<ET_HEX>,ET_HEX,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_POINT>,ET_POINT,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_SEGM>,ET_SEGM,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_TRIG>,ET_TRIG,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_QUAD>,ET_QUAD,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_TET>,ET_TET,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_PRISM>,ET_PRISM,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_HEX>,ET_HEX,0,0>;
 
 
   /* **************************** Segm Elements *************** */
@@ -119,7 +119,7 @@ namespace ngfem
 
   /* *********************** Quad elements ******************* */
 
-  class FE_NedelecQuad1 : public T_HCurlFiniteElement<FE_NedelecQuad1,ET_QUAD,4,1>
+  class FE_NedelecQuad1 : public T_HCurlFiniteElementFO<FE_NedelecQuad1,ET_QUAD,4,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -142,6 +142,8 @@ namespace ngfem
         }
     }
   };
+
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_QUAD,FE_NedelecQuad1>;
 
   /*
  /// Gradients of Q1
@@ -228,7 +230,7 @@ namespace ngfem
 
   /* ******************** triangular elements *********************** */
 
-  class FE_NedelecTrig1 : public T_HCurlFiniteElement<FE_NedelecTrig1,ET_TRIG,3,1>
+  class FE_NedelecTrig1 : public T_HCurlFiniteElementFO<FE_NedelecTrig1,ET_TRIG,3,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -243,7 +245,9 @@ namespace ngfem
     }
   };
 
-  class FE_NedelecTrig2 : public T_HCurlFiniteElement<FE_NedelecTrig2,ET_TRIG,6,1>
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig1>;
+
+  class FE_NedelecTrig2 : public T_HCurlFiniteElementFO<FE_NedelecTrig2,ET_TRIG,6,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -261,7 +265,9 @@ namespace ngfem
     }
   };
 
-  class FE_NedelecTrig3 : public T_HCurlFiniteElement<FE_NedelecTrig3,ET_TRIG,12,2>
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig2>;
+
+  class FE_NedelecTrig3 : public T_HCurlFiniteElementFO<FE_NedelecTrig3,ET_TRIG,12,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -292,7 +298,7 @@ namespace ngfem
     }
   };
 
-
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TRIG,FE_NedelecTrig3>;
 
   /*
  /// Lowest order Nedelec
@@ -394,7 +400,7 @@ namespace ngfem
 
   /* *********************** Tetrahedral elements ********************** */
   
-  class FE_NedelecTet1 : public T_HCurlFiniteElement<FE_NedelecTet1,ET_TET,6,1>
+  class FE_NedelecTet1 : public T_HCurlFiniteElementFO<FE_NedelecTet1,ET_TET,6,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -410,7 +416,9 @@ namespace ngfem
     }
   };
 
-  class FE_NedelecTet2 : public T_HCurlFiniteElement<FE_NedelecTet2,ET_TET,12,1>
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet1>;
+
+  class FE_NedelecTet2 : public T_HCurlFiniteElementFO<FE_NedelecTet2,ET_TET,12,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -428,9 +436,9 @@ namespace ngfem
         }
     }
   };
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet2>;
 
-
-  class FE_NedelecTet3 : public T_HCurlFiniteElement<FE_NedelecTet3,ET_TET,30,2>
+  class FE_NedelecTet3 : public T_HCurlFiniteElementFO<FE_NedelecTet3,ET_TET,30,2>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -458,6 +466,7 @@ namespace ngfem
           }
     }
   };
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_TET,FE_NedelecTet3>;
 
 
   /*
@@ -607,7 +616,6 @@ namespace ngfem
   };
 
 
-
   /* *********************** Hex elements ************************ */ 
 
 
@@ -633,7 +641,7 @@ namespace ngfem
 
   /* *********************** Prism elements ********************** */
 
-  class FE_NedelecPrism1 : public T_HCurlFiniteElement<FE_NedelecPrism1,ET_PRISM,9,1>
+  class FE_NedelecPrism1 : public T_HCurlFiniteElementFO<FE_NedelecPrism1,ET_PRISM,9,1>
   {
   public:
     template<typename Tx, typename TFA>  
@@ -662,6 +670,8 @@ namespace ngfem
     }
   };
   
+  HCURLFE_EXTERN template class T_HCurlHighOrderFiniteElement<ET_PRISM,FE_NedelecPrism1>;
+
   /*
  ///
  class FE_NedelecPrism1 : public HCurlFiniteElement<3>
