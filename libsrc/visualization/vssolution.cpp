@@ -2393,7 +2393,7 @@ namespace netgen
     MyMPI_Bcast (comp);
 #endif
 
-    double val;
+    // double val;
     // bool considerElem;
 
     bool hasit = false;
@@ -2405,63 +2405,61 @@ namespace netgen
 
     if ((ntasks == 1) || (id > 0))
       if (funcnr != -1)
-      {
-        const SolData * sol = soldata[funcnr];
+        {
+          const SolData * sol = soldata[funcnr];
 
-        if (sol->draw_volume)
-          {
-	    NgProfiler::RegionTimer reg1 (timer1);
-
-            int ne = mesh->GetNE();
-            double hmax = maxv; 
-            double hmin = minv; 
-
-#pragma omp parallel for reduction (max : hmax) reduction (min : hmin)
-            for (int i = 0; i < ne; i++) 
-              {
-                bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
-                if (considerElem)
-                  {
-                    /*
-#pragma omp critical(getminmaxvol)
+          if (sol->draw_volume)
+            {
+              NgProfiler::RegionTimer reg1 (timer1);
+              
+              int ne = mesh->GetNE();
+    
+              double hminv = numeric_limits<double>::max();
+              double hmaxv = -numeric_limits<double>::max();
+              bool hhasit = false;
+#pragma omp parallel for reduction (max : hmaxv) reduction (min : hminv) reduction (|| : hhasit)
+              for (int i = 0; i < ne; i++) 
+                {
+                  double val;
+                  bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
+                  if (considerElem)
                     {
-                      if (val > maxv || !hasit) maxv = val;
-                      if (val < minv || !hasit) minv = val;
+                      if (val > hmaxv) hmaxv = val;
+                      if (val < hminv) hminv = val;
+                      hhasit = true;
+                    }
+                }
+
+              minv = min(minv, hminv);
+              maxv = max(maxv, hmaxv);
+              hasit |= hhasit;
+            }
+          
+          if (sol->draw_surface)
+            {
+              NgProfiler::RegionTimer reg2 (timer2);
+              
+              int nse = mesh->GetNSE();
+              for (int i = 0; i < nse; i++)
+                {
+                  ELEMENT_TYPE type = mesh->SurfaceElement(i+1).GetType();
+                  double val;
+                  bool considerElem = (type == QUAD) 
+                    ? GetSurfValue (sol, i, -1, 0.5, 0.5, comp, val)
+                    : GetSurfValue (sol, i, -1, 0.3333333, 0.3333333, comp, val);
+                  
+                  if (considerElem)
+                    {
+                      if (val > maxv) maxv = val;
+                      if (val < minv) minv = val;
                       hasit = true;
                     }
-                    */
-                    if (val > hmax) hmax = val;
-                    if (val < hmin) hmin = val;
-                  }
-              }
-
-            maxv = hmax;
-            minv = hmin;
-            // cout << "maxv = " << maxv << " =?= " << hmax << endl;
-          }
-        if (sol->draw_surface)
-          {
-	    NgProfiler::RegionTimer reg2 (timer2);
-
-            int nse = mesh->GetNSE();
-            for (int i = 0; i < nse; i++)
-              {
-                ELEMENT_TYPE type = mesh->SurfaceElement(i+1).GetType();
-		bool considerElem = (type == QUAD) 
-		  ? GetSurfValue (sol, i, -1, 0.5, 0.5, comp, val)
-		  : GetSurfValue (sol, i, -1, 0.3333333, 0.3333333, comp, val);
-
-                if (considerElem)
-                  {
-                    if (val > maxv) maxv = val;
-                    if (val < minv) minv = val;
-                    hasit = true;
-                  }
-              }
-          }
-      }
+                }
+            }
+        }
     if (minv == maxv) maxv = minv+1e-6;
-
+    if (!hasit) { minv = 0; maxv = 1; }
+    
 #ifdef PARALLEL
     if ((ntasks > 1) && (id == 0))
       {
@@ -3656,14 +3654,18 @@ namespace netgen
   void VisualSceneSolution :: GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs,
                                                      Array<ClipPlanePoint> & pts)
   {
+    static int timer_vals = NgProfiler::CreateTimer ("ClipPlaneTrigs - vertex values");
     static int timer1 = NgProfiler::CreateTimer ("ClipPlaneTrigs1");
-    static int timer2 = NgProfiler::CreateTimer ("ClipPlaneTrigs2");
+    static int timer1a = NgProfiler::CreateTimer ("ClipPlaneTrigs1a");
+    // static int timer2 = NgProfiler::CreateTimer ("ClipPlaneTrigs2");
     static int timer3 = NgProfiler::CreateTimer ("ClipPlaneTrigs3");
     static int timer4 = NgProfiler::CreateTimer ("ClipPlaneTrigs4");
+    static int timer4b = NgProfiler::CreateTimer ("ClipPlaneTrigs4b");
 
 
     NgProfiler::RegionTimer reg1 (timer1);
 
+    
     int ne = mesh->GetNE();
 
     const int edgei[6][2] =
@@ -3688,11 +3690,30 @@ namespace netgen
     Array<Point<3> > locgrid(n3);
     Array<Mat<3,3> > trans(n3);
     Array<double> val(n3);
+    Array<bool> locposval(n3);
     Array<int> compress(n3);
 
+    NgProfiler::StartTimer (timer_vals);
+    Array<double,PointIndex::BASE> vertval(mesh->GetNV());
+    Array<bool,PointIndex::BASE> posval(mesh->GetNV());
+    for (PointIndex pi = vertval.Begin(); pi < vertval.End(); pi++)
+      {
+        Point<3> vert = (*mesh)[pi];
+        vertval[pi] = 
+          vert(0) * clipplane[0] + 
+          vert(1) * clipplane[1] + 
+          vert(2) * clipplane[2] + 
+          clipplane[3]; 
+        posval[pi] = vertval[pi] > 0;
+      }
+    NgProfiler::StopTimer (timer_vals);
+
+    INDEX_2_CLOSED_HASHTABLE<int> edges(8*n3);  // point nr of edge
+    
 
     for (ElementIndex ei = 0; ei < ne; ei++)
       {
+        // NgProfiler::RegionTimer reg1a (timer1a);
         int first_point_of_element = pts.Size();
 
 	locgrid.SetSize(n3);
@@ -3707,7 +3728,26 @@ namespace netgen
             int ii = 0;
             int cnt_valid = 0;
 
-            NgProfiler::StartTimer (timer2);
+            // NgProfiler::StartTimer (timer2);
+
+            
+            if (!mesh->GetCurvedElements().IsElementHighOrder(ei))
+              {
+                bool has_pos = 0, has_neg = 0;
+                
+                for (int i = 0; i < el.GetNP(); i++)
+                  if (posval[el[i]] > 0)
+                    has_pos = 1;
+                  else
+                    has_neg = 1;
+                
+                if (!has_pos || !has_neg) 
+                  {
+                    // NgProfiler::StopTimer (timer2);
+                    continue;
+                  }
+              }
+            
 
 
             if (type == TET || type == TET10)
@@ -3770,16 +3810,18 @@ namespace netgen
 
 	    locgrid.SetSize(cnt_valid);
 
-            NgProfiler::StopTimer (timer2);
-            NgProfiler::RegionTimer reg4(timer4);
+            // NgProfiler::StopTimer (timer2);
+            // NgProfiler::RegionTimer reg4(timer4);
 
             if (mesh->GetCurvedElements().IsHighOrder())
               {
+                NgProfiler::RegionTimer reg4(timer4);
                 mesh->GetCurvedElements().
                   CalcMultiPointElementTransformation (&locgrid, ei, &grid, 0);
               }
             else
               {
+                NgProfiler::RegionTimer reg4(timer4b);
                 Vector shape(el.GetNP());
                 MatrixFixWidth<3> pointmat(el.GetNP());
 
@@ -3803,8 +3845,8 @@ namespace netgen
 
             NgProfiler::RegionTimer reg3(timer3);
 
-            bool has_pos = 0, has_neg = 0;
-                
+            bool has_pos = false, all_pos = true;
+
             for (int i = 0; i < cnt_valid; i++)
               {
                 val[i] = 
@@ -3812,16 +3854,19 @@ namespace netgen
                   grid[i](1) * clipplane[1] + 
                   grid[i](2) * clipplane[2] + 
                   clipplane[3];
-                    
-                if (val[i] > 0)
-                  has_pos = 1;
-                else
-                  has_neg = 1;
+                
+                locposval[i] = val[i] > 0;
+                has_pos |= locposval[i];
+                all_pos &= locposval[i];
+                
+                // if (val[i] > 0) has_pos = 1; else has_neg = 1;
               }
                 
-            if (!has_pos || !has_neg) continue;
-                
-
+            // if (!has_pos || !has_neg) continue;
+            if (!has_pos || all_pos) continue;
+            
+            edges.DeleteData();
+            
             for (int ix = 0; ix < n; ix++)
               for (int iy = 0; iy < n; iy++)
                 for (int iz = 0; iz < n; iz++)
@@ -3834,6 +3879,16 @@ namespace netgen
                     for (int j = 0; j < 8; j++)
                       pi[j] = compress[pi[j]];
 
+                    bool has_pos = false, all_pos = true;
+                    for (int j = 0; j < 8; j++)
+                      if (pi[j] != -1)
+                        {
+                          has_pos |= locposval[pi[j]];
+                          all_pos &= locposval[pi[j]];
+                        }
+                    if (!has_pos || all_pos) continue;
+
+
                     const int tets[6][4] = 
                       { { 1, 2, 4, 5 },
                         { 4, 5, 2, 8 },
@@ -3841,17 +3896,25 @@ namespace netgen
                         { 2, 3, 4, 8 },
                         { 2, 3, 8, 6 },
                         { 3, 8, 6, 7 } };
-
+                    
                     for (int ii = 0; ii < 6; ii++)
                       {
                         int teti[4];
                         for (int k = 0; k < 4; k++)
                           teti[k] = pi[tets[ii][k]-1];
 
-                        bool is_valid = 1;
+                        bool is_valid = true;
                         for (int j = 0; j < 4; j++)
-                          if (teti[j] == -1) is_valid = 0;
+                          is_valid &= (teti[j] != -1);
                         if (!is_valid) continue;
+                        
+                        bool has_pos = false, all_pos = true;
+                        for (int j = 0; j < 4; j++)
+                          {
+                            has_pos |= locposval[teti[j]];
+                            all_pos &= locposval[teti[j]];
+                          }
+                        if (!has_pos || all_pos) continue;
 
                         for (int j = 0; j < 4; j++)
                           nodevali[j] = val[teti[j]];
@@ -3861,15 +3924,8 @@ namespace netgen
                           {
                             int lpi1 = edgei[j][0];
                             int lpi2 = edgei[j][1];
-                            if ( (nodevali[lpi1] > 0) !=
-                                 (nodevali[lpi2] > 0) )
+                            if ( (nodevali[lpi1] > 0) != (nodevali[lpi2] > 0) )
                               {
-                                edgelam[j] = nodevali[lpi2] / (nodevali[lpi2] - nodevali[lpi1]);
-                                Point<3> p1 = grid[teti[lpi1]];
-                                Point<3> p2 = grid[teti[lpi2]];
-                  
-                                edgep[j] = p1 + (1-edgelam[j]) * (p2-p1);
-                  
                                 cntce++;
                                 cpe3 = cpe2;
                                 cpe2 = cpe1;
@@ -3888,33 +3944,34 @@ namespace netgen
                                           case 1: ednr = cpe2; break;
                                           case 2: ednr = cpe3; break;
                                           }
-                                        // cpt.points[k].p = edgep[ednr];
-                                      
+
                                         int pi1 = edgei[ednr][0];
                                         int pi2 = edgei[ednr][1];
-                                        Point<3> p1 = locgrid[teti[pi1]];
-                                        Point<3> p2 = locgrid[teti[pi2]];
-
-                                        // cpt.points[k].lami = p2 + edgelam[ednr] * (p1-p2);
-
-                                        ClipPlanePoint cppt;
-                                        cppt.elnr = ei;
-                                        cppt.p = edgep[ednr];
-                                        cppt.lami =  p2 + edgelam[ednr] * (p1-p2);
-
                                         int pnr = -1;
+                                        
+                                        INDEX_2 pair (teti[pi1], teti[pi2]);
+                                        pair.Sort();
+                                        if (edges.Used(pair))
+                                          pnr = edges.Get(pair);
+                                        else
+                                          {
+                                            ClipPlanePoint cppt;
+                                            cppt.elnr = ei;
+                                            
+                                            edgelam[ednr] = nodevali[pi2] / (nodevali[pi2] - nodevali[pi1]);
 
-                                        for (int l = first_point_of_element; l < pts.Size(); l++)
-                                          if (fabs (cppt.lami(0)-pts[l].lami(0)) < 1e-8 &&
-                                              fabs (cppt.lami(1)-pts[l].lami(1)) < 1e-8 &&
-                                              fabs (cppt.lami(2)-pts[l].lami(2)) < 1e-8)
-                                            {
-                                              pnr = l;
-                                              break;
-                                            }
-
-                                        if (pnr == -1)
-                                          pnr = pts.Append (cppt)-1;
+                                            Point<3> gp1 = grid[teti[pi1]];
+                                            Point<3> gp2 = grid[teti[pi2]];
+                                            cppt.p = gp2 + edgelam[ednr] * (gp1-gp2);
+                                            
+                                            Point<3> p1 = locgrid[teti[pi1]];
+                                            Point<3> p2 = locgrid[teti[pi2]];
+                                            cppt.lami =  p2 + edgelam[ednr] * (p1-p2);
+                                           
+ 
+                                            pnr = pts.Append (cppt)-1;
+                                            edges.Set (pair, pnr);
+                                          }
 
                                         cpt.points[k].pnr = pnr;
                                         cpt.points[k].locpnr = pnr-first_point_of_element;
@@ -3930,7 +3987,7 @@ namespace netgen
 
         else
           {  // other elements not supported (JS, June 2007)
-            return;
+            continue; // return;
           }
       
       }
