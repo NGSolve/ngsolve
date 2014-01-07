@@ -1,15 +1,5 @@
 #include <solve.hpp>
 #include <ctime>
-
-/*
-#include <tcl.h>
-#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
-#define tcl_const const
-#else
-#define tcl_const
-#endif
-*/
-
 #include <parallelngs.hpp>
 
 
@@ -1512,6 +1502,11 @@ namespace ngsolve
 	    *outfile << output_vars[i] << " ";
 	  *outfile << endl;
 	}
+    }
+
+    ~NumProcWriteFile () 
+    {
+      delete outfile;
     }
 
     virtual string GetClassName () const
