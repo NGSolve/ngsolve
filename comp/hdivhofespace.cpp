@@ -148,6 +148,7 @@ namespace ngcomp
           new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
 
+    vefc_dofblocks = Vec<4,int> (0,0,2,1);
   }
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
@@ -785,18 +786,59 @@ namespace ngcomp
     return ndlevel[level];
   }
 
+
+  void HDivHighOrderFESpace :: 
+  GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
+  {
+    dranges.SetSize(0);
+    if (!DefinedOn (ei)) return;
+
+    // Ngs_Element ngel = ma.GetElement(ei);
+
+    if (ei.IsVolume())
+      {
+        if(discont) 
+          {
+            dranges += GetElementDofs(ei.Nr());
+            return;
+          } 
+        
+        ArrayMem<int,6> fanums;
+        ma.GetElFacets (ei.Nr(), fanums);
+        
+        //Raviart-Thomas
+        for (int i = 0; i < fanums.Size(); i++)
+          dranges.Append (fanums[i]);
+        // facets
+        for(int i=0; i<fanums.Size(); i++)
+          dranges += GetFacetDofs (fanums[i]);
+        
+        //inner
+        dranges += GetElementDofs(ei.Nr());
+      }
+    else
+      {
+        ArrayMem<int,12> fanums; 
+        ma.GetSElFacets (ei.Nr(), fanums);
+
+        dranges.Append (fanums[0]);
+        dranges += GetFacetDofs (fanums[0]);
+      }
+  }
+
+
+
   void HDivHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
     if(discont) 
       {
 	// lowest_order included in inner 
-        dnums += IntRange (first_inner_dof[elnr],
-                           first_inner_dof[elnr+1]);
+        dnums += GetElementDofs (elnr);
 	return;
       } 
 
-    Array<int> fanums;
+    ArrayMem<int,6> fanums;
     ma.GetElFacets (elnr, fanums);
 
     //Raviart-Thomas
@@ -804,15 +846,10 @@ namespace ngcomp
       dnums.Append (fanums[i]);
     // facets
     for(int i=0; i<fanums.Size(); i++)
-      {
-        dnums += IntRange (first_facet_dof[fanums[i]],
-                           first_facet_dof[fanums[i]+1]);
-                           
-      }
+      dnums += GetFacetDofs (fanums[i]);
 
     //inner
-    dnums += IntRange (first_inner_dof[elnr],
-                       first_inner_dof[elnr+1]);
+    dnums += GetElementDofs (elnr);
     
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;

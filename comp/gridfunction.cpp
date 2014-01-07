@@ -1017,7 +1017,7 @@ namespace ngcomp
 						double lam1, double lam2, double lam3,
 						double * values) 
   { 
-    static Timer t("visgf::GetValue");
+    // static Timer t("visgf::GetValue");
     /*
     static Timer t1("visgf::GetValue 1");
     static Timer t2("visgf::GetValue 2");
@@ -1025,24 +1025,24 @@ namespace ngcomp
     static Timer t4("visgf::GetValue 3");
     static Timer t5("visgf::GetValue 3");
     */
-    RegionTimer reg(t);
-    t.AddFlops (1);
+    // RegionTimer reg(t);
+    // t.AddFlops (1);
 
     try
       {
 	LocalHeapMem<100000> lh("visgf::getvalue");
 
-	if (!bfi3d.Size()) return 0;
-	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	if (!bfi3d.Size()) return false;
+	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return false;
 	
 	const FESpace & fes = gf->GetFESpace();
 
 	int dim     = fes.GetDimension();
 
-	if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) 
+	if ( !fes.DefinedOn(ElementId(VOL, elnr)))
 	  return false;
 
-	// t1.Start();
+        // t1.Start();
 	HeapReset hr(lh);
 	
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
@@ -1051,8 +1051,8 @@ namespace ngcomp
 	Array<int> dnums (fel.GetNDof(), lh);
 	fes.GetDofNrs (elnr, dnums);
 
-	// t1.Stop();
-	// t2.Start();
+        // t1.Stop();
+        // t2.Start();
 
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
@@ -1072,14 +1072,14 @@ namespace ngcomp
 
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
 
-	// t2.Stop();
-	// t3.Start();
+        // t2.Stop();
+        // t3.Start();
 
 	IntegrationPoint ip(lam1, lam2, lam3, 0);
 	MappedIntegrationPoint<3,3> mip (ip, eltrans);
 
-	// t3.Stop();
-	// t4.Start();
+        // t3.Stop();
+        // t4.Start();
 
 	for(int j = 0; j < bfi3d.Size(); j++)
 	  {
@@ -1094,7 +1094,7 @@ namespace ngcomp
 	      }
 	  }
 	
-	// t4.Stop();
+        // t4.Stop();
 	return true; 
       }
     
@@ -1199,6 +1199,7 @@ namespace ngcomp
 		 double * values, int svalues)
   {
     static Timer t("visgf::GetMultiValue");
+    static Timer t1("visgf::GetMultiValue - 1");
     RegionTimer reg(t);
 
     try
@@ -1262,8 +1263,10 @@ namespace ngcomp
 	    HeapReset hr(lh);
             
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
+            t1.Start();
 	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
-
+            t1.Stop();
+            t1.AddFlops (elu.Size()*mir.Size());
 	    for (int k = 0; k < npts; k++)
 	      for (int i = 0; i < components; i++)
 		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];

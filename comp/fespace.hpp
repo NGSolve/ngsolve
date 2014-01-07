@@ -291,11 +291,23 @@ namespace ngcomp
 
     bool DefinedOn (ElementId id) const
     {
+      /*
       int idx = ma.GetElIndex (id);
       if (id.IsBoundary())
         return DefinedOnBoundary (idx);
       else
         return DefinedOn (idx);
+      */
+      if (id.IsBoundary())
+        {
+          if (!definedonbound.Size()) return true;
+          return DefinedOnBoundary (ma.GetElIndex(id));
+        }
+      else
+        {
+          if (!definedon.Size()) return true;
+          return DefinedOn (ma.GetElIndex(id));
+        }
     }
 
     ///

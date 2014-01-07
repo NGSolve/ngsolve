@@ -42,7 +42,7 @@ namespace ngcomp
     }
   
     ///
-    virtual ~NGS_Object () { ; }
+    virtual ~NGS_Object ();
 
     ///
     void SetName (const string & aname)
@@ -65,20 +65,9 @@ namespace ngcomp
       return ma; 
     }
 
-    virtual string GetClassName () const
-    {
-      return typeid(*this).name();
-    }
-
-    virtual void PrintReport (ostream & ost)
-    {
-      ost << typeid(*this).name();
-    }
-
-    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
-    {
-      cout << "MemoryUsage not implemented for class " << GetClassName() << endl;
-    }
+    virtual string GetClassName () const;
+    virtual void PrintReport (ostream & ost);
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
     Timer & GetTimer () { return timer; }
     const Timer & GetTimer () const { return timer; }

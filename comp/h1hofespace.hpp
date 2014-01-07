@@ -24,7 +24,8 @@ namespace ngcomp
     Array<int> first_face_dof;
     Array<int> first_element_dof;
 
-    typedef int TORDER;
+    // typedef short TORDER;
+    typedef unsigned char TORDER;
     
     /// relative order to mesh-order
     int rel_order; 
@@ -104,12 +105,8 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();    
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
-    void SetFaceOrder (int fnr, int fo) { order_face[fnr] = INT<2> (fo, fo); }
-    void SetFaceOrder (int fnr, int ox, int oy) { order_face[fnr] = INT<2> (ox, oy); }
-    void SetElementOrder (int elnr, int elo) 
-    { order_inner[elnr] = INT<3> (elo, elo, elo); }
-    void SetElementOrder (int elnr, int ox, int oy, int oz) 
-    { order_inner[elnr] = INT<3> (ox, oy, oz); }
+    void SetFaceOrder (int fnr, INT<2> fo) { order_face[fnr] = fo; }
+    void SetElementOrder (int elnr, INT<3> elo) { order_inner[elnr] = elo; }
 
     /// get relative (to mesh) order of finite elements
     virtual int GetRelOrder() const { return rel_order; }

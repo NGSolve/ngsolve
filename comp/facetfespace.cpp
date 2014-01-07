@@ -657,7 +657,8 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       mat = 0.0;
       if (facetnr < 0)
-	mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
+        mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
+      // DiffOpId<D>::GenerateMatrix (fel_vol, mip, mat.Cols(fel.GetRange(0)), lh);
       else
         mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
           fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);

@@ -739,7 +739,7 @@ namespace ngcomp
                      if (eliminate_internal)
                        {
                          static Timer statcondtimer("static condensation", 2);
-                         statcondtimer.Start();
+                         RegionTimer regstat (statcondtimer);
 
                          ArrayMem<int, 50> idofs1;
 
@@ -867,8 +867,6 @@ namespace ngcomp
                              for (int k = 0; k < idofs1.Size(); k++)
                                dnums[idofs1[k]] = -1;
                            }
-                                
-                         statcondtimer.Stop();
                        }
 
                      if (printelmat)
@@ -1689,6 +1687,12 @@ namespace ngcomp
                      const FiniteElement & fel = fespace.GetFE (ei, lh);
                      ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
                      FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+
+                     Array<int> idofs(dnums.Size(), lh);
+                     fespace.GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
+                     if (!idofs.Size()) return;
+                     for (int j = 0; j < idofs.Size(); j++)
+                       idofs[j] = dnums.Pos(idofs[j]);
                      
                      int elmat_size = dnums.Size()*fespace.GetDimension();
                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
@@ -1708,10 +1712,6 @@ namespace ngcomp
                        }
                 
                      fespace.TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
-                     Array<int> idofs(dnums.Size(), lh);
-                     fespace.GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
-                     for (int j = 0; j < idofs.Size(); j++)
-                       idofs[j] = dnums.Pos(idofs[j]);
                      
                      if (idofs.Size())
                        {
@@ -1724,42 +1724,42 @@ namespace ngcomp
                          
                          FlatMatrix<SCAL> ai(dim*idofs.Size(), lh);
                          
-                          if (linearform)
-                            linearform->GetVector().GetIndirect (dnums, elf);
-                          else
-                            f.GetIndirect (dnums, elf);
-                          u.GetIndirect (dnums, elu);
+                         if (linearform)
+                           linearform->GetVector().GetIndirect (dnums, elf);
+                         else
+                           f.GetIndirect (dnums, elf);
+                         u.GetIndirect (dnums, elu);
                           
-                          // compute residuum
-                          elf -= sum_elmat * elu;
+                         // compute residuum
+                         elf -= sum_elmat * elu;
                           
-                          for (int jj = 0; jj < idofs.Size(); jj++)
-                            for (int j = 0; j < dim; j++)
-                              {
-                                for (int kk = 0; kk < idofs.Size(); kk++)
-                                  for (int k = 0; k < dim; k++)
-                                    {
-                                      ai(jj*dim+j, kk*dim+k) =
-                                        sum_elmat(idofs[jj]*dim+j, idofs[kk]*dim+k);
-                                    }
-                                resi(jj*dim+j) = elf(idofs[jj]*dim+j);
-                              }
-                          
-                          // *testout << "residuum = " << resi << endl;
-                          
-                          LapackInverse (ai);
-                          wi = ai * resi;
-                          
-                          // *testout << "inv_ai = " << endl << inv_ai << endl;
-                      
-                          for (int jj = 0; jj < idofs.Size(); jj++)
-                            for (int j = 0; j < dim; j++)
-                              elu(idofs[jj]*dim+j) += wi(jj*dim+j);
-                          
-                          //  *testout << "elu = " << endl << elu << endl;
-                          
-                          u.SetIndirect (dnums, elu);
-                        }
+                         for (int jj = 0; jj < idofs.Size(); jj++)
+                           for (int j = 0; j < dim; j++)
+                             {
+                               for (int kk = 0; kk < idofs.Size(); kk++)
+                                 for (int k = 0; k < dim; k++)
+                                   {
+                                     ai(jj*dim+j, kk*dim+k) =
+                                       sum_elmat(idofs[jj]*dim+j, idofs[kk]*dim+k);
+                                   }
+                               resi(jj*dim+j) = elf(idofs[jj]*dim+j);
+                             }
+                         
+                         // *testout << "residuum = " << resi << endl;
+                         
+                         LapackInverse (ai);
+                         wi = ai * resi;
+                         
+                         // *testout << "inv_ai = " << endl << inv_ai << endl;
+                         
+                         for (int jj = 0; jj < idofs.Size(); jj++)
+                           for (int j = 0; j < dim; j++)
+                             elu(idofs[jj]*dim+j) += wi(jj*dim+j);
+                         
+                         //  *testout << "elu = " << endl << elu << endl;
+                         
+                         u.SetIndirect (dnums, elu);
+                       }
                    });
                 
                 progress.Done();
@@ -1968,7 +1968,7 @@ namespace ngcomp
                       if (eliminate_internal)
                         {
                           static Timer statcondtimer("static condensation");
-                          statcondtimer.Start();
+                          RegionTimer regstat (statcondtimer);
                           
                           fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
                           for (int j = 0; j < idofs1.Size(); j++)
@@ -2340,15 +2340,13 @@ namespace ngcomp
 			 
 			 ApplyElementMatrix(x,y,val,dnums,eltrans, ei.Nr(),0,cnt,lh,&fel);
 		       });
-
-		    /*
-
+                    /*
                     RegionTimer reg (timervol);
 #pragma omp parallel
                     {
                       LocalHeap lh(lh_size, "biform-AddMatrix (a)");
                       Array<int> dnums;
-                    
+                      int ne = ma.GetNE();
 #pragma omp for schedule(dynamic)
                       for (int i = 0; i < ne; i++)
                         {
@@ -2363,7 +2361,7 @@ namespace ngcomp
                           ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
                         }
                     }
-		    */
+                    */
                   }
 
                         
@@ -2828,6 +2826,7 @@ namespace ngcomp
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
+    *testout << "elnum = " << elnum << endl;
     // FlatVector<TV> elvecx(dnums.Size() * this->GetFESpace().GetDimension(), lh);
     // FlatVector<TV> elvecy(dnums.Size() * this->GetFESpace().GetDimension(), lh);
     FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
@@ -2874,6 +2873,7 @@ namespace ngcomp
 	    else
 	      y.AddIndirect (dnums, elvecy);  // coloring	      
           }
+        *testout << "||y|| = " << L2Norm(y) << endl;
       }
     else if (type == 2)
       {
@@ -3033,8 +3033,6 @@ namespace ngcomp
                                                           const FiniteElement * fel,
                                                           const SpecialElement * sel) const
   {
-    // FlatVector<TV> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    // FlatVector<TV> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
     FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
     FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
                       
@@ -3074,7 +3072,6 @@ namespace ngcomp
               << "ely = " << elvecy << endl;
             */
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
-        
             elvecy *= val;
 #pragma omp critical(addapply)
             {
