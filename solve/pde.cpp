@@ -35,7 +35,7 @@ namespace ngsolve
     tm * lt = localtime (&now);
     stringstream date;
     date << 1900+lt->tm_year
-         << "-" << setw(2) << setfill('0') << lt->tm_mon 
+         << "-" << setw(2) << setfill('0') << lt->tm_mon+1
          << "-" << setw(2) << lt-> tm_mday;
     AddStringConstant ("date", date.str());
 
