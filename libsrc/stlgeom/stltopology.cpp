@@ -502,6 +502,10 @@ void STLTopology :: InitSTLGeometry(const Array<STLReadTriangle> & readtrigs)
 	      foundpos = AddPoint(p);
 	      pointtree->Insert (p, foundpos);
 	    }
+          if (Dist(p, points.Get(foundpos)) > 1e-10)
+            cout << "identify close points: " << p << " " << points.Get(foundpos) 
+                 << ", dist = " << Dist(p, points.Get(foundpos))
+                 << endl;
 	  st[k] = foundpos;
 	}
 
