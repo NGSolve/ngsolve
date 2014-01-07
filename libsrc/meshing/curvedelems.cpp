@@ -239,6 +239,24 @@ namespace netgen
 	  values[i+1] = p1;
 	}
     }
+
+    template <class S, class T>
+    void EvaluateScaled (int n, S x, S y, T * values)
+    {
+      S p1 = 1.0, p2 = 0.0, p3;
+      
+      if (n >= 0) 
+	p2 = values[0] = 1.0;
+      if (n >= 1) 
+	p1 = values[1] = a[0]*y+b[0]*x;
+      
+      for (int i  = 1; i < n; i++)
+	{
+	  p3 = p2; p2=p1;
+	  p1 = (a[i]*y+b[i]*x)*p2-c[i]*y*y*p3;
+	  values[i+1] = p1;
+	}
+    }
   };
 
   class JacobiRecPol : public RecPol
@@ -331,8 +349,18 @@ namespace netgen
 
     if (n < 3) return;
     Tx hx[50], hy[50*50];
-    ScaledJacobiPolynomial (n-3, x, 1-y, 2, 2, hx);
-
+    // ScaledJacobiPolynomial (n-3, x, 1-y, 2, 2, hx);
+    /*
+    cout << "scaled jacobi, old: " << endl;
+    for (int i = 0; i <= n-3; i++)
+      cout << i << ": " << hx[i] << endl;
+    */
+    jacpols2[2] -> EvaluateScaled (n-3, x, 1-y, hx);
+    /*
+    cout << "scaled jacobi, new: " << endl;
+    for (int i = 0; i <= n-3; i++)
+      cout << i << ": " << hx[i] << endl;
+    */
     // for (int ix = 0; ix <= n-3; ix++)
     // JacobiPolynomial (n-3, 2*y-1, 2*ix+5, 2, hy+50*ix);
 
@@ -351,7 +379,6 @@ namespace netgen
   }
 
 
-
   static void CalcTrigShapeDxDy (int n, double x, double y, double * dshape)
   { 
     if (n < 3) return;
@@ -366,33 +393,7 @@ namespace netgen
 	dshape[2*i] = res[i].DValue(0);
 	dshape[2*i+1] = res[i].DValue(1);
       }
-
-    /*    
-	  if (n < 3) return;
-    
-          int ndof = (n-1)*(n-2)/2;
-          double h1[1000], h2[1000];
-          double eps = 1e-4;
-  
-          CalcTrigShape (n, x+eps, y, h1);
-          CalcTrigShape (n, x-eps, y, h2);
-
-          for (int i = 0; i < ndof; i++)
-          dshape[2*i] = (h1[i]-h2[i])/(2*eps);
-
-          CalcTrigShape (n, x, y+eps, h1);
-          CalcTrigShape (n, x, y-eps, h2);
-
-          for (int i = 0; i < ndof; i++)
-          dshape[2*i+1] = (h1[i]-h2[i])/(2*eps);
-    */
   }
-
-
-
-
-
-
 
 
   // compute face bubbles up to order n, 0 < y, y-x < 1, x+y < 1
@@ -407,7 +408,8 @@ namespace netgen
 
     // ScaledLegendrePolynomial (n-3, (2*y-1), t, hy);
     for (int ix = 0; ix <= n-3; ix++)
-      ScaledJacobiPolynomial (n-3, 2*y-1, t, 2*ix+5, 2, hy+50*ix);
+      jacpols2[2*ix+5] -> EvaluateScaled (n-3, 2*y-1, t, hy+50*ix);
+    // ScaledJacobiPolynomial (n-3, 2*y-1, t, 2*ix+5, 2, hy+50*ix);
 
 
     int ii = 0;
@@ -434,44 +436,9 @@ namespace netgen
 	dshape[3*i+1] = res[i].DValue(1);
 	dshape[3*i+2] = res[i].DValue(2);
       }
-
-    /*
-      double dshape1[6000];
-      if (n < 3) return;
-      double hvl[1000], hvr[1000];
-      int nd = (n-1)*(n-2)/2;
-    
-      double eps = 1e-6;
-
-      CalcScaledTrigShape (n, x-eps, y, t, hvl);
-      CalcScaledTrigShape (n, x+eps, y, t, hvr);
-      for (int i = 0; i < nd; i++)
-      dshape[3*i] = (hvr[i]-hvl[i])/(2*eps);
-
-      CalcScaledTrigShape (n, x, y-eps, t, hvl);
-      CalcScaledTrigShape (n, x, y+eps, t, hvr);
-      for (int i = 0; i < nd; i++)
-      dshape[3*i+1] = (hvr[i]-hvl[i])/(2*eps);
-
-      CalcScaledTrigShape (n, x, y, t-eps, hvl);
-      CalcScaledTrigShape (n, x, y, t+eps, hvr);
-      for (int i = 0; i < nd; i++)
-      dshape[3*i+2] = (hvr[i]-hvl[i])/(2*eps);
-    */
-
-    /*
-      for (int i = 0; i < 3*nd; i++)
-      if (fabs (dshape[i]-dshape1[i]) > 1e-8 * fabs(dshape[i]) + 1e-6)
-      {
-      cerr
-      cerr << "big difference: " << dshape1[i] << " != " << dshape[i] << endl;
-      }
-    */
   }
 
-    
-
-  
+      
 
   CurvedElements :: CurvedElements (const Mesh & amesh)
     : mesh (amesh)
@@ -2168,6 +2135,8 @@ namespace netgen
 
   bool CurvedElements :: IsElementCurved (ElementIndex elnr) const
   {
+    if (mesh[elnr].GetType() != TET) return true;
+    
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
@@ -2178,7 +2147,7 @@ namespace netgen
 
     const Element & el = mesh[elnr];
     ELEMENT_TYPE type = el.GetType();
-    
+
     int nfaces = MeshTopology::GetNFaces (type);
     if (nfaces > 4)
       { // not a tet
@@ -2222,6 +2191,42 @@ namespace netgen
       }
 
     return (info.ndof > info.nv);
+  }
+
+
+  bool CurvedElements :: IsElementHighOrder (ElementIndex elnr) const
+  {
+    if (mesh.coarsemesh)
+      {
+	const HPRefElement & hpref_el =
+	  (*mesh.hpelements) [mesh[elnr].hp_elnr];
+	
+	return mesh.coarsemesh->GetCurvedElements().IsElementHighOrder (hpref_el.coarse_elnr);
+      }
+
+    const Element & el = mesh[elnr];
+    ELEMENT_TYPE type = el.GetType();
+
+    ElementInfo info;
+    info.elnr = elnr;
+    info.order = order;
+    info.ndof = info.nv = MeshTopology::GetNPoints (type);
+    if (info.order > 1)
+      {
+	const MeshTopology & top = mesh.GetTopology();
+	
+	info.nedges = top.GetElementEdges (elnr+1, info.edgenrs, 0);
+	for (int i = 0; i < info.nedges; i++) info.edgenrs[i]--;
+
+	info.nfaces = top.GetElementFaces (elnr+1, info.facenrs, 0);
+	for (int i = 0; i < info.nfaces; i++) info.facenrs[i]--;
+
+	for (int i = 0; i < info.nedges; i++)
+          if (edgecoeffsindex[info.edgenrs[i]+1] > edgecoeffsindex[info.edgenrs[i]]) return true;
+	for (int i = 0; i < info.nfaces; i++)
+          if (facecoeffsindex[info.facenrs[i]+1] > facecoeffsindex[info.facenrs[i]]) return true;
+      }
+    return false;
   }
 
 
@@ -3589,6 +3594,8 @@ namespace netgen
 				       double * x, size_t sx,
 				       double * dxdxi, size_t sdxdxi)
   {
+    // static int timer = NgProfiler::CreateTimer ("calcmultipointtrafo, calcshape");
+
     if (mesh.coarsemesh)
       {
 	const HPRefElement & hpref_el =
@@ -3674,6 +3681,7 @@ namespace netgen
 
     const Element & el = mesh[elnr];
     ELEMENT_TYPE type = el.GetType();
+
 
     ElementInfo info;
     info.elnr = elnr;

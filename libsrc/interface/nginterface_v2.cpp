@@ -18,6 +18,8 @@ namespace netgen
 
 namespace netgen
 {
+#define NGX_INLINE
+#include "nginterface_v2_impl.hpp"
 
   Ngx_Mesh * LoadMesh (const string & filename)
   {
@@ -26,9 +28,18 @@ namespace netgen
     return new Ngx_Mesh (netgen::mesh.Ptr());
   }
 
+  void Ngx_Mesh :: LoadMesh (const string & filename)
+  {
+    netgen::mesh.Ptr() = NULL;
+    Ng_LoadMesh (filename.c_str());
+    mesh = netgen::mesh.Ptr();
+  }
+
+  /*
   Ngx_Mesh :: Ngx_Mesh (Mesh * amesh)
     : mesh(amesh)
   { ; }
+  */
 
   Ngx_Mesh :: ~Ngx_Mesh ()
   {
@@ -71,13 +82,12 @@ namespace netgen
     return -1;
   }
 
-
+  /*
   Ng_Point Ngx_Mesh :: GetPoint (int nr) const
   {
-    Ng_Point ret;
-    ret.pt = &mesh->Point(nr + PointIndex::BASE)(0);
-    return ret;
+    return Ng_Point (&mesh->Point(nr + PointIndex::BASE)(0));
   }
+  */
 
   template <> DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<0> (int nr) const
   {
@@ -86,6 +96,7 @@ namespace netgen
 	return ret;
   }
 
+  /*
   template <> DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
   {
     const Segment & el = mesh->LineSegment (SegmentIndex(nr));
@@ -149,7 +160,7 @@ namespace netgen
 
     return ret;
   }
-
+  */
 
   template <>
   DLL_HEADER int Ngx_Mesh :: GetElementIndex<0> (int nr) const
@@ -157,6 +168,7 @@ namespace netgen
     return 0;
   }
 
+  /*
   template <>
   DLL_HEADER int Ngx_Mesh :: GetElementIndex<1> (int nr) const
   {
@@ -175,7 +187,7 @@ namespace netgen
   {
     return (*mesh)[ElementIndex(nr)].GetIndex();
   }
-
+  */
 
 
 
@@ -521,14 +533,14 @@ namespace netgen
     return mesh->GetTopology().GetNFaces();
   }
 
-  template <> DLL_HEADER Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr)
+  template <> DLL_HEADER Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr) const
   {
     Ng_Node<1> node;
     node.vertices.ptr = mesh->GetTopology().GetEdgeVerticesPtr(nr);
     return node;
   }
 
-  template <> DLL_HEADER Ng_Node<2> Ngx_Mesh :: GetNode<2> (int nr)
+  template <> DLL_HEADER Ng_Node<2> Ngx_Mesh :: GetNode<2> (int nr) const
   {
     Ng_Node<2> node;
     node.vertices.ptr = mesh->GetTopology().GetFaceVerticesPtr(nr);
@@ -538,10 +550,10 @@ namespace netgen
 
 
   template <>
-  DLL_HEADER int Ngx_Mesh :: FindElementOfPoint <2>
+  DLL_HEADER int Ngx_Mesh :: FindElementOfPoint <2> 
   (double * p, double * lami,
    bool build_searchtree, 
-   int * const indices, int numind)
+   int * const indices, int numind) const
 
   {
     Array<int> dummy(numind);
@@ -573,7 +585,7 @@ namespace netgen
   DLL_HEADER int Ngx_Mesh :: FindElementOfPoint <3>
   (double * p, double * lami,
    bool build_searchtree, 
-   int * const indices, int numind)
+   int * const indices, int numind) const
 
   {
     Array<int> dummy(numind);

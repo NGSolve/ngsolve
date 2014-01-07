@@ -15,11 +15,16 @@
 
 namespace netgen
 {
-
-
-
-
-
+  struct T_EDGE2
+  {
+    int orient:1;
+    int nr:31;    // 0-based
+  };
+  struct T_FACE2
+  {
+    int orient:3;
+    int nr:29;    // 0-based
+  };
 
   class Ng_Element
   {
@@ -49,20 +54,22 @@ namespace netgen
     {
     public:
       int num;
-      const int * ptr;
+      const T_EDGE2 * ptr;
   
       int Size() const { return num; }
-      int operator[] (int i) const { return abs (ptr[i])-1; }
+      // int operator[] (int i) const { return abs (ptr[i])-1; }
+      int operator[] (int i) const { return ptr[i].nr; }
     };
 
     class Ng_Faces
     {
     public:
       int num;
-      const int * ptr;
+      const T_FACE2 * ptr;
   
       int Size() const { return num; }
-      int operator[] (int i) const { return (ptr[i]-1) / 8; }
+      // int operator[] (int i) const { return (ptr[i]-1) / 8; }
+      int operator[] (int i) const { return ptr[i].nr; }
     };
 
   public:
@@ -78,10 +85,12 @@ namespace netgen
   
   class Ng_Point
   {
-  public:
     double * pt;
+  public:
+    Ng_Point (double * apt) : pt(apt) { ; }
     double operator[] (int i)
     { return pt[i]; }
+    operator const double * () { return pt; }
   };
 
 
@@ -152,8 +161,13 @@ namespace netgen
     class Mesh * mesh;
     
   public:
-    Ngx_Mesh(class Mesh * amesh);
+    Ngx_Mesh () { ; }
+    Ngx_Mesh(class Mesh * amesh) : mesh(amesh) { ; }
+    void LoadMesh (const string & filename);
+
     virtual ~Ngx_Mesh();
+
+    bool Valid () { return mesh != NULL; }
     
     int GetDimension() const;
     int GetNLevels() const;
@@ -197,7 +211,7 @@ namespace netgen
     
 
     template <int DIM>
-    Ng_Node<DIM> GetNode (int nr);
+    Ng_Node<DIM> GetNode (int nr) const;
     
     
     template <int DIM>
@@ -208,16 +222,27 @@ namespace netgen
     int FindElementOfPoint 
     (double * p, double * lami,
      bool build_searchtrees = false, 
-     int * const indices = NULL, int numind = 0);
+     int * const indices = NULL, int numind = 0) const;
     
   };
 
 
 
   DLL_HEADER Ngx_Mesh * LoadMesh (const string & filename);
-
-
-
 }
+
+
+#ifdef HAVE_NETGEN_SOURCES
+#include <meshing.hpp>
+
+namespace netgen
+{
+#define NGX_INLINE inline
+#include <nginterface_v2_impl.hpp>
+}
+
+#endif
+
+
 #endif
 

@@ -13,6 +13,19 @@
 */
 
 
+struct T_EDGE
+{
+  int orient:1;
+  int nr:31;    // 0-based
+};
+
+struct T_FACE
+{
+  int forient:3;
+  int fnr:29;    // 0-based
+};
+
+
 class MeshTopology
 {
   const Mesh & mesh;
@@ -21,11 +34,11 @@ class MeshTopology
 
   Array<INDEX_2> edge2vert;
   Array<INDEX_4> face2vert;
-  Array<int[12]> edges;
-  Array<int[6]> faces;
-  Array<int[4]> surfedges;
-  Array<int> segedges;
-  Array<int> surffaces;
+  Array<T_EDGE[12]> edges;
+  Array<T_FACE[6]> faces;
+  Array<T_EDGE[4]> surfedges;
+  Array<T_EDGE> segedges;
+  Array<T_FACE> surffaces;
   Array<INDEX_2> surf2volelement;
   Array<int> face2surfel;
   TABLE<ElementIndex,PointIndex::BASE> *vert2element;
@@ -66,14 +79,20 @@ public:
   inline static const ELEMENT_FACE * GetFaces0 (ELEMENT_TYPE et);
 
   
-  int GetSegmentEdge (int segnr) const { return abs(segedges[segnr-1]); }
-  int GetSegmentEdgeOrientation (int segnr) const { return sgn(segedges[segnr-1]); }
-  int GetEdge (SegmentIndex segnr) const { return abs(segedges[segnr])-1; }
+  // int GetSegmentEdge (int segnr) const { return abs(segedges[segnr-1]); }
+  // int GetSegmentEdgeOrientation (int segnr) const { return sgn(segedges[segnr-1]); }
+  // int GetEdge (SegmentIndex segnr) const { return abs(segedges[segnr])-1; }
+  int GetSegmentEdge (int segnr) const { return segedges[segnr-1].nr+1; }
+  int GetEdge (SegmentIndex segnr) const { return segedges[segnr].nr; }
 
   void GetSegmentEdge (int segnr, int & enr, int & orient) const
   {
+    /*
     enr = abs(segedges.Get(segnr));
     orient = segedges.Get(segnr) > 0 ? 1 : -1;
+    */
+    enr = segedges.Get(segnr).nr+1;
+    orient = segedges.Get(segnr).orient;
   }
 
   void GetElementEdges (int elnr, Array<int> & edges) const;
@@ -103,12 +122,12 @@ public:
 
   int GetSurfaceElementEdges (int elnr, int * edges, int * orient) const;
 
-  const int * GetElementEdgesPtr (int elnr) const { return &edges[elnr][0]; }
-  const int * GetSurfaceElementEdgesPtr (int selnr) const { return &surfedges[selnr][0]; }
-  const int * GetSegmentElementEdgesPtr (int selnr) const { return &segedges[selnr]; }
+  const T_EDGE * GetElementEdgesPtr (int elnr) const { return &edges[elnr][0]; }
+  const T_EDGE * GetSurfaceElementEdgesPtr (int selnr) const { return &surfedges[selnr][0]; }
+  const T_EDGE * GetSegmentElementEdgesPtr (int selnr) const { return &segedges[selnr]; }
 
-  const int * GetElementFacesPtr (int elnr) const { return &faces[elnr][0]; }
-  const int * GetSurfaceElementFacesPtr (int selnr) const { return &surffaces[selnr]; }
+  const T_FACE * GetElementFacesPtr (int elnr) const { return &faces[elnr][0]; }
+  const T_FACE * GetSurfaceElementFacesPtr (int selnr) const { return &surffaces[selnr]; }
 
 
   void GetSurface2VolumeElement (int selnr, int & elnr1, int & elnr2) const
@@ -141,7 +160,7 @@ public:
 
 
 
-int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
+inline int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -172,14 +191,14 @@ int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
     case HEX:
       return 8;
 
-    default:
-      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
     }
   return 0;
 }
 
 
-int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
+inline int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -213,15 +232,15 @@ int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
     case HEX:
       return 8;
 
-    default:
-      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
     }
   return 0;
 }
 
 
 
-int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
+inline int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -252,14 +271,14 @@ int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
     case HEX:
       return 12;
 
-    default:
-      cerr << "Ng_ME_GetNEdges, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetNEdges, illegal element type " << et << endl;
     }
   return 0;
 }
 
 
-int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
+inline int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -290,8 +309,8 @@ int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
     case HEX:
       return 6;
 
-    default:
-      cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
     }
   return 0;
 }
@@ -391,8 +410,8 @@ const ELEMENT_EDGE * MeshTopology :: GetEdges1 (ELEMENT_TYPE et)
 
     case HEX:
       return hex_edges;
-    default:
-      cerr << "Ng_ME_GetEdges, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetEdges, illegal element type " << et << endl;
     }
    return 0;  
 }
@@ -489,8 +508,8 @@ const ELEMENT_EDGE * MeshTopology :: GetEdges0 (ELEMENT_TYPE et)
 
     case HEX:
       return hex_edges;
-    default:
-      cerr << "Ng_ME_GetEdges, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetEdges, illegal element type " << et << endl;
     }
    return 0;  
 }
@@ -504,7 +523,7 @@ const ELEMENT_EDGE * MeshTopology :: GetEdges0 (ELEMENT_TYPE et)
 
 
 
-const ELEMENT_FACE * MeshTopology :: GetFaces1 (ELEMENT_TYPE et)
+inline const ELEMENT_FACE * MeshTopology :: GetFaces1 (ELEMENT_TYPE et)
 {
   static const int trig_faces[1][4] = 
     { { 1, 2, 3, 0 } };
@@ -576,8 +595,8 @@ const ELEMENT_FACE * MeshTopology :: GetFaces1 (ELEMENT_TYPE et)
     case HEX:
       return hex_faces;
 
-    default:
-      cerr << "Ng_ME_GetVertices, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetVertices, illegal element type " << et << endl;
     }
   return 0;
 }
@@ -586,7 +605,7 @@ const ELEMENT_FACE * MeshTopology :: GetFaces1 (ELEMENT_TYPE et)
 
 
 
-const ELEMENT_FACE * MeshTopology :: GetFaces0 (ELEMENT_TYPE et)
+inline const ELEMENT_FACE * MeshTopology :: GetFaces0 (ELEMENT_TYPE et)
 {
   static const int trig_faces[1][4] = 
     { { 0, 1, 2, -1 } };
@@ -658,8 +677,8 @@ const ELEMENT_FACE * MeshTopology :: GetFaces0 (ELEMENT_TYPE et)
     case HEX:
       return hex_faces;
 
-    default:
-      cerr << "Ng_ME_GetVertices, illegal element type " << et << endl;
+      // default:
+      // cerr << "Ng_ME_GetVertices, illegal element type " << et << endl;
     }
   return 0;
 }

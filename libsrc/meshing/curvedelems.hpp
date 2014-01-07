@@ -52,6 +52,7 @@ public:
   bool IsSegmentCurved (SegmentIndex segnr) const;
   bool IsSurfaceElementCurved (SurfaceElementIndex sei) const;
   bool IsElementCurved (ElementIndex ei) const;
+  bool IsElementHighOrder (ElementIndex ei) const;
 
 
   void CalcSegmentTransformation (double xi, SegmentIndex segnr,
