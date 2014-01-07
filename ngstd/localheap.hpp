@@ -34,6 +34,7 @@ namespace ngstd
   class LocalHeap
   {
     char * data;
+    char * next;
     char * p;
     size_t totsize;
     bool owner;
@@ -48,6 +49,7 @@ namespace ngstd
     {
       totsize = asize;
       data = adata;
+      next = data + totsize;
       owner = 0;
       // p = data;
       name = aname;
@@ -57,8 +59,9 @@ namespace ngstd
     /// Use provided memory for the LocalHeap
     LocalHeap (const LocalHeap & lh2)
       : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false)
-    { ; }
-
+    {
+      next = data + totsize;
+    }
   
     /// free memory
     ~LocalHeap ()
@@ -96,8 +99,9 @@ namespace ngstd
       size += (ALIGN - size % ALIGN);
       p += size;
 
-      if ( size_t(p - data) >= totsize )
-	ThrowException();
+      // if ( size_t(p - data) >= totsize )
+      if (p >= next)
+        ThrowException();
 
       return oldp;
     }
@@ -113,7 +117,8 @@ namespace ngstd
       size += (ALIGN - size % ALIGN);
       p += size;
 
-      if ( size_t(p - data) >= totsize )
+      // if ( size_t(p - data) >= totsize )
+      if (p >= next)
 	ThrowException();
 
       return reinterpret_cast<T*> (oldp);

@@ -58,6 +58,7 @@ namespace ngstd
     operator const T& () const { return ar; }
     int Size() { return ar.Size(); }
     auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
+    auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
   };
 
   template <typename T>
@@ -152,11 +153,13 @@ namespace ngstd
   template <typename T, typename INDEX_ARRAY>
   class IndirectArray : public BaseArrayObject<IndirectArray<T, INDEX_ARRAY> >
   {
-    const FlatArray<T> & ba;
+    // const FlatArray<T> & ba;
+    FlatArray<T> ba;
     const INDEX_ARRAY & ia;
 
   public:
-    IndirectArray (const FlatArray<T> & aba,
+    IndirectArray (// const FlatArray<T> & aba,
+                   FlatArray<T> aba,
 		   const INDEX_ARRAY & aia)
       : ba(aba), ia(aia) { ; }
 
@@ -396,6 +399,7 @@ namespace ngstd
   protected:
     /// physical size of array
     TSIZE allocsize;
+    // unsigned int allocsize;
     /// memory is responsibility of container
     bool ownmem;
 

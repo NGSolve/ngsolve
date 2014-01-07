@@ -144,7 +144,7 @@ namespace ngstd
     line.size--;
   }
   
-  void FilteredTableCreator::Add (int blocknr, const int & data)
+  void FilteredTableCreator::Add (int blocknr, int data)
   {
     if (!takedofs||takedofs->Test(data))
       TableCreator<int>::Add(blocknr,data);
@@ -157,7 +157,7 @@ namespace ngstd
 	TableCreator<int>::Add(blocknr,i);
   }  
   
-  void FilteredTableCreator::Add (int blocknr, const FlatArray<int> & dofs)
+  void FilteredTableCreator::Add (int blocknr, FlatArray<int> dofs)
   {
     for (int i = 0; i < dofs.Size(); i++)
       if (!takedofs||takedofs->Test(dofs[i]))

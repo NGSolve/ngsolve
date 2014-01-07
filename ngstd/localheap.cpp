@@ -14,6 +14,7 @@ namespace ngstd
   {
     totsize = asize;
     data = new char[asize];
+    next = data + totsize;
     p = data;
     owner = 1;
     name = aname;
