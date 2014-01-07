@@ -840,7 +840,7 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    FlatMatrixFixHeight & operator= (const Expr<TB> & m)
+    const FlatMatrixFixHeight & operator= (const Expr<TB> & m) const
     {
       for (int j = 0; j < w; j++)
         for (int i = 0; i < H; i++)
@@ -849,7 +849,7 @@ namespace ngbla
     }
 
     /// copy contents
-    FlatMatrixFixHeight & operator= (const FlatMatrixFixHeight & m)
+    const FlatMatrixFixHeight & operator= (const FlatMatrixFixHeight & m) const
     {
       if (H == SLICE)
         for (int i = 0; i < w*H; i++)
@@ -884,7 +884,7 @@ namespace ngbla
       return *this;
     }
 
-
+    /*
     /// access operator, linear access
     TELEM & operator() (int i)
     { 
@@ -902,10 +902,10 @@ namespace ngbla
 #endif
       return data[i+j*SLICE]; 
     }
-
+    */
 
     /// access operator, linear access
-    const TELEM & operator() (int i) const
+    TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(H,w,i);
@@ -914,7 +914,7 @@ namespace ngbla
     }
 
     /// access operator
-    const TELEM & operator() (int i, int j) const
+    TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(H,w,i,j);
@@ -941,14 +941,24 @@ namespace ngbla
     }
 
 
+    const FlatMatrixFixHeight Cols (int first, int next) const
+    {
+      return FlatMatrixFixHeight (next-first, data+first*H);
+    }
+
+    const FlatMatrixFixHeight Cols (IntRange range) const
+    {
+      return FlatMatrixFixHeight (range.Size(), data+range.First()*H);
+    }
+
     const SliceMatrixColMajor<T>
-    Rows (int first, int next)
+    Rows (int first, int next) const
     { 
       return SliceMatrixColMajor<T> (next-first, w, SLICE, data+first);
     }
 
     const SliceMatrixColMajor<T>    
-    Rows (IntRange range) // -> decltype (this->Rows (range.First(), range.Next()))
+    Rows (IntRange range) const // -> decltype (this->Rows (range.First(), range.Next()))
     { 
       return Rows (range.First(), range.Next());
     }
