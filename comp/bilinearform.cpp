@@ -2281,7 +2281,8 @@ namespace ngcomp
     static Timer timerbound ("Apply Matrix - boundary");
     RegionTimer reg (timer);
 
-    static int lh_size = 20000000;
+
+    static int lh_size = 5000000;
 
     if (!MixedSpaces())
 

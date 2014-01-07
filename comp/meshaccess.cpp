@@ -760,8 +760,8 @@ namespace ngcomp
           }
         
         int elind = GetSElIndex (elnr);
-	eltrans->SetElement (1, elnr, elind);
 	eltrans->SetElementType (GetSElType(elnr));
+	eltrans->SetElement (1, elnr, elind);
       }
 
     return *eltrans;
