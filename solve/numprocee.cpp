@@ -114,6 +114,7 @@ namespace ngsolve
       }
 
     delete flux;
+    delete fesflux;
 
     double sum = 0;
     for (int i = 0; i < err.Size(); i++) 
