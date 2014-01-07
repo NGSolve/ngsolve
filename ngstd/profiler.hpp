@@ -203,22 +203,27 @@ namespace ngstd
   class Timer
   {
     int timernr;
+    int priority;
   public:
-    Timer (const string & name, int priority = 1)
+    Timer (const string & name, int apriority = 1)
+      : priority(apriority)
     {
       timernr = NgProfiler::CreateTimer (name);
     }
     void Start () 
     {
-      NgProfiler::StartTimer (timernr);
+      if (priority <= 1)
+	NgProfiler::StartTimer (timernr);
     }
     void Stop () 
     {
-      NgProfiler::StopTimer (timernr);
+      if (priority <= 1)
+	NgProfiler::StopTimer (timernr);
     }
     void AddFlops (double aflops)
     {
-      NgProfiler::AddFlops (timernr, aflops);
+      if (priority <= 1)
+	NgProfiler::AddFlops (timernr, aflops);
     }
 
     double GetTime () { return NgProfiler::GetTime(timernr); }
