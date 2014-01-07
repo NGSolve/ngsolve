@@ -124,10 +124,17 @@ namespace ngfem
       if (DIM == 3)
         ndof += PolBubbleDimension (order_cell[0]);
       
+      /*
       order = 1;
       for (int i = 0; i < N_EDGE; i++) order = max(order, int(order_edge[i]));
       for (int i = 0; i < N_FACE; i++) order = max(order, int(Max (order_face[i]))); 
       if (DIM == 3) order = max (order, int(Max (order_cell[0])));
+      */
+      TORDER ho = 1;
+      for (int i = 0; i < N_EDGE; i++) ho = max(ho, order_edge[i]);
+      for (int i = 0; i < N_FACE; i++) ho = max(ho, Max (order_face[i])); 
+      if (DIM == 3) order = max (ho, Max (order_cell[0]));
+      order = ho;
     }
 
 
