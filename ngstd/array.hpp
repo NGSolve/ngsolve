@@ -900,15 +900,27 @@ namespace ngstd
   }
 
   template <typename T>
-  bool DefaultLess (const T & a, const T & b)
+  INLINE bool DefaultLess (const T & a, const T & b)
   {
     return a < b;
   }
 
-  template <class T>
-  void QuickSort (FlatArray<T> data)
+  template <typename T>
+  class DefaultLessCl
   {
-    QuickSort (data, DefaultLess<T>);
+  public:
+    bool operator() (const T & a, const T & b) const
+    {
+      return a < b;
+    }
+  };
+
+
+
+  template <class T>
+  INLINE void QuickSort (FlatArray<T> data)
+  {
+    QuickSort (data, DefaultLessCl<T>());
   }
 
 
@@ -946,9 +958,9 @@ namespace ngstd
 
 
   template <class T>
-  void QuickSortI (FlatArray<T> data, FlatArray<int> index)
+  INLINE void QuickSortI (FlatArray<T> data, FlatArray<int> index)
   {
-    QuickSortI (data, index, DefaultLess<T>);
+    QuickSortI (data, index, DefaultLessCl<T>());
   }
 
 
