@@ -51,7 +51,9 @@ namespace ngfem
     static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      mat = static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * mip.GetJacobianInverse();
+      HeapReset hr(lh);
+      cout << "diffopcurl: slow matrix" << endl;
+      mat = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh) * mip.GetJacobianInverse();
     }
 
     template <typename AFEL>
@@ -87,6 +89,7 @@ namespace ngfem
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
+      HeapReset hr(lh);
 
       Vec<D,TSCAL> hx;
       hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x;
@@ -99,6 +102,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
+      HeapReset hr(lh);
 
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
@@ -176,6 +180,7 @@ namespace ngfem
     static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
+      cout << "diffopcurl: slow matrix" << endl;
       mat = (1.0/mip.GetJacobiDet())
         * (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * Trans(mip.GetJacobian()));
     }

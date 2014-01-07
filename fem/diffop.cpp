@@ -139,7 +139,11 @@ namespace ngfem
 
 
 
-
+  BlockDifferentialOperator ::
+  ~BlockDifferentialOperator ()
+  {
+    delete &diffop;
+  }
 
 
   void BlockDifferentialOperator ::

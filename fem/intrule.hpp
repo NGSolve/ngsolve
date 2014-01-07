@@ -234,7 +234,6 @@ namespace ngfem
       if (DIMS == DIMR)
 	{
 	  det = Det (dxdxi);
-	  // dxidx = Inv (dxdxi);
 	  normalvec = TSCAL(0.0);
 	  tangentialvec = TSCAL(0.0);
 	}
@@ -259,11 +258,6 @@ namespace ngfem
 	      det = 1.0;
 	      normalvec = 1.0;
 	    }
-	
-	  // Mat<DIMS,DIMS,SCAL> ata, iata;
-	  // ata = Trans (dxdxi) * dxdxi;
-	  // iata = Inv (ata);
-	  // dxidx = iata * Trans (dxdxi);
 	  tangentialvec = TSCAL(0.0);
 	}
       this->measure = fabs (det);

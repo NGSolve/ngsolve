@@ -1284,19 +1284,8 @@ double BlockBilinearFormIntegrator ::
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    //    FlatVector<Complex> hy(ely.Size(), lh);
-    //    BilinearFormIntegrator::ApplyElementMatrix (fel, eltrans, elx, hy, lh);
-
     bfi.ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
     ely *= factor;
-       /*
-    hy -= ely;
-    if (L2Norm (hy) >= 1e-10)
-      {
-	cout << "type = " << typeid(bfi).name() << endl;
-	cout << "Complex different: " << hy << endl;
-      }
-    */
   }
 
 

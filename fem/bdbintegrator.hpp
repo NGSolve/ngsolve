@@ -30,7 +30,7 @@ public:
   // typedef double TSCAL;
   /// is coefficient tensor symmetric ?
   enum { SYMMETRIC = 1 };
-  
+
   template <typename SCAL>
   static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
 
@@ -1496,7 +1496,6 @@ public:
 	dvecop.GenerateVectorIR (fel, mir, dvecs, lh);
         for (int i = 0; i < ir.GetNIP(); i++)
           dvecs.Row(i) *= mir[i].GetWeight();
-
         DIFFOP::ApplyTransIR (fel, mir, dvecs, elvec, lh);
       }
     
