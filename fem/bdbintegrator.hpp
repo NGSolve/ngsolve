@@ -420,6 +420,7 @@ public:
 
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
+
         FlatArray<TDMAT> dmats(ir.GetNIP(), lh);
 	dmatop.GenerateMatrixIR (fel, mir, dmats, lh);
 
@@ -436,11 +437,11 @@ public:
               }
 
             i += BLOCK;
-
+	    
             if (DMATOP::SYMMETRIC)
               FastMat (bdbmat, bbmat, elmat);
             else
-              elmat += Trans (bbmat.Rows(0,DIM_DMAT*BLOCK)) * bdbmat.Rows(DIM_DMAT*BLOCK); 
+              elmat += Trans (bbmat.Rows(0,DIM_DMAT*BLOCK)) * bdbmat.Rows(0,DIM_DMAT*BLOCK); 
           } 
 
         int rest = ir.GetNIP()-i;
@@ -453,7 +454,6 @@ public:
 		TDMAT dmat = mir[i+i2].GetWeight() * dmats[i+i2];
 		bdbmat.Rows(rows) = dmat * bbmat.Rows(rows);
               }
-
 
             if (DMATOP::SYMMETRIC)
               {
@@ -475,7 +475,7 @@ public:
                            elmat);
               }
             else
-              elmat += Trans (bbmat.Rows(0,rest*DIM_DMAT)) * bdbmat.Rows(rest*DIM_DMAT);
+              elmat += Trans (bbmat.Rows(0,rest*DIM_DMAT)) * bdbmat.Rows(0,rest*DIM_DMAT);
 
             /*
             int i2 = 0;
