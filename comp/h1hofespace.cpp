@@ -447,12 +447,12 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
 
-    /*
+    
     ctofdof.Range(0,ma.GetNV()) = [&] (int i)
       { return (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF; };
-    */
-    for (int i = 0; i < ma.GetNV(); i++)
-      ctofdof[i] = (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF;
+    
+    //for (int i = 0; i < ma.GetNV(); i++)
+    //  ctofdof[i] = (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF;
 
     /*
     for (int i = 0; i < ma.GetNV(); i++)
