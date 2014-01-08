@@ -174,9 +174,15 @@ namespace ngcomp
           Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
           // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
           p0 = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[3]));
-          mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
-          mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
-          mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
+		  for (int j = 0; j < 3; j++)
+		  {
+			  Vec<3> pj = FlatVec<3, const double>(mesh->GetPoint(nel.Vertices()[j])) -p0;
+			  for (int k = 0; k < 3; k++)
+				  mat(k,j) = pj(k);
+		  }
+          //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
+          //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
+          //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
         }
       else
         {
@@ -293,7 +299,6 @@ namespace ngcomp
     }
   };
   
-
 
 
 
