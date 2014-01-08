@@ -11,6 +11,8 @@
 #define CHECK_RANGE
 #endif
 
+#include <initializer_list>
+#include<functional>
 
 namespace ngstd
 {
@@ -243,14 +245,14 @@ namespace ngstd
       return *this;
     }
     
-    /*
+    
     const FlatArray & operator= (const std::function<T(int)> & func) const
     {
       for (TSIZE i = 0; i < size; i++)
         data[i] = func(i);
       return *this;
     }
-    */
+    
 
     /// copies pointers
     const FlatArray & Assign (const FlatArray & a2)
