@@ -111,6 +111,26 @@ namespace ngfem
 
   
 #ifdef FILE_L2HOFE_CPP
+  template <> inline void L2HighOrderFE<ET_POINT> ::
+	  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+		  mass(0) = 1;
+  }
+
+  template <> inline void L2HighOrderFE<ET_SEGM> ::
+	  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+		  for (int ix = 0; ix <= order; ix++)
+			  mass(ix) = 1.0 / (2 * ix + 1);
+  }
+
+  template <> inline void L2HighOrderFE<ET_TRIG> ::
+	  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+		  for (int ix = 0, ii = 0; ix <= order; ix++)
+			  for (int iy = 0; iy <= order - ix; iy++, ii++)
+				  mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+  }
 #define L2HOFE_EXTERN
 #else
 #define L2HOFE_EXTERN extern
