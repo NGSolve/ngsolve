@@ -13,6 +13,7 @@
 
 #include <fem.hpp>
 #include "thcurlfe_impl.hpp"
+#include "hcurlhofe_impl.hpp"
 #include "hcurllofe.hpp"
 #include "hdivlofe.hpp"
 
