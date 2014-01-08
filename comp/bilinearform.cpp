@@ -3474,14 +3474,15 @@ namespace ngcomp
                                  space->IsComplex(),   
                                  *space, name, flags);
           }
-        else
-          bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
-            (space->GetDimension(), space->IsComplex(), *space, name, flags);
-        /*
-          CreateSymMatObject3 (bf, T_BilinearFormSymmetric, 
-          space->GetDimension(), space->IsComplex(),   
-          *space, name, flags);
-          */
+		else
+		{
+			//bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
+			//  (space->GetDimension(), space->IsComplex(), *space, name, flags);
+
+			CreateSymMatObject3(bf, T_BilinearFormSymmetric,
+				space->GetDimension(), space->IsComplex(),
+				*space, name, flags);
+		}
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
@@ -3551,15 +3552,17 @@ namespace ngcomp
                                  space->IsComplex(),   
                                  *space, name, flags);
           }
-        else
-          bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
-            (space->GetDimension(), space->IsComplex(), *space, name, flags);
-        
-        /*
-          CreateSymMatObject3 (bf, T_BilinearForm, 
-          space->GetDimension(), space->IsComplex(),   
-          *space, name, flags);
-          */
+		else
+		{
+			//bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
+			//  (space->GetDimension(), space->IsComplex(), *space, name, flags);
+
+			
+			  CreateSymMatObject3 (bf, T_BilinearForm,
+			  space->GetDimension(), space->IsComplex(),
+			  *space, name, flags);
+			  
+		}
       }
 
     return bf;

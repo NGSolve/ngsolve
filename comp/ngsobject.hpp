@@ -336,7 +336,7 @@ namespace ngcomp
 
 
 
-  /*
+  
 
 #if MAX_SYS_DIM <= 1
 
@@ -628,7 +628,7 @@ namespace ngcomp
 
 #endif
 
-  */
+  
 
 
 
