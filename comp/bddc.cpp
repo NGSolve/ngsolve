@@ -60,10 +60,10 @@ namespace ngcomp
       ifcnt = 0;
       const BitArray & freedofs = *fes.GetFreeDofs();
       
+      Array<int> dnums;
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
 	  {
-	    Array<int> dnums;
 	    fes.GetDofNrs (i, bound, dnums);
 	    for (int j = 0; j < dnums.Size(); j++)
 	      {
@@ -85,7 +85,6 @@ namespace ngcomp
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
 	  {
-	    Array<int> dnums;
 	    fes.GetDofNrs (i, bound, dnums);
 	    
 	    int lifcnt = 0;
@@ -105,7 +104,6 @@ namespace ngcomp
 	      } 
 	  }
       
-
       int ndof = fes.GetNDof();      
       
       if (!bfa.IsSymmetric())
@@ -138,13 +136,15 @@ namespace ngcomp
     }
 
     
-    void AddMatrix (FlatMatrix<SCAL> elmat, Array<int> & dnums)
+    void AddMatrix (FlatMatrix<SCAL> elmat, FlatArray<int> dnums, LocalHeap & lh)
 
     {
       static Timer timer ("BDDC - Addmatrix", 2);
       RegionTimer reg(timer);
       static Timer timer2("BDDC - Add to sparse", 3);
       static Timer timer3("BDDC - compute", 3);
+
+      HeapReset hr(lh);
 
       const FESpace & fes = bfa.GetFESpace();
       
@@ -162,7 +162,7 @@ namespace ngcomp
       int sizew = localwbdofs.Size();
       int sizei = localintdofs.Size();
       
-      ArrayMem<double, 20> el2ifweight(sizei);
+      FlatArray<double> el2ifweight(sizei, lh);
       for (int k = 0; k < sizei; k++)
 	el2ifweight[k] = fabs (elmat(localintdofs[k],
 				     localintdofs[k]));
@@ -176,19 +176,23 @@ namespace ngcomp
 	*/
 
       
-      Matrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs);
-      Matrix<SCAL> b = elmat.Rows(localwbdofs).Cols(localintdofs);
-      Matrix<SCAL> c = elmat.Rows(localintdofs).Cols(localwbdofs);
-      Matrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs);
-      Matrix<SCAL> het (sizew, sizei);
-      Matrix<SCAL> he (sizei, sizew);
+      FlatMatrix<SCAL> a = elmat.Rows(localwbdofs).Cols(localwbdofs) | lh;
+      FlatMatrix<SCAL> b = elmat.Rows(localwbdofs).Cols(localintdofs) | lh;
+      FlatMatrix<SCAL> c = elmat.Rows(localintdofs).Cols(localwbdofs) | lh;
+      FlatMatrix<SCAL> d = elmat.Rows(localintdofs).Cols(localintdofs) | lh;
+      FlatMatrix<SCAL> het (sizew, sizei, lh);
+      FlatMatrix<SCAL> he (sizei, sizew, lh);
 	  
       if (sizei)
 	{      
 	  RegionTimer reg(timer3);
 	  timer3.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
-	  LapackInverse (d);
+          if (sizei > 30)
+            LapackInverse (d);
+          else
+            CalcInverse (d);
+
 	  
 	  if (sizew)
 	    {
@@ -204,14 +208,14 @@ namespace ngcomp
 	      if (!bfa.IsSymmetric())
 		{	      
 		  het = SCAL(0.0);
-		  het -= b*d | Lapack;
+		  het -= b*d  | Lapack;
 		  
 		  //E * R^T
 		  for (int l = 0; l < sizei; l++)
 		    het.Col(l) *= el2ifweight[l];
 		}
 	    }
-	  
+          
 	  //R * A_ii^(-1) * R^T
 	  for (int k = 0; k < sizei; k++) d.Row(k) *= el2ifweight[k]; 
 	  for (int l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
@@ -220,24 +224,26 @@ namespace ngcomp
 
       RegionTimer regadd(timer2);
 
-      ArrayMem<int, 20> wbdofs, intdofs;   
+      FlatArray<int> wbdofs(localwbdofs.Size(), lh);
+      FlatArray<int> intdofs(localintdofs.Size(), lh);   
       wbdofs = dnums[localwbdofs];
       intdofs = dnums[localintdofs];
 
+      // critical can be removed when everything is colored
 #pragma omp critical(bddcaddelmat)
       {
-	for (int j = 0; j < intdofs.Size(); j++)
-	  weight[intdofs[j]] += el2ifweight[j];
-
-	sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
+        for (int j = 0; j < intdofs.Size(); j++)
+          weight[intdofs[j]] += el2ifweight[j];
+        
+        sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
+        
+        if (!bfa.IsSymmetric())
+          sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
+        
+        sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 	
-	if (!bfa.IsSymmetric())
-	  sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
-	
-	sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
-	
-	dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
-	  ->AddElementMatrix(wbdofs,wbdofs,a);
+        dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
+          ->AddElementMatrix(wbdofs,wbdofs,a);
       }
     }
 
@@ -547,25 +553,19 @@ namespace ngcomp
     for (int i = 0; i < dnums.Size(); i++)
       if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) used++;
     
-    ArrayMem<int,20> hdnums(used);
-    Matrix<SCAL> helmat(used);
-    
-    for (int i = 0, ii = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i]))
-	{
-	  hdnums[ii] = dnums[i];
-	  
-	  for (int j = 0, jj = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1 && fes.GetFreeDofs()->Test(dnums[j]))
-	      {
-		helmat(ii,jj) = elmat(i,j);
-		jj++;
-	      }
-	  ii++;
-	}
+    FlatArray<int> compress(used, lh);
+    int cnt = 0;
+    for (int i = 0; i < dnums.Size(); i++)
+      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) 
+        compress[cnt++] = i;
+
+    FlatArray<int> hdnums(used, lh);
+    FlatMatrix<SCAL> helmat(used,used, lh);
+    hdnums = dnums[compress];
+    helmat = elmat.Rows(compress).Cols(compress);
     
     if (L2Norm (helmat) != 0)
-      pre -> AddMatrix(helmat, hdnums);
+      pre -> AddMatrix(helmat, hdnums, lh);
   }
   
 
