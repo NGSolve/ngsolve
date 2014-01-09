@@ -156,7 +156,7 @@ namespace ngfem
 	ip.SetNr(i);
 	AddIntegrationPoint (ip);
       }
-  }
+  } 
 
 
 
