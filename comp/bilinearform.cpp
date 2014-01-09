@@ -860,9 +860,9 @@ namespace ngcomp
 
                                   for (int k = 0; k < idofs1.Size(); k++)
                                     dnums[idofs1[k]] = -1;
+
+                                  statcondtimer.Stop();
                                 }
-                                
-                              statcondtimer.Stop();
                             }
 
                           if (printelmat)
@@ -3079,7 +3079,6 @@ cout << "catch in AssembleBilinearform 2" << endl;
               << "ely = " << elvecy << endl;
             */
             BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
-        
             elvecy *= val;
 #pragma omp critical(addapply)
             {
