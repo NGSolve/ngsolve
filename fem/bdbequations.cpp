@@ -1,0 +1,122 @@
+/*********************************************************************/
+/* File:   bdbequations.cpp                                          */
+/* Author: Joachim Schoeberl                                         */
+/* Date:   10. Feb. 2002                                             */
+/*********************************************************************/
+  
+/*  
+   Finite Element Integrators 
+*/
+
+#define FILE_BDBEQUATIONS_CPP
+
+
+#include <fem.hpp>
+#include <diffop_impl.hpp>
+
+
+
+  
+namespace ngfem
+{ 
+
+  /*
+  template <int D, typename FEL> LaplaceBoundaryIntegrator<D,FEL> ::
+  LaplaceBoundaryIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
+  { ; }
+  */
+
+  template <int D, typename FEL> RotSymLaplaceIntegrator<D,FEL> ::
+  RotSymLaplaceIntegrator (CoefficientFunction * coeff)
+    : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
+  { ; }
+
+
+  // standard integratos:
+  
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<1> > initlap1 ("laplace", 1, 1);
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<2> > initlap2 ("laplace", 2, 1);
+  static RegisterBilinearFormIntegrator<LaplaceIntegrator<3> > initlap3 ("laplace", 3, 1);
+
+  static RegisterBilinearFormIntegrator<MassIntegrator<1> > initmass1 ("mass", 1, 1);
+  static RegisterBilinearFormIntegrator<MassIntegrator<2> > initmass2 ("mass", 2, 1);
+  static RegisterBilinearFormIntegrator<MassIntegrator<3> > initmass3 ("mass", 3, 1);
+
+  static RegisterBilinearFormIntegrator<RobinIntegrator<1> > initrobin1 ("robin", 1, 1);
+  static RegisterBilinearFormIntegrator<RobinIntegrator<2> > initrobin2 ("robin", 2, 1);
+  static RegisterBilinearFormIntegrator<RobinIntegrator<3> > initrobin3 ("robin", 3, 1);
+
+
+  static RegisterBilinearFormIntegrator<LaplaceBoundaryIntegrator<2> > initlb2 ("laplaceboundary", 2, 1);
+  static RegisterBilinearFormIntegrator<LaplaceBoundaryIntegrator<3> > initlb3 ("laplaceboundary", 3, 1);
+  /*
+      GetIntegrators().AddBFIntegrator ("laplaceboundary", 2, 1,
+					LaplaceBoundaryIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("laplaceboundary", 3, 1,
+					LaplaceBoundaryIntegrator<3>::Create);
+  */
+
+  static RegisterLinearFormIntegrator<SourceIntegrator<1> > initsource1 ("source", 1, 1);
+  static RegisterLinearFormIntegrator<SourceIntegrator<2> > initsource2 ("source", 2, 1);
+  static RegisterLinearFormIntegrator<SourceIntegrator<3> > initsource3 ("source", 3, 1);
+
+  static RegisterLinearFormIntegrator<NeumannIntegrator<1> > initneumann1 ("neumann", 1, 1);
+  static RegisterLinearFormIntegrator<NeumannIntegrator<2> > initneumann2 ("neumann", 2, 1);
+  static RegisterLinearFormIntegrator<NeumannIntegrator<3> > initneumann3 ("neumann", 3, 1);
+
+
+  static RegisterBilinearFormIntegrator<ElasticityIntegrator<2> > initelast2 ("elasticity", 2, 2);
+  static RegisterBilinearFormIntegrator<ElasticityIntegrator<3> > initelast3 ("elasticity", 3, 2);
+
+  /*
+      GetIntegrators().AddBFIntegrator ("elasticity", 2, 2,
+					ElasticityIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("elasticity", 3, 2,
+					ElasticityIntegrator<3>::Create);
+  */
+
+
+  namespace bdbequations_cpp
+  {
+    class Init
+    { 
+    public:  
+      Init ();
+    };        
+    
+    Init::Init()
+    {
+      GetIntegrators().AddBFIntegrator ("rotsymlaplace", 2, 1,
+					RotSymLaplaceIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("rotsymlaplace", 3, 1,
+					RotSymLaplaceIntegrator<3>::Create);
+
+
+      GetIntegrators().AddBFIntegrator ("ortholaplace", 2, 2,
+					OrthoLaplaceIntegrator<2>::Create);
+      GetIntegrators().AddBFIntegrator ("ortholaplace", 3, 3,
+					OrthoLaplaceIntegrator<3>::Create);
+      
+
+      GetIntegrators().AddBFIntegrator ("orthoelasticity", 3, 9,
+					OrthotropicElasticityIntegrator<3>::Create);
+      
+      GetIntegrators().AddBFIntegrator ("orthocylelasticity", 3, 10,
+					OrthotropicCylElasticityIntegrator<3>::Create);
+      
+      GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
+				       GradSourceIntegrator<3>::Create); 
+
+      GetIntegrators().AddLFIntegrator ("normalneumann", 2, 1,
+					NormalNeumannIntegrator<2>::Create);
+      GetIntegrators().AddLFIntegrator ("normalneumann", 3, 1,
+					NormalNeumannIntegrator<3>::Create);
+    }
+    
+    Init init;
+    int link_it;
+  }
+ 
+}
+

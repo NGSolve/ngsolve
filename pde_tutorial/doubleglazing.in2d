@@ -1,0 +1,27 @@
+splinecurves2dv2
+2
+points
+#point number
+#	x-coordinate
+#		y-coordinate
+#			local refinement
+1	-1	 1 
+2	 1	 1	-maxh=0.01
+3	 1	-1	-maxh=0.01
+4	-1	-1
+
+segments
+#domain left of the segment
+#	domain right of the segment
+#		number of points the segment consists of
+#			first point of the segment
+#				second point of the segment
+#					boundary number
+#						local refinement	
+0	1	2	1	2	-maxh=0.25 -bc=1
+0	1	2	2	3	-maxh=0.1 -bc=2
+0	1	2	3	4	-maxh=0.25 -bc=1
+0	1	2	4	1	-maxh=0.25 -bc=1
+
+materials
+1	inner	-maxh=0.5
