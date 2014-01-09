@@ -982,6 +982,7 @@ namespace ngcomp
 		RegionTimer reg(mattimer_bound);
                 ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
 
+                /*
                 int cnt = 0;
 #pragma omp parallel 
                 {
@@ -998,15 +999,25 @@ namespace ngcomp
                       progress.Update (cnt);
                       
                       HeapReset hr(lh);
-                  
-                      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+                */
+                
+                IterateElements 
+                  (fespace, BND, clh, 
+                   [&] (ElementId ei, LocalHeap & lh)
+                   {
+                     int i = ei.Nr();
+                     
+                     progress.Update ();                  
+                     
+                     if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) return;
+                     
+                     timerb1.Start();
                       
-                      timerb1.Start();
+                     const FiniteElement & fel = fespace.GetSFE (i, lh);
                       
-                      const FiniteElement & fel = fespace.GetSFE (i, lh);
-                      
-                      ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
-                      fespace.GetSDofNrs (i, dnums);
+                     ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
+                     FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     // fespace.GetSDofNrs (i, dnums);
 
                       if(fel.GetNDof() != dnums.Size())
                         {
@@ -1076,7 +1087,7 @@ namespace ngcomp
 
                       timerb3.Start();
                       
-#pragma omp critical (addelmatboundary)
+                      // #pragma omp critical (addelmatboundary)
                       {
                         AddElementMatrix (dnums, dnums, sumelmat, ElementId (BND, i), lh);
                       }
@@ -1085,10 +1096,11 @@ namespace ngcomp
                         preconditioners[j] -> AddElementMatrix (dnums, sumelmat, false, i, lh);
                       
                       timerb3.Stop();
-                    }
-                }//endof parallel 
-
+                   }); // }//endof parallel 
+                
+                
                 progress.Done();
+                gcnt += nse;
 
               }//endof hasbound
 
@@ -3543,7 +3555,7 @@ namespace ngcomp
             else
               return new T_BilinearForm<double,Complex> (*space, name, flags);
           }
-
+        
         if(flags.NumFlagDefined("cacheblocksize"))
           {
             CreateSymMatObject4 (bf, T_BilinearForm, 
