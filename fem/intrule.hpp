@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   /// An integration point 
-  class IntegrationPoint
+  class alignas(8) IntegrationPoint
   {
   private:
     /// number within intergration Rule
@@ -288,12 +288,16 @@ namespace ngfem
     {
       Vec<DIMS, AutoDiff<DIMR, TSCAL> > adp;
       
+      /*
       for (int i = 0; i < DIMS; i++)
         adp[i].Value() = this->IP()(i);
       for (int i = 0; i < DIMS; i++)
         for (int j = 0; j < DIMR; j++)
           adp[i].DValue(j) = GetJacobianInverse()(i,j);
-      
+      */
+      Mat<DIMS,DIMR,TSCAL> ijac = GetJacobianInverse();
+      for (int i = 0; i < DIMS; i++)
+        adp[i] = AutoDiff<DIMR,TSCAL> (this->IP()(i), &ijac(i,0));
       return adp;
     }
 
