@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_builddir) -I$(srcdir) -I$(top_srcdir)/include 
 
 lib_LTLIBRARIES = libngfem.la
 
