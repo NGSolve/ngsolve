@@ -597,7 +597,7 @@ namespace ngfem
     }
 
     template <class S>
-    ALWAYS_INLINE S EvalNext (int i, S x, S & p1, S & p2)
+    ALWAYS_INLINE S EvalNext (int i, S x, S & p1, S & p2) const
     {
       switch (i)
         {
@@ -626,7 +626,7 @@ namespace ngfem
 
 
     template <class S, class Sc>
-    ALWAYS_INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
+    ALWAYS_INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2) const
     {
       switch (i)
         {
@@ -638,7 +638,7 @@ namespace ngfem
 
 
     template <class S, class Sy>
-    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
+    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
     {
       if (REC::ZERO_B)
         {
@@ -661,13 +661,13 @@ namespace ngfem
 
 
     template <class S, class T>
-    INLINE void Eval (int n, S x, T && values) 
+    INLINE void Eval (int n, S x, T && values) const
     {
       EvalMult (n, x, 1.0, values);
     }
 
     template <class S, class Sc, class T>
-    INLINE void EvalMult (int n, S x, Sc c, T && values) 
+    INLINE void EvalMult (int n, S x, Sc c, T && values) const
     {
       S p1, p2;
 
@@ -690,13 +690,13 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    INLINE void EvalScaled (int n, S x, Sy y, T && values)
+    INLINE void EvalScaled (int n, S x, Sy y, T && values) const
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
-    INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
+    INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values) const
     {
       S p1, p2;
 
@@ -994,18 +994,21 @@ namespace ngfem
     int alpha;
 
     static int maxn, maxalpha;
-    int offset;
+    // int offset;
+    Vec<3> * coefsal;
   public:
     JacobiPolynomialAlpha (int a) : alpha(a) 
     { 
-      offset = alpha*(maxn+1);
+      // offset = alpha*(maxn+1);
+      coefsal = &coefs[alpha*(maxn+1)];
     }
 
     template <class S, class T>
     inline JacobiPolynomialAlpha (int n, S x, int a, T && values)
       : alpha(a)
     { 
-      offset = alpha*(maxn+1);
+      // offset = alpha*(maxn+1);
+      coefsal = &coefs[alpha*(maxn+1)];
       Eval (n, x, values);
     }
 
@@ -1016,12 +1019,18 @@ namespace ngfem
     template <class S>
     INLINE S P1(S x) const 
     { 
-      return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+      // return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+      return coefsal[1][0]*x+coefsal[1][1]; 
     }
     
+    /*
     INLINE double A (int i) const { return coefs[offset+i][0]; } 
     INLINE double B (int i) const { return coefs[offset+i][1]; } 
     INLINE double C (int i) const { return coefs[offset+i][2]; } 
+    */
+    INLINE double A (int i) const { return coefsal[i][0]; } 
+    INLINE double B (int i) const { return coefsal[i][1]; } 
+    INLINE double C (int i) const { return coefsal[i][2]; } 
 
     INLINE void ABC (int i, double & a, double & b, double & c) const   
     {

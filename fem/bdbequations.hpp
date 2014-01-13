@@ -88,6 +88,15 @@ namespace ngfem
       y = Trans (mip.GetJacobianInverse()) * hv;
     }
 
+    template <class TVY>
+    static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
+		       const FlatVector<> & x, TVY && y,
+		       LocalHeap & lh) 
+    {
+      Vec<D> hv = Cast(fel).EvaluateGrad(mip.IP(), x);
+      y = Trans (mip.GetJacobianInverse()) * hv;
+    }
+
     using DiffOp<DiffOpGradient<D, FEL> >::ApplyIR;
   
     template <class MIR>
@@ -116,6 +125,7 @@ namespace ngfem
       Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
       y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
     }
+
   };
 
 
@@ -1530,6 +1540,9 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class LaplaceIntegrator<1>;
   BDBEQUATIONS_EXTERN template class LaplaceIntegrator<2>;
   BDBEQUATIONS_EXTERN template class LaplaceIntegrator<3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpGradient<1>, DiagDMat<1>, ScalarFiniteElement<1>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpGradient<2>, DiagDMat<2>, ScalarFiniteElement<2>>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpGradient<3>, DiagDMat<3>, ScalarFiniteElement<3>>;
 
   BDBEQUATIONS_EXTERN template class RotSymLaplaceIntegrator<2>;
   BDBEQUATIONS_EXTERN template class RotSymLaplaceIntegrator<3>;

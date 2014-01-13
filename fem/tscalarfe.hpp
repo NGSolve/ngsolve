@@ -29,7 +29,7 @@ namespace ngfem
     using BASE::order;
 
     T_ScalarFiniteElement () { ; }
-    virtual ~T_ScalarFiniteElement() { ; }
+    // virtual ~T_ScalarFiniteElement() { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
@@ -65,7 +65,7 @@ namespace ngfem
     
   protected:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const
+    INLINE void T_CalcShape (Tx x[], TFA & shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (x, shape);
     }

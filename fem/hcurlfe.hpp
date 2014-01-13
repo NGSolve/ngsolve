@@ -150,12 +150,19 @@ namespace ngfem
   inline AutoDiff<3> Cross (const AutoDiff<3> & u,
 			    const AutoDiff<3> & v)
   {
+    /*
     AutoDiff<3> hv;
     hv.Value() = 0.0;
     hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
     hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
     hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
     return hv;
+    */
+    double hv[3];
+    hv[0] = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
+    hv[1] = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
+    hv[2] = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
+    return AutoDiff<3> (0, hv);
   }
 
   inline AutoDiff<1> Cross (const AutoDiff<2> & u,
