@@ -127,6 +127,12 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
+      if (sizeof(IntegrationPoint) % 8 != 0)
+        {
+          cerr << "Integration must should have 8-byte alignment" << endl;
+          exit(1);
+        }
+
       // static Timer t("eltrans::multipointjacobian"); RegionTimer reg(t);
       
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);

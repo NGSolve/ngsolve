@@ -1,5 +1,5 @@
-AC_INIT([ngsolve],[5.2-dev],[])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_INIT([ngsolve],[5.3-dev],[])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign nostdinc])
 
 AC_CONFIG_MACRO_DIR([m4])
 
