@@ -1,4 +1,4 @@
-AM_CPPFLAGS =  -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES)
+AM_CPPFLAGS = -I$(top_builddir)  -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES)
 
 lib_LTLIBRARIES = libngla.la
 
