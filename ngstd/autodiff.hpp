@@ -58,6 +58,12 @@ public:
     dval[diffindex] = 1;
   }
 
+  INLINE AutoDiff (SCAL aval, const SCAL * grad)
+  {
+    val = aval;
+    LoadGradient (grad);
+  }
+
   /// assign constant value
   INLINE AutoDiff & operator= (SCAL aval) throw()
   {

@@ -244,7 +244,7 @@ namespace ngstd
       for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
       return *this;
     }
-    
+
     
     const FlatArray & operator= (const std::function<T(int)> & func) const
     {
