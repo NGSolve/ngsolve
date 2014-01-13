@@ -847,7 +847,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
+#ifdef TIMINGSEQUENTIAL
 
 
     starttime = WallTime();
@@ -935,6 +935,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (time < 2.0);
     
     cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetTrafo" << endl;
+
+#endif
+
 
   }
 

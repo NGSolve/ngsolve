@@ -90,7 +90,7 @@ namespace ngcomp
     loflags.SetFlag ("order", 1);
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
-    if (timing) loflags.SetFlag ("timing");
+    // if (timing) loflags.SetFlag ("timing");
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
