@@ -3675,7 +3675,6 @@ namespace netgen
 
 
 
-    Vector shapes;
     MatrixFixWidth<3> dshapes;
 
 
@@ -3706,7 +3705,10 @@ namespace netgen
 	// info.ndof += facecoeffsindex[info.facenr+1] - facecoeffsindex[info.facenr];
       }
 
-    Array<Vec<3> > coefs(info.ndof);
+    ArrayMem<Vec<3>,100> coefs(info.ndof);
+    ArrayMem<double,100> shapes_mem(info.ndof);
+    Vector shapes(info.ndof, &shapes_mem[0]);
+
     GetCoefficients (info, &coefs[0]);
     if (x)
       {
