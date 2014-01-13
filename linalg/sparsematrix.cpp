@@ -1002,11 +1002,6 @@ namespace ngla
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums, map);
 
-    // ArrayMem<int, 50> dnums_sort(dnums.Size());
-    // dnums_sort = dnums;
-    // BubbleSort (dnums.Size(), &dnums_sort[0], &map[0]);
-
-
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
     int first_used = 0;
@@ -1014,16 +1009,11 @@ namespace ngla
     
     for (int i1 = first_used; i1 < dnums.Size(); i1++)
       {
-	/*
-	FlatArray<int> rowind = this->GetRowIndices(dnums_sort[i1]);
-	FlatVector<TM> rowvals = this->GetRowValues(dnums_sort[i1]);
-	*/
 	FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
 	FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
 
 	for (int j1 = first_used, k = 0; j1 <= i1; j1++, k++)
 	  {
-	    // while (rowind[k] != dnums_sort[j1])
 	    while (rowind[k] != dnums[map[j1]])
 	      {
 		k++;
