@@ -3,7 +3,7 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "5.2-dev"
+#define VERSION "5.3-dev"
 #endif
 
 
