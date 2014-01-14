@@ -114,6 +114,16 @@ namespace ngfem
   }
   */
 
+  template <int D>
+  void ScalarFiniteElement<D> :: 
+  CalcShape (const IntegrationRule & ir, 
+	     SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      CalcShape (ir[i], shape.Col(i));
+  }
+
+
   template<int D>
   void ScalarFiniteElement<D> :: 
   CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 

@@ -49,6 +49,17 @@ namespace ngfem
     T_CalcShape (&pt(0), shape);
   }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcShape (const IntegrationRule & ir, SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      {
+	Vec<DIM> pt = ir[i].Point();
+	T_CalcShape (&pt(0), shape.Col(i));
+      }
+  }
+
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 

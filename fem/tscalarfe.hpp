@@ -34,13 +34,20 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
     NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const;
+					   SliceVector<> shape) const;
     
-    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const;
+    NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
+					   SliceMatrix<> shape) const;
     
-    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
+    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
+					    FlatVector<double> x) const;
     
-    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
+					  FlatVector<double> coefs, 
+					  FlatVector<double> vals) const;
+    
+    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
+					       FlatVector<> vals, FlatVector<double> coefs) const;
     NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
 
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;

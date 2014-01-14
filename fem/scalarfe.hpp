@@ -59,6 +59,10 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceVector<> shape) const = 0;
 
+    /// compute shape, row is shape nr, col is ip nr
+    NGS_DLL_HEADER 
+    virtual void CalcShape (const IntegrationRule & ir, 
+                            SliceMatrix<> shape) const;
   
     /// compute dshape, matrix: ndof x spacedim
     NGS_DLL_HEADER 

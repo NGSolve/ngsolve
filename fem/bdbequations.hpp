@@ -231,7 +231,15 @@ namespace ngfem
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
 
-
+    using DiffOp<DiffOpId<D, FEL> > :: GenerateMatrixIR;
+    template <typename MAT>
+    static void GenerateMatrixIR (const FiniteElement & fel, 
+                                  const MappedIntegrationRule<3,3> & mir,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mir.IR(), Trans(mat));
+    }
+    
 
     template <typename MIP, class TVX, class TVY>
     static void Apply (const FiniteElement & fel, const MIP & mip,
