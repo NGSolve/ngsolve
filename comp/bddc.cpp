@@ -148,7 +148,7 @@ namespace ngcomp
 
       const FESpace & fes = bfa.GetFESpace();
       
-      ArrayMem<int, 20> localwbdofs, localintdofs;
+      ArrayMem<int, 100> localwbdofs, localintdofs;
       
       for (int k = 0; k < dnums.Size(); k++)
 	{
@@ -193,7 +193,6 @@ namespace ngcomp
           else
             CalcInverse (d);
 
-	  
 	  if (sizew)
 	    {
 	      he = SCAL(0.0);
@@ -204,7 +203,7 @@ namespace ngcomp
 	      //R * E
 	      for (int k = 0; k < sizei; k++)
 		he.Row(k) *= el2ifweight[k]; 
-	  
+
 	      if (!bfa.IsSymmetric())
 		{	      
 		  het = SCAL(0.0);
@@ -215,12 +214,10 @@ namespace ngcomp
 		    het.Col(l) *= el2ifweight[l];
 		}
 	    }
-          
 	  //R * A_ii^(-1) * R^T
 	  for (int k = 0; k < sizei; k++) d.Row(k) *= el2ifweight[k]; 
 	  for (int l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
 	}
-
 
       RegionTimer regadd(timer2);
 
