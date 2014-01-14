@@ -49,7 +49,6 @@
 
 #endif
 
-
 /*
 inline void * operator new (size_t cnt)
 {
@@ -146,8 +145,8 @@ namespace ngstd
 
 
 
-#ifdef JS
-#include <ngstd_js.hpp>
+#ifdef GOLD
+#include <ngstd_gold.hpp>
 #endif
 
 
