@@ -265,7 +265,8 @@ Evaluate (const BaseMappedIntegrationRule & ir,
 
   if (! fun[elind] -> IsComplex ())
     {
-      Matrix<> args(ir.Size(), numarg);
+      ArrayMem<double,2000> mem(ir.Size()*numarg);
+      FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
       for (int i = 0; i < ir.Size(); i++)
 	args.Row(i).Range(0,DIM) = 
 	  static_cast<const DimMappedIntegrationPoint<DIM> & > (ir[i]).GetPoint();
@@ -278,7 +279,6 @@ Evaluate (const BaseMappedIntegrationRule & ir,
 	  args.Cols(an,an+dim) = hmat;
 	  an += dim;
 	}
-    
       for (int i = 0; i < ir.Size(); i++)
 	fun[elind]->Eval (&args(i,0), &values(i,0), values.Width());
     }
