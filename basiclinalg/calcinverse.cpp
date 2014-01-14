@@ -46,7 +46,7 @@ namespace ngbla
 
     int n = inv.Height();
 
-    ngstd::Array<int> p(n);   // pivot-permutation
+    ngstd::ArrayMem<int,100> p(n);   // pivot-permutation
     for (int j = 0; j < n; j++) p[j] = j;
     
     for (int j = 0; j < n; j++)
@@ -111,7 +111,7 @@ namespace ngbla
 
     // row exchange
   
-    Vector<T2> hv(n);
+    VectorMem<100,T2> hv(n);
     for (int i = 0; i < n; i++)
       {
 	for (int k = 0; k < n; k++) hv(p[k]) = inv(k, i);
