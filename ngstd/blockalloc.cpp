@@ -11,10 +11,11 @@
 
 #include <ngstd.hpp>
 
+
+
+
 namespace ngstd
 {
-  using namespace ngstd;
-
 
   BlockAllocator :: BlockAllocator (unsigned int asize, unsigned int ablocks)
     : bablocks (0)
