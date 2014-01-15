@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   /// An integration point 
-  class alignas(8) IntegrationPoint      
+  class /* alignas(8) */ IntegrationPoint      
   {
   private:
     /// number within intergration Rule
