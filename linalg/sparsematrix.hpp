@@ -153,7 +153,7 @@ namespace ngla
   {
   protected:
     /// sparse direct solver
-    mutable INVERSETYPE inversetype = default_inversetype;    // C++11 :-) Windows VS2013
+    mutable INVERSETYPE inversetype;// = default_inversetype;    // C++11 :-) Windows VS2013
 
   public:
     
