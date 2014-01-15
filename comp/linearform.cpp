@@ -253,7 +253,7 @@ namespace ngcomp
                      if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
                      int elvec_size = fel.GetNDof()*fespace.GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
-                     
+
 		     timer2b.Start();
                      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
                      timer2b.Stop();
