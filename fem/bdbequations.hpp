@@ -239,7 +239,6 @@ namespace ngfem
     {
       Cast(fel).CalcShape (mir.IR(), Trans(mat));
     }
-    
 
     template <typename MIP, class TVX, class TVY>
     static void Apply (const FiniteElement & fel, const MIP & mip,
