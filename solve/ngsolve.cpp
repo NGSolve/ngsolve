@@ -939,20 +939,6 @@ void Parallel_Exit ()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #ifdef WIN32
 void * __cdecl my_operator_new_replacement(size_t _count)
 {
