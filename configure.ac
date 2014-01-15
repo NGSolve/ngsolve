@@ -22,10 +22,7 @@ AC_PROG_LIBTOOL
 
 CXXFLAGS="$CXXFLAGS -DUSE_TIMEOFDAY -DLAPACK"
 # ACX_LAPACK
-
-
-
-
+                
 
 AC_ARG_WITH([netgen], 
         [  --with-netgen=dir       use Netgen installed in directory dir],
@@ -76,7 +73,6 @@ AC_ARG_WITH([pardiso],
         [AC_SUBST([PARDISO_LIBS], ["$withval -llapack -lblas -lgomp -gfortran"])]
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
-
 
 # AC_ARG_WITH([superlu],
 #        [AC_HELP_STRING([--with-superlu=-I/usr/include/superlu],[enable sparse LU factorization library])],
