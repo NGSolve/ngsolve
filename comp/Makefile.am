@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include $(TCL_INCLUDES) $(HYPRE_INCLUDES)
+AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/gold -I$(top_srcdir)/include $(TCL_INCLUDES) $(HYPRE_INCLUDES)
 
 lib_LTLIBRARIES = libngcomp.la
 
