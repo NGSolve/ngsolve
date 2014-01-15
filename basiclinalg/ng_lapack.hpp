@@ -1201,7 +1201,15 @@ namespace ngbla
 			     double alpha,
 			     SliceMatrix<double> c,
 			     double beta)
-  { c *= beta; c += alpha * a * b; }
+  { 
+        if (beta == 0)
+              c = alpha * a * b;
+        else      
+        {
+              c *= beta; 
+              c += alpha * a * b; 
+        }
+  }
 
   template <typename TA, typename TB>
   inline void LapackMultAdd (const TA & a,
@@ -1209,8 +1217,16 @@ namespace ngbla
 			     Complex alpha,
 			     SliceMatrix<Complex> c,
 			     Complex beta)
-  { c *= beta; c += alpha * a * b; }
-
+  { 
+        if (beta == Complex(0,0))
+              c = alpha * a * b;
+        else      
+        {
+              c *= beta; 
+              c += alpha * a * b; 
+        }
+  }
+   
 
 
   inline void LapackMultABt (ngbla::FlatMatrix<double> a, 
