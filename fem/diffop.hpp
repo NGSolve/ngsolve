@@ -252,7 +252,7 @@ namespace ngfem
     enum { DIM         = DIFFOP::DIM };
 
   public:
-    NGS_DLL_HEADER T_DifferentialOperator() { ; }
+    T_DifferentialOperator() { ; }
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
@@ -265,21 +265,21 @@ namespace ngfem
 		LocalHeap & lh) const;
     */
 
-    NGS_DLL_HEADER virtual void
+    virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
-    NGS_DLL_HEADER virtual void
+    virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const;
 
-    NGS_DLL_HEADER virtual void
+    virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
