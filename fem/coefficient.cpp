@@ -8,7 +8,6 @@
    Finite Element Coefficient Function
 */
 
-
 #include <fem.hpp>
 
 namespace ngfem
