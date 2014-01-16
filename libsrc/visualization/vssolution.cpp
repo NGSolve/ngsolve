@@ -3736,7 +3736,7 @@ namespace netgen
                 bool has_pos = 0, has_neg = 0;
                 
                 for (int i = 0; i < el.GetNP(); i++)
-                  if (posval[el[i]] > 0)
+                  if (posval[el[i]])
                     has_pos = 1;
                   else
                     has_neg = 1;
