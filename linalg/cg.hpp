@@ -15,7 +15,7 @@ namespace ngla
   /**
      Krylov Space Solver
   */ 
-  class KrylovSpaceSolver : public BaseMatrix
+  class NGS_DLL_HEADER KrylovSpaceSolver : public BaseMatrix
   {
   protected:
     ///
@@ -85,7 +85,7 @@ namespace ngla
     int GetSteps () const
     { return steps; }
     ///
-    NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
+    virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
     ///
     virtual BaseVector * CreateVector () const;
 
