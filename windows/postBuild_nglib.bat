@@ -63,6 +63,19 @@ if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
    if errorlevel 1 goto LibInstallFailed
 )   
+
+if /i "%BUILD_ARCH%" == "x64" (
+   xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x64\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
+   xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x64\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+
+   if errorlevel 1 goto ExternalInstallFailed
+)
+if /i "%BUILD_ARCH%" == "win32" (
+   xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x86\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+   xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x86\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+   if errorlevel 1 goto ExternalInstallFailed
+)
+
 echo Installing %PROJ_NAME%.lib: Completed OK!!
 
 REM *** Copy the include file nglib.h into the install folder ***
@@ -96,6 +109,9 @@ exit 1
 :LibInstallFailed
 echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying %PROJ_NAME%.lib or %PROJ_NAME%.h into install folder!!!
 exit 1
+:ExternalInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying pthreadVC2.dll into install folder!!!
+exit 1 
 
 :BuildEventOK
 echo POSTBUILD Script for %PROJ_NAME% completed OK.....!!
