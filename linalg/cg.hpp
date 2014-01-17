@@ -42,11 +42,11 @@ namespace ngla
 
   public:
     ///
-    KrylovSpaceSolver ();
+    NGS_DLL_HEADER KrylovSpaceSolver();
     ///
-    KrylovSpaceSolver (const BaseMatrix & aa);
+    NGS_DLL_HEADER KrylovSpaceSolver(const BaseMatrix & aa);
     ///
-    KrylovSpaceSolver (const BaseMatrix & aa, const BaseMatrix & ac);
+    NGS_DLL_HEADER KrylovSpaceSolver(const BaseMatrix & aa, const BaseMatrix & ac);
     ///
     void SetMatrix (const BaseMatrix & aa)
     { a = &aa; }
@@ -87,7 +87,7 @@ namespace ngla
     ///
     NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
     ///
-    virtual BaseVector * CreateVector () const;
+    NGS_DLL_HEADER virtual BaseVector * CreateVector() const;
 
 
     virtual int VHeight() const {return a->VWidth();}
