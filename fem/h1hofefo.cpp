@@ -46,10 +46,10 @@ namespace ngfem
   template <int ORDER>   template<typename Tx, typename TFA>  
   void H1HighOrderFEFO<ET_TRIG, ORDER> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
-    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
 
     for (int i = 0; i < 3; i++)
-      shape[i] = lami[i];
+      shape[i] = lam[i];
 
     int ii = 3;
 
@@ -64,19 +64,29 @@ namespace ngfem
 	// INT<2> e = GetEdgeSort (i, vnums);
 	
 	LegendrePolynomial::EvalScaledMult (ORDER-2, 
-					    lami[e[1]]-lami[e[0]], lami[e[0]]+lami[e[1]], 
-					    lami[e[0]]*lami[e[1]], shape.Addr(ii));
+					    lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+					    lam[e[0]]*lam[e[1]], shape.Addr(ii));
 	ii += ORDER-1;
 	/*
         int es = edges[i][0], ee = edges[i][1];
         if (vnums[es] > vnums[ee]) swap (es, ee);
         
         ii += T_ORTHOPOL::CalcScaled<ORDER> 
-          (lami[ee]-lami[es], lami[es]+lami[ee], shape.Addr(ii));
+          (lam[ee]-lam[es], lam[es]+lam[ee], shape.Addr(ii));
 	  */
       }
 
     // inner dofs
+
+    if (ORDER >= 3)
+      {
+        INT<4> f = GetFaceSort (0, vnums);
+
+	DubinerBasis3::EvalMult (ORDER-3, 
+				 lam[f[0]], lam[f[1]], 
+				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+      }
+    /*
     int fav[3] = { 0, 1, 2 }; 
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
     if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
@@ -84,10 +94,11 @@ namespace ngfem
     
     Tx polx[ORDER-2], poly[ORDER-2];
     
-    T_TRIGSHAPES::CalcSplitted<ORDER> (lami[fav[2]]-lami[fav[1]],
-                                       lami[fav[0]], polx, poly);
+    T_TRIGSHAPES::CalcSplitted<ORDER> (lam[fav[2]]-lam[fav[1]],
+                                       lam[fav[0]], polx, poly);
     
     TrigProduct<ORDER-3>::Do (polx, poly, shape.Addr(ii));
+    */
   }
 
   template <>   template<typename Tx, typename TFA>  
@@ -112,7 +123,7 @@ namespace ngfem
 	
 	LegendrePolynomial::EvalScaledMult (0, 
 					    lami[e[1]]-lami[e[0]], lami[e[0]]+lami[e[1]], 
-					    lami[e[0]]*lami[e[1]], shape.Addr(ii));
+					    lami[e[0]]*lami[e[1]], shape+ii);
 	ii += 1;
 
 	/*
