@@ -14,7 +14,7 @@ namespace ngla
 
   // sets the solver which is used for InverseMatrix
   enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS, MASTERINVERSE };
-
+  extern string GetInverseName (INVERSETYPE type);
 
   /**
      The base for all matrices in the linalg.
