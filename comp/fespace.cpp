@@ -548,7 +548,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < dnums.Size(); i++)
       dranges.Append (IntRange (dnums[i], dnums[i]+1));
   }
-
+  /*
   FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
   {
     Vec<4,int> nnodes = ElementTopology::GetNNodes (ma.GetElType (ei));
@@ -571,7 +571,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     return dnums;
   }
-
+  */
 
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
@@ -756,6 +756,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
 
+    /*
     starttime = WallTime();
     steps = 0;
     do
@@ -767,7 +768,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for (int i = 0; i < ma.GetNE(); i++)
 	    {
               HeapReset hr(lh);
-	      /* FlatArray<int> dnums = */ GetDofNrs (ElementId (VOL, i), lh);
+              // FlatArray<int> dnums = 
+              GetDofNrs (ElementId (VOL, i), lh);
 	    }
 	}
 	steps++;
@@ -776,7 +778,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     while (time < 2.0);
     
     cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
-
+    */
 
 
 
@@ -2055,6 +2057,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (int j = 0; j < hdranges.Size(); j++)
           if (hdranges[j].First() != -1)
             dranges[osize+j] = hdranges[j]+cummulative_nd[i];
+          else
+            dranges[osize+j] = hdranges[j];
       }
   }
 

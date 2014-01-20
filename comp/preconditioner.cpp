@@ -274,7 +274,7 @@ namespace ngcomp
     finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
 
     tlp = 0;
-    inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+    inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
   }
 
  
@@ -430,7 +430,7 @@ namespace ngcomp
     {
       bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
       inverse = NULL;
-      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype)); // "sparsecholesky");
     }
     
     ///

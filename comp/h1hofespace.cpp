@@ -11,7 +11,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
-//#include "../fem/h1hofefo.hpp"
+#include "../fem/h1hofefo.hpp"
 
 
 using namespace ngmg; 
@@ -525,7 +525,6 @@ namespace ngcomp
         return *hofe2d;
       }
 
-    
     if (fixed_order && eltype == ET_TET && order <= 6)
       {
         H1HighOrderFiniteElementFO<3> * hofe3d = 0;
@@ -543,6 +542,26 @@ namespace ngcomp
         return *hofe3d;
       }
     */
+
+    if (fixed_order && eltype == ET_TET)
+      {
+        switch (order)
+          {
+          case 1: return *(new (lh) H1HighOrderFEFO<ET_TET,1> ()) -> SetVertexNumbers(ngel.vertices);
+          case 2: return *(new (lh) H1HighOrderFEFO<ET_TET,2> ()) -> SetVertexNumbers(ngel.vertices);
+          case 3: return *(new (lh) H1HighOrderFEFO<ET_TET,3> ()) -> SetVertexNumbers(ngel.vertices);
+            // case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
+            // case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
+          default:
+            ; 
+          }
+      }
+
+
+
+
+
+
     /*
     if (fixed_order && eltype == ET_TET)
       {
