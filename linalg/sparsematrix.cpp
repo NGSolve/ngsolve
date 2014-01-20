@@ -129,7 +129,7 @@ namespace ngla
 	  FlatArray<int> el = rowelements[i];
 	  for (int j = 0; j < el.Size(); j++){
 	    creator.Add(el[j],i);
-	  }
+	  } 
 	}
       }
     
@@ -213,7 +213,7 @@ namespace ngla
     firsti.SetName ("matrix graph, table 1");
     */
     firsti.SetSize (size+1);
-
+    
     nze = 0;
     for (int i = 0; i < size; i++)
       {
