@@ -96,7 +96,7 @@ namespace ngfem
     // ~H1HighOrderFEFO ();
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[3], TFA & shape) const; 
+    INLINE void T_CalcShape (Tx x[3], TFA & shape) const; 
   };
 
 
