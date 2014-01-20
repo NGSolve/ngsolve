@@ -149,10 +149,10 @@ namespace ngfem
   template <int ORDER>   template<typename Tx, typename TFA>  
   void H1HighOrderFEFO<ET_TET, ORDER> :: T_CalcShape (Tx hx[3], TFA & shape) const
   {
-    Tx lami[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+    Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
 
     for (int i = 0; i < 4; i++)
-      shape[i] = lami[i];
+      shape[i] = lam[i];
 
     int ii = 4;
 
@@ -160,11 +160,14 @@ namespace ngfem
     // const EDGE * edges = ElementTopology::GetEdges (ET_TET);
     for (int i = 0; i < 6; i++)
       { 
-        // int es = edges[i][0], ee = edges[i][1];
-        // if (vnums[es] > vnums[ee]) swap (es, ee);
         INT<2> e = GetEdgeSort (i, vnums);
-        ii += T_ORTHOPOL::CalcScaled<ORDER> 
-          (lami[e[1]]-lami[e[0]], lami[e[1]]+lami[e[0]], shape.Addr(ii));
+        LegendrePolynomial::
+          EvalScaledMultFO<ORDER-2> (lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                                     lam[e[0]]*lam[e[1]], shape+ii);
+        ii += ORDER-1;
+
+        // ii += T_ORTHOPOL::CalcScaled<ORDER> 
+        // (lam[e[1]]-lam[e[0]], lam[e[1]]+lam[e[0]], shape.Addr(ii));
       }
 
     // face dofs
@@ -173,15 +176,20 @@ namespace ngfem
 	{
           INT<4> f = GetFaceSort (i, vnums);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
-          
+
+	  DubinerBasis3::EvalScaledMult (ORDER-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+					 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+	  ii += (ORDER-2)*(ORDER-1)/2;
+          /*
 	  ii += T_FACESHAPES::Calc (ORDER, 
-				    lami[f[2]]-lami[f[1]],
-				    lami[f[0]], lami[vop],  shape.Addr(ii));
+				    lam[f[2]]-lam[f[1]],
+				    lam[f[0]], lam[vop],  shape.Addr(ii));
+          */
 	}
 
     if (ORDER >= 4)
       ii += T_INNERSHAPES::Calc (ORDER,
-                                 lami[0]-lami[3], lami[1], lami[2], 
+                                 lam[0]-lam[3], lam[1], lam[2], 
                                  shape.Addr(ii) );
   }
 
