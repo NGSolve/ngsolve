@@ -47,7 +47,7 @@ namespace ngcomp
 
     // high order divergence free
     bool ho_div_free; 
-
+    bool highest_order_dc;
   public:
     HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, 
                           bool parseflags=false);
