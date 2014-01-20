@@ -148,6 +148,11 @@ namespace ngcomp
           new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
       }
 
+    highest_order_dc = flags.GetDefineFlag("highest_order_dc");
+    if (highest_order_dc) {
+      *testout << "highest_order_dc is active!" << endl;
+    }
+
     vefc_dofblocks = Vec<4,int> (0,0,2,1);
   }
   
@@ -310,11 +315,12 @@ namespace ngcomp
 
     if(dim==2)
       {
+	int dec_hodc = highest_order_dc ? 1 : 0;
         for (int i = 0; i < nfa; i++)
           {
             first_facet_dof[i] = ndof;
             if(fine_facet[i])
-              ndof += order_facet[i][0];
+	      ndof += order_facet[i][0] - dec_hodc;
           }
 
         first_facet_dof[nfa] = ndof;
@@ -331,12 +337,14 @@ namespace ngcomp
                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
                   inci = pc[0]*(pc[0]-1)/2;
+		inci += 3*dec_hodc;
                 break;
               case ET_QUAD:
                 if (!ho_div_free)
                   inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
                 else
                   inci = pc[0]*pc[1];
+		inci += 4*dec_hodc;
                 break;
               default: // for the compiler
                 break;  
@@ -351,6 +359,7 @@ namespace ngcomp
       }
     else 
       {
+	cout << "highest_order_dc not supported in 3D" << endl;
         int inci = 0;
         for (int i=0; i< nfa; i++) 
           {
@@ -483,7 +492,7 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    if (ma.GetElType(elnr) == ET_TRIG && order <= 6) // && 0)
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && 0)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
 	switch (order)
@@ -712,6 +721,8 @@ namespace ngcomp
     if(discont) porder = -1; 
     else porder = order; 
 
+    if (highest_order_dc) porder--;
+    
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
@@ -752,8 +763,8 @@ namespace ngcomp
 
 	hofe -> SetVertexNumbers (vnums);
 	ma.GetSElEdges(selnr, ednums);
-	
-	hofe -> SetOrderInner (order_facet[ednums[0]][0]);
+	int dec = highest_order_dc ? 1 : 0;
+	hofe -> SetOrderInner (order_facet[ednums[0]][0]-dec);
 	hofe -> ComputeNDof();
       }
     else
@@ -795,6 +806,12 @@ namespace ngcomp
 
     // Ngs_Element ngel = ma.GetElement(ei);
 
+    if (highest_order_dc) 
+      {
+	FESpace::GetDofRanges (ei, dranges);
+	return;
+      }
+	
     if (ei.IsVolume())
       {
         if(discont) 
@@ -841,16 +858,35 @@ namespace ngcomp
     ArrayMem<int,6> fanums;
     ma.GetElFacets (elnr, fanums);
 
-    //Raviart-Thomas
-    for (int i = 0; i < fanums.Size(); i++)
-      dnums.Append (fanums[i]);
-    // facets
-    for(int i=0; i<fanums.Size(); i++)
-      dnums += GetFacetDofs (fanums[i]);
 
-    //inner
-    dnums += GetElementDofs (elnr);
-    
+
+    if (highest_order_dc)
+      {
+	IntRange eldofs = GetElementDofs (elnr);
+
+	for (int i = 0; i < fanums.Size(); i++)
+	  dnums.Append (fanums[i]);
+
+	for(int i=0; i<fanums.Size(); i++)
+	  {
+	    dnums += GetFacetDofs (fanums[i]);
+	    dnums.Append (eldofs.First()+i);
+	  }
+	dnums += IntRange (eldofs.First()+fanums.Size(), eldofs.Next());
+      }
+    else
+      {
+	//Raviart-Thomas
+	for (int i = 0; i < fanums.Size(); i++)
+	  dnums.Append (fanums[i]);
+	// facets
+	for(int i=0; i<fanums.Size(); i++)
+	  dnums += GetFacetDofs (fanums[i]);
+	
+	//inner
+	dnums += GetElementDofs (elnr);
+      }
+
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
   }
