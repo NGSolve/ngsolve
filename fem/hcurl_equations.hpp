@@ -52,7 +52,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      cout << "diffopcurl: slow matrix" << endl;
+      // cout << "diffopidedge: slow matrix" << endl;
       mat = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh) * mip.GetJacobianInverse();
     }
 
@@ -180,7 +180,7 @@ namespace ngfem
     static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      cout << "diffopcurl: slow matrix" << endl;
+      // cout << "diffopcurl: slow matrix" << endl;
       mat = (1.0/mip.GetJacobiDet())
         * (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * Trans(mip.GetJacobian()));
     }
