@@ -644,8 +644,10 @@ namespace ngcomp
 
                      const FiniteElement & fel = fespace.GetFE (ei, lh);
                      const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                     FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
-
+                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+		     Array<int> dnums (fel.GetNDof(), lh);
+		     fespace.GetDofNrs (ei, dnums);
+                     
                      if (fel.GetNDof() != dnums.Size())
                        {
                          cout << "fel:GetNDof() = " << fel.GetNDof() << endl;
@@ -1016,19 +1018,20 @@ namespace ngcomp
                      const FiniteElement & fel = fespace.GetSFE (i, lh);
                       
                      ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
-                     FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
-                     // fespace.GetSDofNrs (i, dnums);
-
-                      if(fel.GetNDof() != dnums.Size())
-                        {
-                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                          cout << "dnums.Size() = " << dnums.Size() << endl;
-
-                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
-                          (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                          (*testout) << "dnums = " << dnums << endl;
-                          throw Exception ( "Inconsistent number of degrees of freedom " );
-                        }
+                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+		     Array<int> dnums (fel.GetNDof(), lh);
+		     fespace.GetDofNrs (ei, dnums);
+                     
+                     if(fel.GetNDof() != dnums.Size())
+                       {
+                         cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
+                         cout << "dnums.Size() = " << dnums.Size() << endl;
+                         
+                         (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                         (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                         (*testout) << "dnums = " << dnums << endl;
+                         throw Exception ( "Inconsistent number of degrees of freedom " );
+                       }
 
                       timerb1.Stop();
                       
