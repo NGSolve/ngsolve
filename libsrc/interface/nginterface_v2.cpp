@@ -21,6 +21,14 @@ namespace netgen
 #define NGX_INLINE
 #include "nginterface_v2_impl.hpp"
 
+  Ngx_Mesh :: Ngx_Mesh (class Mesh * amesh)
+  {
+    if (amesh)
+      mesh = amesh;
+    else
+      mesh = netgen::mesh.Ptr();
+  }
+
   Ngx_Mesh * LoadMesh (const string & filename)
   {
     netgen::mesh.Ptr() = NULL;

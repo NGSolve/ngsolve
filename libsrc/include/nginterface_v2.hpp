@@ -161,8 +161,9 @@ namespace netgen
     class Mesh * mesh;
     
   public:
-    Ngx_Mesh () { ; }
-    Ngx_Mesh(class Mesh * amesh) : mesh(amesh) { ; }
+    // Ngx_Mesh () { ; }
+    // Ngx_Mesh(class Mesh * amesh) : mesh(amesh) { ; }
+    Ngx_Mesh(class Mesh * amesh = NULL);
     void LoadMesh (const string & filename);
 
     virtual ~Ngx_Mesh();
