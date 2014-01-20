@@ -134,19 +134,19 @@ namespace ngcomp
         }
 
       // static Timer t("eltrans::multipointjacobian"); RegionTimer reg(t);
-      
-      MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      MappedIntegrationRule<DIMS,DIMR> & mir = 
+	static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       mesh -> MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
-                                                      &ir[0](0), &ir[1](0)-&ir[0](0),
+						      &ir[0](0), &ir[1](0)-&ir[0](0),
                                                       &mir[0].Point()(0), 
                                                       &mir[1].Point()(0)-&mir[0].Point()(0), 
                                                       &mir[0].Jacobian()(0,0), 
                                                       &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
-
-      for (int i = 0; i < ir.Size(); i++)
-	mir[i].Compute();
-    }
-  };
+    
+    for (int i = 0; i < ir.Size(); i++)
+      mir[i].Compute();
+  }
+};
   
 
 
@@ -180,12 +180,12 @@ namespace ngcomp
           Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
           // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
           p0 = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[3]));
-		  for (int j = 0; j < 3; j++)
-		  {
-			  Vec<3> pj = FlatVec<3, const double>(mesh->GetPoint(nel.Vertices()[j])) -p0;
-			  for (int k = 0; k < 3; k++)
-				  mat(k,j) = pj(k);
-		  }
+	  for (int j = 0; j < 3; j++)
+	    {
+	      Vec<3> pj = FlatVec<3, const double>(mesh->GetPoint(nel.Vertices()[j])) -p0;
+	      for (int k = 0; k < 3; k++)
+		mat(k,j) = pj(k);
+	    }
           //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
           //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
           //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
@@ -461,7 +461,6 @@ namespace ngcomp
 #ifdef ABC
   void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
   {
-    cout << "getsegpnums" << endl;
     pnums = ArrayObject (mesh -> GetElement<1> (snr).points);
     /*
     pnums.SetSize(3);
@@ -477,7 +476,6 @@ namespace ngcomp
 
   int MeshAccess :: GetSegmentIndex (int snr) const
   {
-    cout << "getsegindex" << endl;
     return mesh -> GetElementIndex<1> (snr);
     //return Ng_GetSegmentIndex(snr+1);
   }

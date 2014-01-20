@@ -633,10 +633,6 @@ namespace ngcomp
                   (fespace, VOL, clh, 
                    [&] (ElementId ei, LocalHeap & lh)
                    {
-                     int i = ei.Nr();
-                          
-                     // HeapReset hr (lh);
-                          
                      if (elmat_ev) 
                        *testout << " Assemble Element " << ei.Nr() << endl;  
                           
@@ -647,7 +643,7 @@ namespace ngcomp
                      const FiniteElement & fel = fespace.GetFE (ei, lh);
                      const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
                      // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
-		     Array<int> dnums  (fel.GetNDof(), lh);
+		     Array<int> dnums (fel.GetNDof(), lh);
 		     fespace.GetDofNrs (ei, dnums);
 
                      if (fel.GetNDof() != dnums.Size())
@@ -676,7 +672,7 @@ namespace ngcomp
                          BilinearFormIntegrator & bfi = *parts[j];
                       
                          if (!bfi.VolumeForm()) continue;
-                         if (!bfi.DefinedOn (ma.GetElIndex (i))) continue;
+                         if (!bfi.DefinedOn (ma.GetElIndex (ei))) continue;
                       
                          FlatMatrix<SCAL> elmat(elmat_size, lh);
 
@@ -700,7 +696,7 @@ namespace ngcomp
                              if (printelmat)
                                {
                                  testout->precision(8);
-                                 (*testout) << "elnum = " << i << endl;
+                                 (*testout) << "elnum = " << ei.Nr() << endl;
                                  (*testout) << "eltype = " << fel.ElementType() << endl;
                                  (*testout) << "integrator = " << bfi.Name() << endl;
                                  (*testout) << "dnums = " << endl << dnums << endl;
@@ -729,7 +725,7 @@ namespace ngcomp
 
                      timer2.Stop();
                      timer3.Start();
-                     fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                     fespace.TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
                      if (elmat_ev)
@@ -738,14 +734,13 @@ namespace ngcomp
                          LapackEigenSystem(sum_elmat, lh);
                        }
 
-
-
+                     int i = ei.Nr();
                      if (eliminate_internal)
                        {
                          static Timer statcondtimer("static condensation", 2);
                          RegionTimer regstat (statcondtimer);
 
-                         ArrayMem<int, 50> idofs1;
+                         Array<int> idofs1(dnums.Size(), lh);
 
                          fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
                          for (int j = 0; j < idofs1.Size(); j++)
@@ -805,10 +800,17 @@ namespace ngcomp
                                }
                              else
                                {
-                                 ArrayMem<int,50> idnums1, idnums;
-                                 ArrayMem<int,50> ednums1, ednums;
+                                 // ArrayMem<int,50> idnums1, idnums;
+                                 // ArrayMem<int,50> ednums1, ednums;
+				 Array<int> idnums1(dnums.Size(), lh), 
+				   ednums1(dnums.Size(), lh);
                                  fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
                                  fespace.GetDofNrs(i,ednums1,EXTERNAL_DOF);
+				 
+				 Array<int> idnums(dim*idnums1.Size(), lh);
+				 Array<int> ednums(dim*ednums1.Size(), lh);
+				 idnums.SetSize(0); 
+				 ednums.SetSize(0);
                                  for (int j = 0; j < idnums1.Size(); j++)
                                    idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
                                  for (int j = 0; j < ednums1.Size(); j++)
@@ -822,7 +824,6 @@ namespace ngcomp
                                  he = 0.0;
                                  he -= d * Trans(c) | Lapack;
                                  harmonicext ->AddElementMatrix(i,idnums,ednums,he);
-                                      
                                  if (!symmetric)
                                    {
                                      FlatMatrix<SCAL> het (sizeo, sizei, lh);
@@ -1010,7 +1011,6 @@ namespace ngcomp
                    [&] (ElementId ei, LocalHeap & lh)
                    {
                      int i = ei.Nr();
-                     
                      progress.Update ();                  
                      
                      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) return;
@@ -1018,8 +1018,8 @@ namespace ngcomp
                      timerb1.Start();
                       
                      const FiniteElement & fel = fespace.GetSFE (i, lh);
-                      
                      ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
+
                      // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
 		     Array<int> dnums  (fel.GetNDof(), lh);
                      fespace.GetDofNrs (ei, dnums);
@@ -1036,7 +1036,6 @@ namespace ngcomp
                        }
                      
                       timerb1.Stop();
-                      
                       int elmat_size = dnums.Size()*fespace.GetDimension();
                       FlatMatrix<SCAL> elmat(elmat_size, lh);
                       FlatMatrix<SCAL> sumelmat(elmat_size, lh);
@@ -1088,8 +1087,7 @@ namespace ngcomp
                           
                           sumelmat += elmat;
                         }
-
-
+		      
                       timerb3.Start();
                       
                       // #pragma omp critical (addelmatboundary)
