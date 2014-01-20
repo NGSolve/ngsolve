@@ -543,6 +543,21 @@ namespace ngcomp
       }
     */
 
+    if (fixed_order && eltype == ET_TRIG)
+      {
+        switch (order)
+          {
+          case 1: return *(new (lh) H1HighOrderFEFO<ET_TRIG,1> ()) -> SetVertexNumbers(ngel.vertices);
+          case 2: return *(new (lh) H1HighOrderFEFO<ET_TRIG,2> ()) -> SetVertexNumbers(ngel.vertices);
+          case 3: return *(new (lh) H1HighOrderFEFO<ET_TRIG,3> ()) -> SetVertexNumbers(ngel.vertices);
+            // case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
+            // case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
+          default:
+            ; 
+          }
+      }
+
+
     if (fixed_order && eltype == ET_TET)
       {
         switch (order)
