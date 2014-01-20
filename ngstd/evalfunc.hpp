@@ -266,7 +266,11 @@ public:
   bool ToBool (double x)  const { return x > eps; }
   bool ToBool (complex<double> x) const { return x.real() > eps; }
   double CheckReal (double x)  const { return x; }
-  double CheckReal (complex<double> x) const { cerr << "illegal complex value" << endl; return 0; }
+  double CheckReal (complex<double> x) const 
+  {
+    if (x.imag() != 0) cerr << "illegal complex value" << endl; 
+    return x.real();
+  }
 
   double Abs (double x) const { return fabs(x); }
   double Abs (complex<double> x) const { return abs(x); }
