@@ -1482,12 +1482,12 @@ namespace ngbla
   }
 
 
-  inline void CalcInverse (const double & m, double & inv)
+  INLINE void CalcInverse (const double & m, double & inv)
   {
     inv = 1 / m;
   }
 
-  inline void CalcInverse (const Complex & m, Complex & inv)
+  INLINE void CalcInverse (const Complex & m, Complex & inv)
   {
     inv = 1.0 / m;
   }
@@ -1501,13 +1501,13 @@ namespace ngbla
   }
 
   template <typename T, typename TINV>
-  inline void CalcInverse (const Mat<1,1,T> & m, TINV & inv)
+  INLINE void CalcInverse (const Mat<1,1,T> & m, TINV & inv)
   {
     inv(0,0) = 1.0 / m(0,0);
   }
 
   template <typename T, typename TINV>
-  inline void CalcInverse (const Mat<2,2,T> & m, TINV & inv)
+  INLINE void CalcInverse (const Mat<2,2,T> & m, TINV & inv)
   {
     T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
     inv(0,0) = idet * m(1,1);
@@ -1517,7 +1517,7 @@ namespace ngbla
   }
 
   template <typename T, typename TINV>
-  inline void CalcInverse (const Mat<3,3,T> & m, TINV & inv)
+  INLINE void CalcInverse (Mat<3,3,T> m, TINV & inv)
   {
     T h0 = m(4)*m(8)-m(5)*m(7);
     T h1 = m(5)*m(6)-m(3)*m(8);
@@ -1542,7 +1542,7 @@ namespace ngbla
 
 
   template <int H, int W, typename T>
-  inline Mat<H,W,T> Inv (const Mat<H,W,T> & m)
+  INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
   {
     Mat<H,W,T> inv;
     CalcInverse (m, inv);

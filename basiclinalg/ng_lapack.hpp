@@ -672,7 +672,7 @@ namespace ngbla
     integer n = a.Width();
     integer lda = a.Width();
 
-    Array<integer> ipiv(n);
+    ArrayMem<integer,100> ipiv(n);
     integer info;
     
     dgetrf_ (&n, &m, &a(0,0), &lda, &ipiv[0], &info);
@@ -682,7 +682,7 @@ namespace ngbla
     dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
     lwork = integer(hwork);
 
-    Array<double> work(lwork);
+    ArrayMem<double,1000> work(lwork);
     dgetri_ (&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
   }
 
