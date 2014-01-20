@@ -238,7 +238,7 @@ namespace ngcomp
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
-    FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
+    // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;
     
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;

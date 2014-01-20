@@ -61,9 +61,15 @@ namespace ngcomp
 	 
          ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 
+         /*
          FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
          FlatArray<int> dnumsflux = fesflux.GetDofNrs (ei, lh);
-         
+         */
+         Array<int> dnums(fel.GetNDof(), lh);
+         Array<int> dnumsflux(felflux.GetNDof(), lh);
+         fes.GetDofNrs (ei, dnums);
+         fesflux.GetDofNrs (ei, dnumsflux);
+
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
          FlatVector<SCAL> elfluxi(dnumsflux.Size() * dimflux, lh);
@@ -364,7 +370,9 @@ namespace ngcomp
 
 	  const FiniteElement & fel = fes.GetFE (ei, lh);
 	  const ElementTransformation & eltrans = ma.GetTrafo (ei, lh); 
-          FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
+          // FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
+          Array<int> dnums(fel.GetNDof(), lh);
+          fes.GetDofNrs (ei, dnums);
 
 	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
 	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);

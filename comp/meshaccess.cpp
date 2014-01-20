@@ -323,7 +323,7 @@ namespace ngcomp
   MeshAccess :: MeshAccess ()
   {
     ngstd::testout = netgen::testout;
-    mesh = NULL;
+    // mesh = NULL;
     Ng_UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }

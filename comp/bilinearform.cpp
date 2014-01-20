@@ -170,8 +170,10 @@ namespace ngcomp
     Array<int> nbelems; //neighbour elements
 
 
+    int maxind = ne + nse + specialelements.Size();
+    if (fespace.UsesDGCoupling()) maxind += nf;
 
-    TableCreator<int> creator;
+    TableCreator<int> creator(maxind);
     for ( ; !creator.Done(); creator++)
       {
         for (int i = 0; i < ne; i++)
@@ -1018,20 +1020,21 @@ namespace ngcomp
                      const FiniteElement & fel = fespace.GetSFE (i, lh);
                       
                      ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
-                     FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
-                     // fespace.GetSDofNrs (i, dnums);
-
-                      if(fel.GetNDof() != dnums.Size())
-                        {
-                          cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
-                          cout << "dnums.Size() = " << dnums.Size() << endl;
-
-                          (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
-                          (*testout) << "dnums.Size() = " << dnums.Size() << endl;
-                          (*testout) << "dnums = " << dnums << endl;
+                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+		     Array<int> dnums  (fel.GetNDof(), lh);
+                     fespace.GetDofNrs (ei, dnums);
+                     
+                     if(fel.GetNDof() != dnums.Size())
+                       {
+                         cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
+                         cout << "dnums.Size() = " << dnums.Size() << endl;
+                         
+                         (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                         (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                         (*testout) << "dnums = " << dnums << endl;
                           throw Exception ( "Inconsistent number of degrees of freedom " );
-                        }
-
+                       }
+                     
                       timerb1.Stop();
                       
                       int elmat_size = dnums.Size()*fespace.GetDimension();
@@ -1700,7 +1703,9 @@ namespace ngcomp
 
                      const FiniteElement & fel = fespace.GetFE (ei, lh);
                      ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                     FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     Array<int> dnums (fel.GetNDof(), lh);
+                     fespace.GetDofNrs (ei, dnums);
 
                      Array<int> idofs(dnums.Size(), lh);
                      fespace.GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
