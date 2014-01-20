@@ -254,4 +254,20 @@ namespace ngla
     throw Exception (err.str());
   }
 
+
+  string GetInverseName (INVERSETYPE type)
+  {
+    switch (type)
+      {
+      case PARDISO:         return "pardiso";
+      case PARDISOSPD:      return "pardisospd";
+      case SPARSECHOLESKY:  return "sparsecholesky";
+      case SUPERLU:         return "superlu";
+      case SUPERLU_DIST:    return "superlu_dist";
+      case MUMPS:           return "mumps";
+      case MASTERINVERSE:   return "masterinverse";
+      }
+    return "";
+  }
+
 }
