@@ -134,6 +134,15 @@ namespace ngstd
       return def;
   }
 
+  string Flags :: GetStringFlag (const char * name, const string & def) const
+  {
+    if (strflags.Used (name))
+      return strflags[name];
+    else
+      return def;
+  }
+
+
   double Flags :: GetNumFlag (const char * name, double def) const
   {
     if (numflags.Used (name))
