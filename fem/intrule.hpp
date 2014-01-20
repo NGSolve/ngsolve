@@ -321,6 +321,7 @@ namespace ngfem
   };
 
 
+  /*
   template <int DIM> 
   INLINE Vec<DIM, AutoDiff<DIM>> Mip2Ad (const MappedIntegrationPoint<DIM,DIM> & mip)
   {
@@ -334,7 +335,7 @@ namespace ngfem
     
     return adp;
   }
-
+  */
 
 
   template <int DIMS, int DIMR, typename SCAL> 

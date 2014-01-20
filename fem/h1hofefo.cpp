@@ -10,7 +10,7 @@
 #include <fem.hpp>
 #include <h1hofefo.hpp>
 
-#include "tscalarfe_impl.hpp"
+#include <tscalarfe_impl.hpp>
 
 
 namespace ngfem
