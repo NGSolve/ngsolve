@@ -483,7 +483,8 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    if (ma.GetElType(elnr) == ET_TRIG && order <= 6) // && 0)
+    /*
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
 	switch (order)
@@ -506,7 +507,7 @@ namespace ngcomp
 	
 	return *hofe2d;
       }  
-
+    */
 
 
     FiniteElement * fe;
