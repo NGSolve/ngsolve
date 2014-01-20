@@ -103,6 +103,21 @@ namespace ngfem
       cout << "L2HighOrderFEFO::GetTraceTrans not available" << endl;
     }
     */
+
+    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
+    {
+      if (ET == ET_TRIG)
+	{
+	  for (int ix = 0, ii = 0; ix <= ORDER; ix++)
+	    for (int iy = 0; iy <= ORDER - ix; iy++, ii++)
+	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+	}
+      else
+	{
+	  cerr << "L2HighOrderFEFO::getdiagmass not implemented" << endl;
+	}
+    }
+
   };
 
 
@@ -122,8 +137,13 @@ namespace ngfem
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[2], TFA & shape) const
+    void T_CalcShape (Tx x[2], TFA & shape) const
     {
+      Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
+      INT<4> f = this -> GetFaceSort (0, vnums);
+      DubinerBasis::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
+      
+      /*
       Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
       INT<4> f = this->GetFaceSort (0, vnums);
       Tx x = lami[f[0]],  y = lami[f[1]],  l3 = lami[f[2]];
@@ -139,6 +159,7 @@ namespace ngfem
       for (int i = 0, ii = 0; i <= ORDER; i++)
 	for (int j = 0; j <= ORDER-i; j++)
 	  shape[ii++] = polx[i] * polsy(i,j);
+      */
     }
 
   };
@@ -148,6 +169,7 @@ namespace ngfem
 
 #ifdef FILE_L2HOFEFO_CPP
 #define L2HOFEFO_EXTERN
+
 #else
 #define L2HOFEFO_EXTERN extern
 #endif
