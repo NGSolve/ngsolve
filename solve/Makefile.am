@@ -1,4 +1,4 @@
-AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(TCL_INCLUDES)
+AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) 
 
 lib_LTLIBRARIES = libngsolve.la
 bin_PROGRAMS = ngs
