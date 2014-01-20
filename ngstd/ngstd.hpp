@@ -54,7 +54,7 @@ inline void * operator new (size_t cnt)
 {
   static int cnt_new = 0;
   cnt_new++;
-  std::cout << "private new called, cnt = " << cnt_new << std::endl;
+  std::cout << "private new called, cnt = " << cnt_new << ", bytes = " << cnt << std::endl;
   return operator new(cnt, std::nothrow);
 }
 
@@ -62,7 +62,7 @@ inline void * operator new[] (size_t cnt)
 {
   static int cnt_new = 0;
   cnt_new++;
-  std::cout << "private new[] called, cnt = " << cnt_new << std::endl;
+  std::cout << "private new[] called, cnt = " << cnt_new << ", bytes = " << cnt << std::endl;
   return operator new[](cnt, std::nothrow);
 }
 */
