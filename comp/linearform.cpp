@@ -1,52 +1,6 @@
 #include <comp.hpp>
 #include <parallelngs.hpp>
 
-//#include <unistd.h>
-
-
-
-  /*
-namespace ngla
-{
-  extern template class S_BaseVector<double>;
-  // template class S_BaseVector<Complex>;
-  
-  extern template class VFlatVector<double>;
-  
-  extern template class S_BaseVectorPtr<double>;
-  extern template class S_BaseVectorPtr<Complex>;
-
-  extern template class VVector<double>;
-  extern template class VVector<Complex>;
-
-  extern template class VVector<Vec<1>>;
-  extern template class VVector<Vec<2>>;
-  extern template class VVector<Vec<3>>;
-  extern template class VVector<Vec<4>>;
-  extern template class VVector<Vec<5>>;
-  extern template class VVector<Vec<6>>;
-  extern template class VVector<Vec<7>>;
-  extern template class VVector<Vec<8>>;
-  extern template class VVector<Vec<9>>;
-  extern template class VVector<Vec<10>>;
-  extern template class VVector<Vec<11>>;
-  extern template class VVector<Vec<12>>;
-
-  extern template class VVector<Vec<1,Complex>>;
-  extern template class VVector<Vec<2,Complex>>;
-  extern template class VVector<Vec<3,Complex>>;
-  extern template class VVector<Vec<4,Complex>>;
-  extern template class VVector<Vec<5,Complex>>;
-  extern template class VVector<Vec<6,Complex>>;
-  extern template class VVector<Vec<7,Complex>>;
-  extern template class VVector<Vec<8,Complex>>;
-  extern template class VVector<Vec<9,Complex>>;
-  extern template class VVector<Vec<10,Complex>>;
-  extern template class VVector<Vec<11,Complex>>;
-  extern template class VVector<Vec<12,Complex>>;
-}
-*/
-
 
 namespace ngcomp
 {
