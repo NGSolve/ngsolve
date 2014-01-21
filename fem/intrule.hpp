@@ -273,7 +273,8 @@ namespace ngfem
     const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
     { 
       if (DIMS == DIMR)
-        return Inv (dxdxi);
+        // return Inv (dxdxi);
+        return 1.0/det * Trans (Cof (dxdxi));
       else
         {
 	  Mat<DIMS,DIMS,SCAL> ata, iata;

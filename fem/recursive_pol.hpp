@@ -789,7 +789,7 @@ namespace ngfem
     LegendrePolynomial () { ; }
 
     template <class S, class T>
-    inline LegendrePolynomial (int n, S x, T && values)
+    INLINE LegendrePolynomial (int n, S x, T && values)
     { 
       Eval (n, x, values);
     }
