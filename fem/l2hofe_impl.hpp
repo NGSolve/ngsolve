@@ -249,7 +249,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
+    INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
   };
 
 
