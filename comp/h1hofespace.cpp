@@ -11,7 +11,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
-#include "../fem/h1hofefo.hpp"
+//#include "../fem/h1hofefo.hpp"
 
 
 using namespace ngmg; 
@@ -542,7 +542,7 @@ namespace ngcomp
         return *hofe3d;
       }
     */
-
+    /*
     if (fixed_order && eltype == ET_TRIG)
       {
         switch (order)
@@ -571,11 +571,7 @@ namespace ngcomp
             ; 
           }
       }
-
-
-
-
-
+    */
 
     /*
     if (fixed_order && eltype == ET_TET)
