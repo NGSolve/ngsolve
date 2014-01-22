@@ -190,7 +190,7 @@ namespace ngfem
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    SliceMatrix<> dshape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp = Mip2Ad(mip);
+    Vec<DIM, AutoDiff<DIM> > adp = mip;
 
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
