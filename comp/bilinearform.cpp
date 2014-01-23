@@ -1614,7 +1614,8 @@ namespace ngcomp
         //  WriteMatrix (*testout);
 
         if (checksum)
-          cout << "|matrix| = " << L2Norm (GetMatrix().AsVector()) << endl;
+          cout << "|matrix| = " 
+               << setprecision(16) << L2Norm (GetMatrix().AsVector()) << endl;
       }
     catch (Exception & e)
       {
