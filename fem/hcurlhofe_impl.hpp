@@ -1033,8 +1033,8 @@ namespace ngfem
  	xi  = sigma[fmax] - sigma[f2]; 
 	eta = sigma[fmax] - sigma[f1];
 
-	T_ORTHOPOL::Calc (px-1, xi, pol_xi);	
-	T_ORTHOPOL::Calc (py-1, eta, pol_eta);
+	T_ORTHOPOL::Calc (px+1, xi, pol_xi);	
+	T_ORTHOPOL::Calc (py+1, eta, pol_eta);
 	
 	for(int k = 0; k < py; k++) pol_eta[k] *= fac;
 
@@ -1050,7 +1050,6 @@ namespace ngfem
 	for (int k = 0; k < py; k++)
           shape[ii++] = uDv<3> (0.5*pol_eta[k] /* *fac */, xi); 
       }
-
 
     if (order_cell[0] >= 2)
       {
