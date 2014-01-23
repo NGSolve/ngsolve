@@ -1045,6 +1045,11 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     enum { IS_LINEAR = 0 };
 
+    // 
+    SliceMatrix() = delete;
+    SliceMatrix(const SliceMatrix &) = default;
+    SliceMatrix & operator= (const SliceMatrix &) = delete;
+
     /// set height, width, and mem
     SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
