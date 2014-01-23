@@ -506,7 +506,8 @@ namespace ngcomp
 
 
         if (checksum)
-          cout << "|vector| = " << L2Norm (GetVector()) << endl;
+          cout << "|vector| = " 
+               << setprecision(16) << L2Norm (GetVector()) << endl;
 
 
 	ma.PopStatus ();
