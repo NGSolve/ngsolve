@@ -47,6 +47,7 @@ namespace ngcomp
     SetKeepInternal (flags.GetDefineFlag ("keep_internal"));
     SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
+    checksum = flags.GetDefineFlag ("checksum");
   }
 
 
@@ -92,6 +93,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
 
     precompute = flags.GetDefineFlag ("precompute");
+    checksum = flags.GetDefineFlag ("checksum");
   }
 
 
@@ -1610,6 +1612,9 @@ namespace ngcomp
           }
         //  cout << "done" << endl;
         //  WriteMatrix (*testout);
+
+        if (checksum)
+          cout << "|matrix| = " << L2Norm (GetMatrix().AsVector()) << endl;
       }
     catch (Exception & e)
       {
