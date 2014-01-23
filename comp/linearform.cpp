@@ -17,6 +17,7 @@ namespace ngcomp
     assembled = false;
     allocated = false;
     initialassembling = true;
+    checksum = flags.GetDefineFlag ("checksum");
     cacheblocksize = 1;
   }
 
@@ -502,6 +503,11 @@ namespace ngcomp
 	    (*testout) << "Linearform " << GetName() << ": " << endl;
 	    (*testout) << GetVector() << endl;
 	  }
+
+
+        if (checksum)
+          cout << "|vector| = " << L2Norm (GetVector()) << endl;
+
 
 	ma.PopStatus ();
       }

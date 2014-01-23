@@ -35,6 +35,9 @@ namespace ngcomp
     bool initialassembling;
 
     int cacheblocksize;
+    /// output of norm of matrix entries
+    bool checksum;
+
   public:
     ///
     LinearForm (const FESpace & afespace, 

@@ -88,7 +88,8 @@ namespace ngcomp
     bool precompute;
     /// precomputed element-wise data
     Array<void*> precomputed_data;
-
+    /// output of norm of matrix entries
+    bool checksum;
 
   public:
     /// generate a bilinear-form
