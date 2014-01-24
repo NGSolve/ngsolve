@@ -5,7 +5,6 @@
 
 #include <fem.hpp>
 
-
 /*
   
 Computes C += A B^t
@@ -388,7 +387,8 @@ namespace ngfem {
 	    {
 	      __m256d a1, a2, b1, b2, b3, b4;
 
-	      if (M2 % 4)
+	      // if (M2 % 4)
+	      if (false)
 		{
 		  a1 = _mm256_loadu_pd(lpa1+k);
 		  a2 = _mm256_loadu_pd(lpa2+k);
@@ -417,7 +417,7 @@ namespace ngfem {
 	    {
 	      int k = M & -4;
 	      __m256i mask64;
-	      switch (M % 4)
+	      switch (M % 4) 
 		{
 		case 1: mask64 = _mm256_set_epi64x(0,0,0,-1); break;
 		case 2: mask64 = _mm256_set_epi64x(0,0,-1,-1); break;

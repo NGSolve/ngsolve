@@ -52,9 +52,6 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      // cout << "diffopidedge: slow matrix" << endl;
-      // cout << "mtype = " << typeid(mat).name() << endl;
-
       mat = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh) * mip.GetJacobianInverse();
     }
 
@@ -188,7 +185,7 @@ namespace ngfem
       mat = (1.0/mip.GetJacobiDet())
         * (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * Trans(mip.GetJacobian()));
     }
-
+    
     template <typename AFEL>
     static void GenerateMatrix2 (const AFEL & fel, 
                                  const MappedIntegrationPoint<3,3> & mip,
@@ -196,7 +193,6 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat);
     }
-
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,

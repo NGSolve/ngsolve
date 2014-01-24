@@ -994,7 +994,6 @@ namespace ngfem
     int alpha;
 
     static int maxn, maxalpha;
-    // int offset;
     Vec<3> * coefsal;
   public:
     JacobiPolynomialAlpha (int a) : alpha(a) 
@@ -1852,6 +1851,12 @@ namespace ngfem
       EvalScaledMult (n, x, y, 1, c, values);
     }
 
+    template <class S, class Sc, class T>
+    INLINE static void EvalScaled (int n, S x, S y, Sc t, T && values)
+    {
+      EvalScaledMult (n, x, y, t, 1, values);
+    }
+
     template <class S, class St, class Sc, class T>
     INLINE static void EvalScaledMult (int n, S x, S y, St t, Sc c, T && values)
     {
@@ -1864,6 +1869,17 @@ namespace ngfem
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);
                      ii += n-i+1;
                    }));
+      
+      /*
+	leg.EvalScaledMult (n, y-(1-x-y), t-x, c
+	SBLambda ([&] (int i, S val) ALWAYS_INLINE  // clang
+                   {
+                     JacobiPolynomialAlpha jac(1+2*i);
+                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
+                     ii += n-i+1;
+                   }));
+    */
+
     }
   };
 

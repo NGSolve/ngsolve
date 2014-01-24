@@ -183,11 +183,13 @@ namespace ngfem
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,4>;
+  /*
+
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,6>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,7>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,8>;
-
+  */
 }
 
 
