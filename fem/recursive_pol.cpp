@@ -43,7 +43,7 @@ namespace ngfem
   {
     if (coefs.Size() < (n+1)*(alpha+1))
       {
-        coefs.SetSize (3* (n+1)*(alpha+1));
+        coefs.SetSize ( /* 3* */ (n+1)*(alpha+1));
 
         for (int a = 0; a <= alpha; a++)
           {

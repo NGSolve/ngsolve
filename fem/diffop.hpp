@@ -32,11 +32,12 @@ namespace ngfem
        mip is the mapped integration point containing the Jacobi-Matrix 
        MAT is the resulting matrix (usually a FixedHeightMatrix)
     */
+
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
-    {
-      ;
+    { 
+      cout << "bad function calling" << endl;
     }
 
     /// tbd
