@@ -144,7 +144,13 @@ template <class T>
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-	  cnt = 0;
+	  int sum = 0;
+	  for (int i = 0; i < cnt.Size(); i++)
+	    {
+	      int nsum = sum + cnt[i];
+	      cnt[i] = sum;
+	      sum = nsum;
+	    }
 	}
     }
 
@@ -159,7 +165,8 @@ template <class T>
 	  cnt[blocknr]++;
 	  break;
 	case 3:
-	  (*table)[blocknr][cnt[blocknr]++] = data;
+	  // (*table)[blocknr][cnt[blocknr]++] = data;
+	  table -> Data() [cnt[blocknr]++] = data;
 	  break;
 	}
     }
@@ -176,9 +183,15 @@ template <class T>
 	  cnt[blocknr]+=range.Size();
 	  break;
 	case 3:
+	  /*
 	  for (int j = 0; j < range.Size(); j++)
 	    (*table)[blocknr][cnt[blocknr]+j] = range.First()+j;
 	  cnt[blocknr]+=range.Size();
+	  */
+	  for (int j = 0; j < range.Size(); j++)
+	    table->Data()[cnt[blocknr]+j] = range.First()+j;
+	  cnt[blocknr]+=range.Size();
+
 	  break;
 	}
     }
@@ -194,9 +207,15 @@ template <class T>
 	  cnt[blocknr]+=dofs.Size();
 	  break;
 	case 3:
+	  /*
 	  for (int j = 0; j < dofs.Size(); j++)
 	    (*table)[blocknr][cnt[blocknr]+j] = dofs[j];
 	  cnt[blocknr]+=dofs.Size();
+	  */
+	  for (int j = 0; j < dofs.Size(); j++)
+	    table->Data()[cnt[blocknr]+j] = dofs[j];
+	  cnt[blocknr]+=dofs.Size();
+
 	  break;
 	}
     }
