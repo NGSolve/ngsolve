@@ -878,7 +878,7 @@ namespace ngcomp
 
                      if (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
-                      
+
                      AddElementMatrix (dnums, dnums, sum_elmat, ei, lh);
                           
                      for (int j = 0; j < preconditioners.Size(); j++)
