@@ -1585,6 +1585,8 @@ namespace netgen
    {
       resthcloseedgefac = 1;
       resthcloseedgeenable = 1;
+	  resthminedgelen = 0.001;
+	  resthminedgelenenable = 1;
    }
 
 
@@ -1594,7 +1596,9 @@ namespace netgen
    {
       ost << "OCC Parameters:" << endl
          << "close edges: " << resthcloseedgeenable
-         << ", fac = " << resthcloseedgefac << endl;
+         << ", fac = " << resthcloseedgefac << endl
+		 << "minimum edge length: " << resthminedgelenenable
+		 << ", min len = " << resthminedgelen << endl;
    }
 
 

@@ -29,6 +29,10 @@ proc setgranularity { gran } {
     set closeedgefaclist { 0.5 1 2 3.5 5 }
     set stloptions.resthcloseedgefac [lindex $closeedgefaclist $gran]
 
+	global stloptions.resthminedgelen
+    set minedgelenlist { 0.002 0.02 0.2 1.0 2.0 5.0 10.0 }
+    set stloptions.resthminedgelen [lindex $minedgelenlist $gran]
+	
     global stloptions.resthedgeanglefac
     set edgeanglefaclist { 0.25 0.5 1 1.5 3 }
     set stloptions.resthedgeanglefac [lindex $edgeanglefaclist $gran]

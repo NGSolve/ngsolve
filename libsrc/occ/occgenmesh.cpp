@@ -1003,8 +1003,15 @@ namespace netgen
 
          int nedges = geom.emap.Extent();
 
+		 double mincurvelength = IGNORECURVELENGTH;
          double maxedgelen = 0;
          double minedgelen = 1e99;
+
+		 if(occparam.resthminedgelenenable) 
+		 {
+			mincurvelength = occparam.resthminedgelen;
+			if(mincurvelength < IGNORECURVELENGTH) mincurvelength = IGNORECURVELENGTH;
+		 }
 
          multithread.task = "Setting local mesh size (elements per edge)";
 
@@ -1020,7 +1027,7 @@ namespace netgen
             BRepGProp::LinearProperties(e, system);
             double len = system.Mass();
 
-            if (len < IGNORECURVELENGTH)
+            if (len < mincurvelength)
             {
                (*testout) << "ignored" << endl;
                continue;

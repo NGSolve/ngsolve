@@ -106,6 +106,9 @@ public:
    int closeedgeenable;                //!< Enable / Disable mesh refinement at close edges
    double closeedgefact;               //!< Factor to use for refinement at close edges (larger => finer)
 
+   int minedgelenenable;			   //!< Enable / Disable user defined minimum edge length for edge subdivision
+   double minedgelen;                  //!< Minimum edge length to use while subdividing the edges (default = 1e-4)
+
    int second_order;                   //!< Generate second-order surface and volume elements
    int quad_dominated;                 //!< Creates a Quad-dominated mesh 
 

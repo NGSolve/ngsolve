@@ -271,8 +271,15 @@ proc meshingoptionsdialog { } {
 	    -resolution 0.1 -variable stloptions.resthcloseedgefac 
 	checkbutton $f.stl.r3.bu -text "STL/IGES/STEP - close edges" \
 	    -variable stloptions.resthcloseedgeenable 
-	
 	pack $f.stl.r3.sc $f.stl.r3.bu -side left
+
+	frame $f.stl.r1b
+	pack $f.stl.r1b -anchor w
+	scale $f.stl.r1b.sc -orient horizontal -length 200 -from 0.002 -to 10 \
+	    -resolution 0.002 -variable stloptions.resthminedgelen
+	checkbutton $f.stl.r1b.bu -text "IGES/STEP - min edge length" \
+	    -variable stloptions.resthminedgelenenable
+	pack $f.stl.r1b.sc $f.stl.r1b.bu -side left
 	
 	frame $f.stl.r1
 	pack $f.stl.r1 -anchor w

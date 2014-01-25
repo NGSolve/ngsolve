@@ -976,6 +976,9 @@ namespace nglib
       closeedgeenable = 0;
       closeedgefact = 2.0;
 
+	  minedgelenenable = 0;
+	  minedgelen = 1e-4;
+
       second_order = 0;
       quad_dominated = 0;
 
@@ -1013,6 +1016,9 @@ namespace nglib
 
       closeedgeenable = 0;
       closeedgefact = 2.0;
+
+  	  minedgelenenable = 0;
+	  minedgelen = 1e-4;
 
       second_order = 0;
       quad_dominated = 0;

@@ -166,6 +166,8 @@ set stloptions.resthlinelengthfac 0.5
 set stloptions.resthlinelengthenable 1
 set stloptions.resthcloseedgefac 1
 set stloptions.resthcloseedgeenable 1
+set stloptions.resthminedgelen 0.01
+set stloptions.resthminedgelenenable 1
 set stloptions.resthedgeanglefac 1
 set stloptions.resthedgeangleenable 0
 set stloptions.resthsurfmeshcurvfac 1
@@ -488,6 +490,8 @@ proc saveoptions { } {
 	    puts $datei "stloptions.resthchartdistenable  ${stloptions.resthchartdistenable}" 
 	    puts $datei "stloptions.resthlinelengthfac  ${stloptions.resthlinelengthfac}" 
 	    puts $datei "stloptions.resthlinelengthenable  ${stloptions.resthlinelengthenable}" 
+		puts $datei "stloptions.resthminedgelen ${stloptions.resthminedgelen}"
+		puts $datei "stloptions.resthminedgelenenable ${stloptions.resthminedgelenenable}"
 	    puts $datei "stloptions.resthcloseedgefac  ${stloptions.resthcloseedgefac}" 
 	    puts $datei "stloptions.resthcloseedgeenable  ${stloptions.resthcloseedgeenable}" 
 	    puts $datei "stloptions.resthedgeanglefac  ${stloptions.resthedgeanglefac}" 
