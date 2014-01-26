@@ -1804,7 +1804,10 @@ namespace ngcomp
     IntegrationPoint ip(lam1, lam2, lam3);
     ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
-    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    if (!cf -> IsComplex())
+      cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    else
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
     return true; 
   }
   
@@ -1817,7 +1820,10 @@ namespace ngcomp
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
     ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
-    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    if (!cf -> IsComplex())
+      cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    else
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
     return true; 
   }
 
@@ -1844,7 +1850,10 @@ namespace ngcomp
     ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     // values[0] = cf -> Evaluate (mip);
-    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    if (!cf -> IsComplex())
+      cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    else
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
     return true; 
   }
 
