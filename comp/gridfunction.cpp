@@ -623,6 +623,7 @@ namespace ngcomp
 			    agf_parent.GetName()+"."+ToString (acomp+1), Flags()), 
       gf_parent(agf_parent), comp(acomp)
   { 
+    this->SetVisual(agf_parent.GetVisual());
     const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
     if (cfe)
       {
