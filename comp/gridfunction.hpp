@@ -51,6 +51,8 @@ namespace ngcomp
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
+    bool GetVisual () const { return visual; }
+    ///
     void SetVisual (bool avisual = 1) { visual = avisual; }
 
     int GetMultiDim () const { return multidim; }
