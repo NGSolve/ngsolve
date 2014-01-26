@@ -1722,7 +1722,6 @@ namespace netgen
 
   void VisualSceneMesh :: BuildTetList()
   {
-
     if (tettimestamp > mesh->GetTimeStamp () &&
 	tettimestamp > vispar.clipping.timestamp )
       return;

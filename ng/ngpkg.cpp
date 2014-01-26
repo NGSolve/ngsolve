@@ -2943,8 +2943,13 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
       atoi (Tcl_GetVar (interp, "::viewoptions.drawpyramids", TCL_GLOBAL_ONLY));
     vispar.drawhexes =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawhexes", TCL_GLOBAL_ONLY));
+    /*
     vispar.shrink =
       atof (Tcl_GetVar (interp, "::viewoptions.shrink", TCL_GLOBAL_ONLY));
+    */
+    double hshrink = atof (Tcl_GetVar (interp, "::viewoptions.shrink", TCL_GLOBAL_ONLY));
+    if (hshrink != vispar.shrink)
+      { vispar.shrink = hshrink; vispar.clipping.timestamp = NextTimeStamp();}
     vispar.drawidentified =
       atoi (Tcl_GetVar (interp, "::viewoptions.drawidentified", TCL_GLOBAL_ONLY));
     vispar.drawpointnumbers =
