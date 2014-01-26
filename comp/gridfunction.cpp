@@ -1945,7 +1945,10 @@ namespace ngcomp
     bool bound = ma.GetDimension() == 3;
     ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
-    cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    if (!cf -> IsComplex())
+      cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
+    else
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
     return true; 
   }
 
