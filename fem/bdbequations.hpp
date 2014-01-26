@@ -39,7 +39,16 @@ namespace ngfem
     { return static_cast<const FEL&> (fel); }
 
 
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, 
+				const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
+    }
 
+    /*
+      // Tans(mat) as left-hand-side value postponed to ngsolve 5.3
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MIP & mip,
@@ -64,7 +73,7 @@ namespace ngfem
     {
       Cast(fel).CalcMappedDShape (mip, mat);
     }
-
+    */
 
     using DiffOp<DiffOpGradient<D, FEL> > :: GenerateMatrixIR;
     template <typename MAT>

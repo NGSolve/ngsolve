@@ -38,7 +38,8 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
-
+    /*
+      // postponed to ngsolve 5.3
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MIP & mip,
@@ -63,8 +64,9 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);
     }
+    */
 
-    /*
+
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -80,7 +82,6 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mip, Trans(mat));
     }
-    */
 
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
@@ -167,7 +168,17 @@ namespace ngfem
     static string Name() { return "curl"; }
 
 
+    template <typename AFEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      mat = (1.0/mip.GetJacobiDet())
+	* (mip.GetJacobian() * Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh)));
+    }
 
+
+    /*
+      // postponed to ngsolve 5.3
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MIP & mip,
@@ -180,7 +191,6 @@ namespace ngfem
     static void GenerateMatrix2 (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      // cout << "diffopcurl: slow matrix" << endl;
       mat = (1.0/mip.GetJacobiDet())
         * (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(), lh) * Trans(mip.GetJacobian()));
     }
@@ -192,7 +202,7 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat);
     }
-
+    */
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
