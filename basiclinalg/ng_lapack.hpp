@@ -289,6 +289,29 @@ namespace ngbla
 			     double beta)
   { BASE_LapackMultAdd<double> (a, false, b, false, alpha, c, beta); }
 
+  inline void LapackMultAdd (SliceMatrix<double,ColMajor> a, 
+			     SliceMatrix<double> b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta)
+  { BASE_LapackMultAdd<double> (Trans(a), true, b, false, alpha, c, beta); }
+
+  inline void LapackMultAdd (SliceMatrix<double> a, 
+			     SliceMatrix<double,ColMajor> b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta)
+  { BASE_LapackMultAdd<double> (a, false, Trans(b), true, alpha, c, beta); }
+
+  inline void LapackMultAdd (SliceMatrix<double,ColMajor> a, 
+			     SliceMatrix<double,ColMajor> b, 
+			     double alpha,
+			     SliceMatrix<double> c,
+			     double beta)
+  { BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta); }
+
+
+
   template <typename TA>
   inline void LapackMultAdd (SliceMatrix<double> a, 
 			     TransExpr<TA> b, 
@@ -321,6 +344,28 @@ namespace ngbla
 			     SliceMatrix<Complex> c,
 			     Complex beta = 1.0)
   { BASE_LapackMultAdd<Complex> (a, false, b, false, alpha, c, beta); }
+
+  inline void LapackMultAdd (SliceMatrix<Complex,ColMajor> a, 
+			     SliceMatrix<Complex> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { BASE_LapackMultAdd<Complex> (Trans(a), true, b, false, alpha, c, beta); }
+
+  inline void LapackMultAdd (SliceMatrix<Complex> a, 
+			     SliceMatrix<Complex,ColMajor> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { BASE_LapackMultAdd<Complex> (a, false, Trans(b), true, alpha, c, beta); }
+
+  inline void LapackMultAdd (SliceMatrix<Complex,ColMajor> a, 
+			     SliceMatrix<Complex,ColMajor> b, 
+			     Complex alpha,
+			     SliceMatrix<Complex> c,
+			     Complex beta)
+  { BASE_LapackMultAdd<Complex> (Trans(a), true, Trans(b), true, alpha, c, beta); }
+
 
   template <typename TA>
   inline void LapackMultAdd (SliceMatrix<Complex> a, 
