@@ -39,43 +39,28 @@ namespace ngfem
     { return static_cast<const FEL&> (fel); }
 
 
-
-    template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
-				const MIP & mip,
-				MAT && mat, LocalHeap & lh)
-    {
-      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
-    }
-
-    // calc gradient for any matrix and mip
-    template <typename MIP, typename MAT>
-    static void GenerateMatrix2 (const FiniteElement & fel, 
-				const MIP & mip,
-				MAT && mat, LocalHeap & lh)
-    {
-      mat = Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ();
-    }
-
-    // calc gradient for slicematrix and real mip (optimized)
-    static void GenerateMatrix2 (const FiniteElement & fel, 
                                 const MappedIntegrationPoint<D,D> & mip,
-				SliceMatrix<> mat, LocalHeap & lh)
+                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
-      Cast(fel).CalcMappedDShape (mip, mat);
+      Cast(fel).CalcMappedDShape (mip, Trans(mat));
+    }
+    
+    template <typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, 
+                                const MappedIntegrationPoint<D,D,Complex> & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
     }
 
-
-    using DiffOp<DiffOpGradient<D, FEL> > :: GenerateMatrixIR;
-    template <typename MAT>
     static void GenerateMatrixIR (const FiniteElement & fel, 
-                                  const MappedIntegrationRule<3,3> & mir,
-                                  MAT & mat, LocalHeap & lh)
+                                  const MappedIntegrationRule<D,D> & mir,
+                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
-      // static Timer t("diffopgrad::GetMatIR"); RegionTimer reg(t);      
       Cast(fel).CalcMappedDShape (mir, Trans(mat));
     }
-
 
     ///
     template <typename MIP, class TVX, class TVY>
@@ -83,8 +68,10 @@ namespace ngfem
 		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCAL;
-      Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
+      HeapReset hr(lh);
+      // typedef typename TVX::TSCAL TSCAL;
+      // Vec<D,TSCAL> hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
+      auto hv = Trans (Cast(fel).GetDShape(mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hv;
     }
 
@@ -120,9 +107,10 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCAL;
+      // typedef typename TVX::TSCAL TSCAL;
+      // Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
 
-      Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
+      auto hv = mip.GetJacobianInverse() * x;
       y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
     }
 
@@ -226,7 +214,7 @@ namespace ngfem
 
     static void GenerateMatrix (const FiniteElement & fel, 
 				const MappedIntegrationPoint<D,D> & mip,
-				SliceMatrixColMajor<> mat, LocalHeap & lh)
+				SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
@@ -652,7 +640,7 @@ namespace ngfem
 
     template <typename FEL, typename MIP, class VECX, class VECY>
     void Apply (const FEL & fel, const MIP & mip,
-		const VECX & x, VECY & y, LocalHeap & lh) const
+		const VECX & x, VECY && y, LocalHeap & lh) const
     {
       y(0) = Evaluate (*coef1, mip) * x(0);
       y(1) = Evaluate (*coef2, mip) * x(1);
@@ -857,11 +845,11 @@ namespace ngfem
       else
 	for (int i = 0; i < N; i++)
 	  {
-	    CoefficientFunction * hp = coefs[i];
-	    vec(i) = hp -> T_Evaluate<TSCAL> (mip);
+            CoefficientFunction * hp = coefs[i];
+            vec(i) = hp -> T_Evaluate<TSCAL> (mip);
 
 	    // gcc 4.6 complains, why ???? (JS)
-	    // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);  
+            // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);  
 	  }
     }  
 
@@ -881,11 +869,11 @@ namespace ngfem
 	for (int j = 0; j < mir.Size(); j++)
 	  for (int i = 0; i < N; i++)
 	    {
-	      CoefficientFunction * hp = coefs[i];
-	      vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
+              CoefficientFunction * hp = coefs[i];
+              vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
 	    
 	      // gcc 4.6 complains, why ???? (JS)
-	      // vec(i) = (coefs[i]) -> T_Evaluate<TSCAL> (mip);  
+              // vecs(j,i) = coefs[i] -> T_Evaluate<TSCAL> (mir[j]);  
 	    }
     }  
   };

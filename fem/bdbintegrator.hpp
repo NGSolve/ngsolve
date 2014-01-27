@@ -55,7 +55,7 @@ public:
   /// apply coefficient matrix.
   template <typename FEL, typename MIP, class TVX, class TVY>
   void Apply (const FEL & fel, const MIP & mip,
-	      const TVX & x, TVY & y,
+	      const TVX & x, TVY && y,
 	      LocalHeap & lh) const
   {
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
@@ -83,7 +83,7 @@ public:
 
   template <typename FEL, typename MIP, class TVX, class TVY>
   void ApplyInv (const FEL & fel, const MIP & mip,
-		 const TVX & x, TVY & y,
+		 const TVX & x, TVY && y,
 		 LocalHeap & lh) const
   {
     Mat<DMO::DIM_DMAT, DMO::DIM_DMAT, double> mat;
@@ -756,13 +756,11 @@ public:
     MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
     
     FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv1(ir.GetNIP(), lh);
-    // FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv2(ir.GetNIP(), lh);
 
     DIFFOP::ApplyIR (fel, mir, elx, hv1, lh);
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	// dmatop.Apply (fel, mir[i], hv1.Row(i), hv2.Row(i), lh);       
         dmatop.Apply1 (fel, mir[i], hv1.Row(i), lh);       
         hv1.Row(i) *= mir[i].GetWeight();
       }
@@ -882,14 +880,13 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
-
-    DIFFOP::ApplyIR (fel, mir, elx, flux, lh);
+    FlatMatrixFixWidth<DIM_DMAT,double> hflux(flux.Height(), &flux(0,0));
+    DIFFOP::ApplyIR (fel, mir, elx, hflux, lh);
     if (applyd)
-      dmatop.ApplyIR (fel, mir, flux, lh);
+      dmatop.ApplyIR (fel, mir, hflux, lh);
   }
 
   virtual void
@@ -900,7 +897,6 @@ public:
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
     
@@ -908,22 +904,7 @@ public:
     DIFFOP::Apply (fel, mip, elx, hflux, lh);
     if (applyd)
       dmatop.Apply1 (fel, mip, hflux, lh);
-    /*
-    if (applyd)
-      {
-	Vec<DIM_DMAT,Complex> hv1;
-	DIFFOP::Apply (fel, mip, elx, hv1, lh);
-	dmatop.Apply (fel, mip, hv1, flux, lh);
-      }
-    else
-      {
-	DIFFOP::Apply (fel, mip, elx, flux, lh);
-      }
-    */
   }
-  
-
-
   
 
 
