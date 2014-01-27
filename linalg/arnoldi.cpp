@@ -18,6 +18,12 @@ namespace ngla
   template <typename SCAL>
   void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, Array<BaseVector*> & hevecs, const BaseMatrix * pre) const
   { 
+    static Timer t("arnoldi");    
+    static Timer t2("arnoldi - orthogonalize");    
+    static Timer t3("arnoldi - compute large vectors");
+
+    RegionTimer reg(t);
+
     BaseVector & hv  = *a.CreateVector();
     BaseVector & hv2 = *a.CreateVector();
     BaseVector & hva = *a.CreateVector();
@@ -48,21 +54,22 @@ namespace ngla
 
     hv.SetRandom();
     hv.SetParallelStatus (CUMULATED);
-    FlatVector<double> fv = hv.FV<double>();
+    FlatVector<SCAL> fv = hv.FV<SCAL>();
     if (freedofs)
       for (int i = 0; i < hv.Size(); i++)
 	if (! (*freedofs)[i] ) fv(i) = 0;
 
+    t2.Start();
     // matV = SCAL(0.0);   why ?
     matH = SCAL(0.0);
 
     hv2 = hv;
     SCAL len = sqrt (S_InnerProduct<SCAL> (hv, hv2)); // parallel
     hv /= len;
-
+    
     for (int i = 0; i < m; i++)
       {
-	cout << IM(1) << "i = " << i << endl;
+	cout << IM(1) << "\ri = " << i << "/" << m << flush;
 	/*
 	for (int j = 0; j < n; j++)
 	  matV(i,j) = hv.FV<SCAL>()(j);
@@ -74,20 +81,30 @@ namespace ngla
 
 	for (int j = 0; j <= i; j++)
 	  {
-	    /*
-	    SCAL sum = 0.0;
+            /*
+            SCAL sum = 0.0;
 	    for (int k = 0; k < n; k++)
 	      sum += hvm.FV<SCAL>()(k) * matV(j,k);
 	    matH(j,i) = sum;
 	    for (int k = 0; k < n; k++)
 	      hvm.FV<SCAL>()(k) -= sum * matV(j,k);
-	    */
+            */
+            /*
+            SCAL sum = 0.0;
+            FlatVector<SCAL> abvj = abv[j] -> FV<SCAL>();
+            FlatVector<SCAL> fv_hvm = hvm.FV<SCAL>();
+	    for (int k = 0; k < n; k++)
+	      sum += fv_hvm(k) * abvj(k);
+	    matH(j,i) = sum;
+	    for (int k = 0; k < n; k++)
+	      fv_hvm(k) -= sum * abvj(k);
+            */
+
 	    matH(j,i) = S_InnerProduct<SCAL> (hvm, *abv[j]);
 	    hvm -= matH(j,i) * *abv[j];
 	  }
 		
 	hv = hvm;
-
 	hv2 = hv;
 	SCAL len = sqrt (S_InnerProduct<SCAL> (hv, hv2));
 	if (i<m-1) matH(i+1,i) = len; 
@@ -96,21 +113,24 @@ namespace ngla
       }
       
     delete inv;
-	    
-    cout << "has Hessenberg" << endl;
-    *testout << "hessenberg = " << endl << matH << endl;
+    t2.Stop();
+    t2.AddFlops (double(n)*m*m);
+    cout << "n = " << n << ", m = " << m << " n*m*m = " << n*m*m << endl;
+    cout << IM(1) << "\ri = " << m << "/" << m << endl;	    
+
 	    
     Vector<Complex> lami(m);
     Matrix<Complex> evecs(m);    
     Matrix<Complex> matHt(m);
 
     matHt = Trans (matH);
-	    
+    
     evecs = Complex (0.0);
     lami = Complex (0.0);
-	
+
+    cout << "Solve Hessenberg evp with Lapack ... " << flush;
     LapackHessenbergEP (matH.Height(), &matHt(0,0), &lami(0), &evecs(0,0));
-    
+    cout << "done" << endl;
 	    
     for (int i = 0; i < m; i++)
       lami(i) =  1.0 / lami(i) + shift;
@@ -118,7 +138,8 @@ namespace ngla
     lam.SetSize (m);
     for (int i = 0; i < m; i++)
       lam[i] = lami(i);
-    
+
+    t3.Start();
     if (numev>0)
       {
 	int nout = min2 (numev, m); 
@@ -132,6 +153,7 @@ namespace ngla
 	    // hevecs[i]->FVComplex() = Trans(matV)*evecs.Row(i);
 	  }
       }
+    t3.Stop();
   } 
 	
 

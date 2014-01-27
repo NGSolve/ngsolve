@@ -114,6 +114,7 @@ namespace ngla
 				bool symmetric)
   {
     static Timer timer("MatrixGraph");
+    static Timer timerd2e("MatrixGraph - dof2el");
     static Timer timers("MatrixGraph - sorting");
     RegionTimer reg (timer);
 
@@ -121,6 +122,8 @@ namespace ngla
     
     int ndof = asize;
     
+    timerd2e.Start();
+
     TableCreator<int> creator(ndof);
     for ( ; !creator.Done(); creator++)
       {    
@@ -132,7 +135,8 @@ namespace ngla
 	  } 
 	}
       }
-    
+    timerd2e.Stop();    
+
     Table<int> & dof2element = *(creator.GetTable());
   
     Array<int> cnt(ndof);

@@ -8,6 +8,7 @@
    base class in vector hierarchy
 */
 
+#define FILE_BASEVECTOR_CPP
 
 #include <la.hpp>
 
@@ -16,7 +17,7 @@ namespace ngla
 {
 
 
-
+  /*
   BaseVector :: BaseVector ()
     : paralleldofs (NULL) 
   {
@@ -45,6 +46,7 @@ namespace ngla
     SetScalar (s);
     return *this;
   }
+  */
 
   double BaseVector :: L2Norm () const
   {
@@ -669,5 +671,8 @@ namespace ngla
   template class S_BaseVectorPtr<double>;
   template class S_BaseVectorPtr<Complex>;
 
+
+  template class VVector<double>;
+  template class VVector<Complex>;
 
 }
