@@ -2397,7 +2397,7 @@ namespace netgen
     // bool considerElem;
 
     bool hasit = false;
-#ifdef max;
+#ifdef max
       #undef max;
 #endif
     minv = numeric_limits<double>::max();
@@ -4175,8 +4175,8 @@ namespace netgen
 		vals[ii] = ExtractValue(sol, scalcomp, &mvalues[ii*sol->components]);
 	    else
 	      for (int ii = 0; ii < nlp; ii++)
-		valsc[ii] = complex<double> (mvalues[ii*sol->components],
-					     mvalues[ii*sol->components+1]);
+		valsc[ii] = complex<double> (mvalues[ii*sol->components + scalcomp-1],
+					     mvalues[ii*sol->components + scalcomp]);
 	  }
 	
 	if(ok)
