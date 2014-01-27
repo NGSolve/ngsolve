@@ -399,15 +399,27 @@ namespace ngfem
     }
   };
 
-  inline ostream & operator<< (ostream & ost, const IntegrationRule & ir)
+  DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
+
+  /*
+    DG Integration rule:
+    volume IR contains points of facet IR.
+    facet IR are Gauss-rules
+    boundary_volume_factor is maximal ration of boundary-weight to volume-weight
+   */
+  class DGIntegrationRule : public IntegrationRule
   {
-    for (int i = 0; i < ir.GetNIP(); i++)
-      ost << ir[i] << endl;
-    return ost;
-  }
-
-
-
+    Array<IntegrationRule*> facetrules;
+    double boundary_volume_factor;
+  public:
+    NGS_DLL_HEADER DGIntegrationRule (ELEMENT_TYPE eltype, int order);
+    int GetNFacets () const { return facetrules.Size(); }
+    const IntegrationRule & GetFacetIntegrationRule (int fnr) const 
+    { return *facetrules[fnr]; }
+    double BoundaryVolumeFactor () const { return boundary_volume_factor; }
+  };
+  
+  DLL_HEADER ostream & operator<< (ostream & ost, const DGIntegrationRule & ir);
 
   template <int D>
   class IntegrationRuleTP : public IntegrationRule
@@ -471,6 +483,14 @@ namespace ngfem
 				      Array<double> & wi,
 				      double alf,
 				      double bet);
+
+  /**
+     Gauss-Lobatto Rule with n points on interval [0,1].
+     Contains 0 and 1 as points
+     exact for polynomials up to order 2n-3
+   */
+  NGS_DLL_HEADER extern 
+  void ComputeGaussLobattoRule (int n, Array<double>& xi, Array<double>& wi);
 
 
   /**

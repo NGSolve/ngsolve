@@ -17,7 +17,7 @@ namespace ngfem
   {
     ost << " locnr = " << ip.nr << ": (" 
 	<< ip.pi[0] << ", " << ip.pi[1] << ", " << ip.pi[2] 
-	<< "), weight = " << ip.weight << endl;
+	<< "), weight = " << ip.weight;
     return ost;
   }
   
@@ -158,6 +158,12 @@ namespace ngfem
       }
   }
 
+  ostream & operator<< (ostream & ost, const IntegrationRule & ir)
+  {
+    for (int i = 0; i < ir.GetNIP(); i++)
+      ost << ir[i] << endl;
+    return ost;
+  }
 
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -354,6 +360,31 @@ namespace ngfem
   }
     
 
+
+  void ComputeGaussLobattoRule (int n, Array<double>& xi, Array<double>& wi)
+  {
+    Array<double> axi;
+    Array<double> awi;
+    
+    ComputeGaussJacobiRule(n-2,axi,awi,1, 1);
+    xi.SetSize(0);
+    wi.SetSize(0);
+    double sum = 1;
+    for (int i = 0; i < n-2; i++)
+      sum -= awi[i];
+
+    xi.Append(0);
+    wi.Append(sum/2);
+
+    xi.Append (axi);
+    wi.Append (awi);
+
+    xi.Append(1);
+    wi.Append(sum/2);
+  }
+
+
+
 #ifdef LAPACK
   void ComputeHermiteRule (int n, 
 			   Array<double> & x,
@@ -442,7 +473,107 @@ namespace ngfem
 #endif
 
 
+  DGIntegrationRule :: DGIntegrationRule(ELEMENT_TYPE eltype, int order)
+  {
 
+    switch (eltype)
+      {
+      case ET_TRIG:
+	{
+          for (int j = 0; j < 3; j++)
+            facetrules.Append (const_cast<IntegrationRule*> (&SelectIntegrationRule (ET_SEGM, order)));
+
+
+	  int len = floor((order+2.0)/2.0);
+	  int lengr = floor((order+5.0)/2.0);
+	  Array<double> axi(lengr);
+	  Array<double> wi(lengr);
+	  Array<double> axib(len);
+	  Array<double> wib(len);
+		
+	  ComputeGaussLobattoRule(lengr, axi , wi);
+	  ComputeGaussRule(len,axib,wib);
+    
+	  for (int i = 0; i < wi.Size(); i++)
+	    if (fabs (axi[i]) < 1e-10)
+	      boundary_volume_factor = 3/wi[i];
+		
+	  int ii = 0;
+	  for (int j = 0; j < len; j++)
+	    for (int k=0; k < lengr;k++)
+	      {
+                if (fabs (axi[k]-1) < 1e-10) continue;
+		IntegrationPoint ip(axib[j]*(1-axi[k]),axi[k],0,wib[j]*wi[k]*(1-axi[k])/3);
+		ip.SetNr(ii);
+		// ip.FacetNr() = (k == 0) ? 0 : -1;
+		AddIntegrationPoint(ip);
+		(*this)[ii].FacetNr() = (k == 0) ? 0 : -1;
+		ii++;
+	      }
+    
+	  for (int j=0;j<len;j++)
+	    for (int k=0;k<lengr;k++)
+	      {
+                if (fabs (axi[k]-1) < 1e-10) continue;
+		IntegrationPoint ip(axi[k], axib[j]*(1-axi[k]), 0, wib[j]*wi[k]*(1-axi[k])/3);
+		ip.SetNr(ii);
+		ip.FacetNr() = (k == 0) ? 1 : -1;			
+		AddIntegrationPoint(ip);
+		(*this)[ii].FacetNr() =  (k == 0) ? 1 : -1;			
+		ii++;
+	      }
+
+	  for (int j=0;j<len;j++)
+	    for (int k=0;k<lengr;k++)
+	      {
+                if (fabs (axi[k]-1) < 1e-10) continue;
+		IntegrationPoint ip( axib[j]*(1-axi[k]),(1-axib[j])*(1-axi[k]), 0, wib[j]*wi[k]*(1-axi[k])/3);
+		ip.SetNr(ii);
+		ip.FacetNr() = (k == 0) ? 2 : -1;			
+		AddIntegrationPoint(ip);
+		(*this)[ii].FacetNr() = (k == 0) ? 2 : -1;
+		ii++;
+	      }
+	  break;
+	}
+      case ET_QUAD:
+	{
+	  int lengl = order/2+2;
+	  int len   = order/2+1;
+	  Array<double> xi(lengl);
+	  Array<double> wi(lengl);
+	  Array<double> xig(len);
+	  Array<double> wig(len);
+
+	  ComputeGaussLobattoRule(lengl, xi , wi);
+	  ComputeGaussRule(len, xig , wig);
+
+	  boundary_volume_factor = 2/wi[0];
+
+	  for (int i = 0, ii = 0; i < len; i++)
+	    for (int j = 0; j < lengl; j++) 
+	      {
+		IntegrationPoint ip1(xig[i],xi[j], 0, 0.5*wig[i]*wi[j]);
+		ip1.SetNr(ii); ii++;
+		AddIntegrationPoint (ip1);
+		IntegrationPoint ip2(xi[j],xig[i], 0, 0.5*wi[j]*wig[i]);
+		ip2.SetNr(ii); ii++;
+		AddIntegrationPoint (ip2);
+	      }
+	}
+      }
+  }
+
+
+  ostream & operator<< (ostream & ost, const DGIntegrationRule & ir)
+  {
+    cout << "DG-IntegrationRule" << endl;
+    cout << "vol-ir: " << endl << (const IntegrationRule&)(ir);
+    for (int i = 0; i < ir.GetNFacets(); i++)
+      cout << "facet " << i << ": " << endl << ir.GetFacetIntegrationRule(i) << endl;
+    cout << "bound-vol-factor = " << ir.BoundaryVolumeFactor() << endl;
+    return ost;
+  }
 
 
 

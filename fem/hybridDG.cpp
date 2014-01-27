@@ -511,7 +511,169 @@ namespace ngfem
 
 
 
+  template <int D>
+  class HDG_IR_LaplaceIntegrator : public BilinearFormIntegrator
+  {
+  protected:
+    CoefficientFunction * coef_lam;
+  public:
+    HDG_IR_LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) 
+      : BilinearFormIntegrator()
+    { 
+      coef_lam  = coeffs[0];
+    }
 
+    virtual ~HDG_IR_LaplaceIntegrator () { ; }
+
+    virtual bool BoundaryForm () const 
+    { return 0; }
+
+    virtual void CalcElementMatrix (const FiniteElement & fel,
+				    const ElementTransformation & eltrans, 
+				    FlatMatrix<double> & elmat,
+				    LocalHeap & lh) const
+    {
+      static Timer timer ("HDG laplace");      
+      static Timer timer0 ("HDG laplace volume ir");
+      static Timer timer1 ("HDG laplace volume");
+      static Timer timer1a ("HDG laplace volume, lapack");
+      static Timer timer2 ("HDG laplace boundary");
+      static Timer timer2a ("HDG laplace boundary, lapack");
+
+      RegionTimer reg (timer);
+
+
+      const CompoundFiniteElement & cfel = 
+        dynamic_cast<const CompoundFiniteElement&> (fel);
+      const ScalarFiniteElement<D> & fel_l2 = 
+        dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
+      const FacetVolumeFiniteElement<D> & fel_facet = 
+        dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
+      
+  
+      ELEMENT_TYPE eltype = cfel.ElementType();
+      
+      IntRange l2_dofs = cfel.GetRange (0);
+      IntRange facet_dofs = cfel.GetRange (1);
+
+      int nd_l2 = fel_l2.GetNDof();
+
+      elmat = 0.0;
+
+      HeapReset hr(lh);
+      
+      FlatMatrixFixWidth<D> dshape(nd_l2, lh);
+      
+      timer0.Start();
+      DGIntegrationRule ir_vol(eltype, 2*fel_l2.Order());
+      timer0.Stop();
+      timer1.Start();
+      MappedIntegrationRule<D,D> mir_vol(ir_vol, eltrans, lh);
+      
+      FlatMatrix<> bmats(ir_vol.GetNIP()*D, nd_l2, lh);
+      FlatMatrix<> dbmats(ir_vol.GetNIP()*D, nd_l2, lh);
+      FlatMatrix<> mat_lam(ir_vol.GetNIP(), 1, lh);
+      
+      coef_lam -> Evaluate (mir_vol, mat_lam); 
+      
+      for (int i = 0; i < ir_vol.GetNIP(); i++)
+        {
+          const MappedIntegrationPoint<D,D> & mip = mir_vol[i];
+	  
+          fel_l2.CalcMappedDShape (mip, dshape);
+          
+          bmats.Rows(i*D, i*D+D) = Trans(dshape);
+          dbmats.Rows(i*D, i*D+D) = mat_lam(i,0) * mip.GetWeight() * Trans(dshape);
+        }
+      
+      timer1.Stop();
+      {
+	RegionTimer reg1a (timer1a);     
+	elmat.Cols(l2_dofs).Rows(l2_dofs) = Trans(dbmats) * bmats  | Lapack;
+      }
+  
+
+      // The facet contribution
+      {
+	RegionTimer reg2 (timer2);     
+        
+	int nfacet = ElementTopology::GetNFacets(eltype);
+      
+	Facet2ElementTrafo transform(eltype); 
+	FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
+
+	for (int k = 0; k < nfacet; k++)
+	  {
+	    HeapReset hr(lh);
+	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            
+	    Vec<D> normal_ref = normals[k];
+
+            // IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
+            const IntegrationRule & ir_facet = ir_vol.GetFacetIntegrationRule (k);
+	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+
+	    Array<int> facetdofs;
+	    facetdofs = l2_dofs;
+	    facetdofs += fel_facet.GetFacetDofs(k) + facet_dofs.First();
+
+	    FlatMatrixFixHeight<2> comp_bmat(facetdofs.Size(), lh);
+	    FlatMatrix<> comp_bmats(2*ir_facet.GetNIP(), facetdofs.Size(), lh);
+	    FlatMatrix<> comp_dbmats(2*ir_facet.GetNIP(), facetdofs.Size(), lh);
+
+	    FlatMatrix<> comp_elmat(facetdofs.Size(), facetdofs.Size(), lh);
+	  
+	    comp_bmat = 0.0;
+
+	    MappedIntegrationRule<D,D> mir(ir_facet_vol, eltrans, lh);
+
+	    FlatMatrix<> mat_lam(ir_facet.GetNIP(), 1, lh);
+	    coef_lam -> Evaluate (mir, mat_lam); 
+
+
+	    for (int l = 0; l < ir_facet.GetNIP(); l++)
+	      {
+		MappedIntegrationPoint<D,D> & mip = mir[l];
+
+		// double lam = coef_lam->Evaluate(mip);
+		double lam = mat_lam(l,0);
+              
+		Mat<D> inv_jac = mip.GetJacobianInverse();
+		double det = mip.GetMeasure();
+
+
+		Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+		double len = L2Norm (normal);
+		normal /= len;
+
+		Vec<D> invjac_normal = inv_jac * normal;
+		
+		comp_bmat.Row(0).Range(l2_dofs) =    // dudn
+		  fel_l2.GetDShape (ir_facet_vol[l], lh) * invjac_normal;
+
+		comp_bmat.Row(1).Range(l2_dofs) =    // u
+		  fel_l2.GetShape(ir_facet_vol[l], lh);
+
+		comp_bmat.Row(1).Range(nd_l2, comp_bmat.Width()) =
+		  -fel_facet.Facet(k).GetShape(ir_facet_vol[l], lh);
+
+		Mat<2,2> dmat = 0.0;
+		dmat(1,0) = dmat(0,1) = -1;
+                dmat(1,1) = 1.1 * ir_vol.BoundaryVolumeFactor() * (len/det);
+
+		dmat *= lam * len * ir_facet[l].Weight();
+
+		comp_bmats.Rows (2*l, 2*l+2) = comp_bmat;
+		comp_dbmats.Rows (2*l, 2*l+2) = dmat * comp_bmat;
+	      }
+
+	    RegionTimer reg2a (timer2a);     
+	    comp_elmat = Trans(comp_bmats) * comp_dbmats    | Lapack;
+	    elmat.Rows(facetdofs).Cols(facetdofs) += comp_elmat;
+	  }
+      }
+    }
+  };
 
 
 
@@ -547,18 +709,17 @@ namespace ngfem
       RegionTimer reg (timer);
 
       const CompoundFiniteElement & cfel = 
-        dynamic_cast<const CompoundFiniteElement&> (fel);
+        static_cast<const CompoundFiniteElement&> (fel);
       const ScalarFiniteElement<D> & fel_l2 = 
-        dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
+        static_cast<const ScalarFiniteElement<D>&> (cfel[0]);
       const FacetVolumeFiniteElement<D> & fel_facet = 
-        dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
+        static_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
     
-      // double alpha = 10;
   
       ELEMENT_TYPE eltype = cfel.ElementType();
       
-      IntRange l2_dofs = cfel.GetRange (0);
-      IntRange facet_dofs = cfel.GetRange (1);
+      IntRange l2_dofs = cfel.GetRange(0);
+      IntRange facet_dofs = cfel.GetRange(1);
 
       int nd_l2 = fel_l2.GetNDof();
       int nd_facet = fel_facet.GetNDof();
@@ -583,25 +744,22 @@ namespace ngfem
 
 	IntegrationRule ir_vol(eltype, 2*fel_l2.Order());
 	MappedIntegrationRule<D,D> mir_vol(ir_vol, eltrans, lh);
-	
-	FlatMatrix<> bmats(ir_vol.GetNIP()*D, nd_l2, lh);
-	FlatMatrix<> dbmats(ir_vol.GetNIP()*D, nd_l2, lh);
+
+	FlatMatrix<> bmats(nd_l2, ir_vol.GetNIP()*D, lh);
+	FlatMatrix<> dbmats(nd_l2, ir_vol.GetNIP()*D, lh);
+        fel_l2.CalcMappedDShape (mir_vol, bmats);
 
 	for (int l = 0; l < ir_vol.GetNIP(); l++)
 	  {
 	    const MappedIntegrationPoint<D,D> & mip = mir_vol[l];
 	    double lam = coef_lam->Evaluate(mip);
-	    
-	    fel_l2.CalcMappedDShape (mip, dshape);
-
-	    bmats.Rows(l*D, (l+1)*D) = Trans(dshape);
-	    dbmats.Rows(l*D, (l+1)*D) = (lam * mip.GetWeight()) * Trans(dshape);
+            dbmats.Cols(l*D, (l+1)*D) = (lam*mip.GetWeight()) * bmats.Cols(l*D, (l+1)*D);
 	  }
 
 	RegionTimer reg1a (timer1a);     
 
-	mat_gradgrad = Trans (dbmats) * bmats | Lapack;
-	elmat.Cols(l2_dofs).Rows(l2_dofs) += mat_gradgrad; 
+        mat_gradgrad = dbmats * Trans(bmats) | Lapack;        
+        elmat.Cols(l2_dofs).Rows(l2_dofs) = mat_gradgrad; 
       }
 
 
@@ -627,9 +785,6 @@ namespace ngfem
 	    IntegrationRule ir_facet(etfacet, 2*fel_l2.Order());
 	    IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
 	    
-	    for (int i = 0; i < ir_facet_vol.Size(); i++)
-	      ir_facet_vol[i].FacetNr() = k;
-
 	    Array<int> comp_facetdofs;
 	    comp_facetdofs += l2_dofs;
 	    comp_facetdofs += fel_facet.GetFacetDofs(k) + base_facet;
@@ -1764,6 +1919,8 @@ namespace ngfem
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<1> > initlap1 ("HDG_laplace", 1, 2);
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<2> > initlap2 ("HDG_laplace", 2, 2);
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<3> > initlap3 ("HDG_laplace", 3, 2);
+
+  static RegisterBilinearFormIntegrator<HDG_IR_LaplaceIntegrator<2> > initlap2ir ("HDG_IR_laplace", 2, 2);
 
   static RegisterBilinearFormIntegrator<HDGBR_LaplaceIntegrator<2> > initlapbr2 ("HDGBR_laplace", 2, 1);
   static RegisterBilinearFormIntegrator<HDGBR_LaplaceIntegrator<3> > initlapbr3 ("HDGBR_laplace", 3, 1);
