@@ -136,6 +136,6 @@ AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile
 comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile 
-pde_tutorial/Makefile windows/Makefile)
+pde_tutorial/Makefile pde_tutorial/pml/Makefile windows/Makefile)
 
 AC_OUTPUT
