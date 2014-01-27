@@ -87,11 +87,11 @@ namespace ngla
     const ParallelDofs * paralleldofs;
 
     ///
-    BaseVector ();
+    BaseVector () : paralleldofs (NULL) { ; }
 
   public:
     ///
-    virtual ~BaseVector ();
+    virtual ~BaseVector () { ; }
 
     ///
     template <typename T> 
@@ -102,11 +102,23 @@ namespace ngla
     }
 
     ///
-    BaseVector & operator= (const BaseVector & v);
+    BaseVector & operator= (const BaseVector & v)
+    {
+      Set (1.0, v);
+      return *this;
+    }
     ///
-    BaseVector & operator= (double s);
+    BaseVector & operator= (double s)
+    {
+      SetScalar (s);
+      return *this;
+    }
     ///
-    BaseVector & operator= (Complex s);
+    BaseVector & operator= (Complex s)
+    {
+      SetScalar (s);
+      return *this;
+    }
 
     ///
     template <typename T>
@@ -385,6 +397,10 @@ namespace ngla
   };
 
 
+#if not defined(FILE_BASEVECTOR_CPP)
+  extern template class S_BaseVector<double>;
+  extern template class S_BaseVector<Complex>;
+#endif
 
   /*
   template <class SCAL>
