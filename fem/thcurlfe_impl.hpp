@@ -57,6 +57,23 @@ namespace ngfem
     Vec<DIM, AutoDiff<DIM> > adp = mip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
                                 { shape.Row(i) = s; }));
+
+    /*
+    static int cnt = 0;
+    static double sumshape = 0.0;
+    static double sumad = 0.0;
+    sumshape += L2Norm (shape);
+    for (int j = 0; j < DIM; j++)
+      for (int k = 0; k < DIM; k++)
+        sumad += sqr (adp(j).DValue(k));
+    cnt++;
+    // if (cnt % 1000 == 0)
+    if (ET == ET_PYRAMID)
+      {
+	cout << "cnt = " << cnt << ", sumad = " << sumad << ", sumshape = " << sumshape << endl;
+        cout << "shape = " << shape << endl;
+      }
+    */
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>

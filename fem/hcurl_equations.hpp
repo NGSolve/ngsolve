@@ -60,31 +60,16 @@ namespace ngfem
                                  const MappedIntegrationPoint<3,3> & mip,
                                  SliceMatrix<> mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);  
     }
 
-    /*
-    template <typename FEL1, typename MIP, typename MAT>
-    static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
-    {
-      mat = Trans (mip.GetJacobianInverse ()) * 
-	Trans (static_cast<const FEL&> (fel).GetShape(mip.IP(), lh));
-    }
 
-    template <typename FEL1>
-    static void GenerateMatrix (const FEL1 & fel, 
-				const MappedIntegrationPoint<D,D> & mip,
-				FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
-    {
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, Trans(mat));
-    }
-    */
+
 
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
     static void Apply (const FEL1 & fel, const MIP & mip,
-		       const TVX & x, TVY & y,
+		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
       typedef typename TVX::TSCAL TSCAL;
@@ -146,7 +131,7 @@ namespace ngfem
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
-		       const TVX & x, TVY & y,
+		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
       y = (1.0/mip.GetJacobiDet()) * 
@@ -196,7 +181,7 @@ namespace ngfem
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
-		       const TVX & x, TVY & y,
+		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
       // typedef typename TVX::TSCAL TSCAL;

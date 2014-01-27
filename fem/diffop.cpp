@@ -18,7 +18,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<double> mat, 
+              FlatMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     cerr << "DifferentialOperator::CalcMatrix called for base class, type = " 
@@ -34,7 +34,7 @@ namespace ngfem
          LocalHeap & lh) const
   {
     cout << "called base class apply, type = " << typeid(*this).name() << endl;
-    FlatMatrix<> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -47,7 +47,7 @@ namespace ngfem
          LocalHeap & lh) const
   {
     cout << "called base class apply, complex" << endl;
-    FlatMatrix<> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
   }
@@ -83,7 +83,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     cout << "called base class apply trans" << endl;
-    FlatMatrix<> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
   }
@@ -97,7 +97,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     cout << "called base class apply trans, complex" << endl;
-    FlatMatrix<> mat(Dim(), x.Size(), lh);
+    FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
   }
@@ -149,10 +149,11 @@ namespace ngfem
   void BlockDifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<double> mat, 
+              FlatMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    FlatMatrix<double> mat1(diffop.Dim(), fel.GetNDof(), lh);
+    HeapReset hr(lh);
+    FlatMatrix<double,ColMajor> mat1(diffop.Dim(), fel.GetNDof(), lh);
     diffop.CalcMatrix (fel, mip, mat1, lh);
     mat = 0;
     

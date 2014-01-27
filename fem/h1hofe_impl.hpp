@@ -312,10 +312,32 @@ namespace ngfem
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
+    /*
+    shape[0] = (1-x)*(1-y)*(1-z);
+    shape[1] = x*(1-y)*(1-z);
+    shape[2] = x*y*(1-z);
+    shape[3] = (1-x)*y*(1-z);
+    shape[4] = (1-x)*(1-y)*z;
+    shape[5] = x*(1-y)*z;
+    shape[6] = x*y*z;
+    shape[7] = (1-x)*y*z; 
+
+    Tx lame[12] = {
+      (1-y)*(1-z), y*(1-z), (1-x)*(1-z), x*(1-z),
+      (1-y)*z, y*z, (1-x)*z, x*z,
+      (1-x)*(1-y), x*(1-y), x*y, (1-x)*y
+    };
+
+    Tx xie[12] = {
+      2*x-1, 1-2*x, 1-2*x, 2*x-1,
+      2*x-1, 1-2*x, 1-2*x, 2*x-1, 
+      2*z-1, 2*z-1, 2*z-1, 2*z-1
+    };
+    */
+
     // vertex shapes
     for (int i = 0; i < 8; i++) 
       shape[i] = lam[i]; 
-
     int ii = 8;
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
@@ -325,16 +347,19 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-          INT<2> e = GetEdgeSort (i, vnums);	  
+          // INT<2> e = GetEdge (i);	  
+	  // Tx xi = (vnums[e[0]] < vnums[e[1]]) ? xie[i] : -xie[i];
+          // Tx lam_e = lame[i];
 
-	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
-	  Tx lam_e = lam[e[0]]+lam[e[1]];
+          INT<2> e = GetEdgeSort (i, vnums);	  
+          Tx xi = sigma[e[1]]-sigma[e[0]]; 
+          Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	  
 	  LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
 	  ii += p-1;
 	}
-     
+
     for (int i = 0; i < N_FACE; i++)
       if (order_face[i][0] >= 2 && order_face[i][1] >= 2)
 	{
@@ -355,7 +380,7 @@ namespace ngfem
             for (int j = 0; j < p[1]-1; j++) 
               shape[ii++]= polx[k] * poly[j];
 	}
-    
+
     // volume dofs:
     INT<3> p = order_cell[0];
     if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)

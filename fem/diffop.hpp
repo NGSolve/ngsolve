@@ -59,7 +59,8 @@ namespace ngfem
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh)
     {
-      typedef typename TVY::TSCAL TSCAL;
+      // typedef typename TVY::TSCAL TSCAL;
+      typedef typename MIP::TSCAL TSCAL;
       HeapReset hr(lh);
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
@@ -84,7 +85,8 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      typedef typename TVY::TSCAL TSCAL;
+      // typedef typename TVY::TSCAL TSCAL;
+      typedef typename MIP::TSCAL TSCAL;
 
       HeapReset hr(lh);
 
@@ -119,7 +121,7 @@ namespace ngfem
 
 
 
-
+  
 
   /**
      Differential Operator.
@@ -143,7 +145,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		FlatMatrix<double> mat,             // should be col major !!!
+		FlatMatrix<double,ColMajor> mat,    // should be col major !!!
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
@@ -226,7 +228,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		FlatMatrix<double> mat, 
+		FlatMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
 
 
@@ -258,13 +260,11 @@ namespace ngfem
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
     
-    /*
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
-		FlatMatrix<double> mat, 
+		FlatMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
-    */
 
     virtual void
     Apply (const FiniteElement & bfel,
@@ -278,6 +278,13 @@ namespace ngfem
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
+	   LocalHeap & lh) const;
+
+    virtual void
+    Apply (const FiniteElement & bfel,
+	   const BaseMappedIntegrationPoint & bmip,
+	   FlatVector<Complex> x, 
+	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;
 
     virtual void
