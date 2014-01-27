@@ -338,10 +338,10 @@ namespace ngcomp
 
   void MeshAccess :: LoadMesh (const string & filename)
   {
-    // Ng_LoadMesh (filename.c_str());
-    // mesh = netgen::LoadMesh (filename);
     mesh.LoadMesh (filename);
     UpdateBuffers();
+    if (!mesh.Valid())
+      throw Exception ("could not load mesh from '" + filename + "'");
   }
 
   /*
