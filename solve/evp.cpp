@@ -1,20 +1,15 @@
 #ifdef LAPACK
 #include "../include/solve.hpp"
 
-namespace ngfem
-{
-  extern Complex alpha;
-}
 
 namespace ngsolve
 {
-  using namespace ngsolve;
 
 
-  /* ***************************** Numproc EVP-Lapack *************************** */
+  /* ***************************** Numproc EVP *************************** */
 
   ///
-  class NumProcEVPLapack : public NumProc
+  class NumProcEVP : public NumProc
   {
   protected:
     BilinearForm * bfa;
@@ -24,28 +19,23 @@ namespace ngsolve
     Preconditioner * pre;
     int num;
 
-    double prec, shift;
+    double prec, shift, shifti;
     bool print;
 
-    string eigenoutstr;
+    string filename;
+
     enum SOLVER { DENSE, ARNOLDI };
-    ///
     SOLVER solver;
 
   public:
-    NumProcEVPLapack (PDE & apde, const Flags & flags);
-    virtual ~NumProcEVPLapack();
-
-    static NumProc * Create (PDE & pde, const Flags & flags)
-    {
-      return new NumProcEVPLapack (pde, flags);
-    }
+    NumProcEVP (PDE & apde, const Flags & flags);
+    virtual ~NumProcEVP() { ; }
 
     virtual void Do(LocalHeap & lh);
 
     virtual string GetClassName () const
     {
-      return " Eigenvalue Problem (Lapack)";
+      return " Eigenvalue Solver";
     }
 
     virtual void PrintReport (ostream & ost)
@@ -58,7 +48,7 @@ namespace ngsolve
   };
 
 
-  NumProcEVPLapack :: NumProcEVPLapack (PDE & apde, const Flags & flags)
+  NumProcEVP :: NumProcEVP (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
@@ -66,60 +56,82 @@ namespace ngsolve
     gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
     pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""),1);
     num = int(flags.GetNumFlag ("num", 500));
-    shift = flags.GetNumFlag ("shift",-1.); 
+    shift = flags.GetNumFlag ("shift",1); 
+    shifti = flags.GetNumFlag ("shifti",0); 
 
-    eigenoutstr = flags.GetStringFlag ("eigenout","eigen.out"); 
+    filename = flags.GetStringFlag ("filename","eigen.out"); 
 
     solver = ARNOLDI;
     if (flags.GetDefineFlag("dense")) solver = DENSE;
   }
 
-  NumProcEVPLapack :: ~NumProcEVPLapack()
+
+
+  void NumProcEVP :: Do(LocalHeap & lh)
   {
-    ;
-  }
-
-
-  void NumProcEVPLapack :: Do(LocalHeap & lh)
-  {
-    cout << "solve evp with Lapack" << endl;
-
-
-
-    cout << "new version using linalg - Arnoldi" << endl;
-
-
-    if (bfa->GetFESpace().IsComplex())
+    if (solver == ARNOLDI)
       {
-        cout << "complex evp" << endl;
-      }
-    else
-      {
-        cout << "real evp" << endl;
-        Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), bfa->GetFESpace().GetFreeDofs() );
-        arnoldi.SetShift (1);
+        cout << "new version using linalg - Arnoldi" << endl;
 
-        int nev = gfu->GetMultiDim();
-        Array<BaseVector*> evecs(nev);
-        // for (int i = 0; i  < nev; i++)
-        // evecs[i] = &gfu->GetVector(i);
-        Array<Complex> lam(nev);
-        if (pre)
-          arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+        if (bfa->GetFESpace().IsComplex())
+          {
+            cout << "complex evp" << endl;
+            
+            Arnoldi<Complex> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
+                                      bfa->GetFESpace().GetFreeDofs() );
+            arnoldi.SetShift (Complex(shift,shifti));
+            
+            int nev = gfu->GetMultiDim();
+            Array<BaseVector*> evecs(nev);
+
+            Array<Complex> lam(nev);
+            if (pre)
+              arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+            else
+              arnoldi.Calc (num, lam, nev, evecs, 0);
+            
+            ofstream eigenout(filename.c_str());
+            eigenout.precision(16);
+            for (int i = 0; i < lam.Size(); ++i)
+              eigenout << lam[i].real() << "\t" << lam[i].imag() << "\t"
+                       << sqrt(lam[i]).real() << "\t" << sqrt(lam[i]).imag() 
+                       << endl;
+            
+            for (int i = 0; i < nev; i++)
+              gfu->GetVector(i) = *evecs[i];
+
+            cout << "lam = " << endl << lam << endl;
+          }
         else
-          arnoldi.Calc (num, lam, nev, evecs, 0);
+          {
+            cout << "real evp" << endl;
+            Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
+                                     bfa->GetFESpace().GetFreeDofs() );
+            arnoldi.SetShift (shift);
+            
+            int nev = gfu->GetMultiDim();
+            Array<BaseVector*> evecs(nev);
+            // for (int i = 0; i  < nev; i++)
+            // evecs[i] = &gfu->GetVector(i);
+            Array<Complex> lam(nev);
+            if (pre)
+              arnoldi.Calc (num, lam, nev, evecs, &pre->GetMatrix());
+            else
+              arnoldi.Calc (num, lam, nev, evecs, 0);
+            
+            ofstream eigenout(filename.c_str());
+            eigenout.precision(16);
+            for (int i = 0; i < lam.Size(); ++i)
+              eigenout << lam[i].real() << "\t" << lam[i].imag() << endl;
+            
+            for (int i = 0; i < nev; i++)
+              gfu->GetVector(i) = *evecs[i];
 
-        ofstream eigenout(eigenoutstr.c_str());
-        for (int i = 0; i < lam.Size(); ++i)
-          eigenout << lam[i].real() << "\t" << lam[i].imag() << endl;
-
-        for (int i = 0; i < nev; i++)
-          gfu->GetVector(i) = *evecs[i];
-        cout << "lam = " << endl << lam << endl;
+            cout << "lam = " << endl << lam << endl;
+          }
+        
+        return;
       }
-
-    return;
-
 
     int dim = bfa->GetFESpace().GetDimension();
     int size = bfa->GetMatrix().Height();
@@ -128,6 +140,8 @@ namespace ngsolve
     
     if (solver == DENSE)
       {
+        cout << "solve evp with dense Lapack" << endl;
+
 	int n = dim*size;
 
 	if (!iscomplex)
@@ -188,7 +202,9 @@ namespace ngsolve
 	    Vector<Complex> lami(n);
 	    Matrix<Complex> evecs(n);
 	    
+            cout << "calling lapack ... " << flush;
 	    LaEigNSSolve (n, &mata(0,0), &matm(0,0), &lami(0), 1, &evecs(0,0), 0, 'N');
+            cout << "done" << endl;
 
 	    for (int i = 0; i < min2 (gfu->GetMultiDim(), n); i++)
 	      {
@@ -204,8 +220,10 @@ namespace ngsolve
 	    ofstream ev ("eigenvalues.out");
 	    for (int i = 0; i < n; i++)
 	      {
-		Complex lam =  (lami(i));
-		ev << i << " " << lam.real() << " " << lam.imag() << endl;
+		Complex lam = lami(i);
+		ev << i << " " << lam.real() << " " << lam.imag();
+                lam = sqrt(lami(i));
+		ev  << " " << lam.real() << " " << lam.imag() << endl;
 	      }
 	    cout << "eigensystem done" << endl;
 	  }
@@ -214,6 +232,7 @@ namespace ngsolve
     else if (solver == ARNOLDI)
 
       {
+        //  old version 
 	int n = dim*size;
 	// VVector<Complex> hv(n), hva(n), hvm(n), hwa(n), hwm(n), w(n);
 
@@ -469,30 +488,8 @@ namespace ngsolve
   }
 
 
-
-
   
-
-
-  namespace
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    { 
-     GetNumProcs().AddNumProc ("evplapack", NumProcEVPLapack::Create, NumProcEVPLapack::PrintDoc);
-    }
-    
-    
-    Init init;
-    
-  }
-  
-
+  static RegisterNumProc<NumProcEVP> npinitevp("evp");
 
 }
 #endif
