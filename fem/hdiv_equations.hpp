@@ -404,7 +404,7 @@ public:
 /// integrator for \f$\int_\Gamma \sigma_n \tau_n \, ds\f$
 template <int D>
 class RobinHDivIntegrator
-  : public T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<3>, HDivNormalFiniteElement<D-1> >
+  : public T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<D>, HDivNormalFiniteElement<D-1> >
 {
 public:
   NGS_DLL_HEADER RobinHDivIntegrator (CoefficientFunction * coeff)

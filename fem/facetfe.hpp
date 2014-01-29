@@ -43,7 +43,7 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const
     {
-      throw Exception ("facetfe - clacdshape not olverloaded");
+      throw Exception ("facetfe - calcdshape not olverloaded");
     }
 
   };
