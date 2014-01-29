@@ -408,7 +408,7 @@ class RobinHDivIntegrator
 {
 public:
   NGS_DLL_HEADER RobinHDivIntegrator (CoefficientFunction * coeff)
-    : T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<3>, HDivNormalFiniteElement<D-1> > (DiagDMat<3> (coeff))
+    : T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<D>, HDivNormalFiniteElement<D-1> > (DiagDMat<3> (coeff))
   { ; }
 
 
