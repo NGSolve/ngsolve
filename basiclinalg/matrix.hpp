@@ -363,6 +363,16 @@ namespace ngbla
     }
     */
 
+    const FlatMatrix Cols (int first, int next) const
+    {
+      return FlatMatrix (h, next-first, data+first*h);
+    }
+
+    const FlatMatrix Cols (IntRange range) const
+    {
+      return FlatMatrix (h, range.Size(), data+range.First()*h);
+    }
+    
     /*
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
     using CMCPMatExpr<FlatMatrix<T> >::Cols;
@@ -1123,12 +1133,12 @@ namespace ngbla
 
     const FlatMatrixFixHeight Cols (int first, int next) const
     {
-      return FlatMatrixFixHeight (next-first, data+first*H);
+      return FlatMatrixFixHeight (next-first, data+first*SLICE);
     }
 
     const FlatMatrixFixHeight Cols (IntRange range) const
     {
-      return FlatMatrixFixHeight (range.Size(), data+range.First()*H);
+      return FlatMatrixFixHeight (range.Size(), data+range.First()*SLICE);
     }
 
     const SliceMatrix<T,ColMajor>
@@ -1439,22 +1449,22 @@ namespace ngbla
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
     }
-
-    const SliceMatrix<T> Cols (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, dist, data+first);
-    }
-
     const SliceMatrix Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
+    */
 
-    const SliceMatrix<T> Cols (IntRange range) const
+    const SliceMatrix Cols (int first, int next) const
+    {
+      return SliceMatrix (h, next-first, dist, data+first*dist);
+    }
+
+
+    const SliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
-    */
   };
 
 
