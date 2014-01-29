@@ -359,7 +359,8 @@ namespace ngcomp
       }
     else 
       {
-	cout << "highest_order_dc not supported in 3D" << endl;
+        if (highest_order_dc)
+          cout << "highest_order_dc not supported in 3D" << endl;
         int inci = 0;
         for (int i=0; i< nfa; i++) 
           {

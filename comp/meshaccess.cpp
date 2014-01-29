@@ -143,8 +143,8 @@ namespace ngcomp
                                                       &mir[0].Jacobian()(0,0), 
                                                       &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
     
-    for (int i = 0; i < ir.Size(); i++)
-      mir[i].Compute();
+      for (int i = 0; i < ir.Size(); i++)
+        mir[i].Compute();
   }
 };
   
@@ -294,7 +294,6 @@ namespace ngcomp
 					 BaseMappedIntegrationRule & bmir) const
     {
       MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
-
       for (int i = 0; i < ir.Size(); i++)
         {
           const IntegrationPoint & ip = ir[i];
@@ -319,11 +318,10 @@ namespace ngcomp
 
 
 
-
-  MeshAccess :: MeshAccess ()
+  MeshAccess :: MeshAccess (netgen::Mesh * amesh)
+    : mesh(amesh)
   {
     ngstd::testout = netgen::testout;
-    // mesh = NULL;
     Ng_UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }
