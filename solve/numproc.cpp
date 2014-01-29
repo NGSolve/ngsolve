@@ -1492,7 +1492,10 @@ namespace ngsolve
       if (filename.length() && (MyMPI_GetId() == 0) )
 	{
 	  filename = pde.GetDirectory() + dirslash + filename;
-	  outfile = new ofstream (filename.c_str());
+          if (!flags.GetDefineFlag ("append"))
+            outfile = new ofstream (filename.c_str());
+          else
+            outfile = new ofstream (filename.c_str(), ios_base::app);
 	}
       else
 	outfile = 0;
@@ -1523,6 +1526,8 @@ namespace ngsolve
 	"\nRequired flags:\n"						\
 	"-filename=<name>\n"						\
 	"    specify the filename\n"					\
+	"-append\n"                                                     \
+	"    append to file\n"                                          \
 	"-variables=[var1,var2...]\n"					\
 	"    variables for output\n";					
     }
