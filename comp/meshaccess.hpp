@@ -117,7 +117,7 @@ namespace ngcomp
 
   public:
     /// connects to Netgen - mesh
-    MeshAccess ();
+    MeshAccess (netgen::Mesh * amesh = NULL);
     /// not much to do 
     virtual ~MeshAccess ();
 
