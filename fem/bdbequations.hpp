@@ -845,11 +845,15 @@ namespace ngfem
       else
 	for (int i = 0; i < N; i++)
 	  {
-            CoefficientFunction * hp = coefs[i];
-            vec(i) = hp -> T_Evaluate<TSCAL> (mip);
-
-	    // gcc 4.6 complains, why ???? (JS)
+            // does not compile with gcc 4.6  ...
             // vec(i) = coefs[i] -> T_Evaluate<TSCAL> (mip);  
+
+            // this works ...
+            // CoefficientFunction * hp = coefs[i];
+            // vec(i) = hp -> T_Evaluate<TSCAL> (mip);
+
+	    // solution thx to Matthias Hochsteger
+            vec(i) = coefs[i] -> template T_Evaluate<TSCAL> (mip);  
 	  }
     }  
 
@@ -869,11 +873,13 @@ namespace ngfem
 	for (int j = 0; j < mir.Size(); j++)
 	  for (int i = 0; i < N; i++)
 	    {
-              CoefficientFunction * hp = coefs[i];
-              vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
+              // CoefficientFunction * hp = coefs[i];
+              // vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
 	    
 	      // gcc 4.6 complains, why ???? (JS)
               // vecs(j,i) = coefs[i] -> T_Evaluate<TSCAL> (mir[j]);  
+              vecs(j,i) = 
+                coefs[i] -> template T_Evaluate<TSCAL> (mir[j]);  
 	    }
     }  
   };
