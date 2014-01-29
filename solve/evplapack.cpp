@@ -21,11 +21,13 @@ namespace ngsolve
     BilinearForm * bfm;
 
     GridFunction * gfu;
+    Preconditioner * pre;
     int num;
 
-    double prec, shift;
+    double prec, shift, shifti;
     bool print;
 
+    string eigenoutstr;
     enum SOLVER { DENSE, ARNOLDI };
     ///
     SOLVER solver;
@@ -63,7 +65,10 @@ namespace ngsolve
     bfm = pde.GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
     gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
     num = int(flags.GetNumFlag ("num", 500));
-    shift = flags.GetNumFlag ("shift",-1.); 
+    shift = flags.GetNumFlag ("shift",1); 
+    shifti = flags.GetNumFlag ("shifti",0); 
+
+    eigenoutstr = flags.GetStringFlag ("eigenout","eigen.out"); 
 
     solver = ARNOLDI;
     if (flags.GetDefineFlag("dense")) solver = DENSE;
@@ -80,33 +85,59 @@ namespace ngsolve
     cout << "solve evp with Lapack" << endl;
 
 
-
     cout << "new version using linalg - Arnoldi" << endl;
 
-
-    if (bfa->GetFESpace().IsComplex())
+    if (solver == ARNOLDI)
       {
-        cout << "complex evp" << endl;
+        if (bfa->GetFESpace().IsComplex())
+          {
+            cout << "complex evp" << endl;
+            
+            Arnoldi<Complex> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
+                                      bfa->GetFESpace().GetFreeDofs() );
+            arnoldi.SetShift (Complex(shift,shifti));
+            
+            int nev = gfu->GetMultiDim();
+            Array<BaseVector*> evecs(nev);
+            // for (int i = 0; i  < nev; i++)
+            // evecs[i] = &gfu->GetVector(i);
+            Array<Complex> lam(nev);
+            arnoldi.Calc (num, lam, nev, evecs);
+            
+            ofstream eigenout(eigenoutstr.c_str());
+            for (int i = 0; i < lam.Size(); ++i)
+              eigenout << lam[i].real() << "\t" << lam[i].imag() << "\t"
+                       << sqrt(lam[i]).real() << "\t" << sqrt(lam[i]).imag() 
+                       << endl;
+            
+            for (int i = 0; i < nev; i++)
+              gfu->GetVector(i) = *evecs[i];
+            cout << "lam = " << endl << lam << endl;
+          }
+        else
+          {
+            cout << "real evp" << endl;
+            Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), bfa->GetFESpace().GetFreeDofs() );
+            arnoldi.SetShift (shift);
+            
+            int nev = gfu->GetMultiDim();
+            Array<BaseVector*> evecs(nev);
+            // for (int i = 0; i  < nev; i++)
+            // evecs[i] = &gfu->GetVector(i);
+            Array<Complex> lam(nev);
+            arnoldi.Calc (num, lam, nev, evecs);
+            
+            ofstream eigenout(eigenoutstr.c_str());
+            for (int i = 0; i < lam.Size(); ++i)
+              eigenout << lam[i].real() << "\t" << lam[i].imag() << endl;
+            
+            for (int i = 0; i < nev; i++)
+              gfu->GetVector(i) = *evecs[i];
+            cout << "lam = " << endl << lam << endl;
+          }
+        
+        return;
       }
-    else
-      {
-        cout << "real evp" << endl;
-        Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix());
-        arnoldi.SetShift (1);
-
-        int nev = gfu->GetMultiDim();
-        Array<BaseVector*> evecs(nev);
-        // for (int i = 0; i  < nev; i++)
-        // evecs[i] = &gfu->GetVector(i);
-        Array<Complex> lam(nev);
-        arnoldi.Calc (num, lam, nev, evecs);
-        for (int i = 0; i < nev; i++)
-          gfu->GetVector(i) = *evecs[i];
-        cout << "lam = " << endl << lam << endl;
-      }
-
-    return;
-
 
     int dim = bfa->GetFESpace().GetDimension();
     int size = bfa->GetMatrix().Height();
@@ -175,7 +206,9 @@ namespace ngsolve
 	    Vector<Complex> lami(n);
 	    Matrix<Complex> evecs(n);
 	    
+            cout << "calling lapack ... " << flush;
 	    LaEigNSSolve (n, &mata(0,0), &matm(0,0), &lami(0), 1, &evecs(0,0), 0, 'N');
+            cout << "done" << endl;
 
 	    for (int i = 0; i < min2 (gfu->GetMultiDim(), n); i++)
 	      {
@@ -191,8 +224,10 @@ namespace ngsolve
 	    ofstream ev ("eigenvalues.out");
 	    for (int i = 0; i < n; i++)
 	      {
-		Complex lam =  (lami(i));
-		ev << i << " " << lam.real() << " " << lam.imag() << endl;
+		Complex lam = lami(i);
+		ev << i << " " << lam.real() << " " << lam.imag();
+                lam = sqrt(lami(i));
+		ev  << " " << lam.real() << " " << lam.imag() << endl;
 	      }
 	    cout << "eigensystem done" << endl;
 	  }
