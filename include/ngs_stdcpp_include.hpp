@@ -6,6 +6,8 @@
 #define VERSION "5.1"
 #endif
 
+#define NGS_VERSION 511
+
 
 #include <iostream>
 #include <fstream>
