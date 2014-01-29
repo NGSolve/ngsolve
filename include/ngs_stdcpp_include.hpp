@@ -6,6 +6,8 @@
 #define VERSION "5.3-dev"
 #endif
 
+#define NGS_VERSION 530
+
 
 #include <iostream>
 #include <fstream>
