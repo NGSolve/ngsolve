@@ -3,8 +3,10 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "5.2-dev"
+#define VERSION "5.2-alpha"
 #endif
+
+#define NGS_VERSION 520
 
 
 #include <iostream>
