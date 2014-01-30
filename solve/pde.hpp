@@ -47,11 +47,11 @@ namespace ngsolve
   };
 
 
-  void BuildLineIntegratorCurvePoints ( const string filename,
+  NGS_DLL_HEADER void BuildLineIntegratorCurvePoints ( const string filename,
 					const MeshAccess & ma,
 					Integrator & integrator,
 					bool draw = true);
-  void BuildLineIntegratorCurvePoints ( istream & infile,
+  NGS_DLL_HEADER void BuildLineIntegratorCurvePoints ( istream & infile,
 					const MeshAccess & ma,
 					Integrator & integrator,
 					bool draw = true);
