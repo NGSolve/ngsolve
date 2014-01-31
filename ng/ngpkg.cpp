@@ -2326,7 +2326,10 @@ namespace netgen
         context->bit_rate = bitrate;
         context->width = nx;
         context->height = ny;
-	context->time_base = (AVRational){ 1, 25 };
+        AVRational s;
+        s.num = 1;
+        s.den = 25;
+	  context->time_base = (AVRational){ 1, 25 };
         context->gop_size = gopsize;
         context->max_b_frames = bframes;
         context->pix_fmt = PIX_FMT_YUV420P;
