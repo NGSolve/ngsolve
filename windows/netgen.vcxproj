@@ -253,7 +253,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -301,7 +301,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(SolutionDir)..\..\ext_libs\zlib\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -346,7 +346,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -394,7 +394,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;_OCC64;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;_OCC64;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
