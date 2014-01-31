@@ -1,7 +1,15 @@
-if {[catch {package require Tix } result ]} {
-     puts "cannot load package Tix"
-     puts "error : $result"
+set batchmode [Ng_GetCommandLineParameter batchmode]
+if {$batchmode=="undefined"} {
+	if {[catch {package require Tix } result ]} {
+		puts "cannot load package Tix"
+		puts "error : $result"
+	}
 }
+# if {[catch {package require Togl 2.0 } result ]} {
+#    puts "cannot load package Togl 2.0"
+#    puts "error : $result"
+# }
+
 
 # if {[catch {package require Togl 2.0 } result ]} {
 #    puts "cannot load package Togl 2.0"
