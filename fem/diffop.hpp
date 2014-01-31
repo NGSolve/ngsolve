@@ -128,7 +128,7 @@ namespace ngfem
   class DifferentialOperator
   {
   public:
-    NGS_DLL_HEADER DifferentialOperator() { ; }
+    DifferentialOperator() { ; }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
