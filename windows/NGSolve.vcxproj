@@ -549,7 +549,7 @@
     <ClCompile Include="..\ngstd\templates.cpp" />
     <ClCompile Include="..\parallel\parallelvvector.cpp" />
     <ClCompile Include="..\solve\bvp.cpp" />
-    <ClCompile Include="..\solve\evplapack.cpp" />
+    <ClCompile Include="..\solve\evp.cpp" />
     <ClCompile Include="..\solve\generalizedEVP.cpp" />
     <ClCompile Include="..\solve\hyperbolic.cpp" />
     <ClCompile Include="..\solve\ngsolve.cpp" />
