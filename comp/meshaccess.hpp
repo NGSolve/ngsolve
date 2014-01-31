@@ -647,7 +647,7 @@ namespace ngcomp
      It controls the Netgen - progressbar as well as console progress update.
      In parallel, all processes must enter and call the Done method.
    */
-  class NGS_DLL_HEADER ProgressOutput
+  class ProgressOutput
   {
     const MeshAccess & ma;
     string task;
