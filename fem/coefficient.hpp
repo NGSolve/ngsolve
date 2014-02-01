@@ -90,11 +90,7 @@ namespace ngfem
       result(0) = f; 
     }
 
-
-    virtual void PrintReport (ostream & ost)
-    {
-      ost << "Base-Class CoefficientFunction" << endl;
-    }
+    virtual void PrintReport (ostream & ost);
   };
 
 
@@ -231,6 +227,8 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
+
+    virtual void PrintReport (ostream & ost);
   };
 
   ///

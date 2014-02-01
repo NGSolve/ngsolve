@@ -150,7 +150,6 @@ namespace ngfem
       data[0] *= uv.w.Value();
       data[1] *= uv.w.Value();
     }
-
     
     INLINE operator Vec<2> () { return data; }
   };
@@ -485,13 +484,13 @@ namespace ngfem
   template <int DIM>
   class HDivDivShapeAssign
   {
-    double * dshape;
+    SliceVector<> dshape;
   public:
-    HDivDivShapeAssign (FlatVector<>  mat)
-    { dshape = &mat(0); }
+    HDivDivShapeAssign (SliceVector<>  mat)
+      : dshape(mat) { ; }
 
     HDivDivShapeElement<DIM> operator[] (int i) const
-    { return HDivDivShapeElement<DIM> (dshape + i); }
+    { return HDivDivShapeElement<DIM> (&dshape(i)); }
   };
 
   template <int DIM>
@@ -532,13 +531,13 @@ namespace ngfem
   public:
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<DIM> shape) const;
+			    SliceMatrix<> shape) const;
     
     virtual void CalcDivShape (const IntegrationPoint & ip, 
-			       FlatVector<> divshape) const;
+			       SliceVector<> divshape) const;
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-				  FlatMatrixFixWidth<DIM> shape) const;
+				  SliceMatrix<> shape) const;
     
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 

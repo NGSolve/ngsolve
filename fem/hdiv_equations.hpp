@@ -35,7 +35,7 @@ public:
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 
-    
+  /*
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
@@ -43,7 +43,26 @@ public:
     mat = (1.0/mip.GetJacobiDet()) * 
       (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
   }
+  */
+
+  static void GenerateMatrix (const FiniteElement & fel, 
+                              const MappedIntegrationPoint<D,D> & mip,
+                              SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcMappedShape (mip, Trans(mat));
+  }
     
+  template <typename MAT>
+  static void GenerateMatrix (const FiniteElement & fel, 
+                              const MappedIntegrationPoint<D,D,Complex> & mip,
+                              MAT && mat, LocalHeap & lh)
+  {
+    HeapReset hr(lh);
+
+    mat = (1.0/mip.GetJacobiDet()) * 
+      (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
+  }
+
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
                      const TVX & x, TVY & y,
@@ -51,7 +70,7 @@ public:
   {
     HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
-      
+    
     Vec<D,TSCAL> hv = Trans (Cast(fel).GetShape(mip.IP(), lh)) * x;
     hv *= (1.0/mip.GetJacobiDet());
     y = mip.GetJacobian() * hv;
@@ -61,17 +80,18 @@ public:
 
   template <typename AFEL, class MIR>
   static void ApplyIR (const AFEL & fel, const MIR & mir,
-		       const FlatVector<double> x, FlatMatrix<double> y,
+		       FlatVector<double> x, FlatMatrixFixWidth<D,double> y,
 		       LocalHeap & lh)
   {
     static Timer t("ApplyIR - HDivfe");
-    RegionTimer reg(t);
+    t.Start();
+    Cast(fel).Evaluate (mir.IR(), x, y);
+    t.Stop();
 
-    Cast(fel).Evaluate (mir.IR(), x, FlatMatrixFixWidth<D> (y.Height(), &y(0,0)));
     for (int i = 0; i < mir.Size(); i++)
       {
-	Vec<D> hy = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian() * y.Row(i);
-	y.Row(i) = hy;
+	Vec<D> hy = mir[i].GetJacobian() * y.Row(i);
+	y.Row(i) = (1.0 / mir[i].GetJacobiDet()) * hy;
       }
   }
 

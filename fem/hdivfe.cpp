@@ -27,7 +27,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcDivShape (const IntegrationPoint & ip, 
-		FlatVector<> divshape) const
+		SliceVector<> divshape) const
   {
     double eps = 1e-5;
     ArrayMem<double, 200> hm1(DIM*ndof), hm2(DIM*ndof), 
@@ -71,7 +71,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                   FlatMatrixFixWidth<DIM> shape) const
+                   SliceMatrix<> shape) const
   {
     CalcShape (mip.IP(), shape);
     Mat<DIM> trans = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
@@ -86,7 +86,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                      FlatVector<> divshape) const
+                      SliceVector<> divshape) const
   {
     CalcDivShape (mip.IP(), divshape);
     divshape /= mip.GetJacobiDet();
@@ -239,7 +239,7 @@ namespace ngfem
 
   void FE_RTTrig0 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<2> shape) const
+	     SliceMatrix<> shape) const
   {
     double x = ip(0);
     double y = ip(1);
@@ -285,7 +285,7 @@ namespace ngfem
 
   void FE_RTTrig0plus :: 
   CalcShape (const IntegrationPoint & ip, 
-	     FlatMatrixFixWidth<2> shape) const
+	     SliceMatrix<> shape) const
   {
     double x = ip.Point()[0];
     double y = ip.Point()[1];
@@ -320,7 +320,7 @@ namespace ngfem
   }
   
   void FE_BDMTrig1 :: CalcShape (const IntegrationPoint & ip, 
-				 FlatMatrixFixWidth<2> shape) const
+				 SliceMatrix<> shape) const
   {
     Mat<6,2> shape1;
     
@@ -421,9 +421,9 @@ FE_RTQuad0 :: ~FE_RTQuad0()
   ;
 }
 
-void FE_RTQuad0 :: 
-CalcShape (const IntegrationPoint & ip, 
-	   FlatMatrixFixWidth<2> shape) const
+  void FE_RTQuad0 :: 
+  CalcShape (const IntegrationPoint & ip, 
+             SliceMatrix<> shape) const
 {
   double x = ip(0);
   double y = ip(1);
@@ -452,8 +452,8 @@ FE_BDMTet1 :: ~FE_BDMTet1()
   ;
 }
 
-void FE_BDMTet1 :: CalcShape (const IntegrationPoint & ip, 
-			      FlatMatrixFixWidth<3> shape) const
+  void FE_BDMTet1 :: CalcShape (const IntegrationPoint & ip, 
+                                SliceMatrix<> shape) const
 {
   Mat<12,3> shape1;
   CalcShape1 (ip, shape1);
