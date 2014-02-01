@@ -17,7 +17,7 @@ namespace ngfem
     HDivDummyFE() : HDivFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<ET_trait<ET>::DIM> shape) const { ; }
+			    SliceMatrix<> shape) const { ; }
   };
 
 
@@ -33,7 +33,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const;
+			    SliceMatrix<> shape) const;
   };
 
 
@@ -50,7 +50,7 @@ namespace ngfem
     ///
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const;
+			    SliceMatrix<> shape) const;
   };
 
 
@@ -70,7 +70,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const;
+			    SliceMatrix<> shape) const;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
@@ -318,7 +318,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const;
+			    SliceMatrix<> shape) const;
 
   };
 
@@ -527,7 +527,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const;
+			    SliceMatrix<> shape) const;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 

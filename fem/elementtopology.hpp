@@ -844,7 +844,7 @@ namespace ngfem
     {
       INT<2> e = GetEdgeSort (i, vnums);
       int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-      Tx xi = 0;
+      Tx xi(0.0);
       for (int j = 0; j < 2; j++)
         {
           int edir = vi[e[1]][j] - vi[e[0]][j];

@@ -79,12 +79,14 @@ namespace ngfem
             if(p > 0) //  && usegrad_edge[i]) 
               { 
                 AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
-                AutoDiff<2> eta = 1 - lami[e[1]] - lami[e[0]]; 
-                T_ORTHOPOL::CalcTrigExt(p+1, xi, eta, 
-                                        SBLambda([&](int i, AutoDiff<2> v)
-                                                 {
-                                                   shape[ii++] = Du<2>(v);
-                                                 }));
+                
+                LegendrePolynomial::
+                  EvalScaledMult (p-1, xi, lami[e[0]]+lami[e[1]], 
+                                  lami[e[0]]*lami[e[1]], 
+                                  SBLambda([&](int i, AutoDiff<2> v)
+                                           {
+                                             shape[ii++] = Du<2>(v);
+                                           }));
               }
           }   
       }
@@ -163,7 +165,8 @@ namespace ngfem
         // High Order edges ... Gradient fields 
         // if(usegrad_edge[i])
           {
-            T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+            // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+            LegendrePolynomial::EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
             for (int j = 0; j < p; j++)
               shape[ii++] = Du<2> (pol_xi[j] * lam_e);
           }

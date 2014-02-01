@@ -150,31 +150,26 @@ namespace ngfem
   void HDivHighOrderNormalSegm<T_ORTHOPOL> :: CalcShape (const IntegrationPoint & ip,
 							 FlatVector<> shape) const
   {
-    double x = ip(0);
+    AutoDiff<1> x (ip(0), 0);
+    AutoDiff<1> lam[2] = { x, 1-x };
 
-    int p = order_inner[0];
+    ArrayMem<AutoDiff<1>,10> adpol1(order);
+	
+    INT<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);	  
+    
+    shape[0] = -lam[e[0]].DValue(0);
 
-    int fac = 1;
-    if (vnums[0] > vnums[1])
-      {
-	fac *= -1;
-	x=1-x;
-      }
-
-
-    ArrayMem<double, 10> rec_pol(p+1), leg(2);
-
-    MatrixFixWidth<2> DExt(p);
-    T_ORTHOPOL::CalcTrigExtDeriv(p+1, 1-2*x, 0, DExt);
-
-    //IntegratedLegendrePolynomial (order_inner, 1-2*x, rec_pol);
-    // LegendrePolynomial (order_inner, 2*x-1, rec_pol);
-    //T_ORTHOPOL::CalcDeriv(order_inner+1, 1-2*x, rec_pol);
-    shape(0) = -1.*fac;
-    for(int j=1; j<=p;j++)
-      shape(j) = 2.* fac * DExt(j-1,0);
-
+    int p = order_inner[0]; 
+    LegendrePolynomial::
+      EvalMult (p-1, 
+                lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], adpol1);
+    
+    for(int j = 0; j < p; j++) 	      
+      shape[j+1] = -adpol1[j].DValue(0);
   }
+
+
+
   template class HDivHighOrderNormalSegm<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderNormalSegm<TrigExtensionMonomial>;
   //template class HDivHighOrderNormalSegm<TrigExtensionOptimal>;
@@ -1460,7 +1455,7 @@ namespace ngfem
 
 
   void HDivHighOrderFE<ET_HEX> :: CalcShape (const IntegrationPoint & ip,
-						  FlatMatrixFixWidth<3> shape) const
+                                             SliceMatrix<> shape) const
   {
 
     int i, j, k, l, m;
@@ -1640,7 +1635,7 @@ namespace ngfem
   }
 
   void HDivHighOrderFE<ET_HEX> :: CalcDivShape (const IntegrationPoint & ip,
-                                                FlatVector<> divshape) const
+                                                SliceVector<> divshape) const
   {
     int i, j, k; 
     AutoDiff<3> x (ip(0),0);

@@ -1165,7 +1165,7 @@ namespace ngfem
       if (n >= 0) values[0] = 1.0;
     */
 
-    S p1 = 1.0, p2 = 0.0, p3;
+    S p1(1.0), p2(0.0), p3;
 
     if (n >= 0) 
       p2 = values[0] = 1.0;

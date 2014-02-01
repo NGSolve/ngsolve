@@ -511,7 +511,7 @@ namespace ngfem
     ArrayMem<Tx, 20> memz(sqr(order+1));
     FlatMatrix<Tx> polsz(order+1, &memz[0]);
 
-    Tx fac = 1.0;
+    Tx fac(1.0);
     for (int i = 0; i <= order; i++)
       {
 	JacobiPolynomial (order, 2*z-1, 2*i+2, 0, polsz.Row(i));

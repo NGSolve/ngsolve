@@ -36,19 +36,19 @@ namespace ngfem
 
     /// compute shape
     virtual void CalcShape (const IntegrationPoint & ip,
-			    FlatMatrixFixWidth<DIM> shape) const = 0;
+			    SliceMatrix<> shape) const = 0;
 
     /// compute div of shape
     virtual void CalcDivShape (const IntegrationPoint & ip,
-			       FlatVector<> divshape) const;
+			       SliceVector<> divshape) const;
 
     /// compute shape
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & sip,
-				  FlatMatrixFixWidth<DIM> shape) const;
+				  SliceMatrix<> shape) const;
 
     /// compute div of shape
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
-				     FlatVector<> divshape) const;
+				     SliceVector<> divshape) const;
 
 
 

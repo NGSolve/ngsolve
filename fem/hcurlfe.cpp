@@ -963,7 +963,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<2> shape) const
+			    SliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -2627,7 +2627,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const
+			    SliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -3230,7 +3230,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatMatrixFixWidth<3> shape) const
+			    SliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);

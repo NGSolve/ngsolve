@@ -265,7 +265,7 @@ namespace ngfem
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	  Tx eta = sigma[f[0]] - sigma[f[3]];
 
-	  Tx scalexi = 1.0, scaleeta = 1.0;
+	  Tx scalexi(1.0), scaleeta(1.0);
 	  if (f[0] / 3 == f[1] / 3)  
 	    scalexi = lam[f[0]]+lam[f[1]];  // xi is horizontal
 	  else
@@ -366,7 +366,7 @@ namespace ngfem
 	  INT<2> p = order_face[i];
           INT<4> f = GetFaceSort (i, vnums);	  
 
-	  Tx lam_f = 0.0;
+	  Tx lam_f(0.0);
 	  for (int j = 0; j < 4; j++) lam_f += lam[f[j]];
           
 	  Tx xi  = sigma[f[0]] - sigma[f[1]]; 
@@ -489,7 +489,7 @@ namespace ngfem
 	INT<2> p = order_face[4];
 
 	int pmax = max2(p[0], p[1]);
-	Tx fac = 1.0;
+	Tx fac(1.0);
 	for (int k = 1; k <= pmax; k++)
 	  fac *= (1-z);
 

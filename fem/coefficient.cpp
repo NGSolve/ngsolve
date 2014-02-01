@@ -19,6 +19,12 @@ namespace ngfem
   CoefficientFunction :: ~CoefficientFunction ()
   { ; }
 
+
+  void CoefficientFunction :: PrintReport (ostream & ost)
+  {
+    ost << "CoefficientFunction is " << typeid(*this).name() << endl;
+  }
+  
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
@@ -303,6 +309,13 @@ Evaluate (const BaseMappedIntegrationRule & ir,
 }
 
   
+template <int DIM>
+void DomainVariableCoefficientFunction<DIM> :: PrintReport (ostream & ost)
+{
+  *testout << "DomainVariableCoefficientFunction, functios are: " << endl;
+  for (int i = 0; i < fun.Size(); i++)
+    fun[i] -> Print(ost);
+}
 
 
 
