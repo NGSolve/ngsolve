@@ -242,7 +242,7 @@ namespace ngcomp
     //
     // int cache_elnr;
     // bool cache_bound;
-    LocalHeap lh;
+    // LocalHeap lh;
     // ElementTransformation eltrans;
     // const FiniteElement * fel;
     // Array<int> dnums;
@@ -321,7 +321,7 @@ namespace ngcomp
   {
     const MeshAccess & ma;
     const CoefficientFunction * cf;
-    LocalHeap lh;
+    // LocalHeap lh;
   public:
     VisualizeCoefficientFunction (const MeshAccess & ama,
 				  const CoefficientFunction * acf);

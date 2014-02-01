@@ -989,24 +989,6 @@ namespace ngcomp
 		RegionTimer reg(mattimer_bound);
                 ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
 
-                /*
-                int cnt = 0;
-#pragma omp parallel 
-                {
-                  LocalHeap lh = clh.Split();
-                  Array<int> dnums; 
-#pragma omp for schedule(dynamic)
-                  for (int i = 0; i < nse; i++)
-                    {
-#pragma omp atomic
-                      cnt++;
-#pragma omp atomic
-                      gcnt++;
-
-                      progress.Update (cnt);
-                      
-                      HeapReset hr(lh);
-                */
                 
                 IterateElements 
                   (fespace, BND, clh, 
@@ -1118,7 +1100,6 @@ namespace ngcomp
                 {
                   LocalHeap lh = clh.Split();
                   Array<int> fnums, elnums, vnums, dnums;
-                  // ElementTransformation eltrans, seltrans;
                 
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
@@ -1701,7 +1682,6 @@ namespace ngcomp
                 IterateElements 
                   (fespace, VOL, clh, 
                    [&] (ElementId ei, LocalHeap & lh)
-
                    {
                      progress.Update ();
 
@@ -2601,28 +2581,38 @@ namespace ngcomp
           }
 
         if (hasinner)
-          for (int i = 0; i < ne; i++)
-            {
-              HeapReset hr(lh);
-          
-              const FiniteElement & fel = fespace.GetFE (i, lh);
-              ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
-              fespace.GetDofNrs (i, dnums);
-          
-              FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), 
-                                       lh);
-
-              x.GetIndirect (dnums, elvecx);
-              fespace.TransformVec (i, false, elvecx, TRANSFORM_SOL);
-
-              for (int j = 0; j < NumIntegrators(); j++)
-                {
-                  const BilinearFormIntegrator & bfi = *parts[j];
-
-                  if (bfi.BoundaryForm()) continue;
-                  energy += bfi.Energy (fel, eltrans, elvecx, lh);
-                }
-            }
+          IterateElements 
+            (fespace, VOL, lh, 
+             [&] (ElementId ei, LocalHeap & lh)
+             {
+               /*
+                 for (int i = 0; i < ne; i++)
+                 {
+                 HeapReset hr(lh);
+               */
+               
+               const FiniteElement & fel = fespace.GetFE (ei, lh);
+               ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+               Array<int> dnums (fel.GetNDof(), lh);
+               fespace.GetDofNrs (ei, dnums);
+               
+               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace().GetDimension(), 
+                                        lh);
+               
+               x.GetIndirect (dnums, elvecx);
+               fespace.TransformVec (ei.Nr(), false, elvecx, TRANSFORM_SOL);
+               
+               double energy_T = 0;
+               for (int j = 0; j < NumIntegrators(); j++)
+                 {
+                   const BilinearFormIntegrator & bfi = *parts[j];
+                   
+                   if (bfi.BoundaryForm()) continue;
+                   energy_T += bfi.Energy (fel, eltrans, elvecx, lh);
+                 }
+#pragma omp atomic
+               energy += energy_T;
+             });
 
         int nse = ma.GetNSE();
         if (hasbound)

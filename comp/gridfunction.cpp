@@ -926,7 +926,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), lh(10000013, "VisualizedGridFunction 2")
+      applyd(aapplyd) // , lh(10000013, "VisualizedGridFunction 2")
   { 
     if(abfi2d)
       bfi2d.Append(abfi2d);
@@ -949,7 +949,7 @@ namespace ngcomp
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
       ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
-      applyd(aapplyd), lh(10000002, "VisualizeGridFunction")
+      applyd(aapplyd) // , lh(10000002, "VisualizeGridFunction")
   { 
     for(int i=0; i<abfi2d.Size(); i++)
       bfi2d.Append(abfi2d[i]);
@@ -1076,6 +1076,8 @@ namespace ngcomp
     
     try
       {
+	LocalHeapMem<100000> lh("visgf::getvalue");
+        
 	if (!bfi3d.Size()) return 0;
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 	
@@ -1086,7 +1088,7 @@ namespace ngcomp
 	
 	if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
 	
-	lh.CleanUp();
+	// lh.CleanUp();
 
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
 
@@ -1169,7 +1171,8 @@ namespace ngcomp
         const FESpace & fes = gf->GetFESpace();
         int dim = fes.GetDimension();
 	
-        HeapReset hr(lh);
+        // HeapReset hr(lh);
+        LocalHeapMem<1000000> lh("visgf::GetMultiValue");
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
 
@@ -1292,7 +1295,7 @@ namespace ngcomp
 
 	int dim = fes.GetDimension();
 
-	HeapReset hr(lh);
+	LocalHeapMem<100000> lh("VisGF::GetSurfValue");
 	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
 
 	ArrayMem<int, 100> dnums;
@@ -1369,8 +1372,8 @@ namespace ngcomp
 
         int dim     = fes.GetDimension();
 
-	lh.CleanUp();
-
+	// lh.CleanUp();
+        LocalHeapMem<100000> lh("VisGF::GetSurfValue");
 	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
 	
 	Array<int> dnums(fel->GetNDof(), lh);
@@ -1485,7 +1488,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
         
         
-        HeapReset hr(lh);
+        LocalHeapMem<1000000> lh("visgf::getmultisurfvalue");
 
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
 
@@ -1549,7 +1552,7 @@ namespace ngcomp
           {
             ta.Start();
 	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
-
+            
 	    for (int k = 0; k < npts; k++)
 	      {
 		Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
@@ -1593,7 +1596,7 @@ namespace ngcomp
   {
     if (ma.GetDimension() != 1) return false;
 
-    HeapReset hr(lh);
+    LocalHeapMem<100000> lh("visgf::getsegmentvalue");
 
     const FESpace & fes = gf->GetFESpace();
     const DifferentialOperator * eval = fes.GetEvaluator (VOL);
@@ -1842,7 +1845,7 @@ namespace ngcomp
   VisualizeCoefficientFunction (const MeshAccess & ama,
 				const CoefficientFunction * acf)
     : SolutionData ("coef", acf->Dimension(), false /* complex */),
-      ma(ama), cf(acf), lh(100000, "viscoef-lh")
+      ma(ama), cf(acf)
   { ; }
   
   VisualizeCoefficientFunction :: ~VisualizeCoefficientFunction ()
@@ -1854,7 +1857,7 @@ namespace ngcomp
 						 double lam1, double lam2, double lam3,
 						 double * values) 
   {
-    HeapReset hr(lh);
+    LocalHeapMem<100000> lh("viscf::GetValue");
     IntegrationPoint ip(lam1, lam2, lam3);
     ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
@@ -1870,7 +1873,7 @@ namespace ngcomp
 	    const double xref[], const double x[], const double dxdxref[],
 	    double * values) 
   {
-    HeapReset hr(lh);
+    LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
     ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
@@ -1897,7 +1900,7 @@ namespace ngcomp
 		double lam1, double lam2, 
 		double * values) 
   {
-    HeapReset hr(lh);
+    LocalHeapMem<1000000> lh("viscf::GetSurfValue");
     IntegrationPoint ip(lam1, lam2);
     ip.FacetNr() = facetnr;
     bool bound = ma.GetDimension() == 3;
