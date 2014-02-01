@@ -449,6 +449,10 @@ namespace ngsolve
     soldata.iscomplex = cf -> IsComplex();
     soldata.draw_surface = true;
     soldata.draw_volume  = true; 
+    if (flags.GetDefineFlag("volume"))
+      soldata.draw_surface = false;
+    if (flags.GetDefineFlag("boundary"))
+      soldata.draw_volume = false;
     soldata.dist = 1;
     soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
     soldata.solclass = vis;
