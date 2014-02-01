@@ -97,89 +97,6 @@ public:
 
   /// accesses partial derivative 
   INLINE SCAL & DValue (int i) throw() { return dval[i]; }
-
-
-  INLINE AutoDiff<D,SCAL> & operator+= (const SCAL & y) throw()
-  {
-    val += y;
-    return *this;
-  }
-
-
-  /// 
-  INLINE AutoDiff<D,SCAL> & operator+= (const AutoDiff<D,SCAL> & y) throw()
-  {
-    val += y.val;
-    for (int i = 0; i < D; i++)
-      dval[i] += y.dval[i];
-    return *this;
-  }
-
-  ///
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator-= (const AutoDiff<D,SCAL> & y) throw()
-  {
-    val -= y.val;
-    for (int i = 0; i < D; i++)
-      dval[i] -= y.dval[i];
-    return *this;
-
-  }
-
-  ///
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator*= (const AutoDiff<D,SCAL> & y) throw()
-  {
-    for (int i = 0; i < D; i++)
-      {
-	// dval[i] *= y.val;
-	// dval[i] += val * y.dval[i];
-        dval[i] = dval[i] * y.val + val * y.dval[i];
-      }
-    val *= y.val;
-    return *this;
-  }
-
-  ///
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator*= (const SCAL & y) throw()
-  {
-    val *= y;
-    for (int i = 0; i < D; i++)
-      dval[i] *= y;
-    return *this;
-  }
-
-  ///
-  ALWAYS_INLINE AutoDiff<D,SCAL> & operator/= (const SCAL & y) throw()
-  {
-    SCAL iy = 1.0 / y;
-    val *= iy;
-    for (int i = 0; i < D; i++)
-      dval[i] *= iy;
-    return *this;
-  }
-
-  /// 
-  ALWAYS_INLINE bool operator== (SCAL val2) throw()
-  {
-    return val == val2;
-  }
-
-  ///
-  bool operator!= (SCAL val2) throw()
-  {
-    return val != val2;
-  }
-
-  ///
-  bool operator< (SCAL val2) throw()
-  {
-    return val < val2;
-  }
-  
-  ///
-  bool operator> (SCAL val2) throw()
-  {
-    return val > val2;
-  }
 };
 
 
@@ -352,12 +269,113 @@ inline AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
   return (1/y) * x;
 }
 
-/// double div AutoDiff
-template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
-{
-  return x * Inv(y);
-}
+  /// double div AutoDiff
+  template<int D, typename SCAL>
+  inline AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
+  {
+    return x * Inv(y);
+  }
+  
+
+
+  
+  template <int D, typename SCAL, typename SCAL2>
+  INLINE AutoDiff<D,SCAL> & operator+= (AutoDiff<D,SCAL> & x, SCAL2 y) throw()
+  {
+    x.Value() += y;
+    return x;
+  }
+
+
+  /// 
+  template <int D, typename SCAL>
+  INLINE AutoDiff<D,SCAL> & operator+= (AutoDiff<D,SCAL> & x, AutoDiff<D,SCAL> y)
+  {
+    x.Value() += y.Value();
+    for (int i = 0; i < D; i++)
+      x.DValue(i) += y.DValue(i);
+    return x;
+  }
+
+  ///
+  template <int D, typename SCAL>
+  INLINE AutoDiff<D,SCAL> & operator-= (AutoDiff<D,SCAL> & x, AutoDiff<D,SCAL> y)
+  {
+    x.Value() -= y.Value();
+    for (int i = 0; i < D; i++)
+      x.DValue(i) -= y.DValue(i);
+    return x;
+
+  }
+
+  template <int D, typename SCAL, typename SCAL2>
+  INLINE AutoDiff<D,SCAL> & operator-= (AutoDiff<D,SCAL> & x, SCAL2 y)
+  {
+    x.Value() -= y;
+    return x;
+  }
+
+  ///
+  template <int D, typename SCAL>
+  INLINE AutoDiff<D,SCAL> & operator*= (AutoDiff<D,SCAL> & x, AutoDiff<D,SCAL> y) 
+  {
+    for (int i = 0; i < D; i++)
+      x.DValue(i) = x.DValue(i)*y.Value() + x.Value() * y.DValue(i);
+    x.Value() *= y.Value();
+    return x;
+  }
+
+  ///
+  template <int D, typename SCAL, typename SCAL2>
+  INLINE AutoDiff<D,SCAL> & operator*= (AutoDiff<D,SCAL> & x, SCAL2 y) 
+  {
+    x.Value() *= y;
+    for (int i = 0; i < D; i++)
+      x.DValue(i) *= y;
+    return x;
+  }
+
+  ///
+  template <int D, typename SCAL>
+  INLINE AutoDiff<D,SCAL> & operator/= (AutoDiff<D,SCAL> & x, SCAL y) 
+  {
+    SCAL iy = 1.0 / y;
+    x.Value() *= iy;
+    for (int i = 0; i < D; i++)
+      x.DValue(i) *= iy;
+    return x;
+  }
+
+
+
+
+  /// 
+  template <int D, typename SCAL>
+  INLINE bool operator== (AutoDiff<D,SCAL> x, SCAL val2) 
+  {
+    return x.Value() == val2;
+  }
+
+  ///
+  template <int D, typename SCAL>
+  INLINE bool operator!= (AutoDiff<D,SCAL> x, SCAL val2) throw()
+  {
+    return x.Value() != val2;
+  }
+
+  ///
+  template <int D, typename SCAL>
+  INLINE bool operator< (AutoDiff<D,SCAL> x, SCAL val2) throw()
+  {
+    return x.Value() < val2;
+  }
+  
+  ///
+  template <int D, typename SCAL>
+  INLINE bool operator> (AutoDiff<D,SCAL> x, SCAL val2) throw()
+  {
+    return x.Value() > val2;
+  }
 
 
 
