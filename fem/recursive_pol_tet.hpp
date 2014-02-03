@@ -5,10 +5,10 @@ namespace ngfem
   {
   public:
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static int Calc (int n, Sx x, Sy y, Sz z, T && values)
+    static INLINE int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
-      ArrayMem<Sx, 20> polx(n+1), poly(n+1); //, polz(n+1);
- 
+      // ArrayMem<Sx, 20> polx(n+1), poly(n+1); //, polz(n+1);
+      Sx polx[100], poly[100];
       Sx bub = (1-x-y-z) * (1+x-y-z) * y * z ; 
 
       LegendrePolynomial::EvalScaledMult (n-4, x, 1-y-z, bub, polx);
@@ -43,25 +43,8 @@ namespace ngfem
       ScaledLegendrePolynomialMult (n-4, x, 1-y-z, bub1, val1);
       ScaledLegendrePolynomialMult (n-4, 2*y - (1-z) , (1-z), y, val2); 
 
-      // LegendrePolynomialMult (n-4, 2*z-1, z, val3);
       LegendrePolynomial leg;
       leg.EvalMult (n-4, 2*z-1, z, val3);
-
-      /*
-	ScaledLegendrePolynomial (n-4, x, 1-y-z, val1);
-	// Sx bub1 = (1-x-y-z) * (1+x-y-z);
-	Sx bub1 = sqr (1-y-z) - sqr(x);
-	for (int i = 0; i <= n-4; i++)
-	val1[i] *= bub1;
-
-	ScaledLegendrePolynomial (n-4, 2*y - (1-z) , (1-z), val2); 
-	for (int i = 0; i <= n-4; i++)
-	val2[i] *= y;
-
-	LegendrePolynomial (n-4, 2*z-1, val3);
-	for (int i = 0; i <= n-4; i++)
-	val3[i] *= z;
-      */
     }
   };
 
