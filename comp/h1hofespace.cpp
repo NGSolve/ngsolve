@@ -11,7 +11,7 @@
 #include <comp.hpp>
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
-//#include "../fem/h1hofefo.hpp"
+#include "../fem/h1hofefo.hpp"
 
 
 using namespace ngmg; 
@@ -507,8 +507,9 @@ namespace ngcomp
 	  }
       }
 
+
     /*
-    if (fixed_order && eltype == ET_TRIG && order <= 6)
+      if (fixed_order && eltype == ET_TRIG && order <= 6)
       {
         H1HighOrderFiniteElementFO<2> * hofe2d = 0;
         switch (order)
@@ -542,7 +543,7 @@ namespace ngcomp
         return *hofe3d;
       }
     */
-    /*
+
     if (fixed_order && eltype == ET_TRIG)
       {
         switch (order)
@@ -571,7 +572,6 @@ namespace ngcomp
             ; 
           }
       }
-    */
 
     /*
     if (fixed_order && eltype == ET_TET)
