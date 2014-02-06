@@ -5,5 +5,6 @@ SUBDIRS = include ngstd basiclinalg linalg parallel fem multigrid comp solve pde
 
 
 dist_bin_SCRIPTS = ngsolve.tcl ngscxx
+DISTCLEANFILES = ngscxx
 
 
