@@ -1055,8 +1055,8 @@ namespace ngbla
 
     auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
     auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
-    auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
-    auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
+    // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
+    // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
 
     const TA & A() const { return a; }

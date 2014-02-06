@@ -524,10 +524,10 @@ namespace ngbla
     // enum { WIDTH  = W };
 
     /// do not initialize 
-    Mat () throw () { ; }
+    INLINE Mat () { ; }
 
     /// copy matrix
-    Mat (const Mat & m) throw()
+    INLINE Mat (const Mat & m) 
       : MatExpr<Mat> ()
     {
       (*this) = m;
@@ -535,7 +535,7 @@ namespace ngbla
 
     /// assign values
     template<typename TB>
-    Mat (const Expr<TB> & m)
+    INLINE Mat (const Expr<TB> & m)
     {
       MatExpr<Mat>::operator= (m);
     }
@@ -549,14 +549,14 @@ namespace ngbla
 
     /// assign values
     template<typename TB>
-    Mat & operator= (const Expr<TB> & m)
+    INLINE Mat & operator= (const Expr<TB> & m)
     {
       MatExpr<Mat>::operator= (m);
       return *this;
     }
 
     /// copy matrix
-    Mat & operator= (const Mat & m) 
+    INLINE Mat & operator= (const Mat & m) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = m.data[i];
@@ -564,7 +564,7 @@ namespace ngbla
     }
  
     /// fill values
-    Mat & operator= (TSCAL s) 
+    INLINE Mat & operator= (TSCAL s) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = s;
@@ -1243,11 +1243,11 @@ namespace ngbla
 
     // 
     SliceMatrix() = delete;
-    SliceMatrix(const SliceMatrix &) = default;
-    SliceMatrix & operator= (const SliceMatrix &) = delete;
+    INLINE SliceMatrix(const SliceMatrix &) = default;
+    INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
 
     /// set height, width, and mem
-    SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
+    INLINE SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
     /*
@@ -1334,32 +1334,32 @@ namespace ngbla
     /// 
     int Dist () const throw() { return dist; }
 
-    const SliceMatrix Rows (int first, int next) const
+    INLINE const SliceMatrix Rows (int first, int next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
     }
 
-    const FlatVector<T> Row (int i) const
+    INLINE const FlatVector<T> Row (int i) const
     {
       return FlatVector<T> (w, &data[i*size_t(dist)]);
     }
 
-    const SliceVector<T> Col (int i) const
+    INLINE const SliceVector<T> Col (int i) const
     {
       return SliceVector<T> (h, dist, &data[i]);
     }
 
-    const SliceMatrix<T> Cols (int first, int next) const
+    INLINE const SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, dist, data+first);
     }
 
-    const SliceMatrix Rows (IntRange range) const
+    INLINE const SliceMatrix Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    const SliceMatrix<T> Cols (IntRange range) const
+    INLINE const SliceMatrix<T> Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
