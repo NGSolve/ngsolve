@@ -3092,6 +3092,27 @@ namespace netgen
 			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
 
     
+
+    /*
+      klappt noch nicht ...
+    GLdouble modelview[16], projection[16];
+    GLint viewport[4];
+    GLdouble result[3];
+    glGetDoublev(GL_MODELVIEW_MATRIX, &modelview[0]); 
+    glGetDoublev(GL_PROJECTION_MATRIX, &projection[0]); 
+    glGetIntegerv(GL_VIEWPORT, &viewport[0]);
+
+    int hy = viewport[3]-py;
+
+    GLfloat pz;
+    cout << "x, y = " << px << ", " << hy << endl;
+    glReadPixels (px, hy, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &pz);
+    cout << "pz = " << pz << endl;    gluUnProject(px, hy, pz, modelview, projection, viewport,
+                 &result[0], &result[1], &result[2]);
+    cout << "3d point : " << result[0] << ", " << result[1] << ", " << result[2] << endl;
+    */
+    
+
     if (user_me_handler)
       {
 	if (selelement != -1)
