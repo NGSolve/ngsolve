@@ -40,6 +40,7 @@
 
 #ifdef __INTEL_COMPILER
 #pragma warning (disable:175)    // range check 
+#pragma warning (disable:597)    // implicit conversion (2014)
 #endif
 
 
