@@ -234,6 +234,7 @@ namespace ngfem
 		       LocalHeap & lh) 
     {
       y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
+      // y(0) = InnerProduct (x, Cast(fel).GetShape (mip.IP(), lh));
     }
 
     static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
@@ -341,6 +342,7 @@ namespace ngfem
 		       LocalHeap & lh) 
     {
       y = Trans (static_cast<const FEL&>(fel).GetShape (mip.IP(), lh)) * x;
+      // y(0) = InnerProduct (x, static_cast<const FEL&>(fel).GetShape (mip.IP(), lh));
     }
 
     static void Apply (const ScalarFiniteElement<D-1> & fel, const MappedIntegrationPoint<D-1,D> & mip,
@@ -1066,7 +1068,7 @@ namespace ngfem
 
 
   // ********************************* Scalar integrators: ********************
-
+  
   /// Integrator for grad u grad v
   template <int D, typename FEL = ScalarFiniteElement<D> >
   class NGS_DLL_HEADER LaplaceIntegrator 
