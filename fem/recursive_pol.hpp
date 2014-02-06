@@ -797,7 +797,8 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
-    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    // static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    static ALWAYS_INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static ALWAYS_INLINE S P1(S x)  { return x; }
     
@@ -1014,7 +1015,7 @@ namespace ngfem
     static void Calc (int n, int maxalpha);
 
     template <class S>
-    INLINE S P0(S x) const { return S(1.0); }
+    INLINE double P0(S x) const { return 1.0; }
     template <class S>
     INLINE S P1(S x) const 
     { 
@@ -1837,7 +1838,7 @@ namespace ngfem
       int ii = 0;
       // leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
       leg.EvalScaled (n, y-(1-x-y), 1-x, 
-            SBLambda ([&] (int i, S val) // ALWAYS_INLINE clang
+	      SBLambda ([&] (int i, S val) LAMBDA_INLINE // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
@@ -1863,7 +1864,7 @@ namespace ngfem
       LegendrePolynomial leg;
       int ii = 0;
       leg.EvalScaledMult1Assign (n, y-(1-x-y), t-x, c,
-          SBLambda ([&] (int i, S val) ALWAYS_INLINE  // clang
+          SBLambda ([&] (int i, S val) LAMBDA_INLINE  // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalScaledMult (n-i, 2*x-1, t, val, values+ii);
