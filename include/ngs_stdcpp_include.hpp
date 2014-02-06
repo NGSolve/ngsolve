@@ -42,14 +42,17 @@
 
 #ifdef __INTEL_COMPILER
 #define ALWAYS_INLINE __forceinline
-#define INLINE __forceinline
+#define INLINE __forceinline inline
+#define LAMBDA_INLINE
 #else
 #ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
 #define INLINE __attribute__ ((__always_inline__)) inline
+#define LAMBDA_INLINE __attribute__ ((__always_inline__))
 #else
 #define ALWAYS_INLINE
 #define INLINE inline
+#define LAMBDA_INLINE
 #endif
 #endif
 
