@@ -79,22 +79,20 @@ namespace ngstd
 
   BaseDynamicTable :: ~BaseDynamicTable ()
   {
-    int i;
     if (oneblock)
       delete [] oneblock;
     else
-      for (i = 0; i < data.Size(); i++)
+      for (int i = 0; i < data.Size(); i++)
 	delete [] static_cast<char*> (data[i].col);
   }
 
   void BaseDynamicTable :: SetSize (int size)
   {
-    int i;
-    for (i = 0; i < data.Size(); i++)
+    for (int i = 0; i < data.Size(); i++)
       delete [] static_cast<char*> (data[i].col);
 
     data.SetSize(size);
-    for (i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
       {
 	data[i].maxsize = 0;
 	data[i].size = 0;

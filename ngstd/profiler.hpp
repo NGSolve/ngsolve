@@ -175,6 +175,11 @@ namespace ngstd
       return counts[nr];
     }
 
+    static long int GetFlops (int nr)
+    {
+      return flops[nr];
+    }
+
     /// change name
     static void SetName (int nr, const string & name) { names[nr] = name; }
     /// print profile
@@ -228,7 +233,9 @@ namespace ngstd
 
     double GetTime () { return NgProfiler::GetTime(timernr); }
     long int GetCounts () { return NgProfiler::GetCounts(timernr); }
-
+    double GetMFlops () 
+    { return NgProfiler::GetFlops(timernr) 
+        / NgProfiler::GetTime(timernr) * 1e-6; }
     operator int () { return timernr; }
   };
   
