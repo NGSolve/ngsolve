@@ -1,3 +1,13 @@
+#ifndef FILE_RECURSIVE_POL_TET
+#define FILE_RECURSIVE_POL_TET
+
+/*********************************************************************/
+/* File:   recursive_pol.hpp                                         */
+/* Author: Start                                                     */
+/* Date:   6. Feb. 2003                                              */
+/*********************************************************************/
+
+
 namespace ngfem
 {
 
@@ -58,7 +68,7 @@ namespace ngfem
     {
       int ii = 0, j, k;
       ArrayMem<Sx, 20> polx(n+1), poly(n+1), polz(n+1);
-
+      
       Sx bub = y * z * (1-x-y-z) * (1+x-y-z);
       ScaledJacobiPolynomial (n-4, x, (1-y-z), 2, 2, polx);
     
@@ -100,18 +110,6 @@ namespace ngfem
       Sx bub1 = sqr (1-y-z) - sqr (x); 
       ScaledLegendrePolynomialMult (n-3, x, 1-y-z, bub1, val1);
       ScaledLegendrePolynomialMult (n-3, 2*y-(1-z),(1-z), y, val2);
-      /*
-	ScaledLegendrePolynomial (n-3, x, 1-y-z, val1);
-
-	// Sx bub1 = (1-x-y-z) * (1+x-y-z);
-	Sx bub1 = sqr (1-y-z) - sqr (x); 
-	for (int i = 0; i <= n-3; i++)
-	val1[i] *= bub1;
-
-	ScaledLegendrePolynomial (n-3, 2*y-(1-z),(1-z), val2);
-	for (int i = 0; i <= n-3; i++)
-	val2[i] *= y;
-      */
     }
   };
 
@@ -309,7 +307,7 @@ namespace ngfem
 
 	  Sx hx = x + z * (-1+2*ip(0)+ip(1));
 	  Sy hy = y + z * ip(1);
-
+          
 	  //Sx bub = hy * (1-hx-hy) * (1+hx-hy);
 	  ScaledJacobiPolynomial (n-3, hx, 1-hy, 2, 2, polx);
 
@@ -381,3 +379,6 @@ namespace ngfem
 
 
 }
+
+
+#endif

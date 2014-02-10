@@ -18,17 +18,17 @@ facethofe.cpp
 
 # 
 
-include_HEADERS = bdbequations.hpp hcurl_equations.hpp		      \
-elasticity_equations.hpp diffop.hpp bdbintegrator.hpp coefficient.hpp \
-elementtopology.hpp elementtransformation.hpp facetfe.hpp	      \
-facethofe.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	      \
-h1hofefo.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp hcurlhofe.hpp	      \
-hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp	      \
-integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp  \
-recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	      \
-specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	      \
-hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	      \
-hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp \
+include_HEADERS = bdbequations.hpp hcurl_equations.hpp		       \
+elasticity_equations.hpp diffop.hpp bdbintegrator.hpp coefficient.hpp  \
+elementtopology.hpp elementtransformation.hpp facetfe.hpp	       \
+facethofe.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	       \
+h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp       \
+hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp \
+integrator.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp   \
+recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	       \
+specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	       \
+hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	       \
+hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp  \
 diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp thcurlfe_impl.hpp
 
 

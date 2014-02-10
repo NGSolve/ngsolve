@@ -103,6 +103,19 @@ namespace ngfem
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
+  auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  EvaluateGrad (const IntegrationPoint & ip, FlatVector<double> coefs) const -> Vec<DIM>
+  {
+    Vec<DIM, AutoDiff<DIM> > adp = ip;
+    AutoDiff<DIM> sum = 0.0;
+    T_CalcShape (&adp(0), SBLambda ( [&](int i, AutoDiff<DIM> val) 
+                                     { 
+                                       sum += coefs(i) * val;
+                                     }));
+    return AD2Vec<DIM> (sum);
+  }
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const
   {
@@ -207,7 +220,8 @@ namespace ngfem
   }
 
 
-
+  /*
+    ... not yet working
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   GetPolOrders (FlatArray<PolOrder<DIM> > orders) const
@@ -244,6 +258,7 @@ namespace ngfem
     T_CalcShape (&po[0], orders);
     // did not work for old tensor productelements: order cancelation for lam_e
   }
+  */
 }
 
 

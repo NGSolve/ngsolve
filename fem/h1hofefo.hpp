@@ -28,27 +28,24 @@ namespace ngfem
     using ScalarFiniteElement<2>::ndof;
     using ScalarFiniteElement<2>::order;    
 
-    int vnums[3];
+    using ET_trait<ET_TRIG> :: N_VERTEX;
 
-    typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    typedef TrigShapesInnerLegendre T_TRIGSHAPES;
+    int vnums[N_VERTEX];
 
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
-    NGS_DLL_HEADER H1HighOrderFEFO () 
+    INLINE H1HighOrderFEFO () 
     {
       order = ORDER;
       ndof = NDOF; 
-      // eltype = ET_TRIG;
-      for (int i = 0; i < ET_trait<ET_TRIG>::N_VERTEX; i++) 
-        vnums[i] = i;
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
     }
 
     template <typename TA> 
-    H1HighOrderFEFO<ET_TRIG, ORDER> * SetVertexNumbers (const TA & avnums)
+    INLINE H1HighOrderFEFO<ET_TRIG, ORDER> * SetVertexNumbers (const TA & avnums)
     { 
-      for (int i = 0; i < 3; i++) vnums[i] = avnums[i]; 
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; 
       return this;
     }
 
@@ -65,15 +62,13 @@ namespace ngfem
     public T_ScalarFiniteElement< H1HighOrderFEFO<ET_TET,ORDER>, ET_TET>,
     public ET_trait<ET_TET> 
   {
-    int vnums[4];
+    using ET_trait<ET_TET> :: N_VERTEX;
+
+    int vnums[N_VERTEX];
     using ScalarFiniteElement<3>::ndof;
     using ScalarFiniteElement<3>::order;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-
-    typedef TetShapesInnerLegendre T_INNERSHAPES;
-    typedef TetShapesFaceLegendre T_FACESHAPES;
-
 
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
@@ -81,19 +76,15 @@ namespace ngfem
     {
       order = ORDER; 
       ndof = NDOF; 
-      // eltype = ET_TET;
-      for (int i = 0; i < ET_trait<ET_TET>::N_VERTEX; i++)
-	vnums[i] = i;
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
     }
 
     template <typename TA> 
-    H1HighOrderFEFO<ET_TET, ORDER> * SetVertexNumbers (const TA & avnums)
+    INLINE H1HighOrderFEFO<ET_TET, ORDER> * SetVertexNumbers (const TA & avnums)
     { 
-      for (int i = 0; i < 4; i++) vnums[i] = avnums[i]; 
+      for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; 
       return this;
     }
-
-    // ~H1HighOrderFEFO ();
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx x[3], TFA & shape) const; 
@@ -101,23 +92,24 @@ namespace ngfem
 
 
 
-
-
-
-
-
+}
 
 
 
 
 #ifdef FILE_H1HOFEFO_CPP
+
 #define H1HOFEFO_EXTERN
+#include <h1hofefo_impl.hpp>
+#include <tscalarfe_impl.hpp>
+
 #else
 #define H1HOFEFO_EXTERN extern
 #endif
 
 
-
+namespace ngfem
+{
 
   H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,1>, ET_TRIG>;
   H1HOFEFO_EXTERN template class T_ScalarFiniteElement<H1HighOrderFEFO<ET_TRIG,2>, ET_TRIG>;

@@ -195,7 +195,9 @@ namespace ngfem
     /// global vertex numbers define ordering of vertices
     template <typename TA>
     void SetVertexNumbers (const TA & avnums)
-    { for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; }
+    { 
+      for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; 
+    }
 
     /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }

@@ -520,7 +520,7 @@ public:
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 	MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
 
-	FlatMatrixFixHeight<DIM_DMAT, TSCAL> bmat (ndof * DIM, lh);
+	FlatMatrixFixHeight<DIM_DMAT> bmat (ndof * DIM, lh);
 	Mat<DIM_DMAT,DIM_DMAT,TSCAL> dmat;
 
 	FlatMatrix<TSCAL> bbmat (ndof * DIM, DIM_DMAT*ir.GetNIP(), lh);

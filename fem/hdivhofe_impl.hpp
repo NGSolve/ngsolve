@@ -7,12 +7,11 @@
 /* Date:   15. Feb. 2003                                             */
 /*********************************************************************/
 
+#include "recursive_pol_tet.hpp"
 
 
 namespace ngfem
 {
-
-
 
 
   template <>

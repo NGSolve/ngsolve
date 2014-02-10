@@ -10,7 +10,5 @@
 #include <fem.hpp>
 #include <h1hofe.hpp>
 
-#include <h1hofe_impl.hpp>
-#include <tscalarfe_impl.hpp>
 
  
