@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   /// An integration point 
-  class alignas(8) IntegrationPoint
+  class /* alignas(8) */ IntegrationPoint
   {
   private:
     /// number within intergration Rule
@@ -270,7 +270,7 @@ namespace ngfem
     SCAL GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
-    const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
+    INLINE const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
     { 
       if (DIMS == DIMR)
         // return Inv (dxdxi);
