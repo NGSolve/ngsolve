@@ -205,11 +205,10 @@ namespace ngstd
 
   public:
     /// Constructs a hashtable of size bags.
-    HashTable (int size)
+    INLINE HashTable (int size)
       : hash(size), cont(size)
-    {
-      ;
-    }
+    { ; }
+    INLINE ~HashTable () { ; }
 
     /// Sets identifier ahash to value acont
     void Set (const T_HASH & ahash, const T & acont)
