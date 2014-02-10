@@ -404,6 +404,7 @@ namespace ngmg
 
         smoother->PostSmooth (level, u, f, smoothingsteps);
       }
+
     delete &cres;
     delete &cw;
     delete &res;

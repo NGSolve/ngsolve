@@ -22,7 +22,7 @@ $(top_builddir)/parallel/libparallel.la		\
 $(top_builddir)/linalg/libngla.la		\
 $(top_builddir)/basiclinalg/libngbla.la		\
 $(top_builddir)/multigrid/libngmg.la		\
-$(LAPACK_LIBS) $(TCL_LIB_SPEC)
+$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
 libngsolve_la_LDFLAGS = -avoid-version
 #  -rdynamic
@@ -38,7 +38,7 @@ ngs_LDADD = libngsolve.la \
 	$(top_builddir)/linalg/libngla.la \
 	$(top_builddir)/basiclinalg/libngbla.la		\
 	$(top_builddir)/ngstd/libngstd.la \
-	$(LAPACK_LIBS) \
+	$(PARDISO_LIBS) $(LAPACK_LIBS) \
         -L$(libdir) -lnglib -linterface 
 
 include_HEADERS = solve.hpp pde.hpp numproc.hpp

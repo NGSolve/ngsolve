@@ -40,6 +40,21 @@ namespace ngfem {
 					   _mm256_extractf128_pd (hsum1, 1), 0));
     return hsum;
   }
+
+
+
+#ifdef __INTEL_COMPILER
+  INLINE __m256d operator* (__m256d a, __m256d b)
+  {
+    return _mm256_mul_pd (a, b);
+  }
+  INLINE __m256d operator+= (__m256d & a, __m256d b)
+  {
+    a = _mm256_add_pd (a, b);
+    return a;
+  }
+#endif
+  
 #endif
 
 
@@ -292,11 +307,15 @@ namespace ngfem {
 		  b3 = _mm256_load_pd(lpb3+k);
 		  b4 = _mm256_load_pd(lpb4+k);
 		}
-	      sum11 += a1*b1; sum12 += a1*b2;
-	      sum13 += a1*b3; sum14 += a1*b4;
+	      sum11 += a1*b1; 
+	      sum12 += a1*b2;
+	      sum13 += a1*b3; 
+	      sum14 += a1*b4;
 
-	      sum21 += a2*b1; sum22 += a2*b2;
-	      sum23 += a2*b3; sum24 += a2*b4;
+	      sum21 += a2*b1; 
+	      sum22 += a2*b2;
+	      sum23 += a2*b3; 
+	      sum24 += a2*b4;
 	    }
 
 	  if (M % 4)
@@ -442,12 +461,14 @@ namespace ngfem {
 
   inline SSEComplex operator+ (SSEComplex a, SSEComplex b)
   {
-    return a.Data() + b.Data();
+    return _mm_add_pd (a.Data(), b.Data());
   }
 
   inline SSEComplex operator+= (SSEComplex & a, SSEComplex b)
   {
-    return a.Data() += b.Data();
+    a = _mm_add_pd (a.Data(), b.Data());
+    return a;
+    // return a.Data() += b.Data();
   }
 
   inline SSEComplex operator* (SSEComplex a, SSEComplex b)
@@ -456,8 +477,8 @@ namespace ngfem {
     SSEComplex ai = a.imag();
     SSEComplex rb = _mm_shuffle_pd (b.Data(), b.Data(), 1);
 
-    return _mm_addsub_pd ( ar.Data()*b.Data(),  
-                           ai.Data()*rb.Data() );
+    return _mm_addsub_pd ( _mm_mul_pd (ar.Data(),b.Data()),
+                           _mm_mul_pd (ai.Data(),rb.Data()) );
   }
 
   template <int M>

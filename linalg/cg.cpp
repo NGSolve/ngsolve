@@ -580,6 +580,7 @@ namespace ngla
 	  {
 	    d = f - (*a) * u;
 	  }
+
 	if (c)
 	  w = (*c) * d;
 	else

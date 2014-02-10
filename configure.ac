@@ -57,10 +57,11 @@ AC_ARG_WITH([lapack],
 
 AC_ARG_ENABLE([pardiso],
         [AC_HELP_STRING([--enable-pardiso],[enable sparse direct solver pardiso])], 
-        [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO"])]
-        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU_IA32 -llapack"])]
+        [AC_SUBST([PARDISO_INCLUDES], ["-DUSE_PARDISO -DUSE_PARDISO400"])]
+        [AC_SUBST([PARDISO_LIBS], ["-lpardiso500-GNU481-X86-64 -lgfortran"])]
 #        [AC_SUBST([PARDISO_LIBS], ["-lpardiso_GNU42_EM64T_INT64_P -lgfortran"])]
         )
+#  -llapack
 
 AC_ARG_ENABLE([pardiso4],
         [AC_HELP_STRING([--enable-pardiso4],[enable sparse direct solver pardiso])],
@@ -111,7 +112,7 @@ AC_ARG_ENABLE([mumps],
 #AC_SUBST([NETGEN_INCLUDES], ["-I$netgendir/include"])
 # AC_SUBST(NETGEN_INCLUDES, "-I$netgendir/include")
 # AC_MSG_NOTICE([Netgen includes... $NETGEN_INCLUDES])
-CXXFLAGS="$CXXFLAGS -I$netgendir/include"
+CXXFLAGS="$CXXFLAGS -I. -I$netgendir/include"
 
 AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
