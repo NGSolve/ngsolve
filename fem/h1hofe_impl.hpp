@@ -7,7 +7,7 @@
 /* Date:   6. Feb. 2003                                              */
 /*********************************************************************/
 
-#include "h1hofe.hpp"
+#include "recursive_pol_tet.hpp"
 
 namespace ngfem
 {
@@ -15,11 +15,11 @@ namespace ngfem
   
 
   template <ELEMENT_TYPE ET> 
-  class H1HighOrderFE_Shape : public H1HighOrderFE<ET>
+  class H1HighOrderFE_Shape : public H1HighOrderFE<ET, H1HighOrderFE_Shape<ET>>
   {
   public:
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
+    void T_CalcShape (Tx hx[], TFA & shape) const;
   };
   
 
@@ -36,21 +36,23 @@ namespace ngfem
 
 
   /* *********************** Segment  **********************/
+  
 
-  template<> template<typename Tx, typename TFA>  
+  template <> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lam[2] = { x[0], 1-x[0] };
-
+    
     shape[0] = lam[0];
     shape[1] = lam[1];
-
+    
     INT<2> e = GetEdgeSort (0, vnums);
-
+    
     LegendrePolynomial::EvalMult (order_edge[0]-2, 
-				  lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
+                                    lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
     
   }
+
 
   /* *********************** Triangle  **********************/
 
@@ -135,7 +137,7 @@ namespace ngfem
         */
 
         LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub,
-          SBLambda ([&](int i, Tx val) LAMBDA_INLINE // clang
+          SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
                     {  
                       LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
                       ii += p[1]-1;
@@ -298,7 +300,7 @@ namespace ngfem
 
 
 
-
+ 
 
   /* *********************** Hex  **********************/
 

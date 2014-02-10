@@ -65,7 +65,7 @@ namespace ngfem
     virtual bool BoundaryForm () const = 0;
 
     /// integrates just on the skeleton, standard is NO
-    virtual bool SkeletonForm () const {return 0;} 
+    virtual bool SkeletonForm () const { return false; }  
 
     virtual bool VolumeForm () const
     {

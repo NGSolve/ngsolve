@@ -12,6 +12,87 @@
 // #include "l2hofe_impl.hpp"
 
 
+
+
+template <int NUM>
+class Cl_Iterate
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)
+  {
+    Cl_Iterate<NUM-1>::Do(f);
+    f(NUM);
+  }
+};
+
+template <>
+class Cl_Iterate<0>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)  { f(0); }
+};
+
+template <int NUM, typename FUNC>
+INLINE void Iterate (FUNC f)
+{
+  Cl_Iterate<NUM>::Do(f);
+}
+
+
+
+
+
+
+
+
+template <int O, int IX, int IY>
+class Cl_IterateTrig
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)
+  {
+    Cl_IterateTrig<O,IX,IY-1>::Do(f);
+    f(IX,IY);
+  }
+};
+
+template <int O, int IX>
+class Cl_IterateTrig<O,IX,0>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)  
+  {
+    Cl_IterateTrig<O,IX-1,O-IX+1>::Do(f);    
+    f(IX,0); 
+  }
+};
+
+template <int O>
+class Cl_IterateTrig<O,0,0>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)  
+  {
+    f(0,0); 
+  }
+};
+
+
+
+template <int NUM, typename FUNC>
+INLINE void IterateTrig (FUNC f)
+{
+  Cl_IterateTrig<NUM,NUM,0>::Do(f);
+}
+
+
+
+
 namespace ngfem
 {
 
@@ -30,7 +111,7 @@ namespace ngfem
   class L2HighOrderFEFO : public BASE
   {
   protected:
-    // using typename BASE::T_IMPL;
+    using typename BASE::T_IMPL;
     using typename BASE::T_SHAPES;
     typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
 
@@ -45,8 +126,7 @@ namespace ngfem
 
     L2HighOrderFEFO () 
     {
-      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++)
-	vnums[i] = i;
+      for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       order = ORDER;
       ndof = SHAPES::NDOF;
     }
@@ -70,19 +150,28 @@ namespace ngfem
     }
     */
 
-    void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
     {
-      int classnr =  ET_trait<ET>::GetClassNr (vnums);
+      // static Timer t("evaluate");
+      // RegionTimer r(t);
+      // t.AddFlops (ir.GetNIP()*coefs.Size());
 
+      int classnr =  ET_trait<ET>::GetClassNr (vnums);
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
-	vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
+        vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
       else
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
     virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
     {
+      /*
+        static Timer t("evaluate grad trans");
+        RegionTimer r(t);
+        t.AddFlops (DIM*ir.GetNIP()*coefs.Size());
+      */
+
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
@@ -108,9 +197,18 @@ namespace ngfem
     {
       if (ET == ET_TRIG)
 	{
+          int ii = 0;
+          IterateTrig<ORDER> ([&] (int ix, int iy)
+            {
+              mass[ii] = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+              ii++;
+            });
+
+          /*
 	  for (int ix = 0, ii = 0; ix <= ORDER; ix++)
 	    for (int iy = 0; iy <= ORDER - ix; iy++, ii++)
 	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+          */
 	}
       else
 	{
@@ -137,29 +235,28 @@ namespace ngfem
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
     {
-      Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
+      Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
       INT<4> f = this -> GetFaceSort (0, vnums);
-      DubinerBasis::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
-      
-      /*
-      Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
-      INT<4> f = this->GetFaceSort (0, vnums);
-      Tx x = lami[f[0]],  y = lami[f[1]],  l3 = lami[f[2]];
+      // DubinerBasis3::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
 
-      Vec<ORDER+1, Tx> polx;
-      Mat<ORDER+1, ORDER+1, Tx> polsy;
 
-      LegendrePolynomial leg;
-      leg.EvalScaledFO<ORDER> (x-l3, 1-y, polx);
+      Tx x = lam[f[0]];
+      Tx y = lam[f[1]];
+      LegendrePolynomial_Old leg;
+      Tx p1, p2, p3, p4;
 
-      DubinerJacobiPolynomialsFO<ORDER, ORDER, 1,0>::Eval (2*y-1, polsy);
-      
-      for (int i = 0, ii = 0; i <= ORDER; i++)
-	for (int j = 0; j <= ORDER-i; j++)
-	  shape[ii++] = polx[i] * polsy(i,j);
-      */
+      int ii = 0;
+      IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
+        {
+          if (iy == 0)
+            leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
+
+          JacobiPolynomialNew jac(1+2*ix, 0);
+          shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
+          ii++;
+        });
     }
 
   };
@@ -174,15 +271,29 @@ namespace ngfem
 #define L2HOFEFO_EXTERN extern
 #endif
 
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,0>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,1>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,2>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,3>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,4>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,5>, ET_TRIG, DGFiniteElement<2>>;
+  L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,6>, ET_TRIG, DGFiniteElement<2>>;
   
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,2>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,3>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,4>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,5>>;
+  L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,6>>;
 
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,0>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,1>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,4>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;
+  L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,6>;
   /*
 
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;

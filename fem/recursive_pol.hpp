@@ -235,6 +235,18 @@ namespace ngfem
     template <class S, class Sy>
     ALWAYS_INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
     {
+      if (i == 0) 
+        {
+          p1 = REC::P0(x);
+          return;
+        }
+      if (i == 1) 
+        {
+          p2 = p1;
+          p1 = REC::P1(x);
+          return;
+        }
+
       if (REC::ZERO_B)
         {
           S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
@@ -587,7 +599,7 @@ namespace ngfem
   {
   public:
 
-    ALWAYS_INLINE void ABC (int i, double & a, double & b, double & c) const   
+    INLINE void ABC (int i, double & a, double & b, double & c) const   
     {
       a = static_cast<const REC&>(*this).A(i);
       b = static_cast<const REC&>(*this).B(i);
@@ -596,8 +608,49 @@ namespace ngfem
       a *= d; b *= d; c *= d;
     }
 
+    const REC & Cast() const { return static_cast<const REC &> (*this); }
+
     template <class S>
-    ALWAYS_INLINE S EvalNext (int i, S x, S & p1, S & p2) const
+    INLINE S EvalNext (int i, S x, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = Cast().P0(x);
+        case 1: return p1 = Cast().P1(x);
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                S pnew = Cast().A(i) * x * p1 + Cast().C(i)*p2;
+                p2 = p1;
+                p1 = pnew;
+                return p1;
+              }
+            else
+              {
+                S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
+                p2 = p1;
+                p1 = pnew;
+                return p1;
+              }
+          }
+        }
+    }
+
+    template <class S, class Sc>
+    INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
+    {
+      switch (i)
+        {
+        case 0: return p1 = c * Cast().P0(x);
+        case 1: p2 = p1; return p1 = c * Cast().P1(x);
+        default: return EvalNext (i, x, p1, p2);
+        }
+    }
+
+
+    template <class S>
+    INLINE S EvalNextTicTac (int i, S x, S & p1, S & p2) const
     {
       switch (i)
         {
@@ -626,19 +679,19 @@ namespace ngfem
 
 
     template <class S, class Sc>
-    ALWAYS_INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2) const
+    INLINE S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2) const
     {
       switch (i)
         {
         case 0: return p1 = c * static_cast<const REC&>(*this).P0(x);
         case 1: return p1 = c * static_cast<const REC&>(*this).P1(x);
-        default: return EvalNext (i, x, p1, p2);
+        default: return EvalNextTicTac (i, x, p1, p2);
         }
     }
 
 
     template <class S, class Sy>
-    ALWAYS_INLINE void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
+    INLINE S EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
     {
       if (REC::ZERO_B)
         {
@@ -654,11 +707,10 @@ namespace ngfem
           p2 = p1;
           p1 = pnew;
         }
+      return p1;
     }
 
-
   public:
-
 
     template <class S, class T>
     INLINE void Eval (int n, S x, T && values) const
@@ -673,21 +725,19 @@ namespace ngfem
 
       if (n < 0) return;
 
-      values[0] = EvalNextMult(0, x, c, p1, p2);
+      values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
       if (n < 1) return;
 
-      values[1] = EvalNextMult(1, x, c, p2, p1);
+      values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
 
       for (int i = 2; i <= n; i+=2)
 	{	
-	  values[i] = EvalNext (i, x, p1, p2);
+	  values[i] = EvalNextTicTac (i, x, p1, p2);
           if (i == n) break;
-	  values[i+1] = EvalNext (i+1, x, p2, p1);
+	  values[i+1] = EvalNextTicTac (i+1, x, p2, p1);
 	}
     }
-
-
 
     template <class S, class Sy, class T>
     INLINE void EvalScaled (int n, S x, Sy y, T && values) const
@@ -707,42 +757,8 @@ namespace ngfem
 
       values[1] = p1 = c * static_cast<const REC&>(*this).P1(x);
 
-      /*
-      if (n < 2) return;
-
-      EvalScaledNext(2, x, y, p1, p2);
-      values[2] = p1;
-      if (n < 3) return;
-
-      EvalScaledNext(3, x, y, p1, p2);
-      values[3] = p1;
-      if (n < 4) return;
-
-      EvalScaledNext(4, x, y, p1, p2);
-      values[4] = p1;
-      if (n < 5) return;
-
-      EvalScaledNext(5, x, y, p1, p2);
-      values[5] = p1;
-      if (n < 6) return;
-
-      EvalScaledNext(6, x, y, p1, p2);
-      values[6] = p1;
-      if (n < 7) return;
-
-      EvalScaledNext(7, x, y, p1, p2);
-      values[7] = p1;
-      if (n < 8) return;
-
-      EvalScaledNext(8, x, y, p1, p2);
-      values[8] = p1;
-      */
-
       for (int i = 2; i <= n; i++)
-	{	
-	  EvalScaledNext (i, x, y, p1, p2);
-	  values[i] = p1;
-	}
+        values[i] = EvalScaledNext (i, x, y, p1, p2);
     }
 
     enum { ZERO_B = 0 };
@@ -797,7 +813,6 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
-    // static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
     static ALWAYS_INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static ALWAYS_INLINE S P1(S x)  { return x; }
@@ -923,7 +938,7 @@ namespace ngfem
 
 
 
-
+  /*
   class JacobiPolynomial3 : public RecursivePolynomialNonStatic<JacobiPolynomial3>
   {
     double al, be;
@@ -981,7 +996,7 @@ namespace ngfem
     ALWAYS_INLINE double D (int i) const
     { i--; return ( pold(0) + i * (pold(1) + i * (pold(2) + i * pold(3))) ); }
   };
-
+  */
 
 
 
@@ -1053,6 +1068,35 @@ namespace ngfem
 
   };
 
+
+
+  class JacobiPolynomialNew : public RecursivePolynomialNonStatic<JacobiPolynomialNew>
+  {
+  protected:
+    double al, be;
+
+  public:
+    JacobiPolynomialNew (double alpha, double beta) : al(alpha), be(beta) { ; }
+
+    template <class S>
+    INLINE double P0(S x) const { return 1.0; }
+    template <class S>
+    INLINE S P1(S x) const 
+    { 
+      return 0.5 * (2*(al+1)+(al+be+2)*(x-1));
+    }
+
+    enum { ZERO_B = 0 };
+
+    INLINE double A (int i) const
+    { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    INLINE double B (int i) const
+    { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+    INLINE double C (int i) const
+    { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+
+    INLINE double D (int i) const { return 1; }
+  };
 
 
 

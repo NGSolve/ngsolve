@@ -25,9 +25,9 @@ namespace ngfem
    */
 
   template <ELEMENT_TYPE ET, 
-            template <ELEMENT_TYPE ET2> class TSHAPES = H1HighOrderFE_Shape,
-            class BASE = T_ScalarFiniteElement< TSHAPES<ET>, ET> >
-            
+            class SHAPES = H1HighOrderFE_Shape<ET>,
+            class BASE = T_ScalarFiniteElement< SHAPES, ET> >
+  
 
   class H1HighOrderFE : public BASE, public ET_trait<ET>
   {
@@ -123,13 +123,7 @@ namespace ngfem
       
       if (DIM == 3)
         ndof += PolBubbleDimension (order_cell[0]);
-      
-      /*
-      order = 1;
-      for (int i = 0; i < N_EDGE; i++) order = max(order, int(order_edge[i]));
-      for (int i = 0; i < N_FACE; i++) order = max(order, int(Max (order_face[i]))); 
-      if (DIM == 3) order = max (order, int(Max (order_cell[0])));
-      */
+
       TORDER ho = 1;
       for (int i = 0; i < N_EDGE; i++) ho = max(ho, order_edge[i]);
       for (int i = 0; i < N_FACE; i++) ho = max(ho, Max (order_face[i])); 
@@ -140,26 +134,29 @@ namespace ngfem
 
   };
 
-  
-
-
-
-
-
-
-
+}  
 
 
 
 #ifdef FILE_H1HOFE_CPP
+
 #define H1HOFE_EXTERN
+#include <h1hofe_impl.hpp>
+#include <tscalarfe_impl.hpp>
+
 #else
+
 #define H1HOFE_EXTERN extern
+
 #endif
+
+namespace ngfem
+{
   H1HOFE_EXTERN template class H1HighOrderFE<ET_POINT>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_SEGM>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_TRIG>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_QUAD>;
+
   H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_PRISM>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_PYRAMID>;
@@ -167,7 +164,6 @@ namespace ngfem
 
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
-
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
 
@@ -175,9 +171,6 @@ namespace ngfem
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
-
-  // H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
-  // H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
 }
 
 

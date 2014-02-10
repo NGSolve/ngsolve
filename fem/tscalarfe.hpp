@@ -48,6 +48,9 @@ namespace ngfem
     
     NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
 					       FlatVector<> vals, FlatVector<double> coefs) const;
+
+    NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
+
     NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
 
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
@@ -58,17 +61,14 @@ namespace ngfem
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
                        */
-    /*
-    virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
-				   FlatMatrixFixWidth<DIM> dshape) const;
-    */
+
     NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
-				   SliceMatrix<> dshape) const;
+                                                  SliceMatrix<> dshape) const;
 
     NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
-    NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
+    // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     
   protected:
     template<typename Tx, typename TFA>  
