@@ -97,9 +97,9 @@ namespace netgen
     SetLight();
 
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
-    GLdouble projmat[16];
+    GLdouble projmat[16];                 // brauchen wir das ?
     glGetDoublev (GL_PROJECTION_MATRIX, projmat);
 
 
@@ -3093,30 +3093,31 @@ namespace netgen
 
     
 
-    /*
-      klappt noch nicht ...
+
     GLdouble modelview[16], projection[16];
     GLint viewport[4];
     GLdouble result[3];
-    glGetDoublev(GL_MODELVIEW_MATRIX, &modelview[0]); 
+
     glGetDoublev(GL_PROJECTION_MATRIX, &projection[0]); 
     glGetIntegerv(GL_VIEWPORT, &viewport[0]);
 
     int hy = viewport[3]-py;
 
     GLfloat pz;
-    cout << "x, y = " << px << ", " << hy << endl;
+    // cout << "x, y = " << px << ", " << hy << endl;
     glReadPixels (px, hy, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &pz);
-    cout << "pz = " << pz << endl;    gluUnProject(px, hy, pz, modelview, projection, viewport,
+    cout << "pz = " << pz << endl;    
+    gluUnProject(px, hy, pz, transformationmat, projection, viewport,
                  &result[0], &result[1], &result[2]);
-    cout << "3d point : " << result[0] << ", " << result[1] << ", " << result[2] << endl;
-    */
+
+    if (pz < 1.0)
+      cout << "point : " << result[0] << ", " << result[1] << ", " << result[2] << endl;
     
 
-    if (user_me_handler)
+    if (user_me_handler && pz < 1.0)
       {
 	if (selelement != -1)
-	  user_me_handler -> DblClick (selelement-1);
+	  user_me_handler -> DblClick (selelement-1, result[0], result[1], result[2]);
       }
 
     selecttimestamp = NextTimeStamp();
@@ -3298,7 +3299,7 @@ namespace netgen
 
   void MouseDblClickSelect (const int px, const int py,
 			    const GLdouble * clipplane, const GLdouble backcolor,
-			    const float * transformationmat,
+			    const double * transformationmat,
 			    const Point3d & center,
 			    const double rad,
 			    const int displaylist,
@@ -3337,7 +3338,7 @@ namespace netgen
     glMatrixMode (GL_MODELVIEW);
 
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
 
     //  SetClippingPlane();

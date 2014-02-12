@@ -39,7 +39,7 @@ namespace netgen
     //  glEnable (GL_LIGHT0);
     glDisable (GL_LIGHTING);
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
     //  SetClippingPlane ();
 

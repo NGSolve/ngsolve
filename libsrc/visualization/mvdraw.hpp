@@ -22,12 +22,12 @@ namespace netgen
     static DLL_HEADER Point3d center;
     static DLL_HEADER double rad;
 
-    static float lookatmat[16];
-    static float transmat[16];
-    static float rotmat[16];
-    static float centermat[16];
+    static double lookatmat[16];
+    static double transmat[16];
+    static double rotmat[16];
+    static double centermat[16];
 	
-    static DLL_HEADER float transformationmat[16];
+    static DLL_HEADER double transformationmat[16];
 
     GLdouble clipplane[4];
 
@@ -236,7 +236,7 @@ namespace netgen
 
   void MouseDblClickSelect (const int px, const int py,
                             const GLdouble * clipplane, const GLdouble backcolor,
-                            const float * transformationmat,
+                            const double * transformationmat,
                             const Point3d & center,
                             const double rad,
                             const int displaylist,

@@ -41,11 +41,11 @@ namespace netgen
   int VisualScene :: ntexcols = -1;
 
 
-  float VisualScene :: lookatmat[16];
-  float VisualScene :: transmat[16];
-  float VisualScene :: rotmat[16];
-  float VisualScene :: centermat[16];
-  float VisualScene :: transformationmat[16];
+  double VisualScene :: lookatmat[16];
+  double VisualScene :: transmat[16];
+  double VisualScene :: rotmat[16];
+  double VisualScene :: centermat[16];
+  double VisualScene :: transformationmat[16];
 
   int VisualScene :: selface;
   int VisualScene :: selelement;
@@ -158,25 +158,25 @@ namespace netgen
 
     glLoadIdentity();
     gluLookAt (0, 0, 6, 0, 0, 0, 0, 1, 0);
-    glGetFloatv (GL_MODELVIEW_MATRIX, lookatmat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, lookatmat);
 
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -dist);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transmat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transmat);
   
     glLoadIdentity();
-    glGetFloatv (GL_MODELVIEW_MATRIX, rotmat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, rotmat);
 
-    glScalef (1/rad, 1/rad, 1/rad);
+    glScaled (1/rad, 1/rad, 1/rad);
     glTranslated (-center.X(), -center.Y(), -center.Z());
-    glGetFloatv (GL_MODELVIEW_MATRIX, centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, centermat);
 
     glLoadIdentity();
-    glMultMatrixf (lookatmat);
-    glMultMatrixf (transmat);
-    glMultMatrixf (rotmat);
-    glMultMatrixf (centermat);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transformationmat);
+    glMultMatrixd (lookatmat);
+    glMultMatrixd (transmat);
+    glMultMatrixd (rotmat);
+    glMultMatrixd (centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transformationmat);
 
     glPopMatrix();
   }
@@ -193,14 +193,14 @@ namespace netgen
 	glRotatef(alpha[i], vec[i].X(), vec[i].Y(), vec[i].Z());
       }
 
-    glGetFloatv (GL_MODELVIEW_MATRIX, rotmat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, rotmat);
 
     glLoadIdentity();
-    glMultMatrixf (lookatmat);
-    glMultMatrixf (transmat);
-    glMultMatrixf (rotmat);
-    glMultMatrixf (centermat);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transformationmat);
+    glMultMatrixd (lookatmat);
+    glMultMatrixd (transmat);
+    glMultMatrixd (rotmat);
+    glMultMatrixd (centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transformationmat);
   
     glPopMatrix();
   } 
@@ -241,14 +241,14 @@ namespace netgen
       glRotatef(90.0, 0.0f, 1.0f, 0.0f);    
 
 
-    glGetFloatv (GL_MODELVIEW_MATRIX, rotmat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, rotmat);
 
     glLoadIdentity();
-    glMultMatrixf (lookatmat);
-    glMultMatrixf (transmat);
-    glMultMatrixf (rotmat);
-    glMultMatrixf (centermat);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transformationmat);
+    glMultMatrixd (lookatmat);
+    glMultMatrixd (transmat);
+    glMultMatrixd (rotmat);
+    glMultMatrixd (centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transformationmat);
   
     glPopMatrix();
   }
@@ -269,8 +269,8 @@ namespace netgen
 	{	
 	  glRotatef(float(deltax)/2, 0.0f, 1.0f, 0.0f);
 	  glRotatef(float(deltay)/2, 1.0f, 0.0f, 0.0f);
-	  glMultMatrixf (rotmat);
-	  glGetFloatv (GL_MODELVIEW_MATRIX, rotmat);
+	  glMultMatrixd (rotmat);
+	  glGetDoublev (GL_MODELVIEW_MATRIX, rotmat);
 	  break;
 	}
       case 'm':
@@ -310,8 +310,8 @@ namespace netgen
 
 	  glTranslated (px2-px1, py2-py1, pz2-pz1);
 	
-	  glMultMatrixf (transmat);
-	  glGetFloatv (GL_MODELVIEW_MATRIX, transmat);
+	  glMultMatrixd (transmat);
+	  glGetDoublev (GL_MODELVIEW_MATRIX, transmat);
 	  break;
 	}
       case 'z':
@@ -324,18 +324,18 @@ namespace netgen
 		    exp (double (-deltay)/100), 
 		    exp (double (-deltay)/100));
 	  // glTranslatef(0.0f, 0.0f, dist);
-	  glMultMatrixf (transmat);
-	  glGetFloatv (GL_MODELVIEW_MATRIX, transmat);
+	  glMultMatrixd (transmat);
+	  glGetDoublev (GL_MODELVIEW_MATRIX, transmat);
 	  break;
 	}
       }
 
     glLoadIdentity();
-    glMultMatrixf (lookatmat);
-    glMultMatrixf (transmat);
-    glMultMatrixf (rotmat);
-    glMultMatrixf (centermat);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transformationmat);
+    glMultMatrixd (lookatmat);
+    glMultMatrixd (transmat);
+    glMultMatrixd (rotmat);
+    glMultMatrixd (centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transformationmat);
   
     glPopMatrix();
   }
@@ -349,8 +349,8 @@ namespace netgen
     gluLookAt (cam(0), cam(1), cam(2), 
 	       obj(0), obj(1), obj(2),
 	       camup(0), camup(1), camup(2));
-    glMultMatrixf (centermat);
-    glGetFloatv (GL_MODELVIEW_MATRIX, transformationmat);
+    glMultMatrixd (centermat);
+    glGetDoublev (GL_MODELVIEW_MATRIX, transformationmat);
     glPopMatrix();
   }
 
@@ -631,7 +631,7 @@ namespace netgen
     glTranslatef (-1, -1, 0.0);
     glScalef (40.0 / viewport[2], 40.0 / viewport[3], 1);
     glTranslatef (2.0, 2.0, 0.0);
-    glMultMatrixf (rotmat);
+    glMultMatrixd (rotmat);
 
     glEnable (GL_COLOR_MATERIAL);
     glDisable (GL_LIGHTING);

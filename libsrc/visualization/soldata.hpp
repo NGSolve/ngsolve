@@ -113,7 +113,7 @@ namespace netgen
   class DLL_HEADER MouseEventHandler
   {
   public:
-    virtual void DblClick (int elnr) { ; }
+    virtual void DblClick (int elnr, double x, double y, double z) = 0;
   };
 
 }

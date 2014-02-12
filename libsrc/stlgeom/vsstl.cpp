@@ -84,7 +84,7 @@ void VisualSceneSTLMeshing :: DrawScene ()
   SetLight();
 
   glPushMatrix();
-  glMultMatrixf (transformationmat);
+  glMultMatrixd (transformationmat);
 
   SetClippingPlane ();
 
@@ -865,7 +865,7 @@ void VisualSceneSTLMeshing :: MouseDblClick (int px, int py)
   glMatrixMode (GL_MODELVIEW); 
 
   glPushMatrix();
-  glMultMatrixf (transformationmat);
+  glMultMatrixd (transformationmat);
 
 
   glInitNames();
@@ -1101,7 +1101,7 @@ void VisualSceneSTLMeshing :: MouseDblClick (int px, int py)
 
 
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
 
 

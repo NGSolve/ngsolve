@@ -59,7 +59,7 @@ namespace netgen
 
 
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
     SetClippingPlane ();
 
@@ -259,7 +259,7 @@ namespace netgen
     glLineWidth (1.0f);
 
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
     //  glEnable (GL_COLOR);
     //  glDisable (GL_COLOR_MATERIAL);

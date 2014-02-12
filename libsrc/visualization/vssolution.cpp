@@ -362,7 +362,7 @@ namespace netgen
     SetLight();
     
     glPushMatrix();
-    glMultMatrixf (transformationmat);
+    glMultMatrixd (transformationmat);
 
     glMatrixMode (GL_MODELVIEW); 
     

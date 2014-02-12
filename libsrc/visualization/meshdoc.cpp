@@ -105,7 +105,7 @@ void VisualSceneMeshDoctor :: DrawScene ()
   SetLight();
 
   glPushMatrix();
-  glMultMatrixf (transformationmat);
+  glMultMatrixd (transformationmat);
   
   glInitNames ();
   glPushName (0);
@@ -479,7 +479,7 @@ void VisualSceneMeshDoctor :: MouseDblClick (int px, int py)
   glMatrixMode (GL_MODELVIEW); 
 
   glPushMatrix();
-  glMultMatrixf (transformationmat);
+  glMultMatrixd (transformationmat);
 
   glInitNames();
   glPushName (1);

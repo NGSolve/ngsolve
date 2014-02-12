@@ -58,7 +58,7 @@ namespace netgen
       SetLight();
 
       glPushMatrix();
-      glMultMatrixf (transformationmat);
+      glMultMatrixd (transformationmat);
 
       glShadeModel (GL_SMOOTH);
       glDisable (GL_COLOR_MATERIAL);
@@ -654,7 +654,7 @@ namespace netgen
       glMatrixMode (GL_MODELVIEW);
 
       glPushMatrix();
-      glMultMatrixf (transformationmat);
+      glMultMatrixd (transformationmat);
 
       glInitNames();
       glPushName (1);
