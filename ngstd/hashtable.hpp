@@ -450,7 +450,16 @@ namespace ngstd
     }
   };
 
-}
 
+
+
+  template <int N, typename T>
+  Archive & operator & (Archive & archive, INT<N,T> & mi)
+  {
+    for (int i = 0; i < N; i++)
+      archive & mi[i];
+    return archive;
+  }
+}
 
 #endif

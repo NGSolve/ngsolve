@@ -102,7 +102,6 @@ namespace ngsolve
     ///
     Array<NGS_Object*> todo;
 
-
     ///
     int levelsolved;
     //
@@ -113,9 +112,7 @@ namespace ngsolve
 
     string evaluatefiles;
 
-    // #ifdef SOCKETS
-    //   ClientSocketAccess sa;
-    // #endif
+
 
     /// a hack 
     Tcl_Interp * tcl_interpreter;
@@ -140,6 +137,8 @@ namespace ngsolve
     ///  
     void Solve ();
     // void SolveBVP () { Solve(); }
+    
+    void DoArchive (Archive & archive);
 
     ///
     void PrintReport (ostream & ost);

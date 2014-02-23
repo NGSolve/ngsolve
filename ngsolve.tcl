@@ -228,6 +228,24 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    }
 	}
 
+    .ngmenu.solve add command -label "Dump PDE" \
+        -command {
+            NGS_DumpPDE test.arch
+        }
+
+    .ngmenu.solve add command -label "Restore PDE" \
+        -command {
+            NGS_RestorePDE test.arch
+        }
+
+    .ngmenu.solve add command -label "Socket-load" \
+	-command { NGS_SocketLoad 52002 
+            set selectvisual solution
+	    Ng_SetVisParameters	
+	    redraw
+        }
+
+
     #     .ngmenu.solve add command -label "Save Solution (ASCII)..." \
 	# 	-command { 
     # 	    set types { {"Solution File"  {.asol} } }

@@ -118,6 +118,8 @@ namespace ngstd
     { name = numlistflags.GetName(i); return numlistflags[i]; }
     const Array<char*> * GetStringListFlag (int i, const char *& name) const
     { name = strlistflags.GetName(i); return strlistflags[i]; }
+
+    friend Archive & operator & (Archive & archive, Flags & flags);
   };
 
 
@@ -128,6 +130,8 @@ namespace ngstd
     flags.PrintFlags (s);
     return s;
   }
+
+  extern Archive & operator & (Archive & archive, Flags & flags);
 }
 
   

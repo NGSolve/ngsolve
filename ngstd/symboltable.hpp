@@ -155,6 +155,35 @@ ostream & operator<< (ostream & ost, SymbolTable<T> & st)
   return ost;
 }
 
+
+  template <typename T> 
+  Archive & operator & (Archive & ar, SymbolTable<T> & table)
+  {
+    if (ar.Output())
+      {
+        ar << table.Size();
+        for (int i = 0; i < table.Size(); i++)
+          {
+            ar << string (table.GetName(i));
+            ar & table[i];
+          }
+      }
+    else
+      {
+        int s;
+        ar & s;
+        for (int i = 0; i < s; i++)
+          {
+            string name;
+            T entry(0);
+            ar & name & entry;
+            table.Set (name, entry);
+          }
+      }
+    return ar;
+  }
+
+
 }
 
 #endif

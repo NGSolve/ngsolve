@@ -44,6 +44,8 @@ public:
 
   ///
   virtual void Update(LocalHeap & lh);
+  ///
+  virtual void DoArchive (Archive & archive);
   /// 
   virtual void UpdateCouplingDofArray();
 

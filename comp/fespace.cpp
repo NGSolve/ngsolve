@@ -718,6 +718,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	nfree++;
   }
   
+  void FESpace :: DoArchive (Archive & archive)
+  {
+    archive & order & dimension & iscomplex & dgjumps & print & level_updated;
+    archive & definedon & definedonbound;
+    archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
+    archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
+
+  }
+
 
   int FESpace :: GetNDofLevel (int level) const
   {
@@ -1269,6 +1278,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
+  void NodalFESpace :: DoArchive (Archive & archive)
+  {
+    archive & ndlevel;
+  }
+
+
   int NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
@@ -1585,7 +1600,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndlevel.Append (n_el_dofs * ma.GetNE());
   }
 
-  
+  void ElementFESpace :: DoArchive (Archive & archive)
+  {
+    FESpace :: DoArchive (archive);
+    archive & ndlevel & n_el_dofs;
+  }
+
   void ElementFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     if (order == 0)
@@ -2279,6 +2299,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )
 	{
 	  space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
+          space -> type = type;
 	}
     return space;
   }

@@ -100,9 +100,10 @@ namespace ngstd
       p += size;
 
       // if ( size_t(p - data) >= totsize )
+#ifndef FULLSPEED
       if (p >= next)
         ThrowException();
-
+#endif
       return oldp;
     }
 
@@ -117,9 +118,10 @@ namespace ngstd
       size += (ALIGN - size % ALIGN);
       p += size;
 
-      // if ( size_t(p - data) >= totsize )
+#ifndef FULLSPEED
       if (p >= next)
 	ThrowException();
+#endif
 
       return reinterpret_cast<T*> (oldp);
     }

@@ -370,6 +370,28 @@ namespace ngcomp
     UpdateCouplingDofArray();
   }
 		
+  void HCurlHighOrderFESpace :: DoArchive(Archive & archive)
+  {
+    low_order_space -> DoArchive (archive);
+    FESpace::DoArchive(archive);
+    archive & level;
+    archive & first_edge_dof & first_inner_dof & first_face_dof;
+    archive & fn & rel_order & rel_orders;
+    archive & order_edge & fine_edge & fine_face;
+    archive & cell_ngrad & face_ngrad & order_face & order_inner & order_avertex;
+    archive & usegrad_edge & usegrad_face & usegrad_cell;
+    archive & dom_order_min & dom_order_max;
+    archive & maxorder & minorder;
+    archive & gradientdomains & gradientboundaries;
+    archive & usegrad & var_order;
+    archive & ndof & nedfine & uniform_order_inner & 
+      uniform_order_face & uniform_order_edge & augmented;
+    archive & flags;
+    archive & smoother & level_adapted_order & nograds;
+    archive & fast_pfem & discontinuous;
+  }
+
+
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
     // int nv = ma.GetNV();

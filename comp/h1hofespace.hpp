@@ -69,6 +69,8 @@ namespace ngcomp
     ///
     virtual void PrintReport (ostream & ost);
 
+    virtual void DoArchive (Archive & archive);
+
     ///
     virtual int GetNDof () const;
     ///

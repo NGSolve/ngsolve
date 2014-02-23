@@ -1000,6 +1000,26 @@ namespace ngstd
     return SumArray<TA1,TA2> (a1.Spec(), a2.Spec());
   }
                                
+
+
+
+
+  template <typename T> 
+  Archive & operator & (Archive & archive, Array<T> & a)
+  {
+    if (archive.Output())
+      archive << a.Size();
+    else
+      {
+        int size;
+        archive & size;
+        a.SetSize (size);
+      }
+    
+    for (int i = 0; i < a.Size(); i++)
+      archive & a[i];
+    return archive;
+  }
 }
 
 

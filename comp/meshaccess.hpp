@@ -606,6 +606,9 @@ namespace ngcomp
     void UnSetHigherIntegrationOrder(int elnr);
 
     void LoadMesh (const string & filename);
+    void LoadMesh (istream & str);
+    void SaveMesh (ostream & str) const;
+    void ArchiveMesh (Archive & archive);
     // void LoadMeshFromString(const string & str);
 
     // void PrecomputeGeometryData(int intorder);

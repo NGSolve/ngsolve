@@ -485,7 +485,23 @@ namespace ngcomp
   }
 
 
+  void H1HighOrderFESpace :: DoArchive (Archive & archive)
+  {
+    low_order_space -> DoArchive (archive);
 
+    FESpace::DoArchive(archive);
+    archive & level;
+    archive & first_edge_dof & first_face_dof & first_element_dof;
+    archive & rel_order & var_order & fixed_order & wb_loedge;
+    archive & order_edge & order_face & order_inner;
+    archive & used_vertex & used_edge & used_face;
+    archive & ndof & uniform_order_inner & uniform_order_face 
+      & uniform_order_edge & uniform_order_quad & uniform_order_trig;
+    archive & dom_order_min & dom_order_max;
+    archive & smoother;
+    archive & ndlevel;
+    archive & level_adapted_order & nodalp2;
+  }
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {

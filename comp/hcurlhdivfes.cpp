@@ -306,6 +306,15 @@ namespace ngcomp
     UpdateCouplingDofArray();
   }
 
+
+  void NedelecFESpace :: DoArchive(Archive & archive)
+  {
+    FESpace::DoArchive(archive);
+    archive & edgepoints & parentedges;
+    archive & finelevelofedge & nelevel;
+    archive & discontinuous;
+  }
+
   void  NedelecFESpace :: UpdateCouplingDofArray ()
   {
     int level = ma.GetNLevels()-1;

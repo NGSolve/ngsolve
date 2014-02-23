@@ -3104,6 +3104,45 @@ namespace ngsolve
   };
 
 
+
+class NumProcPause : public NumProc
+{
+  double seconds;
+public:
+  NumProcPause (PDE & apde, const Flags & flags)
+    : NumProc (apde)
+  {
+    seconds = flags.GetNumFlag ("seconds", 10);
+  }
+
+  virtual void Do(LocalHeap & lh)
+  {
+    sleep (seconds);
+  }
+
+
+  virtual string GetClassName () const
+  {
+    return "NumProcPause";
+  }
+
+  virtual void PrintReport (ostream & ost)
+  {
+    ost << GetClassName() << endl
+        << "pause for " << seconds << " seconds" << endl;
+  }
+
+  ///
+  static void PrintDoc (ostream & ost)
+  {
+    ost << 
+      "\n\nNumproc Parabolic:\n"                
+	<< endl;
+  }
+};
+
+
+
   //////////////////////////////////////////////////////////////////////////////
 
 
@@ -3229,6 +3268,7 @@ namespace ngsolve
   static RegisterNumProc<NumProcWriteFile> npinitwf ("writefile");
   static RegisterNumProc<NumProcDrawFlux> npinitdf ("drawflux");
   static RegisterNumProc<NumProcDrawCoefficient> npinitdc ("draw");
+  static RegisterNumProc<NumProcPause> npinitpause ("pause");
 
   static RegisterNumProc<NumProcLoadSolution2> npload ("loadgridfunction2");
   static RegisterNumProc<NumProcSaveSolution2> npsave ("savegridfunction2");

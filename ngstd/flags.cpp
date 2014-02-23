@@ -5,6 +5,7 @@
 /**************************************************************************/
 
 #include <ngstd.hpp>
+#include "archive.hpp"
 
 #ifdef WIN32
 #include <float.h>
@@ -226,14 +227,13 @@ namespace ngstd
 
   void Flags :: SaveFlags (const char * filename) const 
   {
-    int i;
     ofstream outfile (filename);
   
-    for (i = 0; i < strflags.Size(); i++)
+    for (int i = 0; i < strflags.Size(); i++)
       outfile << strflags.GetName(i) << " = " << strflags[i] << endl;
-    for (i = 0; i < numflags.Size(); i++)
+    for (int i = 0; i < numflags.Size(); i++)
       outfile << numflags.GetName(i) << " = " << numflags[i] << endl;
-    for (i = 0; i < defflags.Size(); i++)
+    for (int i = 0; i < defflags.Size(); i++)
       outfile << defflags.GetName(i) << endl;
   }
  
@@ -241,19 +241,18 @@ namespace ngstd
 
   void Flags :: PrintFlags (ostream & ost) const 
   {
-    int i;
-    for (i = 0; i < strflags.Size(); i++)
+    for (int i = 0; i < strflags.Size(); i++)
       ost << strflags.GetName(i) << " = " << strflags[i] << endl;
-    for (i = 0; i < numflags.Size(); i++)
+    for (int i = 0; i < numflags.Size(); i++)
       ost << numflags.GetName(i) << " = " << numflags[i] << endl;
-    for (i = 0; i < defflags.Size(); i++)
+    for (int i = 0; i < defflags.Size(); i++)
       ost << defflags.GetName(i) << endl;
-    for (i = 0; i < strlistflags.Size(); i++)
+    for (int i = 0; i < strlistflags.Size(); i++)
       ost << strlistflags.GetName(i) << " = " << strlistflags[i] << endl;
-    for (i = 0; i < numlistflags.Size(); i++)
+    for (int i = 0; i < numlistflags.Size(); i++)
       ost << numlistflags.GetName(i) << " = " << numlistflags[i] << endl;
   }
- 
+
 
   void Flags :: LoadFlags (const char * filename) 
   {
@@ -301,6 +300,14 @@ namespace ngstd
       }
   }
 
+  Archive & operator & (Archive & archive, Flags & flags)
+  {
+    cout << "Archive Flags" << endl;
+    cout << flags << endl;
+    archive & flags.strflags;
+    archive & flags.numflags;
+    return archive;
+  }
 
   void Flags :: SetCommandLineFlag (const char * st)
   {
