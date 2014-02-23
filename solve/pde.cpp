@@ -759,7 +759,91 @@ namespace ngsolve
 
 
 
+  void PDE :: DoArchive (Archive & archive)
+  {
+    LocalHeap lh (1000000, "ArchiveHeap");
 
+    archive & geometryfilename & meshfilename;
+
+    if (archive.Output())
+      {
+        mas[0] -> ArchiveMesh (archive);
+      }
+    else
+      {
+        MeshAccess * ma = new MeshAccess;
+        ma -> ArchiveMesh (archive);
+        AddMeshAccess(ma);
+      }
+
+
+    archive & constants;
+    archive & string_constants;
+    archive & variables;
+
+    // archive & evaluators;
+    // archive & coefficients;
+
+    // archive spaces
+    if (archive.Output())
+      {
+        archive << spaces.Size();
+        for (int i = 0; i < spaces.Size(); i++)
+          {
+            archive << string(spaces.GetName(i));
+            archive << spaces[i] -> type;
+            archive << spaces[i] -> GetDimension();
+            spaces[i] -> DoArchive(archive);
+          }
+      }
+    else
+      {
+        int size;
+        archive & size;
+        for (int i = 0; i < size; i++)
+          {
+            string type, name;
+            int dim;
+            archive & name & type & dim;
+
+            Flags flags;
+            flags.SetFlag ("dim",dim);
+            FESpace * fes = CreateFESpace (type, *mas[0], flags);
+
+            fes -> DoArchive(archive);
+            fes -> FinalizeUpdate (lh);
+            spaces.Set (name, fes);
+            todo.Append(fes);
+          }
+      }
+
+    // archive gridfunctions
+    if (archive.Output())
+      {
+        archive << gridfunctions.Size();
+        for (int i = 0; i < gridfunctions.Size(); i++)
+          {
+            archive << string (gridfunctions.GetName(i));
+            archive << gridfunctions[i]->GetFESpace().GetName();
+            gridfunctions[i] -> DoArchive (archive);
+            // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
+          }
+      }
+    else
+      {
+        int s;
+        archive & s;
+        for (int i = 0; i < s; i++)
+          {
+            string name, fesname;
+            archive & name & fesname;
+            GridFunction * gf = CreateGridFunction (GetFESpace(fesname), name, Flags());
+            // cout << "got gf, type = " << typeid(*gf).name() << endl;
+            AddGridFunction (name, gf);
+            gridfunctions[i] -> DoArchive (archive);            
+          }
+      }
+  }
 
 
 

@@ -84,6 +84,8 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh);
     ///
+    virtual void DoArchive (Archive & archive);
+    ///
     virtual int GetNDof () const;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;

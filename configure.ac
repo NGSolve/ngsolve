@@ -132,6 +132,9 @@ chmod a+x ngscxx
 define([svnversion], esyscmd([sh -c "svnversion|tr -d '\n'"]))dnl
 AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
 
+define([builddate], esyscmd([sh -c "date|tr -d '\n'"]))dnl
+AC_DEFINE(BUILDDATE, "builddate", [build date])
+
 
 AC_CONFIG_HEADERS(config.h) 
 AC_CONFIG_FILES(Makefile include/Makefile

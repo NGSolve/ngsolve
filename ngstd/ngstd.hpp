@@ -108,7 +108,7 @@ namespace ngstd
 
 #include <ngs_defines.hpp>
 
-  
+#include "archive_base.hpp"    
 #include "ngsstream.hpp"  
 #include "templates.hpp"
 #include "exception.hpp"

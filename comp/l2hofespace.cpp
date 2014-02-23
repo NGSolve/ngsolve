@@ -292,7 +292,7 @@ namespace ngcomp
               }
           }
 
-	if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
+	if (ma.GetElType(elnr) == ET_TRIG && order <= 3)
 	  {
 	    DGFiniteElement<2> * hofe2d = 0;
 	    switch (order)
@@ -301,10 +301,10 @@ namespace ngcomp
 	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
 	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
 	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
+		/*
 	      case 4: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
 	      case 5: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
 	      case 6: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
-		/*
 	      case 7: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,7> (); break;
 	      case 8: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,8> (); break;
 		*/

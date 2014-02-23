@@ -535,7 +535,12 @@ namespace ngcomp
         }
       else
         {
-          for (int j = 0; j < ma.GetNE(); j++)
+#ifdef FULLSPEED
+          int checkels = min (1, ma.GetNE());
+#else
+          int checkels = ma.GetNE();
+#endif
+          for (int j = 0; j < checkels; j++)
             {
               HeapReset hr(clh);
               if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
@@ -2564,7 +2569,6 @@ namespace ngcomp
     if (!MixedSpaces())
       {
         Array<int> dnums;
-        int ne = ma.GetNE();
       
         LocalHeap lh (2000000, "biform-energy");
 

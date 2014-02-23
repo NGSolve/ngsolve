@@ -150,9 +150,10 @@ namespace ngcomp
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs; // = NULL;
-  
+    
   public:
     Vec<4,int> vefc_dofblocks;  // = 2;
+    string type;
 
     /**
        Constructor.
@@ -184,6 +185,9 @@ namespace ngcomp
 
     /// print report to stream
     virtual void PrintReport (ostream & ost);
+
+    /// Dump/restore fespace
+    virtual void DoArchive (Archive & archive);
 
     /// order of finite elements
     int GetOrder () const { return order; }
@@ -568,6 +572,8 @@ namespace ngcomp
 
     ///
     virtual void Update (LocalHeap & lh);
+    
+    virtual void DoArchive (Archive & archive);
     ///
     virtual int GetNDof () const;
     ///
@@ -641,7 +647,8 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
-
+    /// 
+    virtual void DoArchive (Archive & archive);
     ///
     virtual int GetNDof () const { return ndlevel.Last(); }
   

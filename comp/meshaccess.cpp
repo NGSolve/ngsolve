@@ -342,6 +342,25 @@ namespace ngcomp
       throw Exception ("could not load mesh from '" + filename + "'");
   }
 
+  void MeshAccess :: LoadMesh (istream & str)
+  {
+    mesh.LoadMesh (str);
+    UpdateBuffers();
+  }
+
+  void MeshAccess :: SaveMesh (ostream & str) const
+  {
+    mesh.SaveMesh (str);
+  }
+
+  void MeshAccess :: ArchiveMesh (Archive & archive) 
+  {
+    mesh.DoArchive (archive);
+    if (archive.Input()) UpdateBuffers();
+  }
+
+
+
   /*
   void MeshAccess :: LoadMeshFromString(const string & str)
   {

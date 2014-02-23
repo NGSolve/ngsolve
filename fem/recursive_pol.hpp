@@ -193,9 +193,40 @@ namespace ngfem
   class RecursivePolynomial
   {
   public:
+    template <class S>
+    INLINE static S EvalNext (int i, S x, S & p1, S & p2)
+    {
+      if (i == 0) 
+        {
+          p1 = REC::P0(x);
+          return p1;
+        }
+      if (i == 1) 
+        {
+          p2 = p1;
+          p1 = REC::P1(x);
+          return p1;
+        }
+
+      if (REC::ZERO_B)
+        {
+          S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      else
+        {
+          S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      return p1;
+    }
+
+
 
     template <class S>
-    ALWAYS_INLINE static S EvalNext (int i, S x, S & p1, S & p2)
+    ALWAYS_INLINE static S EvalNextTicTac (int i, S x, S & p1, S & p2)
     {
       switch (i)
         {
@@ -221,13 +252,13 @@ namespace ngfem
 
 
     template <class S, class Sc>
-    ALWAYS_INLINE static S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
+    ALWAYS_INLINE static S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2)
     {
       switch (i)
         {
         case 0: return p1 = c * REC::P0(x);
         case 1: return p1 = c * REC::P1(x);
-        default: return EvalNext (i, x, p1, p2);
+        default: return EvalNextTicTac (i, x, p1, p2);
         }
     }
 
@@ -305,21 +336,59 @@ namespace ngfem
 
       if (n < 0) return;
 
-      values[0] = EvalNextMult(0, x, c, p1, p2);
+      values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
       if (n < 1) return;
 
-      values[1] = EvalNextMult(1, x, c, p2, p1);
+      values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
 
       int i = 2;
       for ( ; i < n; i+=2)
 	{	
-	  values[i] = EvalNext (i, x, p1, p2);
-	  values[i+1] = EvalNext (i+1, x, p2, p1);
+	  values[i] = EvalNextTicTac (i, x, p1, p2);
+	  values[i+1] = EvalNextTicTac (i+1, x, p2, p1);
 	}
       if (i <= n)
-        values[i] = EvalNext (i, x, p1, p2);
+        values[i] = EvalNextTicTac (i, x, p1, p2);
     }
+
+
+
+    template <class S, class T>
+    INLINE static void Eval1Assign (int n, S x, T && values)
+    {
+      EvalMult1Assign (n, x, 1.0, values);
+    }
+
+    template <class S, class Sc, class T>
+    INLINE static void EvalMult1Assign (int n, S x, Sc c, T && values)
+    {
+      S p1, p2;
+
+      for (int i = 0; i <= n; i++)
+        values[i] = EvalNext (i, x, p1, p2);
+      /*
+      for (int i = 0; i <= n; i++)
+	{	
+          switch (i)
+            {
+            case 0: 
+              p1 = c * REC::P0(x); 
+              break;
+            case 1:
+              p2 = c * REC::P0(x);
+              p1 = c * REC::P1(x);
+              break;
+            default:
+              EvalNext (i, x, p1, p2);
+            }
+	  values[i] = p1;
+	}
+      */
+    }
+
+
+
 
 
 
@@ -1450,7 +1519,7 @@ namespace ngfem
       else
 	{
           Swap (help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
-	  REC::EvalNext (ORDER, x, help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
+	  REC::EvalNextTicTac (ORDER, x, help[DIAG-ORDER][0], help[DIAG-ORDER][1]);
 	}
       values(DIAG-ORDER, ORDER) = help[DIAG-ORDER][0];
     }
@@ -1632,7 +1701,7 @@ namespace ngfem
       else
 	{
           Swap (help(DIAG-ORDER,0), help(DIAG-ORDER,1));
-	  REC::EvalNext (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
+	  REC::EvalNextTicTac (ORDER, x, help(DIAG-ORDER,0), help(DIAG-ORDER,1));
 	}
       values[TrigIndex(ORDER,DIAG-ORDER,help.Height()-1)] = help(DIAG-ORDER,0);
 

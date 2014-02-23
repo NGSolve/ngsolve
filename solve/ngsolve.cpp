@@ -130,12 +130,166 @@ int NGS_Help (ClientData clientData,
 NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
 
 
-#ifdef SOCKETS
-AutoPtr<ngsolve::ServerJobManager> serverjobmanager;
-namespace netgen {
-  extern ServerSocketManager serversocketmanager;
+
+#include <sockets.hpp>
+
+
+  class SocketOutArchive : public Archive
+  {
+    Socket & sock;
+  public:
+    SocketOutArchive (Socket & asock) : sock(asock) { ; }
+
+    virtual bool Output () { return true; }
+    virtual bool Input () { return false; }
+
+    virtual Archive & operator & (double & d) 
+    {
+      sock.Tsend(d);
+      return *this; 
+    }
+    virtual Archive & operator & (int & i) 
+    {
+      sock.Tsend(i);
+      return *this; 
+    }
+    virtual Archive & operator & (short int & i) 
+    {
+      sock.Tsend(i);
+      return *this; 
+    }
+    virtual Archive & operator & (unsigned char & i) 
+    { 
+      sock.Tsend (i);
+      return *this; 
+    }
+    virtual Archive & operator & (bool & b) 
+    { 
+      return *this; 
+    }
+    virtual Archive & operator & (string & str) 
+    {
+      sock.send (str);
+      return *this; 
+    }
+    virtual Archive & operator & (char *& str) 
+    {
+      sock.send (string (str));
+      return *this; 
+    }
+  };
+
+
+  class SocketInArchive : public Archive
+  {
+    Socket & sock;
+  public:
+    SocketInArchive (Socket & asock) : sock(asock) { ; }
+    virtual bool Output () { return false; }
+    virtual bool Input () { return true; }
+    virtual Archive & operator & (double & d) 
+    {
+      sock.Trecv (d);
+      return *this; 
+    }
+    virtual Archive & operator & (int & i) 
+    {
+      sock.Trecv (i);
+      return *this; 
+    }
+    virtual Archive & operator & (short int & i) 
+    {
+      sock.Trecv (i);
+      return *this; 
+    }
+    virtual Archive & operator & (unsigned char & i) 
+    {
+      sock.Trecv(i);
+      return *this; 
+    }
+    virtual Archive & operator & (bool & b) { return *this; }
+
+    virtual Archive & operator & (string & str) 
+    { 
+      sock.recv (str);
+      return *this;
+    }
+
+    virtual Archive & operator & (char *& str) 
+    { 
+      string hstr;
+      sock.recv (hstr);
+      str = new char [hstr.length()+1];
+      strcpy (str, hstr.c_str());
+      return *this;
+    }
+  };
+
+
+
+
+static pthread_t socket_thread;
+void MyRunParallel ( void * (*fun)(void *), void * in)
+{
+  pthread_attr_t attr;
+  pthread_attr_init (&attr);
+  pthread_attr_setstacksize(&attr, 1000000);
+  pthread_create (&socket_thread, &attr, fun, in);
 }
-#endif
+
+void * SocketThread (void * data)
+{
+  int port = *(int*)data;
+  cout << "NGSolve accepts socket communication on port " << port << endl;
+  ServerSocket server (port);
+
+  while (true)
+    {
+      try
+        {
+          ServerSocket new_sock;
+          server.accept (new_sock);
+
+          while (new_sock.is_valid())
+            {
+              string str;
+              new_sock >> str;
+              
+              if (str == "")
+                break;
+              else if (str == "np") 
+                new_sock << ToString (pde->GetMeshAccess().GetNP());
+              else if (str == "ne") 
+                new_sock << ToString (pde->GetMeshAccess().GetNE());
+              /*
+              else if (str == "mesh") 
+                {
+                  stringstream str;
+                  netgen::mesh -> Save (str);
+                  new_sock << str.str();
+                }
+              */
+              else if (str == "pde") 
+                {
+                  SocketOutArchive archive(new_sock);
+                  pde -> DoArchive (archive);
+                  cout << "PDE completely sent" << endl;
+                }
+              else
+                {
+                  cout << "got string '" << str << "'" << endl;
+                  new_sock << "hab dich nicht verstanden";
+                }
+
+            }
+        }
+      catch ( SocketException& ) {}
+    }
+  return NULL;
+}
+
+
+
 
 
 
@@ -165,6 +319,14 @@ int NGS_LoadPDE (ClientData clientData,
 
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
+
+          int port = pde -> GetConstant ("port", true);
+          if (port)
+            {
+              int * hport = new int;
+              *hport = port;
+              MyRunParallel (SocketThread, hport);
+            }
 	}
       catch (exception & e)
 	{
@@ -334,6 +496,71 @@ int NGS_LoadSolution (ClientData clientData,
     }
 
   Tcl_SetResult (interp, (char*)"Cannot load solution", TCL_STATIC);
+  return TCL_ERROR;
+}
+
+
+
+int NGS_DumpPDE (ClientData clientData,
+		      Tcl_Interp * interp,
+		      int argc, tcl_const char *argv[])
+{
+  if (argc >= 2 && pde)
+    {
+      TextOutArchive archive (argv[1]);
+      pde->DoArchive (archive);
+      return TCL_OK;
+    }
+
+  Tcl_SetResult (interp, (char*)"Dump error", TCL_STATIC);
+  return TCL_ERROR;
+}
+
+int NGS_RestorePDE (ClientData clientData,
+                         Tcl_Interp * interp,
+                         int argc, tcl_const char *argv[])
+{
+  if (argc >= 2)
+    {
+      TextInArchive archive (argv[1]);
+      pde.Reset(new ngsolve::PDE);
+      pde->DoArchive (archive);
+      return TCL_OK;
+    }
+
+  Tcl_SetResult (interp, (char*)"Dump error", TCL_STATIC);
+  return TCL_ERROR;
+}
+
+
+int NGS_SocketLoad (ClientData clientData,
+                    Tcl_Interp * interp,
+                    int argc, tcl_const char *argv[])
+{
+  if (argc >= 2)
+    {
+      try
+        {
+          int portnum = atoi (argv[1]);
+          cout << "load from port " << portnum;
+          
+          ClientSocket socket (portnum,"localhost");
+          socket << "pde";
+          
+          SocketInArchive archive (socket);
+          pde.Reset(new ngsolve::PDE);
+          pde->DoArchive (archive);
+          return TCL_OK;
+        }
+      catch (SocketException & e)
+        {
+          cout << "caught SocketException : " << e.What() << endl;
+          Tcl_SetResult (interp, (char*) e.What().c_str(), TCL_VOLATILE);
+          return TCL_ERROR;
+        }
+    }
+
+  Tcl_SetResult (interp, (char*)"load socket error", TCL_STATIC);
   return TCL_ERROR;
 }
 
@@ -765,6 +992,18 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (Tcl_CmdDeleteProc*) NULL);
 
   Tcl_CreateCommand (interp, "NGS_LoadSolution", NGS_LoadSolution,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+  Tcl_CreateCommand (interp, "NGS_DumpPDE", NGS_DumpPDE,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+  Tcl_CreateCommand (interp, "NGS_RestorePDE", NGS_RestorePDE,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+  Tcl_CreateCommand (interp, "NGS_SocketLoad", NGS_SocketLoad,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 

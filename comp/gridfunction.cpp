@@ -34,6 +34,22 @@ namespace ngcomp
     throw Exception("GridFunction::Update not overloaded");
   }
 
+  void GridFunction :: DoArchive (Archive & archive)
+  {
+    archive & nested & visual & multidim & level_updated;
+    archive & cacheblocksize;
+
+    if (!archive.Output()) Update();
+    
+    for (int i = 0; i < vec.Size(); i++)
+      {
+        FlatVector<double> fv = vec[i] -> FVDouble();
+        for (int i = 0; i < fv.Size(); i++)
+          archive & fv(i);
+      }
+  }
+
+
   bool GridFunction :: IsUpdated () const
   {
     int ndof = GetFESpace().GetNDof();
@@ -900,12 +916,12 @@ namespace ngcomp
 
     ArrayMem<int, 50> dnums;
     fes.GetDofNrs (elnr, boundary, dnums);
-     
+    
     VectorMem<50> elu(dnums.Size()*dim);
 
     gf.GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-    
+
     if (diffop)
       diffop->Apply (fel, ir, elu, values, lh2);
     else

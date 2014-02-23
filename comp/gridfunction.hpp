@@ -42,6 +42,8 @@ namespace ngcomp
     virtual ~GridFunction ();
     ///
     virtual void Update ();
+    ///
+    virtual void DoArchive (Archive & archive);
     ///  
     virtual BaseVector & GetVector (int comp = 0) { return *(vec[comp]); }
     ///  
