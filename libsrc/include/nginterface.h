@@ -289,6 +289,7 @@ extern "C" {
   // #include "../visualization/soldata.hpp"
     class SolutionData;
     class MouseEventHandler;
+    class UserVisualizationObject;
   }
 
   enum Ng_SolutionType
@@ -326,6 +327,8 @@ extern "C" {
   DLL_HEADER void Ng_Redraw();
   ///
   DLL_HEADER void Ng_SetMouseEventHandler (netgen::MouseEventHandler * handler);
+  ///
+  DLL_HEADER void Ng_SetUserVisualizationObject (netgen::UserVisualizationObject * vis);
   //
   DLL_HEADER void Ng_SetVisualizationParameter (const char * name, 
                                                 const char * value);

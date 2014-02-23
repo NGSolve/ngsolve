@@ -580,6 +580,12 @@ namespace netgen
         glCallList (clipplane_isolinelist);
       }
 
+
+    // user visualization
+    
+    for (int i = 0; i < user_vis.Size(); i++)
+      user_vis[i] -> Draw();
+
     glPopMatrix();
     
     glDisable(GL_CLIP_PLANE0);

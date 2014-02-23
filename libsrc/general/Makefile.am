@@ -1,8 +1,6 @@
 noinst_HEADERS = array.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp flags.hpp mystring.hpp spbita2d.hpp template.hpp autoptr.hpp hashtabl.hpp netgenout.hpp profiler.hpp stack.hpp bitarray.hpp seti.hpp symbolta.hpp dynamicmem.hpp  parthreads.hpp mpi_interface.hpp gzstream.h
 
-#  moveablemem.hpp
-
-include_HEADERS = ngexception.hpp
+include_HEADERS = ngexception.hpp archive_base.hpp
 
 AM_CPPFLAGS =  $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include
 METASOURCES = AUTO
@@ -12,4 +10,3 @@ libgen_la_SOURCES = array.cpp bitarray.cpp dynamicmem.cpp flags.cpp \
 	profiler.cpp seti.cpp sort.cpp spbita2d.cpp symbolta.cpp table.cpp \
 	mpi_interface.cpp gzstream.cpp
 
-#  moveablemem.cpp

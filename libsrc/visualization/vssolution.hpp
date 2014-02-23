@@ -86,12 +86,13 @@ class VisualSceneSolution : public VisualScene
 
   NgLock *lock;
 
-
+  
 #ifdef PARALLELGL
   Array<int> par_linelists;
   Array<int> par_surfellists;
 #endif
 
+  Array<UserVisualizationObject*> user_vis;
 
 public:
 
@@ -209,6 +210,12 @@ public:
   }
 
   void GetMinMax (int funcnr, int comp, double & minv, double & maxv) const;
+
+  void AddUserVisualizationObject (UserVisualizationObject * vis)
+  {
+    user_vis.Append (vis);
+  }
+  
 
 private:
   void GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs, Array<ClipPlanePoint> & pts);

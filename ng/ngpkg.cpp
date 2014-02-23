@@ -2764,6 +2764,10 @@ void Ng_SetMouseEventHandler (netgen::MouseEventHandler * handler)
   vsmesh.SetMouseEventHandler (handler);
 }
 
+void Ng_SetUserVisualizationObject (netgen::UserVisualizationObject * vis)
+{
+  vssolution.AddUserVisualizationObject (vis);
+}
 
 void Ng_ClearSolutionData ()
 {
