@@ -739,8 +739,8 @@ namespace ngsolve
 	  
 
     // set solution data
-    for (int i = 0; i < gridfunctions.Size(); i++)
-      gridfunctions[i]->Visualize(gridfunctions.GetName(i));
+    // for (int i = 0; i < gridfunctions.Size(); i++)
+    //   gridfunctions[i]->Visualize(gridfunctions.GetName(i));
 
     t2.Stop();
 

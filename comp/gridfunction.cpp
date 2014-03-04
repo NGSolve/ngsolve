@@ -1006,7 +1006,6 @@ namespace ngcomp
     try
       {
 	LocalHeapMem<100000> lh("visgf::getvalue");
-
 	if (!bfi3d.Size()) return false;
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return false;
 	
@@ -1023,12 +1022,12 @@ namespace ngcomp
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
 	const FiniteElement & fel = fes.GetFE (elnr, lh);
 
+
 	Array<int> dnums (fel.GetNDof(), lh);
 	fes.GetDofNrs (elnr, dnums);
 
         // t1.Stop();
         // t2.Start();
-
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
@@ -1046,7 +1045,6 @@ namespace ngcomp
 	  }
 
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
-
         // t2.Stop();
         // t3.Start();
 
@@ -1302,7 +1300,6 @@ namespace ngcomp
 
     try
       {
-
 	if (!bfi2d.Size()) return 0;
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
