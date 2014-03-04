@@ -819,7 +819,7 @@ namespace ngbla
     }
 
     /// assign constant
-    FlatMatrixFixWidth & operator= (TSCAL s) throw()
+    const FlatMatrixFixWidth & operator= (TSCAL s) const throw()
     {
       if (W == DIST)
         for (int i = 0; i < h*W; i++)
@@ -833,7 +833,7 @@ namespace ngbla
     }
 
     /// copy size and pointers
-    FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
+    const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) const throw()
     {
       h = m.h;
       data = m.data;
