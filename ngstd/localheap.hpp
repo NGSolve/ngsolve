@@ -100,7 +100,7 @@ namespace ngstd
       p += size;
 
       // if ( size_t(p - data) >= totsize )
-#ifndef FULLSPEED
+#ifndef xxFULLSPEED
       if (p >= next)
         ThrowException();
 #endif
@@ -118,7 +118,7 @@ namespace ngstd
       size += (ALIGN - size % ALIGN);
       p += size;
 
-#ifndef FULLSPEED
+#ifndef xxFULLSPEED
       if (p >= next)
 	ThrowException();
 #endif
@@ -126,9 +126,9 @@ namespace ngstd
       return reinterpret_cast<T*> (oldp);
     }
 
-  private:
+  private: 
     ///
-    NGS_DLL_HEADER void ThrowException(); //  throw (LocalHeapOverflow);
+    NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
 
   public:
     /// free memory (dummy function)
