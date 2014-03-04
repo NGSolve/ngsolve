@@ -126,12 +126,8 @@ int NGS_Help (ClientData clientData,
 
 
 
-// AutoPtr<ngcomp::MeshAccess> ma;
 NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
 
-
-
-#include <sockets.hpp>
 
 
   class SocketOutArchive : public Archive
@@ -544,7 +540,10 @@ int NGS_SocketLoad (ClientData clientData,
           int portnum = atoi (argv[1]);
           cout << "load from port " << portnum;
           
-          ClientSocket socket (portnum,"localhost");
+          string hostname = "localhost";
+          if (argc >= 3) hostname = argv[2];
+              
+          ClientSocket socket (portnum, hostname);
           socket << "pde";
           
           SocketInArchive archive (socket);
