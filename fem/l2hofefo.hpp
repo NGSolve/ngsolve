@@ -263,7 +263,7 @@ namespace ngfem
           int ii = 0;
           IterateTrig<ORDER> ([&] (int ix, int iy)
             {
-              mass[ii] = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+              mass[ii] = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
               ii++;
             });
 
@@ -345,7 +345,7 @@ namespace ngfem
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,7>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,8>, ET_TRIG, DGFiniteElement<2>>;
   */
-
+  
 
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
@@ -357,6 +357,8 @@ namespace ngfem
   /*
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,7>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,8>>;
+  // L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,9>>;
+  // L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,10>>;
   */
 
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,0>;
@@ -370,6 +372,9 @@ namespace ngfem
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,7>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,8>;
   */
+  // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,9>;
+  // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,10>;
+
 }
 
 
