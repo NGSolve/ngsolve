@@ -49,6 +49,7 @@
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
 #define INLINE __attribute__ ((__always_inline__)) inline
 #define LAMBDA_INLINE __attribute__ ((__always_inline__))
+#define VLA
 #else
 #define ALWAYS_INLINE
 #define INLINE inline
