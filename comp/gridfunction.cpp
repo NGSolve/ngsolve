@@ -82,6 +82,13 @@ namespace ngcomp
 
 
 
+  void GridFunction :: AddMultiDimComponent (BaseVector & v)
+  {
+    vec.SetSize (vec.Size()+1);
+    vec[multidim] = v.CreateVector();
+    *vec[multidim] = v;
+    multidim++;
+  }
 
 
   void GridFunction :: Visualize(const string & given_name)
