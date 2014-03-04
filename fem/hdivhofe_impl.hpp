@@ -55,14 +55,12 @@ namespace ngfem
 
 
   template<typename Tx, typename TFA>  
-  void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  INLINE void  HDivHighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx hx[2], TFA & shape) const
   {
     if (only_ho_div && (order_inner[0] <= 1)) return;
 
     Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
 
-    ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
-	
     int ii = 3; 
     if (!only_ho_div)
       {
@@ -79,7 +77,8 @@ namespace ngfem
               { 
                 AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
                 
-                LegendrePolynomial::
+                // LegendrePolynomial::
+                IntLegNoBubble::
                   EvalScaledMult (p-1, xi, lami[e[0]]+lami[e[1]], 
                                   lami[e[0]]*lami[e[1]], 
                                   SBLambda([&](int i, AutoDiff<2> v)
@@ -96,6 +95,8 @@ namespace ngfem
     int p = order_inner[0];      
     if(p > 1) 
       {
+        ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
+
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
 	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
@@ -165,7 +166,9 @@ namespace ngfem
         // if(usegrad_edge[i])
           {
             // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
-            LegendrePolynomial::EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
+            // LegendrePolynomial::
+            IntLegNoBubble::
+              EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
             for (int j = 0; j < p; j++)
               shape[ii++] = Du<2> (pol_xi[j] * lam_e);
           }

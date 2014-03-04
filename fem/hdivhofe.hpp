@@ -21,19 +21,14 @@ namespace ngfem
   protected:
     int vnums[8];
  
-    INT<3> order_inner;
+    INT<DIM> order_inner;
     INT<2> order_face[6];  // 3D only
     int order_edge[12];   // 2D only
 
-    // bool augmented;
-
-    // bool discontinuous;
     bool ho_div_free;
     bool only_ho_div;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-
-
   public:
     HDivHighOrderFiniteElement () 
       : ho_div_free(false), only_ho_div(false) { ; }
@@ -42,11 +37,11 @@ namespace ngfem
     void SetVertexNumbers (FlatArray<int> & avnums);
     void SetOrderEdge(FlatArray<int> & oe);
     void SetOrderFace (FlatArray<int> & of);
-    void SetOrderInner (int oi);
+    // void SetOrderInner (int oi);
     void SetOrderFace (FlatArray<INT<2> > & of);
-    void SetOrderInner (INT<3> oi); 
+    void SetOrderInner (INT<DIM> oi); 
 
-    void SetDiscontinuous (bool disc) { ; } // discontinuous = disc; };  
+    // void SetDiscontinuous (bool disc) { ; } // discontinuous = disc; };  
     void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; only_ho_div = only_ho_div && !ho_div_free;};  
     void SetOnlyHODiv (bool aonly_ho_div) { only_ho_div = aonly_ho_div; ho_div_free = ho_div_free && !only_ho_div;};  
 
@@ -66,19 +61,14 @@ namespace ngfem
   template <int D>
   class HDivHighOrderNormalFiniteElement : public HDivNormalFiniteElement<D>
   {
-
-    //public:
-    // enum { DIM = D };
-
   protected:
     int vnums[4];
     INT<2> order_inner;
 
-    int ned; // number of edges in element
-    int nv; // number of vertices in element
+    // int ned; // number of edges in element
+    // int nv; // number of vertices in element
 
-
-    bool augmented;
+    // bool augmented;
 
   public:
     ///
@@ -159,18 +149,14 @@ namespace ngfem
   
     using HDivFiniteElement<DIM>::ndof;
     using HDivFiniteElement<DIM>::order;
-    // using HDivFiniteElement<DIM>::eltype;
 
     using HDivHighOrderFiniteElement<DIM>::order_edge;
     using HDivHighOrderFiniteElement<DIM>::order_face;
     using HDivHighOrderFiniteElement<DIM>::order_inner;
     using HDivHighOrderFiniteElement<DIM>::ho_div_free;
     using HDivHighOrderFiniteElement<DIM>::only_ho_div;
-    // using HDivHighOrderFiniteElement<DIM>::discontinuous;
-
 
     using HDivHighOrderFiniteElement<DIM>::vnums;
-  
   
   public:
     T_HDivHighOrderFiniteElement () 

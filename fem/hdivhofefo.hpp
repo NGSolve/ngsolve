@@ -134,8 +134,6 @@ namespace ngfem
         for (int i = 0; i < 3; i++)
         {
           INT<2> e = this->GetEdgeSort (i, vnums);
-          // int es = edges[i][0], ee = edges[i][1];
-          // if (vnums[es] > vnums[ee])  swap (es, ee);
           
           //Nedelec low order edge shape function 
           shape[i] = uDv_minus_vDu<2> (lami[e[0]], lami[e[1]]);
@@ -144,12 +142,22 @@ namespace ngfem
           if(ORDER > 0) //  && usegrad_edge[i]) 
             { 
               AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
+              // LegendrePolynomial::
+              IntLegNoBubble::
+                EvalScaledMult (ORDER-1, xi, lami[e[0]]+lami[e[1]], 
+                                lami[e[0]]*lami[e[1]], 
+                                SBLambda([&](int i, AutoDiff<2> v)
+                                         {
+                                           shape[ii++] = Du<2>(v);
+                                         }));
+              /*
               AutoDiff<2> eta = 1 - lami[e[1]] - lami[e[0]]; 
               // T_ORTHOPOL::CalcTrigExt(ORDER+1, xi, eta, adpol1); 
               T_ORTHOPOL::CalcScaled<ORDER+1> (xi, 1-eta, adpol1); 
               
               for(int j = 0; j < ORDER; j++) 
               shape[ii++] = Du<2> (adpol1[j]);
+              */
             }
         }   
       }

@@ -50,7 +50,6 @@ namespace ngfem
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = INT<2>(of[i],of[i]);
     ComputeNDof();
-   
   }
   
   template <int D>
@@ -62,18 +61,19 @@ namespace ngfem
     ComputeNDof();
   }
 
+  /*
   template <int D>
   void HDivHighOrderFiniteElement<D>::
   SetOrderInner (int oi)
   {
     order_inner = INT<3>(oi,oi,oi);
     ComputeNDof();
-
   }
-  
+  */
+
   template <int D>
   void HDivHighOrderFiniteElement<D>::
-  SetOrderInner (INT<3> oi)
+  SetOrderInner (INT<D> oi)
   {
     order_inner = oi;
     ComputeNDof();
@@ -160,7 +160,8 @@ namespace ngfem
     shape[0] = -lam[e[0]].DValue(0);
 
     int p = order_inner[0]; 
-    LegendrePolynomial::
+    // LegendrePolynomial::
+    IntLegNoBubble::
       EvalMult (p-1, 
                 lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], adpol1);
     
@@ -338,6 +339,7 @@ namespace ngfem
     ArrayMem<AutoDiff<2>, 100> ad_rec_pol2(p);
 
     ScaledLegendrePolynomial(p-1, le-ls, 1-lo, ad_rec_pol1);
+    // IntLegNoBubble::EvalScaled (p-1, le-ls, 1-lo, ad_rec_pol1); 
     LegendrePolynomial(p-1, 2*lo-1, ad_rec_pol2);
 
     for (k = 0; k <= p-1; k++)

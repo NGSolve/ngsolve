@@ -814,6 +814,12 @@ namespace ngfem
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const 
+    { 
+      return static_cast<const REC&>(*this).P1(x);
+    }
+
     template <class S, class Sy, class Sc, class T>
     INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values) const
     {
@@ -824,7 +830,7 @@ namespace ngfem
       values[0] = p2 = c * static_cast<const REC&>(*this).P0(x);
       if (n < 1) return;
 
-      values[1] = p1 = c * static_cast<const REC&>(*this).P1(x);
+      values[1] = p1 = c * static_cast<const REC&>(*this).P1(x,y);
 
       for (int i = 2; i <= n; i++)
         values[i] = EvalScaledNext (i, x, y, p1, p2);
@@ -891,6 +897,31 @@ namespace ngfem
     static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
     enum { ZERO_B = 1 };
   };
+
+
+  class IntLegNoBubble : public RecursivePolynomial<IntLegNoBubble>
+  {
+  public:
+    IntLegNoBubble () { ; }
+    
+    template <class S, class T>
+    inline IntLegNoBubble (int n, S x, T && values)
+    {
+      Eval (n, x, values);
+    }
+    
+    template <class S>
+    static ALWAYS_INLINE double P0(S x)  { return -0.5; }
+    template <class S>
+    static ALWAYS_INLINE S P1(S x)  { return -0.5*x; }
+    
+    static ALWAYS_INLINE double A (int i) { i+=2; return (2*i-3)/double(i); }
+    static ALWAYS_INLINE double B (int i) { return 0; }
+    static ALWAYS_INLINE double C (int i) { i+=2; return -(i-3.0)/i; }
+    enum { ZERO_B = 1 };
+  };
+    
+
 
 
   class IntegratedLegendrePolynomial : public RecursivePolynomial<IntegratedLegendrePolynomial>
@@ -1105,6 +1136,12 @@ namespace ngfem
     { 
       // return coefs[offset+1][0]*x+coefs[offset+1][1]; 
       return coefsal[1][0]*x+coefsal[1][1]; 
+    }
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const 
+    { 
+      // return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+      return coefsal[1][0]*x+coefsal[1][1]*y; 
     }
     
     /*

@@ -69,28 +69,27 @@ namespace ngfem
       default:
         ;
       }
-
-    order = 0; // max(order_edges,order_face,order_cell);  
+    
+    TORDER horder = 0; 
     for (int i = 0; i < N_EDGE; i++)
-      order = max (order, int (order_edge[i]));
+      horder = max (horder, order_edge[i]);
 
     for(int i=0; i < N_FACE; i++) 
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-        order = max (order, order_face[i][0]);
+        horder = max (horder, order_face[i][0]);
       else
-        order = max (order, Max (order_face[i]));
+        horder = max (horder, Max (order_face[i]));
 
     if (DIM == 3)
-      order = max (order, Max(order_cell));
+      horder = max (horder, Max(order_cell));
 
     // for integration order .. 
     if (ET == ET_PRISM || ET == ET_HEX || ET == ET_PYRAMID || ET == ET_QUAD)
-      order++;
+      horder++;
     else
-      if (order==0) order++;
+      if (horder==0) horder++;
+    order = horder;
   }
-
-
 
 
 
@@ -102,7 +101,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     void T_CalcShape (Tx hx[2], TFA & shape) const; 
   };
-
 
 
 
