@@ -138,7 +138,7 @@ namespace ngfem
   {
     for (int ix = 0, ii = 0; ix <= order; ix++)
       for (int iy = 0; iy <= order - ix; iy++, ii++)
-	mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
+	mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
   }
 }
 
