@@ -123,9 +123,11 @@ namespace ngfem
 #endif
 
 
+  FINITEELEMENT_EXTERN template class DummyFE<ET_POINT>;
   FINITEELEMENT_EXTERN template class DummyFE<ET_SEGM>;
   FINITEELEMENT_EXTERN template class DummyFE<ET_TRIG>;
   FINITEELEMENT_EXTERN template class DummyFE<ET_QUAD>;
+
   FINITEELEMENT_EXTERN template class DummyFE<ET_TET>;
   FINITEELEMENT_EXTERN template class DummyFE<ET_PRISM>;
   FINITEELEMENT_EXTERN template class DummyFE<ET_PYRAMID>;

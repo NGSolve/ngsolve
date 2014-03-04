@@ -14,10 +14,6 @@ namespace ngfem
 
 
 
-
-
-
-
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   typename L2HighOrderFE<ET,SHAPES,BASE>::TPRECOMP L2HighOrderFE<ET,SHAPES,BASE>::precomp;
 
@@ -234,7 +230,7 @@ namespace ngfem
   }
 
 
-
+  
 
 
 
@@ -251,78 +247,6 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
   };
-
-
-  /*
-  template <>
-  class L2HighOrderFE_Shape<ET_POINT> : public L2HighOrderFE<ET_POINT>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <>
-  class L2HighOrderFE_Shape<ET_SEGM> : public L2HighOrderFE<ET_SEGM>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <> 
-  class L2HighOrderFE_Shape<ET_TRIG> : public L2HighOrderFE<ET_TRIG>
-  {
-        
-  public:        
-    template<typename Tx, typename TFA> 
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-  
-  template <> 
-  class L2HighOrderFE_Shape<ET_QUAD> : public L2HighOrderFE<ET_QUAD>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
-  };
-
-  template <> 
-  class L2HighOrderFE_Shape<ET_TET> : public L2HighOrderFE<ET_TET>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <> 
-  class L2HighOrderFE_Shape<ET_PRISM> : public L2HighOrderFE<ET_PRISM>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
-  };
-
-  template <> 
-  class L2HighOrderFE_Shape<ET_PYRAMID> : public L2HighOrderFE<ET_PYRAMID>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-
-  template <> 
-  class L2HighOrderFE_Shape<ET_HEX> : public L2HighOrderFE<ET_HEX>
-  {
-  public:
-    template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx x[], TFA & shape) const;
-  };
-  */
-
-
-
-
 
 
 
@@ -363,7 +287,7 @@ namespace ngfem
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     INT<4> f = GetFaceSort (0, vnums);
     int p = order_inner[0];
-    DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+    DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
   }
 
 
@@ -380,15 +304,23 @@ namespace ngfem
     
     Tx xi = sigma[f[0]]-sigma[f[1]]; 
     Tx eta = sigma[f[0]]-sigma[f[3]]; 
-    
-    int n = max(order_inner[0],order_inner[1]);
-    ArrayMem<Tx, 20> polx(n+1), poly(n+1);
+
+    int p=order_inner[0];
+    int q=order_inner[1];
+
+#ifdef VLA
+    Tx mem[p+q+2];
+    Tx * polx = &mem[0];
+    Tx * poly = &mem[p+1];
+#else
+    ArrayMem<Tx, 20> polx(p+1), poly(q+1);
+#endif
       
-    LegendrePolynomial (n, xi, polx);
-    LegendrePolynomial (n, eta, poly);
+    LegendrePolynomial (p, xi, polx);
+    LegendrePolynomial (q, eta, poly);
       
-    for (int i = 0, ii = 0; i <= order_inner[0]; i++)
-      for (int j = 0; j <= order_inner[1]; j++)
+    for (int i = 0, ii = 0; i <= p; i++)
+      for (int j = 0; j <= q; j++)
         shape[ii++] = polx[i] * poly[j];
   }
 
@@ -414,24 +346,59 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       lamis[i] = lami[sort[i]];
 
+    /*
     ArrayMem<Tx, 20> memx(sqr(order+1));
     ArrayMem<Tx, 20> memy(sqr(order+1));
-
+    VectorMem<10, Tx> polsz(order+1);
     FlatMatrix<Tx> polsx(order+1, &memx[0]);
     FlatMatrix<Tx> polsy(order+1, &memy[0]);
-    VectorMem<10, Tx> polsz(order+1);
-    
-    for (int i = 0; i <= order; i++)
-      JacobiPolynomial (order, 2*lamis[0]-1, 2*i+2, 0, polsx.Row(i));
-    for (int i = 0; i <= order; i++)
-      ScaledJacobiPolynomial (order, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], 2*i+1, 0, polsy.Row(i));
 
-    ScaledLegendrePolynomial (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
+    for (int i = 0; i <= order; i++)
+      {
+        JacobiPolynomialAlpha jac(2*i+2);
+        jac.Eval (order, 2*lamis[0]-1, polsx.Row(i));
+      }
+
+    for (int i = 0; i <= order; i++)
+      {
+        JacobiPolynomialAlpha jac(2*i+1);
+        jac.EvalScaled (order, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polsy.Row(i));
+      }
+
+    // ScaledLegendrePolynomial (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
 
     for (int i = 0, ii = 0; i <= order; i++)
       for (int j = 0; j <= order-i; j++)
         for (int k = 0; k <= order-i-j; k++, ii++)
           shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
+
+
+    */
+
+#ifdef VLA
+    Tx mem[2*order+2];
+    Tx * polsy = &mem[0];
+    Tx * polsz = &mem[order+1];
+#else
+    VectorMem<20, Tx> polsz(order+1);
+    VectorMem<20, Tx> polsy(order+1);
+#endif
+
+    LegendrePolynomial leg;
+    leg.EvalScaled (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
+
+    for (int k = 0, ii = 0; k <= order; k++)
+      {
+        JacobiPolynomialAlpha jac(2*k+1);
+        jac.EvalScaledMult (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polsz[k], polsy);
+
+        for (int j = 0; j <= order-k; j++)
+          {
+            JacobiPolynomialAlpha jac(2*(j+k)+2);
+            jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
+            ii += order-k-j+1;
+          }
+      }
   }
 
 
@@ -543,7 +510,14 @@ namespace ngfem
     int q=order_inner[1];
     int r=order_inner[2];
     
+#ifdef VLA
+    Tx mem[p+q+r+3];
+    Tx * polx = &mem[0];
+    Tx * poly = &mem[p+1];
+    Tx * polz = &mem[p+q+2];
+#else
     ArrayMem<Tx, 20> polx(p+1), poly(q+1), polz(r+1);
+#endif
 
     LegendrePolynomial (p, 2*x-1, polx);
     LegendrePolynomial (q, 2*y-1, poly);
@@ -551,9 +525,17 @@ namespace ngfem
   
     for (int i = 0, ii = 0; i <= p; i++)
       for (int j = 0; j <= q; j++)
-        for (int k = 0; k <= r; k++)
-          shape[ii++] = polx[i] * poly[j] * polz[k];
+        {
+          Tx hval = polx[i] * poly[j];
+          for (int k = 0; k <= r; k++)
+            shape[ii++] = hval * polz[k];
+        }
+
   }
+
+
+
+
 
 
 

@@ -42,15 +42,14 @@ namespace ngfem
   }
   
       
-
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
-	    FlatMatrixFixWidth<DIM> vals) const
+	    FlatMatrixFixWidth<DIM> vals) const  
   {    
-    static Timer t("HDivFE - evaluate IR");
-    t.AddFlops (ir.GetNIP()* this->GetNDof());
-    RegionTimer reg(t);
+    // static Timer t("HDivFE - evaluate IR");
+    // t.AddFlops (ir.GetNIP()* this->GetNDof());
+    // RegionTimer reg(t);
 
     for (int i = 0; i < ir.GetNIP(); i++)
       {

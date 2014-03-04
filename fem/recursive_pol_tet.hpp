@@ -17,8 +17,17 @@ namespace ngfem
     template <typename Sx, typename Sy, typename Sz, typename T>
     static INLINE int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
-      // ArrayMem<Sx, 20> polx(n+1), poly(n+1); //, polz(n+1);
-      Sx polx[100], poly[100];
+#ifdef VLA
+      Sx tmp[2*n+2];
+      Sx * polx = &tmp[0];
+      Sx * poly = &tmp[n+1];
+#else
+      ArrayMem<Sx, 20> polx(n+1), poly(n+1); //, polz(n+1);
+#endif
+
+      // Sx polx[100], poly[100];
+
+
       Sx bub = (1-x-y-z) * (1+x-y-z) * y * z ; 
 
       LegendrePolynomial::EvalScaledMult (n-4, x, 1-y-z, bub, polx);

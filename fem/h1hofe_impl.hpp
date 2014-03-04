@@ -12,8 +12,6 @@
 namespace ngfem
 {
 
-  
-
   template <ELEMENT_TYPE ET> 
   class H1HighOrderFE_Shape : public H1HighOrderFE<ET, H1HighOrderFE_Shape<ET>>
   {
@@ -22,7 +20,6 @@ namespace ngfem
     void T_CalcShape (Tx hx[], TFA & shape) const;
   };
   
-
 
 
   /* *********************** Point  **********************/
@@ -35,8 +32,7 @@ namespace ngfem
 
 
 
-  /* *********************** Segment  **********************/
-  
+  /* *********************** Segment  **********************/  
 
   template <> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
@@ -92,8 +88,6 @@ namespace ngfem
 
   /* *********************** Quadrilateral  **********************/
 
-
-
   template<> template<typename Tx, typename TFA>  
   void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
   {
@@ -147,7 +141,6 @@ namespace ngfem
 
 
   /* *********************** Tetrahedron  **********************/
-
 
   template<> template<typename Tx, typename TFA>  
   INLINE void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
@@ -314,32 +307,8 @@ namespace ngfem
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
 
-    /*
-    shape[0] = (1-x)*(1-y)*(1-z);
-    shape[1] = x*(1-y)*(1-z);
-    shape[2] = x*y*(1-z);
-    shape[3] = (1-x)*y*(1-z);
-    shape[4] = (1-x)*(1-y)*z;
-    shape[5] = x*(1-y)*z;
-    shape[6] = x*y*z;
-    shape[7] = (1-x)*y*z; 
-
-    Tx lame[12] = {
-      (1-y)*(1-z), y*(1-z), (1-x)*(1-z), x*(1-z),
-      (1-y)*z, y*z, (1-x)*z, x*z,
-      (1-x)*(1-y), x*(1-y), x*y, (1-x)*y
-    };
-
-    Tx xie[12] = {
-      2*x-1, 1-2*x, 1-2*x, 2*x-1,
-      2*x-1, 1-2*x, 1-2*x, 2*x-1, 
-      2*z-1, 2*z-1, 2*z-1, 2*z-1
-    };
-    */
-
     // vertex shapes
-    for (int i = 0; i < 8; i++) 
-      shape[i] = lam[i]; 
+    for (int i = 0; i < 8; i++) shape[i] = lam[i]; 
     int ii = 8;
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
@@ -349,9 +318,6 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
 	  int p = order_edge[i];
-          // INT<2> e = GetEdge (i);	  
-	  // Tx xi = (vnums[e[0]] < vnums[e[1]]) ? xie[i] : -xie[i];
-          // Tx lam_e = lame[i];
 
           INT<2> e = GetEdgeSort (i, vnums);	  
           Tx xi = sigma[e[1]]-sigma[e[0]]; 
@@ -529,7 +495,5 @@ namespace ngfem
   }
 
 }
-
-
 
 #endif

@@ -108,11 +108,18 @@ namespace ngfem
     NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
   };
 
+}
+
 
   
 #ifdef FILE_L2HOFE_CPP
 #define L2HOFE_EXTERN
 
+#include <tscalarfe_impl.hpp>
+#include <l2hofe_impl.hpp>
+
+namespace ngfem
+{
   template <> inline void L2HighOrderFE<ET_POINT> ::
   GetDiagMassMatrix(FlatVector<> mass) const
   {
@@ -133,16 +140,22 @@ namespace ngfem
       for (int iy = 0; iy <= order - ix; iy++, ii++)
 	mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
   }
-
+}
 
 #else
 #define L2HOFE_EXTERN extern
 #endif
-  
+
+
+
+
+namespace ngfem
+{
   L2HOFE_EXTERN template class L2HighOrderFE<ET_POINT>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_SEGM>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_TRIG>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_QUAD>;
+
   L2HOFE_EXTERN template class L2HighOrderFE<ET_TET>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PRISM>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PYRAMID>;
@@ -150,7 +163,6 @@ namespace ngfem
 
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
-
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
 

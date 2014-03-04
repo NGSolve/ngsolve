@@ -42,18 +42,17 @@ namespace ngfem
 
     enum { DIM = ET_trait<ET>::DIM };
 
-    int vnums[N_VERTEX]; 
-    INT<N_EDGE, short> order_edge;
-    INT<2> order_face[6];
-    INT<3> order_cell;
+    typedef short TORDER;
 
+    int vnums[N_VERTEX]; 
+    INT<N_EDGE, TORDER> order_edge;
+    INT<N_FACE, INT<2, TORDER>> order_face;
+    INT<3, TORDER> order_cell;
     
     //bool usegrad_edge[N_EDGE]; 
     INT<N_EDGE, bool> usegrad_edge;
-    bool usegrad_face[6]; 
+    INT<N_FACE, bool> usegrad_face;
     bool usegrad_cell; 
-
-    // using BASE::xx_discontinuous;
 
     using BASE::ndof;
     using BASE::order;
@@ -80,59 +79,65 @@ namespace ngfem
 
     /// assignes vertex numbers
     template <typename TA> 
-    void SetVertexNumbers (const TA & avnums)
+    INLINE void SetVertexNumbers (const TA & avnums)
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
 
     // void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-    void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
-    void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+    INLINE void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
+    INLINE void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
 
-    void SetUseGradEdge(int nr, bool uge) { usegrad_edge[nr] = uge; }
-    void SetUseGradFace(int nr, bool ugf) { usegrad_face[nr] = ugf; }
+    INLINE void SetUseGradEdge(int nr, bool uge) { usegrad_edge[nr] = uge; }
+    INLINE void SetUseGradFace(int nr, bool ugf) { usegrad_face[nr] = ugf; }
 
 
-    void SetOrderCell (INT<3> oi) { order_cell = oi; }
+    INLINE void SetOrderCell (INT<3> oi) { order_cell = oi; }
 
     /// set isotropic or anisotropic face orders
     template <typename TA>
-    void SetOrderFace (const TA & of)
+    INLINE void SetOrderFace (const TA & of)
     { for (int i = 0; i < N_FACE; i++) order_face[i] = of[i]; }
 
     /// set edge orders
     template <typename TA>
-    void SetOrderEdge (const TA & oe)
+    INLINE void SetOrderEdge (const TA & oe)
     { for (int i = 0; i < N_EDGE; i++) order_edge[i] = oe[i]; }
 
     /// use edge-gradients
     template <typename TA>
-    void SetUseGradEdge (const TA & uge)
+    INLINE void SetUseGradEdge (const TA & uge)
     { for (int i = 0; i < N_EDGE; i++) usegrad_edge[i] = uge[i]; }
 
     /// use face-gradients
     template <typename TA>
-    void SetUseGradFace (const TA & ugf)
+    INLINE void SetUseGradFace (const TA & ugf)
     { for (int i = 0; i < N_FACE; i++) usegrad_face[i] = ugf[i]; }
 
-    void SetUseGradCell (bool ugc) 
+    INLINE void SetUseGradCell (bool ugc) 
     { usegrad_cell = ugc; }
 
     void ComputeNDof();
-
   };
 
-  
-
-
-
+}  
 
 
 #ifdef FILE_HCURLHOFE_CPP
+
 #define HCURLHOFE_EXTERN
+#include <thcurlfe_impl.hpp>
+#include <hcurlhofe_impl.hpp>
+
 #else
+
 #define HCURLHOFE_EXTERN extern
 
-  HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
+#endif
+
+
+namespace ngfem
+{
+  // HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_POINT>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_SEGM>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_TRIG>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_QUAD>;
@@ -141,7 +146,8 @@ namespace ngfem
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_PYRAMID>;
   HCURLHOFE_EXTERN template class HCurlHighOrderFE<ET_HEX>;
 
-
+  // HCURLHOFE_EXTERN template class 
+  // T_HCurlHighOrderFiniteElement<ET_POINT, HCurlHighOrderFE_Shape<ET_POINT>>;
   HCURLHOFE_EXTERN template class 
   T_HCurlHighOrderFiniteElement<ET_SEGM, HCurlHighOrderFE_Shape<ET_SEGM>>;
   HCURLHOFE_EXTERN template class 
@@ -157,7 +163,6 @@ namespace ngfem
   T_HCurlHighOrderFiniteElement<ET_PYRAMID, HCurlHighOrderFE_Shape<ET_PYRAMID>>;
   HCURLHOFE_EXTERN template class 
   T_HCurlHighOrderFiniteElement<ET_HEX, HCurlHighOrderFE_Shape<ET_HEX>>;
-#endif
   
 }
 
