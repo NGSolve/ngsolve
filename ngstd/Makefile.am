@@ -7,7 +7,7 @@ bessel.hpp bitarray.hpp blockalloc.hpp evalfunc.hpp exception.hpp     \
 flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      \
 profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    \
 parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      \
-polorder.hpp archive.hpp sockets.hpp
+polorder.hpp archive.hpp archive_base.hpp sockets.hpp
 
 
 libngstd_la_SOURCES = exception.cpp table.cpp bitarray.cpp flags.cpp \
