@@ -493,7 +493,7 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && 0)
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
 	switch (order)
@@ -552,7 +552,6 @@ namespace ngcomp
     ma.GetElVertices(elnr, vnums);
     if ( ma.GetDimension() == 2)
       {
-	
 	HDivHighOrderFiniteElement<2> * hofe =
 	  dynamic_cast<HDivHighOrderFiniteElement<2>*> (fe);
 	ArrayMem<int, 12> ednums, order_ed;
@@ -566,14 +565,9 @@ namespace ngcomp
 	hofe -> SetVertexNumbers (vnums);
 	hofe -> SetOrderEdge (order_ed);
 	
-	// #ifndef NEW_HDIVFE // old version 
-	//  hofe -> SetOrderInner (order_inner[elnr][0]);
-	// hofe -> SetDiscontinuous(discont); 
-	// #else
-        // new anisotropic FE
 	hofe -> SetOrderInner (order_inner[elnr]); 
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]);
-	hofe -> SetDiscontinuous(discont); 
+
         hofe -> SetHODivFree (ho_div_free);
         hofe -> SetOnlyHODiv (false);
 	hofe -> ComputeNDof();
@@ -596,7 +590,6 @@ namespace ngcomp
 	hofe -> SetOrderFace (order_fa);
 	hofe -> SetOrderInner (order_inner[elnr]);
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]); // under construction
-	hofe -> SetDiscontinuous(discont); 
         hofe -> SetHODivFree (ho_div_free);
         hofe -> SetOnlyHODiv (false);
 	hofe -> ComputeNDof();
@@ -607,9 +600,9 @@ namespace ngcomp
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
-    if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && 0)
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
-	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
+	HDivHighOrderFiniteElementFO<2> * hofe2d = 0; 
 	switch (order)
 	  {
 	  case 1: hofe2d = new (lh)  HDivHighOrderFEFO<ET_TRIG,1> (); break;
@@ -674,14 +667,8 @@ namespace ngcomp
 	hofe -> SetVertexNumbers (vnums);
 	hofe -> SetOrderEdge (order_ed);
 	
-	// #ifndef NEW_HDIVFE // old version 
-	//  hofe -> SetOrderInner (order_inner[elnr][0]);
-	// hofe -> SetDiscontinuous(discont); 
-	// #else
-        // new anisotropic FE
 	hofe -> SetOrderInner (order_inner[elnr]); 
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]);
-	hofe -> SetDiscontinuous(discont); 
         hofe -> SetOnlyHODiv (true);
 	hofe -> ComputeNDof();
       }
@@ -703,7 +690,7 @@ namespace ngcomp
 	hofe -> SetOrderFace (order_fa);
 	hofe -> SetOrderInner (order_inner[elnr]);
 	//hofe -> SetOrderInnerCurl (order_inner_curl[elnr]); // under construction
-	hofe -> SetDiscontinuous(discont); 
+	// hofe -> SetDiscontinuous(discont); 
         hofe -> SetOnlyHODiv (ho_div_free);
 	hofe -> ComputeNDof();
       }
@@ -776,7 +763,8 @@ namespace ngcomp
 	hofe -> SetVertexNumbers (vnums);
 	
 #ifdef NEW_HDIVFE
-	INT<3> order_fa = INT<3>(order_facet[ma.GetSElFace(selnr)][0],order_facet[ma.GetSElFace(selnr)][1],0);
+	INT<3> order_fa = INT<3>(order_facet[ma.GetSElFace(selnr)][0],
+                                 order_facet[ma.GetSElFace(selnr)][1],0);
 	hofe -> SetOrderInner (order_fa);
 #else 
 	int order_fa = order_facet[ma.GetSElFace(selnr)][0];

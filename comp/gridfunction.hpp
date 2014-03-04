@@ -58,6 +58,9 @@ namespace ngcomp
     void SetVisual (bool avisual = 1) { visual = avisual; }
 
     int GetMultiDim () const { return multidim; }
+
+    /// increase multidim and copy vec to new component
+    void AddMultiDimComponent (BaseVector & vec);
   
     int GetLevelUpdated() const { return level_updated; }
     ///
