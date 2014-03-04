@@ -239,7 +239,8 @@ if { [catch { NGS_GetData } ] == 0 } {
         }
 
     .ngmenu.solve add command -label "Socket-load" \
-	-command { NGS_SocketLoad 52002 
+	-command { NGS_SocketLoad 52002 128.131.37.12
+# numericus.asc.tuwien.ac.at
             set selectvisual solution
 	    Ng_SetVisParameters	
 	    redraw
