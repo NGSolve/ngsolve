@@ -16,9 +16,16 @@ To do: *Internal External Dofs (eliminate internal)
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-#include <../fem/l2hofe.hpp>
+/*
+// #include <../fem/l2hofe.hpp>
 #include <../fem/l2hofe_impl.hpp>
+#ifdef GOLD
+#include <../gold/tscalarfe_impl.hpp>
+#else
+#include <../fem/tscalarfe_impl.hpp>
+#endif
 #include <../fem/l2hofefo.hpp>
+*/
 
 using namespace ngmg;
 
@@ -294,6 +301,11 @@ namespace ngcomp
 
 	if (ma.GetElType(elnr) == ET_TRIG && order <= 3)
 	  {
+	    ArrayMem<int,3> vnums(3);
+	    ma.GetElVertices (elnr, vnums);
+	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
+
+	    /*
 	    DGFiniteElement<2> * hofe2d = 0;
 	    switch (order)
 	      {
@@ -301,13 +313,6 @@ namespace ngcomp
 	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
 	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
 	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
-		/*
-	      case 4: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
-	      case 5: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,5> (); break;
-	      case 6: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,6> (); break;
-	      case 7: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,7> (); break;
-	      case 8: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,8> (); break;
-		*/
 	      }
 	    
 	    Ngs_Element ngel = ma.GetElement<2> (elnr);
@@ -315,6 +320,7 @@ namespace ngcomp
 	      hofe2d->SetVertexNumber (j, ngel.vertices[j]);
 
 	    return *hofe2d;
+	    */
 	  }
 
         switch (eltype)
@@ -369,7 +375,26 @@ namespace ngcomp
     switch (vnums.Size())
       {
       case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0); 
-      case 2: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
+      case 2: 
+	return *CreateL2HighOrderFE<ET_SEGM> (order, vnums, lh);
+	/*
+	{
+	  switch (order)
+	    {
+	    case 0: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,0> (); break;
+	    case 1: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,1> (); break;
+	    case 2: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,2> (); break;
+	    case 3: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,3> (); break;
+	    case 4: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,4> (); break;
+	    case 5: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,5> (); break;
+	    case 6: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,6> (); break;
+	    case 7: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,7> (); break;
+	    case 8: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,8> (); break;
+	    default: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); 
+	    }
+	  break;
+	}
+	*/
       case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
       case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
