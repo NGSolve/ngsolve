@@ -258,7 +258,11 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
     {
-      if (ET == ET_TRIG)
+      if (ET == ET_SEGM)
+	{
+	  Iterate<ORDER> ([&] (int i) { mass[i] = 1.0 / (2*i+1); });
+	}
+      else if (ET == ET_TRIG)
 	{
           int ii = 0;
           IterateTrig<ORDER> ([&] (int ix, int iy)
@@ -279,6 +283,32 @@ namespace ngfem
 	}
     }
 
+  };
+
+
+
+
+
+  /**
+     High order triangular finite element
+  */
+  template <int ORDER>
+  class L2HighOrderFEFO_Shapes<ET_SEGM, ORDER> : public L2HighOrderFEFO<ET_SEGM, ORDER>
+  {
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::ndof;
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::vnums; 
+
+  public:
+
+    enum { NDOF = (ORDER+1) };
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
+    {
+      Tx lam[2] = { hx[0], 1-hx[0] };
+      INT<2> e = this -> GetEdgeSort (0, vnums);
+      LegendrePolynomial::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
+    }
   };
 
 
@@ -325,7 +355,7 @@ namespace ngfem
   };
 
 
-
+#ifdef NONE
 
 #ifdef FILE_L2HOFEFO_CPP
 #define L2HOFEFO_EXTERN
@@ -374,6 +404,8 @@ namespace ngfem
   */
   // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,9>;
   // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,10>;
+
+#endif
 
 }
 
