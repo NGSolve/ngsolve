@@ -71,7 +71,7 @@ namespace ngfem
       }
     else
       {
-        Vec<DIM, AutoDiff<DIM> > adp = mip; // Mip2Ad(mip);
+        Vec<DIM, AutoDiff<DIM> > adp = mip; 
         T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
                                         { curlshape.Row(i) = s; }));
       }
@@ -81,10 +81,10 @@ namespace ngfem
   auto T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurlShape (const IntegrationPoint & ip, 
                      FlatVector<double> x,
-                     LocalHeap & lh) const -> Vec<DIM_CURL>
+                     LocalHeap & lh) const -> Vec<DIM_CURL_(DIM)>
   {
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
-    Vec<DIM_CURL> sum = 0.0;
+    Vec<DIM_CURL_(DIM)> sum = 0.0;
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
                                     { sum += x(i) * s; }));
     return sum;

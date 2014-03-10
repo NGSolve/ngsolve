@@ -23,7 +23,7 @@ namespace ngfem
   protected:
     enum { DIM = ET_trait<ET>::DIM };
   
-    using BASE::DIM_CURL;
+    // using BASE::DIM_CURL;
     using BASE::ndof;
     using BASE::order;
 
@@ -50,7 +50,7 @@ namespace ngfem
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                       SliceMatrix<> curlshape) const;
 
-    virtual Vec <DIM_CURL>
+    virtual Vec <DIM_CURL_(DIM)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
                        FlatVector<double> x,
                        LocalHeap & lh) const;

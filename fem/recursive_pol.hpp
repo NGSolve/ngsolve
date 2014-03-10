@@ -1176,6 +1176,131 @@ namespace ngfem
 
 
 
+// see Beuchler+Schoeberl : New shape functions for trigs, formula (2.11)
+
+class IntJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPolynomialAlpha>
+  {
+  public:
+    int alpha;
+
+  public:
+    IntJacobiPolynomialAlpha (int a) : alpha(a) 
+    { 
+      ;
+    }
+
+    template <class S, class T>
+    inline IntJacobiPolynomialAlpha (int n, S x, int a, T && values)
+      : alpha(a)
+    { 
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    INLINE double P0(S x) const { return 1.0; }
+
+    // d/dx  ( (x+1) P1) =  0.5*(alpha+2) x + 0.5 * alpha;
+    // (x+1) P1 = 0.25*(alpha+2) x^2 + 0.5 * alpha * x  - 0.25*(alpha+2) (-1)^2 - 0.5*alpha*(-1)
+    // = 0.25*(alpha+2) (x-1)*(x+1)  + 0.5 * alpha (x+1)
+    // P1 = 0.25*(alpha+2)(x-1) + 0.5 * alpha
+    
+    template <class S>
+    INLINE S P1(S x) const 
+    { 
+      return 0.25 * (alpha+2)*x + 0.25*(alpha-2);
+    }
+
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const 
+    { 
+      return 0.25 * (alpha+2)*x + 0.25*(alpha-2) * y;
+    }
+
+    INLINE double A (int i) const { return CalcA (i, alpha, 0); }
+    INLINE double B (int i) const { return CalcB (i, alpha, 0); }
+    INLINE double C (int i) const { return CalcC (i, alpha, 0); }
+
+    enum { ZERO_B = 0 };
+
+    static double CalcA (int n, double al, double be) 
+    { return (2.0*n+al-1)*(2*n+al-2)*(2*n+al) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+    static double CalcB (int n, double al, double be)
+    { return (2.0*n+al-1)*al * (al-2) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+    static double CalcC (int n, double al, double be)
+    { return - 2*(n-1)*(n+al-2)*(2*n+al) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+
+    INLINE double D (int i) const { return 1; }
+  };
+
+
+
+
+
+// see Beuchler+Schoeberl : New shape functions for trigs, formula (2.11)
+// \int_(-1)^x P^(alpha,0)(s) ds   /  (1-s)
+class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPolynomialAlpha>
+  {
+  public:
+    int alpha;
+
+  public:
+    IntegratedJacobiPolynomialAlpha (int a) : alpha(a) 
+    { 
+      ;
+    }
+
+    template <class S, class T>
+    inline IntegratedJacobiPolynomialAlpha (int n, S x, int a, T && values)
+      : alpha(a)
+    { 
+      Eval (n, x, values);
+    }
+
+    template <class S>
+    INLINE double P0(S x) const { return 1.0; }
+
+    // d/dx  ( (x+1) P1) =  0.5*(alpha+2) x + 0.5 * alpha;
+    // (x+1) P1 = 0.25*(alpha+2) x^2 + 0.5 * alpha * x  - 0.25*(alpha+2) (-1)^2 - 0.5*alpha*(-1)
+    // = 0.25*(alpha+2) (x-1)*(x+1)  + 0.5 * alpha (x+1)
+    // P1 = 0.25*(alpha+2)(x-1) + 0.5 * alpha
+    
+    template <class S>
+    INLINE S P1(S x) const 
+    { 
+      return 0.25 * (alpha+2)*x + 0.25*(alpha-2);
+    }
+
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const 
+    { 
+      return 0.25 * (alpha+2)*x + 0.25*(alpha-2) * y;
+    }
+
+    INLINE double A (int i) const { return CalcA (i, alpha, 0); }
+    INLINE double B (int i) const { return CalcB (i, alpha, 0); }
+    INLINE double C (int i) const { return CalcC (i, alpha, 0); }
+
+    enum { ZERO_B = 0 };
+
+    static double CalcA (int n, double al, double be) 
+    { return (2.0*n+al-1)*(2*n+al-2)*(2*n+al) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+    static double CalcB (int n, double al, double be)
+    { return (2.0*n+al-1)*al * (al-2) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+    static double CalcC (int n, double al, double be)
+    { return - 2*(n-1)*(n+al-2)*(2*n+al) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
+
+    INLINE double D (int i) const { return 1; }
+  };
+
+
+
+
+
+
+
+
+
+
   class JacobiPolynomialNew : public RecursivePolynomialNonStatic<JacobiPolynomialNew>
   {
   protected:

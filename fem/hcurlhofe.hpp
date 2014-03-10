@@ -64,12 +64,14 @@ namespace ngfem
 
     INLINE HCurlHighOrderFE (int aorder) 
     {
-      for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-      for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
+      order_edge = aorder;
+      order_face = aorder;
+      // for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
+      // for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
       if (DIM == 3) order_cell = aorder;
       
       for(int i = 0; i < N_EDGE; i++) usegrad_edge[i] = 1;
-      for(int i=0; i < N_FACE; i++) usegrad_face[i] = 1;
+      for(int i = 0; i < N_FACE; i++) usegrad_face[i] = 1;
       if (DIM == 3) usegrad_cell = 1;
       
       for (int i = 0; i < N_VERTEX; i++) vnums[i] = i;
