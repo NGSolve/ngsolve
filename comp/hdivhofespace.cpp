@@ -325,11 +325,11 @@ namespace ngcomp
 
         first_facet_dof[nfa] = ndof;
       
-        int inci = 0;
         for(int i=0; i< nel; i++)
           {
             INT<3> pc = order_inner_curl[i];
             INT<3> p = order_inner[i];
+            int inci = 0;
             switch(ma.GetElType(i))
               {
               case ET_TRIG:
@@ -349,13 +349,33 @@ namespace ngcomp
               default: // for the compiler
                 break;  
               }
-            if (inci < 0) inci = 0;
-            {
-              first_inner_dof[i] = ndof;
-              ndof+=inci;
-            }
+            first_inner_dof[i] = ndof;
+            if (inci > 0) ndof+=inci;
           }
         first_inner_dof[nel] = ndof;
+
+
+        if (highest_order_dc)
+          {
+            dc_pairs.SetSize (ma.GetNFacets());
+            dc_pairs = INT<2> (-1,-1);
+            
+            Array<int> fnums;
+            for (int i = 0; i < ma.GetNE(); i++)
+              {
+                ma.GetElFacets (i, fnums);
+                for (int k = 0; k < fnums.Size(); k++)
+                  {
+                    int di = first_inner_dof[i]+k;
+                    dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
+                    dc_pairs[fnums[k]][0] = di;
+                  }
+              }
+          }
+        else
+          dc_pairs.SetSize (0);
+        
+
       }
     else 
       {

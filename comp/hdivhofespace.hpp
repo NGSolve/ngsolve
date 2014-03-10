@@ -47,7 +47,11 @@ namespace ngcomp
 
     // high order divergence free
     bool ho_div_free; 
+
+    // highest-order facet dofs discontinuous ?
     bool highest_order_dc;
+    // discontinuous facet pairs:
+    Array<INT<2>> dc_pairs;
   public:
     HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, 
                           bool parseflags=false);
@@ -122,17 +126,11 @@ namespace ngcomp
     // virtual int LowOrderDof() const { if(discont) return(0); else return(1);} 
 
 
+    const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
+
     virtual bool VarOrder() const { return var_order; } 
     virtual int GetRelOrder() const { return rel_order; } 
 
-    /*
-    virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const
-    { 
-      bool isfacet = ( (ma.GetDimension() == 2 && nt == NT_EDGE) || (ma.GetDimension() == 3 && nt == NT_FACE));
-      if ( isfacet ) return 1;
-      else return 0; 
-    }
-    */
 
     IntRange GetFacetDofs (int nr) const
     {
