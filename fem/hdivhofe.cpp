@@ -296,14 +296,13 @@ namespace ngfem
     dlami(2,0) = -1.;
     dlami(2,1) = -1.;
 
-    int ii, i, j, k, l, is, ie, iop;
+    int ii, is, ie, iop;
 
     int p = order_inner[0];
     ii = 1;
 
     int fav[3];
-    for(i=0;i<3;i++) fav[i] = i;
-
+    for(int i=0;i<3;i++) fav[i] = i;
 
     //Sort vertices  first edge op minimal vertex
     int fswap = 1;
@@ -318,7 +317,7 @@ namespace ngfem
     AutoDiff<2> lo = lami[iop];
 
     //AutoDiff<3> lsle = lami[is]*lami[ie];
-    for (j = 0; j < 2; j++)
+    for (int j = 0; j < 2; j++)
       {
         ls.DValue(j) = dlami(is,j);
         le.DValue(j) = dlami(ie,j);
@@ -326,14 +325,15 @@ namespace ngfem
       }
 
     Vec<2> nedelec;
-    for (j = 0; j < 2; j++)
+    for (int j = 0; j < 2; j++)
       nedelec(j) = ls.Value()*le.DValue(j) - le.Value()*ls.DValue(j);
-
-    AutoDiff<2> lsle=ls*le;
 
     // RT_0-normal low order shapes
     shape(0) = fswap;
 
+
+    /*
+    AutoDiff<2> lsle=ls*le;
     Vec<2> grad1, grad2;
     ArrayMem<AutoDiff<2>, 100> ad_rec_pol1(p);
     ArrayMem<AutoDiff<2>, 100> ad_rec_pol2(p);
@@ -371,16 +371,38 @@ namespace ngfem
           grad2(j) = ad_rec_pol2[k].DValue(j);
         shape(ii) = (grad2(0)*nedelec(1) - grad2(1)*nedelec(0)) + ad_rec_pol2[k].Value()*curlned;
       }       
+    */
+
+    ArrayMem<AutoDiff<2>, 20> adpol1(p);
+    ArrayMem<AutoDiff<2>, 20> adpol2(p);
+
+    IntLegNoBubble::EvalScaledMult (p-1, le-ls, le+ls, ls*le, adpol1); 
+
+    // Typ 1
+    for (int k = 0; k <= p-1; k++)
+      {
+        IntegratedJacobiPolynomialAlpha jac(2*k+3);
+        jac.EvalMult(p-1-k, 2*lo-1, lo, adpol2);
+	for (int l = 0; l <= p-1-k; l++, ii++)
+          shape(ii) = Cross (adpol2[l], adpol1[k]).DValue(0);
+      }
+
+    IntegratedJacobiPolynomialAlpha jac(3);
+    jac.EvalMult(p-1, 2*lo-1, lo, adpol2);
+
+    // Typ 2
+    double curlned;
+    curlned = 2.* (ls.DValue(0)*le.DValue(1) - ls.DValue(1)*le.DValue(0));
+    for (int k = 0; k <= p-1; k++, ii++)
+      shape(ii) = adpol2[k].DValue(0)*nedelec(1) - adpol2[k].DValue(1)*nedelec(0) 
+        + adpol2[k].Value()*curlned;
   }
+
+
   template class HDivHighOrderNormalTrig<IntegratedLegendreMonomialExt>;
   template class HDivHighOrderNormalTrig<TrigExtensionMonomial>;
   // template class HDivHighOrderNormalTrig<TrigExtensionOptimal>;
   template class HDivHighOrderNormalTrig<TrigExtensionMin>;
-
-
-
-
-
 
 
 
