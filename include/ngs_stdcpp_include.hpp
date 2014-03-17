@@ -27,6 +27,8 @@
 #include <string>
 #include <typeinfo>
 #include <memory>
+#include <initializer_list>
+#include <functional>
 
 
 
