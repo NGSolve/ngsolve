@@ -182,6 +182,14 @@ namespace ngbla
       return *this;
     }
 
+    const FlatVector & operator= (initializer_list<T> list) const
+    {
+      int cnt = 0;
+      for (auto i = list.begin(); cnt < size; i++, cnt++)
+        data[cnt] = *i;
+      return *this;
+    }
+
     template<typename TB>
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
@@ -421,13 +429,11 @@ namespace ngbla
       return RowsArrayExpr<FlatVector> (*this, rows);
     }
 
-    /*
     // shape functions had a problem with icc v9.1
     Vec<S,T> * Addr(int i) const
     {
       return static_cast<Vec<S,T>*> ((void*) (data+i*S)); 
     }
-    */
 
     /*
     const CArray<Vec<S,T> > Addr(int i) const
@@ -497,6 +503,8 @@ namespace ngbla
   template <typename T = double>
   class Vector : public FlatVector<T>
   {
+    using FlatVector<T>::data;
+    using FlatVector<T>::size;
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
@@ -520,6 +528,15 @@ namespace ngbla
       : FlatVector<T> (v2.Height(), new T[v2.Height()]) 
     {
       FlatVector<T>::operator= (v2);
+    }
+
+
+    Vector (initializer_list<T> list) 
+      : FlatVector<T> (list.size(), new T[list.size()])
+    {
+      int cnt = 0;
+      for (auto i = list.begin(); i < list.end(); i++, cnt++)
+        data[cnt] = *i;
     }
 
 
@@ -554,6 +571,15 @@ namespace ngbla
     {
       FlatVector<T>::operator= (static_cast<FlatVector<T> >(v2));
       // MatExpr<FlatVector<T> >::operator= (v2);  // does not work, we don't know why
+      return *this;
+    }
+
+    Vector & operator= (initializer_list<T> list) 
+    {
+      SetSize (list.size());
+      int cnt = 0;
+      for (auto i = list.begin(); i < list.end(); i++, cnt++)
+        data[cnt] = *i;
       return *this;
     }
 
