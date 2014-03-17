@@ -34,6 +34,34 @@ namespace ngfem
   }
 
 
+  Array< Vec<2> > IntLegNoBubble :: coefs;
+
+  void IntLegNoBubble :: Calc (int n)
+  {
+    if (coefs.Size() > n) return;
+
+#pragma omp critical (calcintlegnobub)
+    {
+      if (coefs.Size() <= n)
+        {
+          coefs.SetSize (n+1);
+          
+          coefs[0][0] = -0.5;
+          coefs[1][1] = -0.5;
+          for (int i = 2; i <= n; i++)
+            {
+              coefs[i][0] = CalcA(i);
+              coefs[i][1] = CalcC(i);
+            }
+        }
+    }
+  }
+
+
+
+
+
+
   int JacobiPolynomialAlpha :: maxn;
   int JacobiPolynomialAlpha :: maxalpha;
   Array< Vec<3> > JacobiPolynomialAlpha :: coefs;
@@ -71,11 +99,23 @@ namespace ngfem
     InitRecPol()
     {
       LegendrePolynomial::Calc(1000);
+      IntLegNoBubble::Calc(1000);
       JacobiPolynomialAlpha::Calc(100,100); 
     }
   };
 
   InitRecPol init;
+
+
+
+
+
+
+
+
+
+
+
 
 
 #ifdef OLD

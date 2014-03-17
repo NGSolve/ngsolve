@@ -901,6 +901,8 @@ namespace ngfem
 
   class IntLegNoBubble : public RecursivePolynomial<IntLegNoBubble>
   {
+    static Array< Vec<2> > coefs;
+
   public:
     IntLegNoBubble () { ; }
     
@@ -910,14 +912,20 @@ namespace ngfem
       Eval (n, x, values);
     }
     
+    static void Calc (int n);
+
     template <class S>
     static ALWAYS_INLINE double P0(S x)  { return -0.5; }
     template <class S>
     static ALWAYS_INLINE S P1(S x)  { return -0.5*x; }
-    
-    static ALWAYS_INLINE double A (int i) { i+=2; return (2*i-3)/double(i); }
+
+    static ALWAYS_INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
     static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { i+=2; return -(i-3.0)/i; }
+    static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    
+    static ALWAYS_INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
+    static ALWAYS_INLINE double CalcB (int i) { return 0; }
+    static ALWAYS_INLINE double CalcC (int i) { i+=2; return -(i-3.0)/i; }
     enum { ZERO_B = 1 };
   };
     
