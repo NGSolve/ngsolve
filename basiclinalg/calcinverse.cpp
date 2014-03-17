@@ -62,7 +62,10 @@ namespace ngbla
 	      maxval = abs (inv(j, i));
 	    }
       
-	if (maxval < 1e-20)
+        double rest = 0.0;
+        for (int i = j+1; i < n; i++)
+          rest += abs(inv(r, i));
+	if (maxval < 1e-10*rest)
 	  {
 	    throw Exception ("Inverse matrix: Matrix singular");
 	  }
