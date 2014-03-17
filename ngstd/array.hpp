@@ -11,8 +11,6 @@
 #define CHECK_RANGE
 #endif
 
-#include <initializer_list>
-#include<functional>
 
 namespace ngstd
 {
