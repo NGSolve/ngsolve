@@ -243,14 +243,10 @@ namespace ngla
 			      const FlatVector<double> & v) const = 0;
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<Complex> & v) const = 0;
-    void SetIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<double> & v);
-    void SetIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<Complex> & v);
-    void AddIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<double> & v);
-    void AddIndirect (const FlatArray<int> & ind, 
-		      const FlatVector<Complex> & v);
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v);
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v);
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v);
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v);
 
     /*
 

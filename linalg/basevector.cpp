@@ -310,8 +310,8 @@ namespace ngla
 
 
 
-  void BaseVector :: SetIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<double> & v) 
+  void BaseVector :: SetIndirect (FlatArray<int> ind, 
+				  FlatVector<double> v) 
   { 
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
@@ -336,8 +336,8 @@ namespace ngla
     */
   }
 
-  void BaseVector :: SetIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<Complex> & v) 
+  void BaseVector :: SetIndirect (FlatArray<int> ind, 
+				  FlatVector<Complex> v) 
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
@@ -388,8 +388,8 @@ namespace ngla
     }
   */  
 
-  void BaseVector :: AddIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<double> & v) 
+  void BaseVector :: AddIndirect (FlatArray<int> ind, 
+				  FlatVector<double> v) 
   { 
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
@@ -413,8 +413,8 @@ namespace ngla
     */
   }
 
-  void BaseVector :: AddIndirect (const FlatArray<int> & ind, 
-				  const FlatVector<Complex> & v)
+  void BaseVector :: AddIndirect (FlatArray<int> ind, 
+				  FlatVector<Complex> v)
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
