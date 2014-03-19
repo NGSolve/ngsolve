@@ -23,10 +23,7 @@ namespace ngla
     size = elsperrow.Size();
     width = awidth;
     owner = true;
-    /*
-    firsti.Alloc (size+1);
-    firsti.SetName ("matrix graph, table 1");
-    */
+
     firsti.SetSize (size+1);
     nze = 0;
     for (int i = 0; i < size; i++)
@@ -36,10 +33,6 @@ namespace ngla
       }
     firsti[size] = nze;
     
-    /*
-    colnr.Alloc (nze+1);
-    colnr.SetName ("matrix graph");
-    */
     colnr.SetSize (nze+1);
     
     for (size_t i = 0; i < nze; i++)
@@ -53,17 +46,8 @@ namespace ngla
     width = as;
     nze = as * max_elsperrow;
 
-    // colnr = new int[as*max_elsperrow+1];
-    /*
-    colnr.Alloc (as*max_elsperrow+1);
-    colnr.SetName ("matrix graph");
-    */
     colnr.SetSize (as*max_elsperrow+1);
-    // firsti = new int[as+1];
-    /*
-    firsti.Alloc (as+1);
-    firsti.SetName ("matrix graph, table 1");
-    */
+
     firsti.SetSize (as+1);
     owner = true;
     
@@ -92,10 +76,6 @@ namespace ngla
       }
     else
       {
-	/*
-	firsti.Alloc (size+1);
-	colnr.Alloc (nze);
-	*/
 	firsti.SetSize (size+1);
 	colnr.SetSize (nze);
 	
@@ -110,8 +90,8 @@ namespace ngla
 
 
   MatrixGraph :: MatrixGraph (int asize, const Table<int> & rowelements, 
-				const Table<int> & colelements, 
-				bool symmetric)
+                              const Table<int> & colelements, 
+                              bool symmetric)
   {
     static Timer timer("MatrixGraph");
     static Timer timerd2e("MatrixGraph - dof2el");
@@ -1496,6 +1476,9 @@ namespace ngla
   
 #if MAX_CACHEBLOCKS >= 2
   template class SparseMatrixSymmetric<double, Vec<2> >;
+#ifdef GOLD
+  // template class SparseMatrixSymmetric<double, MD<2> >;
+#endif
 #endif
 #if MAX_CACHEBLOCKS >= 3
   template class SparseMatrixSymmetric<double, Vec<3> >;

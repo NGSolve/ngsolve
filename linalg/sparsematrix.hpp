@@ -82,11 +82,9 @@ namespace ngla
     size_t nze; 
 
     /// column numbers
-    // DynamicMem<int> colnr;
     Array<int, size_t> colnr;
 
     /// pointer to first in row
-    // DynamicMem<size_t> firsti;
     Array<size_t, size_t> firsti;
   
     /// row has same non-zero elements as previous row
@@ -128,7 +126,6 @@ namespace ngla
     size_t NZE() const { return nze; }
 
     FlatArray<int> GetRowIndices(int i) const
-    // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
     { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
 
     size_t First (int i) const { return firsti[i]; }
@@ -158,27 +155,29 @@ namespace ngla
   public:
     
     BaseSparseMatrix (int as, int max_elsperrow)
-      : MatrixGraph (as, max_elsperrow)  , inversetype(default_inversetype)
+      : MatrixGraph (as, max_elsperrow)  
+                     // , inversetype(default_inversetype)
     { ; }
     
     BaseSparseMatrix (const Array<int> & elsperrow, int awidth)
-      : MatrixGraph (elsperrow, awidth) , inversetype(default_inversetype)
+      : MatrixGraph (elsperrow, awidth) 
+                     // , inversetype(default_inversetype)
     { ; }
 
     BaseSparseMatrix (int size, const Table<int> & rowelements, 
 		      const Table<int> & colelements, bool symmetric)
       : MatrixGraph (size, rowelements, colelements, symmetric)
-                      , inversetype(default_inversetype)
+                     // , inversetype(default_inversetype)
     { ; }
 
     BaseSparseMatrix (const MatrixGraph & agraph, bool stealgraph)
       : MatrixGraph (agraph, stealgraph)
-                      , inversetype(default_inversetype)
+                     // , inversetype(default_inversetype)
     { ; }   
 
     BaseSparseMatrix (const BaseSparseMatrix & amat)
       : BaseMatrix(amat), MatrixGraph (amat, 0)
-                      , inversetype(default_inversetype)
+                     // , inversetype(default_inversetype)
     { ; }   
 
 
@@ -363,14 +362,10 @@ namespace ngla
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
 
-    // using MatrixGraph::firsti;
-
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV_ROW TVX;
     typedef TV_COL TVY;
-    // typedef typename mat_scale_type<TVX,Complex>::TMAT TVXC;
-    // typedef typename mat_scale_type<TVY,Complex>::TMAT TVYC;
 
     ///
     SparseMatrix (int as, int max_elsperrow)
@@ -434,18 +429,21 @@ namespace ngla
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
+
       /*
+        // no need for low-level tuning anymore thx compiler-tech
       int nj = firsti[row+1] - firsti[row];
       const int * colpi = &colnr[0]+firsti[row];
       const TM * datap = &data[0]+firsti[row];
+      // FlatVector<TVX> hvec = vec;
       const TVX * vecp = vec.Addr(0);
     
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
-      // for (int j = 0; j < nj; j++, colpi++, datap++)
-      // sum += *datap * vecp[*colpi];
-      for (int j = 0; j < nj; j++)
-	sum += datap[j] * vecp[colpi[j]];
+      for (int j = 0; j < nj; j++, colpi++, datap++)
+        sum += *datap * vecp[*colpi];
+      // for (int j = 0; j < nj; j++)
+      // sum += datap[j] * vecp[colpi[j]];
       return sum;
       */
     }
@@ -469,7 +467,6 @@ namespace ngla
         vecp[colpi[j]] += Trans(datap[j]) * el; 
       */
 
-      
       size_t first = firsti[row];
       size_t last = firsti[row+1];
       // TVX * vecp = vec.Addr(0);
