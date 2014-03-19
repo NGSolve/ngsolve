@@ -20,9 +20,6 @@ using namespace ngmg;
 namespace ngcomp
 {
 
-
-
-
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
@@ -320,6 +317,7 @@ namespace ngcomp
     if(print) 
       {
 	*testout << " H1HoFESpace order " << order << " , var_order " << var_order << " , relorder " << rel_order << endl;  
+	(*testout) << "used_vertex (h1): " << used_vertex << endl;
 	(*testout) << "used_edge (h1): " << used_edge << endl;
 	(*testout) << "used_face (h1): " << used_face << endl;
 	
@@ -454,7 +452,7 @@ namespace ngcomp
 
     for (int i = 0; i < ma.GetNV(); i++)
       ctofdof[i] = (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF;
-
+    
     /*
     for (int i = 0; i < ma.GetNV(); i++)
       if (used_vertex[i])
@@ -476,6 +474,10 @@ namespace ngcomp
 
     for (int el = 0; el < ma.GetNE(); el ++)
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
+
+    *testout << "updatecoupling done, " << endl
+             << "used_vertex: " << endl << used_vertex << endl
+             << "ctofdof: " << endl << ctofdof << endl;
   }
 
 
