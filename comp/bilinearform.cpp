@@ -2831,6 +2831,8 @@ namespace ngcomp
 #endif
   }
 
+
+
   template <class TM, class TV>
   void T_BilinearForm<TM,TV>::ApplyElementMatrix(const BaseVector & x,
                                                  BaseVector & y,
@@ -2844,9 +2846,6 @@ namespace ngcomp
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
-    *testout << "elnum = " << elnum << endl;
-    // FlatVector<TV> elvecx(dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    // FlatVector<TV> elvecy(dnums.Size() * this->GetFESpace().GetDimension(), lh);
     FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
     FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
 
@@ -3438,6 +3437,14 @@ namespace ngcomp
             if(flags.NumFlagDefined("cacheblocksize"))
               {
                 int cacheblocksize = int(flags.GetNumFlag("cacheblocksize", 1)); 
+                /*
+#if MAX_CACHEBLOCKS >= 2 
+#ifdef GOLD
+                if (cacheblocksize == 2)
+                  return new T_BilinearFormSymmetric<double,MD<2>> (*space, name, flags);
+#endif
+#endif
+                */
                 return CreateBilinearForm1<MAX_CACHEBLOCKS> (cacheblocksize, space, name, flags);
                 /*
                   switch(int(flags.GetNumFlag("cacheblocksize",1)))

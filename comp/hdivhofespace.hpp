@@ -47,6 +47,8 @@ namespace ngcomp
 
     // high order divergence free
     bool ho_div_free; 
+    ///
+    bool fixed_order;
 
     // highest-order facet dofs discontinuous ?
     bool highest_order_dc;

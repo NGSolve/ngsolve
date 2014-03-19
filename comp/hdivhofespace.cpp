@@ -118,6 +118,7 @@ namespace ngcomp
     print = flags.GetDefineFlag("print"); 
 
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
+    fixed_order = flags.GetDefineFlag ("fixedorder");
 
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
@@ -513,7 +514,7 @@ namespace ngcomp
 
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
+    if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
 	switch (order)
