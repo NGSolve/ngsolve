@@ -401,6 +401,12 @@ namespace ngfem
 	AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
 	AutoDiff<3> eta = lami[fav[2]];
 
+        AutoDiff<3> sum = lami[fav[1]]+lami[fav[0]];
+        AutoDiff<3> bub = lami[fav[1]]*lami[fav[0]];
+        // AutoDiff<3> zeta = lami[fop];  
+
+
+        /*
 	T_TRIGFACESHAPES::CalcSplitted(p+2,xi,eta,adpol1,adpol2); 
 	for (int k = 0; k < adpol1.Size(); k++)
           adpol1[k] *= 0.5; 
@@ -413,6 +419,25 @@ namespace ngfem
         // Curl (Type 3) //curl( * v) = nabla v x ned + curl(ned)*v
         for (int j = 0; j <= p-1; j++)
 	  shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
+        */
+
+        IntLegNoBubble::EvalScaledMult (p-1, xi, sum, bub, adpol1); 
+        
+        // Typ 1
+        for (int k = 0; k <= p-1; k++)
+          {
+            IntegratedJacobiPolynomialAlpha jac(2*k+3);
+            // jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
+            jac.EvalMult(p-1, eta-sum, eta, adpol2);
+            for (int l = 0; l <= p-1-k; l++)
+              shape[ii++] = Du_Cross_Dv<3> (adpol2[l]*muz[fav[2]], adpol1[k]);
+          }
+        
+        IntegratedJacobiPolynomialAlpha jac(3);
+        // jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
+        jac.EvalMult(p-1, eta-sum, eta, adpol2);
+        for (int j = 0; j <= p-1; j++)
+          shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
       }    
     
     // quad faces
