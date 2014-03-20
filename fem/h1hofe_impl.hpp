@@ -44,9 +44,10 @@ namespace ngfem
     
     INT<2> e = GetEdgeSort (0, vnums);
     
-    LegendrePolynomial::EvalMult (order_edge[0]-2, 
-                                    lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
-    
+    LegendrePolynomial::
+      // IntLegNoBubble::
+      EvalMult (order_edge[0]-2, 
+                lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
   }
 
 
@@ -68,6 +69,7 @@ namespace ngfem
           INT<2> e = GetEdgeSort (i, vnums);
 
 	  LegendrePolynomial::
+          // IntLegNoBubble::
             EvalScaledMult (order_edge[i]-2, 
                             lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                             lam[e[0]]*lam[e[1]], shape+ii);
