@@ -100,7 +100,7 @@ namespace ngstd
       p += size;
 
       // if ( size_t(p - data) >= totsize )
-#ifndef xxFULLSPEED
+#ifndef FULLSPEED
       if (p >= next)
         ThrowException();
 #endif
@@ -118,7 +118,7 @@ namespace ngstd
       size += (ALIGN - size % ALIGN);
       p += size;
 
-#ifndef xxFULLSPEED
+#ifndef FULLSPEED
       if (p >= next)
 	ThrowException();
 #endif
