@@ -116,7 +116,7 @@ namespace ngfem
     Tx x = hx[0];
     Tx lam[2] = { x, 1-x };
 
-    ArrayMem<AutoDiff<1>,10> adpol1(order);
+    ArrayMem<Tx,10> adpol1(order);
 	
     INT<2> e = GetEdgeSort (0, vnums);	  
     
@@ -150,7 +150,7 @@ namespace ngfem
     Tx x = hx[0], y = hx[1];
     Tx lam[3] = { x, y, 1-x-y };
 
-    ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
+    ArrayMem<Tx,10> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
     for (int i = 0; i < 3; i++)
@@ -180,8 +180,8 @@ namespace ngfem
       {
 	INT<4> fav = GetFaceSort (0, vnums);
 
-	AutoDiff<2> xi  = lam[fav[2]]-lam[fav[1]];
-	AutoDiff<2> eta = lam[fav[0]]; 
+	Tx xi  = lam[fav[2]]-lam[fav[1]];
+	Tx eta = lam[fav[0]]; 
 
         TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
 	
@@ -190,7 +190,7 @@ namespace ngfem
           {
             DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                     SBLambda ([&](int nr, AutoDiff<2> val)
+                                     SBLambda ([&](int nr, Tx val)
                                                {
                                                  shape[ii++] = Du<2> (val);
                                                }));
@@ -222,19 +222,19 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1];
 
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+    Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
     int ii = 4;
-    ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
+    ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
 
     for (int i = 0; i < 4; i++)
       {
 	int p = order_edge[i]; 
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
-	AutoDiff<2> xi  = sigma[e[1]]-sigma[e[0]];
-	AutoDiff<2> lam_e = lami[e[0]]+lami[e[1]];  
+	Tx xi  = sigma[e[1]]-sigma[e[0]];
+	Tx lam_e = lami[e[0]]+lami[e[1]];  
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
 	// Nedelec0-shapes
@@ -260,14 +260,14 @@ namespace ngfem
 
     if (usegrad_face[0] && p[0] >= 1 && p[1] >= 1)
       {
-        Vec<2,AutoDiff<2>> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
+        Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
         
         LegendrePolynomial::EvalMult(p[0]-1, xi(0), bub,
               SBLambda ([&](int i, Tx val) // ALWAYS_INLINE // clang
                     {  
                       LegendrePolynomial::EvalMult (p[1]-1, xi(1), val, 
-                                                    SBLambda([&](int i2, AutoDiff<2> v2)
+                                                    SBLambda([&](int i2, Tx v2)
                                                              {
                                                                shape[ii++] = Du<2> (v2);
                                                              }));
@@ -287,8 +287,8 @@ namespace ngfem
     int f2 = (fmax+1)%4; 
     if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1; 
 
-    AutoDiff<2> xi = sigma[fmax]-sigma[f1];  // in [-1,1]
-    AutoDiff<2> eta = sigma[fmax]-sigma[f2]; // in [-1,1]
+    Tx xi = sigma[fmax]-sigma[f1];  // in [-1,1]
+    Tx eta = sigma[fmax]-sigma[f2]; // in [-1,1]
     
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
@@ -327,7 +327,7 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[4] = { x, y, z, 1-x-y-z };
 
-    ArrayMem<AutoDiff<3>,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
+    ArrayMem<Tx,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
     int ii = 6; 
 
     for (int i = 0; i < N_EDGE; i++)
@@ -345,7 +345,7 @@ namespace ngfem
 	      EvalScaledMult (p-1, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 			      lam[e[0]]*lam[e[1]], 
-                              SBLambda ([&](int i, AutoDiff<3> val)
+                              SBLambda ([&](int i, Tx val)
                                         {
                                           shape[ii++] = Du<3> (val);
                                         }));
@@ -361,9 +361,9 @@ namespace ngfem
           int vop = 6 - fav[0] - fav[1] - fav[2];  	
           int p = order_face[i][0];
           
-          AutoDiff<3> xi = lam[fav[2]]-lam[fav[1]];
-          AutoDiff<3> eta = lam[fav[0]]; // lo 
-          AutoDiff<3> zeta = lam[vop];   // lz 
+          Tx xi = lam[fav[2]]-lam[fav[1]];
+          Tx eta = lam[fav[0]]; // lo 
+          Tx zeta = lam[vop];   // lz 
           
           TetShapesFaceLegendre::CalcSplitted (p+1, xi, eta, zeta, adpol1, adpol2); 
           
@@ -372,7 +372,7 @@ namespace ngfem
             {
               DubinerBasis3::EvalScaledMult (p-2, lam[fav[0]], lam[fav[1]], 1-lam[vop], 
                                              lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
-                                             SBLambda ([&](int nr, AutoDiff<3> val)
+                                             SBLambda ([&](int nr, Tx val)
                                                        {
                                                          shape[ii++] = Du<3> (val);
                                                        }));
@@ -429,14 +429,14 @@ namespace ngfem
 
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    AutoDiff<3> lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
-    AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+    Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
 
-    AutoDiff<3> sigma[6];
+    Tx sigma[6];
     for (int i = 0; i < 6; i++) sigma[i] = lam[i] + muz[i];
 
-    ArrayMem<AutoDiff<3>,20> adpolxy1(order+3),adpolxy2(order+3); 
-    ArrayMem<AutoDiff<3>,20> adpolz(order+3);   
+    ArrayMem<Tx,20> adpolxy1(order+3),adpolxy2(order+3); 
+    ArrayMem<Tx,20> adpolz(order+3);   
 
     int ii = 9;
     
@@ -511,7 +511,7 @@ namespace ngfem
             {
               DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
-                                       SBLambda ([&](int nr, AutoDiff<3> val)
+                                       SBLambda ([&](int nr, Tx val)
                                                  {
                                                    shape[ii++] = Du<3> (val);
                                                  }));
@@ -519,8 +519,8 @@ namespace ngfem
         }
 
 
-	AutoDiff<3> xi = lam[fav[2]]-lam[fav[1]];
-	AutoDiff<3> eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
+	Tx xi = lam[fav[2]]-lam[fav[1]];
+	Tx eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
 	
 	T_TRIGFACESHAPES::CalcSplitted(p+1,xi,eta,adpolxy1,adpolxy2); 
         /*
@@ -580,9 +580,9 @@ namespace ngfem
 
 	int fz = 3-fmax; 
 	int ftrig = fmax^1; 
-	AutoDiff<3> xi = lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
-	AutoDiff<3> eta = 1-lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
-	AutoDiff<3> zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
+	Tx xi = lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
+	Tx eta = 1-lam[faces[i][fmax]]-lam[faces[i][ftrig]]; 
+	Tx zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	
 	int pp = int(max2(p[0],p[1]))+1;
 	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
@@ -698,13 +698,13 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    AutoDiff<3> lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
-			 (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
-    AutoDiff<3> sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
-			  (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
-     
+    Tx lami[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
+                (1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
+    Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
+                 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
+    
     int ii = 12; 
-    ArrayMem<AutoDiff<3>, 20> pol_xi(order+2),pol_eta(order+2),pol_zeta(order+2);
+    ArrayMem<Tx, 20> pol_xi(order+2),pol_eta(order+2),pol_zeta(order+2);
    
     // edges
     for (int i = 0; i < 12; i++)
@@ -712,8 +712,8 @@ namespace ngfem
 	int p = order_edge[i]; 
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
-	AutoDiff<3> xi  = sigma[e[1]]-sigma[e[0]];
-	AutoDiff<3> lam_e = lami[e[0]]+lami[e[1]];  
+	Tx xi  = sigma[e[1]]-sigma[e[0]];
+	Tx lam_e = lami[e[0]]+lami[e[1]];  
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
 	// Nedelec0-shapes
@@ -737,7 +737,7 @@ namespace ngfem
       {
 	INT<2> p = order_face[i];
 
-	AutoDiff<3> lam_f = 0;
+	Tx lam_f = 0;
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
 
@@ -776,8 +776,8 @@ namespace ngfem
 	int f1 = faces[i][q1]; 
 	int f2 = faces[i][q2]; 
 	      
-	AutoDiff<3> xi = sigma[fmax]-sigma[f1]; 
-	AutoDiff<3> eta = sigma[fmax]-sigma[f2]; 
+	Tx xi = sigma[fmax]-sigma[f1]; 
+	Tx eta = sigma[fmax]-sigma[f2]; 
     
 	T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
 	T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
@@ -797,10 +797,10 @@ namespace ngfem
 
 	// Missing ones 
 	for(int j = 0; j < p[0];j++) 
-          shape[ii++] = wuDv_minus_wvDu<3> (0.5, eta, pol_xi[j]*lam_f); 
+          shape[ii++] = wuDv_minus_wvDu<3> (Tx(0.5), eta, pol_xi[j]*lam_f); 
 
 	for(int j = 0; j < p[1];j++) 
-          shape[ii++] = wuDv_minus_wvDu<3> (0.5, xi, pol_eta[j]*lam_f); 
+          shape[ii++] = wuDv_minus_wvDu<3> (Tx(0.5), xi, pol_eta[j]*lam_f); 
       }
 
 
@@ -875,22 +875,22 @@ namespace ngfem
 
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    if(z.Value()==1.) z.Value() -=1.e-8; 
+    //if(z.Value()==1.) z.Value() -=1.e-8; 
+    z.Value() = z.Value()*(1-1e-12);
 
-
-    AutoDiff<3> xt = x/(1-z); 
-    AutoDiff<3> yt = y/(1-z); 
-    AutoDiff<3> sigma[5] = {(1-xt)+(1-yt)+(1-z),xt+(1-yt)+(1-z), xt + yt + (1-z), 
+    Tx xt = x/(1-z); 
+    Tx yt = y/(1-z); 
+    Tx sigma[5] = {(1-xt)+(1-yt)+(1-z),xt+(1-yt)+(1-z), xt + yt + (1-z), 
 			    (1-xt)+yt+(1-z),z}; 
 
-    AutoDiff<3> lami[5] = {(1-xt)*(1-yt)*(1-z),xt*(1-yt)*(1-z), xt * yt * (1-z), 
+    Tx lami[5] = {(1-xt)*(1-yt)*(1-z),xt*(1-yt)*(1-z), xt * yt * (1-z), 
 			   (1-xt)*yt*(1-z),z}; 
 
-    AutoDiff<3> lambda[5] = {(1-xt)*(1-yt),xt*(1-yt), xt * yt, 
+    Tx lambda[5] = {(1-xt)*(1-yt),xt*(1-yt), xt * yt, 
                              (1-xt)*yt,z}; 
         
        
-    ArrayMem<AutoDiff<3>, 20> pol_xi(order+2), pol_eta(order+2), pol_zeta(order+2);
+    ArrayMem<Tx, 20> pol_xi(order+2), pol_eta(order+2), pol_zeta(order+2);
     
     int ii =8; 
  
@@ -900,18 +900,18 @@ namespace ngfem
         int p = order_edge[i];
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
-	AutoDiff<3> xi  = sigma[e[1]] - sigma[e[0]];   
-	AutoDiff<3> lam_t = lambda[e[1]] + lambda[e[0]]; 
+	Tx xi  = sigma[e[1]] - sigma[e[0]];   
+	Tx lam_t = lambda[e[1]] + lambda[e[0]]; 
         
         shape[i] = uDv<3> (0.5 * (1-z)*(1-z)*lam_t, xi);
 
 	if(usegrad_edge[i])
 	  {
-            AutoDiff<3> bub = 0.25*(1-xi*xi)*(1-z)*(1-z)*lam_t;
+            Tx bub = 0.25*(1-xi*xi)*(1-z)*(1-z)*lam_t;
 	    LegendrePolynomial::
 	      EvalScaledMult (p-1,
 			      xi*(1-z), 1-z, bub,
-                              SBLambda ([&](int i, AutoDiff<3> val)
+                              SBLambda ([&](int i, Tx val)
                                         {
                                           shape[ii++] = Du<3>(val);
                                         }));
@@ -935,7 +935,7 @@ namespace ngfem
 	    LegendrePolynomial::
 	      EvalScaledMult (p-1,
                               xi, lam_e, bub, 
-                              SBLambda ([&](int i, AutoDiff<3> val)
+                              SBLambda ([&](int i, Tx val)
                                         {
                                           shape[ii++] = Du<3>(val);
                                         }));
@@ -949,8 +949,8 @@ namespace ngfem
       if (order_face[i][0] >= 2)
 	{
 	  int p = order_face[i][0];
-	  AutoDiff<3> lam_face = lambda[faces[i][0]] + lambda[faces[i][1]];  
-	  AutoDiff<3> bary[3] = 
+	  Tx lam_face = lambda[faces[i][0]] + lambda[faces[i][1]];  
+	  Tx bary[3] = 
 	    {(sigma[faces[i][0]]-(1-z)-lam_face)*(1-z), 
 	     (sigma[faces[i][1]]-(1-z)-lam_face)*(1-z), z}; 
 			     
@@ -964,7 +964,7 @@ namespace ngfem
               Tx bub = lam_face * bary[fav[0]]*bary[fav[1]]*bary[fav[2]];
               DubinerBasis3::
                 EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
-                          SBLambda ([&](int nr, AutoDiff<3> val)
+                          SBLambda ([&](int nr, Tx val)
                                     {
                                       shape[ii++] = Du<3> (val);
                                     }));
@@ -1000,7 +1000,7 @@ namespace ngfem
 	int py = order_face[4][0]; // SZ-Attentione 
 	int p = max2(px, py);
 
-	AutoDiff<3> fac = 1.0;
+	Tx fac = 1.0;
 	for (int k = 1; k <= p+1; k++) fac *= (1-z);
 
 	INT<4> f = GetFaceSort (4, vnums);	  

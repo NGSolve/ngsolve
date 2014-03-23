@@ -57,13 +57,19 @@ namespace ngfem
 
     template <typename AFEL>
     static void GenerateMatrix2 (const AFEL & fel, 
-                                 const MappedIntegrationPoint<3,3> & mip,
+                                 const MappedIntegrationPoint<D,D> & mip,
                                  SliceMatrix<> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);  
     }
 
 
+    static void GenerateMatrixIR (const FiniteElement & fel, 
+                                  const MappedIntegrationRule<D,D> & mir,
+                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).CalcMappedShape (mir, Trans(mat));
+    }
 
 
 
@@ -178,6 +184,14 @@ namespace ngfem
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mip, mat);
     }
+
+    static void GenerateMatrixIR (const FiniteElement & fel, 
+                                  const MappedIntegrationRule<3,3> & mir,
+                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).CalcMappedCurlShape (mir, Trans(mat));
+    }
+
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,

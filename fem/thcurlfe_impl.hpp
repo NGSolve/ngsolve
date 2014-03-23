@@ -90,6 +90,16 @@ namespace ngfem
     return sum;
   }
 
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const
+  {
+    LocalHeapMem<1000> lhdummy("dummy");
+    for (int i = 0; i < ir.Size(); i++)
+      curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
+  }
+
+
 }
 
 

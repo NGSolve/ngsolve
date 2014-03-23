@@ -125,7 +125,7 @@ namespace ngfem
       Tx x = hx[0], y = hx[1];
       Tx lami[3] = { x, y, 1-x-y };
 
-      AutoDiff<2> adpol1[ORDER], adpol2[ORDER];
+      Tx adpol1[ORDER], adpol2[ORDER];
 
       int ii = 3; 
 
@@ -141,12 +141,12 @@ namespace ngfem
           //HO-Edge shapes (Gradient Fields)   
           if(ORDER > 0) //  && usegrad_edge[i]) 
             { 
-              AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
+              Tx xi = lami[e[1]] - lami[e[0]]; 
               // LegendrePolynomial::
               IntLegNoBubble::
                 EvalScaledMult (ORDER-1, xi, lami[e[0]]+lami[e[1]], 
                                 lami[e[0]]*lami[e[1]], 
-                                SBLambda([&](int i, AutoDiff<2> v)
+                                SBLambda([&](int i, Tx v)
                                          {
                                            shape[ii++] = Du<2>(v);
                                          }));
@@ -168,8 +168,8 @@ namespace ngfem
 	{
 	  INT<4> fav = this->GetFaceSort (0, vnums);
 
-	  AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
-	  AutoDiff<2> eta = lami[fav[0]]; 
+	  Tx xi  = lami[fav[2]]-lami[fav[1]];
+	  Tx eta = lami[fav[0]]; 
 	  
 	  TrigShapesInnerLegendre::CalcSplitted<ORDER+1> (xi, eta, adpol1,adpol2);
 	  

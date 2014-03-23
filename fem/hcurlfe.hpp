@@ -66,11 +66,17 @@ namespace ngfem
     /// compute shape
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
+
+    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                                  SliceMatrix<> shape) const;
+
     
     /// compute curl of shape
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				      SliceMatrix<> curlshape) const;
 
+    virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                                      SliceMatrix<> curlshape) const;
 
     ///
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip, 
@@ -105,6 +111,8 @@ namespace ngfem
       return Trans (GetCurlShape(ip, lh)) * x;
     }  
 
+    NGS_DLL_HEADER virtual void 
+    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<D> curl) const;
 
   protected:
     ///
@@ -149,8 +157,9 @@ namespace ngfem
 
 
   // hv.DValue() = (grad u) x (grad v) 
-  inline AutoDiff<3> Cross (const AutoDiff<3> & u,
-			    const AutoDiff<3> & v)
+  template <typename SCAL>
+  INLINE AutoDiff<3,SCAL> Cross (const AutoDiff<3,SCAL> & u,
+                                 const AutoDiff<3,SCAL> & v)
   {
     /*
     AutoDiff<3> hv;
@@ -160,26 +169,28 @@ namespace ngfem
     hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
     return hv;
     */
-    double hv[3];
+    SCAL hv[3];
     hv[0] = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
     hv[1] = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
     hv[2] = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
-    return AutoDiff<3> (0, hv);
+    return AutoDiff<3,SCAL> (0, hv);
   }
 
-  inline AutoDiff<1> Cross (const AutoDiff<2> & u,
-			    const AutoDiff<2> & v)
+  template <typename SCAL>
+  inline AutoDiff<1,SCAL> Cross (const AutoDiff<2,SCAL> & u,
+			    const AutoDiff<2,SCAL> & v)
   {
-    AutoDiff<1> hv;
+    AutoDiff<1,SCAL> hv;
     hv.Value() = 0.0;
     hv.DValue(0) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
     return hv;
   }
 
-  inline AutoDiff<0> Cross (const AutoDiff<1> & u,
-			    const AutoDiff<1> & v)
+  template <typename SCAL>
+  inline AutoDiff<0,SCAL> Cross (const AutoDiff<1,SCAL> & u,
+			    const AutoDiff<1,SCAL> & v)
   {
-    AutoDiff<0> hv;
+    AutoDiff<0,SCAL> hv;
     hv.Value() = 0.0;
     return hv;
   }
@@ -189,128 +200,148 @@ namespace ngfem
 
 
 
-  template <int DIM>
-  class Du
+  template <int DIM, typename SCAL = double>
+  class Class_Du
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM> & u;
+    const AutoDiff<DIM,SCAL> & u;
 
-    Du (const AutoDiff<DIM> & au)
+    Class_Du (const AutoDiff<DIM,SCAL> & au)
       : u(au) { ; }
 
-    Vec<DIM> Value () const
+    Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM> val;
+      Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = u.DValue(j);
       return val;
     }
 
-    Vec<DIM_CURL> CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
-      return Vec<DIM> (0.0);
+      return Vec<DIM_CURL,SCAL> (0.0);
     }
   };
 
+  template <int DIM, typename SCAL>
+  INLINE Class_Du<DIM,SCAL> Du (AutoDiff<DIM,SCAL> u)
+  { return Class_Du<DIM,SCAL> (u); }
 
 
 
-  template <int DIM>
-  class uDv
+
+  template <int DIM, typename SCAL = double>
+  class Class_uDv
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM> & u, v;
+    const AutoDiff<DIM,SCAL> & u, v;
 
-    uDv (const AutoDiff<DIM> & au, 
-         const AutoDiff<DIM> & av)
+    Class_uDv (const AutoDiff<DIM,SCAL> & au, 
+         const AutoDiff<DIM,SCAL> & av)
       : u(au), v(av) { ; }
 
-    Vec<DIM> Value () const
+    Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM> val;
+      Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = u.Value() * v.DValue(j);
       return val;
     }
 
-    Vec<DIM_CURL> CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
-      AutoDiff<DIM_CURL> hd = Cross (u, v);
-      Vec<DIM_CURL> val;
+      AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
+      Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = hd.DValue(i);
       return val;
     }
   };
 
+  template <int DIM, typename SCAL>
+  INLINE Class_uDv<DIM,SCAL> uDv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
+  { return Class_uDv<DIM,SCAL> (u,v); }
 
 
-  template <int DIM>
-  class uDv_minus_vDu
+  template <int DIM, typename SCAL = double>
+  class Class_uDv_minus_vDu
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM> & u, v;
+    const AutoDiff<DIM, SCAL> & u, v;
 
-    uDv_minus_vDu (const AutoDiff<DIM> & au, 
-                   const AutoDiff<DIM> & av)
+    Class_uDv_minus_vDu (const AutoDiff<DIM,SCAL> & au, 
+                   const AutoDiff<DIM,SCAL> & av)
       : u(au), v(av) { ; }
 
-    Vec<DIM> Value () const
+    Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM> val;
+      Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = u.Value() * v.DValue(j) - v.Value() * u.DValue(j);
       return val;
     }
 
-    Vec<DIM_CURL> CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
-      AutoDiff<DIM_CURL> hd = Cross (u, v);
-      Vec<DIM_CURL> val;
+      AutoDiff<DIM_CURL,SCAL> hd = Cross (u, v);
+      Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = 2 * hd.DValue(i);
       return val;
     }
   };
 
+  template <int DIM, typename SCAL>
+  INLINE Class_uDv_minus_vDu<DIM,SCAL> 
+  uDv_minus_vDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
+  { return Class_uDv_minus_vDu<DIM,SCAL> (u,v); }
 
-  template <int DIM>
-  class wuDv_minus_wvDu
+
+
+
+
+  template <int DIM, typename SCAL = double>
+  class Class_wuDv_minus_wvDu
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM> & u, v, w;
+    const AutoDiff<DIM,SCAL> & u, v, w;
 
-    wuDv_minus_wvDu (const AutoDiff<DIM> & au, 
-                     const AutoDiff<DIM> & av,
-                     const AutoDiff<DIM> & aw)
+    Class_wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> & au, 
+                     const AutoDiff<DIM,SCAL> & av,
+                     const AutoDiff<DIM,SCAL> & aw)
       : u(au), v(av), w(aw) { ; }
 
-    Vec<DIM> Value () const
+    Vec<DIM,SCAL> Value () const
     {
-      Vec<DIM> val;
+      Vec<DIM,SCAL> val;
       for (int j = 0; j < DIM; j++)
 	val(j) = w.Value() * (u.Value() * v.DValue(j) - v.Value() * u.DValue(j));
       return val;
     }
 
-    Vec<DIM_CURL> CurlValue () const
+    Vec<DIM_CURL,SCAL> CurlValue () const
     {
-      AutoDiff<DIM_CURL> hd = Cross (u*w, v) + Cross(u, v*w);
-      Vec<DIM_CURL> val;
+      AutoDiff<DIM_CURL,SCAL> hd = Cross (u*w, v) + Cross(u, v*w);
+      Vec<DIM_CURL,SCAL> val;
       for (int i = 0; i < DIM_CURL; i++) 
         val(i) = hd.DValue(i);
       return val;
     }
   };
 
+
+  template <int DIM, typename SCAL>
+  INLINE Class_wuDv_minus_wvDu<DIM,SCAL> 
+  wuDv_minus_wvDu (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
+  { return Class_wuDv_minus_wvDu<DIM,SCAL> (u,v,w); }
 
 
 

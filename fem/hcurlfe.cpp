@@ -12,7 +12,7 @@
 #define FILE_HCURLFE_CPP
 
 #include <fem.hpp>
-#include "thcurlfe_impl.hpp"
+#include <thcurlfe_impl.hpp>
 #include "hcurlhofe_impl.hpp"
 #include "hcurllofe.hpp"
 #include "hdivlofe.hpp"
@@ -136,6 +136,17 @@ namespace ngfem
       }
   }
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                   SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedShape (mir[i], shape.Cols(D, (i+1)*D));
+  }
+  
+
+
   /// compute curl of shape
   template <int D>
   void HCurlFiniteElement<D> ::
@@ -158,7 +169,24 @@ namespace ngfem
       }
   }
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                       SliceMatrix<> curlshape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedCurlShape (mir[i], curlshape.Cols(i*DIM_CURL_(D), (i+1)*DIM_CURL_(D)));
+  }
+  
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<D> curl) const
+  {
+    LocalHeapMem<1000> lhdummy("dummy");
+    for (int i = 0; i < ir.Size(); i++)
+      curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
+  }
 
 
 

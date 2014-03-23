@@ -69,19 +69,19 @@ namespace ngfem
             INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
 
             //Nedelec low order edge shape function 
-            shape[i] = uDv_minus_vDu<2> (lami[e[0]], lami[e[1]]);
+            shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
 
             int p = order_edge[i]; 
             //HO-Edge shapes (Gradient Fields)   
             if(p > 0) //  && usegrad_edge[i]) 
               { 
-                AutoDiff<2> xi = lami[e[1]] - lami[e[0]]; 
+                Tx xi = lami[e[1]] - lami[e[0]]; 
                 
                 // LegendrePolynomial::
                 IntLegNoBubble::
                   EvalScaledMult (p-1, xi, lami[e[0]]+lami[e[1]], 
                                   lami[e[0]]*lami[e[1]], 
-                                  SBLambda([&](int i, AutoDiff<2> v)
+                                  SBLambda([&](int i, Tx v)
                                            {
                                              shape[ii++] = Du<2>(v);
                                            }));
@@ -95,12 +95,12 @@ namespace ngfem
     int p = order_inner[0];      
     if(p > 1) 
       {
-        ArrayMem<AutoDiff<2>,10> adpol1(order),adpol2(order);	
+        ArrayMem<Tx,10> adpol1(order),adpol2(order);	
 
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
-	AutoDiff<2> xi  = lami[fav[2]]-lami[fav[1]];
-	AutoDiff<2> eta = lami[fav[0]]; 
+	Tx xi  = lami[fav[2]]-lami[fav[1]];
+	Tx eta = lami[fav[0]]; 
 
         TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
 	
@@ -108,7 +108,7 @@ namespace ngfem
         // rotated gradients:
           for (int j = 0; j < p-1; j++)
             for (int k = 0; k < p-1-j; k++, ii++)
-              shape[ii] = Du<2> (adpol1[j] * adpol2[k]);
+              shape[ii] = Du (adpol1[j] * adpol2[k]);
         }
         
         if (!ho_div_free)
@@ -116,11 +116,11 @@ namespace ngfem
             // other combination
             for (int j = 0; j < p-1; j++)
               for (int k = 0; k < p-1-j; k++, ii++)
-                shape[ii] = uDv_minus_vDu<2> (adpol2[k], adpol1[j]);
+                shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
             
             // rec_pol * Nedelec0 
             for (int j = 0; j < p-1; j++, ii++)
-              shape[ii] = wuDv_minus_wvDu<2> (lami[fav[1]], lami[fav[2]], adpol2[j]);
+              shape[ii] = wuDv_minus_wvDu (lami[fav[1]], lami[fav[2]], adpol2[j]);
           }
       }
   }
@@ -141,11 +141,11 @@ namespace ngfem
     if (only_ho_div && (order_inner[0]<=1 && order_inner[1]<=1)) return;
     Tx x = hx[0], y = hx[1];
 
-    AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
-    AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+    Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+    Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
 
     int ii = 4;
-    ArrayMem<AutoDiff<2>, 10> pol_xi(order+2), pol_eta(order+2);
+    ArrayMem<Tx, 10> pol_xi(order+2), pol_eta(order+2);
 
     if (!only_ho_div){
       // edges
@@ -156,22 +156,22 @@ namespace ngfem
         int es = edges[i][0], ee = edges[i][1];
         if (vnums[es] > vnums[ee]) swap (es, ee);
 
-        AutoDiff<2> xi  = sigma[ee]-sigma[es];
-        AutoDiff<2> lam_e = lami[ee]+lami[es];  // attention in [0,1]
+        Tx xi  = sigma[ee]-sigma[es];
+        Tx lam_e = lami[ee]+lami[es];  // attention in [0,1]
 
         // Nedelec0-shapes
-          shape[i] = uDv<2> (0.5 * lam_e, xi); 
-
+        shape[i] = uDv<2> (0.5 * lam_e, xi); 
+        
         // High Order edges ... Gradient fields 
         // if(usegrad_edge[i])
-          {
-            // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
-            // LegendrePolynomial::
-            IntLegNoBubble::
-              EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
-            for (int j = 0; j < p; j++)
-              shape[ii++] = Du<2> (pol_xi[j] * lam_e);
-          }
+        {
+          // T_ORTHOPOL::Calc (p+1, xi, pol_xi);  
+          // LegendrePolynomial::
+          IntLegNoBubble::
+            EvalMult (p-1, xi, 0.25*(1-xi*xi), pol_xi);
+          for (int j = 0; j < p; j++)
+            shape[ii++] = Du<2> (pol_xi[j] * lam_e);
+        }
         }
     }
     else
@@ -186,9 +186,9 @@ namespace ngfem
     int f1 = (fmax+3)%4; 
     int f2 = (fmax+1)%4; 
     if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f2 > f1; 
-
-    AutoDiff<2> xi = sigma[fmax]-sigma[f1];  // in [-1,1]
-    AutoDiff<2> eta = sigma[fmax]-sigma[f2]; // in [-1,1]
+    
+    Tx xi = sigma[fmax]-sigma[f1];  // in [-1,1]
+    Tx eta = sigma[fmax]-sigma[f2]; // in [-1,1]
     
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
@@ -231,7 +231,6 @@ namespace ngfem
 
 
 
-
   
   /// compute shape
   template<typename Tx, typename TFA>  
@@ -241,7 +240,6 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
-    ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
 	
     int ii = 4; 
     if (!only_ho_div)
@@ -261,7 +259,7 @@ namespace ngfem
           int fop = 6 - fav[0] - fav[1] - fav[2];
           
           // RT lowest order
-          shape[i] = uDvDw_Cyclic<3> (lami[fav[0]], lami[fav[1]], lami[fav[2]]);
+          shape[i] = uDvDw_Cyclic (lami[fav[0]], lami[fav[1]], lami[fav[2]]);
 
           Tx xi = lami[fav[1]]-lami[fav[0]];
           Tx sum = lami[fav[1]]+lami[fav[0]];
@@ -286,21 +284,43 @@ namespace ngfem
             shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
           */
 
+
+          /*
           IntLegNoBubble::EvalScaledMult (p-1, xi, sum, bub, adpol1); 
-          
-          // Typ 1
           for (int k = 0; k <= p-1; k++)
             {
               IntegratedJacobiPolynomialAlpha jac(2*k+3);
-              jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
-              for (int l = 0; l <= p-1-k; l++)
-                shape[ii++] = Du_Cross_Dv<3> (adpol2[l], adpol1[k]);
+              Tx polk = adpol1[k];
+              jac.EvalScaledMult(p-k-1, eta-sum, 1-zeta, eta, 
+                                 SBLambda ([&](int i, Tx val)
+                                           {
+                                             shape[ii++] = 
+                                               Du_Cross_Dv (val, polk);
+                                           }));
             }
+          */
+
+          // Typ 1
+          IntLegNoBubble::
+            EvalScaledMult (p-1, xi, sum, bub, 
+                            SBLambda([&](int k, Tx polk)
+                                     {
+                                       IntegratedJacobiPolynomialAlpha jac(2*k+3);
+                                       jac.EvalScaledMult(p-k-1, eta-sum, 1-zeta, eta, 
+                                                          SBLambda ([&](int i, Tx val)
+                                                                    {
+                                                                      shape[ii++] = 
+                                                                        Du_Cross_Dv (val, polk);
+                                                                    }));
+                                     }));
           
           IntegratedJacobiPolynomialAlpha jac(3);
-          jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
-          for (int j = 0; j <= p-1; j++)
-            shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]);
+          jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, 
+                             SBLambda ([&](int i, Tx val)
+                                       {
+                                         shape[ii++] = 
+                                           curl_uDvw_minus_Duvw (lami[fav[0]], lami[fav[1]], val);
+                                       }));
         }
     }
     else
@@ -311,6 +331,8 @@ namespace ngfem
     int pp = max(p,pc); 
     if ( pp >= 2 )
       {
+        ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
+
         T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       
         if (!only_ho_div){
@@ -373,15 +395,13 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
 
-    AutoDiff<3> lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
-    AutoDiff<3> muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
+    Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
+    Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
        
     const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
 
-    ArrayMem<AutoDiff<3>,20> adpolxy1(order+4),adpolxy2(order+4); 
-    ArrayMem<AutoDiff<3>,20> adpolz(order+4);   
-
-
+    ArrayMem<Tx,20> adpolxy1(order+4),adpolxy2(order+4); 
+    ArrayMem<Tx,20> adpolz(order+4);   
     ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
     
     // trig faces
@@ -398,11 +418,11 @@ namespace ngfem
 	
 	shape[i] = wDu_Cross_Dv<3> (lami[fav[0]], lami[fav[1]], muz[fav[0]]);
 
-	AutoDiff<3> xi = lami[fav[1]]-lami[fav[0]];
-	AutoDiff<3> eta = lami[fav[2]];
+	Tx xi = lami[fav[1]]-lami[fav[0]];
+	Tx eta = lami[fav[2]];
 
-        AutoDiff<3> sum = lami[fav[1]]+lami[fav[0]];
-        AutoDiff<3> bub = lami[fav[1]]*lami[fav[0]];
+        Tx sum = lami[fav[1]]+lami[fav[0]];
+        Tx bub = lami[fav[1]]*lami[fav[0]];
         // AutoDiff<3> zeta = lami[fop];  
 
 
@@ -455,9 +475,9 @@ namespace ngfem
 	int f1 = faces[i][ftrig];
 	int f2 = faces[i][fz];
 
-	AutoDiff<3> xi = lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
-	AutoDiff<3> eta = 1-lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
-	AutoDiff<3> zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
+	Tx xi = lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	Tx eta = 1-lami[faces[i][fmax]]-lami[faces[i][ftrig]]; 
+	Tx zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	
 	int pp = int(max2(p[0],p[1]))+1;
 	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
@@ -562,9 +582,6 @@ namespace ngfem
 
     if (ii != ndof) cout << "hdiv-prism: dofs missing, ndof = " << ndof << ", ii = " << ii << endl;
   }
-
-
-
 
 
 
