@@ -1152,11 +1152,6 @@ namespace ngfem
       return coefsal[1][0]*x+coefsal[1][1]*y; 
     }
     
-    /*
-    INLINE double A (int i) const { return coefs[offset+i][0]; } 
-    INLINE double B (int i) const { return coefs[offset+i][1]; } 
-    INLINE double C (int i) const { return coefs[offset+i][2]; } 
-    */
     INLINE double A (int i) const { return coefsal[i][0]; } 
     INLINE double B (int i) const { return coefsal[i][1]; } 
     INLINE double C (int i) const { return coefsal[i][2]; } 
@@ -1184,8 +1179,8 @@ namespace ngfem
 
 
 
+  /*
 // see Beuchler+Schoeberl : New shape functions for trigs, formula (2.11)
-
 class IntJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPolynomialAlpha>
   {
   public:
@@ -1239,30 +1234,36 @@ class IntJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPo
 
     INLINE double D (int i) const { return 1; }
   };
-
+  */
 
 
 
 
 // see Beuchler+Schoeberl : New shape functions for trigs, formula (2.11)
 // \int_(-1)^x P^(alpha,0)(s) ds   /  (1-s)
-class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPolynomialAlpha>
+class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntegratedJacobiPolynomialAlpha>
   {
   public:
+    static Array< Vec<3> > coefs;
     int alpha;
+    static int maxn, maxalpha;
+    Vec<3> * coefsal;
 
   public:
     IntegratedJacobiPolynomialAlpha (int a) : alpha(a) 
     { 
-      ;
+      coefsal = &coefs[alpha*(maxn+1)];
     }
 
     template <class S, class T>
     inline IntegratedJacobiPolynomialAlpha (int n, S x, int a, T && values)
       : alpha(a)
     { 
+      coefsal = &coefs[alpha*(maxn+1)];
       Eval (n, x, values);
     }
+
+    static void Calc (int n, int maxalpha);
 
     template <class S>
     INLINE double P0(S x) const { return 1.0; }
@@ -1275,19 +1276,25 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJ
     template <class S>
     INLINE S P1(S x) const 
     { 
-      return 0.25 * (alpha+2)*x + 0.25*(alpha-2);
+      return coefsal[1][0]*x+coefsal[1][1]; 
+      // return 0.25 * (alpha+2)*x + 0.25*(alpha-2);
     }
 
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
-      return 0.25 * (alpha+2)*x + 0.25*(alpha-2) * y;
+      return coefsal[1][0]*x+coefsal[1][1]*y; 
+      // return 0.25 * (alpha+2)*x + 0.25*(alpha-2) * y;
     }
 
+    INLINE double A (int i) const { return coefsal[i][0]; } 
+    INLINE double B (int i) const { return coefsal[i][1]; } 
+    INLINE double C (int i) const { return coefsal[i][2]; } 
+    /*
     INLINE double A (int i) const { return CalcA (i, alpha, 0); }
     INLINE double B (int i) const { return CalcB (i, alpha, 0); }
     INLINE double C (int i) const { return CalcC (i, alpha, 0); }
-
+    */
     enum { ZERO_B = 0 };
 
     static double CalcA (int n, double al, double be) 
