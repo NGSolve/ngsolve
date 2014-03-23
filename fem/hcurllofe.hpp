@@ -127,16 +127,16 @@ namespace ngfem
     {
       Tx x = hx[0], y = hx[1];
       
-      AutoDiff<2> lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
-      AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
+      Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
+      Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
       const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
       for (int i = 0; i < 4; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
           
-          AutoDiff<2> xi  = sigma[ee]-sigma[es];
-          AutoDiff<2> lam_e = lami[ee]+lami[es];  
+          Tx xi  = sigma[ee]-sigma[es];
+          Tx lam_e = lami[ee]+lami[es];  
           
           shape[i] = uDv<2> (0.5 * lam_e, xi); 
         }
