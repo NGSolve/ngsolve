@@ -4,23 +4,6 @@
 
 
 
-namespace ngbla
-{
-
-  template <int DIM>
-  class AD2Vec : public MatExpr<AD2Vec<DIM> >
-  {
-    AutoDiff<DIM> ad;
-  public:
-    INLINE AD2Vec (double d) : ad(d) { ; }
-    INLINE AD2Vec (AutoDiff<DIM> aad) : ad(aad) { ; }
-    INLINE double operator() (int i) const { return ad.DValue(i); }
-    INLINE double operator() (int i, int j) const { return ad.DValue(i); }
-    INLINE AutoDiff<DIM> Data() const { return ad; }
-  };
-
-}
-
 
 
  
