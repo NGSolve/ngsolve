@@ -116,7 +116,7 @@ namespace ngfem
     Tx x = hx[0];
     Tx lam[2] = { x, 1-x };
 
-    ArrayMem<Tx,10> adpol1(order);
+    ArrayMem<Tx,20> adpol1(order);
 	
     INT<2> e = GetEdgeSort (0, vnums);	  
     
@@ -150,7 +150,7 @@ namespace ngfem
     Tx x = hx[0], y = hx[1];
     Tx lam[3] = { x, y, 1-x-y };
 
-    ArrayMem<Tx,10> adpol1(order),adpol2(order);	
+    ArrayMem<Tx,20> adpol1(order),adpol2(order);	
 	
     int ii = 3; 
     for (int i = 0; i < 3; i++)
@@ -327,7 +327,7 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lam[4] = { x, y, z, 1-x-y-z };
 
-    ArrayMem<Tx,10> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
+    ArrayMem<Tx,20> adpol1(order+2),adpol2(order+2),adpol3(order+2); 
     int ii = 6; 
 
     for (int i = 0; i < N_EDGE; i++)
