@@ -61,6 +61,16 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                   SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedShape (mir[i], shape);
+  }
+
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                        SliceMatrix<> curlshape) const
   { 
@@ -76,6 +86,17 @@ namespace ngfem
                                         { curlshape.Row(i) = s; }));
       }
   }
+
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                       SliceMatrix<> curlshape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedCurlShape (mir[i], curlshape);
+  }    
+
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   auto T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
