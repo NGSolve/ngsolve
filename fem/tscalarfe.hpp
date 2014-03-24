@@ -104,9 +104,26 @@ namespace ngfem
     static void T_CalcShape (Tx x[1], TFA & shape) 
     { ; }
   };
+}
 
+
+namespace ngbla
+{
+
+  template <int DIM, typename SCAL = double>
+  class AD2Vec : public MatExpr<AD2Vec<DIM,SCAL> >
+  {
+    AutoDiff<DIM,SCAL> ad;
+  public:
+    INLINE AD2Vec (double d) : ad(d) { ; }
+    INLINE AD2Vec (AutoDiff<DIM,SCAL> aad) : ad(aad) { ; }
+    INLINE SCAL operator() (int i) const { return ad.DValue(i); }
+    INLINE SCAL operator() (int i, int j) const { return ad.DValue(i); }
+    INLINE AutoDiff<DIM,SCAL> Data() const { return ad; }
+  };
 
 }
+
 
 
 #endif
