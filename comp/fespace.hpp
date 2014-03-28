@@ -42,6 +42,7 @@ namespace ngcomp
 		      };
 		     
 
+  ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
 
 
   /**

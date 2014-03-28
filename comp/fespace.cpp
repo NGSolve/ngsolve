@@ -1104,6 +1104,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
 
 
+  ostream & operator<< (ostream & ost, COUPLING_TYPE ct)
+  {
+    switch (ct)
+      {
+      case UNUSED_DOF: ost << "unused"; break;
+      case LOCAL_DOF:  ost << "local"; break;
+      case INTERFACE_DOF: ost << "interface"; break;
+      case NONWIREBASKET_DOF: ost << "non-wirebasket"; break;
+      WIREBASKET_DOF: ost << "wirebasket"; break;
+      EXTERNAL_DOF: ost << "external"; break;
+      ANY_DOF: ost << "any"; break;
+      };
+    return ost;
+  }
+
+
+
   void FESpace :: UpdateParallelDofs ( )
   {
     if (MyMPI_GetNTasks() == 1) return;
