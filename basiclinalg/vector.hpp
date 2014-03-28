@@ -160,7 +160,7 @@ namespace ngbla
     }
 
     /// copy vector. sizes must match
-    const FlatVector & operator= (const FlatVector & v) const
+    INLINE const FlatVector & operator= (const FlatVector & v) const
     {
       for (int i = 0; i < size; i++)
 	data[i*dist] = v(i);
@@ -169,7 +169,7 @@ namespace ngbla
 
     /// evaluate matrix expression
     template<typename TB>
-    const FlatVector & operator= (const Expr<TB> & v) const
+    INLINE const FlatVector & operator= (const Expr<TB> & v) const
     {
       return CMCPMatExpr<FlatVector>::operator= (v);
     }
@@ -1236,7 +1236,7 @@ namespace ngbla
 
 
     template<typename TB>
-    ALWAYS_INLINE const SliceVector & operator+= (const Expr<TB> & v) const
+    INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < s; i++)
@@ -1400,7 +1400,7 @@ namespace ngbla
     }
 
     /// copies contents of vector
-    const FixSliceVector & operator= (const FixSliceVector & v2) const
+    INLINE const FixSliceVector & operator= (const FixSliceVector & v2) const
     {
       for (int i = 0; i < s; i++)
 	data[i*DIST] = v2(i);
@@ -1408,7 +1408,7 @@ namespace ngbla
     }
 
     template<typename TB>
-    const FixSliceVector & operator= (const Expr<TB> & v) const
+    INLINE const FixSliceVector & operator= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < s; i++)
@@ -1421,7 +1421,7 @@ namespace ngbla
 
 
     template<typename TB>
-    ALWAYS_INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
+    INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < s; i++)
