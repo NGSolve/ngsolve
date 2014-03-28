@@ -221,6 +221,12 @@ namespace ngfem
   }
 
 
+  template<int D>
+  void ScalarFiniteElement<D> :: 
+  EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
+  {
+    cout << "EvalGradTrans not overloaded" << endl;
+  }
 
 
 
