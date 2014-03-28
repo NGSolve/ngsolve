@@ -55,6 +55,8 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
 
+    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
+
     NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const;
 /*    

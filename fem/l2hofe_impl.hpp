@@ -149,10 +149,6 @@ namespace ngfem
     }
 
 
-
-
-
-
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const
@@ -387,6 +383,7 @@ namespace ngfem
     LegendrePolynomial leg;
     leg.EvalScaled (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
 
+    int horder = order;
     for (int k = 0, ii = 0; k <= order; k++)
       {
         JacobiPolynomialAlpha jac(2*k+1);
@@ -397,6 +394,18 @@ namespace ngfem
             JacobiPolynomialAlpha jac(2*(j+k)+2);
             jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
             ii += order-k-j+1;
+	    
+	    /*
+	      // some preformance tests ...
+	    Tx sh = (2*lamis[0]-1)*polsy[j];
+	    // int lmax = order-k-j;
+	    // for (int l = 0; l <= lmax; l++)
+	    for (int l = 0; l <= horder-k-j; l++)
+	      {
+		shape[ii++] = sh;
+		sh *= 0.9;
+	      }
+	    */
           }
       }
   }
