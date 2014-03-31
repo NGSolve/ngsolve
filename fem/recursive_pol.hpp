@@ -787,6 +787,12 @@ namespace ngfem
       EvalMult (n, x, 1.0, values);
     }
 
+    template <class S, class T>
+    INLINE void Eval1Assign (int n, S x, T && values) const
+    {
+      EvalMult1Assign (n, x, 1.0, values);
+    }
+
     template <class S, class Sc, class T>
     INLINE void EvalMult (int n, S x, Sc c, T && values) const
     {
@@ -808,12 +814,20 @@ namespace ngfem
 	}
     }
 
+    template <class S, class Sc, class T>
+    INLINE void EvalMult1Assign (int n, S x, Sc c, T && values)
+    {
+      S p1(0.0), p2(0.0); // initialize for surpressing warning
+      for (int i = 0; i <= n; i++)
+        values[i] = EvalNextMult (i, x, c, p1, p2);
+    }
+
     template <class S, class Sy, class T>
     INLINE void EvalScaled (int n, S x, Sy y, T && values) const
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
-
+    
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
@@ -1390,7 +1404,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   template <class S, class T>
   inline void JacobiPolynomial (int n, S x, double alpha, double beta, T && values)
   {
-    S p1 = S(1.0), p2 = S(0.0), p3;
+    S p1(1.0), p2(0.0), p3;
 
     if (n >= 0) 
       values[0] = p2 = 1.0;
