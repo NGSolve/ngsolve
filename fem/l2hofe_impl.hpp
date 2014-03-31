@@ -383,7 +383,6 @@ namespace ngfem
     LegendrePolynomial leg;
     leg.EvalScaled (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
 
-    int horder = order;
     for (int k = 0, ii = 0; k <= order; k++)
       {
         JacobiPolynomialAlpha jac(2*k+1);
@@ -392,11 +391,12 @@ namespace ngfem
         for (int j = 0; j <= order-k; j++)
           {
             JacobiPolynomialAlpha jac(2*(j+k)+2);
-            jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
+            jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
             ii += order-k-j+1;
 	    
 	    /*
 	      // some preformance tests ...
+              int horder = order;
 	    Tx sh = (2*lamis[0]-1)*polsy[j];
 	    // int lmax = order-k-j;
 	    // for (int l = 0; l <= lmax; l++)
