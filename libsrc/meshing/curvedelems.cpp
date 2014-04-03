@@ -1507,6 +1507,7 @@ namespace netgen
 
   bool CurvedElements :: IsSurfaceElementCurved (SurfaceElementIndex elnr) const
   {
+    if (mesh[elnr].GetType() != TRIG) return true;
     if (!IsHighOrder()) return false;
 
     if (mesh.coarsemesh)
