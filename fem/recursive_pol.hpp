@@ -685,7 +685,7 @@ namespace ngfem
       switch (i)
         {
         case 0: return p1 = Cast().P0(x);
-        case 1: return p1 = Cast().P1(x);
+        case 1: p2 = p1; return p1 = Cast().P1(x);
         default:
           {
             if (REC::ZERO_B)
@@ -713,7 +713,14 @@ namespace ngfem
         {
         case 0: return p1 = c * Cast().P0(x);
         case 1: p2 = p1; return p1 = c * Cast().P1(x);
-        default: return EvalNext (i, x, p1, p2);
+        default:
+          {
+            S pnew = REC::ZERO_B ?
+              Cast().A(i) * x * p1 + Cast().C(i)*p2 :
+              (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
+            p2 = p1; p1 = pnew;
+            return p1;
+          }
         }
     }
 
@@ -764,20 +771,53 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          S pnew = static_cast<const REC&>(*this).A(i) * x * p1 + static_cast<const REC&>(*this).C(i) * (y*y)*p2;
-          pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+          S pnew = Cast().A(i) * x * p1 + Cast().C(i) * (y*y)*p2;
+          pnew *= 1.0 / Cast().D(i);
           p2 = p1;
           p1 = pnew;
         }
       else
         {
-          S pnew = (static_cast<const REC&>(*this).A(i) * x + static_cast<const REC&>(*this).B(i) * y) * p1 + static_cast<const REC&>(*this).C(i) * (y*y)*p2;
+          S pnew = (Cast().A(i) * x + Cast() * y) * p1 + Cast().C(i) * (y*y)*p2;
           pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
           p2 = p1;
           p1 = pnew;
         }
       return p1;
     }
+
+    // new
+    template <class S, class Sy, class Tc>
+    INLINE S EvalScaledMultNext (int i, S x, Sy y, Tc c, S & p1, S & p2) const
+    {
+      switch (i)
+        {
+        case 0: 
+          return p1 = c * static_cast<const REC&>(*this).P0(x);
+        case 1: 
+          p2 = p1; return p1 = c * static_cast<const REC&>(*this).P1(x,y);
+        default:
+          {
+            if (REC::ZERO_B)
+              {
+                S pnew = Cast().A(i) * x * p1 + Cast().C(i) * (y*y)*p2;
+                pnew *= 1.0 / Cast().D(i);
+                p2 = p1;
+                p1 = pnew;
+              }
+            else
+              {
+                S pnew = (Cast().A(i) * x + Cast().B(i) * y) * p1 + Cast().C(i) * (y*y)*p2;
+                pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+                p2 = p1;
+                p1 = pnew;
+              }
+            return p1;
+          }
+        }
+    }
+
+
 
   public:
 
@@ -837,6 +877,7 @@ namespace ngfem
     template <class S, class Sy, class Sc, class T>
     INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values) const
     {
+      /*
       S p1, p2;
 
       if (n < 0) return;
@@ -848,6 +889,10 @@ namespace ngfem
 
       for (int i = 2; i <= n; i++)
         values[i] = EvalScaledNext (i, x, y, p1, p2);
+      */
+      S p1(0.0), p2(0.0);
+      for (int i = 0; i <= n; i++)
+        values[i] = EvalScaledMultNext (i, x, y, c, p1, p2);
     }
 
     enum { ZERO_B = 0 };
