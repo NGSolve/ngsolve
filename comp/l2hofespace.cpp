@@ -299,7 +299,7 @@ namespace ngcomp
               }
           }
 
-	if (ma.GetElType(elnr) == ET_TRIG && order <= 3)
+	if (ma.GetElType(elnr) == ET_TRIG) //  && order <= 3)
 	  {
 	    ArrayMem<int,3> vnums(3);
 	    ma.GetElVertices (elnr, vnums);

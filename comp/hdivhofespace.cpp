@@ -570,6 +570,7 @@ namespace ngcomp
     Ngs_Element ngel = ma.GetElement(elnr);
     ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
 
+    /*
     if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -593,7 +594,7 @@ namespace ngcomp
 	
 	return *hofe2d;
       }  
-
+    */
 
     try
       {
@@ -703,7 +704,8 @@ namespace ngcomp
     ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
 
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
-
+    
+    /*
     if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0; 
@@ -726,6 +728,7 @@ namespace ngcomp
 	
 	return *hofe2d;
       }  
+    */
 
     try
       {
