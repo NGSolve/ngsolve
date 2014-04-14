@@ -23,8 +23,11 @@ namespace ngfem
 		SliceVector<> divshape) const
   {  
     Vec<DIM,AutoDiff<DIM>> adp = ip;
-    HDivDivShapeAssign<DIM> ds(divshape); 
-    static_cast<const FEL*> (this) -> T_CalcShape (&adp(0), ds);
+    static_cast<const FEL*> (this) -> 
+      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2DivShape<DIM> val)
+                                      {
+                                        divshape(nr) = val;
+                                      }));
   }
 
     

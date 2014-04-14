@@ -71,7 +71,7 @@ namespace ngfem
             //Nedelec low order edge shape function 
             shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
 
-            int p = order_edge[i]; 
+            int p = order_facet[i][0]; 
             //HO-Edge shapes (Gradient Fields)   
             if(p > 0) //  && usegrad_edge[i]) 
               { 
@@ -95,14 +95,20 @@ namespace ngfem
     int p = order_inner[0];      
     if(p > 1) 
       {
+#ifdef VLA
+        Tx mem[2*order];
+        Tx * adpol1 = &mem[0];
+        Tx * adpol2 = &mem[order];
+#else
         ArrayMem<Tx,10> adpol1(order),adpol2(order);	
+#endif
 
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
 	Tx xi  = lami[fav[2]]-lami[fav[1]];
 	Tx eta = lami[fav[0]]; 
 
-        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1,adpol2);
+        TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1, adpol2);
 	
         if (!only_ho_div){
         // rotated gradients:
@@ -152,8 +158,8 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
       for (int i = 0; i < 4; i++)
         {
-        int p = order_edge[i]; 
-        int es = edges[i][0], ee = edges[i][1];
+          int p = order_facet[i][0]; 
+          int es = edges[i][0], ee = edges[i][1];
         if (vnums[es] > vnums[ee]) swap (es, ee);
 
         Tx xi  = sigma[ee]-sigma[es];
@@ -216,6 +222,8 @@ namespace ngfem
         for(int j = 0; j < p[1]; j++)
           shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
       }
+
+    if (ii != ndof) cout << "ndof = " << ndof << ", but ii = " << ii << endl;
   }
 
 
@@ -247,7 +255,7 @@ namespace ngfem
       const FACE * faces = ElementTopology::GetFaces (ET_TET);
       for (int i = 0; i < 4; i++)
         {
-        int p = order_face[i][0];
+          int p = order_facet[i][0];
 
           int fav[3];
           for(int j = 0; j < 3; j++) fav[j]=faces[i][j];
@@ -409,7 +417,7 @@ namespace ngfem
     int ii = 5;
     for (int i = 0; i < 2; i++)
       {
-	int p = order_face[i][0];
+	int p = order_facet[i][0];
 	int fav[3] = {faces[i][0], faces[i][1], faces[i][2]};
 
 	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
@@ -463,7 +471,7 @@ namespace ngfem
     // quad faces
     for (int i = 2; i < 5; i++)
       {
-	INT<2> p = order_face[i];
+	INT<2> p = order_facet[i];
 	 
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)

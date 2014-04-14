@@ -1,9 +1,12 @@
+#define FILE_HDIVHOFE_CPP
+
 #include <fem.hpp>
-#include <thdivfe_impl.hpp>
 #include <hdivhofe.hpp>
+/*
+#include <thdivfe_impl.hpp>
 #include <hdivhofe_impl.hpp>
 #include <hdivhofefo.hpp>
-
+*/
 
 namespace ngfem
 {  
@@ -13,6 +16,7 @@ namespace ngfem
   // HDivHighOrderFiniteElement
   //------------------------------------------------------------------------
 
+  /*
   template <int D>
   HDivHighOrderFiniteElement<D> ::
   HDivHighOrderFiniteElement (ELEMENT_TYPE aeltype)
@@ -61,16 +65,6 @@ namespace ngfem
     ComputeNDof();
   }
 
-  /*
-  template <int D>
-  void HDivHighOrderFiniteElement<D>::
-  SetOrderInner (int oi)
-  {
-    order_inner = INT<3>(oi,oi,oi);
-    ComputeNDof();
-  }
-  */
-
   template <int D>
   void HDivHighOrderFiniteElement<D>::
   SetOrderInner (INT<D> oi)
@@ -91,6 +85,7 @@ namespace ngfem
       for (int j = 0; j < ElementTopology::GetNFaces(et); j++)
 	ost << "order_face[" << j << "] = " << order_face[j] << endl;
   }
+  */
 
 
   //------------------------------------------------------------------------
@@ -414,7 +409,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  void T_HDivHighOrderFiniteElement<ET> :: 
+  void HDivHighOrderFE<ET> :: 
   ComputeNDof()
   {
     if (DIM == 2)
@@ -422,9 +417,15 @@ namespace ngfem
         if (only_ho_div)
 	  {
 	    if (ET == ET_TRIG)
-	      ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
+              {
+                ndof = order_inner[0]*(order_inner[0]+1)/2 - 1;
+                order = order_inner[0];
+              }
 	    else
-	      ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
+              {
+                ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
+                order = max(order_inner[0], order_inner[1])+1;
+              }
 	    return;
 	  }
         else
@@ -432,7 +433,7 @@ namespace ngfem
 	    ndof = ET_trait<ET>::N_EDGE;
 	    
 	    for(int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-	      ndof += order_edge[i];
+	      ndof += order_facet[i][0];
 	    
 	    if (ET == ET_TRIG)
 	      {
@@ -458,8 +459,8 @@ namespace ngfem
 
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_EDGE; i++)
-          if (order_edge[i] > order)
-            order = order_edge[i];
+          if (order_facet[i][0] > order)
+            order = order_facet[i][0];
         
         for (int j = 0; j < 2; j++)
           if (order_inner[j] > order) 
@@ -499,7 +500,7 @@ namespace ngfem
 
           for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
             {
-              INT<2> p = order_face[i];
+              INT<2> p = order_facet[i];
               if (ET_trait<ET>::FaceType(i) == ET_TRIG)
                 ndof += (p[0]*p[0]+3*p[0])/2;
               else
@@ -541,7 +542,7 @@ namespace ngfem
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
           {
-            int p = max(order_face[i][0], order_face[i][1]);
+            int p = max(order_facet[i][0], order_facet[i][1]);
             if (p > order) order = p;
           }
 
@@ -558,7 +559,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  void T_HDivHighOrderFiniteElement<ET> :: 
+  void HDivHighOrderFE<ET> :: 
   GetFacetDofs(int i, Array<int> & dnums) const
   {
     dnums.SetSize(0);
@@ -570,10 +571,10 @@ namespace ngfem
 	int nf = 0;
 	switch (ElementTopology::GetFacetType(ET,j))
 	  {
-	  case ET_SEGM: nf = order_edge[j]; break;
+	  case ET_SEGM: nf = order_facet[j][0]; break;
 	    // case ET_TRIG: nf = (sqr (order_face[0])+3*order_face[0])/2; break;
-	  case ET_TRIG: nf = (order_face[j][0]+1)*(order_face[j][0]+2)/2-1; break;
-	  case ET_QUAD: nf = (order_face[j][0]+1)*(order_face[j][1]+1)-1; break;
+	  case ET_TRIG: nf = (order_facet[j][0]+1)*(order_facet[j][0]+2)/2-1; break;
+	  case ET_QUAD: nf = (order_facet[j][0]+1)*(order_facet[j][1]+1)-1; break;
 	  default:
 	    throw Exception("what kind of face is that ?");
 	  }
@@ -1434,6 +1435,8 @@ namespace ngfem
   //------------------------------------------------------------------------
 
 
+#ifdef HDIVHEX
+
   HDivHighOrderFE<ET_HEX> :: HDivHighOrderFE (int aorder)
     : HDivHighOrderFiniteElement<3>(ET_HEX)
   {
@@ -1777,28 +1780,21 @@ namespace ngfem
     for (int i=0; i<nf; i++)
       dnums.Append(base+i);
   }   
+#endif
 
 
-  template class  HDivHighOrderFiniteElement<2>;
-  template class  HDivHighOrderFiniteElement<3>;
+  // template class  HDivHighOrderFiniteElement<2>;
+  // template class  HDivHighOrderFiniteElement<3>;
   template class  HDivHighOrderNormalFiniteElement<1>;
   template class  HDivHighOrderNormalFiniteElement<2>;
 
+  /*
   template class T_HDivHighOrderFiniteElement<ET_TRIG>;
   template class T_HDivHighOrderFiniteElement<ET_QUAD>;
   template class T_HDivHighOrderFiniteElement<ET_TET>;
   template class T_HDivHighOrderFiniteElement<ET_PRISM>;
+  */
 
-
-//  template class HDivHighOrderFE<ET_TRIG>;
-//  template class HDivHighOrderFE<ET_QUAD>;
-  template class HDivHighOrderFE<ET_TET>;
-  template class HDivHighOrderFE<ET_PRISM>;
-
-  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
-  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
-  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_TET>, ET_TET>;
-  template class T_HDivFiniteElement<HDivHighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
 
 
 
