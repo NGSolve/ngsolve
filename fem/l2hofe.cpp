@@ -51,6 +51,7 @@ namespace ngfem
       case 1: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
       case 2: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
       case 3: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
+      case 4: hofe = new (lh)  L2HighOrderFEFO<ET_TRIG,4> (); break;
       default: hofe = new (lh) L2HighOrderFE<ET_TRIG> (order); break;
       }
 

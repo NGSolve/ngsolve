@@ -441,7 +441,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET>
   class T_HDivFiniteElement 
-    : virtual public HDivFiniteElement<ET_trait<ET>::DIM>
+    : public HDivFiniteElement<ET_trait<ET>::DIM>
     
   {
     enum { DIM = ET_trait<ET>::DIM };

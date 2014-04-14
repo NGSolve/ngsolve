@@ -17,6 +17,7 @@ namespace ngfem
      High order finite elements for L2 of fixed order
   */
 
+  /*
   template<int DIM>
   class HDivHighOrderFiniteElementFO : virtual public HDivFiniteElement<DIM>
   {
@@ -30,10 +31,12 @@ namespace ngfem
     void SetOnlyHODiv (bool aonly_ho_div) { only_ho_div = aonly_ho_div; ho_div_free = ho_div_free && !only_ho_div;}; 
     virtual void ComputeNDof () = 0;
   };
-
+  */
   
   template <ELEMENT_TYPE ET, int ORDER> class HDivHighOrderFEFO;
 
+
+  /*
   template <ELEMENT_TYPE ET, int ORDER>
   class T_HDivHighOrderFiniteElementFO : 
     public HDivHighOrderFiniteElementFO<ET_trait<ET>::DIM>,
@@ -70,7 +73,7 @@ namespace ngfem
       order = ORDER;
     }
   };
-
+  */
 
 
 
@@ -78,18 +81,41 @@ namespace ngfem
      High order triangular finite element
   */
   template <int ORDER>
-  class HDivHighOrderFEFO<ET_TRIG, ORDER> : public T_HDivHighOrderFiniteElementFO<ET_TRIG, ORDER>
+  class HDivHighOrderFEFO<ET_TRIG, ORDER> : 
+    public T_HDivFiniteElement<HDivHighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG>,
+    public ET_trait<ET_TRIG>
   {
-    using T_HDivHighOrderFiniteElementFO<ET_TRIG, ORDER>::ndof;
-    using T_HDivHighOrderFiniteElementFO<ET_TRIG, ORDER>::vnums; 
-    using T_HDivHighOrderFiniteElementFO<ET_TRIG, ORDER>::ho_div_free; 
-    using T_HDivHighOrderFiniteElementFO<ET_TRIG, ORDER>::only_ho_div; 
+    using T_HDivFiniteElement<HDivHighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG> :: ndof;
+    using T_HDivFiniteElement<HDivHighOrderFEFO<ET_TRIG,ORDER>, ET_TRIG> :: order;
+    /*
+    using T_HDivFiniteElement<ET_TRIG, ORDER>::ndof;
+    using T_HDivFiniteElement<ET_TRIG, ORDER>::vnums; 
+    using T_HDivFiniteElement<ET_TRIG, ORDER>::ho_div_free; 
+    using T_HDivFiniteElement<ET_TRIG, ORDER>::only_ho_div; 
+    */
+
+    int vnums[3];
+    bool ho_div_free;
+    bool only_ho_div;
+
+  public:
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
     typedef TrigShapesInnerLegendre T_TRIGSHAPES;
 
   public:
-    HDivHighOrderFEFO () { ; }
+    HDivHighOrderFEFO () 
+      : ho_div_free(false), only_ho_div(false)
+    { 
+      order = ORDER;
+    }
+
+
+    void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
+    void SetHODivFree (bool aho_div_free) { ho_div_free = aho_div_free; only_ho_div = only_ho_div && !ho_div_free;};  
+    void SetOnlyHODiv (bool aonly_ho_div) { only_ho_div = aonly_ho_div; ho_div_free = ho_div_free && !only_ho_div;}; 
+
+
 
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
