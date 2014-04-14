@@ -380,8 +380,6 @@ namespace ngcomp
       }
     else 
       {
-        if (highest_order_dc)
-          cout << "highest_order_dc not supported in 3D" << endl;
         int inci = 0;
         for (int i=0; i< nfa; i++) 
           {
@@ -394,6 +392,7 @@ namespace ngcomp
                   {
                   case 3: //Triangle
                     inci= (p[0]*p[0]+3*p[0])/2; 
+                    if (highest_order_dc) inci -= p[0]+1;
                     break;
                   case 4: //Quad 
                     inci= p[0]*p[1] + p[0] + p[1];
@@ -423,6 +422,7 @@ namespace ngcomp
                   inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
                 if(pc[0]>1)
                   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
+                if (highest_order_dc) inci += 4*(p[0]+1);
                 break;
               case ET_PRISM:
                 // inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
@@ -447,6 +447,32 @@ namespace ngcomp
             ndof+= inci;
           }
         first_inner_dof[nel] = ndof;
+
+
+        
+        if (highest_order_dc)
+          {
+            cout << "WARNING: highest-order-dc for 3D: pairs not available" << endl;
+            /*
+            dc_pairs.SetSize (ma.GetNFacets());
+            dc_pairs = INT<2> (-1,-1);
+            
+            Array<int> fnums;
+            for (int i = 0; i < ma.GetNE(); i++)
+              {
+                ma.GetElFacets (i, fnums);
+                for (int k = 0; k < fnums.Size(); k++)
+                  {
+                    int di = first_inner_dof[i]+k;
+                    dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
+                    dc_pairs[fnums[k]][0] = di;
+                  }
+              }
+            */
+          }
+        else
+          dc_pairs.SetSize (0);
+
       }
    
 
@@ -512,8 +538,38 @@ namespace ngcomp
                      first_inner_dof[el+1]) = LOCAL_DOF;
   }
 
+
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, LocalHeap & lh) const
+  {
+    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM> (elnr);
+    HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
+
+    hofe -> SetVertexNumbers (ngel.Vertices());
+    hofe -> SetHODivFree (ho_div_free);
+    hofe -> SetOnlyHODiv (onlyhdiv);
+
+    hofe -> SetOrderInner (order_inner[elnr]);
+        
+    switch (int(ET_trait<ET>::DIM))
+      {
+      case 2:
+        hofe -> SetOrderFacet (order_facet[ngel.Edges()]);
+        break;
+      case 3:
+        hofe -> SetOrderFacet (order_facet[ngel.Faces()]);
+        break;
+      }
+    hofe -> ComputeNDof();
+    return *hofe;
+  }
+
+
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
+    Ngs_Element ngel = ma.GetElement(elnr);
+    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+
     if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0;
@@ -539,13 +595,34 @@ namespace ngcomp
       }  
 
 
+    try
+      {
+        switch (eltype)
+          {
+            // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, false, lh);
+            
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, false, lh);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, false, lh);
 
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, false, lh);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, lh);
+            // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
+            // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, lh);
+            
+          default:
+            throw Exception ("illegal element in H1HoFeSpace::GetFE");
+          }
+      }
+    catch (Exception & e)
+      {
+        e.Append ("in HDivHOFESpace::GetElement\n");
+        throw;
+      }
+    
+    
+    /*
     FiniteElement * fe;
     
-    // typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
-    // typedef TrigExtensionMonomial T_ORTHOPOL;
-    
-
     
     switch (ma.GetElType(elnr))
       {
@@ -579,6 +656,7 @@ namespace ngcomp
 	
 	ma.GetElEdges(elnr, ednums);
 	order_ed.SetSize (ednums.Size());
+
 	
 	for (int j = 0; j < ednums.Size(); j++)
 	  order_ed[j] = order_facet[ednums[j]][0];
@@ -616,11 +694,16 @@ namespace ngcomp
 	hofe -> ComputeNDof();
       }
     return *fe;
+    */
   }
 
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
+    Ngs_Element ngel = ma.GetElement(elnr);
+    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
+
     if (ma.GetElType(elnr) == ET_TRIG && order <= 6)
       {
 	HDivHighOrderFiniteElementFO<2> * hofe2d = 0; 
@@ -644,8 +727,32 @@ namespace ngcomp
 	return *hofe2d;
       }  
 
+    try
+      {
+        switch (eltype)
+          {
+            // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, true, lh);
+
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, true, lh);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, true, lh);
+
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, true, lh);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, true, lh);
+            // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, lh);
+            // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, true, lh);
+            
+          default:
+            throw Exception ("illegal element in H1HoFeSpace::GetFE");
+          }
+      }
+    catch (Exception & e)
+      {
+        e.Append ("in HDivHOFESpace::GetElement\n");
+        throw;
+      }
 
 
+    /*
     FiniteElement * fe;
     
     switch (ma.GetElType(elnr))
@@ -716,6 +823,7 @@ namespace ngcomp
 	hofe -> ComputeNDof();
       }
     return *fe;
+    */
   }
 
 
@@ -786,9 +894,16 @@ namespace ngcomp
 #ifdef NEW_HDIVFE
 	INT<3> order_fa = INT<3>(order_facet[ma.GetSElFace(selnr)][0],
                                  order_facet[ma.GetSElFace(selnr)][1],0);
+        if (highest_order_dc)
+          {
+            order_fa[0]--;
+            order_fa[1]--;
+            order_fa[2]--;
+          }
 	hofe -> SetOrderInner (order_fa);
 #else 
 	int order_fa = order_facet[ma.GetSElFace(selnr)][0];
+        if (highest_order_dc) order_fa--;
 	hofe -> SetOrderInner (order_fa);
 #endif
 	hofe -> ComputeNDof();
@@ -811,6 +926,7 @@ namespace ngcomp
   void HDivHighOrderFESpace :: 
   GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
+    cout << "getdofranges not operational" << endl;
     dranges.SetSize(0);
     if (!DefinedOn (ei)) return;
 
@@ -872,17 +988,50 @@ namespace ngcomp
 
     if (highest_order_dc)
       {
-	IntRange eldofs = GetElementDofs (elnr);
+        if (ma.GetDimension() == 2)
+          {
+            IntRange eldofs = GetElementDofs (elnr);
+            
+            for (int i = 0; i < fanums.Size(); i++)
+              dnums.Append (fanums[i]);
+            
+            int first_el_dof = eldofs.First();
+            for(int i=0; i<fanums.Size(); i++)
+              {
+                dnums += GetFacetDofs (fanums[i]);
+                dnums.Append (first_el_dof++);
+                // dnums.Append (eldofs.First()+i);
+              }
+            dnums += IntRange (first_el_dof, eldofs.Next());
+          }
+        else
+          {
+            IntRange eldofs = GetElementDofs (elnr);
+            
+            for (int i = 0; i < fanums.Size(); i++)
+              dnums.Append (fanums[i]);
+            
+            int firstel = eldofs.First();
+            
+            for(int i=0; i<fanums.Size(); i++)
+              {
+                *testout << "facetdofs = " << GetFacetDofs(fanums[i]) << endl;
+                int firstfa = GetFacetDofs(fanums[i]).First();
 
-	for (int i = 0; i < fanums.Size(); i++)
-	  dnums.Append (fanums[i]);
-
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-	    dnums += GetFacetDofs (fanums[i]);
-	    dnums.Append (eldofs.First()+i);
-	  }
-	dnums += IntRange (eldofs.First()+fanums.Size(), eldofs.Next());
+                for (int i = 0; i <= order-1; i++)
+                  {
+                    for(int j = 0; j < order-i-1; j++)
+                      dnums.Append(firstfa++);
+                    dnums.Append(firstel++);
+                  }
+                for (int i = 0; i < order-1; i++)
+                  dnums.Append(firstfa++);
+                dnums.Append(firstel++);
+              }
+            dnums += IntRange (firstel, eldofs.Next());
+            *testout << "eldofs = " << eldofs << endl;
+            *testout << "dnums = " << endl << dnums << endl;
+          }
       }
     else
       {

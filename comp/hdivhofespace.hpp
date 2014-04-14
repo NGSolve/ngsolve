@@ -60,8 +60,6 @@ namespace ngcomp
     ///
     virtual ~HDivHighOrderFESpace ();
 
-    // static FESpace * Create (const MeshAccess & ma, const Flags & flags);
-
     void UpdateDofTables(); 
 
     void UpdateCouplingDofArray();   
@@ -79,6 +77,9 @@ namespace ngcomp
     virtual int GetNDofLevel (int level) const;
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    ///
+    template <ELEMENT_TYPE ET>
+    const FiniteElement & T_GetFE (int elnr, bool onlyhdiv, LocalHeap & lh) const;
     ///
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
     ///
