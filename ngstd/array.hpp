@@ -185,6 +185,20 @@ namespace ngstd
   };
 
 
+  template <typename TSIZE>
+  class FAIterator
+  {
+    TSIZE ind;
+  public:
+    FAIterator (TSIZE ai) : ind(ai) { ; }
+    FAIterator operator++ (int) { return ind++; }
+    FAIterator operator++ () { return ++ind; }
+    FAIterator operator*() const { return ind; }
+    TSIZE Index() { return ind; }
+    operator TSIZE () const { return ind; }
+    bool operator != (FAIterator d2) { return ind != d2.ind; }
+  };
+
 
   /**
      A simple array container.
@@ -359,7 +373,10 @@ namespace ngstd
     {
       return ( Pos(elem) >= 0 );
     }
-
+    
+      
+    FAIterator<TSIZE> begin() { return 0; }
+    FAIterator<TSIZE> end() { return size; }
   };
 
 

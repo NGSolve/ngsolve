@@ -215,6 +215,10 @@ namespace ngstd
     {
       timernr = NgProfiler::CreateTimer (name);
     }
+    void SetName (const string & name)
+    {
+      NgProfiler::SetName (timernr, name);
+    }
     void Start () 
     {
       if (priority <= 1)
@@ -292,7 +296,7 @@ namespace ngstd
 	  stack_top = prev;
 	}
     }
-
+    void SetName (const string & /* st */) { ; }
     void AddFlops (double aflops)  { ; }
     double GetTime () { return 0; }
     long int GetCounts () { return 0; }
@@ -317,6 +321,7 @@ namespace ngstd
       VT_USER_END_ID(timer_id);
     }
 
+    void SetName (const string & st) { ; }
     void AddFlops (double aflops)  { ; }
     double GetTime () { return 0; }
     long int GetCounts () { return 0; }
