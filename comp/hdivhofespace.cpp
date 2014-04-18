@@ -452,9 +452,9 @@ namespace ngcomp
         
         if (highest_order_dc)
           {
-            cout << "WARNING: highest-order-dc for 3D: pairs not available" << endl;
-            /*
-            dc_pairs.SetSize (ma.GetNFacets());
+            // cout << "WARNING: highest-order-dc for 3D: pairs not available" << endl;
+
+            dc_pairs.SetSize ((order+1)*ma.GetNFacets());
             dc_pairs = INT<2> (-1,-1);
             
             Array<int> fnums;
@@ -463,12 +463,16 @@ namespace ngcomp
                 ma.GetElFacets (i, fnums);
                 for (int k = 0; k < fnums.Size(); k++)
                   {
-                    int di = first_inner_dof[i]+k;
-                    dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
-                    dc_pairs[fnums[k]][0] = di;
+		    int base = fnums[k]*(order+1);
+                    int di = first_inner_dof[i]+k*(order+1);
+
+		    for (int l = 0; l < order+1; l++)
+		      {
+			dc_pairs[base+l][1] = dc_pairs[base+l][0];
+			dc_pairs[base+l][0] = di+l;
+		      }
                   }
               }
-            */
           }
         else
           dc_pairs.SetSize (0);
