@@ -239,7 +239,9 @@ if { [catch { NGS_GetData } ] == 0 } {
         }
 
     .ngmenu.solve add command -label "Socket-load" \
-	-command { NGS_SocketLoad 52002 128.131.37.12
+	-command { 
+            NGS_SocketLoad 52002 
+# 128.131.37.12
 # numericus.asc.tuwien.ac.at
             set selectvisual solution
 	    Ng_SetVisParameters	
@@ -351,6 +353,9 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    tixTree $w.mtre -options { separator "\\" }
 	    pack $w.mtre -fill both -expand y
 	    set hlist [$w.mtre subwidget hlist]
+
+            $hlist configure -selectforeground black
+            $hlist configure -selectbackground grey
 
 	    $hlist add constants -itemtype text -text "Constants"
 	    set constants [NGS_GetData constants]
