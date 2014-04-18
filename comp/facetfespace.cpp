@@ -75,7 +75,8 @@ namespace ngcomp
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (order == 0)
       highest_order_dc = false;
-
+    
+    nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
     // TODO: Evaluator for shape tester 
     static ConstantCoefficientFunction one(1);
@@ -320,7 +321,7 @@ namespace ngcomp
 
     for (int facet = 0; facet < ma.GetNFacets(); facet++)
       {
-	ctofdof[facet] = WIREBASKET_DOF;
+	ctofdof[facet] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
 	ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
 

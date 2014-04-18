@@ -25,7 +25,7 @@ namespace ngcomp
   protected:
     /// Finite element space
     const FESpace & fespace;
-    /// Test-space if different from trial-space, otherwise 0 (non operational)
+    /// Test-space if different from trial-space, otherwise NULL (non operational)
     const FESpace * fespace2;
 
     /// don't assemble matrix
