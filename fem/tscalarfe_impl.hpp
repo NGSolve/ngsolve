@@ -126,6 +126,14 @@ namespace ngfem
                                         { coefs(j) += InnerProduct (vals.Row(i), shape); }));
       }
   }
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
+  {
+    cout << "evalgrad trans, ir system not implemented" << endl;
+  }
+
 
   /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
