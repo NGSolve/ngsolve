@@ -430,8 +430,8 @@ namespace ngfem
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
-				  jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
-				  // jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
+				  // jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
+				  jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
                                   ii += order-k-j+1;
                                 }));
                  }));

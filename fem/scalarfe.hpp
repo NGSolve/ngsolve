@@ -142,7 +142,7 @@ namespace ngfem
     /**
        Each column a vector ...
      */
-    // NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
     /**
        Evaluate gradient in points of integrationrule ir.

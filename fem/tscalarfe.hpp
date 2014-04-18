@@ -28,7 +28,7 @@ namespace ngfem
     using BASE::ndof;
     using BASE::order;
 
-    T_ScalarFiniteElement () { ; }
+    INLINE T_ScalarFiniteElement () { ; }
     // virtual ~T_ScalarFiniteElement() { ; }
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
@@ -45,7 +45,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
 					  FlatVector<double> coefs, 
 					  FlatVector<double> vals) const;
-    // NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
     NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
 					       FlatVector<> vals, FlatVector<double> coefs) const;
