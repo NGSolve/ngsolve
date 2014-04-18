@@ -538,7 +538,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return *fe;
   }
 
-
+  /*
+    // not such a great idea ..
   void FESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
     // cout << "getdofrangs called for fespace " << GetClassName() << endl;
@@ -548,6 +549,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < dnums.Size(); i++)
       dranges.Append (IntRange (dnums[i], dnums[i]+1));
   }
+  */
+
   /*
   FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
   {
@@ -2080,6 +2083,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void CompoundFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
+  /*
     dranges.SetSize (0);
     for (int i = 0; i < spaces.Size(); i++)
       {
@@ -2097,8 +2101,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
           else
             dranges[osize+j] = hdranges[j];
       }
+  */
   }
-
 
 
 

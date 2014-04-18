@@ -21,13 +21,7 @@ namespace ngfem
 
 namespace ngcomp
 {
-  // using netgen::Ng_Element;
-  using netgen::Ng_Point;
   using netgen::Ng_Node;
-
-  // using netgen::Ng_GetPoint;
-  // using netgen::Ng_GetElement;
-  // using netgen::Ng_GetNode;
 
 
   /**
@@ -79,11 +73,27 @@ namespace ngcomp
   public:
     ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
     int Nr() const { return nr; }
+    operator int () const { return nr; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
+
+    bool operator< (int nr2) { return nr < nr2; }
+    ElementId operator++ (int) { return ElementId(vb,nr++); }
+    ElementId operator++ () { return ElementId(vb,++nr); }
+    ElementId operator*() const { return *this; }
+    bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
   };
   
-
+  class ElementRange
+  {
+    VorB vb;
+    IntRange r;
+  public:
+    ElementRange (VorB avb, IntRange ar) : vb(avb), r(ar) { ; }
+    ElementId begin () { return ElementId(vb,r.First()); }
+    ElementId end () { return ElementId(vb,r.Next()); }
+  };
+  
 
   class Ngs_Element : public netgen::Ng_Element
   {
@@ -182,7 +192,7 @@ namespace ngcomp
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const
     { 
-      Ng_Point pt = mesh.GetPoint (pi);
+      auto pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
     }
 
@@ -191,10 +201,16 @@ namespace ngcomp
     Vec<D> GetPoint (int pi) const
     { 
       Vec<D> p;
-      Ng_Point pt = mesh.GetPoint (pi);
+      auto pt = mesh.GetPoint (pi);
       for (int j = 0; j < D; j++) p(j) = pt[j];
       return p;
     }
+
+    ElementRange Elements (VorB vb) const
+    {
+      return ElementRange (vb, IntRange (0, GetNE(vb)));
+    }
+
 
     /// the geometry type of the element
     ELEMENT_TYPE GetElType (int elnr) const
@@ -331,7 +347,11 @@ namespace ngcomp
 	case 3:
         default: return mesh.GetElement<3> (ei.Nr());
 	}
+    }
 
+    Ngs_Element operator[] (ElementId ei) const    
+    {
+      return GetElement (ei);
     }
 
 
@@ -368,7 +388,7 @@ namespace ngcomp
        The method is not yet fully functional.
      */
     template <int DIM>
-    Ng_Node<DIM> GetNode (int nr) const
+    netgen::Ng_Node<DIM> GetNode (int nr) const
     {
       return mesh.GetNode<DIM> (nr);
     }

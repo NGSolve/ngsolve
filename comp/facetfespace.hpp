@@ -44,7 +44,7 @@ namespace ngcomp
     Array<int> ndlevel;
     bool var_order; 
     bool highest_order_dc;
-    
+    bool nowirebasket;
   public:
     ///
     FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);

@@ -205,7 +205,8 @@ namespace ngcomp
 
     int dim = ma.GetDimension();
     
-    for(int i = 0; i < nel; i++)
+    // for(int i = 0; i < nel; i++)
+    for (auto i : ma.Elements(VOL))
       {
 	ELEMENT_TYPE eltype = ma.GetElType(i); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
@@ -213,7 +214,8 @@ namespace ngcomp
 	Array<int> elfacets; 
 	ma.GetElFacets (i,elfacets); 
 	
-	for (int j=0;j<elfacets.Size();j++) fine_facet[elfacets[j]] = 1; 
+	//for (int j=0;j<elfacets.Size();j++) fine_facet[elfacets[j]] = 1; 
+        fine_facet[elfacets] = true;
 	
 	if(!var_order) continue; 
 	
@@ -278,15 +280,13 @@ namespace ngcomp
 			   fine_facet, MPI_LOR);
 
     if(uniform_order_inner > -1) order_inner = uniform_order_inner;
-
     if(uniform_order_facet > -1) order_facet = uniform_order_facet;
 
     for(int i=0;i<nfa;i++) if(!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
 
-    // by SZ ... since order_inner_curl is not working yet for hdivhofe 	 
-    for(int i=0; i<order_inner_curl.Size(); i++) 
-      order_inner_curl[i] = order_inner[i]; 
-
+    // by SZ ... since order_inner_curl is not working yet for hdivhofe
+    order_inner_curl = order_inner; 
+    
     if(print) 
       {
 	*testout << " discont " << discont << endl;
@@ -484,10 +484,7 @@ namespace ngcomp
             int incii = first_inner_dof[i+1]-first_inner_dof[i]; 
 	     	     
             Array<int> elfacets; 
-            if(dim==2) 
-              ma.GetElEdges(i,elfacets);
-            else 
-              ma.GetElFaces(i,elfacets);
+            ma.GetElFacets (i, elfacets);
 	     
             for(int j=0; j<elfacets.Size(); j++) 
               incii+=first_facet_dof[elfacets[j]+1]-first_facet_dof[elfacets[j]]+1; // incl. lowest-order 
@@ -529,13 +526,11 @@ namespace ngcomp
     for (int facet = 0; facet < ma.GetNFacets(); facet++)
       {
         ctofdof[facet] = WIREBASKET_DOF;
-        ctofdof.Range (first_facet_dof[facet], 
-                       first_facet_dof[facet+1]) = INTERFACE_DOF;
+        ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
     
     for (int el = 0; el < ma.GetNE(); el++)
-      ctofdof.Range (first_inner_dof[el], 
-                     first_inner_dof[el+1]) = LOCAL_DOF;
+      ctofdof[GetElementDofs(el)] = LOCAL_DOF;
   }
 
 
@@ -931,6 +926,7 @@ namespace ngcomp
   {
     cout << "getdofranges not operational" << endl;
     dranges.SetSize(0);
+    /*
     if (!DefinedOn (ei)) return;
 
     // Ngs_Element ngel = ma.GetElement(ei);
@@ -970,6 +966,7 @@ namespace ngcomp
         dranges.Append (fanums[0]);
         dranges += GetFacetDofs (fanums[0]);
       }
+    */
   }
 
 
@@ -987,23 +984,19 @@ namespace ngcomp
     ArrayMem<int,6> fanums;
     ma.GetElFacets (elnr, fanums);
 
-
-
     if (highest_order_dc)
       {
         if (ma.GetDimension() == 2)
           {
             IntRange eldofs = GetElementDofs (elnr);
             
-            for (int i = 0; i < fanums.Size(); i++)
-              dnums.Append (fanums[i]);
+            dnums += fanums;
             
             int first_el_dof = eldofs.First();
-            for(int i=0; i<fanums.Size(); i++)
+            for(int i = 0; i < fanums.Size(); i++)
               {
                 dnums += GetFacetDofs (fanums[i]);
-                dnums.Append (first_el_dof++);
-                // dnums.Append (eldofs.First()+i);
+                dnums += first_el_dof++;
               }
             dnums += IntRange (first_el_dof, eldofs.Next());
           }

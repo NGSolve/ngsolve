@@ -164,9 +164,6 @@ namespace ngcomp
     int ned = (dim <= 1) ? 0 : ma.GetNEdges();
     int nfa = (dim <= 2) ? 0 : ma.GetNFaces();
     int ne = ma.GetNE();
-    int nse = ma.GetNSE();
-    
-	
 
     used_edge.SetSize(ned); 
     used_face.SetSize(nfa); 
@@ -175,7 +172,8 @@ namespace ngcomp
     used_edge = false; 
     used_face = false; 
     used_vertex = false; 
-    
+
+    /*
     for (int i = 0; i < ne; i++)
       if (DefinedOn (ma.GetElIndex (i))) 
 	{
@@ -184,10 +182,20 @@ namespace ngcomp
 	  if (dim >= 2) used_edge[ngel.Edges()] = true;
 	  if (dim == 3) used_face[ngel.Faces()] = true;
 	}
+    */
+    
+    for (ElementId ei : ma.Elements(VOL))
+      if (DefinedOn (ei))
+	{
+	  Ngs_Element ngel = ma[ei];
+	  used_vertex[ngel.Vertices()] = true;
+	  if (dim >= 2) used_edge[ngel.Edges()] = true;
+	  if (dim == 3) used_face[ngel.Faces()] = true;
+	}
 
-
+    /*
     Array<int> eledges, elfaces, vnums;
-    for (int i = 0; i < nse; i++)
+    for (int i = 0; i < ma.GetNSE(); i++)
       if (DefinedOnBoundary (ma.GetSElIndex (i))) 
 	{
 	  ma.GetSElVertices (i, vnums);
@@ -197,7 +205,16 @@ namespace ngcomp
 	  if (dim >= 2) for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
 	  if (dim == 3) used_face[ma.GetSElFace(i)] = 1; 
 	}
+    */
 
+    for (ElementId ei : ma.Elements(BND))
+      if (DefinedOn (ei))
+	{
+	  Ngs_Element ngel = ma[ei];
+	  used_vertex[ngel.Vertices()] = true;
+	  if (dim >= 2) used_edge[ngel.Edges()] = true;
+	  if (dim == 3) used_face[ngel.Faces()] = true;
+	}
     
     ma.AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
     ma.AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
@@ -212,73 +229,76 @@ namespace ngcomp
     int p = var_order ?  1 : order; 
     
     order_edge = p; 
-    order_face = p; // INT<2>(p,p);
-    order_inner = p; // INT<3>(p,p,p); 
+    order_face = p; 
+    order_inner = p;
 	
+    Array<int> eledges, elfaces, vnums;
     if(var_order) 
-      for (int i = 0; i < ne; i++)
-      {	
-	if (!DefinedOn (ma.GetElIndex (i))) continue;
+      // for (int i = 0; i < ne; i++)
+      for (ElementId ei : ma.Elements(VOL))
+        {	
+          if (!DefinedOn (ei)) continue;
+          int i = ei.Nr();
+          
+          ELEMENT_TYPE eltype = ma.GetElType(ei); 
+          const FACE * faces = ElementTopology::GetFaces (eltype);
+          const EDGE * edges = ElementTopology::GetEdges (eltype);
+          const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
-	ELEMENT_TYPE eltype=ma.GetElType(i); 
-	const FACE * faces = ElementTopology::GetFaces (eltype);
-	const EDGE * edges = ElementTopology::GetEdges (eltype);
-	const POINT3D * points = ElementTopology :: GetVertices (eltype);
-	ma.GetElVertices (i, vnums);
-	ma.GetElEdges (i, eledges);		
-
+          ma.GetElVertices (ei, vnums);
+          ma.GetElEdges (i, eledges);		
 	
-	INT<3,TORDER> el_orders = ma.GetElOrders(i); 
-	for(int l=0;l<3;l++) el_orders[l] += rel_order; 
+          INT<3,TORDER> el_orders = ma.GetElOrders(i); 
+          for(int l=0;l<3;l++) el_orders[l] += rel_order; 
 
-	for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
-	for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
+          for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
+          for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
 	
 
-	for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
-	for(int j=0;j<eledges.Size();j++)
-	  {
-	    for(int k=0;k<dim;k++)
-	      if(points[edges[j][0]][k] != points[edges[j][1]][k])
-		{ 
-		  order_edge[eledges[j]] = max2(order_edge[eledges[j]],el_orders[k]);
-		  k=dim; 
-		}
-	  }
-	
-	if(dim==3)
-	  {
-	    for(int j=0;j<elfaces.Size();j++)
-	      {
-		// trig_face
-		if(faces[j][3]==-1) 
-		  {
-		    order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
-							 el_orders[0]));
-		    order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
-		  }
-		else //quad_face
-		  {
-		    int fmax = 0;
-		    for(int k = 1; k < 4; k++) 
-		      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
-		    
-		    INT<2> f((fmax+3)%4,(fmax+1)%4); 
-		    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
-		    
-		    for(int l=0;l<2;l++)
-		      for(int k=0;k<3;k++)
-			if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
-			  {
-			    order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
-								 el_orders[k]));
-			    break;
-			  }
-		  }
-	      }
-	  }
-      }
-
+          for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
+          for(int j=0;j<eledges.Size();j++)
+            {
+              for(int k=0;k<dim;k++)
+                if(points[edges[j][0]][k] != points[edges[j][1]][k])
+                  { 
+                    order_edge[eledges[j]] = max2(order_edge[eledges[j]],el_orders[k]);
+                    k=dim; 
+                  }
+            }
+          
+          if(dim==3)
+            {
+              for(int j=0;j<elfaces.Size();j++)
+                {
+                  // trig_face
+                  if(faces[j][3]==-1) 
+                    {
+                      order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
+                                                           el_orders[0]));
+                      order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
+                    }
+                  else //quad_face
+                    {
+                      int fmax = 0;
+                      for(int k = 1; k < 4; k++) 
+                        if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
+                      
+                      INT<2> f((fmax+3)%4,(fmax+1)%4); 
+                      if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
+                      
+                      for(int l=0;l<2;l++)
+                        for(int k=0;k<3;k++)
+                          if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
+                            {
+                              order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
+                                                                   el_orders[k]));
+                              break;
+                            }
+                    }
+                }
+            }
+        }
+    
     /* 
        if (ma.GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {
@@ -299,20 +319,24 @@ namespace ngcomp
     if(uniform_order_edge > -1)   
       order_edge = uniform_order_edge; 
 
-
-    for(int i=0;i<ned;i++) 
-      if(!used_edge[i]) 
-	order_edge[i] = 1; 
-
-    if(dim == 3) 
-      for(int i=0;i<nfa;i++) 
-	if(!used_face[i]) 
-	  order_face[i] = 1; 
-
+    /*
+    for(int i = 0; i < ned; i++) 
+      if (!used_edge[i]) order_edge[i] = 1; 
+    for(int i = 0; i < nfa; i++) 
+      if (!used_face[i]) order_face[i] = 1; 
     for (int i = 0; i < ne; i++)
       if (!DefinedOn (ma.GetElIndex (i)))
 	order_inner[i] = 1; 
+    */
 
+    for (auto i : used_edge)
+      if (!used_edge[i]) order_edge[i] = 1; 
+
+    for (auto i : used_face)
+      if (!used_face[i]) order_face[i] = 1; 
+
+    for (ElementId ei : ma.Elements(VOL))
+      if (!DefinedOn(ei)) order_inner[ei] = 1;
 
     if(print) 
       {
@@ -357,7 +381,7 @@ namespace ngcomp
     for (int i = 0; i < ned; i++)
       {
 	first_edge_dof[i] = ndof;
-	if(order_edge[i]>1)
+	if (order_edge[i]>1)
 	  ndof += order_edge[i] - 1;
       }
     first_edge_dof[ned] = ndof;
@@ -370,15 +394,15 @@ namespace ngcomp
 	switch(ma.GetFacetType(i))
 	  {
 	  case ET_TRIG:
-	    if(p[0]>2)
+	     if (p[0] > 2)
 	      ndof += (p[0]-1)*(p[0]-2)/2;
 	    break;
 	  case ET_QUAD:
-	    if(p[0] > 1 && p[1]>1)
+	    if (p[0] > 1 && p[1] > 1)
 	      ndof += (p[0]-1)*(p[1]-1);
 	    break; 
 	  default:
-	    ;
+            ;
 	  }
       }
     first_face_dof[nfa] = ndof;
@@ -391,11 +415,11 @@ namespace ngcomp
 	switch (ma.GetElType(i))
 	  {
 	  case ET_TRIG:
-	    if(p[0]>2)
+	    if(p[0] > 2)
 	      ndof += (p[0]-1)*(p[0]-2)/2;
 	    break;
 	  case ET_QUAD:
-	    if(p[0]>1 && p[1]>1)
+	    if(p[0] > 1 && p[1] > 1)
 	      ndof += (p[0]-1)*(p[1]-1);
 	    break;
 	  case ET_TET:
@@ -403,15 +427,15 @@ namespace ngcomp
 	      ndof += (p[0]-1)*(p[0]-2)*(p[0]-3)/6;
 	    break;
 	  case ET_PRISM:
-	    if(p[0]>2 && p[2]>1)
+	    if(p[0] > 2 && p[2] > 1)
 	      ndof += (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
 	    break;
 	  case ET_PYRAMID:
-	    if(p[0]>2)
+	    if(p[0] > 2)
 	      ndof += (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
 	    break;
 	  case ET_HEX:
-	    if(p[0]>1 && p[1] > 1 && p[2]>1) 
+	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
 	      ndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
 	    break;
           case ET_SEGM:
@@ -445,25 +469,13 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
 
-    /*
-    ctofdof.Range(0,ma.GetNV()) = [&] (int i)
-      { return (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF; };
-    */
+    for (int i = 0; i < ma.GetNV(); i++)
+      ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
 
-    for (int i = 0; i < ma.GetNV(); i++)
-      ctofdof[i] = (used_vertex[i]) ? WIREBASKET_DOF : UNUSED_DOF;
-    
-    /*
-    for (int i = 0; i < ma.GetNV(); i++)
-      if (used_vertex[i])
-	ctofdof[i] = WIREBASKET_DOF;
-      else
-	ctofdof[i] = UNUSED_DOF;
-    */
     for (int edge = 0; edge < ma.GetNEdges(); edge++)
       {
 	IntRange range = GetEdgeDofs (edge);
-	ctofdof.Range(range) = INTERFACE_DOF;
+	ctofdof[range] = INTERFACE_DOF;
 	if (wb_loedge && (range.Size() > 0))
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
@@ -472,12 +484,11 @@ namespace ngcomp
       for (int face = 0; face < ma.GetNFaces(); face++)
 	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
 
-    for (int el = 0; el < ma.GetNE(); el ++)
+    for (int el = 0; el < ma.GetNE(); el++)
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
-
-    *testout << "updatecoupling done, " << endl
-             << "used_vertex: " << endl << used_vertex << endl
-             << "ctofdof: " << endl << ctofdof << endl;
+    
+    if (print)
+      *testout << "ctofdof: " << endl << ctofdof << endl;
   }
 
 
@@ -525,43 +536,6 @@ namespace ngcomp
 	  }
       }
 
-
-    /*
-      if (fixed_order && eltype == ET_TRIG && order <= 6)
-      {
-        H1HighOrderFiniteElementFO<2> * hofe2d = 0;
-        switch (order)
-          {
-          case 1: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,1> (); break;
-          case 2: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,2> (); break;
-          case 3: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,3> (); break;
-          case 4: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,4> (); break;
-          case 5: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,5> (); break;
-          case 6: hofe2d = new (lh)  H1HighOrderFEFO<ET_TRIG,6> (); break;
-          }
-    
-        hofe2d->SetVertexNumbers (ngel.vertices);
-        return *hofe2d;
-      }
-
-    if (fixed_order && eltype == ET_TET && order <= 6)
-      {
-        H1HighOrderFiniteElementFO<3> * hofe3d = 0;
-        switch (order)
-          {
-          case 1: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,1> (); break;
-          case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
-          case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
-          case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
-          case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
-          case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
-          }
-    
-        hofe3d->SetVertexNumbers (ngel.vertices);
-        return *hofe3d;
-      }
-    */
-
     if (fixed_order && eltype == ET_TRIG)
       {
         switch (order)
@@ -569,13 +543,10 @@ namespace ngcomp
           case 1: return *(new (lh) H1HighOrderFEFO<ET_TRIG,1> ()) -> SetVertexNumbers(ngel.vertices);
           case 2: return *(new (lh) H1HighOrderFEFO<ET_TRIG,2> ()) -> SetVertexNumbers(ngel.vertices);
           case 3: return *(new (lh) H1HighOrderFEFO<ET_TRIG,3> ()) -> SetVertexNumbers(ngel.vertices);
-            // case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
-            // case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
           default:
             ; 
           }
       }
-
 
     if (fixed_order && eltype == ET_TET)
       {
@@ -584,41 +555,10 @@ namespace ngcomp
           case 1: return *(new (lh) H1HighOrderFEFO<ET_TET,1> ()) -> SetVertexNumbers(ngel.vertices);
           case 2: return *(new (lh) H1HighOrderFEFO<ET_TET,2> ()) -> SetVertexNumbers(ngel.vertices);
           case 3: return *(new (lh) H1HighOrderFEFO<ET_TET,3> ()) -> SetVertexNumbers(ngel.vertices);
-            // case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
-            // case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
           default:
             ; 
           }
       }
-
-    /*
-    if (fixed_order && eltype == ET_TET)
-      {
-        switch (order)
-          {
-          case 1: return *(new (lh) H1HighOrderFEFO<ET_TET,1>())
-              -> SetVertexNumbers(ngel.vertices);
-          case 2: return *(new (lh) H1HighOrderFEFO<ET_TET,2>())
-              -> SetVertexNumbers(ngel.vertices);
-          case 3: return *(new (lh) H1HighOrderFEFO<ET_TET,3>())
-              -> SetVertexNumbers(ngel.vertices);
-          case 4: return *(new (lh) H1HighOrderFEFO<ET_TET,4>())
-              -> SetVertexNumbers(ngel.vertices);
-            
-          //case 2: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,2> (); break;
-          //case 3: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,3> (); break;
-          //case 4: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,4> (); break;
-          //case 5: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,5> (); break;
-          //case 6: hofe3d = new (lh)  H1HighOrderFEFO<ET_TET,6> (); break;
-            
-          }
-        // hofe3d->SetVertexNumbers (ngel.vertices);
-        // return *hofe3d;
-      }
-      */
-
-
-
 
 
     try
@@ -691,7 +631,6 @@ namespace ngcomp
 
 
 
- 
 
 
   const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
@@ -788,15 +727,16 @@ namespace ngcomp
     
     Ngs_Element ngel = ma.GetElement(elnr);
 
-    dnums = ArrayObject (ngel.vertices);
+    // dnums = ArrayObject (ngel.vertices);
+    dnums = ngel.Vertices();
 
     if (ma.GetDimension() >= 2)
       for (int i = 0; i < ngel.edges.Size(); i++)
-        dnums += GetEdgeDofs (ngel.edges[i]);
+        dnums += GetEdgeDofs (ngel.Edges()[i]);
 
     if (ma.GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
-        dnums += GetFaceDofs (ngel.faces[i]);
+        dnums += GetFaceDofs (ngel.Faces()[i]);
 
     dnums += GetElementDofs (elnr);
   }
