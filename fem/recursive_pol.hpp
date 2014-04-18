@@ -2187,7 +2187,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       int ii = 0;
       // leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
       leg.EvalScaled (n, y-(1-x-y), 1-x, 
-	      SBLambda ([&] (int i, S val) LAMBDA_INLINE // clang
+	      SBLambda ([&] (int i, S val) LAMBDA_INLINE 
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);

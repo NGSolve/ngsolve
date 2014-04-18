@@ -16,7 +16,6 @@
 #include "h1lofe.hpp"
 #include "l2hofe.hpp"
 
-
 namespace ngfem
 {
 
@@ -189,6 +188,14 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
+  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
+  {
+    cout << "multi-evaluate called for base class, not implemented" << endl;
+  }
+
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -335,6 +342,12 @@ namespace ngfem
   }
 
 
+  void MyFunc(int order)
+  {
+    L2HighOrderFE<ET_SEGM> fe;
+  }
+
+
   template <int D>
   void DGFiniteElement<D>:: 
   CalcTraceMatrix (int facet, FlatMatrix<> trace) const
@@ -386,7 +399,6 @@ namespace ngfem
     delete facetfe1;
     delete facetfe2;
   }
-
 
   template <int D>
   void DGFiniteElement<D>:: 
