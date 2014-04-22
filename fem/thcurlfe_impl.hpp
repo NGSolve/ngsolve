@@ -65,7 +65,7 @@ namespace ngfem
                    SliceMatrix<> shape) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape);
+      CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
   }
 
 
@@ -94,7 +94,8 @@ namespace ngfem
                        SliceMatrix<> curlshape) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      CalcMappedCurlShape (mir[i], curlshape);
+      CalcMappedCurlShape (mir[i], 
+                           curlshape.Cols(DIM_CURL_(DIM)*i, DIM_CURL_(DIM)*(i+1)));
   }    
 
 
