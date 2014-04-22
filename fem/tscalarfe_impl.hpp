@@ -70,6 +70,25 @@ namespace ngfem
       }
   }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
+  {
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        Vec<DIM> pt = ir[i].Point();
+
+        // double sum = 0;
+        values.Row(i) = 0.0;
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, double shape) 
+                                        { 
+                                          // sum += coefs(i)*shape; 
+                                          values.Row(i) += shape * coefs.Row(j); 
+                                        } 
+                                        ));
+        // vals(i) = sum;
+      }
+  }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
