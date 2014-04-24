@@ -173,6 +173,8 @@ namespace ngfem
     { return cachecomp; }
 
     virtual void SetFileName(const string & filename);
+
+    virtual void SetFlags (const Flags & flags) { ; }
   };
 
 
