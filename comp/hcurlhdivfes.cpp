@@ -380,7 +380,7 @@ namespace ngcomp
 				     MAT & mat, TRANSFORM_TYPE tt) const
   {
     Ngs_Element ngel = ma.GetElement(elnr, boundary);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
     const EDGE * edges = ElementTopology::GetEdges (eltype);
@@ -425,7 +425,7 @@ namespace ngcomp
 
 
     Ngs_Element ngel = boundary ? ma.GetSElement (elnr) : ma.GetElement(elnr);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
     const EDGE * edges = ElementTopology::GetEdges (eltype);

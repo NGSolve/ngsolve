@@ -133,7 +133,7 @@ namespace ngcomp
 #endif
 
     FlatVector<SCAL> fluxi(dimflux, clh);
-    Array<int> dnumsflux(1);
+    ArrayMem<int,1> dnumsflux(1);
     for (int i = 0; i < cnti.Size(); i++)
       if (cnti[i])
 	{
@@ -211,7 +211,6 @@ namespace ngcomp
     HeapReset hr(lh);
 
     int elnr;
-    ArrayMem<int,100> dnums;
 
     IntegrationPoint ip(0,0,0,1);
 
@@ -239,6 +238,7 @@ namespace ngcomp
     const FESpace & fes = u.GetFESpace();
     const FiniteElement & fel = fes.GetFE (elnr, boundary, lh);
     const ElementTransformation & eltrans = ma.GetTrafo (elnr, boundary, lh);
+    Array<int> dnums(fel.GetNDof(), lh);
     fes.GetDofNrs (elnr, boundary, dnums);
 	
     FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);

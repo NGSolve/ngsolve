@@ -189,7 +189,7 @@ namespace ngcomp
     const Preconditioner * coarse_pre;
   public:
     ///
-    LocalPreconditioner (PDE * pde, Flags & aflags,
+    LocalPreconditioner (PDE * pde, const Flags & aflags,
 			 const string aname = "localprecond");
     ///
     virtual ~LocalPreconditioner();
@@ -226,7 +226,7 @@ namespace ngcomp
     int smoothingsteps;
   public:
     ///
-    TwoLevelPreconditioner (PDE * apde, Flags & aflags,
+    TwoLevelPreconditioner (PDE * apde, const Flags & aflags,
 			    const string aname = "twolevelprecond");
     ///
     virtual ~TwoLevelPreconditioner();
@@ -260,7 +260,7 @@ namespace ngcomp
     BaseMatrix * cm;
   public:
     ///
-    ComplexPreconditioner (PDE * apde, Flags & aflags,
+    ComplexPreconditioner (PDE * apde, const Flags & aflags,
 			   const string aname = "complexprecond");
     ///
     virtual ~ComplexPreconditioner();
@@ -293,7 +293,7 @@ namespace ngcomp
     int steps; 
   public:
     ///
-    ChebychevPreconditioner (PDE * apde, Flags & aflags,
+    ChebychevPreconditioner (PDE * apde, const Flags & aflags,
 			     const string aname = "chebychevprecond");
     ///
     virtual ~ChebychevPreconditioner();
@@ -329,7 +329,7 @@ namespace ngcomp
     bool coarsegrid;
     int levels;
   public:
-    CommutingAMGPreconditioner (PDE * apde, Flags & aflags,
+    CommutingAMGPreconditioner (PDE * apde, const Flags & aflags,
 				const string aname = "commutingamgprecond");
 
     virtual ~CommutingAMGPreconditioner ();
@@ -382,7 +382,7 @@ namespace ngcomp
     BaseMatrix * cm;
   public:
     ///
-    NonsymmetricPreconditioner (PDE * apde, Flags & aflags,
+    NonsymmetricPreconditioner (PDE * apde, const Flags & aflags,
 				const string aname = "nonsymmetricprecond");
     ///
     virtual ~NonsymmetricPreconditioner();

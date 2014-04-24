@@ -490,7 +490,7 @@ namespace ngcomp
 
 
 
-  LocalPreconditioner :: LocalPreconditioner (PDE * pde, Flags & aflags, 
+  LocalPreconditioner :: LocalPreconditioner (PDE * pde, const Flags & aflags, 
 					      const string aname)
     : Preconditioner (pde,aflags,aname),
       coarse_pre(0)
@@ -636,7 +636,7 @@ namespace ngcomp
   // ****************************** TwoLevelPreconditioner *******************************
 
 
-  TwoLevelPreconditioner :: TwoLevelPreconditioner (PDE * apde, Flags & aflags, const string aname)
+  TwoLevelPreconditioner :: TwoLevelPreconditioner (PDE * apde, const Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
     pde = apde;
@@ -679,7 +679,7 @@ namespace ngcomp
 
 
 
-ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, const string aname)
+ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
     dim = int (flags.GetNumFlag ("dim", 1));
@@ -716,7 +716,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
 
 
 
-  ChebychevPreconditioner :: ChebychevPreconditioner (PDE * apde, Flags & aflags, const string aname)
+  ChebychevPreconditioner :: ChebychevPreconditioner (PDE * apde, const Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
     steps = int (flags.GetNumFlag ("steps",10.));
@@ -768,7 +768,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
   ////////////////////////////////////////////////////////////////////////////////
   // added 08/19/2003, FB
 
-  NonsymmetricPreconditioner :: NonsymmetricPreconditioner (PDE * apde, Flags & aflags, const string aname)
+  NonsymmetricPreconditioner :: NonsymmetricPreconditioner (PDE * apde, const Flags & aflags, const string aname)
     : Preconditioner(apde,aflags,aname)
   {
     dim = int (flags.GetNumFlag ("dim", 1));
@@ -823,7 +823,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, Flags & aflags, cons
   ////////////////////////////////////////////////////////////////////////////////
 
 
-  CommutingAMGPreconditioner :: CommutingAMGPreconditioner (PDE * apde, Flags & aflags, const string aname)
+  CommutingAMGPreconditioner :: CommutingAMGPreconditioner (PDE * apde, const Flags & aflags, const string aname)
     : Preconditioner (apde,aflags,aname), pde(apde)
   {
     bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
