@@ -47,7 +47,7 @@ public:
   virtual ~EvalFunction ();
 
   /// parse from stream
-  void Parse (istream & aist);
+  bool Parse (istream & aist);
   /// define constant 
   void DefineConstant (const char * name, double val);
   /// define constant 
@@ -84,6 +84,8 @@ public:
 
   /// is expression a constant ?
   bool IsConstant () const;
+  /// evaluate the constant value
+  double EvalConstant () const;
 
   /// vector dimension of result
   int Dimension() const { return res_type.vecdim; }
@@ -189,7 +191,7 @@ protected:
   /// parsing expression (standard parsing grammer)
   ResultType ParseExpression ();
   /// parsing expression (standard parsing grammer)
-  ResultType ParseExpression2 ();
+  ResultType ParseCommaExpression ();
   /// parsing expression (standard parsing grammer)
   ResultType ParseSubExpression ();
   /// parsing expression (standard parsing grammer)
@@ -212,7 +214,8 @@ protected:
   bool var_iscomplex;
   ///
   double * globvar;
- 
+  streampos lastpos;
+
   typedef double(*TFUNP) (double);
   /// registerd functions
   static SymbolTable<TFUNP> functions;
@@ -261,7 +264,8 @@ public:
     { return string_value; }
   
   /// read next token
-  void ReadNext();
+  void ReadNext(bool optional = true);
+  void WriteBack();
 
   bool ToBool (double x)  const { return x > eps; }
   bool ToBool (complex<double> x) const { return x.real() > eps; }
