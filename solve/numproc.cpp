@@ -1503,7 +1503,7 @@ namespace ngsolve
       output_vars = flags.GetStringListFlag ("variables");
       // cout << "variables = " << endl << output_vars;
 
-      if (outfile)
+      if (outfile && !flags.GetDefineFlag("append"))
 	{
 	  *outfile << "# ";
 	  for (int i = 0; i < output_vars.Size(); i++)

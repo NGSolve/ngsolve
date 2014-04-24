@@ -703,6 +703,9 @@ namespace ngsolve
           }
         
 	AddVariable ("timing.level", WallTime()-starttime, 6);
+        if (bf) AddVariable (string("timing.bf.")+bf->GetName(), bf->GetTimer().GetTime(), 6);
+        if (lf) AddVariable (string("timing.lf.")+lf->GetName(), lf->GetTimer().GetTime(), 6);
+        if (np) AddVariable (string("timing.np.")+np->GetName(), np->GetTimer().GetTime(), 6);
       }
 
 

@@ -1359,7 +1359,7 @@ namespace ngsolve
 		      ngfem::BilinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::BilinearFormIntegrator*> (info->creator(coeffs));
 		      integrator -> SetName (integrator_name);
-
+		      integrator -> SetFlags (partflags);
 
 
 		      if (partflags.NumFlagDefined ("order"))

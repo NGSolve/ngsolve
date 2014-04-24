@@ -167,6 +167,8 @@ namespace ngfem
     {
       cerr << "SetFileName not defined for Integrator base class" << endl;
     }
+
+    virtual void SetFlags (const Flags & flags) { ; }
   };
 
 
