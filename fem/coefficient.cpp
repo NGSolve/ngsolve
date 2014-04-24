@@ -114,6 +114,14 @@ namespace ngfem
 
 
 
+  template <int DIM>
+  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction (const EvalFunction & afun)
+    : fun(1)
+  {
+    fun[0] = new EvalFunction (afun);
+    numarg = 3;
+  }
 
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
