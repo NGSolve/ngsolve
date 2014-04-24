@@ -47,6 +47,64 @@ namespace ngsolve
   };
 
 
+  class LabelStatement : public NGS_Object
+  {
+    string label;
+  public:
+    LabelStatement(const MeshAccess & ama, const string & aname,
+                  string alabel)
+      : NGS_Object(ama,aname)
+    { 
+      label = alabel;
+    }
+
+    string GetLabel() const { return label; }
+  };
+
+  class GotoStatement : public NGS_Object
+  {
+    string target;
+  public:
+    GotoStatement(const MeshAccess & ama, const string & aname,
+                  string atarget)
+      : NGS_Object(ama,aname)
+    { 
+      target = atarget;
+    }
+
+    string GetTarget() const
+    {
+      return target;
+    }
+  };
+
+  class ConditionalGotoStatement : public NGS_Object
+  {
+    EvalFunction * fun;
+    string target;
+  public:
+    ConditionalGotoStatement(const MeshAccess & ama, const string & aname,
+                  EvalFunction * afun, string atarget)
+      : NGS_Object(ama,aname)
+    { 
+      fun = afun;
+      target = atarget;
+    }
+    
+    bool EvaluateCondition () const
+    {
+      return fun -> Eval ((double*)NULL);
+    }
+
+    string GetTarget() const
+    {
+      return target;
+    }
+  };
+
+
+
+
   void BuildLineIntegratorCurvePoints ( const string filename,
 					const MeshAccess & ma,
 					Integrator & integrator,
@@ -209,21 +267,23 @@ namespace ngsolve
     ///
     void AddVariable (const string & name, EvalVariable * eval);
     ///
+    void AddVariableEvaluation (EvalVariable * eval);
+    ///
     void AddCoefficientFunction (const string & name, CoefficientFunction* fun);
     ///
     FESpace * AddFESpace (const string & name, const Flags & flags);
     ///
     void AddFESpace (const string & name, FESpace * space);
     ///
-    GridFunction * AddGridFunction (const string & name, Flags & flags);
+    GridFunction * AddGridFunction (const string & name, const Flags & flags);
     ///
     void AddGridFunction (const string & name, GridFunction * gf, bool addcf = false);
     ///
-    BilinearForm * AddBilinearForm (const string & name, Flags & flags);
+    BilinearForm * AddBilinearForm (const string & name, const Flags & flags);
     ///
-    LinearForm * AddLinearForm (const string & name, Flags & flags);
+    LinearForm * AddLinearForm (const string & name, const Flags & flags);
     ///
-    Preconditioner * AddPreconditioner (const string & name, Flags & flags);
+    Preconditioner * AddPreconditioner (const string & name, const Flags & flags);
     ///
     void AddNumProc (const string & name, NumProc * np);
 
@@ -275,6 +335,14 @@ namespace ngsolve
     ///
     SymbolTable<NumProc*> & GetNumProcTable()
     { return numprocs; }  
+
+
+    int GetNStatements () { return todo.Size(); }
+    const NGS_Object * GetStatement (int nr) { return todo[nr]; }
+    void AddControlStatement (NGS_Object * obj)
+    {
+      todo.Append (obj);
+    }
 
     ///
     bool IsGood () { return isgood; }

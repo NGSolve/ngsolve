@@ -683,6 +683,48 @@ namespace ngsolve
 		
 		np->Do(lh);
 	      }
+
+            else if (dynamic_cast<const LabelStatement*> (todo[i]))
+              {
+                cout << IM(1)
+                     << dynamic_cast<const LabelStatement*>(todo[i])->GetLabel() << endl;
+              }
+
+            else if (dynamic_cast<const GotoStatement*> (todo[i]))
+              {
+                /*
+                int target = 
+                  dynamic_cast<const GotoStatement*>(todo[i])->GetTarget();
+                cout << "goto " << target << endl;
+                i = target; // jump to i
+                */
+                const GotoStatement * statement =
+                  dynamic_cast<const GotoStatement*>(todo[i]);
+                string target = statement -> GetTarget();
+                for (int j = 0; j < todo.Size(); j++)
+                  {
+                    const LabelStatement * lst = 
+                      dynamic_cast<const LabelStatement*> (todo[j]);
+                    if (lst && lst->GetLabel() == target)
+                      i = j-1;
+                  }
+              }
+
+            else if (dynamic_cast<const ConditionalGotoStatement*> (todo[i]))
+              {
+                const ConditionalGotoStatement * statement =
+                  dynamic_cast<const ConditionalGotoStatement*>(todo[i]);
+                string target = statement -> GetTarget();
+                
+                if (statement->EvaluateCondition())
+                  for (int j = 0; j < todo.Size(); j++)
+                    {
+                      const LabelStatement * lst = 
+                        dynamic_cast<const LabelStatement*> (todo[j]);
+                      if (lst && lst->GetLabel() == target)
+                        i = j-1;
+                    }
+              }
             
             else
               cerr << "???????????????" << endl;
@@ -888,7 +930,11 @@ namespace ngsolve
     cout << IM(1) << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
-  
+  void PDE :: AddVariableEvaluation (EvalVariable * eval)
+  {
+    evaluators.Append(eval);
+    todo.Append(eval);
+  }
 
   void PDE :: AddCoefficientFunction (const string & name, CoefficientFunction* fun)
   {
@@ -992,7 +1038,7 @@ namespace ngsolve
 
 
 
-  GridFunction * PDE :: AddGridFunction (const string & name, Flags & flags)
+  GridFunction * PDE :: AddGridFunction (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add grid-function " << name << endl;
 
@@ -1041,7 +1087,7 @@ namespace ngsolve
   }
 
 
-  BilinearForm * PDE :: AddBilinearForm (const string & name, Flags & flags)
+  BilinearForm * PDE :: AddBilinearForm (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add bilinear-form " << name << endl;
     string spacename = flags.GetStringFlag ("fespace", "");
@@ -1075,7 +1121,7 @@ namespace ngsolve
 
 
  
-  LinearForm * PDE :: AddLinearForm (const string & name, Flags & flags)
+  LinearForm * PDE :: AddLinearForm (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add linear-form " << name << endl;
 
@@ -1097,7 +1143,7 @@ namespace ngsolve
 
 
 
-  Preconditioner * PDE :: AddPreconditioner (const string & name, Flags & flags)
+  Preconditioner * PDE :: AddPreconditioner (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add preconditioner " << name << flush;
 
