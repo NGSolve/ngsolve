@@ -323,6 +323,9 @@ namespace ngstd
 	cerr << "flag must start with '-'" << endl;
 	return;
       }
+
+    // flag with double --
+    if (st[1] == '-') st++;
   
     const char * pos = strchr (st, '=');
     const char * posbrack = strchr (st, '[');

@@ -186,17 +186,17 @@ namespace ngstd
 
 
   template <typename TSIZE>
-  class FAIterator
+  class ArrayIterator
   {
     TSIZE ind;
   public:
-    FAIterator (TSIZE ai) : ind(ai) { ; }
-    FAIterator operator++ (int) { return ind++; }
-    FAIterator operator++ () { return ++ind; }
-    FAIterator operator*() const { return ind; }
+    ArrayIterator (TSIZE ai) : ind(ai) { ; }
+    ArrayIterator operator++ (int) { return ind++; }
+    ArrayIterator operator++ () { return ++ind; }
+    ArrayIterator operator*() const { return ind; }
     TSIZE Index() { return ind; }
     operator TSIZE () const { return ind; }
-    bool operator != (FAIterator d2) { return ind != d2.ind; }
+    bool operator != (ArrayIterator d2) { return ind != d2.ind; }
   };
 
 
@@ -374,9 +374,10 @@ namespace ngstd
       return ( Pos(elem) >= 0 );
     }
     
-      
-    FAIterator<TSIZE> begin() { return 0; }
-    FAIterator<TSIZE> end() { return size; }
+    /*
+    ArrayIterator<TSIZE> begin() { return 0; }
+    ArrayIterator<TSIZE> end() { return size; }
+    */
   };
 
 

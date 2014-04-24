@@ -71,11 +71,13 @@ namespace ngstd
     ;
   }
 
-  void EvalFunction :: Parse (istream & aist)
+  bool EvalFunction :: Parse (istream & aist)
   {
     ist = &aist;
     ReadNext();
     res_type = ParseExpression ();
+    if (GetToken() != END) WriteBack();
+    return program.Size() > 0;
   }
 
 
@@ -862,9 +864,14 @@ namespace ngstd
     return true;
   }
 
+  double EvalFunction :: EvalConstant () const
+  {
+    return Eval ((double*)NULL);
+  }
+
+
   bool EvalFunction :: IsComplex () const
   {
-    // cout << "evalfunction::iscomplex:" << endl;
     for (int i = 0; i < program.Size(); i++)
       {
 	EVAL_TOKEN op = program[i].op;
@@ -920,13 +927,13 @@ namespace ngstd
 
 
 
-  EvalFunction::ResultType EvalFunction :: ParseExpression ()
+  EvalFunction::ResultType EvalFunction :: ParseCommaExpression ()
   {
-    ResultType result = ParseExpression2 ();
+    ResultType result = ParseExpression ();
     if (GetToken() == COMMA)
       {
 	ReadNext();   // ','
-	result = ParseExpression ();
+	result = ParseCommaExpression ();
 	result.vecdim++;
 	AddOperation (COMMA);
       }
@@ -954,7 +961,7 @@ namespace ngstd
 
 
 
-  EvalFunction::ResultType EvalFunction :: ParseExpression2 ()
+  EvalFunction::ResultType EvalFunction :: ParseExpression ()
   {
     ResultType result = ParseSubExpression ();
 
@@ -1014,7 +1021,6 @@ namespace ngstd
 
     while (1)
       {
-	//      cout << "parseexpr, goken = " << GetToken() << endl;
 	switch (GetToken())
 	  {
 	  case ADD:
@@ -1067,7 +1073,6 @@ namespace ngstd
   
     while (1)
       {
-	//      cout << "parseterm, goken = " << GetToken() << endl;
 	switch (GetToken())
 	  {
 	  case MULT:
@@ -1123,13 +1128,13 @@ namespace ngstd
       {
       case CONSTANT:
 	{
-	  ReadNext();
 	  AddConstant (GetNumValue());
+	  ReadNext();
 	  break;
 	}
       case SUB:
 	{
-	  ReadNext();
+	  ReadNext();   // '-'
 	  result = ParsePrimary();
 	  AddConstant (-1);
 	  AddOperation (MULT);
@@ -1137,8 +1142,8 @@ namespace ngstd
 	}
       case LP:
 	{
-	  ReadNext();
-	  result = ParseExpression();
+	  ReadNext();  // '('
+	  result = ParseCommaExpression();
 	  ReadNext();  // ')'
 	  break;
 	}
@@ -1224,15 +1229,20 @@ namespace ngstd
 	  break; 
 	}
       default:
-	cout << "why did I get here  ???" << endl;
+	cout << "EvalFunction: why did I get here  ???" << endl;
       }
     return result;
   }
 
 
-
-  void EvalFunction :: ReadNext ()
+  void EvalFunction :: WriteBack ()
   {
+    ist -> seekg(lastpos);
+  }
+
+  void EvalFunction :: ReadNext (bool optional)
+  {
+    lastpos = ist -> tellg();
     char ch;
 
     // skip whitespaces
@@ -1260,6 +1270,19 @@ namespace ngstd
       case ',':
 	{
 	  token = EVAL_TOKEN (ch);
+
+          // check for double --
+          if (ch == '-')
+            {
+              char ch2;
+              ist -> get(ch2);
+              ist -> putback(ch2);
+              if (ch2 == '-')
+                {
+                  token = END;
+                  return;
+                }
+            }
 	  break;
 	}
       
@@ -1283,9 +1306,6 @@ namespace ngstd
 		}
 	      (*ist).putback (ch);
 	      string_value[cnt] = 0;
-
-	      //	      cout << "parse string " << string_value << endl;
-
 
 	      if (strcmp (string_value, "and") == 0)
 		{
@@ -1439,7 +1459,6 @@ namespace ngstd
 
 	      if (constants.Used (string_value))
 		{
-		  //		  cout << "scanner found constant" << endl;
 		  token = CONSTANT;
 		  num_value = constants[string_value];
 		  return;
@@ -1449,10 +1468,8 @@ namespace ngstd
 		{
 		  token = GLOBVAR;
 		  globvar = globvariables[string_value];
-		  //		  cout << "scanner found glob. variable: " << *globvar << endl;
 		  return;
 		}
-	      //	    cout << "found string " << string_value << endl;
 
 	      //	    (*ist) >> string_value;
 	      //	    cout << "string = " << string_value << endl;
@@ -1527,7 +1544,7 @@ namespace ngstd
 	}
       }
 
-    if(token == STRING)
+    if(!optional && token == STRING)
       cerr << "WARNING: Please check function, didn't know what to do with \"" << string_value << "\"" << endl;
 
     //  cout << "token = " << token << " = " << char(token) << " numval = " << num_value << endl;
