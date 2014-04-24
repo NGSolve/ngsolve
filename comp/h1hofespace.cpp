@@ -184,7 +184,7 @@ namespace ngcomp
 	}
     */
     
-    for (ElementId ei : ma.Elements(VOL))
+    for (ElementId ei : ma.Elements<VOL>())
       if (DefinedOn (ei))
 	{
 	  Ngs_Element ngel = ma[ei];
@@ -207,7 +207,7 @@ namespace ngcomp
 	}
     */
 
-    for (ElementId ei : ma.Elements(BND))
+    for (ElementId ei : ma.Elements<BND>())
       if (DefinedOn (ei))
 	{
 	  Ngs_Element ngel = ma[ei];
@@ -319,23 +319,24 @@ namespace ngcomp
     if(uniform_order_edge > -1)   
       order_edge = uniform_order_edge; 
 
-    /*
     for(int i = 0; i < ned; i++) 
       if (!used_edge[i]) order_edge[i] = 1; 
     for(int i = 0; i < nfa; i++) 
       if (!used_face[i]) order_face[i] = 1; 
+
+    /*
     for (int i = 0; i < ne; i++)
       if (!DefinedOn (ma.GetElIndex (i)))
 	order_inner[i] = 1; 
     */
-
+    /*
     for (auto i : used_edge)
       if (!used_edge[i]) order_edge[i] = 1; 
 
     for (auto i : used_face)
       if (!used_face[i]) order_face[i] = 1; 
-
-    for (ElementId ei : ma.Elements(VOL))
+    */
+    for (ElementId ei : ma.Elements<VOL>())
       if (!DefinedOn(ei)) order_inner[ei] = 1;
 
     if(print) 
@@ -519,7 +520,7 @@ namespace ngcomp
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma.GetElement(elnr);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
 
     if (!DefinedOn (ElementId (VOL, elnr)))
       {
@@ -678,7 +679,7 @@ namespace ngcomp
     
     hofe -> SetVertexNumbers (ngel.vertices);
     
-    switch (int(ET_trait<ET>::DIM))
+    switch (int (ET_trait<ET>::DIM))
       {
       case 0:
         {
@@ -727,7 +728,6 @@ namespace ngcomp
     
     Ngs_Element ngel = ma.GetElement(elnr);
 
-    // dnums = ArrayObject (ngel.vertices);
     dnums = ngel.Vertices();
 
     if (ma.GetDimension() >= 2)

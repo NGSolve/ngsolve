@@ -710,7 +710,7 @@ namespace ngcomp
   const FiniteElement & HCurlHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma.GetElement(elnr);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
 
     /*
     if (!DefinedOn (ma.GetElIndex (elnr)))

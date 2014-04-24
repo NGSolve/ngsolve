@@ -24,43 +24,6 @@ namespace ngcomp
   using netgen::Ng_Node;
 
 
-  /**
-     Converts element-type from Netgen to element-types of NGSolve.
-     E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
-   */
-  inline ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
-  {
-    switch (type)
-      {
-      case NG_PNT: 
-	return ET_POINT;
-
-      case NG_SEGM: case NG_SEGM3:
-	return ET_SEGM;
-
-      case NG_TRIG: case NG_TRIG6: 
-	return ET_TRIG;
-	
-      case NG_QUAD: case NG_QUAD6:
-	return ET_QUAD;
-	
-      case NG_TET: case NG_TET10:
-	return ET_TET;
-
-      case NG_PRISM: case NG_PRISM12:
-	return ET_PRISM;
-
-      case NG_PYRAMID:
-	return ET_PYRAMID;
-
-      case NG_HEX:
-	return ET_HEX;
-
-      default:
-        return ET_TRIG;
-      }
-    // throw Exception ("Netgen2NgS type conversion: Unhandled element type");
-  }
 
 
   enum VorB { VOL, BND };
@@ -83,6 +46,17 @@ namespace ngcomp
     ElementId operator*() const { return *this; }
     bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
   };
+
+  class ElementIterator
+  {
+    VorB vb;
+    int nr;
+  public:
+    ElementIterator (VorB avb, int anr) : vb(avb), nr(anr) { ; }
+    ElementIterator operator++ () { return ElementIterator(vb,++nr); }
+    ElementId operator*() const { return ElementId(vb,nr); }
+    bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
+  };
   
   class ElementRange
   {
@@ -90,8 +64,29 @@ namespace ngcomp
     IntRange r;
   public:
     ElementRange (VorB avb, IntRange ar) : vb(avb), r(ar) { ; }
-    ElementId begin () { return ElementId(vb,r.First()); }
-    ElementId end () { return ElementId(vb,r.Next()); }
+    ElementIterator begin () const { return ElementIterator(vb,r.First()); }
+    ElementIterator end () const { return ElementIterator(vb,r.Next()); }
+  };
+
+  template <VorB VB>
+  class TElementIterator
+  {
+    int nr;
+  public:
+    TElementIterator (int anr) : nr(anr) { ; }
+    TElementIterator operator++ () { return TElementIterator(++nr); }
+    ElementId operator*() const { return ElementId(VB,nr); }
+    bool operator!=(TElementIterator id2) const { return nr != id2.nr; }
+  };
+  
+  template <VorB VB>
+  class TElementRange
+  {
+    IntRange r;
+  public:
+    TElementRange (IntRange ar) : r(ar) { ; }
+    TElementIterator<VB> begin () const { return TElementIterator<VB>(r.First()); }
+    TElementIterator<VB> end () const { return TElementIterator<VB>(r.Next()); }
   };
   
 
@@ -102,6 +97,30 @@ namespace ngcomp
     auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
     auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
     auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
+    
+    /*
+      Converts element-type from Netgen to element-types of NGSolve.
+      E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
+    */
+    static INLINE ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
+    {
+      switch (type)
+        {
+        case NG_PNT:                    return ET_POINT;
+        case NG_SEGM: case NG_SEGM3:    return ET_SEGM;
+        case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
+        case NG_QUAD: case NG_QUAD6:    return ET_QUAD;
+        case NG_TET: case NG_TET10:     return ET_TET;
+        case NG_PRISM: case NG_PRISM12: return ET_PRISM;
+        case NG_PYRAMID:                return ET_PYRAMID;
+        case NG_HEX:                    return ET_HEX;
+        default:
+          throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+        }
+    }
+
+    ELEMENT_TYPE GetType () const 
+    { return ConvertElementType (Ng_Element::GetType()); }
   };
 
 
@@ -211,17 +230,48 @@ namespace ngcomp
       return ElementRange (vb, IntRange (0, GetNE(vb)));
     }
 
+    template <VorB VB>
+    TElementRange<VB> Elements () const
+    {
+      return TElementRange<VB> (IntRange (0, GetNE(VB)));
+    }
+
+    
+
+  /**
+     Converts element-type from Netgen to element-types of NGSolve.
+     E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
+  */
+    /*
+    static INLINE ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
+    {
+      switch (type)
+        {
+        case NG_PNT:                    return ET_POINT;
+        case NG_SEGM: case NG_SEGM3:    return ET_SEGM;
+        case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
+        case NG_QUAD: case NG_QUAD6:    return ET_QUAD;
+        case NG_TET: case NG_TET10:     return ET_TET;
+        case NG_PRISM: case NG_PRISM12: return ET_PRISM;
+        case NG_PYRAMID:                return ET_PYRAMID;
+        case NG_HEX:                    return ET_HEX;
+        default:
+          throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+        }
+    }
+    */
+
 
     /// the geometry type of the element
     ELEMENT_TYPE GetElType (int elnr) const
-    { return ConvertElementType (GetElement(elnr).GetType()); }
+    { return GetElement(elnr).GetType(); }
 
     /// the geometry type of the boundary element
     ELEMENT_TYPE GetSElType (int elnr) const
-    { return ConvertElementType (GetSElement(elnr).GetType()); }
+    { return GetSElement(elnr).GetType(); }
 
     ELEMENT_TYPE GetElType (ElementId ei) const
-    { return ConvertElementType (GetElement(ei).GetType()); }
+    { return GetElement(ei).GetType(); }
 
 
     /// the sub-domain index of the element

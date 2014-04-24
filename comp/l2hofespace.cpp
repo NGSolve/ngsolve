@@ -282,7 +282,7 @@ namespace ngcomp
     try
       { 
         Ngs_Element ngel = ma.GetElement(elnr);
-        ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+        ELEMENT_TYPE eltype = ngel.GetType();
         
         if (!DefinedOn (ma.GetElIndex (elnr)))
           {
@@ -622,7 +622,7 @@ namespace ngcomp
 	
 	Ngs_Element ngel = ma.GetElement<1> (elnr);
 
-	switch (ConvertElementType (ngel.GetType()))
+	switch (ngel.GetType())
 	  {
 	  case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
 	  default:
@@ -640,7 +640,7 @@ namespace ngcomp
 	
 	Ngs_Element ngel = ma.GetElement<2> (elnr);
 	
-	switch (ConvertElementType (ngel.GetType()))
+	switch (ngel.GetType())
 	  {
 	  case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
 	  case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;

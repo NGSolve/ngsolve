@@ -567,7 +567,7 @@ namespace ngcomp
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma.GetElement(elnr);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
 
     /*
     if (ma.GetElType(elnr) == ET_TRIG && order <= 6 && fixed_order)
@@ -700,7 +700,7 @@ namespace ngcomp
   const FiniteElement & HDivHighOrderFESpace :: GetHODivFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma.GetElement(elnr);
-    ELEMENT_TYPE eltype = ConvertElementType(ngel.GetType());
+    ELEMENT_TYPE eltype = ngel.GetType();
 
     if (!ho_div_free) throw Exception ("You don't have hodivfree active. You are not allow to call GetHODivFE");
     
