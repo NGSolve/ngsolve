@@ -364,6 +364,7 @@ namespace ngsolve
 	delete &hv;
       }
 
+
     ma.PopStatus ();
     
     if (print)
