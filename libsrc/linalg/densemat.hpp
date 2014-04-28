@@ -158,25 +158,29 @@ class MatrixFixWidth
 protected:
   int height;
   double * data;
-
+  bool ownmem;
 public:
   ///
   MatrixFixWidth () 
-  { height = 0; data = 0; }
+  { height = 0; data = 0; ownmem = false; }
   ///
   MatrixFixWidth (int h)
-  { height = h; data = new double[WIDTH*height]; }
+  { height = h; data = new double[WIDTH*height]; ownmem = true; }
+  /// 
+  MatrixFixWidth (int h, double * adata)
+  { height = h; data = adata; ownmem = false; }
   ///
   ~MatrixFixWidth ()
-  { delete [] data; }
+  { if (ownmem) delete [] data; }
 
   void SetSize (int h)
   {
     if (h != height)
       {
-	delete data;
+	if (ownmem) delete data;
 	height = h;
 	data = new double[WIDTH*height]; 
+	ownmem = true;
       }
   }
 
