@@ -40,6 +40,9 @@ namespace ngbla
   template <class T2>
   void T_CalcInverse (FlatMatrix<T2> inv)
   {
+    static Timer t("CalcInverse");
+    RegionTimer reg(t);
+
     // Gauss - Jordan - algorithm
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145
     // int n = m.Height();
@@ -65,7 +68,7 @@ namespace ngbla
         double rest = 0.0;
         for (int i = j+1; i < n; i++)
           rest += abs(inv(r, i));
-	if (maxval < 1e-10*rest)
+	if (maxval < 1e-20*rest)
 	  {
 	    throw Exception ("Inverse matrix: Matrix singular");
 	  }
@@ -90,7 +93,6 @@ namespace ngbla
 	    inv(j, i) = h;
 	  }
 	inv(j,j) = hr;
-
 
 	for (int k = 0; k < n; k++)
 	  if (k != j)

@@ -283,11 +283,11 @@ namespace ngsolve
   {
     char ch(0);
 
-    lastpos = scanin->tellg();    
-
     // skip whitespaces
     do
       { 
+        lastpos = scanin->tellg();    
+  
 	scanin->get(ch);
 	if (ch == '\n') 
 	  linenum++;
@@ -315,7 +315,6 @@ namespace ngsolve
 	  }	
       }
     while (isspace(ch));
-  
   
     //cout << "ch = \"" << ch << "\"" << endl;
 
@@ -459,7 +458,19 @@ namespace ngsolve
   }
 
 
-  
+  class PDEEvalFunction : public EvalFunction
+  {
+  public:
+    PDEEvalFunction (PDE & pde)
+    {
+      for (int i = 0; i < pde.GetConstantTable().Size(); i++)
+        DefineConstant (pde.GetConstantTable().GetName(i),
+                        pde.GetConstantTable()[i]);
+      for (int i = 0; i < pde.GetVariableTable().Size(); i++)
+        DefineGlobalVariable (pde.GetVariableTable().GetName(i),
+                              pde.GetVariableTable()[i]);
+    }
+  };
 
 
   void CommandList (bool nomeshload = false, const bool nogeometryload = false);
@@ -683,13 +694,15 @@ namespace ngsolve
 
           case KW_IF:
             {
-              EvalFunction * fun = new EvalFunction();
+              EvalFunction * fun = new PDEEvalFunction(*pde);
+              /*
               for (int i = 0; i < pde->GetConstantTable().Size(); i++)
                 fun->DefineConstant (pde->GetConstantTable().GetName(i),
                                                    pde->GetConstantTable()[i]);
               for (int i = 0; i < pde->GetVariableTable().Size(); i++)
                 fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
                                            pde->GetVariableTable()[i]);
+              */
               fun->Parse (*scan->scanin);
               
               scan -> ReadNext();
@@ -779,14 +792,15 @@ namespace ngsolve
               scan->GetToken() == NUMBER ||
               scan->GetToken() == MINUS)
 	    {
-	      EvalFunction * fun = new EvalFunction ();
+	      EvalFunction * fun = new PDEEvalFunction (*pde);
+              /*
 	      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
 		fun->DefineConstant (pde->GetConstantTable().GetName(i),
 				     pde->GetConstantTable()[i]);
 	      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 		fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
 					   pde->GetVariableTable()[i]);
-	      
+              */
               scan->WriteBack();
 	      fun->Parse (*scan->scanin);
 	      if (fun->IsConstant())
@@ -850,7 +864,6 @@ namespace ngsolve
 	      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 		eval->GetEvaluator().DefineGlobalVariable (pde->GetVariableTable().GetName(i),
 							   pde->GetVariableTable()[i]);
-              
               scan->WriteBack();
 	      eval->GetEvaluator().Parse (*scan->scanin);
 	    }
@@ -901,14 +914,15 @@ namespace ngsolve
 
 		  if (scan->GetToken() == LP)
 		    {
-		      EvalFunction * fun = new EvalFunction ();
+		      EvalFunction * fun = new PDEEvalFunction (*pde);
+                      /*
 		      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
 			fun->DefineConstant (pde->GetConstantTable().GetName(i),
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
 						   pde->GetVariableTable()[i]);
-		      
+                      */
 		      
                       scan->WriteBack();
 		      fun->Parse (*scan->scanin);
@@ -1393,11 +1407,7 @@ namespace ngsolve
 
 	  string name = scan->GetStringValue ();
 	  scan->ReadNext();
-	  /*
-	  Flags flags;
-	  CheckFlags (flags);
-	  pde->AddFESpace (name, flags);
-	  */	  
+
 	  pde->AddFESpace (name, ParseFlags());
 	  break;
 	}
@@ -1408,11 +1418,6 @@ namespace ngsolve
 	  string name = scan->GetStringValue ();
 	  scan->ReadNext();
 
-          /*
-	  Flags flags;
-	  CheckFlags (flags);
-	  pde->AddGridFunction (name, flags);
-          */
 	  pde->AddGridFunction (name, ParseFlags());
 	  break;
 	}
@@ -1476,7 +1481,7 @@ namespace ngsolve
 
                           if (!coeffs[i])
                             {
-                              EvalFunction * fun = new EvalFunction();
+                              EvalFunction * fun = new PDEEvalFunction(*pde);
                               scan-> WriteBack();
                               if (fun->Parse(*scan->scanin))
                                 {
@@ -1695,7 +1700,7 @@ namespace ngsolve
 
                           if (!coeffs[i])
                             {
-                              EvalFunction * fun = new EvalFunction();
+                              EvalFunction * fun = new PDEEvalFunction(*pde);
                               scan-> WriteBack();
                               if (fun->Parse(*scan->scanin))
                                 {

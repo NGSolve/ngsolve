@@ -452,8 +452,6 @@ namespace ngcomp
         
         if (highest_order_dc)
           {
-            // cout << "WARNING: highest-order-dc for 3D: pairs not available" << endl;
-
             dc_pairs.SetSize ((order+1)*ma.GetNFacets());
             dc_pairs = INT<2> (-1,-1);
             

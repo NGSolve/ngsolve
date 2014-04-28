@@ -995,18 +995,11 @@ namespace ngcomp
   
 
   template <class SCAL>
-  bool VisualizeGridFunction<SCAL> :: GetValue (int elnr, 
-						double lam1, double lam2, double lam3,
-						double * values) 
+  bool VisualizeGridFunction<SCAL> :: 
+  GetValue (int elnr, double lam1, double lam2, double lam3,
+            double * values) 
   { 
     // static Timer t("visgf::GetValue");
-    /*
-    static Timer t1("visgf::GetValue 1");
-    static Timer t2("visgf::GetValue 2");
-    static Timer t3("visgf::GetValue 3");
-    static Timer t4("visgf::GetValue 3");
-    static Timer t5("visgf::GetValue 3");
-    */
     // RegionTimer reg(t);
     // t.AddFlops (1);
 
@@ -1019,22 +1012,17 @@ namespace ngcomp
 	const FESpace & fes = gf->GetFESpace();
 
 	int dim     = fes.GetDimension();
+        ElementId ei(VOL,elnr);
 
-	if ( !fes.DefinedOn(ElementId(VOL, elnr)))
-	  return false;
+	if ( !fes.DefinedOn(ei)) return false;
 
-        // t1.Start();
 	HeapReset hr(lh);
 	
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
-	const FiniteElement & fel = fes.GetFE (elnr, lh);
-
+	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+	const FiniteElement & fel = fes.GetFE (ei, lh);
 
 	Array<int> dnums (fel.GetNDof(), lh);
-	fes.GetDofNrs (elnr, dnums);
-
-        // t1.Stop();
-        // t2.Start();
+	fes.GetDofNrs (ei, dnums);
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
@@ -1052,30 +1040,26 @@ namespace ngcomp
 	  }
 
 	fes.TransformVec (elnr, 0, elu, TRANSFORM_SOL);
-        // t2.Stop();
-        // t3.Start();
 
 	IntegrationPoint ip(lam1, lam2, lam3, 0);
 	MappedIntegrationPoint<3,3> mip (ip, eltrans);
 
-        // t3.Stop();
-        // t4.Start();
+        for (int i = 0; i < components; i++) values[i] = 0;
 
+        bool ok = false;
 	for(int j = 0; j < bfi3d.Size(); j++)
-	  {
-	    HeapReset hr(lh);
-	    FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
-	    bfi3d[j]->CalcFlux (fel, mip, elu, flux, applyd, lh);
-	    
-	    for (int i = 0; i < components; i++)
-	      {
-		if(j == 0) values[i] = 0;
-		values[i] += ((double*)(void*)&flux(0))[i];
-	      }
-	  }
-	
-        // t4.Stop();
-	return true; 
+          if (bfi3d[j]->DefinedOn(ma.GetElIndex(ei)))
+            {
+              HeapReset hr(lh);
+              FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
+              bfi3d[j]->CalcFlux (fel, mip, elu, flux, applyd, lh);
+              
+              for (int i = 0; i < components; i++)
+                values[i] += ((double*)(void*)&flux(0))[i];
+              ok = true;
+            }
+        
+        return ok; 
       }
     
     catch (Exception & e)
@@ -1088,9 +1072,10 @@ namespace ngcomp
 
 
   template <class SCAL>
-  bool VisualizeGridFunction<SCAL> :: GetValue (int elnr, 
-						const double xref[], const double x[], const double dxdxref[],
-						double * values) 
+  bool VisualizeGridFunction<SCAL> :: 
+  GetValue (int elnr, 
+            const double xref[], const double x[], const double dxdxref[],
+            double * values) 
   { 
     static Timer t("visgf::GetValue2");
     RegionTimer reg(t);
@@ -1106,15 +1091,14 @@ namespace ngcomp
 	const FESpace & fes = gf->GetFESpace();
 	
 	int dim     = fes.GetDimension();
+        ElementId ei(VOL,elnr);
 	
-	if ( !fes.DefinedOn(ma.GetElIndex(elnr)) ) return 0;
+	if ( !fes.DefinedOn(ei) ) return 0;
 	
-	// lh.CleanUp();
-
-	const FiniteElement * fel = &fes.GetFE (elnr, lh);
+	const FiniteElement * fel = &fes.GetFE (ei, lh);
 
 	Array<int> dnums(fel->GetNDof(), lh);
-	fes.GetDofNrs (elnr, dnums);
+	fes.GetDofNrs (ei, dnums);
 
 	FlatVector<SCAL> elu (fel->GetNDof() * dim, lh);
 
@@ -1148,19 +1132,21 @@ namespace ngcomp
 	IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
 	MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
 	
+        for (int i = 0; i < components; i++) values[i] = 0;
+        bool ok = false;
+
 	for(int j = 0; j < bfi3d.Size(); j++)
-	  {
-	    FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
-	    bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
-	    
-	    for (int i = 0; i < components; i++)
-	      {
-		if(j == 0) values[i] = 0;
-		values[i] += ((double*)(void*)&flux(0))[i];
-	      }
-	  }
+          if (bfi3d[j]->DefinedOn(ma.GetElIndex(ei)))
+            {
+              FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
+              bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
+              
+              for (int i = 0; i < components; i++)
+                values[i] += ((double*)(void*)&flux(0))[i];
+              ok = true;
+            }
 	
-	return true; 
+	return ok; 
       }
     catch (Exception & e)
       {
