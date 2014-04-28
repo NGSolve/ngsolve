@@ -652,16 +652,16 @@ namespace netgen
 
 	      for (int i2 = 0; i2 < edgenrs.Size(); i2++)
 		{
-		  PointIndex pi1 = el[edges[i2][0]];
-		  PointIndex pi2 = el[edges[i2][1]];
+		  // PointIndex pi1 = el[edges[i2][0]];
+		  // PointIndex pi2 = el[edges[i2][1]];
 
-		  bool swap = pi1 > pi2;
+		  // bool swap = pi1 > pi2;
 		
-		  Point<3> p1 = mesh[pi1];
-		  Point<3> p2 = mesh[pi2];
+		  // Point<3> p1 = mesh[pi1];
+		  // Point<3> p2 = mesh[pi2];
 		
-		  int order1 = edgeorder[edgenrs[i2]];
-		  int ndof = max (0, order1-1);
+		  // int order1 = edgeorder[edgenrs[i2]];
+		  // int ndof = max (0, order1-1);
 
 		  surfnr[edgenrs[i2]] = mesh.GetFaceDescriptor(el.GetIndex()).SurfNr();
 		  gi0[edgenrs[i2]] = el.GeomInfoPi(edges[i2][0]+1);
@@ -1163,7 +1163,7 @@ namespace netgen
 		    for (int k = 0; k < verts.Size(); k++)
 		      pp += lami[k] * Vec<3> (mesh.Point(verts[k]));
 
-		    const ELEMENT_EDGE * edges = MeshTopology::GetEdges0 (TRIG);
+		    // const ELEMENT_EDGE * edges = MeshTopology::GetEdges0 (TRIG);
 		    for (int k = 0; k < edgenrs.Size(); k++)
 		      {
 			int eorder = edgeorder[edgenrs[k]];

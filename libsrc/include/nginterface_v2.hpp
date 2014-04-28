@@ -12,9 +12,6 @@
   C++ interface to Netgen
 */
 
-// #include "../general/archive_base.hpp"
-// namespace ngstd { class Archive; }
-
 
 namespace netgen
 {

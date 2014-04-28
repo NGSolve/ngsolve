@@ -88,7 +88,8 @@ namespace netgen
 	const TopLevelObject * tlo = geometry -> GetTopLevelObject (i);
 	if (tlo->GetVisible() && !tlo->GetTransparent())
 	  {
-	    float mat_col[] = { tlo->GetRed(), tlo->GetGreen(), tlo->GetBlue(), 1 };
+	    float mat_col[] = { float(tlo->GetRed()), float(tlo->GetGreen()), 
+				float(tlo->GetBlue()), 1 };
 	    glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_col);
 	  
 	    glCallList (trilists[i]);
@@ -105,7 +106,8 @@ namespace netgen
 	const TopLevelObject * tlo = geometry -> GetTopLevelObject (i);
 	if (tlo->GetVisible() && tlo->GetTransparent())
 	  {
-	    float mat_col[] = { tlo->GetRed(), tlo->GetGreen(), tlo->GetBlue(), transp };
+	    float mat_col[] = { float(tlo->GetRed()), float(tlo->GetGreen()), 
+				float(tlo->GetBlue()), float(transp) };
 
 	    glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, mat_col);
 	  
@@ -326,9 +328,9 @@ namespace netgen
     if (vispar.drawededgenrs)
       {
 	glEnable (GL_COLOR_MATERIAL);
-	GLfloat textcol[3] = { 1 - backcolor,
-			       1 - backcolor,
-			       1 - backcolor };
+	GLfloat textcol[3] = { GLfloat(1 - backcolor),
+			       GLfloat(1 - backcolor), 
+			       GLfloat(1 - backcolor) };
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
@@ -397,9 +399,9 @@ namespace netgen
     if (vispar.drawedpointnrs)
       {
 	glEnable (GL_COLOR_MATERIAL);
-	GLfloat textcol[3] = { 1 - backcolor,
-			       1 - backcolor,
-			       1 - backcolor };
+	GLfloat textcol[3] = { GLfloat(1 - backcolor),
+			       GLfloat(1 - backcolor),
+			       GLfloat(1 - backcolor) };
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);

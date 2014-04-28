@@ -2419,7 +2419,6 @@ namespace netgen
               NgProfiler::RegionTimer reg1 (timer1);
               
               int ne = mesh->GetNE();
-    
               double hminv = numeric_limits<double>::max();
               double hmaxv = -numeric_limits<double>::max();
               bool hhasit = false;
@@ -2723,8 +2722,9 @@ namespace netgen
       {
       case SOL_VIRTUALFUNCTION:
         {
+	  val = 0.0;
           double values[20];
-          ok = data->solclass->GetValue (elnr, lam1, lam2, lam3, values);
+	  ok = data->solclass->GetValue (elnr, lam1, lam2, lam3, values);
 
           val = values[comp-1];
           return ok;
@@ -3662,7 +3662,7 @@ namespace netgen
   {
     static int timer_vals = NgProfiler::CreateTimer ("ClipPlaneTrigs - vertex values");
     static int timer1 = NgProfiler::CreateTimer ("ClipPlaneTrigs1");
-    static int timer1a = NgProfiler::CreateTimer ("ClipPlaneTrigs1a");
+    // static int timer1a = NgProfiler::CreateTimer ("ClipPlaneTrigs1a");
     // static int timer2 = NgProfiler::CreateTimer ("ClipPlaneTrigs2");
     static int timer3 = NgProfiler::CreateTimer ("ClipPlaneTrigs3");
     static int timer4 = NgProfiler::CreateTimer ("ClipPlaneTrigs4");

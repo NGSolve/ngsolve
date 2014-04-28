@@ -1527,6 +1527,11 @@ namespace netgen
 
   void MeshTopology :: GetEdgeVertices (int ednr, int & v1, int & v2) const
   {
+    // cout << "id = " << id << "getedgevertices, ednr = " << ednr << ", ned = " << edge2vert.Size() << "&v1 = " << &v1 << endl;
+    if (ednr < 1 || ednr > edge2vert.Size())
+      cerr << "illegal edge nr: " << ednr << ", numedges = " << edge2vert.Size() 
+	   << " id = " << id 
+	   << endl;
     v1 = edge2vert.Get(ednr)[0];
     v2 = edge2vert.Get(ednr)[1];
   }

@@ -394,7 +394,7 @@ namespace netgen
 
 	selbuf.Add (dest, sei);
 	selbuf.Add (dest, sel.GetIndex());
-	selbuf.Add (dest, 0);
+	// selbuf.Add (dest, 0);
 	selbuf.Add (dest, sel.GetNP());
 	
 	for ( int ii = 1; ii <= sel.GetNP(); ii++)
@@ -636,7 +636,7 @@ namespace netgen
 	{
 	  int globsel = selbuf[ii++];
 	  int faceind = selbuf[ii++];
-	  bool isghost = selbuf[ii++];
+	  //bool isghost = selbuf[ii++];
 	  int nep = selbuf[ii++];
 	  Element2d tri(nep);
 	  tri.SetIndex(faceind);
@@ -788,8 +788,8 @@ namespace netgen
       {
 	eptr.Append (eind.Size());
 	const Segment & el = LineSegment(i+1);
-	eind.Append (el[0]);
-	eind.Append (el[1]);
+	eind.Append (el[0]-1);
+	eind.Append (el[1]-1);
       }
     eptr.Append (eind.Size());
     Array<idx_t> epart(ne), npart(nn);
@@ -1318,7 +1318,7 @@ namespace netgen
     idxtype  *xadj, * adjacency, *v_weights = NULL, *e_weights = NULL;
 
     int weightflag = 0;
-    int numflag = 0;
+    // int numflag = 0;
     int nparts = ntasks - 1;
 
     int options[5];
@@ -1485,11 +1485,9 @@ namespace netgen
     idxtype *v_weights = NULL, *e_weights = NULL;
 
     int weightflag = 0;
-    int numflag = 0;
+    // int numflag = 0;
     int nparts = ntasks - 1;
 
-    int options[5];
-    options[0] = 0;
     int edgecut;
     Array<idxtype> part(ne);
 
@@ -1497,6 +1495,8 @@ namespace netgen
       BubbleSort (adjacency.Range (xadj[el], xadj[el+1]));
 
 #ifdef METIS4	
+    int options[5];
+    options[0] = 0;
     METIS_PartGraphKway ( &ne, &xadj[0], &adjacency[0], v_weights, e_weights, &weightflag, 
 			  &numflag, &nparts, options, &edgecut, &part[0] );
 #else

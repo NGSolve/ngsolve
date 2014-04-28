@@ -181,17 +181,19 @@ namespace netgen
 
 
     static bool firsttime = true;
-    static int timers[100];
-    static int timers2[100];
-    static int timers3[100];
+    // static int timers[100];
+    // static int timers2[100];
+    // static int timers3[100];
     if (firsttime)
       {
+	/*
 	for (int ri = 0; ri < rules.Size(); ri++)
 	  timers[ri] = NgProfiler::CreateTimer (string("netrule ")+rules[ri]->Name());
 	for (int ri = 0; ri < rules.Size(); ri++)
 	  timers2[ri] = NgProfiler::CreateTimer (string("netrule,mapped ")+rules[ri]->Name());
 	for (int ri = 0; ri < rules.Size(); ri++)
 	  timers3[ri] = NgProfiler::CreateTimer (string("netrule,lines mapped ")+rules[ri]->Name());
+	*/
 	firsttime = false;
       }
 
