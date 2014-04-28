@@ -354,11 +354,22 @@ namespace netgen
     ///
     int GetNV() const
     {
+      if (typ == TRIG || typ == TRIG6)
+        return 3;
+      else
+        {
+#ifdef DEBUG
+          if (typ != QUAD && typ != QUAD6 && typ != QUAD8)
+            PrintSysError ("element2d::GetNV not implemented for typ", typ)
+#endif
+          return 4;
+        }
+      /*
       switch (typ)
 	{
 	case TRIG:
 	case TRIG6: return 3;
-
+          
 	case QUAD:
 	case QUAD8:
 	case QUAD6: return 4;
@@ -369,6 +380,7 @@ namespace netgen
 	    ;
 	}
       return np;
+      */
     }
 
     ///

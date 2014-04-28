@@ -1,4 +1,4 @@
-#include <mystdlib.h>
+ #include <mystdlib.h>
 #include "meshing.hpp"
 
 
@@ -13,13 +13,64 @@ namespace netgen
   
   void Refinement :: MakeSecondOrder (Mesh & mesh)
   {
-    int nseg, nse, ne;
+    /*
+      Berlin, 2014: if we have curved surface elements, keep them !
+    */
 
     mesh.ComputeNVertices();
-    mesh.SetNP(mesh.GetNV());
-  
+    // mesh.SetNP(mesh.GetNV());
+    mesh.SetNP(mesh.GetNP());  // setup multilevel-table
+
     INDEX_2_HASHTABLE<PointIndex> between(mesh.GetNP() + 5);
 
+    for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
+      {
+	const Element2d & el = mesh[sei];
+
+	static int betw_trig[3][3] =
+	  { { 1, 2, 3 }, { 0, 2, 4 }, { 0, 1, 5 } };
+	static int betw_quad6[2][3] =
+	  { { 0, 1, 4 }, { 3, 2, 5 } };
+	static int betw_quad8[4][3] =
+	  { { 0, 1, 4 }, { 3, 2, 5 },
+	    { 0, 3, 6 }, { 1, 2, 7 } };
+      
+	int onp = 0;
+	int (*betw)[3] = NULL;
+	switch (el.GetType())
+	  {
+	  case TRIG6:
+	    {
+	      betw = betw_trig;
+	      onp = 3;
+	      break;
+	    }
+	  case QUAD6: 
+            {
+              betw = betw_quad6;
+              onp = 4;
+              break;
+            }
+	  case QUAD8: 
+            {
+              betw = betw_quad8;
+              onp = 4;
+              break;
+            }
+          default:
+            ;
+          }
+        
+        if (betw)
+          for (int j = 0; j < el.GetNP()-onp; j++)
+            {
+              int pi1 = el[betw[j][0]];
+              int pi2 = el[betw[j][1]];
+              INDEX_2 i2 = INDEX_2::Sort (pi1, pi2);
+              between.Set (i2, el[onp+j]);
+            }
+      }
+      
 
     bool thinlayers = 0;
     for (ElementIndex ei = 0; ei < mesh.GetNE(); ei++)
@@ -28,7 +79,7 @@ namespace netgen
 	thinlayers = 1;
     
 
-    nseg = mesh.GetNSeg();
+    int nseg = mesh.GetNSeg();
     for (SegmentIndex si = 0; si < nseg; si++)
       {
 	Segment & el = mesh.LineSegment(si);
@@ -54,8 +105,7 @@ namespace netgen
       }
 
     // refine surface elements
-    nse = mesh.GetNSE();
-    for (SurfaceElementIndex sei = 0; sei < nse; sei++)
+    for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
       {
 	int j;
 	const Element2d & el = mesh.SurfaceElement(sei);
@@ -149,8 +199,7 @@ namespace netgen
 
 
     // refine volume elements
-    ne = mesh.GetNE();
-    for (int i = 1; i <= ne; i++)
+    for (int i = 1; i <= mesh.GetNE(); i++)
       {
 	const Element & el = mesh.VolumeElement(i);
 	int onp = 0;

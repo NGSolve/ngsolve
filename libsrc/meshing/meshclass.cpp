@@ -1470,15 +1470,28 @@ namespace netgen
 
         // int si = sel.GetIndex();
 
-        for (int j = 0; j < sel.GetNP(); j++)
-          {
-            INDEX_2 i2;
-            i2.I1() = sel.PNumMod(j+1);
-            i2.I2() = sel.PNumMod(j+2);
-            i2.Sort();
-            if (sel.GetNP() <= 4)
+        if (sel.GetNP() <= 4)
+          for (int j = 0; j < sel.GetNP(); j++)
+            {
+              INDEX_2 i2;
+              i2.I1() = sel.PNumMod(j+1);
+              i2.I2() = sel.PNumMod(j+2);
+              i2.Sort();
               boundaryedges->Set (i2, 1);
+            }
+        else if (sel.GetType()==TRIG6)
+          {
+            for (int j = 0; j < 3; j++)
+              {
+                INDEX_2 i2;
+                i2.I1() = sel[j];
+                i2.I2() = sel[(j+1)%3];
+                i2.Sort();
+                boundaryedges->Set (i2, 1);
+              }
           }
+        else 
+          cerr << "illegal elemenet for buildboundaryedges" << endl;
       }
 
 
@@ -1825,6 +1838,7 @@ namespace netgen
           for (ii = 0; ii < row.Size(); ii++)
             {
               hel = SurfaceElement(row[ii]);
+              if (hel.GetType() == TRIG6) hel.SetType(TRIG);
               int ind = hel.GetIndex();	  
 
               if (GetFaceDescriptor(ind).DomainIn() && 
@@ -4347,11 +4361,9 @@ namespace netgen
     int i = 0;
 
     const int maxits = 30;
-
     while(delta > 1e-16 && i<maxits)
       {
         curvedelems->CalcElementTransformation(lam,element-1,x,Jac);
-
         rhs = p-x;
         Jac.Solve(rhs,deltalam);
 
@@ -4366,7 +4378,6 @@ namespace netgen
 
     if(i==maxits)
       return false;
-
 
     for(i=0; i<3; i++)
       lami[i] = lam(i);
@@ -4568,7 +4579,6 @@ namespace netgen
               ii = locels.Get(i);
             else
               ii = i;
-
             if(ii == ps_startelement) continue;
 
             if(indices != NULL && indices->Size() > 0)

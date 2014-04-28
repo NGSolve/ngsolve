@@ -22,6 +22,9 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
   int timer1 = NgProfiler::CreateTimer ("makeatlas");
   int timer2 = NgProfiler::CreateTimer ("makeatlas - part 2");
   int timer3 = NgProfiler::CreateTimer ("makeatlas - part 3");
+  int timer4 = NgProfiler::CreateTimer ("makeatlas - part 4");
+  int timer4a = NgProfiler::CreateTimer ("makeatlas - part 4a");
+  int timer5 = NgProfiler::CreateTimer ("makeatlas - part 5");
 
   PushStatusF("Make Atlas");
 
@@ -113,6 +116,8 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
       STLChart * chart = new STLChart(this);
       atlas.Append(chart);
 
+      // *testout << "Chart " << atlas.Size() << endl;
+
       //find unmarked trig
       int prelastunmarked = lastunmarked;
 
@@ -143,7 +148,8 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 	  
       Vec<3> sn = GetTriangle(starttrig).Normal();
       chart->SetNormal (startp, sn);
-
+      
+      // *testout << "first trig " << starttrig << ", n = " << sn << endl;
 
       SetMarker(starttrig, chartnum);
       markedtrigcnt++;
@@ -181,14 +187,16 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 		  for (int j = 1; j <= NONeighbourTrigs(i); j++)
 		    {
 		      int nt = NeighbourTrig(i,j);
+                      // *testout << "check trig " << nt << endl;
 		      int np1, np2;
 		      GetTriangle(i).GetNeighbourPoints(GetTriangle(nt),np1,np2);
 		      if (GetMarker(nt) == 0 && !IsEdge(np1,np2))
 			{
 			  Vec<3> n2 = GetTriangle(nt).Normal();
+                          // *testout << "acos = " << 180/M_PI*acos (n2*sn) << endl;
 			  if ( (n2 * sn) >= coschartangle )
 			    {
-			      
+                              // *testout << "good angle " << endl;
 			      accepted = 1;
 			      /*
 				//alter spiralentest, schnell, aber ungenau
@@ -229,19 +237,22 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 				      accepted = chartbound.TestSeg(GetPoint(nnp1),
 								    GetPoint(nnp2),
 								    sn,sinchartangle,1 /*chartboundarydivisions*/ ,points, eps);
-
+                                      
+                                      // if (!accepted) *testout << "not acc due to testseg" << endl;
 
 				      Vec<3> n3 = GetTriangle(nnt).Normal();
 				      if ( (n3 * sn) >= coschartangle  &&
 					   IsSmoothEdge (nnp1, nnp2) )
 					accepted = 1;
 				    }
-				  if (!accepted) {break;}
+				  if (!accepted) 
+                                    break;
 				}
 			      
-
+                              
 			      if (accepted)
 				{
+                                  // *testout << "trig accepted" << endl;
 				  SetMarker(nt, chartnum); 
 				  changed = true;
 				  markedtrigcnt++;
@@ -318,6 +329,8 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 		    {
 		      accepted = 1;
 		      
+                      NgProfiler::StartTimer (timer4);
+
 		      bool isdirtytrig = false;
 		      Vec<3> gn = GetTriangle(nt).GeomNormal(points);
 		      double gnlen = gn.Length();
@@ -339,11 +352,15 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 				int nnp1, nnp2; 
 				GetTriangle(nt).GetNeighbourPoints(GetTriangle(nnt),nnp1,nnp2);
 				
+                                // NgProfiler::StartTimer (timer4a);
+
 				accepted = 
 				  chartbound.TestSeg(GetPoint(nnp1),GetPoint(nnp2),
 						     sn,sinouterchartangle, 0 /*chartboundarydivisions*/ ,points, eps);
 				
-				
+                                // NgProfiler::StopTimer (timer4a);				
+
+
 				Vec<3> n3 = GetTriangle(nnt).Normal();
 				if ( (n3 * sn) >= cosouterchartangle  &&
 				     IsSmoothEdge (nnp1, nnp2) )
@@ -352,7 +369,11 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
 			    if (!accepted) break;
 			  }
 		      
-		      
+                      NgProfiler::StopTimer (timer4);		      
+
+                      NgProfiler::RegionTimer reg5(timer5);		      
+
+
 		      // outer chart is only small environment of
 		      //    inner chart:
 		      
