@@ -778,11 +778,13 @@ void STLChart :: SetNormal (const Point<3> & apref, const Vec<3> & anormal)
   t2 = Cross (normal, t1);
 }
 
+/*
 Point<2> STLChart :: Project2d (const Point<3> & p3d) const
 {
   Vec<3> v = p3d-pref;
   return Point<2> (t1 * v, t2 * v);
 }
+*/
 
 
 
@@ -792,6 +794,8 @@ Point<2> STLChart :: Project2d (const Point<3> & p3d) const
   int i1, i2;
 public:
 */
+
+/*
 STLBoundarySeg :: 
 STLBoundarySeg (int ai1, int ai2, const Array<Point<3> > & points,
 		const STLChart * chart)
@@ -809,6 +813,7 @@ STLBoundarySeg (int ai1, int ai2, const Array<Point<3> > & points,
   boundingbox.Set (p2d1);
   boundingbox.Add (p2d2);
 }
+*/
 
 void STLBoundarySeg :: Swap ()
 {
@@ -1103,6 +1108,15 @@ int STLBoundary :: TestSegChartNV(const Point3d & p1, const Point3d& p2,
 
   double eps = 1e-3;
   bool ok = true;
+
+  /*
+  static long int cnt = 0;
+  static long int totnseg = 0;
+  totnseg += nseg;
+  cnt++;
+  if ( (cnt % 100000) == 0)
+  cout << "avg nseg = " << double(totnseg)/cnt << endl;
+  */
 
   for (int j = 1; j <= nseg; j++)
     {

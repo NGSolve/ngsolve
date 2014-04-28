@@ -100,7 +100,11 @@ private:
 public:
   void SetNormal (const Point<3> & apref, const Vec<3> & anormal);
   const Vec<3> & GetNormal () const { return normal; }
-  Point<2> Project2d (const Point<3> & p3d) const;
+  Point<2> Project2d (const Point<3> & p3d) const
+  {
+    Vec<3> v = p3d-pref;
+    return Point<2> (t1 * v, t2 * v);
+  }
 };
 
 class STLBoundarySeg
@@ -116,7 +120,19 @@ class STLBoundarySeg
 public:
   STLBoundarySeg () { ; }
   STLBoundarySeg (int ai1, int ai2, const Array<Point<3> > & points,
-		  const STLChart * achart);
+		  const STLChart * chart)
+    : p1(points.Get(ai1)), p2(points.Get(ai2)),
+      i1(ai1), i2(ai2)
+  {
+    center = ::netgen::Center (p1, p2);
+    rad = Dist (p1, center);
+    
+    p2d1 = chart->Project2d (p1);
+    p2d2 = chart->Project2d (p2);
+    
+    boundingbox.Set (p2d1);
+    boundingbox.Add (p2d2);
+  }
 
   int operator== (const STLBoundarySeg & s2) const
     { return i1 == s2.i1 && i2 == s2.i2; }
