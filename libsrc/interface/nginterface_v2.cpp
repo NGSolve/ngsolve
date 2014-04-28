@@ -7,8 +7,6 @@
 #include "nginterface.h"
 #include "nginterface_v2.hpp"
 
-#include "../general/archive_base.hpp"
-
 namespace netgen
 {
 #include "writeuser.hpp"

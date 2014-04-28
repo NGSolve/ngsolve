@@ -12,7 +12,6 @@
   C++ interface to Netgen
 */
 
-
 namespace netgen
 {
   struct T_EDGE2
