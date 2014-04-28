@@ -1561,7 +1561,8 @@ namespace netgen
 	lock -> Lock();
       }
 
-    if (edgetimestamp > mesh->GetTimeStamp () && vispar.shrink == 1)
+    if (edgetimestamp > mesh->GetTimeStamp () && vispar.drawtetsdomain == 0 
+	&& vispar.shrink == 1)
       return;
 
     edgetimestamp = NextTimeStamp();
@@ -1585,6 +1586,13 @@ namespace netgen
     for (int i = 1; i <= mesh->GetNSeg(); i++)
       {
 	const Segment & seg = mesh->LineSegment(i);
+
+#ifdef PARALLEL
+	if (ntasks > 1 && 
+	    vispar.drawtetsdomain && 
+	    (vispar.drawtetsdomain != seg.GetPartition())) continue;
+#endif
+
 	const Point3d & p1 = (*mesh)[seg[0]];
 	const Point3d & p2 = (*mesh)[seg[1]];
 
