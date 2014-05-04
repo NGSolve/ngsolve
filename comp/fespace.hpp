@@ -763,7 +763,7 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();
 
     /// 
-    virtual int GetNDof () const { return ndlevel.Last(); }
+    virtual int GetNDof () const { return cummulative_nd.Last();} //ndlevel.Last(); }
     ///
     virtual int GetNDofLevel (int level) const { return ndlevel[level]; }
 
