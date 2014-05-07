@@ -194,6 +194,8 @@ namespace ngfem
   public:
     ///
     DomainVariableCoefficientFunction (const EvalFunction & afun);
+    DomainVariableCoefficientFunction (const EvalFunction & afun,
+				       const Array<CoefficientFunction*> & adepends_on);
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun);
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
 				       const Array<CoefficientFunction*> & adepends_on);
@@ -212,13 +214,16 @@ namespace ngfem
       return *(fun[index]);
     }
 
-    virtual bool IsComplex() const 
+    virtual bool IsComplex() const;
+    /*
     {
       for (int i = 0; i < fun.Size(); i++)
 	if (fun[i]->IsResultComplex()) return true;
       return false;
     }
-    virtual int Dimension() const { return fun[0]->Dimension(); }
+    */
+    virtual int Dimension() const; 
+    // { return fun[0]->Dimension(); }
 
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const;

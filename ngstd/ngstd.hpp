@@ -125,7 +125,10 @@ namespace ngstd
 #include "autoptr.hpp"
 #include "memusage.hpp"
 #include "flags.hpp"
+
 #include "evalfunc.hpp"
+// namespace ngstd { class EvalFunction; }
+
 #include "autodiff.hpp"
 #include "autodiffdiff.hpp"
 #include "polorder.hpp"

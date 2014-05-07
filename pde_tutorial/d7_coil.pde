@@ -3,7 +3,7 @@ mesh = coil.vol
 
 
 define constant geometryorder = 4
-define constant heapsize = 50000000
+# define constant heapsize = 50000000
 
 define constant mu0 = 1.257e-7
 
@@ -11,17 +11,14 @@ define constant mu0 = 1.257e-7
 define coefficient nu
 (1/mu0), (1/mu0), 
 
-
 # artificial conductivity for regularization
-define coefficient sigma
-1e-1, 1e-1,
+define coefficient sigma 1e-8*nu
 
 # 1000 Ampere-turns
 define coefficient r (sqrt(x*x+y*y))
 define coefficient cs 
 ( 1000/16 * (y/r,-x/r,0))
 (0, 0, 0),
-
 
 define fespace v -type=hcurlho -order=4 -nograds -dirichlet=[1]
 
@@ -31,7 +28,7 @@ define linearform f -fespace=v
 sourceedge cs  -definedon=1
 
 
-define bilinearform a -fespace=v -symmetric -linearform=f -eliminate_internal -keep_internal
+define bilinearform a -fespace=v -symmetric -linearform=f -eliminate_internal 
 curlcurledge nu 
 massedge sigma
 

@@ -200,6 +200,11 @@ if { [catch { NGS_GetData } ] == 0 } {
     .ngmenu.solve.solvex  add command -label "20 Level" -command { SolveX 20 }
 
 
+    .ngmenu.solve add command -label "Enter Command" \
+	-command { 
+	    NGS_EnterCommand;
+	}
+
 
     .ngmenu.solve add command -label "Visualization..." \
 	-command { 
@@ -500,9 +505,6 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 
 
-
-
-
     if { [Ng_GetCommandLineParameter recent]=="defined" } {
 	if { [catch { .ngmenu.solve invoke "Solve Recent PDE";  } errstring] == 1 } {
 	    puts "TCL-ERROR handler:\n $errstring";
@@ -518,6 +520,7 @@ if { [catch { NGS_GetData } ] == 0 } {
     bind . <l><p> { .ngmenu.solve invoke "Load PDE..." }  ; 
     bind . <s><r> { .ngmenu.solve invoke "Solve Recent PDE" }  ; 
     bind . <s><p> { .ngmenu.solve invoke "Solve PDE" }  ; 
+    bind . <e><c> { .ngmenu.solve invoke "Enter Command" }  ; 
 
 
 

@@ -9,6 +9,7 @@
 */
 
 #include <fem.hpp>
+#include <../ngstd/evalfunc.hpp>
 
 namespace ngfem
 {
@@ -125,6 +126,19 @@ namespace ngfem
 
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction (const EvalFunction & afun,
+				     const Array<CoefficientFunction*> & adepends_on)
+    : fun(1), depends_on(adepends_on)
+  {
+    fun[0] = new EvalFunction (afun);
+    numarg = 3;
+    for (int i = 0; i < depends_on.Size(); i++)
+      numarg += depends_on[i]->Dimension();
+  }
+
+
+  template <int DIM>
+  DomainVariableCoefficientFunction<DIM> ::
   DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun)
     : fun(afun.Size())
   {
@@ -148,15 +162,6 @@ namespace ngfem
       else
         fun[i] = 0;
 
-    /*
-    numarg = 3;
-    for (int i = 3; i < depends_on.Size(); i++)
-      {
-	cout << "i = " << i << endl;
-	numarg += depends_on[i]->Dimension();
-	cout << "numarg = " << numarg << endl;
-      }
-    */
     numarg = 3;
     for (int i = 0; i < depends_on.Size(); i++)
       numarg += depends_on[i]->Dimension();
@@ -191,6 +196,20 @@ namespace ngfem
       double val = fun[elind]->Eval (&args(0));
       return val;
     */
+  }
+
+  template <int DIM>
+  bool DomainVariableCoefficientFunction<DIM> :: IsComplex() const 
+  {
+    for (int i = 0; i < fun.Size(); i++)
+      if (fun[i]->IsResultComplex()) return true;
+    return false;
+  }
+  
+  template <int DIM>
+  int DomainVariableCoefficientFunction<DIM> :: Dimension() const
+  { 
+    return fun[0]->Dimension(); 
   }
 
 

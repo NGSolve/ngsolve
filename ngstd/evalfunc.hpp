@@ -12,6 +12,105 @@ namespace ngstd
 {
 
 
+
+
+  class GenericVariable 
+  {
+    int dim;
+    bool iscomplex;
+    double * data;
+  public:
+    GenericVariable (const GenericVariable & v2)
+    {
+      dim = v2.dim;
+      iscomplex = v2.iscomplex;
+      int hdim = iscomplex ? 2*dim : dim;
+      data = new double[hdim];
+      for (int j = 0; j < hdim; j++)
+        data[j] = v2.data[j];
+    }
+    GenericVariable (GenericVariable && v2)
+    {
+      cout << "move constr" << endl;
+      dim = v2.dim;
+      iscomplex = v2.iscomplex;
+      int hdim = iscomplex ? 2*dim : dim;
+      data = new double[hdim];
+      for (int j = 0; j < hdim; j++)
+        data[j] = v2.data[j];
+    }
+    GenericVariable (bool acomplex = false, int adim = 1)
+      : dim(adim), iscomplex(acomplex)
+    {
+      int hdim = iscomplex ? 2*dim : dim;
+      data = new double[hdim];
+    }
+    ~GenericVariable ()  
+    { 
+      delete [] data; 
+    }
+    GenericVariable & operator= (const GenericVariable & v2)
+    {
+      dim = v2.dim;
+      iscomplex = v2.iscomplex;
+      int hdim = iscomplex ? 2*dim : dim;
+      delete [] data;
+      data = new double[hdim];
+      for (int j = 0; j < hdim; j++)
+        data[j] = v2.data[j];
+      return *this;
+    }
+
+    int Dimension() const { return dim; }
+    bool IsComplex () const { return iscomplex; }
+
+    double & ValueDouble(int i = 0) { return data[i]; }
+    complex<double> & ValueComplex (int i = 0) 
+    { return reinterpret_cast<std::complex<double>*>(data)[i]; }
+    
+    const double & ValueDouble(int i = 0) const { return data[i]; }
+    const std::complex<double> & ValueComplex (int i = 0) const 
+    { return reinterpret_cast<complex<double>*>(data)[i]; }
+
+    
+    template <typename SCAL> SCAL Value (int i) const;
+  };
+
+  template<> 
+  inline double GenericVariable::Value<double> (int i) const 
+  { 
+    if (iscomplex) throw Exception ("Value<double> called for complex variable");
+    return data[i]; 
+  }
+  template<> 
+  inline std::complex<double> GenericVariable::Value<std::complex<double>> (int i) const 
+  { 
+    if (iscomplex)
+      return complex<double> (data[2*i], data[2*i+1]);
+    else
+      return complex<double> (data[i]);
+  }
+
+
+  inline ostream & operator<< (ostream & ost, const GenericVariable & var)
+  {
+    if (var.IsComplex())
+      for (int i = 0; i < var.Dimension(); i++)
+        ost << var.ValueComplex(i) << ", ";
+    else
+      for (int i = 0; i < var.Dimension(); i++)
+        ost << var.ValueDouble(i) << ", ";
+    return ost;
+  }
+
+
+
+
+
+
+
+
+
 /**
    Numerical expression parser.
    The expression is stored in reverse Polnish notation.
@@ -27,9 +126,9 @@ class NGS_DLL_HEADER EvalFunction
     ADD = '+', SUB = '-', MULT = '*', DIV = '/', LP ='(', RP = ')',
     COMMA = ',',
     NEG = 100, 
-    VEC_ADD, VEC_SUB, VEC_SCAL_MULT, SCAL_VEC_MULT, VEC_VEC_MULT, VEC_SCAL_DIV,
+    VEC_ADD, VEC_SUB, VEC_SCAL_MULT, SCAL_VEC_MULT, VEC_VEC_MULT, VEC_SCAL_DIV, VEC_ELEM, VEC_DIM,
     AND, OR, NOT, GREATER, LESS, GREATEREQUAL, LESSEQUAL, EQUAL,
-    CONSTANT, IMAG, VARIABLE, FUNCTION, GLOBVAR, /* COEFF_FUNC,*/ END, STRING,
+    CONSTANT, IMAG, VARIABLE, FUNCTION, GLOBVAR, GLOBGENVAR, /* COEFF_FUNC,*/ END, STRING,
     SIN, COS, TAN, ATAN, ATAN2, EXP, LOG, ABS, SIGN, SQRT, STEP,
     BESSELJ0, BESSELY0, BESSELJ1, BESSELY1
   };
@@ -52,6 +151,8 @@ public:
   void DefineConstant (const char * name, double val);
   /// define constant 
   void DefineGlobalVariable (const char * name, double * var);
+  /// define constant 
+  void DefineGlobalVariable (const char * name, GenericVariable * var);
   /// define arguments 
   void DefineArgument (const char * name, int num, int vecdim = 1, bool iscomplex = false);
 
@@ -102,6 +203,10 @@ public:
   void AddGlobVariable (const double * dp)
   { program.Append (step(dp)); }
 
+  /// push pointer to global double value.
+  void AddGlobVariable (const GenericVariable * dp)
+  { program.Append (step(dp)); }
+
   /// push operation. 
   void AddOperation (EVAL_TOKEN op)
   { program.Append (step(op)); }
@@ -127,6 +232,8 @@ protected:
       double val;
       /// a pointer to a global variable
       const double *globvar;
+      /// a pointer to a global variable
+      const GenericVariable *globgenvar;
       /// the input argument number varnum
       int varnum;
       /// a pointer to a unary function
@@ -162,6 +269,12 @@ protected:
     { 
       op = GLOBVAR;
       operand.globvar = aglobvar;
+    }
+
+    step (const GenericVariable * aglobvar)
+    { 
+      op = GLOBGENVAR;
+      operand.globgenvar = aglobvar;
     }
 
     step (double (*fun) (double))
@@ -214,6 +327,7 @@ protected:
   bool var_iscomplex;
   ///
   double * globvar;
+  GenericVariable * globgenvar;
   streampos lastpos;
 
   typedef double(*TFUNP) (double);
@@ -225,6 +339,8 @@ protected:
 
   /// registerd variables
   SymbolTable<double*> globvariables;
+  /// registerd variables
+  SymbolTable<GenericVariable*> genericvariables;
   
 public:
   /// the arguments passed to the function
@@ -276,7 +392,7 @@ public:
     return x.real();
   }
 
-  double Abs (double x) const { return fabs(x); }
+  double Abs (double x) const { return std::fabs(x); }
   double Abs (complex<double> x) const { return abs(x); }
 };
 

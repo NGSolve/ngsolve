@@ -305,6 +305,11 @@ namespace ngcomp
 
     /// reconstruct internal dofs
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const = 0;
+
+    /// modify rhs due to static condensation
+    virtual void ModifyRHS (BaseVector & f) const = 0;
+  
+
   
     /// add eps I to the assembled matrix
     void SetEpsRegularization(double val) { eps_regularization = val; }
@@ -435,6 +440,8 @@ namespace ngcomp
     virtual double Energy (const BaseVector & x) const;
 
     virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const;
+
+    virtual void ModifyRHS (BaseVector & fd) const;
 
     ///
     virtual void DoAssemble (LocalHeap & lh);

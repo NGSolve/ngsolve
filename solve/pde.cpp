@@ -25,7 +25,7 @@ namespace ngsolve
   {
     levelsolved = -1;
     SetGood (true);
-
+    pc = 0;
     constant_table_for_FEM = &constants;
 
     AddVariable ("timing.level", 0.0, 6);
@@ -188,6 +188,8 @@ namespace ngsolve
       ost << "string constant " << string_constants.GetName(i) << " = " << string_constants[i] << endl;
     for (int i = 0; i < variables.Size(); i++)
       ost << "variable " << variables.GetName(i) << " = " << variables[i] << endl;
+    for (int i = 0; i < generic_variables.Size(); i++)
+      ost << "variable " << generic_variables.GetName(i) << " = " << generic_variables[i] << endl;
 
     ost << endl;
   
@@ -487,11 +489,7 @@ namespace ngsolve
   void PDE :: Solve ()
   {
     static Timer timer("Solver - Total");
-    static Timer t1("Solver - begin");
-    static Timer t2("Solver - end");
-
     RegionTimer reg (timer);
-    t1.Start();
 
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
@@ -504,7 +502,6 @@ namespace ngsolve
       AddConstant ("numthreads", omp_get_max_threads());      
     heapsize *= omp_get_max_threads();
 #endif
-    
 
     LocalHeap lh(heapsize, "PDE - main heap");
 
@@ -512,71 +509,75 @@ namespace ngsolve
 
     MyMPI_Barrier();
 
-    static Timer meshtimer("Mesh adaption");
-    meshtimer.Start();
-    
-    if (levelsolved >= 0)
+    if (pc == 0 || pc == todo.Size())
       {
-	if (constants.Used ("refinehp"))
-	  Ng_Refine(NG_REFINE_HP);
-	else if (constants.Used ("refinep"))
-	  Ng_Refine(NG_REFINE_P);
-	else
-	  Ng_Refine(NG_REFINE_H);
-      }
-
-    if (constants.Used ("secondorder"))
-      throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
+        pc = 0;
+        static Timer meshtimer("Mesh adaption");
+        meshtimer.Start();
+    
+        if (levelsolved >= 0)
+          {
+            if (constants.Used ("refinehp"))
+              Ng_Refine(NG_REFINE_HP);
+            else if (constants.Used ("refinep"))
+              Ng_Refine(NG_REFINE_P);
+            else
+              Ng_Refine(NG_REFINE_H);
+          }
+        
+        if (constants.Used ("secondorder"))
+          throw Exception ("secondorder is obsolete \n Please use  'define constant geometryorder = 2' instead");
 	
-    if (constants.Used ("hpref") && levelsolved == -1)
-      {
-        double geom_factor = constants.Used("hpref_geom_factor") ? 
-          constants["hpref_geom_factor"] : 0.125;
-        bool setorders = !constants.Used("hpref_setnoorders");
-
-        Ng_HPRefinement (int (constants["hpref"]), geom_factor, setorders);
-        /*
-	if( constants.Used("hpref_setnoorders") )
-	  {
-	    if( constants.Used("hpref_geom_factor")) 
+        if (constants.Used ("hpref") && levelsolved == -1)
+          {
+            double geom_factor = constants.Used("hpref_geom_factor") ? 
+              constants["hpref_geom_factor"] : 0.125;
+            bool setorders = !constants.Used("hpref_setnoorders");
+            
+            Ng_HPRefinement (int (constants["hpref"]), geom_factor, setorders);
+            /*
+              if( constants.Used("hpref_setnoorders") )
+              {
+              if( constants.Used("hpref_geom_factor")) 
 	      Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"],false);
-	    else
+              else
 	      Ng_HPRefinement (int (constants["hpref"]),0.125 ,false);
-	  }
-	else
-	  {
-	    if( constants.Used("hpref_geom_factor")) 
+              }
+              else
+              {
+              if( constants.Used("hpref_geom_factor")) 
 	      Ng_HPRefinement (int (constants["hpref"]),constants["hpref_geom_factor"]);
-	    else
+              else
 	      Ng_HPRefinement (int (constants["hpref"]));
-	  }
-        */
+              }
+            */
+          }
+        
+        int geometryorder = 1;
+        if (constants.Used ("geometryorder"))
+          geometryorder = int (constants["geometryorder"]);
+        
+        bool rational = false;
+        if (constants.Used ("rationalgeometry"))
+          rational = bool (constants["rationalgeometry"]);
+        
+        
+        if (constants.Used("common_integration_order"))
+          {
+            cout << IM(1) << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
+            Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
+          }
+
+        if (geometryorder > 1)
+          Ng_HighOrder (geometryorder, rational);
+        
+        meshtimer.Stop();
+        
+        for (int i = 0; i < mas.Size(); i++)
+          mas[i]->UpdateBuffers();   // update global mesh infos
       }
 
-    
-    int geometryorder = 1;
-    if (constants.Used ("geometryorder"))
-      geometryorder = int (constants["geometryorder"]);
 
-    bool rational = false;
-    if (constants.Used ("rationalgeometry"))
-      rational = bool (constants["rationalgeometry"]);
-
-
-    if (constants.Used("common_integration_order"))
-      {
-	cout << IM(1) << " !!! comminintegrationorder = " << int (constants["common_integration_order"]) << endl;
-	Integrator::SetCommonIntegrationOrder (int (constants["common_integration_order"]));
-      }
-
-    if (geometryorder > 1)
-      Ng_HighOrder (geometryorder, rational);
-
-
-    meshtimer.Stop();
-    
-    for (int i = 0; i < mas.Size(); i++)
-      mas[i]->UpdateBuffers();   // update global mesh infos
 
     cout << IM(1) << "Solve at level " << mas[0]->GetNLevels()-1
 	 << ", NE = " << mas[0]->GetNE() 
@@ -594,21 +595,20 @@ namespace ngsolve
 				     *mas[0],
 				     *CurvePointIntegrators[i]);
 		    
-    t1.Stop();
 
-    for(int i = 0; i < todo.Size(); i++)
+    for(  ; pc < todo.Size(); pc++)
       {
-	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[i]);
-	FESpace * fes = dynamic_cast<FESpace *>(todo[i]);
-	GridFunction * gf = dynamic_cast<GridFunction *>(todo[i]);
-	BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[i]);
-	LinearForm * lf = dynamic_cast<LinearForm *>(todo[i]);
-	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[i]);
-	NumProc * np = dynamic_cast<NumProc *>(todo[i]);
+	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[pc]);
+	FESpace * fes = dynamic_cast<FESpace *>(todo[pc]);
+	GridFunction * gf = dynamic_cast<GridFunction *>(todo[pc]);
+	BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[pc]);
+	LinearForm * lf = dynamic_cast<LinearForm *>(todo[pc]);
+	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[pc]);
+	NumProc * np = dynamic_cast<NumProc *>(todo[pc]);
         
         try
           {
-            RegionTimer timer(todo[i]->GetTimer());
+            RegionTimer timer(todo[pc]->GetTimer());
             HeapReset hr(lh);
 
             if (ev)
@@ -684,36 +684,30 @@ namespace ngsolve
 		np->Do(lh);
 	      }
 
-            else if (dynamic_cast<const LabelStatement*> (todo[i]))
+            else if (dynamic_cast<const LabelStatement*> (todo[pc]))
               {
                 cout << IM(1)
-                     << dynamic_cast<const LabelStatement*>(todo[i])->GetLabel() << endl;
+                     << dynamic_cast<const LabelStatement*>(todo[pc])->GetLabel() << endl;
               }
 
-            else if (dynamic_cast<const GotoStatement*> (todo[i]))
+            else if (dynamic_cast<const GotoStatement*> (todo[pc]))
               {
-                /*
-                int target = 
-                  dynamic_cast<const GotoStatement*>(todo[i])->GetTarget();
-                cout << "goto " << target << endl;
-                i = target; // jump to i
-                */
                 const GotoStatement * statement =
-                  dynamic_cast<const GotoStatement*>(todo[i]);
+                  dynamic_cast<const GotoStatement*>(todo[pc]);
                 string target = statement -> GetTarget();
                 for (int j = 0; j < todo.Size(); j++)
                   {
                     const LabelStatement * lst = 
                       dynamic_cast<const LabelStatement*> (todo[j]);
                     if (lst && lst->GetLabel() == target)
-                      i = j-1;
+                      pc = j-1;
                   }
               }
 
-            else if (dynamic_cast<const ConditionalGotoStatement*> (todo[i]))
+            else if (dynamic_cast<const ConditionalGotoStatement*> (todo[pc]))
               {
                 const ConditionalGotoStatement * statement =
-                  dynamic_cast<const ConditionalGotoStatement*>(todo[i]);
+                  dynamic_cast<const ConditionalGotoStatement*>(todo[pc]);
                 string target = statement -> GetTarget();
                 
                 if (statement->EvaluateCondition())
@@ -722,10 +716,13 @@ namespace ngsolve
                       const LabelStatement * lst = 
                         dynamic_cast<const LabelStatement*> (todo[j]);
                       if (lst && lst->GetLabel() == target)
-                        i = j-1;
+                        pc = j-1;
                     }
               }
-            
+            else if (dynamic_cast<const StopStatement*> (todo[pc]))
+              {
+                pc = todo.Size()-1;
+              }            
             else
               cerr << "???????????????" << endl;
           }
@@ -735,8 +732,8 @@ namespace ngsolve
           {
             throw Exception (string(e.what()) + 
                              "\nthrown by update " 
-                             + todo[i]->GetClassName() + " "
-                             + todo[i]->GetName());
+                             + todo[pc]->GetClassName() + " "
+                             + todo[pc]->GetName());
           }
 #ifdef _MSC_VER
 # ifndef MSVC_EXPRESS
@@ -746,17 +743,17 @@ namespace ngsolve
             e->GetErrorMessage(msg, 255);
             throw Exception (msg + 
                              string ("\nthrown by update ")
-                             + todo[i]->GetClassName() + " "
-                             + todo[i]->GetName());
+                             + todo[pc]->GetClassName() + " "
+                             + todo[pc]->GetName());
           }
 # endif // MSVC_EXPRESS
 #endif
         catch (Exception & e)
           {
             e.Append ("\nthrown by update ");
-            e.Append (todo[i]->GetClassName());
+            e.Append (todo[pc]->GetClassName());
             e.Append (" ");
-            e.Append (todo[i]->GetName());
+            e.Append (todo[pc]->GetName());
             throw;
           }
         
@@ -777,14 +774,10 @@ namespace ngsolve
       if(!linearforms[i]->SkipCleanUp())
 	linearforms[i]->CleanUpLevel();
 
-    t2.Start();
-	  
-
     // set solution data
     // for (int i = 0; i < gridfunctions.Size(); i++)
     //   gridfunctions[i]->Visualize(gridfunctions.GetName(i));
 
-    t2.Stop();
 
     Ng_Redraw();
     levelsolved++;
@@ -1054,7 +1047,7 @@ namespace ngsolve
  
     GridFunction * gf = CreateGridFunction (space, name, flags);
 
-    AddGridFunction (name, gf, flags.GetDefineFlag ("addcoef"));
+    AddGridFunction (name, gf, true); // flags.GetDefineFlag ("addcoef"));
     return gf;
   }
 

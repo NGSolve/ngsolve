@@ -7,6 +7,9 @@
 /* Date:   08. Jul. 2000                                             */
 /*********************************************************************/
 
+
+// #include <../ngstd/evalfunc.hpp>
+
 namespace ngsolve
 {
 
@@ -15,28 +18,29 @@ namespace ngsolve
   {
   private:
     double * variable;
-    EvalFunction evaluator;
+    EvalFunction * evaluator;
   public:
-    EvalVariable(const MeshAccess & ama, const string & aname)
-      : NGS_Object(ama,aname), variable(NULL)
+    EvalVariable(const MeshAccess & ama, const string & aname,
+                 EvalFunction * aevaluator)
+      : NGS_Object(ama,aname), variable(NULL), evaluator(aevaluator)
     { ; }
       
     void SetVariable(double & avariable)
     { 
       variable = &avariable; 
     }
-    
+    /*
     EvalFunction & GetEvaluator(void)
     {
       return evaluator;
     }
-
-    double Evaluate(void)
+    */
+    double Evaluate()
     {
       if(variable)
-	return *variable = evaluator.Eval((double*)(0));
+	return *variable = evaluator->Eval((double*)(0));
       else
-	return evaluator.Eval((double*)(0));
+	return evaluator->Eval((double*)(0));
     }
 
     virtual string GetClassName () const
@@ -45,6 +49,7 @@ namespace ngsolve
     }
  
   };
+
 
 
   class LabelStatement : public NGS_Object
@@ -102,7 +107,13 @@ namespace ngsolve
     }
   };
 
-
+  class StopStatement : public NGS_Object
+  {
+  public:
+    StopStatement(const MeshAccess & ama, const string & aname)
+      : NGS_Object(ama,aname) 
+    { ; }
+  };
 
 
   void BuildLineIntegratorCurvePoints ( const string filename,
@@ -134,6 +145,8 @@ namespace ngsolve
     SymbolTable<string*> string_constants;
     ///
     SymbolTable<double*> variables;
+    ///
+    SymbolTable<GenericVariable> generic_variables;
     ///
     Array<EvalVariable*> evaluators;
     ///
@@ -170,7 +183,8 @@ namespace ngsolve
 
     string evaluatefiles;
 
-
+    /// program counter
+    int pc;  
 
     /// a hack 
     Tcl_Interp * tcl_interpreter;
@@ -314,6 +328,10 @@ namespace ngsolve
     ///
     SymbolTable<double*> & GetVariableTable ()
     { return variables; }
+
+    SymbolTable<GenericVariable> & GenericVariables() { return generic_variables; }
+    const SymbolTable<GenericVariable> & GenericVariables() const { return generic_variables; }
+
     ///
     SymbolTable<CoefficientFunction*> & GetCoefficientTable ()
     { return coefficients; }
@@ -349,8 +367,8 @@ namespace ngsolve
     ///
     void SetGood (bool agood) { isgood = agood; }
   
-
-
+    int GetPC() const { return pc; }
+    
   
     string GetMatfile() const
     { return matfile;} 

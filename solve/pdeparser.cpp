@@ -17,24 +17,20 @@ namespace ngsolve
 
   enum TOKEN_TYPE 
     { 
-      UNDEF = 0,
-      NUMBER = 1, 
-      STRING = 2,
-      END = 3,  
+      UNDEF = 0, NUMBER = 1, STRING = 2, END = 3,  
   
-      PLUS = '+', 
-      MINUS = '-', 
+      PLUS = '+', MINUS = '-', 
       MUL = '*', DIV = '/',
       LP = '(', RP = ')', EQUAL = '=', COMMA = ',',
       LSB = '[', RSB = ']',
       COMMENT = '#',
       KW_DEFINE = 100, KW_GEOMETRY, KW_MESH, KW_SHARED,
       KW_CONSTANT, KW_VARIABLE, KW_COEFFICIENT, KW_FESPACE, KW_GRIDFUNCTION, 
-      KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, KW_BEMELEMENT,
+      KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, 
       KW_INTEGRATOR = 200, KW_NUMPROC_ID,
       KW_NUMPROC = 300, 
       KW_MATFILE,
-      KW_LABEL = 1000, KW_GOTO, KW_IF
+      KW_LABEL = 1000, KW_GOTO, KW_IF, KW_STOP
     };
 
   
@@ -56,15 +52,14 @@ namespace ngsolve
       { KW_FESPACE,     "fespace" },
       { KW_GRIDFUNCTION, "gridfunction" },
       { KW_BILINEARFORM, "bilinearform" },
-      { KW_BEMELEMENT,  "bemelement" },
       { KW_LINEARFORM,  "linearform" },
       { KW_PRECONDITIONER, "preconditioner" },
       { KW_NUMPROC,     "numproc" },
       { KW_MATFILE,     "matfile"},
       { KW_LABEL,       "label"},
       { KW_GOTO,        "goto"},
+      { KW_STOP,        "stop"},
       { KW_IF,          "if"},
-      // { KW_OVERLAP,     "overlap"},
       { TOKEN_TYPE(0) }
     };
 
@@ -145,7 +140,6 @@ namespace ngsolve
     for (int i = 0; i < nps.GetNumProcs().Size(); i++)
       numprocs.Set (nps.GetNumProcs()[i]->name, 1);
 
-
     HandleStringConstants();
     scanin = new stringstream(copy_of_stream);
   }
@@ -155,11 +149,11 @@ namespace ngsolve
     delete scanin;
   }
 
+  // replace $(variable)
   void PDEScanner :: HandleStringConstants(void)
   {
     copy_of_stream = "";
     char ch;
-
 
     while(!scanin->eof())
       {
@@ -167,9 +161,6 @@ namespace ngsolve
 	if(!scanin->eof())
 	  copy_of_stream += ch;
       }
-
-
-
 
     int argc;
     char ** argv;
@@ -275,7 +266,6 @@ namespace ngsolve
 	  }
       }
   }
-
 
 
 
@@ -387,6 +377,7 @@ namespace ngsolve
 		{
 		  string_value += ch;
                   scanin->get(ch);
+                  // if (scanin->eof()) break;
 		}
 	      scanin->putback (ch);
 
@@ -460,8 +451,10 @@ namespace ngsolve
 
   class PDEEvalFunction : public EvalFunction
   {
+    PDE & pde;
   public:
-    PDEEvalFunction (PDE & pde)
+    PDEEvalFunction (PDE & apde)
+      : pde(apde)
     {
       for (int i = 0; i < pde.GetConstantTable().Size(); i++)
         DefineConstant (pde.GetConstantTable().GetName(i),
@@ -469,7 +462,42 @@ namespace ngsolve
       for (int i = 0; i < pde.GetVariableTable().Size(); i++)
         DefineGlobalVariable (pde.GetVariableTable().GetName(i),
                               pde.GetVariableTable()[i]);
+      for (int i = 0; i < pde.GenericVariables().Size(); i++)
+        DefineGlobalVariable (pde.GenericVariables().GetName(i),
+                              &pde.GenericVariables()[i]);
     }
+
+    bool Parse (istream & aist, Array<CoefficientFunction*> & depends)
+    {
+      for (int i = 0; i < pde.GetCoefficientTable().Size(); i++)
+        DefineArgument (pde.GetCoefficientTable().GetName(i),-1,
+                        pde.GetCoefficientTable()[i]->Dimension(),
+                        pde.GetCoefficientTable()[i]->IsComplex());
+      
+
+      bool ok = EvalFunction::Parse(aist);
+
+      
+      int tot = 3;
+      for (int i = 0; i < pde.GetCoefficientTable().Size(); i++)
+        tot += pde.GetCoefficientTable()[i]->Dimension();
+      Array<const char*> names(tot);
+      names = NULL;
+      for (int i = 0; i < arguments.Size(); i++)
+        {
+          int num = arguments[i].argnum;
+          if (num >= 3)
+            names[num] = arguments.GetName(i);
+        }
+      for (int i = 0; i < names.Size(); i++)
+        if (names[i])
+          {
+            cout << "depend on " << names[i] << endl;
+            depends.Append (pde.GetCoefficientTable()[names[i]]);
+          }
+      return ok;
+    }
+
   };
 
 
@@ -494,11 +522,7 @@ namespace ngsolve
 	  case KW_GEOMETRY:
 	    {
 	      scan->ReadNext();
-	      if (scan->GetToken() != '=')
-		{
-		  //cout << "Got Token: " << scan->GetToken() << endl;
-		  scan->Error ("Expected =");
-		}
+	      if (scan->GetToken() != '=') scan->Error ("Expected =");
 	      scan->ReadNext();
 	      	      
 	      string geofile = pde->GetDirectory()+dirslash+scan->GetStringValue();
@@ -522,12 +546,8 @@ namespace ngsolve
 	  case KW_MESH:
 	    {
 	      scan->ReadNext();
-	      if (scan->GetToken() != '=')
-		scan->Error ("Expected '='");
+	      if (scan->GetToken() != '=') scan->Error ("Expected '='");
 	      scan->ReadNext();
-
-	      // cout << "Load Mesh from File " << scan->GetStringValue() << endl;
-	      // Ng_LoadMesh ((char*)scan->GetStringValueC());
 
 	      string meshfile = pde->GetDirectory()+dirslash+scan->GetStringValue();
 	      pde->SetMeshFileName(meshfile);
@@ -536,7 +556,6 @@ namespace ngsolve
                   if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-                      //pde->GetMeshAccess().LoadMesh (meshfile);
                       MeshAccess * ma = new MeshAccess;
                       ma -> LoadMesh (meshfile);
                       pde -> AddMeshAccess(ma);
@@ -544,11 +563,9 @@ namespace ngsolve
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-
                       MeshAccess * ma = new MeshAccess;
                       ma -> LoadMesh (scan->GetStringValue());
                       pde -> AddMeshAccess(ma);
-                      // pde->GetMeshAccess().LoadMesh (scan->GetStringValue());
 		    }
 		}
 
@@ -567,13 +584,11 @@ namespace ngsolve
 	  case KW_SHARED:
 	    {
 	      scan->ReadNext();
-	      if (scan->GetToken() != '=')
-		scan->Error ("Expected '='");
+	      if (scan->GetToken() != '=') scan->Error ("Expected '='");
 	      scan->ReadNext();
 		  
-		  string shared = scan->GetStringValue();
+              string shared = scan->GetStringValue();
 	      scan->ReadNext();
-
 
 #ifdef HAVE_DLFCN_H 
 	      shared += ".so";
@@ -598,15 +613,13 @@ namespace ngsolve
                   throw Exception (err.str());
 		}
 #endif
-
               break;
             }
 	    
 	  case KW_MATFILE:
 	    {
 	      scan->ReadNext();
-	      if (scan->GetToken() != '=')
-		scan->Error ("Expected '='");
+	      if (scan->GetToken() != '=') scan->Error ("Expected '='");
 	      scan->ReadNext();
 	      
 	      string matfile  = scan->GetStringValue();
@@ -695,14 +708,6 @@ namespace ngsolve
           case KW_IF:
             {
               EvalFunction * fun = new PDEEvalFunction(*pde);
-              /*
-              for (int i = 0; i < pde->GetConstantTable().Size(); i++)
-                fun->DefineConstant (pde->GetConstantTable().GetName(i),
-                                                   pde->GetConstantTable()[i]);
-              for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-                fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-                                           pde->GetVariableTable()[i]);
-              */
               fun->Parse (*scan->scanin);
               
               scan -> ReadNext();
@@ -716,8 +721,12 @@ namespace ngsolve
               break;
             }
 
-
-
+          case KW_STOP:
+            {
+              scan -> ReadNext();
+              pde -> AddControlStatement (new StopStatement (pde->GetMeshAccess(), "dummy"));
+              break;
+            }
 
 	  default:
 	    {
@@ -728,8 +737,9 @@ namespace ngsolve
                   double & var = pde->GetVariable(scan->GetStringValue());
                   scan -> ReadNext(); // '='
 
-                  EvalVariable * ev = new EvalVariable (pde->GetMeshAccess(), scan->GetStringValue());
-                  ev -> SetVariable (var);
+                  EvalFunction * fun = new PDEEvalFunction (*pde);
+                  fun -> Parse (*scan->scanin);
+                  /*
                   for (int i = 0; i < pde->GetConstantTable().Size(); i++)
                     ev->GetEvaluator().DefineConstant (pde->GetConstantTable().GetName(i),
                                                         pde->GetConstantTable()[i]);
@@ -737,10 +747,47 @@ namespace ngsolve
                     ev->GetEvaluator().DefineGlobalVariable (pde->GetVariableTable().GetName(i),
                                                               pde->GetVariableTable()[i]);
                   ev -> GetEvaluator().Parse (*scan->scanin);
-
+                  */
+                  
+                  EvalVariable * ev = new EvalVariable (pde->GetMeshAccess(), scan->GetStringValue(), fun);
+                  ev -> SetVariable (var);
                   pde -> AddVariableEvaluation (ev);
                   scan->ReadNext();
                 }
+              
+              else if (scan -> GetToken() == STRING &&
+                       pde -> GetGridFunctionTable().Used (scan->GetStringValue()))
+                {
+                  cout << "add GridFunction assignment" << endl;
+                  string gfname = scan->GetStringValue();
+                  GridFunction * gf = pde->GetGridFunction(gfname);
+                  scan -> ReadNext(); // '='
+
+                  PDEEvalFunction * fun = new PDEEvalFunction(*pde);
+                  Array<CoefficientFunction*> depends;
+                  fun->Parse (*scan->scanin, depends);
+                  scan -> ReadNext();
+                  cout << "set gridfunction " << gf -> GetName() << " to evalfunction ";
+
+                  static int cnt = 0;
+                  cnt++;
+                  string coefname = "assigncoef" + ToString(cnt);
+		  if (pde->GetMeshAccess().GetDimension() == 2)
+		    pde->AddCoefficientFunction
+		      (coefname, new DomainVariableCoefficientFunction<2>(*fun, depends));
+		  else
+		    pde->AddCoefficientFunction
+		      (coefname, new DomainVariableCoefficientFunction<3>(*fun, depends));
+                  
+                  Flags flags = ParseFlags();
+                  flags.SetFlag ("gridfunction", gfname.c_str());
+                  flags.SetFlag ("coefficient", coefname.c_str());
+
+                  string npname = "assignnp" + ToString(cnt);
+                  pde -> AddNumProc (npname, GetNumProcs().GetNumProc("setvalues", pde->GetMeshAccess().GetDimension())
+                                     -> creator (*pde, flags));
+                }
+
               
               else
                 {
@@ -793,16 +840,9 @@ namespace ngsolve
               scan->GetToken() == MINUS)
 	    {
 	      EvalFunction * fun = new PDEEvalFunction (*pde);
-              /*
-	      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
-		fun->DefineConstant (pde->GetConstantTable().GetName(i),
-				     pde->GetConstantTable()[i]);
-	      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-		fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-					   pde->GetVariableTable()[i]);
-              */
               scan->WriteBack();
 	      fun->Parse (*scan->scanin);
+
 	      if (fun->IsConstant())
 		val = fun->Eval ((double*)(0));
 	      else
@@ -853,6 +893,35 @@ namespace ngsolve
 
 	  double val = 0;
 	  
+          EvalFunction * fun = new PDEEvalFunction(*pde);
+          scan->WriteBack();
+          fun->Parse (*scan->scanin);
+
+          // cout << "function parsing complete, fun = ";
+          // fun->Print(cout);
+          // cout << endl;
+
+          if (! fun -> IsResultComplex() && fun->Dimension() == 1)
+            {
+              if (fun->IsConstant())
+                pde->AddVariable (name, fun->EvalConstant(), 1);
+              else
+                pde->AddVariable (name, new EvalVariable (pde->GetMeshAccess(), name, fun));
+            }
+          else
+            {
+              GenericVariable var (fun->IsResultComplex(), fun->Dimension());
+              if (var.IsComplex())
+                fun -> Eval ( (Complex*)NULL, &var.ValueDouble(), var.Dimension());
+              else
+                fun -> Eval ( (double*)NULL, &var.ValueDouble(), var.Dimension());
+              
+              cout << "generic variable " << name << " = " << var << endl;
+              pde->GenericVariables().Set(name, var);
+            }
+	  scan->ReadNext();
+
+          /*
 	  EvalVariable * eval = NULL;
 
 	  if (scan->GetToken() == LP)
@@ -884,6 +953,7 @@ namespace ngsolve
 	  else
 	    pde->AddVariable (name, val, 1);
 	  scan->ReadNext();
+          */
 	  break;
 	}
 
@@ -1234,7 +1304,7 @@ namespace ngsolve
 			fun->DefineArgument (pde->GetCoefficientTable().GetName(i),-1,
 					     pde->GetCoefficientTable()[i]->Dimension(),
 					     pde->GetCoefficientTable()[i]->IsComplex());
-
+                      
                       scan->WriteBack();
 		      fun->Parse (*scan->scanin);
 		      coeffs.Append (fun);
@@ -1358,7 +1428,6 @@ namespace ngsolve
 		      names = NULL;
 		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
 			{
-			  string name = coeffs[0]->arguments.GetName(i);
 			  int num = coeffs[0]->arguments[i].argnum;
 			  if (num >= 3)
 			    names[num] = coeffs[0]->arguments.GetName(i);
@@ -1369,21 +1438,6 @@ namespace ngsolve
 			    cout << "depend on " << names[i] << endl;
 			    depends.Append (pde->GetCoefficientTable()[names[i]]);
 			  }
-		      
-		      /*
-		      for (int i = 0; i < coeffs[0]->arguments.Size(); i++)
-			{
-			  string name = coeffs[0]->arguments.GetName(i);
-			  int num = coeffs[0]->arguments[i].argnum;
-			  if (num >= 3)
-			    depends[num] = pde->GetCoefficientTable()[name];
-			}
-
-		      while (depends.Size() && !depends.Last())
-			depends.SetSize(depends.Size()-1);
-		      */
-
-		      // cout << "depends = " << endl << depends << endl;
 		    }
 
 		  if (pde->GetMeshAccess().GetDimension() == 2)
@@ -1469,14 +1523,8 @@ namespace ngsolve
 			  coeffs[i] = pde->GetCoefficientFunction (scan->GetStringValue(), 1);
 			  if (!coeffs[i])
 			    {
-                              /*
-			      T_GridFunction<double> * gf = 
-				dynamic_cast<T_GridFunction<double>*> (pde->GetGridFunction (scan->GetStringValue(), 1));
-                              */
-                              GridFunction * gf = 
-                                pde->GetGridFunction (scan->GetStringValue(), 1);
-			      if (gf)
-                                coeffs[i] = new GridFunctionCoefficientFunction (*gf);
+                              GridFunction * gf = pde->GetGridFunction (scan->GetStringValue(), 1);
+			      if (gf) coeffs[i] = new GridFunctionCoefficientFunction (*gf);
 			    }
 
                           if (!coeffs[i])
@@ -1858,7 +1906,6 @@ namespace ngsolve
 	  break;
 	}
 
-
       case KW_PRECONDITIONER:
 	{
 	  scan->ReadNext();
@@ -1873,23 +1920,6 @@ namespace ngsolve
 
 	  break;	
 	}
-
-
-	/*
-      case KW_BEMELEMENT:
-	{
-	  scan->ReadNext();
-	  string name = scan->GetStringValue ();
-
-	  scan->ReadNext();
-	  Flags flags;
-
-	  CheckFlags (flags);
-	  pde->AddBEMElement (name, flags);
-
-	  break;
-	}
-	*/
 
       case STRING:
 	{
