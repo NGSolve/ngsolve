@@ -135,6 +135,7 @@ AC_DEFINE(SVN_REVISION, "svnversion", [SVN Revision])
 define([builddate], esyscmd([sh -c "date|tr -d '\n'"]))dnl
 AC_DEFINE(BUILDDATE, "builddate", [build date])
 
+AC_SUBST(GOLD_INCLUDE, -I$GOLD_INCLUDE)
 
 AC_CONFIG_HEADERS(config.h) 
 AC_CONFIG_FILES(Makefile include/Makefile
