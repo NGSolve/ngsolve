@@ -108,7 +108,7 @@ namespace ngfem
   class DummyFE : public FiniteElement
   {
   public:
-    INLINE DummyFE () : FiniteElement(0, 0) { ; }
+    /* INLINE */ DummyFE () : FiniteElement(0, 0) { ; }
     virtual ELEMENT_TYPE ElementType() const { return ET; }
   };
 

@@ -67,8 +67,8 @@ namespace ngfem
     static TPRECOMP_GRAD precomp_grad;
 
   public:
-    INLINE L2HighOrderFE () { ; }
-    INLINE L2HighOrderFE (int aorder)
+    /* INLINE */ L2HighOrderFE () { ; }
+    /* INLINE */ L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       order = aorder;
