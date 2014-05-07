@@ -35,7 +35,7 @@ namespace ngfem
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
-    INLINE H1HighOrderFEFO () 
+    /* INLINE */ H1HighOrderFEFO () 
     {
       order = ORDER;
       ndof = NDOF; 

@@ -60,9 +60,9 @@ namespace ngfem
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
 
   public:
-    INLINE HCurlHighOrderFE () { ; } 
+    /* INLINE */ HCurlHighOrderFE () { ; } 
 
-    INLINE HCurlHighOrderFE (int aorder) 
+    /* INLINE */ HCurlHighOrderFE (int aorder) 
     {
       order_edge = aorder;
       order_face = aorder;

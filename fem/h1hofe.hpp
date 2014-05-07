@@ -64,10 +64,10 @@ namespace ngfem
 
   public:
     /// minimal constructor, orders will be set later
-    INLINE H1HighOrderFE () { ; } 
+    /* INLINE */ H1HighOrderFE () { ; } 
 
     /// builds a functional element of order aorder.
-    INLINE H1HighOrderFE (int aorder)
+    /* INLINE */ H1HighOrderFE (int aorder)
     { 
       ndof = PolDimension (aorder);
       
