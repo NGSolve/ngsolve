@@ -354,15 +354,21 @@ namespace ngsolve
     double starttime, endtime;
     starttime = WallTime(); // clock();
 
+
+    BaseVector & hv = *vecu.CreateVector();
     if (solver != DIRECT)
-      invmat->Mult (vecf, vecu);
+      {
+	hv = vecf;
+        bfa->ModifyRHS (hv);
+        invmat->Mult (hv, vecu);
+      }
     else 
       {
-	BaseVector & hv = *vecu.CreateVector();
 	hv = vecf - mat * vecu;
+        bfa->ModifyRHS (hv);
 	vecu += (*invmat2) * hv;
-	delete &hv;
       }
+    delete &hv;
 
 
     ma.PopStatus ();

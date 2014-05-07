@@ -44,7 +44,8 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal"));
-    SetKeepInternal (flags.GetDefineFlag ("keep_internal"));
+    SetKeepInternal (eliminate_internal && 
+                     !flags.GetDefineFlag ("nokeep_internal"));
     SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
@@ -72,7 +73,7 @@ namespace ngcomp
     printelmat = false;
     elmat_ev = false;
     eliminate_internal = false;
-    keep_internal = false;
+    // keep_internal = false;
 
 
     SetGalerkin( flags.GetDefineFlag( "project" ) );
@@ -89,7 +90,8 @@ namespace ngcomp
 
     if (flags.GetDefineFlag ("timing")) SetTiming (1);
     if (flags.GetDefineFlag ("eliminate_internal")) SetEliminateInternal (1);
-    if (flags.GetDefineFlag ("keep_internal")) SetKeepInternal (1);
+    SetKeepInternal (eliminate_internal && 
+                     !flags.GetDefineFlag ("nokeep_internal"));
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
 
     precompute = flags.GetDefineFlag ("precompute");
@@ -901,6 +903,7 @@ namespace ngcomp
                 
                 // MPI_Barrier (MPI_COMM_WORLD);
 
+                /*
                 if (linearform && keep_internal)
                   {
                     cout << IM(3) << "\rmodifying condensated rhs";
@@ -910,7 +913,8 @@ namespace ngcomp
 
                     cout << IM(3) << "\t done" << endl;
                   }
-                
+                */
+
                 gcnt += ne;
               }
 
@@ -1618,6 +1622,13 @@ namespace ngcomp
   }
 
   
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: 
+  ModifyRHS (BaseVector & f) const
+  {
+    if (keep_internal)
+      f += GetHarmonicExtensionTrans() * f;
+  }
 
   template <class SCAL>
   void S_BilinearForm<SCAL> :: 
@@ -1635,15 +1646,10 @@ namespace ngcomp
 
         int ne = ma.GetNE();
 
-        bool hasinner = 0;
-
+        bool hasinner = false;
         for (int j = 0; j < NumIntegrators(); j++)
-          {
-            if (!parts[j] -> BoundaryForm())
-              hasinner = 1;
-          }       
+          if (!parts[j] -> BoundaryForm()) hasinner = true;
          
-        // clock_t prevtime = clock();
         if (hasinner)
           {
             if (keep_internal)
@@ -1658,16 +1664,6 @@ namespace ngcomp
                     fespace.GetDofNrs (i, dnums, LOCAL_DOF);            
                     FlatVector<SCAL> elu (dnums.Size(), clh);
                     elu = 0.0;
-                    
-                    /*
-                      u.GetIndirect (dnums, elu);
-                      if (L2Norm (elu) > 1e-8)
-                      {
-                      *testout << "loc u not 0" << endl;
-                      *testout << "dnums = " << dnums << endl;
-                      *testout << "loc u = " << endl << elu << endl;
-                      }
-                    */
                     u.SetIndirect (dnums, elu);
                   }
                 
@@ -1675,7 +1671,6 @@ namespace ngcomp
                   u += GetInnerSolve() * linearform -> GetVector();
                 else
                   u += GetInnerSolve() * f;
-                
                 
                 u += GetHarmonicExtension() * u;
                 cout << IM(1) << endl;

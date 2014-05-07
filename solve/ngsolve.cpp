@@ -431,6 +431,32 @@ int NGS_SolvePDE (ClientData clientData,
 }
 
 
+int NGS_EnterCommand (ClientData clientData,
+                      Tcl_Interp * interp,
+                      int argc, tcl_const char *argv[])
+{
+  cout << "Enter command: ";
+  string st;
+  char ch;
+  do
+    {
+      cin.get(ch);
+      st += ch;
+    }
+  while (ch != '\n');
+  cout << "command = " << st << endl;
+  if (pde)
+    {
+      stringstream sstream(st);
+      pde->LoadPDE (sstream);
+      pde->Solve ();
+      pde->PrintReport (*testout);
+    }
+
+  return TCL_OK;
+}
+
+
 
 
 int NGS_PrintPDE (ClientData clientData,
@@ -979,6 +1005,10 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (Tcl_CmdDeleteProc*) NULL);
 
   Tcl_CreateCommand (interp, "NGS_SolvePDE", NGS_SolvePDE,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+  Tcl_CreateCommand (interp, "NGS_EnterCommand", NGS_EnterCommand,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 

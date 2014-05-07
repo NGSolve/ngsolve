@@ -27,12 +27,10 @@ define coefficient surfaceloadz
 
 define fespace v -type=h1ho -dim=3 -order=3 
 define fespace vp -type=h1ho -dim=6 -order=2
-define fespace vmises  -type=h1ho -dim=1 -order=1
 define fespace verr -type=l2 -order=0
 
 define gridfunction u -fespace=v -nested #-addcoef
 define gridfunction p -fespace=vp
-define gridfunction mises -fespace=vmises
 define gridfunction error -fespace=verr
 
 define bilinearform a -fespace=v -symmetric
@@ -40,11 +38,6 @@ elasticity E nu
 robin transmissionbc -comp=1
 robin transmissionbc -comp=2
 robin transmissionbc -comp=3
-# robin bearingbc -normal
-# normalrobin bearingbc1 -definedon=1 
-# normalrobin bearingbc2 -definedon=2
-# normalrobin bearingbc3 -definedon=3 
-
 
 define linearform f -fespace=v
 neumann surfaceloadz -comp=3
@@ -72,13 +65,12 @@ define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=2
 
 
 numproc constrainedbvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=50 -constraints=[cnsty1,cnstz1,cnsty2,cnstz2,cnsty3,cnstz3]
-# numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200
-# ,cnsty2,cnsty3,cnstz1,cnstz2,cnstz3]
+
 numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
-# numproc calcfluxcomponent np2a -flux=p -comp=mises -mises
+numproc drawflux np2a -bilinearform=a -solution=u -label=stress -applyd
 
 numproc zzerrorestimator np3 -bilinearform=a -linearform=f -solution=u -error=error -flux=p
 numproc markelements np3a -error=error -factor=0.5 -minlevel=1 
 
-# numproc calcfluxcomponent np4  -flux=p -comp=mises -mises
+
 

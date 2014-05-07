@@ -721,7 +721,8 @@ namespace ngstd
           T * p = new T[nsize];
 	
           TSIZE mins = (nsize < size) ? nsize : size; 
-          memcpy (p, data, mins * sizeof(T));
+          // memcpy (p, data, mins * sizeof(T));
+          for (int i = 0; i < mins; i++) p[i] = data[i];
 
           if (ownmem) delete [] data;
           ownmem = 1;

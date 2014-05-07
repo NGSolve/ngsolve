@@ -11,6 +11,7 @@
 
 
 #include <ngstd.hpp>
+// #include <evalfunc.hpp>
 
 
 namespace ngstd
@@ -89,6 +90,11 @@ namespace ngstd
   void EvalFunction :: DefineGlobalVariable (const char * name, double * var)
   {
     globvariables.Set (name, var);
+  }
+
+  void EvalFunction :: DefineGlobalVariable (const char * name, GenericVariable * var)
+  {
+    genericvariables.Set (name, var);
   }
 
   void EvalFunction :: DefineArgument (const char * name, int num, int vecdim, bool iscomplex)
@@ -241,6 +247,25 @@ namespace ngstd
 	      break;
 	    }
 
+	  case VEC_ELEM:
+	    {
+	      int dim = program[i-1].vecdim;
+              int index = int(CheckReal (stack[stacksize]));
+              // cout << "vec_elem, dim = " << dim << ", index = " << index << endl;
+              stack[stacksize-dim] = stack[stacksize-dim+index-1];
+	      stacksize -= dim;
+	      break;
+	    }
+
+	  case VEC_DIM:
+	    {
+	      int dim = program[i-1].vecdim;
+              // cout << "dim = " << dim << endl;
+	      stacksize -= dim-1;
+              stack[stacksize]=dim;
+	      break;
+	    }
+
 	  case NEG:
 	    stack[stacksize] = -stack[stacksize];
 	    break;
@@ -324,6 +349,14 @@ namespace ngstd
 	  case GLOBVAR:
 	    stacksize++;
 	    stack[stacksize] = *program[i].operand.globvar;
+	    break;
+
+	  case GLOBGENVAR:
+            for (int j = 0; j < program[i].operand.globgenvar->Dimension(); j++)
+              {
+                stacksize++;
+                stack[stacksize] = program[i].operand.globgenvar->Value<TCALC>(j);
+              }
 	    break;
 
 	  case IMAG:
@@ -414,440 +447,6 @@ namespace ngstd
   }
 
 
-  /*
-  void EvalFunction :: Eval (const double * x, double * y, int ydim) const
-  {
-    ArrayMem<double, 100> stack(program.Size());
-
-    int stacksize = -1;
-    for (int i = 0; i < program.Size(); i++)
-      {
-	switch (program[i].op)
-	  {
-	  case ADD:
-	    stack[stacksize-1] += stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case SUB:
-	    stack[stacksize-1] -= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case MULT:
-	    stack[stacksize-1] *= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case DIV:
-	    stack[stacksize-1] /= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case VEC_ADD:
-	    {
-	      int dim = program[i].vecdim;
-	      for (int j = 0; j < dim; j++)
-		stack[stacksize-2*dim+j+1] += stack[stacksize-dim+j+1];
-	      stacksize -= dim;
-	      break;
-	    }
-
-	  case VEC_SUB:
-	    {
-	      int dim = program[i].vecdim;
-	      for (int j = 0; j < dim; j++)
-		stack[stacksize-2*dim+j+1] -= stack[stacksize-dim+j+1];
-	      stacksize -= dim;
-	      break;
-	    }
-
-	  case SCAL_VEC_MULT:
-	    {
-	      int dim = program[i].vecdim;
-	      double scal = stack[stacksize-dim];
-	      for (int j = 0; j < dim; j++)
-		stack[stacksize-dim+j] = scal * stack[stacksize-dim+j+1];
-	      stacksize--;
-	      break;
-	    }
-
-	  case NEG:
-	    stack[stacksize] = -stack[stacksize];
-	    break;
-
-	  case AND:
-	    if( ToBool (stack[stacksize-1]) && ToBool (stack[stacksize]))
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-	    
-	  case OR:
-	    if(stack[stacksize-1] > eps || stack[stacksize] > eps)
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-	    
-	  case NOT:
-	    if(stack[stacksize] > eps)
-	      stack[stacksize] = 0;
-	    else
-	      stack[stacksize] = 1;
-	    break;
-
-	  case GREATER:
-	    if(stack[stacksize-1] > stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case GREATEREQUAL:
-	    if(stack[stacksize-1] >= stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case EQUAL:
-	    if(std::fabs(stack[stacksize-1] - stack[stacksize]) < eps)
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case LESSEQUAL:
-	    if(stack[stacksize-1] <= stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case LESS:
-	    if(stack[stacksize-1] < stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case CONSTANT:
-	    stacksize++;
-	    stack[stacksize] = program[i].operand.val;
-	    break;
-
-	  case VARIABLE:
-	    stacksize++;
-	    stack[stacksize] = x[program[i].operand.varnum];
-	    break;
-
-	  case GLOBVAR:
-	    stacksize++;
-	    stack[stacksize] = *program[i].operand.globvar;
-	    break;
-
-	  case IMAG:
-	    throw Exception ("Real Eval called for Complex EvalFunction\n");
-
-	  case FUNCTION:
-	    stack[stacksize] = (*program[i].operand.fun) (stack[stacksize]);
-	    break;
-
-	  case SIN:
-	    stack[stacksize] = sin (stack[stacksize]);
-	    break;
-	  case COS:
-	    stack[stacksize] = cos (stack[stacksize]);
-	    break;
-	  case TAN:
-	    stack[stacksize] = tan (stack[stacksize]);
-	    break;
-	  case ATAN:
-	    stack[stacksize] = atan (stack[stacksize]);
-	    break;
-	  case ATAN2:
-	    stack[stacksize-1] = atan2(stack[stacksize-1],
-				       stack[stacksize]);
-	    stacksize--;
-	    break;
-	  case EXP:
-	    stack[stacksize] = exp (stack[stacksize]);
-	    break;
-	  case LOG:
-	    stack[stacksize] = log (stack[stacksize]);
-	    break;
-	  case ABS:
-	    stack[stacksize] = std::fabs (stack[stacksize]);
-	    break;
-	  case SIGN:
-	    if(stack[stacksize] > 0)
-	      stack[stacksize] = 1;
-	    else if(stack[stacksize] < 0)
-	      stack[stacksize] = -1;
-	    else
-	      stack[stacksize] = 0;
-	    break;
-	  case SQRT:
-	    stack[stacksize] = sqrt (stack[stacksize]);
-	    break;
-	  case STEP:
-	    stack[stacksize] = (stack[stacksize] >= 0) ? 1 : 0;
-	    break;
-	    
-	  case COMMA:
-	    break;
-
-	  case BESSELJ0:
-	    stack[stacksize] = bessj0 (stack[stacksize]);
-	    break;
-	  case BESSELJ1:
-	    stack[stacksize] = bessj1 (stack[stacksize]);
-	    break;
-	  case BESSELY0:
-	    stack[stacksize] = bessy0 (stack[stacksize]);
-	    break;
-	  case BESSELY1:
-	    stack[stacksize] = bessy1 (stack[stacksize]);
-	    break;
-
-	  default:
-	    cerr << "undefined operation for EvalFunction" << endl;
-	  }
-      }
-
-    if (stacksize != ydim-1)
-      {
-	cout << "final stacksize is " << stacksize+1 << ", but ydim is " << ydim << endl;
-	return;
-      }
-
-    for (int i = 0; i < ydim; i++)
-      y[i] = stack[i];
-  }
-  */
-
-
-#ifdef NONE
-  template <typename TIN>
-  void EvalFunction :: Eval (const TIN * x, complex<double> * y, int ydim) const
-  {
-    ArrayMem<complex<double>, 100> stack(program.Size());
-
-    int stacksize = -1;
-    for (int i = 0; i < program.Size(); i++)
-      {
-	switch (program[i].op)
-	  {
-	  case ADD:
-	    stack[stacksize-1] += stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case SUB:
-	    stack[stacksize-1] -= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case MULT:
-	    stack[stacksize-1] *= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case DIV:
-	    stack[stacksize-1] /= stack[stacksize];
-	    stacksize--;
-	    break;
-
-	  case NEG:
-	    stack[stacksize] = -stack[stacksize];
-	    break;
-
-	    /*
-	  case AND:
-	    if(stack[stacksize-1] > eps && stack[stacksize] > eps)
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-	    
-	  case OR:
-	    if(stack[stacksize-1] > eps || stack[stacksize] > eps)
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-	    
-	  case NOT:
-	    if(stack[stacksize] > eps)
-	      stack[stacksize] = 0;
-	    else
-	      stack[stacksize] = 1;
-	    break;
-
-	  case GREATER:
-	    if(stack[stacksize-1] > stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case GREATEREQUAL:
-	    if(stack[stacksize-1] >= stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case EQUAL:
-	    if(std::fabs(stack[stacksize-1] - stack[stacksize]) < eps)
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case LESSEQUAL:
-	    if(stack[stacksize-1] <= stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-
-	  case LESS:
-	    if(stack[stacksize-1] < stack[stacksize])
-	      stack[stacksize-1] = 1;
-	    else
-	      stack[stacksize-1] = 0;
-	    stacksize--;
-	    break;
-	    */
-	  case CONSTANT:
-	    stacksize++;
-	    stack[stacksize] = program[i].operand.val;
-	    break;
-
-	  case VARIABLE:
-	    stacksize++;
-	    stack[stacksize] = x[program[i].operand.varnum];
-	    break;
-
-	  case GLOBVAR:
-	    stacksize++;
-	    stack[stacksize] = *program[i].operand.globvar;
-	    break;
-
-	  case IMAG:
-	    stacksize++;
-	    stack[stacksize] = complex<double> (0, 1);
-	    break;
-
-
-	    /*
-	  case FUNCTION:
-	    stack[stacksize] = (*program[i].operand.fun) (stack[stacksize]);
-	    break;
-	    */
-
-	  case SIN:
-	    stack[stacksize] = sin (stack[stacksize]);
-	    break;
-	  case COS:
-	    stack[stacksize] = cos (stack[stacksize]);
-	    break;
-	  case TAN:
-	    stack[stacksize] = tan (stack[stacksize]);
-	    break;
-	    /*
-	  case ATAN:
-	    stack[stacksize] = atan (stack[stacksize]);
-	    break;
-	  case ATAN2:
-	    stack[stacksize-1] = atan2(stack[stacksize-1],
-				       stack[stacksize]);
-	    stacksize--;
-	    break;
-	    */
-	  case EXP:
-	    stack[stacksize] = exp (stack[stacksize]);
-	    break;
-	  case LOG:
-	    stack[stacksize] = log (stack[stacksize]);
-	    break;
-	    /*
-	  case ABS:
-	    stack[stacksize] = std::fabs (stack[stacksize]);
-	    break;
-	    */
-	    /*
-	  case SIGN:
-	    if(stack[stacksize] > 0)
-	      stack[stacksize] = 1;
-	    else if(stack[stacksize] < 0)
-	      stack[stacksize] = -1;
-	    else
-	      stack[stacksize] = 0;
-	    break;
-	    */
-	  case SQRT:
-	    stack[stacksize] = sqrt (stack[stacksize]);
-	    break;
-	  case STEP:
-	    stack[stacksize] = (stack[stacksize].real() >= 0) ? 1 : 0;
-	    break;
-	  case COMMA:
-	    break;
-	    /*
-	  case BESSELJ0:
-	    stack[stacksize] = bessj0 (stack[stacksize]);
-	    break;
-	  case BESSELJ1:
-	    stack[stacksize] = bessj1 (stack[stacksize]);
-	    break;
-	  case BESSELY0:
-	    stack[stacksize] = bessy0 (stack[stacksize]);
-	    break;
-	  case BESSELY1:
-	    stack[stacksize] = bessy1 (stack[stacksize]);
-	    break;
-	    */
-
-	  default:
-	    cerr << "undefined operation for EvalFunction, complex, op = " << program[i].op << endl;
-	  }
-      }
-
-    if (stacksize != ydim-1)
-      {
-	cout << "final stacksize is " << stacksize+1 << ", but ydim is " << ydim << endl;
-	// cout << "final stacksize not matching ydim" << endl;
-	return;
-      }
-
-    for (int i = 0; i < ydim; i++)
-      y[i] = stack[i];
-  }
-#endif
-
-  //   template void EvalFunction :: Eval<double> (const double * x, complex<double> * y, int ydim) const;
-  // template void EvalFunction :: Eval<complex<double> > (const complex<double> * x, complex<double> * y, int ydim) const;
-  
-  
-
-
-
 
 
   bool EvalFunction :: IsConstant () const
@@ -904,6 +503,7 @@ namespace ngstd
 	  {
 	  case CONSTANT: ost << " const, val = " << program[i].operand.val; break;
 	  case VARIABLE: ost << " input var " << program[i].operand.varnum; break;
+	  case GLOBGENVAR: ost << " global var " << *program[i].operand.globgenvar; break;
 	  case SIN: ost << " sin"; break;
 	  case COS: ost << " cos"; break;
 	  case TAN: ost << " tan"; break;
@@ -1162,6 +762,36 @@ namespace ngstd
 	  AddGlobVariable (globvar);
 	  break;
 	}
+      case GLOBGENVAR:
+	{
+	  ReadNext();
+	  AddGlobVariable (globgenvar);
+          program.Last().vecdim = globgenvar -> Dimension();
+          result.iscomplex = globgenvar -> IsComplex();
+          result.vecdim = globgenvar -> Dimension();
+
+          if (GetToken() == '(')
+            {
+              // cout << "array access !!!" << endl;
+              /* ResultType result2 = */ 
+              ParsePrimary();
+              program.Last().vecdim = result.vecdim;
+              AddOperation(VEC_ELEM);
+              result.vecdim = 1;
+            }
+
+	  break;
+	}
+        
+      case VEC_DIM:
+        {
+          ReadNext();
+          ParsePrimary();
+          AddOperation(VEC_DIM);
+          program.Last().vecdim = result.vecdim;
+          break;
+        }
+
       case IMAG:
 	{
 	  ReadNext();
@@ -1445,6 +1075,12 @@ namespace ngstd
 		  return;
 		}
 
+	      if (strcmp (string_value, "dim") == 0)
+		{
+		  token = VEC_DIM;
+		  return;
+		}
+
 	      if (strcmp (string_value, "I") == 0)
 		{
 		  token = IMAG;
@@ -1468,6 +1104,13 @@ namespace ngstd
 		{
 		  token = GLOBVAR;
 		  globvar = globvariables[string_value];
+		  return;
+		}
+
+	      if (genericvariables.Used (string_value))
+		{
+		  token = GLOBGENVAR;
+		  globgenvar = genericvariables[string_value];
 		  return;
 		}
 
