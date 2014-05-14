@@ -476,7 +476,6 @@ namespace ngsolve
       
 
       bool ok = EvalFunction::Parse(aist);
-
       
       int tot = 3;
       for (int i = 0; i < pde.GetCoefficientTable().Size(); i++)
