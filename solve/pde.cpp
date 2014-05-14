@@ -1100,9 +1100,8 @@ namespace ngsolve
       {
 	bilinearforms.Set (name, CreateBilinearForm (space, name, flags));
       }
-
-    //  else
-    //    bilinearforms.Set (name, new T_BilinearForm<double > (*space, *space2, name));
+    else
+      bilinearforms.Set (name, new T_BilinearForm<double > (*space, *space2, name, flags));
     
     if (flags.StringFlagDefined ("linearform"))
       bilinearforms[name] -> SetLinearForm (GetLinearForm (flags.GetStringFlag ("linearform", 0)));
