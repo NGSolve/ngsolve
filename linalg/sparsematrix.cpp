@@ -94,16 +94,13 @@ namespace ngla
                               bool symmetric)
   {
     static Timer timer("MatrixGraph");
-    static Timer timerd2e("MatrixGraph - dof2el");
-    static Timer timers("MatrixGraph - sorting");
     RegionTimer reg (timer);
 
     bool includediag = (&rowelements == &colelements);
     
     int ndof = asize;
-    
-    timerd2e.Start();
 
+    // generate row-dof to element table
     TableCreator<int> creator(ndof);
     for ( ; !creator.Done(); creator++)
       {    
@@ -115,15 +112,11 @@ namespace ngla
 	  } 
 	}
       }
-    timerd2e.Stop();    
 
     Table<int> & dof2element = *(creator.GetTable());
-  
+
     Array<int> cnt(ndof);
     cnt = 0;
-
-    // Array<int> mark(ndof);
-    // mark = -1;
 
     if (!symmetric)
       {
@@ -192,10 +185,6 @@ namespace ngla
     width = ndof;
     owner = true;
 
-    /*
-    firsti.Alloc (size+1);
-    firsti.SetName ("matrix graph, table 1");
-    */
     firsti.SetSize (size+1);
     
     nze = 0;
@@ -206,12 +195,7 @@ namespace ngla
       }
     firsti[size] = nze;
     
-    /*
-    colnr.Alloc (nze+1);
-    colnr.SetName ("matrix graph");
-    */
     colnr.SetSize (nze+1);
-    // mark = -1;
 
     if (!symmetric)
       {
@@ -277,13 +261,11 @@ namespace ngla
 	  }
       } 
 
-    timers.Start();
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
       // BitonicSort<1> (GetRowIndices(i));
       QuickSort (GetRowIndices(i));
-    timers.Stop();
 
     colnr[nze] = 0;
 
