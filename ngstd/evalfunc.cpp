@@ -735,9 +735,15 @@ namespace ngstd
       case SUB:
 	{
 	  ReadNext();   // '-'
-	  result = ParsePrimary();
 	  AddConstant (-1);
-	  AddOperation (MULT);
+	  result = ParsePrimary();
+          if (result.vecdim == 1)
+            AddOperation (MULT);
+          else
+            {
+              AddOperation (SCAL_VEC_MULT);
+              program.Last().vecdim = result.vecdim;
+            }
 	  break;
 	}
       case LP:
@@ -749,17 +755,17 @@ namespace ngstd
 	}
       case VARIABLE:
 	{
-	  ReadNext();
 	  AddVariable (GetVariableNumber());
 	  program.Last().vecdim = GetVariableDimension();
 	  result.vecdim = GetVariableDimension();
 	  result.iscomplex = GetVariableIsComplex();
+	  ReadNext();
 	  break;
 	}
       case GLOBVAR:
 	{
-	  ReadNext();
 	  AddGlobVariable (globvar);
+	  ReadNext();
 	  break;
 	}
       case GLOBGENVAR:
