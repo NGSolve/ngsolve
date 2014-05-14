@@ -234,10 +234,77 @@ namespace ngcomp
             }
 
       }
+    
+    MatrixGraph * graph;
 
-    MatrixGraph * graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
+    if (!fespace2)
+      graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
+    else
+      {
+        TableCreator<int> creator2(maxind);
+        for ( ; !creator2.Done(); creator2++)
+          {
+            for (int i = 0; i < ne; i++)
+              {
+                if (!fespace2->DefinedOn (ma.GetElIndex(i))) continue;
+                
+                if (eliminate_internal)
+                  fespace2->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                else
+                  fespace2->GetDofNrs (i, dnums);
+
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (dnums[j] != -1)
+                    creator2.Add (i, dnums[j]);
+              }
+        
+            for (int i = 0; i < nse; i++)
+              {
+                if (!fespace2->DefinedOnBoundary (ma.GetSElIndex(i))) continue;
+            
+                fespace2->GetSDofNrs (i, dnums);
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (dnums[j] != -1)
+                    creator2.Add (ne+i, dnums[j]);
+              }
+
+            /*
+              // just not tested ...
+            for (int i = 0; i < specialelements.Size(); i++)
+              {
+                specialelements[i]->GetDofNrs (dnums);
+            
+                for (int j = 0; j < dnums.Size(); j++)
+                  if (dnums[j] != -1)
+                    creator2.Add (ne+nse+i, dnums[j]);
+              }
+
+            if (fespace2->UsesDGCoupling())
+              //add dofs of neighbour elements as well
+              for (int i = 0; i < nf; i++)
+                {
+                  nbelems.SetSize(0);
+                  ma.GetFacetElements(i,elnums);
+                  for (int k=0; k<elnums.Size(); k++)
+                    nbelems.Append(elnums[k]);
+
+                  for (int k=0;k<nbelems.Size();k++){
+                    int elnr=nbelems[k];
+                    if (!fespace2->DefinedOn (ma.GetElIndex(elnr))) continue;
+                    fespace2->GetDofNrs (elnr, dnums);
+                    for (int j = 0; j < dnums.Size(); j++)
+                      if (dnums[j] != -1)
+                        creator2.Add (ne+nse+nspe+i, dnums[j]);
+                  }
+                }
+            */
+          }
+
+        graph = new MatrixGraph (fespace2->GetNDof(), *creator2.GetTable(), *creator.GetTable(), symmetric);        
+        delete creator2.GetTable();
+      }
+
     delete creator.GetTable();
-
     graph -> FindSameNZE();
     return graph;
   }
@@ -1010,8 +1077,8 @@ namespace ngcomp
                      
                      timerb1.Start();
                       
-                     const FiniteElement & fel = fespace.GetSFE (i, lh);
-                     ElementTransformation & eltrans = ma.GetTrafo (i, BND, lh);
+                     const FiniteElement & fel = fespace.GetFE (ei, lh);
+                     ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 
                      // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
 		     Array<int> dnums  (fel.GetNDof(), lh);
@@ -1497,90 +1564,91 @@ namespace ngcomp
 
           {
             cout << "assemble mixed not implemented" << endl;
-#ifdef ABC
             // mixed spaces
       
-            Array<int> dnums1;
-            Array<int> dnums2;
+            // Array<int> dnums1;
+            // Array<int> dnums2;
 
-            //      DenseMatrix elmat;
-            ElementTransformation eltrans;
+            // DenseMatrix elmat;
+            // ElementTransformation eltrans;
       
-            int ne = ma.GetNE();
+            // int ne = ma.GetNE();
       
             BaseMatrix & mat = GetMatrix();
-            //      (*mat) = 0;
-      
-            cout << "assemble" << endl;
-            // LocalHeap lh (5000000);
+            mat = 0.0;
 
-            int hasbound = 0;
-            int hasinner = 0;
+            cout << "assemble mixed bilinearform" << endl;
 
-            for (int j = 1; j <= NumIntegrators(); j++)
+            bool hasbound = false;
+            bool hasinner = false;
+
+            for (int j = 0; j < NumIntegrators(); j++)
               {
                 const BilinearFormIntegrator & bfi = *GetIntegrator(j);
                 if (bfi.BoundaryForm())
-                  hasbound = 1;
+                  hasbound = true;
                 else
-                  hasinner = 1;
+                  hasinner = true;
               }
-
+            
+            
             if (hasinner)
-              for (int i = 1; i <= ne; i++)
-                {
-                  if (i % 100 == 0)
-                    cout << "." << flush;
-                  clh.CleanUp();
+              IterateElements 
+                (fespace, VOL, clh,          // coloring for 1 space is enough
+                 [&] (ElementId ei, LocalHeap & lh)
+                 {
+                   const FiniteElement & fel1 = fespace.GetFE (ei, lh);
+                   const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+                   
+                   Array<int> dnums1(fel1.GetNDof(), lh);
+                   Array<int> dnums2(fel2.GetNDof(), lh);
+                   const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+                   fespace.GetDofNrs (ei, dnums1);
+                   fespace2->GetDofNrs (ei, dnums2);
           
-                  const FiniteElement & fel1 = fespace.GetFE (i, lh);
-                  const FiniteElement & fel2 = fespace2->GetFE (i, lh);
+                   FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+                   for (int j = 0; j < NumIntegrators(); j++)
+                     {
+                       const BilinearFormIntegrator & bfi = *GetIntegrator(j);
+                       if (bfi.BoundaryForm()) continue;
 
-                  ma.GetElementTransformation (i, eltrans, lh);
-                  fespace.GetDofNrs (i, dnums1);
-                  fespace2->GetDofNrs (i, dnums2);
-          
-                  for (int j = 0; j < NumIntegrators(); j++)
-                    {
-                      const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                      if (bfi.BoundaryForm()) continue;
-              
-                      /*
-                      // elmat = 
-                      bfi.AssembleMixedElementMatrix (fel1, fel2, eltrans, 
-                      lh);
-                      */
-                      //              (*testout) << "mixed mat = " << elmat << endl;
+                       ArrayMem<const FiniteElement*,2> fea(2);
+                       fea[0] = &fel1;
+                       fea[1] = &fel2;
+                       CompoundFiniteElement cfel(fea);
 
-                      //              fespace.TransformMatrix (i, elmat);
+                       bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
 
-                      /*
-                        dynamic_cast<SparseSystemMatrixRectangle<SysVector1d, SysVector2d > *> (mat)
-                        -> AddMixedElementMatrix (dnums2, dnums1, elmat);
-                      */
-                    }
-                }
-      
+                       /*
+                        fespace.Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                        fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
+                       */
 
+                       AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                     }
+                 });
+
+
+#ifdef ABC
             cout << " boundary terms ";
-
+              
             int nse = ma.GetNSE();
             if (hasbound)
               for (int i = 1; i <= nse; i++)
                 {
                   const FiniteElement & fel1 = fespace.GetSFE (i, lh);
                   const FiniteElement & fel2 = fespace2->GetSFE (i, lh);
-          
+              
                   ma.GetSurfaceElementTransformation (i, eltrans, lh);
                   fespace.GetSDofNrs (i, dnums1);
                   fespace2->GetSDofNrs (i, dnums2);
-          
+              
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
                       const BilinearFormIntegrator & bfi = *parts[j];
-
+                      
                       if (!bfi.BoundaryForm()) continue;
-              
+                      
                       //  elmat = 
                       //              bfi.AssembleMixedElementMatrix (fel1, fel2, eltrans, lh);
                       /*
@@ -1593,12 +1661,11 @@ namespace ngcomp
                       */
                     }
                 }
-
-            // if (print)
-            //  (*testout) << "mat = " << (*mat) << endl;
-
-            cout << endl;
 #endif
+
+            if (print) *testout << "mat = " << mat << endl;
+            
+            cout << endl;
           }
         //  cout << "done" << endl;
         //  WriteMatrix (*testout);
@@ -3798,4 +3865,6 @@ namespace ngcomp
 
   template class ElementByElement_BilinearForm<double>;
   template class ElementByElement_BilinearForm<Complex>;
+
+  template class T_BilinearForm<double,double>;
 }
