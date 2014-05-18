@@ -60,7 +60,7 @@ namespace ngcomp
   {
     multilevel = true;
     galerkin = false;
-    symmetric = true;
+    symmetric = false;
     hermitean = false;
 
     SetEpsRegularization (0);
@@ -876,8 +876,6 @@ namespace ngcomp
                                }
                              else
                                {
-                                 // ArrayMem<int,50> idnums1, idnums;
-                                 // ArrayMem<int,50> ednums1, ednums;
 				 Array<int> idnums1(dnums.Size(), lh), 
 				   ednums1(dnums.Size(), lh);
                                  fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
@@ -968,8 +966,6 @@ namespace ngcomp
 
                 progress.Done();
                 
-                // MPI_Barrier (MPI_COMM_WORLD);
-
                 /*
                 if (linearform && keep_internal)
                   {
@@ -1560,24 +1556,15 @@ namespace ngcomp
           }
 
         else
-        
 
           {
-            cout << "assemble mixed not implemented" << endl;
             // mixed spaces
-      
-            // Array<int> dnums1;
-            // Array<int> dnums2;
 
-            // DenseMatrix elmat;
-            // ElementTransformation eltrans;
-      
-            // int ne = ma.GetNE();
+            cout << "assemble mixed bilinearform" << endl;
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
 
-            cout << "assemble mixed bilinearform" << endl;
 
             bool hasbound = false;
             bool hasinner = false;
@@ -1590,7 +1577,6 @@ namespace ngcomp
                 else
                   hasinner = true;
               }
-            
             
             if (hasinner)
               IterateElements 
@@ -1612,6 +1598,7 @@ namespace ngcomp
                        const BilinearFormIntegrator & bfi = *GetIntegrator(j);
                        if (bfi.BoundaryForm()) continue;
 
+                       // ArrayMem<const FiniteElement*,2> fea = { &fel1, &fel2 };
                        ArrayMem<const FiniteElement*,2> fea(2);
                        fea[0] = &fel1;
                        fea[1] = &fel2;
