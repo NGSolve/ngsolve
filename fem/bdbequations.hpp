@@ -201,7 +201,7 @@ namespace ngfem
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      // cout << "diffop id, gen matrix, mat = " << typeid(mat).name() << endl;
+      HeapReset hr(lh);
       mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
     }
 
@@ -233,8 +233,8 @@ namespace ngfem
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
+      HeapReset hr(lh);
       y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
-      // y(0) = InnerProduct (x, Cast(fel).GetShape (mip.IP(), lh));
     }
 
     static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
@@ -247,9 +247,9 @@ namespace ngfem
 
     using DiffOp<DiffOpId<D, FEL> >::ApplyIR;
 
-    template <class MIR>
+    template <class MIR, class TMY>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
-			 const FlatVector<double> x, FlatMatrix<double> y,
+                         FlatVector<double> x, TMY y,
 			 LocalHeap & lh)
     {
       Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
@@ -262,6 +262,7 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
+      HeapReset hr(lh);
       y = Cast(fel).GetShape (mip.IP(), lh) * x;
     }
 
@@ -303,6 +304,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       const FlatVector<> shape = fel.GetShape (mip.IP(), lh);
   
 
@@ -333,6 +335,7 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
     }
 
@@ -341,6 +344,7 @@ namespace ngfem
 		       const TVX & x, TVY & y,
 		       LocalHeap & lh) 
     {
+      HeapReset hr(lh);
       y = Trans (static_cast<const FEL&>(fel).GetShape (mip.IP(), lh)) * x;
       // y(0) = InnerProduct (x, static_cast<const FEL&>(fel).GetShape (mip.IP(), lh));
     }
@@ -358,6 +362,7 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
+      HeapReset hr(lh);
       y = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
     }
 
