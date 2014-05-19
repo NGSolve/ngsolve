@@ -1008,7 +1008,6 @@ namespace ngcomp
 	LocalHeapMem<100000> lh("visgf::getvalue");
 	if (!bfi3d.Size()) return false;
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return false;
-	
 	const FESpace & fes = gf->GetFESpace();
 
 	int dim     = fes.GetDimension();
@@ -1058,7 +1057,7 @@ namespace ngcomp
                 values[i] += ((double*)(void*)&flux(0))[i];
               ok = true;
             }
-        
+
         return ok; 
       }
     
@@ -1086,7 +1085,6 @@ namespace ngcomp
         
 	if (!bfi3d.Size()) return 0;
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
-	
 	
 	const FESpace & fes = gf->GetFESpace();
 	
@@ -1180,12 +1178,13 @@ namespace ngcomp
 	
         // HeapReset hr(lh);
         LocalHeapMem<1000000> lh("visgf::GetMultiValue");
+
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
 
 
-	Array<int> dnums(fel->GetNDof(), lh);
-	FlatVector<SCAL> elu (fel->GetNDof() * dim, lh);
+	ArrayMem<int,200> dnums(fel->GetNDof());
+	VectorMem<200,SCAL> elu (fel->GetNDof() * dim);
 
 	fes.GetDofNrs (elnr, dnums);
 
@@ -1234,6 +1233,7 @@ namespace ngcomp
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
             t1.Start();
 	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+
             t1.Stop();
             t1.AddFlops (elu.Size()*mir.Size());
 	    for (int k = 0; k < npts; k++)
@@ -1250,20 +1250,6 @@ namespace ngcomp
         return 0;
       }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
