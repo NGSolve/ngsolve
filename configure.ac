@@ -126,7 +126,7 @@ AC_ARG_ENABLE([vt],
 
 
 echo "creating compiler wrapper ngscxx"
-echo "$CXX -I. $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
+echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
 chmod a+x ngscxx 
 
 define([svnversion], esyscmd([sh -c "svnversion|tr -d '\n'"]))dnl
