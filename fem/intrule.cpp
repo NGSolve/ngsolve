@@ -560,7 +560,79 @@ namespace ngfem
 		ip2.SetNr(ii); ii++;
 		AddIntegrationPoint (ip2);
 	      }
+          break;
 	}
+    
+
+      case ET_TET:
+	{
+
+          /*
+            o = 0 -> p2 -> 3 p
+            o = 1 -> p3 -> 3 p
+            o = 2 -> p4 -> 4 p
+           */
+          Facet2ElementTrafo trafo(ET_TET);
+          const POINT3D * pnts = ElementTopology::GetVertices(ET_TET);
+
+          /*
+	  int lengr = floor((order+6.0)/2.0);
+	  Array<double> axi(lengr);
+	  Array<double> wi(lengr);
+	  ComputeGaussLobattoRule(lengr, axi , wi);
+          */
+
+          int lengr = floor((order+3.0)/2.0);
+	  Array<double> axi, wi;
+          ComputeGaussJacobiRule(lengr,axi,wi,1,0); 
+          double sum = 1.0/2;
+          for (int i = 0; i < wi.Size(); i++) sum -= axi[i]*wi[i];
+          wi.Append(sum);
+          axi.Append(1.0);
+
+          /*
+          int lengr = floor((order+1.0)/2.0);
+	  Array<double> axi, wi;
+          ComputeGaussJacobiRule(lengr,axi,wi,1,2); 
+          double sum = 1.0/3;
+          for (int i = 0; i < wi.Size(); i++) sum -= axi[i]*axi[i]*wi[i];
+          wi.Append(sum);
+          axi.Append(1.0);
+          */
+
+          int ii = 0;
+          for (int j = 0; j < 4; j++)
+            {
+              facetrules.Append (const_cast<IntegrationRule*> (&SelectIntegrationRule (ET_TRIG, order)));
+              IntegrationRule & ir = *facetrules.Last();
+              Vec<3> v (pnts[j][0], pnts[j][1], pnts[j][2]);
+
+              for (int k = 0; k < ir.Size(); k++)
+                {
+                  IntegrationPoint ip3d = trafo(j, ir[k]);
+                  for (int l = 0; l < axi.Size(); l++)
+                    {
+                      Vec<3> pf = ip3d.Point();
+                      Vec<3> p = axi[l] * pf + (1-axi[l]) * v;
+                      double weight = wi[l]*sqr(axi[l])*ir[k].Weight()/4;
+                      if (weight > 1e-10)
+                        {
+                          IntegrationPoint ip (p, weight);
+                          ip.SetNr(ii);
+                          ii++;
+                          ip.FacetNr() = -1;
+                          if (axi[l] > 1-1e-10) ip.FacetNr() = j;
+                          AddIntegrationPoint (ip);
+                        }
+                      
+                      if (axi[l] > 1-1e-10)
+                        boundary_volume_factor = 4/wi[l];
+                    }
+                }
+            }              
+              
+          break;
+        }
       }
   }
 

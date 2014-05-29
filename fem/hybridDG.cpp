@@ -570,11 +570,12 @@ namespace ngfem
       timer1.Start();
       MappedIntegrationRule<D,D> mir_vol(ir_vol, eltrans, lh);
       
+      FlatMatrix<> mat_lam(ir_vol.GetNIP(), 1, lh);
+      coef_lam -> Evaluate (mir_vol, mat_lam); 
+
+      /*
       FlatMatrix<> bmats(ir_vol.GetNIP()*D, nd_l2, lh);
       FlatMatrix<> dbmats(ir_vol.GetNIP()*D, nd_l2, lh);
-      FlatMatrix<> mat_lam(ir_vol.GetNIP(), 1, lh);
-      
-      coef_lam -> Evaluate (mir_vol, mat_lam); 
       
       for (int i = 0; i < ir_vol.GetNIP(); i++)
         {
@@ -591,7 +592,19 @@ namespace ngfem
 	RegionTimer reg1a (timer1a);     
 	elmat.Cols(l2_dofs).Rows(l2_dofs) = Trans(dbmats) * bmats  | Lapack;
       }
-  
+      */
+
+      FlatMatrix<> bmats(nd_l2, ir_vol.GetNIP()*D, lh);
+      FlatMatrix<> dbmats(nd_l2, ir_vol.GetNIP()*D, lh);
+      fel_l2.CalcMappedDShape (mir_vol, bmats);
+
+      for (int i = 0; i < ir_vol.GetNIP(); i++)
+        dbmats.Cols(i*D, i*D+D) = mat_lam(i,0) * mir_vol[i].GetWeight() * bmats.Cols(i*D,i*D+D);
+      timer1.Stop();
+      {
+	RegionTimer reg1a (timer1a);     
+	elmat.Cols(l2_dofs).Rows(l2_dofs) = dbmats * Trans(bmats)  | Lapack;
+      }
 
       // The facet contribution
       {
@@ -605,7 +618,7 @@ namespace ngfem
 	for (int k = 0; k < nfacet; k++)
 	  {
 	    HeapReset hr(lh);
-	    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+	    // ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
             
 	    Vec<D> normal_ref = normals[k];
 
@@ -1920,7 +1933,8 @@ namespace ngfem
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<2> > initlap2 ("HDG_laplace", 2, 2);
   static RegisterBilinearFormIntegrator<HDG_LaplaceIntegrator<3> > initlap3 ("HDG_laplace", 3, 2);
 
-  static RegisterBilinearFormIntegrator<HDG_IR_LaplaceIntegrator<2> > initlap2ir ("HDG_IR_laplace", 2, 2);
+  static RegisterBilinearFormIntegrator<HDG_IR_LaplaceIntegrator<2> > initlap2ir ("HDG_IR_laplace", 2, 1);
+  static RegisterBilinearFormIntegrator<HDG_IR_LaplaceIntegrator<3> > initlap3ir ("HDG_IR_laplace", 3, 1);
 
   static RegisterBilinearFormIntegrator<HDGBR_LaplaceIntegrator<2> > initlapbr2 ("HDGBR_laplace", 2, 1);
   static RegisterBilinearFormIntegrator<HDGBR_LaplaceIntegrator<3> > initlapbr3 ("HDGBR_laplace", 3, 1);

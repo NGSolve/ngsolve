@@ -488,8 +488,14 @@ namespace ngfem
 	Tx zeta = muz[faces[i][fmax]]-muz[faces[i][fz]]; 
 	
 	int pp = int(max2(p[0],p[1]))+1;
+        /*
 	T_ORTHOPOL::CalcTrigExt(pp,xi,eta,adpolxy1); 
 	T_ORTHOPOL::Calc(pp,zeta,adpolz); 
+        */
+
+	Tx bub = lami[faces[i][fmax]]*lami[faces[i][ftrig]]; 
+        IntLegNoBubble::EvalScaledMult (pp-1, xi, 1-eta, 4*bub, adpolxy1); 
+        IntLegNoBubble::EvalMult (pp-1, zeta, 1-zeta*zeta, adpolz); 
 
 	double fac = (vnums[faces[i][fz]] > vnums[faces[i][ftrig]]) ? 1 : -1;
 
