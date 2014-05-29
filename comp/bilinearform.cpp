@@ -14,6 +14,37 @@ namespace ngcomp
   { ; }
 
 
+  template <typename SCAL>
+  void CalcSchur (FlatMatrix<SCAL> a, 
+                  FlatMatrix<SCAL> schur,
+                  FlatArray<int> keep, FlatArray<int> eliminate)
+  {
+    // via Cholesky
+    // A = L D L^t
+    int nk = keep.Size();
+    int ne = eliminate.Size();
+    int n = nk+ne;
+    Matrix<SCAL> temp(n);
+
+    temp.Rows(0,ne).Cols(0,ne) = a.Rows(eliminate).Cols(eliminate);
+    temp.Rows(0,ne).Cols(ne,n) = a.Rows(eliminate).Cols(keep);
+    temp.Rows(ne,n).Cols(0,ne) = a.Rows(keep).Cols(eliminate);
+    temp.Rows(ne,n).Cols(ne,n) = a.Rows(keep).Cols(keep);
+
+    for (int i = 0; i < ne; i++)
+      {
+        SCAL d = temp(i,i);
+        SCAL id = 1.0/d;
+
+        for (int j = i+1; j < n; j++)
+          for (int k = i+1; k < n; k++)
+            temp(j,k) -= temp(j,i) * id * temp(i,k);
+        for (int j = i+1; j < n; j++)
+          temp(j,i) *= id;
+      }
+    schur = temp.Rows(ne,n).Cols(ne,n);
+  }
+
 
   BilinearForm :: 
   BilinearForm (const FESpace & afespace,
@@ -49,6 +80,8 @@ namespace ngcomp
     SetStoreInner (flags.GetDefineFlag ("store_inner"));
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
+    spd = flags.GetDefineFlag ("spd");
+    if (spd) symmetric = true;
   }
 
 
@@ -61,6 +94,7 @@ namespace ngcomp
     multilevel = true;
     galerkin = false;
     symmetric = false;
+    spd = false;
     hermitean = false;
 
     SetEpsRegularization (0);
@@ -892,7 +926,23 @@ namespace ngcomp
                                       
                                  if (store_inner)
                                    innermatrix ->AddElementMatrix(i,idnums,idnums,d);
+                                 
 
+                                 /*
+                                 Matrix<SCAL> hd = d;
+                                 Vector<SCAL> diag(d.Height());
+                                 for (int i = 0; i < d.Height(); i++)
+                                   diag(i) = sqrt(fabs(hd(i,i)));
+                                 for (int i = 0; i < d.Height(); i++)
+                                   {
+                                     hd.Row(i) *= 1.0/diag(i);
+                                     hd.Col(i) *= 1.0/diag(i);
+                                   }
+                                 Vector<SCAL> lam(d.Height());
+                                 Matrix<SCAL> evecs(d.Height());
+                                 CalcEigenSystem (hd, lam, evecs);
+                                 cout << "lam = " << lam << endl;
+                                 */
                                  LapackInverse (d);
                                  FlatMatrix<SCAL> he (sizei, sizeo, lh);
                                  he = 0.0;
@@ -907,10 +957,21 @@ namespace ngcomp
                                      static_cast<ElementByElementMatrix<SCAL>*>(harmonicexttrans)
                                        ->AddElementMatrix(i,ednums,idnums,het);
                                    }
-
+                                 
                                  innersolve ->AddElementMatrix(i,idnums,idnums,d);
 
                                  LapackMultAddAB (b, he, 1.0, a);
+ 
+                                 if (spd)
+                                   {
+                                     // *testout << "schur orig = " << endl << a << endl;
+                                     
+                                     Matrix<SCAL> schur(odofs.Size());
+                                     CalcSchur (sum_elmat, schur, odofs, idofs);
+                                     
+                                     // *testout << "new schur = " << endl << schur << endl;
+                                     a = schur;
+                                   }
                                }                             
 
                              if (printelmat) 
@@ -1566,14 +1627,14 @@ namespace ngcomp
             mat = 0.0;
 
 
-            bool hasbound = false;
+            // bool hasbound = false;
             bool hasinner = false;
 
             for (int j = 0; j < NumIntegrators(); j++)
               {
                 const BilinearFormIntegrator & bfi = *GetIntegrator(j);
                 if (bfi.BoundaryForm())
-                  hasbound = true;
+                  ; // hasbound = true;
                 else
                   hasinner = true;
               }

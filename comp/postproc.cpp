@@ -356,7 +356,6 @@ namespace ngcomp
 
     u.GetVector() = 0.0;
 
-
     ProgressOutput progress (ma, "setvalues element", ma.GetNE());
 
     IterateElements 
@@ -384,7 +383,7 @@ namespace ngcomp
 	  BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 
 	  coef.Evaluate (mir, mfluxi);
-
+          
 	  for (int j = 0; j < ir.GetNIP(); j++)
 	    mfluxi.Row(j) *= mir[j].GetWeight();
 

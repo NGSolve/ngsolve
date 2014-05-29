@@ -40,6 +40,8 @@ namespace ngcomp
     bool hermitean;
     /// bilinear form is symmetric
     bool symmetric;
+    /// bilinear form is symmetric and positive definite (experimental)
+    bool spd;
     /// add epsilon for regularization
     double eps_regularization; 
     /// diagonal value for unused dofs
