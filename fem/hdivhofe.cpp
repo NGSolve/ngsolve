@@ -230,8 +230,12 @@ namespace ngfem
 
     shape(0) = fac;
 
+    /*
     T_ORTHOPOL::Calc(p[0]+1, xi,pol_xi);
     T_ORTHOPOL::Calc(p[1]+1,eta,pol_eta);
+    */
+    IntLegNoBubble::EvalMult (p[0]-1, xi, 1-xi*xi, pol_xi);
+    IntLegNoBubble::EvalMult (p[1]-1, eta, 1-eta*eta, pol_eta);
 
     // Typ 1
     for (int k = 0; k < p[0]; k++)

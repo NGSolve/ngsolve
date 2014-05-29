@@ -62,7 +62,7 @@ namespace ngfem
     INT<4> f = GetFaceSort (fnr, vnums);
     int p = facet_order[fnr];
     
-    DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+    DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
   }
 
 
@@ -113,7 +113,7 @@ namespace ngfem
     int p = facet_order[fnr];
     
     if (fnr < 2)
-      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+      DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
     else
       {
 	Tx xi  = lam[f[0]]+muz[f[0]] - lam[f[1]]-muz[f[1]];
@@ -158,7 +158,7 @@ namespace ngfem
     int p = facet_order[fnr];
     
     if (fnr < 4)
-      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+      DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
     else
       {
 	Tx xi  = sigma[f[0]]-sigma[f[1]];
