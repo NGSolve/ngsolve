@@ -28,6 +28,11 @@ namespace ngcomp
 
   enum VorB { VOL, BND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
+  inline ostream & operator<< (ostream & ost, VorB vb)
+  {
+    if (vb == VOL) ost << "VOL"; else ost << "BND";
+    return ost;
+  }
 
   class ElementId
   {

@@ -319,9 +319,22 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
     ctofdof = INTERFACE_DOF;
 
+    Array<bool> fine_facet(ma.GetNFacets());
+    fine_facet = false;
+
+    if (ma.GetDimension() == 3)
+      for (ElementId ei : ma.Elements<VOL>())
+        fine_facet[ma[ei].Faces()] = true;
+    else
+      for (ElementId ei : ma.Elements<VOL>())
+        fine_facet[ma[ei].Edges()] = true;      
+
     for (int facet = 0; facet < ma.GetNFacets(); facet++)
       {
-	ctofdof[facet] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
+        if (fine_facet[facet])
+          ctofdof[facet] = nowirebasket ? INTERFACE_DOF : WIREBASKET_DOF;
+        else
+          ctofdof[facet] = UNUSED_DOF;
 	ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
 

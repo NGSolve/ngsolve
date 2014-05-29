@@ -396,6 +396,7 @@ namespace ngcomp
                     break;
                   case 4: //Quad 
                     inci= p[0]*p[1] + p[0] + p[1];
+                    if (highest_order_dc) inci -= p[0]+p[1]+1;
                     break;
                   }
               }
@@ -429,6 +430,8 @@ namespace ngcomp
 		inci = (p[0]+2)*p[0]*(p[2]+1) + (p[0]+1)*(p[0]+2)*p[2]/2;
 		if (ho_div_free)
 		  inci -= (p[0]+1)*(p[0]+2)*(p[2]+1)/2 - 1;
+
+                if (highest_order_dc) inci += 2*(p[0]+1)+3*(p[0]+p[2]+1);
                 break;
               case ET_HEX:
                 inci =  2*pc[0]*pc[1]*pc[2] + pc[0]*pc[1] + pc[1]*pc[2] + pc[0]* pc[2]
