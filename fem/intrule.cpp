@@ -538,6 +538,10 @@ namespace ngfem
 	}
       case ET_QUAD:
 	{
+          for (int j = 0; j < 4; j++)
+            facetrules.Append (const_cast<IntegrationRule*> (&SelectIntegrationRule (ET_SEGM, order)));
+
+
 	  int lengl = order/2+2;
 	  int len   = order/2+1;
 	  Array<double> xi(lengl);
