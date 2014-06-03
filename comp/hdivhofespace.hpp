@@ -40,6 +40,7 @@ namespace ngcomp
     Array<INT<3> > order_inner_curl;
     Array<INT<2> > order_facet; 
     Array<bool> fine_facet; 
+    Array<bool> boundary_facet; 
  
     Array<int> ndlevel;
     int uniform_order_inner; 

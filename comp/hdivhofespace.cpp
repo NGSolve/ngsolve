@@ -180,12 +180,22 @@ namespace ngcomp
     // int nv = ma.GetNV();
     int nel = ma.GetNE();
     int nfa = ma.GetNFacets();
+    int dim = ma.GetDimension();
+    
        
     order_facet.SetSize(nfa);
     order_inner.SetSize(nel); 
     order_inner_curl.SetSize(nel); 
     fine_facet.SetSize(nfa); 
+    boundary_facet.SetSize(nfa); 
    
+    boundary_facet = false;
+    for (int i = 0; i < ma.GetNSE(); i++)
+      {
+	Array<int> elfacets; 
+	ma.GetSElFacets (i,elfacets); 
+	boundary_facet[elfacets[0]] = true;
+      }
      
     // cout << " order hdiv " << order << endl; 
     // cout << " curl_order hdiv " << curl_order << endl; 
@@ -203,8 +213,6 @@ namespace ngcomp
     order_inner_curl = pc;
     fine_facet = 0; //!!!! 
 
-    int dim = ma.GetDimension();
-    
     // for(int i = 0; i < nel; i++)
     for (auto i : ma.Elements(VOL))
       {
@@ -321,11 +329,13 @@ namespace ngcomp
           {
             first_facet_dof[i] = ndof;
             if(fine_facet[i])
-	      ndof += order_facet[i][0] - dec_hodc;
+	      ndof += order_facet[i][0];
+	    if (highest_order_dc && !boundary_facet[i]) ndof--;
           }
 
         first_facet_dof[nfa] = ndof;
       
+	Array<int> fnums;
         for(int i=0; i< nel; i++)
           {
             INT<3> pc = order_inner_curl[i];
@@ -338,18 +348,24 @@ namespace ngcomp
                   inci = pc[0]*(pc[0]-1)/2 + p[0]*(p[0]-1)/2 + p[0]-1;
                 else
                   inci = pc[0]*(pc[0]-1)/2;
-		inci += 3*dec_hodc;
                 break;
               case ET_QUAD:
                 if (!ho_div_free)
                   inci = pc[0]*pc[1] + p[0]*p[1]+p[0]+p[1];
                 else
                   inci = pc[0]*pc[1];
-		inci += 4*dec_hodc;
                 break;
               default: // for the compiler
                 break;  
               }
+
+	    if (highest_order_dc)
+	      {
+		ma.GetElFacets (i, fnums);	
+		for (int j = 0; j < fnums.Size(); j++)
+		  if (!boundary_facet[fnums[j]]) inci++;
+	      }
+
             first_inner_dof[i] = ndof;
             if (inci > 0) ndof+=inci;
           }
@@ -365,18 +381,18 @@ namespace ngcomp
             for (int i = 0; i < ma.GetNE(); i++)
               {
                 ma.GetElFacets (i, fnums);
+		int fid = first_inner_dof[i];
                 for (int k = 0; k < fnums.Size(); k++)
-                  {
-                    int di = first_inner_dof[i]+k;
-                    dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
-                    dc_pairs[fnums[k]][0] = di;
-                  }
+		  if (!boundary_facet[fnums[k]])
+		    {
+		      int di = fid++; // first_inner_dof[i]+k;
+		      dc_pairs[fnums[k]][1] = dc_pairs[fnums[k]][0];
+		      dc_pairs[fnums[k]][0] = di;
+		    }
               }
           }
         else
           dc_pairs.SetSize (0);
-        
-
       }
     else 
       {
@@ -392,11 +408,11 @@ namespace ngcomp
                   {
                   case 3: //Triangle
                     inci= (p[0]*p[0]+3*p[0])/2; 
-                    if (highest_order_dc) inci -= p[0]+1;
+                    if (highest_order_dc && !boundary_facet[i]) inci -= p[0]+1;
                     break;
                   case 4: //Quad 
                     inci= p[0]*p[1] + p[0] + p[1];
-                    if (highest_order_dc) inci -= p[0]+p[1]+1;
+                    if (highest_order_dc && !boundary_facet[i]) inci -= p[0]+p[1]+1;
                     break;
                   }
               }
@@ -410,6 +426,7 @@ namespace ngcomp
           }
         first_facet_dof[nfa] = ndof;
 	 
+	Array<int> fnums;
         for (int i=0; i< nel; i++)
           {
             INT<3> p = order_inner[i];
@@ -423,7 +440,13 @@ namespace ngcomp
                   inci = p[0]*(p[0]+1)*(p[0]-1)/6 + p[0]*(p[0]-1)/2 + p[0]-1;
                 if(pc[0]>1)
                   inci += pc[0]*(pc[0]+1)*(pc[0]-1)/3 + pc[0]*(pc[0]-1)/2; ;
-                if (highest_order_dc) inci += 4*(p[0]+1);
+                if (highest_order_dc) 
+		  {
+		    ma.GetElFacets (i, fnums);	
+		    for (int j = 0; j < fnums.Size(); j++)
+		      if (!boundary_facet[fnums[j]]) inci += p[0]+1;
+		  }
+		// inci += 4*(p[0]+1);
                 break;
               case ET_PRISM:
                 // inci = (p[0]+1)*(3*(p[0]-1)+(p[0]-1)*(p[0]-2))+ (p[0]-1)*(p[0]+1)*(p[0]+2)/2;
@@ -462,17 +485,19 @@ namespace ngcomp
             for (int i = 0; i < ma.GetNE(); i++)
               {
                 ma.GetElFacets (i, fnums);
+		int di = first_inner_dof[i]; // +k*(order+1);
+		    
                 for (int k = 0; k < fnums.Size(); k++)
-                  {
-		    int base = fnums[k]*(order+1);
-                    int di = first_inner_dof[i]+k*(order+1);
-
-		    for (int l = 0; l < order+1; l++)
-		      {
-			dc_pairs[base+l][1] = dc_pairs[base+l][0];
-			dc_pairs[base+l][0] = di+l;
-		      }
-                  }
+		  if (!boundary_facet[fnums[k]])
+		    {
+		      int base = fnums[k]*(order+1);
+		      
+		      for (int l = 0; l < order+1; l++)
+			{
+			  dc_pairs[base+l][1] = dc_pairs[base+l][0];
+			  dc_pairs[base+l][0] = di++;
+			}
+		    }
               }
           }
         else
@@ -841,8 +866,8 @@ namespace ngcomp
     if(discont) porder = -1; 
     else porder = order; 
 
-    if (highest_order_dc) porder--;
-    
+    // if (highest_order_dc) porder--;
+
     switch (ma.GetSElType(selnr))
       {
       case ET_SEGM:
@@ -883,8 +908,8 @@ namespace ngcomp
 
 	hofe -> SetVertexNumbers (vnums);
 	ma.GetSElEdges(selnr, ednums);
-	int dec = highest_order_dc ? 1 : 0;
-	hofe -> SetOrderInner (order_facet[ednums[0]][0]-dec);
+	// int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
+	hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
 	hofe -> ComputeNDof();
       }
     else
@@ -906,7 +931,7 @@ namespace ngcomp
 	hofe -> SetOrderInner (order_fa);
 #else 
 	int order_fa = order_facet[ma.GetSElFace(selnr)][0];
-        if (highest_order_dc) order_fa--;
+        // if (highest_order_dc) order_fa--;
 	hofe -> SetOrderInner (order_fa);
 #endif
 	hofe -> ComputeNDof();
@@ -998,11 +1023,18 @@ namespace ngcomp
             dnums += fanums;
             
             int first_el_dof = eldofs.First();
+	    // cout << "eldofs = " << eldofs;
             for(int i = 0; i < fanums.Size(); i++)
               {
                 dnums += GetFacetDofs (fanums[i]);
-                dnums += first_el_dof++;
+		// cout << "fadofs = " << GetFacetDofs(fanums[i]);
+		if (!boundary_facet[fanums[i]])
+		  {
+		    // cout << " if ";
+		    dnums += first_el_dof++;
+		  }
               }
+	    // cout << "first el = " << first_el_dof << endl;
             dnums += IntRange (first_el_dof, eldofs.Next());
           }
         else
@@ -1016,22 +1048,27 @@ namespace ngcomp
             
             for(int i=0; i<fanums.Size(); i++)
               {
-                *testout << "facetdofs = " << GetFacetDofs(fanums[i]) << endl;
+                // *testout << "facetdofs = " << GetFacetDofs(fanums[i]) << endl;
                 int firstfa = GetFacetDofs(fanums[i]).First();
-
-                for (int i = 0; i <= order-1; i++)
-                  {
-                    for(int j = 0; j < order-i-1; j++)
-                      dnums.Append(firstfa++);
-                    dnums.Append(firstel++);
-                  }
-                for (int i = 0; i < order-1; i++)
-                  dnums.Append(firstfa++);
-                dnums.Append(firstel++);
+		
+		if (!boundary_facet[fanums[i]])
+		  {
+		    for (int i = 0; i <= order-1; i++)
+		      {
+			for(int j = 0; j < order-i-1; j++)
+			  dnums.Append(firstfa++);
+			dnums.Append(firstel++);
+		      }
+		    for (int i = 0; i < order-1; i++)
+		      dnums.Append(firstfa++);
+		    dnums.Append(firstel++);
+		  }
+		else
+		  dnums += (GetFacetDofs(fanums[i]));
               }
             dnums += IntRange (firstel, eldofs.Next());
-            *testout << "eldofs = " << eldofs << endl;
-            *testout << "dnums = " << endl << dnums << endl;
+            // *testout << "eldofs = " << eldofs << endl;
+            // *testout << "dnums = " << endl << dnums << endl;
           }
       }
     else
@@ -1049,6 +1086,8 @@ namespace ngcomp
 
     if (!DefinedOn (ma.GetElIndex (elnr)))
       dnums = -1;
+
+    // cout << "ndof = " << dnums.Size() << endl;
   }
 
 
