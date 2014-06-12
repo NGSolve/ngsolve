@@ -42,7 +42,7 @@ namespace ngcomp
 		      };
 		     
 
-  ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
+  NGS_DLL_HEADER ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
 
 
   /**
