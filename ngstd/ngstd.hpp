@@ -136,7 +136,9 @@ namespace ngstd
 #include "statushandler.hpp"
 
 #include "mpiwrapper.hpp"
+#ifndef WIN32
 #include "sockets.hpp"
+#endif
 #include "archive.hpp"
 
 namespace ngstd
