@@ -4486,8 +4486,11 @@ namespace ngfem
   void FE_NedelecPyramid3 :: CalcShape (const IntegrationPoint & ip, 
 					SliceMatrix<> shape) const
   {
-    shape = 0.0; //!
-    Mat<NDOF,3> hshape;
+	  cout << "old nedelec pyramid disabled" << endl;
+
+	  shape = 0.0; //!
+	  /*
+	  Mat<NDOF,3> hshape;
     Mat<8,3> shape1;
     CalcShape1 (ip, hshape);
     shape = Trans (trans) * hshape;
@@ -4515,6 +4518,7 @@ namespace ngfem
     for (i = 0; i < NFACEDOF; i++)
       for (j = 0; j < 3; j++)
 	shape(i+8+NEDGEDOF,j) = shape3(i,j);
+	*/
   }
 
 
