@@ -2404,7 +2404,7 @@ namespace netgen
 
     bool hasit = false;
 #ifdef max
-      #undef max;
+      #undef max
 #endif
     minv = numeric_limits<double>::max();
     maxv = -numeric_limits<double>::max();
