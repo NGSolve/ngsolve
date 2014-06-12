@@ -17,7 +17,7 @@ namespace ngfem
   
   template <int D>
   //   class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public FiniteElement
-  class NGS_DLL_HEADER VectorFacetFacetFiniteElement : public HCurlFiniteElement<D>
+  class VectorFacetFacetFiniteElement : public HCurlFiniteElement<D>
   {
   protected:
     int vnums[8];
@@ -75,7 +75,7 @@ namespace ngfem
   /**
      High order 1D finite element
   */
-  class NGS_DLL_HEADER VectorFacetFacetSegm : public VectorFacetFacetFiniteElement<1>
+  class VectorFacetFacetSegm : public VectorFacetFacetFiniteElement<1>
   {
   public:
     VectorFacetFacetSegm (int aorder=0);
@@ -146,7 +146,7 @@ namespace ngfem
 
 
   template <int D>
-  class NGS_DLL_HEADER VectorFacetVolumeFiniteElement : public HCurlFiniteElement<D>
+  class VectorFacetVolumeFiniteElement : public HCurlFiniteElement<D>
   {
   protected:
     int vnums[8];
