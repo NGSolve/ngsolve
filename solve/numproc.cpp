@@ -3117,7 +3117,11 @@ public:
 
   virtual void Do(LocalHeap & lh)
   {
+#ifndef WIN32
     sleep (seconds);
+#else
+	  Sleep(1000*seconds);
+#endif
   }
 
 
