@@ -423,6 +423,7 @@
       <TargetMachine>MachineX64</TargetMachine>
       <AllowIsolation>true</AllowIsolation>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <StackReserveSize>4000000</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Message>Running POSTBUILD Script....</Message>
