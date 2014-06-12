@@ -488,6 +488,7 @@
     <ClCompile Include="..\fem\finiteelement.cpp" />
     <ClCompile Include="..\fem\generic_recpol.cpp" />
     <ClCompile Include="..\fem\h1hofe.cpp" />
+    <ClCompile Include="..\fem\h1hofefo.cpp" />
     <ClCompile Include="..\fem\h1lofe.cpp" />
     <ClCompile Include="..\fem\hcurlfe.cpp" />
     <ClCompile Include="..\fem\hcurlhofe.cpp" />
@@ -539,7 +540,7 @@
     <ClCompile Include="..\ngstd\templates.cpp" />
     <ClCompile Include="..\parallel\parallelvvector.cpp" />
     <ClCompile Include="..\solve\bvp.cpp" />
-    <ClCompile Include="..\solve\evplapack.cpp" />
+    <ClCompile Include="..\solve\evp.cpp" />
     <ClCompile Include="..\solve\generalizedEVP.cpp" />
     <ClCompile Include="..\solve\hyperbolic.cpp" />
     <ClCompile Include="..\solve\numproc.cpp" />
