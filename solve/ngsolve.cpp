@@ -30,6 +30,7 @@ using namespace ngsolve;
 #include "markus/jobmanager.hpp"
 #endif
 
+
 // #include "/home/joachim/netgen-mesher/netgen/libsrc/include/meshing.hpp"
 // volatile int & running = netgen::multithread.running;
 // static bool got_exception = false;
@@ -129,7 +130,7 @@ int NGS_Help (ClientData clientData,
 NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
 
 
-
+#ifdef _NGSOLVE_SOCKETS_HPP
   class SocketOutArchive : public Archive
   {
     Socket & sock;
@@ -221,10 +222,11 @@ NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
     }
   };
 
+#endif
 
-
-
+#ifndef WIN32
 static pthread_t socket_thread;
+
 void MyRunParallel ( void * (*fun)(void *), void * in)
 {
   pthread_attr_t attr;
@@ -232,6 +234,8 @@ void MyRunParallel ( void * (*fun)(void *), void * in)
   pthread_attr_setstacksize(&attr, 1000000);
   pthread_create (&socket_thread, &attr, fun, in);
 }
+
+
 
 void * SocketThread (void * data)
 {
@@ -284,6 +288,7 @@ void * SocketThread (void * data)
   return NULL;
 }
 
+#endif
 
 
 
@@ -321,7 +326,9 @@ int NGS_LoadPDE (ClientData clientData,
             {
               int * hport = new int;
               *hport = port;
+#ifndef WIN32
               MyRunParallel (SocketThread, hport);
+#endif
             }
 	}
       catch (exception & e)
@@ -561,6 +568,7 @@ int NGS_SocketLoad (ClientData clientData,
 {
   if (argc >= 2)
     {
+#ifndef WIN32
       try
         {
           int portnum = atoi (argv[1]);
@@ -583,6 +591,7 @@ int NGS_SocketLoad (ClientData clientData,
           Tcl_SetResult (interp, (char*) e.What().c_str(), TCL_VOLATILE);
           return TCL_ERROR;
         }
+#endif
     }
 
   Tcl_SetResult (interp, (char*)"load socket error", TCL_STATIC);
