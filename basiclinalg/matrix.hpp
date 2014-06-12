@@ -12,7 +12,7 @@ namespace ngbla
 
   
   template <int H, int W, typename T> class Mat;
-  template <typename T, ORDERING ORD = RowMajor> class SliceMatrix;
+  template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
@@ -1221,7 +1221,7 @@ namespace ngbla
 
 
 
-  template <typename T = double, ORDERING ORD>
+  template <typename T, ORDERING ORD>
   class SliceMatrix : public CMCPMatExpr<SliceMatrix<T> >
   {
   protected:
