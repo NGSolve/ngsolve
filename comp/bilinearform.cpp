@@ -2722,6 +2722,8 @@ namespace ngcomp
                    const BilinearFormIntegrator & bfi = *parts[j];
                    
                    if (bfi.BoundaryForm()) continue;
+		   if (!bfi.DefinedOn (ma.GetElIndex (ei))) continue;
+
                    energy_T += bfi.Energy (fel, eltrans, elvecx, lh);
                  }
 #pragma omp atomic
@@ -2745,6 +2747,7 @@ namespace ngcomp
               for (int j = 0; j < NumIntegrators(); j++)
                 {
                   const BilinearFormIntegrator & bfi = *parts[j];
+		  if (!bfi.DefinedOn (ma.GetElIndex (ElementId(BND,i)))) continue;
                 
                   if (!bfi.BoundaryForm()) continue;
                   energy += bfi.Energy (fel, eltrans, elvecx, lh);
