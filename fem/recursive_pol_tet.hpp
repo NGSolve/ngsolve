@@ -57,7 +57,7 @@ namespace ngfem
     }
 
     template <typename Sx, typename Sy, typename Sz, typename T1, typename T2, typename T3>
-    static void CalcSplitted (int n, Sx x, Sy y, Sz z, T1 & val1, T2 & val2, T3 & val3)
+    static INLINE void CalcSplitted (int n, Sx x, Sy y, Sz z, T1 & val1, T2 & val2, T3 & val3)
     {
       Sx bub1 = sqr (1-y-z) - sqr(x);
       ScaledLegendrePolynomialMult (n-4, x, 1-y-z, bub1, val1);
