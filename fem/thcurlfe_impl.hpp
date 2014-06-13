@@ -56,7 +56,10 @@ namespace ngfem
   {
     Vec<DIM, AutoDiff<DIM> > adp = mip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
-                                { shape.Row(i) = s; }));
+				    { 
+				      // shape.Row(i) = s; 
+				      FlatVec<DIM> (&shape(i,0)) = s; 
+				    }));
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>

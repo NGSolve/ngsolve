@@ -40,7 +40,8 @@ namespace ngfem
     static_cast<const FEL*> (this) -> 
       T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val)
                                       {
-                                        shape.Row(nr) = Vec<DIM> (val);
+                                        // shape.Row(nr) = Vec<DIM> (val);
+					FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
                                       }));
   }
   
