@@ -10,9 +10,10 @@ namespace ngfem
   {    
     Vec<DIM,AutoDiff<DIM>> adp = ip;
     static_cast<const FEL*> (this) -> 
-      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val)
+      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val)  LAMBDA_INLINE
                                       {
-                                        shape.Row(nr) = Vec<DIM> (val);
+                                        // shape.Row(nr) = Vec<DIM> (val);
+					FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
                                       }));
   }
   
@@ -24,7 +25,7 @@ namespace ngfem
   {  
     Vec<DIM,AutoDiff<DIM>> adp = ip;
     static_cast<const FEL*> (this) -> 
-      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2DivShape<DIM> val)
+      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2DivShape<DIM> val) LAMBDA_INLINE
                                       {
                                         divshape(nr) = val;
                                       }));
@@ -38,7 +39,7 @@ namespace ngfem
   {   
     Vec<DIM,AutoDiff<DIM>> adp = mip;    
     static_cast<const FEL*> (this) -> 
-      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val)
+      T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val) LAMBDA_INLINE
                                       {
                                         // shape.Row(nr) = Vec<DIM> (val);
 					FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);

@@ -311,11 +311,11 @@ namespace ngfem
           // Typ 1
           IntLegNoBubble::
             EvalScaledMult (p-1, xi, sum, bub, 
-                            SBLambda([&](int k, Tx polk)
+                            SBLambda([&](int k, Tx polk) LAMBDA_INLINE
                                      {
                                        IntegratedJacobiPolynomialAlpha jac(2*k+3);
                                        jac.EvalScaledMult(p-k-1, eta-sum, 1-zeta, eta, 
-                                                          SBLambda ([&](int i, Tx val)
+                                                          SBLambda ([&](int i, Tx val) LAMBDA_INLINE
                                                                     {
                                                                       shape[ii++] = 
                                                                         Du_Cross_Dv (val, polk);
@@ -324,7 +324,7 @@ namespace ngfem
           
           IntegratedJacobiPolynomialAlpha jac(3);
           jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, 
-                             SBLambda ([&](int i, Tx val)
+                             SBLambda ([&](int i, Tx val) LAMBDA_INLINE
                                        {
                                          shape[ii++] = 
                                            curl_uDvw_minus_Duvw (lami[fav[0]], lami[fav[1]], val);
@@ -339,7 +339,14 @@ namespace ngfem
     int pp = max(p,pc); 
     if ( pp >= 2 )
       {
+#ifdef VLA
+        Tx mem[3*order];
+        Tx * adpol1 = &mem[0];
+        Tx * adpol2 = &mem[order];
+        Tx * adpol3 = &mem[2*order];
+#else
         ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
+#endif
 
         T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       
