@@ -60,8 +60,10 @@ namespace ngfem
     static INLINE void CalcSplitted (int n, Sx x, Sy y, Sz z, T1 & val1, T2 & val2, T3 & val3)
     {
       Sx bub1 = sqr (1-y-z) - sqr(x);
-      ScaledLegendrePolynomialMult (n-4, x, 1-y-z, bub1, val1);
-      ScaledLegendrePolynomialMult (n-4, 2*y - (1-z) , (1-z), y, val2); 
+      // ScaledLegendrePolynomialMult (n-4, x, 1-y-z, bub1, val1);
+      // ScaledLegendrePolynomialMult (n-4, 2*y - (1-z) , (1-z), y, val2); 
+      LegendrePolynomial::EvalScaledMult (n-4, x, 1-y-z, bub1, val1);
+      LegendrePolynomial::EvalScaledMult (n-4, 2*y - (1-z) , (1-z), y, val2); 
 
       LegendrePolynomial leg;
       leg.EvalMult (n-4, 2*z-1, z, val3);
@@ -115,11 +117,15 @@ namespace ngfem
       return ii;
     }
     template <typename Sx, typename Sy, typename Sz, typename T>
-    static void CalcSplitted (int n, Sx x, Sy y, Sz z, T && val1, T && val2)
+    static INLINE void CalcSplitted (int n, Sx x, Sy y, Sz z, T && val1, T && val2)
     {
       Sx bub1 = sqr (1-y-z) - sqr (x); 
+      /*
       ScaledLegendrePolynomialMult (n-3, x, 1-y-z, bub1, val1);
       ScaledLegendrePolynomialMult (n-3, 2*y-(1-z),(1-z), y, val2);
+      */
+      LegendrePolynomial::EvalScaledMult (n-3, x, 1-y-z, bub1, val1);
+      LegendrePolynomial::EvalScaledMult (n-3, 2*y-(1-z),(1-z), y, val2);
     }
   };
 

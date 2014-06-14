@@ -86,7 +86,10 @@ namespace ngfem
       {
         Vec<DIM, AutoDiff<DIM> > adp = mip; 
         T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                        { curlshape.Row(i) = s; }));
+                                        { 
+                                          // curlshape.Row(i) = s; 
+                                          FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s; 
+                                        }));
       }
   }
 
