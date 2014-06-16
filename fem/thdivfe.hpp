@@ -456,6 +456,9 @@ namespace ngfem
     
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
+
+    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mip,
+				  SliceMatrix<> shape) const;
     
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 

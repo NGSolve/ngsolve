@@ -42,9 +42,16 @@ namespace ngfem
     virtual void CalcDivShape (const IntegrationPoint & ip,
 			       SliceVector<> divshape) const;
 
+    /// calc normal components of facet shapes, ip has facet-nr
+    virtual void CalcNormalShape (const IntegrationPoint & ip, 
+                                  SliceVector<> nshape) const;
+
     /// compute shape
-    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & sip,
+    virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
+
+    virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                                  SliceMatrix<> shape) const;
 
     /// compute div of shape
     virtual void CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & sip,
