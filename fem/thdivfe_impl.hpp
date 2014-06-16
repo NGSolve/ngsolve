@@ -41,11 +41,18 @@ namespace ngfem
     static_cast<const FEL*> (this) -> 
       T_CalcShape (&adp(0), SBLambda( [&] (int nr, THDiv2Shape<DIM> val) LAMBDA_INLINE
                                       {
-                                        // shape.Row(nr) = Vec<DIM> (val);
 					FlatVec<DIM> (&shape(nr,0)) = Vec<DIM> (val);
                                       }));
   }
-  
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HDivHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                   SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
+  }
       
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 

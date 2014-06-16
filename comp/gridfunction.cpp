@@ -1067,6 +1067,12 @@ namespace ngcomp
              << e.What();
         return false;
       }
+    catch (exception & e)
+      {
+        cout << "GetValue caught exception" << endl
+             << typeid(e).name() << endl;
+        return false;
+      }
   }
 
 
@@ -1150,6 +1156,12 @@ namespace ngcomp
       {
         cout << "GetValue 2 caught exception" << endl
              << e.What();
+        return false;
+      }
+    catch (exception & e)
+      {
+        cout << "GetValue 2 caught exception" << endl
+             << typeid(e).name() << endl;
         return false;
       }
   }
@@ -1248,6 +1260,12 @@ namespace ngcomp
         cout << "GetMultiValue caught exception" << endl
              << e.What();
         return 0;
+      }
+    catch (exception & e)
+      {
+        cout << "GetMultiValue caught exception" << endl
+             << typeid(e).name() << endl;
+        return false;
       }
   }
 

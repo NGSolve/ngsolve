@@ -66,6 +66,28 @@ namespace ngfem
       }
   }
 
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcNormalShape (const IntegrationPoint & ip, 
+                   SliceVector<> nshape) const
+  {
+    Array<int> dnums;
+    int fnr = ip.FacetNr();
+    if (fnr < 0) cerr << "HDivFE::CalcNormalShape: not a facet ip" << endl;
+    GetFacetDofs (fnr, dnums);
+
+    NORMAL * normals = ElementTopology::GetNormals(ElementType());
+    Vec<D> normal_ref;
+    for (int i = 0; i < D; i++)
+      normal_ref(i) = normals[fnr][i];
+
+    MatrixFixWidth<D> shape(GetNDof());
+    CalcShape (ip, shape);
+    for (int i = 0; i < dnums.Size(); i++)
+      nshape(i) = InnerProduct (normal_ref, shape.Row(dnums[i]));
+  }
+
+
 
   /// compute shape
   template <int D>
@@ -81,6 +103,16 @@ namespace ngfem
         shape.Row(i) = trans * hs;
       }
   }
+
+  template <int D>
+  void HDivFiniteElement<D> ::
+  CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+                   SliceMatrix<> shape) const
+  {
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMappedShape (mir[i], shape.Cols(D, (i+1)*D));
+  }
+
 
   /// compute curl of shape
   template <int D>

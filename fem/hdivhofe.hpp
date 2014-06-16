@@ -167,6 +167,11 @@ namespace ngfem
     virtual void ComputeNDof();
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
+
+    /// calc normal components of facet shapes, ip has facet-nr
+    virtual void CalcNormalShape (const IntegrationPoint & ip, 
+                                  SliceVector<> nshape) const;
+
   };
 
 
