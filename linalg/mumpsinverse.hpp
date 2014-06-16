@@ -138,11 +138,13 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual BaseVector * CreateVector () const
+    virtual BaseVector * CreateVector () const;
+    /*
     {
-      return new VVector<TV> (height);
+      return new ParallelVVector<TV> (height, paralleldofs);
+      // return new VVector<TV> (height);
     }
-
+    */
 
   private:
     void MumpsFunction (MUMPS_STRUC_C & mumps_id)

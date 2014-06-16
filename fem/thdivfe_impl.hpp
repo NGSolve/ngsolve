@@ -45,8 +45,8 @@ namespace ngfem
                                       }));
   }
 
-  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
-  void T_HDivHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET>::
   CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                    SliceMatrix<> shape) const
   {

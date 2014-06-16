@@ -1,7 +1,7 @@
 AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) 
 
 lib_LTLIBRARIES = libngsolve.la
-bin_PROGRAMS = ngs
+bin_PROGRAMS =  ngs
 
 
 
@@ -38,8 +38,8 @@ ngs_LDADD = libngsolve.la \
 	$(top_builddir)/linalg/libngla.la \
 	$(top_builddir)/basiclinalg/libngbla.la		\
 	$(top_builddir)/ngstd/libngstd.la \
-	$(PARDISO_LIBS) $(LAPACK_LIBS) \
-        -L$(libdir) -lnglib -linterface 
+	$(PARDISO_LIBS) $(LAPACK_LIBS) $(MUMPS_LIBS) \
+       -L$(libdir) -lnglib -linterface 
 
 include_HEADERS = solve.hpp pde.hpp numproc.hpp
 

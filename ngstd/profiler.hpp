@@ -269,11 +269,14 @@ namespace ngstd
     int timer_id;
     Timer * prev;
     int priority;
+    string name;
   public:
-    Timer (const string & name, int apriority = 1)
+    Timer (const string & aname, int apriority = 1)
+      : name(aname)
     {
       priority = apriority;
-      timer_id = VT_USER_DEF(name.c_str());
+      // timer_id = VT_USER_DEF(name.c_str());
+      timer_id = VT_USER_DEF(name.c_str(), NULL, NULL, -1);
     }
     void Start () 
     {
@@ -282,17 +285,25 @@ namespace ngstd
 	  prev = stack_top;
 	  stack_top = this;
 	  if (prev)
-	    VT_USER_END_ID (prev -> timer_id);
-	  VT_USER_START_ID(timer_id);
+	    // VT_USER_END_ID (prev -> timer_id);
+	    // VT_USER_END2 (prev -> timer_id);
+	    VT_USER_END (prev -> name.c_str());
+	  // VT_USER_START_ID(timer_id);
+	  // VT_USER_START2 (timer_id);
+	  VT_USER_START (name.c_str());
 	}
     }
     void Stop () 
     {
       if (priority == 1)
 	{
-	  VT_USER_END_ID(timer_id);
+	  // VT_USER_END_ID(timer_id);
+	  // VT_USER_END2(timer_id);
+	  VT_USER_END(name.c_str());
 	  if (prev != NULL)
-	    VT_USER_START_ID(prev -> timer_id);
+	    // VT_USER_START_ID(prev -> timer_id);
+	    // VT_USER_START2(prev -> timer_id);
+	    VT_USER_START(prev -> name.c_str());
 	  stack_top = prev;
 	}
     }
@@ -300,6 +311,7 @@ namespace ngstd
     void AddFlops (double aflops)  { ; }
     double GetTime () { return 0; }
     long int GetCounts () { return 0; }
+    operator int () { return timer_id; }
   };
 #else
 
