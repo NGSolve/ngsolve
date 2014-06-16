@@ -788,7 +788,7 @@ namespace ngla
     */
 
     mumps_id.icntl[6]=7;   // 0..min deg, 3..scotch 5..metis, 7..default
-    mumps_id.icntl[12]=1;  // 0..do use, 1..not using scalapck for root schur complement
+    mumps_id.icntl[12]=0;  // 0..do use, 1..not using scalapck for root schur complement
     mumps_id.icntl[13]=50; // memory increase (in %) due to error -9
     mumps_id.icntl[17]=3;  // parallel input
     mumps_id.icntl[27]=0;  // 0..default, 1..seq, 2..parallel analysis
@@ -930,6 +930,12 @@ namespace ngla
   }
 
 
+  template <class TM, class TV>
+  BaseVector * ParallelMumpsInverse<TM,TV> :: CreateVector () const
+    {
+      return new ParallelVVector<TV> (height, paralleldofs);
+      // return new VVector<TV> (height);
+    }
 
 
 

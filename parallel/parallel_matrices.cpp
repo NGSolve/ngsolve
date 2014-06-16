@@ -404,6 +404,9 @@ namespace ngla
     inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Mat<3> > (subset);   if (inv) return inv;
 
+    inv = InverseMatrixTM<Mat<2,2,Complex> > (subset);   if (inv) return inv;
+    inv = InverseMatrixTM<Mat<3,3,Complex> > (subset);   if (inv) return inv;
+
     throw Exception ("ParallelMatrix::Inverse(BitArray) not available, typeid(mat) = " 
 		     + ToString (typeid(mat).name()));
   }

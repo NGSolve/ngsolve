@@ -376,7 +376,7 @@ namespace ngfem
     ArrayMem<AutoDiff<2>, 20> adpol2(p);
 
     IntLegNoBubble::EvalScaledMult (p-1, le-ls, le+ls, ls*le, adpol1); 
-
+    /*
     // Typ 1
     for (int k = 0; k <= p-1; k++)
       {
@@ -385,6 +385,20 @@ namespace ngfem
 	for (int l = 0; l <= p-1-k; l++, ii++)
           shape(ii) = Cross (adpol2[l], adpol1[k]).DValue(0);
       }
+    */
+
+    // Vector<> hshape(shape.Size());
+    // ArrayMem<double, 20> adpol2b(p);
+    // hshape = 0.0;
+    // int iii = 1;
+    for (int k = 0; k <= p-1; k++)
+      {
+        JacobiPolynomialAlpha jac(2*k+3);
+	double factor = Cross (lo, adpol1[k]).DValue(0);
+        jac.EvalMult(p-1-k, 2*lo.Value()-1, factor, shape+ii);
+	ii += p-k;
+      }
+    // cout << "shape = " << endl << shape << endl << " hshape = " << hshape << endl;
 
     IntegratedJacobiPolynomialAlpha jac(3);
     jac.EvalMult(p-1, 2*lo-1, lo, adpol2);
@@ -638,7 +652,33 @@ namespace ngfem
   }
 
 
+  template<>
+  void HDivHighOrderFE<ET_TET> :: 
+  CalcNormalShape (const IntegrationPoint & ip, 
+                   SliceVector<> nshape) const
+  {
+    // Vector<> nshape1(nshape.Size());
+    // HDivFiniteElement<3>::CalcNormalShape (ip, nshape1);
 
+    int fnr = ip.FacetNr();
+    double lam[] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
+    
+    INT<4> face = ET_trait<ET_TET>::GetFace(fnr);
+    
+    IntegrationPoint ip2d(lam[face[0]], lam[face[1]], lam[face[2]]);
+    ArrayMem<int,3> vnumsf(3);
+    for (int j = 0; j < 3; j++) vnumsf[j] = vnums[face[j]];
+    
+    HDivHighOrderNormalTrig<> trig(order_facet[fnr][0]);
+    trig.SetVertexNumbers (vnumsf);
+
+    VectorMem<20> tmp(nshape.Size());
+    trig.CalcShape (ip2d, tmp);
+    nshape = -tmp;
+    // cout << "nshape1 = " << endl << nshape1 << endl;
+    // cout << "nshape = " << endl << nshape << endl;
+    // cout << "******************************************** diff = " << L2Norm (nshape-nshape1) << endl;
+  }
 
   //------------------------------------------------------------------------
   // HDivHighOrderTrig
