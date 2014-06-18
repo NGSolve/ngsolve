@@ -311,34 +311,30 @@ namespace ngfem
   void VectorFacetVolumeTrig ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
-    shape = 0.0;
+    for (int i = 0; i < ndof; i++)
+      shape(i, 0) = shape(i, 1) = 0;
+
     int first = first_facet_dof[fanr];
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
     const EDGE * edges = ElementTopology :: GetEdges ( eltype );
 
-    int  fav[2] = {edges[fanr][0], edges[fanr][1] };
-    int j1 = 0; 
-    int j2 = 1; 
+    int fav[2] = { edges[fanr][0], edges[fanr][1] };
+    int j1 = 0, j2 = 1;
     if(vnums[fav[j1]] > vnums[fav[j2]]) swap(j1,j2); 
 
     AutoDiff<2> lami[3] = {x, y, 1-x-y};  
 
     int p = facet_order[fanr][0];
-    ArrayMem< double, 10> polx(p+1);
-    int ii = first;
 
     AutoDiff<2> xi = lami[fav[j1]] - lami[fav[j2]];
-
-    LegendrePolynomial (p, xi.Value(), polx);
-    for (int i = 0; i <= facet_order[fanr][0]; i++)
-      {
-	double val = polx[i];
-	shape(ii,0) = val * xi.DValue(0);
-	shape(ii,1) = val * xi.DValue(1);
-	ii++;
-      }
+    LegendrePolynomial (p, xi.Value(), 
+                        SBLambda([&](int nr, double val)
+                                 {
+                                   shape(first+nr,0) = val * xi.DValue(0);
+                                   shape(first+nr,1) = val * xi.DValue(1);
+                                 }));
   }
 
   void VectorFacetVolumeTrig ::
@@ -467,7 +463,8 @@ namespace ngfem
   void VectorFacetVolumeTet ::
   CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
   {
-    shape = 0.0;
+    for (int i = 0; i < ndof; i++)
+      shape(i,0) = shape(i,1) = shape(i,2) = 0;
 
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
