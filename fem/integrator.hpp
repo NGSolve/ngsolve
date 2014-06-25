@@ -922,6 +922,10 @@ namespace ngfem
     virtual int DimSpace () const
     { return bfi.DimSpace(); }
 
+    virtual void CheckElement (const FiniteElement & el) const
+    {
+      return bfi.CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
+    }
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
