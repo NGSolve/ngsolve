@@ -509,10 +509,14 @@ namespace ngcomp
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
+    /// returns all elements connected to an edge
+    void GetEdgeSurfaceElements (int enr, Array<int> & elnums) const;
     /// returns all edges of a face
     void GetFaceEdges (int fnr, Array<int> & edges) const;
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
+    /// returns surface elements connected to a face
+    void GetFaceSurfaceElements (int fnr, Array<int> & elnums) const;
     /// point numbers of a 1D element
     // void GetSegmentPNums (int snr, Array<int> & pnums) const;
     /// index of 1D element
@@ -537,6 +541,15 @@ namespace ngcomp
         case 1: GetVertexElements (fnr, elnums); break;
         case 2: GetEdgeElements (fnr, elnums); break;
         case 3: GetFaceElements (fnr, elnums); break;
+        }
+    }
+    void GetFacetSurfaceElements (int fnr, Array<int> & elnums) const
+    {
+      switch (dim)
+        {
+          // case 1: GetVertexElements (fnr, elnums); break;
+        case 2: GetEdgeSurfaceElements (fnr, elnums); break;
+        case 3: GetFaceSurfaceElements (fnr, elnums); break;
         }
     }
 

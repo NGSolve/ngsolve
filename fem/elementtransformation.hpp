@@ -129,7 +129,8 @@ namespace ngfem
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const = 0;
 
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
-
+    virtual const void * GetMesh () const { return NULL; }
+    
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
     ElementTransformation & operator= (const ElementTransformation & eltrans2) 
