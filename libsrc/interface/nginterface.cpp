@@ -1932,14 +1932,29 @@ int Ng_GetVertex_Elements( int vnr, int* elems )
 ///// Added by Roman Stainko ....
 int Ng_GetVertex_SurfaceElements( int vnr, int* elems )
 {
-  const MeshTopology& topology = mesh->GetTopology();
-  ArrayMem<int,4> indexArray;
-  topology.GetVertexSurfaceElements( vnr, indexArray );
-  
-  for( int i=0; i<indexArray.Size(); i++ )
-    elems[i] = indexArray[i];
-  
-  return indexArray.Size();
+  switch (mesh->GetDimension())
+    {
+    case 3:
+      {
+        const MeshTopology& topology = mesh->GetTopology();
+        ArrayMem<int,4> indexArray;
+        topology.GetVertexSurfaceElements( vnr, indexArray );
+        
+        for( int i=0; i<indexArray.Size(); i++ )
+          elems[i] = indexArray[i];
+        
+        return indexArray.Size();
+      }
+    case 2:
+      {
+        int cnt = 0;
+        for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
+          if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) 
+            elems[cnt++] = i+1;
+        return cnt;
+      }
+    }
+  return 0;
 }
 
 ///// Added by Roman Stainko ....
@@ -1955,11 +1970,24 @@ int Ng_GetVertex_NElements( int vnr )
 ///// Added by Roman Stainko ....
 int Ng_GetVertex_NSurfaceElements( int vnr )
 {
-  const MeshTopology& topology = mesh->GetTopology();
-  ArrayMem<int,4> indexArray;
-  topology.GetVertexSurfaceElements( vnr, indexArray );
-
-  return indexArray.Size();
+  switch (mesh->GetDimension())
+    {
+    case 3:
+      {
+        const MeshTopology& topology = mesh->GetTopology();
+        ArrayMem<int,4> indexArray;
+        topology.GetVertexSurfaceElements( vnr, indexArray );
+        return indexArray.Size();
+      }
+    case 2:
+      {
+        int cnt = 0;
+        for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
+          if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) cnt++;
+        return cnt;
+      }
+    }
+  return 0;
 }
 
 
