@@ -183,16 +183,21 @@ namespace ngcomp
       FlatMatrix<SCAL> het (sizew, sizei, lh);
       FlatMatrix<SCAL> he (sizei, sizew, lh);
 	  
+      // *testout << "localwb = " << endl << localwbdofs << endl;
+      // *testout << "localintdofs = " << endl << localintdofs << endl;
+
       if (sizei)
 	{      
 	  RegionTimer reg(timer3);
 	  timer3.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
+          // *testout << "inner = " << endl << d << endl;
           if (sizei > 30)
             LapackInverse (d);
           else
             CalcInverse (d);
 
+          // *testout << "inner,inv = " << endl << d << endl;
 	  if (sizew)
 	    {
 	      he = SCAL(0.0);
@@ -226,8 +231,17 @@ namespace ngcomp
       wbdofs = dnums[localwbdofs];
       intdofs = dnums[localintdofs];
 
+      /*
+      *testout << "BDDC:" << endl 
+               << "elmat = " << endl << elmat 
+               << "he = " << endl << he << endl
+               << "het = " << endl << het << endl
+               << "inv_innder = " << endl << d << endl
+               << "schur = " << endl << a << endl;
+      */
+
       // critical can be removed when everything is colored
-#pragma omp critical(bddcaddelmat)
+      // #pragma omp critical(bddcaddelmat)
       {
         for (int j = 0; j < intdofs.Size(); j++)
           weight[intdofs[j]] += el2ifweight[j];
@@ -273,10 +287,22 @@ namespace ngcomp
 	  sparse_harmonicext->GetRowValues(i) /= weight[i];
       
       if (!bfa.IsSymmetric())
-	for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
-	  if (weight[i])
-	    sparse_harmonicexttrans->GetRowValues(i) /= weight[i];
-
+        {
+          for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
+            {
+              FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
+              FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
+              for (int j = 0; j < rowind.Size(); j++)
+                if (weight[rowind[j]])
+                  values[j] /= weight[rowind[j]];
+            }
+          /*
+          // bug ! should be transposed !!!
+          for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
+            if (weight[i])
+              sparse_harmonicexttrans->GetRowValues(i) /= weight[i];
+          */
+        }
 
       // now generate wire-basked solver
 

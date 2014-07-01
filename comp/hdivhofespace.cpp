@@ -189,7 +189,6 @@ namespace ngcomp
     fine_facet.SetSize(nfa); 
     boundary_facet.SetSize(nfa); 
    
-    /*
     boundary_facet = false;
     for (int i = 0; i < ma.GetNSE(); i++)
       {
@@ -197,7 +196,7 @@ namespace ngcomp
 	ma.GetSElFacets (i,elfacets); 
 	boundary_facet[elfacets[0]] = true;
       }
-    */
+
     // cout << " order hdiv " << order << endl; 
     // cout << " curl_order hdiv " << curl_order << endl; 
 
