@@ -1587,6 +1587,7 @@ namespace ngstd
   class MPI_Traits<ngbla::Vec<S, T> >
   {
   public:
+    /// gets the MPI datatype
     static MPI_Datatype MPIType () 
     { 
       static MPI_Datatype MPI_T = 0;

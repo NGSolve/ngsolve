@@ -35,6 +35,7 @@ namespace ngstd
   class MPI_Traits<ngbla::Complex>
   {
   public:
+    /// gets the MPI datatype
     static MPI_Datatype MPIType () 
     { 
       // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??

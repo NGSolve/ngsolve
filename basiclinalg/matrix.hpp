@@ -1897,6 +1897,7 @@ namespace ngstd
   class MPI_Traits<ngbla::Mat<N, M, T> >
   {
   public:
+    /// gets the MPI datatype
     static MPI_Datatype MPIType () 
     { 
       static MPI_Datatype MPI_T = 0;

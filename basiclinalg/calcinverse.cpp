@@ -40,8 +40,8 @@ namespace ngbla
   template <class T2>
   void T_CalcInverse (FlatMatrix<T2> inv)
   {
-    static Timer t("CalcInverse");
-    RegionTimer reg(t);
+    // static Timer t("CalcInverse");
+    // RegionTimer reg(t);
 
     // Gauss - Jordan - algorithm
     // Algorithm of Stoer, Einf. i. d. Num. Math, S 145

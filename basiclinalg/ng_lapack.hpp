@@ -710,12 +710,12 @@ namespace ngbla
 
 
 
-  inline void LapackInverse (ngbla::FlatMatrix<double> a)
+  inline void LapackInverse (ngbla::SliceMatrix<double> a)
   {
     integer m = a.Height();
     if (m == 0) return;
     integer n = a.Width();
-    integer lda = a.Width();
+    integer lda = a.Dist();
 
     ArrayMem<integer,100> ipiv(n);
     integer info;
