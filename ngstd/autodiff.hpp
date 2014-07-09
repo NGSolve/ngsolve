@@ -114,7 +114,7 @@ inline ostream & operator<< (ostream & ost, const AutoDiff<D,SCAL> & x)
 
 /// AutoDiff plus AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value () = x.Value()+y.Value();
@@ -127,7 +127,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & x, con
 
 /// AutoDiff minus AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x.Value()-y.Value();
@@ -139,7 +139,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, con
 
 /// double plus AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (double x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator+ (double x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x+y.Value();
@@ -150,7 +150,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (double x, const AutoDiff<D,SCAL
 
 /// AutoDiff plus double
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & y, double x) throw()
+INLINE AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & y, double x) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x+y.Value();
@@ -162,7 +162,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & y, dou
 
 /// minus AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x) throw()
+INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = -x.Value();
@@ -173,7 +173,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x) thr
 
 /// AutoDiff minus double
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, double y) throw()
+INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, double y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x.Value()-y;
@@ -184,7 +184,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, dou
 
 ///
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (double x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator- (double x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x-y.Value();
@@ -196,7 +196,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator- (double x, const AutoDiff<D,SCAL
 
 /// double times AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (double x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator* (double x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x*y.Value();
@@ -207,7 +207,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (double x, const AutoDiff<D,SCAL
 
 /// AutoDiff times double
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & y, double x) throw()
+INLINE AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & y, double x) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x*y.Value();
@@ -218,7 +218,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & y, dou
 
 /// AutoDiff times AutoDiff
 template<int D, typename SCAL>
-ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
+INLINE AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   SCAL hx = x.Value();
@@ -233,7 +233,7 @@ ALWAYS_INLINE inline AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & x, con
 
 /// AutoDiff times AutoDiff
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> sqr (const AutoDiff<D,SCAL> & x) throw()
+INLINE AutoDiff<D,SCAL> sqr (const AutoDiff<D,SCAL> & x) throw()
 {
   AutoDiff<D,SCAL> res;
   SCAL hx = x.Value();
@@ -246,7 +246,7 @@ inline AutoDiff<D,SCAL> sqr (const AutoDiff<D,SCAL> & x) throw()
 
 /// Inverse of AutoDiff
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> Inv (const AutoDiff<D,SCAL> & x)
+INLINE AutoDiff<D,SCAL> Inv (const AutoDiff<D,SCAL> & x)
 {
   AutoDiff<D,SCAL> res(1.0 / x.Value());
   for (int i = 0; i < D; i++)
@@ -257,21 +257,21 @@ inline AutoDiff<D,SCAL> Inv (const AutoDiff<D,SCAL> & x)
 
 /// AutoDiff div AutoDiff
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y)
+INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, const AutoDiff<D,SCAL> & y)
 {
   return x * Inv (y);
 }
 
 /// AutoDiff div double
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
+INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
 {
   return (1/y) * x;
 }
 
   /// double div AutoDiff
   template<int D, typename SCAL>
-  inline AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
+  INLINE AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
   {
     return x * Inv(y);
   }
@@ -381,7 +381,7 @@ inline AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
 
 
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
+INLINE AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
 {
   double abs = std::fabs (x.Value());
   AutoDiff<D,SCAL> res( abs );
@@ -395,7 +395,7 @@ inline AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
 }
 
 template<int D, typename SCAL>
-inline AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
+INLINE AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
 {
   AutoDiff<D,SCAL> res;
   res.Value() = std::sqrt(x.Value());

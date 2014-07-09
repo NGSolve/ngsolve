@@ -12,21 +12,21 @@ namespace ngstd
 
 /// min of 2 values
 template <class T>
-inline T min2 (T a, T b)
+INLINE T min2 (T a, T b)
 {
   return (a < b) ? a : b;
 }
 
 /// max of 2 values
 template <class T>
-inline T max2 (T a, T b)
+INLINE T max2 (T a, T b)
 {
   return (a > b) ? a : b;
 }
 
 /// min of 3 values
 template <class T>
-inline T min3 (T a, T b, T c)
+INLINE T min3 (T a, T b, T c)
 {
   return (a < b) ? (a < c) ? a : c
     : (b < c) ? b : c;
@@ -34,7 +34,7 @@ inline T min3 (T a, T b, T c)
 
 /// max of 3 values
 template <class T>
-inline T max3 (T a, T b, T c)
+INLINE T max3 (T a, T b, T c)
 {
   ///
   return (a > b) ? ((a > c) ? a : c)
@@ -44,7 +44,7 @@ inline T max3 (T a, T b, T c)
 
 /// swap 2 elements. 
 template <class T>
-inline void Swap (T & a, T & b)
+INLINE void Swap (T & a, T & b)
 {
   T temp = a;
   a = b;
@@ -54,21 +54,21 @@ inline void Swap (T & a, T & b)
 
 /// sign of value (+1, 0, -1)
 template <class T>
-inline int sgn (T a)
+INLINE int sgn (T a)
 {
   return (a > 0) ? 1 : ( ( a < 0) ? -1 : 0 );
 }
 
 /// square element 
 template <class T>
-inline T sqr (const T a)
+INLINE T sqr (const T a)
 {
   return a * a; 
 }
 
 /// element to the third power
 template <class T>
-inline T pow3 (const T a)
+INLINE T pow3 (const T a)
 {
   return a * a * a; 
 }

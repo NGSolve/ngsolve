@@ -33,18 +33,18 @@ namespace ngfem
 
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     
-    NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
-					   SliceVector<> shape) const;
+    HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
+					      SliceVector<> shape) const;
     
     NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
 					   SliceMatrix<> shape) const;
     
-    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
-					    FlatVector<double> x) const;
+    HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
+					       FlatVector<double> x) const;
     
-    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
-					  FlatVector<double> coefs, 
-					  FlatVector<double> vals) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
+					     FlatVector<double> coefs, 
+					     FlatVector<double> vals) const;
     NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
     NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
@@ -58,8 +58,8 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
 
-    NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const;
+    HD NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
+					       SliceMatrix<> dshape) const;
 /*    
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;

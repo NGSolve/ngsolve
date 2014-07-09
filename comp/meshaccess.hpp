@@ -119,9 +119,12 @@ namespace ngcomp
         case NG_PRISM: case NG_PRISM12: return ET_PRISM;
         case NG_PYRAMID:                return ET_PYRAMID;
         case NG_HEX:                    return ET_HEX;
+	  /*
         default:
-          throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+	throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+	  */
         }
+      return ET_POINT; // for the compiler
     }
 
     ELEMENT_TYPE GetType () const 

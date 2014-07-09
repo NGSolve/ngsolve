@@ -36,8 +36,8 @@ namespace ngstd
   class BaseArrayObject
   {
   public:
-    BaseArrayObject() { ; }
-    const TA & Spec() const { return static_cast<const T&> (*this); }
+    INLINE BaseArrayObject() { ; }
+    INLINE const TA & Spec() const { return static_cast<const T&> (*this); }
   };
 
 
@@ -54,15 +54,15 @@ namespace ngstd
   {
     const T & ar;
   public:
-    AOWrapper (const T & aar) : ar(aar) { ; }
-    operator const T& () const { return ar; }
-    int Size() { return ar.Size(); }
-    auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
-    auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
+    INLINE AOWrapper (const T & aar) : ar(aar) { ; }
+    INLINE operator const T& () const { return ar; }
+    INLINE int Size() { return ar.Size(); }
+    INLINE auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
+    INLINE auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
   };
 
   template <typename T>
-  inline AOWrapper<T> ArrayObject (const T & ar)
+  INLINE AOWrapper<T> ArrayObject (const T & ar)
   {
     return AOWrapper<T> (ar);
   }
@@ -86,19 +86,19 @@ namespace ngstd
   public:
 
     /// initialize array 
-    CArray () { data = 0; }
+    INLINE CArray () { data = 0; }
 
     /// provide size and memory
-    CArray (T * adata) 
+    INLINE CArray (T * adata) 
       : data(adata) { ; }
 
     /// Access array
-    T & operator[] (int i) const
+    INLINE T & operator[] (int i) const
     {
       return data[i]; 
     }
 
-    operator T* () const { return data; }
+    INLINE operator T* () const { return data; }
   };
 
 
@@ -111,32 +111,32 @@ namespace ngstd
   {
     int first, next;
   public: 
-    IntRange () { ; }
-    IntRange (int f) : first(f), next(f+1) {;} 
-    IntRange (int f, int n) : first(f), next(n) {;} 
-    int First() const { return first; }
-    int Next() const { return next; }
-    int Size() const { return next-first; }
-    int operator[] (int i) const { return first+i; }
-    bool Contains (int i) const { return ((i >= first) && (i < next)); }
+    INLINE IntRange () { ; }
+    INLINE IntRange (int f) : first(f), next(f+1) {;} 
+    INLINE IntRange (int f, int n) : first(f), next(n) {;} 
+    INLINE int First() const { return first; }
+    INLINE int Next() const { return next; }
+    INLINE int Size() const { return next-first; }
+    INLINE int operator[] (int i) const { return first+i; }
+    INLINE bool Contains (int i) const { return ((i >= first) && (i < next)); }
   };
 
-  inline IntRange operator+ (const IntRange & range, int shift)
+  INLINE IntRange operator+ (const IntRange & range, int shift)
   {
     return IntRange (range.First()+shift, range.Next()+shift);
   }
 
-  inline IntRange operator+ (int shift, const IntRange & range)
+  INLINE IntRange operator+ (int shift, const IntRange & range)
   {
     return IntRange (range.First()+shift, range.Next()+shift);
   }
 
-  inline IntRange operator* (int scale, const IntRange & range)
+  INLINE IntRange operator* (int scale, const IntRange & range)
   {
     return IntRange (scale*range.First(), scale*range.Next());
   }
 
-  inline IntRange operator* (const IntRange & range, int scale)
+  INLINE IntRange operator* (const IntRange & range, int scale)
   {
     return IntRange (scale*range.First(), scale*range.Next());
   }
@@ -158,16 +158,16 @@ namespace ngstd
     const INDEX_ARRAY & ia;
 
   public:
-    IndirectArray (// const FlatArray<T> & aba,
+    INLINE IndirectArray (// const FlatArray<T> & aba,
                    FlatArray<T> aba,
 		   const INDEX_ARRAY & aia)
       : ba(aba), ia(aia) { ; }
 
-    int Size() const { return ia.Spec().Size(); }
-    T operator[] (int i) const { return ba[ia.Spec()[i]]; }
-    T & operator[] (int i) { return ba[ia.Spec()[i]]; }
+    INLINE int Size() const { return ia.Spec().Size(); }
+    INLINE T operator[] (int i) const { return ba[ia.Spec()[i]]; }
+    INLINE T & operator[] (int i) { return ba[ia.Spec()[i]]; }
 
-    IndirectArray operator= (const T & val) 
+    INLINE IndirectArray operator= (const T & val) 
     {
       for (int i = 0; i < Size(); i++)
         (*this)[i] = val;
@@ -175,7 +175,7 @@ namespace ngstd
     }
 
     template <typename T2, typename TA>
-    IndirectArray operator= (const BaseArrayObject<T2,TA> & a2) 
+    INLINE IndirectArray operator= (const BaseArrayObject<T2,TA> & a2) 
     {
       for (int i = 0; i < Size(); i++) 
 	(*this)[i] = a2.Spec()[i];
@@ -190,13 +190,13 @@ namespace ngstd
   {
     TSIZE ind;
   public:
-    ArrayIterator (TSIZE ai) : ind(ai) { ; }
-    ArrayIterator operator++ (int) { return ind++; }
-    ArrayIterator operator++ () { return ++ind; }
-    ArrayIterator operator*() const { return ind; }
-    TSIZE Index() { return ind; }
-    operator TSIZE () const { return ind; }
-    bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+    INLINE ArrayIterator (TSIZE ai) : ind(ai) { ; }
+    INLINE ArrayIterator operator++ (int) { return ind++; }
+    INLINE ArrayIterator operator++ () { return ++ind; }
+    INLINE ArrayIterator operator*() const { return ind; }
+    INLINE TSIZE Index() { return ind; }
+    INLINE operator TSIZE () const { return ind; }
+    INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
   };
 
 
@@ -218,25 +218,25 @@ namespace ngstd
   public:
 
     /// initialize array 
-    FlatArray () { ; } // size = 0; data = 0; }
+    INLINE FlatArray () { ; } // size = 0; data = 0; }
 
     /// provide size and memory
-    FlatArray (TSIZE asize, T * adata) 
+    INLINE FlatArray (TSIZE asize, T * adata) 
       : size(asize), data(adata) { ; }
 
     /// memory from local heap
-    FlatArray(TSIZE asize, LocalHeap & lh)
+    INLINE FlatArray(TSIZE asize, LocalHeap & lh)
       : size(asize),
         // data(static_cast<T*> (lh.Alloc(asize*sizeof(T))))
         data (lh.Alloc<T> (asize))
     { ; }
 
     /// the size
-    TSIZE Size() const { return size; }
+    INLINE TSIZE Size() const { return size; }
 
 
     /// Fill array with value val
-    const FlatArray & operator= (const T & val) const
+    INLINE const FlatArray & operator= (const T & val) const
     {
       for (TSIZE i = 0; i < size; i++)
         data[i] = val;
@@ -244,21 +244,21 @@ namespace ngstd
     }
 
     /// copies array
-    const FlatArray & operator= (const FlatArray & a2) const
+    INLINE const FlatArray & operator= (const FlatArray & a2) const
     {
       for (TSIZE i = 0; i < size; i++) data[i] = a2[i];
       return *this;
     }
 
     template <typename T2, typename TA>
-    const FlatArray & operator= (const BaseArrayObject<T2,TA> & a2) const
+    INLINE const FlatArray & operator= (const BaseArrayObject<T2,TA> & a2) const
     {
       for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
       return *this;
     }
 
     
-    const FlatArray & operator= (const std::function<T(int)> & func) const
+    INLINE const FlatArray & operator= (const std::function<T(int)> & func) const
     {
       for (TSIZE i = 0; i < size; i++)
         data[i] = func(i);
@@ -267,7 +267,7 @@ namespace ngstd
     
 
     /// copies pointers
-    const FlatArray & Assign (const FlatArray & a2)
+    INLINE const FlatArray & Assign (const FlatArray & a2)
     {
       size = a2.size;
       data = a2.data;
@@ -275,7 +275,7 @@ namespace ngstd
     }
 
     /// assigns memory from local heap
-    const FlatArray & Assign (TSIZE asize, LocalHeap & lh)
+    INLINE const FlatArray & Assign (TSIZE asize, LocalHeap & lh)
     {
       size = asize;
       data = lh.Alloc<T> (asize);
@@ -284,7 +284,7 @@ namespace ngstd
 
 
     /// Access array. range check by macro CHECK_RANGE
-    T & operator[] (TSIZE i) const
+    INLINE T & operator[] (TSIZE i) const
     {
 
 #ifdef CHECK_RANGE
@@ -296,12 +296,12 @@ namespace ngstd
     }
   
 
-    const CArray<T> Addr (int pos)
+    INLINE const CArray<T> Addr (int pos)
     { return CArray<T> (data+pos); }
 
     // const CArray<T> operator+ (int pos)
     // { return CArray<T> (data+pos); }
-    T * operator+ (int pos) { return data+pos; }
+    INLINE T * operator+ (int pos) { return data+pos; }
 
     /*
     // icc does not like this version
@@ -323,31 +323,31 @@ namespace ngstd
     }
 
     /// takes sub-array starting from position pos
-    const FlatArray<T> Part (int pos)
+    INLINE const FlatArray<T> Part (int pos)
     {
       return FlatArray<T> (size-pos, data+pos);
     }
 
     /// takes subsize elements starting from position pos
-    const FlatArray<T> Part (int pos, int subsize)
+    INLINE const FlatArray<T> Part (int pos, int subsize)
     {
       return FlatArray<T> (subsize, data+pos);
     }
 
     /// takes range starting from position start of end-start elements
-    const FlatArray<T> Range (int start, int end) const
+    INLINE const FlatArray<T> Range (int start, int end) const
     {
       return FlatArray<T> (end-start, data+start);
     }
 
     /// takes range starting from position start of end-start elements
-    const FlatArray<T> Range (class IntRange range) const
+    INLINE const FlatArray<T> Range (class IntRange range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
 
     /// takes range starting from position start of end-start elements
-    const FlatArray<T> operator[] (const IntRange range) const
+    INLINE const FlatArray<T> operator[] (const IntRange range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
@@ -360,7 +360,7 @@ namespace ngstd
     }
 
     /// first position of element elem, returns -1 if element not contained in array 
-    int Pos(const T & elem) const
+    INLINE int Pos(const T & elem) const
     {
       int pos = -1;
       for(int i=0; pos==-1 && i < size; i++)
@@ -369,7 +369,7 @@ namespace ngstd
     }
 
     /// does the array contain element elem ?
-    bool Contains(const T & elem) const
+    INLINE bool Contains(const T & elem) const
     {
       return ( Pos(elem) >= 0 );
     }

@@ -28,10 +28,10 @@ namespace ngfem
     int order;
   protected:
     /// default constructor
-    FiniteElement () { ; }
+    INLINE FiniteElement () { ; }
 
     /// constructor
-    FiniteElement (int andof, int aorder)
+    INLINE FiniteElement (int andof, int aorder)
       : ndof(andof), order(aorder)
     { ; }
 
@@ -40,10 +40,10 @@ namespace ngfem
     virtual ~FiniteElement () { ; }
 
     /// Number of degrees-of-freedom
-    int GetNDof () const { return ndof; }
+    INLINE int GetNDof () const { return ndof; }
 
     /// maximal polynomial order
-    int Order () const { return order; }
+    INLINE int Order () const { return order; }
 
     /// geometry of element
     virtual ELEMENT_TYPE ElementType() const = 0; //  { return eltype; }

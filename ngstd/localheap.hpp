@@ -45,7 +45,7 @@ namespace ngstd
     NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname);
 
     /// Use provided memory for the LocalHeap
-    LocalHeap (char * adata, size_t asize, const char  * aname) throw ()
+    INLINE LocalHeap (char * adata, size_t asize, const char  * aname) throw ()
     {
       totsize = asize;
       data = adata;
@@ -57,21 +57,21 @@ namespace ngstd
     }
 
     /// Use provided memory for the LocalHeap
-    LocalHeap (const LocalHeap & lh2)
+    INLINE LocalHeap (const LocalHeap & lh2)
       : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false)
     {
       next = data + totsize;
     }
   
     /// free memory
-    ~LocalHeap ()
+    INLINE ~LocalHeap ()
     {
       if (owner)
 	delete [] data;
     }
   
     /// delete all memory on local heap
-    void CleanUp() throw ()
+    INLINE void CleanUp() throw ()
     {
       p = data;
       // p += (16 - (long(p) & 15) );
@@ -79,19 +79,19 @@ namespace ngstd
     }
 
     /// returns heap-pointer
-    void * GetPointer () throw ()
+    INLINE void * GetPointer () throw ()
     {
       return p;
     }
 
     /// deletes memory back to heap-pointer
-    void CleanUp (void * addr) throw ()
+    INLINE void CleanUp (void * addr) throw ()
     {
       p = (char*)addr;
     }
 
     /// allocates size bytes of memory from local heap
-    void * Alloc (size_t size) // throw (LocalHeapOverflow)
+    INLINE void * Alloc (size_t size) // throw (LocalHeapOverflow)
     {
       char * oldp = p;
     
@@ -109,7 +109,7 @@ namespace ngstd
 
     /// allocates size objects of type T on local heap
     template <typename T>
-    T * Alloc (size_t size) // throw (LocalHeapOverflow)
+    INLINE T * Alloc (size_t size) // throw (LocalHeapOverflow)
     {
       char * oldp = p;
       size *= sizeof (T);
@@ -128,20 +128,21 @@ namespace ngstd
 
   private: 
     ///
-    NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
+    // NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
+    INLINE NGS_DLL_HEADER void ThrowException() { ; }
 
   public:
     /// free memory (dummy function)
-    void Free (void * data) throw () 
+    INLINE void Free (void * data) throw () 
     {
       ;
     }
 
     /// available memory on LocalHeap
-    size_t Available () const throw () { return (totsize - (p-data)); }
+    INLINE size_t Available () const throw () { return (totsize - (p-data)); }
 
     /// Split free memory on heap into pieces for each openmp-thread
-    LocalHeap Split () const
+    INLINE LocalHeap Split () const
     {
 #ifdef _OPENMP
       int pieces = omp_get_num_threads();
@@ -155,12 +156,12 @@ namespace ngstd
       return LocalHeap (p + i * size_of_piece, size_of_piece, name);
     }
 
-    void ClearValues ()
+    INLINE void ClearValues ()
     {
       for (size_t i = 0; i < totsize; i++) data[i] = 47;
     }
 
-    size_t UsedSize ()
+    INLINE size_t UsedSize ()
     {
       for (size_t i = totsize-1; i != 0; i--)
         if (data[i] != 47) return i;
@@ -179,7 +180,7 @@ namespace ngstd
   {
     char mem[S];
   public:
-    LocalHeapMem (const char * aname) throw () : LocalHeap (mem, S, aname) { ; }
+    INLINE LocalHeapMem (const char * aname) throw () : LocalHeap (mem, S, aname) { ; }
   };
 
 
@@ -199,11 +200,11 @@ namespace ngstd
     void * pointer;
   public:
     ///
-    HeapReset (LocalHeap & alh) 
+    INLINE HeapReset (LocalHeap & alh) 
       : lh(alh), pointer (alh.GetPointer()) { ; }
     
     ///
-    ~HeapReset () 
+    INLINE ~HeapReset () 
     {
       lh.CleanUp (pointer);
     }
@@ -212,12 +213,12 @@ namespace ngstd
 }
 
 
-inline void * operator new (size_t size, ngstd::LocalHeap & lh)  
+INLINE void * operator new (size_t size, ngstd::LocalHeap & lh)  
 {
   return lh.Alloc(size);
 }
 
-inline void operator delete (void * p, ngstd::LocalHeap & lh)  
+INLINE void operator delete (void * p, ngstd::LocalHeap & lh)  
 {
   ; 
 }

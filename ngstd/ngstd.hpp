@@ -108,6 +108,10 @@ namespace ngstd
 
 #include <ngs_defines.hpp>
 
+#ifdef USE_MYCOMPLEX
+#include "mycomplex.hpp"  
+#endif
+
 #include "archive_base.hpp"    
 #include "ngsstream.hpp"  
 #include "templates.hpp"
