@@ -128,8 +128,7 @@ namespace ngstd
 
   private: 
     ///
-    // NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
-    INLINE NGS_DLL_HEADER void ThrowException() { ; }
+    NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
 
   public:
     /// free memory (dummy function)
