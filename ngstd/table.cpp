@@ -35,12 +35,13 @@ namespace ngstd
       }
     index[i] = cnt;
   }
-  
+
+  /*
   BaseTable :: ~BaseTable ()
   {
     delete [] index;
   }
-
+  */
 
 
   BaseDynamicTable :: BaseDynamicTable (int size)

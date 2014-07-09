@@ -128,7 +128,11 @@ namespace ngstd
 
   private: 
     ///
+#ifndef __CUDA_ARCH__
     NGS_DLL_HEADER void ThrowException(); // __attribute__ ((noreturn));
+#else
+    INLINE void ThrowException() { ; }
+#endif
 
   public:
     /// free memory (dummy function)
