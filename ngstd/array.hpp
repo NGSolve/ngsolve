@@ -427,14 +427,14 @@ namespace ngstd
     using FlatArray<T,TSIZE>::data;
   public:
     /// Generate array of logical and physical size asize
-    explicit Array()
+    INLINE explicit Array()
       : FlatArray<T,TSIZE> (0, NULL)
     {
       allocsize = 0; 
       ownmem = 1;
     }
 
-    explicit Array(TSIZE asize)
+    INLINE explicit Array(TSIZE asize)
       : FlatArray<T,TSIZE> (asize, new T[asize])
     {
       allocsize = asize; 
@@ -443,7 +443,7 @@ namespace ngstd
 
 
     /// Generate array in user data
-    Array(TSIZE asize, T* adata)
+    INLINE Array(TSIZE asize, T* adata)
       : FlatArray<T,TSIZE> (asize, adata)
     {
       allocsize = asize; 
@@ -451,7 +451,7 @@ namespace ngstd
     }
 
     /// Generate array in user data
-    Array(TSIZE asize, LocalHeap & lh)
+    INLINE Array(TSIZE asize, LocalHeap & lh)
       : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 
@@ -459,7 +459,7 @@ namespace ngstd
     }
     
     /// array copy 
-    explicit Array (const Array & a2)
+    INLINE explicit Array (const Array & a2)
       : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : NULL)
     {
       allocsize = size;
@@ -511,31 +511,31 @@ namespace ngstd
     }
 
     /// we tell the compiler that there is no need for deleting the array ..
-    void NothingToDelete () { ownmem = false; }
+    INLINE void NothingToDelete () { ownmem = false; }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
-    void SetSize(TSIZE nsize)
+    INLINE void SetSize(TSIZE nsize)
     {
       if (nsize > allocsize) ReSize (nsize);
       size = nsize; 
     }
 
     /// Change physical size. Keeps logical size. Keeps contents.
-    void SetAllocSize (int nallocsize)
+    INLINE void SetAllocSize (int nallocsize)
     {
       if (nallocsize > allocsize)
         ReSize (nallocsize);
     }
 
     /// Change physical size. Keeps logical size. Keeps contents.
-    TSIZE AllocSize () const
+    INLINE TSIZE AllocSize () const
     {
       return allocsize;
     }
 
 
     /// assigns memory from local heap
-    const Array & Assign (TSIZE asize, LocalHeap & lh)
+    INLINE const Array & Assign (TSIZE asize, LocalHeap & lh)
     {
       if (ownmem) delete [] data;
       size = allocsize = asize;
@@ -545,7 +545,7 @@ namespace ngstd
     }
 
     /// Add element at end of array. reallocation if necessary.
-    int Append (const T & el)
+    INLINE int Append (const T & el)
     {
       if (size == allocsize) 
         ReSize (size+1);
@@ -554,7 +554,7 @@ namespace ngstd
       return size;
     }
 
-    Array<T> & operator += (const T & el)
+    INLINE Array<T> & operator += (const T & el)
     {
       Append (el);
       return *this;
@@ -563,7 +563,7 @@ namespace ngstd
 
     /// Append array at end of array. reallocation if necessary.
     // int Append (const Array<T> & source)
-    int Append (FlatArray<T> source)
+    INLINE int Append (FlatArray<T> source)
     {
       if(size + source.Size() >= allocsize)
         ReSize (size + source.Size() + 1);
@@ -579,7 +579,7 @@ namespace ngstd
 
 
     /// Delete element i. Move last element to position i.
-    void DeleteElement (int i)
+    INLINE void DeleteElement (int i)
     {
 #ifdef CHECK_RANGE
       // RangeCheck (i);
@@ -591,7 +591,7 @@ namespace ngstd
 
 
     /// Delete element i. Move all remaining elements forward
-    void RemoveElement (int i)
+    INLINE void RemoveElement (int i)
     {
       for(int j = i; j < this->size-1; j++)
 	this->data[i] = this->data[i+1];
@@ -600,7 +600,7 @@ namespace ngstd
 
 
     /// Delete last element. 
-    void DeleteLast ()
+    INLINE void DeleteLast ()
     {
 #ifdef CHECK_RANGE
       //    CheckNonEmpty();
@@ -610,7 +610,7 @@ namespace ngstd
     }
 
     /// Deallocate memory
-    void DeleteAll ()
+    INLINE void DeleteAll ()
     {
       if (ownmem) delete [] data;
       data = 0;
@@ -618,7 +618,7 @@ namespace ngstd
     }
 
     /// Fill array with val
-    Array & operator= (const T & val)
+    INLINE Array & operator= (const T & val)
     {
       FlatArray<T,TSIZE>::operator= (val);
       return *this;
@@ -634,7 +634,7 @@ namespace ngstd
     */
 
     /// array copy
-    Array & operator= (const Array & a2)
+    INLINE Array & operator= (const Array & a2)
     {
       SetSize (a2.Size());
       for (TSIZE i = 0; i < size; i++)
@@ -643,7 +643,7 @@ namespace ngstd
     }
 
     /// array copy
-    Array & operator= (const FlatArray<T,TSIZE> & a2)
+    INLINE Array & operator= (const FlatArray<T,TSIZE> & a2)
     {
       SetSize (a2.Size());
       for (int i = 0; i < size; i++)
@@ -670,7 +670,7 @@ namespace ngstd
       return *this;
     }
 
-    void Swap (Array & b)
+    INLINE void Swap (Array & b)
     {
       ngstd::Swap (size, b.size);
       ngstd::Swap (data, b.data);
@@ -681,7 +681,7 @@ namespace ngstd
   private:
 
     /// resize array, at least to size minsize. copy contents
-    void ReSize (TSIZE minsize);
+    INLINE void ReSize (TSIZE minsize);
     /*
     {
       TSIZE nsize = 2 * allocsize;
@@ -711,7 +711,7 @@ namespace ngstd
 
   /// resize array, at least to size minsize. copy contents
   template <class T, class TSIZE> 
-  void Array<T,TSIZE> :: ReSize (TSIZE minsize)
+  INLINE void Array<T,TSIZE> :: ReSize (TSIZE minsize)
   {
     TSIZE nsize = 2 * allocsize;
     if (nsize < minsize) nsize = minsize;

@@ -26,11 +26,17 @@ protected:
   /// pointer to first in row
   int * index;
 
+  INLINE BaseTable ()
+    : size(0), index(0) { ; }
+
 public:  
   NGS_DLL_HEADER BaseTable (int asize, int entrysize);
   NGS_DLL_HEADER BaseTable (const FlatArray<int> & entrysize);
-  NGS_DLL_HEADER ~BaseTable ();
-  int * Index() const { return index; }
+  HD NGS_DLL_HEADER ~BaseTable ()
+  {
+    delete [] index;
+  }
+  INLINE int * Index() const { return index; }
 };
 
 
@@ -46,32 +52,35 @@ protected:
   /// array of data 
   T * data;
 
+  INLINE Table ()
+    : data(NULL) { ; }
+
 public:
   /// Construct table of uniform entrysize
-  Table (int asize, int entrysize)
+  INLINE Table (int asize, int entrysize)
     : BaseTable (asize, entrysize) 
   { 
     data = new T[index[size]]; 
   }
 
   /// Construct table of variable entrysize
-  Table (const FlatArray<int> & entrysize)
+  INLINE Table (const FlatArray<int> & entrysize)
     : BaseTable (entrysize)
   {
     data = new T[index[size]]; 
   }
 
   /// Delete data
-  ~Table ()
+  INLINE ~Table ()
   {
     delete [] data; 
   }
 
   /// Size of table
-  int Size() const { return size; }
+  INLINE int Size() const { return size; }
   
   /// number of elements in all rows
-  int NElements() const { return index[size]; }
+  INLINE int NElements() const { return index[size]; }
 
   /*
   /// Access entry.
@@ -81,14 +90,14 @@ public:
   }
   */
   /// Access entry
-  const FlatArray<T> operator[] (int i) const 
+  INLINE const FlatArray<T> operator[] (int i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
 
-  T * Data() const { return data; }
+  INLINE T * Data() const { return data; }
 
-  FlatArray<T> AsArray() const
+  INLINE FlatArray<T> AsArray() const
   {
     return FlatArray<T> (index[size], data);
   }
