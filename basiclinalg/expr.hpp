@@ -1501,6 +1501,12 @@ namespace ngbla
   }
 
   template <typename T, typename TINV>
+  INLINE void CalcInverse (const Mat<0,0,T> & m, TINV & inv)
+  {
+    ;
+  }
+
+  template <typename T, typename TINV>
   INLINE void CalcInverse (const Mat<1,1,T> & m, TINV & inv)
   {
     inv(0,0) = 1.0 / m(0,0);
@@ -1558,6 +1564,12 @@ namespace ngbla
 
 
   template <typename T>
+  INLINE Mat<0,0,T> Adj (Mat<0,0,T> m)
+  {
+    return Mat<0,0,T>();
+  }
+
+  template <typename T>
   INLINE Mat<1,1,T> Adj (Mat<1,1,T> m)
   {
     Mat<1,1,T> adj;
@@ -1602,6 +1614,12 @@ namespace ngbla
   {
     cerr << "Cof<" << H << "," << W << "> not implemented" << endl;
     return m;
+  }
+
+  template <typename T>
+  INLINE Mat<0,0,T> Cof (Mat<0,0,T> m)
+  {
+    return Mat<0,0,T>();
   }
 
   template <typename T>
