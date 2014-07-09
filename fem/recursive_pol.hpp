@@ -60,7 +60,7 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & p2) 
+    INLINE static void Eval (S x, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::Eval (x, values, p2, p3);
@@ -69,7 +69,7 @@ namespace ngfem
 
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
+    INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalMult (x, c, values, p2, p3);
@@ -78,7 +78,7 @@ namespace ngfem
 
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
+    INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaled (x, y, values, p2, p3);
@@ -87,7 +87,7 @@ namespace ngfem
 
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
+    INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaledMult (x, y, c, values, p2, p3);
@@ -101,20 +101,20 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (S x, T && values, S & /* p1 */, S & /* p2 */) 
+      INLINE static void Eval (S x, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
+      INLINE static void EvalMult (S x, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & /* p1 */, S & /* p2 */) 
+      INLINE static void EvalScaled (S x, Sy y, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
+      INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & /* p1 */, S & /* p2 */) 
       { ; }
 
     };
@@ -125,26 +125,26 @@ namespace ngfem
     {
     public:
       template <class S, class T>
-      ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & /* p2 */) 
+      INLINE static void Eval (S x, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sc, class T>
-      ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & /* p2 */) 
+      INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = c * REC::P0(x);
       }
 
 
       template <class S, class Sy, class T>
-      ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & /* p2 */) 
+      INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = REC::P0(x);
       }
 
       template <class S, class Sy, class Sc, class T>
-      ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & /* p2 */) 
+      INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & /* p2 */) 
       {
 	values[0] = p1 = c * REC::P0(x);
       }
@@ -156,28 +156,28 @@ namespace ngfem
   {
   public:
     template <class S, class T>
-    ALWAYS_INLINE static void Eval (S x, T && values, S & p1, S & p2) 
+    INLINE static void Eval (S x, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = REC::P0(x);
       values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
+    INLINE static void EvalMult (S x, Sc c, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = c * REC::P0(x);
       values[1] = p1 = c * REC::P1(x);
     }
 
     template <class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
+    INLINE static void EvalScaled (S x, Sy y, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = REC::P0(x);
       values[1] = p1 = REC::P1(x);
     }
 
     template <class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
+    INLINE static void EvalScaledMult (S x, Sy y, Sc c, T && values, S & p1, S & p2) 
     {
       values[0] = p2 = c * REC::P0(x);
       values[1] = p1 = c * REC::P1(x);
@@ -226,7 +226,7 @@ namespace ngfem
 
 
     template <class S>
-    ALWAYS_INLINE static S EvalNextTicTac (int i, S x, S & p1, S & p2)
+    INLINE static S EvalNextTicTac (int i, S x, S & p1, S & p2)
     {
       switch (i)
         {
@@ -252,7 +252,7 @@ namespace ngfem
 
 
     template <class S, class Sc>
-    ALWAYS_INLINE static S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2)
+    INLINE static S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2)
     {
       switch (i)
         {
@@ -264,7 +264,7 @@ namespace ngfem
 
 
     template <class S, class Sy>
-    ALWAYS_INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
+    INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
     {
       if (i == 0) 
         {
@@ -293,7 +293,7 @@ namespace ngfem
     }
 
     template <class S, class Sy>
-    ALWAYS_INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
+    INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
     {
       // switch (i)
         {
@@ -626,28 +626,28 @@ namespace ngfem
 
 
     template <int N, class S, class T>
-    ALWAYS_INLINE static void EvalFO (S x, T && values) 
+    INLINE static void EvalFO (S x, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::Eval (x, values, p1, p2);
     }
 
     template <int N, class S, class Sc, class T>
-    ALWAYS_INLINE static void EvalMultFO (S x, Sc c, T && values) 
+    INLINE static void EvalMultFO (S x, Sc c, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalMult (x, c, values, p1, p2);
     }
 
     template <int N, class S, class Sy, class T>
-    ALWAYS_INLINE static void EvalScaledFO (S x, Sy y, T && values) 
+    INLINE static void EvalScaledFO (S x, Sy y, T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalScaled (x, y, values, p1, p2);
     }
 
     template <int N, class S, class Sy, class Sc, class T>
-    ALWAYS_INLINE static void EvalScaledMultFO (S x, Sy y, Sc c,T && values) 
+    INLINE static void EvalScaledMultFO (S x, Sy y, Sc c,T && values) 
     {
       S p1, p2;
       CEvalFO<REC, N>::EvalScaledMult (x, y, c, values, p1, p2);
@@ -677,7 +677,7 @@ namespace ngfem
       a *= d; b *= d; c *= d;
     }
 
-    const REC & Cast() const { return static_cast<const REC &> (*this); }
+    INLINE const REC & Cast() const { return static_cast<const REC &> (*this); }
 
     template <class S>
     INLINE S EvalNext (int i, S x, S & p1, S & p2)
@@ -920,13 +920,13 @@ namespace ngfem
     }
 
     template <class S>
-    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    static INLINE S P0(S x)  { return S(1.0); }
     template <class S>
-    static ALWAYS_INLINE S P1(S x)  { return x; }
+    static INLINE S P1(S x)  { return x; }
     
-    static ALWAYS_INLINE double A (int i) { return 2.0-1.0/i; }
-    static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { return 1.0/i-1.0; }
+    static INLINE double A (int i) { return 2.0-1.0/i; }
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return 1.0/i-1.0; }
     enum { ZERO_B = 1 };
   };
     
@@ -936,7 +936,7 @@ namespace ngfem
     static Array< Vec<2> > coefs;
     
   public:
-    LegendrePolynomial () { ; }
+    INLINE LegendrePolynomial () { ; }
 
     template <class S, class T>
     INLINE LegendrePolynomial (int n, S x, T && values)
@@ -947,13 +947,13 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
-    static ALWAYS_INLINE double P0(S x)  { return 1.0; }
+    static INLINE double P0(S x)  { return 1.0; }
     template <class S>
-    static ALWAYS_INLINE S P1(S x)  { return x; }
+    static INLINE S P1(S x)  { return x; }
     
-    static ALWAYS_INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
-    static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
     enum { ZERO_B = 1 };
   };
 
@@ -974,17 +974,17 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
-    static ALWAYS_INLINE double P0(S x)  { return -0.5; }
+    static INLINE double P0(S x)  { return -0.5; }
     template <class S>
-    static ALWAYS_INLINE S P1(S x)  { return -0.5*x; }
+    static INLINE S P1(S x)  { return -0.5*x; }
 
-    static ALWAYS_INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
-    static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
     
-    static ALWAYS_INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
-    static ALWAYS_INLINE double CalcB (int i) { return 0; }
-    static ALWAYS_INLINE double CalcC (int i) { i+=2; return -(i-3.0)/i; }
+    static INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
+    static INLINE double CalcB (int i) { return 0; }
+    static INLINE double CalcC (int i) { i+=2; return -(i-3.0)/i; }
     enum { ZERO_B = 1 };
   };
     
@@ -1007,13 +1007,13 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
-    static ALWAYS_INLINE S P0(S x)  { return S(-1.0); }
+    static INLINE S P0(S x)  { return S(-1.0); }
     template <class S>
-    static ALWAYS_INLINE S P1(S x)  { return x; }
+    static INLINE S P1(S x)  { return x; }
     
-    static ALWAYS_INLINE double A (int i) { return (2*i-3)/double(i); }
-    static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { return -(i-3.0)/i; }
+    static INLINE double A (int i) { return (2*i-3)/double(i); }
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return -(i-3.0)/i; }
     enum { ZERO_B = 1 };
   };
 
@@ -1031,13 +1031,13 @@ namespace ngfem
     }
 
     template <class S>
-    static ALWAYS_INLINE S P0(S x)  { return S(1.0); }
+    static INLINE S P0(S x)  { return S(1.0); }
     template <class S>
-    static ALWAYS_INLINE S P1(S x)  { return x; }
+    static INLINE S P1(S x)  { return x; }
     
-    static ALWAYS_INLINE double A (int i) { return 2; } 
-    static ALWAYS_INLINE double B (int i) { return 0; }
-    static ALWAYS_INLINE double C (int i) { return -1; }
+    static INLINE double A (int i) { return 2; } 
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return -1; }
     enum { ZERO_B = 1 };
   };
 
@@ -1062,15 +1062,15 @@ namespace ngfem
     // using BASE::EvalFO;
     
     template <class S>
-    static ALWAYS_INLINE S P0(S x) { return S(1.0); }
+    static INLINE S P0(S x) { return S(1.0); }
     template <class S>
-    static ALWAYS_INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
       
-    static ALWAYS_INLINE double A (int i) 
+    static INLINE double A (int i) 
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static ALWAYS_INLINE double B (int i)
+    static INLINE double B (int i)
     { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static ALWAYS_INLINE double C (int i) 
+    static INLINE double C (int i) 
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
   };
 
@@ -1090,17 +1090,17 @@ namespace ngfem
     }
 
     template <class S>
-    ALWAYS_INLINE S P0(S x) const { return S(1.0); }
+    INLINE S P0(S x) const { return S(1.0); }
     template <class S>
-    ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
       
-    ALWAYS_INLINE double A (int i) const
+    INLINE double A (int i) const
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    ALWAYS_INLINE double B (int i) const
+    INLINE double B (int i) const
     { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    ALWAYS_INLINE double C (int i) const
+    INLINE double C (int i) const
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    ALWAYS_INLINE double D (int i) const { return 1; }
+    INLINE double D (int i) const { return 1; }
   };
 
 
@@ -1149,18 +1149,18 @@ namespace ngfem
     }
 
     template <class S>
-    ALWAYS_INLINE S P0(S x) const { return S(1.0); }
+    INLINE S P0(S x) const { return S(1.0); }
     template <class S>
-    ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
 
-    ALWAYS_INLINE double A (int i) const
+    INLINE double A (int i) const
     { i--; return ( pola(0) + i * (pola(1) + i * (pola(2) + i * pola(3))) ); }
-    ALWAYS_INLINE double B (int i) const
+    INLINE double B (int i) const
     { i--; return ( polb(0) + i * polb(1) ); }
-    ALWAYS_INLINE double C (int i) const
+    INLINE double C (int i) const
     { i--; return ( polc(0) + i * (polc(1) + i * (polc(2) + i * polc(3))) ); }
 
-    ALWAYS_INLINE double D (int i) const
+    INLINE double D (int i) const
     { i--; return ( pold(0) + i * (pold(1) + i * (pold(2) + i * pold(3))) ); }
   };
   */
@@ -1381,7 +1381,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     double al, be;
 
   public:
-    JacobiPolynomialNew (double alpha, double beta) : al(alpha), be(beta) { ; }
+    INLINE JacobiPolynomialNew (double alpha, double beta) : al(alpha), be(beta) { ; }
 
     template <class S>
     INLINE double P0(S x) const { return 1.0; }
@@ -1740,7 +1740,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values)
+    INLINE static void Step (S x, Thelp & help, T & values)
     {
       DubinerJacobiPolynomialsDiag<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, help, values);
       typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
@@ -1766,7 +1766,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values) {;}
+    INLINE static void Step (S x, Thelp & help, T & values) {;}
   };
 
   
@@ -1829,7 +1829,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class St, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values)
+    INLINE static void Step (S x, St t, Thelp & help, T & values)
     {
       DubinerJacobiPolynomialsScaledDiag<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, t, help, values);
       typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
@@ -1854,7 +1854,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class St, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
+    INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
   };
 
   
@@ -1921,7 +1921,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values)
+    INLINE static void Step (S x, Thelp & help, T & values)
     {
       DubinerJacobiPolynomialsDiag_Linear<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, help, values);
       typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
@@ -1972,7 +1972,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, Thelp & help, T & values) {;}
+    INLINE static void Step (S x, Thelp & help, T & values) {;}
   };
 
   
@@ -2055,7 +2055,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class St, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values)
+    INLINE static void Step (S x, St t, Thelp & help, T & values)
     {
       DubinerJacobiPolynomialsScaledDiag_Linear<ALPHA0, BETA, DIAG, ORDER-1>::Step (x, t, help, values);
       typedef JacobiPolynomialFix<ALPHA0+2*(DIAG-ORDER), BETA> REC;
@@ -2080,7 +2080,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template<class S, class St, class Thelp, class T>
-    ALWAYS_INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
+    INLINE static void Step (S x, St t, Thelp & help, T & values) {;}
   };
 
   
@@ -2222,7 +2222,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       
       /*
 	leg.EvalScaledMult (n, y-(1-x-y), t-x, c
-	SBLambda ([&] (int i, S val) ALWAYS_INLINE  // clang
+	SBLambda ([&] (int i, S val) INLINE  // clang
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
@@ -3438,7 +3438,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     enum { FLOP = TReduceAlpha<N-1,AL>::FLOP + 2 };
 
     template <class T>
-    static ALWAYS_INLINE void Do (T & inout)
+    static INLINE void Do (T & inout)
     {
       inout[N-1] += double(N)/double(N+AL) * inout[N];
       inout[N] *= double(2*N+AL)/double(N+AL);
@@ -3446,7 +3446,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     }
 
     template <class T>
-    static ALWAYS_INLINE void Trans (T & inout)
+    static INLINE void Trans (T & inout)
     {
       TReduceAlpha<N-1,AL>::Trans(inout);
       inout[N] *= double(2*N+AL)/double(N+AL);
@@ -3477,7 +3477,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     enum { FLOP = TReduceAlphaFactor<N-1,AL>::FLOP + 2 };
 
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       if (HIGHEST)
 	inout[N] = double(-N)/double(2*N+AL) * inout[N-1];
@@ -3488,7 +3488,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     }
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       TReduceAlphaFactor<N-1,AL,0>::Trans(inout);
       inout[N-1] *= double(N+AL)/double(2*N+AL);
@@ -3554,7 +3554,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       enum { c3 = double((N-1)*(2*N+AL)) / double( (N+AL)*(2*N+AL-2)) };
     */
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       double val = inout(N);
       inout(N-1) += c2() * val;
@@ -3577,7 +3577,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     }
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       inout(N) = inout(N-1);
       inout(N-1) = 0;
@@ -3634,7 +3634,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     // (P_i^Al)' = c1 P_i^AL + c2 (P_{i-1}^AL)' + c3 (P_{i-2}^AL)' 
 
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       double val = inout(N);
       if (N > 1) inout(N-2) += val;
@@ -3647,7 +3647,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     }
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       inout(N) = inout(N-1);
       inout(N-1) = 0;
@@ -3709,7 +3709,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     enum { FLOP = TTriangleReduceFactorCol<N,J,I-1,AL,BE>::FLOP + 4 };
 
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       double val    = inout(I,J);
 
@@ -3724,7 +3724,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       TTriangleReduceFactorCol<N,J,I-1,AL,BE> ::Trans(inout);
 
@@ -3762,7 +3762,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 	   TTriangleReduceFactorCol<N,J,N-J,AL,BE>::FLOP };
 
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       if (J == N)
 	for (int i = 0; i <= N+1; i++)
@@ -3773,7 +3773,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     }
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       /*
 	if (J == N)
@@ -3828,7 +3828,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
   template <class T>
-  static  ALWAYS_INLINE void Do (T & inout)
+  static  INLINE void Do (T & inout)
   {
   Vec<N-J+2> hv;
   hv(0) = 0.0;
@@ -3855,7 +3855,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
   template <class T>
-  static  ALWAYS_INLINE void Trans (T & inout)
+  static  INLINE void Trans (T & inout)
   {
   Vec<N-J+2> hv;
     
@@ -3910,7 +3910,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   {
   public:
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       if (BE+I == 0) cout << "is 0" << endl;
       double fac = 1.0 / ( (BE + I)*(4 + AL-1 + 2*I-2 + J-1) );
@@ -3929,7 +3929,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       TTriangleReduceLoop2New<N,I,J-1,AL,BE>::Trans(inout);
 
@@ -3970,14 +3970,14 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
     template <class T>
-    static  ALWAYS_INLINE void Do (T & inout)
+    static  INLINE void Do (T & inout)
     {
       TTriangleReduceLoop2New<N,I,N-I,AL,BE>::Do(inout);
       TTriangleReduceNew<N,I-1,AL,BE>::Do(inout);
     }
 
     template <class T>
-    static  ALWAYS_INLINE void Trans (T & inout)
+    static  INLINE void Trans (T & inout)
     {
       TTriangleReduceNew<N,I-1,AL,BE>::Trans(inout);
       TTriangleReduceLoop2New<N,I,N-I,AL,BE>::Trans(inout);
@@ -4009,7 +4009,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   public:
 
   template <class T>
-  static  ALWAYS_INLINE void Do (T & inout)
+  static  INLINE void Do (T & inout)
   {
   for (int J = N-I; J >= 0; J--)
   {
@@ -4030,7 +4030,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 
   template <class T>
-  static  ALWAYS_INLINE void Trans (T & inout)
+  static  INLINE void Trans (T & inout)
   {
   TTriangleReduceNew<N,I-1,AL,BE>::Trans(inout);
 

@@ -48,32 +48,32 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    FlatMatrix () { ; }
+    INLINE FlatMatrix () { ; }
   
     /// set height, width, and mem
-    FlatMatrix (int ah, int aw, T * adata) 
+    INLINE FlatMatrix (int ah, int aw, T * adata) 
       : h(ah), w(aw), data(adata) { ; }
   
     /// set height = width, and mem
-    FlatMatrix (int ah, T * adata) 
+    INLINE FlatMatrix (int ah, T * adata) 
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    FlatMatrix (int ah, int aw, LocalHeap & lh) 
+    INLINE FlatMatrix (int ah, int aw, LocalHeap & lh) 
       : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
-    FlatMatrix (int ah, LocalHeap & lh) 
+    INLINE FlatMatrix (int ah, LocalHeap & lh) 
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
-    FlatMatrix (const FlatMatrix & m) throw () 
+    INLINE FlatMatrix (const FlatMatrix & m) throw () 
       : h(m.h), w(m.w) , data(m.data)
     { ; }
   
     /// allocate and compute 
     template<typename TB>
-    FlatMatrix (const LocalHeapExpr<TB> & m2) 
+    INLINE FlatMatrix (const LocalHeapExpr<TB> & m2) 
     {
       h = m2.A().Height();
       w = m2.A().Width();
@@ -84,14 +84,14 @@ namespace ngbla
 
     /// useful to put FlatMatrix over other matrix
     template <typename T2>
-    explicit FlatMatrix (const MatExpr<T2> & m)
+    INLINE explicit FlatMatrix (const MatExpr<T2> & m)
       : h(m.Height()), w(m.Width()),
         data(const_cast<T*>(&m.Spec()(0,0)))  
     { ; }
   
     /// useful to put FlatMatrix over other Mat
     template <int H, int W>
-    FlatMatrix (const Mat<H,W,TSCAL> & m) throw()
+    INLINE FlatMatrix (const Mat<H,W,TSCAL> & m) throw()
       : h(H), w(W), data(const_cast<T*>(&m(0,0)))
     { ; }
 
@@ -99,7 +99,7 @@ namespace ngbla
     // ~FlatMatrix () throw() { ; }
 
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, LocalHeap & lh)  
+    INLINE void AssignMemory (int ah, int aw, LocalHeap & lh)  
     {
       h = ah;
       w = aw;
@@ -107,7 +107,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, T * mem) throw()
+    INLINE void AssignMemory (int ah, int aw, T * mem) throw()
     {
       h = ah;
       w = aw;
@@ -117,27 +117,27 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    const FlatMatrix & operator= (const Expr<TBxx> & m) const
+    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
     {
       return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
     /// copy contents
-    const FlatMatrix & operator= (const FlatMatrix & m) const 
+    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
       for (int i = 0; i < h*w; i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
-    const FlatMatrix & operator= (TSCAL s) const 
+    INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
       for (int i = 0; i < h*w; i++) data[i] = s; 
       return *this;
     }
 
     /// copy size and pointers
-    FlatMatrix & Assign (const FlatMatrix & m) throw()
+    INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
       h = m.h;
       w = m.w;
@@ -147,7 +147,7 @@ namespace ngbla
 
 
     /// access operator, linear access
-    TELEM & operator() (int i) const 
+    INLINE TELEM & operator() (int i) const 
     { 
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -156,7 +156,7 @@ namespace ngbla
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -165,29 +165,29 @@ namespace ngbla
     }
 
     /// the height
-    int Height () const { return h; }
+    INLINE int Height () const { return h; }
 
     /// the width
-    int Width () const { return w; }
+    INLINE int Width () const { return w; }
 
-    const FlatVector<T> Row (int i) const
+    INLINE const FlatVector<T> Row (int i) const
     {
       return FlatVector<T> (w, &data[i*size_t(w)]);
     }
 
 #ifdef FLATVECTOR_WITH_DIST
-    const FlatVector<T> Col (int i) const
+    INLINE const FlatVector<T> Col (int i) const
     {
       return FlatVector<T> (h, w, &data[i]);
     }
 #else
-    const SliceVector<T> Col (int i) const
+    INLINE const SliceVector<T> Col (int i) const
     {
       return SliceVector<T> (h, w, &data[i]);
     }
 #endif
 
-    const SliceVector<T> Diag () const
+    INLINE const SliceVector<T> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
@@ -195,27 +195,27 @@ namespace ngbla
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
     using CMCPMatExpr<FlatMatrix<T> >::Cols;
 
-    const FlatMatrix Rows (int first, int next) const
+    INLINE const FlatMatrix Rows (int first, int next) const
     {
       return FlatMatrix (next-first, w, data+first*w);
     }
 
-    const SliceMatrix<T> Cols (int first, int next) const
+    INLINE const SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
 
-    const FlatMatrix Rows (IntRange range) const
+    INLINE const FlatMatrix Rows (IntRange range) const
     {
       return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
     }
 
-    const SliceMatrix<T> Cols (IntRange range) const
+    INLINE const SliceMatrix<T> Cols (IntRange range) const
     {
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
 
-    operator SliceMatrix<T> () const
+    INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, w, w, data);
     }
@@ -241,32 +241,32 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    FlatMatrix () { ; }
+    INLINE FlatMatrix () { ; }
   
     /// set height, width, and mem
-    FlatMatrix (int ah, int aw, T * adata) 
+    INLINE FlatMatrix (int ah, int aw, T * adata) 
       : h(ah), w(aw), data(adata) { ; }
   
     /// set height = width, and mem
-    FlatMatrix (int ah, T * adata) 
+    INLINE FlatMatrix (int ah, T * adata) 
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    FlatMatrix (int ah, int aw, LocalHeap & lh) 
+    INLINE FlatMatrix (int ah, int aw, LocalHeap & lh) 
       : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
-    FlatMatrix (int ah, LocalHeap & lh) 
+    INLINE FlatMatrix (int ah, LocalHeap & lh) 
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
-    FlatMatrix (const FlatMatrix & m) throw () 
+    INLINE FlatMatrix (const FlatMatrix & m) throw () 
       : h(m.h), w(m.w) , data(m.data)
     { ; }
   
     /// allocate and compute 
     template<typename TB>
-    FlatMatrix (const LocalHeapExpr<TB> & m2) 
+    INLINE FlatMatrix (const LocalHeapExpr<TB> & m2) 
     {
       h = m2.A().Height();
       w = m2.A().Width();
@@ -276,7 +276,7 @@ namespace ngbla
     }
 
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, LocalHeap & lh)  
+    INLINE void AssignMemory (int ah, int aw, LocalHeap & lh)  
     {
       h = ah;
       w = aw;
@@ -284,7 +284,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    void AssignMemory (int ah, int aw, T * mem) throw()
+    INLINE void AssignMemory (int ah, int aw, T * mem) throw()
     {
       h = ah;
       w = aw;
@@ -293,27 +293,27 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    const FlatMatrix & operator= (const Expr<TBxx> & m) const
+    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
     {
       return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
     /// copy contents
-    const FlatMatrix & operator= (const FlatMatrix & m) const 
+    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
       for (int i = 0; i < h*w; i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
-    const FlatMatrix & operator= (TSCAL s) const 
+    INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
       for (int i = 0; i < h*w; i++) data[i] = s; 
       return *this;
     }
 
     /// copy size and pointers
-    FlatMatrix & Assign (const FlatMatrix & m) throw()
+    INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
       h = m.h;
       w = m.w;
@@ -322,7 +322,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    TELEM & operator() (int i) const 
+    INLINE TELEM & operator() (int i) const 
     { 
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -331,7 +331,7 @@ namespace ngbla
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -340,18 +340,18 @@ namespace ngbla
     }
 
     /// the height
-    int Height () const { return h; }
+    INLINE int Height () const { return h; }
 
     /// the width
-    int Width () const { return w; }
+    INLINE int Width () const { return w; }
 
 
-    const FlatVector<T> Col (int i) const
+    INLINE const FlatVector<T> Col (int i) const
     {
       return FlatVector<T> (h, &data[i*size_t(h)]);
     }
 
-    const SliceVector<T> Row (int i) const
+    INLINE const SliceVector<T> Row (int i) const
     {
       return SliceVector<T> (w, h, &data[i]);
     }
@@ -363,12 +363,12 @@ namespace ngbla
     }
     */
 
-    const FlatMatrix Cols (int first, int next) const
+    INLINE const FlatMatrix Cols (int first, int next) const
     {
       return FlatMatrix (h, next-first, data+first*h);
     }
 
-    const FlatMatrix Cols (IntRange range) const
+    INLINE const FlatMatrix Cols (IntRange range) const
     {
       return FlatMatrix (h, range.Size(), data+range.First()*h);
     }
@@ -398,7 +398,7 @@ namespace ngbla
     }
     */
 
-    operator SliceMatrix<T,ColMajor> () const
+    INLINE operator SliceMatrix<T,ColMajor> () const
     {
       return SliceMatrix<T,ColMajor> (h, w, h, data);
     }
@@ -541,7 +541,7 @@ namespace ngbla
     }
 
     /// fill with scalar
-    Mat (TSCAL s) 
+    INLINE Mat (TSCAL s) 
     {
       for (int i = 0; i < H*W; i++) 
         data[i] = s;
@@ -572,39 +572,39 @@ namespace ngbla
     }
 
     /// linear access
-    TELEM & operator() (int i) { return data[i]; }
+    INLINE TELEM & operator() (int i) { return data[i]; }
     /// access element
-    TELEM & operator() (int i, int j) { return data[i*W+j]; }
+    INLINE TELEM & operator() (int i, int j) { return data[i*W+j]; }
     /// linear access
-    const TELEM & operator() (int i) const { return data[i]; }
+    INLINE const TELEM & operator() (int i) const { return data[i]; }
     /// access element
-    const TELEM & operator() (int i, int j) const { return data[i*W+j]; }
+    INLINE const TELEM & operator() (int i, int j) const { return data[i*W+j]; }
 
     /// the height
-    int Height () const { return H; }
+    INLINE int Height () const { return H; }
     /// the width
-    int Width () const { return W; }
+    INLINE int Width () const { return W; }
 
     ///
-    const FlatVec<W,T> Row (int i) 
+    INLINE const FlatVec<W,T> Row (int i) 
     {
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
     ///
-    const FlatVec<W,const T> Row (int i) const
+    INLINE const FlatVec<W,const T> Row (int i) const
     {
       return FlatVec<W,const T> (&(*this)(i,0));
     }
 
     ///
-    const FixSliceVector<W,T> Col (int i) 
+    INLINE const FixSliceVector<W,T> Col (int i) 
     {
       return FixSliceVector<W,T> (H, &(*this)(0,i));
     }
 
     ///
-    const FixSliceVector<W,const T> Col (int i) const
+    INLINE const FixSliceVector<W,const T> Col (int i) const
     {
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
     }
@@ -757,40 +757,40 @@ namespace ngbla
     enum { IS_LINEAR = (W == DIST) }; 
 
     /// nothing done in default constructor
-    FlatMatrixFixWidth () { ; }
+    INLINE FlatMatrixFixWidth () { ; }
   
     /// set height and mem
-    FlatMatrixFixWidth (int ah, T * adata) throw()
+    INLINE FlatMatrixFixWidth (int ah, T * adata) throw()
       : data(adata), h(ah) { ; }
 
     /// allocates at local heap
-    FlatMatrixFixWidth (int ah, LocalHeap & lh) 
+    INLINE FlatMatrixFixWidth (int ah, LocalHeap & lh) 
       : data(lh.Alloc<T>(ah*DIST)), h(ah) { ; }
   
     /// copy constructor. copies pointers, not contents
-    FlatMatrixFixWidth (const FlatMatrixFixWidth & m)
+    INLINE FlatMatrixFixWidth (const FlatMatrixFixWidth & m)
       : data(m.data), h(m.h)
     { ; }
 
     /// copy constructor. copies pointers, not contents
-    FlatMatrixFixWidth (const FlatMatrix<TSCAL> & m) 
+    INLINE FlatMatrixFixWidth (const FlatMatrix<TSCAL> & m) 
       : data(const_cast<T*> (&m(0))), h(m.Height())
     { ; }
 
     template <int H>
-    FlatMatrixFixWidth (const Mat<H,W,TSCAL> & m) 
+    INLINE FlatMatrixFixWidth (const Mat<H,W,TSCAL> & m) 
       : data(const_cast<T*>(&m(0,0))), h(H)
     { ; }  
 
     /// set size, and assign mem
-    void AssignMemory (int ah, LocalHeap & lh) 
+    INLINE void AssignMemory (int ah, LocalHeap & lh) 
     {
       h = ah;
       data = lh.Alloc<T> (h*DIST);
     }
   
     /// set size, and assign mem
-    void AssignMemory (int ah, T * mem) throw()
+    INLINE void AssignMemory (int ah, T * mem) throw()
     {
       h = ah;
       data = mem;
@@ -799,13 +799,13 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    const FlatMatrixFixWidth & operator= (const Expr<TB> & m) const
+    INLINE const FlatMatrixFixWidth & operator= (const Expr<TB> & m) const
     {
       return CMCPMatExpr<FlatMatrixFixWidth>::operator= (m);
     }
 
     /// copy contents
-    const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
+    INLINE const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
     {
       if (W == DIST)
         for (int i = 0; i < h*W; i++)
@@ -819,7 +819,7 @@ namespace ngbla
     }
 
     /// assign constant
-    const FlatMatrixFixWidth & operator= (TSCAL s) const throw()
+    INLINE const FlatMatrixFixWidth & operator= (TSCAL s) const throw()
     {
       if (W == DIST)
         for (int i = 0; i < h*W; i++)
@@ -833,7 +833,7 @@ namespace ngbla
     }
 
     /// copy size and pointers
-    const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) const throw()
+    INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
     {
       h = m.h;
       data = m.data;
@@ -841,7 +841,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    TELEM & operator() (int i) const
+    INLINE TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,W,i);
@@ -850,7 +850,7 @@ namespace ngbla
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,W,i,j);
@@ -859,21 +859,21 @@ namespace ngbla
     }
 
     /// the height
-    int Height () const throw() { return h; }
+    INLINE int Height () const throw() { return h; }
 
     /// the width
-    int Width () const throw() { return W; }
+    INLINE int Width () const throw() { return W; }
 
     ///
-    operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
+    INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
     ///
-    const FlatVec<W,T> Row (int i) const
+    INLINE const FlatVec<W,T> Row (int i) const
     {
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
-    const FixSliceVector<DIST,T> Col (int i) const
+    INLINE const FixSliceVector<DIST,T> Col (int i) const
     {
       return FixSliceVector<DIST,T> (h, &data[i]);
     }
@@ -881,27 +881,27 @@ namespace ngbla
     using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Rows;
     using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Cols;
 
-    const FlatMatrixFixWidth Rows (int first, int next) const
+    INLINE const FlatMatrixFixWidth Rows (int first, int next) const
     {
       return FlatMatrixFixWidth (next-first, data+first*DIST);
     }
 
-    const SliceMatrix<T> Cols (int first, int next) const
+    INLINE const SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, DIST, data+first);
     }
 
-    const FlatMatrixFixWidth Rows (IntRange range) const
+    INLINE const FlatMatrixFixWidth Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    const SliceMatrix<T> Cols (IntRange range) const
+    INLINE const SliceMatrix<T> Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
 
-    operator SliceMatrix<T> () const
+    INLINE operator SliceMatrix<T> () const
     {
       return SliceMatrix<T> (h, W, DIST, data);
     }
@@ -1262,19 +1262,19 @@ namespace ngbla
     */
 
     template<int H, int W>
-    SliceMatrix (Mat<H,W,T> & mat)
+    INLINE SliceMatrix (Mat<H,W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(&mat(0,0))
     { ; }
 
     /// assign contents
     template<typename TB>
-    const SliceMatrix & operator= (const Expr<TB> & m) const
+    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
 
   
-    const SliceMatrix & operator= (const SliceMatrix & m) const
+    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
@@ -1299,7 +1299,7 @@ namespace ngbla
     */
 
     /// assign constant
-    const SliceMatrix & operator= (TSCAL s) const
+    INLINE const SliceMatrix & operator= (TSCAL s) const
     {
       for (int i = 0; i < h; i++)
         for (int j = 0; j < w; j++)
@@ -1308,7 +1308,7 @@ namespace ngbla
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (int i, int j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -1317,7 +1317,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    TELEM & operator() (int i) const
+    INLINE TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -1326,13 +1326,13 @@ namespace ngbla
     }
 
     /// the height
-    int Height () const throw() { return h; }
+    INLINE int Height () const throw() { return h; }
 
     /// the width
-    int Width () const throw() { return w; }
+    INLINE int Width () const throw() { return w; }
 
     /// 
-    int Dist () const throw() { return dist; }
+    INLINE int Dist () const throw() { return dist; }
 
     INLINE const SliceMatrix Rows (int first, int next) const
     {
@@ -1715,7 +1715,7 @@ namespace ngbla
 
 
   template <int H, int W, typename T>
-  inline auto Trans (const Mat<H,W,T> & mat)
+  INLINE auto Trans (const Mat<H,W,T> & mat)
     -> Mat<W,H,decltype(Trans(mat(0,0)))>
   {
     Mat<W,H,decltype(Trans(mat(0,0)))> res;
@@ -1735,7 +1735,7 @@ template <typename T>
 
 
   template <int S, typename T>
-  inline auto operator* (double a, const Vec<S,T> & vec) 
+  INLINE  auto operator* (double a, const Vec<S,T> & vec) 
     -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
@@ -1746,7 +1746,7 @@ template <typename T>
   }
 
   template <int S, typename T>
-  inline auto operator* (double a, FlatVec<S,T> vec) 
+  INLINE auto operator* (double a, FlatVec<S,T> vec) 
     -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
@@ -1757,7 +1757,7 @@ template <typename T>
   }
 
   template <int S, typename T>
-  inline auto operator* (Complex a, const Vec<S,T> & vec) 
+  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
     -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
@@ -1768,7 +1768,7 @@ template <typename T>
   }
 
   template <int S, typename T>
-  inline auto operator* (Complex a, FlatVec<S,T> vec) 
+  INLINE auto operator* (Complex a, FlatVec<S,T> vec) 
     -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
@@ -1782,7 +1782,7 @@ template <typename T>
 
 
   template <int H, int W, int W2, typename T1, typename T2>
-  inline auto operator* (const Mat<H,W,T1> & mat1, const Mat<W,W2,T2> & mat2) 
+  INLINE auto operator* (const Mat<H,W,T1> & mat1, const Mat<W,W2,T2> & mat2) 
     -> Mat<H,W2,decltype( xxxRemoveConst(mat1(0,0)*mat2(0,0)))>
   {
     typedef decltype( xxxRemoveConst(mat1(0,0)*mat2(0))) TRES;
@@ -1800,7 +1800,7 @@ template <typename T>
 
 
   template <int H, int W, int W2, typename T1, typename T2>
-  inline auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
+  INLINE auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
     -> Vec<H, decltype(xxxRemoveConst(mat(0,0)*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(mat(0,0)*vec(0))) TRES;
@@ -1812,7 +1812,7 @@ template <typename T>
   }
 
   template <int H, int W, typename T1, typename T2>
-  inline auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
+  INLINE auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
     -> Vec<H, decltype(xxxRemoveConst(mat(0,0)*vec(0)))>
   {
     typedef decltype(xxxRemoveConst(mat(0,0)*vec(0))) TRES;

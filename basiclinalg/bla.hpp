@@ -20,8 +20,14 @@ namespace ngbla
 
   using ngstd::CArray;
 
+#ifdef USE_MYCOMPLEX
+  typedef MyComplex<double> Complex;
+  inline double fabs (Complex v) { return ngstd::abs (v); }
+#else
   typedef std::complex<double> Complex;
   inline double fabs (Complex v) { return std::abs (v); }
+#endif
+
 
   inline bool IsComplex(double v) { return false; }
   inline bool IsComplex(Complex v) { return true; }

@@ -34,13 +34,13 @@ namespace ngfem
 
     virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
 
-    virtual void CalcShape (const IntegrationPoint & ip, 
+    HD virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const
     {
       fe.CalcFacetShapeVolIP(fnr, ip, shape);
     }
     
-    virtual void CalcDShape (const IntegrationPoint & ip, 
+    HD virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const
     {
       throw Exception ("facetfe - calcdshape not olverloaded");

@@ -133,7 +133,7 @@ namespace ngfem
     for (int i = 0; i < dshape.Height(); i++)
       {
         Vec<D> hv = dshape.Row(i);
-        dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
+        FlatVec<D> (&dshape(i,0)) = Trans (mip.GetJacobianInverse ()) * hv;
       }
   }
 
@@ -470,13 +470,13 @@ namespace ngfem
 
 
 
-  template class ScalarFiniteElement<0>;
+  // template class ScalarFiniteElement<0>;
   template class ScalarFiniteElement<1>;
   template class ScalarFiniteElement<2>;
   template class ScalarFiniteElement<3>;
 
 
-  template class DGFiniteElement<0>;
+  // template class DGFiniteElement<0>;
   template class DGFiniteElement<1>;
   template class DGFiniteElement<2>;
   template class DGFiniteElement<3>;

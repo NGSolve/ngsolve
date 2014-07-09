@@ -21,24 +21,24 @@ namespace ngstd
 
   public:
     ///
-    INT () { }
+    INLINE INT () { }
 
     /// init all
-    INT (T ai1)
+    INLINE INT (T ai1)
     { 
       for (int j = 0; j < N; j++) { i[j] = ai1; }
     }
 
     /// init i[0], i[1]
-    INT (T ai1, T ai2)
+    INLINE INT (T ai1, T ai2)
     { i[0] = ai1; i[1] = ai2; }
 
     /// init i[0], i[1], i[2]
-    INT (T ai1, T ai2, T ai3)
+    INLINE INT (T ai1, T ai2, T ai3)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; }
 
     /// init i[0], i[1], i[2]
-    INT (T ai1, T ai2, T ai3, T ai4)
+    INLINE INT (T ai1, T ai2, T ai3, T ai4)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; i[3] = ai4; }
 
     /*
@@ -51,7 +51,7 @@ namespace ngstd
     */
 
     template <int N2, typename T2>
-    INT (const INT<N2,T2> & in2)
+    INLINE INT (const INT<N2,T2> & in2)
     {
       if (N2 <= N)
         {
@@ -68,7 +68,7 @@ namespace ngstd
     }
   
     /// all ints equal ?
-    bool operator== (const INT & in2) const
+    INLINE bool operator== (const INT & in2) const
     { 
       for (int j = 0; j < N; j++) 
 	if (i[j] != in2.i[j]) return 0;
@@ -76,7 +76,7 @@ namespace ngstd
     }
 
     /// sort integers
-    void Sort ()
+    INLINE void Sort ()
     {
       for (int k = 0; k < N; k++)
 	for (int l = k+1; l < N; l++)
@@ -85,20 +85,20 @@ namespace ngstd
     }
 
     /// access
-    T & operator[] (int j)
+    INLINE T & operator[] (int j)
     { return i[j]; }
 
     /// access
-    const T & operator[] (int j) const
+    INLINE const T & operator[] (int j) const
     { return i[j]; }
 
-    void SetAll (T value)
+    INLINE void SetAll (T value)
     {
       for (int j = 0; j < N; j++)
 	i[j] = value;
     }
 
-    INT<N,T> & operator= (T value)
+    INLINE INT<N,T> & operator= (T value)
     {
       for (int j = 0; j < N; j++)
 	i[j] = value;
@@ -106,7 +106,7 @@ namespace ngstd
     }
 
     template <typename T2>
-    INT<N,T> & operator= (INT<N,T2> v2)
+    INLINE INT<N,T> & operator= (INT<N,T2> v2)
     {
       for (int j = 0; j < N; j++)
 	i[j] = v2[j];
@@ -116,18 +116,18 @@ namespace ngstd
 
   /// sort 2 integers
   template <>
-  inline void INT<2>::Sort ()
+  INLINE void INT<2>::Sort ()
   {
-    if (i[0] > i[1]) swap (i[0], i[1]);
+    if (i[0] > i[1]) Swap (i[0], i[1]);
   }
 
   /// sort 3 integers
   template <>
-  inline void INT<3>::Sort ()
+  INLINE void INT<3>::Sort ()
   {
-    if (i[0] > i[1]) swap (i[0], i[1]);
-    if (i[1] > i[2]) swap (i[1], i[2]);
-    if (i[0] > i[1]) swap (i[0], i[1]);
+    if (i[0] > i[1]) Swap (i[0], i[1]);
+    if (i[1] > i[2]) Swap (i[1], i[2]);
+    if (i[0] > i[1]) Swap (i[0], i[1]);
   }
 
   /// Print integers
@@ -141,7 +141,7 @@ namespace ngstd
 
 
   template <int N>
-  inline int HashValue (const INT<N> & ind, int size)
+  INLINE int HashValue (const INT<N> & ind, int size)
   {
     int sum = 0;
     for (int i = 0; i < N; i++)
@@ -150,19 +150,19 @@ namespace ngstd
   }
 
   /// hash value of 1 int
-  inline int HashValue (const INT<1> & ind, int size) 
+  INLINE int HashValue (const INT<1> & ind, int size) 
   {
     return ind[0] % size;
   }
 
   /// hash value of 2 int
-  inline int HashValue (const INT<2> & ind, int size) 
+  INLINE int HashValue (const INT<2> & ind, int size) 
   {
     return (113*ind[0]+ind[1]) % size;
   }
 
   /// hash value of 3 int
-  inline int HashValue (const INT<3> & ind, int size) 
+  INLINE int HashValue (const INT<3> & ind, int size) 
   {
     return (113*ind[0]+59*ind[1]+ind[2]) % size;
   }
@@ -171,7 +171,7 @@ namespace ngstd
   // using ngstd::max;
 
   template <int D, typename T>
-  inline T Max (const INT<D,T> & i)
+  INLINE T Max (const INT<D,T> & i)
   {
     if (D == 0) return 0;
     T m = i[0];

@@ -213,7 +213,7 @@ namespace ngfem
     }
     */
 
-    virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+    HD virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
     {
       // static Timer t("evaluate");
       // RegionTimer r(t);
@@ -265,7 +265,7 @@ namespace ngfem
       else if (ET == ET_TRIG)
 	{
           int ii = 0;
-          IterateTrig<ORDER> ([&] (int ix, int iy)
+          IterateTrig<ORDER> (HD [&] (int ix, int iy) 
             {
               mass[ii] = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
               ii++;

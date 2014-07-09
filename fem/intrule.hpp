@@ -359,7 +359,7 @@ namespace ngfem
   {
   public:
     ///
-    IntegrationRule () { ; }
+    INLINE IntegrationRule () { ; }
 
     /**
        An integration rule for element type of certain order.
@@ -367,33 +367,33 @@ namespace ngfem
     */
     NGS_DLL_HEADER IntegrationRule (ELEMENT_TYPE eltype, int order);
     
-    IntegrationRule (int asize, IntegrationPoint * pip)
+    INLINE IntegrationRule (int asize, IntegrationPoint * pip)
       : Array<IntegrationPoint> (asize, pip) { ; }
 
 
-    NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
+    INLINE NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
       : Array<IntegrationPoint> (ir2.Size(), &ir2[0])
     { ; }
 
-    NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
+    INLINE NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
       : Array<IntegrationPoint> (asize, lh)
     { ; }
 
-    NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
+    INLINE NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
 
     // make it polymorphic
     virtual ~IntegrationRule() { ; }
 
     ///
-    void AddIntegrationPoint (const IntegrationPoint & ip)
+    INLINE void AddIntegrationPoint (const IntegrationPoint & ip)
     { 
       Append (ip);
     }
 
     /// number of integration points
-    int GetNIP() const { return Size(); }
+    INLINE int GetNIP() const { return Size(); }
 
-    IntegrationRule Range (int first, int next) const
+    INLINE IntegrationRule Range (int first, int next) const
     {
       return IntegrationRule (next-first, &(*this)[first]);
     }

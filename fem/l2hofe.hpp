@@ -29,7 +29,7 @@ namespace ngfem
     Matrix<> shapes;
     Matrix<> dshapes;
     
-    PrecomputedScalShapes (int nip, int ndof)
+    INLINE PrecomputedScalShapes (int nip, int ndof)
       : shapes(nip, ndof), dshapes (DIM*nip, ndof)
     { ; }
 
@@ -99,7 +99,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir);
 
     using BASE::Evaluate;
-    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
     NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
 
     NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;

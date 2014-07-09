@@ -310,18 +310,18 @@ namespace ngbla
   class Expr 
   {
   public:
-    Expr () { ; }
+    INLINE Expr () { ; }
 
     /// cast to specific type
-    T & Spec() { return static_cast<T&> (*this); }
+    INLINE T & Spec() { return static_cast<T&> (*this); }
 
     /// cast to specific type
-    const T & Spec() const { return static_cast<const T&> (*this); }
+    INLINE const T & Spec() const { return static_cast<const T&> (*this); }
 
 
     /// height 
-    int Height() const { return Spec().T::Height(); }
-    int Width() const { return Spec().T::Width(); }
+    INLINE int Height() const { return Spec().T::Height(); }
+    INLINE int Width() const { return Spec().T::Width(); }
 
     // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
     // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
@@ -329,18 +329,18 @@ namespace ngbla
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
 
-    RowExpr<const T> Row (int r) const
+    INLINE RowExpr<const T> Row (int r) const
     {
       return RowExpr<const T> (static_cast<const T&> (*this), r);
     }
 
-    ColExpr<T> Col (int r) const
+    INLINE ColExpr<T> Col (int r) const
     {
       return RowExpr<T> (static_cast<T&> (*this), r);
     }
 
 
-    SubMatrixExpr<T>
+    INLINE SubMatrixExpr<T>
     Rows (int first, int next)
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
@@ -483,7 +483,7 @@ namespace ngbla
   {
   public:
  
-    MatExpr () { ; }
+    INLINE MatExpr () { ; }
 
     using Expr<T>::Spec;
     using Expr<T>::Height;
@@ -560,19 +560,19 @@ namespace ngbla
     {
     public:
       template <typename T1, typename T2> 
-      void operator() (T1 && v1, const T2 & v2) { v1 = v2; }
+      INLINE void operator() (T1 && v1, const T2 & v2) { v1 = v2; }
     };
     class AsAdd 
     {
     public:
       template <typename T1, typename T2> 
-      void operator() (T1 && v1, const T2 & v2) { v1 += v2; }
+      INLINE void operator() (T1 && v1, const T2 & v2) { v1 += v2; }
     };
     class AsSub 
     {
     public:
       template <typename T1, typename T2> 
-      void operator() (T1 && v1, const T2 & v2) { v1 -= v2; }
+      INLINE void operator() (T1 && v1, const T2 & v2) { v1 -= v2; }
     };
 	
 
@@ -602,21 +602,21 @@ namespace ngbla
 
 
     template <typename TA, typename TB>
-    T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
+    INLINE T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 0.0);
       return Spec();
     }
 
     template <typename TA, typename TB>
-    ALWAYS_INLINE T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    INLINE T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 1.0);
       return Spec();
     }
 
     template <typename TA, typename TB>
-    ALWAYS_INLINE T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
+    INLINE T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
     {
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
       return Spec();
@@ -628,7 +628,7 @@ namespace ngbla
 
 
     template<typename TB>
-    ALWAYS_INLINE T & operator+= (const Expr<SymExpr<TB> > & v)
+    INLINE T & operator+= (const Expr<SymExpr<TB> > & v)
     {
 #ifdef CHECK_RANGE
       if (Height() != v.Height() || Width() != v.Width())
@@ -653,7 +653,7 @@ namespace ngbla
 
 
     template <class SCAL2>
-    T & operator*= (const SCAL2 & s)
+    INLINE T & operator*= (const SCAL2 & s)
     {
       if (T::IS_LINEAR)
 	{
@@ -670,7 +670,7 @@ namespace ngbla
     }
 
     template <class SCAL2>
-    T & operator/= (const SCAL2 & s)
+    INLINE T & operator/= (const SCAL2 & s)
     {
       return (*this) *= (1./s);
     }
@@ -698,7 +698,7 @@ namespace ngbla
     // int Height() const { return Spec().T::Height(); }
     // int Width() const { return Spec().T::Width(); }
 
-    CMCPMatExpr () { ; }
+    INLINE CMCPMatExpr () { ; }
 
     using MatExpr<T>::Spec;
     using MatExpr<T>::Height;
@@ -818,14 +818,14 @@ namespace ngbla
   public:
 
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    
+    INLINE SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    SumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+    INLINE auto operator() (int i) const -> decltype(a(i)+b(i)) { return a(i)+b(i); }
+    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)+b(i,j)) { return a(i,j)+b(i,j); }
 
-    auto operator() (int i) const -> decltype(a(i)+b(i)) { return a(i)+b(i); }
-    auto operator() (int i, int j) const -> decltype(a(i,j)+b(i,j)) { return a(i,j)+b(i,j); }
-
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
 
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
@@ -856,13 +856,13 @@ namespace ngbla
   public:
 
     enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    
+    INLINE SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    SubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
-
-    auto operator() (int i) const -> decltype(a(i)-b(i)) { return a(i)-b(i); }
-    auto operator() (int i, int j) const -> decltype(a(i,j)-b(i,j)) { return a(i,j)-b(i,j); }
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    INLINE auto operator() (int i) const -> decltype(a(i)-b(i)) { return a(i)-b(i); }
+    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)-b(i,j)) { return a(i,j)-b(i,j); }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
   };
 
 
@@ -923,7 +923,7 @@ namespace ngbla
   public:
     enum { IS_LINEAR = TA::IS_LINEAR };
 
-    ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
+    INLINE ScaleExpr (const TA & aa, TS as) : a(aa), s(as) { ; }
 
     INLINE auto operator() (int i) const -> decltype(s*a(i)) { return s * a(i); }
     INLINE auto operator() (int i, int j) const -> decltype(s*a(i,j)) { return s * a(i,j); }
@@ -970,12 +970,12 @@ namespace ngbla
     const TB & b;
   public:
 
-    MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+    INLINE MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-    auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
+    INLINE auto operator() (int i) const -> decltype(a(0,0)*b(0,0))
     { return operator()(i,0); }  
 
-    auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
+    INLINE auto operator() (int i, int j) const -> decltype (a(0,0)*b(0,0))
     { 
       int wa = a.Width();
 
@@ -993,10 +993,10 @@ namespace ngbla
       // return 0;
     }
 
-    const TA & A() const { return a; }
-    const TB & B() const { return b; }
-    int Height() const { return a.Height(); }
-    int Width() const { return b.Width(); }
+    INLINE const TA & A() const { return a; }
+    INLINE const TB & B() const { return b; }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
 
@@ -1025,7 +1025,7 @@ namespace ngbla
 
 
   template <typename TA, typename TB>
-  inline MultExpr<TA, TB>
+  INLINE MultExpr<TA, TB>
   operator* (const Expr<TA> & a, const Expr<TB> & b)
   {
     return MultExpr<TA, TB> (a.Spec(), b.Spec());
@@ -1035,10 +1035,10 @@ namespace ngbla
   /* ************************** Trans *************************** */
 
 
-  inline double Trans (double a) { return a; }
-  inline Complex Trans (Complex a) { return a; }
+  INLINE double Trans (double a) { return a; }
+  INLINE Complex Trans (Complex a) { return a; }
   template<int D, typename TAD>
-  inline AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
+  INLINE AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
 
 
   /**
@@ -1048,18 +1048,18 @@ namespace ngbla
   {
     const TA & a;
   public:
-    TransExpr (const TA & aa) : a(aa) { ; }
+    INLINE TransExpr (const TA & aa) : a(aa) { ; }
 
-    int Height() const { return a.Width(); }
-    int Width() const { return a.Height(); }
+    INLINE int Height() const { return a.Width(); }
+    INLINE int Width() const { return a.Height(); }
 
-    auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
-    auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
+    INLINE auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
+    INLINE auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
     // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
     // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
 
-    const TA & A() const { return a; }
+    INLINE const TA & A() const { return a; }
   };
 
 
@@ -1218,12 +1218,12 @@ namespace ngbla
   /* ************************* Conjugate *********************** */ 
 
 
-  inline double Conj (double a)
+  INLINE double Conj (double a)
   {
     return a;
   }
 
-  inline Complex Conj (Complex a)
+  INLINE Complex Conj (Complex a)
   {
     return conj(a);
   }
@@ -1239,13 +1239,13 @@ namespace ngbla
     // typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
-    ConjExpr (const TA & aa) : a(aa) { ; }
+    INLINE ConjExpr (const TA & aa) : a(aa) { ; }
 
-    int Height() const { return a.Height(); }
-    int Width() const { return a.Width(); }
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
  
-    auto operator() (int i, int j) const -> decltype(Conj(a(i,j))) { return Conj(a(i,j)); }
-    auto operator() (int i) const -> decltype(Conj(a(i))) { return Conj(a(i)); }
+    INLINE auto operator() (int i, int j) const -> decltype(Conj(a(i,j))) { return Conj(a(i,j)); }
+    INLINE auto operator() (int i) const -> decltype(Conj(a(i))) { return Conj(a(i)); }
 
     enum { IS_LINEAR = 0 };
   };
@@ -1253,14 +1253,14 @@ namespace ngbla
 
   /// Conjugate
   template <typename TA>
-  inline ConjExpr<TA>
+  INLINE ConjExpr<TA>
   Conj (const Expr<TA> & a)
   {
     return ConjExpr<TA> (static_cast <const TA&> (a));
   }
 
   template<int D, typename TAD>
-  inline AutoDiff<D,TAD> Conj (const AutoDiff<D,TAD> & a) 
+  INLINE AutoDiff<D,TAD> Conj (const AutoDiff<D,TAD> & a) 
   { 
     AutoDiff<D,TAD> b; 
     b.Value() = conj(a.Value()); 
@@ -1278,18 +1278,18 @@ namespace ngbla
   /* ************************* InnerProduct ********************** */
 
 
-  inline double InnerProduct (double a, double b) {return a * b;}
-  inline Complex InnerProduct (Complex a, Complex b) {return a * b;}
-  inline Complex InnerProduct (double a, Complex b) {return a * b;}
-  inline Complex InnerProduct (Complex a, double b) {return a * b;}
-  inline int InnerProduct (int a, int b) {return a * b;}
+  INLINE double InnerProduct (double a, double b) {return a * b;}
+  INLINE Complex InnerProduct (Complex a, Complex b) {return a * b;}
+  INLINE Complex InnerProduct (double a, Complex b) {return a * b;}
+  INLINE Complex InnerProduct (Complex a, double b) {return a * b;}
+  INLINE int InnerProduct (int a, int b) {return a * b;}
 
   /**
      Inner product
   */
 
   template <class TA, class TB>
-  inline auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
+  INLINE auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
     -> decltype (InnerProduct(a.Spec()(0), b.Spec()(0)))
   {
     if (a.Height() == 0) return 0; 

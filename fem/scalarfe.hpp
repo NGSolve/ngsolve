@@ -55,7 +55,7 @@ namespace ngfem
 
 
     /// compute shape
-    NGS_DLL_HEADER 
+    HD NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceVector<> shape) const = 0;
 
@@ -65,7 +65,7 @@ namespace ngfem
                             SliceMatrix<> shape) const;
   
     /// compute dshape, matrix: ndof x spacedim
-    NGS_DLL_HEADER 
+    HD NGS_DLL_HEADER 
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     SliceMatrix<> dshape) const = 0;
     
@@ -125,7 +125,7 @@ namespace ngfem
        Evaluates function in integration point ip.
        Vector x provides coefficient vector.
      */
-    NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, FlatVector<> x) const;
+    HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, FlatVector<> x) const;
 
     /**
        Evaluates gradient in integration point ip.
@@ -138,7 +138,7 @@ namespace ngfem
        Evaluate function in points of integrationrule ir.
        Vector x provides coefficient vector.
      */
-    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<> coefs, FlatVector<> values) const;
     /**
        Each column a vector ...
      */
