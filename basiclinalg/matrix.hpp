@@ -917,16 +917,16 @@ namespace ngbla
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
-    MatrixFixWidth () { ; }
+    INLINE MatrixFixWidth () { ; }
 
     /// allocate matrix of size ah * ah
-    MatrixFixWidth (int ah) : FlatMatrixFixWidth<W,T> (ah, new T[ah*W]) { ; }
+    INLINE MatrixFixWidth (int ah) : FlatMatrixFixWidth<W,T> (ah, new T[ah*W]) { ; }
 
     /// delete memory
-    ~MatrixFixWidth() { delete [] this->data; }
+    INLINE ~MatrixFixWidth() { delete [] this->data; }
 
     /// sets new size of matrix
-    void SetSize(int ah)
+    INLINE void SetSize(int ah)
     {
       if (this->h == ah) return;
       delete [] this->data;
@@ -936,14 +936,14 @@ namespace ngbla
 
     /// assign matrix, sizes must match
     template<typename TB>
-    MatrixFixWidth & operator= (const Expr<TB> & m)
+    INLINE MatrixFixWidth & operator= (const Expr<TB> & m)
     {
       MatExpr<FlatMatrixFixWidth<W,T> >::operator= (m);
       return *this;
     }
 
     /// fill matrix with scalar
-    MatrixFixWidth & operator= (TSCAL s)
+    INLINE MatrixFixWidth & operator= (TSCAL s)
     {
       FlatMatrixFixWidth<W,T>::operator= (s);
       return *this;
