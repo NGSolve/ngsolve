@@ -120,7 +120,11 @@ namespace ngcomp
         case NG_PYRAMID:                return ET_PYRAMID;
         case NG_HEX:                    return ET_HEX;
         default:
+#ifndef __CUDA_ARCH__
 	  throw Exception ("Netgen2NgS type conversion: Unhandled element type");
+#else
+	  return ET_POINT;
+#endif	  
         }
     }
 
