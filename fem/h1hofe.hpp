@@ -62,6 +62,8 @@ namespace ngfem
     /// order of internal shapes (3d only)
     Vec<N_CELL, INT<3,TORDER> > order_cell;
 
+    // typedef LegendrePolynomial EdgeOrthoPol;
+    typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
   public:
     /// minimal constructor, orders will be set later
     /* INLINE */ H1HighOrderFE () { ; } 

@@ -10,25 +10,36 @@
 namespace ngsolve
 {
 
-/** 
-    numerical procedures
-*/
-
 class PDE;
   
-///
+
+/** 
+    numerical procedure.  
+    
+    A numproc is an object which performs some numerical computations,
+    e.g. solving a boundary value problem, or doing some
+    post-processing. Typically, a numproc calls a linear algebra
+    function or finite element operation for doing so.
+
+    A numproc collects some components in the constructor, and
+    performs the action in the virtual function Do.
+*/
+
 class NGS_DLL_HEADER NumProc : public NGS_Object
 {
 protected:
-  ///
+  /// reference to the PDE the numproc belongs to
   PDE & pde;
-
-  int callposition;
+  
+  // int callposition;
 public:
-  ///
-  NumProc (PDE & apde, const int acallposition = 0);
-  ///
-  NumProc (PDE & apde, const Flags & flags, const int acallposition = 0);
+  /// 
+  // NumProc (PDE & apde); // , const int acallposition = 0);
+  /**
+     Generate a numproc. 
+     Use objects of pde container, parameterized by flags
+  */
+  NumProc (PDE & apde, const Flags & flags = Flags()); // , const int acallposition = 0);
   ///
   virtual ~NumProc();
   ///
@@ -38,13 +49,13 @@ public:
   ///
   static void PrintDoc (ostream & ost);
 
-  int GetCallPosition (void) const { return callposition;} 
+  // int GetCallPosition (void) const { return callposition;} 
 };
 
 
 
 
-/// Registered numprocs
+/// Registered numprocs container
 class NGS_DLL_HEADER NumProcs
 {
 public:
@@ -81,10 +92,18 @@ public:
   void Print (ostream & ost) const;
 };
 
- 
+
+
+  /// global variable of all registered numprocs 
 extern NGS_DLL_HEADER NumProcs & GetNumProcs ();
 
+  /**
+     A template-mechanism to register numprocs.
 
+     Use:
+     RegisterNumProc<MyNumProc> anyname("mynumproc");
+     to register you numproc with a given name.
+  */
 template <typename NP>
 class RegisterNumProc
 {
@@ -92,7 +111,6 @@ public:
   RegisterNumProc (string label, int dim = -1)
   {
     GetNumProcs().AddNumProc (label, dim, Create, NP::PrintDoc);
-    // cout << "register numproc '" << label << "'" << endl;
   }
   
   static NumProc * Create (PDE & pde, const Flags & flags)

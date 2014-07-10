@@ -277,12 +277,12 @@ void BilinearForm :: Assemble ()
 
 
 
-//@Include: ngstd/*.hpp
-//@Include: basiclinalg/*.hpp
-//@Include: linalg/*.hpp
-//@Include: fem/*.hpp
-//@Include: comp/*.hpp
-//@Include: solve/*.hpp
+@Include: ngstd/*.hpp
+@Include: basiclinalg/*.hpp
+@Include: linalg/*.hpp
+@Include: fem/*.hpp
+@Include: comp/*.hpp
+@Include: solve/*.hpp
 
 
 

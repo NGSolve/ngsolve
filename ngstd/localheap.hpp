@@ -221,10 +221,21 @@ INLINE void * operator new (size_t size, ngstd::LocalHeap & lh)
   return lh.Alloc(size);
 }
 
+INLINE void * operator new [] (size_t size, ngstd::LocalHeap & lh)  
+{
+  return lh.Alloc(size);
+}
+
 INLINE void operator delete (void * p, ngstd::LocalHeap & lh)  
 {
   ; 
 }
+
+INLINE void operator delete [] (void * p, ngstd::LocalHeap & lh)  
+{
+  ; 
+}
+
 
 
 

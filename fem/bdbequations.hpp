@@ -93,7 +93,7 @@ namespace ngfem
     {
       FlatMatrixFixWidth<D> grad(mir.Size(), &y(0));
       Cast(fel).EvaluateGrad (mir.IR(), x, grad);
-      for  (int i = 0; i < mir.Size(); i++)
+      for (int i = 0; i < mir.Size(); i++)
 	{
 	  Vec<D> hv = grad.Row(i);
 	  grad.Row(i) = Trans (mir[i].GetJacobianInverse()) * hv;
