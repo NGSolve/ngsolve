@@ -44,8 +44,9 @@ namespace ngfem
     
     INT<2> e = GetEdgeSort (0, vnums);
     
-    LegendrePolynomial::
-      // IntLegNoBubble::
+    // LegendrePolynomial::
+    // IntLegNoBubble::
+    EdgeOrthoPol::
       EvalMult (order_edge[0]-2, 
                 lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
   }
@@ -62,26 +63,24 @@ namespace ngfem
 
     int ii = 3;
     
-    // edge dofs
+    // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
       if (order_edge[i] >= 2)
 	{ 
           INT<2> e = GetEdgeSort (i, vnums);
-
-	  LegendrePolynomial::
-          // IntLegNoBubble::
+          EdgeOrthoPol::
             EvalScaledMult (order_edge[i]-2, 
                             lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                             lam[e[0]]*lam[e[1]], shape+ii);
 	  ii += order_edge[i]-1;
 	}
 
-    int p = order_face[0][0];
-    if (p >= 3)
+    // inner shapes
+    if (order_face[0][0] >= 3)
       {
         INT<4> f = GetFaceSort (0, vnums);
 
-	DubinerBasis3::EvalMult (p-3, 
+	DubinerBasis3::EvalMult (order_face[0][0]-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
       }
@@ -100,7 +99,7 @@ namespace ngfem
     for(int i=0; i < N_VERTEX; i++) shape[i] = lam[i]; 
     int ii = 4;
      
-    // edge dofs
+    // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
       {
 	int p = order_edge[i];
@@ -109,11 +108,11 @@ namespace ngfem
         Tx lam_e = ET_trait<ET_QUAD>::LamEdge(i, hx);
 
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
-	LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
+	EdgeOrthoPol::EvalMult (p-2, xi, bub, shape+ii);
 	ii += p-1;
       }    
     
-    // element dofs
+    // inner shapes
     INT<2> p = order_face[0];
     if (p[0] >= 2 && p[1] >= 2)
       {
@@ -159,9 +158,9 @@ namespace ngfem
       if (order_edge[i] >= 2)
 	{
           INT<2> e = GetEdgeSort (i, vnums);
-	  LegendrePolynomial::EvalScaledMult (order_edge[i]-2, 
-					      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-					      lam[e[0]]*lam[e[1]], shape+ii);
+	  EdgeOrthoPol::EvalScaledMult (order_edge[i]-2, 
+                                        lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
+                                        lam[e[0]]*lam[e[1]], shape+ii);
 	  ii += order_edge[i]-1;
 	}
 
@@ -215,7 +214,7 @@ namespace ngfem
 	  Tx eta = lam[e[0]]+lam[e[1]]; 
 	  Tx bub = lam[e[0]]*lam[e[1]]*muz[e[1]];
 
-	  LegendrePolynomial::
+	  EdgeOrthoPol::
 	    EvalScaledMult (order_edge[i]-2, xi, eta, bub, shape+ii);
 	  ii += order_edge[i]-1;
 	}
@@ -226,7 +225,7 @@ namespace ngfem
 	{
           INT<2> e = GetEdgeSort (i, vnums);
 
-	  LegendrePolynomial::
+	  EdgeOrthoPol::
 	    EvalMult (order_edge[i]-2, 
 		      muz[e[1]]-muz[e[0]], 
 		      muz[e[0]]*muz[e[1]]*lam[e[1]], shape+ii);
@@ -326,7 +325,7 @@ namespace ngfem
           Tx lam_e = lam[e[0]]+lam[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi);
 	  
-	  LegendrePolynomial::EvalMult (p-2, xi, bub, shape+ii);
+	  EdgeOrthoPol::EvalMult (p-2, xi, bub, shape+ii);
 	  ii += p-1;
 	}
 

@@ -194,8 +194,8 @@ namespace ngstd
   /**
      A hash-table.
      Generic identifiers are mapped to the generic type T.
-     An open hashtable. The table is implemented by a \Ref{DynamicTable}.
-     Identifiers must provide a \Ref{HashValue} function.
+     An open hashtable. The table is implemented by a DynamicTable.
+     Identifiers must provide a HashValue method.
   */
   template <class T_HASH, class T>
   class HashTable

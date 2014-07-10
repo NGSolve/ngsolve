@@ -131,7 +131,9 @@ namespace ngsolve
     ip_type = SYMMETRIC;
     if (ipflag == "symmetric") ip_type = SYMMETRIC;
     if (ipflag == "hermitean") ip_type = HERMITEAN;
+    if (ipflag == "hermitian") ip_type = HERMITEAN;
     if (ipflag == "conj_hermitean") ip_type = CONJ_HERMITEAN;
+    if (ipflag == "conj_hermitian") ip_type = CONJ_HERMITEAN;
 
     print = flags.GetDefineFlag ("print");
     useseedvariant = flags.GetDefineFlag ("seed");

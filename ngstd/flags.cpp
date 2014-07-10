@@ -48,6 +48,16 @@ namespace ngstd
       }
   }
 
+  Flags :: Flags (std::initializer_list<string> list)
+  {
+    for (auto i = list.begin(); i < list.end(); i++)
+      SetCommandLineFlag ((string("-")+*i).c_str());      
+    // data[cnt] = *i;
+    // for (int i = 0; i < list.size(); i++)
+    //   SetCommandLineFlag ((string("-")+list[i]).c_str());      
+  }
+
+
   Flags :: Flags (string f1, string f2, string f3, string f4, string f5)
   {
     SetCommandLineFlag ((string("-")+f1).c_str());

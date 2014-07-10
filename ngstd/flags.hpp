@@ -37,6 +37,8 @@ namespace ngstd
     /// copy flags 
     Flags (const Flags & flags);
     ///
+    Flags (std::initializer_list<string> list);
+    /// 
     Flags (string f1, string f2 = "", string f3 = "", string f4 = "", string f5 = "");
     /// delete mem
     ~Flags ();

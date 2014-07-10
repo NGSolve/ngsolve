@@ -6,14 +6,17 @@
 namespace ngsolve
 {
 
-  NumProc :: NumProc (PDE & apde, const int acallposition)
-    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde),     
-      callposition(acallposition) 
+  /*
+  NumProc :: NumProc (PDE & apde) // , const int acallposition)
+    : NGS_Object (apde.GetMeshAccess(), "numproc"), pde(apde)
+                     // , callposition(acallposition) 
   { ; }
+  */
 
-  NumProc :: NumProc (PDE & apde, const Flags & flags, const int acallposition)
+
+  NumProc :: NumProc (PDE & apde, const Flags & flags) // , const int acallposition)
     : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
-      pde(apde), callposition(acallposition) 
+      pde(apde) // , callposition(acallposition) 
   {
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));

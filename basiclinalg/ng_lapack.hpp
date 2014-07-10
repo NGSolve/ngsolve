@@ -733,20 +733,20 @@ namespace ngbla
 
 
 
-  inline void LapackInverseSPD (ngbla::FlatMatrix<double> a)
+  inline void LapackInverseSPD (ngbla::SliceMatrix<double> a)
   {
     integer n = a.Width();
     if (n == 0) return;
-    integer lda = n;
+    integer lda = a.Dist();
 
     integer info;
-    char uplo = 'L';
+    char uplo = 'U';
 
     dpotrf_ (&uplo, &n, &a(0,0), &lda, &info);
     dpotri_ (&uplo, &n, &a(0,0), &lda, &info);
     for (int i = 0; i < n; i++)
       for (int j = 0; j < i; j++)
-	a(i,j) = a(j,i);
+	a(j,i) = a(i,j);
   }
 
 
