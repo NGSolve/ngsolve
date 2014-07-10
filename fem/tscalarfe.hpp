@@ -31,12 +31,12 @@ namespace ngfem
     INLINE T_ScalarFiniteElement () { ; }
     // virtual ~T_ScalarFiniteElement() { ; }
 
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
     
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 					      SliceVector<> shape) const;
     
-    NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
+    HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
 					   SliceMatrix<> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
@@ -45,18 +45,18 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
 					     FlatVector<double> coefs, 
 					     FlatVector<double> vals) const;
-    NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
-    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
 					       FlatVector<> vals, FlatVector<double> coefs) const;
 
-    NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
+    HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
 
-    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
 
-    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
 
-    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
 
     HD NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
 					       SliceMatrix<> dshape) const;
@@ -65,10 +65,10 @@ namespace ngfem
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
                        */
 
-    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
+    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
                                                   SliceMatrix<> dshape) const;
 
-    NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
+    HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
@@ -86,7 +86,7 @@ namespace ngfem
   class T_ScalarFiniteElementFO : public T_ScalarFiniteElement<FEL,ET>
   {
   public:
-    T_ScalarFiniteElementFO ()
+    INLINE T_ScalarFiniteElementFO ()
     {
       this->ndof = NDOF; 
       this->order = ORDER; 
@@ -101,10 +101,10 @@ namespace ngfem
   class ScalarDummyFE : public T_ScalarFiniteElementFO<ScalarDummyFE<ET>,ET,0,0>
   {
   public:
-    NGS_DLL_HEADER ScalarDummyFE() { ; }
-    NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
+    INLINE NGS_DLL_HEADER ScalarDummyFE() { ; }
+    HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
+    INLINE static void T_CalcShape (Tx x[1], TFA & shape) 
     { ; }
   };
 }

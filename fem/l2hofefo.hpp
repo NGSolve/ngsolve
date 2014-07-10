@@ -44,9 +44,6 @@ INLINE void Iterate (FUNC f)
 
 
 
-
-
-
 template <int O, int IX, int IY>
 class Cl_IterateTrig
 {
@@ -156,8 +153,13 @@ INLINE void IterateTrig (FUNC && f)
 
 
 
+
+
+
 namespace ngfem
 {
+
+
 
   /**
      High order finite elements for L2 of fixed order
@@ -187,7 +189,7 @@ namespace ngfem
 
   public:
 
-    L2HighOrderFEFO () 
+    INLINE L2HighOrderFEFO () 
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       order = ORDER;
@@ -219,28 +221,31 @@ namespace ngfem
       // RegionTimer r(t);
       // t.AddFlops (ir.GetNIP()*coefs.Size());
 
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
         vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
       else
+#endif
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
-    virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
+    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
     {
       /*
         static Timer t("evaluate grad trans");
         RegionTimer r(t);
         t.AddFlops (DIM*ir.GetNIP()*coefs.Size());
       */
-
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
 	coefs = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
       else
+#endif
         BASE::T_IMPL:: EvaluateGradTrans (ir, values, coefs);
     }
 
@@ -256,7 +261,7 @@ namespace ngfem
     }
     */
 
-    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
     {
       if (ET == ET_SEGM)
 	{
@@ -265,7 +270,8 @@ namespace ngfem
       else if (ET == ET_TRIG)
 	{
           int ii = 0;
-          IterateTrig<ORDER> (HD [&] (int ix, int iy) 
+
+          IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
             {
               mass[ii] = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
               ii++;
@@ -277,14 +283,14 @@ namespace ngfem
 	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
           */
 	}
+#ifndef __CUDA_ARCH__
       else
 	{
 	  cerr << "L2HighOrderFEFO::getdiagmass not implemented" << endl;
 	}
+#endif
     }
-
   };
-
 
 
 
@@ -334,7 +340,6 @@ namespace ngfem
       INT<4> f = this -> GetFaceSort (0, vnums);
       // DubinerBasis3::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
 
-
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
       LegendrePolynomial_Old leg;
@@ -344,14 +349,18 @@ namespace ngfem
       IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
         {
           if (iy == 0)
-            leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
+	    {
+#ifdef __CUDA_ARCH__
+	      // __threadfence_block();
+#endif
+	      leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
+	    }
 
           JacobiPolynomialNew jac(1+2*ix, 0);
           shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
           ii++;
         });
     }
-
   };
 
 

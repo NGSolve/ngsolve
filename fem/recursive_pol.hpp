@@ -18,13 +18,13 @@ namespace ngfem
 
 
   // Use Lambda function with square-bracket assignment
-
   template <typename FUNC>
   class SBLambdaElement
   {
     FUNC f;
     int i;
   public:
+    INLINE SBLambdaElement (const SBLambdaElement & e2) : f(e2.f), i(e2.i) { ; }
     INLINE SBLambdaElement (FUNC af, int hi) : f(af), i(hi) { ; }
     template <typename VAL>
     INLINE VAL operator= (VAL v) { f(i, v); return v; }
@@ -36,6 +36,7 @@ namespace ngfem
     FUNC func;
     int offset;
   public:
+    INLINE Class_SBLambda (const Class_SBLambda & l2) : func(l2.func), offset(l2.offset) { ; }
     INLINE Class_SBLambda (FUNC f, int ao = 0) : func(f), offset(ao) { ; }
     INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
     INLINE Class_SBLambda<FUNC> operator+ (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
@@ -47,8 +48,6 @@ namespace ngfem
   {
     return Class_SBLambda<FUNC> (f);
   }
-    
-
 
 
 
@@ -911,10 +910,10 @@ namespace ngfem
   class LegendrePolynomial_Old : public RecursivePolynomial<LegendrePolynomial_Old>
   {
   public:
-    LegendrePolynomial_Old () { ; }
+    INLINE LegendrePolynomial_Old () { ; }
 
     template <class S, class T>
-    inline LegendrePolynomial_Old (int n, S x, T && values)
+    INLINE LegendrePolynomial_Old (int n, S x, T && values)
     {
       Eval (n, x, values);
     }
@@ -929,7 +928,10 @@ namespace ngfem
     static INLINE double C (int i) { return 1.0/i-1.0; }
     enum { ZERO_B = 1 };
   };
-    
+
+#ifdef __CUDACC__
+  __device__ Vec<2> * legendre_coefs;
+#endif
 
   class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
   {
@@ -950,13 +952,25 @@ namespace ngfem
     static INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static INLINE S P1(S x)  { return x; }
-    
+
+#ifndef __CUDA_ARCH__
     static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+#else
+    static INLINE double A (int i) { return legendre_coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return legendre_coefs[i][1]; } // 1.0/i-1.0; 
+#endif    
     enum { ZERO_B = 1 };
   };
 
+
+
+
+#ifdef __CUDACC__    
+  __device__ Vec<2> * intlegnobubble_coefs;
+#endif
 
   class IntLegNoBubble : public RecursivePolynomial<IntLegNoBubble>
   {
@@ -978,9 +992,15 @@ namespace ngfem
     template <class S>
     static INLINE S P1(S x)  { return -0.5*x; }
 
+#ifndef __CUDA_ARCH__    
     static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+#else
+    static INLINE double A (int i) { return intlegnobubble_coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double B (int i) { return 0; }
+    static INLINE double C (int i) { return intlegnobubble_coefs[i][1]; } // 1.0/i-1.0; 
+#endif
     
     static INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
     static INLINE double CalcB (int i) { return 0; }
@@ -2269,7 +2289,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
      WARNING: is not \int P_i
   */
   template <class S, class T>
-  inline void IntegratedLegendrePolynomial_Old (int n, S x, T && values)
+  INLINE void IntegratedLegendrePolynomial_Old (int n, S x, T && values)
   {
     S p1 = -1.0;
     S p2 = 0.0; 
@@ -2734,7 +2754,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   }
 	  
   template <class T> 
-  inline void LegendrePolynomialandDiff(int n, double x,  T & P, T & Px) 
+  INLINE void LegendrePolynomialandDiff(int n, double x,  T & P, T & Px) 
   {
     /*
       ArrayMem<AutoDiff<1>,10> ad_values(n+1);

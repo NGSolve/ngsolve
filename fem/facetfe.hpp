@@ -32,7 +32,7 @@ namespace ngfem
       ; // cout << "created facetfefacet" << endl;
     }
 
-    virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
 
     HD virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const

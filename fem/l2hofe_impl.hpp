@@ -31,6 +31,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   PrecomputeTrace ()
   {
+#ifndef __CUDA_ARCH__
     for (int f = 0; f < ElementTopology::GetNFacets(ET); f++)
       {
         int classnr =  ET_trait<ET>::GetFacetClassNr (f, vnums);
@@ -52,6 +53,7 @@ namespace ngfem
         DGFiniteElement<DIM>::CalcTraceMatrix (f, *trace);
         precomp_trace.Set (INT<2> (order, classnr), trace);
       }
+#endif
   }
   
   
@@ -59,6 +61,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   PrecomputeGrad ()
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     
     if (precomp_grad.Used (INT<2> (order, classnr)))
@@ -67,6 +70,7 @@ namespace ngfem
     Matrix<> * gmat = new Matrix<>(ndof*DIM, ndof);
     DGFiniteElement<DIM>::CalcGradientMatrix (*gmat);
     precomp_grad.Set (INT<2> (order, classnr), gmat);
+#endif
   }
     
 
@@ -75,6 +79,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   PrecomputeShapes (const IntegrationRule & ir) 
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
     if (precomp.Get (classnr, order, ir.GetNIP())) return;
@@ -90,6 +95,7 @@ namespace ngfem
       }
     
     precomp.Add (classnr, order, ir.GetNIP(), pre);
+#endif
   }
   
 
@@ -98,11 +104,13 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
     if (pre)
       vals = pre->shapes * coefs;
     else
+#endif
       BASE :: Evaluate (ir, coefs, vals);
   }
 
@@ -110,12 +118,14 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
 
     if (pre)
       coefs = Trans(pre->shapes)*values;
     else
+#endif
       BASE :: EvaluateTrans (ir, values, coefs);
   }
 
@@ -123,6 +133,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const
     {
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
@@ -132,6 +143,7 @@ namespace ngfem
 	  vval = pre->dshapes * coefs;
 	}
       else
+#endif
 	BASE :: EvaluateGrad (ir, coefs, values);
     }
 
@@ -139,12 +151,14 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
     {
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
 
       PrecomputedScalShapes<DIM> * pre = precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
 	coefs = Trans (pre->dshapes) * FlatVector<> (DIM*ndof, &values(0,0));  // values.Height !!!
       else
+#endif
 	BASE :: EvaluateGradTrans (ir, values, coefs);
     }
 
@@ -153,6 +167,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     int bnr, pos;
     if (precomp_grad.Used (INT<2> (order, classnr), bnr, pos))
@@ -162,6 +177,7 @@ namespace ngfem
         vgrad = gmat * coefs;
       }
     else
+#endif
       DGFiniteElement<DIM>::GetGradient (coefs, grad);
   }
   
@@ -169,6 +185,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const
   {
+#ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
     int bnr, pos;
     if (precomp_grad.Used (INT<2> (order, classnr), bnr, pos))
@@ -178,6 +195,7 @@ namespace ngfem
         coefs = Trans(gmat) * vgrad;
       }
     else
+#endif
       DGFiniteElement<DIM>::GetGradientTrans (grad, coefs);
   }
 
@@ -193,6 +211,7 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const
     {
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       int bnr, pos;
       if (precomp_trace.Used (INT<2> (order, classnr), bnr, pos))
@@ -201,6 +220,7 @@ namespace ngfem
 	  fcoefs = trace * coefs;
 	}
       else
+#endif
 	DGFiniteElement<DIM>::GetTrace (facet, coefs, fcoefs);
     }
 
@@ -208,12 +228,14 @@ namespace ngfem
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
   GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const
   {
+#ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetFacetClassNr (facet, vnums);
       if (precomp_trace.Used (INT<2> (order, classnr)))
 	{
 	  coefs = Trans(*precomp_trace.Get (INT<2> (order, classnr))) * fcoefs;
 	}
       else
+#endif
 	DGFiniteElement<DIM>::GetTraceTrans (facet, fcoefs, coefs);
     }
 
@@ -239,6 +261,11 @@ namespace ngfem
   template <ELEMENT_TYPE ET> 
   class L2HighOrderFE_Shape : public L2HighOrderFE<ET>
   {
+    using L2HighOrderFE<ET>::vnums;
+    using L2HighOrderFE<ET>::order;
+    using L2HighOrderFE<ET>::order_inner;
+    using L2HighOrderFE<ET>::GetFaceSort;
+    using L2HighOrderFE<ET>::GetEdgeSort;
   public:
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx hx[], TFA & shape) const;

@@ -35,7 +35,9 @@ namespace ngfem
   void ScalarFiniteElement<D> :: 
   GetPolOrders (FlatArray<PolOrder<D> > orders) const
   {
+#ifndef __CUDA_ARCH__
     throw Exception (string ("GetPolOrders not implemnted for element") + ClassName());
+#endif
   }
 
 
@@ -190,7 +192,9 @@ namespace ngfem
   void ScalarFiniteElement<D> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
+#ifndef __CUDA_ARCH__
     cout << "multi-evaluate called for base class, not implemented" << endl;
+#endif
   }
 
 
@@ -233,7 +237,9 @@ namespace ngfem
   void ScalarFiniteElement<D> :: 
   EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
   {
+#ifndef __CUDA_ARCH__
     cout << "EvalGradTrans not overloaded" << endl;
+#endif
   }
 
 
@@ -330,6 +336,7 @@ namespace ngfem
   void DGFiniteElement<D>:: 
   GetDiagMassMatrix (FlatVector<> mass) const
   {
+#ifndef __CUDA_ARCH__
     IntegrationRule ir(this->ElementType(), 2*order);
     VectorMem<50> shape(ndof);
     mass = 0;
@@ -339,6 +346,7 @@ namespace ngfem
         for (int j = 0; j < ndof; j++)
           mass(j) += ir[i].Weight() * sqr (shape(j));
       }
+#endif
   }
 
 

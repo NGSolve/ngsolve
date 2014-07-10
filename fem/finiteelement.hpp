@@ -37,7 +37,7 @@ namespace ngfem
 
   public:
     /// make the class virtual
-    virtual ~FiniteElement () { ; }
+    HD virtual ~FiniteElement () { ; }
 
     /// Number of degrees-of-freedom
     INLINE int GetNDof () const { return ndof; }
@@ -46,7 +46,7 @@ namespace ngfem
     INLINE int Order () const { return order; }
 
     /// geometry of element
-    virtual ELEMENT_TYPE ElementType() const = 0; //  { return eltype; }
+    HD virtual ELEMENT_TYPE ElementType() const = 0; //  { return eltype; }
 
     /// the name of the element family
     virtual string ClassName() const;
@@ -76,7 +76,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
 
-    virtual ELEMENT_TYPE ElementType() const { return fea[0]->ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const { return fea[0]->ElementType(); }
     /// number of components
     int GetNComponents() const { return fea.Size(); }
 
@@ -109,7 +109,7 @@ namespace ngfem
   {
   public:
     /* INLINE */ DummyFE () : FiniteElement(0, 0) { ; }
-    virtual ELEMENT_TYPE ElementType() const { return ET; }
+    HD virtual ELEMENT_TYPE ElementType() const { return ET; }
   };
 
 
