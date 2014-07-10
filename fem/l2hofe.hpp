@@ -67,8 +67,8 @@ namespace ngfem
     static TPRECOMP_GRAD precomp_grad;
 
   public:
-    /* INLINE */ L2HighOrderFE () { ; }
-    /* INLINE */ L2HighOrderFE (int aorder)
+    INLINE L2HighOrderFE () { ; }
+    INLINE L2HighOrderFE (int aorder)
     {
       for (int i = 0; i < ET_trait<ET>::N_VERTEX; i++) vnums[i] = i;
       order = aorder;
@@ -76,7 +76,7 @@ namespace ngfem
       ndof = PolDimension (aorder);
     }
 
-    virtual NGS_DLL_HEADER ~L2HighOrderFE () { ; }
+    // virtual NGS_DLL_HEADER ~L2HighOrderFE () { ; }
     
     /// global vertex numbers define ordering of vertices
     template <typename TA>
@@ -100,12 +100,12 @@ namespace ngfem
 
     using BASE::Evaluate;
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
-    NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
 
-    NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
     using BASE::EvaluateGradTrans;
-    NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
 
     NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
     NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const;
@@ -113,7 +113,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const;
     NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const;
 
-    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
   };
 
 }

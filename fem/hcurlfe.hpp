@@ -51,7 +51,7 @@ namespace ngfem
     INLINE HCurlFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; } 
   
-    virtual ~HCurlFiniteElement () { ; }
+    HD virtual ~HCurlFiniteElement () { ; }
 
     virtual string ClassName() const;
 

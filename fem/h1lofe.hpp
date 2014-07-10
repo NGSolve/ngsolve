@@ -18,7 +18,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[], TFA & shape) 
+    static INLINE void T_CalcShape (Tx x[], TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -30,7 +30,7 @@ namespace ngfem
   {
   public:   
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx x[1], TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -42,7 +42,7 @@ namespace ngfem
   public:
         NGS_DLL_HEADER FE_Segm1() { ; }
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx x[1], TFA & shape) 
     {
       shape[0] = x[0];
       shape[1] = 1-x[0];
@@ -55,7 +55,7 @@ namespace ngfem
   public:
         NGS_DLL_HEADER FE_Segm2() { ; }
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       Tx x = hx[0];
 
@@ -70,7 +70,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       Tx x = hx[0];
 
@@ -86,7 +86,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx x[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx x[1], TFA & shape) 
     {
       shape[0] = 1;
       shape[1] = 2*x[0]-1;
@@ -98,7 +98,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       Tx x = hx[0];
 
@@ -113,7 +113,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -124,7 +124,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       Tx x = hx[0];
       Tx lam2 = 1-x;
@@ -143,7 +143,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
     {
       Tx x = hx[0];
       // Tx lam2 = 1-x;
@@ -155,10 +155,12 @@ namespace ngfem
       if (ORDER >= 1) shape[1] = 2*x-1;
       if (ORDER >= 2) shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
       if (ORDER >= 3) shape[3] = (2*x-1)*(2*x-1)*(2*x-1);
+#ifndef __CUDA_ARCH__
       if (ORDER >= 4)
         {
           throw Exception ("TSegmL2: Legendre polynomials not implemented");
         }
+#endif
     }
   };
 
@@ -175,7 +177,7 @@ namespace ngfem
   public:
     FE_Trig0() { ndof = 1; order = 0; }
     template<typename Tx, typename TFA>  
-    inline void T_CalcShape (Tx x[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx x[2], TFA & shape) const
     {
       shape[0] = 1;
     }
@@ -187,7 +189,7 @@ namespace ngfem
   public:
     FE_Trig1() { ndof = 3; order = 1;}
     template<typename Tx, typename TFA>  
-    inline void T_CalcShape (Tx x[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx x[2], TFA & shape) const
     {
       shape[0] = x[0];
       shape[1] = x[1];      
@@ -202,7 +204,7 @@ namespace ngfem
   public:
     FE_Trig2() { ndof = 6; order = 2;}
     template<typename Tx, typename TFA>  
-    inline void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -222,7 +224,7 @@ namespace ngfem
   public:
     FE_Trig2HB() { ndof = 6; order = 2;}
     template<typename Tx, typename TFA>  
-    inline void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -243,7 +245,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -265,7 +267,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       shape[0] = 1.0;
     }
@@ -277,7 +279,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -295,7 +297,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -320,7 +322,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -345,7 +347,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape)
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape)
     {
       shape[0] = 1;
     }
@@ -357,7 +359,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -376,7 +378,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -404,7 +406,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -431,7 +433,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -453,7 +455,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       shape[0] = Tx(1);
     }
@@ -464,7 +466,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -485,7 +487,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -522,7 +524,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -552,7 +554,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -588,7 +590,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       shape[0] = Tx(1);
     }
@@ -599,7 +601,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -627,7 +629,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -639,7 +641,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
     {
       Tx x = hx[0];
       Tx y = hx[1];
@@ -702,7 +704,7 @@ namespace ngfem
 
 
 
-  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Point,ET_POINT>;
+  /* H1LOFE_EXTERN */ template class T_ScalarFiniteElement<FE_Point,ET_POINT>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm0,ET_SEGM>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm1,ET_SEGM>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm2,ET_SEGM>;
@@ -765,7 +767,7 @@ namespace ngfem
 
 
 
-  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
+  /* H1LOFE_EXTERN */ template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm1,ET_SEGM,2,1>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>;

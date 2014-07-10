@@ -28,7 +28,7 @@ namespace ngfem
     bool precomputed_geometry;
   public:
     ///
-    IntegrationPoint & operator=(const IntegrationPoint & aip)
+    INLINE IntegrationPoint & operator=(const IntegrationPoint & aip)
     {
       nr = aip.Nr();
       pi[0] = aip(0);
@@ -41,7 +41,7 @@ namespace ngfem
     }
 
     ///
-    IntegrationPoint (const double api[3], double aw)
+    INLINE IntegrationPoint (const double api[3], double aw)
     {
       nr = -1;
       pi[0] = api[0];
@@ -53,7 +53,7 @@ namespace ngfem
     }
 
     ///
-    IntegrationPoint (double p1 = 0, double p2 = 0, double p3 = 0, double aw = 0)
+    INLINE IntegrationPoint (double p1 = 0, double p2 = 0, double p3 = 0, double aw = 0)
     {
       nr = -1;
       pi[0] = p1;
@@ -65,7 +65,7 @@ namespace ngfem
     }
 
     ///
-    IntegrationPoint (const FlatVector<double> & ap, double aw)
+    INLINE IntegrationPoint (const FlatVector<double> & ap, double aw)
     {
       nr = -1;
       pi[0] = (ap.Size() >= 1) ? ap(0) : 0;
@@ -78,7 +78,7 @@ namespace ngfem
 
 
     template <int D>
-    IntegrationPoint (const Vec<D> & ap, double aw = -1)
+    INLINE IntegrationPoint (const Vec<D> & ap, double aw = -1)
     {
       nr = -1;
       for (int j = 0; j < D; j++)
@@ -89,35 +89,35 @@ namespace ngfem
     }
 
     ///
-    IntegrationPoint (const IntegrationPoint & aip)
+    INLINE IntegrationPoint (const IntegrationPoint & aip)
     { *this = aip; }
 
     ///
-    void SetNr (int anr) { nr = anr; }
+    INLINE void SetNr (int anr) { nr = anr; }
     ///
     // const double * Point () const { return pi; }
     ///
-    int Size() const { return 3; }
+    INLINE int Size() const { return 3; }
     ///
-    const double & operator() (int i) const { return pi[i]; }
+    INLINE const double & operator() (int i) const { return pi[i]; }
     ///
-    double & operator() (int i) { return pi[i]; }
+    INLINE double & operator() (int i) { return pi[i]; }
     ///
-    double Weight () const { return weight; }
+    INLINE double Weight () const { return weight; }
     ///
-    void SetWeight (double w) { weight = w; }
+    INLINE void SetWeight (double w) { weight = w; }
 
     /// number within integration rule
-    int Nr () const { return nr; }
+    INLINE int Nr () const { return nr; }
 
     /// global number of ip
-    int IPNr () const { return -1; }
+    INLINE int IPNr () const { return -1; }
 
-    FlatVec<3, double> Point() { return &pi[0]; }
-    FlatVec<3, const double> Point() const { return &pi[0]; }
-  public:
-    int & FacetNr() { return facetnr; }
-    int FacetNr() const { return facetnr; }
+    INLINE FlatVec<3, double> Point() { return &pi[0]; }
+    INLINE FlatVec<3, const double> Point() const { return &pi[0]; }
+
+    INLINE int & FacetNr() { return facetnr; }
+    INLINE int FacetNr() const { return facetnr; }
 
 
     template <int DIM> 
@@ -155,19 +155,19 @@ namespace ngfem
     double measure; 
   public:
     ///
-    BaseMappedIntegrationPoint (const IntegrationPoint & aip,
+    INLINE BaseMappedIntegrationPoint (const IntegrationPoint & aip,
 				const ElementTransformation & aeltrans)
       : ip(&aip), eltrans(&aeltrans)  { ; }
     /// 
-    const IntegrationPoint & IP () const { return *ip; }
+    INLINE const IntegrationPoint & IP () const { return *ip; }
     ///
-    const ElementTransformation & GetTransformation () const { return *eltrans; }
+    INLINE const ElementTransformation & GetTransformation () const { return *eltrans; }
     ///
-    int GetIPNr() const { return ip->Nr(); }
+    INLINE int GetIPNr() const { return ip->Nr(); }
     ///
-    double GetMeasure() const { return measure; }
+    INLINE double GetMeasure() const { return measure; }
     ///
-    double GetWeight() const { return measure * ip->Weight(); }
+    INLINE double GetWeight() const { return measure * ip->Weight(); }
   };
 
 
@@ -179,15 +179,15 @@ namespace ngfem
     Vec<R,SCAL> point;
   public:
     ///
-    DimMappedIntegrationPoint (const IntegrationPoint & aip,
+    INLINE DimMappedIntegrationPoint (const IntegrationPoint & aip,
 				 const ElementTransformation & aeltrans)
       : BaseMappedIntegrationPoint (aip, aeltrans)
     { ; }
     ///
-    const Vec<R,SCAL> & GetPoint () const { return point; }
-    Vec<R,SCAL> & Point () { return point; }
+    INLINE const Vec<R,SCAL> & GetPoint () const { return point; }
+    INLINE Vec<R,SCAL> & Point () { return point; }
     ///
-    SCAL operator() (int i) const { return point(i); }
+    INLINE SCAL operator() (int i) const { return point(i); }
   };
 
 
@@ -211,14 +211,14 @@ namespace ngfem
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
 					   const ElementTransformation & aeltrans);
 
-    MappedIntegrationPoint (const IntegrationPoint & aip,
+    INLINE MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
 			    int /* dummy */)
       : DimMappedIntegrationPoint<DIMR,SCAL> (aip, aeltrans)
     { ; }
 
     ///
-    MappedIntegrationPoint (const IntegrationPoint & aip,
+    INLINE MappedIntegrationPoint (const IntegrationPoint & aip,
 			    const ElementTransformation & aeltrans,
 			    const FlatVec<DIMR, SCAL> ax,
 			    const Mat<DIMR, DIMS, SCAL> & adxdxi)
@@ -229,7 +229,7 @@ namespace ngfem
       Compute();
     }
 
-    void Compute ()
+    INLINE void Compute ()
     {
       if (DIMS == DIMR)
 	{
@@ -264,10 +264,10 @@ namespace ngfem
     }
   
     ///
-    const Mat<DIMR,DIMS,SCAL> & GetJacobian() const { return dxdxi; }
-    Mat<DIMR,DIMS,SCAL> & Jacobian() { return dxdxi; }
+    INLINE const Mat<DIMR,DIMS,SCAL> & GetJacobian() const { return dxdxi; }
+    INLINE Mat<DIMR,DIMS,SCAL> & Jacobian() { return dxdxi; }
     ///
-    SCAL GetJacobiDet() const { return det; }
+    INLINE SCAL GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
     INLINE const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
@@ -305,15 +305,15 @@ namespace ngfem
 
 
     ///
-    const Vec<DIMR,SCAL> GetNV () const { return normalvec; }
+    INLINE const Vec<DIMR,SCAL> GetNV () const { return normalvec; }
     /// 
-    void SetNV ( const Vec<DIMR,SCAL> & vec) { normalvec = vec; }
+    INLINE void SetNV ( const Vec<DIMR,SCAL> & vec) { normalvec = vec; }
     ///
-    void SetTV ( const Vec<DIMR,SCAL> & vec) { tangentialvec = vec; }
+    INLINE void SetTV ( const Vec<DIMR,SCAL> & vec) { tangentialvec = vec; }
     ///
-    const Vec<DIMR,SCAL> GetTV () const { return tangentialvec; }
+    INLINE const Vec<DIMR,SCAL> GetTV () const { return tangentialvec; }
     ///
-    int IsBoundary () const { return DIMS != DIMR; }
+    INLINE int IsBoundary () const { return DIMS != DIMR; }
 
     ///
     void CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2) const;
@@ -382,7 +382,7 @@ namespace ngfem
     INLINE NGS_DLL_HEADER IntegrationRule (int asize, double (*pts)[3], double * weights);
 
     // make it polymorphic
-    virtual ~IntegrationRule() { ; }
+    HD virtual ~IntegrationRule() { ; }
 
     ///
     INLINE void AddIntegrationPoint (const IntegrationPoint & ip)
@@ -853,15 +853,15 @@ namespace ngfem
     int incr;
 
   public:
-    BaseMappedIntegrationRule (const IntegrationRule & air,
+    INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
 			       const ElementTransformation & aeltrans)
       : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
 
-    int Size() const { return ir.Size(); }
-    const IntegrationRule & IR() const { return ir; }
-    const ElementTransformation & GetTransformation () const { return eltrans; }
+    INLINE int Size() const { return ir.Size(); }
+    INLINE const IntegrationRule & IR() const { return ir; }
+    INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
 
-    const BaseMappedIntegrationPoint & operator[] (int i) const
+    INLINE const BaseMappedIntegrationPoint & operator[] (int i) const
     { return *static_cast<const BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
   };
 
@@ -874,7 +874,7 @@ namespace ngfem
 			   const ElementTransformation & aeltrans, 
 			   LocalHeap & lh);
 
-    MappedIntegrationRule (const IntegrationRule & ir, 
+    INLINE MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & eltrans, 
 			   int dummy,
 			   LocalHeap & lh)
@@ -884,7 +884,7 @@ namespace ngfem
       incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
     }
 
-    MappedIntegrationRule (const IntegrationRule & air, 
+    INLINE MappedIntegrationRule (const IntegrationRule & air, 
 			   const ElementTransformation & aeltrans, 
                            FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > amips)
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
@@ -893,12 +893,12 @@ namespace ngfem
       incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
     }
     
-    MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
+    INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
     { 
       return mips[i]; 
     }
 
-    MappedIntegrationRule Range(int first, int next)
+    INLINE MappedIntegrationRule Range(int first, int next)
     {
       return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
