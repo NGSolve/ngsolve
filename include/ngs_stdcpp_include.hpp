@@ -52,7 +52,7 @@
 #else
 #ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
-#define INLINE __attribute__ ((__always_inline__)) inline   HD
+#define INLINE __attribute__ ((__always_inline__)) inline   HD 
 #define LAMBDA_INLINE __attribute__ ((__always_inline__))
 #define VLA
 #else
