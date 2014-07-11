@@ -677,7 +677,7 @@ namespace ngfem
     static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
     {
       INT<2> e = GetEdge (i);
-      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      if (vnums[e[0]] > vnums[e[1]]) Swap (e[0], e[1]);
       return e;
     }
 

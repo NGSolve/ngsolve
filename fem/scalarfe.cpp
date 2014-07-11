@@ -349,12 +349,12 @@ namespace ngfem
 #endif
   }
 
-
+  /*
   void MyFunc(int order)
   {
     L2HighOrderFE<ET_SEGM> fe;
   }
-
+  */
 
   template <int D>
   void DGFiniteElement<D>:: 

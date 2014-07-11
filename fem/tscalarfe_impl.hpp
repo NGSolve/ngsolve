@@ -150,7 +150,9 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
   {
+#ifndef __CUDA_ARCH__
     cout << "evalgrad trans, ir system not implemented" << endl;
+#endif
   }
 
 

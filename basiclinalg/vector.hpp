@@ -964,7 +964,7 @@ namespace ngbla
   };
 
 
-  /*
+
   template <typename T>
   class Vec<0,T>  : public MatExpr<Vec<0,T> > 
   {
@@ -973,15 +973,15 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
-
+    INLINE int Size() const { return 0; }
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
 
-    INLINE T & operator[] (int i) const  { return *(T*)(NULL); }
-    INLINE T & operator() (int i) const  { return *(T*)(NULL); }
-    INLINE T & operator() (int i, int j) const  { return *(T*)(NULL); }
+    INLINE T & operator[] (int i) const  { return *(T*)(void*)(this); }
+    INLINE T & operator() (int i) const  { return *(T*)(void*)(this); }
+    INLINE T & operator() (int i, int j) const  { return *(T*)(void*)(this); }
   };
-  */
+  /*
   template <typename T>
   class Vec<0,T>  : public MatExpr<Vec<0,T> > 
   {
@@ -995,15 +995,15 @@ namespace ngbla
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
 
-    INLINE T operator[] (int i) const  { return dummy; }
-    INLINE T operator() (int i) const  { return dummy; }
-    INLINE T operator() (int i, int j) const  { return dummy; }
+    INLINE T operator[] (int i) const  { return 0.0; }
+    INLINE T operator() (int i) const  { return 0.0; }
+    INLINE T operator() (int i, int j) const  { return 0.0; }
 
     INLINE T & operator[] (int i)  { return dummy; }
     INLINE T & operator() (int i)  { return dummy; }
     INLINE T & operator() (int i, int j)  { return dummy; }
   };
-
+  */
 
 
   template <int S, typename T>

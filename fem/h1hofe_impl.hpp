@@ -15,9 +15,21 @@ namespace ngfem
   template <ELEMENT_TYPE ET> 
   class H1HighOrderFE_Shape : public H1HighOrderFE<ET, H1HighOrderFE_Shape<ET>>
   {
+    using H1HighOrderFE<ET>::vnums;
+    using H1HighOrderFE<ET>::order;
+    using H1HighOrderFE<ET>::order_edge;
+    using H1HighOrderFE<ET>::order_face;
+    using H1HighOrderFE<ET>::order_cell;
+    using H1HighOrderFE<ET>::GetFaceSort;
+    using H1HighOrderFE<ET>::GetEdgeSort;
+    using H1HighOrderFE<ET>::EdgeOrthoPol;
+
+    using H1HighOrderFE<ET>::N_VERTEX;
+    using H1HighOrderFE<ET>::N_EDGE;
+    using H1HighOrderFE<ET>::N_FACE;
   public:
     template<typename Tx, typename TFA>  
-    void T_CalcShape (Tx hx[], TFA & shape) const;
+    INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
   };
   
 
