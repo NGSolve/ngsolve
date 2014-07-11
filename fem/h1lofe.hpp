@@ -704,7 +704,7 @@ namespace ngfem
 
 
 
-  /* H1LOFE_EXTERN */ template class T_ScalarFiniteElement<FE_Point,ET_POINT>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Point,ET_POINT>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm0,ET_SEGM>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm1,ET_SEGM>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Segm2,ET_SEGM>;
@@ -766,8 +766,8 @@ namespace ngfem
 
 
 
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
 
-  /* H1LOFE_EXTERN */ template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm1,ET_SEGM,2,1>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>;
