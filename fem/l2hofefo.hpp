@@ -342,21 +342,18 @@ namespace ngfem
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
-      LegendrePolynomial_Old leg;
+      // LegendrePolynomial_Old leg;
+      LegendrePolynomial leg;
       Tx p1, p2, p3, p4;
 
       int ii = 0;
       IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
         {
           if (iy == 0)
-	    {
-#ifdef __CUDA_ARCH__
-	      // __threadfence_block();
-#endif
-	      leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
-	    }
+	    leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
 
-          JacobiPolynomialNew jac(1+2*ix, 0);
+	  JacobiPolynomialAlpha jac(1+2*ix);
+          // JacobiPolynomialNew jac(1+2*ix, 0);
           shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
           ii++;
         });

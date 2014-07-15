@@ -11,7 +11,7 @@ namespace ngfem
 {
 
   Array< Vec<2> > LegendrePolynomial :: coefs;
-
+  
   void LegendrePolynomial :: Calc (int n)
   {
     if (coefs.Size() > n) return;

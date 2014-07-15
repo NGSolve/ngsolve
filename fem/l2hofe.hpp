@@ -57,6 +57,7 @@ namespace ngfem
 
     INT<DIM> order_inner; 
 
+#ifndef __CUDA_ARCH__
     typedef PrecomputedShapesContainer<PrecomputedScalShapes<DIM> > TPRECOMP;
     static TPRECOMP precomp;
 
@@ -65,6 +66,7 @@ namespace ngfem
 
     typedef HashTable<INT<2>, Matrix<>*> TPRECOMP_GRAD;
     static TPRECOMP_GRAD precomp_grad;
+#endif
 
   public:
     INLINE L2HighOrderFE () { ; }
