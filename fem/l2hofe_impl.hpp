@@ -13,7 +13,7 @@ namespace ngfem
 {
 
 
-
+#ifndef __CUDA_ARCH__
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   typename L2HighOrderFE<ET,SHAPES,BASE>::TPRECOMP L2HighOrderFE<ET,SHAPES,BASE>::precomp;
 
@@ -22,6 +22,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   typename L2HighOrderFE<ET,SHAPES,BASE>::TPRECOMP_GRAD L2HighOrderFE<ET,SHAPES,BASE>::precomp_grad(40);
+#endif
 
 
 
@@ -307,10 +308,15 @@ namespace ngfem
   void L2HighOrderFE_Shape<ET_TRIG> ::
   T_CalcShape (Tx x[], TFA & shape) const
   {
+#ifndef __CUDA_ARCH__
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     INT<4> f = GetFaceSort (0, vnums);
     int p = order_inner[0];
     DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
+#else
+    int p = order_inner[0];
+    DubinerBasis3::Eval (p, x[0], x[1], shape);
+#endif
   }
 
 

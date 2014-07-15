@@ -1,10 +1,10 @@
+#ifdef __CUDA_ARCH__
+#include "tscalarfe_impl_cuda.hpp"
+#endif
+
+
 #ifndef FILE_TSCALARFE_IMPL
 #define FILE_TSCALARFE_IMPL
-
-
-
-
-
 
  
 namespace ngfem
@@ -150,9 +150,7 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
   {
-#ifndef __CUDA_ARCH__
     cout << "evalgrad trans, ir system not implemented" << endl;
-#endif
   }
 
 
