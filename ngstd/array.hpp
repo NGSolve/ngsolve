@@ -32,31 +32,36 @@ namespace ngstd
   /*
     Some class which can be treated as array
    */
-  template <typename T, typename TA = T>
+  template <typename T> // , typename TA = T>
   class BaseArrayObject
   {
+
   public:
     INLINE BaseArrayObject() { ; }
-    INLINE const TA & Spec() const { return static_cast<const T&> (*this); }
+
+    INLINE const T & Spec() const { return static_cast<const T&> (*this); }
+    INLINE int Size() const { return Spec().Size(); }
+    // INLINE auto operator[] (int i) -> decltype (Spec()[i]) { return Spec()[i]; }
+    // INLINE auto operator[] (int i) const -> decltype (T::operator[](i)) { return Spec()[i]; }
   };
 
 
-  template <typename T, typename TA>
-  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T,TA> & array)
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, const BaseArrayObject<T> & array)
   {
-    for (int i = 0; i < array.Spec().Size(); i++)
+    for (int i = 0; i < array./* Spec().*/ Size(); i++)
       ost << i << ":" << array.Spec()[i] << endl;
     return ost;
   }
   
   template <typename T>
-  class AOWrapper : public BaseArrayObject< AOWrapper<T> , T>
+  class AOWrapper : public BaseArrayObject<AOWrapper<T>>
   {
     const T & ar;
   public:
     INLINE AOWrapper (const T & aar) : ar(aar) { ; }
     INLINE operator const T& () const { return ar; }
-    INLINE int Size() { return ar.Size(); }
+    INLINE int Size() const { return ar.Size(); }
     INLINE auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
     INLINE auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
   };
@@ -163,7 +168,7 @@ namespace ngstd
 		   const INDEX_ARRAY & aia)
       : ba(aba), ia(aia) { ; }
 
-    INLINE int Size() const { return ia.Spec().Size(); }
+    INLINE int Size() const { return ia. /* Spec(). */ Size(); }
     INLINE T operator[] (int i) const { return ba[ia.Spec()[i]]; }
     INLINE T & operator[] (int i) { return ba[ia.Spec()[i]]; }
 
@@ -174,8 +179,8 @@ namespace ngstd
       return IndirectArray (ba, ia);
     }
 
-    template <typename T2, typename TA>
-    INLINE IndirectArray operator= (const BaseArrayObject<T2,TA> & a2) 
+    template <typename T2>
+    INLINE IndirectArray operator= (const BaseArrayObject<T2> & a2) 
     {
       for (int i = 0; i < Size(); i++) 
 	(*this)[i] = a2.Spec()[i];
@@ -250,8 +255,8 @@ namespace ngstd
       return *this;
     }
 
-    template <typename T2, typename TA>
-    INLINE const FlatArray & operator= (const BaseArrayObject<T2,TA> & a2) const
+    template <typename T2>
+    INLINE const FlatArray & operator= (const BaseArrayObject<T2> & a2) const
     {
       for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
       return *this;
@@ -352,11 +357,11 @@ namespace ngstd
       return FlatArray<T> (range.Size(), data+range.First());
     }
     
-    template <typename TI1, typename TI2>
-    IndirectArray<T, BaseArrayObject<TI1,TI2> > 
-    operator[] (const BaseArrayObject<TI1,TI2> & ind_array) const
+    template <typename TI1>
+    IndirectArray<T, BaseArrayObject<TI1> > 
+    operator[] (const BaseArrayObject<TI1> & ind_array) const
     {
-      return IndirectArray<T, BaseArrayObject<TI1,TI2> > (*this, ind_array);
+      return IndirectArray<T, BaseArrayObject<TI1> > (*this, ind_array);
     }
 
     /// first position of element elem, returns -1 if element not contained in array 
@@ -468,9 +473,9 @@ namespace ngstd
         (*this)[i] = a2[i];
     }
 
-    template <typename TA, typename TA2>
-    explicit Array (const BaseArrayObject<TA,TA2> & a2)
-      : FlatArray<T,TSIZE> (a2.Spec().Size(), 
+    template <typename TA>
+    explicit Array (const BaseArrayObject<TA> & a2)
+      : FlatArray<T,TSIZE> (a2. /* Spec(). */ Size(), 
                             a2.Spec().Size() ? new T[a2.Spec().Size()] : NULL)
     {
       allocsize = size;
@@ -661,8 +666,8 @@ namespace ngstd
       return *this;
     }
     */
-    template <typename T2, typename TA>
-    Array & operator= (const BaseArrayObject<T2,TA> & a2)
+    template <typename T2>
+    Array & operator= (const BaseArrayObject<T2> & a2)
     {
       SetSize (a2.Spec().Size());
       for (int i = 0; i < size; i++)
@@ -722,7 +727,7 @@ namespace ngstd
 	
           TSIZE mins = (nsize < size) ? nsize : size; 
           // memcpy (p, data, mins * sizeof(T));
-          for (int i = 0; i < mins; i++) p[i] = data[i];
+          for (TSIZE i = 0; i < mins; i++) p[i] = data[i];
 
           if (ownmem) delete [] data;
           ownmem = 1;
@@ -801,8 +806,8 @@ namespace ngstd
     }
 
 
-    template <typename T2, typename TA>
-    ArrayMem & operator= (const BaseArrayObject<T2,TA> & a2)
+    template <typename T2>
+    ArrayMem & operator= (const BaseArrayObject<T2> & a2)
     {
       this->SetSize (a2.Spec().Size());
       for (int i = 0; i < size; i++)
@@ -833,8 +838,8 @@ namespace ngstd
   */
   
 
-  template <typename T2, typename TA>
-  inline Array<int> & operator+= (Array<int> & array, const BaseArrayObject<T2,TA> & a2)
+  template <typename T2>
+  inline Array<int> & operator+= (Array<int> & array, const BaseArrayObject<T2> & a2)
   {
     int oldsize = array.Size();
     int s = a2.Spec().Size();

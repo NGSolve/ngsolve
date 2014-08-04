@@ -464,7 +464,7 @@ namespace ngfem
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
 				  // jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
-				  jac.EvalMult (this->order-k-j, 2*lamis[0]-1, polsy, shape+ii);
+				  jac.EvalMult (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
                                   ii += this->order-k-j+1;
                                 }));
                  }));

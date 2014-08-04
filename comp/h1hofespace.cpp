@@ -806,7 +806,7 @@ namespace ngcomp
 
     Ngs_Element ngel = ma.GetSElement(elnr);
 
-    dnums = ArrayObject (ngel.vertices);
+    dnums = ngel.Vertices();
 
     for (int i = 0; i < ngel.edges.Size(); i++)
       dnums += GetEdgeDofs (ngel.edges[i]);

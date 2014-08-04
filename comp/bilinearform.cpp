@@ -847,7 +847,7 @@ namespace ngcomp
                      int i = ei.Nr();
                      if (eliminate_internal)
                        {
-                         static Timer statcondtimer("static condensation", 2);
+                         static Timer statcondtimer("static condensation", 1);
                          RegionTimer regstat (statcondtimer);
 
                          Array<int> idofs1(dnums.Size(), lh);

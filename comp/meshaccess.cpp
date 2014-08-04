@@ -483,7 +483,7 @@ namespace ngcomp
 #ifdef ABC
   void MeshAccess :: GetSegmentPNums (int snr, Array<int> & pnums) const
   {
-    pnums = ArrayObject (mesh -> GetElement<1> (snr).points);
+    pnums = GetElement<1> (snr).Points();
     /*
     pnums.SetSize(3);
     int np;
@@ -677,10 +677,10 @@ namespace ngcomp
   {
     switch (dim)
       {
-      case 1: fnums = ArrayObject (mesh.GetElement<1> (elnr).vertices); break;
-      case 2: fnums = ArrayObject (mesh.GetElement<2> (elnr).edges); break;
+      case 1: fnums = GetElement<1> (elnr).Vertices(); break;
+      case 2: fnums = GetElement<2> (elnr).Edges(); break;
       default:
-        fnums = ArrayObject (mesh.GetElement<3> (elnr).faces);
+        fnums = GetElement<3> (elnr).Faces();
       }
   } 
     
