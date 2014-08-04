@@ -669,8 +669,8 @@ namespace ngbla
   class VectorMem : public FlatVector<T>
   {
     /// a predfined amount of memory
-    double mem[(S*sizeof(T)+7) / 8];   // alignment (on ia64 machines)
-    // T mem[S];                     // should be best, but calls trivial default constructor 
+// double mem[(S*sizeof(T)+7) / 8];   // alignment (on ia64 machines)
+    T mem[S];                     // should be best, but calls trivial default constructor 
   public:
     /// the scalar type
     typedef typename mat_traits<T>::TSCAL TSCAL;

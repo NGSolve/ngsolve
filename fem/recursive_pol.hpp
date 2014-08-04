@@ -52,6 +52,31 @@ namespace ngfem
 
 
 
+  template <typename FUNC, typename FUNC2>
+  class Class_SBLambdaDuo
+  {
+    FUNC func;
+    FUNC2 func2;
+    int offset;
+  public:
+    INLINE Class_SBLambdaDuo (const Class_SBLambdaDuo & l2) : func(l2.func), func2(l2.func2), offset(l2.offset) { ; }
+    INLINE Class_SBLambdaDuo (FUNC f, FUNC2 f2, int ao = 0) : func(f), func2(f2), offset(ao) { ; }
+    INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
+    INLINE Class_SBLambdaDuo<FUNC, FUNC2> operator+ (int i) const { return Class_SBLambdaDuo<FUNC,FUNC2> (func, func2, offset+i); }
+    INLINE Class_SBLambdaDuo<FUNC, FUNC2> Addr (int i) const { return Class_SBLambdaDuo<FUNC,FUNC2> (func, func2, offset+i); }
+    template <typename VAL1, typename VAL2>
+    void operator() (int i1, VAL1 v1, int i2, VAL2 v2) const { func2(i1, v1, i2, v2); }
+  };
+
+  template <typename FUNC, typename FUNC2> 
+  INLINE const Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
+  {
+    return Class_SBLambdaDuo<FUNC,FUNC2> (f, f2);
+  }
+
+
+
+
 
   /// a helper class for fixed order evaluation
   template <class REC, int N>
@@ -325,13 +350,13 @@ namespace ngfem
           {
             if (REC::ZERO_B)
               {
-                p1 *= REC::C(i) *y*y;
+                p1 *= REC::C(i) *(y*y);
                 p1 += REC::A(i) * x * p2;
                 return p1;
               }
             else
               {
-                p1 *= REC::C(i) *y*y;
+                p1 *= REC::C(i) *(y*y);
                 p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
                 return p1;
               }
@@ -369,6 +394,31 @@ namespace ngfem
 	{	
 	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+      if (i <= n)
+        values[i] = EvalNextTicTac2 (i, x, p1, p2);
+    }
+
+
+    template <class S, class Sc, class T1, class T2>
+    INLINE static void EvalMult (int n, S x, Sc c, const Class_SBLambdaDuo<T1,T2> & values) 
+    {
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
+      if (n < 1) return;
+
+      values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
+      if (n < 2) return;
+
+      int i = 2;
+      for ( ; i < n; i+=2)
+	{	
+	  S v1  = EvalNextTicTac2 (i, x, p1, p2);
+	  S v2 = EvalNextTicTac2 (i+1, x, p2, p1);
+	  values (i, v1, i+1, v2);
 	}
       if (i <= n)
         values[i] = EvalNextTicTac2 (i, x, p1, p2);
@@ -447,7 +497,7 @@ namespace ngfem
 
       for (int i = 2; i <= n; i++)
 	{	
-	  EvalScaledNext (i, x, y, p1, p2);
+	  EvalScaledNext2 (i, x, y, p1, p2);
 	  values[i] = p1;
 	}
 
@@ -797,7 +847,6 @@ namespace ngfem
     }
 
 
-
     template <class S, class Sc>
     INLINE S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2) const
     {
@@ -805,13 +854,13 @@ namespace ngfem
         {
         case 0: return p1 = c * static_cast<const REC&>(*this).P0(x);
         case 1: return p1 = c * static_cast<const REC&>(*this).P1(x);
-        default: return EvalNextTicTac (i, x, p1, p2);
+        default: return EvalNextTicTac2 (i, x, p1, p2);
         }
     }
 
 
     template <class S, class Sy>
-    INLINE S EvalScaledNext (int i, S x, Sy y, S & p1, S & p2) const
+    INLINE S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2) const
     {
       if (REC::ZERO_B)
         {
@@ -931,7 +980,7 @@ namespace ngfem
       values[1] = p1 = c * static_cast<const REC&>(*this).P1(x,y);
 
       for (int i = 2; i <= n; i++)
-        values[i] = EvalScaledNext (i, x, y, p1, p2);
+        values[i] = EvalScaledNext2 (i, x, y, p1, p2);
       /*
       S p1(0.0), p2(0.0);
       for (int i = 0; i <= n; i++)
@@ -2606,10 +2655,10 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     values[1] = p1 = x;
     if (n < 2) return;
 
-    for (int j=2; j < n; j+=2)
+    for (int j=2; j < n-1; j+=2)
       {
 	/*
-	  double invj = 1.0/j;
+	  double invj = 1.0/j; 
 	  p2 *= (invj-1) * tt;
 	  p2 += (2-invj) * x * p1;
 	  values[j]   = p2; 

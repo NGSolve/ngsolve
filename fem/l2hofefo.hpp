@@ -14,33 +14,6 @@
 
 
 
-template <int NUM>
-class Cl_Iterate
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)
-  {
-    Cl_Iterate<NUM-1>::Do(f);
-    f(NUM);
-  }
-};
-
-template <>
-class Cl_Iterate<0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)  { f(0); }
-};
-
-template <int NUM, typename FUNC>
-INLINE void Iterate (FUNC f)
-{
-  Cl_Iterate<NUM>::Do(f);
-}
-
-
 
 
 
@@ -265,7 +238,7 @@ namespace ngfem
     {
       if (ET == ET_SEGM)
 	{
-	  Iterate<ORDER> ([&] (int i) { mass[i] = 1.0 / (2*i+1); });
+	  Iterate<ORDER+1> ([&] (int i) { mass[i] = 1.0 / (2*i+1); });
 	}
       else if (ET == ET_TRIG)
 	{

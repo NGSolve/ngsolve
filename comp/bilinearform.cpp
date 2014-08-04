@@ -3626,14 +3626,14 @@ namespace ngcomp
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
+	/*
         bf = CreateSymMatObject<T_BilinearFormDiagonal, BilinearForm> //, const FESpace, const string, const Flags>
           (space->GetDimension(), space->IsComplex(), *space, name, flags);
+	*/
         
-        /*
           CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
           space->GetDimension(), space->IsComplex(),   
           *space, name, flags);
-          */
       }
     else
       {

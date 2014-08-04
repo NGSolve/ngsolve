@@ -535,12 +535,13 @@ namespace ngfem
 
     VectorMem<10, Tx> polsy(p+1);
     VectorMem<10, Tx> polsz(q+1);
-    
+
     for (int i = 0; i <= p; i++)
       JacobiPolynomial (p, 2*x-1, 2*i+1, 0, polsx.Row(i));
 
-    ScaledLegendrePolynomial (order, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
-    LegendrePolynomial (order, 2*z-1, polsz);
+    // ScaledLegendrePolynomial (order, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
+    LegendrePolynomial::EvalScaled (p, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
+    LegendrePolynomial (q, 2*z-1, polsz);
 
     int ii = 0;
     for (int k = 0; k <= q; k++)
