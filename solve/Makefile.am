@@ -39,8 +39,8 @@ ngs_LDADD = libngsolve.la \
 	$(top_builddir)/basiclinalg/libngbla.la		\
 	$(top_builddir)/ngstd/libngstd.la \
 	$(PARDISO_LIBS) $(LAPACK_LIBS) $(MUMPS_LIBS) \
-	-L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg \
-	-L/opt/OpenCASCADE/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin
+	-L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
+#	-L/opt/OpenCASCADE/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin
 
 include_HEADERS = solve.hpp pde.hpp numproc.hpp
 
