@@ -103,6 +103,42 @@ void LoadBin (istream & ist, T & val)
 }
 
 
+
+
+
+
+
+template <int NUM>
+class Cl_Iterate
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)
+  {
+    Cl_Iterate<NUM-1>::Do(f);
+    f(NUM);
+  }
+};
+
+template <>
+class Cl_Iterate<0>
+{
+public:
+  template <typename FUNC>
+  static INLINE void Do (FUNC f)  { f(0); }
+};
+
+template <int NUM, typename FUNC>
+INLINE void Iterate (FUNC f)
+{
+  Cl_Iterate<NUM-1>::Do(f);
+}
+
+
+
+
+
+
 }
 
 #endif
