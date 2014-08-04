@@ -822,7 +822,7 @@ namespace ngfem
         }
       else
         {
-          S pnew = (Cast().A(i) * x + Cast() * y) * p1 + Cast().C(i) * (y*y)*p2;
+          S pnew = (Cast().A(i) * x + Cast().B(i) * y) * p1 + Cast().C(i) * (y*y)*p2;
           pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
           p2 = p1;
           p1 = pnew;
