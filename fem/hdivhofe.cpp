@@ -608,16 +608,6 @@ namespace ngfem
     throw Exception("illegal facet index");
   }
 
-
-
-  template <ELEMENT_TYPE ET>
-  void HDivHighOrderFE<ET> :: 
-  CalcNormalShape (const IntegrationPoint & ip, 
-                   SliceVector<> nshape) const
-  {
-    cout << "HDivHOFE, calcnormalshape not overloaded" << endl;
-  }
-
     
   template<>
   void HDivHighOrderFE<ET_TRIG> :: 
@@ -678,6 +668,15 @@ namespace ngfem
     // cout << "nshape1 = " << endl << nshape1 << endl;
     // cout << "nshape = " << endl << nshape << endl;
     // cout << "******************************************** diff = " << L2Norm (nshape-nshape1) << endl;
+  }
+
+
+  template <ELEMENT_TYPE ET>
+  void HDivHighOrderFE<ET> ::
+	  CalcNormalShape(const IntegrationPoint & ip,
+	  SliceVector<> nshape) const
+  {
+	  cout << "HDivHOFE, calcnormalshape not overloaded" << endl;
   }
 
   //------------------------------------------------------------------------
