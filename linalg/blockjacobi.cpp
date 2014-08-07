@@ -321,6 +321,8 @@ namespace ngla
 
 
     clock_t prevtime = clock();
+
+    /*
     for (int i = 0; i < blocktable.Size(); i++)
       {
         if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
@@ -346,6 +348,40 @@ namespace ngla
 	
         CalcInverse (blockmat, *invdiag[i]);
       }
+    */
+
+    int cnt = 0;
+#pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < blocktable.Size(); i++)
+      {
+#pragma omp atomic
+	cnt++;
+	if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+	  {
+#pragma omp critical(buildingblockupdate) 
+	    {
+	      cout << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
+	      prevtime = clock();
+	    }
+	  }
+	
+	int bs = blocktable[i].Size();
+	if (!bs) 
+	  {
+	    invdiag[i] = 0;
+	    continue;
+	  }
+	
+	Matrix<TM> blockmat(bs);
+	invdiag[i] = new Matrix<TM> (bs);
+        
+	for (int j = 0; j < bs; j++)
+	  for (int k = 0; k < bs; k++)
+	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
+
+	CalcInverse (blockmat, *invdiag[i]);
+      }
+
     cout << "\rBlockJacobi Preconditioner built" << endl;
   }
 
