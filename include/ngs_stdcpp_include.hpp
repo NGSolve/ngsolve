@@ -89,9 +89,15 @@
 #endif
 
 
+#ifdef __CUDACC__
+#define CUDA
+#define HD __host__ __device__
+#endif
+
 #ifndef HD
 #define HD
 #endif
+
 
 #ifdef __INTEL_COMPILER
 #define ALWAYS_INLINE __forceinline
