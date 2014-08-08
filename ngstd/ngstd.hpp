@@ -162,4 +162,6 @@ namespace ngstd
 
 
 
+#include "cuda_ngstd.hpp"
+
 #endif
