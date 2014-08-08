@@ -462,7 +462,15 @@ namespace ngstd
       allocsize = asize; 
       ownmem = 0;
     }
-    
+
+    INLINE Array (Array && a2) = default;
+    /*
+    INLINE Array (Array && a2) 
+    {
+      cout << "juhuu, move" << endl;
+    }
+    */
+
     /// array copy 
     INLINE explicit Array (const Array & a2)
       : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : NULL)
@@ -473,6 +481,7 @@ namespace ngstd
         (*this)[i] = a2[i];
     }
 
+    
     template <typename TA>
     explicit Array (const BaseArrayObject<TA> & a2)
       : FlatArray<T,TSIZE> (a2. /* Spec(). */ Size(), 
