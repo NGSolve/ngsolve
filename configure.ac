@@ -127,6 +127,12 @@ AC_ARG_ENABLE([vt],
         [CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"]
         )       
 
+AC_ARG_ENABLE([cuda],
+	[AC_HELP_STRING([--enable-cuda],[enable CUDA GPU support])],
+	[CXXFLAGS+=" -DCUDA -I/usr/local/cuda-6.5/include"]
+	[LDFLAGS+=" -L/usr/local/cuda-6.5/lib64 -lcudart"]
+	)
+
 
 echo "creating compiler wrapper ngscxx"
 echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
