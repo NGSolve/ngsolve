@@ -342,6 +342,20 @@ namespace ngfem
     template <class S, class Sy>
     INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
     {
+      if (REC::ZERO_B)
+        {
+          S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      else
+        {
+          S pnew = (REC::A(i) * x + REC::B(i) * y) * p1 + REC::C(i) * (y*y)*p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      return p1;
+      /*
       // switch (i)
         {
           // case 0: return p1 = REC::P0(x);
@@ -362,6 +376,7 @@ namespace ngfem
               }
           }
         }
+      */
     }
 
 

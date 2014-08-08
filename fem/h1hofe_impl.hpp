@@ -22,11 +22,16 @@ namespace ngfem
     using H1HighOrderFE<ET>::order_cell;
     using H1HighOrderFE<ET>::GetFaceSort;
     using H1HighOrderFE<ET>::GetEdgeSort;
-    using H1HighOrderFE<ET>::EdgeOrthoPol;
+    // using H1HighOrderFE<ET>::EdgeOrthoPol;
 
     using H1HighOrderFE<ET>::N_VERTEX;
     using H1HighOrderFE<ET>::N_EDGE;
     using H1HighOrderFE<ET>::N_FACE;
+
+    // typedef LegendrePolynomial EdgeOrthoPol;
+    // typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
+    typedef ChebyPolynomial EdgeOrthoPol;  // Integrated Legendre divided by bubble
+
   public:
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
