@@ -334,7 +334,6 @@ namespace ngfem
   };
 
 
-#ifdef NONE
 
 #ifdef FILE_L2HOFEFO_CPP
 #define L2HOFEFO_EXTERN
@@ -384,7 +383,6 @@ namespace ngfem
   // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,9>;
   // L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,10>;
 
-#endif
 
 }
 
