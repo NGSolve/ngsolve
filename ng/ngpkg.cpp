@@ -2879,7 +2879,7 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
     vispar.shininess = atof (Tcl_GetVar (interp, "::viewoptions.mat.shininess", TCL_GLOBAL_ONLY));
     vispar.locviewer = atoi (Tcl_GetVar (interp, "::viewoptions.light.locviewer", TCL_GLOBAL_ONLY));
     vispar.transp = atof (Tcl_GetVar (interp, "::viewoptions.mat.transp", TCL_GLOBAL_ONLY));
-
+    
     VisualizationParameters::Clipping hclip;
     hclip.normal.X() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.nx", TCL_GLOBAL_ONLY));
     hclip.normal.Y() = atof (Tcl_GetVar (interp, "::viewoptions.clipping.ny", TCL_GLOBAL_ONLY));
@@ -2893,9 +2893,10 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
       atoi (Tcl_GetVar (interp, "::viewoptions.clipping.notdomain", TCL_GLOBAL_ONLY));
 
     if ( ! (hclip == vispar.clipping) )
-      hclip.timestamp = NextTimeStamp();
-    vispar.clipping = hclip;
-
+      {
+	vispar.clipping = hclip;
+	vispar.clipping.timestamp = NextTimeStamp();
+      }
 
     vispar.whitebackground = atoi (Tcl_GetVar (interp, "::viewoptions.whitebackground", TCL_GLOBAL_ONLY));
     vispar.drawcoordinatecross = atoi (Tcl_GetVar (interp, "::viewoptions.drawcoordinatecross", TCL_GLOBAL_ONLY));

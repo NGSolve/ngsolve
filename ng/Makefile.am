@@ -14,7 +14,7 @@ if NGMKL
 AM_CPPFLAGS += -DLINKMKL
 MKL_LIBS = -L$(MKLROOT)/lib/intel64  -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_def
 endif
-
+# -lpardiso500-GNU472-X86-64 -lgfortran
 
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.la \
 	$(top_builddir)/libsrc/csg/libcsgvis.la \

@@ -799,7 +799,6 @@ namespace netgen
           max2 (mesh->GetTimeStamp(), solutiontimestamp);
       }
 
-
     if (clipplanetimestamp < vispar.clipping.timestamp ||
         clipplanetimestamp < solutiontimestamp)
       {
