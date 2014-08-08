@@ -11,7 +11,7 @@ namespace ngs_cuda
 
 
   template <typename T>
-  class DevArray
+  class DevArray 
   {
     int size;
     T * dev_data;
@@ -48,10 +48,13 @@ namespace ngs_cuda
       cudaMemcpy (&a2[0], dev_data, sizeof(T)*size, cudaMemcpyDeviceToHost);    
     }
 
-    operator FlatArray<T> ()
+    INLINE int Size() const { return size; }
+
+    INLINE operator FlatArray<T> ()
     {
       return FlatArray<T> (size, dev_data);
     }
+
   }; 
 
 
@@ -67,7 +70,7 @@ namespace ngs_cuda
     using Table<T>::data;
     using Table<T>::index;
   public:
-    HD TableWrapper (int asize, int * aindex, T * adata)
+    INLINE TableWrapper (int asize, int * aindex, T * adata)
     // : Table<T> (0,0)
     { 
       size = asize;
@@ -75,7 +78,7 @@ namespace ngs_cuda
       data = adata;
     }
 
-    HD TableWrapper (const Table<T> & tab)
+    INLINE TableWrapper (const Table<T> & tab)
     // : Table<T> (0,0) 
     {
       const TableWrapper<T> & htab = static_cast<const TableWrapper<T>&> (tab);
@@ -83,15 +86,16 @@ namespace ngs_cuda
       data = htab.data;
       index = htab.index;
     }
-    HD ~TableWrapper ()
+    INLINE ~TableWrapper ()
     {
       data = NULL;
       index = NULL;
     }
 
-    HD int SizeData() { return index[size]; }
-    HD int* & Index() { return index; }
-    HD T* & Data() { return data; }
+    INLINE int SizeData() { return index[size]; }
+    INLINE int* & Index() { return index; }
+    INLINE T* & Data() { return data; }
+
     // HD const int * & Index() const { return index; }
     // HD const T * & Data() const { return data; }
   };

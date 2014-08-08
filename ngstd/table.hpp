@@ -30,9 +30,29 @@ protected:
     : size(0), index(0) { ; }
 
 public:  
-  NGS_DLL_HEADER BaseTable (int asize, int entrysize);
-  NGS_DLL_HEADER BaseTable (const FlatArray<int> & entrysize);
-  HD NGS_DLL_HEADER ~BaseTable ()
+  INLINE BaseTable (int asize, int entrysize)
+  {
+    size = asize;
+    index = new int[size+1];
+    for (int i = 0; i <= size; i++)
+      index[i] = i*entrysize;
+  }
+
+  INLINE BaseTable (const FlatArray<int> & entrysize)
+  {
+    int i, cnt = 0;
+    size  = entrysize.Size();
+    
+    index = new int[size+1];
+    for (i = 0; i < size; i++)
+      {
+	index[i] = cnt;
+	cnt += entrysize[i];
+      }
+    index[i] = cnt;
+  }
+
+  INLINE ~BaseTable ()
   {
     delete [] index;
   }

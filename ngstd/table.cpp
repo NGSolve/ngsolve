@@ -13,6 +13,7 @@
 namespace ngstd
 {
 
+  /*
   BaseTable :: BaseTable (int asize, int entrysize)
   {
     size = asize;
@@ -35,6 +36,7 @@ namespace ngstd
       }
     index[i] = cnt;
   }
+  */
 
   /*
   BaseTable :: ~BaseTable ()
