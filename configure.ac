@@ -130,7 +130,7 @@ AC_ARG_ENABLE([vt],
 AC_ARG_ENABLE([cuda],
 	[AC_HELP_STRING([--enable-cuda],[enable CUDA GPU support])],
 	[CXXFLAGS+=" -DCUDA -I/usr/local/cuda-6.5/include"]
-	[LDFLAGS+=" -L/usr/local/cuda-6.5/lib64 -lcudart"]
+	[LDFLAGS+=" -L/usr/local/cuda-6.5/lib64 -lcudart -lcublas -lcusparse"]
 	)
 
 
