@@ -6,7 +6,7 @@
 namespace ngla
 {
 
-  class UnifiedVector : public BaseVector
+  class UnifiedVector : public S_BaseVector<double>
   {
     int size;
     double * host_data;
@@ -33,6 +33,8 @@ namespace ngla
     virtual BaseVector & Set (double scal, const BaseVector & v);
     virtual BaseVector & Add (double scal, const BaseVector & v);
 
+    virtual double InnerProduct (const BaseVector & v2) const;
+
 
     void UpdateHost () const;
     void UpdateDevice () const;
@@ -53,6 +55,7 @@ namespace ngla
 
     
     friend class DevSparseMatrix;
+    friend class DevJacobiPreconditioner;
   };
 
   class DevSparseMatrix : public BaseMatrix
@@ -64,6 +67,27 @@ namespace ngla
     int height, width, nze;
   public:
     DevSparseMatrix (const SparseMatrix<double> & mat);
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+  };
+
+
+  class DevJacobiPreconditioner : public BaseMatrix
+  {
+    // should be like this:
+    // double * dev_diag;
+    // int size;
+
+    // stored as sparse matrix ...
+    cusparseMatDescr_t * descr;
+    int * dev_ind;
+    int * dev_col;
+    double * dev_val;
+    int height, width, nze;
+    
+
+  public:
+    DevJacobiPreconditioner (const SparseMatrix<double> & mat, const BitArray & freedofs);
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
   };
