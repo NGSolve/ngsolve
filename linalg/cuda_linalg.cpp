@@ -25,6 +25,8 @@ namespace ngla
     cudaMalloc(&dev_data, size*sizeof(double));
     host_uptodate = false;
     dev_uptodate = false;
+
+    (*this) = 0.0;
   }
 
   BaseVector & UnifiedVector :: operator= (double d)
@@ -34,23 +36,6 @@ namespace ngla
     dev_uptodate = false;
     UpdateDevice();
     return *this;
-
-    /*
-    if (dev_uptodate || !host_uptodate)
-      {
-        // dev_dat = d  // howto ????
-        dev_uptodate = true;
-        host_uptodate = false;
-      }
-    else
-      {
-        for (int i = 0; i < size; i++)
-          host_data[i] = d;
-
-        dev_uptodate = false;
-        host_uptodate = true;
-      }
-    */
   }
 
   BaseVector & UnifiedVector :: operator= (BaseVector & v2)
@@ -121,12 +106,33 @@ namespace ngla
       }
     else
       {
-	VFlatVector<> (size, host_data) = scal * v;
-	host_uptodate = true;
+	UpdateHost();
+	VFlatVector<> (size, host_data) += scal * v;
 	dev_uptodate = false;
       }
   }
   
+  double UnifiedVector :: InnerProduct (const BaseVector & v2) const
+  {
+    cout << "Inner Prod" << endl;
+
+    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
+    if (uv2)
+      {
+	UpdateDevice();
+	uv2->UpdateDevice();
+	
+	double res;
+	cublasDdot (handle, size, dev_data, 1, uv2->dev_data, 1, &res);
+	return res;
+      }
+
+    FlatVector<> fv = FVDouble();
+    FlatVector<> fv2 = v2.FVDouble();
+    return ngbla::InnerProduct (fv, fv2);
+  }
+
+
   ostream & UnifiedVector :: Print (ostream & ost) const
   {
     cout << "output unified vector, host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
@@ -137,7 +143,7 @@ namespace ngla
   void UnifiedVector :: UpdateHost () const
   {
     if (host_uptodate) return;
-    if (!dev_uptodate) cout << "device not uptodate" << endl;
+    if (!dev_uptodate) cout << "ERROR UnifiedVector::UpdateHost non is uptodate" << endl;
     cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);    
     host_uptodate = true;
   }
@@ -145,7 +151,8 @@ namespace ngla
   void UnifiedVector :: UpdateDevice () const
   {
     if (dev_uptodate) return;
-    if (!host_uptodate) cout << "host not uptodate" << endl;
+    if (!host_uptodate) cout << "ERROR UnifiedVector::UpdateDevice non is uptodate" << endl;
+    cout << "Host2Device copy !!!!!!!!!!!!!!" << endl;
     cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
     dev_uptodate = true;
   }
@@ -216,18 +223,16 @@ namespace ngla
     cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_val, &mat.GetRowValues(0)[0], mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
-    
-
   }
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    cout << "device mult" << endl;
+    cout << "device mult sparse" << endl;
     const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
     ux.UpdateDevice();
-    uy = 0.0;
+    // uy = 0.0;
     uy.UpdateDevice();
 
     double alpha= 1;
@@ -238,12 +243,13 @@ namespace ngla
 		    ux.dev_data, &beta, uy.dev_data);
 
     uy.host_uptodate = false;
+    cout << "mult complete" << endl;
   }
 
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    cout << "device multadd" << endl;
+    cout << "device multadd sparse matrix" << endl;
     const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
@@ -258,8 +264,108 @@ namespace ngla
 		    ux.dev_data, &beta, uy.dev_data);
 
     uy.host_uptodate = false;
+
+    cout << "mult complete" << endl;
   }
   
+
+
+
+
+
+
+
+  DevJacobiPreconditioner :: DevJacobiPreconditioner (const SparseMatrix<double> & mat,
+						      const BitArray & freedofs)
+  {
+    height = mat.Height();
+    width = mat.Height();
+    nze = mat.Height();
+
+    descr = new cusparseMatDescr_t;
+    cusparseCreateMatDescr (descr);
+
+    cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL);
+    cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO);
+
+    cout << "create Jacobi preconditioner" << endl;
+    
+    Array<int> temp_ind (height+1); 
+    Array<int> temp_cols (height);
+    Array<double> temp_vals (height);
+
+    for (int i = 0; i <= height; i++) temp_ind[i] = i; 
+
+    for (int i = 0; i < height; i++)
+      {
+	temp_cols[i] = i;
+	if (freedofs.Test(i))
+	  temp_vals[i] = 1.0 / mat(i,i);
+	else
+	  temp_vals[i] = 0.0;
+      }
+
+    cudaMalloc ((void**)&dev_ind, (height+1) * sizeof(int));
+    cudaMalloc ((void**)&dev_col, (height) * sizeof(int));
+    cudaMalloc ((void**)&dev_val, (height) * sizeof(double));
+
+    cudaMemcpy (dev_ind, &temp_ind[0], (height+1)*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy (dev_col, &temp_cols[0], height*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy (dev_val, &temp_vals[0], height*sizeof(double), cudaMemcpyHostToDevice);
+  }
+  
+  void DevJacobiPreconditioner :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    cout << "device mult precond" << endl;
+
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+
+    ux.UpdateDevice();
+    // uy = 0.0;
+    uy.UpdateDevice();
+
+    double alpha= 1;
+    double beta = 0;
+    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+		    &alpha, *descr, 
+		    dev_val, dev_ind, dev_col, 
+		    ux.dev_data, &beta, uy.dev_data);
+
+    uy.host_uptodate = false;
+
+    cout << "mult complete" << endl;
+  }
+
+
+  void DevJacobiPreconditioner :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    cout << "device multadd precond" << endl;
+
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    double alpha= 1;
+    double beta = 1;
+    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+		    &alpha, *descr, 
+		    dev_val, dev_ind, dev_col, 
+		    ux.dev_data, &beta, uy.dev_data);
+
+    uy.host_uptodate = false;
+    cout << "mult complete" << endl;
+  }
+  
+
+
+
+
+
+
+
 
 
 
