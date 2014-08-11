@@ -11,6 +11,10 @@
 #include <cublas_v2.h>
 #include <cusparse.h>
 
+extern void SetScalar (double val, int n, double * dev_ptr);
+
+
+
 namespace ngla
 {
   cublasHandle_t handle;
@@ -32,10 +36,17 @@ namespace ngla
   BaseVector & UnifiedVector :: operator= (double d)
   {
     for (int i = 0; i < size; i++) host_data[i] = d;
+    ::SetScalar (d, size, dev_data);
+    host_uptodate = true;
+    dev_uptodate = true;
+    
+    return *this;
+    /*
     host_uptodate = true;
     dev_uptodate = false;
     UpdateDevice();
     return *this;
+    */
   }
 
   BaseVector & UnifiedVector :: operator= (BaseVector & v2)
@@ -232,7 +243,7 @@ namespace ngla
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
     ux.UpdateDevice();
-    // uy = 0.0;
+    uy = 0.0;
     uy.UpdateDevice();
 
     double alpha= 1;
@@ -322,7 +333,7 @@ namespace ngla
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
     ux.UpdateDevice();
-    // uy = 0.0;
+    uy = 0.0;
     uy.UpdateDevice();
 
     double alpha= 1;
