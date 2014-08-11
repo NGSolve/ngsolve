@@ -46,7 +46,7 @@ namespace ngla
 #include "eigen.hpp"
 #include "arnoldi.hpp"
 
-
+#include "cuda_linalg.hpp"
 
 
 #endif
