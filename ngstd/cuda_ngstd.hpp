@@ -62,7 +62,7 @@ namespace ngs_cuda
 
 
 
-
+  /*
   template <class T>
   class TableWrapper : public Table<T>
   {
@@ -99,6 +99,7 @@ namespace ngs_cuda
     // HD const int * & Index() const { return index; }
     // HD const T * & Data() const { return data; }
   };
+  */
 
 
   template <typename T>
@@ -110,14 +111,14 @@ namespace ngs_cuda
   
   public: 
 
-    DevTable (TableWrapper<T> t2)
+    DevTable (const Table<T> & t2)
     {
       size = t2.Size();
       cudaMalloc((int**)&dev_index, (size+1)*sizeof(int));
-      cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice); 
+      cudaMemcpy (dev_index, &t2.IndexArray()[0], sizeof(int)*(size+1), cudaMemcpyHostToDevice); 
       // cout << "res = " << cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice) << endl;
     
-      int sizedata = t2.SizeData();
+      int sizedata = t2.AsArray().Size();
       cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
       cudaMemcpy (dev_data, t2.Data(), sizeof(T)*sizedata, cudaMemcpyHostToDevice);
     }
@@ -128,9 +129,9 @@ namespace ngs_cuda
       cudaFree (dev_index);
     }
 
-    operator TableWrapper<T> () const
+    operator FlatTable<T> () const
     {
-      return TableWrapper<T> (size, dev_index, dev_data);
+      return FlatTable<T> (size, dev_index, dev_data);
     }
   }; 
 

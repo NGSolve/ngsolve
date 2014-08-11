@@ -13,6 +13,7 @@ namespace ngstd
 
 
 
+#ifdef OLD
 
 /**
    Base class of \Ref{Table} container.
@@ -58,6 +59,38 @@ public:
   }
   INLINE int * Index() const { return index; }
 };
+#endif
+
+
+
+template <class T>
+class FlatTable 
+{
+protected:
+  /// number of rows
+  int size;
+  /// pointer to first in row
+  int * index;
+  /// array of data 
+  T * data;
+
+public:
+  INLINE FlatTable() { ; }
+
+  INLINE FlatTable(int as, int * aindex, T * adata)
+    : size(as), index(aindex), data(adata) { ; }
+
+  /// Size of table
+  INLINE int Size() const { return size; }
+
+  /// Access entry
+  INLINE const FlatArray<T> operator[] (int i) const 
+  { 
+    return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
+  }
+
+};
+
 
 
 /** 
@@ -66,38 +99,59 @@ public:
     The entry sizes must be known at construction.
 */
 template <class T>
-class Table : public BaseTable
+class Table : public FlatTable<T>
 {
 protected:
-  /// array of data 
-  T * data;
 
+  using FlatTable<T>::size;
+  using FlatTable<T>::index;
+  using FlatTable<T>::data;
+
+  /*
   INLINE Table ()
     : data(NULL) { ; }
+  */
 
 public:
   /// Construct table of uniform entrysize
   INLINE Table (int asize, int entrysize)
-    : BaseTable (asize, entrysize) 
+  // : BaseTable (asize, entrysize) 
   { 
+    size = asize;
+    index = new int[size+1];
+    for (int i = 0; i <= size; i++)
+      index[i] = i*entrysize;
     data = new T[index[size]]; 
   }
 
   /// Construct table of variable entrysize
   INLINE Table (const FlatArray<int> & entrysize)
-    : BaseTable (entrysize)
+  // : BaseTable (entrysize)
   {
-    data = new T[index[size]]; 
+    int i, cnt = 0;
+    size  = entrysize.Size();
+    
+    index = new int[size+1];
+    for (i = 0; i < size; i++)
+      {
+	index[i] = cnt;
+	cnt += entrysize[i];
+      }
+    index[i] = cnt;
+
+    data = new T[cnt];
   }
 
   /// Delete data
   INLINE ~Table ()
   {
     delete [] data; 
+    delete [] index;
   }
 
   /// Size of table
-  INLINE int Size() const { return size; }
+  // INLINE int Size() const { return size; }
+  using FlatTable<T>::Size;
   
   /// number of elements in all rows
   INLINE int NElements() const { return index[size]; }
@@ -109,17 +163,26 @@ public:
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
   */
+  /*
   /// Access entry
   INLINE const FlatArray<T> operator[] (int i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
+  */
+
+  using FlatTable<T>::operator[];
 
   INLINE T * Data() const { return data; }
 
   INLINE FlatArray<T> AsArray() const
   {
     return FlatArray<T> (index[size], data);
+  }
+
+  INLINE FlatArray<int> IndexArray() const
+  {
+    return FlatArray<int> (size+1, index);
   }
 };
 
