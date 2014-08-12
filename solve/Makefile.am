@@ -8,7 +8,7 @@ bin_PROGRAMS =  ngs
 
 libngsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
 numproc.cpp evp.cpp hyperbolic.cpp  \
-numprocee.cpp pde.cpp pdeparser.cpp
+numprocee.cpp pde.cpp pdeparser.cpp ngs_python.cpp
 
 if NGSGUI
   libngsolve_la_SOURCES += ngsolve.cpp shapetester.cpp
@@ -42,7 +42,8 @@ ngs_LDADD = libngsolve.la \
 	-L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
 #	-L/opt/OpenCASCADE/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin
 
-include_HEADERS = solve.hpp pde.hpp numproc.hpp
+include_HEADERS = solve.hpp pde.hpp numproc.hpp ngs_python.hpp
 
 
+dist_bin_SCRIPTS = init.py
 

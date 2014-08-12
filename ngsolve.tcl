@@ -252,6 +252,12 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    redraw
         }
 
+    .ngmenu.solve add command -label "Python shell" \
+	-command { 
+            NGS_PythonShell
+	}
+
+
 
     #     .ngmenu.solve add command -label "Save Solution (ASCII)..." \
 	# 	-command { 
