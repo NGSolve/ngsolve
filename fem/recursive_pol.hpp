@@ -89,9 +89,9 @@ namespace ngfem
       S p3;
       CEvalFO<REC,N-1>::Eval (x, values, p2, p3);
       if (REC::ZERO_B)
-	values[N] = p1 = ( REC::A(N) * x ) * p2 + REC::C(N) * p3;
+	values[N] = p1 = ( REC::CalcA(N) * x ) * p2 + REC::CalcC(N) * p3;
       else
-	values[N] = p1 = ( REC::A(N) * x + REC::B(N)) * p2 + REC::C(N) * p3;
+	values[N] = p1 = ( REC::CalcA(N) * x + REC::CalcB(N)) * p2 + REC::CalcC(N) * p3;
     }
 
 
@@ -101,9 +101,9 @@ namespace ngfem
       S p3;
       CEvalFO<REC,N-1>::EvalMult (x, c, values, p2, p3);
       if (REC::ZERO_B)
-	values[N] = p1 = ( REC::A(N) * x ) * p2 + REC::C(N) * p3;
+	values[N] = p1 = ( REC::CalcA(N) * x ) * p2 + REC::CalcC(N) * p3;
       else
-	values[N] = p1 = ( REC::A(N) * x + REC::B(N)) * p2 + REC::C(N) * p3;
+	values[N] = p1 = ( REC::CalcA(N) * x + REC::CalcB(N)) * p2 + REC::CalcC(N) * p3;
     }
     
 
@@ -112,7 +112,7 @@ namespace ngfem
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaled (x, y, values, p2, p3);
-      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*(y*y) * p3;
+      values[N] = p1 = ( REC::CalcA(N) * x + REC::CalcB(N) * y) * p2 + REC::CalcC(N)*(y*y) * p3;
     }
 
 
@@ -121,7 +121,7 @@ namespace ngfem
     {
       S p3;
       CEvalFO<REC,N-1>::EvalScaledMult (x, y, c, values, p2, p3);
-      values[N] = p1 = ( REC::A(N) * x + REC::B(N) * y) * p2 + REC::C(N)*(y*y) * p3;
+      values[N] = p1 = ( REC::CalcA(N) * x + REC::CalcB(N) * y) * p2 + REC::CalcC(N)*(y*y) * p3;
     }
   };
 
@@ -1042,13 +1042,13 @@ namespace ngfem
 
   /* ******************** Legendre Polynomial ****************** */
 
-  class LegendrePolynomial_Old : public RecursivePolynomial<LegendrePolynomial_Old>
+  class LegendrePolynomial_CalcCoefficient : public RecursivePolynomial<LegendrePolynomial_CalcCoefficient>
   {
   public:
-    INLINE LegendrePolynomial_Old () { ; }
+    INLINE LegendrePolynomial_CalcCoefficient () { ; }
 
     template <class S, class T>
-    INLINE LegendrePolynomial_Old (int n, S x, T && values)
+    INLINE LegendrePolynomial_CalcCoefficient (int n, S x, T && values)
     {
       Eval (n, x, values);
     }
@@ -1063,6 +1063,8 @@ namespace ngfem
     static INLINE double C (int i) { return 1.0/i-1.0; }
     enum { ZERO_B = 1 };
   };
+
+
 
 #ifdef __CUDACC__
   // __device__ Vec<2> * legendre_coefs;
@@ -1090,14 +1092,19 @@ namespace ngfem
     template <class S>
     static INLINE S P1(S x)  { return x; }
 
+
+    static INLINE double CalcA (int i) { return 2.0-1.0/i; }
+    static INLINE double CalcB (int i) { return 0; }
+    static INLINE double CalcC (int i) { return 1.0/i-1.0; }
+
 #ifndef __CUDA_ARCH__
-    static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double A (int i) { return coefs[i][0]; } 
     static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double C (int i) { return coefs[i][1]; } 
 #else
-    static INLINE double A (int i) { return legendre_coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double A (int i) { return legendre_coefs[i][0]; } 
     static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return legendre_coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double C (int i) { return legendre_coefs[i][1]; } 
 #endif    
     enum { ZERO_B = 1 };
   };
@@ -1130,13 +1137,13 @@ namespace ngfem
     static INLINE S P1(S x)  { return -0.5*x; }
 
 #ifndef __CUDA_ARCH__    
-    static INLINE double A (int i) { return coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double A (int i) { return coefs[i][0]; } 
     static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double C (int i) { return coefs[i][1]; } 
 #else
-    static INLINE double A (int i) { return intlegnobubble_coefs[i][0]; } // 2.0-1.0/i; 
+    static INLINE double A (int i) { return intlegnobubble_coefs[i][0]; }
     static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return intlegnobubble_coefs[i][1]; } // 1.0/i-1.0; 
+    static INLINE double C (int i) { return intlegnobubble_coefs[i][1]; }
 #endif
     
     static INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
@@ -1147,7 +1154,7 @@ namespace ngfem
     
 
 
-
+  
   class IntegratedLegendrePolynomial : public RecursivePolynomial<IntegratedLegendrePolynomial>
   {
     // static Array< double[2] > coefs;
@@ -1195,6 +1202,11 @@ namespace ngfem
     static INLINE double A (int i) { return 2; } 
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return -1; }
+
+    static INLINE double CalcA (int i) { return 2; } 
+    static INLINE double CalcB (int i) { return 0; }
+    static INLINE double CalcC (int i) { return -1; }
+
     enum { ZERO_B = 1 };
   };
 
@@ -1259,68 +1271,6 @@ namespace ngfem
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
     INLINE double D (int i) const { return 1; }
   };
-
-
-
-  /*
-  class JacobiPolynomial3 : public RecursivePolynomialNonStatic<JacobiPolynomial3>
-  {
-    double al, be;
-    Vec<4> pola;
-    Vec<4> polc;
-    Vec<4> pold;
-    Vec<2> polb;
-  public:
-    JacobiPolynomial3 (double a, double b) : al(a), be(b) 
-    { 
-      ;
-    }
-
-    template <class S, class T>
-    inline JacobiPolynomial3 (int n, S x, double alpha, double beta, T && values)
-      : al(alpha), be(beta)
-    {
-      double ab = al+be;
-      // A(i) = ( pola(3) i^3 + pola(2) i^2 + pola(1) i + pola(0) )  / pold
-      // ...
-
-      pola(0) = ab*(ab+1)*(ab+2);
-      pola(1) = 6*ab*ab+12*ab+4;
-      pola(2) = 12*ab+12;
-      pola(3) = 8;
-
-      polb(0) = (ab+1)*(al*al-be*be);
-      polb(1) = 2*(al*al-be*be);
-
-      polc(0) = -2*al*be*(ab+2);
-      polc(1) = -2*ab*(ab+2)-4*al*be;
-      polc(2) = -6*ab-4;
-      polc(3) = -4;
-
-      pold(0) = 2*(ab+1)*ab;
-      pold(1) = 2*ab*ab+8*ab+4;
-      pold(2) = 6*ab+8;
-      pold(3) = 4;
-
-      Eval (n, x, values);
-    }
-
-    template <class S>
-    INLINE S P0(S x) const { return S(1.0); }
-    template <class S>
-    INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
-
-    INLINE double A (int i) const
-    { i--; return ( pola(0) + i * (pola(1) + i * (pola(2) + i * pola(3))) ); }
-    INLINE double B (int i) const
-    { i--; return ( polb(0) + i * polb(1) ); }
-    INLINE double C (int i) const
-    { i--; return ( polc(0) + i * (polc(1) + i * (polc(2) + i * polc(3))) ); }
-
-    INLINE double D (int i) const
-    { i--; return ( pold(0) + i * (pold(1) + i * (pold(2) + i * pold(3))) ); }
-  };
-  */
 
 
 

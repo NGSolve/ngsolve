@@ -316,8 +316,8 @@ namespace ngfem
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
-      // LegendrePolynomial_Old leg;
-      LegendrePolynomial leg;
+      LegendrePolynomial_CalcCoefficient leg;
+      // LegendrePolynomial leg;
       Tx p1, p2, p3, p4;
 
       int ii = 0;
@@ -326,8 +326,8 @@ namespace ngfem
           if (iy == 0)
 	    leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
 
-	  JacobiPolynomialAlpha jac(1+2*ix);
-          // JacobiPolynomialNew jac(1+2*ix, 0);
+	  // JacobiPolynomialAlpha jac(1+2*ix);
+	  JacobiPolynomialNew jac(1+2*ix, 0);
           shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
           ii++;
         });
