@@ -652,6 +652,7 @@ int NGS_PythonShell (ClientData clientData,
 	      
 
 	      bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
+		// .def("__repr__", DummyPrintElement)
 		.add_property("vertices", &NgsElementGetVertices);
 
 	      void (MeshAccess::*DummyGetElV)(int, Array<int>&) const = &MeshAccess::GetElVertices;
@@ -659,7 +660,8 @@ int NGS_PythonShell (ClientData clientData,
 	      bp::class_<MeshAccess>("MeshAccess", bp::no_init)
 		.def("GetNV", &MeshAccess::GetNV)
 		// .def("GetElement", DummyGetElement)
-		.def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement))
+		.def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
+		     (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
 		.def("GetElementVertices", DummyGetElV)
 		.add_property ("nv", &MeshAccess::GetNV);
 	      main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
