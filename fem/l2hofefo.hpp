@@ -286,6 +286,7 @@ namespace ngfem
     {
       Tx lam[2] = { hx[0], 1-hx[0] };
       INT<2> e = this -> GetEdgeSort (0, vnums);
+      // LegendrePolynomial_Old::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
       LegendrePolynomial::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
     }
   };

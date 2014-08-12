@@ -18,6 +18,7 @@
 #define tcl_const
 #endif
 
+#include <thread>
 
 using namespace std;
 using namespace ngsolve;
@@ -28,6 +29,11 @@ using namespace ngsolve;
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
+#endif
+
+
+#ifdef NGS_PYTHON
+#include "ngs_python.hpp"
 #endif
 
 
@@ -599,6 +605,47 @@ int NGS_SocketLoad (ClientData clientData,
 }
 
 
+int NGS_PythonShell (ClientData clientData,
+                    Tcl_Interp * interp,
+                    int argc, tcl_const char *argv[])
+{
+#ifdef NGS_PYTHON
+
+  cout << "try to init python" << endl;
+
+  /*
+  std::thread testthread([&]() {
+			 cout << "hy from thread" << endl;
+		       });
+  
+  cout << "xxx 2" << endl;
+  */
+  
+  std::thread * pythread = 
+    new std::thread([&]() {
+		      cout << "init python" << endl;
+			 auto py = PythonEnvironment::getInstance();
+			 
+			 try{
+			   py.Init();
+			   string initfile = netgen::ngdir + dirslash + "init.py";
+			   cout << "python init file = " << initfile << endl;
+			   py.exec_file(initfile.c_str());
+			 }
+			 catch(bp::error_already_set const &) {
+			   PyErr_Print();
+			 }
+ 
+			 Py_Finalize();
+		       });
+  
+#else
+  cerr << "Sorry, you have to compile ngsolve with Python" << endl;
+  return TCL_ERROR;
+#endif
+}
+
+
 
 int NGS_PrintMemoryUsage (ClientData clientData,
 			  Tcl_Interp * interp,
@@ -1042,6 +1089,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (Tcl_CmdDeleteProc*) NULL);
 
   Tcl_CreateCommand (interp, "NGS_SocketLoad", NGS_SocketLoad,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+
+  Tcl_CreateCommand (interp, "NGS_PythonShell", NGS_PythonShell,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 

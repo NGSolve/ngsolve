@@ -767,7 +767,28 @@ namespace ngfem
     INLINE const REC & Cast() const { return static_cast<const REC &> (*this); }
 
     template <class S>
-    INLINE S EvalNext (int i, S x, S & p1, S & p2)
+    INLINE S EvalNext2 (int i, S x, S & p1, S & p2) const
+    {
+      if (REC::ZERO_B)
+	{
+	  S pnew = Cast().A(i) * x * p1 + Cast().C(i)*p2;
+	  p2 = p1;
+	  p1 = pnew;
+	  return p1;
+	}
+      else
+	{
+	  S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
+	  p2 = p1;
+	  p1 = pnew;
+	  return p1;
+	}
+    }
+
+
+
+    template <class S>
+    INLINE S EvalNext (int i, S x, S & p1, S & p2) const
     {
       switch (i)
         {
@@ -954,6 +975,11 @@ namespace ngfem
       values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
 
+      /*
+      for (int i = 2; i <= n; i++)
+        values[i] = EvalNext2 (i, x, p1, p2);
+      */
+
       for (int i = 2; i <= n; i+=2)
 	{	
 	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
@@ -1041,20 +1067,7 @@ namespace ngfem
 #ifdef __CUDACC__
   // __device__ Vec<2> * legendre_coefs;
   // __device__ Vec<2> legendre_coefs[100];
-  __device__ double legendre_coefs[1001][2];
-  /*
-  __device__ const double legendre_coefs[1001][2] = 
-    {
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-      { 1, 0 }, { 2, 3 }, { 5, 6, }, { 7, 8, }, { 8, 10 }, { 12, 13 }, { 8, 10 }, { 12, 13 },
-    };
-  */
+  extern __device__ double legendre_coefs[1000][2];
 #endif
 
   class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
@@ -1093,7 +1106,7 @@ namespace ngfem
 
 
 #ifdef __CUDACC__    
-  __device__ Vec<2> * intlegnobubble_coefs;
+  extern __device__ Vec<2> * intlegnobubble_coefs;
 #endif
 
   class IntLegNoBubble : public RecursivePolynomial<IntLegNoBubble>
@@ -1314,8 +1327,8 @@ namespace ngfem
 
 #ifdef __CUDACC__    
   // __device__ Vec<3> * jacobialpha_coefs;
-  __device__ double jacobialpha_coefs[100][100][4];
-  __device__ int jacobialpha_maxn;
+  extern __device__ double jacobialpha_coefs[100][100][4];
+  extern __device__ int jacobialpha_maxn;
 #endif
 
   class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>
@@ -2349,8 +2362,15 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 	      SBLambda ([&] (int i, S val) LAMBDA_INLINE 
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
+		     /*
                      jac.EvalMult (n-i, 2*x-1, val, values+ii);
                      ii += n-i+1;
+		     */
+                     jac.EvalMult (n-i, 2*x-1, val, 
+				   SBLambda([&](int j, S v2) 
+					    {
+					      values[ii++] = v2;
+					    }));
                    }));
     }
 
