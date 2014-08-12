@@ -152,7 +152,6 @@ public:
     Swap (size, tab2.size);
     Swap (index, tab2.index);
     Swap (data, tab2.data);
-    cout << "move table" << endl;
   }
 
 
