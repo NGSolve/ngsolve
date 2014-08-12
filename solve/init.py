@@ -1,6 +1,6 @@
 
 def startConsole():
-     import readline # optional, will allow Up/Down/History in the console
+    import readline # optional, will allow Up/Down/History in the console
     import code
     vars = globals().copy()
     vars.update(locals())
