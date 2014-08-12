@@ -24,9 +24,8 @@ $(top_builddir)/basiclinalg/libngbla.la		\
 $(top_builddir)/multigrid/libngmg.la		\
 $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
-libngsolve_la_LDFLAGS = -avoid-version
-#  -rdynamic
-
+libngsolve_la_LDFLAGS = -avoid-version -lboost_python-py34  -lpython3.4m
+#   -rdynamic
 
 
 ngs_SOURCES = ngs.cpp
