@@ -30,6 +30,11 @@ namespace netgen {
 #include <nginterface.h>
 #include <ngexception.hpp>
 
+namespace netgen
+{
+  extern string ngdir;
+}
+
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
 #endif
@@ -626,7 +631,7 @@ int NGS_PythonShell (ClientData clientData,
   
   std::thread * pythread = 
       new std::thread([&]() {
-              cout << "init python" << endl;
+              cout << "init python, new" << endl;
               Py_Initialize();
 
               try{
@@ -638,6 +643,30 @@ int NGS_PythonShell (ClientData clientData,
               main_namespace["Vector"] = PyExportVector("Vector");
               main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
               main_namespace["Matrix"] = PyExportMatrix("Matrix");
+
+
+
+	      
+              main_namespace["FlatArray"] = PyExportFlatArray("FlatArray");
+              main_namespace["Array"] = PyExportArray("Array");
+	      
+
+	      bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
+		.add_property("vertices", &NgsElementGetVertices);
+
+	      void (MeshAccess::*DummyGetElV)(int, Array<int>&) const = &MeshAccess::GetElVertices;
+	      Ngs_Element (MeshAccess::*DummyGetElement)(int, bool) const = &MeshAccess::GetElement;
+	      bp::class_<MeshAccess>("MeshAccess", bp::no_init)
+		.def("GetNV", &MeshAccess::GetNV)
+		// .def("GetElement", DummyGetElement)
+		.def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement))
+		.def("GetElementVertices", DummyGetElV)
+		.add_property ("nv", &MeshAccess::GetNV);
+	      main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+
+
+
+
               bp::exec_file(initfile.c_str(), main_namespace, main_namespace);
               }
               catch(bp::error_already_set const &) {
@@ -647,7 +676,7 @@ int NGS_PythonShell (ClientData clientData,
               });
 //     pythread->join();
 //     Py_Finalize();
-  
+  return TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
   return TCL_ERROR;

@@ -8,6 +8,11 @@ bp::class_<Vector<double>, bp::bases<FlatVector<double> > > PyExportVector(const
 bp::class_<FlatMatrix<double> > &PyExportFlatMatrix(const char *name);
 bp::class_<Matrix<double>, bp::bases<FlatMatrix<double> > > PyExportMatrix(const char *name);
 
+bp::class_<FlatArray<int> > &PyExportFlatArray(const char *name);
+bp::class_<Array<int>, bp::bases<FlatArray<int> > > PyExportArray(const char *name);
+
+
+
 // using namespace boost::python;
 // namespace bp = boost::python;
 // 
@@ -59,4 +64,9 @@ bp::class_<Matrix<double>, bp::bases<FlatMatrix<double> > > PyExportMatrix(const
 
 // void InitPyNgs();
 
+
+
+
+
+static Array<int> NgsElementGetVertices (Ngs_Element & el) { return Array<int> (el.Vertices()); }
 

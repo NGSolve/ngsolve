@@ -226,3 +226,39 @@ class_<Matrix<double>, bases<FlatMatrix<double> > > PyExportMatrix(const char *n
 // 
 // }
 // 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class_<FlatArray<int> > &PyExportFlatArray(const char *name) {
+    return class_<FlatArray<int> >(name)
+        .def(init<int, int *>())
+        .def("__str__", &PyToString<FlatArray<int> >)
+        .def("__len__", &PyVecLen<FlatArray<int> >)
+        .def("__getitem__", &PyVecGet<FlatArray<int> >)
+        .def("__setitem__", &PyVecSet<FlatArray<int> >)
+      // .def("Assign", &Assign)
+      // .def("Add", &Add)
+      //  .def(self+=self)
+      //  .def(self-=self)
+      //  .def(self*=double())
+        ;
+}
+
+class_<Array<int>, bases<FlatArray<int> > > PyExportArray(const char *name) {
+    return class_<Array<int> , bases<FlatArray<int> > >(name)
+        .def(init<int>())
+        ;
+}
+
