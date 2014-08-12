@@ -135,6 +135,11 @@ AC_ARG_ENABLE([cuda],
 	)
 AM_CONDITIONAL([NGSCUDA], [test x$cudaon = xtrue])
 
+AM_PATH_PYTHON([3.2])
+echo "python dir = $pythondir"
+echo "python = $PYTHON"
+echo "pythonprefix = $PYTHON_PREFIX"
+
 
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
