@@ -463,13 +463,13 @@ namespace ngstd
       ownmem = 0;
     }
 
-    INLINE Array (Array && a2) = default;
-    /*
     INLINE Array (Array && a2) 
     {
-      cout << "juhuu, move" << endl;
+      size = 0;
+      data = NULL;
+      ngstd::Swap (size, a2.size);
+      ngstd::Swap (data, a2.data);
     }
-    */
 
     /// array copy 
     INLINE explicit Array (const Array & a2)
