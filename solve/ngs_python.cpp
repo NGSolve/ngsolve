@@ -3,16 +3,16 @@ using namespace ngsolve;
 
 
 
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+// #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <string>
 #include <ostream>
 
 #include "ngs_python.hpp"
 
+using namespace boost::python;
 using std::string;
 using std::ostringstream;
 
-using namespace boost::python;
 
 template<typename T>
 struct PyVec : public T {
@@ -210,19 +210,19 @@ class_<Matrix<double>, bases<FlatMatrix<double> > > PyExportMatrix(const char *n
 // auto PyFlatVectorD = PyExportFlatVector("FlatVector"); 
 // auto PyVectorD = PyExportVector("Vector"); 
 
-void PythonEnvironment::Init() {
-
-    Py_Initialize();
-    main_module = import("__main__");
-    main_namespace = main_module.attr("__dict__");
-
-    PyRun_SimpleString("def raiseIndexError():\n\traise IndexError(\"that's enough!\")\n");
-    auto raiseIndexError = main_module.attr("raiseIndexError");
-
-    main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
-    main_namespace["Vector"] = PyExportVector("Vector");
-    main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
-    main_namespace["Matrix"] = PyExportMatrix("Matrix");
-
-}
-
+// void PythonEnvironment::Init() {
+// 
+//     Py_Initialize();
+//     main_module = import("__main__");
+//     main_namespace = main_module.attr("__dict__");
+// 
+//     PyRun_SimpleString("def raiseIndexError():\n\traise IndexError(\"that's enough!\")\n");
+//     auto raiseIndexError = main_module.attr("raiseIndexError");
+// 
+//     main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
+//     main_namespace["Vector"] = PyExportVector("Vector");
+//     main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
+//     main_namespace["Matrix"] = PyExportMatrix("Matrix");
+// 
+// }
+// 

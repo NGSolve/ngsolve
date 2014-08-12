@@ -23,6 +23,9 @@
 using namespace std;
 using namespace ngsolve;
 
+namespace netgen {
+    extern string ngdir;
+}
 
 #include <nginterface.h>
 #include <ngexception.hpp>
@@ -622,22 +625,28 @@ int NGS_PythonShell (ClientData clientData,
   */
   
   std::thread * pythread = 
-    new std::thread([&]() {
-		      cout << "init python" << endl;
-			 auto py = PythonEnvironment::getInstance();
-			 
-			 try{
-			   py.Init();
-			   string initfile = netgen::ngdir + dirslash + "init.py";
-			   cout << "python init file = " << initfile << endl;
-			   py.exec_file(initfile.c_str());
-			 }
-			 catch(bp::error_already_set const &) {
-			   PyErr_Print();
-			 }
- 
-			 Py_Finalize();
-		       });
+      new std::thread([&]() {
+              cout << "init python" << endl;
+              Py_Initialize();
+
+              try{
+              auto main_module = bp::import("__main__");
+              auto main_namespace = main_module.attr("__dict__");
+              string initfile = netgen::ngdir + dirslash + "init.py";
+              cout << "python init file = " << initfile << endl;
+              main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
+              main_namespace["Vector"] = PyExportVector("Vector");
+              main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
+              main_namespace["Matrix"] = PyExportMatrix("Matrix");
+              bp::exec_file(initfile.c_str(), main_namespace, main_namespace);
+              }
+              catch(bp::error_already_set const &) {
+              PyErr_Print();
+              }
+
+              });
+//     pythread->join();
+//     Py_Finalize();
   
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
