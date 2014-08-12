@@ -1,3 +1,5 @@
+#ifdef CUDA
+
 #include <ngstd.hpp>
 
 
@@ -52,3 +54,6 @@ namespace ngs_cuda
 
 
 }
+
+
+#endif
