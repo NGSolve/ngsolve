@@ -142,6 +142,20 @@ public:
     data = new T[cnt];
   }
 
+  INLINE Table (const Table<int> & tab2) = delete;
+  INLINE Table (Table<int> && tab2)
+  {
+    size = 0;
+    index = NULL;
+    data = NULL;
+
+    Swap (size, tab2.size);
+    Swap (index, tab2.index);
+    Swap (data, tab2.data);
+    cout << "move table" << endl;
+  }
+
+
   /// Delete data
   INLINE ~Table ()
   {
@@ -220,6 +234,14 @@ template <class T>
     { nd = acnt; table = NULL; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
+
+    operator Table<T> () 
+    {
+      Table<int> tmp (std::move(*table));
+      delete table;
+      table = NULL;
+      return tmp;
+    }
 
     bool Done () { return mode > 3; }
     void operator++(int) { SetMode (mode+1); }

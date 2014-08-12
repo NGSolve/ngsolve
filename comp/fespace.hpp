@@ -241,6 +241,8 @@ namespace ngcomp
 	GetDofNrs (ei.Nr(), dnums);
     }
 
+    Table<int> CreateDofTable (VorB vorb) const;
+
     // virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     // FlatArray<int> GetDofNrs (ElementId ei, LocalHeap & lh) const;

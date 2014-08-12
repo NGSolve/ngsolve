@@ -99,9 +99,9 @@ namespace ngcomp
   {
   public:
     Ngs_Element (const netgen::Ng_Element & el) : netgen::Ng_Element(el) { ; }
-    auto Vertices() -> decltype (ArrayObject(vertices)) { return vertices; }
-    auto Edges() -> decltype (ArrayObject(edges)) { return edges; }
-    auto Faces() -> decltype (ArrayObject(faces)) { return faces; }
+    auto Vertices() const -> decltype (ArrayObject(vertices)) { return vertices; }
+    auto Edges() const -> decltype (ArrayObject(edges)) { return edges; }
+    auto Faces() const -> decltype (ArrayObject(faces)) { return faces; }
     
     /*
       Converts element-type from Netgen to element-types of NGSolve.
@@ -244,32 +244,6 @@ namespace ngcomp
     {
       return TElementRange<VB> (IntRange (0, GetNE(VB)));
     }
-
-    
-
-  /**
-     Converts element-type from Netgen to element-types of NGSolve.
-     E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.
-  */
-    /*
-    static INLINE ELEMENT_TYPE ConvertElementType (NG_ELEMENT_TYPE type)
-    {
-      switch (type)
-        {
-        case NG_PNT:                    return ET_POINT;
-        case NG_SEGM: case NG_SEGM3:    return ET_SEGM;
-        case NG_TRIG: case NG_TRIG6:    return ET_TRIG;
-        case NG_QUAD: case NG_QUAD6:    return ET_QUAD;
-        case NG_TET: case NG_TET10:     return ET_TET;
-        case NG_PRISM: case NG_PRISM12: return ET_PRISM;
-        case NG_PYRAMID:                return ET_PYRAMID;
-        case NG_HEX:                    return ET_HEX;
-        default:
-          throw Exception ("Netgen2NgS type conversion: Unhandled element type");
-        }
-    }
-    */
-
 
     /// the geometry type of the element
     ELEMENT_TYPE GetElType (int elnr) const

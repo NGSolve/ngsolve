@@ -576,6 +576,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
   */
 
+
+  Table<int> FESpace :: CreateDofTable (VorB vorb) const
+  {
+    TableCreator<int> creator;
+    
+    Array<int> dnums;
+    for ( ; !creator.Done(); creator++)
+      {
+	for (int i = 0; i < ma.GetNE(vorb); i++)
+	  {
+	    GetDofNrs (ElementId(vorb,i), dnums);
+	    creator.Add (i, dnums);
+	  }
+      }
+
+    return creator;
+  }
+
   /// get coupling type of dof
   COUPLING_TYPE FESpace :: GetDofCouplingType (int dof) const 
   {

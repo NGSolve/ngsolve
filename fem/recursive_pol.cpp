@@ -26,8 +26,8 @@ namespace ngfem
           coefs[1][1] = 1;
           for (int i = 2; i <= n; i++)
             {
-              coefs[i][0] = (2.0*i-1)/i;
-              coefs[i][1] = (1.0-i)/i;
+              coefs[i][0] = CalcA(i);  // (2.0*i-1)/i;
+              coefs[i][1] = CalcC(i);  // (1.0-i)/i;
             }
         }
     }
