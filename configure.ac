@@ -144,8 +144,8 @@ echo "pythonprefix = $PYTHON_PREFIX"
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
 	[CXXFLAGS+=" -DNGS_PYTHON -I/usr/include/python3.4"]	
-	[LDFLAGS+=" -lboost_python-py34  -lpython3.4m"]
 	)
+# 	[LDFLAGS+=" -lboost_python-py34  -lpython3.4m"]
 
 echo "creating compiler wrapper ngscxx"
 echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
