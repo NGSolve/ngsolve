@@ -1,6 +1,7 @@
 include_HEADERS = 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES) -I/usr/include/python3.4
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES) 
+
 
 if NGGUI
 bin_PROGRAMS = netgen
@@ -44,7 +45,15 @@ ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl \
 occgeom.tcl acisgeom.tcl netgen.ocf
 
 
-netgen_LDFLAGS = -export-dynamic -lboost_python-py34 -lpython3.4m
+netgen_LDFLAGS = -export-dynamic
+
+if NGPYTHON
+AM_CPPFLAGS += -I/usr/include/python3.2 -DNGPYTHON
+# netgen_LDFLAGS += -lboost_python-py34 -lpython3.4m
+netgen_LDFLAGS += -lboost_python-py32 -lpython3.2mu	
+endif
+
+
 # netgen_LDFLAGS = -rdynamic 
 # -static
 

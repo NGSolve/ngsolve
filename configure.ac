@@ -145,6 +145,15 @@ AC_ARG_ENABLE([mkl],
         [if test "$enableval" = yes; then mklon=true; else mklon=false; fi]
         )
 
+
+pythonon=false
+AC_ARG_ENABLE([python],
+        [AS_HELP_STRING([--enable-python],[link boost python, necessary for ngsolve])],
+        [if test "$enableval" = yes; then pythonon=true; else pythonon=false; fi]
+        )
+
+
+
 # only for GUI version 
 
 if test a$ngguion = atrue ; then
@@ -202,6 +211,7 @@ fi
 AM_CONDITIONAL([NGLIB], [test x$nglibon = xtrue])
 AM_CONDITIONAL([NGGUI], [test x$ngguion = xtrue])
 AM_CONDITIONAL([NGMKL], [test x$mklon = xtrue])
+AM_CONDITIONAL([NGPYTHON], [test x$pythonon = xtrue])
 
 AC_CHECK_HEADER(pthread.h)
 
