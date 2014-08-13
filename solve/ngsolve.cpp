@@ -629,53 +629,21 @@ int NGS_PythonShell (ClientData clientData,
   cout << "xxx 2" << endl;
   */
   
-  std::thread * pythread = 
-      new std::thread([&]() {
-              cout << "init python, new" << endl;
-              Py_Initialize();
+  string initfile = netgen::ngdir + dirslash + "init.py";
+  cout << "python init file = " << initfile << endl;
+  auto py_env = PythonEnvironment::getInstance();
 
-              try{
-              auto main_module = bp::import("__main__");
-              auto main_namespace = main_module.attr("__dict__");
-              string initfile = netgen::ngdir + dirslash + "init.py";
-              cout << "python init file = " << initfile << endl;
-              main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
-              main_namespace["Vector"] = PyExportVector("Vector");
-              main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
-              main_namespace["Matrix"] = PyExportMatrix("Matrix");
+  py_env.Spawn(initfile);
 
-
-
-	      
-              main_namespace["FlatArray"] = PyExportFlatArray("FlatArray");
-              main_namespace["Array"] = PyExportArray("Array");
-	      
-
-	      bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
-		// .def("__repr__", DummyPrintElement)
-		.add_property("vertices", &NgsElementGetVertices);
-
-	      void (MeshAccess::*DummyGetElV)(int, Array<int>&) const = &MeshAccess::GetElVertices;
-	      Ngs_Element (MeshAccess::*DummyGetElement)(int, bool) const = &MeshAccess::GetElement;
-	      bp::class_<MeshAccess>("MeshAccess", bp::no_init)
-		.def("GetNV", &MeshAccess::GetNV)
-		// .def("GetElement", DummyGetElement)
-		.def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
-		     (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
-		.def("GetElementVertices", DummyGetElV)
-		.add_property ("nv", &MeshAccess::GetNV);
-	      main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
-
-
-
-
-              bp::exec_file(initfile.c_str(), main_namespace, main_namespace);
-              }
-              catch(bp::error_already_set const &) {
-              PyErr_Print();
-              }
-
-              });
+//   std::thread * pythread = 
+//       new std::thread([&]() {
+//               cout << "init python, new4" << endl;
+//               auto py_env = PythonEnvironment::getInstance();
+//               string initfile = netgen::ngdir + dirslash + "init.py";
+//               cout << "python init file = " << initfile << endl;
+//               py_env.exec_file(initfile.c_str());
+// 
+//               });
 //     pythread->join();
 //     Py_Finalize();
   return TCL_OK;
