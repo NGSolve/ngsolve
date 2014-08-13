@@ -1069,7 +1069,7 @@ namespace ngfem
 #ifdef __CUDACC__
   // __device__ Vec<2> * legendre_coefs;
   // __device__ Vec<2> legendre_coefs[100];
-  extern __device__ double legendre_coefs[1000][2];
+  extern __device__ double legendre_coefs[][2];
 #endif
 
   class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
@@ -1307,7 +1307,9 @@ namespace ngfem
       : alpha(a)
     { 
       // offset = alpha*(maxn+1);
+#ifndef __CUDA_ARCH__
       coefsal = &coefs[alpha*(maxn+1)];
+#endif
       Eval (n, x, values);
     }
 
@@ -1318,14 +1320,20 @@ namespace ngfem
     template <class S>
     INLINE S P1(S x) const 
     { 
-      // return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+#ifndef __CUDA_ARCH__
       return coefsal[1][0]*x+coefsal[1][1]; 
+#else
+      return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1];
+#endif
     }
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
-      // return coefs[offset+1][0]*x+coefs[offset+1][1]; 
+#ifndef __CUDA_ARCH__
       return coefsal[1][0]*x+coefsal[1][1]*y; 
+#else
+      return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1]*y;
+#endif
     }
 
 #ifndef __CUDA_ARCH__

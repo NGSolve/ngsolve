@@ -765,7 +765,6 @@ namespace ngfem
 
 
 
-
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>;
 
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>;
