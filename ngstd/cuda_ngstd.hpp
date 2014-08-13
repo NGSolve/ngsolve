@@ -55,6 +55,16 @@ namespace ngs_cuda
       return FlatArray<T> (size, dev_data);
     }
 
+    explicit INLINE operator Array<T> ()
+    {
+      Array<T> temp(size);
+#ifdef __CUDA_ARCH__
+      temp = FlatArray<T> (*this);
+#else
+      D2H (temp);
+#endif
+      return temp;
+    }
   }; 
 
 

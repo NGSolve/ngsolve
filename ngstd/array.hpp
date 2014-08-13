@@ -465,10 +465,15 @@ namespace ngstd
 
     INLINE Array (Array && a2) 
     {
+      allocsize = 0;
+      ownmem = false;
       size = 0;
       data = NULL;
+
       ngstd::Swap (size, a2.size);
       ngstd::Swap (data, a2.data);
+      ngstd::Swap (allocsize, a2.allocsize);
+      ngstd::Swap (ownmem, a2.ownmem);
     }
 
     /// array copy 
