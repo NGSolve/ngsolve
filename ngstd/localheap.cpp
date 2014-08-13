@@ -16,7 +16,7 @@ namespace ngstd
     data = new char[asize];
     next = data + totsize;
     p = data;
-    owner = 1;
+    owner = true;
     name = aname;
     CleanUp();   // align pointer
   }
