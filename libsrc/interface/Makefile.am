@@ -10,3 +10,6 @@ libinterface_la_SOURCES = nginterface.cpp nginterface_v2.cpp \
 	wuchemnitz.cpp writegmsh2.cpp writeOpenFOAM15x.cpp 
 
 
+libinterface_la_LIBADD = $(top_builddir)/libsrc/meshing/libmesh.la
+
+# libinterface_la_LDFLAGS = -rdynamic

@@ -1,6 +1,6 @@
 include_HEADERS = 
 
-AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES)
+AM_CPPFLAGS = -I$(top_srcdir)/libsrc/include -I$(top_srcdir)/libsrc/interface -DOPENGL  -D$(TOGL_WINDOWINGSYSTEM)  $(TCL_INCLUDES) $(MPI_INCLUDES) $(FFMPEG_INCLUDES) $(JPEGLIB_INCLUDES) -I/usr/include/python3.4
 
 if NGGUI
 bin_PROGRAMS = netgen
@@ -21,7 +21,8 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
-	-L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS) $(MKL_LIBS)
+	-L$(TK_BIN_DIR)/Togl1.7 $(TOGLLIBDIR) -lTogl $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS) $(MKL_LIBS) 
+
 
 #
 #	$(top_builddir)/libsrc/occ/liboccvis.la 
@@ -43,8 +44,10 @@ ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl \
 occgeom.tcl acisgeom.tcl netgen.ocf
 
 
-netgen_LDFLAGS = -export-dynamic 
+netgen_LDFLAGS = -export-dynamic -lboost_python-py34 -lpython3.4m
 # netgen_LDFLAGS = -rdynamic 
 # -static
+
+# netgen_LDFLAGS += -rdynamic
 
 

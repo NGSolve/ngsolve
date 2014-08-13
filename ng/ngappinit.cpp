@@ -7,6 +7,7 @@
 #include "incvis.hpp"
 #include <meshing.hpp>
 
+#include <boost/python.hpp>
 
 
 namespace netgen
