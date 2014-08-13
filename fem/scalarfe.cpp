@@ -356,6 +356,7 @@ namespace ngfem
   }
   */
 
+
   template <int D>
   void DGFiniteElement<D>:: 
   CalcTraceMatrix (int facet, FlatMatrix<> trace) const
