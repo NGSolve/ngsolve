@@ -13,6 +13,7 @@ using namespace boost::python;
 using std::string;
 using std::ostringstream;
 
+PythonEnvironment PythonEnvironment::instance;
 
 template<typename T>
 struct PyVec : public T {
@@ -171,73 +172,6 @@ class_<Matrix<double>, bases<FlatMatrix<double> > > PyExportMatrix(const char *n
         .def(init<int,int>())
         ;
 }
-
-
-// BOOST_PYTHON_MODULE(linhyp) {
-// 
-// 	class_<NumProcLinearHyperbolic<2> >("linhyp2", no_init )
-// 		.def("Step", &NumProcLinearHyperbolic<2>::Step)
-// 		.def("Redraw", &NumProcLinearHyperbolic<2>::Redraw)
-//         .def_readwrite("dt", &NumProcLinearHyperbolic<2>::dt)
-//         .def_readwrite("tend", &NumProcLinearHyperbolic<2>::tend)
-//         .def_readwrite("t", &NumProcLinearHyperbolic<2>::t)
-//         .def_readwrite("u", &NumProcLinearHyperbolic<2>::vecu)
-//         .def_readwrite("hu", &NumProcLinearHyperbolic<2>::hu)
-//         .def_readwrite("conv", &NumProcLinearHyperbolic<2>::conv)
-//         .def_readwrite("w", &NumProcLinearHyperbolic<2>::w)
-//         ;
-// 
-//     int (MeshAccess::*getNE_p)() const = &MeshAccess::GetNE;
-//     class_<MeshAccess>("Meshaccess", no_init)
-//         .def("GetNE", getNE_p)
-//         .def("GetNP", &MeshAccess::GetNP)
-//         .def("GetNV", &MeshAccess::GetNV)
-//         .def("GetNEdges", &MeshAccess::GetNEdges)
-//         .def("GetNFaces", &MeshAccess::GetNFaces)
-//         .add_property("ne", getNE_p)
-//         .add_property("np", &MeshAccess::GetNP)
-//         .add_property("nv", &MeshAccess::GetNV)
-//         .add_property("ned", &MeshAccess::GetNEdges)
-//         .add_property("nf", &MeshAccess::GetNFaces)
-//         ;
-// };
-
-
-
-// class_<FlatVector<double>, bases<FlatVector<double> > > PyFlatVectorD = PyExportFlatVector("FlatVector"); 
-// class_<Vector<double>, bases<Vector<double> >  > PyVectorD = PyExportVector("Vector"); 
-
-// auto PyFlatVectorD = PyExportFlatVector("FlatVector"); 
-// auto PyVectorD = PyExportVector("Vector"); 
-
-// void PythonEnvironment::Init() {
-// 
-//     Py_Initialize();
-//     main_module = import("__main__");
-//     main_namespace = main_module.attr("__dict__");
-// 
-//     PyRun_SimpleString("def raiseIndexError():\n\traise IndexError(\"that's enough!\")\n");
-//     auto raiseIndexError = main_module.attr("raiseIndexError");
-// 
-//     main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
-//     main_namespace["Vector"] = PyExportVector("Vector");
-//     main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
-//     main_namespace["Matrix"] = PyExportMatrix("Matrix");
-// 
-// }
-// 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
