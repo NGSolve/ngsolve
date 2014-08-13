@@ -62,6 +62,8 @@ namespace ngstd
 #include "bandmatrix.hpp"
 #include "tensor.hpp"
 
+#include "cuda_bla.hpp"
+
 namespace ngbla
 {
 
