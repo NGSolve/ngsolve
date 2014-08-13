@@ -13,7 +13,7 @@ using namespace boost::python;
 using std::string;
 using std::ostringstream;
 
-PythonEnvironment PythonEnvironment::instance;
+PythonEnvironment PythonEnvironment::py_env;
 
 template<typename T>
 struct PyVec : public T {
@@ -93,45 +93,66 @@ T *createObject( int size, double *data=0 ) {
 }
 
 ////////////////////////////////////////////////////////////
-void Assign(FlatVector<double> &self, FlatVector<double> &v, double s) {
-//     cout << "assign: " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TVEC, typename TSCAL = double>
+void Assign(TVEC&self, TVEC&v, double s) {
     self = s*v;
 }
 
-void Add(FlatVector<double> &self, FlatVector<double> &v, double s) {
-//     cout << "add   : " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TVEC, typename TSCAL = double>
+void Add(TVEC&self, TVEC&v, double s) {
     self += s*v;
 }
 
-void Mult(FlatMatrix<double> &self, FlatVector<double> &x, FlatVector<double> &y, double s) {
-//     cout << "add   : " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TMAT, typename TVEC, typename TSCAL = double>
+void Mult(TMAT &self, TVEC&x, TVEC&y, double s) {
     y = s*self*x;
 }
 
-void MultAdd(FlatMatrix<double> &self, FlatVector<double> &x, FlatVector<double> &y, double s) {
-//     cout << "add   : " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TMAT, typename TVEC, typename TSCAL = double>
+void MultAdd(TMAT &self, TVEC&x, TVEC&y, double s) {
     y += s*self*x;
 }
 
-void MultTrans(FlatMatrix<double> &self, FlatVector<double> &x, FlatVector<double> &y, double s) {
-//     cout << "add   : " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TMAT, typename TVEC, typename TSCAL = double>
+void MultTrans(TMAT &self, TVEC&x, TVEC&y, double s) {
     y = s*Trans(self)*x;
 }
 
-void MultTransAdd(FlatMatrix<double> &self, FlatVector<double> &x, FlatVector<double> &y, double s) {
-//     cout << "add   : " << s << "\t" << &self[0] << '\t' << &v[0] << endl;
+template<typename TMAT, typename TVEC, typename TSCAL = double>
+void MultTransAdd(TMAT &self, TVEC&x, TVEC&y, double s) {
     y += s*Trans(self)*x;
-}
+}       
+
+template< typename T, typename TELEM = double >
+struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOperator<T,TELEM> > {
+    friend class def_visitor_access;
+
+    template <class Tclass>
+        void visit(Tclass& c) const
+        {
+            c
+                .def("__getitem__", &PyDefBracketOperator<T,TELEM>::Get)
+                .def("__setitem__", &PyDefBracketOperator<T,TELEM>::Set)
+                ;
+        }
+
+    static TELEM Get(T& self, int i) { return self[i]; } 
+    static void Set(T& self, int i, TELEM val) { self[i] = val; }
+};
+
 
 class_<FlatVector<double> > &PyExportFlatVector(const char *name) {
     return class_<FlatVector<double> >(name)
         .def(init<int, double *>())
         .def("__str__", &PyToString<FlatVector<double> >)
         .def("__len__", &PyVecLen<FlatVector<double> >)
-        .def("__getitem__", &PyVecGet<FlatVector<double> >)
-        .def("__setitem__", &PyVecSet<FlatVector<double> >)
-        .def("Assign", &Assign)
-        .def("Add", &Add)
+//         .def("__getitem__", &PyVecGet<FlatVector<double> >)
+//         .def("__setitem__", &PyVecSet<FlatVector<double> >)
+//          .def(my_def_visitor())
+         .def(PyDefBracketOperator<FlatVector<double>, double>())
+            
+//         .def("Assign", &Assign)
+//         .def("Add", &Add)
         .def(self+=self)
         .def(self-=self)
         .def(self*=double())
@@ -155,10 +176,10 @@ class_<FlatMatrix<double> > &PyExportFlatMatrix(const char *name) {
 //         .def("__setitem__", &PyVecSet<FlatMatrix<double> >)
 //         .def("Assign", &Assign)
 //         .def("Add", &Add)
-        .def("Mult", &Mult)
-        .def("MultAdd", &MultAdd)
-        .def("MultTrans", &MultTrans)
-        .def("MultTransAdd", &MultTransAdd)
+        .def("Mult", &Mult<FlatMatrix<double>, FlatVector<double>, double>)
+        .def("MultAdd", &MultAdd<FlatMatrix<double>, FlatVector<double>, double>)
+        .def("MultTrans", &MultTrans<FlatMatrix<double>, FlatVector<double>, double>)
+        .def("MultTransAdd", &MultTransAdd<FlatMatrix<double>, FlatVector<double>, double>)
         .def("Get", &PyMatGet<FlatMatrix<double> >)
         .def("Set", &PyMatSet<FlatMatrix<double> >)
         .def(self+=self)
