@@ -136,6 +136,7 @@ AC_ARG_ENABLE([cuda],
 AM_CONDITIONAL([NGSCUDA], [test x$cudaon = xtrue])
 
 AM_PATH_PYTHON([3.2])
+echo "python version = $PYTHON_VERSION"
 echo "python dir = $pythondir"
 echo "python = $PYTHON"
 echo "pythonprefix = $PYTHON_PREFIX"
@@ -143,7 +144,7 @@ echo "pythonprefix = $PYTHON_PREFIX"
 
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
-	[CXXFLAGS+=" -DNGS_PYTHON -I/usr/include/python3.4"]	
+	[CXXFLAGS+=" -DNGS_PYTHON -I/usr/include/python$(PYTHON_VERSION)nixda"]	
 	)
 # 	[LDFLAGS+=" -lboost_python-py34  -lpython3.4m"]
 
