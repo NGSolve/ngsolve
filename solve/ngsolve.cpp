@@ -335,6 +335,11 @@ int NGS_LoadPDE (ClientData clientData,
           pde->LoadPDE (argv[1]);
 	  pde->PrintReport (*testout);
 
+#ifdef NGS_PYTHON
+          cout << "set python mesh" << endl;
+          PythonEnvironment::getInstance().main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+#endif
+
           int port = pde -> GetConstant ("port", true);
           if (port)
             {
