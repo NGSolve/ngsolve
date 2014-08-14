@@ -142,8 +142,24 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
                 ;
         }
 
-    static TELEM Get(T& self, int i) { return self[i]; } 
-    static void Set(T& self, int i, TELEM val) { self[i] = val; }
+    static TELEM Get(T& self, int i) { 
+        if( i<self.Size() && i>=0 )
+            return self[i];
+        RaiseIndexError();
+        return TELEM();
+    } 
+
+    static void Set(T& self, int i, TELEM val) {
+        if( i<self.Size() && i>=0 )
+            self[i] = val;
+        else
+            RaiseIndexError();
+    }
+
+    static void RaiseIndexError() {
+        PythonEnvironment::getInstance().exec("raise IndexError()\n");
+    }
+
 };
 
 //////////////////////////////////////////////////////////////////////
