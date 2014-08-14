@@ -24,7 +24,9 @@ $(top_builddir)/basiclinalg/libngbla.la		\
 $(top_builddir)/multigrid/libngmg.la		\
 $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
-libngsolve_la_LDFLAGS = -avoid-version -lboost_python-py$(PYTHON_VERSION)  -lpython3.2mu
+libngsolve_la_LDFLAGS = -avoid-version
+libngsolve_la_LDFLAGS += -lboost_python-py34 -lpython3.4m
+# libngsolve_la_LDFLAGS += -lboost_python-py32 -lpython3.2mu
 #   -rdynamic
 
 
