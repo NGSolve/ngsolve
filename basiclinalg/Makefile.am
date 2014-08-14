@@ -3,7 +3,8 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include -I/usr/include/python$(P
 lib_LTLIBRARIES = libngbla.la
 
 libngbla_la_SOURCES = bandmatrix.cpp calcinverse.cpp cholesky.cpp \
-eigensystem.cpp vecmat.cpp LapackGEP.cpp LapackInterface.hpp python_bla.cpp
+eigensystem.cpp vecmat.cpp LapackGEP.cpp LapackInterface.hpp 
+# python_bla.cpp
 
 libngbla_la_LIBADD = $(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS) $(PYTHON_LIBS)
 # libngbla_la_LIBADD += -lgmp -lgmpxx
