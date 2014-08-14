@@ -134,7 +134,8 @@ class PythonEnvironment {
                     AcquireGIL gil_lock;
                     py_env.pythread_id = std::this_thread::get_id();
 
-                    py_env.main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+                    if (pde)
+                      py_env.main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
 
                     py_env.exec_file(init_file_.c_str());
                     }
