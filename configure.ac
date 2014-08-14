@@ -145,6 +145,7 @@ echo "pythonprefix = $PYTHON_PREFIX"
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
 	[CXXFLAGS+=" -DNGS_PYTHON -I/usr/include/python$(PYTHON_VERSION)nixda"]	
+        [AC_SUBST([PYTHON_LIBS], ["-lboost_python-py32 -lpython3.2mu"])]
 	)
 # 	[LDFLAGS+=" -lboost_python-py34  -lpython3.4m"]
 
