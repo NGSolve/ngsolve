@@ -60,14 +60,10 @@ class PythonEnvironment {
         if(pythread_id != mainthread_id) {
             cout << "Python thread already running!" << endl;
         } else {
-            new std::thread([](string init_file_) {
+            std::thread([](string init_file_) {
                     try{
                     AcquireGIL gil_lock;
                     py_env.pythread_id = std::this_thread::get_id();
-
-                    if (pde)
-                      py_env.main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
-
                     py_env.exec_file(init_file_.c_str());
                     }
                     catch(bp::error_already_set const &) {
@@ -75,7 +71,7 @@ class PythonEnvironment {
                     }
                     cout << "Python shell finished." << endl;
                     py_env.pythread_id = py_env.mainthread_id;
-                    }, initfile);
+                    }, initfile).detach();
         }
     }
 
