@@ -178,6 +178,7 @@ class PyIterator {
     TELEM Next() { 
         if(index<startindex+size) return v[index++];
         else PythonEnvironment::getInstance().exec("raise StopIteration()\n");
+        return TELEM();
     }
 
     static void Export () {
