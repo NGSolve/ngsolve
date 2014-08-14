@@ -7,6 +7,8 @@ void PyExportBla(PythonEnvironment &py_env) {
     py_env["FlatVector"] = bp::class_<FVD >("FlatVector")
         .def(PyDefVector<FVD, double>()) 
         .def(PyDefToString<FVD >())
+        .def("Assign", FunctionPointer( [](FVD &self, FVD &v, double s) { self  = s*v; }) )
+        .def("Add",    FunctionPointer( [](FVD &self, FVD &v, double s) { self += s*v; }) )
         .def(bp::init<int, double *>())
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
