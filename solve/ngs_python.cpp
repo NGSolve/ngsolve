@@ -8,6 +8,7 @@ using namespace ngsolve;
 
 #include "ngs_python.hpp"
 #include "../basiclinalg/python_bla.hpp"
+#include "../basiclinalg/python_bla.cpp"  // a hack
 
 using std::string;
 using std::ostringstream;
