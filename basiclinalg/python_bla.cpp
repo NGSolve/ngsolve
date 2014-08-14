@@ -3,9 +3,10 @@
 #include "python_bla.hpp"
 
 void PyExportBla(PythonEnvironment &py_env) {
-    py_env["FlatVector"] = bp::class_<FlatVector<double> >("FlatVector")
-        .def(PyDefVector<FlatVector<double>, double>()) 
-        .def(PyDefToString<FlatVector<double> >())
+    typedef FlatVector<double> FVD;
+    py_env["FlatVector"] = bp::class_<FVD >("FlatVector")
+        .def(PyDefVector<FVD, double>()) 
+        .def(PyDefToString<FVD >())
         .def(bp::init<int, double *>())
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
@@ -36,8 +37,24 @@ void PyExportBla(PythonEnvironment &py_env) {
         .def(bp::init<int>())
         ;
 
-//             py_env["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
-//             py_env["Matrix"] = PyExportMatrix("Matrix");
+    typedef FlatMatrix<double> FMD;
+    py_env["FlatMatrix"] = bp::class_<FlatMatrix<double> >("FlatMatrix")
+        .def(PyDefToString<FMD>())
+        .def("Mult",        FunctionPointer( [](FMD &m, FVD &x, FVD &y, double s) { y  = s*m*x; }) )
+        .def("MultAdd",     FunctionPointer( [](FMD &m, FVD &x, FVD &y, double s) { y += s*m*x; }) )
+        .def("MultTrans",   FunctionPointer( [](FMD &m, FVD &x, FVD &y, double s) { y  = s*Trans(m)*x; }) )
+        .def("MultTransAdd",FunctionPointer( [](FMD &m, FVD &x, FVD &y, double s) { y += s*Trans(m)*x; }) )
+        .def("Get", FunctionPointer( [](FMD &m, int i, int j)->double { return m(i,j); } ) )
+        .def("Set", FunctionPointer( [](FMD &m, int i, int j, double val) { m(i,j) = val; }) )
+        .def(bp::self+=bp::self)
+        .def(bp::self-=bp::self)
+        .def(bp::self*=double())
+        ;
+
+    py_env["Matrix"] = bp::class_<Matrix<double>, bp::bases<FMD> >("Matrix")
+        .def(bp::init<int, int>())
+        ;
+
 }
 
 #endif // NGS_PYTHON
