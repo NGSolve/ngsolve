@@ -623,34 +623,10 @@ int NGS_PythonShell (ClientData clientData,
                     int argc, tcl_const char *argv[])
 {
 #ifdef NGS_PYTHON
-
-  cout << "try to init python" << endl;
-
-  /*
-  std::thread testthread([&]() {
-			 cout << "hy from thread" << endl;
-		       });
-  
-  cout << "xxx 2" << endl;
-  */
-  
   string initfile = netgen::ngdir + dirslash + "init.py";
   cout << "python init file = " << initfile << endl;
   auto py_env = PythonEnvironment::getInstance();
-
   py_env.Spawn(initfile);
-
-//   std::thread * pythread = 
-//       new std::thread([&]() {
-//               cout << "init python, new4" << endl;
-//               auto py_env = PythonEnvironment::getInstance();
-//               string initfile = netgen::ngdir + dirslash + "init.py";
-//               cout << "python init file = " << initfile << endl;
-//               py_env.exec_file(initfile.c_str());
-// 
-//               });
-//     pythread->join();
-//     Py_Finalize();
   return TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
