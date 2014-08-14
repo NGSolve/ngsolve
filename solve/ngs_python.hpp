@@ -1,54 +1,21 @@
+#ifndef NGS_PYTHON_HPP___
+#define NGS_PYTHON_HPP___
+#ifdef NGS_PYTHON
 
 #include <boost/python.hpp>
 #include <solve.hpp>
 #include <thread>
-
 namespace bp = boost::python;
 
-bp::class_<FlatVector<double> > &PyExportFlatVector(const char *name);
-bp::class_<Vector<double>, bp::bases<FlatVector<double> > > PyExportVector(const char *name);
-bp::class_<FlatMatrix<double> > &PyExportFlatMatrix(const char *name);
-bp::class_<Matrix<double>, bp::bases<FlatMatrix<double> > > PyExportMatrix(const char *name);
-
-bp::class_<FlatArray<int> > &PyExportFlatArray(const char *name);
-bp::class_<Array<int>, bp::bases<FlatArray<int> > > PyExportArray(const char *name);
-
-
-//////////////////////////////////////////////////////////////////////
-// Lambda to function pointer conversion
-template <typename Function>
-struct function_traits
-: public function_traits<decltype(&Function::operator())>
-{};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct function_traits<ReturnType(ClassType::*)(Args...) const>
-{
-    typedef ReturnType (*pointer)(Args...);
-};
-
-template <typename Function>
-    typename function_traits<Function>::pointer
-FunctionPointer (const Function& lambda)
-{
-    return static_cast<typename function_traits<Function>::pointer>(lambda);
-}
-//////////////////////////////////////////////////////////////////////
 
 using namespace ngsolve;
-using namespace boost::python;
 namespace bp = boost::python;
 
 namespace netgen {
     extern string ngdir;
 }
 
-extern bp::object raiseIndexError;
 extern AutoPtr<ngsolve::PDE> pde;
-// extern bp::class_<FlatVector<double> > *PyFlatVectorD;
-// extern bp::class_<Vector<double>, bp::bases<FlatVector<double> >  > *PyVectorD;
-// extern auto PyFlatVectorD -> decltype(PyExportFlatVector("FlatVector")); 
-// extern auto PyVectorD -> decltype(PyExportVector("Vector")); 
 
 void InitPyNgs();
 class AcquireGIL 
@@ -69,61 +36,25 @@ class AcquireGIL
 class PythonEnvironment {
     public:
     static PythonEnvironment py_env;
-    bp::object main_module; // = import("__main__");
-    bp::object main_namespace; // = main_module.attr("__dict__");
+    bp::object main_module; 
+    bp::object main_namespace; 
 
     std::thread::id pythread_id;
     std::thread::id mainthread_id;
 
     // Private constructor
-    PythonEnvironment() {
-        mainthread_id = std::this_thread::get_id();
-        pythread_id = std::this_thread::get_id();
-        cout << "******************************" << endl;
-        cout << "PythonEnvironment Constructor!" << endl;
-        cout << "******************************" << endl;
-        Py_Initialize();
-        PyEval_InitThreads();
-
-        try{
-            main_module = bp::import("__main__");
-            main_namespace = main_module.attr("__dict__");
-
-            main_namespace["FlatVector"] = PyExportFlatVector("FlatVector");
-            main_namespace["Vector"] = PyExportVector("Vector");
-            main_namespace["FlatMatrix"] = PyExportFlatMatrix("FlatMatrix");
-            main_namespace["Matrix"] = PyExportMatrix("Matrix");
-
-            main_namespace["FlatArray"] = PyExportFlatArray("FlatArray");
-            main_namespace["Array"] = PyExportArray("Array");
-
-            void (*foo)(Ngs_Element &) = [](Ngs_Element &el){ cout << "hallo!" << endl; };
-
-            bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
-                .add_property("vertices2", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ))
-                .add_property("vertices", static_cast<Array<int> (*)(Ngs_Element &el)>([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ));
-
-            bp::class_<MeshAccess>("MeshAccess", bp::no_init)
-                .def("GetNV", &MeshAccess::GetNV)
-                .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
-                        (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
-                .def("GetElementVertices", static_cast<void (MeshAccess::*)(int, Array<int> &) const>( &MeshAccess::GetElVertices))
-                .add_property ("nv", &MeshAccess::GetNV);
-        }
-        catch(bp::error_already_set const &) {
-            PyErr_Print();
-        }
-        PyEval_ReleaseLock();
-        cout << "******************************" << endl;
-        cout << "Constructor finished!" << endl;
-        cout << "******************************" << endl;
-    }
+    PythonEnvironment();
 
     public:
     // Singleton pattern
     static PythonEnvironment &getInstance() {
         return py_env;
     }
+    
+    auto operator[] ( const char *s ) -> decltype(main_namespace[s]) {
+        return main_namespace[s];
+    }
+
 
     void Spawn(string initfile) {
         if(pythread_id != mainthread_id) {
@@ -146,8 +77,10 @@ class PythonEnvironment {
                     py_env.pythread_id = py_env.mainthread_id;
                     }, initfile);
         }
-        //         PyRun_SimpleString("def raiseIndexError():\n\traise IndexError(\"that's enough!\")\n");
-        //         auto raiseIndexError = main_module.attr("raiseIndexError");
+    }
+
+    void exec(const char *s) {
+        bp::exec(s);
     }
 
     void exec_file(const char *file) {
@@ -164,7 +97,96 @@ class PythonEnvironment {
 };
 
 
+//////////////////////////////////////////////////////////////////////
+// Lambda to function pointer conversion
+template <typename Function>
+struct function_traits
+: public function_traits<decltype(&Function::operator())> {};
+
+template <typename ClassType, typename ReturnType, typename... Args>
+struct function_traits<ReturnType(ClassType::*)(Args...) const> {
+    typedef ReturnType (*pointer)(Args...);
+};
+
+template <typename Function>
+typename function_traits<Function>::pointer
+FunctionPointer (const Function& lambda) {
+    return static_cast<typename function_traits<Function>::pointer>(lambda);
+}
+
+
+//////////////////////////////////////////////////////////////////////
+template< typename T>
+struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
+    template <class Tclass>
+        void visit(Tclass& c) const {
+            c.def("__str__", &PyDefToString<T>::ToString);
+        }
+
+    static string ToString(T &t ) {
+        std::ostringstream s;
+        s << t;
+        return s.str();
+    }
+};
+
+
+//////////////////////////////////////////////////////////////////////
+template< typename T, typename TELEM = double >
+struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOperator<T,TELEM> > {
+    template <class Tclass>
+        void visit(Tclass& c) const {
+            c
+                .def("__getitem__", &PyDefBracketOperator<T,TELEM>::Get)
+                .def("__setitem__", &PyDefBracketOperator<T,TELEM>::Set)
+                ;
+        }
+
+    static TELEM Get(T& self, int i) { return self[i]; } 
+    static void Set(T& self, int i, TELEM val) { self[i] = val; }
+};
+
+//////////////////////////////////////////////////////////////////////
+// Python iterator protocoll
+template <typename T>
+class PyIterator {
+    T &v;
+    int size;
+    int index;
+    int startindex;
+    typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
+    
+    public:
+    PyIterator(T &v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
+
+    TELEM Next() { 
+        if(index<startindex+size) return v[index++];
+        else PythonEnvironment::getInstance().exec("raise StopIteration()\n");
+    }
+
+    static void Export () {
+        bp::class_<PyIterator<T> >("PyIterator", bp::no_init).def("__next__", &PyIterator<T>::Next);
+    }
+};
 
 
 
 
+//////////////////////////////////////////////////////////////////////
+// Export len, bracket operator and iterator protocoll at once
+template< typename T,  typename TELEM = double>
+struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
+    template <class Tclass>
+        void visit(Tclass& c) const {
+            PyIterator<T>::Export();
+            c
+                .def("__len__", FunctionPointer( []( T& v) { return v.Size();} ) )
+                .def(PyDefBracketOperator<T, TELEM>())
+                .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T>(v, v.Size(), 0 ); }))
+                ;
+        }
+};
+
+
+#endif // NGS_PYTHON
+#endif // NGS_PYTHON_HPP___
