@@ -6,9 +6,7 @@ using namespace ngsolve;
 #include <ostream>
 #include <type_traits>
 
-#include "ngs_python.hpp"
-#include "../basiclinalg/python_bla.hpp"
-#include "../basiclinalg/python_bla.cpp"  // a hack
+#include "python_ngstd.hpp"
 
 using std::string;
 using std::ostringstream;
@@ -26,7 +24,7 @@ PythonEnvironment::PythonEnvironment() {
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
 
-        PyExportBla(*this);
+//         PyExportBla(*this);
 
         void (*foo)(Ngs_Element &) = [](Ngs_Element &el){ cout << "hallo!" << endl; };
 

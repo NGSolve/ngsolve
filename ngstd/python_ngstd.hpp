@@ -1,5 +1,5 @@
-#ifndef NGS_PYTHON_HPP___
-#define NGS_PYTHON_HPP___
+#ifndef PYTHON_NGSTD_HPP___
+#define PYTHON_NGSTD_HPP___
 #ifdef NGS_PYTHON
 
 #include <boost/python.hpp>
@@ -202,4 +202,4 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
 
 
 #endif // NGS_PYTHON
-#endif // NGS_PYTHON_HPP___
+#endif // PYTHON_NGSTD_HPP___
