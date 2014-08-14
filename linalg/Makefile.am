@@ -1,5 +1,4 @@
 
-
 AM_CPPFLAGS = -I$(top_builddir)  -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES)
 
 lib_LTLIBRARIES = libngla.la
@@ -24,7 +23,7 @@ endif
 
 include_HEADERS = basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp special_matrix.hpp superluinverse.hpp mumpsinverse.hpp vvector.hpp elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp
 
-libngla_la_LDFLAGS = -avoid-version  $(PARDISO_LIBS) $(MUMPS_LIBS) $(SUPERLU_LIBS)  $(LAPACK_LIB)
+libngla_la_LDFLAGS = -avoid-version  $(PARDISO_LIBS) $(MUMPS_LIBS) $(SUPERLU_LIBS)  $(LAPACK_LIBS) $(PYTHON_LIBS)
 
 
 
