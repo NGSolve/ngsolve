@@ -1,5 +1,8 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+#include <bla.hpp>
+using namespace ngbla;
+
 
 struct PyExportBla {
     PyExportBla() {

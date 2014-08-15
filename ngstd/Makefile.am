@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include -I/usr/include/python$(PYTHON_VERSION)
 
 lib_LTLIBRARIES = libngstd.la
 
