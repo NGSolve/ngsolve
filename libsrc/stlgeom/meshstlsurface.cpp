@@ -575,7 +575,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
   double starttime = GetTime ();
   mesh.SurfaceArea().ReCalc();
 
-  int oldnp = mesh.GetNP();
+  // int oldnp = mesh.GetNP();
 
   Array<int,PointIndex::BASE> compress(mesh.GetNP());
   compress = 0;
@@ -919,13 +919,10 @@ int MeshingSTLSurface ::
 IsLineVertexOnChart (const Point3d & p1, const Point3d & p2,
 		     int endpoint, const PointGeomInfo & gi)
 {
-  Vec3d baselinenormal = geom.meshtrignv;
-
   int lineendtrig = gi.trignum;
-
-  
   return geom.TrigIsInOC (lineendtrig, geom.meshchart);
 
+  // Vec3d baselinenormal = geom.meshtrignv;
   //  Vec3d linenormal = geom.GetTriangleNormal (lineendtrig);
   //  return ( (baselinenormal * linenormal) > cos (30 * (M_PI/180)) );
 }

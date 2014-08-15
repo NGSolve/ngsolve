@@ -74,13 +74,14 @@ Meshing3 :: ~Meshing3 ()
 
 
 
+/*
+  // was war das ????
 static double CalcLocH (const Array<Point3d> & locpoints,
 			const Array<MiniElement2d> & locfaces,
 			double h)
 {
   return h;
 
-  // was war das ????
   
   int i, j;
   double hi, h1, d, dn, sum, weight, wi;
@@ -138,7 +139,7 @@ static double CalcLocH (const Array<Point3d> & locpoints,
 
   return sum/weight;
 }
-
+*/
 
 PointIndex Meshing3 :: AddPoint (const Point3d & p, PointIndex globind)
 {

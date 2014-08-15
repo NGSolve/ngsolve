@@ -3871,7 +3871,7 @@ namespace netgen
 	
 	const bool uselocalworsening = false;
 	
-	bool repaired = false;
+	// bool repaired = false;
 	
 	Validate(mesh,bad_elts,pure_badness,max_worsening,uselocalworsening);
 	
@@ -3906,7 +3906,7 @@ namespace netgen
 				pure_badness,
 				max_worsening,uselocalworsening,
 				idmaps);
-		repaired = true;
+		// repaired = true;
 		repaired_once = true;
 	      }
 	    catch(NgException & ex)

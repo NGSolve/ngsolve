@@ -23,7 +23,6 @@ void STLGeometry :: MakeAtlas(Mesh & mesh)
   int timer2 = NgProfiler::CreateTimer ("makeatlas - part 2");
   int timer3 = NgProfiler::CreateTimer ("makeatlas - part 3");
   int timer4 = NgProfiler::CreateTimer ("makeatlas - part 4");
-  int timer4a = NgProfiler::CreateTimer ("makeatlas - part 4a");
   int timer5 = NgProfiler::CreateTimer ("makeatlas - part 5");
 
   PushStatusF("Make Atlas");

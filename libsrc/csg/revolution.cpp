@@ -801,7 +801,7 @@ namespace netgen
 	const LineSeg<2> * linesegment = 
 	  dynamic_cast<const LineSeg<2> *>(&faces[intersecting_faces[0]]->GetSpline());
 		
-	Vec<2> t1,t2;
+	Vec<2> t1(0),t2(0);
 
 	if(linesegment)
 	  t1 = linesegment->StartPI() - linesegment->EndPI();

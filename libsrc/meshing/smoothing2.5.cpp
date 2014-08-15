@@ -54,6 +54,7 @@ namespace netgen
     Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
 
+    /*
     bool mixed = 0;
     for (i = 0; i < seia.Size(); i++)
       if (mesh[seia[i]].GetNP() != 3)
@@ -61,7 +62,7 @@ namespace netgen
 	  mixed = 1;
 	  break;
 	}
-
+    */
 
     int loci;
     double fact;

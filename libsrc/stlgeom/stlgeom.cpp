@@ -2678,7 +2678,7 @@ void STLGeometry :: AddFaceEdges()
       {
 	const STLChart& c = GetChart(chartindex.Get(i));
         // bool foundone = false;
-        int longest_ap1, longest_ap2 = -1;
+        int longest_ap1 = -1, longest_ap2 = -1;
         double maxlen = -1;
 	for (int j = 1; j <= c.GetNChartT(); j++)
 	  {
