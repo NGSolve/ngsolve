@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir) $(GOLD_INCLUDE) -I$(top_srcdir)/include $(TCL_INCLUDES) $(HYPRE_INCLUDES) $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) -I/usr/include/python$(PYTHON_VERSION)
+AM_CPPFLAGS = -I$(top_builddir) $(GOLD_INCLUDE) -I$(top_srcdir)/include $(TCL_INCLUDES) $(HYPRE_INCLUDES) $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES)
 
 lib_LTLIBRARIES = libngcomp.la
 
