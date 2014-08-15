@@ -41,7 +41,7 @@ namespace netgen
 
 
 #ifdef NGS_PYTHON
-#include "ngs_python.hpp"
+#include "../ngstd/python_ngstd.hpp"
 #endif
 
 
