@@ -3,19 +3,22 @@
 #ifdef NGS_PYTHON
 
 #include <boost/python.hpp>
-#include <solve.hpp>
+// #include <solve.hpp>
+#include <ngstd.hpp>
 #include <thread>
 namespace bp = boost::python;
 
 
-using namespace ngsolve;
+// using namespace ngsolve;
 namespace bp = boost::python;
 
+/*
 namespace netgen {
     extern string ngdir;
 }
 
 extern AutoPtr<ngsolve::PDE> pde;
+*/
 
 void InitPyNgs();
 class AcquireGIL 
@@ -89,7 +92,7 @@ class PythonEnvironment {
     }
 
     virtual ~PythonEnvironment() { }
-    static Array<int> NgsElementGetVertices (Ngs_Element & el) { return Array<int> (el.Vertices()); }
+  // static Array<int> NgsElementGetVertices (Ngs_Element & el) { return Array<int> (el.Vertices()); }
 };
 
 

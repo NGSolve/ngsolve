@@ -14,13 +14,14 @@ namespace ngcomp
      High Order Finite Element Space
   */
 
+  typedef size_t index_edge;
 
   class NGS_DLL_HEADER H1HighOrderFESpace : public FESpace
   {
   protected:
     int level;
 
-    Array<int> first_edge_dof;
+    Array<int,index_edge> first_edge_dof;
     Array<int> first_face_dof;
     Array<int> first_element_dof;
 
