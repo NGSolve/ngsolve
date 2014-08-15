@@ -372,7 +372,6 @@ namespace netgen
 	static int timer2a = NgProfiler::CreateTimer ("topology::buildfacesa");
 	static int timer2b = NgProfiler::CreateTimer ("topology::buildfacesb");
 	static int timer2c = NgProfiler::CreateTimer ("topology::buildfacesc");
-	static int timer2d = NgProfiler::CreateTimer ("topology::buildfacesd");
 	NgProfiler::RegionTimer reg2 (timer2);
 
 	if (id == 0)

@@ -584,7 +584,9 @@ namespace netgen
     glDisable (GL_TEXTURE_1D);
     
     glEnable (GL_COLOR_MATERIAL);
-    GLfloat textcol[3] = { 1 - backcolor, 1 - backcolor, 1 - backcolor };
+    GLfloat textcol[3] = { GLfloat(1 - backcolor), 
+                           GLfloat(1 - backcolor), 
+                           GLfloat(1 - backcolor) };
     glColor3fv (textcol);
     
     glPushAttrib (GL_LIST_BIT);
@@ -638,9 +640,9 @@ namespace netgen
 
     glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 
-    GLfloat textcol[3] = { 1 - backcolor,
-			   1 - backcolor,
-			   1 - backcolor };
+    GLfloat textcol[3] = { GLfloat(1 - backcolor),
+			   GLfloat(1 - backcolor),
+			   GLfloat(1 - backcolor) };
     glColor3fv (textcol);
 
     glLineWidth (1.0f);
@@ -710,9 +712,9 @@ namespace netgen
     glDisable (GL_LIGHTING);
 
     glEnable (GL_COLOR_MATERIAL);
-    GLfloat textcol[3] = { 1 - backcolor,
-			   1 - backcolor,
-			   1 - backcolor };
+    GLfloat textcol[3] = { GLfloat(1 - backcolor),
+			   GLfloat(1 - backcolor),
+			   GLfloat(1 - backcolor) };
     glColor3fv (textcol);
     glLineWidth (1.0f);
 

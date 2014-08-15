@@ -3678,7 +3678,7 @@ namespace netgen
         { 1, 2 }, { 1, 3 }, { 2, 3 } };
 
     double edgelam[6];
-    Point<3> edgep[6];
+    // Point<3> edgep[6];
     double nodevali[4];
 
     int cntce;
@@ -4540,7 +4540,7 @@ namespace netgen
 	    
             for (int i = 0; i < vssolution.soldata.Size(); i++)
               {
-                if ( (strlen (vssolution.soldata[i]->name) == pointpos-1) &&
+                if ( (strlen (vssolution.soldata[i]->name) == size_t(pointpos-1)) &&
                      (strncmp (vssolution.soldata[i]->name, scalname, pointpos-1) == 0) )
                   {
                     vssolution.scalfunction = i;

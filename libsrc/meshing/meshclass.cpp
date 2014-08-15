@@ -1592,7 +1592,7 @@ namespace netgen
         surfelementht -> Set (i3, sei);   // war das wichtig ???    sel.GetIndex());
       }
 
-    int np = GetNP();
+    // int np = GetNP();
 
     if (dimension == 3)
       {

@@ -411,9 +411,9 @@ namespace netgen
 	vispar.drawelementnumbers)
       {
 	//     	glEnable (GL_COLOR_MATERIAL);
-	GLfloat textcol[3] = { 1 - backcolor,
-			       1 - backcolor,
-			       1 - backcolor };
+	GLfloat textcol[3] = { float(1-backcolor),
+                               float(1-backcolor),
+                               float(1-backcolor) };
 	glColor3fv (textcol);
 	glNormal3d (0, 0, 1);
 	glPushAttrib (GL_LIST_BIT);
@@ -1816,16 +1816,6 @@ namespace netgen
 	*/
       };
 
-    static float tetcols_ghost[4][4];
-
-    for (int j = 0; j < 4; j++)
-      {
-	for (int i = 0; i < 3; i++)
-	  tetcols_ghost[j][i] = tetcols[j][i];
-	tetcols_ghost[j][3] = 0.3; 
-      }
-
-
     CurvedElements & curv = mesh->GetCurvedElements();
 
 
@@ -3099,10 +3089,8 @@ namespace netgen
     MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
 			filledlist,selelement,selface,seledge,selpoint,selpoint2,locpi);
 
-    
 
-
-    GLdouble modelview[16], projection[16];
+    GLdouble /* modelview[16], */ projection[16];
     GLint viewport[4];
     GLdouble result[3];
 

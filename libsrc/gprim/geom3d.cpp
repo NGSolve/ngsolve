@@ -400,6 +400,14 @@ void Transpose (Vec3d & v1, Vec3d & v2, Vec3d & v3)
 }
 
 
+/*
+  gcc4.8.3  warning: array subscript is above array bounds [-Warray-bounds]
+ */
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
 int SolveLinearSystem (const Vec3d & col1, const Vec3d & col2,
 		       const Vec3d & col3, const Vec3d & rhs,
 		       Vec3d & sol)
@@ -518,6 +526,11 @@ int SolveLinearSystem (const Vec3d & col1, const Vec3d & col2,
   return 0;
   */
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 
 
 int SolveLinearSystemLS (const Vec3d & col1,

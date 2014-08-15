@@ -430,25 +430,12 @@ int Tcl_AppInit(Tcl_Interp * interp)
 // from the ngsolve shared library
 
 #ifdef LINKMKL
-
-typedef long int integer;
-#define F77_FUNC(func)  func ## _
-extern  "C" integer F77_FUNC(pardisoinit)
-    (void *, integer *, integer *, integer *, double *, integer *);
-
-
 extern "C" double ddot_(int *n, double *dx, int *incx, double *dy, 
                         int *incy);
-
-int mkldummy()
+void mkldummy()
 {
   int n = 1, one = 1;
   double a = 1, b = 1; 
   ddot_(&n, &a, &one, &b, &one);
-  /*
-  void * p;
-  integer li;
-  F77_FUNC(pardisoinit) (p, &li, &li, &li, &a, &li);
-  */
 }
 #endif
