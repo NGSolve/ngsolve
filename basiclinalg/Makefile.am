@@ -16,3 +16,4 @@ tensor.hpp cuda_bla.hpp
 
 libngbla_la_LDFLAGS = -avoid-version 
 
+dist_bin_SCRIPTS = bla.py

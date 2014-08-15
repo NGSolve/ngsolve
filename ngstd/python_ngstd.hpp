@@ -50,6 +50,7 @@ class PythonEnvironment {
         if(pythread_id != mainthread_id) {
             cout << "Python thread already running!" << endl;
         } else {
+            PyEval_ReleaseLock();
             std::thread([](string init_file_) {
                     try{
                     AcquireGIL gil_lock;
@@ -66,7 +67,7 @@ class PythonEnvironment {
     }
 
     void exec(const char *s) {
-        bp::exec(s);
+        bp::exec(s, main_namespace, main_namespace);
     }
 
     void exec_file(const char *file) {

@@ -46,5 +46,4 @@ ngs_LDADD = libngsolve.la \
 include_HEADERS = solve.hpp pde.hpp numproc.hpp 
 
 
-dist_bin_SCRIPTS = init.py
 
