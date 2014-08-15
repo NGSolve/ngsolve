@@ -125,6 +125,8 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
             c
                 .def("__getitem__", &PyDefBracketOperator<T,TELEM>::Get)
                 .def("__setitem__", &PyDefBracketOperator<T,TELEM>::Set)
+                .def("Get", &PyDefBracketOperator<T,TELEM>::Get)
+                .def("Set", &PyDefBracketOperator<T,TELEM>::Set)
                 ;
         }
 
