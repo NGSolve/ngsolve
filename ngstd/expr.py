@@ -131,6 +131,24 @@ class MatVecExpr(BinExpr):
     def __str__(self):
         return str(self.a) + ' + ' + str(self.b)
         
+def GetSlice(self, index):
+    if not isinstance(index,slice):
+        return self.Get(index)
+    index = index.indices(len(self))
+    if(index[2]!=1):
+        print("Slicing with 3 parameters not supported!")
+        return none
+    return self.Range(index[0], index[1])
+
+def SetSlice(self, index, other):
+    if not isinstance(index,slice):
+        self.Set(index, other)
+        return
+    index = index.indices(len(self))
+    if(index[2]!=1):
+        print("Slicing with 3 parameters not supported!")
+        return none
+    self.Range(index[0], index[1]).Assign(other, 1.0)
 
 
 
