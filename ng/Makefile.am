@@ -47,11 +47,12 @@ occgeom.tcl acisgeom.tcl netgen.ocf
 
 netgen_LDFLAGS = -export-dynamic
 
-if NGPYTHON
-AM_CPPFLAGS += -I/usr/include/python3.2 -DNGPYTHON
+# if NGPYTHON
+# AM_CPPFLAGS += -I/usr/include/python3.4 -DNGPYTHON
 # netgen_LDFLAGS += -lboost_python-py34 -lpython3.4m
-netgen_LDFLAGS += -lboost_python-py32 -lpython3.2mu	
-endif
+# netgen_LDFLAGS += -lpython3.4m
+# netgen_LDFLAGS += -lboost_python-py32 -lpython3.2mu	
+# endif
 
 
 # netgen_LDFLAGS = -rdynamic 

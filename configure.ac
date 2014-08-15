@@ -145,11 +145,15 @@ AC_ARG_ENABLE([mkl],
         [if test "$enableval" = yes; then mklon=true; else mklon=false; fi]
         )
 
+AM_PATH_PYTHON([3.2])
+AX_PYTHON_DEVEL([>= '3.2'])
 
 pythonon=false
 AC_ARG_ENABLE([python],
         [AS_HELP_STRING([--enable-python],[link boost python, necessary for ngsolve])],
         [if test "$enableval" = yes; then pythonon=true; else pythonon=false; fi]
+	[CXXFLAGS+=" $PYTHON_CPPFLAGS -DNGPYTHON"]
+	[LDFLAGS+=" $PYTHON_LDFLAGS"]
         )
 
 
