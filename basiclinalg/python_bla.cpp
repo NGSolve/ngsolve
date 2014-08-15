@@ -60,6 +60,9 @@ struct PyExportBla {
         py_env["Matrix"] = bp::class_<Matrix<double>, bp::bases<FMD> >("Matrix")
             .def(bp::init<int, int>())
             ;
+
+        // execute bla.py
+        py_env.exec("globals().update(run_module('bla',globals()))");
     }
 };
 
