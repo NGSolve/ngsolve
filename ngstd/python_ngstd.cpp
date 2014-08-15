@@ -21,9 +21,6 @@ PythonEnvironment::PythonEnvironment() {
     try{
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
-
-//         PyExportBla(*this);
-
     }
     catch(bp::error_already_set const &) {
         PyErr_Print();
