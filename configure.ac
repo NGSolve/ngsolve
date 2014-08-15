@@ -136,7 +136,11 @@ AC_ARG_ENABLE([cuda],
 AM_CONDITIONAL([NGSCUDA], [test x$cudaon = xtrue])
 
 AM_PATH_PYTHON([3.2])
-AX_PYTHON_DEVEL
+AX_PYTHON_DEVEL([>= '3.2'])
+
+# CXXFLAGS+=" $PYTHON_CPPFLAGS"
+# LDFLAGS+=" $PYTHON_LDFLAGS"
+
 AX_BOOST_BASE
 AX_BOOST_PYTHON
 
@@ -145,13 +149,14 @@ echo "from pythond devel: python cpp = $PYTHON_CPPFLAGS"
 echo "from pythond devel: python ld = $PYTHON_LDFLAGS"
 echo "from boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
 
-# CXXFLAGS+=" $PYTHON_CPPFLAGS"
+# why does it choose boost_python-py27 when available ????
+# AC_SUBST(BOOST_PYTHON_LIB, boost_python-py34)
+# echo "modified boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
 
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
-	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
-#        [AC_SUBST([PYTHON_LIBS], ["-lboost_python-py32"])]
-        [LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
+ 	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
+        [LDFLAGS+=" -l$BOOST_PYTHON_LIB $PYTHON_LDFLAGS"]
 	)
 
 echo "creating compiler wrapper ngscxx"

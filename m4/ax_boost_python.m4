@@ -67,7 +67,14 @@ ac_cv_boost_python,
  fi
  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
  #include <boost/python/module.hpp>
+ #include <boost/python.hpp>                           //JS
  using namespace boost::python;
+ /*
+ // JS: add some python 3 code to force linking to bp-3x  
+ class Hugo { };                                       //JS
+ void func() {                                         //JS
+ class_<Hugo>("Hugo", boost::python::no_init); }       //JS
+ */
  BOOST_PYTHON_MODULE(test) { throw "Boost::Python test."; }]],
 	[[return 0;]])],
 	ac_cv_boost_python=yes, ac_cv_boost_python=no)
@@ -83,7 +90,8 @@ if test "$ac_cv_boost_python" = "yes"; then
      ax_boost_python_lib=boost_python-$with_boost_python
    fi])
   BOOSTLIBDIR=`echo $BOOST_LDFLAGS | sed -e 's/@<:@^\/@:>@*//'`
-  for ax_lib in `ls $BOOSTLIBDIR/libboost_python*.so* $BOOSTLIBDIR/libboost_python*.dylib* $BOOSTLIBDIR/libboost_python*.a* 2>/dev/null | sed 's,.*/,,' | sed -e 's;^lib\(boost_python.*\)\.so.*$;\1;' -e 's;^lib\(boost_python.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_python.*\)\.a.*$;\1;' ` $ax_python_lib $ax_boost_python_lib boost_python; do
+# JS: added -py3 three times for force bp-py3x
+  for ax_lib in `ls $BOOSTLIBDIR/libboost_python-py3*.so* $BOOSTLIBDIR/libboost_python-py3*.dylib* $BOOSTLIBDIR/libboost_python-py3*.a* 2>/dev/null | sed 's,.*/,,' | sed -e 's;^lib\(boost_python.*\)\.so.*$;\1;' -e 's;^lib\(boost_python.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_python.*\)\.a.*$;\1;' ` $ax_python_lib $ax_boost_python_lib boost_python; do
     AC_CHECK_LIB($ax_lib, exit, [BOOST_PYTHON_LIB=$ax_lib break], , [$PYTHON_LDFLAGS])
   done
   AC_SUBST(BOOST_PYTHON_LIB)
