@@ -46,9 +46,11 @@
 
 
 #ifdef __INTEL_COMPILER
-#pragma warning (disable:175)    // range check 
-#pragma warning (disable:597)    // implicit conversion (2014)
-#pragma warning (disable:1292)   // unknown attribute
+// #pragma warning (disable:175)    // range check 
+// #pragma warning (disable:597)    // implicit conversion (2014)
+
+// unknown attribute __leaf__ in /usr/include/x86_64-linux-gnu/sys/sysmacros.h
+#pragma warning (disable:1292)  
 #endif
 
 
