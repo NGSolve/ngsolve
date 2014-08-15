@@ -136,18 +136,23 @@ AC_ARG_ENABLE([cuda],
 AM_CONDITIONAL([NGSCUDA], [test x$cudaon = xtrue])
 
 AM_PATH_PYTHON([3.2])
-echo "python version = $PYTHON_VERSION"
-echo "python dir = $pythondir"
-echo "python = $PYTHON"
-echo "pythonprefix = $PYTHON_PREFIX"
+AX_PYTHON_DEVEL
+AX_BOOST_BASE
+AX_BOOST_PYTHON
 
+echo "from path python:   python version = $PYTHON_VERSION"
+echo "from pythond devel: python cpp = $PYTHON_CPPFLAGS"
+echo "from pythond devel: python ld = $PYTHON_LDFLAGS"
+echo "from boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
+
+# CXXFLAGS+=" $PYTHON_CPPFLAGS"
 
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
-	[CXXFLAGS+=" -DNGS_PYTHON -I/usr/include/python$(PYTHON_VERSION)nixda"]	
-        [AC_SUBST([PYTHON_LIBS], ["-lboost_python-py32 -lpython3.2mu"])]
+	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
+#        [AC_SUBST([PYTHON_LIBS], ["-lboost_python-py32"])]
+        [LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
 	)
-# 	[LDFLAGS+=" -lboost_python-py34  -lpython3.4m"]
 
 echo "creating compiler wrapper ngscxx"
 echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx

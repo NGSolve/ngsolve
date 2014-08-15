@@ -1,4 +1,4 @@
-AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) -I/usr/include/python$(PYTHON_VERSION)
+AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) 
 
 lib_LTLIBRARIES = libngsolve.la
 bin_PROGRAMS =  ngs
@@ -26,7 +26,7 @@ $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)
 
 libngsolve_la_LDFLAGS = -avoid-version
 # libngsolve_la_LDFLAGS += -lboost_python-py34 -lpython3.4m
-libngsolve_la_LDFLAGS += $(PYTHON_LIBS)
+# libngsolve_la_LDFLAGS += $(PYTHON_LIBS)
 #   -rdynamic
 
 
