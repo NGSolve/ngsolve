@@ -107,6 +107,7 @@ struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
     template <class Tclass>
         void visit(Tclass& c) const {
             c.def("__str__", &PyDefToString<T>::ToString);
+            c.def("__repr__", &PyDefToString<T>::ToString);
         }
 
     static string ToString(T &t ) {

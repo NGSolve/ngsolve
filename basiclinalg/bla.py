@@ -6,7 +6,6 @@ FlatVector.expr = property(lambda self: VecExpr(self))
 FlatVector.data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))
 FlatVector.__add__ = lambda self,y: self.expr+Expr(y)
 FlatVector.__rmul__ = lambda self,y: y*self.expr 
-FlatVector.__repr__ = FlatVector.__str__
 FlatVector.__getitem__ = GetSlice
 FlatVector.__setitem__ = SetSlice
 
