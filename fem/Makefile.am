@@ -12,10 +12,8 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
 intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp   \
 scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp	      \
 hybridDG.cpp DGIntegrators.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp   \
-facethofe.cpp
-
-#  
-
+facethofe.cpp 
+# fem_kernels.cu
 # 
 
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		       \
@@ -34,4 +32,20 @@ diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp thcurlfe_impl.hpp
 
 libngfem_la_LDFLAGS = -avoid-version
 
+
+
+if NGSCUDA
+
+#
+# dost not yet work. we need the legendre coefficients extern, so we need -dc cuda compilation
+# 
+# NVCC = /usr/local/cuda-6.5/bin/nvcc
+# SUFFIXES = .cu
+# .cu.o:
+# 	$(NVCC) -arch compute_35 -code sm_35 -std=c++11 -O2 -I$(top_srcdir)/include  -dc -Xcompiler -fpic -DUSE_MYCOMPLEX -DHD="__host__ __device__" -c -o tmp.o $<
+# 	$(NVCC) -arch compute_35 -code sm_35 -Xcompiler -fpic -dlink tmp.o -o $@ -L/usr/local/cuda-6.5/lib64 -lcudadevrt -lcudart
+
+# libngfem_la_LIBADD += $(top_builddir)/fem/fem_kernels.o -L/usr/local/cuda-6.5/lib64  -lcudadevrt -lcudart
+
+endif
 
