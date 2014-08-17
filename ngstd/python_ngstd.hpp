@@ -70,6 +70,10 @@ class PythonEnvironment {
         bp::exec(s, main_namespace, main_namespace);
     }
 
+    void exec(const string s) {
+        bp::exec(s.c_str(), main_namespace, main_namespace);
+    }
+
     void exec_file(const char *file) {
         try{
             bp::exec_file(file, main_namespace, main_namespace);
@@ -193,6 +197,42 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
         }
 };
 
+//////////////////////////////////////////////////////////////////////
+// Enable numeric expressions for matrix class
+void PyEnableMatExpr(const char *class_name) {
+    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+
+    string cn(class_name);
+    py_env.exec(cn + ".expr = property(lambda self: MatExpr(self))");
+    py_env.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
+    py_env.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
+    py_env.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
+    py_env.exec(cn + ".__mul__ = lambda self,y: MatVecExpr(self.expr, Expr(y))");
+}
+
+//////////////////////////////////////////////////////////////////////
+// Enable numeric expressions for vector class
+void PyEnableVecExpr(const char *class_name) {
+    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+
+    string cn(class_name);
+    py_env.exec(cn + ".expr = property(lambda self: VecExpr(self))");
+    py_env.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
+    py_env.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
+    py_env.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
+    py_env.exec(cn + ".__getitem__ = GetSlice");
+    py_env.exec(cn + ".__setitem__ = SetSlice");
+}
+
+//////////////////////////////////////////////////////////////////////
+// Enable Slicing support
+void PyEnableSlicing(const char *class_name) {
+    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+
+    string cn(class_name);
+    py_env.exec(cn + ".__getitem__ = GetSlice");
+    py_env.exec(cn + ".__setitem__ = SetSlice");
+}
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___

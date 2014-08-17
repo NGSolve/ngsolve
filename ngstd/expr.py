@@ -148,7 +148,7 @@ def SetSlice(self, index, other):
     if(index[2]!=1):
         print("Slicing with 3 parameters not supported!")
         return none
-    self.Range(index[0], index[1]).Assign(other, 1.0)
+    Expr(other).AssignTo(self.Range(index[0], index[1]).expr)
 
 
 
