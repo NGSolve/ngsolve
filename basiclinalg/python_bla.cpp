@@ -20,6 +20,8 @@ struct PyExportBla {
             .def(bp::self*=double())
             ;
 
+        PyEnableVecExpr("FlatVector");
+
         py_env["Vector"] = bp::class_<Vector<double>, bp::bases<FlatVector<double> > >("Vector")
             .def(bp::init<int>())
             ;
@@ -37,6 +39,8 @@ struct PyExportBla {
             .def(bp::self-=bp::self)
             .def(bp::self*=double())
             ;
+
+        PyEnableMatExpr("FlatMatrix");
 
         py_env["Matrix"] = bp::class_<Matrix<double>, bp::bases<FMD> >("Matrix")
             .def(bp::init<int, int>())
