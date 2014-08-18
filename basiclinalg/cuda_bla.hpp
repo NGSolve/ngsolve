@@ -38,19 +38,26 @@ namespace ngs_cuda
       return *this;
     }
 
-    void D2H (FlatVector<T> & a2)
+    void D2H (FlatVector<T> & a2) const
     {
       cudaMemcpy (&a2[0], dev_data, sizeof(T)*size, cudaMemcpyDeviceToHost);    
     }
 
     INLINE int Size() const { return size; }
 
+    /*
     INLINE operator FlatVector<T> ()
     {
       return FlatVector<T> (size, dev_data);
     }
+    */
 
-    explicit INLINE operator Vector<T> ()
+    INLINE FlatVector<T> Dev() const
+    {
+      return FlatVector<T> (size, dev_data);
+    }
+
+    explicit INLINE operator Vector<T> () const
     {
       Vector<T> temp(size);
 #ifdef __CUDA_ARCH__
@@ -60,6 +67,12 @@ namespace ngs_cuda
 #endif
       return temp;
     }
+
+    INLINE Vector<T> Host() const
+    {
+      return Vector<T> (*this);
+    }
+
   }; 
 
 }

@@ -42,7 +42,7 @@ if NGSCUDA
 NVCC = /usr/local/cuda-6.5/bin/nvcc
 SUFFIXES = .cu
 .cu.o:
-	$(NVCC) -arch compute_35 -code sm_35 -std=c++11 -O2 -I$(top_srcdir)/include  -dc -Xcompiler -fpic -DUSE_MYCOMPLEX -DHD="__host__ __device__" -c -o tmp.o $<
+	$(NVCC) -arch compute_35 -code sm_35 -std=c++11 -O2 -I$(top_srcdir)/include  -rdc true -Xcompiler -fpic -DUSE_MYCOMPLEX -DHD="__host__ __device__" -c -o tmp.o $<
 	$(NVCC) -arch compute_35 -code sm_35 -Xcompiler -fpic -dlink tmp.o -o $@ -L/usr/local/cuda-6.5/lib64 -lcudadevrt -lcudart
 
 libngfem_la_LIBADD += $(top_builddir)/fem/fem_kernels.o $(top_builddir)/fem/tmp.o -L/usr/local/cuda-6.5/lib64  -lcudadevrt -lcudart

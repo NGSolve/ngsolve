@@ -4,6 +4,7 @@
 using namespace ngfem;
 using namespace ngs_cuda;
 
+
 namespace ngfem
 {
   __device__ double legendre_coefs[1000][2];
@@ -13,6 +14,7 @@ namespace ngfem
 
 __global__ void InitLegendre (int n)
 {
+  printf (" ------------- legendre coeffs at %p\n", legendre_coefs);
   // legendre_coefs = new Vec<2>[n+1];
   legendre_coefs[0][0] = 1;
   legendre_coefs[1][1] = 1; 

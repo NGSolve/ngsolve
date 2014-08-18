@@ -10,6 +10,54 @@ namespace ngs_cuda
   void InitCUDA (int verbose = 2);
 
 
+
+
+
+
+
+  template <typename T>
+  class DevVar
+  {
+    T * ptr;
+  public:
+    DevVar()
+    {
+      cudaMalloc (&ptr, sizeof(T));
+    }
+
+    DevVar(T val)
+    {
+      cudaMalloc (&ptr, sizeof(T));
+      cudaMemcpy (ptr, &val, sizeof(T), cudaMemcpyHostToDevice);
+    }
+
+    operator T () const
+    {
+      T tmp;
+      cudaMemcpy (&tmp, ptr, sizeof(T), cudaMemcpyDeviceToHost);    
+      return tmp;
+    }
+
+    T * DevPtr() const { return ptr; }
+    T & DevRef() const { return *ptr; }
+
+  };
+
+  template <typename T>
+  inline ostream & operator<< (ostream & ost, DevVar<T> & var)
+  {
+    ost << T(var);
+    return ost;
+  }
+
+
+
+
+
+
+
+
+
   template <typename T>
   class DevArray 
   {
@@ -35,7 +83,7 @@ namespace ngs_cuda
       cudaFree (dev_data);
     }
 
-    T * Data() { return dev_data; }
+    T * DevPtr() { return dev_data; }
 
     DevArray & operator= (FlatArray<T> a2)
     {
@@ -43,19 +91,25 @@ namespace ngs_cuda
       return *this;
     }
 
-    void D2H (FlatArray<T> & a2)
+    void D2H (FlatArray<T> & a2) const
     {
       cudaMemcpy (&a2[0], dev_data, sizeof(T)*size, cudaMemcpyDeviceToHost);    
     }
 
     INLINE int Size() const { return size; }
 
+    /*
     INLINE operator FlatArray<T> ()
     {
       return FlatArray<T> (size, dev_data);
     }
+    */
+    INLINE FlatArray<T> Dev() const
+    {
+      return FlatArray<T> (size, dev_data);
+    }
 
-    explicit INLINE operator Array<T> ()
+    explicit INLINE operator Array<T> () const
     {
       Array<T> temp(size);
 #ifdef __CUDA_ARCH__
@@ -65,6 +119,12 @@ namespace ngs_cuda
 #endif
       return temp;
     }
+
+    INLINE Array<T> Host() const
+    {
+      return Array<T> (*this);
+    }
+
   }; 
 
 
@@ -73,33 +133,33 @@ namespace ngs_cuda
 
 
   /*
-  template <class T>
-  class TableWrapper : public Table<T>
-  {
+    template <class T>
+    class TableWrapper : public Table<T>
+    {
     using Table<T>::size;
     using Table<T>::data;
     using Table<T>::index;
-  public:
+    public:
     INLINE TableWrapper (int asize, int * aindex, T * adata)
     // : Table<T> (0,0)
     { 
-      size = asize;
-      index = aindex;
-      data = adata;
+    size = asize;
+    index = aindex;
+    data = adata;
     }
 
     INLINE TableWrapper (const Table<T> & tab)
     // : Table<T> (0,0) 
     {
-      const TableWrapper<T> & htab = static_cast<const TableWrapper<T>&> (tab);
-      size = htab.size;
-      data = htab.data;
-      index = htab.index;
+    const TableWrapper<T> & htab = static_cast<const TableWrapper<T>&> (tab);
+    size = htab.size;
+    data = htab.data;
+    index = htab.index;
     }
     INLINE ~TableWrapper ()
     {
-      data = NULL;
-      index = NULL;
+    data = NULL;
+    index = NULL;
     }
 
     INLINE int SizeData() { return index[size]; }
@@ -108,7 +168,7 @@ namespace ngs_cuda
 
     // HD const int * & Index() const { return index; }
     // HD const T * & Data() const { return data; }
-  };
+    };
   */
 
 
@@ -139,6 +199,12 @@ namespace ngs_cuda
       cudaFree (dev_index);
     }
 
+    void D2H (FlatTable<T> & t2) const
+    {
+      int sizedata = t2.AsArray().Size();
+      cudaMemcpy (&t2[0][0], dev_data, sizeof(T)*sizedata, cudaMemcpyDeviceToHost);    
+    }
+
     operator FlatTable<T> () const
     {
       return FlatTable<T> (size, dev_index, dev_data);
@@ -155,51 +221,51 @@ namespace ngs_cuda
 
 
   /*
-  template <typename T = double>
-  class DevMatrix
-  {
+    template <typename T = double>
+    class DevMatrix
+    {
     int h;
     int w; 
     T * dev_data;
   
-  public: 
+    public: 
     DevMatrix (int ah, int aw)
     {
-      h = ah; w = aw;
-      cudaMalloc((T**)&dev_data, h*w*sizeof(T));
+    h = ah; w = aw;
+    cudaMalloc((T**)&dev_data, h*w*sizeof(T));
     }
 
     DevMatrix (FlatMatrix<T> m2)
     {
-      h = m2.Height();
-      w = m2.Width();
-      cudaMalloc((T**)&dev_data, h*w*sizeof(T));
-      cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+    h = m2.Height();
+    w = m2.Width();
+    cudaMalloc((T**)&dev_data, h*w*sizeof(T));
+    cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
     }
 
     ~DevMatrix ()
     {
-      cudaFree (dev_data);
+    cudaFree (dev_data);
     }
 
     T * Data() { return dev_data; }
 
     DevMatrix & operator= (FlatMatrix<T> m2)
     {
-      cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
-      return *this;
+    cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+    return *this;
     }
 
     void D2H (FlatMatrix<T> & m2)
     {
-      cudaMemcpy (&m2(0,0), dev_data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);    
+    cudaMemcpy (&m2(0,0), dev_data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);    
     }
 
     operator FlatMatrix<T> ()
     {
-      return FlatMatrix<T> (h, w, dev_data);
+    return FlatMatrix<T> (h, w, dev_data);
     }
-  }; 
+    }; 
   */
 }
 
