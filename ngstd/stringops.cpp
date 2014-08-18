@@ -67,7 +67,7 @@ namespace ngstd
 	else
 	  {
 	    foundpos = str.find(nextpart,strpos);
-	    ok = (foundpos != str.size());
+	    ok = (foundpos != int(str.size()));
 	  }
 	
 	if(ok)

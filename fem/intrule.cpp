@@ -637,6 +637,10 @@ namespace ngfem
               
           break;
         }
+
+      default:
+        throw Exception (string("Sorry, no DG intrules for element type ")
+                         +ElementTopology::GetElementName(eltype));
       }
   }
 
