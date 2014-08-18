@@ -42,10 +42,19 @@ namespace ngs_cuda
     for (int i = 0; i < devCount; ++i)
       {
 	// Get device properties
-	cout << endl << "CUDA Device " << i << endl;
 	cudaDeviceProp devProp;
 	cudaGetDeviceProperties(&devProp, i);
-	printDevProp(devProp);
+
+        if (verbose == 1)
+          {
+            cout << "CUDA Device " << i << ": " << devProp.name 
+                 << ", cap " << devProp.major << "." << devProp.minor << endl;
+          }
+        if (verbose >= 2)
+          {
+            cout << endl << "CUDA Device " << i << endl;
+            printDevProp(devProp);
+          }
       }
 
     cudaDeviceSetSharedMemConfig ( cudaSharedMemBankSizeEightByte );

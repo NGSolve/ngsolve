@@ -89,6 +89,17 @@ public:
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
 
+  INLINE T * Data() const { return data; }
+
+  INLINE FlatArray<T> AsArray() const
+  {
+    return FlatArray<T> (index[size], data);
+  }
+
+  INLINE FlatArray<int> IndexArray() const
+  {
+    return FlatArray<int> (size+1, index);
+  }
 };
 
 
@@ -121,7 +132,7 @@ public:
     index = new int[size+1];
     for (int i = 0; i <= size; i++)
       index[i] = i*entrysize;
-    data = new T[index[size]]; 
+    data = new T [size*entrysize]; 
   }
 
   /// Construct table of variable entrysize
@@ -185,18 +196,6 @@ public:
   */
 
   using FlatTable<T>::operator[];
-
-  INLINE T * Data() const { return data; }
-
-  INLINE FlatArray<T> AsArray() const
-  {
-    return FlatArray<T> (index[size], data);
-  }
-
-  INLINE FlatArray<int> IndexArray() const
-  {
-    return FlatArray<int> (size+1, index);
-  }
 };
 
 

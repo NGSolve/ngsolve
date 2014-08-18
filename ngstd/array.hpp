@@ -262,14 +262,12 @@ namespace ngstd
       return *this;
     }
 
-    
     INLINE const FlatArray & operator= (const std::function<T(int)> & func) const
     {
       for (TSIZE i = 0; i < size; i++)
         data[i] = func(i);
       return *this;
     }
-    
 
     /// copies pointers
     INLINE const FlatArray & Assign (const FlatArray & a2)
