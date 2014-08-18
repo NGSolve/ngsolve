@@ -238,7 +238,7 @@ template <class T>
       Table<int> tmp (std::move(*table));
       delete table;
       table = NULL;
-      return tmp;
+      return std::move(tmp);
     }
 
     bool Done () { return mode > 3; }
