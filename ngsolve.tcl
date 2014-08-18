@@ -252,7 +252,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    redraw
         }
 
-    .ngmenu.solve add command -label "Python shell" \
+    .ngmenu.solve add command -label "Python shell"  -accelerator "<p><y>"\
 	-command { 
             NGS_PythonShell
 	}
@@ -526,9 +526,7 @@ if { [catch { NGS_GetData } ] == 0 } {
     bind . <s><r> { .ngmenu.solve invoke "Solve Recent PDE" }  ; 
     bind . <s><p> { .ngmenu.solve invoke "Solve PDE" }  ; 
     bind . <e><c> { .ngmenu.solve invoke "Enter Command" }  ; 
-
-
-
+    bind . <p><y> { .ngmenu.solve invoke "Python shell" }  ; 
 
 
 }
