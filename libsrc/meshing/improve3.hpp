@@ -110,7 +110,7 @@ public:
 public:
   JacobianPointFunction (Mesh::T_POINTS & apoints, 
 			 const Mesh::T_VOLELEMENTS & aelements);
-  
+  virtual ~JacobianPointFunction () { ; }
   virtual void SetPointIndex (PointIndex aactpind);
   virtual double Func (const Vector & x) const;
   virtual double FuncGrad (const Vector & x, Vector & g) const;
