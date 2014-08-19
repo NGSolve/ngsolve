@@ -6,7 +6,6 @@
 
 #include "python_ngstd.hpp"
 
-using std::string;
 using std::ostringstream;
 
 PythonEnvironment PythonEnvironment::py_env;
