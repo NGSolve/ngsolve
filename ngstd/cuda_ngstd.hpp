@@ -91,7 +91,7 @@ namespace ngs_cuda
       return *this;
     }
 
-    void D2H (FlatArray<T> & a2) const
+    void D2H (FlatArray<T> a2) const
     {
       cudaMemcpy (&a2[0], dev_data, sizeof(T)*size, cudaMemcpyDeviceToHost);    
     }
