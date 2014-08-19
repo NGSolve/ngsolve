@@ -13,7 +13,7 @@ struct PyExportBla {
             .def(PyDefToString<FVD >())
             .def("Assign", FunctionPointer( [](FVD &self, FVD &v, double s) { self  = s*v; }) )
             .def("Add",    FunctionPointer( [](FVD &self, FVD &v, double s) { self += s*v; }) )
-            .def("Range",    static_cast<const FVD (FVD::*)(int,int) const> (&FVD::Range ) )
+          .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
             .def(bp::init<int, double *>())
             .def(bp::self+=bp::self)
             .def(bp::self-=bp::self)

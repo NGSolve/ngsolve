@@ -338,13 +338,13 @@ namespace ngstd
     }
 
     /// takes range starting from position start of end-start elements
-    INLINE const FlatArray<T> Range (int start, int end) const
+    INLINE /* const */ FlatArray<T> Range (int start, int end) const
     {
       return FlatArray<T> (end-start, data+start);
     }
 
     /// takes range starting from position start of end-start elements
-    INLINE const FlatArray<T> Range (class IntRange range) const
+    INLINE /* const */ FlatArray<T> Range (class IntRange range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
