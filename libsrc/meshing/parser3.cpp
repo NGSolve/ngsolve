@@ -869,7 +869,7 @@ void vnetrule :: LoadRule (istream & ist)
       
       for (k = 1; k <= freesetfaces.Size(); k++)
 	{
-          threeint tr = freesetfaces.Get(k);
+          // threeint tr = freesetfaces.Get(k);
 
 	  for (l = k+1; l <= freesetfaces.Size(); l++)
 	    {

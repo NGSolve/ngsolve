@@ -50,7 +50,7 @@ namespace netgen
     double sum = 0;
     for (int i = 1; i <= n; i++)
       {
-	double t = (i-0.5)*dt;
+	// double t = (i-0.5)*dt;
 	double fun = hi[i-1];
 	sum += dt / fun;
       }

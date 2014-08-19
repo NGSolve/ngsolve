@@ -48,7 +48,7 @@ namespace netgen
     int modelverts,modeledges,modelfaces,modelcells;
     Point3d p;
     int numObj3D,numObj2D,numObj1D,numObj0D;
-    bool nullstarted;
+    // bool nullstarted;
     Array<int> eldom;
     int minId3D = -1, minId2D = -1;
     int maxId3D(-1), maxId2D(-1), maxId1D(-1), maxId0D(-1);
@@ -222,7 +222,7 @@ namespace netgen
           case 14:
             // EdgeID, NodeID0, NodeID1, Type (0=Reg 1=PMaster 2=PSlave 3=CPMaster 4=CPSlave), PID
             cout << "read edges" << endl;
-            nullstarted = false;
+            // nullstarted = false;
             segmentdata.SetSize(nedges);
             for(int i=0; i<nedges; i++)
               {
@@ -272,7 +272,7 @@ namespace netgen
               int segnum_ng[3];
               bool neg[3];
               cout << "read faces" << endl;
-              nullstarted = false;
+              // nullstarted = false;
               for(int i=0; i<nfaces; i++)
                 {
                   int trinum;
@@ -331,8 +331,8 @@ namespace netgen
                             }
                         }
                     }
-                  else
-                    nullstarted = true;
+                  // else
+                  //   nullstarted = true;
                 }
             }
             break;
@@ -397,7 +397,7 @@ namespace netgen
 #ifdef WIN32
                          << "%%\r"
 #else
-                         << "\%\r"
+                         << "%\r"
 #endif 
                          << flush;
                   in >> elemid;

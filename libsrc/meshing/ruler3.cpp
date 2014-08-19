@@ -229,7 +229,8 @@ int Meshing3 :: ApplyRules
       NgProfiler::RegionTimer regx1(base);
       NgProfiler::RegionTimer regx(base+ri);
 
-      sprintf (problems.Elem(ri), "");
+      // sprintf (problems.Elem(ri), "");
+      *problems.Elem(ri) = '\0';
 
       rule = rules.Get(ri);
       

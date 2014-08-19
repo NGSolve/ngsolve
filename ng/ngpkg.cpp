@@ -2116,7 +2116,13 @@ namespace netgen
       return TCL_ERROR;
     }
     sprintf(str,"rm %s", filename2);
-    system(str);
+
+    err = system(str);
+    if (err != 0)
+      {
+        Tcl_SetResult (Togl_Interp(togl), (char*)"Cannot delete temporary file", TCL_VOLATILE);
+        return TCL_ERROR;
+      }
 
     return TCL_OK;
   }

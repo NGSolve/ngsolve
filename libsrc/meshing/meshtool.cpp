@@ -356,18 +356,16 @@ namespace netgen
     if(teterrpow < 1) teterrpow = 1;
 
     if (teterrpow == 1)
-    {
-       errpow = err;
-       grad = graderr;
-    }
-
-    if (teterrpow == 2)
+      {
+        errpow = err;
+        grad = graderr;
+      }
+    else if (teterrpow == 2)
       {
         errpow = err*err;   
         grad = (2 * err) * graderr;
       }
-
-    if(teterrpow > 2)
+    else 
       {
         errpow = pow (err, teterrpow);
         grad = (teterrpow * errpow / err) * graderr;

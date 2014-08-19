@@ -1626,6 +1626,10 @@ int Ng_GetNVertexElements (int vnr)
           if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) cnt++;
         return cnt;
       }
+    default:
+      cerr << "error: mesh->GetDimension() gives " 
+           << mesh->GetDimension() << endl;
+      return 0;
     }
 }
 

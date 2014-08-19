@@ -26,9 +26,16 @@ namespace netgen
   public:
     Point () { ; }
     Point (double ax) { for (int i = 0; i < D; i++) x[i] = ax; }
-    Point (double ax, double ay) { x[0] = ax; x[1] = ay; }
-    Point (double ax, double ay, double az)
-    { x[0] = ax; x[1] = ay; x[2] = az; }
+    Point (double ax, double ay) 
+    { 
+      // static_assert(D==2, "Point<D> constructor with 2 args called");
+      x[0] = ax; x[1] = ay; 
+    }
+    Point (double ax, double ay, double az) 
+    {
+      // static_assert(D==3, "Point<D> constructor with 3 args called");
+      x[0] = ax; x[1] = ay; x[2] = az; 
+    }
     Point (double ax, double ay, double az, double au)
     { x[0] = ax; x[1] = ay; x[2] = az; x[3] = au;}
 
@@ -57,10 +64,6 @@ namespace netgen
     operator const double* () const { return x; }
   };
 
-
-
-
-
   template <int D>
   class Vec
   {
@@ -71,9 +74,16 @@ namespace netgen
   public:
     Vec () { ; } // for (int i = 0; i < D; i++) x[i] = 0; }
     Vec (double ax) { for (int i = 0; i < D; i++) x[i] = ax; }
-    Vec (double ax, double ay) { x[0] = ax; x[1] = ay; }
+    Vec (double ax, double ay) 
+    { 
+      // static_assert(D==2, "Vec<D> constructor with 2 args called");
+      x[0] = ax; x[1] = ay; 
+    }
     Vec (double ax, double ay, double az)
-    { x[0] = ax; x[1] = ay; x[2] = az; }
+    { 
+      // static_assert(D==3, "Vec<D> constructor with 3 args called");
+      x[0] = ax; x[1] = ay; x[2] = az; 
+    }
     Vec (double ax, double ay, double az, double au)
     { x[0] = ax; x[1] = ay; x[2] = az; x[3] = au; }
 

@@ -474,7 +474,7 @@ namespace netgen
 
     root->flags.isinner = 0;
 
-    Point<2> rpmid(root->xmid[0], root->xmid[1], root->xmid[2]);
+    Point<2> rpmid(root->xmid[0], root->xmid[1]);   // , root->xmid[2]);
     Vec<2> rv(root->h2, root->h2);
     Point<2> rx2 = rpmid + rv;
     // Point<2> rx1 = rpmid - rv;

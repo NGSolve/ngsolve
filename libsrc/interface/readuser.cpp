@@ -89,7 +89,7 @@ namespace netgen
          strcmp (&filename[strlen (filename)-4], ".unv") == 0 )
       {  
         char reco[100];
-        int invert;
+        // int invert;
       
         ifstream in(filename);
 

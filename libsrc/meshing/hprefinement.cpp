@@ -544,6 +544,13 @@ namespace netgen
 	hps = &refhex_1f_0e_0v; break;
       case HP_HEX_1FA_1FB_0E_0V: 
 	hps = &refhex_1fa_1fb_0e_0v; break; 
+
+
+
+      default:
+        {
+          hps = NULL;
+        }
       }
 
     /*
@@ -1518,7 +1525,7 @@ namespace netgen
 	  }
 	for(SurfaceElementIndex i=0;i<mesh.GetNSE(); i++) 
 	  { 
-	    Element2d el = mesh[i] ;
+	    // Element2d el = mesh[i] ;
 	    HPRefElement & hpel = hpelements[mesh[i].hp_elnr];
 	    const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (mesh[i].GetType());
 	    double dist[3] = {0,0,0}; 
@@ -1877,8 +1884,8 @@ bool CheckSingularities(Mesh & mesh, INDEX_2_HASHTABLE<int> & edges, INDEX_2_HAS
 	    }
 	  case HP_HEX:
 	    { 
-	      hpel.type = hpel.type = ClassifyHex(hpel, edges, edgepoint_dom, cornerpoint, edgepoint, faces,
-						  face_edges, surf_edges, facepoint); 	    	    
+	      hpel.type = ClassifyHex(hpel, edges, edgepoint_dom, cornerpoint, edgepoint, faces,
+                                      face_edges, surf_edges, facepoint); 	    	    
 	      break; 
 	    } 
 	  case HP_TRIG: 

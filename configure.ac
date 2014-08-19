@@ -171,7 +171,7 @@ TEA_PUBLIC_TCL_HEADERS
 TEA_PUBLIC_TK_HEADERS
 
 AC_SUBST([TOGLLIBDIR], ["$togllibfl"])
-AC_CHECK_HEADER([togl.h])
+# AC_CHECK_HEADER([togl.h])
 AC_CHECK_HEADER([GL/gl.h])
 
 
@@ -190,7 +190,7 @@ case "${TEA_WINDOWINGSYSTEM}" in
 		;;
 	x11)
 		AC_SUBST(TOGL_WINDOWINGSYSTEM,TOGL_X11)
-		TEA_ADD_LIBS([-lGL -lXmu])
+		TEA_ADD_LIBS([-lGL -lXmu -lX11])
 		LIBGLU=-lGLU
 		;;
 	win32)
@@ -217,16 +217,24 @@ AM_CONDITIONAL([NGGUI], [test x$ngguion = xtrue])
 AM_CONDITIONAL([NGMKL], [test x$mklon = xtrue])
 AM_CONDITIONAL([NGPYTHON], [test x$pythonon = xtrue])
 
-AC_CHECK_HEADER(pthread.h)
+# AC_CHECK_HEADER(pthread.h)
 
-AC_CHECK_FUNCS([pow])
-AC_CHECK_FUNCS([floor])
-AC_CHECK_FUNCS([matherr])
-AC_CHECK_HEADERS([limits.h])
+# AC_CHECK_FUNCS([pow])
+# AC_CHECK_FUNCS([floor])
+# AC_CHECK_FUNCS([matherr])
+# AC_CHECK_HEADERS([limits.h])
 
-AC_CHECK_LIB(pthread, pthread_create)
+# AC_CHECK_LIB(pthread, pthread_create)
 
 
+# LDFLAGS+=" -L/usr/lib/Togl1.7"
+# AC_SEARCH_LIBS(Togl_Init,[Togl Togl1.7],
+#         MYTOGL_LIB=$LIBS
+#        LIBS="",
+#        ,
+#        [-lGL -lXmu -ltk8.5 -ltcl8.5])
+# echo "libs = $LIBS"
+# echo "TOGL_LIB = $MYTOGL_LIB"
 
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 

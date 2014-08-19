@@ -1608,7 +1608,7 @@ namespace netgen
     double abs2 = Abs2(v1);
     double tau = v1 * n;
     double rho = sqrt (abs2 - tau*tau);
-    double func = sqr (R - rho) + tau*tau - r*r;
+    // double func = sqr (R - rho) + tau*tau - r*r;
 
     Vec<3> gradabs2 = 2 * v1;
     Vec<3> gradtau = n;

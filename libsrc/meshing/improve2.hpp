@@ -14,6 +14,7 @@ class MeshOptimize2d
 public:
   ///
   MeshOptimize2d ();
+  virtual ~MeshOptimize2d() { ; }
   ///
   void ImproveMesh (Mesh & mesh2d, const MeshingParameters & mp);
   void ImproveMeshJacobian (Mesh & mesh2d, const MeshingParameters & mp);

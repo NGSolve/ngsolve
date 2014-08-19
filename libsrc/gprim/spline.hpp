@@ -483,19 +483,38 @@ namespace netgen
 	if ( w1>M_PI )   w1 -= 2*M_PI;
       }
   }
- 
 
+  /*
   template<int D>
   Point<D> CircleSeg<D> :: GetPoint (double t) const
   {
     if (t >= 1.0)  { return p3; }
-     
     double phi = StartAngle() + t*(EndAngle()-StartAngle());
     Vec<D>  tmp(cos(phi),sin(phi));
-     
+    return pm + Radius()*tmp;
+  }
+  */
+  template<>
+  inline Point<3> CircleSeg<3> :: GetPoint (double t) const
+  {
+    // not really useful, but keep it as it was ...
+    if (t >= 1.0)  { return p3; }
+    double phi = StartAngle() + t*(EndAngle()-StartAngle());
+    Vec<3>  tmp(cos(phi),sin(phi),0);
     return pm + Radius()*tmp;
   }
   
+  template<>
+  inline Point<2> CircleSeg<2> :: GetPoint (double t) const
+  {
+    if (t >= 1.0)  { return p3; }
+     
+    double phi = StartAngle() + t*(EndAngle()-StartAngle());
+    Vec<2>  tmp(cos(phi),sin(phi));
+     
+    return pm + Radius()*tmp;
+  }
+
   template<int D>
   void CircleSeg<D> :: GetCoeff (Vector & coeff) const
   { 

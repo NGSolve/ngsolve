@@ -310,7 +310,7 @@ namespace netgen
     PointFunction (Mesh::T_POINTS & apoints, 
 		   const Mesh::T_VOLELEMENTS & aelements,
 		   const MeshingParameters & amp);
-  
+    virtual ~PointFunction () { ; }
     virtual void SetPointIndex (PointIndex aactpind);
     void SetLocalH (double ah) { h = ah; }
     double GetLocalH () const { return h; }

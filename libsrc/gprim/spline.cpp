@@ -101,13 +101,17 @@ namespace netgen
   template<int D>
   inline Point<D> SplineSeg3<D> :: GetPoint (double t) const
   {
-    double x, y, w;
     double b1, b2, b3;
 
     b1 = (1-t)*(1-t);
     b2 = weight * t * (1-t);
     b3 = t * t;
 
+    Vec<D> hp = b1 * Vec<D>(p1) + b2 * Vec<D>(p2) + b3 * Vec<D>(p3);
+    double w = b1+b2+b3;
+    return Point<D> ((1.0/w)*hp);
+    /*
+    double x, y, w;
     x = p1(0) * b1 + p2(0) * b2 + p3(0) * b3;
     y = p1(1) * b1 + p2(1) * b2 + p3(1) * b3;
     w = b1 + b2 + b3;
@@ -119,6 +123,7 @@ namespace netgen
       }
     else
       return Point<D> (x/w, y/w);
+    */
   }
 
 
