@@ -5,7 +5,7 @@ namespace ngs_cuda
   using namespace ngbla;
 
 
-  template <typename T>
+  template <typename T = double>
   class DevVector 
   {
     int size;
@@ -38,7 +38,7 @@ namespace ngs_cuda
       return *this;
     }
 
-    void D2H (FlatVector<T> & a2) const
+    void D2H (FlatVector<T> a2) const
     {
       cudaMemcpy (&a2[0], dev_data, sizeof(T)*size, cudaMemcpyDeviceToHost);    
     }
@@ -74,6 +74,97 @@ namespace ngs_cuda
     }
 
   }; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  template <typename T = double>
+  class DevMatrix 
+  {
+    int h, w;
+    T * dev_data;
+  
+  public: 
+    DevMatrix (int ah, int aw)
+    {
+      h = ah;
+      w = aw;
+      cudaMalloc((T**)&dev_data, h*w*sizeof(T));
+    }
+
+    DevMatrix (FlatMatrix<T> a2)
+    {
+      h = a2.Height();
+      w = a2.Width();
+      cudaMalloc((T**)&dev_data, h*w*sizeof(T));
+      cudaMemcpy (dev_data, &a2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+    }
+
+    ~DevMatrix ()
+    {
+      cudaFree (dev_data);
+    }
+
+    T * Data() { return dev_data; }
+
+    DevMatrix & operator= (FlatMatrix<T> a2)
+    {
+      cudaMemcpy (dev_data, &a2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+      return *this;
+    }
+
+    void D2H (FlatMatrix<T> a2) const
+    {
+      cudaMemcpy (&a2(0,0), dev_data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);    
+    }
+
+    INLINE int Height() const { return h; }
+    INLINE int Width() const { return w; }
+
+    /*
+    INLINE operator FlatVector<T> ()
+    {
+      return FlatVector<T> (size, dev_data);
+    }
+    */
+
+    INLINE FlatMatrix<T> Dev() const
+    {
+      return FlatMatrix<T> (h, w, dev_data);
+    }
+
+    explicit INLINE operator Matrix<T> () const
+    {
+      Matrix<T> temp(h,w);
+#ifdef __CUDA_ARCH__
+      temp = FlatMatrix<T> (*this);
+#else
+      D2H (temp);
+#endif
+      return std::move(temp);
+    }
+
+    INLINE Matrix<T> Host() const
+    {
+      return Matrix<T> (*this);
+    }
+
+  }; 
+
+
+
 
 }
 
