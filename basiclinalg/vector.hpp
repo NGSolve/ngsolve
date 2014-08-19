@@ -251,13 +251,13 @@ namespace ngbla
     INLINE const FlatVector<T> Range (int first, int next) const
     { return FlatVector<T> (next-first, dist, data+dist*first); }
 #else
-    INLINE const FlatVector<T> Range (int first, int next) const
+    INLINE /* const */ FlatVector<T> Range (int first, int next) const
     { return FlatVector<T> (next-first, data+dist*first); }
 #endif
 
 
     /// sub-vector given by range
-    INLINE const FlatVector<T> Range (IntRange range) const
+    INLINE /* const */ FlatVector<T> Range (IntRange range) const
     { return Range (range.First(), range.Next()); }
 
 
@@ -449,11 +449,11 @@ namespace ngbla
     */
 
     /// sub-vector of size next-first, starting at first
-    const FlatVector<Vec<S,T> > Range (int first, int next) const
+    /* const */ FlatVector<Vec<S,T> > Range (int first, int next) const
     { return FlatVector<Vec<S,T> > (next-first, data+S*first); }
 
     /// sub-vector given by range
-    const FlatVector<Vec<S,T> > Range (IntRange range) const
+    /* const */ FlatVector<Vec<S,T> > Range (IntRange range) const
     { return FlatVector<Vec<S,T> > (range.Next()-range.First(), data+S*range.First()); }
 
     /// vector size
@@ -784,7 +784,7 @@ namespace ngbla
 
     INLINE FlatSysVector<T> Range(int first, int last)
     { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
-    INLINE const FlatSysVector<T> Range(int first, int last) const
+    INLINE /* const */ FlatSysVector<T> Range(int first, int last) const
     { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }
 
     INLINE int Size () const { return s; }
@@ -956,10 +956,10 @@ namespace ngbla
     /// corresponding matrix with
     INLINE int Width () const { return 1; }
 
-    INLINE const FlatVector<const T> Range(int first, int next) const
+    INLINE /* const */ FlatVector<const T> Range(int first, int next) const
     { return FlatVector<const T> (next-first, data+first); }
 
-    INLINE const FlatVector<T> Range(int first, int next) 
+    INLINE /* const */ FlatVector<T> Range(int first, int next) 
     { return FlatVector<T> (next-first, data+first); }
   };
 
@@ -1156,7 +1156,7 @@ namespace ngbla
       return data[i]; 
     }
 
-    INLINE const FlatVector<T> Range(int first, int next) const
+    INLINE /* const */ FlatVector<T> Range(int first, int next) const
     { return FlatVector<T> (next-first, data+first); }
 
     /// vector size
