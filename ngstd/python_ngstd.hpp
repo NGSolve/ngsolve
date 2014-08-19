@@ -5,8 +5,15 @@
 #include <boost/python.hpp>
 #include <ngstd.hpp>
 #include <thread>
+#include <iostream>
 
 namespace bp = boost::python;
+
+using std::string;
+using std::cout;
+using std::endl;
+
+using namespace ngstd;
 
 class AcquireGIL 
 {
@@ -106,6 +113,31 @@ FunctionPointer (const Function& lambda) {
 
 
 //////////////////////////////////////////////////////////////////////
+// Python class name type traits
+template <typename T>
+struct PyNameTraits {
+    static constexpr char name[] = "";
+};
+
+template<>
+struct PyNameTraits<int> {
+    static constexpr char name[] = "I";
+};
+
+template<>
+struct PyNameTraits<float> {
+    static constexpr char name[] = "F";
+};
+
+template<>
+struct PyNameTraits<double> {
+    static constexpr char name[] = "D";
+};
+
+template <typename T>
+const char *GetPyName() { return PyNameTraits<T>::name; }
+
+//////////////////////////////////////////////////////////////////////
 template< typename T>
 struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
     template <class Tclass>
@@ -157,13 +189,13 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
 
 //////////////////////////////////////////////////////////////////////
 // Python iterator protocoll
-template <typename T>
+template <typename T, typename TELEM>
 class PyIterator {
     T &v;
     int size;
     int index;
     int startindex;
-    typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
+//     typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
     
     public:
     PyIterator(T &v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
@@ -175,7 +207,7 @@ class PyIterator {
     }
 
     static void Export () {
-        bp::class_<PyIterator<T> >("PyIterator", bp::no_init).def("__next__", &PyIterator<T>::Next);
+        bp::class_<PyIterator<T, TELEM> >("PyIterator", bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
     }
 };
 
@@ -188,18 +220,18 @@ template< typename T,  typename TELEM = double>
 struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
     template <class Tclass>
         void visit(Tclass& c) const {
-            PyIterator<T>::Export();
+            PyIterator<T, TELEM>::Export();
             c
                 .def("__len__", FunctionPointer( []( T& v) { return v.Size();} ) )
                 .def(PyDefBracketOperator<T, TELEM>())
-                .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T>(v, v.Size(), 0 ); }))
+                .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); }))
                 ;
         }
 };
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
-void PyEnableMatExpr(const char *class_name) {
+static void PyEnableMatExpr(const char *class_name) {
     PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
@@ -212,7 +244,7 @@ void PyEnableMatExpr(const char *class_name) {
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for vector class
-void PyEnableVecExpr(const char *class_name) {
+static void PyEnableVecExpr(const char *class_name) {
     PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
@@ -226,7 +258,7 @@ void PyEnableVecExpr(const char *class_name) {
 
 //////////////////////////////////////////////////////////////////////
 // Enable Slicing support
-void PyEnableSlicing(const char *class_name) {
+static void PyEnableSlicing(const char *class_name) {
     PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
