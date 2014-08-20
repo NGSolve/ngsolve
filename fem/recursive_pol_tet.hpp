@@ -29,12 +29,11 @@ namespace ngfem
       Sx bub = (1-x-y-z) * (1+x-y-z) * y * z ; 
 
       LegendrePolynomial::EvalScaledMult (n-4, x, 1-y-z, bub, polx);
-      LegendrePolynomial::EvalScaled (n-4, 2*y - (1-z) , (1-z),poly);  //SZ (1-z)-1, poly);
+      LegendrePolynomial::EvalScaled (n-4, 2*y - (1-z) , (1-z),poly); 
       
-      // ScaledLegendrePolynomial (n-4, x, 1-y-z, polx);
-      // ScaledLegendrePolynomial (n-4, 2*y - (1-z) , (1-z),poly);  //SZ (1-z)-1, poly);
-      LegendrePolynomial (n-4, 2*z-1, polz);
+      // LegendrePolynomial (n-4, 2*z-1, polz);
 
+      /*
       int ii = 0;
       for (int i = 0; i <= n-4; i++)
 	for (int j = 0; j <= n-4-i; j++)
@@ -43,8 +42,7 @@ namespace ngfem
             for (int k = 0; k <= n-4-i-j; k++)
               values[ii++] = hp * polz[k];
           }
-
-      /*
+      */
       int ii = 0;
       for (int i = 0; i <= n-4; i++)
 	for (int j = 0; j <= n-4-i; j++)
@@ -52,7 +50,6 @@ namespace ngfem
 	    LegendrePolynomial::EvalMult (n-4-i-j, 2*z-1, polx[i]*poly[j], values+ii);
 	    ii += n-3-i-j;
 	  }
-      */
       return ii;
     }
 

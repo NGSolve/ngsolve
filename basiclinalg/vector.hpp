@@ -845,6 +845,7 @@ namespace ngbla
     /// initialize zeroth and first elements
     INLINE Vec (const T & s1, const T & s2)
     {
+      static_assert (S==2, "Init Vec<S> with 2 elements, but S != 2");
       data[0] = s1;
       data[1] = s2;
     }
@@ -852,6 +853,7 @@ namespace ngbla
     /// initialize zeroth, first, and second elements
     INLINE Vec (const T & s1, const T & s2, const T & s3)
     {
+      static_assert (S==3, "Init Vec<S> with 3 elements, but S != 3");
       data[0] = s1;
       data[1] = s2;
       data[2] = s3;
@@ -860,6 +862,7 @@ namespace ngbla
     /// initialize zeroth, first, and second elements
     INLINE Vec (const T & s1, const T & s2, const T & s3, const T & s4)
     {
+      static_assert (S==4, "Init Vec<S> with 4 elements, but S != 4");
       data[0] = s1;
       data[1] = s2;
       data[2] = s3;

@@ -847,11 +847,15 @@ namespace ngfem
 
       for (int i = 2; i <= n; i++)
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
-      /*
+    }
+
+    template <class S, class Sy, class Sc, class T>
+    INLINE void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values) const
+    {
       S p1(0.0), p2(0.0);
       for (int i = 0; i <= n; i++)
         values[i] = EvalScaledMultNext (i, x, y, c, p1, p2);
-      */
+
     }
 
     enum { ZERO_B = 0 };

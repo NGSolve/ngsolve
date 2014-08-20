@@ -361,9 +361,7 @@ namespace ngfem
   T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
-    
-    int sort[4];
-    for (int i = 0; i < 4; i++) sort[i] = i;
+    int sort[4] = { 0, 1, 2, 3 };
     
     if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
     if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
@@ -432,24 +430,6 @@ namespace ngfem
           }
       }
     */
-    /*
-    int ii = 0;
-    LegendrePolynomial leg;
-    leg.EvalScaled1Assign 
-      (order, lamis[2]-lamis[3], lamis[2]+lamis[3],
-       SBLambda ([&](int k, Tx polz) LAMBDA_INLINE
-                 {
-                   JacobiPolynomialAlpha jac(2*k+1);
-                   jac.EvalScaledMult (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, polsy);
-                   
-                   for (int j = 0; j <= order-k; j++)
-                     {
-                       JacobiPolynomialAlpha jac(2*(j+k)+2);
-                       jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
-                       ii += order-k-j+1;
-                     }
-                 }));
-    */
 
     int ii = 0;
     LegendrePolynomial leg;
@@ -458,43 +438,15 @@ namespace ngfem
        SBLambda ([&](int k, Tx polz) LAMBDA_INLINE
                  {
                    JacobiPolynomialAlpha jac(2*k+1);
-                   jac.EvalScaledMult 
+                   jac.EvalScaledMult1Assign
                      (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
-				  // jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy, shape+ii);
-								  jac.EvalMult(this->order - k - j, 2 * lamis[0] - 1, polsy, shape + ii);
+                                  jac.EvalMult(this->order - k - j, 2 * lamis[0] - 1, polsy, shape + ii);
                                   ii += this->order-k-j+1;
                                 }));
                  }));
-
-    /*
-    Tx mem[(order+1)*(order+1)];
-    FlatMatrix<Tx> polx(order+1,order+1,&mem[0]);
-    for (int i = 0; i <= order; i++)
-      {
-        JacobiPolynomialAlpha jac(2*i+1);
-        jac.EvalScaled (order-i, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polx.Row(i));
-      }
-
-    int ii = 0;
-    LegendrePolynomial leg;
-    leg.EvalScaled1Assign 
-      (order, lamis[2]-lamis[3], lamis[2]+lamis[3],
-       SBLambda ([&](int k, Tx polz) LAMBDA_INLINE
-                 {
-                   JacobiPolynomialAlpha jac(2*k+1);
-                   jac.EvalScaledMult 
-                     (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
-                      SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
-                                {
-                                  FlatVector<Tx> row = polx.Row(j+k);
-                                  for (int i = 0; i <= order-k-j; i++)
-                                    shape[ii++] = row(i) * polsy;
-                                }));
-                 }));
-    */
   }
 
 

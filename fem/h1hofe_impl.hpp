@@ -30,7 +30,8 @@ namespace ngfem
 
     // typedef LegendrePolynomial EdgeOrthoPol;
     // typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
-    typedef ChebyPolynomial EdgeOrthoPol;  // Integrated Legendre divided by bubble
+    typedef ChebyPolynomial EdgeOrthoPol; 
+    typedef ChebyPolynomial QuadOrthoPol; 
 
   public:
     template<typename Tx, typename TFA>  
@@ -96,7 +97,6 @@ namespace ngfem
     if (order_face[0][0] >= 3)
       {
         INT<4> f = GetFaceSort (0, vnums);
-
 	DubinerBasis3::EvalMult (order_face[0][0]-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
@@ -148,10 +148,10 @@ namespace ngfem
 	    shape[ii++] = polxi[k] * poleta[j];
         */
 
-        LegendrePolynomial::EvalMult1Assign(p[0]-2, xi(0), bub,
+        QuadOrthoPol::EvalMult1Assign(p[0]-2, xi(0), bub,
           SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
                     {  
-                      LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
+                      QuadOrthoPol::EvalMult (p[1]-2, xi(1), val, shape+ii);
                       ii += p[1]-1;
                     }));
       }
@@ -285,8 +285,8 @@ namespace ngfem
 	    scaleeta = lam[f[0]]+lam[f[3]];
 
 	  Tx bub = (1.0/16)*(scaleeta*scaleeta-eta*eta)*(scalexi*scalexi-xi*xi);
-	  LegendrePolynomial::EvalScaled     (p[0]-2, xi, scalexi, polx);
-	  LegendrePolynomial::EvalScaledMult (p[1]-2, eta, scaleeta, bub, poly);
+	  QuadOrthoPol::EvalScaled     (p[0]-2, xi, scalexi, polx);
+	  QuadOrthoPol::EvalScaledMult (p[1]-2, eta, scaleeta, bub, poly);
 	    
 	  for (int k = 0; k < p[0]-1; k++) 
             for (int j = 0; j < p[1]-1; j++) 
@@ -329,7 +329,7 @@ namespace ngfem
     for (int i = 0; i < 8; i++) shape[i] = lam[i]; 
     int ii = 8;
 
-    ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
+    ArrayMem<Tx,30> polx(order+1), poly(order+1), polz(order+1);
     
     // edge dofs
     for (int i = 0; i < N_EDGE; i++)
@@ -359,8 +359,8 @@ namespace ngfem
 	  Tx eta = sigma[f[0]] - sigma[f[3]];
 
 	  Tx bub = 1.0/16 * (1-xi*xi)*(1-eta*eta) * lam_f;
-	  LegendrePolynomial::EvalMult(p[0]-2, xi, bub, polx);
-	  LegendrePolynomial::Eval(p[1]-2, eta, poly);
+	  QuadOrthoPol::EvalMult(p[0]-2, xi, bub, polx);
+	  QuadOrthoPol::Eval(p[1]-2, eta, poly);
 
 	  for (int k = 0; k < p[0]-1; k++) 
             for (int j = 0; j < p[1]-1; j++) 
@@ -371,9 +371,9 @@ namespace ngfem
     INT<3> p = order_cell[0];
     if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
       {
-	LegendrePolynomial::EvalMult (p[0]-2, 2*x-1, x*(1-x), polx);
-	LegendrePolynomial::EvalMult (p[1]-2, 2*y-1, y*(1-y), poly);
-	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
+	QuadOrthoPol::EvalMult (p[0]-2, 2*x-1, x*(1-x), polx);
+	QuadOrthoPol::EvalMult (p[1]-2, 2*y-1, y*(1-y), poly);
+	QuadOrthoPol::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < p[0]-1; i++)
 	  for (int j = 0; j < p[1]-1; j++)
@@ -484,8 +484,8 @@ namespace ngfem
 	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	Tx eta = sigma[f[0]] - sigma[f[3]];
 
-	LegendrePolynomial::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
-	LegendrePolynomial::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
+	QuadOrthoPol::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
+	QuadOrthoPol::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
 	for (int k = 0; k < p[0]-1; k++) 
 	  for (int j = 0; j < p[1]-1; j++) 
 	    shape[ii++] = polx[k] * poly[j] * fac; 
