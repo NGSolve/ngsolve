@@ -855,7 +855,10 @@ namespace ngfem
     static INLINE Tx XiEdge (int i, Tx hx[], const TVN & vnums)
     {
       INT<2> e = GetEdgeSort (i, vnums);
-      int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+#ifndef __CUDA_ARCH__
+      static 
+#endif
+        const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0.0);
       for (int j = 0; j < 2; j++)
         {
@@ -917,7 +920,10 @@ namespace ngfem
     static INLINE Vec<2,Tx> XiFace (int /* i */, Tx hx[], const TVN & vnums)
     {
       INT<4> f = GetFaceSort (0, vnums); 
-      int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+#ifndef __CUDA_ARCH__
+      static 
+#endif
+        const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi = 0, eta = 0;
       for (int j = 0; j < 2; j++)
         {

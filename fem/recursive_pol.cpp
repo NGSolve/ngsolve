@@ -24,7 +24,7 @@ namespace ngfem
           
           coefs[0][0] = 1;
           coefs[1][1] = 1;
-          for (int i = 2; i <= n; i++)
+          for (int i = 1; i <= n; i++)
             {
               coefs[i][0] = CalcA(i);  // (2.0*i-1)/i;
               coefs[i][1] = CalcC(i);  // (1.0-i)/i;
@@ -45,10 +45,10 @@ namespace ngfem
       if (coefs.Size() <= n)
         {
           coefs.SetSize (n+1);
-          
-          coefs[0][0] = -0.5;
-          coefs[1][1] = -0.5;
-          for (int i = 2; i <= n; i++)
+          coefs[0][0] = coefs[0][1] = 1e10;
+          // coefs[0][0] = -0.5;
+          // coefs[1][1] = -0.5;
+          for (int i = 1; i <= n; i++)
             {
               coefs[i][0] = CalcA(i);
               coefs[i][1] = CalcC(i);

@@ -224,20 +224,8 @@ namespace ngfem
   {
   public:
     template <class S>
-    INLINE static S EvalNext (int i, S x, S & p1, S & p2)
+    INLINE static S EvalNext2 (int i, S x, S & p1, S & p2)
     {
-      if (i == 0) 
-        {
-          p1 = REC::P0(x);
-          return p1;
-        }
-      if (i == 1) 
-        {
-          p2 = p1;
-          p1 = REC::P1(x);
-          return p1;
-        }
-
       if (REC::ZERO_B)
         {
           S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
@@ -252,6 +240,40 @@ namespace ngfem
         }
       return p1;
     }
+
+    template <class S>
+    INLINE static S EvalNext (int i, S x, S & p1, S & p2)
+    {
+      if (i == 0) 
+        {
+          p1 = REC::P0(x);
+          return p1;
+        }
+      if (i == 1) 
+        {
+          p2 = p1;
+          p1 = REC::P1(x);
+          return p1;
+        }
+      return EvalNext2 (i, x, p1, p2);
+      /*
+      if (REC::ZERO_B)
+        {
+          S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      else
+        {
+          S pnew = (REC::A(i) * x + REC::B(i)) * p1 + REC::C(i) * p2;
+          p2 = p1;
+          p1 = pnew;
+        }
+      return p1;
+      */
+    }
+
+
 
 
 
@@ -384,7 +406,6 @@ namespace ngfem
 
   public:
 
-
     template <class S, class T>
     INLINE static void Eval (int n, S x, T && values) 
     {
@@ -404,14 +425,13 @@ namespace ngfem
       values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
 
-      int i = 2;
-      for ( ; i < n; i+=2)
+      for (int i = 2; i < n; i+=2)
 	{	
 	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
 	}
-      if (i <= n)
-        values[i] = EvalNextTicTac2 (i, x, p1, p2);
+      if ( (n&1) == 0 )
+        values[n] = EvalNextTicTac2 (n, x, p1, p2);
     }
 
 
@@ -450,28 +470,16 @@ namespace ngfem
     template <class S, class Sc, class T>
     INLINE static void EvalMult1Assign (int n, S x, Sc c, T && values)
     {
-      S p1, p2;
-
-      for (int i = 0; i <= n; i++)
-        values[i] = EvalNext (i, x, p1, p2);
-      /*
-      for (int i = 0; i <= n; i++)
-	{	
-          switch (i)
-            {
-            case 0: 
-              p1 = c * REC::P0(x); 
-              break;
-            case 1:
-              p2 = c * REC::P0(x);
-              p1 = c * REC::P1(x);
-              break;
-            default:
-              EvalNext (i, x, p1, p2);
-            }
+      int i = 0;
+      S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
+      while (true)
+        {
 	  values[i] = p1;
-	}
-      */
+          if (i == n) break;
+          EvalNext2 (i, x, p1, p2);
+          i++;
+        }
+
     }
 
 
@@ -485,11 +493,24 @@ namespace ngfem
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
-    template <class S, class Sy, class T>
-    INLINE static void EvalScaled2Assign (int n, S x, Sy y, T && values)
+    template <class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
-      EvalScaledMult2Assign (n, x, y, 1.0, values);
+      S p1, p2;
+
+      if (n < 0) return;
+      values[0] = p2 = c * REC::P0(x);
+      if (n < 1) return;
+
+      values[1] = p1 = c * REC::P1(x);
+
+      for (int i = 2; i <= n; i++)
+	{	
+	  EvalScaledNext2 (i, x, y, p1, p2);
+	  values[i] = p1;
+	}
     }
+
 
     template <class S, class Sy, class T>
     INLINE static void EvalScaled1Assign (int n, S x, Sy y, T && values)
@@ -498,214 +519,18 @@ namespace ngfem
     }
 
     template <class S, class Sy, class Sc, class T>
-    INLINE static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
-    {
-      // 54855278 bytes libngfem.so
-      // 4.55795 sec d4
-      S p1, p2;
-
-      if (n < 0) return;
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      values[1] = p1 = c * REC::P1(x);
-
-      for (int i = 2; i <= n; i++)
-	{	
-	  EvalScaledNext2 (i, x, y, p1, p2);
-	  values[i] = p1;
-	}
-
-
-      /*
-      // 54710961 bytes libngfem.so
-      // 4.73713 sec d4
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      p1 = c * REC::P1(x);
-
-      for (int i = 1; i <= n; i++)
-	{	
-	  values[i] = p1;
-	  EvalScaledNext (i+1, x, y, p1, p2);
-	}
-      */
-
-
-      /*
-        // 54763104 bytes libngfem.so
-        // 4.62 sec
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      int i = 1;
-      p1 = c * REC::P1(x);
-      while (1)
-        {
-          values[i] = p1;
-          i++;
-          if (i > n) break;
-	  EvalScaledNext (i, x, y, p1, p2);          
-        }
-      */
-
-      /*  
-          // 55426878 bytes libngfem.so
-          // 4.72 sec
-      S p1, p2;
-      int i;
-      if (n % 2 == 0)
-        { 
-          values[0] = p2 = c * REC::P0(x);
-          p1 = c * REC::P1(x);
-          EvalScaledNext2(2, x, y, p2, p1);
-          i = 1;
-        }
-      else
-        { // odd
-          p1 = c * REC::P0(x);
-          p2 = c * REC::P1(x);
-          i = 0;
-        }
-      if (n <= 0) return;
-      
-      while (1)
-	{	
-          values[i] = p1;
-          values[i+1] = p2;
-          i += 2;
-          if (i > n) break;
-	  EvalScaledNext2 (i, x, y, p1, p2);
-	  EvalScaledNext2 (i+1, x, y, p2, p1);
-	}
-      */
-    }
-
-
-    template <class S, class Sy, class Sc, class T>
     INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
     {
-      // 54855278 bytes libngfem.so
-      // 4.55795 sec d4
-      S p1(0), p2(0);
-      for (int i = 0; i <= n; i++)
-	{	
-          if (i == 0)
-            p1 = c * REC::P0(x);
-          else if (i == 1)
-            {
-              p2 = c * REC::P0(x);
-              p1 = c * REC::P1(x);
-            }
-          else
-            EvalScaledNext (i, x, y, p1, p2);
-	  values[i] = p1;
-	}
-    }
-
-    template <class S, class Sy, class Sc, class T>
-    INLINE static void EvalScaledMult2Assign (int n, S x, Sy y, Sc c, T && values)
-    {
-      /*
-      // 54855278 bytes libngfem.so
-      // 4.55795 sec d4
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      values[1] = p1 = c * REC::P1(x);
-
-      for (int i = 2; i <= n; i++)
-	{	
-	  EvalScaledNext (i, x, y, p1, p2);
-	  values[i] = p1;
-	}
-      */
-
-      /*
-      // 54710961 bytes libngfem.so
-      // 4.73713 sec d4
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      p1 = c * REC::P1(x);
-
-      for (int i = 1; i <= n; i++)
-	{	
-	  values[i] = p1;
-	  EvalScaledNext (i+1, x, y, p1, p2);
-	}
-      */
-
-
-        // 54763104 bytes libngfem.so
-        // 4.62 sec
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
-
-      int i = 1;
-      p1 = c * REC::P1(x);
-      while (1)
+      int i = 0;
+      S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
+      while (true)
         {
-          values[i] = p1;
+	  values[i] = p1;
+          if (i == n) break;
+          EvalScaledNext2 (i, x, y, p1, p2);
           i++;
-          if (i > n) break;
-	  EvalScaledNext (i, x, y, p1, p2);          
         }
-
-
-      /*  
-          // 55426878 bytes libngfem.so
-          // 4.72 sec
-      S p1, p2;
-      int i;
-      if (n % 2 == 0)
-        { 
-          values[0] = p2 = c * REC::P0(x);
-          p1 = c * REC::P1(x);
-          EvalScaledNext2(2, x, y, p2, p1);
-          i = 1;
-        }
-      else
-        { // odd
-          p1 = c * REC::P0(x);
-          p2 = c * REC::P1(x);
-          i = 0;
-        }
-      if (n <= 0) return;
-      
-      while (1)
-	{	
-          values[i] = p1;
-          values[i+1] = p2;
-          i += 2;
-          if (i > n) break;
-	  EvalScaledNext2 (i, x, y, p1, p2);
-	  EvalScaledNext2 (i+1, x, y, p2, p1);
-	}
-      */
     }
-
 
 
 
@@ -1088,6 +913,8 @@ namespace ngfem
     static void Calc (int n);
 
     template <class S>
+    static INLINE double Pm1(S x)  { return 0.0; }
+    template <class S>
     static INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static INLINE S P1(S x)  { return x; }
@@ -1195,7 +1022,9 @@ namespace ngfem
     }
 
     template <class S>
-    static INLINE S P0(S x)  { return S(1.0); }
+    static INLINE S Pm1(S x)  { return x; }
+    template <class S>
+    static INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static INLINE S P1(S x)  { return x; }
     
@@ -2315,15 +2144,10 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     {
       LegendrePolynomial leg;
       int ii = 0;
-      // leg.EvalScaled (n, y-(1-x-y), 1-x, 
       leg.EvalScaled1Assign (n, y-(1-x-y), 1-x, 
 	      SBLambda ([&] (int i, S val) LAMBDA_INLINE 
                    {
                      JacobiPolynomialAlpha jac(1+2*i);
-		     /*
-                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
-                     ii += n-i+1;
-		     */
                      jac.EvalMult (n-i, 2*x-1, val, 
 				   SBLambda([&](int j, S v2) 
 					    {
@@ -2335,7 +2159,18 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     template <class S, class Sc, class T>
     INLINE static void EvalMult (int n, S x, S y, Sc c, T && values)
     {
-      EvalScaledMult (n, x, y, 1, c, values);
+      LegendrePolynomial leg;
+      int ii = 0;
+      leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
+            SBLambda ([&] (int i, S val) LAMBDA_INLINE 
+                   {
+                     JacobiPolynomialAlpha jac(1+2*i);
+                     jac.EvalMult (n-i, 2*x-1, val, 
+				   SBLambda([&](int j, S v2) 
+					    {
+					      values[ii++] = v2;
+					    }));
+                   }));
     }
 
     template <class S, class Sc, class T>
@@ -2357,16 +2192,6 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
                      ii += n-i+1;
                    }));
       
-      /*
-	leg.EvalScaledMult (n, y-(1-x-y), t-x, c
-	SBLambda ([&] (int i, S val) INLINE  // clang
-                   {
-                     JacobiPolynomialAlpha jac(1+2*i);
-                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
-                     ii += n-i+1;
-                   }));
-    */
-
     }
   };
 

@@ -59,13 +59,13 @@ namespace ngfem
     shape[0] = lam[0];
     shape[1] = lam[1];
     
-    INT<2> e = GetEdgeSort (0, vnums);
-    
-    // LegendrePolynomial::
-    // IntLegNoBubble::
-    EdgeOrthoPol::
-      EvalMult (order_edge[0]-2, 
-                lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
+    if (order_edge[0] >= 2)
+      {
+        INT<2> e = GetEdgeSort (0, vnums);
+        EdgeOrthoPol::
+          EvalMult (order_edge[0]-2, 
+                    lam[e[1]]-lam[e[0]], lam[e[0]]*lam[e[1]], shape+2);
+      }
   }
 
 
@@ -148,7 +148,7 @@ namespace ngfem
 	    shape[ii++] = polxi[k] * poleta[j];
         */
 
-        LegendrePolynomial::EvalMult(p[0]-2, xi(0), bub,
+        LegendrePolynomial::EvalMult1Assign(p[0]-2, xi(0), bub,
           SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
                     {  
                       LegendrePolynomial::EvalMult (p[1]-2, xi(1), val, shape+ii);
