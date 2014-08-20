@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_builddir) $(GOLD_INCLUDE) -I$(top_srcdir)/xxgold -I$(srcdir) -I$(top_srcdir)/include 
+AM_CPPFLAGS = -I$(top_builddir) $(GOLD_INCLUDE) -I$(srcdir) -I$(top_srcdir)/include 
 
 lib_LTLIBRARIES = libngfem.la
 
@@ -12,8 +12,7 @@ coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp \
 intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp   \
 scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp	      \
 hybridDG.cpp DGIntegrators.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp   \
-facethofe.cpp 
-# fem_kernels.cu
+facethofe.cpp fem_kernels.cu
 # 
 
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		       \
