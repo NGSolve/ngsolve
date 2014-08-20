@@ -116,26 +116,30 @@ FunctionPointer (const Function& lambda) {
 // Python class name type traits
 template <typename T>
 struct PyNameTraits {
-    static constexpr char name[] = "";
+    static const string & GetName() { static const string name = ""; return name; }
 };
 
 template<>
 struct PyNameTraits<int> {
-    static constexpr char name[] = "I";
+    static const string & GetName() { static const string name = "I"; return name; }
 };
 
 template<>
 struct PyNameTraits<float> {
-    static constexpr char name[] = "F";
+    static const string & GetName() { static const string name = "F"; return name; }
 };
 
 template<>
 struct PyNameTraits<double> {
-    static constexpr char name[] = "D";
+    static const string & GetName() { static const string name = "D"; return name; }
 };
 
 template <typename T>
-const char *GetPyName() { return PyNameTraits<T>::name; }
+string GetPyName(const char *prefix = 0) {
+    string s;
+    if(prefix) s = string(prefix);
+    s+= PyNameTraits<T>::GetName();
+}
 
 //////////////////////////////////////////////////////////////////////
 template< typename T>
