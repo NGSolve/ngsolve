@@ -67,7 +67,7 @@ BOOST_PYTHON_MODULE(libngspy)
   PythonEnvironment py_env;
   PyExportNgStd ps(py_env);
   PyExportNgBla pbla(py_env);
-  // PyExportNgComp pcomp(py_env);
+  PyExportNgComp pcomp(py_env);
 
   /*
     // Export ngstd classes

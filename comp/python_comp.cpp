@@ -12,14 +12,35 @@ struct PyExportNgComp {
 
 PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
 
-  void (*foo)(Ngs_Element &) = [](Ngs_Element &el){ cout << "hallo!" << endl; };
-
+  /*
+    // embedded py crasht hier, shared-libray klappt:
+  enum color { red = 1, green = 2, blue = 4 };
+  py_env["color"] = bp::enum_<color>("color")
+    .value("red", red)
+    .value("green", green)
+    .value("blue", blue)
+    ;
+  // py_env["VorB"] = 
+  bp::enum_<VorB>("VorB")
+    .value("VOL", VOL)
+    .value("BND", BND)
+    .export_values()
+    ;
+    // liefert py-runtimer Error ?!?!?!?!
+    */
+  /*
+  bp::class_<ElementId> ("ElementId", bp::init<VorB,int>())
+    .add_property("nr", &ElementId::Nr)    
+    .def("IsVolume", &ElementId::IsVolume)
+    .def("IsBoundary", &ElementId::IsBoundary)
+    .def(PyDefToString<FESpace>())
+    ;
+  */
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
     .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ))
     .add_property("edges", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Edges());} ))
     .add_property("faces", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Faces());} ))
     ;
-
 
   bp::class_<MeshAccess>("MeshAccess", bp::no_init)
     // .def("GetNV", &MeshAccess::GetNV)
@@ -37,6 +58,16 @@ PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
     .def(PyDefToString<FESpace>())
     ;
+
+  bp::class_<GridFunction,boost::noncopyable>("GridFunction", bp::no_init)
+    .def(PyDefToString<GridFunction>())
+    ;
+
+  bp::class_<BilinearForm,boost::noncopyable>("BilinearForm", bp::no_init)
+    .def(PyDefToString<BilinearForm>())
+    ;
+
+
 
 }
 

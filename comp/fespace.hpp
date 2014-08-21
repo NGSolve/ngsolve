@@ -520,12 +520,6 @@ namespace ngcomp
   };
 
   
-  inline ostream & operator<< (ostream & ost, const FESpace & fes)
-  {
-    fes.PrintReport (ost);
-    return ost;
-  }
-  
 
   template <typename T>
   inline void IterateElements (const FESpace & fes, 

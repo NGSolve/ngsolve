@@ -1161,6 +1161,8 @@ int NGSolve_Init (Tcl_Interp * interp)
 
   
   PyExportSymbolTable< FESpace* > ();
+  PyExportSymbolTable< GridFunction * > ();
+  PyExportSymbolTable< BilinearForm * > ();
   PyExportSymbolTableStdTypes< double > ();
   PyExportSymbolTableStdTypes< double* > ();
 
@@ -1176,6 +1178,8 @@ int NGSolve_Init (Tcl_Interp * interp)
     .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Constants", &PDE::GetConstantTable, bp::return_value_policy<bp::reference_existing_object>())
     .add_property ("spaces", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<FESpace*>>(self.GetSpaceTable()); }))
+    .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<GridFunction*>>(self.GetGridFunctionTable()); }))
+    .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<BilinearForm*>>(self.GetBilinearFormTable()); }))
     ;
 
 
