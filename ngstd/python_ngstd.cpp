@@ -39,6 +39,16 @@ PyExportNgStd ::
     py_env["ArrayI"] = bp::class_<Array<int>, bp::bases<FlatArray<int> > >("ArrayI")
         .def(bp::init<int>())
         ;
+
+
+    py_env["LocalHeap"] = bp::class_<ngstd::LocalHeap>
+      ("LocalHeap",bp::no_init)
+      .def(bp::init<size_t,const char*>())
+      ;
+
+    py_env["Flags"] = bp::class_<ngstd::Flags>
+      ("Flags")
+      ;
     }
 
 
