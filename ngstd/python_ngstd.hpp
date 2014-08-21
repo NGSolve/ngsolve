@@ -15,73 +15,27 @@ using std::endl;
 
 using namespace ngstd;
 
-class AcquireGIL 
+class BasePythonEnvironment
 {
-    public:
-        inline AcquireGIL(){
-            state = PyGILState_Ensure();
-        }
+protected:
+  BasePythonEnvironment () { ; }
 
-        inline ~AcquireGIL(){
-            PyGILState_Release(state);
-        }
-    private:
-        PyGILState_STATE state;
-};
+  bp::object main_module; 
+  bp::object main_namespace; 
 
+public:
+  virtual ~BasePythonEnvironment() { }
+  
+  auto operator[] ( const char *s ) -> decltype(main_namespace[s]) {
+    return main_namespace[s];
+  }
+  
 
-class PythonEnvironment {
-    public:
-    static PythonEnvironment py_env;
-    bp::object main_module; 
-    bp::object main_namespace; 
-
-    std::thread::id pythread_id;
-    std::thread::id mainthread_id;
-
-    // Private constructor
-    PythonEnvironment();
-
-    public:
-    // Singleton pattern
-    static PythonEnvironment &getInstance() {
-        return py_env;
-    }
-    
-    auto operator[] ( const char *s ) -> decltype(main_namespace[s]) {
-        return main_namespace[s];
-    }
-
-
-    void Spawn(string initfile) {
-        if(pythread_id != mainthread_id) {
-            cout << "Python thread already running!" << endl;
-        } else {
-            PyEval_ReleaseLock();
-            std::thread([](string init_file_) {
-                    try{
-                    AcquireGIL gil_lock;
-                    py_env.pythread_id = std::this_thread::get_id();
-                    py_env.exec_file(init_file_.c_str());
-                    }
-                    catch(bp::error_already_set const &) {
-                    PyErr_Print();
-                    }
-                    cout << "Python shell finished." << endl;
-                    py_env.pythread_id = py_env.mainthread_id;
-                    }, initfile).detach();
-        }
-    }
-
-    void exec(const char *s) {
-        bp::exec(s, main_namespace, main_namespace);
-    }
-
-    void exec(const string s) {
+  virtual void exec(const string s) {
         bp::exec(s.c_str(), main_namespace, main_namespace);
     }
 
-    void exec_file(const char *file) {
+  virtual void exec_file(const char *file) {
         try{
             bp::exec_file(file, main_namespace, main_namespace);
         }
@@ -90,8 +44,12 @@ class PythonEnvironment {
         }
     }
 
-    virtual ~PythonEnvironment() { }
+  
 };
+
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -139,6 +97,7 @@ string GetPyName(const char *prefix = 0) {
     string s;
     if(prefix) s = string(prefix);
     s+= PyNameTraits<T>::GetName();
+    return s;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -186,7 +145,8 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
     }
 
     static void RaiseIndexError() {
-        PythonEnvironment::getInstance().exec("raise IndexError()\n");
+      // PythonEnvironment::getInstance().exec("raise IndexError()\n");
+      cerr << "python Index error" << endl;
     }
 
 };
@@ -206,7 +166,9 @@ class PyIterator {
 
     TELEM Next() { 
         if(index<startindex+size) return v[index++];
-        else PythonEnvironment::getInstance().exec("raise StopIteration()\n");
+        else
+          // PythonEnvironment::getInstance().exec("raise StopIteration()\n");
+          cerr << "python Index error" << endl;
         return TELEM();
     }
 
@@ -235,8 +197,8 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
-static void PyEnableMatExpr(const char *class_name) {
-    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+static void PyEnableMatExpr(BasePythonEnvironment & py_env, const char *class_name) {
+  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
     py_env.exec(cn + ".expr = property(lambda self: MatExpr(self))");
@@ -248,8 +210,8 @@ static void PyEnableMatExpr(const char *class_name) {
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for vector class
-static void PyEnableVecExpr(const char *class_name) {
-    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+static void PyEnableVecExpr(BasePythonEnvironment & py_env, const char *class_name) {
+  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
     py_env.exec(cn + ".expr = property(lambda self: VecExpr(self))");
@@ -262,8 +224,8 @@ static void PyEnableVecExpr(const char *class_name) {
 
 //////////////////////////////////////////////////////////////////////
 // Enable Slicing support
-static void PyEnableSlicing(const char *class_name) {
-    PythonEnvironment &py_env = PythonEnvironment::getInstance();
+static void PyEnableSlicing(BasePythonEnvironment & py_env, const char *class_name) {
+  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
     py_env.exec(cn + ".__getitem__ = GetSlice");

@@ -42,6 +42,114 @@ namespace netgen
 
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+
+
+
+
+
+class AcquireGIL 
+{
+    public:
+        inline AcquireGIL(){
+            state = PyGILState_Ensure();
+        }
+
+        inline ~AcquireGIL(){
+            PyGILState_Release(state);
+        }
+    private:
+  PyGILState_STATE state;
+};
+
+
+class PythonEnvironment : public BasePythonEnvironment {
+    public:
+    static PythonEnvironment py_env;
+
+    std::thread::id pythread_id;
+    std::thread::id mainthread_id;
+
+    // Private constructor
+    PythonEnvironment();
+
+    public:
+    // Singleton pattern
+    static PythonEnvironment &getInstance() {
+        return py_env;
+    }
+    
+
+
+    void Spawn(string initfile) {
+        if(pythread_id != mainthread_id) {
+            cout << "Python thread already running!" << endl;
+        } else {
+            PyEval_ReleaseLock();
+            std::thread([](string init_file_) {
+                    try{
+                    AcquireGIL gil_lock;
+                    py_env.pythread_id = std::this_thread::get_id();
+                    py_env.exec_file(init_file_.c_str());
+                    }
+                    catch(bp::error_already_set const &) {
+                    PyErr_Print();
+                    }
+                    cout << "Python shell finished." << endl;
+                    py_env.pythread_id = py_env.mainthread_id;
+                    }, initfile).detach();
+        }
+    }
+
+
+    virtual ~PythonEnvironment() { }
+};
+
+
+
+PythonEnvironment::PythonEnvironment() {
+    mainthread_id = std::this_thread::get_id();
+    pythread_id = std::this_thread::get_id();
+    cout << "Init Python environment." << endl;
+    Py_Initialize();
+    PyEval_InitThreads();
+
+    try{
+        main_module = bp::import("__main__");
+        main_namespace = main_module.attr("__dict__");
+
+        exec("from sys import path");
+        exec("from runpy import run_module");
+        exec("from os import environ");
+
+        exec("path.append(environ['NETGENDIR'])");
+        exec("globals().update(run_module('expr',globals()))");
+    }
+    catch(bp::error_already_set const &) {
+        PyErr_Print();
+    }
+
+}
+
+
+PythonEnvironment PythonEnvironment::py_env;
+
+
+
+
+struct PyExportNgStd {
+  PyExportNgStd(BasePythonEnvironment & py_env);
+};
+
+struct PyExportNgBla {
+  PyExportNgBla(BasePythonEnvironment & py_env);
+};
+
+struct PyExportNgComp {
+  PyExportNgComp(BasePythonEnvironment & py_env);
+};
+         
+
+
 #endif
 
 
@@ -337,7 +445,7 @@ int NGS_LoadPDE (ClientData clientData,
 
 #ifdef NGS_PYTHON
           cout << "set python mesh" << endl;
-          PythonEnvironment::getInstance().main_namespace["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+          PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
 #endif
 
           int port = pde -> GetConstant ("port", true);
@@ -1036,6 +1144,13 @@ int NGSolve_Init (Tcl_Interp * interp)
     serverjobmanager.Reset(new ServerJobManager(netgen::serversocketmanager,pde,ma,interp)); //!
 
 #endif
+
+
+  PyExportNgStd init_pystd(PythonEnvironment::getInstance());
+  PyExportNgBla init_pybla(PythonEnvironment::getInstance());
+  PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
+
+
 
   Tcl_CreateCommand (interp, "NGS_PrintRegistered", NGS_PrintRegistered,
 		     (ClientData)NULL,
