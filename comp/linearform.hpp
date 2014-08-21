@@ -102,7 +102,7 @@ namespace ngcomp
     void SetPrintElmat (bool ap);
 
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
     ///
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 

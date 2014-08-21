@@ -67,8 +67,6 @@ namespace ngcomp
 
     ///
     virtual void Update(LocalHeap & lh);
-    ///
-    virtual void PrintReport (ostream & ost);
 
     virtual void DoArchive (Archive & archive);
 

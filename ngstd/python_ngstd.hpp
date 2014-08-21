@@ -239,6 +239,23 @@ inline void PyEnableSlicing(BasePythonEnvironment & py_env, const char *class_na
 //////////////////////////////////////////////////////////////////
 // SymbolTable - template
 
+template <typename T>
+class PyRef 
+{
+  const T & ref;
+public:
+  PyRef (const T & aref) : ref(aref) { ; }
+  const T & Cast () const { return ref; }
+};
+
+template <typename T> 
+inline ostream & operator<< (ostream & ost, PyRef<T> ref)
+{
+  ost << (ref.Cast());
+  return ost;
+}
+
+
 
 template<typename T>
 struct PyNameTraits<SymbolTable<T>> {
@@ -247,13 +264,19 @@ struct PyNameTraits<SymbolTable<T>> {
 };
 
 
+template<typename T>
+struct PyNameTraits<PyRef<T>> {
+  static string GetName()
+  { return string("Ref_") + GetPyName<T>(); }
+};
+
 template <typename T> void PyExportSymbolTable ()
 {
   string name = GetPyName<SymbolTable<T>>();
-
   bp::class_<SymbolTable<T>>(name.c_str())
     .add_property ("size", &SymbolTable<T>::Size)
-    .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
+    .def(PyDefToString<SymbolTable<T>>())
+    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
                                         -> typename std::remove_pointer<T>::type &
                                         {
@@ -263,23 +286,43 @@ template <typename T> void PyExportSymbolTable ()
                                         })
          , bp::return_value_policy<bp::reference_existing_object>())
     ;
-}
+
+  name = GetPyName<PyRef<SymbolTable<T>>>();
+  bp::class_<PyRef<SymbolTable<T>>>(name.c_str(), bp::no_init)
+    .add_property ("size", FunctionPointer([](PyRef<SymbolTable<T>> & self)
+                                           { return self.Cast().Size(); }))
+    .def(PyDefToString<PyRef<SymbolTable<T>>>())
+    // .def(PyDefVector<PyRef<SymbolTable<T>>,typename std::remove_pointer<T>::type>())
+    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, bp::str s)
+                                        -> typename std::remove_pointer<T>::type &
+                                        {
+                                          if (!self.Cast().Used(bp::extract<char const *>(s)))
+                                            cerr << "unused" << endl;
+                                          return *self.Cast()[bp::extract<char const *>(s)];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>())
+    .def("__len__", FunctionPointer( [](PyRef<SymbolTable<T>> & self) 
+                                     { return self.Cast().Size();} ) )
+    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, int nr)
+                                        -> typename std::remove_pointer<T>::type &
+                                        {
+                                          if (nr < 0 || nr >= self.Cast().Size())
+                                            cerr << "unused" << endl;
+                                          return *self.Cast()[nr];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>())
+    ;
+    }
 
 template <class T>
-class cl_rp
-{
-public:
-  static T Val (T v) { return v; }
-};
+struct cl_remove_pointer
+{ static T Val (T v) { return v; } };
 template <class T>
-class cl_rp<T*>
-{
-public:
-  static T & Val (T * v) { return *v; }
-};
+struct cl_remove_pointer<T*>
+{ static T & Val (T * v) { return *v; }};
 
-template <class T> auto MyRemovePtr (T d) -> decltype(cl_rp<T>::Val(d))
-{ return cl_rp<T>::Val(d); }
+template <class T> inline auto MyRemovePtr (T d) -> decltype(cl_remove_pointer<T>::Val(d))
+{ return cl_remove_pointer<T>::Val(d); }
 
 
 template <typename T> void PyExportSymbolTableStdTypes ()
@@ -288,7 +331,6 @@ template <typename T> void PyExportSymbolTableStdTypes ()
 
   bp::class_<SymbolTable<T>>(name.c_str())
     .add_property ("size", &SymbolTable<T>::Size)
-    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
     .def(PyDefToString<SymbolTable<T>>())
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
                                         {

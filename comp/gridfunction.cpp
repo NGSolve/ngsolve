@@ -61,7 +61,7 @@ namespace ngcomp
     return true;
   }
 
-  void GridFunction :: PrintReport (ostream & ost)
+  void GridFunction :: PrintReport (ostream & ost) const
   {
     ost << "on space " << GetFESpace().GetName() << endl
 	<< "nested = " << nested << endl;

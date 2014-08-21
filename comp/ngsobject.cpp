@@ -122,7 +122,7 @@ string NGS_Object :: GetClassName () const
   return typeid(*this).name();
 }
 
-void NGS_Object :: PrintReport (ostream & ost)
+void NGS_Object :: PrintReport (ostream & ost) const
 {
   ost << typeid(*this).name();
 }

@@ -1175,6 +1175,7 @@ int NGSolve_Init (Tcl_Interp * interp)
     .def("Spaces", &PDE::GetSpaceTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Constants", &PDE::GetConstantTable, bp::return_value_policy<bp::reference_existing_object>())
+    .add_property ("spaces", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<FESpace*>>(self.GetSpaceTable()); }))
     ;
 
 

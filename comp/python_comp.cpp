@@ -35,6 +35,7 @@ PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
   bp::class_<FESpace,boost::noncopyable>("FESpace", bp::no_init)
     .def("GetDofNrs", FunctionPointer([](FESpace & self, int i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
+    .def(PyDefToString<FESpace>())
     ;
 
 }

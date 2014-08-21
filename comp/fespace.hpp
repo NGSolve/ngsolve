@@ -185,7 +185,7 @@ namespace ngcomp
     { return (vb == VOL) ? *element_coloring : *selement_coloring; }
 
     /// print report to stream
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     /// Dump/restore fespace
     virtual void DoArchive (Archive & archive);
@@ -519,7 +519,13 @@ namespace ngcomp
     }
   };
 
-
+  
+  inline ostream & operator<< (ostream & ost, const FESpace & fes)
+  {
+    fes.PrintReport (ost);
+    return ost;
+  }
+  
 
   template <typename T>
   inline void IterateElements (const FESpace & fes, 
