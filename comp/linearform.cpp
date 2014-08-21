@@ -33,7 +33,7 @@ namespace ngcomp
     parts_deletable.Append(deletable);
   }
 
-  void LinearForm :: PrintReport (ostream & ost)
+  void LinearForm :: PrintReport (ostream & ost) const
   {
     ost << "on space " << GetFESpace().GetName() << endl
 	<< "integrators: " << endl;

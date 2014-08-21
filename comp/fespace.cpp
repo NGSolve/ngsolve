@@ -716,7 +716,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   
-  void FESpace :: PrintReport (ostream & ost)
+  void FESpace :: PrintReport (ostream & ost) const
   {
     ost << "type  = " << GetClassName() << endl
 	<< "order = " << order << endl

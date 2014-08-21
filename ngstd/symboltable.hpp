@@ -148,7 +148,7 @@ public:
 };
 
 template <typename T>
-ostream & operator<< (ostream & ost, SymbolTable<T> & st)
+ostream & operator<< (ostream & ost, const SymbolTable<T> & st)
 {
   for (int i = 0; i < st.Size(); i++)
     ost << st.GetName(i) << " : " << st[i] << endl;
