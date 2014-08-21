@@ -83,6 +83,12 @@ namespace ngcomp
   };
 
 
+  inline ostream & operator<< (ostream & ost, const NGS_Object & obj)
+  {
+    obj.PrintReport (ost);
+    return ost;
+  }
+  
 
 
   
