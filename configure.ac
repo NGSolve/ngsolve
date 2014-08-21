@@ -153,11 +153,14 @@ echo "from boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
 # AC_SUBST(BOOST_PYTHON_LIB, boost_python-py34)
 # echo "modified boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
 
+pyon=false
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
  	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
         [LDFLAGS+=" -l$BOOST_PYTHON_LIB $PYTHON_LDFLAGS"]
+        [pyon=true]
 	)
+AM_CONDITIONAL([NGSPY], [test x$pyon = xtrue])
 
 echo "creating compiler wrapper ngscxx"
 echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx

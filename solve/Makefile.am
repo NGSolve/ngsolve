@@ -1,6 +1,6 @@
 AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) 
 
-lib_LTLIBRARIES = libngsolve.la  libngspy.la
+lib_LTLIBRARIES = libngsolve.la
 bin_PROGRAMS =  ngs
 
 
@@ -34,8 +34,8 @@ libngsolve_la_LDFLAGS = -avoid-version
 
 
 
-
-
+if NGSPY
+lib_LTLIBRARIES += libngspy.la
 libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \
 numproc.cpp evp.cpp hyperbolic.cpp  \
 numprocee.cpp pde.cpp pdeparser.cpp 
@@ -50,7 +50,7 @@ $(top_builddir)/multigrid/libngmg.la		\
 $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)  \
 -L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
 libngspy_la_LDFLAGS = -avoid-version
-
+endif
 
 
 
