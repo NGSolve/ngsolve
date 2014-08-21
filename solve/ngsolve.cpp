@@ -446,6 +446,7 @@ int NGS_LoadPDE (ClientData clientData,
 #ifdef NGS_PYTHON
           cout << "set python mesh" << endl;
           PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+          PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
 #endif
 
           int port = pde -> GetConstant ("port", true);
@@ -1146,10 +1147,24 @@ int NGSolve_Init (Tcl_Interp * interp)
 #endif
 
 
+
+
+#ifdef NGS_PYTHON
   PyExportNgStd init_pystd(PythonEnvironment::getInstance());
   PyExportNgBla init_pybla(PythonEnvironment::getInstance());
   PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
 
+  
+  PyExportSymbolTable< FESpace* > ();
+  PyExportSymbolTableStdTypes< double > ();
+  PyExportSymbolTableStdTypes< double* > ();
+
+  bp::class_<PDE> ("PDE", bp::no_init)
+    .def("Spaces", &PDE::GetSpaceTable, bp::return_value_policy<bp::reference_existing_object>())
+    .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
+    .def("Constants", &PDE::GetConstantTable, bp::return_value_policy<bp::reference_existing_object>())
+    ;
+#endif
 
 
   Tcl_CreateCommand (interp, "NGS_PrintRegistered", NGS_PrintRegistered,
