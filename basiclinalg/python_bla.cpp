@@ -9,7 +9,6 @@ struct PyExportNgBla {
 
 PyExportNgBla ::
     PyExportNgBla(BasePythonEnvironment & py_env) {
-  cout << "a" << endl;
       // auto py_env = PythonEnvironment::getInstance();
         typedef FlatVector<double> FVD;
         py_env["FlatVector"] = bp::class_<FVD >("FlatVector")
@@ -23,14 +22,11 @@ PyExportNgBla ::
             .def(bp::self-=bp::self)
             .def(bp::self*=double())
             ;
-        cout << " type enablevecexpr " << endl;
         PyEnableVecExpr(py_env, "FlatVector");
-        cout << " succ" << endl;
         py_env["Vector"] = bp::class_<Vector<double>, bp::bases<FlatVector<double> > >("Vector")
             .def(bp::init<int>())
             ;
 
-  cout << "b" << endl;
         typedef FlatMatrix<double> FMD;
         py_env["FlatMatrix"] = bp::class_<FlatMatrix<double> >("FlatMatrix")
             .def(PyDefToString<FMD>())
@@ -45,7 +41,7 @@ PyExportNgBla ::
             .def(bp::self*=double())
             ;
 
-        // PyEnableMatExpr(py_env, "FlatMatrix");
+        PyEnableMatExpr(py_env, "FlatMatrix");
 
         py_env["Matrix"] = bp::class_<Matrix<double>, bp::bases<FMD> >("Matrix")
             .def(bp::init<int, int>())
@@ -53,8 +49,6 @@ PyExportNgBla ::
 
         // execute bla.py
         // py_env.exec("globals().update(run_module('bla',globals()))");
-
-  cout << "c" << endl;
     }
 
 

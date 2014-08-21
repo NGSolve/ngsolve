@@ -1150,6 +1150,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 
 
 #ifdef NGS_PYTHON
+
+  string initfile = netgen::ngdir + dirslash + "init.py";
+  cout << "python init file = " << initfile << endl;
+  auto py_env = PythonEnvironment::getInstance();
+
   PyExportNgStd init_pystd(PythonEnvironment::getInstance());
   PyExportNgBla init_pybla(PythonEnvironment::getInstance());
   PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
@@ -1159,11 +1164,23 @@ int NGSolve_Init (Tcl_Interp * interp)
   PyExportSymbolTableStdTypes< double > ();
   PyExportSymbolTableStdTypes< double* > ();
 
-  bp::class_<PDE> ("PDE", bp::no_init)
+  py_env["PDE"] = bp::class_<PDE> ("PDE")
+    .def("SetSelfPtr", FunctionPointer([](PDE & self) { pde.Reset (&self, false); return; }))
+    .def("Load", static_cast<void(ngsolve::PDE::*)(const string &, const bool, const bool)> 
+         (&ngsolve::PDE::LoadPDE),
+         (boost::python::arg("filename"), 
+          boost::python::arg("meshload")=0, 
+          boost::python::arg("nogeometryload")=0))
+    .def("Solve", &ngsolve::PDE::Solve)
     .def("Spaces", &PDE::GetSpaceTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Constants", &PDE::GetConstantTable, bp::return_value_policy<bp::reference_existing_object>())
     ;
+
+
+
+  py_env.Spawn(initfile);
+
 #endif
 
 

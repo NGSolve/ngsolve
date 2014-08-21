@@ -20,14 +20,15 @@ class AutoPtr
 private:
   /// the pointer
   T * ptr;
+  bool owner;
 public:
   ///
   typedef T* pT;
 
   /// initialize AutoPtr
-  explicit AutoPtr (T * p = 0)  { ptr = p; }
+  explicit AutoPtr (T * p = 0, bool aowner = true)  { ptr = p; owner = aowner;}
   /// delete object
-  ~AutoPtr () { delete ptr; }
+  ~AutoPtr () { if (owner) delete ptr; }
   
   /// reference to object
   T & operator*() const { return *ptr; }
@@ -42,7 +43,8 @@ public:
   T * Ptr() const { return ptr; }
 
   /// delete object, and reset pointer
-  void Reset(T * p = 0) { if (p != ptr) { delete ptr; ptr = p; } }
+  void Reset(T * p = 0, bool aowner = true) 
+  { if (p != ptr) { if (owner) delete ptr; ptr = p; }; owner = aowner; }
 
   /// is pointer non-zero ?
   operator bool () { return ptr != 0; }
