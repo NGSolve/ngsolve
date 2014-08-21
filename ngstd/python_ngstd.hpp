@@ -74,7 +74,7 @@ FunctionPointer (const Function& lambda) {
 // Python class name type traits
 template <typename T>
 struct PyNameTraits {
-    static const string & GetName() { static const string name = ""; return name; }
+  static const string & GetName() { static const string name = typeid(T).name(); return name; }
 };
 
 template<>
@@ -197,7 +197,7 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
-static void PyEnableMatExpr(BasePythonEnvironment & py_env, const char *class_name) {
+inline void PyEnableMatExpr(BasePythonEnvironment & py_env, const char *class_name) {
   // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
@@ -210,7 +210,7 @@ static void PyEnableMatExpr(BasePythonEnvironment & py_env, const char *class_na
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for vector class
-static void PyEnableVecExpr(BasePythonEnvironment & py_env, const char *class_name) {
+inline void PyEnableVecExpr(BasePythonEnvironment & py_env, const char *class_name) {
   // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
@@ -224,13 +224,85 @@ static void PyEnableVecExpr(BasePythonEnvironment & py_env, const char *class_na
 
 //////////////////////////////////////////////////////////////////////
 // Enable Slicing support
-static void PyEnableSlicing(BasePythonEnvironment & py_env, const char *class_name) {
+inline void PyEnableSlicing(BasePythonEnvironment & py_env, const char *class_name) {
   // PythonEnvironment &py_env = PythonEnvironment::getInstance();
 
     string cn(class_name);
     py_env.exec(cn + ".__getitem__ = GetSlice");
     py_env.exec(cn + ".__setitem__ = SetSlice");
 }
+
+
+
+
+
+//////////////////////////////////////////////////////////////////
+// SymbolTable - template
+
+
+template<typename T>
+struct PyNameTraits<SymbolTable<T>> {
+  static string GetName()
+  { return string("SymbolTable_") + GetPyName<T>(); }
+};
+
+
+template <typename T> void PyExportSymbolTable ()
+{
+  string name = GetPyName<SymbolTable<T>>();
+
+  bp::class_<SymbolTable<T>>(name.c_str())
+    .add_property ("size", &SymbolTable<T>::Size)
+    .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
+    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
+                                        -> typename std::remove_pointer<T>::type &
+                                        {
+                                          if (!self.Used(bp::extract<char const *>(s)))
+                                            cerr << "unused" << endl;
+                                          return *self[bp::extract<char const *>(s)];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>())
+    ;
+}
+
+template <class T>
+class cl_rp
+{
+public:
+  static T Val (T v) { return v; }
+};
+template <class T>
+class cl_rp<T*>
+{
+public:
+  static T & Val (T * v) { return *v; }
+};
+
+template <class T> auto MyRemovePtr (T d) -> decltype(cl_rp<T>::Val(d))
+{ return cl_rp<T>::Val(d); }
+
+
+template <typename T> void PyExportSymbolTableStdTypes ()
+{
+  string name = GetPyName<SymbolTable<T>>();
+
+  bp::class_<SymbolTable<T>>(name.c_str())
+    .add_property ("size", &SymbolTable<T>::Size)
+    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
+    .def(PyDefToString<SymbolTable<T>>())
+    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
+                                        {
+                                          if (!self.Used(bp::extract<char const *>(s)))
+                                            cerr << "unused" << endl;
+                                          return MyRemovePtr (self[bp::extract<char const *>(s)]);
+                                        }))
+    ;
+}
+
+
+
+
+
 
 #endif // NGS_PYTHON
 #endif // PYTHON_NGSTD_HPP___
