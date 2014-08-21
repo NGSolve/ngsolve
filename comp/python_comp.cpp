@@ -4,10 +4,13 @@
 using namespace ngcomp;
 
 
-struct PyExportComp {
-    PyExportComp() {
-        auto py_env = PythonEnvironment::getInstance();
 
+struct PyExportNgComp {
+  PyExportNgComp(BasePythonEnvironment & py_env);
+};
+
+
+PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
 
         void (*foo)(Ngs_Element &) = [](Ngs_Element &el){ cout << "hallo!" << endl; };
 
@@ -28,10 +31,9 @@ struct PyExportComp {
             ;
 
     }
-};
 
 
 // Call constructor to export python classes
-static PyExportComp python_export_comp;
+// static PyExportComp python_export_comp (PythonEnvironment::getInstance());
 
 #endif // NGS_PYTHON
