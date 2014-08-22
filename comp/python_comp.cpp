@@ -50,12 +50,13 @@ PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
     .add_property("faces", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Faces());} ))
     ;
 
-  bp::class_<MeshAccess>("MeshAccess", bp::no_init)
+  py_env["MeshAccess"] = 
+    bp::class_<MeshAccess>("MeshAccess", "meshclass doc", bp::no_init)
     // .def("GetNV", &MeshAccess::GetNV)
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
          (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
     .def("GetElementVertices", static_cast<void (MeshAccess::*)(int, Array<int> &) const>( &MeshAccess::GetElVertices))
-    .add_property ("nv", &MeshAccess::GetNV)
+    .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
     .add_property ("ne", static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE))
     ;
 
