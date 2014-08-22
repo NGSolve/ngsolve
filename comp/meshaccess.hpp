@@ -52,6 +52,12 @@ namespace ngcomp
     bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
   };
 
+  inline ostream & operator<< (ostream & ost, ElementId id)
+  {
+    return ost << (id.IsVolume() ? 'V' : 'B') << ' ' << id.Nr();
+  }
+
+
   class ElementIterator
   {
     VorB vb;
