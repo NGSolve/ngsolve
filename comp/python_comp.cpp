@@ -10,16 +10,22 @@ struct PyExportNgComp {
 };
 
 
+enum color { red = 1, green = 2, blue = 4 };
+color identity_ (color x) { return x; }
+
 PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
 
   /*
     // embedded py crasht hier, shared-libray klappt:
-  enum color { red = 1, green = 2, blue = 4 };
-  py_env["color"] = bp::enum_<color>("color")
+  //   py_env["color"] = 
+  bp::enum_<color>("color")
     .value("red", red)
     .value("green", green)
     .value("blue", blue)
     ;
+  bp::def ("identity", identity_);
+  */
+  /*
   // py_env["VorB"] = 
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
@@ -27,15 +33,17 @@ PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
     .export_values()
     ;
     // liefert py-runtimer Error ?!?!?!?!
-    */
-  /*
+
   bp::class_<ElementId> ("ElementId", bp::init<VorB,int>())
+    .def(PyDefToString<ElementId>())
     .add_property("nr", &ElementId::Nr)    
     .def("IsVolume", &ElementId::IsVolume)
     .def("IsBoundary", &ElementId::IsBoundary)
     .def(PyDefToString<FESpace>())
     ;
   */
+
+
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
     .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ))
     .add_property("edges", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Edges());} ))

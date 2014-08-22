@@ -10,6 +10,9 @@ void func()
 }
 
 
+// NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
+
+
 struct PyExportNgStd {
   PyExportNgStd(BasePythonEnvironment & py_env);
 };
@@ -21,6 +24,7 @@ struct PyExportNgBla {
 struct PyExportNgComp {
   PyExportNgComp(BasePythonEnvironment & py_env);
 };
+void PyExportNgSolve (BasePythonEnvironment & py_env);
 
 
 class PythonEnvironment : public BasePythonEnvironment
@@ -68,17 +72,5 @@ BOOST_PYTHON_MODULE(libngspy)
   PyExportNgStd ps(py_env);
   PyExportNgBla pbla(py_env);
   PyExportNgComp pcomp(py_env);
-
-  /*
-    // Export ngstd classes
-      bp::class_<FlatArray<double> >("FlatArrayD")
-        .def(PyDefVector<FlatArray<double>, double>()) 
-        .def(PyDefToString<FlatArray<double> >())
-        .def(bp::init<int, double *>())
-        ;
-    
-      bp::class_<Array<double>, bp::bases<FlatArray<double> > >("ArrayD")
-        .def(bp::init<int>())
-        ;
-  */
+  PyExportNgSolve (py_env);
 }
