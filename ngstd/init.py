@@ -1,3 +1,5 @@
+print ("hello from init.py")
+
 def mydir(x=None):
     if x==None:
         return []

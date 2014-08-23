@@ -119,6 +119,34 @@ struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
 
 
 //////////////////////////////////////////////////////////////////////
+// read-only bracket operator  (Matthias, please polish !)
+// enough for iterator
+// read-wirt bracket could use inheritance 
+template< typename T, typename TELEM = double >
+struct PyDefROBracketOperator : public boost::python::def_visitor<PyDefROBracketOperator<T,TELEM> > {
+  template <class Tclass>
+  void visit(Tclass& c) const {
+    c
+      .def("__getitem__", &PyDefROBracketOperator<T,TELEM>::Get)
+      .def("Get", &PyDefROBracketOperator<T,TELEM>::Get)
+      ;
+  }
+
+  static TELEM Get(T& self, int i) { 
+    if( i<self.Size() && i>=0 )
+      return self[i];
+    RaiseIndexError();
+    // return TELEM();  // problem with deleted default-constructor
+  } 
+
+  static void RaiseIndexError() {
+    // PythonEnvironment::getInstance().exec("raise IndexError()\n");
+    cerr << "python Index error" << endl;
+  }
+
+};
+
+
 template< typename T, typename TELEM = double >
 struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOperator<T,TELEM> > {
   template <class Tclass>
@@ -168,9 +196,9 @@ public:
   TELEM Next() { 
     if(index<startindex+size) return v[index++];
     else
-      // PythonEnvironment::getInstance().exec("raise StopIteration()\n");
-      cerr << "python Index error" << endl;
-    return TELEM();
+      bp::exec("raise StopIteration()\n");
+    // cerr << "python Index error" << endl;
+    // return TELEM();
   }
 
   static void Export () {
@@ -195,6 +223,20 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
       ;
   }
 };
+
+// Joachim: Matthias, please polish
+template< typename T,  typename TELEM = double>
+struct PyDefList : public boost::python::def_visitor<PyDefList<T,TELEM> > {
+  template <class Tclass>
+  void visit(Tclass& c) const {
+    PyIterator<T, TELEM>::Export();
+    c
+      .def(PyDefROBracketOperator<T, TELEM>())
+      .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); }))
+      ;
+  }
+};
+
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class

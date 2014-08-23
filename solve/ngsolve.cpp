@@ -45,8 +45,6 @@ namespace netgen
 
 
 
-
-
 class AcquireGIL 
 {
     public:
@@ -105,24 +103,23 @@ class PythonEnvironment : public BasePythonEnvironment {
     virtual ~PythonEnvironment() { }
 };
 
-
+extern "C" PyObject * PyInit_Ngstd();
 extern "C" PyObject * PyInit_Ngbla();
-struct PyExportNgStd {
-  PyExportNgStd(BasePythonEnvironment & py_env);
-};
-
 struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
 
 extern "C" PyObject * PyInit_Ngcomp();
-void PyExportNgSolve(BasePythonEnvironment & py_env);
+extern "C" PyObject * PyInit_Ngsolve();
+
 
 PythonEnvironment::PythonEnvironment() {
+    PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
     PyExportNgBla init_pybla(*this);
-    // PyExportNgComp();
     PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);    
+    PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
+
     mainthread_id = std::this_thread::get_id();
     pythread_id = std::this_thread::get_id();
     cout << "Init Python environment." << endl;
@@ -133,7 +130,10 @@ PythonEnvironment::PythonEnvironment() {
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
 
+        exec("from Ngstd import *");
         exec("from Ngcomp import *");
+        exec("from Ngsolve import *");
+
 //         exec("from ngbla import *");
         exec("from sys import path");
         exec("from runpy import run_module");
@@ -457,7 +457,7 @@ int NGS_LoadPDE (ClientData clientData,
 
 #ifdef NGS_PYTHON
           cout << "set python mesh" << endl;
-          PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
+          // PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
           PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
 #endif
 
@@ -1166,11 +1166,6 @@ int NGSolve_Init (Tcl_Interp * interp)
   string initfile = netgen::ngdir + dirslash + "init.py";
   cout << "python init file = " << initfile << endl;
   auto py_env = PythonEnvironment::getInstance();
-
-  PyExportNgStd init_pystd(PythonEnvironment::getInstance());
-//   PyExportNgBla init_pybla(PythonEnvironment::getInstance());
-  // PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
-  PyExportNgSolve(PythonEnvironment::getInstance());
 
   {
     bp::scope sc(py_env.main_module);

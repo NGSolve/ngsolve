@@ -22,6 +22,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
 
   bp::class_<ElementRange> ("ElementRange", bp::init<VorB,IntRange>())
+    .def(PyDefList<ElementRange,ElementId>())
     ;
 
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
@@ -31,6 +32,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
 
   bp::class_<MeshAccess>("MeshAccess", "meshclass doc", bp::no_init)
+    .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements))
     .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
 
