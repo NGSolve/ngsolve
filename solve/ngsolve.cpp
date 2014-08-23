@@ -63,6 +63,7 @@ class AcquireGIL
 
 
 class PythonEnvironment : public BasePythonEnvironment {
+    bool is_init;
     public:
     static PythonEnvironment py_env;
 
@@ -105,37 +106,7 @@ class PythonEnvironment : public BasePythonEnvironment {
 };
 
 
-
-PythonEnvironment::PythonEnvironment() {
-    mainthread_id = std::this_thread::get_id();
-    pythread_id = std::this_thread::get_id();
-    cout << "Init Python environment." << endl;
-    Py_Initialize();
-    PyEval_InitThreads();
-
-    try{
-        main_module = bp::import("__main__");
-        main_namespace = main_module.attr("__dict__");
-
-        exec("from sys import path");
-        exec("from runpy import run_module");
-        exec("from os import environ");
-
-        exec("path.append(environ['NETGENDIR'])");
-        exec("globals().update(run_module('expr',globals()))");
-    }
-    catch(bp::error_already_set const &) {
-        PyErr_Print();
-    }
-
-}
-
-
-PythonEnvironment PythonEnvironment::py_env;
-
-
-
-
+extern "C" PyObject * PyInit_Ngbla();
 struct PyExportNgStd {
   PyExportNgStd(BasePythonEnvironment & py_env);
 };
@@ -148,7 +119,39 @@ struct PyExportNgComp {
   PyExportNgComp(BasePythonEnvironment & py_env);
 };
 void PyExportNgSolve(BasePythonEnvironment & py_env);
+
+PythonEnvironment::PythonEnvironment() {
+    PyExportNgBla init_pybla(*this);
+    mainthread_id = std::this_thread::get_id();
+    pythread_id = std::this_thread::get_id();
+    cout << "Init Python environment." << endl;
+    Py_Initialize();
+    PyEval_InitThreads();
+
+    try{
+        main_module = bp::import("__main__");
+        main_namespace = main_module.attr("__dict__");
+
+//         exec("from ngbla import *");
+        exec("from sys import path");
+        exec("from runpy import run_module");
+        exec("from os import environ");
+
+        exec("path.append(environ['NETGENDIR'])");
+        exec("globals().update(run_module('expr',globals()))");
+    }
+    catch(bp::error_already_set const &) {
+        PyErr_Print();
+    }
+}
+
+
+PythonEnvironment PythonEnvironment::py_env;
+
+
          
+
+
 
 
 #endif
@@ -1157,7 +1160,7 @@ int NGSolve_Init (Tcl_Interp * interp)
   auto py_env = PythonEnvironment::getInstance();
 
   PyExportNgStd init_pystd(PythonEnvironment::getInstance());
-  PyExportNgBla init_pybla(PythonEnvironment::getInstance());
+//   PyExportNgBla init_pybla(PythonEnvironment::getInstance());
   PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
   PyExportNgSolve(PythonEnvironment::getInstance());
 
