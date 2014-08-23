@@ -10,26 +10,14 @@ void func()
 }
 
 
-// NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
-
-
-struct PyExportNgStd {
-  PyExportNgStd(BasePythonEnvironment & py_env);
-};
 
 struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
-/*
-struct PyExportNgComp {
-  PyExportNgComp(BasePythonEnvironment & py_env);
-};
-*/
+extern "C" PyObject * PyInit_Ngstd();
 extern "C" PyObject * PyInit_Ngcomp();
-
-void PyExportNgSolve (BasePythonEnvironment & py_env);
-
+extern "C" PyObject * PyInit_Ngsolve();
 
 class PythonEnvironment : public BasePythonEnvironment
 {
@@ -38,6 +26,13 @@ public:
   { 
     main_module = bp::import("__main__");
     main_namespace = main_module.attr("__dict__"); 
+
+    /*
+    exec("from ngstd import *");
+    exec("from ngbla import *");
+    exec("from ngcomp import *");
+    exec("from ngsolve import *");
+    */
 
     exec("from sys import path");
     exec("from runpy import run_module");
@@ -73,9 +68,9 @@ BOOST_PYTHON_MODULE(libngspy)
   bp::def("func", func);
 
   PythonEnvironment py_env;
-  PyExportNgStd ps(py_env);
+
+  PyImport_AppendInittab("Ngstd", PyInit_Ngstd);
   PyExportNgBla pbla(py_env);
-  // PyExportNgComp pcomp(py_env);
-  PyInit_Ngcomp();
-  PyExportNgSolve (py_env);
+  PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);
+  PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);
 }
