@@ -17,7 +17,8 @@ using namespace ngstd;
 
 class BasePythonEnvironment
 {
-protected:
+  // protected:
+public:
   BasePythonEnvironment () { ; }
 
   bp::object main_module; 

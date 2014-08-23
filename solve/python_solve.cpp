@@ -8,6 +8,8 @@ using namespace ngcomp;
 
 void PyExportNgSolve(BasePythonEnvironment & py_env) 
 {
+  bp::scope sc(py_env.main_module);  
+
   PyExportSymbolTable< FESpace* > ();
   PyExportSymbolTable< GridFunction * > ();
   PyExportSymbolTable< BilinearForm * > ();
@@ -15,8 +17,7 @@ void PyExportNgSolve(BasePythonEnvironment & py_env)
   PyExportSymbolTableStdTypes< double* > ();
 
 
-  py_env["PDE"] = bp::class_<PDE> ("PDE")
-    // .def("SetSelfPtr", FunctionPointer([](PDE & self) { pde.Reset (&self, false); return; }))
+  bp::class_<PDE> ("PDE")
     .def("Load", static_cast<void(ngsolve::PDE::*)(const string &, const bool, const bool)> 
          (&ngsolve::PDE::LoadPDE),
          (boost::python::arg("filename"), 
