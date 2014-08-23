@@ -21,9 +21,13 @@ struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
+/*
 struct PyExportNgComp {
   PyExportNgComp(BasePythonEnvironment & py_env);
 };
+*/
+extern "C" PyObject * PyInit_Ngcomp();
+
 void PyExportNgSolve (BasePythonEnvironment & py_env);
 
 
@@ -71,6 +75,7 @@ BOOST_PYTHON_MODULE(libngspy)
   PythonEnvironment py_env;
   PyExportNgStd ps(py_env);
   PyExportNgBla pbla(py_env);
-  PyExportNgComp pcomp(py_env);
+  // PyExportNgComp pcomp(py_env);
+  PyInit_Ngcomp();
   PyExportNgSolve (py_env);
 }
