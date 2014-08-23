@@ -4,16 +4,9 @@
 using namespace ngcomp;
 
 
+BOOST_PYTHON_MODULE(Ngcomp) {
 
-struct PyExportNgComp {
-  PyExportNgComp(BasePythonEnvironment & py_env);
-};
-
-
-PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
-
-  bp::scope sc(py_env.main_module);  
-  
+  cout << "init py - ngcomp" << endl;
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
     .value("BND", BND)
@@ -71,9 +64,5 @@ PyExportNgComp :: PyExportNgComp(BasePythonEnvironment & py_env) {
     .def(PyDefToString<BilinearForm>())
     ;
 }
-
-
-// Call constructor to export python classes
-// static PyExportComp python_export_comp (PythonEnvironment::getInstance());
 
 #endif // NGS_PYTHON

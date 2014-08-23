@@ -115,13 +115,14 @@ struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
-struct PyExportNgComp {
-  PyExportNgComp(BasePythonEnvironment & py_env);
-};
+
+extern "C" PyObject * PyInit_Ngcomp();
 void PyExportNgSolve(BasePythonEnvironment & py_env);
 
 PythonEnvironment::PythonEnvironment() {
     PyExportNgBla init_pybla(*this);
+    // PyExportNgComp();
+    PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);    
     mainthread_id = std::this_thread::get_id();
     pythread_id = std::this_thread::get_id();
     cout << "Init Python environment." << endl;
@@ -132,6 +133,7 @@ PythonEnvironment::PythonEnvironment() {
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
 
+        exec("from Ngcomp import *");
 //         exec("from ngbla import *");
         exec("from sys import path");
         exec("from runpy import run_module");
@@ -1167,7 +1169,7 @@ int NGSolve_Init (Tcl_Interp * interp)
 
   PyExportNgStd init_pystd(PythonEnvironment::getInstance());
 //   PyExportNgBla init_pybla(PythonEnvironment::getInstance());
-  PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
+  // PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
   PyExportNgSolve(PythonEnvironment::getInstance());
 
   {
