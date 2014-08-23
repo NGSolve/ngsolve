@@ -154,6 +154,12 @@ PythonEnvironment PythonEnvironment::py_env;
 
 
 
+/*
+struct PyExportNgComp {
+  PyExportNgComp(BasePythonEnvironment & py_env);
+};
+void PyExportNgSolve(BasePythonEnvironment & py_env);
+*/         
 #endif
 
 
@@ -1164,11 +1170,11 @@ int NGSolve_Init (Tcl_Interp * interp)
   PyExportNgComp init_pycomp(PythonEnvironment::getInstance());
   PyExportNgSolve(PythonEnvironment::getInstance());
 
-  /*
-    // damit erhalten wir die PDE auch im ngsolve - gui
-    // py runtime crash, Matthias ???
-    bp::def ("SetDefaultPDE", FunctionPointer([](PDE & apde) {  pde.Reset (&apde, false); return; }));
-  */
+  {
+    bp::scope sc(py_env.main_module);
+    bp::def ("SetDefaultPDE", 
+             FunctionPointer([](PDE & apde) {  pde.Reset (&apde, false); return; }));
+  }
 
   py_env.Spawn(initfile);
 

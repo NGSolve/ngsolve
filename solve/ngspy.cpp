@@ -44,13 +44,13 @@ public:
   }
 
   virtual void exec(const string s) {
-    cout << "exec from ngspy" << endl;
+    // cout << "exec from ngspy" << endl;
     bp::exec(s.c_str());
   }
 
 
   virtual void exec_file(const char *file) {
-    cout << "file exec from ngspy" << endl;
+    // cout << "file exec from ngspy" << endl;
     try{
       bp::exec_file(file);
         }

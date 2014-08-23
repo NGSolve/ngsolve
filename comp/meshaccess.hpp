@@ -69,14 +69,15 @@ namespace ngcomp
     bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
   };
   
-  class ElementRange
+  class ElementRange : public IntRange
   {
     VorB vb;
-    IntRange r;
+    // IntRange r;
   public:
-    ElementRange (VorB avb, IntRange ar) : vb(avb), r(ar) { ; }
-    ElementIterator begin () const { return ElementIterator(vb,r.First()); }
-    ElementIterator end () const { return ElementIterator(vb,r.Next()); }
+    ElementRange (VorB avb, IntRange ar) : IntRange(ar), vb(avb) { ; }
+    ElementIterator begin () const { return ElementIterator(vb,First()); }
+    ElementIterator end () const { return ElementIterator(vb,Next()); }
+    ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
   };
 
   template <VorB VB>
