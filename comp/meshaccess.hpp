@@ -54,7 +54,7 @@ namespace ngcomp
 
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
-    return ost << (id.IsVolume() ? 'V' : 'B') << ' ' << id.Nr();
+    return ost << (id.IsVolume() ? "VEl" : "BEl") << ' ' << id.Nr();
   }
 
 

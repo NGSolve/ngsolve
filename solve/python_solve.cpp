@@ -3,13 +3,8 @@
 #include <solve.hpp>
 using namespace ngcomp;
 
-// extern AutoPtr<ngsolve::PDE> pde;
 
-
-void PyExportNgSolve(BasePythonEnvironment & py_env) 
-{
-  bp::scope sc(py_env.main_module);  
-
+BOOST_PYTHON_MODULE(Ngsolve) {
   PyExportSymbolTable< FESpace* > ();
   PyExportSymbolTable< GridFunction * > ();
   PyExportSymbolTable< BilinearForm * > ();
@@ -23,6 +18,9 @@ void PyExportNgSolve(BasePythonEnvironment & py_env)
          (boost::python::arg("filename"), 
           boost::python::arg("meshload")=0, 
           boost::python::arg("nogeometryload")=0))
+    .def("Mesh",  static_cast<MeshAccess&(ngsolve::PDE::* const)(int)>(&PDE::GetMeshAccess),
+         bp::return_value_policy<bp::reference_existing_object>(),
+         (bp::arg("nr")=0))
     .def("Solve", &ngsolve::PDE::Solve)
     .def("Spaces", &PDE::GetSpaceTable, bp::return_value_policy<bp::reference_existing_object>())
     .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
@@ -31,7 +29,6 @@ void PyExportNgSolve(BasePythonEnvironment & py_env)
     .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<GridFunction*>>(self.GetGridFunctionTable()); }))
     .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return PyRef<SymbolTable<BilinearForm*>>(self.GetBilinearFormTable()); }))
     ;
-
 }
 
 
