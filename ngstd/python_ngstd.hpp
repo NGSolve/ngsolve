@@ -2,6 +2,7 @@
 #define PYTHON_NGSTD_HPP___
 #ifdef NGS_PYTHON
 
+
 #include <boost/python.hpp>
 #include <ngstd.hpp>
 #include <thread>
@@ -14,6 +15,8 @@ using std::cout;
 using std::endl;
 
 using namespace ngstd;
+
+
 
 class BasePythonEnvironment
 {
@@ -339,32 +342,18 @@ template <typename T> void PyExportSymbolTable ()
   bp::class_<SymbolTable<T>>(name.c_str())
     .add_property ("size", &SymbolTable<T>::Size)
     .def(PyDefToString<SymbolTable<T>>())
-    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
 
-    /*
-    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
-                                        -> typename T_MyRemovePtr<T>::type&
-                                        // -> typename std::remove_pointer<T>::type &
-                                        {
-                                          string name = bp::extract<string>(s);
-                                          if (!self.Used(name))
-                                            cerr << "unused" << endl;
-                                          return *self[name];
-                                        })
-         , bp::return_value_policy<bp::reference_existing_object>()
-         )
-    */
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
                                         {
                                           string name = bp::extract<string>(s);
                                           if (!self.Used(name))
                                             cerr << "unused" << endl;
-                                          // return auto_ptr<typename T_MyRemovePtr<T>::type> (self[name].get());
-                                          return self[name];
+                                          return self[name];  // needs boost 1.55 !!
                                         })
-         // , bp::return_value_policy<bp::reference_existing_object>()
          )
     ;
+
+
 
   name = GetPyName<PyRef<SymbolTable<T>>>();
   bp::class_<PyRef<SymbolTable<T>>>(name.c_str(), bp::no_init)
