@@ -18,9 +18,6 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
-
-
   BaseSymbolTable :: BaseSymbolTable ()
   {
     ;
@@ -35,40 +32,43 @@ namespace ngstd
 
   void BaseSymbolTable :: DelNames()
   {
+    /*
     for (int i = 0; i < names.Size(); i++)
       delete [] names[i];
+    */
     names.SetSize (0);
   }
 
-  int BaseSymbolTable :: Index (const char * name) const
+  int BaseSymbolTable :: Index (const string & name) const
   {
+    /*
     if (name)
       for (int i = 0; i < names.Size(); i++)
 	if (strcmp (names[i], name) == 0) return i;
-    
+    */
+    for (int i = 0; i < names.Size(); i++)
+      if (names[i] == name) return i;
+
     stringstream str;
-    if (name)
-      str << "SymbolTable: unused name '" << name << "'" << endl;
-    else
-      str << "SymbolTable: name = 0" << endl;
-      
+    str << "SymbolTable: unused name '" << name << "'" << endl;
     throw Exception (str.str());
   }
 
-  int BaseSymbolTable :: CheckIndex (const char * name) const
+  int BaseSymbolTable :: CheckIndex (const string & name) const
   {
-    if (name)
-      for (int i = 0; i < names.Size(); i++)
-	if (strcmp (names[i], name) == 0) return i;
+    for (int i = 0; i < names.Size(); i++)
+      if (names[i] == name) return i;
     return -1;
   }
 
-
-  void BaseSymbolTable :: AppendName (const char * name)
+  void BaseSymbolTable :: AppendName (const string & name)
   {
+    /*
     char * hname = new char [strlen (name) + 1];
     strcpy (hname, name);
     names.Append (hname);
+    */
+    names.Append (name);
   }
 
 }

@@ -111,15 +111,15 @@ namespace ngstd
 
     ///
     const char * GetStringFlag (int i, const char *& name) const
-    { name = strflags.GetName(i); return strflags[i]; }
+    { name = strflags.GetName(i).c_str(); return strflags[i]; }
     double GetNumFlag (int i, const char *& name) const
-    { name = numflags.GetName(i); return numflags[i]; }
+    { name = numflags.GetName(i).c_str(); return numflags[i]; }
     void GetDefineFlag (int i, const char *& name) const
-    { name = defflags.GetName(i); }
+    { name = defflags.GetName(i).c_str(); }
     const Array<double> * GetNumListFlag (int i, const char *& name) const
-    { name = numlistflags.GetName(i); return numlistflags[i]; }
+    { name = numlistflags.GetName(i).c_str(); return numlistflags[i]; }
     const Array<char*> * GetStringListFlag (int i, const char *& name) const
-    { name = strlistflags.GetName(i); return strlistflags[i]; }
+    { name = strlistflags.GetName(i).c_str(); return strlistflags[i]; }
 
     friend Archive & operator & (Archive & archive, Flags & flags);
   };

@@ -152,17 +152,17 @@ namespace ngsolve
     ///
     SymbolTable<CoefficientFunction*> coefficients;
     ///
-    SymbolTable<FESpace*> spaces;
+    SymbolTable<shared_ptr<FESpace>> spaces;
     ///
-    SymbolTable<GridFunction*> gridfunctions;
+    SymbolTable<shared_ptr<GridFunction>> gridfunctions;
     ///
-    SymbolTable<BilinearForm*> bilinearforms;
+    SymbolTable<shared_ptr<BilinearForm>> bilinearforms;
     ///
-    SymbolTable<LinearForm*> linearforms;
+    SymbolTable<shared_ptr<LinearForm>> linearforms;
     ///
-    SymbolTable<Preconditioner*> preconditioners;
+    SymbolTable<shared_ptr<Preconditioner>> preconditioners;
     ///
-    SymbolTable<NumProc*> numprocs;
+    SymbolTable<shared_ptr<NumProc>> numprocs;
   
     /// 
     bool isgood;
@@ -336,22 +336,22 @@ namespace ngsolve
     SymbolTable<CoefficientFunction*> & GetCoefficientTable ()
     { return coefficients; }
     ///
-    SymbolTable<FESpace*> & GetSpaceTable ()
+    SymbolTable<shared_ptr<FESpace>> & GetSpaceTable ()
     { return spaces; }
     ///
-    SymbolTable<GridFunction*> & GetGridFunctionTable()
+    SymbolTable<shared_ptr<GridFunction>> & GetGridFunctionTable()
     { return gridfunctions; }
     ///
-    SymbolTable<BilinearForm*> & GetBilinearFormTable()
+    SymbolTable<shared_ptr<BilinearForm>> & GetBilinearFormTable()
     { return bilinearforms; }
     ///
-    SymbolTable<LinearForm*> & GetLinearFormTable()
+    SymbolTable<shared_ptr<LinearForm>> & GetLinearFormTable()
     { return linearforms; }
     ///
-    SymbolTable<Preconditioner*> & GetPreconditionerTable ()
+    SymbolTable<shared_ptr<Preconditioner>> & GetPreconditionerTable ()
     { return preconditioners; }
     ///
-    SymbolTable<NumProc*> & GetNumProcTable()
+    SymbolTable<shared_ptr<NumProc>> & GetNumProcTable()
     { return numprocs; }  
 
 

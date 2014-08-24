@@ -18,7 +18,7 @@ class BaseSymbolTable
 {
 protected:
   /// identifiers
-  Array <char*> names;
+  Array <string> names;
   
 public:
   /// 
@@ -29,13 +29,13 @@ public:
   NGS_DLL_HEADER void DelNames ();
 
   /// append new name (copy)
-  NGS_DLL_HEADER void AppendName (const char * name);
+  NGS_DLL_HEADER void AppendName (const string & name);
 
   /// Index of symbol name, throws exception if unsued
-  NGS_DLL_HEADER int Index (const char * name) const;
+  NGS_DLL_HEADER int Index (const string & name) const;
 
   /// Index of symbol name, returns -1 if unused
-  NGS_DLL_HEADER int CheckIndex (const char * name) const;
+  NGS_DLL_HEADER int CheckIndex (const string & name) const;
 };
 
 
@@ -56,8 +56,8 @@ class SymbolTable : public BaseSymbolTable
   Array <T> data;
 public:
   /// Creates a symboltable
-  SymbolTable ()
-  { ; }
+  SymbolTable () = default;
+  SymbolTable (const SymbolTable & tab2) = default;
 
   /// number of identifiers
   int Size() const
@@ -65,28 +65,30 @@ public:
     return data.Size(); 
   }
 
-
+  /*
   /// Returns reference to element. exception for unused identifier
   T & operator[] (const char * name)
   {
     return data[Index (name)]; 
   }
+  */
 
   /// Returns reference to element. exception for unused identifier
   T & operator[] (const string & name)
   {
-    return data[Index (name.c_str())]; 
+    return data[Index (name)]; 
   }
 
+  /*
   /// Returns element, error if not used
   const T & operator[] (const char * name) const
   {
     return data[Index (name)]; 
   }
-
+  */
   const T & operator[] (const string & name) const
   {
-    return data[Index (name.c_str())]; 
+    return data[Index (name)];
   }
 
   /// Returns reference to i-th element
@@ -98,12 +100,12 @@ public:
   { return data[i]; } 
 
   /// Returns name of i-th element
-  const char* GetName (int i) const
+  const string & GetName (int i) const
   { return names[i]; }
 
 
   /// Associates el to the string name, overrides if name is used
-  void Set (const char * name, const T & el)
+  void Set (const string & name, const T & el)
   {
     int i = CheckIndex (name);
     if (i >= 0) 
@@ -114,21 +116,25 @@ public:
 	AppendName (name);
       }
   }
-
+  /*
   void Set (const string & name, const T & el)
   {
     Set (name.c_str(), el);
   }
+  */
 
+  /*
   /// Checks whether name is used
   bool Used (const char * name) const
   {
     return (CheckIndex(name) >= 0) ? 1 : 0;
   }
+  */
 
   bool Used (const string & name) const
   {
-    return Used (name.c_str());
+    return (CheckIndex(name) >= 0) ? 1 : 0;
+    // return Used (name.c_str());
   }
 
   /// Deletes symboltable
@@ -138,7 +144,6 @@ public:
     data.DeleteAll();
   }
 
-
   SymbolTable<T> & operator= (const SymbolTable<T> & tab2)
   {
     for (int i = 0; i < tab2.Size(); i++)
@@ -147,13 +152,13 @@ public:
   }
 };
 
-template <typename T>
-ostream & operator<< (ostream & ost, const SymbolTable<T> & st)
-{
-  for (int i = 0; i < st.Size(); i++)
-    ost << st.GetName(i) << " : " << st[i] << endl;
-  return ost;
-}
+  template <typename T>
+  ostream & operator<< (ostream & ost, const SymbolTable<T> & st)
+  {
+    for (int i = 0; i < st.Size(); i++)
+      ost << st.GetName(i) << " : " << st[i] << endl;
+    return ost;
+  }
 
 
   template <typename T> 

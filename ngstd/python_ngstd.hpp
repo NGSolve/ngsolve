@@ -313,49 +313,9 @@ struct PyNameTraits<PyRef<T>> {
   { return string("Ref_") + GetPyName<T>(); }
 };
 
-template <typename T> void PyExportSymbolTable ()
-{
-  string name = GetPyName<SymbolTable<T>>();
-  bp::class_<SymbolTable<T>>(name.c_str())
-    .add_property ("size", &SymbolTable<T>::Size)
-    .def(PyDefToString<SymbolTable<T>>())
-    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
-    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
-                                        -> typename std::remove_pointer<T>::type &
-                                        {
-                                          if (!self.Used(bp::extract<char const *>(s)))
-                                            cerr << "unused" << endl;
-                                          return *self[bp::extract<char const *>(s)];
-                                        })
-         , bp::return_value_policy<bp::reference_existing_object>())
-    ;
 
-  name = GetPyName<PyRef<SymbolTable<T>>>();
-  bp::class_<PyRef<SymbolTable<T>>>(name.c_str(), bp::no_init)
-    .add_property ("size", FunctionPointer([](PyRef<SymbolTable<T>> & self)
-                                           { return self.Cast().Size(); }))
-    .def(PyDefToString<PyRef<SymbolTable<T>>>())
-    // .def(PyDefVector<PyRef<SymbolTable<T>>,typename std::remove_pointer<T>::type>())
-    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, bp::str s)
-                                        -> typename std::remove_pointer<T>::type &
-                                        {
-                                          if (!self.Cast().Used(bp::extract<char const *>(s)))
-                                            cerr << "unused" << endl;
-                                          return *self.Cast()[bp::extract<char const *>(s)];
-                                        })
-         , bp::return_value_policy<bp::reference_existing_object>())
-    .def("__len__", FunctionPointer( [](PyRef<SymbolTable<T>> & self) 
-                                     { return self.Cast().Size();} ) )
-    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, int nr)
-                                        -> typename std::remove_pointer<T>::type &
-                                        {
-                                          if (nr < 0 || nr >= self.Cast().Size())
-                                            cerr << "unused" << endl;
-                                          return *self.Cast()[nr];
-                                        })
-         , bp::return_value_policy<bp::reference_existing_object>())
-    ;
-    }
+template <typename T> struct T_MyRemovePtr { typedef T& type; };
+template <typename T> struct T_MyRemovePtr<shared_ptr<T>> { typedef T& type; };
 
 template <class T>
 struct cl_remove_pointer
@@ -368,6 +328,56 @@ template <class T> inline auto MyRemovePtr (T d) -> decltype(cl_remove_pointer<T
 { return cl_remove_pointer<T>::Val(d); }
 
 
+
+
+template <typename T> void PyExportSymbolTable ()
+{
+  string name = GetPyName<SymbolTable<T>>();
+  bp::class_<SymbolTable<T>>(name.c_str())
+    .add_property ("size", &SymbolTable<T>::Size)
+    .def(PyDefToString<SymbolTable<T>>())
+    // .def("__str__", FunctionPointer([](SymbolTable<T> & self) { cout << self; }))
+    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
+                                        -> typename T_MyRemovePtr<T>::type
+                                        // -> typename std::remove_pointer<T>::type &
+                                        {
+                                          if (!self.Used(bp::extract<string>(s)))
+                                            cerr << "unused" << endl;
+                                          return *self[bp::extract<string>(s)];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>()
+         )
+    ;
+
+  name = GetPyName<PyRef<SymbolTable<T>>>();
+  bp::class_<PyRef<SymbolTable<T>>>(name.c_str(), bp::no_init)
+    .add_property ("size", FunctionPointer([](PyRef<SymbolTable<T>> & self)
+                                           { return self.Cast().Size(); }))
+    .def(PyDefToString<PyRef<SymbolTable<T>>>())
+    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, bp::str s)
+                                        -> typename T_MyRemovePtr<T>::type
+                                        {
+                                          if (!self.Cast().Used(bp::extract<string>(s)))
+                                            cerr << "unused" << endl;
+                                          return *self.Cast()[bp::extract<string>(s)];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>()
+         )
+    .def("__len__", FunctionPointer( [](PyRef<SymbolTable<T>> & self) 
+                                     { return self.Cast().Size();} ) )
+    .def("__getitem__", FunctionPointer([](PyRef<SymbolTable<T>> & self, int nr)
+                                        -> typename T_MyRemovePtr<T>::type
+                                        {
+                                          if (nr < 0 || nr >= self.Cast().Size())
+                                            cerr << "unused" << endl;
+                                          return *self.Cast()[nr];
+                                        })
+         , bp::return_value_policy<bp::reference_existing_object>())
+    ;
+    }
+
+
+
 template <typename T> void PyExportSymbolTableStdTypes ()
 {
   string name = GetPyName<SymbolTable<T>>();
@@ -377,9 +387,9 @@ template <typename T> void PyExportSymbolTableStdTypes ()
     .def(PyDefToString<SymbolTable<T>>())
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
                                         {
-                                          if (!self.Used(bp::extract<char const *>(s)))
+                                          if (!self.Used(bp::extract<string>(s)))
                                             cerr << "unused" << endl;
-                                          return MyRemovePtr (self[bp::extract<char const *>(s)]);
+                                          return MyRemovePtr (self[bp::extract<string>(s)]);
                                         }))
     ;
 }

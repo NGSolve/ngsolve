@@ -486,7 +486,7 @@ namespace ngsolve
         {
           int num = arguments[i].argnum;
           if (num >= 3)
-            names[num] = arguments.GetName(i);
+            names[num] = arguments.GetName(i).c_str();
         }
       for (int i = 0; i < names.Size(); i++)
         if (names[i])
@@ -1429,7 +1429,7 @@ namespace ngsolve
 			{
 			  int num = coeffs[0]->arguments[i].argnum;
 			  if (num >= 3)
-			    names[num] = coeffs[0]->arguments.GetName(i);
+			    names[num] = coeffs[0]->arguments.GetName(i).c_str();
 			}
 		      for (int i = 0; i < names.Size(); i++)
 			if (names[i])

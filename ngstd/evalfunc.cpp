@@ -82,22 +82,22 @@ namespace ngstd
   }
 
 
-  void EvalFunction :: DefineConstant (const char * name, double val)
+  void EvalFunction :: DefineConstant (const string & name, double val)
   {
     constants.Set (name, val);
   }
 
-  void EvalFunction :: DefineGlobalVariable (const char * name, double * var)
+  void EvalFunction :: DefineGlobalVariable (const string & name, double * var)
   {
     globvariables.Set (name, var);
   }
 
-  void EvalFunction :: DefineGlobalVariable (const char * name, GenericVariable * var)
+  void EvalFunction :: DefineGlobalVariable (const string & name, GenericVariable * var)
   {
     genericvariables.Set (name, var);
   }
 
-  void EvalFunction :: DefineArgument (const char * name, int num, int vecdim, bool iscomplex)
+  void EvalFunction :: DefineArgument (const string & name, int num, int vecdim, bool iscomplex)
   {
     arguments.Set (name, argtype(num, vecdim, iscomplex));
   }
