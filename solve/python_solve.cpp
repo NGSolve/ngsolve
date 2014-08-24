@@ -5,6 +5,7 @@ using namespace ngcomp;
 
 
 BOOST_PYTHON_MODULE(Ngsolve) {
+  cout << "init py - ngsolve" << endl;
   PyExportSymbolTable< FESpace* > ();
   PyExportSymbolTable< GridFunction * > ();
   PyExportSymbolTable< BilinearForm * > ();

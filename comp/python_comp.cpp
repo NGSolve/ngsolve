@@ -7,6 +7,7 @@ using namespace ngcomp;
 BOOST_PYTHON_MODULE(Ngcomp) {
 
   cout << "init py - ngcomp" << endl;
+
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
     .value("BND", BND)
@@ -29,6 +30,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ))
     .add_property("edges", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Edges());} ))
     .add_property("faces", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Faces());} ))
+    .add_property("type", &Ngs_Element::GetType)
     ;
 
   bp::class_<MeshAccess>("MeshAccess", "meshclass doc", bp::no_init)
@@ -40,6 +42,10 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
     .add_property ("ne", static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE))
 
+    .def ("GetTrafo", 
+          static_cast<ElementTransformation&(MeshAccess::*)(ElementId,LocalHeap&)const>
+          (&MeshAccess::GetTrafo), 
+          bp::return_value_policy<bp::reference_existing_object>())
 
     // first attempts, but keep for a moment ...
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
@@ -56,7 +62,12 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
     .def(PyDefToString<FESpace>())
+    .def ("GetFE", 
+          static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
+          (&FESpace::GetFE), 
+          bp::return_value_policy<bp::reference_existing_object>())
     ;
+
 
   bp::class_<GridFunction,boost::noncopyable>("GridFunction", bp::no_init)
     .def(PyDefToString<GridFunction>())

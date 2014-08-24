@@ -10,7 +10,7 @@ using std::ostringstream;
 
 
 BOOST_PYTHON_MODULE(Ngstd) {
-      
+  cout << "init py - ngstd" << endl;
     // Export ngstd classes
   bp::class_<FlatArray<double> >("FlatArrayD")
         .def(PyDefVector<FlatArray<double>, double>()) 
@@ -32,11 +32,13 @@ BOOST_PYTHON_MODULE(Ngstd) {
         .def(bp::init<int>())
         ;
     
-    
 
     bp::class_<ngstd::LocalHeap>
-      ("LocalHeap",bp::no_init)
-      .def(bp::init<size_t,const char*>())
+      ("LocalHeap",bp::init<size_t,const char*>())
+      ;
+
+    bp::class_<ngstd::HeapReset>
+      ("HeapReset",bp::init<LocalHeap&>())
       ;
 
     bp::class_<ngstd::Flags>
