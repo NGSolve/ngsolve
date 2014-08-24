@@ -148,13 +148,13 @@ public:
   /// parse from stream
   bool Parse (istream & aist);
   /// define constant 
-  void DefineConstant (const char * name, double val);
+  void DefineConstant (const string & name, double val);
   /// define constant 
-  void DefineGlobalVariable (const char * name, double * var);
+  void DefineGlobalVariable (const string & name, double * var);
   /// define constant 
-  void DefineGlobalVariable (const char * name, GenericVariable * var);
+  void DefineGlobalVariable (const string & name, GenericVariable * var);
   /// define arguments 
-  void DefineArgument (const char * name, int num, int vecdim = 1, bool iscomplex = false);
+  void DefineArgument (const string & name, int num, int vecdim = 1, bool iscomplex = false);
 
   /// evaluate function
   double Eval (const double * x = NULL) const;

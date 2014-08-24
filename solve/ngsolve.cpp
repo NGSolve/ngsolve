@@ -890,7 +890,7 @@ int NGS_GetData (ClientData clientData,
       else if (strcmp (argv[1], "coefficientname") == 0)
 	{
 	  sprintf (buf, "%s",
-		   pde->GetCoefficientTable().GetName(atoi(argv[2])));
+		   pde->GetCoefficientTable().GetName(atoi(argv[2])).c_str());
 	}
 
 
@@ -902,7 +902,7 @@ int NGS_GetData (ClientData clientData,
       else if (strcmp (argv[1], "spacename") == 0)
 	{
 	  sprintf (buf, "%s",
-		   pde->GetSpaceTable().GetName(atoi(argv[2])));
+		   pde->GetSpaceTable().GetName(atoi(argv[2])).c_str());
 	}
       else if (strcmp (argv[1], "spacetype") == 0)
 	{
@@ -942,7 +942,7 @@ int NGS_GetData (ClientData clientData,
       else if (strcmp (argv[1], "gridfunctionname") == 0)
 	{
 	  sprintf (buf, "%s",
-		   pde->GetGridFunctionTable().GetName(atoi(argv[2])));
+		   pde->GetGridFunctionTable().GetName(atoi(argv[2])).c_str());
 	}
       else if (strcmp (argv[1], "gridfunctionspace") == 0)
 	{
@@ -961,7 +961,7 @@ int NGS_GetData (ClientData clientData,
       else if (strcmp (argv[1], "bilinearformname") == 0)
 	{
 	  sprintf (buf, "%s",
-		   pde->GetBilinearFormTable().GetName(atoi(argv[2])));
+		   pde->GetBilinearFormTable().GetName(atoi(argv[2])).c_str());
 	}
 
       else if (strcmp (argv[1], "numlinearforms") == 0)
@@ -971,7 +971,7 @@ int NGS_GetData (ClientData clientData,
       else if (strcmp (argv[1], "linearformname") == 0)
 	{
 	  sprintf (buf, "%s",
-		   pde->GetLinearFormTable().GetName(atoi(argv[2])));
+		   pde->GetLinearFormTable().GetName(atoi(argv[2])).c_str());
 	}
 
       else if (strcmp (argv[1], "numbilinearformcomps") == 0)
