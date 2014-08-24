@@ -56,7 +56,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
 
 
-  bp::class_<FESpace, auto_ptr<FESpace>, boost::noncopyable>("FESpace", bp::no_init)
+  bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("GetDofNrs", FunctionPointer([](FESpace & self, int i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
@@ -67,11 +67,12 @@ BOOST_PYTHON_MODULE(Ngcomp) {
           bp::return_value_policy<bp::reference_existing_object>())
     ;
 
-  bp::class_<GridFunction, auto_ptr<GridFunction>, boost::noncopyable>("GridFunction", bp::no_init)
+
+  bp::class_<GridFunction, shared_ptr<GridFunction>, boost::noncopyable>("GridFunction", bp::no_init)
     .def(PyDefToString<GridFunction>())
     ;
 
-  bp::class_<BilinearForm, auto_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
+  bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
     ;
 }
