@@ -54,6 +54,36 @@ BOOST_PYTHON_MODULE(Ngfem) {
     // .add_property("classname", &FiniteElement::ClassName)   // crashes ???
     ;
   
+  typedef FiniteElement* FEPtr;
+  bp::def("H1FE", FunctionPointer([](ELEMENT_TYPE et, int order)->FEPtr
+                                  {
+                                    FiniteElement * fe = NULL;
+                                    switch (et)
+                                      {
+                                      case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
+                                      case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
+                                      case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
+                                      default: cerr << "cannot make fe " << et << endl;
+                                      }
+                                    return fe;
+                                  }),
+          bp::return_value_policy<bp::manage_new_object>()
+          );
+  bp::def("L2FE", FunctionPointer([](ELEMENT_TYPE et, int order)->FEPtr
+                                  {
+                                    FiniteElement * fe = NULL;
+                                    switch (et)
+                                      {
+                                      case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
+                                      case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
+                                      case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
+                                      default: cerr << "cannot make fe " << et << endl;
+                                      }
+                                    return fe;
+                                  }),
+          bp::return_value_policy<bp::manage_new_object>()
+          );
+    
   bp::class_<ElementTransformation, boost::noncopyable>("ElementTransformation", bp::no_init)
     .def ("IsBoundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
