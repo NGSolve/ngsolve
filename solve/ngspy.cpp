@@ -16,6 +16,7 @@ struct PyExportNgBla {
 };
 
 extern "C" PyObject * PyInit_Ngstd();
+extern "C" PyObject * PyInit_Ngfem();
 extern "C" PyObject * PyInit_Ngcomp();
 extern "C" PyObject * PyInit_Ngsolve();
 
@@ -71,6 +72,7 @@ BOOST_PYTHON_MODULE(libngspy)
 
   PyImport_AppendInittab("Ngstd", PyInit_Ngstd);
   PyExportNgBla pbla(py_env);
+  PyImport_AppendInittab("Ngfem", PyInit_Ngfem);
   PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);
   PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);
 }

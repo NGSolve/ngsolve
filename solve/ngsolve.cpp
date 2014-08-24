@@ -110,6 +110,7 @@ struct PyExportNgBla {
 };
 
 
+extern "C" PyObject * PyInit_Ngfem();
 extern "C" PyObject * PyInit_Ngcomp();
 extern "C" PyObject * PyInit_Ngsolve();
 
@@ -117,6 +118,7 @@ extern "C" PyObject * PyInit_Ngsolve();
 PythonEnvironment::PythonEnvironment() {
     PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
     PyExportNgBla init_pybla(*this);
+    PyImport_AppendInittab("Ngfem", PyInit_Ngfem);    
     PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);    
     PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
 
@@ -131,6 +133,7 @@ PythonEnvironment::PythonEnvironment() {
         main_namespace = main_module.attr("__dict__");
 
         exec("from Ngstd import *");
+        exec("from Ngfem import *");
         exec("from Ngcomp import *");
         exec("from Ngsolve import *");
 
