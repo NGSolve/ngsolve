@@ -83,17 +83,17 @@ struct PyNameTraits {
 
 template<>
 struct PyNameTraits<int> {
-  static const string & GetName() { static const string name = "I"; return name; }
+  static string GetName() { return "I"; }
 };
 
 template<>
 struct PyNameTraits<float> {
-  static const string & GetName() { static const string name = "F"; return name; }
+  static string GetName() { return "F"; }
 };
 
 template<>
 struct PyNameTraits<double> {
-  static const string & GetName() { static const string name = "D"; return name; }
+  static string GetName() { return "D"; }
 };
 
 template <typename T>
@@ -135,7 +135,8 @@ struct PyDefROBracketOperator : public boost::python::def_visitor<PyDefROBracket
       ;
   }
 
-  static TELEM Get(T& self, int i) { 
+  static TELEM Get(T& self, int i) 
+  { 
     if( i<self.Size() && i>=0 )
       return self[i];
     RaiseIndexError();
@@ -144,6 +145,7 @@ struct PyDefROBracketOperator : public boost::python::def_visitor<PyDefROBracket
 
   static void RaiseIndexError() {
     // PythonEnvironment::getInstance().exec("raise IndexError()\n");
+    bp::exec("raise IndexError()\n");
     cerr << "python Index error" << endl;
   }
 
@@ -187,14 +189,14 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
 // Python iterator protocoll
 template <typename T, typename TELEM>
 class PyIterator {
-  T &v;
+  T v;
   int size;
   int index;
   int startindex;
   //     typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
     
 public:
-  PyIterator(T &v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
+  PyIterator(T v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
 
   TELEM Next() { 
     if(index<startindex+size) return v[index++];
@@ -205,7 +207,9 @@ public:
   }
 
   static void Export () {
-    bp::class_<PyIterator<T, TELEM> >("PyIterator", bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
+    string name = string("PyIterator")+GetPyName<T>();
+    bp::class_<PyIterator<T, TELEM> >( name.c_str(), bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
+    // bp::class_<PyIterator<T, TELEM> >(string("PyIterator")+GetPyName<T>(), bp::no_init).def("__next__", &PyIterator<T, TELEM>::Next);
   }
 };
 
@@ -235,7 +239,10 @@ struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> 
     PyIterator<T, TELEM>::Export();
     c
       .def(PyDefROBracketOperator<T, TELEM>())
-      .def("__iter__", FunctionPointer([](T &v) { return PyIterator<T, TELEM>(v, v.Size(), 0 ); }))
+      .def("__iter__", FunctionPointer([](T &v) 
+                                       {
+                                         return PyIterator<T, TELEM>(v, v.Size(), 0 ); 
+                                       }))
       ;
   }
 };

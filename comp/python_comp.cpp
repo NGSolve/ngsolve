@@ -21,13 +21,13 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .def("IsBoundary", &ElementId::IsBoundary)
     .def(PyDefToString<FESpace>())
     ;
-
-  bp::class_<ElementRange> ("ElementRange", bp::init<VorB,IntRange>())
+  //
+  bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())
     .def(PyDefIterable<ElementRange,ElementId>())
     ;
 
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
-    .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Vertices());} ))
+    .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{return Array<int>(el.Vertices());} ))
     .add_property("edges", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Edges());} ))
     .add_property("faces", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Faces());} ))
     .add_property("type", &Ngs_Element::GetType)
