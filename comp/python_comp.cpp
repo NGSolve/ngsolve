@@ -86,4 +86,31 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
 }
 
+
+
+
+
+
+BOOST_PYTHON_MODULE(libngcomp)
+{
+  cout << "execute 'import Ngstd' to import py-ngstd module" << endl;
+  cout << "execute 'import Ngbla' to import py-ngbla module" << endl;
+  cout << "execute 'import Ngfem' to import py-ngfem module" << endl;
+  cout << "execute 'import Ngcomp' to import py-ngcomp module" << endl;
+}
+
+struct Init {
+  Init() 
+  { 
+    PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp); 
+  }
+};
+static Init init;
+
+
+
+
+
+
+
 #endif // NGS_PYTHON

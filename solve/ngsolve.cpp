@@ -111,15 +111,12 @@ struct PyExportNgBla {
 
 
 // extern "C" PyObject * PyInit_Ngfem();
-extern "C" PyObject * PyInit_Ngcomp();
 extern "C" PyObject * PyInit_Ngsolve();
 
 
 PythonEnvironment::PythonEnvironment() {
   // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
     PyExportNgBla init_pybla(*this);
-    // PyImport_AppendInittab("Ngfem", PyInit_Ngfem);    
-    PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);    
     PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
 
     mainthread_id = std::this_thread::get_id();
