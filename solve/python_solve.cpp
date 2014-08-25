@@ -33,8 +33,11 @@ BOOST_PYTHON_MODULE(Ngsolve) {
          bp::return_value_policy<bp::reference_existing_object>(),
          (bp::arg("nr")=0))
     .def("Solve", &ngsolve::PDE::Solve)
-    .def("Spaces", &PDE::GetSpaceTable, bp::return_value_policy<bp::reference_existing_object>())
-    .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
+
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<GridFunction> gf)
+                                {
+                                  self.AddGridFunction (gf->GetName(), gf);
+                                }))
 
     .add_property ("constants", FunctionPointer([](PDE & self) { return self.GetConstantTable(); }))
     .add_property ("variables", FunctionPointer([](PDE & self) { return self.GetVariableTable(); }))

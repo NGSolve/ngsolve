@@ -81,6 +81,15 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .def(PyDefToString<GridFunction>())
     ;
 
+  bp::def("CreateGF", FunctionPointer
+          ([](string name, const FESpace & fespace)
+           {
+             Flags flags;
+             GridFunction * gf = CreateGridFunction (&fespace, name, flags);
+             return shared_ptr<GridFunction> (gf);
+           }),
+          (bp::arg("name"), bp::arg("fespace")));
+  
   bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
     ;

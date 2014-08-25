@@ -297,7 +297,7 @@ namespace ngsolve
     ///
     GridFunction * AddGridFunction (const string & name, const Flags & flags);
     ///
-    void AddGridFunction (const string & name, GridFunction * gf, bool addcf = false);
+    void AddGridFunction (const string & name, shared_ptr<GridFunction> gf, bool addcf = false);
     ///
     BilinearForm * AddBilinearForm (const string & name, const Flags & flags);
     ///

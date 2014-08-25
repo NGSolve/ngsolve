@@ -876,7 +876,7 @@ namespace ngsolve
             archive & name & fesname;
             GridFunction * gf = CreateGridFunction (GetFESpace(fesname), name, Flags());
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
-            AddGridFunction (name, gf);
+            AddGridFunction (name, shared_ptr<GridFunction> (gf));
             gridfunctions[i] -> DoArchive (archive);            
           }
       }
@@ -1049,15 +1049,15 @@ namespace ngsolve
  
     GridFunction * gf = CreateGridFunction (space, name, flags);
 
-    AddGridFunction (name, gf, true); // flags.GetDefineFlag ("addcoef"));
+    AddGridFunction (name, shared_ptr<GridFunction>(gf), true); // flags.GetDefineFlag ("addcoef"));
     return gf;
   }
 
-  void PDE :: AddGridFunction (const string & name, GridFunction * gf, bool addcf)
+  void PDE :: AddGridFunction (const string & name, shared_ptr<GridFunction> gf, bool addcf)
   {
     gf -> SetName (name);
-    gridfunctions.Set (name, shared_ptr<GridFunction>(gf));
-    todo.Append(gf);
+    gridfunctions.Set (name, gf);
+    todo.Append(gf.get());
 
     if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
       AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
@@ -1076,7 +1076,7 @@ namespace ngsolve
 	for (int i = 0; i < cfe->GetNSpaces(); i++)
 	  {
             string nname = name + "." + ToString(i+1);
-	    AddGridFunction (nname, gf->GetComponent(i), addcf);
+	    AddGridFunction (nname, shared_ptr<GridFunction>(gf->GetComponent(i)), addcf);
 	  }
       }
   }
