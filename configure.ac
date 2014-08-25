@@ -157,7 +157,7 @@ pyon=false
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
  	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
-        [LDFLAGS+=" -l$BOOST_PYTHON_LIB $PYTHON_LDFLAGS"]
+        [LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
         [pyon=true]
 	)
 AM_CONDITIONAL([NGSPY], [test x$pyon = xtrue])

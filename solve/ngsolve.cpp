@@ -41,8 +41,10 @@ namespace netgen
 
 
 #ifdef NGS_PYTHON
+// #include <dlfcn.h>  // dlopen of python lib ???
 #include "../ngstd/python_ngstd.hpp"
 
+void * ptr = (void*)PyOS_InputHook;
 
 
 class AcquireGIL 
@@ -1159,9 +1161,11 @@ int NGSolve_Init (Tcl_Interp * interp)
 #endif
 
 
-
+  
 
 #ifdef NGS_PYTHON
+
+  // void * handle = dlopen ("libpython3.2mu.so", RTLD_LAZY | RTLD_GLOBAL);
 
   string initfile = netgen::ngdir + dirslash + "init.py";
   cout << "python init file = " << initfile << endl;
