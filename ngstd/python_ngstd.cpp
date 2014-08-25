@@ -61,14 +61,12 @@ BOOST_PYTHON_MODULE(Ngstd)
 
 BOOST_PYTHON_MODULE(libngstd)
 {
-  cout << "running pyinit_libngstd" << endl;
-  // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);  
+  cout << "execute 'import Ngstd' to import py-ngstd module" << endl;
 }
 
 struct Init {
   Init() 
   { 
-    cout << "init ngstd-py" << endl;
     PyImport_AppendInittab("Ngstd", PyInit_Ngstd); 
   }
 };

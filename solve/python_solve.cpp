@@ -18,8 +18,8 @@ BOOST_PYTHON_MODULE(Ngsolve) {
   PyExportSymbolTable<shared_ptr<BilinearForm>> ();
   PyExportSymbolTable<shared_ptr<LinearForm>> ();
   PyExportSymbolTable<shared_ptr<NumProc>> ();
-  PyExportSymbolTableStdTypes< double > ();
-  PyExportSymbolTableStdTypes< shared_ptr<double> > ();
+  PyExportSymbolTable<double> ();
+  PyExportSymbolTable<shared_ptr<double>> ();
 
 
   bp::class_<PDE> ("PDE", bp::init<>())
