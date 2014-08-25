@@ -352,7 +352,7 @@ template <typename T> void PyExportSymbolTable ()
     ;
 
 
-
+  /*
   name = GetPyName<PyRef<SymbolTable<T>>>();
   bp::class_<PyRef<SymbolTable<T>>>(name.c_str(), bp::no_init)
     .add_property ("size", FunctionPointer([](PyRef<SymbolTable<T>> & self)
@@ -378,10 +378,10 @@ template <typename T> void PyExportSymbolTable ()
                                         })
          , bp::return_value_policy<bp::reference_existing_object>())
     ;
-    }
+  */
+}
 
-
-
+/*
 template <typename T> void PyExportSymbolTableStdTypes ()
 {
   string name = GetPyName<SymbolTable<T>>();
@@ -397,8 +397,7 @@ template <typename T> void PyExportSymbolTableStdTypes ()
                                         }))
     ;
 }
-
-
+*/
 
 
 

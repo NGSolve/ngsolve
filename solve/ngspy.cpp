@@ -2,21 +2,14 @@
 using namespace ngsolve;
 #include "../ngstd/python_ngstd.hpp"
 
-void func()
-{
-  cout << "hi" << endl;
-  
-  boost::python::exec("a = 1");
-}
-
 
 
 struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
-extern "C" PyObject * PyInit_Ngstd();
-extern "C" PyObject * PyInit_Ngfem();
+// extern "C" PyObject * PyInit_Ngstd();
+// extern "C" PyObject * PyInit_Ngfem();
 extern "C" PyObject * PyInit_Ngcomp();
 extern "C" PyObject * PyInit_Ngsolve();
 
@@ -64,15 +57,11 @@ public:
 
 BOOST_PYTHON_MODULE(libngspy)
 {
-  namespace bp = boost::python;
-  
-  bp::def("func", func);
-
   PythonEnvironment py_env;
 
-  PyImport_AppendInittab("Ngstd", PyInit_Ngstd);
+  // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);
   PyExportNgBla pbla(py_env);
-  PyImport_AppendInittab("Ngfem", PyInit_Ngfem);
+  // PyImport_AppendInittab("Ngfem", PyInit_Ngfem);
   PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);
   PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);
 }

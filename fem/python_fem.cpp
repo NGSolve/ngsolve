@@ -132,5 +132,21 @@ BOOST_PYTHON_MODULE(Ngfem) {
            }));
 }
 
+BOOST_PYTHON_MODULE(libngfem)
+{
+  cout << "execute 'import Ngstd' to import py-ngstd module" << endl;
+  cout << "execute 'import Ngbla' to import py-ngbla module" << endl;
+  cout << "execute 'import Ngfem' to import py-ngfem module" << endl;
+}
+
+struct Init {
+  Init() 
+  { 
+    PyImport_AppendInittab("Ngfem", PyInit_Ngfem); 
+  }
+};
+static Init init;
+
+
 
 #endif
