@@ -72,10 +72,9 @@ namespace ngsolve
     for (int i = 0; i < numprocs.Size(); i++)
       delete numprocs[i];
     numprocs.DeleteAll();
-    */
-
     for (int i = 0; i < variables.Size(); i++)
       delete variables[i];
+    */
     for (int i = 0; i < string_constants.Size(); i++)
       delete string_constants[i];
     string_constants.DeleteAll();
@@ -911,7 +910,7 @@ namespace ngsolve
       {
 	double * varp = new double;
 	*varp = val;
-	variables.Set (name, varp);
+	variables.Set (name, shared_ptr<double> (varp));
       }
   }
 

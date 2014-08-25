@@ -4,27 +4,6 @@
 using namespace ngfem;
 
 
-// for testing ...
-class Base
-{
-public:
-  Base () { cout << "constr Base" << endl; }
-  virtual void f() { cout << "hi from base"; }
-  virtual void g() = 0;
-  virtual ~Base() { cout << "destr base"; }
-  
-};
-
-class Derived : public Base
-{
-public:
-  Derived () { cout << "constr Derived" << endl; }
-  virtual void f() { cout << "hi from derived"; }
-  virtual void g() { cout << "g is overloaded"; }
-  virtual ~Derived() { cout << "destr derived"; }
-};
-
-
 
 BOOST_PYTHON_MODULE(Ngfem) {
 
@@ -135,12 +114,9 @@ BOOST_PYTHON_MODULE(Ngfem) {
     ;
 
 
-  // testing
-  bp::class_<Base, boost::noncopyable>("Base", bp::no_init)
-    .def ("f", &Base::f)
-    .def ("g", &Base::g)
-    ;
-  bp::class_<Derived, bp::bases<Base>>("Derived")
+
+  bp::def("testlist", FunctionPointer
+          ([](bp::object const & x) { cout << "any object"; }))
     ;
 
   bp::def("testlist", FunctionPointer

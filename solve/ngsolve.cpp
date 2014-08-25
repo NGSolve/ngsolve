@@ -116,7 +116,7 @@ extern "C" PyObject * PyInit_Ngsolve();
 
 
 PythonEnvironment::PythonEnvironment() {
-    PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
+  // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
     PyExportNgBla init_pybla(*this);
     PyImport_AppendInittab("Ngfem", PyInit_Ngfem);    
     PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);    

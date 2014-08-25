@@ -23,7 +23,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
 
   bp::class_<ElementRange> ("ElementRange", bp::init<VorB,IntRange>())
-    .def(PyDefList<ElementRange,ElementId>())
+    .def(PyDefIterable<ElementRange,ElementId>())
     ;
 
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
@@ -58,6 +58,14 @@ BOOST_PYTHON_MODULE(Ngcomp) {
 
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
+    .def("Update", FunctionPointer([](FESpace & self, int heapsize)
+                                   {
+                                     LocalHeap lh (heapsize, "FESpace::Update-heap");
+                                     self.Update(lh);
+                                     self.FinalizeUpdate(lh);
+                                   }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+    
     .def("GetDofNrs", FunctionPointer([](FESpace & self, int i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
