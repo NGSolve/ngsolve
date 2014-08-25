@@ -39,6 +39,9 @@ BOOST_PYTHON_MODULE(Ngstd)
 
   bp::class_<ngstd::HeapReset>
     ("HeapReset",bp::init<LocalHeap&>())
+    // .def(bp::init<const HeapReset&>())
+    // .def("__enter__", FunctionPointer([](HeapReset & lh) { cout << "enter" << endl; }))
+    // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
     ;
 
   bp::class_<ngstd::Flags>
@@ -48,7 +51,7 @@ BOOST_PYTHON_MODULE(Ngstd)
   bp::class_<ngstd::IntRange>
     ("IntRange", bp::init<int,int>())
     .def(PyDefToString<IntRange>())
-    .def(PyDefList<IntRange,int>())
+    .def(PyDefIterable<IntRange,int>())
     ;
 
     
@@ -59,7 +62,17 @@ BOOST_PYTHON_MODULE(Ngstd)
 BOOST_PYTHON_MODULE(libngstd)
 {
   cout << "running pyinit_libngstd" << endl;
-  PyImport_AppendInittab("Ngstd", PyInit_Ngstd);  
+  // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);  
 }
+
+struct Init {
+  Init() 
+  { 
+    cout << "init ngstd-py" << endl;
+    PyImport_AppendInittab("Ngstd", PyInit_Ngstd); 
+  }
+};
+static Init init;
+
 
 #endif // NGS_PYTHON

@@ -461,7 +461,7 @@ namespace ngsolve
                         pde.GetConstantTable()[i]);
       for (int i = 0; i < pde.GetVariableTable().Size(); i++)
         DefineGlobalVariable (pde.GetVariableTable().GetName(i),
-                              pde.GetVariableTable()[i]);
+                              pde.GetVariableTable()[i].get());
       for (int i = 0; i < pde.GenericVariables().Size(); i++)
         DefineGlobalVariable (pde.GenericVariables().GetName(i),
                               &pde.GenericVariables()[i]);
@@ -1170,7 +1170,7 @@ namespace ngsolve
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-						   pde->GetVariableTable()[i]);
+						   pde->GetVariableTable()[i].get());
 		      
 		      
                       scan->WriteBack();
@@ -1298,7 +1298,7 @@ namespace ngsolve
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
-						   pde->GetVariableTable()[i]);
+						   pde->GetVariableTable()[i].get());
 		      for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
 			fun->DefineArgument (pde->GetCoefficientTable().GetName(i),-1,
 					     pde->GetCoefficientTable()[i]->Dimension(),

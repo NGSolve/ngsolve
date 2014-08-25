@@ -19,10 +19,11 @@ BOOST_PYTHON_MODULE(Ngsolve) {
   PyExportSymbolTable<shared_ptr<LinearForm>> ();
   PyExportSymbolTable<shared_ptr<NumProc>> ();
   PyExportSymbolTableStdTypes< double > ();
-  PyExportSymbolTableStdTypes< double* > ();
+  PyExportSymbolTableStdTypes< shared_ptr<double> > ();
 
 
-  bp::class_<PDE> ("PDE")
+  bp::class_<PDE> ("PDE", bp::init<>())
+    .def(bp::init<const string&>())
     .def("Load", static_cast<void(ngsolve::PDE::*)(const string &, const bool, const bool)> 
          (&ngsolve::PDE::LoadPDE),
          (boost::python::arg("filename"), 
@@ -36,6 +37,7 @@ BOOST_PYTHON_MODULE(Ngsolve) {
     .def("Variables", &PDE::GetVariableTable, bp::return_value_policy<bp::reference_existing_object>())
 
     .add_property ("constants", FunctionPointer([](PDE & self) { return self.GetConstantTable(); }))
+    .add_property ("variables", FunctionPointer([](PDE & self) { return self.GetVariableTable(); }))
     .add_property ("spaces", FunctionPointer([](PDE & self) { return self.GetSpaceTable(); }))
     .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return self.GetGridFunctionTable(); }))
     .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return self.GetBilinearFormTable(); }))

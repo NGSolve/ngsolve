@@ -144,7 +144,7 @@ namespace ngsolve
     ///
     SymbolTable<string*> string_constants;
     ///
-    SymbolTable<double*> variables;
+    SymbolTable<shared_ptr<double>> variables;
     ///
     SymbolTable<GenericVariable> generic_variables;
     ///
@@ -192,6 +192,12 @@ namespace ngsolve
   public:
     ///
     PDE();
+    ///
+    PDE (const string & filename)
+      : PDE() 
+    {
+      LoadPDE (filename);
+    }
     ///
     ~PDE();
 
@@ -326,7 +332,7 @@ namespace ngsolve
     SymbolTable<string*> & GetStringConstantTable ()
     { return string_constants; }
     ///
-    SymbolTable<double*> & GetVariableTable ()
+    SymbolTable<shared_ptr<double>> & GetVariableTable ()
     { return variables; }
 
     SymbolTable<GenericVariable> & GenericVariables() { return generic_variables; }

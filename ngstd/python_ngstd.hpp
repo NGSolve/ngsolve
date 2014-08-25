@@ -229,7 +229,7 @@ struct PyDefVector : public boost::python::def_visitor<PyDefVector<T,TELEM> > {
 
 // Joachim: Matthias, please polish
 template< typename T,  typename TELEM = double>
-struct PyDefList : public boost::python::def_visitor<PyDefList<T,TELEM> > {
+struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> > {
   template <class Tclass>
   void visit(Tclass& c) const {
     PyIterator<T, TELEM>::Export();
@@ -342,10 +342,8 @@ template <typename T> void PyExportSymbolTable ()
   bp::class_<SymbolTable<T>>(name.c_str())
     .add_property ("size", &SymbolTable<T>::Size)
     .def(PyDefToString<SymbolTable<T>>())
-
-    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, bp::str s)
+    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, string name)
                                         {
-                                          string name = bp::extract<string>(s);
                                           if (!self.Used(name))
                                             cerr << "unused" << endl;
                                           return self[name];  // needs boost 1.55 !!
