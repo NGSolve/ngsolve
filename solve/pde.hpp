@@ -150,7 +150,7 @@ namespace ngsolve
     ///
     Array<EvalVariable*> evaluators;
     ///
-    SymbolTable<CoefficientFunction*> coefficients;
+    SymbolTable<shared_ptr<CoefficientFunction>> coefficients;
     ///
     SymbolTable<shared_ptr<FESpace>> spaces;
     ///
@@ -333,7 +333,7 @@ namespace ngsolve
     const SymbolTable<GenericVariable> & GenericVariables() const { return generic_variables; }
 
     ///
-    SymbolTable<CoefficientFunction*> & GetCoefficientTable ()
+    SymbolTable<shared_ptr<CoefficientFunction>> & GetCoefficientTable ()
     { return coefficients; }
     ///
     SymbolTable<shared_ptr<FESpace>> & GetSpaceTable ()

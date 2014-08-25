@@ -188,6 +188,12 @@ namespace ngcomp
   public:
     /// connects to Netgen - mesh
     MeshAccess (netgen::Mesh * amesh = NULL);
+    /// loads mesh from file
+    MeshAccess (string filename)
+      : MeshAccess() 
+    {
+      LoadMesh (filename);
+    }
     /// not much to do 
     virtual ~MeshAccess ();
 

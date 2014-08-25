@@ -90,8 +90,14 @@ namespace ngfem
       result(0) = f; 
     }
 
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
   };
+
+  inline ostream & operator<< (ostream & ost, CoefficientFunction & cf)
+  {
+    cf.PrintReport (ost);
+    return ost;
+  }
 
 
   template <>
@@ -148,6 +154,8 @@ namespace ngfem
     {
       return val;
     }
+
+    virtual void PrintReport (ostream & ost) const;
   };
 
 
@@ -234,7 +242,7 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
 			   FlatMatrix<double> values) const;
 
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
   };
 
   ///

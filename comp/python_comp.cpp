@@ -33,7 +33,8 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     .add_property("type", &Ngs_Element::GetType)
     ;
 
-  bp::class_<MeshAccess>("MeshAccess", "meshclass doc", bp::no_init)
+  bp::class_<MeshAccess>("Mesh", "meshclass doc", bp::init<string>())
+    .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh))
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements))
     .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
