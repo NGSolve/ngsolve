@@ -9,10 +9,12 @@ from Ngstd import *
 
 
 
-pde = PDE()
-pde.Load ("../pde_tutorial/d1_square.pde")
+# pde = PDE()
+# pde.Load ("../pde_tutorial/d1_square.pde")
+# mesh = pde.Mesh()
 
-mesh = pde.Mesh()
+mesh = Mesh("../pde_tutorial/square.vol")
+
 
 for i in mesh.Elements(VOL):
     print (i)

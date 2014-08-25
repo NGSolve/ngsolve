@@ -49,10 +49,10 @@ namespace ngsolve
   
   PDE :: ~PDE()
   {
+    /*
     for (int i = 0; i < coefficients.Size(); i++)
       delete coefficients[i];
     coefficients.DeleteAll();
-    /*
     for (int i = 0; i < spaces.Size(); i++)
       delete spaces[i];
     spaces.DeleteAll();
@@ -352,7 +352,7 @@ namespace ngsolve
   GetCoefficientFunction (const string & name, bool opt)
   { 
     if (coefficients.Used(name))
-      return coefficients[name]; 
+      return coefficients[name].get(); 
 
     if (opt) return NULL;
     throw Exception (string ("CoefficientFunction '") + name + "' not defined\n");
@@ -421,7 +421,7 @@ namespace ngsolve
   GetCoefficientFunction (const string & name, bool opt) const
   { 
     if (coefficients.Used(name))
-      return coefficients[name]; 
+      return coefficients[name].get(); 
 
     if (opt) return NULL;
     throw Exception (string("CoefficientFunction '") + name + "' not defined\n");
@@ -935,7 +935,7 @@ namespace ngsolve
   void PDE :: AddCoefficientFunction (const string & name, CoefficientFunction* fun)
   {
     cout << IM(1) << "add coefficient-function, name = " << name << endl;
-    coefficients.Set (name.c_str(), fun);
+    coefficients.Set (name.c_str(), shared_ptr<CoefficientFunction> (fun));
   }
 
 

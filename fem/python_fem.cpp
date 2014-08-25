@@ -3,17 +3,8 @@
 #include <fem.hpp>
 using namespace ngfem;
 
-struct ElementTransformationWrap : ElementTransformation, bp::wrapper<ElementTransformation>
-{
-  void CalcJacobian (const IntegrationPoint & ip,
-                     FlatMatrix<> dxdxi) const
-  {
-    ; // this -> get_override("CalcJacobian")(ip, dxdxi);
-  }
-  
-};
 
-
+// for testing ...
 class Base
 {
 public:
@@ -54,33 +45,35 @@ BOOST_PYTHON_MODULE(Ngfem) {
     // .add_property("classname", &FiniteElement::ClassName)   // crashes ???
     ;
   
-  typedef FiniteElement* FEPtr;
-  bp::def("H1FE", FunctionPointer([](ELEMENT_TYPE et, int order)->FEPtr
-                                  {
-                                    FiniteElement * fe = NULL;
-                                    switch (et)
-                                      {
-                                      case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
-                                      case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
-                                      case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
-                                      default: cerr << "cannot make fe " << et << endl;
-                                      }
-                                    return fe;
-                                  }),
+  bp::def("H1FE", FunctionPointer
+          ([](ELEMENT_TYPE et, int order)
+           {
+             FiniteElement * fe = NULL;
+             switch (et)
+               {
+               case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
+               case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
+               case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
+               default: cerr << "cannot make fe " << et << endl;
+               }
+             return fe;
+           }),
           bp::return_value_policy<bp::manage_new_object>()
           );
-  bp::def("L2FE", FunctionPointer([](ELEMENT_TYPE et, int order)->FEPtr
-                                  {
-                                    FiniteElement * fe = NULL;
-                                    switch (et)
-                                      {
-                                      case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
-                                      case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
-                                      case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
-                                      default: cerr << "cannot make fe " << et << endl;
-                                      }
-                                    return fe;
-                                  }),
+
+  bp::def("L2FE", FunctionPointer
+          ([](ELEMENT_TYPE et, int order)
+           {
+             FiniteElement * fe = NULL;
+             switch (et)
+               {
+               case ET_TRIG: fe = new L2HighOrderFE<ET_TRIG>(order); break;
+               case ET_QUAD: fe = new L2HighOrderFE<ET_QUAD>(order); break;
+               case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
+               default: cerr << "cannot make fe " << et << endl;
+               }
+             return fe;
+           }),
           bp::return_value_policy<bp::manage_new_object>()
           );
     
@@ -88,27 +81,59 @@ BOOST_PYTHON_MODULE(Ngfem) {
     .def ("IsBoundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
     ;
-
-
-
-  bp::class_<BilinearFormIntegrator, boost::noncopyable>("BilinearFormIntegrator", bp::no_init)
+  
+  bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
+    ("BilinearFormIntegrator", bp::no_init)
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
                                                       const ElementTransformation&,
-                                                     FlatMatrix<double>&,LocalHeap&)const>
+                                                      FlatMatrix<double>&,LocalHeap&)const>
          (&BilinearFormIntegrator::CalcElementMatrix))
     ;
+  bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
+    ("LinearFormIntegrator", bp::no_init)
+    .def("CalcElementVector", 
+         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>&,LocalHeap&)const>
+         (&LinearFormIntegrator::CalcElementVector))
+    ;
 
+  bp::def("CreateBFI", FunctionPointer 
+          ([](string name, int dim, CoefficientFunction & coef)
+           {
+             BilinearFormIntegrator * itor =
+               GetIntegrators().CreateBFI (name, dim, &coef);
+             
+             if (!itor) cerr << "undefined integrator '" << name 
+                             << "' in " << dim << " dimension having 1 coefficient"
+                             << endl;
+             
+             return shared_ptr<BilinearFormIntegrator> (itor);
+           }),
+          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
+    ;
+
+  bp::def("CreateLFI", FunctionPointer
+          ([](string name, int dim, CoefficientFunction & coef)
+           {
+             LinearFormIntegrator * itor =
+               GetIntegrators().CreateLFI (name, dim, &coef);
+             
+             if (!itor) cerr << "undefined integrator '" << name 
+                             << "' in " << dim << " dimension having 1 coefficient"
+                             << endl;
+             
+             return shared_ptr<LinearFormIntegrator> (itor);
+           }),
+          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
+    ;
+  
   bp::class_<CoefficientFunction, boost::noncopyable>("CoefficientFunction", bp::no_init)
     ;
 
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>>
-    ("ConstantCoefficientFunction", bp::init<double>())
+    ("ConstantCF", bp::init<double>())
     ;
 
-  bp::class_<LaplaceIntegrator<2>, bp::bases<BilinearFormIntegrator>>
-    ("LaplaceIntegrator_2d", bp::init<CoefficientFunction*>())  
-    ;
 
   // testing
   bp::class_<Base, boost::noncopyable>("Base", bp::no_init)
@@ -118,7 +143,17 @@ BOOST_PYTHON_MODULE(Ngfem) {
   bp::class_<Derived, bp::bases<Base>>("Derived")
     ;
 
-
+  bp::def("testlist", FunctionPointer
+          ([](bp::list const & x) 
+           { 
+             cout << "got list of length "  << bp::len(x) << endl;
+             for (int i = 0; i < bp::len(x); i++)
+               {
+                 cout << "list[" << i << "] = ";
+                 CoefficientFunction & cf = bp::extract<CoefficientFunction&> (x[i]);
+                 cf.PrintReport(cout);
+               }
+           }));
 }
 
 

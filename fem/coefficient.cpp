@@ -21,7 +21,7 @@ namespace ngfem
   { ; }
 
 
-  void CoefficientFunction :: PrintReport (ostream & ost)
+  void CoefficientFunction :: PrintReport (ostream & ost) const
   {
     ost << "CoefficientFunction is " << typeid(*this).name() << endl;
   }
@@ -51,6 +51,10 @@ namespace ngfem
   ~ConstantCoefficientFunction ()
   { ; }
 
+  void ConstantCoefficientFunction :: PrintReport (ostream & ost) const
+  {
+    ost << "ConstantCF, val = " << val << endl;
+  }
 
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
@@ -337,7 +341,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
 
   
 template <int DIM>
-void DomainVariableCoefficientFunction<DIM> :: PrintReport (ostream & ost)
+void DomainVariableCoefficientFunction<DIM> :: PrintReport (ostream & ost) const
 {
   *testout << "DomainVariableCoefficientFunction, functios are: " << endl;
   for (int i = 0; i < fun.Size(); i++)

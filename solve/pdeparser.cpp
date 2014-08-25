@@ -492,7 +492,7 @@ namespace ngsolve
         if (names[i])
           {
             cout << "depend on " << names[i] << endl;
-            depends.Append (pde.GetCoefficientTable()[names[i]]);
+            depends.Append (pde.GetCoefficientFunction(names[i]));
           }
       return ok;
     }
@@ -1435,7 +1435,7 @@ namespace ngsolve
 			if (names[i])
 			  {
 			    cout << "depend on " << names[i] << endl;
-			    depends.Append (pde->GetCoefficientTable()[names[i]]);
+			    depends.Append (pde->GetCoefficientFunction(names[i]));
 			  }
 		    }
 
