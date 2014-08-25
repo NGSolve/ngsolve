@@ -8,10 +8,8 @@ struct PyExportNgBla {
   PyExportNgBla(BasePythonEnvironment & py_env);
 };
 
-// extern "C" PyObject * PyInit_Ngstd();
-// extern "C" PyObject * PyInit_Ngfem();
-extern "C" PyObject * PyInit_Ngcomp();
 extern "C" PyObject * PyInit_Ngsolve();
+extern "C" PyObject * PyInit_Ngfem();
 
 class PythonEnvironment : public BasePythonEnvironment
 {
@@ -59,9 +57,17 @@ BOOST_PYTHON_MODULE(libngspy)
 {
   PythonEnvironment py_env;
 
+  cout << "execute:" << endl << endl;
+  cout << "from Ngstd import *" << endl;
+  cout << "from Ngbla import *" << endl;
+  cout << "from Ngfem import *" << endl;
+  cout << "from Ngcomp import *" << endl;
+  cout << "from Ngsolve import *" << endl << endl;
+  cout << "to import ngs - modules" << endl;
+
   // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);
   PyExportNgBla pbla(py_env);
   // PyImport_AppendInittab("Ngfem", PyInit_Ngfem);
-  PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);
+  // PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp);
   PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);
 }
