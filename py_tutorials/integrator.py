@@ -2,12 +2,11 @@ import sys
 sys.path.append("/opt/netgen/lib")
 
 from libngspy import *
-from Ngsolve import *
-from Ngcomp import *
-from Ngfem import *
-from Ngbla import *
 from Ngstd import *
-
+from Ngbla import *
+from Ngfem import *
+from Ngcomp import *
+from Ngsolve import *
 
 
 

@@ -3,10 +3,10 @@ sys.path.append("/opt/netgen/lib")
 
 from libngspy import *
 from Ngstd import *
+from Ngbla import *
 from Ngfem import *
 from Ngcomp import *
 from Ngsolve import *
-
 
 
 # pde = PDE()
@@ -16,13 +16,14 @@ from Ngsolve import *
 # mesh = Mesh("square.vol")
 mesh = Mesh("cube.vol.gz")
 
-from tkinter import filedialog
-filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
-mesh = Mesh(filename)
+# from tkinter import filedialog
+# filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
+# mesh = Mesh(filename)
 
 
 for i in mesh.Elements(VOL):
     print (i)
+    print (mesh[i])
     print (mesh[i].vertices)
 
 

@@ -2,15 +2,17 @@ import sys
 sys.path.append("/opt/netgen/lib")
 
 import libngspy
-from Ngsolve import *
-from Ngcomp import *
-from Ngfem import *
-from Ngbla import *
 from Ngstd import *
+from Ngbla import *
+from Ngfem import *
+from Ngcomp import *
+from Ngsolve import *
+
 
 
 
 pde = PDE("../pde_tutorial/d1_square.pde")
+# SetDefaultPDE (pde)
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
