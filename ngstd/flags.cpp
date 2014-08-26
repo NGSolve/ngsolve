@@ -99,7 +99,7 @@ namespace ngstd
     return *this;
   }
   
-  Flags & Flags :: SetFlag (const char * name, double val)
+  Flags & Flags :: SetFlag (const char * name, double val) &
   {
     numflags.Set (name, val);
     return *this;
