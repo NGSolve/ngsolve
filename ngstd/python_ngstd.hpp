@@ -269,7 +269,7 @@ struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> 
 template <typename T, typename TELEM>
 class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T,TELEM>>
 {
-
+  // typename decltype(T::First()) TELEM2;    // wie geht das ????
   class Iterator
   {
     TELEM first;
