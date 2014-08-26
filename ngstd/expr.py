@@ -30,6 +30,9 @@ class BaseExpr:
     def __add__(self, other):
         return SumExpr(self, Expr(other))
 
+    def __sub__(self, other):
+        return SumExpr(self, Expr(other).Scale(-1))
+    
     def __str__(self):
         return str(self.a)
 

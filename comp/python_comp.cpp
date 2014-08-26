@@ -17,6 +17,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
 
   cout << "init py - ngcomp" << endl;
 
+
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
     .value("BND", BND)
@@ -32,7 +33,7 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
   //
   bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())
-    .def(PyDefIterable2<ElementRange,ElementId>())
+    .def(PyDefIterable2<ElementRange>())
     // .def("__iter__", bp::iterator<ElementRange>())
     ;
 
@@ -85,10 +86,19 @@ BOOST_PYTHON_MODULE(Ngcomp) {
           (&FESpace::GetFE), 
           bp::return_value_policy<bp::reference_existing_object>())
     ;
-
-
+  
   bp::class_<GridFunction, shared_ptr<GridFunction>, boost::noncopyable>("GridFunction", bp::no_init)
     .def(PyDefToString<GridFunction>())
+   .def("Update", FunctionPointer([](GridFunction & self)
+                                   {
+                                     self.Update();
+                                   }))
+    .def("Vector", FunctionPointer([](shared_ptr<GridFunction> self)->BaseVector& { return self->GetVector(); }),
+         bp::return_value_policy<bp::reference_existing_object>())
+
+
+    // .def("Vector", &GridFunction::GetVector, 
+    //     bp::return_value_policy<bp::reference_existing_object>())
     ;
 
   bp::def("CreateGF", FunctionPointer
@@ -102,7 +112,17 @@ BOOST_PYTHON_MODULE(Ngcomp) {
   
   bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
+    .def("Matrix", FunctionPointer([](shared_ptr<BilinearForm> self)->BaseMatrix& { return self->GetMatrix(); }),
+         bp::return_value_policy<bp::reference_existing_object>())
     ;
+
+  bp::class_<LinearForm, shared_ptr<LinearForm>, boost::noncopyable>("LinearForm", bp::no_init)
+    .def(PyDefToString<LinearForm>())
+    .def("Vector", FunctionPointer([](shared_ptr<LinearForm> self)->BaseVector& { return self->GetVector(); }),
+         bp::return_value_policy<bp::reference_existing_object>())
+    ;
+
+
 }
 
 
