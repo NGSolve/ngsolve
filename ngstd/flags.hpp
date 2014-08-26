@@ -36,6 +36,8 @@ namespace ngstd
     Flags ();
     /// copy flags 
     Flags (const Flags & flags);
+    /// steal flags
+    Flags (Flags && flags) = default;
     ///
     Flags (std::initializer_list<string> list);
     /// 
@@ -48,7 +50,7 @@ namespace ngstd
     /// Sets string flag, overwrite if exists
     Flags & SetFlag (const char * name, const char * val);
     /// Sets numerical flag, overwrite if exists
-    Flags &  SetFlag (const char * name, double val);
+    Flags &  SetFlag (const char * name, double val) &;
     /// Sets boolean flag
     Flags &  SetFlag (const char * name);
     /// Sets string array flag
@@ -56,6 +58,14 @@ namespace ngstd
     /// Sets double array flag
     Flags &  SetFlag (const char * name, const Array<double> & val);
   
+    Flags SetFlag (const char * name, double val) &&
+    {
+      cout << "rvalue setflag" << endl;
+      Flags tmp = std::move(*this);
+      tmp.SetFlag (name, val);
+      return std::move(tmp);
+    }
+
     /// Save flags to file
     void SaveFlags (const char * filename) const;
     /// write flags to stream
