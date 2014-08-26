@@ -120,6 +120,16 @@ struct PyDefToString : public boost::python::def_visitor<PyDefToString<T> > {
   }
 };
 
+template <typename T>
+class cl_NonElement 
+{
+public:
+  static T Val() { return -1; }
+};
+
+template <typename T>
+inline T NonElement() { return cl_NonElement<T>::Val(); }
+
 
 //////////////////////////////////////////////////////////////////////
 // read-only bracket operator  (Matthias, please polish !)
@@ -140,7 +150,7 @@ struct PyDefROBracketOperator : public boost::python::def_visitor<PyDefROBracket
     if( i<self.Size() && i>=0 )
       return self[i];
     RaiseIndexError();
-    // return TELEM();  // problem with deleted default-constructor
+    return NonElement<TELEM>();
   } 
 
   static void RaiseIndexError() {
@@ -187,21 +197,24 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
 
 //////////////////////////////////////////////////////////////////////
 // Python iterator protocoll
+
 template <typename T, typename TELEM>
 class PyIterator {
-  T v;
+  T & v;
   int size;
   int index;
   int startindex;
   //     typedef typename std::remove_reference<decltype(v[startindex])>::type TELEM;
     
 public:
-  PyIterator(T v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
+  PyIterator(T & v_, int size_, int startindex_ = 0) : v(v_), size(size_), index(startindex_), startindex(startindex_) {}
 
   TELEM Next() { 
     if(index<startindex+size) return v[index++];
-    else
+    else 
       bp::exec("raise StopIteration()\n");
+    // PyErr_SetNone(PyExc_StopIteration);
+    return NonElement<TELEM>();
     // cerr << "python Index error" << endl;
     // return TELEM();
   }
@@ -246,6 +259,49 @@ struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> 
       ;
   }
 };
+
+
+
+
+
+
+// iterable where elements have an increment operator (JS)
+template <typename T, typename TELEM>
+class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T,TELEM>>
+{
+
+  class Iterator
+  {
+    TELEM first;
+    int size, cnt;
+  public:
+    Iterator (const T & container)
+      : first (container.First()), size(container.Size()), cnt(0) { }
+    TELEM Next()
+    {
+      if (++cnt > size)
+        bp::exec("raise StopIteration()\n");
+      return first++;
+    }
+  };
+
+public:
+  template <class Tclass>
+  void visit (Tclass & c) const
+  {
+    string itername = string("PyIterator2_")+GetPyName<T>();
+    bp::class_<Iterator>(itername.c_str(),bp::no_init)
+      .def("__next__", &Iterator::Next)
+      ;
+    c.def("__iter__", FunctionPointer
+          ([](const T & c) { return Iterator(c); }))
+      ;
+  }
+};
+
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////

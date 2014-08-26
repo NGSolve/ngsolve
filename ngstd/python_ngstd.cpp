@@ -9,6 +9,7 @@
 using std::ostringstream;
 
 
+
 BOOST_PYTHON_MODULE(Ngstd) 
 {
   cout << "init ngstd - py" << endl;
@@ -48,10 +49,12 @@ BOOST_PYTHON_MODULE(Ngstd)
     ("Flags")
     ;
 
+
   bp::class_<ngstd::IntRange>
     ("IntRange", bp::init<int,int>())
-    .def(PyDefToString<IntRange>())
-    .def(PyDefIterable<IntRange,int>())
+    // .def(PyDefIterable<IntRange,int>())
+    .def(PyDefIterable2<IntRange,int>())
+    .def("__str__", &ToString<IntRange>)
     ;
 
     

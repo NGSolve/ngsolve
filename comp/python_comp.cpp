@@ -4,6 +4,15 @@
 using namespace ngcomp;
 
 
+
+template <> class cl_NonElement<ElementId>
+{
+public:
+  static ElementId Val() { return ElementId(VOL,-1); }
+};
+
+
+
 BOOST_PYTHON_MODULE(Ngcomp) {
 
   cout << "init py - ngcomp" << endl;
@@ -23,7 +32,8 @@ BOOST_PYTHON_MODULE(Ngcomp) {
     ;
   //
   bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())
-    .def(PyDefIterable<ElementRange,ElementId>())
+    .def(PyDefIterable2<ElementRange,ElementId>())
+    // .def("__iter__", bp::iterator<ElementRange>())
     ;
 
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
