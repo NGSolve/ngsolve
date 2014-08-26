@@ -139,13 +139,14 @@ BOOST_PYTHON_MODULE(libngfem)
   cout << "execute 'import Ngfem' to import py-ngfem module" << endl;
 }
 
-struct Init {
-  Init() 
+struct Init_pyfem {
+  Init_pyfem() 
   { 
+    cout << "add Ngfem to py-ini" << endl;
     PyImport_AppendInittab("Ngfem", PyInit_Ngfem); 
   }
 };
-static Init init;
+static Init_pyfem init;
 
 
 

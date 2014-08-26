@@ -65,6 +65,7 @@ struct function_traits
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...) const> {
   typedef ReturnType (*pointer)(Args...);
+  typedef ReturnType return_type;
 };
 
 template <typename Function>
@@ -262,14 +263,13 @@ struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> 
 
 
 
-
-
-
 // iterable where elements have an increment operator (JS)
-template <typename T, typename TELEM>
-class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T,TELEM>>
+template <typename T>
+class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T>>
 {
-  // typename decltype(T::First()) TELEM2;    // wie geht das ????
+  typedef decltype(&T::First) TFUNCTION;
+  typedef typename function_traits<TFUNCTION>::return_type TELEM;
+
   class Iterator
   {
     TELEM first;

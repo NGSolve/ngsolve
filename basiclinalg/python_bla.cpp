@@ -5,10 +5,6 @@
 using std::shared_ptr;
 using namespace ngbla;
 
-struct PyExportNgBla {
-  PyExportNgBla(BasePythonEnvironment & py_env);
-  PyExportNgBla();
-};
 
 static double test_double = 1;
 
@@ -53,14 +49,15 @@ BOOST_PYTHON_MODULE(Ngbla) {
 //          bp::exec("globals().update(run_module('bla',globals()))");
     }
 
-PyExportNgBla ::
-    PyExportNgBla() {
-    cout << "appendInittab" << endl;
-    PyImport_AppendInittab("Ngbla", PyInit_Ngbla);
-    }
 
 
-// Call constructor to export python classes
-// static PyExportNgBla python_export_bla ();
+struct Init_pybla {
+  Init_pybla() 
+  { 
+    cout << "add Ngbla to py-ini" << endl;
+    PyImport_AppendInittab("Ngbla", PyInit_Ngbla); 
+  }
+};
+static Init_pybla initbla;
 
 #endif // NGS_PYTHON

@@ -53,7 +53,7 @@ BOOST_PYTHON_MODULE(Ngstd)
   bp::class_<ngstd::IntRange>
     ("IntRange", bp::init<int,int>())
     // .def(PyDefIterable<IntRange,int>())
-    .def(PyDefIterable2<IntRange,int>())
+    .def(PyDefIterable2<IntRange>())
     .def("__str__", &ToString<IntRange>)
     ;
 
