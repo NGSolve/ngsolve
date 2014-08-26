@@ -75,6 +75,7 @@ namespace ngcomp
     // IntRange r;
   public:
     ElementRange (VorB avb, IntRange ar) : IntRange(ar), vb(avb) { ; }
+    ElementId First() const { return ElementId(vb, IntRange::First()); }
     ElementIterator begin () const { return ElementIterator(vb,First()); }
     ElementIterator end () const { return ElementIterator(vb,Next()); }
     ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
