@@ -9,6 +9,29 @@
 
 namespace ngcomp
 {
+ 
+  static void NOOP_Deleter(void *) { ; }
+
+  template <typename T>
+  class shared_ref
+  {
+    shared_ptr<T> sp;
+  public:
+    shared_ref (shared_ptr<T> asp) : sp(asp) { ; }
+    shared_ref (T & ref) : sp(&ref, NOOP_Deleter) { ; }
+
+    operator shared_ptr<T> () { return sp; }
+    operator T & () { return *sp; }
+    operator const T & () const { return *sp; }
+
+    /*
+    operator T && () && { return *sp; }
+    operator const T && () const && { return *sp; }
+    T & operator& () { return *sp; }
+    const T & operator& () const { return *sp; }
+    */
+  };
+
 
   /** 
       Grid-functions
@@ -35,12 +58,19 @@ namespace ngcomp
     Array<GridFunction*> compgfs;
   public:
     /// 
+    /*
     GridFunction (const FESpace & afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
+    */
+
+    GridFunction (shared_ref<FESpace> afespace, 
+		  const string & name = "gfu", 
+		  const Flags & flags = Flags());
+
     ///
     virtual ~GridFunction ();
     ///
@@ -67,10 +97,13 @@ namespace ngcomp
   
     int GetLevelUpdated() const { return level_updated; }
     ///
+
     const FESpace & GetFESpace() const { return *fespace; }
     ///
     shared_ptr<FESpace> GetFESpacePtr() const { return fespace; }
 
+    // geht leider nicht so wie geplant ... GetFESpace().GetNDof()
+    // shared_ref<FESpace> GetFESpace() const { return fespace; }  
     ///
     virtual string GetClassName () const
     {
@@ -157,9 +190,12 @@ namespace ngcomp
   class NGS_DLL_HEADER S_GridFunction : public GridFunction
   {
   public:
+    /*
     S_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
-    S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
+    */
+
+    S_GridFunction (shared_ref<FESpace> afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
   
 
@@ -185,10 +221,15 @@ namespace ngcomp
     typedef typename mat_traits<TV>::TSCAL TSCAL;
     enum { VDIM = mat_traits<TV>::HEIGHT };
 
+    /*
     T_GridFunction (const FESpace & afespace, 
 		    const string & aname = "gfu", 
 		    const Flags & flags = Flags());
     T_GridFunction (shared_ptr<FESpace> afespace, 
+		    const string & aname = "gfu", 
+		    const Flags & flags = Flags());
+    */
+    T_GridFunction (shared_ref<FESpace> afespace, 
 		    const string & aname = "gfu", 
 		    const Flags & flags = Flags());
     virtual ~T_GridFunction ();
@@ -197,14 +238,21 @@ namespace ngcomp
   };
 
 
-  extern NGS_DLL_HEADER 
-  GridFunction * CreateGridFunction (const FESpace * space,
-                                     const string & name, const Flags & flags);
 
 
   extern NGS_DLL_HEADER 
   GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
                                      const string & name, const Flags & flags);
+
+
+  inline 
+  GridFunction * CreateGridFunction (const FESpace * space,
+                                     const string & name, const Flags & flags)
+  {
+    return 
+      CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), 
+                          name, flags);
+  }
 
 
 

@@ -10,8 +10,8 @@ namespace ngcomp
 {
   using namespace ngmg;
   
-  static void NOOP_Deleter(void *) { ; }
 
+  /*
   GridFunction :: GridFunction (const FESpace & afespace, const string & name,
 				const Flags & flags)
     : GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), name, flags)
@@ -27,6 +27,18 @@ namespace ngcomp
     level_updated = -1;
     cacheblocksize = 1;
   }
+  */
+  GridFunction :: GridFunction (shared_ref<FESpace> afespace, const string & name,
+				const Flags & flags)
+    : NGS_Object (shared_ptr<FESpace>(afespace)->GetMeshAccess(), name), fespace(afespace)
+  { 
+    nested = flags.GetDefineFlag ("nested");
+    visual = !flags.GetDefineFlag ("novisual");
+    multidim = int (flags.GetNumFlag ("multidim", 1));
+    level_updated = -1;
+    cacheblocksize = 1;
+  }
+
 
   GridFunction :: ~GridFunction()
   {
@@ -607,7 +619,7 @@ namespace ngcomp
   template <class SCAL>
   S_ComponentGridFunction<SCAL> :: 
   S_ComponentGridFunction (const S_GridFunction<SCAL> & agf_parent, int acomp)
-    : S_GridFunction<SCAL> (*dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
+    : S_GridFunction<SCAL> ( (FESpace&) *dynamic_cast<const CompoundFESpace&> (agf_parent.GetFESpace())[acomp], 
 			    agf_parent.GetName()+"."+ToString (acomp+1), Flags()), 
       gf_parent(agf_parent), comp(acomp)
   { 
@@ -647,7 +659,7 @@ namespace ngcomp
   }
 
 
-
+  /*
   template <class TV>
   T_GridFunction<TV> ::
   T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
@@ -667,6 +679,28 @@ namespace ngcomp
 
     this->Visualize (this->name);
   }
+  */
+  template <class TV>
+  T_GridFunction<TV> ::
+  T_GridFunction (shared_ref<FESpace> afespace, const string & aname, const Flags & flags)
+    : S_GridFunction<TSCAL> (afespace, aname, flags)
+  {
+    vec.SetSize (this->multidim);
+    vec = 0;
+
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&this->GetFESpace());
+    if (cfe)
+      {
+	int nsp = cfe->GetNSpaces();
+	compgfs.SetSize(nsp);
+	for (int i = 0; i < nsp; i++)
+	  compgfs[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
+      }    
+
+    this->Visualize (this->name);
+  }
+
+
 
   template <class TV>
   T_GridFunction<TV> :: ~T_GridFunction()
@@ -744,12 +778,14 @@ namespace ngcomp
 	throw e;
       }    
   }
- 
+
+  /*
   GridFunction * CreateGridFunction (const FESpace * space,
 				     const string & name, const Flags & flags)
   {
     return CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), name, flags);
   }
+  */
 
   GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
 				     const string & name, const Flags & flags)

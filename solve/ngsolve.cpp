@@ -132,19 +132,29 @@ PythonEnvironment::PythonEnvironment() {
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
 
+        /*
         exec("from ngstd import *");
         exec("from ngbla import *");
         exec("from ngla import *");
         exec("from ngfem import *");
         exec("from ngcomp import *");
         exec("from ngsolve import *");
+        */
+        exec("import ngstd");
+        exec("import ngbla");
+        exec("import ngla");
+        exec("import ngfem");
+        exec("import ngcomp");
+        exec("import ngsolve");
+
 
 //         exec("from ngbla import *");
         exec("from sys import path");
         exec("from runpy import run_module");
         exec("from os import environ");
-
+        
         exec("path.append(environ['NETGENDIR'])");
+        exec("path.append('.')");
         exec("globals().update(run_module('expr',globals()))");
     }
     catch(bp::error_already_set const &) {

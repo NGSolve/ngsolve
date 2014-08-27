@@ -117,10 +117,10 @@ BOOST_PYTHON_MODULE(libngcomp) {
   
   bp::def("CreateGF",
           FunctionPointer
-          ([](string name, const FESpace & fespace)
+          ([](string name, shared_ptr<FESpace> fespace)
            {
              Flags flags;
-             GridFunction * gf = CreateGridFunction (&fespace, name, flags);
+             GridFunction * gf = CreateGridFunction (fespace, name, flags);
              return shared_ptr<GridFunction> (gf);
            }),
           (bp::arg("name"), bp::arg("fespace")),

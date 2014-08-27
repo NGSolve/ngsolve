@@ -12,7 +12,7 @@ from Ngsolve import *
 
 
 pde = PDE("../pde_tutorial/d1_square.pde")
-# SetDefaultPDE (pde)
+SetDefaultPDE (pde)
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
