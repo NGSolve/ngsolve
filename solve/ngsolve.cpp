@@ -105,22 +105,10 @@ class PythonEnvironment : public BasePythonEnvironment {
     virtual ~PythonEnvironment() { }
 };
 
-// extern "C" PyObject * PyInit_Ngstd();
-// extern "C" PyObject * PyInit_Ngbla();
-/*
-struct PyExportNgBla {
-  PyExportNgBla(BasePythonEnvironment & py_env);
-};
-*/
-
-// extern "C" PyObject * PyInit_Ngfem();
-// extern "C" PyObject * PyInit_Ngsolve();
 
 
 PythonEnvironment::PythonEnvironment() {
-  // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
-  // PyExportNgBla init_pybla(*this);
-  // PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
+
 
     mainthread_id = std::this_thread::get_id();
     pythread_id = std::this_thread::get_id();
@@ -156,6 +144,8 @@ PythonEnvironment::PythonEnvironment() {
         exec("path.append(environ['NETGENDIR'])");
         exec("path.append('.')");
         exec("globals().update(run_module('expr',globals()))");
+        exec("globals().update(run_module('bla',globals()))");
+        exec("globals().update(run_module('la',globals()))");
     }
     catch(bp::error_already_set const &) {
         PyErr_Print();

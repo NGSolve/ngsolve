@@ -1,16 +1,17 @@
 import sys
 sys.path.append("/opt/netgen/lib")
 
-from libngspy import *
-from ngstd import *
-from ngbla import *
-from ngfem import *
-from ngcomp import *
-from ngsolve import *
+import libngspy
+import ngstd
+import ngbla
+import ngfem
+import ngcomp
+import ngsolve
 
 
-pde = PDE()
-pde.Load ("../pde_tutorial/d1_square.pde")
+
+
+pde = ngsolve.PDE("../pde_tutorial/d1_square.pde")
 mesh = pde.Mesh()
 
 # mesh = Mesh("square.vol")
@@ -21,7 +22,7 @@ mesh = pde.Mesh()
 # mesh = Mesh(filename)
 
 
-for i in mesh.Elements(VOL):
+for i in mesh.Elements(ngcomp.VOL):
     print (i)
     print (mesh[i])
     print (mesh[i].vertices)
