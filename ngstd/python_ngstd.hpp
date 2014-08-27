@@ -125,7 +125,7 @@ template <typename T>
 class cl_NonElement 
 {
 public:
-  static T Val() { return -1; }
+  static T Val() { return 0; }
 };
 
 template <typename T>
@@ -405,22 +405,31 @@ template <typename T> void PyExportSymbolTable ()
 
   string name = GetPyName<SymbolTable<T>>();
   bp::class_<SymbolTable<T>>(name.c_str())
-    .add_property ("size", &SymbolTable<T>::Size)
-    .def(PyDefToString<SymbolTable<T>>())
+    .def("__str__", &ToString<SymbolTable<T>>)
     .def("__len__", &SymbolTable<T>::Size)
+    .def("__contains__", &SymbolTable<T>::Used)
     .def("GetName", FunctionPointer([](ST & self, int i) 
                                     { return string(self.GetName(i)); }))
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, string name)
                                         {
                                           if (!self.Used(name))
-                                            cerr << "unused" << endl;
+                                            {
+                                              // bp::exec("raise KeyError()\n");
+                                              bp::exec("raise KeyError()\n");
+                                              cerr << "symboltable out of range - but should not get here anyway" << endl;
+                                              return self[0]; 
+                                            }
                                           return self[name]; 
                                         })
          )
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, int i)
                                         {
                                           if (i < 0 || i >= self.Size())
-                                            cerr << "out of range" << endl;
+                                            {
+                                              bp::exec("raise IndexError()\n");
+                                              cerr << "symboltable out of range - but should not get here anyway" << endl;
+                                              return self[i]; 
+                                            }
                                           return self[i];  
                                         })
          )
