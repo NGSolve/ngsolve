@@ -401,15 +401,27 @@ template <class T> inline auto MyRemovePtr (T d) -> decltype(cl_remove_pointer<T
 
 template <typename T> void PyExportSymbolTable ()
 {
+  typedef SymbolTable<T> ST;
+
   string name = GetPyName<SymbolTable<T>>();
   bp::class_<SymbolTable<T>>(name.c_str())
     .add_property ("size", &SymbolTable<T>::Size)
     .def(PyDefToString<SymbolTable<T>>())
+    .def("__len__", &SymbolTable<T>::Size)
+    .def("GetName", FunctionPointer([](ST & self, int i) 
+                                    { return string(self.GetName(i)); }))
     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, string name)
                                         {
                                           if (!self.Used(name))
                                             cerr << "unused" << endl;
-                                          return self[name];  // needs boost 1.55 !!
+                                          return self[name]; 
+                                        })
+         )
+    .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, int i)
+                                        {
+                                          if (i < 0 || i >= self.Size())
+                                            cerr << "out of range" << endl;
+                                          return self[i];  
                                         })
          )
     ;

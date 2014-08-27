@@ -8,9 +8,9 @@ using namespace ngla;
 
 
 
-BOOST_PYTHON_MODULE(Ngla) {
+BOOST_PYTHON_MODULE(libngla) {
 
-  cout << "init py - ngla" << endl;
+  cout << "init ngla - py" << endl;
   
   bp::class_<BaseVector,boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
@@ -47,17 +47,11 @@ BOOST_PYTHON_MODULE(Ngla) {
 
 
 
-
-
-BOOST_PYTHON_MODULE(libngcomp)
-{
-  cout << "execute 'import ngla' to import py-ngla module" << endl;
-}
-
 struct Init {
   Init() 
   { 
-    PyImport_AppendInittab("Ngla", PyInit_Ngla); 
+    cout << "adding module 'ngla' to py-inittab" << endl;
+    PyImport_AppendInittab("ngla", PyInit_libngla); 
   }
 };
 static Init init;

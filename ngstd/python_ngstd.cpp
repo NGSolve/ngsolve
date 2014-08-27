@@ -9,8 +9,7 @@
 using std::ostringstream;
 
 
-
-BOOST_PYTHON_MODULE(Ngstd) 
+BOOST_PYTHON_MODULE(libngstd) 
 {
   cout << "init ngstd - py" << endl;
 
@@ -61,18 +60,19 @@ BOOST_PYTHON_MODULE(Ngstd)
 }
 
 
-
+/*
 BOOST_PYTHON_MODULE(libngstd)
 {
   cout << "I am in ini-libngstd and you should execute:" << endl
        << "from Ngstd import *" << endl;
 }
+*/
 
 struct Init {
   Init() 
   { 
-    cout << "add Ngstd to py-ini" << endl;
-    PyImport_AppendInittab("Ngstd", PyInit_Ngstd); 
+    cout << "adding module 'ngstd' to py-inittab" << endl;
+    PyImport_AppendInittab("ngstd", PyInit_libngstd); 
   }
 };
 static Init init;

@@ -32,9 +32,6 @@ libngsolve_la_LDFLAGS = " -avoid-version -rdynamic"
 
 
 
-
-
-
 if NGSPY
 lib_LTLIBRARIES += libngspy.la
 libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \

@@ -17,7 +17,7 @@ namespace ngcomp
   {
   protected:
     /// the finite element space
-    const FESpace & fespace;
+    shared_ptr<FESpace> fespace;
     /// should we do a prolongation from one multigrid-level to the next ?
     bool nested;
     /// should we visualize the gridfunction ?
@@ -36,6 +36,9 @@ namespace ngcomp
   public:
     /// 
     GridFunction (const FESpace & afespace, 
+		  const string & name = "gfu", 
+		  const Flags & flags = Flags());
+    GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
     ///
@@ -64,8 +67,9 @@ namespace ngcomp
   
     int GetLevelUpdated() const { return level_updated; }
     ///
-    const FESpace & GetFESpace() const
-    { return fespace; }
+    const FESpace & GetFESpace() const { return *fespace; }
+    ///
+    shared_ptr<FESpace> GetFESpacePtr() const { return fespace; }
 
     ///
     virtual string GetClassName () const
@@ -155,6 +159,8 @@ namespace ngcomp
   public:
     S_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
       : GridFunction (afespace, aname, flags) { ; }
+    S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
+      : GridFunction (afespace, aname, flags) { ; }
   
 
     // parallel Load/Save by Martin Huber and Lothar Nannen 
@@ -182,14 +188,23 @@ namespace ngcomp
     T_GridFunction (const FESpace & afespace, 
 		    const string & aname = "gfu", 
 		    const Flags & flags = Flags());
+    T_GridFunction (shared_ptr<FESpace> afespace, 
+		    const string & aname = "gfu", 
+		    const Flags & flags = Flags());
     virtual ~T_GridFunction ();
 
     virtual void Update ();
   };
 
 
-  extern NGS_DLL_HEADER GridFunction * CreateGridFunction (const FESpace * space,
-					    const string & name, const Flags & flags);
+  extern NGS_DLL_HEADER 
+  GridFunction * CreateGridFunction (const FESpace * space,
+                                     const string & name, const Flags & flags);
+
+
+  extern NGS_DLL_HEADER 
+  GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
+                                     const string & name, const Flags & flags);
 
 
 

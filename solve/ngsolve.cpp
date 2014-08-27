@@ -120,7 +120,7 @@ extern "C" PyObject * PyInit_Ngsolve();
 PythonEnvironment::PythonEnvironment() {
   // PyImport_AppendInittab("Ngstd", PyInit_Ngstd);    
   // PyExportNgBla init_pybla(*this);
-    PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
+  // PyImport_AppendInittab("Ngsolve", PyInit_Ngsolve);    
 
     mainthread_id = std::this_thread::get_id();
     pythread_id = std::this_thread::get_id();
@@ -132,11 +132,11 @@ PythonEnvironment::PythonEnvironment() {
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
 
-        exec("from Ngstd import *");
-        exec("from Ngbla import *");
-        exec("from Ngla import *");
-        exec("from Ngfem import *");
-        exec("from Ngcomp import *");
+        exec("from ngstd import *");
+        exec("from ngbla import *");
+        exec("from ngla import *");
+        exec("from ngfem import *");
+        exec("from ngcomp import *");
         exec("from Ngsolve import *");
 
 //         exec("from ngbla import *");

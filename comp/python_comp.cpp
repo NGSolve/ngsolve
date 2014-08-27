@@ -13,10 +13,9 @@ public:
 
 
 
-BOOST_PYTHON_MODULE(Ngcomp) {
+BOOST_PYTHON_MODULE(libngcomp) {
 
-  cout << "init py - ngcomp" << endl;
-
+  cout << "init ngcomp - py" << endl;
 
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
@@ -87,28 +86,45 @@ BOOST_PYTHON_MODULE(Ngcomp) {
           bp::return_value_policy<bp::reference_existing_object>())
     ;
   
-  bp::class_<GridFunction, shared_ptr<GridFunction>, boost::noncopyable>("GridFunction", bp::no_init)
-    .def(PyDefToString<GridFunction>())
-   .def("Update", FunctionPointer([](GridFunction & self)
-                                   {
-                                     self.Update();
-                                   }))
-    .def("Vector", FunctionPointer([](shared_ptr<GridFunction> self)->BaseVector& { return self->GetVector(); }),
+  typedef GridFunction GF;
+  bp::class_<GF, shared_ptr<GF>, boost::noncopyable>
+    ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
+    .def("__str__", &ToString<GF>)
+      
+    // problem: not a shared_ptr
+    .add_property("space", &GF::GetFESpacePtr, "the finite element spaces")
+         /*
+         FunctionPointer ([](GF & self) -> const FESpace&
+                          { return self.GetFESpace(); } 
+                          ),
          bp::return_value_policy<bp::reference_existing_object>())
+         */
+    .def("Update", //
+         FunctionPointer([](GF & self)
+                         {
+                           self.Update();
+                         }),
+         "update vector size to finite element space dimension after mesh refinement"
+         )
 
+    .def("Vector", 
+         FunctionPointer([](GF & self)->BaseVector& { return self.GetVector(); }),
+         bp::return_value_policy<bp::reference_existing_object>(),
+         "vector of coefficients"
+         )
 
-    // .def("Vector", &GridFunction::GetVector, 
-    //     bp::return_value_policy<bp::reference_existing_object>())
     ;
-
-  bp::def("CreateGF", FunctionPointer
+  
+  bp::def("CreateGF",
+          FunctionPointer
           ([](string name, const FESpace & fespace)
            {
              Flags flags;
              GridFunction * gf = CreateGridFunction (&fespace, name, flags);
              return shared_ptr<GridFunction> (gf);
            }),
-          (bp::arg("name"), bp::arg("fespace")));
+          (bp::arg("name"), bp::arg("fespace")),
+          "creates a gridfunction in finite element space");
   
   bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
@@ -129,19 +145,11 @@ BOOST_PYTHON_MODULE(Ngcomp) {
 
 
 
-
-BOOST_PYTHON_MODULE(libngcomp)
-{
-  cout << "execute 'import Ngstd' to import py-ngstd module" << endl;
-  cout << "execute 'import Ngbla' to import py-ngbla module" << endl;
-  cout << "execute 'import Ngfem' to import py-ngfem module" << endl;
-  cout << "execute 'import Ngcomp' to import py-ngcomp module" << endl;
-}
-
 struct Init {
   Init() 
   { 
-    PyImport_AppendInittab("Ngcomp", PyInit_Ngcomp); 
+    cout << "adding module 'ngcomp' to py-inittab" << endl;
+    PyImport_AppendInittab("ngcomp", PyInit_libngcomp); 
   }
 };
 static Init init;
