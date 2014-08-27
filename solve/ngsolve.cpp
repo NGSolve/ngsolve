@@ -114,7 +114,7 @@ struct PyExportNgBla {
 */
 
 // extern "C" PyObject * PyInit_Ngfem();
-extern "C" PyObject * PyInit_Ngsolve();
+// extern "C" PyObject * PyInit_Ngsolve();
 
 
 PythonEnvironment::PythonEnvironment() {
@@ -137,7 +137,7 @@ PythonEnvironment::PythonEnvironment() {
         exec("from ngla import *");
         exec("from ngfem import *");
         exec("from ngcomp import *");
-        exec("from Ngsolve import *");
+        exec("from ngsolve import *");
 
 //         exec("from ngbla import *");
         exec("from sys import path");
