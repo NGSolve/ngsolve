@@ -3,16 +3,11 @@
 #include <solve.hpp>
 using namespace ngsolve;
 
-/*
-template <typename T> 
-auto_ptr<T> make_auto_ptr(T * ptr)
-{
-  return auto_ptr<T> (ptr);
-}
-*/
 
-BOOST_PYTHON_MODULE(Ngsolve) {
-  cout << "init py - ngsolve" << endl;
+BOOST_PYTHON_MODULE(libngsolve) {
+
+  cout << "init ngsolve - py" << endl;
+
   PyExportSymbolTable<shared_ptr<FESpace>> ();
   PyExportSymbolTable<shared_ptr<GridFunction>> ();
   PyExportSymbolTable<shared_ptr<BilinearForm>> ();
@@ -51,6 +46,14 @@ BOOST_PYTHON_MODULE(Ngsolve) {
 
 
 
+struct Init {
+  Init() 
+  { 
+    cout << "adding module 'ngsolve' to py-inittab" << endl;
+    PyImport_AppendInittab("ngsolve", PyInit_libngsolve); 
+  }
+};
+static Init init;
 
 
 

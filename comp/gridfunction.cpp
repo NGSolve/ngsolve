@@ -9,11 +9,17 @@
 namespace ngcomp
 {
   using namespace ngmg;
-
+  
+  static void NOOP_Deleter(void *) { ; }
 
   GridFunction :: GridFunction (const FESpace & afespace, const string & name,
 				const Flags & flags)
-    : NGS_Object (afespace.GetMeshAccess(), name), fespace(afespace)
+    : GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), name, flags)
+  { ; }
+
+  GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
+				const Flags & flags)
+    : NGS_Object (afespace->GetMeshAccess(), name), fespace(afespace)
   { 
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
@@ -52,7 +58,7 @@ namespace ngcomp
 
   bool GridFunction :: IsUpdated () const
   {
-    int ndof = GetFESpace().GetNDof();
+    int ndof = fespace->GetNDof();
     for (int i = 0; i < multidim; i++)
       {
 	if (!vec[i]) return false;
@@ -64,7 +70,7 @@ namespace ngcomp
   void GridFunction :: PrintReport (ostream & ost) const
   {
     ost << "gridfunction '" << GetName() << "' on space '" 
-        << GetFESpace().GetName() << "'\n"
+        << fespace->GetName() << "'\n"
 	<< "nested = " << nested << endl;
   }
 
@@ -109,18 +115,18 @@ namespace ngcomp
 
     if (ma.GetDimension() == 2)
       {
-	bfi2d = fespace.GetIntegrator();
+	bfi2d = fespace->GetIntegrator();
       }
     else
       {
-	bfi3d = fespace.GetIntegrator();
-	bfi2d = fespace.GetBoundaryIntegrator();
+	bfi3d = fespace->GetIntegrator();
+	bfi2d = fespace->GetBoundaryIntegrator();
       }
 
     if (bfi2d || bfi3d)
       {
         netgen::SolutionData * vis;
-	if (!fespace.IsComplex())
+	if (!fespace->IsComplex())
 	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
 	else
 	  vis = new VisualizeGridFunction<Complex> (ma, this, bfi2d, bfi3d, 0);
@@ -739,9 +745,13 @@ namespace ngcomp
       }    
   }
  
-
-
   GridFunction * CreateGridFunction (const FESpace * space,
+				     const string & name, const Flags & flags)
+  {
+    return CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), name, flags);
+  }
+
+  GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
 				     const string & name, const Flags & flags)
   {
     GridFunction * gf = 

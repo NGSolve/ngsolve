@@ -8,7 +8,7 @@ using namespace ngbla;
 
 static double test_double = 1;
 
-BOOST_PYTHON_MODULE(Ngbla) {
+BOOST_PYTHON_MODULE(libngbla) {
     bp::def("Testfunc", FunctionPointer([]() { cout << "TEST!" <<endl; } ));
         typedef FlatVector<double> FVD;
         bp::class_<FVD >("FlatVector")
@@ -54,8 +54,8 @@ BOOST_PYTHON_MODULE(Ngbla) {
 struct Init_pybla {
   Init_pybla() 
   { 
-    cout << "add Ngbla to py-ini" << endl;
-    PyImport_AppendInittab("Ngbla", PyInit_Ngbla); 
+    cout << "adding module 'ngbla' to py-inittab" << endl;
+    PyImport_AppendInittab("ngbla", PyInit_libngbla); 
   }
 };
 static Init_pybla initbla;

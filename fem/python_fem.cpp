@@ -5,9 +5,9 @@ using namespace ngfem;
 
 
 
-BOOST_PYTHON_MODULE(Ngfem) {
+BOOST_PYTHON_MODULE(libngfem) {
 
-  cout << "init py - ngfem" << endl;
+  cout << "init ngfem - py" << endl;
 
   bp::enum_<ELEMENT_TYPE>("ELEMENT_TYPE")
     .value("POINT", ET_POINT)     .value("SEGM", ET_SEGM)
@@ -132,18 +132,12 @@ BOOST_PYTHON_MODULE(Ngfem) {
            }));
 }
 
-BOOST_PYTHON_MODULE(libngfem)
-{
-  cout << "execute 'import Ngstd' to import py-ngstd module" << endl;
-  cout << "execute 'import Ngbla' to import py-ngbla module" << endl;
-  cout << "execute 'import Ngfem' to import py-ngfem module" << endl;
-}
 
 struct Init_pyfem {
   Init_pyfem() 
   { 
-    cout << "add Ngfem to py-ini" << endl;
-    PyImport_AppendInittab("Ngfem", PyInit_Ngfem); 
+    cout << "adding module 'ngstd' to py-inittab" << endl;
+    PyImport_AppendInittab("ngfem", PyInit_libngfem); 
   }
 };
 static Init_pyfem init;
