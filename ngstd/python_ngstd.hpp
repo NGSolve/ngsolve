@@ -39,19 +39,37 @@ public:
     bp::exec(s.c_str(), main_namespace, main_namespace);
   }
 
-  virtual void exec_file(const string file) {
-    bp::exec_file(file.c_str(), main_namespace, main_namespace);
-    return;
-    try{
-      bp::exec_file(file.c_str(), main_namespace, main_namespace);
+  virtual void exec_file(const string fstr) {
+    string output;
+    ifstream file;
+    file.open(fstr.c_str());
+    if (file.is_open())
+    {
+        while (!file.eof())
+        {
+            std::string line;            
+            std::getline(file, line);
+            output += line.append("\n");
+        }
     }
-    catch(bp::error_already_set const &) {
-      PyErr_Print();
-    }
-    catch (...) {
-        cout << "caught!" << endl;
-    }
-  }
+    file.close();
+    exec(output);
+   }
+
+
+
+  //  bp::exec_file(file.c_str(), main_namespace, main_namespace);
+  //  return;
+  //  try{
+  //    bp::exec_file(file.c_str(), main_namespace, main_namespace);
+  //  }
+  //  catch(bp::error_already_set const &) {
+  //    PyErr_Print();
+  //  }
+  //  catch (...) {
+  //      cout << "caught!" << endl;
+  //  }
+  //}
 
   
 };
