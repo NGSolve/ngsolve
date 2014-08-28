@@ -106,6 +106,7 @@ class PythonEnvironment : public BasePythonEnvironment {
 };
 
 
+void ExportNgbla();
 
 PythonEnvironment::PythonEnvironment() {
 
@@ -115,10 +116,16 @@ PythonEnvironment::PythonEnvironment() {
     cout << "Init Python environment." << endl;
     Py_Initialize();
     PyEval_InitThreads();
-
     try{
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
+        exec("from sys import path");
+//         exec("from runpy import run_module");
+        exec("from os import environ");
+
+        exec("path.append(environ['NETGENDIR'])");
+        exec("path.append('.')");
+
 
         /*
         exec("from ngstd import *");
@@ -129,7 +136,10 @@ PythonEnvironment::PythonEnvironment() {
         exec("from ngsolve import *");
         */
         exec("import ngstd");
-        exec("import ngbla");
+
+//         exec("import ngbla");
+        ExportNgbla();
+
         exec("import ngla");
         exec("import ngfem");
         exec("import ngcomp");
@@ -137,15 +147,9 @@ PythonEnvironment::PythonEnvironment() {
 
 
 //         exec("from ngbla import *");
-        exec("from sys import path");
-        exec("from runpy import run_module");
-        exec("from os import environ");
-        
-        exec("path.append(environ['NETGENDIR'])");
-        exec("path.append('.')");
-        exec("globals().update(run_module('expr',globals()))");
-        exec("globals().update(run_module('bla',globals()))");
-        exec("globals().update(run_module('la',globals()))");
+//         exec("globals().update(run_module('expr',globals()))");
+//         exec("globals().update(run_module('bla',globals()))");
+//         exec("globals().update(run_module('la',globals()))");
     }
     catch(bp::error_already_set const &) {
         PyErr_Print();
