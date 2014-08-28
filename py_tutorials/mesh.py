@@ -1,25 +1,18 @@
 import sys
 sys.path.append("/opt/netgen/lib")
 
-import libngspy
-import ngstd
-import ngbla
-import ngfem
-import ngcomp
-import ngsolve
+from libngspy import *
 
 
+# pde = ngsolve.PDE("../pde_tutorial/d1_square.pde")
+# mesh = pde.Mesh()
 
-
-pde = ngsolve.PDE("../pde_tutorial/d1_square.pde")
-mesh = pde.Mesh()
-
-# mesh = Mesh("square.vol")
-# mesh = Mesh("cube.vol.gz")
+# mesh = ngcomp.Mesh("square.vol")
+mesh = ngcomp.Mesh("cube.vol.gz")
 
 # from tkinter import filedialog
 # filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
-# mesh = Mesh(filename)
+# mesh = ngcomp.Mesh(filename)
 
 
 for i in mesh.Elements(ngcomp.VOL):

@@ -5,9 +5,19 @@ using namespace ngfem;
 
 
 
-BOOST_PYTHON_MODULE(libngfem) {
+void ExportNgfem() {
+    std::string nested_name = "ngfem";
+    if( bp::scope() )
+      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngfem");
+    
+    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-  cout << "init ngfem - py" << endl;
+    cout << "exporting ngfem as " << nested_name << endl;
+    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+    parent.attr("ngfem") = module ;
+
+    bp::scope ngbla_scope(module);
+
 
   bp::enum_<ELEMENT_TYPE>("ELEMENT_TYPE")
     .value("POINT", ET_POINT)     .value("SEGM", ET_SEGM)
@@ -133,14 +143,14 @@ BOOST_PYTHON_MODULE(libngfem) {
 }
 
 
-struct Init_pyfem {
-  Init_pyfem() 
-  { 
-    cout << "adding module 'ngstd' to py-inittab" << endl;
-    PyImport_AppendInittab("ngfem", PyInit_libngfem); 
-  }
-};
-static Init_pyfem init;
+int ExportNgstd();
+int ExportNgbla();
+
+BOOST_PYTHON_MODULE(libngfem) {
+  ExportNgstd();
+  ExportNgbla();
+  ExportNgfem();
+}
 
 
 

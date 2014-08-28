@@ -4,9 +4,23 @@
 using namespace ngsolve;
 
 
-BOOST_PYTHON_MODULE(libngsolve) {
 
-  cout << "init ngsolve - py" << endl;
+
+
+void ExportNgsolve() {
+    std::string nested_name = "ngsolve";
+    if( bp::scope() )
+      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngsolve");
+    
+    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+
+    cout << "exporting ngstd as " << nested_name << endl;
+    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+    parent.attr("ngsolve") = module ;
+
+    bp::scope local_scope(module);
+
+
 
   PyExportSymbolTable<shared_ptr<FESpace>> ();
   PyExportSymbolTable<shared_ptr<GridFunction>> ();
@@ -61,19 +75,6 @@ BOOST_PYTHON_MODULE(libngsolve) {
     .add_property ("numprocs", FunctionPointer([](PDE & self) { return self.GetNumProcTable(); }))
     ;
 }
-
-
-
-struct Init {
-  Init() 
-  { 
-    cout << "adding module 'ngsolve' to py-inittab" << endl;
-    PyImport_AppendInittab("ngsolve", PyInit_libngsolve); 
-  }
-};
-static Init init;
-
-
 
 
 

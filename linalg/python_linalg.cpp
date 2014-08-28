@@ -7,10 +7,26 @@ using namespace ngla;
 
 
 
+void ExportNgla() {
+    std::string nested_name = "ngla";
+    if( bp::scope() )
+         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngla");
+    
+    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-BOOST_PYTHON_MODULE(libngla) {
+    cout << "exporting ngla as " << nested_name << endl;
+    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+    parent.attr("ngla") = module ;
 
-  cout << "init ngla - py" << endl;
+    bp::scope ngla_scope(module);
+
+    bp::object expr_module = bp::import("expr");
+    bp::object expr_namespace = expr_module.attr("__dict__");
+
+
+
+
+
   
   bp::class_<BaseVector,boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
@@ -46,16 +62,12 @@ BOOST_PYTHON_MODULE(libngla) {
 
 
 
+int ExportNgbla();
 
-struct Init {
-  Init() 
-  { 
-    cout << "adding module 'ngla' to py-inittab" << endl;
-    PyImport_AppendInittab("ngla", PyInit_libngla); 
-  }
-};
-static Init init;
-
+BOOST_PYTHON_MODULE(libngbla) {
+  ExportNgbla();
+  ExportNgla();
+}
 
 
 
