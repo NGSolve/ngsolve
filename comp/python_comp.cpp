@@ -13,9 +13,22 @@ public:
 
 
 
-BOOST_PYTHON_MODULE(libngcomp) {
 
-  cout << "init ngcomp - py" << endl;
+void ExportNgcomp() {
+    std::string nested_name = "ngcomp";
+    if( bp::scope() )
+      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngcomp");
+    
+    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+
+    cout << "exporting ngstd as " << nested_name << endl;
+    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+    parent.attr("ngcomp") = module ;
+
+    bp::scope local_scope(module);
+
+
+
 
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
@@ -145,15 +158,16 @@ BOOST_PYTHON_MODULE(libngcomp) {
 
 
 
-struct Init {
-  Init() 
-  { 
-    cout << "adding module 'ngcomp' to py-inittab" << endl;
-    PyImport_AppendInittab("ngcomp", PyInit_libngcomp); 
-  }
-};
-static Init init;
+int ExportNgstd();
+int ExportNgbla();
+int ExportNgfem();
 
+BOOST_PYTHON_MODULE(libngcomp) {
+  ExportNgstd();
+  ExportNgbla();
+  ExportNgfem();
+  ExportNgcomp();
+}
 
 
 

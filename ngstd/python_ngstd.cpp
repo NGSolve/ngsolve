@@ -8,9 +8,20 @@
 
 using std::ostringstream;
 
-BOOST_PYTHON_MODULE(libngstd) 
-{
-  cout << "init ngstd - py" << endl;
+
+void ExportNgstd() {
+    std::string nested_name = "ngstd";
+    if( bp::scope() )
+      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngstd");
+    
+    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+
+    cout << "exporting ngstd as " << nested_name << endl;
+    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+    parent.attr("ngstd") = module ;
+
+    bp::scope ngbla_scope(module);
+
 
   bp::class_<FlatArray<double> >("FlatArrayD")
     .def(PyDefVector<FlatArray<double>, double>()) 
@@ -65,14 +76,12 @@ BOOST_PYTHON_MODULE(libngstd)
 }
 
 
-struct Init {
-  Init() 
-  { 
-    cout << "adding module 'ngstd' to py-inittab" << endl;
-    PyImport_AppendInittab("ngstd", PyInit_libngstd); 
-  }
-};
-static Init init;
+
+BOOST_PYTHON_MODULE(libngstd) {
+  ExportNgstd();
+}
+
+
 
 
 #endif // NGS_PYTHON
