@@ -24,7 +24,7 @@ using namespace std;
 using namespace ngsolve;
 
 namespace netgen {
-    extern string ngdir;
+    string ngdir="";
 }
 
 #include <nginterface.h>
@@ -84,20 +84,24 @@ class PythonEnvironment : public BasePythonEnvironment {
     void Spawn(string initfile) {
         if(pythread_id != mainthread_id) {
             cout << "Python thread already running!" << endl;
-        } else {
-            PyEval_ReleaseLock();
+        }
+        else {
             std::thread([](string init_file_) {
-                    try{
-                    AcquireGIL gil_lock;
-                    py_env.pythread_id = std::this_thread::get_id();
-                    py_env.exec_file(init_file_.c_str());
-                    }
-                    catch(bp::error_already_set const &) {
-                    PyErr_Print();
-                    }
-                    cout << "Python shell finished." << endl;
-                    py_env.pythread_id = py_env.mainthread_id;
-                    }, initfile).detach();
+                AcquireGIL gil_lock;
+            try{
+                py_env.pythread_id = std::this_thread::get_id();
+                //py_env.exec_file(init_file_.c_str());
+                py_env.exec("from runpy import run_module");
+                py_env.exec("globals().update(run_module('init',globals()))");
+            }
+            catch (bp::error_already_set const &) {
+                PyErr_Print();
+            }
+            cout << "Python shell finished." << endl;
+
+            py_env.pythread_id = py_env.mainthread_id;
+        
+              }, initfile).detach();
         }
     }
 
@@ -138,6 +142,7 @@ PythonEnvironment::PythonEnvironment() {
         ExportNgla();
         ExportNgcomp();
         ExportNgsolve();
+        PyEval_ReleaseLock();
     }
     catch(bp::error_already_set const &) {
         PyErr_Print();
