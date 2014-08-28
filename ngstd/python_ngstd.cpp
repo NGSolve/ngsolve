@@ -30,6 +30,14 @@ BOOST_PYTHON_MODULE(libngstd)
 
   bp::class_<Array<int>, bp::bases<FlatArray<int> > >("ArrayI")
     .def(bp::init<int>())
+    .def("__init__", bp::make_constructor (FunctionPointer ([](bp::list const & x)
+                {
+                  int s = bp::len(x);
+                  shared_ptr<Array<int>> tmp (new Array<int>(s));
+                  for (int i = 0; i < s; i++)
+                    (*tmp)[i] = bp::extract<int> (x[i]); 
+                  return tmp;
+                })))
     ;
     
   bp::class_<ngstd::LocalHeap>
