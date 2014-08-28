@@ -76,6 +76,8 @@ C:\Windows\System32\xcopy "%NGSOLVE_INCROOT%\fem\*.hpp" "%INSTALL_FOLDER%\includ
 C:\Windows\System32\xcopy "%NGSOLVE_INCROOT%\comp\*.hpp" "%INSTALL_FOLDER%\include\comp\" /i /d /y
 C:\Windows\System32\xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.hpp" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
 C:\Windows\System32\xcopy "%NGSOLVE_INCROOT%\basiclinalg\*.h" "%INSTALL_FOLDER%\include\basiclinalg\" /i /d /y
+C:\Windows\System32\xcopy "%NGSOLVE_INCROOT%\ngstd\*.py" "%INSTALL_FOLDER%\bin\" /i /d /y
+
 
 REM *** Copy the NgSolve pde tutorials to the install folder ***
 echo Copying pde tutorials

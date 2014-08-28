@@ -62,9 +62,9 @@ void ExportNgla() {
 
 
 
-int ExportNgbla();
+void ExportNgbla();
 
-BOOST_PYTHON_MODULE(libngbla) {
+BOOST_PYTHON_MODULE(libngla) {
   ExportNgbla();
   ExportNgla();
 }

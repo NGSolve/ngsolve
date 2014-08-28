@@ -2,8 +2,7 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <fem.hpp>
 using namespace ngfem;
-
-
+using ngfem::ELEMENT_TYPE;
 
 void ExportNgfem() {
     std::string nested_name = "ngfem";
@@ -143,8 +142,8 @@ void ExportNgfem() {
 }
 
 
-int ExportNgstd();
-int ExportNgbla();
+void ExportNgstd();
+void ExportNgbla();
 
 BOOST_PYTHON_MODULE(libngfem) {
   ExportNgstd();
