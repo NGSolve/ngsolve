@@ -19,6 +19,9 @@ def Expr(a):
 def expr_add(a,b):
     return Expr(a) + Expr(b)
 
+def expr_sub(a,b):
+    return Expr(a) - Expr(b)
+
 def expr_data(a,b):
     Expr(b).AssignTo(a.expr)
 

@@ -36,7 +36,12 @@ void ExportNgla() {
 
     .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
     .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
-    ;
+    .add_property("expr", bp::object(expr_namespace["VecExpr"]) )
+    .add_property("data", bp::object(expr_namespace["VecExpr"]), bp::object(expr_namespace["expr_data"] ))
+    .def("__add__" , bp::object(expr_namespace["expr_add"]) )
+    .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
+    ;       
+
   bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
     ;
   
