@@ -121,6 +121,19 @@ void ExportNgfem() {
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>>
     ("ConstantCF", bp::init<double>())
     ;
+  
+  // we better get rid of the template argument !
+  bp::class_<DomainVariableCoefficientFunction<2>,bp::bases<CoefficientFunction>, boost::noncopyable>
+    ("VariableCF", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](string str)
+                           {
+                             // mem-leak -> smart pointer !!!
+                             EvalFunction * ef = new EvalFunction (str);
+                             return shared_ptr<DomainVariableCoefficientFunction<2>>
+                               (new DomainVariableCoefficientFunction<2> (*ef));
+                           })))
+    ;
 
 
 

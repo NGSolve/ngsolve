@@ -112,13 +112,20 @@ void ExportNgcomp() {
                           ),
          bp::return_value_policy<bp::reference_existing_object>())
          */
-    .def("Update", //
+    .def("Update", 
          FunctionPointer([](GF & self)
                          {
                            self.Update();
                          }),
          "update vector size to finite element space dimension after mesh refinement"
          )
+
+    .def("Set",
+         FunctionPointer([](GF & self, const CoefficientFunction & cf)
+                        {
+                          LocalHeap lh(1000000, "tmplh");
+                          SetValues (cf, self, false, NULL, lh);
+                        }))
 
     .def("Vector", 
          FunctionPointer([](GF & self)->BaseVector& { return self.GetVector(); }),
