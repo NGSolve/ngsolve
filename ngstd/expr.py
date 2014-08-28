@@ -2,14 +2,25 @@
 # Expression classes                          
 ###############################################
 
+import time
+print ("Import expr.py")
+
+def fexpr():
+    print("hallo from expr")
+
 def Expr(a):
     if isinstance(a, BaseExpr):
         return a
     try:
         return a.expr
     except:
-        return a
+        raise TypeError('cannot convert ' + str(type(a)) + ' to expression')
     
+def expr_add(a,b):
+    return Expr(a) + Expr(b)
+
+def expr_data(a,b):
+    Expr(b).AssignTo(a.expr)
 
 class BaseExpr:
     def copy(self):
