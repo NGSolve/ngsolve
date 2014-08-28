@@ -23,9 +23,6 @@
 using namespace std;
 using namespace ngsolve;
 
-namespace netgen {
-    string ngdir="";
-}
 
 #include <nginterface.h>
 #include <ngexception.hpp>
@@ -90,9 +87,9 @@ class PythonEnvironment : public BasePythonEnvironment {
                 AcquireGIL gil_lock;
             try{
                 py_env.pythread_id = std::this_thread::get_id();
-                //py_env.exec_file(init_file_.c_str());
-                py_env.exec("from runpy import run_module");
-                py_env.exec("globals().update(run_module('init',globals()))");
+                py_env.exec_file(init_file_.c_str());
+                // py_env.exec("from runpy import run_module");
+                // py_env.exec("globals().update(run_module('init',globals()))");
             }
             catch (bp::error_already_set const &) {
                 PyErr_Print();
@@ -138,10 +135,21 @@ PythonEnvironment::PythonEnvironment() {
         ExportNgstd();
         ExportNgbla();
         ExportNgfem();
-
         ExportNgla();
         ExportNgcomp();
         ExportNgsolve();
+
+        cout << "ngs-python objects are available in ngstd, ngbla, ...\n"
+             << "to import the whole bunch of objets enter\n\n"
+             << "from ngstd import *\n"
+             << "from ngbla import *\n"
+             << "from ngfem import *\n"
+             << "from ngla import *\n"
+             << "from ngcomp import *\n"
+             << "from ngsolve import *\n"
+             << "dir()\n"
+             << endl << endl;
+
         PyEval_ReleaseLock();
     }
     catch(bp::error_already_set const &) {
@@ -460,7 +468,10 @@ int NGS_LoadPDE (ClientData clientData,
 #ifdef NGS_PYTHON
           cout << "set python mesh" << endl;
           // PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
-          PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+          {
+            // AcquireGIL gil_lock;
+            PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+          }
 #endif
 
           int port = pde -> GetConstant ("port", true);
