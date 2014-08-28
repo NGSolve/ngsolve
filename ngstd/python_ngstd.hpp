@@ -39,12 +39,17 @@ public:
     bp::exec(s.c_str(), main_namespace, main_namespace);
   }
 
-  virtual void exec_file(const char *file) {
+  virtual void exec_file(const string file) {
+    bp::exec_file(file.c_str(), main_namespace, main_namespace);
+    return;
     try{
-      bp::exec_file(file, main_namespace, main_namespace);
+      bp::exec_file(file.c_str(), main_namespace, main_namespace);
     }
     catch(bp::error_already_set const &) {
       PyErr_Print();
+    }
+    catch (...) {
+        cout << "caught!" << endl;
     }
   }
 

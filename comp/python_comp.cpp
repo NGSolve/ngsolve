@@ -158,9 +158,9 @@ void ExportNgcomp() {
 
 
 
-int ExportNgstd();
-int ExportNgbla();
-int ExportNgfem();
+void ExportNgstd();
+void ExportNgbla();
+void ExportNgfem();
 
 BOOST_PYTHON_MODULE(libngcomp) {
   ExportNgstd();
