@@ -6,7 +6,6 @@ using namespace ngsolve;
 
 
 
-
 void ExportNgsolve() {
     std::string nested_name = "ngsolve";
     if( bp::scope() )
@@ -19,8 +18,6 @@ void ExportNgsolve() {
     parent.attr("ngsolve") = module ;
 
     bp::scope local_scope(module);
-
-
 
   PyExportSymbolTable<shared_ptr<FESpace>> ();
   PyExportSymbolTable<shared_ptr<GridFunction>> ();
@@ -42,8 +39,8 @@ void ExportNgsolve() {
                           }));
   ;
 
-  // bp::class_<NumProc>("NumProc", bp::no_init);
 
+  
   bp::class_<PDE> ("PDE", bp::init<>())
     .def(bp::init<const string&>())
     .def("Load", static_cast<void(ngsolve::PDE::*)(const string &, const bool, const bool)> 
