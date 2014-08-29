@@ -36,6 +36,17 @@ void ExportNgcomp() {
     .export_values()
     ;
 
+  bp::enum_<COUPLING_TYPE> ("COUPLING_TYPE")
+    .value("UNUSED_DOF", UNUSED_DOF)
+    .value("LOCAL_DOF", LOCAL_DOF)
+    .value("INTERFACE_DOF", INTERFACE_DOF)
+    .value("NONWIREBASKET_DOF", NONWIREBASKET_DOF)
+    .value("WIREBASKET_DOF", WIREBASKET_DOF)
+    .value("EXTERNAL_DOF", EXTERNAL_DOF)
+    .value("ANY_DOF", ANY_DOF)
+    .export_values()
+    ;
+
   bp::class_<ElementId> ("ElementId", bp::init<VorB,int>())
     .def(PyDefToString<ElementId>())
     .add_property("nr", &ElementId::Nr)    
@@ -50,9 +61,9 @@ void ExportNgcomp() {
     ;
 
   bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
-    .add_property("vertices", FunctionPointer([](Ngs_Element &el)->Array<int>{return Array<int>(el.Vertices());} ))
-    .add_property("edges", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Edges());} ))
-    .add_property("faces", FunctionPointer([](Ngs_Element &el)->Array<int>{ return Array<int>(el.Faces());} ))
+    .add_property("vertices", FunctionPointer([](Ngs_Element &el) {return bp::tuple(Array<int>(el.Vertices()));} ))
+    .add_property("edges", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Edges()));} ))
+    .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ))
     .add_property("type", &Ngs_Element::GetType)
     ;
 
@@ -74,10 +85,8 @@ void ExportNgcomp() {
     // first attempts, but keep for a moment ...
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
          (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
-    .def("GetElementVertices", static_cast<void (MeshAccess::*)(int, Array<int> &) const>( &MeshAccess::GetElVertices))
-
-
     ;
+
 
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
@@ -89,8 +98,13 @@ void ExportNgcomp() {
                                    }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     
-    .def("GetDofNrs", FunctionPointer([](FESpace & self, int i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
-    .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId i) { Array<int> tmp; self.GetDofNrs(i,tmp); return tmp; }))
+    .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId i) 
+                                   {
+                                     Array<int> tmp; self.GetDofNrs(i,tmp); 
+                                     return bp::tuple (tmp); 
+                                   }))
+
+    .def("CouplingType", &FESpace::GetDofCouplingType)
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
     .def(PyDefToString<FESpace>())
     .def ("GetFE", 
@@ -103,26 +117,16 @@ void ExportNgcomp() {
   bp::class_<GF, shared_ptr<GF>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
     .def("__str__", &ToString<GF>)
-      
-    // problem: not a shared_ptr
     .add_property("space", &GF::GetFESpacePtr, "the finite element spaces")
-         /*
-         FunctionPointer ([](GF & self) -> const FESpace&
-                          { return self.GetFESpace(); } 
-                          ),
-         bp::return_value_policy<bp::reference_existing_object>())
-         */
+    
     .def("Update", 
-         FunctionPointer([](GF & self)
-                         {
-                           self.Update();
-                         }),
+         FunctionPointer([](GF & self) {self.Update();}),
          "update vector size to finite element space dimension after mesh refinement"
          )
 
     .def("Set",
          FunctionPointer([](GF & self, const CoefficientFunction & cf)
-                        {
+                         {
                           LocalHeap lh(1000000, "tmplh");
                           SetValues (cf, self, false, NULL, lh);
                         }))
