@@ -3,8 +3,40 @@
 #include <solve.hpp>
 using namespace ngsolve;
 
+struct TestBase {
+    virtual void f() const = 0;
+    virtual void g() const { cout << "g" << endl; };
+    virtual void h() const { cout << "h" << endl; };
+};
+
+struct TestBaseWrap : TestBase, bp::wrapper<TestBase> {
+    void f() const {
+        this->get_override("f")();
+    }
+};
+
+void TestExport() {
 
 
+  bp::class_<TestBaseWrap, boost::noncopyable>("TestBase")
+    .def("f", bp::pure_virtual(&TestBase::f)) 
+  ;
+
+  bp::def("callf", FunctionPointer( [] (const TestBase &b) { b.f(); } ) );
+}
+
+class PyNumProc : public NumProc, public bp::wrapper<NumProc> {
+    public:
+        PyNumProc (PDE & apde, const Flags & flags) : NumProc(pde,flags) {
+           cout << "pynumproc constructor" << endl; 
+        }
+
+        virtual void Do(LocalHeap & lh) {
+            this->get_override("Do")(lh);
+        }
+};
+
+static PyNumProc *python_np;
 
 void ExportNgsolve() {
     std::string nested_name = "ngsolve";
@@ -27,9 +59,20 @@ void ExportNgsolve() {
   PyExportSymbolTable<double> ();
   PyExportSymbolTable<shared_ptr<double>> ();
 
+  TestExport();
 
-  bp::class_<NumProc, shared_ptr<NumProc>,boost::noncopyable> ("NumProc", bp::no_init)
+  bp::def("RegisterNumProc", FunctionPointer( [] (PyNumProc & np, string label, int dim) { 
+      python_np = &np;
+      GetNumProcs().AddNumProc (label, dim, FunctionPointer( [] (PDE & pde, const Flags & flags) { return (NumProc*) python_np;}  ));
+//       RegisterNumProc<PyNumProc>(name, dim); return;
+      } ));
+      
+      
+
+  bp::class_<PyNumProc, shared_ptr<PyNumProc>,boost::noncopyable> ("NumProc", bp::no_init)
     // .def("__str__", &ToString<NumProc>)
+    .def(bp::init<PDE &, const Flags &>())
+    .def("Do", bp::pure_virtual(&PyNumProc::Do))
     .def ("__str__", 
           FunctionPointer([](NumProc & np) -> string
                           {
@@ -58,6 +101,12 @@ void ExportNgsolve() {
                                           self.AddGridFunction (name, gf);
                                         }))
     */
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<PyNumProc> np)
+                                {
+                                cout << "add numproc" << endl;
+                                  self.AddNumProc ("pynumproc", &*np);
+                                }))
+
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<GridFunction> gf)
                                 {
                                   self.AddGridFunction (gf->GetName(), gf);
