@@ -1,13 +1,6 @@
 #ifndef FILE_NGBLA
 #define FILE_NGBLA
 
-// #ifdef USE_BLAS
-// extern "C"
-// {
-// #include <mkl_cblas.h>
-// }
-// #endif
-
 
 #include <ngstd.hpp>
 
@@ -62,7 +55,6 @@ namespace ngstd
 #include "bandmatrix.hpp"
 #include "tensor.hpp"
 
-#include "cuda_bla.hpp"
 
 namespace ngbla
 {

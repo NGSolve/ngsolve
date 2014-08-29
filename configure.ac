@@ -127,38 +127,6 @@ AC_ARG_ENABLE([vt],
         [CXXFLAGS="$CXXFLAGS -vt:inst manual -DVTRACE"]
         )       
 
-AC_ARG_ENABLE([cuda],
-	[AC_HELP_STRING([--enable-cuda],[enable CUDA GPU support])],
-	[CXXFLAGS+=" -DCUDA -I/usr/local/cuda-6.5/include"]
-	[LDFLAGS+=" -L/usr/local/cuda-6.5/lib64 -lcudart -lcublas -lcusparse"]
-	cudaon=true
-	)
-AM_CONDITIONAL([NGSCUDA], [test x$cudaon = xtrue])
-
-AM_PATH_PYTHON([3.2])
-AX_PYTHON_DEVEL([>= '3.2'])
-
-# CXXFLAGS+=" $PYTHON_CPPFLAGS"
-# LDFLAGS+=" $PYTHON_LDFLAGS"
-
-AX_BOOST_BASE
-AX_BOOST_PYTHON
-
-echo "from path python:   python version = $PYTHON_VERSION"
-echo "from pythond devel: python cpp = $PYTHON_CPPFLAGS"
-echo "from pythond devel: python ld = $PYTHON_LDFLAGS"
-echo "from boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
-
-# why does it choose boost_python-py27 when available ????
-# AC_SUBST(BOOST_PYTHON_LIB, boost_python-py34)
-# echo "modified boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
-
-AC_ARG_ENABLE([python],
-	[AC_HELP_STRING([--enable-python],[enable python shell])],
- 	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
-        [LDFLAGS+=" -l$BOOST_PYTHON_LIB $PYTHON_LDFLAGS"]
-	)
-
 echo "creating compiler wrapper ngscxx"
 echo "$CXX -I. $GOLD_INCLUDE $CXXFLAGS -L$netgendir/lib -fpic $LAPACK_INCLUDES $TCL_INCLUDES $MUMPS_INCLUDES $PARDISO_INCLUDES \$*  $LAPACK_LIBS -Wl,--rpath=$netgendir/lib" > ngscxx
 chmod a+x ngscxx 

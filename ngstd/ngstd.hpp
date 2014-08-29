@@ -154,14 +154,4 @@ namespace ngstd
 #endif
 }
 
-
-
-#ifdef GOLD
-#include <ngstd_gold.hpp>
-#endif
-
-
-
-#include "cuda_ngstd.hpp"
-
 #endif
