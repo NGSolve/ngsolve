@@ -91,7 +91,7 @@ if test "$ac_cv_boost_python" = "yes"; then
    fi])
   BOOSTLIBDIR=`echo $BOOST_LDFLAGS | sed -e 's/@<:@^\/@:>@*//'`
 # JS: added -py3 three times for force bp-py3x
-  for ax_lib in `ls $BOOSTLIBDIR/libboost_python-py3*.so* $BOOSTLIBDIR/libboost_python-py3*.dylib* $BOOSTLIBDIR/libboost_python-py3*.a* 2>/dev/null | sed 's,.*/,,' | sed -e 's;^lib\(boost_python.*\)\.so.*$;\1;' -e 's;^lib\(boost_python.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_python.*\)\.a.*$;\1;' ` $ax_python_lib $ax_boost_python_lib boost_python; do
+  for ax_lib in `ls -r $BOOSTLIBDIR/libboost_python-py3*.so* $BOOSTLIBDIR/libboost_python-py3*.dylib* $BOOSTLIBDIR/libboost_python-py3*.a* 2>/dev/null | sed 's,.*/,,' | sed -e 's;^lib\(boost_python.*\)\.so.*$;\1;' -e 's;^lib\(boost_python.*\)\.dylib.*$;\1;' -e 's;^lib\(boost_python.*\)\.a.*$;\1;' ` $ax_python_lib $ax_boost_python_lib boost_python; do
     AC_CHECK_LIB($ax_lib, exit, [BOOST_PYTHON_LIB=$ax_lib break], , [$PYTHON_LDFLAGS])
   done
   AC_SUBST(BOOST_PYTHON_LIB)
