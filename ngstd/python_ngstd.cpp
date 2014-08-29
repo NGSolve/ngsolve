@@ -23,6 +23,7 @@ void ExportNgstd() {
     bp::scope ngbla_scope(module);
 
 
+
   bp::class_<FlatArray<double> >("FlatArrayD")
     .def(PyDefVector<FlatArray<double>, double>()) 
     .def(PyDefToString<FlatArray<double> >())
