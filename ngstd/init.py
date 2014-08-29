@@ -1,4 +1,4 @@
-print ("hello from init.py")
+print ("Hello from init.py")
 
 def mydir(x=None):
     if x==None:
@@ -7,9 +7,18 @@ def mydir(x=None):
         return [i for i in dir(x) if not '__' in i]
 
 def startConsole():
-    import rlcompleter, readline # optional, will allow Up/Down/History in the console
     import code
-    readline.parse_and_bind("tab:complete") # autocomplete
+    try:
+        import readline
+        import rlcompleter
+        readline.parse_and_bind("tab:complete") # autocomplete
+    except:
+        try:
+            import pyreadline as readline
+            import rlcompleter
+            readline.parse_and_bind("tab:complete") # autocomplete
+        except:
+            print('readline not found')
     vars = globals()
     vars.update(locals())
     shell = code.InteractiveConsole(vars)
