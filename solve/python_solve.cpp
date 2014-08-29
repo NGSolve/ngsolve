@@ -69,9 +69,9 @@ void ExportNgsolve() {
       
       
 
-  bp::class_<PyNumProc, shared_ptr<PyNumProc>,boost::noncopyable> ("NumProc", bp::no_init)
+  bp::class_<PyNumProc ,boost::noncopyable> ("NumProc", bp::init<PDE &, const Flags &>())
     // .def("__str__", &ToString<NumProc>)
-    .def(bp::init<PDE &, const Flags &>())
+//     .def(bp::init<PDE &, const Flags &>())
     .def("Do", bp::pure_virtual(&PyNumProc::Do))
     .def ("__str__", 
           FunctionPointer([](NumProc & np) -> string
@@ -101,10 +101,10 @@ void ExportNgsolve() {
                                           self.AddGridFunction (name, gf);
                                         }))
     */
-    .def("Add", FunctionPointer([](PDE & self, shared_ptr<PyNumProc> np)
+    .def("Add", FunctionPointer([](PDE & self, PyNumProc &np)
                                 {
                                 cout << "add numproc" << endl;
-                                  self.AddNumProc ("pynumproc", &*np);
+                                  self.AddNumProc ("pynumproc", &np);
                                 }))
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<GridFunction> gf)
