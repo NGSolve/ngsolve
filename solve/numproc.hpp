@@ -65,11 +65,11 @@ public:
     string name;
     int dim;
 
-    NumProc* (*creator)(PDE & pde, const Flags & flags);
+    shared_ptr<NumProc> (*creator)(PDE & pde, const Flags & flags);
     void (*printdoc) (ostream & ost);
     
     NumProcInfo (const string & aname, int adim, 
-		 NumProc* (*acreator)(PDE & pde, const Flags & flags),
+		 shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 		 void (*aprintdoc) (ostream & ost));
   };
 
@@ -78,12 +78,12 @@ public:
   NumProcs();
   ~NumProcs();  
   void AddNumProc (const string & aname, 
-		   NumProc* (*acreator)(PDE & pde, const Flags & flags),
+		   shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
 
 
   void AddNumProc (const string & aname, int dim, 
-		   NumProc* (*acreator)(PDE & pde, const Flags & flags),
+		   shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
 
   const Array<NumProcInfo*> & GetNumProcs() { return npa; }
@@ -113,9 +113,9 @@ public:
     GetNumProcs().AddNumProc (label, dim, Create, NP::PrintDoc);
   }
   
-  static NumProc * Create (PDE & pde, const Flags & flags)
+  static shared_ptr<NumProc> Create (PDE & pde, const Flags & flags)
   {
-    return new NP (pde, flags);
+    return shared_ptr<NumProc> (new NP (pde, flags));
   }
 };
 
