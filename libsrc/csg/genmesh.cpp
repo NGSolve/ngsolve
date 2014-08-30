@@ -60,9 +60,10 @@ namespace netgen
 
 
 
-  static void FindEdges (CSGeometry & geom, Mesh & mesh, const bool setmeshsize = false)
+  static void FindEdges (CSGeometry & geom, Mesh & mesh, MeshingParameters & mparam,
+                         const bool setmeshsize = false)
   {
-    EdgeCalculation ec (geom, specpoints);
+    EdgeCalculation ec (geom, specpoints, mparam);
     ec.SetIdEps(geom.GetIdEps());
     ec.Calc (mparam.maxh, mesh);
 
@@ -215,11 +216,11 @@ namespace netgen
   }
 
 
+  
+  
 
 
-
-
-  static void MeshSurface (CSGeometry & geom, Mesh & mesh)
+  static void MeshSurface (CSGeometry & geom, Mesh & mesh, MeshingParameters & mparam)
   {
     const char * savetask = multithread.task;
     multithread.task = "Surface meshing";
@@ -561,8 +562,7 @@ namespace netgen
 
 	PrintMessage (3, (mesh.GetNSE() - oldnf), " elements, ", mesh.GetNP(), " points");
 
-	extern void Render();
-	Render();
+	mparam.Render();
       }
     
     mesh.Compress();
@@ -639,8 +639,7 @@ namespace netgen
 	    PrintMessage (3, (mesh.GetNSE() - oldnf), " elements, ", mesh.GetNP(), " points");
 	  }
       
-	extern void Render();
-	Render();
+        mparam.Render();
       }
     while (changed);
 
@@ -709,7 +708,7 @@ namespace netgen
 
     if (perfstepsstart <= MESHCONST_MESHEDGES)
       {
-	FindEdges (geom, *mesh, true);
+	FindEdges (geom, *mesh, mparam, true);
 	if (multithread.terminate) return TCL_OK;
 #ifdef LOG_STREAM      
 	(*logout) << "Edges meshed" << endl
@@ -728,14 +727,14 @@ namespace netgen
 	    
 	    FindPoints (geom, *mesh);
 	    if (multithread.terminate) return TCL_OK;
-	    FindEdges (geom, *mesh, true);
+	    FindEdges (geom, *mesh, mparam, true);
 	    if (multithread.terminate) return TCL_OK;
 	    
 	    mesh->DeleteMesh();
 	  
 	    FindPoints (geom, *mesh);
 	    if (multithread.terminate) return TCL_OK;
-	    FindEdges (geom, *mesh);
+	    FindEdges (geom, *mesh, mparam);
 	    if (multithread.terminate) return TCL_OK;
 	  }
       }
@@ -746,7 +745,7 @@ namespace netgen
 
     if (perfstepsstart <= MESHCONST_MESHSURFACE)
       {
-	MeshSurface (geom, *mesh);  
+	MeshSurface (geom, *mesh, mparam);  
 	if (multithread.terminate) return TCL_OK;
       
 #ifdef LOG_STREAM
@@ -762,10 +761,10 @@ namespace netgen
 
 	    FindPoints (geom, *mesh);
 	    if (multithread.terminate) return TCL_OK;
-	    FindEdges (geom, *mesh);
+	    FindEdges (geom, *mesh, mparam);
 	    if (multithread.terminate) return TCL_OK;
 
-	    MeshSurface (geom, *mesh);  
+	    MeshSurface (geom, *mesh, mparam);  
 	    if (multithread.terminate) return TCL_OK;
 	  }
 

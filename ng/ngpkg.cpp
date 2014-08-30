@@ -36,6 +36,7 @@ extern bool nodisplay;
 
 namespace netgen
 {
+  extern MeshingParameters mparam;
 #include "../libsrc/interface/writeuser.hpp"
 #include "demoview.hpp"
 }
@@ -156,7 +157,7 @@ namespace netgen
     */
   }
 
-  DLL_HEADER void MyError(const char * ch)
+  DLL_HEADER void MyError2(const char * ch)
   {
     cout << ch;
     (*testout) << "Error !!! " << ch << endl << flush;
@@ -164,13 +165,13 @@ namespace netgen
 #endif
 
   static clock_t starttimea;
-  void ResetTime ()
+  void ResetTime2 ()
   {
     starttimea = clock();
   }
 
 #ifndef SMALLLIB
-  DLL_HEADER double GetTime ()
+  DLL_HEADER double GetTime2 ()
   {
     return double(clock() - starttimea) / CLOCKS_PER_SEC;
   }
@@ -1127,6 +1128,7 @@ namespace netgen
   {
     mparam.maxh = atof (Tcl_GetVar (interp, "::options.meshsize", 0));
     mparam.minh = atof (Tcl_GetVar (interp, "::options.minmeshsize", 0));
+
     mparam.meshsizefilename = Tcl_GetVar (interp, "::options.meshsizefilename", 0);
     if (!strlen (mparam.meshsizefilename))
       mparam.meshsizefilename = NULL;
@@ -1356,6 +1358,9 @@ namespace netgen
 
     multithread.running = 1;
     multithread.terminate = 0;
+    
+    extern void Render();
+    mparam.render_function = &Render;
 
     for (int i = 0; i < geometryregister.Size(); i++)
       geometryregister[i] -> SetParameters (interp);

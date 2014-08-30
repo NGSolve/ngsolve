@@ -27,6 +27,35 @@ namespace netgen
 
   string ngdir = ".";
 
+  // parallel netgen
+  int id = 0, ntasks = 1;
+
+
+  void Ng_PrintDest(const char * s)
+  {
+    if (id == 0)
+      (*mycout) << s << flush;
+  }
+
+  DLL_HEADER void MyError(const char * ch)
+  {
+    cout << ch;
+    (*testout) << "Error !!! " << ch << endl << flush;
+  }
+
+  static clock_t starttimea;
+  void ResetTime ()
+  {
+    starttimea = clock();
+  }
+
+  double GetTime ()
+  {
+    return double(clock() - starttimea) / CLOCKS_PER_SEC;
+  }
+
+
+
   Array<int> tets_in_qualclass;
 
   int h_argc = 0;

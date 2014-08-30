@@ -27,8 +27,9 @@ libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp \
 	pyramid2rls.cpp pyramidrls.cpp quadrls.cpp refine.cpp		    \
 	ruler2.cpp ruler3.cpp secondorder.cpp smoothing2.5.cpp		    \
 	smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		    \
-	topology.cpp triarls.cpp validate.cpp zrefine.cpp bcfunctions.cpp   \
-	parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp basegeom.cpp 
+	topology.cpp triarls.cpp validate.cpp bcfunctions.cpp   \
+	parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp basegeom.cpp     \
+	python_mesh.cpp
 
 libmesh_la_LIBADD =  $(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \

@@ -163,8 +163,9 @@ MaxCurvatureLoc (const Point<3> & /* c */ , double /* rad */) const
               
 
 
-double Surface :: LocH (const Point<3> & p, double x, 
-			double c, double hmax) const
+double Surface :: LocH (const Point<3> & p, double x, double c, 
+                        const MeshingParameters & mparam,
+                        double hmax) const
   // finds h <= hmax, s.t.  h * \kappa_x*h < c
 {
   /*

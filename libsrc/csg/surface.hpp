@@ -176,7 +176,9 @@ namespace netgen
 	\[ h  \times \kappa (x) \leq c \qquad \mbox{in} B(x, h), \]
 	where kappa(x) is the curvature in x. */
     virtual double LocH (const Point<3> & p, double x, 
-			 double c, double hmax) const;
+			 double c, 
+                         const MeshingParameters & mparam,
+                         double hmax) const;
 
     /**
        Gets Approximation by triangles,

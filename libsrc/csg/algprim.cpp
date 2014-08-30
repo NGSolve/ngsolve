@@ -1404,7 +1404,8 @@ namespace netgen
 
 
   double Cone ::  LocH (const Point<3> & p, double /* x */, 
-                        double /* c */, double hmax) const
+                        double /* c */, 
+                        const MeshingParameters & mparam, double hmax) const
   {
     //double bloch = Surface::LocH (p, x, c, hmax);
     Vec<3> g;

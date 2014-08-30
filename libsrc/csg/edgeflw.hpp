@@ -42,10 +42,12 @@ namespace netgen
     int cntedge;
 
     double ideps;
+    MeshingParameters & mparam;
 
   public:
     EdgeCalculation (const CSGeometry & ageometry,
-		     Array<SpecialPoint> & aspecpoints);
+		     Array<SpecialPoint> & aspecpoints,
+                     MeshingParameters & amparam);
 
     ~EdgeCalculation();
 

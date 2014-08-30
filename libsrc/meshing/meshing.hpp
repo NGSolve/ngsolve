@@ -14,7 +14,7 @@ namespace netgen
 {
   // extern int printmessage_importance;
 
-  class CSGeometry;
+  // class CSGeometry;
   class NetgenGeometry;
 }
   

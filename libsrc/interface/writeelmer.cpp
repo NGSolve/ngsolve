@@ -17,10 +17,11 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
+  extern MeshingParameters & mparam;
 
 
 void WriteElmerFormat (const Mesh &mesh,
-			 const string &filename)
+                       const string &filename)
 {
   cout << "write elmer mesh files" << endl;
   int np = mesh.GetNP();

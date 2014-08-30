@@ -17,7 +17,7 @@ Meshing2Surfaces :: Meshing2Surfaces (const Surface & asurface)
 Meshing2Surfaces :: Meshing2Surfaces (const Surface & asurf,
 				      const MeshingParameters & mp,
 				      const Box<3> & abb)
-  : Meshing2(mp, abb), surface(asurf)
+  : Meshing2(mp, abb), surface(asurf), mparam (mp)
 {
   ;
 }
@@ -58,7 +58,7 @@ int Meshing2Surfaces :: TransformFromPlain (Point2d & planepoint,
 
 double Meshing2Surfaces :: CalcLocalH (const Point3d & p, double gh) const
 {
-  return surface.LocH (p, 3, 1, gh);
+  return surface.LocH (p, 3, 1, mparam, gh);
   /*
     double loch = mesh.lochfunc->GetH(p);
     if (gh < loch) loch = gh;

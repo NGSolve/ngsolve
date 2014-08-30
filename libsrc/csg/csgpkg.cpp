@@ -511,9 +511,9 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-    double globh = mparam.maxh;
+    // double globh = mparam.maxh;
     for (int i = 1; i <= geometry->singedges.Size(); i++)
-      geometry->singedges.Get(i)->SetMeshSize (*mesh, globh);
+      geometry->singedges.Get(i)->SetMeshSize (*mesh, 1e99 /* globh*/);
     return TCL_OK;
   }
 
@@ -529,9 +529,9 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-    double globh = mparam.maxh;
+    // double globh = mparam.maxh;
     for (int i = 1; i <= geometry->singpoints.Size(); i++)
-      geometry->singpoints.Get(i)->SetMeshSize (*mesh, globh);
+      geometry->singpoints.Get(i)->SetMeshSize (*mesh, 1e99 /* globh */ );
     return TCL_OK;
   }
 

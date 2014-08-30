@@ -1104,6 +1104,13 @@ namespace netgen
     void Print (ostream & ost) const;
 
     void CopyFrom(const MeshingParameters & other);
+
+    void (*render_function)() = NULL;
+    void Render()
+    {
+      if (render_function) 
+        (*render_function)();
+    }
   };
 
 

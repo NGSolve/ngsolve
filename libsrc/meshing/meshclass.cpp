@@ -773,12 +773,20 @@ namespace netgen
 
   void Mesh :: Load (const string & filename)
   {
+    cout << "filename = " << filename << endl;
+    istream * infile = NULL;
 
-    ifstream infile(filename.c_str());
-    if (!infile.good())
+    if (filename.find(".vol.gz") != string::npos)
+      infile = new igzstream (filename.c_str());
+    else
+      infile = new ifstream (filename.c_str());
+
+    // ifstream infile(filename.c_str());
+    if (! (infile -> good()) )
       throw NgException ("mesh file not found");
 
-    Load(infile);
+    Load(*infile);
+    delete infile;
   }
 
 
@@ -786,7 +794,6 @@ namespace netgen
 
   void Mesh :: Load (istream & infile)
   {
-
     char str[100];
     int i, n;
 
@@ -798,11 +805,11 @@ namespace netgen
     facedecoding.SetSize(0);
 
     bool endmesh = false;
+    
 
     while (infile.good() && !endmesh)
       {
         infile >> str;
-
         if (strcmp (str, "dimension") == 0)
           {
             infile >> dimension;

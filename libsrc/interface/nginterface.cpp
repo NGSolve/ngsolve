@@ -61,7 +61,12 @@ void RunParallel ( void* (*fun)(void *), void * in)
 #else  // For #ifdef _MSC_VER
 
 // #include <pthread.h>
- 
+
+namespace netgen
+{
+  MeshingParameters mparam;
+}
+
 static pthread_t meshingthread;
 void RunParallel ( void * (*fun)(void *), void * in)
 {
@@ -98,8 +103,6 @@ void RunParallel ( void * (*fun)(void *), void * in)
 namespace netgen
 {
 #include "writeuser.hpp"
-
-  MeshingParameters mparam;
 
   // global variable mesh (should not be used in libraries)
   AutoPtr<Mesh> mesh;

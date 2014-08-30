@@ -1172,7 +1172,7 @@ FuncDeriv (const Vector & x, const Vector & dir, double & deriv) const
 
 
 #ifdef SOLIDGEOMxxxx
-void Mesh :: ImproveMesh (const CSGeometry & geometry, OPTIMIZEGOAL goal)
+void Mesh :: ImproveMesh (const CSG eometry & geometry, OPTIMIZEGOAL goal)
 {
   INDEX i, eli;
   int j;

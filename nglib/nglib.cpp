@@ -45,11 +45,12 @@ namespace netgen
 #endif
 
 
+/*
 namespace netgen
 {
   int id = 0, ntasks = 1;
 }
-
+*/
 
 
 /*
@@ -1176,7 +1177,7 @@ namespace netgen
 {
    char geomfilename[255];
 
-   DLL_HEADER void MyError (const char * ch)
+   DLL_HEADER void MyError2 (const char * ch)
    {
       cerr << ch;
    }
@@ -1185,7 +1186,7 @@ namespace netgen
 
 
    //Destination for messages, errors, ...
-   DLL_HEADER void Ng_PrintDest(const char * s)
+   DLL_HEADER void Ng_PrintDest2(const char * s)
    {
 #ifdef PARALLEL
      int id = 0;
@@ -1196,13 +1197,12 @@ namespace netgen
    }
 
 
-
-
+  /*
    DLL_HEADER double GetTime ()
    {
       return 0;
    }
-
+  */
 
 
 

@@ -25,6 +25,8 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
+  extern MeshingParameters & mparam;
+
    // Mapping of entities from Netgen definitions to GMSH definitions
    enum GMSH_ELEMENTS {GMSH_TRIG = 2, GMSH_TRIG6 = 9,
       GMSH_QUAD = 3, GMSH_QUAD8 = 16,
@@ -46,7 +48,7 @@ namespace netgen
    *
    */
    void WriteGmsh2Format (const Mesh & mesh,
-      const CSGeometry & geom,
+      const NetgenGeometry & geom,
       const string & filename)
    {
       ofstream outfile (filename.c_str());

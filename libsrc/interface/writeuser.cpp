@@ -14,6 +14,8 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
+  extern MeshingParameters & mparam;
+
 
   void RegisterUserFormats (Array<const char*> & names,
 			    Array<const char*> & extensions)
@@ -157,7 +159,7 @@ bool WriteUserFormat (const string & format,
  */
 
 void WriteNeutralFormat (const Mesh & mesh,
-			 const CSGeometry & geom,
+			 const NetgenGeometry & geom,
 			 const string & filename)
 {
   cout << "write neutral, new" << endl;
@@ -617,7 +619,7 @@ void WriteVRMLFormat (const Mesh & mesh,
  * FEPP .. a finite element package developed at University Linz, Austria
  */
 void WriteFEPPFormat (const Mesh & mesh,
-		      const CSGeometry & geom,
+		      const NetgenGeometry & geom,
 		      const string & filename)
 {
 
@@ -708,7 +710,7 @@ void WriteFEPPFormat (const Mesh & mesh,
 	}
       */
 
-
+      /*
       // write CSG surfaces
       if (&geom && geom.GetNSurf() >= ns)
 	{
@@ -717,6 +719,7 @@ void WriteFEPPFormat (const Mesh & mesh,
 	    geom.GetSurface(mesh.GetFaceDescriptor(i).SurfNr())->Print(outfile);
 	}
       else
+      */
 	outfile << "0" << endl;
     }
 
@@ -747,7 +750,7 @@ void WriteFEPPFormat (const Mesh & mesh,
  */
 
 void WriteEdgeElementFormat (const Mesh & mesh,
-			     const CSGeometry & geom,
+			     const NetgenGeometry & geom,
 			     const string & filename)
 {
   cout << "write edge element format" << endl;

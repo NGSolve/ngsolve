@@ -15,6 +15,7 @@ AC_DISABLE_STATIC
 
 AC_LANG([C++])
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX_11
 
 AC_OPENMP
 CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
@@ -147,13 +148,15 @@ AC_ARG_ENABLE([mkl],
 
 AM_PATH_PYTHON([3.2])
 AX_PYTHON_DEVEL([>= '3.2'])
+AX_BOOST_BASE([1.55])
+AX_BOOST_PYTHON
 
 pythonon=false
 AC_ARG_ENABLE([python],
         [AS_HELP_STRING([--enable-python],[link boost python, necessary for ngsolve])],
         [if test "$enableval" = yes; then pythonon=true; else pythonon=false; fi]
 	[CXXFLAGS+=" $PYTHON_CPPFLAGS -DNGPYTHON"]
-	[LDFLAGS+=" $PYTHON_LDFLAGS"]
+	[LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
         )
 
 

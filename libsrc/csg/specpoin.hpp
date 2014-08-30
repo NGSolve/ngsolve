@@ -11,7 +11,7 @@
 namespace netgen
 {
 
-  extern DLL_HEADER MeshingParameters mparam;
+  // extern DLL_HEADER MeshingParameters mparam;
 
   /*
 

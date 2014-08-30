@@ -11,10 +11,12 @@
 #include <boost/python.hpp>
 #endif
 
+/*
 namespace netgen
 {
   int id = 0, ntasks = 1;
 }
+*/
 
 #ifdef PARALLEL
 #include <mpi.h>

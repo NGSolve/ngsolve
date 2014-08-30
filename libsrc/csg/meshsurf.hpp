@@ -9,7 +9,9 @@ namespace netgen
   {
     ///
     const Surface & surface;
-  
+    
+    /// should be movec to base ... 
+    const MeshingParameters & mparam;
   public:
     ///
     //  Meshing2Surfaces (const Surface & asurf);

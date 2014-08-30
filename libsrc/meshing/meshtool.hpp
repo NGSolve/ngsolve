@@ -38,7 +38,7 @@ extern void SaveVolumeMesh (
 
 ///
 void SaveVolumeMesh (const Mesh & mesh, 
-		     const class CSGeometry & geometry,
+		     const class NetgenGeometry & geometry,
 		     char * filename);
 
 ///

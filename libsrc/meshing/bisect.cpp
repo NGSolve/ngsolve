@@ -1909,7 +1909,7 @@ namespace netgen
 
 
 
-  void BisectTetsCopyMesh (Mesh & mesh, const class CSGeometry *,
+  void BisectTetsCopyMesh (Mesh & mesh, const NetgenGeometry *,
 			   BisectionOptions & opt,
 			   const Array< Array<int,PointIndex::BASE>* > & idmaps,
 			   const string & refinfofile)

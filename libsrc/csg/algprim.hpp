@@ -341,7 +341,9 @@ namespace netgen
     virtual double HesseNorm () const;
 
     virtual double LocH (const Point<3> & p, double x, 
-			 double c, double hmax) const;
+			 double c,                          
+                         const MeshingParameters & mparam,
+                         double hmax) const;
 
     ///
     virtual Point<3> GetSurfacePoint () const;

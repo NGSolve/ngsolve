@@ -11,7 +11,7 @@
 extern
 void WriteFile (int typ,
                 const Mesh & mesh,
-                const CSGeometry & geom,
+                const NetgenGeometry & geom,
                 const char * filename,
                 const char * geomfile = NULL,
                 double h = 0);
@@ -29,7 +29,7 @@ void ReadFile (Mesh & mesh,
 
 extern
 void WriteNeutralFormat (const Mesh & mesh,
-                         const CSGeometry & geom,
+                         const NetgenGeometry & geom,
                          const string & filename);
 
 extern
@@ -57,19 +57,19 @@ void WriteVRMLFormat (const Mesh & mesh,
 
 extern
 void WriteFEPPFormat (const Mesh & mesh,
-                      const CSGeometry & geom,
+                      const NetgenGeometry & geom,
                       const string & filename);
 
 extern
 void WriteGmshFormat (const Mesh & mesh,
-                      const CSGeometry & geom,
+                      const NetgenGeometry & geom,
                       const string & filename);
 
 
 // Philippose - 29/01/2009
 // Added GMSH v2.xx Mesh Export support
 void WriteGmsh2Format (const Mesh & mesh,
-                       const CSGeometry & geom,
+                       const NetgenGeometry & geom,
                        const string & filename);
 
 
@@ -78,7 +78,7 @@ void WriteGmsh2Format (const Mesh & mesh,
 extern 
 void WriteOpenFOAM15xFormat (const Mesh & mesh, 
                              const string & casename,
-							 const bool compressed);
+                             const bool compressed);
 
 
 extern
@@ -87,13 +87,13 @@ void WriteUserChemnitz (const Mesh & mesh,
 
 extern
 void WriteJCMFormat (const Mesh & mesh,
-                     const CSGeometry & geom,
+                     const NetgenGeometry & geom,
                      const string & filename);
 
 
 extern
 void WriteDiffPackFormat (const Mesh & mesh,
-                          const CSGeometry & geom,
+                          const NetgenGeometry & geom,
                           const string & filename);
 
 extern
@@ -102,7 +102,7 @@ void WriteTochnogFormat (const Mesh & mesh,
 
 extern
 void WriteTecPlotFormat (const Mesh & mesh,
-                         const CSGeometry & geom,
+                         const NetgenGeometry & geom,
                          const string & filename);
 
 extern
@@ -128,7 +128,7 @@ void WriteElmerFormat (const Mesh & mesh,
 
 extern
 void WriteEdgeElementFormat (const Mesh & mesh,
-                             const CSGeometry & geom,
+                             const NetgenGeometry & geom,
                              const string & filename);
 
 
