@@ -219,15 +219,23 @@ namespace ngsolve
     void DoArchive (Archive & archive);
 
     ///
-    void PrintReport (ostream & ost);
+    void PrintReport (ostream & ost) const;
 
     ///
     void PrintMemoryUsage (ostream & ost);
 
     ///
-    const MeshAccess & GetMeshAccess (int nr = 0) const  { return *mas[nr]; }
+    const MeshAccess & GetMeshAccess (int nr = 0) const  
+    { 
+      cout << "pde gemeshacc const, pde = " << this << ", nr = " << nr << endl;
+      return *mas[nr]; 
+    }
     ///
-    MeshAccess & GetMeshAccess (int nr = 0)  { return *mas[nr]; }
+    MeshAccess & GetMeshAccess (int nr = 0) 
+    {
+      cout << "pde gemeshacc, pde = " << this << ", nr = " << nr << endl;
+      return *mas[nr]; 
+    }
     ///
     void AddMeshAccess (MeshAccess * ma) { mas.Append (ma); }
     ///
@@ -305,7 +313,7 @@ namespace ngsolve
     ///
     Preconditioner * AddPreconditioner (const string & name, const Flags & flags);
     ///
-    void AddNumProc (const string & name, NumProc * np);
+    void AddNumProc (const string & name, shared_ptr<NumProc> np);
 
 
     ///

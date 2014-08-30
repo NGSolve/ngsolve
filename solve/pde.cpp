@@ -181,7 +181,7 @@ namespace ngsolve
   }
 
 
-  void PDE :: PrintReport (ostream & ost)
+  void PDE :: PrintReport (ostream & ost) const
   { 
     ost << endl << "PDE Description:" << endl;
 
@@ -1251,13 +1251,12 @@ namespace ngsolve
 
 
 
-  void PDE :: AddNumProc (const string & name, NumProc * np)
+  void PDE :: AddNumProc (const string & name, shared_ptr<NumProc> np)
   {
     cout << IM(1) << "add numproc " << name << ", type = " << np->GetClassName() << endl;
     np->SetName (name);
-    numprocs.Set (name, shared_ptr<NumProc>(np));
-
-    todo.Append(np);
+    numprocs.Set (name, np);
+    todo.Append(np.get());
   }
 
 

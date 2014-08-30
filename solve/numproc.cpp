@@ -18,6 +18,7 @@ namespace ngsolve
     : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
       pde(apde) // , callposition(acallposition) 
   {
+    cout << "numproc constr" << endl;
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
   }
@@ -675,7 +676,7 @@ namespace ngsolve
       "            sets the direction of the normal vector of the rectangles (x|y|z)\n"\
       "       -n1=<number of points>\n" \
       "       -n2=<number of points>\n" \
-      "       -n3=<number of points>\n" \
+      "       -n3=<number of points>\n"                                 \
       "            set the number of integration points resp. the number of rectangles in the 3 directions\n" \
       "-text=blabla \n" \
       "    prints text \n" \
@@ -3200,7 +3201,7 @@ public:
 
   NumProcs::NumProcInfo::
   NumProcInfo (const string & aname, int adim, 
-	       NumProc* (*acreator)(PDE & pde, const Flags & flags),
+	       shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	       void (*aprintdoc) (ostream & ost) )
     : name(aname), dim(adim), creator(acreator), printdoc(aprintdoc)
   {
@@ -3220,7 +3221,7 @@ public:
   
   void NumProcs :: 
   AddNumProc (const string & aname,
-	      NumProc* (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (new NumProcInfo(aname, -1, acreator, printdoc));
@@ -3228,7 +3229,7 @@ public:
 
   void NumProcs :: 
   AddNumProc (const string & aname, int adim, 
-	      NumProc* (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (new NumProcInfo(aname, adim, acreator, printdoc));
@@ -3281,43 +3282,24 @@ public:
   static RegisterNumProc<NumProcSaveSolution2> npsave ("savegridfunction2");
   static RegisterNumProc<NumProcAssembleLinearization> npassnonl ("assemblelinearization");
 
-  namespace numproc_cpp
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      // GetNumProcs().AddNumProc ("calcflux", NumProcCalcFlux::Create, NumProcCalcFlux::PrintDoc);
-      // GetNumProcs().AddNumProc ("setvalues", NumProcSetValues::Create, NumProcSetValues::PrintDoc);
-      // GetNumProcs().AddNumProc ("drawflux", NumProcDrawFlux::Create, NumProcDrawFlux::PrintDoc);
-      GetNumProcs().AddNumProc ("evaluate", NumProcEvaluate::Create, NumProcEvaluate::PrintDoc);
-      GetNumProcs().AddNumProc ("analyze", NumProcAnalyze::Create, NumProcAnalyze::PrintDoc);
-      GetNumProcs().AddNumProc ("warn", NumProcWarn::Create, NumProcWarn::PrintDoc);
-      GetNumProcs().AddNumProc ("tcltable", NumProcTclTable::Create, NumProcTclTable::PrintDoc);
-      GetNumProcs().AddNumProc ("tclmenu", NumProcTclMenu::Create, NumProcTclMenu::PrintDoc);
-      // GetNumProcs().AddNumProc ("visualization", NumProcVisualization::Create, NumProcVisualization::PrintDoc);
-      GetNumProcs().AddNumProc ("loadsolution", NumProcLoadSolution::Create, NumProcLoadSolution::PrintDoc);
+
+
+  static RegisterNumProc<NumProcEvaluate> npeval("evaluate");
+  static RegisterNumProc<NumProcAnalyze> npanalyze ("analyze");
+  static RegisterNumProc<NumProcWarn> npwarn("warn");
+  static RegisterNumProc<NumProcTclTable> nptcltable("tcltable");
+  static RegisterNumProc<NumProcTclMenu> nptclmenu("tclmenu");
+  static RegisterNumProc<NumProcLoadSolution> nploadsol("loadsolution");
+  
+  static RegisterNumProc<NumProcSaveSolution> npsavesol ("savesolution");
+  static RegisterNumProc<NumProcQuit> npquad ("quit");
+  static RegisterNumProc<NumProcGenerateOne> npgen1 ("generateone");
+  static RegisterNumProc<NumProcClearGridFunctions> npcleargf ("cleargridfunctions");
+  
 #ifdef ASTRID
       GetNumProcs().AddNumProc ("loadzipsolution", NumProcLoadZipSolution::Create, NumProcLoadZipSolution::PrintDoc);
-#endif
-      GetNumProcs().AddNumProc ("savesolution", NumProcSaveSolution::Create, NumProcSaveSolution::PrintDoc);
-#ifdef ASTRID
       GetNumProcs().AddNumProc ("savezipsolution", NumProcSaveZipSolution::Create, NumProcSaveZipSolution::PrintDoc);
 #endif
-      GetNumProcs().AddNumProc ("quit", NumProcQuit::Create, NumProcQuit::PrintDoc);
-      GetNumProcs().AddNumProc ("generateone", NumProcGenerateOne::Create, NumProcGenerateOne::PrintDoc);
-      GetNumProcs().AddNumProc ("cleargridfunctions", NumProcClearGridFunctions::Create, NumProcClearGridFunctions::PrintDoc);
-      
-      // GetNumProcs().AddNumProc ("directsolverregion", NumProcDirectSolverRegion::Create, NumProcDirectSolverRegion::PrintDoc);
-      // GetNumProcs().AddNumProc ("setvisual", NumProcSetVisual::Create);
-    }
-
-    
-    Init init;
-  }
+  
 }
   
