@@ -291,7 +291,8 @@ if { [catch { NGS_GetData } ] == 0 } {
 	-command {
 	    tk_messageBox -message \
 		"This is NETGEN/NGSolve \n mainly written by \n Joachim Schoeberl \n\
-                 at RWTH Aachen University, Germany \n\
+                 at Vienna University of Technology, Austria \n\
+                 and RWTH Aachen University, Germany \n\
                  and Johannes Kepler University, Linz, Austria \n\
                  supported by the Austrian Science Foundation FWF \n\
                  thanks to \n\
