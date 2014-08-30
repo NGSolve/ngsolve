@@ -227,13 +227,11 @@ namespace ngsolve
     ///
     const MeshAccess & GetMeshAccess (int nr = 0) const  
     { 
-      cout << "pde gemeshacc const, pde = " << this << ", nr = " << nr << endl;
       return *mas[nr]; 
     }
     ///
     MeshAccess & GetMeshAccess (int nr = 0) 
     {
-      cout << "pde gemeshacc, pde = " << this << ", nr = " << nr << endl;
       return *mas[nr]; 
     }
     ///
