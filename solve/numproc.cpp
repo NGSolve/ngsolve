@@ -18,11 +18,9 @@ namespace ngsolve
     : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
       pde(apde) // , callposition(acallposition) 
   {
-    cout << "numproc constr" << endl;
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
   }
-
   
   NumProc :: ~NumProc()
   {
