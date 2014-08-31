@@ -1,5 +1,7 @@
 import sys
-sys.path.append("/opt/netgen/lib")
+import os
+from os import environ
+sys.path.append(environ['NETGENDIR']+"/../lib")
 
 from libngspy import *
 
