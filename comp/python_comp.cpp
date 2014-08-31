@@ -137,7 +137,6 @@ void ExportNgcomp() {
 
     .def("__str__", &ToString<GF>)
     .add_property("space", &GF::FESpacePtr, "the finite element spaces")
-    
     .def("Update", 
          FunctionPointer([](GF & self) {self.Update();}),
          "update vector size to finite element space dimension after mesh refinement"
@@ -158,6 +157,7 @@ void ExportNgcomp() {
 
     ;
   
+  /*
   bp::def("CreateGF",
           FunctionPointer
           ([](string name, shared_ptr<FESpace> fespace)
@@ -168,7 +168,8 @@ void ExportNgcomp() {
            }),
           (bp::arg("name"), bp::arg("fespace")),
           "creates a gridfunction in finite element space");
-  
+  */
+
   bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
     .def("Matrix", FunctionPointer([](shared_ptr<BilinearForm> self)->BaseMatrix& { return self->GetMatrix(); }),

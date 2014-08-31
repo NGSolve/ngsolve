@@ -523,6 +523,8 @@ void * SolveBVP(void *)
     omp_set_num_threads (1);
 #endif
 
+  AcquireGIL gil_lock;
+
   try
     {
       if (pde && pde->IsGood())
