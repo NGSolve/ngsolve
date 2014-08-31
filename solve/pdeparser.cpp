@@ -9,6 +9,12 @@
 #endif
 
 
+#ifdef NGS_PYTHON
+#include "../ngstd/python_ngstd.hpp"
+BasePythonEnvironment & GetPythonEnvironment ();
+#endif
+
+
 
 namespace ngsolve
 {
@@ -24,7 +30,7 @@ namespace ngsolve
       LP = '(', RP = ')', EQUAL = '=', COMMA = ',',
       LSB = '[', RSB = ']',
       COMMENT = '#',
-      KW_DEFINE = 100, KW_GEOMETRY, KW_MESH, KW_SHARED,
+      KW_DEFINE = 100, KW_GEOMETRY, KW_MESH, KW_SHARED, KW_PYMODULE,
       KW_CONSTANT, KW_VARIABLE, KW_COEFFICIENT, KW_FESPACE, KW_GRIDFUNCTION, 
       KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, 
       KW_INTEGRATOR = 200, KW_NUMPROC_ID,
@@ -46,6 +52,7 @@ namespace ngsolve
       { KW_GEOMETRY,    "geometry" },
       { KW_MESH,        "mesh" },
       { KW_SHARED,      "shared" },
+      { KW_PYMODULE,    "pymodule" },
       { KW_CONSTANT,    "constant" },
       { KW_VARIABLE,    "variable" },
       { KW_COEFFICIENT, "coefficient" },
@@ -611,6 +618,30 @@ namespace ngsolve
                   err << "Cannot load shared library '" << shared << "' \nerrmsg: "; //   << dlerror();
                   throw Exception (err.str());
 		}
+#endif
+              break;
+            }
+
+	  case KW_PYMODULE:
+	    {
+	      scan->ReadNext();
+	      if (scan->GetToken() != '=') scan->Error ("Expected '='");
+	      scan->ReadNext();
+		  
+              string module_name = scan->GetStringValue();
+	      scan->ReadNext();
+#ifdef NGS_PYTHON
+              cout << "*********** load py-module " << module_name << endl;
+              BasePythonEnvironment & py_env = GetPythonEnvironment();
+              string command = string("import ") + module_name;
+              // py_env.exec (command.c_str());
+
+              py_env.exec("from runpy import run_module");
+              py_env.exec("globals().update(run_module('module1',globals()))");
+
+
+#else
+              cout << "want to load py-module, but python not enabled" << endl;
 #endif
               break;
             }

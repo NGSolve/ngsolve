@@ -76,6 +76,10 @@ class PythonEnvironment : public BasePythonEnvironment {
         return py_env;
     }
     
+  virtual void exec(const string s) {
+    AcquireGIL gil_lock;
+    bp::exec(s.c_str(), main_namespace, main_namespace);
+  }
 
 
     void Spawn(string initfile) {
@@ -161,17 +165,9 @@ PythonEnvironment::PythonEnvironment() {
 PythonEnvironment PythonEnvironment::py_env;
 
 
-         
+BasePythonEnvironment & GetPythonEnvironment () { return PythonEnvironment::getInstance(); }
 
 
-
-
-/*
-struct PyExportNgComp {
-  PyExportNgComp(BasePythonEnvironment & py_env);
-};
-void PyExportNgSolve(BasePythonEnvironment & py_env);
-*/         
 #endif
 
 
@@ -469,7 +465,7 @@ int NGS_LoadPDE (ClientData clientData,
           cout << "set python mesh" << endl;
           // PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
           {
-            // AcquireGIL gil_lock;
+            AcquireGIL gil_lock;
             PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
           }
 #endif
@@ -579,6 +575,7 @@ int NGS_SolvePDE (ClientData clientData,
       Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
       return TCL_ERROR;
     }
+  AcquireGIL gil_lock;
 
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
