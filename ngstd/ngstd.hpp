@@ -155,6 +155,8 @@ namespace ngstd
 }
 
 
+inline void NOOP_Deleter(void *) { ; }
+
 
 #ifdef GOLD
 #include <ngstd_gold.hpp>
