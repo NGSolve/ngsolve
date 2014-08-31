@@ -337,7 +337,7 @@ namespace ngcomp
       if (!used_face[i]) order_face[i] = 1; 
     */
     for (ElementId ei : ma.Elements<VOL>())
-      if (!DefinedOn(ei)) order_inner[ei] = 1;
+      if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
 
     if(print) 
       {

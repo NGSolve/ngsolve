@@ -214,20 +214,21 @@ namespace ngcomp
     fine_facet = 0; //!!!! 
 
     // for(int i = 0; i < nel; i++)
-    for (auto i : ma.Elements(VOL))
+    for (ElementId ei : ma.Elements(VOL))
       {
-	ELEMENT_TYPE eltype = ma.GetElType(i); 
+	ELEMENT_TYPE eltype = ma.GetElType(ei); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
 	Array<int> elfacets; 
-	ma.GetElFacets (i,elfacets); 
+	ma.GetElFacets (ei.Nr(),elfacets); 
 	
 	//for (int j=0;j<elfacets.Size();j++) fine_facet[elfacets[j]] = 1; 
         fine_facet[elfacets] = true;
 	
 	if(!var_order) continue; 
 	
-	INT<3> el_orders = ma.GetElOrders(i);  
+        int i = ei.Nr();
+	INT<3> el_orders = ma.GetElOrders(ei.Nr());  
 	
 	for(int k=0;k<dim;k++)
 	  {

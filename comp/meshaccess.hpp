@@ -41,7 +41,7 @@ namespace ngcomp
   public:
     ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
     int Nr() const { return nr; }
-    operator int () const { return nr; }
+    // operator int () const { return nr; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
 
@@ -76,9 +76,9 @@ namespace ngcomp
   public:
     ElementRange (VorB avb, IntRange ar) : IntRange(ar), vb(avb) { ; }
     ElementId First() const { return ElementId(vb, IntRange::First()); }
-    ElementIterator begin () const { return ElementIterator(vb,First()); }
-    ElementIterator end () const { return ElementIterator(vb,Next()); }
-    ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
+    ElementIterator begin () const { return ElementIterator(vb,IntRange::First()); }
+    ElementIterator end () const { return ElementIterator(vb,IntRange::Next()); }
+    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
   };
 
   template <VorB VB>
