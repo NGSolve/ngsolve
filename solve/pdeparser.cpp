@@ -34,7 +34,7 @@ namespace ngsolve
       KW_CONSTANT, KW_VARIABLE, KW_COEFFICIENT, KW_FESPACE, KW_GRIDFUNCTION, 
       KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, 
       KW_INTEGRATOR = 200, KW_NUMPROC_ID,
-      KW_NUMPROC = 300, 
+      KW_NUMPROC = 300, KW_PYNUMPROC,
       KW_MATFILE,
       KW_LABEL = 1000, KW_GOTO, KW_IF, KW_STOP
     };
@@ -62,6 +62,7 @@ namespace ngsolve
       { KW_LINEARFORM,  "linearform" },
       { KW_PRECONDITIONER, "preconditioner" },
       { KW_NUMPROC,     "numproc" },
+      { KW_PYNUMPROC,   "pynumproc" },
       { KW_MATFILE,     "matfile"},
       { KW_LABEL,       "label"},
       { KW_GOTO,        "goto"},
@@ -717,6 +718,35 @@ namespace ngsolve
 	      break;
 	    }
 
+	  case KW_PYNUMPROC:
+            {
+	      scan->ReadNext();
+	      string npid = scan->GetStringValue();
+
+	      scan->ReadNext();
+	      string name = scan->GetStringValue();
+
+	      scan->ReadNext();
+	      Flags flags;
+	      CheckFlags (flags);
+	      flags.SetFlag ("name", name.c_str());
+              
+#ifdef NGS_PYTHON
+              cout << "*********** create py-numproc " << npid << ", name = " << name << endl;
+              BasePythonEnvironment & py_env = GetPythonEnvironment();
+
+              py_env["temppde"] = bp::ptr(pde);
+              string command = string("np = ") + npid + " (temppde, ngstd.Flags()) \n";
+              command += "temppde.Add(np)\n";
+              cout << "command = " << endl << command << endl;
+              py_env.exec (command);
+                
+#else
+              cerr << "sorry, python not enabled" << endl;
+#endif
+              break;
+            }
+
           case KW_LABEL:
             {
               scan -> ReadNext();
@@ -921,7 +951,7 @@ namespace ngsolve
 
 	  scan->ReadNext();
 
-	  double val = 0;
+	  // double val = 0;
 	  
           EvalFunction * fun = new PDEEvalFunction(*pde);
           scan->WriteBack();
