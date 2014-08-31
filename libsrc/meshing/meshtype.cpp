@@ -2513,41 +2513,41 @@ namespace netgen
 
   MeshingParameters :: MeshingParameters ()
   {
-    optimize3d = "cmdmustm";
+    // optimize3d = "cmdmustm";
     //optimize3d = "cmdmstm";
-    optsteps3d = 3;
-    optimize2d = "smsmsmSmSmSm";
+    // optsteps3d = 3;
+    // optimize2d = "smsmsmSmSmSm";
     // optsteps2d = 3;
-    opterrpow = 2;
-    blockfill = 1;
-    filldist = 0.1;
-    safety = 5;
-    relinnersafety = 3;
-    uselocalh = 1;
-    grading = 0.3;
-    delaunay = 1;
-    maxh = 1e10;
-    minh = 0;
-    meshsizefilename = NULL;
-    startinsurface = 0;
-    checkoverlap = 1;
-    checkoverlappingboundary = 1;
-    checkchartboundary = 1;
-    curvaturesafety = 2;
-    segmentsperedge = 1;
-    parthread = 0;
+    // opterrpow = 2;
+    // blockfill = 1;
+    // filldist = 0.1;
+    // safety = 5;
+    // relinnersafety = 3;
+    // uselocalh = 1;
+    // grading = 0.3;
+    // delaunay = 1;
+    // maxh = 1e10;
+    // minh = 0;
+    // meshsizefilename = NULL;
+    // startinsurface = 0;
+    // checkoverlap = 1;
+    // checkoverlappingboundary = 1;
+    // checkchartboundary = 1;
+    // curvaturesafety = 2;
+    // segmentsperedge = 1;
+    // parthread = 0;
 
-    elsizeweight = 0.2;
-    giveuptol2d = 200;
-    giveuptol = 10;
-    maxoutersteps = 10;
-    starshapeclass = 5;
-    baseelnp = 0;
-    sloppy = 1;
+    // elsizeweight = 0.2;
+    // giveuptol2d = 200;
+    // giveuptol = 10;
+    // maxoutersteps = 10;
+    // starshapeclass = 5;
+    // baseelnp = 0;
+    // sloppy = 1;
 
-    badellimit = 175;
-    check_impossible = 0;
-    secondorder = 0;
+    // badellimit = 175;
+    // check_impossible = 0;
+    // secondorder = 0;
   }
 
   void MeshingParameters :: Print (ostream & ost) const
@@ -2565,12 +2565,9 @@ namespace netgen
         << " uselocalh = " <<  uselocalh << endl
         << " grading = " <<  grading << endl
         << " delaunay = " <<  delaunay << endl
-        << " maxh = " <<  maxh << endl;
-    if(meshsizefilename)
-      ost << " meshsizefilename = " <<  meshsizefilename << endl;
-    else
-      ost << " meshsizefilename = NULL" << endl;
-    ost << " startinsurface = " <<  startinsurface << endl
+        << " maxh = " <<  maxh << endl
+        << " meshsizefilename = " <<  meshsizefilename << endl
+        << " startinsurface = " <<  startinsurface << endl
         << " checkoverlap = " <<  checkoverlap << endl
         << " checkchartboundary = " <<  checkchartboundary << endl
         << " curvaturesafety = " <<  curvaturesafety << endl
@@ -2591,6 +2588,7 @@ namespace netgen
         << " inverttrigs = " <<  inverttrigs << endl;
   }
 
+  /*
   void MeshingParameters :: CopyFrom(const MeshingParameters & other)
   {
     //strcpy(optimize3d,other.optimize3d); 
@@ -2610,6 +2608,7 @@ namespace netgen
     maxh = other.maxh;
     //strcpy(const_cast<char*>(meshsizefilename), other.meshsizefilename);
     //const_cast<char*>(meshsizefilename) = other.meshsizefilename; //???
+    meshsizefilename = other.meshsizefilename;
     startinsurface = other.startinsurface;
     checkoverlap = other.checkoverlap;
     checkoverlappingboundary = other.checkoverlappingboundary;
@@ -2631,7 +2630,7 @@ namespace netgen
     inverttets = other.inverttets;
     inverttrigs = other.inverttrigs;
   }
-
+  */
 
   DebugParameters :: DebugParameters ()
   {

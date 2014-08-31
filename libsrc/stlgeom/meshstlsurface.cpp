@@ -756,7 +756,7 @@ void STLSurfaceOptimization (STLGeometry & geom,
   PrintMessage(5,"optimize string = ", meshparam.optimize2d, " elsizew = ", meshparam.elsizeweight);
 
   for (int i = 1; i <= meshparam.optsteps2d; i++)
-    for (size_t j = 1; j <= strlen(meshparam.optimize2d); j++)
+    for (size_t j = 1; j <= meshparam.optimize2d.length(); j++)
       {
 	if (multithread.terminate)
 	  break;

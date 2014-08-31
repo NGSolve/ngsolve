@@ -389,7 +389,7 @@ namespace netgen
     ///
     DLL_HEADER void RestrictLocalH (resthtype rht, int nr, double loch);
     ///
-    DLL_HEADER void LoadLocalMeshSize (const char * meshsizefilename);
+    DLL_HEADER void LoadLocalMeshSize (const string & meshsizefilename);
     ///
     DLL_HEADER void SetGlobalH (double h);
     ///

@@ -2922,15 +2922,15 @@ namespace netgen
   }
 
 
-  void Mesh :: LoadLocalMeshSize (const char * meshsizefilename)
+  void Mesh :: LoadLocalMeshSize (const string &  meshsizefilename)
   {
     // Philippose - 10/03/2009
     // Improve error checking when loading and reading
     // the local mesh size file
 
-    if (!meshsizefilename) return;
+    if (meshsizefilename.empty()) return;
 
-    ifstream msf(meshsizefilename);
+    ifstream msf(meshsizefilename.c_str());
 
     // Philippose - 09/03/2009
     // Adding print message information in case the specified 

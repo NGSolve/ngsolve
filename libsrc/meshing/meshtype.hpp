@@ -999,6 +999,13 @@ namespace netgen
   class DLL_HEADER MeshingParameters
   {
   public:
+
+
+    
+
+
+
+
     /**
        3d optimization strategy:
        // m .. move nodes
@@ -1011,7 +1018,7 @@ namespace netgen
        // h .. Histogramm, no pause
        // H .. Histogramm, pause
        */
-    string optimize3d;
+    string optimize3d = "cmdmustm";
     /// number of 3d optimization steps
     int optsteps3d = 3;
     /**
@@ -1023,71 +1030,71 @@ namespace netgen
        // P .. plot, pause
        // c .. combine
        **/
-    const char * optimize2d;
+    string optimize2d = "smsmsmSmSmSm";
     /// number of 2d optimization steps
-    int optsteps2d;
+    int optsteps2d = 3;
     /// power of error (to approximate max err optimization)
-    double opterrpow;
+    double opterrpow = 2;
     /// do block filling ?  
-    int blockfill;
+    int blockfill = 1;
     /// block filling up to distance
-    double filldist;
+    double filldist = 0.1;
     /// radius of local environment (times h)
-    double safety;
+    double safety = 5;
     /// radius of active environment (times h)
-    double relinnersafety;
+    double relinnersafety = 3;
     /// use local h ?
-    int uselocalh;
+    int uselocalh = 1;
     /// grading for local h
-    double grading;
+    double grading = 0.3;
     /// use delaunay meshing
-    int delaunay;
+    int delaunay = 1;
     /// maximal mesh size
-    double maxh;
+    double maxh = 1e10;
     /// minimal mesh size
-    double minh;
+    double minh = 0.0;
     /// file for meshsize
-    const char * meshsizefilename;
+    string meshsizefilename = "";
     /// start surfacemeshing from everywhere in surface
-    int startinsurface;
+    int startinsurface = 0;
     /// check overlapping surfaces (debug)
-    int checkoverlap;
+    int checkoverlap = 1;
     /// check overlapping surface mesh before volume meshing
-    int checkoverlappingboundary;
+    int checkoverlappingboundary = 1;
     /// check chart boundary (sometimes too restrictive)
-    int checkchartboundary;
+    int checkchartboundary = 1;
     /// safty factor for curvatures (elemetns per radius)
-    double curvaturesafety;
+    double curvaturesafety = 2;
     /// minimal number of segments per edge
-    double segmentsperedge;
+    double segmentsperedge = 1;
     /// use parallel threads
-    int parthread;
+    int parthread = 0;
     /// weight of element size w.r.t element shape
-    double elsizeweight;
+    double elsizeweight = 0.2;
     /// init with default values
 
 
     /// from mp3:
     /// give up quality class, 2d meshing
-    int giveuptol2d;
+    int giveuptol2d = 200;
     /// give up quality class, 3d meshing
-    int giveuptol;
+    int giveuptol = 10;
     /// maximal outer steps
-    int maxoutersteps;
+    int maxoutersteps = 10;
     /// class starting star-shape filling
-    int starshapeclass;
+    int starshapeclass = 5;
     /// if non-zero, baseelement must have baseelnp points
-    int baseelnp;        
+    int baseelnp = 0;        
     /// quality tolerances are handled less careful
-    int sloppy;
+    int sloppy = 1;
   
     /// limit for max element angle (150-180)
-    double badellimit;
+    double badellimit = 175;
 
-    bool check_impossible;
+    bool check_impossible = 0;
   
     ///
-    int secondorder;
+    int secondorder = 0;
     /// high order element curvature
     int elementorder;
     /// quad-dominated surface meshing
@@ -1101,9 +1108,12 @@ namespace netgen
     ///
     MeshingParameters ();
     ///
+    MeshingParameters (const MeshingParameters & mp2) = default;
+    ///
     void Print (ostream & ost) const;
-
-    void CopyFrom(const MeshingParameters & other);
+    /// 
+    // void CopyFrom(const MeshingParameters & other);
+    
 
     void (*render_function)() = NULL;
     void Render()

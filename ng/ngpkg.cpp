@@ -1130,8 +1130,7 @@ namespace netgen
     mparam.minh = atof (Tcl_GetVar (interp, "::options.minmeshsize", 0));
 
     mparam.meshsizefilename = Tcl_GetVar (interp, "::options.meshsizefilename", 0);
-    if (!strlen (mparam.meshsizefilename))
-      mparam.meshsizefilename = NULL;
+    // if (!strlen (mparam.meshsizefilename)) mparam.meshsizefilename = NULL;
 
     mparam.curvaturesafety = atof (Tcl_GetVar (interp, "::options.curvaturesafety", 0));
     mparam.segmentsperedge = atof (Tcl_GetVar (interp, "::options.segmentsperedge", 0));

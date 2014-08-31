@@ -100,6 +100,7 @@ void ExportNetgenMeshing()
     ;
 
   bp::class_<Element>("Element3D")
+    .add_property("index", &Element::GetIndex, &Element::SetIndex)
     .add_property("vertices", 
                   FunctionPointer ([](const Element & self) -> bp::list
                                    {

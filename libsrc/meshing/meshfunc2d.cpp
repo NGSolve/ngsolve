@@ -11,7 +11,7 @@ namespace netgen
 
     mesh.CalcSurfacesOfNode();
 
-    const char * optstr = mp.optimize2d;
+    const char * optstr = mp.optimize2d.c_str();
     int optsteps = mp.optsteps2d;
 
     for (int i = 1; i <= optsteps; i++)
