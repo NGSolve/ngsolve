@@ -155,7 +155,7 @@ pythonon=false
 AC_ARG_ENABLE([python],
         [AS_HELP_STRING([--enable-python],[link boost python, necessary for ngsolve])],
         [if test "$enableval" = yes; then pythonon=true; else pythonon=false; fi]
-	[CXXFLAGS+=" $PYTHON_CPPFLAGS -DNGPYTHON"]
+	[CXXFLAGS+=" $PYTHON_CPPFLAGS -DNG_PYTHON"]
 	[LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
         )
 

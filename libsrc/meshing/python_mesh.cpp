@@ -1,3 +1,5 @@
+#ifdef NG_PYTHON
+
 #include <boost/python.hpp>
 #include <boost/python/slice.hpp>
 
@@ -163,6 +165,9 @@ BOOST_PYTHON_MODULE(libmesh) {
   ExportNetgenMeshing();
 }
 
+
+
+#endif
 
 
 

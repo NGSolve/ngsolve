@@ -1,5 +1,6 @@
-#include <boost/python.hpp>
+#ifdef NG_PYTHON
 
+#include <boost/python.hpp>
 #include <csg.hpp>
 
 
@@ -92,4 +93,5 @@ BOOST_PYTHON_MODULE(libcsg) {
 }
 
 
+#endif
 
