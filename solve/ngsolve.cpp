@@ -528,7 +528,9 @@ void * SolveBVP(void *)
     omp_set_num_threads (1);
 #endif
 
+#ifdef NGS_PYTHON
   AcquireGIL gil_lock;
+#endif
 
   try
     {
@@ -582,7 +584,10 @@ int NGS_SolvePDE (ClientData clientData,
       Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
       return TCL_ERROR;
     }
+
+#ifdef NGS_PYTHON
   AcquireGIL gil_lock;
+#endif
 
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
