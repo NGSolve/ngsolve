@@ -3,6 +3,17 @@ using namespace ngsolve;
 #include "../ngstd/python_ngstd.hpp"
 
 
+
+BasePythonEnvironment py_env;
+
+BasePythonEnvironment & GetPythonEnvironment () 
+{
+  return py_env;
+}
+
+
+
+
 int ExportNgstd();
 int ExportNgbla();
 int ExportNgfem();
