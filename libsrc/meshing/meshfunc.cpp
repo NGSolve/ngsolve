@@ -639,7 +639,8 @@ namespace netgen
 	MeshOptimize3d optmesh(mp);
 
 	// teterrpow = mp.opterrpow;
-	for (size_t j = 1; j <= strlen(mp.optimize3d); j++)
+	// for (size_t j = 1; j <= strlen(mp.optimize3d); j++)
+        for (size_t j = 1; j <= mp.optimize3d.length(); j++)
 	  {
 	    if (multithread.terminate)
 	      break;

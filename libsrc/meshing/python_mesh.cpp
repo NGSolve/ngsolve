@@ -1,4 +1,5 @@
 #include <boost/python.hpp>
+#include <boost/python/slice.hpp>
 
 #include <mystdlib.h>
 #include "meshing.hpp"
@@ -37,20 +38,25 @@ inline string ToString (const T& t)
 
 
 
-template <typename T>
+template <typename T, int BASE = 0, typename TIND = int>
 void ExportArray ()
 {
   string name = string("Array_") + typeid(T).name();
-  bp::class_<Array<T>,boost::noncopyable>(name.c_str())
-    .def ("__len__", &Array<T>::Size)
+  bp::class_<Array<T,BASE,TIND>,boost::noncopyable>(name.c_str())
+    .def ("__len__", &Array<T,BASE,TIND>::Size)
     .def ("__getitem__", 
-          FunctionPointer ([](Array<T> & self, int i) -> T&
+          FunctionPointer ([](Array<T,BASE,TIND> & self, TIND i) -> T&
                            {
-                             if (i < 0 || i >= self.Size())
+                             if (i < BASE || i >= BASE+self.Size())
                                bp::exec("raise IndexError()\n");
                              return self[i];
                            }),
           bp::return_value_policy<bp::reference_existing_object>())
+
+    .def ("__iter__", 
+          bp::range (FunctionPointer([](Array<T,BASE,TIND> & self) { return &self[BASE]; }),
+                     FunctionPointer([](Array<T,BASE,TIND> & self) { return &self[BASE+self.Size()]; })))
+
     ;
 }
 
@@ -71,12 +77,28 @@ void ExportNetgenMeshing()
   
   bp::scope local_scope(module);
 
-  bp::class_<PointIndex>("PointId")
+  bp::class_<PointIndex>("PointId", bp::init<int>())
     .def("__repr__", &ToString<PointIndex>)
     .def("__str__", &ToString<PointIndex>)
     .add_property("nr", &PointIndex::operator int)
     ;
   
+  bp::class_<Point<3>> ("Point")
+    .def(bp::init<double,double,double>())
+    ;
+  
+  bp::class_<MeshPoint,bp::bases<Point<3>>>("MeshPoint")
+    .def(bp::init<Point<3>>())
+    .add_property("p", FunctionPointer([](const MeshPoint & self)
+                                       {
+                                         bp::list l;
+                                         l.append ( (self)[0] );
+                                         l.append ( (self)[1] );
+                                         l.append ( (self)[2] );
+                                         return l;
+                                       }))
+    ;
+
   bp::class_<Element>("Element3D")
     .add_property("vertices", 
                   FunctionPointer ([](const Element & self) -> bp::list
@@ -89,6 +111,8 @@ void ExportNetgenMeshing()
     ;
   
   ExportArray<Element>();
+  ExportArray<Element2d>();
+  ExportArray<MeshPoint,PointIndex::BASE,PointIndex>();
   ;
   
   
@@ -100,16 +124,35 @@ void ExportNetgenMeshing()
     .def("Elements3D", 
          static_cast<Array<Element>&(Mesh::*)()> (& &Mesh::VolumeElements),
          bp::return_value_policy<bp::reference_existing_object>())
-    
-    /*
-    .def("Elements2D", &Mesh::SurfaceElements,
+
+    .def("Elements2D", 
+         static_cast<Array<Element2d>&(Mesh::*)()> (& &Mesh::SurfaceElements),
          bp::return_value_policy<bp::reference_existing_object>())
-    */
 
+    .def("Points", 
+         static_cast<Mesh::T_POINTS&(Mesh::*)()> (& &Mesh::Points),
+         bp::return_value_policy<bp::reference_existing_object>())
+
+
+    .def("__getitem__", FunctionPointer ([](const Mesh & self, PointIndex pi)
+                                         {
+                                           return self[pi];
+                                         }))
+
+    .def ("Add", FunctionPointer ([](Mesh & self, MeshPoint p)
+                                  {
+                                    return self.AddPoint (Point3d(p));
+                                  }))
     ;
+  
 
-
-  bp::class_<MeshingParameters> ("MeshingParameters")
+  typedef MeshingParameters MP;
+  bp::class_<MP> ("MeshingParameters")
+    .def("__str__", &ToString<MP>)
+    .add_property("maxh", 
+                  FunctionPointer ([](const MP & mp ) { return mp.maxh; }),
+                  FunctionPointer ([](MP & mp, double maxh) { return mp.maxh = maxh; }))
+                  
     ;
 }
 

@@ -2517,7 +2517,7 @@ namespace netgen
     //optimize3d = "cmdmstm";
     optsteps3d = 3;
     optimize2d = "smsmsmSmSmSm";
-    optsteps2d = 3;
+    // optsteps2d = 3;
     opterrpow = 2;
     blockfill = 1;
     filldist = 0.1;

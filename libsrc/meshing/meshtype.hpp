@@ -1011,9 +1011,9 @@ namespace netgen
        // h .. Histogramm, no pause
        // H .. Histogramm, pause
        */
-    const char * optimize3d;
+    string optimize3d;
     /// number of 3d optimization steps
-    int optsteps3d;
+    int optsteps3d = 3;
     /**
        2d optimization strategy:
        // s .. swap, opt 6 lines/node
@@ -1091,13 +1091,13 @@ namespace netgen
     /// high order element curvature
     int elementorder;
     /// quad-dominated surface meshing
-    int quad;
+    int quad = 0;
     ///
-    int inverttets;
+    int inverttets = 0;
     ///
-    int inverttrigs;
+    int inverttrigs = 0;
     ///
-    int autozrefine;
+    int autozrefine = 0;
     ///
     MeshingParameters ();
     ///
@@ -1113,7 +1113,11 @@ namespace netgen
     }
   };
 
-
+  inline ostream & operator<< (ostream & ost, const MeshingParameters & mp)
+  {
+    mp.Print (ost);
+    return ost;
+  }
 
   class DebugParameters 
   {

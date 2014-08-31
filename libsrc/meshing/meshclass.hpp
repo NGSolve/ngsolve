@@ -272,6 +272,9 @@ namespace netgen
     Element2d & operator[] (SurfaceElementIndex ei)
     { return surfelements[ei]; }
 
+    const T_SURFELEMENTS & SurfaceElements() const { return surfelements; }
+    T_SURFELEMENTS & SurfaceElements() { return surfelements; }
+
   
     DLL_HEADER void RebuildSurfaceElementLists ();
     DLL_HEADER void GetSurfaceElementsOfFace (int facenr, Array<SurfaceElementIndex> & sei) const;
