@@ -3,11 +3,15 @@
 #include <solve.hpp>
 using namespace ngsolve;
 
+
+// static void NOOP_Deleter(void *) { ; }
+
 class NumProc1 : public NumProc
 {
+
 public:
-  NumProc1 (PDE & pde, const Flags & flags) : NumProc (pde, flags)
-  { ; }
+  NumProc1 (PDE & pde, const Flags & flags) : NumProc (pde, flags) { ; }
+  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (&pde,&NOOP_Deleter); }
   // virtual void Do (LocalHeap & lh) { ; }
 };
 
@@ -15,6 +19,7 @@ class NumProcWrap : public NumProc1, public bp::wrapper<NumProc1> {
 public:
   NumProcWrap (PDE & pde, const Flags & flags) : NumProc1(pde, flags) { ; }
   void Do(LocalHeap & lh)  {
+    cout << "numproc wrap - do" << endl;
     this->get_override("Do")(lh);
   }
 };
@@ -62,12 +67,25 @@ void ExportNgsolve() {
       } ));
       
 
-  bp::class_<NumProc, shared_ptr<NumProc>, boost::noncopyable> ("NumProc", bp::no_init)
+  bp::def("RegisterNumProc", FunctionPointer
+          ( [] (const NumProc1 & np, string label) { 
+            GetNumProcs().AddNumProc (label, -1, FunctionPointer
+                                      ( [] (PDE & pde, const Flags & flags) 
+                                        {
+                                          return shared_ptr<NumProc>(python_np, &NOOP_Deleter);
+                                        }  ));
+            //       RegisterNumProc<PyNumProc>(name, dim); return;
+          } ));
+
+
+
+  bp::class_<NumProc, shared_ptr<NumProc>,bp::bases<NGS_Object>,boost::noncopyable> ("NumProc", bp::no_init)
     ;
 
   // die geht
   bp::class_<NumProcWrap,bp::bases<NumProc>,boost::noncopyable>("NumProc1", bp::init<PDE&, const Flags&>())
     .def("Do", bp::pure_virtual(&NumProc1::Do)) 
+    .add_property("pde", &NumProc1::GetPDE)
     ;
   
 
@@ -84,7 +102,7 @@ void ExportNgsolve() {
   ;
 
   
-  bp::class_<PDE> ("PDE", bp::init<>())
+  bp::class_<PDE,shared_ptr<PDE>> ("PDE", bp::init<>())
     .def(bp::init<const string&>())
     .def("Load", static_cast<void(ngsolve::PDE::*)(const string &, const bool, const bool)> 
          (&ngsolve::PDE::LoadPDE),
