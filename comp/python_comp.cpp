@@ -14,19 +14,20 @@ public:
 
 
 
-void ExportNgcomp() {
-    std::string nested_name = "ngcomp";
-    if( bp::scope() )
-      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngcomp");
+void ExportNgcomp() 
+{
+  std::string nested_name = "ngcomp";
+  if( bp::scope() )
+    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngcomp");
+  
+  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+  
+  cout << "exporting ngstd as " << nested_name << endl;
+  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+  parent.attr("ngcomp") = module;
+  
+  bp::scope local_scope(module);
     
-    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-
-    cout << "exporting ngstd as " << nested_name << endl;
-    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("ngcomp") = module ;
-
-    bp::scope local_scope(module);
-
 
 
 
@@ -48,11 +49,10 @@ void ExportNgcomp() {
     ;
 
   bp::class_<ElementId> ("ElementId", bp::init<VorB,int>())
-    .def(PyDefToString<ElementId>())
+    .def("__str__", &ToString<ElementId>)
     .add_property("nr", &ElementId::Nr)    
     .def("IsVolume", &ElementId::IsVolume)
     .def("IsBoundary", &ElementId::IsBoundary)
-    .def(PyDefToString<FESpace>())
     ;
   //
   bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())

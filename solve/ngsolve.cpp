@@ -78,7 +78,12 @@ class PythonEnvironment : public BasePythonEnvironment {
     
   virtual void exec(const string s) {
     AcquireGIL gil_lock;
-    bp::exec(s.c_str(), main_namespace, main_namespace);
+    try{
+      bp::exec(s.c_str(), main_namespace, main_namespace);
+    }
+    catch (bp::error_already_set const &) {
+      PyErr_Print();
+    }
   }
 
 
