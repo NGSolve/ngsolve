@@ -87,6 +87,13 @@ void ExportNgcomp() {
          (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
     ;
 
+  
+  bp::class_<NGS_Object, shared_ptr<NGS_Object>,  boost::noncopyable>("NGS_Object", bp::no_init)
+    .add_property("name", FunctionPointer([](const NGS_Object & self)->string
+                                          {
+                                            return self.GetName();
+                                          }))
+    ;
 
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
@@ -116,8 +123,20 @@ void ExportNgcomp() {
   typedef GridFunction GF;
   bp::class_<GF, shared_ptr<GF>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
+
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](string name, shared_ptr<FESpace> fespace)
+                           {
+                             Flags flags;
+                             GridFunction * gf = CreateGridFunction (fespace, name, flags);
+                             return shared_ptr<GridFunction> (gf);
+                           })),
+         // (bp::arg("self"), bp::arg("name"), bp::arg("fespace")), // how ?
+         "creates a gridfunction in finite element space"
+         )
+
     .def("__str__", &ToString<GF>)
-    .add_property("space", &GF::GetFESpacePtr, "the finite element spaces")
+    .add_property("space", &GF::FESpacePtr, "the finite element spaces")
     
     .def("Update", 
          FunctionPointer([](GF & self) {self.Update();}),

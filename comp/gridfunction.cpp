@@ -11,7 +11,6 @@ namespace ngcomp
   using namespace ngmg;
   
 
-  /*
   GridFunction :: GridFunction (const FESpace & afespace, const string & name,
 				const Flags & flags)
     : GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), name, flags)
@@ -24,19 +23,8 @@ namespace ngcomp
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
-    level_updated = -1;
-    cacheblocksize = 1;
-  }
-  */
-  GridFunction :: GridFunction (shared_ref<FESpace> afespace, const string & name,
-				const Flags & flags)
-    : NGS_Object (shared_ptr<FESpace>(afespace)->GetMeshAccess(), name), fespace(afespace)
-  { 
-    nested = flags.GetDefineFlag ("nested");
-    visual = !flags.GetDefineFlag ("novisual");
-    multidim = int (flags.GetNumFlag ("multidim", 1));
-    level_updated = -1;
-    cacheblocksize = 1;
+    // level_updated = -1;
+    // cacheblocksize = 1;
   }
 
 
@@ -680,9 +668,16 @@ namespace ngcomp
     this->Visualize (this->name);
   }
   */
+
   template <class TV>
   T_GridFunction<TV> ::
-  T_GridFunction (shared_ref<FESpace> afespace, const string & aname, const Flags & flags)
+  T_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
+    : T_GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), aname, flags)
+  { ; }
+
+  template <class TV>
+  T_GridFunction<TV> ::
+  T_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
     : S_GridFunction<TSCAL> (afespace, aname, flags)
   {
     vec.SetSize (this->multidim);
