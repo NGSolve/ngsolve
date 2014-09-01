@@ -22,6 +22,12 @@ def expr_add(a,b):
 def expr_sub(a,b):
     return Expr(a) - Expr(b)
 
+def expr_mul(a,b):
+    return Expr(a) * Expr(b)
+
+def expr_rmul(b,a): # rmul -> swap a,b
+    return float(a) * Expr(b)
+
 def expr_data(a,b):
     Expr(b).AssignTo(a.expr)
 
