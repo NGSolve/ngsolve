@@ -34,6 +34,8 @@ void ExportNgbla() {
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
         .def("__add__" , bp::object(expr_namespace["expr_add"]) )
+        .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
+        .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
         ;
 
     bp::class_<Vector<double>, bp::bases<FlatVector<double> > >("Vector")
@@ -54,6 +56,8 @@ void ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
+        .def("__mul__" , bp::object(expr_namespace["expr_mul"]) )
+        .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
         ;
 
     bp::class_<Matrix<double>, bp::bases<FMD> >("Matrix")

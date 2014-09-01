@@ -80,9 +80,13 @@ void ExportNgstd() {
     // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
     ;
 
-  bp::class_<ngstd::Flags, shared_ptr<Flags> >("Flags")
+  bp::class_<ngstd::BitArray>
+      ("BitArray")
+  ;
 
- .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
+  bp::class_<ngstd::Flags, shared_ptr<Flags> >
+    ("Flags")
+    .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
     {      
       for (int i = 0; i < bp::len(aflags); i++)
       {   

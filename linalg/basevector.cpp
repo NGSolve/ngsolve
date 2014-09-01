@@ -78,24 +78,32 @@ namespace ngla
 
   BaseVector & BaseVector :: Set (double scal, const BaseVector & v)
   {
+    if(Size() != v.Size())
+        throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
     FVDouble() = scal * v.FVDouble();
     return *this;
   }
 
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
   {
+    if(Size() != v.Size())
+        throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
     FVComplex() = scal * v.FVComplex();
     return *this;
   }
     
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
+    if(Size() != v.Size())
+        throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
     FVDouble() += scal * v.FVDouble();
     return *this;
   }
 
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
+    if(Size() != v.Size())
+        throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
     FVComplex() += scal * v.FVComplex();
     return *this;
   }

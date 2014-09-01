@@ -40,6 +40,11 @@ void ExportNgla() {
     .add_property("data", bp::object(expr_namespace["VecExpr"]), bp::object(expr_namespace["expr_data"] ))
     .def("__add__" , bp::object(expr_namespace["expr_add"]) )
     .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
+    .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
+
+    .def(bp::self+=bp::self)
+    .def(bp::self-=bp::self)
+    .def(bp::self*=double())
     ;       
 
   bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
@@ -58,6 +63,14 @@ void ExportNgla() {
     .def("MultAdd",     FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.MultAdd (s, x, y); }))
     // .def("MultTrans",   FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y  = s*Trans(m)*x; }) )
     // .def("MultTransAdd",FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y += s*Trans(m)*x; }) )
+
+    .add_property("expr", bp::object(expr_namespace["MatExpr"]) )
+    .def("__mul__" , bp::object(expr_namespace["expr_mul"]) )
+    .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
+
+    .def("__iadd__", FunctionPointer( [] (BM &m, BM &m2) { 
+        m.AsVector()+=m2.AsVector();
+    }))
 
     .def("Inverse", FunctionPointer( [](BM &m) { return m.InverseMatrix(); }),
          bp::return_value_policy<bp::manage_new_object>())
