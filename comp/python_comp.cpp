@@ -118,6 +118,10 @@ void ExportNgcomp()
           static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
           (&FESpace::GetFE), 
           bp::return_value_policy<bp::reference_existing_object>())
+
+    .def("FreeDofs",
+            FunctionPointer( [] ( const FESpace &self, bool b ) -> const BitArray &{ return *self.GetFreeDofs(b); } ),
+            bp::return_value_policy<bp::reference_existing_object>())
     ;
   
   typedef GridFunction GF;
