@@ -20,7 +20,7 @@ laplace one
 
 preconditioner c -type=direct -bilinearform=a
 
-# numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000
+numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=1000
 
 # numproc drawflux np2 -bilinearform=a -solution=u -label=flux -applyd
 # numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture
