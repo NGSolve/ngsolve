@@ -8,6 +8,15 @@
 
 using std::ostringstream;
 
+template<typename T>
+Array<T> & makeCArray(const bp::object & obj)
+{     
+    Array<T> * C_vdL = new Array<T>(bp::len(obj));    
+    for (int i = 0; i < bp::len(obj); i++)    
+        (*C_vdL)[i] = bp::extract<T>(obj[i]);        
+    return *C_vdL;
+}
+
 
 void ExportNgstd() {
     std::string nested_name = "ngstd";
@@ -71,45 +80,82 @@ void ExportNgstd() {
     // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
     ;
 
-  bp::class_<ngstd::Flags, shared_ptr<Flags> >
-    ("Flags")
-    .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
+  bp::class_<ngstd::Flags, shared_ptr<Flags> >("Flags")
+
+ .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
     {      
       for (int i = 0; i < bp::len(aflags); i++)
-      {           
-          string s = bp::extract<string>(aflags.keys()[i]);
+      {   
+          char * s = bp::extract<char *>(aflags.keys()[i]);          
           bp::extract<double> vd(aflags.values()[i]);
           if (vd.check())
-              self.SetFlag(s.c_str(), vd());         
+              self.SetFlag(s, vd());         
 
-          bp::extract<string> vs(aflags.values()[i]);
+          bp::extract<char *> vs(aflags.values()[i]);
           if (vs.check())
-              self.SetFlag(s.c_str(), vs().c_str());
+              self.SetFlag(s, vs());
 
+          bp::extract<bp::list> vdl(aflags.values()[i]);
+          if (vdl.check())
+          {             
+              bp::extract<double> d0(vdl()[0]);
+              bp::extract<char *> s0(vdl()[0]);
+              if(d0.check())
+                self.SetFlag(s, makeCArray<double>(aflags.values()[i]));
+              if (s0.check())
+                  self.SetFlag(s, makeCArray<char *>(aflags.values()[i]));
+          }
 
-          // geht noch nicht ...
-          bp::extract<Array<double>> vda(aflags.values()[i]);
-          if (vda.check())
-            {
-              cout << "is double array" << endl;
-              self.SetFlag(s.c_str(), vda);
-            }
-          
+          bp::extract<bp::tuple> vdt(aflags.values()[i]);
+          if (vdt.check())
+          {
+              bp::extract<double> d0(vdt()[0]);
+              bp::extract<char *> s0(vdt()[0]);
+              if (d0.check())
+                  self.SetFlag(s, makeCArray<double>(aflags.values()[i]));
+              if (s0.check())
+                  self.SetFlag(s, makeCArray<char *>(aflags.values()[i]));
+          }
+
       }
       return self;
     }), bp::return_value_policy<bp::reference_existing_object>())
-    .def("Set", FunctionPointer([](Flags & self, const string & akey, const double & value)->Flags&
-    {                           
-        self.SetFlag(akey.c_str(), value);                        
+
+    .def("Set", FunctionPointer([](Flags & self, const char * akey, const bp::object & value)->Flags&
+    {              
+        bp::extract<double> vd(value);
+        if (vd.check())
+            self.SetFlag(akey, vd());
+
+        bp::extract<char *> vs(value);
+        if (vs.check())
+            self.SetFlag(akey, vs());
+
+        bp::extract<bp::list> vdl(value);        
+        if (vdl.check())
+        {
+            bp::extract<double> d0(vdl()[0]);            
+            bp::extract<char *> s0(vdl()[0]);            
+            if (d0.check())
+                self.SetFlag(akey, makeCArray<double>(value));
+            if (s0.check())
+                self.SetFlag(akey, makeCArray<char *>(value));
+        }
+
+        bp::extract<bp::tuple> vdt(value);
+        if (vdt.check())
+        {
+            bp::extract<double> d0(vdt()[0]);
+            bp::extract<char *> s0(vdt()[0]);
+            if (d0.check())
+                self.SetFlag(akey, makeCArray<double>(value));
+            if (s0.check())
+                self.SetFlag(akey, makeCArray<char *>(value));
+        }
         return self;
-    }), bp::return_value_policy<bp::reference_existing_object>()
+    }), bp::return_value_policy<bp::reference_existing_object>()       
         )
-        .def("Set", FunctionPointer([](Flags & self, const string & akey,const string & value)->Flags&
-    {                
-        self.SetFlag(akey.c_str(), value.c_str());
-        return self;
-    }), bp::return_value_policy<bp::reference_existing_object>()
-        )
+
     .def("__str__", &ToString<Flags>)   
    ;
 
