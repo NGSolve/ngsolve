@@ -120,8 +120,9 @@ void ExportNgcomp()
           bp::return_value_policy<bp::reference_existing_object>())
 
     .def("FreeDofs",
-            FunctionPointer( [] ( const FESpace &self, bool b ) -> const BitArray &{ return *self.GetFreeDofs(b); } ),
-            bp::return_value_policy<bp::reference_existing_object>())
+         FunctionPointer( [] (const FESpace &self, bool coupling) -> const BitArray &{ return *self.GetFreeDofs(coupling); } ),
+         bp::return_value_policy<bp::reference_existing_object>(),
+         (bp::arg("self"), bp::arg("coupling")=0))
     ;
   
   typedef GridFunction GF;
