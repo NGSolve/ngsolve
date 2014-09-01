@@ -32,6 +32,14 @@ void ExportNgstd() {
     
   bp::class_<Array<double>, bp::bases<FlatArray<double> > >("ArrayD")
     .def(bp::init<int>())
+    .def("__init__", bp::make_constructor (FunctionPointer ([](bp::list const & x)
+                                                            {
+                  int s = bp::len(x);
+                  shared_ptr<Array<double>> tmp (new Array<double>(s));
+                  for (int i = 0; i < s; i++)
+                    (*tmp)[i] = bp::extract<double> (x[i]); 
+                  return tmp;
+                })))
     ;
 
   bp::class_<FlatArray<int> >("FlatArrayI")
@@ -71,11 +79,22 @@ void ExportNgstd() {
       {           
           string s = bp::extract<string>(aflags.keys()[i]);
           bp::extract<double> vd(aflags.values()[i]);
-          bp::extract<string> vs(aflags.values()[i]);
           if (vd.check())
               self.SetFlag(s.c_str(), vd());         
+
+          bp::extract<string> vs(aflags.values()[i]);
           if (vs.check())
               self.SetFlag(s.c_str(), vs().c_str());
+
+
+          // geht noch nicht ...
+          bp::extract<Array<double>> vda(aflags.values()[i]);
+          if (vda.check())
+            {
+              cout << "is double array" << endl;
+              self.SetFlag(s.c_str(), vda);
+            }
+          
       }
       return self;
     }), bp::return_value_policy<bp::reference_existing_object>())
