@@ -81,7 +81,8 @@ void ExportNgstd() {
     ;
 
   bp::class_<ngstd::BitArray>
-      ("BitArray")
+    ("BitArray")
+    .def("__str__", &ToString<BitArray>)
   ;
 
   bp::class_<ngstd::Flags, shared_ptr<Flags> >
