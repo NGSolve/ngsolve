@@ -63,9 +63,36 @@ void ExportNgstd() {
     // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
     ;
 
-  bp::class_<ngstd::Flags>
+  bp::class_<ngstd::Flags, shared_ptr<Flags> >
     ("Flags")
-    ;
+    .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
+    {      
+      for (int i = 0; i < bp::len(aflags); i++)
+      {           
+          string s = bp::extract<string>(aflags.keys()[i]);
+          bp::extract<double> vd(aflags.values()[i]);
+          bp::extract<string> vs(aflags.values()[i]);
+          if (vd.check())
+              self.SetFlag(s.c_str(), vd());         
+          if (vs.check())
+              self.SetFlag(s.c_str(), vs().c_str());
+      }
+      return self;
+    }), bp::return_value_policy<bp::reference_existing_object>())
+    .def("Set", FunctionPointer([](Flags & self, const string & akey, const double & value)->Flags&
+    {                           
+        self.SetFlag(akey.c_str(), value);                        
+        return self;
+    }), bp::return_value_policy<bp::reference_existing_object>()
+        )
+        .def("Set", FunctionPointer([](Flags & self, const string & akey,const string & value)->Flags&
+    {                
+        self.SetFlag(akey.c_str(), value.c_str());
+        return self;
+    }), bp::return_value_policy<bp::reference_existing_object>()
+        )
+    .def("__str__", &ToString<Flags>)   
+   ;
 
 
   bp::class_<ngstd::IntRange>
