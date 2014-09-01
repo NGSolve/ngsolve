@@ -60,25 +60,6 @@ void ExportNgsolve() {
 
   // TestExport();
 
-  bp::def("RegisterNumProc", FunctionPointer( [] (PyNumProc & np, string label, int dim) { 
-      python_np = &np;
-      GetNumProcs().AddNumProc (label, dim, FunctionPointer( [] (PDE & pde, const Flags & flags) { return shared_ptr<NumProc>(python_np);}  ));
-//       RegisterNumProc<PyNumProc>(name, dim); return;
-      } ));
-      
-
-  bp::def("RegisterNumProc", FunctionPointer
-          ( [] (const NumProc1 & np, string label) { 
-            GetNumProcs().AddNumProc (label, -1, FunctionPointer
-                                      ( [] (PDE & pde, const Flags & flags) 
-                                        {
-                                          return shared_ptr<NumProc>(python_np, &NOOP_Deleter);
-                                        }  ));
-            //       RegisterNumProc<PyNumProc>(name, dim); return;
-          } ));
-
-
-
   bp::class_<NumProc, shared_ptr<NumProc>,bp::bases<NGS_Object>,boost::noncopyable> ("NumProc", bp::no_init)
     ;
 
