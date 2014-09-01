@@ -740,6 +740,11 @@ namespace ngsolve
               command += "temppde.Add(np)\n";
               cout << "command = " << endl << command << endl;
               py_env.exec (command);
+
+//               auto temp_np = py_env[npid]( pde, flags ) ;
+//               py_env["print"](temp_np);
+                
+//               pde.Add(bp::extract<??>( py_env[npid]( pde, flags ) ) );
                 
 #else
               cerr << "sorry, python not enabled" << endl;
