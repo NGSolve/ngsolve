@@ -29,7 +29,7 @@ using namespace ngsolve;
 
 namespace netgen
 {
-  extern string ngdir;
+    DLL_HEADER extern string ngdir;
 }
 
 #ifdef SOCKETS
