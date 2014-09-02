@@ -6,36 +6,24 @@ using namespace ngsolve;
 
 // static void NOOP_Deleter(void *) { ; }
 
-class NumProc1 : public NumProc
+class PyNumProc : public NumProc
 {
 
 public:
-  NumProc1 (PDE & pde, const Flags & flags) : NumProc (pde, flags) { ; }
+  PyNumProc (PDE & pde, const Flags & flags) : NumProc (pde, flags) { ; }
   shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (&pde,&NOOP_Deleter); }
   // virtual void Do (LocalHeap & lh) { ; }
 };
 
-class NumProcWrap : public NumProc1, public bp::wrapper<NumProc1> {
+class NumProcWrap : public PyNumProc, public bp::wrapper<PyNumProc> {
 public:
-  NumProcWrap (PDE & pde, const Flags & flags) : NumProc1(pde, flags) { ; }
+  NumProcWrap (PDE & pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
   void Do(LocalHeap & lh)  {
     cout << "numproc wrap - do" << endl;
     this->get_override("Do")(lh);
   }
 };
 
-
-// crashes 
-class PyNumProc : public NumProc, public bp::wrapper<NumProc> {
-public:
-  PyNumProc (PDE & apde, const Flags & flags) : NumProc(pde,flags) { ; }
-
-  void Do(LocalHeap & lh) {
-    this->get_override("Do")(lh);
-  }
-};
-
-static PyNumProc *python_np;
 
 void ExportNgsolve() {
     std::string nested_name = "ngsolve";
@@ -58,29 +46,16 @@ void ExportNgsolve() {
   PyExportSymbolTable<double> ();
   PyExportSymbolTable<shared_ptr<double>> ();
 
-  // TestExport();
 
   bp::class_<NumProc, shared_ptr<NumProc>,bp::bases<NGS_Object>,boost::noncopyable> ("NumProc", bp::no_init)
     ;
 
   // die geht
-  bp::class_<NumProcWrap,bp::bases<NumProc>,boost::noncopyable>("NumProc1", bp::init<PDE&, const Flags&>())
-    .def("Do", bp::pure_virtual(&NumProc1::Do)) 
-    .add_property("pde", &NumProc1::GetPDE)
+  bp::class_<NumProcWrap,bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<PDE&, const Flags&>())
+    .def("Do", bp::pure_virtual(&PyNumProc::Do)) 
+    .add_property("pde", &PyNumProc::GetPDE)
     ;
   
-
-  // die geht nicht
-  bp::class_<PyNumProc,boost::noncopyable> ("NumProc2", bp::init<PDE&, const Flags&>())
-    .def("Do", bp::pure_virtual(&NumProc::Do))
-    .def ("__str__", 
-          FunctionPointer([](NumProc & np) -> string
-                          {
-                            stringstream str;
-                            np.PrintReport (str);
-                            return str.str();
-                          }));
-  ;
 
   
   bp::class_<PDE,shared_ptr<PDE>> ("PDE", bp::init<>())
@@ -101,11 +76,11 @@ void ExportNgsolve() {
                                   self.AddNumProc ("pynumproc", shared_ptr<NumProc> (&np, &NOOP_Deleter));
                                 }))
     
-    .def("Add", FunctionPointer([](PDE & self, NumProc1 & np)
-                                {
-                                  cout << "add numproc1 - at addr " << &np << endl;
-                                  self.AddNumProc ("pynumproc", shared_ptr<NumProc> (&np, &NOOP_Deleter));
-                                }))
+//     .def("Add", FunctionPointer([](PDE & self, NumProc1 & np)
+//                                 {
+//                                   cout << "add numproc1 - at addr " << &np << endl;
+//                                   self.AddNumProc ("pynumproc", shared_ptr<NumProc> (&np, &NOOP_Deleter));
+//                                 }))
 
     
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProc> np)
@@ -120,13 +95,42 @@ void ExportNgsolve() {
                                   self.AddGridFunction (gf->GetName(), gf);
                                 }))
 
-    .add_property ("constants", FunctionPointer([](PDE & self) { return self.GetConstantTable(); }))
-    .add_property ("variables", FunctionPointer([](PDE & self) { return self.GetVariableTable(); }))
-    .add_property ("spaces", FunctionPointer([](PDE & self) { return self.GetSpaceTable(); }))
-    .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return self.GetGridFunctionTable(); }))
-    .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return self.GetBilinearFormTable(); }))
-    .add_property ("linearforms", FunctionPointer([](PDE & self) { return self.GetLinearFormTable(); }))
-    .add_property ("numprocs", FunctionPointer([](PDE & self) { return self.GetNumProcTable(); }))
+    .def("Add", FunctionPointer([](PDE & self, const bp::list &l)
+                                {
+                                    for (int i=0; i<bp::len(l); i++)
+                                    {
+                                        bp::extract<shared_ptr<PyNumProc>> np(l[i]);
+                                        if(np.check())
+                                        {
+                                            self.AddNumProc (np()->GetName(), np());
+                                            continue;
+                                        }
+
+                                        bp::extract<shared_ptr<NumProc>> pnp(l[i]);
+                                        if(np.check())
+                                        {
+                                            self.AddNumProc (pnp()->GetName(), pnp());
+                                            continue;
+                                        }
+
+                                        bp::extract<shared_ptr<GridFunction>> gf(l[i]);
+                                        if(gf.check())
+                                        {
+                                            self.AddGridFunction (gf()->GetName(), gf());
+                                            continue;
+                                        }
+
+                                        cout << "warning: unknown object at position " << i << endl;
+                                    }
+                                }))
+
+    .add_property ("constants", FunctionPointer([](PDE & self) { return bp::object(self.GetConstantTable()); }))
+    .add_property ("variables", FunctionPointer([](PDE & self) { return bp::object(self.GetVariableTable()); }))
+    .add_property ("spaces", FunctionPointer([](PDE & self) { return bp::object(self.GetSpaceTable()); }))
+    .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return bp::object(self.GetGridFunctionTable()); }))
+    .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetBilinearFormTable()); }))
+    .add_property ("linearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetLinearFormTable()); }))
+    .add_property ("numprocs", FunctionPointer([](PDE & self) { return bp::object(self.GetNumProcTable()); }))
     ;
 }
 

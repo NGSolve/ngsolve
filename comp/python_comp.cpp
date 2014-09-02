@@ -160,6 +160,21 @@ void ExportNgcomp()
          "vector of coefficients"
          )
 
+    .add_property("vec",
+         FunctionPointer([](GF & self)-> shared_ptr<BaseVector> { return shared_ptr<BaseVector>(&self.GetVector(), &NOOP_Deleter); }),
+         "vector of coefficients of first multidim dimension"
+         )
+
+    .add_property("vecs",
+         FunctionPointer([](GF & self)-> bp::list { 
+             bp::list vecs;
+             for (int i=0; i<self.GetMultiDim(); i++) {
+                 vecs.append(shared_ptr<BaseVector>(&self.GetVector(i), &NOOP_Deleter));
+             }
+             return vecs;
+             }),
+         "list of vectors of coefficients"
+         )
     ;
   
   /*

@@ -28,7 +28,7 @@ void ExportNgla() {
 
 
   
-  bp::class_<BaseVector,boost::noncopyable>("BaseVector", bp::no_init)
+  bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
     .def("CreateVector", &BaseVector::CreateVector,
