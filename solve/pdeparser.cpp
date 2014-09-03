@@ -475,7 +475,7 @@ namespace ngsolve
                               &pde.GenericVariables()[i]);
     }
 
-    bool Parse (istream & aist, Array<CoefficientFunction*> & depends)
+    bool Parse (istream & aist, Array<shared_ptr<CoefficientFunction>> & depends)
     {
       for (int i = 0; i < pde.GetCoefficientTable().Size(); i++)
         DefineArgument (pde.GetCoefficientTable().GetName(i),-1,
@@ -829,7 +829,7 @@ namespace ngsolve
                   scan -> ReadNext(); // '='
 
                   PDEEvalFunction * fun = new PDEEvalFunction(*pde);
-                  Array<CoefficientFunction*> depends;
+                  Array<shared_ptr<CoefficientFunction>> depends;
                   fun->Parse (*scan->scanin, depends);
                   scan -> ReadNext();
                   cout << "set gridfunction " << gf -> GetName() << " to evalfunction ";
@@ -839,10 +839,10 @@ namespace ngsolve
                   string coefname = "assigncoef" + ToString(cnt);
 		  if (pde->GetMeshAccess().GetDimension() == 2)
 		    pde->AddCoefficientFunction
-		      (coefname, new DomainVariableCoefficientFunction<2>(*fun, depends));
+		      (coefname, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(*fun, depends)));
 		  else
 		    pde->AddCoefficientFunction
-		      (coefname, new DomainVariableCoefficientFunction<3>(*fun, depends));
+		      (coefname, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(*fun, depends)));
                   
                   Flags flags = ParseFlags();
                   flags.SetFlag ("gridfunction", gfname.c_str());
@@ -935,7 +935,7 @@ namespace ngsolve
 	    {
 	      pde->AddConstant (name, val);
 	      pde->AddCoefficientFunction
-		(name, new ConstantCoefficientFunction(val));
+		(name, shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(val)));
 	    }
 	  else
 	    pde->AddStringConstant (name, sval);
@@ -1162,17 +1162,17 @@ namespace ngsolve
 		{
 		  (*testout) << "material coefficients = " << endl << dcoeffs << endl;
 		  pde->AddCoefficientFunction
-		    (name, new DomainConstantCoefficientFunction(dcoeffs));
+		    (name, shared_ptr<CoefficientFunction> (new DomainConstantCoefficientFunction(dcoeffs)));
 		}
 	      else
 		{
 		  (*testout) << "material coefficients variable " << endl;
 		  if (pde->GetMeshAccess().GetDimension() == 2)
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<2>(coeffs));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs)));
 		  else
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<3>(coeffs));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs)));
 		}
 	      
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
@@ -1205,10 +1205,9 @@ namespace ngsolve
 
 
 	      pde->AddCoefficientFunction
-		(name, new FileCoefficientFunction(ipfilename,
-						   infofilename,
-						   valuesfilename,
-						   loadvalues));
+		(name, shared_ptr<CoefficientFunction> 
+                 (new FileCoefficientFunction(ipfilename, infofilename,
+                                              valuesfilename, loadvalues)));
 	      
 	      //scan -> ReadNext();
 	    }
@@ -1322,17 +1321,17 @@ namespace ngsolve
 		{
 		  (*testout) << "material coefficients = " << endl << dcoeffs << endl;
 		  pde->AddCoefficientFunction
-		    (name, new DomainConstantCoefficientFunction(dcoeffs));
+		    (name, shared_ptr<CoefficientFunction> (new DomainConstantCoefficientFunction(dcoeffs)));
 		}
 	      else
 		{
 		  (*testout) << "material coefficients variable " << endl;
 		  if (pde->GetMeshAccess().GetDimension() == 2)
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<2>(coeffs));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs)));
 		  else
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<3>(coeffs));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs)));
 		}
 	      
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
@@ -1468,22 +1467,22 @@ namespace ngsolve
 	      if (polycoeffs.Size() > 0)
 		{
 		  pde->AddCoefficientFunction
-		    (name, new PolynomialCoefficientFunction(polycoeffs,polybounds));
+		    (name, shared_ptr<CoefficientFunction> (new PolynomialCoefficientFunction(polycoeffs,polybounds)));
 		}
 	      else if (allconst)
 		{
 		  if (dcoeffs.Size() == 1)
 		    pde->AddCoefficientFunction
-		      (name, new ConstantCoefficientFunction(dcoeffs[0]));
+		      (name, shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(dcoeffs[0])));
 		  else
 		    pde->AddCoefficientFunction
-		      (name, new DomainConstantCoefficientFunction(dcoeffs));
+		      (name, shared_ptr<CoefficientFunction> (new DomainConstantCoefficientFunction(dcoeffs)));
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
 		}
 	      else
 		{
-		  Array<CoefficientFunction*> depends; // pde->GetCoefficientTable().Size()+3);
+		  Array<shared_ptr<CoefficientFunction>> depends; // pde->GetCoefficientTable().Size()+3);
 		  if (coeffs[0])
 		    {
 		      int tot = 3;
@@ -1507,10 +1506,10 @@ namespace ngsolve
 
 		  if (pde->GetMeshAccess().GetDimension() == 2)
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<2>(coeffs, depends));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs, depends)));
 		  else
 		    pde->AddCoefficientFunction
-		      (name, new DomainVariableCoefficientFunction<3>(coeffs, depends));
+		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs, depends)));
 
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
@@ -1574,14 +1573,13 @@ namespace ngsolve
 	      if (integrator_token == KW_INTEGRATOR)
 		{
 		  string integrator_name = scan->GetStringValue();
-		  const ngfem::Integrators::IntegratorInfo * info =
-		    ngfem::GetIntegrators() 
-		    . GetBFI(integrator_name, 
-			     pde->GetMeshAccess().GetDimension());
+		  //const ngfem::Integrators::IntegratorInfo
+                  auto info = ngfem::GetIntegrators() 
+		    . GetBFI(integrator_name, pde->GetMeshAccess().GetDimension());
 
 		  if (info)
 		    {
-		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
+		      Array<shared_ptr<CoefficientFunction>> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
@@ -1589,7 +1587,7 @@ namespace ngsolve
 			  if (!coeffs[i])
 			    {
                               GridFunction * gf = pde->GetGridFunction (scan->GetStringValue(), 1);
-			      if (gf) coeffs[i] = new GridFunctionCoefficientFunction (*gf);
+			      if (gf) coeffs[i] = shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction (*gf));
 			    }
 
                           if (!coeffs[i])
@@ -1599,16 +1597,16 @@ namespace ngsolve
                               if (fun->Parse(*scan->scanin))
                                 {
                                   if (fun->IsConstant())
-                                    coeffs[i] = new ConstantCoefficientFunction (fun->EvalConstant());
+                                    coeffs[i] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction (fun->EvalConstant()));
                                   else
                                     {
                                       switch (pde->GetMeshAccess().GetDimension())
                                         {
                                         case 2:
-                                          coeffs[i] = new DomainVariableCoefficientFunction<2> (*fun);
+                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2> (*fun));
                                           break;
                                         case 3:
-                                          coeffs[i] = new DomainVariableCoefficientFunction<3> (*fun);
+                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3> (*fun));
                                           break;
                                         }
                                     }
@@ -1624,9 +1622,12 @@ namespace ngsolve
 		    
 		      Flags partflags;
 		      CheckFlags (partflags);
-
+                      
+                      /*
 		      ngfem::BilinearFormIntegrator * integrator = 
 			dynamic_cast<ngfem::BilinearFormIntegrator*> (info->creator(coeffs));
+                      */
+                      auto integrator = info->creator(coeffs);
 		      integrator -> SetName (integrator_name);
 		      integrator -> SetFlags (partflags);
 
@@ -1662,16 +1663,16 @@ namespace ngsolve
 			  if (dynamic_cast<const CompoundFESpace*> 
 			      (&pde->GetBilinearForm (name)->GetFESpace()))
 			    {
-			      integrator = new CompoundBilinearFormIntegrator
-				(*integrator, 
-				 int(partflags.GetNumFlag ("comp", 1))-1);
+			      integrator.reset (new CompoundBilinearFormIntegrator
+                                                (*integrator, 
+                                                 int(partflags.GetNumFlag ("comp", 1))-1));
 			    }
 			  else
 			    {
-			      integrator = new BlockBilinearFormIntegrator
-				(*integrator, 
-				 pde->GetBilinearForm (name)->GetFESpace().GetDimension(),
-				 int(partflags.GetNumFlag ("comp", 1))-1);
+			      integrator.reset (new BlockBilinearFormIntegrator
+                                                (*integrator, 
+                                                 pde->GetBilinearForm (name)->GetFESpace().GetDimension(),
+                                                 int(partflags.GetNumFlag ("comp", 1))-1));
 			    }
 			}
 
@@ -1686,14 +1687,14 @@ namespace ngsolve
 
 		      if (partflags.GetDefineFlag ("imag"))
 			{
-			  integrator = new ComplexBilinearFormIntegrator
-			    (*integrator, Complex(0,1));
+			  integrator.reset(new ComplexBilinearFormIntegrator
+                                           (*integrator, Complex(0,1)));
 			}
 
 		      if (partflags.GetDefineFlag ("real"))
 			{
-			  integrator = new ComplexBilinearFormIntegrator
-			    (*integrator, Complex(1,0));
+			  integrator.reset(new ComplexBilinearFormIntegrator
+                                           (*integrator, Complex(1,0)));
 			}
 
 
@@ -1792,14 +1793,12 @@ namespace ngsolve
 		{
 		  string integrator_name = scan->GetStringValue();
 
-		  const ngfem::Integrators::IntegratorInfo * info =
-		    ngfem::GetIntegrators() 
-		    . GetLFI(integrator_name, 
-			     pde->GetMeshAccess().GetDimension());
+		  auto info =
+		    ngfem::GetIntegrators().GetLFI(integrator_name, pde->GetMeshAccess().GetDimension());
 		
 		  if (info)
 		    {
-		      Array<CoefficientFunction*> coeffs(info->numcoeffs);
+		      Array<shared_ptr<CoefficientFunction>> coeffs(info->numcoeffs);
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
@@ -1808,7 +1807,7 @@ namespace ngsolve
 			    {
 			      GridFunction * gf = pde->GetGridFunction (scan->GetStringValue(), 1);
 			      if (gf)
-				coeffs[i] = new GridFunctionCoefficientFunction (*gf);
+				coeffs[i] = shared_ptr<CoefficientFunction>(new GridFunctionCoefficientFunction (*gf));
 			    }
 
                           if (!coeffs[i])
@@ -1818,16 +1817,16 @@ namespace ngsolve
                               if (fun->Parse(*scan->scanin))
                                 {
                                   if (fun->IsConstant())
-                                    coeffs[i] = new ConstantCoefficientFunction (fun->EvalConstant());
+                                    coeffs[i] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction (fun->EvalConstant()));
                                   else
                                     {
                                       switch (pde->GetMeshAccess().GetDimension())
                                         {
                                         case 2:
-                                          coeffs[i] = new DomainVariableCoefficientFunction<2> (*fun);
+                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2> (*fun));
                                           break;
                                         case 3:
-                                          coeffs[i] = new DomainVariableCoefficientFunction<3> (*fun);
+                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3> (*fun));
                                           break;
                                         }
                                     }
@@ -1851,10 +1850,12 @@ namespace ngsolve
 		    
 		      Flags partflags;
 		      CheckFlags (partflags);
-		    
-		      ngfem::LinearFormIntegrator * integrator = 
-			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
 
+                      /*
+		      ngfem:: integrator = 
+			dynamic_cast<ngfem::LinearFormIntegrator*> (info->creator(coeffs));
+                      */
+                      auto integrator = info->creator(coeffs);
 		      int numregions = integrator -> BoundaryForm() ? 
 			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
 		      for (int i = 0; i < coeffs.Size(); i++)
@@ -1885,16 +1886,16 @@ namespace ngsolve
 			  if (dynamic_cast<const CompoundFESpace*> 
 			      (&pde->GetLinearForm (name)->GetFESpace()))
 			    {
-			      integrator = new CompoundLinearFormIntegrator
-				(*integrator, 
-				 int(partflags.GetNumFlag ("comp", 1))-1);
+			      integrator.reset (new CompoundLinearFormIntegrator
+                                                (*integrator, 
+                                                 int(partflags.GetNumFlag ("comp", 1))-1));
 			    }
 			  else
 			    {
-			      integrator = new BlockLinearFormIntegrator
-				(*integrator, 
-				 pde->GetLinearForm (name)->GetFESpace().GetDimension(),
-				 int(partflags.GetNumFlag ("comp", 1))-1);
+			      integrator.reset (new BlockLinearFormIntegrator
+                                                (*integrator, 
+                                                 pde->GetLinearForm (name)->GetFESpace().GetDimension(),
+                                                 int(partflags.GetNumFlag ("comp", 1))-1));
 			    }
 			}
 
@@ -1905,14 +1906,13 @@ namespace ngsolve
 		    
 		      if (partflags.GetDefineFlag ("imag"))
 			{
-			  integrator = new ComplexLinearFormIntegrator
-			    (*integrator, Complex(0,1));
+			  integrator = shared_ptr<LinearFormIntegrator> (new ComplexLinearFormIntegrator
+                                                                        (*integrator, Complex(0,1)));
 			} 
 
 		      if (partflags.GetDefineFlag ("real"))
 			{
-			  integrator = new ComplexLinearFormIntegrator
-			    (*integrator, Complex(1,0));
+			  integrator = shared_ptr<LinearFormIntegrator> (new ComplexLinearFormIntegrator (*integrator, Complex(1,0)));
 			} 
 
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
@@ -1945,7 +1945,7 @@ namespace ngsolve
 		      if (partflags.StringFlagDefined ("curvefile"))
 			{		
 			  pde->SetLineIntegratorCurvePointInfo(pde->GetDirectory() + dirslash + partflags.GetStringFlag("curvefile",""),
-			  				       integrator);
+			  				       integrator.get());
 
 			  //BuildLineIntegratorCurvePoints ( pde->GetDirectory() + dirslash + partflags.GetStringFlag("curvefile",""),
 			  //				   pde->GetMeshAccess(),

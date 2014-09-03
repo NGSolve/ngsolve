@@ -124,15 +124,15 @@ namespace ngcomp
 	  new BlockDifferentialOperator (*boundary_evaluator, dimension);
       }
 
-    static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
-    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), &one);
+    // static ConstantCoefficientFunction one(1);
+    auto one = make_shared<ConstantCoefficientFunction> (1);
+    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), one);
+    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), one);
 
     if (dimension > 1)
       {
-	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
-	boundary_integrator = 
-	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
+	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
       }
 
     prol = new LinearProlongation(*this);

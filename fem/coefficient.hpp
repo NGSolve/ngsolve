@@ -197,16 +197,16 @@ namespace ngfem
   class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
   {
     Array<EvalFunction*> fun;
-    Array<CoefficientFunction*> depends_on;
+    Array<shared_ptr<CoefficientFunction>> depends_on;
     int numarg;
   public:
     ///
     DomainVariableCoefficientFunction (const EvalFunction & afun);
     DomainVariableCoefficientFunction (const EvalFunction & afun,
-				       const Array<CoefficientFunction*> & adepends_on);
+				       const Array<shared_ptr<CoefficientFunction>> & adepends_on);
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun);
     DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
-				       const Array<CoefficientFunction*> & adepends_on);
+				       const Array<shared_ptr<CoefficientFunction>> & adepends_on);
 
     ///
     virtual ~DomainVariableCoefficientFunction ();

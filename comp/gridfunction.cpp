@@ -111,7 +111,7 @@ namespace ngcomp
       }
     */
 
-    const BilinearFormIntegrator * bfi2d = 0, * bfi3d = 0;
+    shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
 
     if (ma.GetDimension() == 2)
       {
@@ -985,8 +985,8 @@ namespace ngcomp
   VisualizeGridFunction<SCAL> ::
   VisualizeGridFunction (const MeshAccess & ama,
 			 const GridFunction * agf,
-			 const BilinearFormIntegrator * abfi2d,
-			 const BilinearFormIntegrator * abfi3d,
+			 shared_ptr<BilinearFormIntegrator> abfi2d,
+			 shared_ptr<BilinearFormIntegrator> abfi3d,
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
@@ -1008,8 +1008,8 @@ namespace ngcomp
   VisualizeGridFunction<SCAL> ::
   VisualizeGridFunction (const MeshAccess & ama,
 			 const GridFunction * agf,
-			 const Array<BilinearFormIntegrator *> & abfi2d,
-			 const Array<BilinearFormIntegrator *> & abfi3d,
+			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
+			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace().IsComplex()),
@@ -1895,7 +1895,7 @@ namespace ngcomp
 
   VisualizeCoefficientFunction :: 
   VisualizeCoefficientFunction (const MeshAccess & ama,
-				const CoefficientFunction * acf)
+				shared_ptr<CoefficientFunction> acf)
     : SolutionData ("coef", acf->Dimension(), false /* complex */),
       ma(ama), cf(acf)
   { ; }

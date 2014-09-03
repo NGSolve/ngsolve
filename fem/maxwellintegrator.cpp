@@ -41,8 +41,6 @@ namespace ngfem
   MassEdgeIntegrator<D,FEL> :: MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> (coeffs)
   { ; }
-  */
-  
 
   CurlCurlBoundaryEdgeIntegrator ::
   CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff)
@@ -54,8 +52,8 @@ namespace ngfem
   CurlCurlBoundaryEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
     : T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > (coeffs)
   { ; }
-
-
+  */
+  
 
   // template <> 
   MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> > ::
@@ -71,7 +69,7 @@ namespace ngfem
   
 
 
-
+  /*
   template <int D, typename FEL> SourceEdgeIntegrator<D,FEL> ::
   SourceEdgeIntegrator (CoefficientFunction * coeff)
     : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (DVec<D> (coeff))
@@ -96,7 +94,7 @@ namespace ngfem
     : T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> (coeffs)
   { ; }
 
-
+  */
 
 
 
@@ -142,10 +140,8 @@ namespace ngfem
     
     Init::Init()
     {
+      cout << "skipping maxwell integrators (orthocurledge, masedgeaniso, tangsource, curlbound) !!!!!!!!!!!!!!!" << endl;
       /*
-      GetIntegrators().AddBFIntegrator ("curlcurlboundaryedge", 3, 1,
-					CurlCurlBoundaryEdgeIntegrator::Create);
-      */
       GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
 					CurlCurlEdgeOrthoIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("orthomassedge", 2, 2,
@@ -163,9 +159,11 @@ namespace ngfem
 					TangentialSourceEdgeIntegrator<3>::Create);
       GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 2, 1,
 					TangentialSourceEdgeIntegrator<2>::Create);
+      */
     }
 
     Init init;
+
   }
 }
 

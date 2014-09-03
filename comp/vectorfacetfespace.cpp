@@ -78,10 +78,10 @@ namespace ngcomp
 
     evaluator = NULL;
     static ConstantCoefficientFunction one(1);
-    Array<CoefficientFunction*> coeffs(1);
-    coeffs[0] = &one;
+    // Array<CoefficientFunction*> coeffs(1);
+    // coeffs[0] = &one;
     // evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
-    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma.GetDimension(), coeffs); 
+    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma.GetDimension(), &one); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {

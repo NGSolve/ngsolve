@@ -195,9 +195,15 @@ public:
   // typedef typename DMATOP::TSCAL TSCAL;
 
   ///
-  T_BDBIntegrator  (Array<CoefficientFunction*> & coeffs)
-  : dmatop(coeffs)
+  T_BDBIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+    : dmatop(coeffs)
   { ; }
+
+  T_BDBIntegrator  (const CoefficientFunction * coef)
+    : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
+  { ; }
+
+
 
   ///
   T_BDBIntegrator (const DMATOP & admat)
@@ -1281,6 +1287,15 @@ public:
   // typedef typename DVecOp::TSCAL TSCAL;
 
   ///
+  T_BIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+    : dvecop(coeffs)
+  { ; }
+
+  T_BIntegrator  (const CoefficientFunction * coef)
+    : dvecop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
+  { ; }
+
+
   T_BIntegrator (const DVecOp & advec)
     : dvecop(advec)
   { ; }

@@ -131,7 +131,7 @@ namespace ngfem
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
   DomainVariableCoefficientFunction (const EvalFunction & afun,
-				     const Array<CoefficientFunction*> & adepends_on)
+				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(1), depends_on(adepends_on)
   {
     fun[0] = new EvalFunction (afun);
@@ -157,7 +157,7 @@ namespace ngfem
   template <int DIM>
   DomainVariableCoefficientFunction<DIM> ::
   DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
-				     const Array<CoefficientFunction*> & adepends_on)
+				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(afun.Size()), depends_on(adepends_on)
   {
     for (int i = 0; i < fun.Size(); i++)

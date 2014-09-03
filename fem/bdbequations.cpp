@@ -27,11 +27,12 @@ namespace ngfem
   { ; }
   */
 
+  /*
   template <int D, typename FEL> RotSymLaplaceIntegrator<D,FEL> ::
   RotSymLaplaceIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> (RotSymLaplaceDMat<D> (coeff))
   { ; }
-
+  */
 
   // standard integratos:
   
@@ -64,61 +65,29 @@ namespace ngfem
   static RegisterLinearFormIntegrator<NeumannIntegrator<1> > initneumann1 ("neumann", 1, 1);
   static RegisterLinearFormIntegrator<NeumannIntegrator<2> > initneumann2 ("neumann", 2, 1);
   static RegisterLinearFormIntegrator<NeumannIntegrator<3> > initneumann3 ("neumann", 3, 1);
-
+  
 
   static RegisterBilinearFormIntegrator<ElasticityIntegrator<2> > initelast2 ("elasticity", 2, 2);
   static RegisterBilinearFormIntegrator<ElasticityIntegrator<3> > initelast3 ("elasticity", 3, 2);
 
-  /*
-      GetIntegrators().AddBFIntegrator ("elasticity", 2, 2,
-					ElasticityIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("elasticity", 3, 2,
-					ElasticityIntegrator<3>::Create);
-  */
+  static RegisterBilinearFormIntegrator<RotSymLaplaceIntegrator<2>> initrs2 ("rotsymlaplace", 2, 1);
+  static RegisterBilinearFormIntegrator<RotSymLaplaceIntegrator<3>> initrs3 ("rotsymlaplace", 3, 1);
+
+  static RegisterBilinearFormIntegrator<OrthoLaplaceIntegrator<2>> initolap2 ("ortholaplace", 2, 2);
+  static RegisterBilinearFormIntegrator<OrthoLaplaceIntegrator<3>> initolap3 ("ortholaplace", 3, 3);
 
 
-  namespace bdbequations_cpp
-  {
-    class Init
-    { 
-    public:  
-      Init ();
-    };        
-    
-    Init::Init()
-    {
-      GetIntegrators().AddBFIntegrator ("rotsymlaplace", 2, 1,
-					RotSymLaplaceIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("rotsymlaplace", 3, 1,
-					RotSymLaplaceIntegrator<3>::Create);
 
 
-      GetIntegrators().AddBFIntegrator ("ortholaplace", 2, 2,
-					OrthoLaplaceIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("ortholaplace", 3, 3,
-					OrthoLaplaceIntegrator<3>::Create);
+  static RegisterBilinearFormIntegrator<OrthotropicElasticityIntegrator<3>>  init_oelast3("orthoelasticity", 3, 9);
+  static RegisterBilinearFormIntegrator<OrthotropicCylElasticityIntegrator<3>> init_coelast3  ("orthocylelasticity", 3, 10);
+
       
+  static RegisterLinearFormIntegrator<GradSourceIntegrator<2>> init_gradsource2 ("gradsource", 2, 2);
+  static RegisterLinearFormIntegrator<GradSourceIntegrator<3>> init_gradsource3 ("gradsource", 3, 3);
 
-      GetIntegrators().AddBFIntegrator ("orthoelasticity", 3, 9,
-					OrthotropicElasticityIntegrator<3>::Create);
-      
-      GetIntegrators().AddBFIntegrator ("orthocylelasticity", 3, 10,
-					OrthotropicCylElasticityIntegrator<3>::Create);
-      
-      GetIntegrators().AddLFIntegrator("gradsource", 2, 2, 
-				       GradSourceIntegrator<2>::Create); 
-      GetIntegrators().AddLFIntegrator("gradsource", 3, 3, 
-				       GradSourceIntegrator<3>::Create); 
-
-      GetIntegrators().AddLFIntegrator ("normalneumann", 2, 1,
-					NormalNeumannIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("normalneumann", 3, 1,
-					NormalNeumannIntegrator<3>::Create);
-    }
-    
-    Init init;
-    int link_it;
-  }
+  static RegisterLinearFormIntegrator<NormalNeumannIntegrator<2>> init_normneu2("normalneumann", 2, 1);
+  static RegisterLinearFormIntegrator<NormalNeumannIntegrator<3>> init_normneu3("normalneumann", 3, 1);
  
 }
 

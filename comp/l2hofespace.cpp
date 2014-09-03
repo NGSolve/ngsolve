@@ -70,7 +70,7 @@ namespace ngcomp
     integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
 
     if (dimension > 1)
-      integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+      integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
 
 
 
@@ -560,19 +560,18 @@ namespace ngcomp
 
     if (ma.GetDimension() == 2)
       {
-	boundary_integrator = 
-	  new RobinIntegrator<2> (new ConstantCoefficientFunction(1));
+	// boundary_integrator.reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
+        boundary_integrator = 
+          make_shared<RobinIntegrator<2>>(make_shared<ConstantCoefficientFunction>(1));
       }
     else
       {
-	boundary_integrator = 
-	  new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
+	boundary_integrator.reset(new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
       {
-	boundary_integrator = 
-	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
+	boundary_integrator.reset(new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
       }
   }
 

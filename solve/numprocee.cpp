@@ -71,7 +71,7 @@ namespace ngsolve
     if (bfa->NumIntegrators() == 0)
       throw Exception ("ZZErrorEstimator: Bilinearform needs an integrator");
 
-    BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
+    auto bfi = bfa->GetIntegrator(0);
 
     Flags fesflags;
      
@@ -109,8 +109,8 @@ namespace ngsolve
     int ndom = ma.GetNDomains();
     for (int k = 0; k < ndom; k++)
       {
-	CalcFluxProject (ma, *gfu, *flux, *bfi, 1, k, lh);
-	CalcError (ma, *gfu, *flux, *bfi, err, k, lh);
+	CalcFluxProject (ma, *gfu, *flux, bfi, 1, k, lh);
+	CalcError (ma, *gfu, *flux, bfi, err, k, lh);
       }
 
     delete flux;
@@ -160,9 +160,9 @@ namespace ngsolve
     /// second gridfunction
     GridFunction * gfu2;
     /// use coefficient function ( coef_real, i * coef_imag )
-    CoefficientFunction * coef_real;
+    shared_ptr<CoefficientFunction> coef_real;
     /// imaginary part of function
-    CoefficientFunction * coef_imag;
+    shared_ptr<CoefficientFunction> coef_imag;
 
     /// difference function
     GridFunction * gfdiff;
@@ -265,7 +265,7 @@ namespace ngsolve
 	if (bfa1->NumIntegrators() == 0)
 	  throw Exception ("Difference: Bilinearform1 needs an integrator");
 
-	BilinearFormIntegrator * bfi1 = bfa1->GetIntegrator(0);
+	auto bfi1 = bfa1->GetIntegrator(0);
 	FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
 	diff = 0;
 
@@ -273,7 +273,7 @@ namespace ngsolve
 
 	if ( bfa2 )
 	  {
-	    BilinearFormIntegrator * bfi2 = bfa2->GetIntegrator(0);
+	    auto bfi2 = bfa2->GetIntegrator(0);
     
 	    for (int k = 0; k < ndom; k++)
 	      {
@@ -282,23 +282,21 @@ namespace ngsolve
 		    CalcDifference (ma, 
 				dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
 				dynamic_cast<const S_GridFunction<double>&> (*gfu2), 
-				*bfi1, *bfi2,
-				diff, k, lh);
+                                    bfi1, bfi2, diff, k, lh);
 		  }
 		else
 		  {
 		    CalcDifference (ma,
-				dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
-				dynamic_cast<const S_GridFunction<Complex>&> (*gfu2), 
-				*bfi1, *bfi2,
-				diff, k, lh);
+                                    dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
+                                    dynamic_cast<const S_GridFunction<Complex>&> (*gfu2), 
+                                    bfi1, bfi2, diff, k, lh);
 		  }	    
 	      }
 	  }
 	else
 	  {
 	    for (int k = 0; k < ndom; k++)
-	      CalcDifference (ma, *gfu1, *bfi1, coef_real, diff, k, lh);
+	      CalcDifference (ma, *gfu1, bfi1, coef_real, diff, k, lh);
 	  }
 
 	for (int i = 0; i < diff.Size(); i++)
@@ -388,7 +386,7 @@ namespace ngsolve
     if (bfa->NumIntegrators() == 0)
       throw Exception ("RTZZErrorEstimator: Bilinearform needs an integrator");
 
-    BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
+    auto bfi = bfa->GetIntegrator(0);
 
     Flags fesflags;
     fesflags.SetFlag ("order", bfa->GetFESpace().GetOrder());
@@ -408,8 +406,8 @@ namespace ngsolve
 
     err = 0;
 
-    CalcFluxProject (ma, *gfu, *flux, *bfi, 1, -1, lh);
-    CalcError (ma, *gfu, *flux, *bfi, err, -1, lh);
+    CalcFluxProject (ma, *gfu, *flux, bfi, 1, -1, lh);
+    CalcError (ma, *gfu, *flux, bfi, err, -1, lh);
 
 
     delete flux;
@@ -439,7 +437,7 @@ namespace ngsolve
 
 
 
-
+  
   ///
   class NumProcHierarchicalErrorEstimator : public NumProc
   {
@@ -798,13 +796,13 @@ namespace ngsolve
     if (bfa->NumIntegrators() == 0)
       throw Exception ("PrimalDualErrorEstimator: Bilinearform needs an integrator");
 
-    BilinearFormIntegrator * bfi = bfa->GetIntegrator(0);
+    auto bfi = bfa->GetIntegrator(0);
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
       // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
-    CalcError (ma, *gfu, *gfflux, *bfi, err, -1, lh);
+    CalcError (ma, *gfu, *gfflux, bfi, err, -1, lh);
   
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)

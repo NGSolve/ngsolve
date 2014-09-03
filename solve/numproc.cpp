@@ -136,7 +136,7 @@ namespace ngsolve
   void NumProcCalcFlux :: Do(LocalHeap & lh)
   {
     CalcFluxProject (pde.GetMeshAccess(), *gfu, *gfflux,
-		     *bfa->GetIntegrator(0),
+		     bfa->GetIntegrator(0),
 		     applyd, domain, lh);
     
     /*
@@ -173,7 +173,7 @@ namespace ngsolve
   {
   protected:
     GridFunction * gfu;
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
     bool boundary;
     bool coarsegridonly;
     int component;
@@ -229,7 +229,7 @@ namespace ngsolve
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
-      SetValues (*coef, *hgfu, boundary, 0, lh);
+      SetValues (coef, *hgfu, boundary, 0, lh);
       if (print) 
         *testout << "setvalues result:" << endl << hgfu->GetVector() << endl;
     }
@@ -334,7 +334,7 @@ namespace ngsolve
     label = flags.GetStringFlag ("label", "");
     useall = flags.GetDefineFlag ("useall");
 
-    Array<BilinearFormIntegrator *> bfi2d, bfi3d;
+    Array<shared_ptr<BilinearFormIntegrator>> bfi2d, bfi3d;
 
     for (int i = 0; i < bfa->NumIntegrators(); i++)
       {
@@ -417,7 +417,7 @@ namespace ngsolve
   {
   protected:
     netgen::SolutionData * vis;
-    CoefficientFunction * cf;
+    shared_ptr<CoefficientFunction> cf;
     string label;
 
   public:
@@ -720,8 +720,7 @@ namespace ngsolve
       }
     else if (point.Size() >= 2)
       {
-	const BilinearFormIntegrator & bfi = (bfa) ? *bfa->GetIntegrator(0) 
-	  : *gfu->GetFESpace().GetIntegrator();
+	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace().GetIntegrator();
 
 	if (point2.Size() >= 2)
 	  {
@@ -749,7 +748,7 @@ namespace ngsolve
 		    
 		    if (!gfu->GetFESpace().IsComplex())
 		      {
-			FlatVector<double> pflux(bfi.DimFlux(), lh);
+			FlatVector<double> pflux(bfi->DimFlux(), lh);
 			bool ok =
 			  CalcPointFlux<double> (ma, *gfu, p,
 						 pflux, bfi, applyd, lh, component);
@@ -770,7 +769,7 @@ namespace ngsolve
 		      }
 		    else
 		      {
-			FlatVector<Complex> pflux(bfi.DimFlux(), lh);
+			FlatVector<Complex> pflux(bfi->DimFlux(), lh);
 			bool ok =
 			  CalcPointFlux (ma, *gfu, p,
 					 pflux, bfi, applyd, lh, component);
@@ -872,7 +871,7 @@ namespace ngsolve
 			
 			if (!gfu->GetFESpace().IsComplex())
 			  {
-			    FlatVector<double> pflux(bfi.DimFlux(), lh);
+			    FlatVector<double> pflux(bfi->DimFlux(), lh);
                             CalcPointFlux (ma, *gfu, p,
                                            pflux, bfi, applyd, lh, component);
 			    
@@ -886,7 +885,7 @@ namespace ngsolve
 			  }
 			else
 			  {
-			    FlatVector<Complex> pflux(bfi.DimFlux(), lh);
+			    FlatVector<Complex> pflux(bfi->DimFlux(), lh);
 			    complexflux = true;
                             CalcPointFlux (ma, *gfu, p,
                                            pflux, bfi, applyd, lh, component);
@@ -949,7 +948,7 @@ namespace ngsolve
 
 	    if (!gfu->GetFESpace().IsComplex())
 	      {
-		FlatVector<double> pflux(bfi.DimFlux(), lh);
+		FlatVector<double> pflux(bfi->DimFlux(), lh);
 		CalcPointFlux (ma, *gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
@@ -958,7 +957,7 @@ namespace ngsolve
 	      }
 	    else
 	      {
-		FlatVector<Complex> pflux(bfi.DimFlux(), lh);
+		FlatVector<Complex> pflux(bfi->DimFlux(), lh);
 		CalcPointFlux (ma, *gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
@@ -1154,8 +1153,8 @@ namespace ngsolve
     bool writevar = (strcmp(variablename.c_str(), "") != 0);
     string actvarname;
 
-    const BilinearFormIntegrator * Integrator_ptr;
-    const BilinearFormIntegrator * BoundaryIntegrator_ptr;
+    shared_ptr<BilinearFormIntegrator> Integrator_ptr;
+    shared_ptr<BilinearFormIntegrator> BoundaryIntegrator_ptr;
     
 
     const FESpace & fes = gfu->GetFESpace();
@@ -1381,7 +1380,7 @@ namespace ngsolve
 
   class NumProcIntegrate : public NumProc
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
     int order;
   public:
     NumProcIntegrate (PDE & apde, const Flags & flags)

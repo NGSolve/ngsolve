@@ -324,7 +324,7 @@ namespace ngcomp
     const BilinearForm * bfa;
     // CommutingAMG * amg;
     BaseMatrix * amg;
-    CoefficientFunction *coefe, *coeff, *coefse;
+    shared_ptr<CoefficientFunction> coefe, coeff, coefse;
     bool hcurl;
     bool coarsegrid;
     int levels;
