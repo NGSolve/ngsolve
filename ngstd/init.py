@@ -1,4 +1,5 @@
 print ("Hello from init.py")
+import ngfem_cf
 
 def mydir(x=None):
     if x==None:
