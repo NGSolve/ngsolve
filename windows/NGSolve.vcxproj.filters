@@ -1,0 +1,830 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\basiclinalg\bandmatrix.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\basiclinalg\calcinverse.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\basiclinalg\cholesky.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\basiclinalg\eigensystem.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\basiclinalg\LapackGEP.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\basiclinalg\vecmat.cpp">
+      <Filter>Source Files\basiclinalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\bilinearform.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\facetfespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\fespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\gridfunction.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\h1hofespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hcurlhdivfes.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hcurlhofespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hdivhofespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hierarchicalee.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hypre_precond.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\l2hofespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\linearform.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\meshaccess.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\ngsobject.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\postproc.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\preconditioner.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\vectorfacetfespace.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\bdbequations.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\coefficient.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\DGIntegrators.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\diffop.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\elementtopology.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\elementtransformation.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\facethofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\fastmat.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\finiteelement.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\generic_recpol.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofefo.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1lofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofe_pyramid.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofe_tet.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofe_prism.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\h1hofe_hex.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hcurlfe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hcurlhofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hdiv_equations.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hdivfe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hdivhofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\hybridDG.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\integrator.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\intrule.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\l2hofe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\l2hofefo.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\maxwellintegrator.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\pml.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\recursive_pol.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\recursive_pol_trig.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\scalarfe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\specialelement.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\fem\vectorfacetfe.cpp">
+      <Filter>Source Files\fem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\arnoldi.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\basematrix.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\basevector.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\blockjacobi.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\cg.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\chebyshev.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\commutingAMG.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\eigen.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\elementbyelement.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\jacobi.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\mumpsinverse.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\order.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\paralleldofs.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\pardisoinverse.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\sparsecholesky.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\sparsematrix.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\special_matrix.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\linalg\superluinverse.cpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\multigrid\mgpre.cpp">
+      <Filter>Source Files\multigrid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\multigrid\prolongation.cpp">
+      <Filter>Source Files\multigrid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\multigrid\smoother.cpp">
+      <Filter>Source Files\multigrid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\archive.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\bitarray.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\blockalloc.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\evalfunc.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\exception.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\flags.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\localheap.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\profiler.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\sockets.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\stringops.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\symboltable.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\table.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ngstd\templates.cpp">
+      <Filter>Source Files\ngstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\parallel\parallel_matrices.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\parallel\parallelvvector.cpp">
+      <Filter>Source Files\parallel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\bvp.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\evp.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\generalizedEVP.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\hyperbolic.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\ngsolve.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\numproc.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\numprocee.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\pde.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\pdeparser.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\solve\shapetester.cpp">
+      <Filter>Source Files\solve</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\bddc.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\comp\hdivfes.cpp">
+      <Filter>Source Files\comp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\basiclinalg\bla.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\arch.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\bandmatrix.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\cholesky.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\clapack.h">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\expr.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\LapackInterface.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\matrix.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\ng_lapack.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\symmetricmatrix.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\vector.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\basiclinalg\tensor.hpp">
+      <Filter>Header Files\basiclinalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\bilinearform.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\comp.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\comp_utils.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\facetfespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\fespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\gridfunction.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\h1hofespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\hcurlhdivfes.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\hcurlhofespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\hdivhofespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\hypre_precond.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\l2hofespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\linearform.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\meshaccess.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\ngsobject.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\postproc.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\preconditioner.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\vectorfacetfespace.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\bdbequations.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\bdbintegrator.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\coefficient.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\diffop.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\diffop_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\elasticity_equations.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\elementtransformation.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\elementtopology.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\generic_recpol.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\finiteelement.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\fem.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\facethofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\facetfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\h1hofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\h1hofe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\h1lofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\h1hofefo.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\h1hofefo_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdivhofefo.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdivhofe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdivhofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdivfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdiv_equations.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hcurlhofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hcurllofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hcurlfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hcurl_equations.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hcurlhofe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\hdivlofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\vectorfacetfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\tscalarfe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\tscalarfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\thdivfe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\thdivfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\thcurlfe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\thcurlfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\specialelement.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\scalarfe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\recursive_pol_trig.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\recursive_pol_tet.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\recursive_pol.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\precomp.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\pml.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\l2hofe.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\l2hofe_impl.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\intrule.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\fem\integrator.hpp">
+      <Filter>Header Files\fem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\bla.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\comp.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\compatibility.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fem.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\la.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\multigrid.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ngs_defines.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ngstd.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\parallelngs.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\arnoldi.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\basematrix.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\basevector.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\blockjacobi.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\cg.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\chebyshev.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\commutingAMG.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\eigen.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\elementbyelement.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\jacobi.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\la.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\mumpsinverse.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\order.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\parallel\paralleldofs.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\vvector.hpp">
+      <Filter>Source Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\superluinverse.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\special_matrix.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\sparsematrix.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\sparsecholesky.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\linalg\pardisoinverse.hpp">
+      <Filter>Header Files\linalg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\multigrid\mgpre.hpp">
+      <Filter>Header Files\multigrid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\multigrid\multigrid.hpp">
+      <Filter>Header Files\multigrid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\multigrid\prolongation.hpp">
+      <Filter>Header Files\multigrid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\multigrid\smoother.hpp">
+      <Filter>Header Files\multigrid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\archive.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\archive_base.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\array.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\autodiff.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\autodiffdiff.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\autoptr.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\bessel.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\bitarray.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\blockalloc.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\evalfunc.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\exception.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\flags.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\hashtable.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\localheap.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\memusage.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\mpiwrapper.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\mycomplex.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\ngsstream.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\parthreads.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\polorder.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\profiler.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\sockets.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\statushandler.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\stringops.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\symboltable.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\table.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\templates.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\parallel\parallel_matrices.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\parallel\parallelngs.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\parallel\parallelvector.hpp">
+      <Filter>Header Files\parallel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\solve\pde.hpp">
+      <Filter>Source Files\solve</Filter>
+    </ClInclude>
+    <ClInclude Include="..\solve\solve.hpp">
+      <Filter>Source Files\solve</Filter>
+    </ClInclude>
+    <ClInclude Include="..\solve\numproc.hpp">
+      <Filter>Header Files\solve</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\bddc.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\comp\hdivfes.hpp">
+      <Filter>Header Files\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\ngs_stdcpp_include.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ngstd\ngstd.hpp">
+      <Filter>Header Files\ngstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\solve.hpp">
+      <Filter>Header Files\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{3d2a44f7-75fb-492a-88f4-c9c6aa21d382}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{c677911d-0994-47ec-9313-3689d357e55b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\comp">
+      <UniqueIdentifier>{ee1b496b-ce3b-4dab-927c-54838e2dc213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\fem">
+      <UniqueIdentifier>{e51d142c-aa8a-4d7f-b419-cffdbd340c31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\include">
+      <UniqueIdentifier>{75ba0cae-8fe3-44ff-a4c3-706aa59a048e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\linalg">
+      <UniqueIdentifier>{354e1f87-773d-45ab-a514-37a8b94c2c89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\multigrid">
+      <UniqueIdentifier>{4cc106bc-b524-4a2a-b314-cd9ce93d447b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ngstd">
+      <UniqueIdentifier>{0e747e31-3b17-4cee-878f-ef3974335604}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parallel">
+      <UniqueIdentifier>{a91a60c7-2444-4458-9e30-a42d01dc0773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\solve">
+      <UniqueIdentifier>{7024a65f-847a-41d3-ac8b-9d8a371a0ec6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\basiclinalg">
+      <UniqueIdentifier>{661d40bc-0588-4513-85c0-bb8405394298}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\basiclinalg">
+      <UniqueIdentifier>{2f69e473-3e35-4332-be36-4e8df91d9a43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\comp">
+      <UniqueIdentifier>{f3f2c4b2-5c35-4337-b199-7dfacc1e40d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\fem">
+      <UniqueIdentifier>{424d60e7-e4d8-45ef-b496-502bbd902c91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\linalg">
+      <UniqueIdentifier>{75b7831b-3461-449e-9b19-60233d15c3c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\multigrid">
+      <UniqueIdentifier>{30c6d219-0a6c-4429-93b6-b1bb21159ec3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\solve">
+      <UniqueIdentifier>{40faaf03-72af-40ae-8d64-8ef7c1db6cff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parallel">
+      <UniqueIdentifier>{d886e993-0aa3-46c2-9a2c-08e1a9fe261f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ngstd">
+      <UniqueIdentifier>{76386617-4dc9-4206-a398-aa9b0dd013d3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\fem\l2hofefo.hpp">
+      <Filter>Header Files\fem</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

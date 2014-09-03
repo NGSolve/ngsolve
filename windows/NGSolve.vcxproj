@@ -251,7 +251,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -292,7 +292,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -329,7 +329,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -370,7 +370,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -407,7 +407,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_c_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_c_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(MKL_ROOT)\compiler\lib\ia32;$(MKL_ROOT)\mkl\lib\ia32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -449,7 +449,7 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_lp64_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_lp64_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
       <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(MKL_ROOT)\mkl\lib\intel64;$(MKL_ROOT)\compiler\lib\intel64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -475,6 +475,7 @@
     <ClCompile Include="..\comp\hdivfes.cpp" />
     <ClCompile Include="..\comp\hdivhofespace.cpp" />
     <ClCompile Include="..\comp\hierarchicalee.cpp" />
+    <ClCompile Include="..\comp\hypre_precond.cpp" />
     <ClCompile Include="..\comp\l2hofespace.cpp" />
     <ClCompile Include="..\comp\linearform.cpp" />
     <ClCompile Include="..\comp\meshaccess.cpp" />
@@ -493,12 +494,17 @@
     <ClCompile Include="..\fem\DGIntegrators.cpp" />
     <ClCompile Include="..\fem\diffop.cpp" />
     <ClCompile Include="..\fem\elementtopology.cpp" />
+    <ClCompile Include="..\fem\elementtransformation.cpp" />
     <ClCompile Include="..\fem\facethofe.cpp" />
     <ClCompile Include="..\fem\fastmat.cpp" />
     <ClCompile Include="..\fem\finiteelement.cpp" />
     <ClCompile Include="..\fem\generic_recpol.cpp" />
     <ClCompile Include="..\fem\h1hofe.cpp" />
     <ClCompile Include="..\fem\h1hofefo.cpp" />
+    <ClCompile Include="..\fem\h1hofe_hex.cpp" />
+    <ClCompile Include="..\fem\h1hofe_prism.cpp" />
+    <ClCompile Include="..\fem\h1hofe_pyramid.cpp" />
+    <ClCompile Include="..\fem\h1hofe_tet.cpp" />
     <ClCompile Include="..\fem\h1lofe.cpp" />
     <ClCompile Include="..\fem\hcurlfe.cpp" />
     <ClCompile Include="..\fem\hcurlhofe.cpp" />
@@ -529,6 +535,7 @@
     <ClCompile Include="..\linalg\jacobi.cpp" />
     <ClCompile Include="..\linalg\mumpsinverse.cpp" />
     <ClCompile Include="..\linalg\order.cpp" />
+    <ClCompile Include="..\linalg\paralleldofs.cpp" />
     <ClCompile Include="..\linalg\pardisoinverse.cpp" />
     <ClCompile Include="..\linalg\sparsecholesky.cpp" />
     <ClCompile Include="..\linalg\sparsematrix.cpp" />
@@ -545,11 +552,13 @@
     <ClCompile Include="..\ngstd\flags.cpp" />
     <ClCompile Include="..\ngstd\localheap.cpp" />
     <ClCompile Include="..\ngstd\profiler.cpp" />
+    <ClCompile Include="..\ngstd\sockets.cpp" />
     <ClCompile Include="..\ngstd\stringops.cpp" />
     <ClCompile Include="..\ngstd\symboltable.cpp" />
     <ClCompile Include="..\ngstd\table.cpp" />
     <ClCompile Include="..\ngstd\templates.cpp" />
     <ClCompile Include="..\parallel\parallelvvector.cpp" />
+    <ClCompile Include="..\parallel\parallel_matrices.cpp" />
     <ClCompile Include="..\solve\bvp.cpp" />
     <ClCompile Include="..\solve\evp.cpp" />
     <ClCompile Include="..\solve\generalizedEVP.cpp" />
@@ -562,6 +571,7 @@
     <ClCompile Include="..\solve\shapetester.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\basiclinalg\tensor.hpp" />
     <ClInclude Include="..\comp\bddc.hpp" />
     <ClInclude Include="..\comp\bilinearform.hpp" />
     <ClInclude Include="..\comp\comp.hpp" />
@@ -574,6 +584,7 @@
     <ClInclude Include="..\comp\hcurlhofespace.hpp" />
     <ClInclude Include="..\comp\hdivfes.hpp" />
     <ClInclude Include="..\comp\hdivhofespace.hpp" />
+    <ClInclude Include="..\comp\hypre_precond.hpp" />
     <ClInclude Include="..\comp\l2hofespace.hpp" />
     <ClInclude Include="..\comp\linearform.hpp" />
     <ClInclude Include="..\comp\meshaccess.hpp" />
@@ -589,7 +600,6 @@
     <ClInclude Include="..\basiclinalg\expr.hpp" />
     <ClInclude Include="..\basiclinalg\LapackInterface.hpp" />
     <ClInclude Include="..\basiclinalg\matrix.hpp" />
-    <ClInclude Include="..\basiclinalg\md.hpp" />
     <ClInclude Include="..\basiclinalg\ng_lapack.hpp" />
     <ClInclude Include="..\basiclinalg\symmetricmatrix.hpp" />
     <ClInclude Include="..\basiclinalg\vector.hpp" />
@@ -597,21 +607,26 @@
     <ClInclude Include="..\fem\bdbintegrator.hpp" />
     <ClInclude Include="..\fem\coefficient.hpp" />
     <ClInclude Include="..\fem\diffop.hpp" />
+    <ClInclude Include="..\fem\diffop_impl.hpp" />
+    <ClInclude Include="..\fem\elasticity_equations.hpp" />
     <ClInclude Include="..\fem\elementtopology.hpp" />
     <ClInclude Include="..\fem\elementtransformation.hpp" />
     <ClInclude Include="..\fem\facetfe.hpp" />
     <ClInclude Include="..\fem\facethofe.hpp" />
     <ClInclude Include="..\fem\fem.hpp" />
-    <ClInclude Include="..\fem\femtypes.hpp" />
     <ClInclude Include="..\fem\finiteelement.hpp" />
     <ClInclude Include="..\fem\generic_recpol.hpp" />
     <ClInclude Include="..\fem\h1hofe.hpp" />
+    <ClInclude Include="..\fem\h1hofefo_impl.hpp" />
     <ClInclude Include="..\fem\h1hofe_impl.hpp" />
     <ClInclude Include="..\fem\h1hofefo.hpp" />
     <ClInclude Include="..\fem\h1lofe.hpp" />
     <ClInclude Include="..\fem\hcurlfe.hpp" />
     <ClInclude Include="..\fem\hcurlhofe.hpp" />
+    <ClInclude Include="..\fem\hcurlhofe_impl.hpp" />
     <ClInclude Include="..\fem\hcurllofe.hpp" />
+    <ClInclude Include="..\fem\hcurl_equations.hpp" />
+    <ClInclude Include="..\fem\hdivlofe.hpp" />
     <ClInclude Include="..\fem\hdiv_equations.hpp" />
     <ClInclude Include="..\fem\hdivfe.hpp" />
     <ClInclude Include="..\fem\hdivhofe.hpp" />
@@ -621,12 +636,16 @@
     <ClInclude Include="..\fem\intrule.hpp" />
     <ClInclude Include="..\fem\l2hofe.hpp" />
     <CustomBuild Include="..\fem\l2hofefo.hpp" />
+    <ClInclude Include="..\fem\l2hofe_impl.hpp" />
     <ClInclude Include="..\fem\pml.hpp" />
+    <ClInclude Include="..\fem\precomp.hpp" />
     <ClInclude Include="..\fem\recursive_pol.hpp" />
     <ClInclude Include="..\fem\recursive_pol_tet.hpp" />
     <ClInclude Include="..\fem\recursive_pol_trig.hpp" />
     <ClInclude Include="..\fem\scalarfe.hpp" />
     <ClInclude Include="..\fem\specialelement.hpp" />
+    <ClInclude Include="..\fem\thcurlfe.hpp" />
+    <ClInclude Include="..\fem\thcurlfe_impl.hpp" />
     <ClInclude Include="..\fem\thdivfe.hpp" />
     <ClInclude Include="..\fem\thdivfe_impl.hpp" />
     <ClInclude Include="..\fem\tscalarfe.hpp" />
@@ -634,6 +653,7 @@
     <ClInclude Include="..\fem\vectorfacetfe.hpp" />
     <ClInclude Include="..\include\bla.hpp" />
     <ClInclude Include="..\include\comp.hpp" />
+    <ClInclude Include="..\include\compatibility.hpp" />
     <ClInclude Include="..\include\fem.hpp" />
     <ClInclude Include="..\include\la.hpp" />
     <ClInclude Include="..\include\multigrid.hpp" />
@@ -665,6 +685,8 @@
     <ClInclude Include="..\multigrid\multigrid.hpp" />
     <ClInclude Include="..\multigrid\prolongation.hpp" />
     <ClInclude Include="..\multigrid\smoother.hpp" />
+    <ClInclude Include="..\ngstd\archive.hpp" />
+    <ClInclude Include="..\ngstd\archive_base.hpp" />
     <ClInclude Include="..\ngstd\array.hpp" />
     <ClInclude Include="..\ngstd\autodiff.hpp" />
     <ClInclude Include="..\ngstd\autodiffdiff.hpp" />
@@ -672,25 +694,29 @@
     <ClInclude Include="..\ngstd\bessel.hpp" />
     <ClInclude Include="..\ngstd\bitarray.hpp" />
     <ClInclude Include="..\ngstd\blockalloc.hpp" />
-    <ClInclude Include="..\ngstd\dynamicmem.hpp" />
     <ClInclude Include="..\ngstd\evalfunc.hpp" />
     <ClInclude Include="..\ngstd\exception.hpp" />
     <ClInclude Include="..\ngstd\flags.hpp" />
     <ClInclude Include="..\ngstd\hashtable.hpp" />
     <ClInclude Include="..\ngstd\localheap.hpp" />
     <ClInclude Include="..\ngstd\memusage.hpp" />
+    <ClInclude Include="..\ngstd\mpiwrapper.hpp" />
+    <ClInclude Include="..\ngstd\mycomplex.hpp" />
+    <ClInclude Include="..\ngstd\ngsstream.hpp" />
     <ClInclude Include="..\ngstd\ngstd.hpp" />
     <ClInclude Include="..\ngstd\parthreads.hpp" />
+    <ClInclude Include="..\ngstd\polorder.hpp" />
     <ClInclude Include="..\ngstd\profiler.hpp" />
+    <ClInclude Include="..\ngstd\sockets.hpp" />
     <ClInclude Include="..\ngstd\statushandler.hpp" />
     <ClInclude Include="..\ngstd\stringops.hpp" />
     <ClInclude Include="..\ngstd\symboltable.hpp" />
     <ClInclude Include="..\ngstd\table.hpp" />
     <ClInclude Include="..\ngstd\templates.hpp" />
     <ClInclude Include="..\parallel\paralleldofs.hpp" />
-    <ClInclude Include="..\parallel\parallelmeshaccess.hpp" />
     <ClInclude Include="..\parallel\parallelngs.hpp" />
-    <ClInclude Include="..\parallel\superlu_dist.hpp" />
+    <ClInclude Include="..\parallel\parallelvector.hpp" />
+    <ClInclude Include="..\parallel\parallel_matrices.hpp" />
     <ClInclude Include="..\solve\numproc.hpp" />
     <ClInclude Include="..\solve\pde.hpp" />
     <ClInclude Include="..\solve\solve.hpp" />
