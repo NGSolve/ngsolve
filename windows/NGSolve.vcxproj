@@ -431,8 +431,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;C:\Boost_Source\boost_1_56_0;C:\Python34\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NGS_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -451,7 +451,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_lp64_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(MKL_ROOT)\mkl\lib\intel64;$(MKL_ROOT)\compiler\lib\intel64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(MKL_ROOT)\mkl\lib\intel64;$(MKL_ROOT)\compiler\lib\intel64;C:\Python34\libs;C:\Boost_Source\boost_1_56_0\stage\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -464,6 +464,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\basiclinalg\python_bla.cpp" />
     <ClCompile Include="..\comp\bddc.cpp" />
     <ClCompile Include="..\comp\bilinearform.cpp" />
     <ClCompile Include="..\comp\facetfespace.cpp" />
@@ -481,6 +482,7 @@
     <ClCompile Include="..\comp\ngsobject.cpp" />
     <ClCompile Include="..\comp\postproc.cpp" />
     <ClCompile Include="..\comp\preconditioner.cpp" />
+    <ClCompile Include="..\comp\python_comp.cpp" />
     <ClCompile Include="..\comp\vectorfacetfespace.cpp" />
     <ClCompile Include="..\basiclinalg\bandmatrix.cpp" />
     <ClCompile Include="..\basiclinalg\calcinverse.cpp" />
@@ -512,6 +514,7 @@
     <ClCompile Include="..\fem\l2hofefo.cpp" />
     <ClCompile Include="..\fem\maxwellintegrator.cpp" />
     <ClCompile Include="..\fem\pml.cpp" />
+    <ClCompile Include="..\fem\python_fem.cpp" />
     <ClCompile Include="..\fem\recursive_pol.cpp" />
     <ClCompile Include="..\fem\recursive_pol_trig.cpp" />
     <ClCompile Include="..\fem\scalarfe.cpp" />
@@ -530,6 +533,7 @@
     <ClCompile Include="..\linalg\mumpsinverse.cpp" />
     <ClCompile Include="..\linalg\order.cpp" />
     <ClCompile Include="..\linalg\pardisoinverse.cpp" />
+    <ClCompile Include="..\linalg\python_linalg.cpp" />
     <ClCompile Include="..\linalg\sparsecholesky.cpp" />
     <ClCompile Include="..\linalg\sparsematrix.cpp" />
     <ClCompile Include="..\linalg\special_matrix.cpp" />
@@ -545,6 +549,7 @@
     <ClCompile Include="..\ngstd\flags.cpp" />
     <ClCompile Include="..\ngstd\localheap.cpp" />
     <ClCompile Include="..\ngstd\profiler.cpp" />
+    <ClCompile Include="..\ngstd\python_ngstd.cpp" />
     <ClCompile Include="..\ngstd\stringops.cpp" />
     <ClCompile Include="..\ngstd\symboltable.cpp" />
     <ClCompile Include="..\ngstd\table.cpp" />
@@ -559,6 +564,7 @@
     <ClCompile Include="..\solve\numprocee.cpp" />
     <ClCompile Include="..\solve\pde.cpp" />
     <ClCompile Include="..\solve\pdeparser.cpp" />
+    <ClCompile Include="..\solve\python_solve.cpp" />
     <ClCompile Include="..\solve\shapetester.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -682,6 +688,7 @@
     <ClInclude Include="..\ngstd\ngstd.hpp" />
     <ClInclude Include="..\ngstd\parthreads.hpp" />
     <ClInclude Include="..\ngstd\profiler.hpp" />
+    <ClInclude Include="..\ngstd\python_ngstd.hpp" />
     <ClInclude Include="..\ngstd\statushandler.hpp" />
     <ClInclude Include="..\ngstd\stringops.hpp" />
     <ClInclude Include="..\ngstd\symboltable.hpp" />
