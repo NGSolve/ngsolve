@@ -1961,17 +1961,17 @@ double BlockBilinearFormIntegrator ::
 
 
 
-
-  Integrators::IntegratorInfo::
+  template <typename T>
+  Integrators::IntegratorInfo<T>::
   IntegratorInfo (const string & aname,
 		   int aspacedim, int anumcoeffs,
-		   Integrator* (*acreator)(Array<CoefficientFunction*>&))
+		   shared_ptr<T> (*acreator)(const Array<shared_ptr<CoefficientFunction>>&))
     : name(aname), spacedim(aspacedim), numcoeffs(anumcoeffs), creator(acreator)
   {
     ;
   }
   
-
+  
   Integrators :: Integrators ()
   {
     ;
@@ -1987,12 +1987,12 @@ double BlockBilinearFormIntegrator ::
   
   void Integrators :: 
   AddBFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		 Integrator* (*creator)(Array<CoefficientFunction*>&))
+                   shared_ptr<BilinearFormIntegrator>(*creator)(const Array<shared_ptr<CoefficientFunction>> &))
   {
-    bfis.Append (new IntegratorInfo(aname, aspacedim, anumcoeffs, creator));
+    bfis.Append (new IntegratorInfo<BilinearFormIntegrator>(aname, aspacedim, anumcoeffs, creator));
   }
 
-  const Integrators::IntegratorInfo * 
+  const Integrators::IntegratorInfo<BilinearFormIntegrator> * 
   Integrators::GetBFI(const string & name, int spacedim) const
   {
     for (int i = 0; i < bfis.Size(); i++)
@@ -2002,34 +2002,43 @@ double BlockBilinearFormIntegrator ::
     throw Exception (string ("GetBFI: Unknown integrator ") + name + "\n");
   }
 
-  BilinearFormIntegrator * 
+  shared_ptr<BilinearFormIntegrator>
   Integrators::CreateBFI(const string & name, int dim, 
-			 Array<CoefficientFunction*> & coeffs) const
+			 const Array<shared_ptr<CoefficientFunction>> & coeffs) const
   {
-    BilinearFormIntegrator * bfi =
-      dynamic_cast<BilinearFormIntegrator*> (GetBFI(name, dim)->creator(coeffs));
-    //cout << "call setname to " << name << endl;
+    auto bfi = GetBFI(name, dim)->creator(coeffs);
     bfi -> SetName (name);
     return bfi;
   }
 
-  BilinearFormIntegrator * 
+  shared_ptr<BilinearFormIntegrator>
   Integrators::CreateBFI(const string & name, int dim, 
-			 CoefficientFunction * coef) const
+			 shared_ptr<CoefficientFunction> coef) const
   {
-    Array<CoefficientFunction*> coeffs(1);
+    Array<shared_ptr<CoefficientFunction>> coeffs(1);
     coeffs[0] = coef;
     return CreateBFI (name, dim, coeffs);
   }
 
-  void Integrators :: 
-  AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-		   Integrator* (*creator)(Array<CoefficientFunction*>&))
+  shared_ptr<BilinearFormIntegrator>
+  Integrators::CreateBFI(const string & name, int dim, 
+			 const CoefficientFunction * coef) const
   {
-    lfis.Append (new IntegratorInfo(aname, aspacedim, anumcoeffs, creator));
+    Array<shared_ptr<CoefficientFunction>> coeffs(1);
+    coeffs[0] = shared_ptr<CoefficientFunction> 
+      (const_cast<CoefficientFunction*>(coef), NOOP_Deleter);
+    return CreateBFI (name, dim, coeffs);
   }
 
-  const Integrators::IntegratorInfo * 
+
+  void Integrators :: 
+  AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
+		   shared_ptr<LinearFormIntegrator>(*creator)(const Array<shared_ptr<CoefficientFunction>>&))
+  {
+    lfis.Append (new IntegratorInfo<LinearFormIntegrator>(aname, aspacedim, anumcoeffs, creator));
+  }
+
+  const Integrators::IntegratorInfo<LinearFormIntegrator> * 
   Integrators::GetLFI(const string & name, int spacedim) const
   {
     for (int i = 0; i < lfis.Size(); i++)
@@ -2040,21 +2049,22 @@ double BlockBilinearFormIntegrator ::
   }
 
 
-  LinearFormIntegrator * 
+  shared_ptr<LinearFormIntegrator>
   Integrators::CreateLFI(const string & name, int dim, 
-			 Array<CoefficientFunction*> & coeffs) const
+			 const Array<shared_ptr<CoefficientFunction>> & coeffs) const
   {
-    LinearFormIntegrator * lfi =
-      dynamic_cast<LinearFormIntegrator*> (GetLFI(name, dim)->creator(coeffs));
+    // LinearFormIntegrator * lfi =
+    // dynamic_cast<LinearFormIntegrator*> (GetLFI(name, dim)->creator(coeffs));
+    auto lfi = GetLFI(name, dim)->creator(coeffs);
     lfi -> SetName (name);
     return lfi;
   }
 
-  LinearFormIntegrator * 
+  shared_ptr<LinearFormIntegrator>
   Integrators::CreateLFI(const string & name, int dim, 
-			 CoefficientFunction * coef) const
+			 shared_ptr<CoefficientFunction> coef) const
   {
-    Array<CoefficientFunction*> coeffs(1);
+    Array<shared_ptr<CoefficientFunction>> coeffs(1);
     coeffs[0] = coef;
     return CreateLFI (name, dim, coeffs);
   }

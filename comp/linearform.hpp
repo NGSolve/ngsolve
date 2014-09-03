@@ -20,7 +20,7 @@ namespace ngcomp
     ///
     const FESpace & fespace;
     ///
-    Array<LinearFormIntegrator*> parts;
+    Array<shared_ptr<LinearFormIntegrator>> parts;
     ///
     Array<bool> parts_deletable;
     /// do the integration on independent meshes
@@ -52,15 +52,15 @@ namespace ngcomp
 
 
     ///
-    virtual void AddIntegrator (LinearFormIntegrator * lfi, bool deletable = true);
+    virtual void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi, bool deletable = true);
 
     ///
-    virtual const LinearFormIntegrator * GetIntegrator (int i) const
+    virtual shared_ptr<LinearFormIntegrator> GetIntegrator (int i) const
     {
       return parts[i]; 
     }
-
-    virtual LinearFormIntegrator * GetIntegrator (int i) 
+    
+    virtual shared_ptr<LinearFormIntegrator> GetIntegrator (int i) 
     {
       return parts[i];
     }

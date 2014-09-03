@@ -68,6 +68,7 @@ void ExportNgcomp()
     ;
 
   bp::class_<MeshAccess>("Mesh", "meshclass doc", bp::init<string>())
+    .def(bp::init<netgen::Mesh*>())
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh))
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements))
     .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
@@ -148,7 +149,7 @@ void ExportNgcomp()
          )
 
     .def("Set",
-         FunctionPointer([](GF & self, const CoefficientFunction & cf)
+         FunctionPointer([](GF & self, shared_ptr<CoefficientFunction> cf)
                          {
                           LocalHeap lh(1000000, "tmplh");
                           SetValues (cf, self, false, NULL, lh);

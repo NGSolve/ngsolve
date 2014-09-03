@@ -583,7 +583,7 @@ namespace ngfem
       : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
     (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
     { ; }
-  
+    
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new PML_CurlCurlEdgeIntegrator (coeffs[0]);
@@ -717,6 +717,8 @@ namespace ngfem
 	PML_ElasticityIntegrator<2>::Create);
       */
 
+      cout << "PML Integrators currently not available" << endl;
+      /*
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 3, 1,
 					PML_CurlCurlEdgeIntegrator<3>::Create);
       GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 2, 1,
@@ -731,6 +733,7 @@ namespace ngfem
 					PML_MassHDivIntegrator<2>::Create);
       //      GetIntegrators().AddBFIntegrator ("PML_robinhdiv", 2, 1,
       //					PML_RobinHDivIntegrator<2>::Create);
+      */
     }
     
     Init init;

@@ -875,14 +875,14 @@ namespace ngcomp
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
       {
-	Array<CoefficientFunction*> coeffs(1);
-	coeffs[0] = new ConstantCoefficientFunction(1);
+	Array<shared_ptr<CoefficientFunction>> coeffs(1);
+	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
 	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
     else if(ma.GetDimension() == 3) 
       {
-	Array<CoefficientFunction*> coeffs(1); 
-	coeffs[0] = new ConstantCoefficientFunction(1); 
+	Array<shared_ptr<CoefficientFunction>> coeffs(1); 
+	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1)); 
 	integrator = GetIntegrators().CreateBFI("massedge",3,coeffs); 
 	boundary_integrator = GetIntegrators().CreateBFI("robinedge",3,coeffs); 
 	

@@ -82,20 +82,19 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-        integrator = new MassIntegrator<2> (&one);
-        boundary_integrator = new RobinIntegrator<2> (&one);
+        integrator.reset (new MassIntegrator<2> (&one));
+        boundary_integrator.reset (new RobinIntegrator<2> (&one));
       }
     else
       {
-        integrator = new MassIntegrator<3> (&one);
-        boundary_integrator = new RobinIntegrator<3> (&one);
+        integrator.reset (new MassIntegrator<3> (&one));
+        boundary_integrator.reset (new RobinIntegrator<3> (&one));
       }
 
     if (dimension > 1)
       {
-        integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
-        boundary_integrator =
-	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
+        integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+        boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
       }
 
     switch (ma.GetDimension())
@@ -683,11 +682,14 @@ namespace ngcomp
   class NGS_DLL_HEADER HDG_MassIntegrator 
     : public T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >
   {
+    typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
   public:
-    HDG_MassIntegrator (Array<CoefficientFunction*> & coeffs)
+    using BASE::BASE;
+    /*
+    HDG_MassIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs)
       : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeffs[0]))
     { ; }
-    
+    */
     virtual ~HDG_MassIntegrator () { ; }
     virtual string Name () const { return "Mass-HDG"; }
   };
@@ -737,16 +739,16 @@ namespace ngcomp
     if (ma.GetDimension() == 2)
       {
 	// integrator = new HDG_MassIntegrator<2> (&one);
-        boundary_integrator = new RobinIntegrator<2> (&one);
+        boundary_integrator.reset (new RobinIntegrator<2> (&one));
 	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>;
       }
     else
       {
         // integrator = new HDG_MassIntegrator<3> (&one);
-        boundary_integrator = new RobinIntegrator<3> (&one);
+        boundary_integrator.reset (new RobinIntegrator<3> (&one));
 	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>;
       }
-    boundary_integrator = new CompoundBilinearFormIntegrator (*boundary_integrator, 1);
+    boundary_integrator.reset (new CompoundBilinearFormIntegrator (*boundary_integrator, 1));
   }
 
   HybridDGFESpace :: ~HybridDGFESpace () { ; }

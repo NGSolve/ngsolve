@@ -237,8 +237,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete boundary_evaluator;
     delete evaluator;
     delete flux_evaluator;
-    delete integrator;
-    delete boundary_integrator;
+    // delete integrator;
+    // delete boundary_integrator;
     delete prol;
 
     delete tet;
@@ -1238,19 +1238,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-	integrator = new MassIntegrator<2> (&one);
-	boundary_integrator = new RobinIntegrator<2> (&one);
+	integrator.reset (new MassIntegrator<2> (&one));
+	boundary_integrator.reset (new RobinIntegrator<2> (&one));
       }
     else
       {
-	integrator = new MassIntegrator<3> (&one);
-	boundary_integrator = new RobinIntegrator<3> (&one);
+	integrator.reset (new MassIntegrator<3> (&one));
+	boundary_integrator.reset (new RobinIntegrator<3> (&one));
       }
 
     if (dimension > 1)
       {
-	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
-	boundary_integrator = new BlockBilinearFormIntegrator (*boundary_integrator, dimension);  
+	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));  
       }
 
     if (order == 1) 
@@ -1466,23 +1466,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma.GetDimension() == 2)
       {
-	integrator = 
-	  new MassIntegrator<2> (new ConstantCoefficientFunction(1));
+	integrator.reset (new MassIntegrator<2> (new ConstantCoefficientFunction(1)));
 	boundary_integrator = 0;
       }
     else
       {
-	integrator = 
-	  new MassIntegrator<3> (new ConstantCoefficientFunction(1));
-	boundary_integrator = 
-	  new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
+	integrator.reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
+	boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
       }
 
     if (dimension > 1)
       {
-	integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
-	boundary_integrator = 
-	  new BlockBilinearFormIntegrator (*boundary_integrator, dimension);  
+	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
       }
   }
 
@@ -1614,17 +1610,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma.GetDimension() == 2)
       {
-        integrator = new MassIntegrator<2> (&one);
+        integrator.reset (new MassIntegrator<2> (&one));
         boundary_integrator = 0;
       }
     else
       {
-        integrator = new MassIntegrator<3> (&one);
+        integrator.reset (new MassIntegrator<3> (&one));
         boundary_integrator = 0;
       }
     
     if (dimension > 1)
-      integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
+      integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -1739,11 +1735,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         n_el_dofs = 9;
     }
 
-    boundary_integrator = 
-        new RobinIntegrator<3> (new ConstantCoefficientFunction(1));
+    boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
 
     if (dimension > 1)
-      boundary_integrator = new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
+      boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
   }
 
   

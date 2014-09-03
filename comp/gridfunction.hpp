@@ -270,8 +270,8 @@ namespace ngcomp
   {
     const MeshAccess & ma;
     const S_GridFunction<SCAL> * gf;
-    Array<const BilinearFormIntegrator *> bfi2d;
-    Array<const BilinearFormIntegrator *> bfi3d;
+    Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
+    Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;
     //
     // int cache_elnr;
@@ -285,13 +285,13 @@ namespace ngcomp
   public:
     VisualizeGridFunction (const MeshAccess & ama,
 			   const GridFunction * agf,
-			   const BilinearFormIntegrator * abfi2d,
-			   const BilinearFormIntegrator * abfi3d,
+			   const shared_ptr<BilinearFormIntegrator> abfi2d,
+			   const shared_ptr<BilinearFormIntegrator> abfi3d,
 			   bool aapplyd);
     VisualizeGridFunction (const MeshAccess & ama,
 			   const GridFunction * agf,
-			   const Array<BilinearFormIntegrator *> & abfi2d,
-			   const Array<BilinearFormIntegrator *> & abfi3d,
+			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
+			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
 			   bool aapplyd);
 
     virtual ~VisualizeGridFunction ();
@@ -354,11 +354,11 @@ namespace ngcomp
   class NGS_DLL_HEADER VisualizeCoefficientFunction : public netgen::SolutionData
   {
     const MeshAccess & ma;
-    const CoefficientFunction * cf;
+    shared_ptr<CoefficientFunction> cf;
     // LocalHeap lh;
   public:
     VisualizeCoefficientFunction (const MeshAccess & ama,
-				  const CoefficientFunction * acf);
+				  shared_ptr<CoefficientFunction> acf);
     
     virtual ~VisualizeCoefficientFunction ();
   

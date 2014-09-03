@@ -130,23 +130,22 @@ namespace ngcomp
     // Evaluator for shape tester 
     if (ma.GetDimension() == 2)
       {
-        Array<CoefficientFunction*> coeffs(1);
-        coeffs[0] = new ConstantCoefficientFunction(1);
+        Array<shared_ptr<CoefficientFunction>> coeffs(1);
+        coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
         integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
         boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 2, coeffs);
       }
     else
       {
-        Array<CoefficientFunction*> coeffs(1);
-        coeffs[0] = new ConstantCoefficientFunction(1);
+        Array<shared_ptr<CoefficientFunction>> coeffs(1);
+        coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
         integrator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
         boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
       }
     if (dimension > 1)
       {
-        integrator = new BlockBilinearFormIntegrator (*integrator, dimension);
-        boundary_integrator =
-          new BlockBilinearFormIntegrator (*boundary_integrator, dimension);
+        integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+        boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
       }
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");

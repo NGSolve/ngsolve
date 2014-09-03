@@ -60,7 +60,7 @@ namespace ngcomp
     Array<BaseMatrix*> mats;
 
     /// bilinearform-integrators
-    Array<BilinearFormIntegrator*> parts;
+    Array<shared_ptr<BilinearFormIntegrator>> parts;
 
     /// is biform responsible for the deallocation ?
     Array<bool> parts_deletable;
@@ -109,7 +109,7 @@ namespace ngcomp
   
 
     ///
-    void AddIntegrator (BilinearFormIntegrator * bfi, bool deletable = true);
+    void AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi, bool deletable = true);
 
     /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,
@@ -129,7 +129,7 @@ namespace ngcomp
     */
 
     /// the i-th integrator
-    BilinearFormIntegrator * GetIntegrator (int i) const { return parts[i]; }
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (int i) const { return parts[i]; }
 
     // const BilinearFormIntegrator * GetIntegrator (int i) const { return parts[i]; }
 

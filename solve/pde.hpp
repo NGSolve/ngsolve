@@ -250,7 +250,7 @@ namespace ngsolve
     ///
     double & GetVariable (const string & aname, bool opt = 0);
     ///
-    CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
+    shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0);
     ///
     FESpace * GetFESpace (const string & name, bool opt = 0);
     ///
@@ -295,7 +295,7 @@ namespace ngsolve
     ///
     void AddVariableEvaluation (EvalVariable * eval);
     ///
-    void AddCoefficientFunction (const string & name, CoefficientFunction* fun);
+    void AddCoefficientFunction (const string & name, shared_ptr<CoefficientFunction> fun);
     ///
     FESpace * AddFESpace (const string & name, const Flags & flags);
     ///
@@ -315,7 +315,7 @@ namespace ngsolve
 
 
     ///
-    void AddBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
+    void AddBilinearFormIntegrator (const string & name, shared_ptr<BilinearFormIntegrator> part,
 				    const bool deletable = true);
 
     /*
@@ -325,7 +325,7 @@ namespace ngsolve
     */
 
     ///
-    void AddLinearFormIntegrator (const string & name, LinearFormIntegrator * part);
+    void AddLinearFormIntegrator (const string & name, shared_ptr<LinearFormIntegrator> part);
 
     ///
     void SetLineIntegratorCurvePointInfo(const string & filename,

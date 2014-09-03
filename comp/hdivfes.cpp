@@ -55,8 +55,8 @@ namespace ngcomp
     
     if (ma.GetDimension() == 2)
     {
-      Array<CoefficientFunction*> coeffs(1);
-      coeffs[0] = new ConstantCoefficientFunction(1);
+      Array<shared_ptr<CoefficientFunction>> coeffs(1);
+      coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
       integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
     }
   }

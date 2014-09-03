@@ -125,9 +125,9 @@ namespace ngcomp
     DifferentialOperator * flux_evaluator; // = NULL;
 
     /// Evaluator for visualization (old style)
-    BilinearFormIntegrator * integrator; // = NULL;
+    shared_ptr<BilinearFormIntegrator> integrator; // = NULL;
     /// Evaluator for visualization of boundary data
-    BilinearFormIntegrator * boundary_integrator; // = NULL;
+    shared_ptr<BilinearFormIntegrator> boundary_integrator; // = NULL;
 
 
 
@@ -451,7 +451,7 @@ namespace ngcomp
     }
 
     /// returns function-evaluator
-    const BilinearFormIntegrator * GetIntegrator (bool vb = VOL) const
+    shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
     { 
       if (vb == BND)
 	return boundary_integrator; 
@@ -463,7 +463,7 @@ namespace ngcomp
     /// returns function-evaluator for boundary values
     const DifferentialOperator * GetBoundaryEvaluator () const
     { return boundary_evaluator; }
-    const BilinearFormIntegrator * GetBoundaryIntegrator () const
+    shared_ptr<BilinearFormIntegrator> GetBoundaryIntegrator () const
     { return boundary_integrator; }
 
 

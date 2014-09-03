@@ -14,7 +14,7 @@
 
 namespace ngfem
 {
-  extern SymbolTable<double> * constant_table_for_FEM;
+  // extern SymbolTable<double> * constant_table_for_FEM;
 }
 
 
@@ -26,7 +26,7 @@ namespace ngsolve
     levelsolved = -1;
     SetGood (true);
     pc = 0;
-    constant_table_for_FEM = &constants;
+    // constant_table_for_FEM = &constants;
 
     AddVariable ("timing.level", 0.0, 6);
 
@@ -347,11 +347,11 @@ namespace ngsolve
     throw Exception (string ("Variable '") + name + "' not defined\n");
   }
 
-  CoefficientFunction * PDE :: 
+  shared_ptr<CoefficientFunction> PDE :: 
   GetCoefficientFunction (const string & name, bool opt)
   { 
     if (coefficients.Used(name))
-      return coefficients[name].get(); 
+      return coefficients[name];
 
     if (opt) return NULL;
     throw Exception (string ("CoefficientFunction '") + name + "' not defined\n");
@@ -932,10 +932,10 @@ namespace ngsolve
     todo.Append(eval);
   }
 
-  void PDE :: AddCoefficientFunction (const string & name, CoefficientFunction* fun)
+  void PDE :: AddCoefficientFunction (const string & name, shared_ptr<CoefficientFunction> fun)
   {
     cout << IM(1) << "add coefficient-function, name = " << name << endl;
-    coefficients.Set (name.c_str(), shared_ptr<CoefficientFunction> (fun));
+    coefficients.Set (name.c_str(), fun);
   }
 
 
@@ -1061,13 +1061,13 @@ namespace ngsolve
     todo.Append(gf.get());
 
     if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
-      AddCoefficientFunction (name, new GridFunctionCoefficientFunction(*gf));
+      AddCoefficientFunction (name, shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction(*gf)));
     
     if (addcf && gf->GetFESpace().GetFluxEvaluator())
       {
         const DifferentialOperator * diffop = gf->GetFESpace().GetFluxEvaluator();
         string fluxname = diffop->Name() + "_" + name;
-        AddCoefficientFunction (fluxname, new GridFunctionCoefficientFunction(*gf, diffop));
+        AddCoefficientFunction (fluxname, shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction(*gf, diffop)));
       }
     
 
@@ -1262,7 +1262,7 @@ namespace ngsolve
 
 
   
-  void PDE :: AddBilinearFormIntegrator (const string & name, BilinearFormIntegrator * part,
+  void PDE :: AddBilinearFormIntegrator (const string & name, shared_ptr<BilinearFormIntegrator> part,
 					 const bool deletable)
   {
     BilinearForm * form = GetBilinearForm (name);
@@ -1295,7 +1295,7 @@ namespace ngsolve
   }
   */
  
-  void PDE :: AddLinearFormIntegrator (const string & name, LinearFormIntegrator * part)
+  void PDE :: AddLinearFormIntegrator (const string & name, shared_ptr<LinearFormIntegrator> part)
   {
     LinearForm * form = GetLinearForm (name);
     if (form && part)

@@ -196,7 +196,7 @@ namespace ngfem
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
-
+    
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -445,13 +445,14 @@ namespace ngfem
   template <int DIM>
   class DiagDMat : public DMatOp<DiagDMat<DIM>,DIM>
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
   public:
     // typedef SCAL TSCAL;
     enum { DIM_DMAT = DIM };
-    DiagDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
+    DiagDMat (shared_ptr<CoefficientFunction> acoef) : coef(acoef) { ; }
 
-    DiagDMat (Array<CoefficientFunction*> & acoefs) : coef(acoefs[0]) { ; }
+    DiagDMat (const Array<shared_ptr<CoefficientFunction>> & acoefs) 
+      : coef(acoefs[0]) { ; }
 
     template <typename SCAL>
     static DiagMat<DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
@@ -522,10 +523,11 @@ namespace ngfem
 
   template <> class OrthoDMat<1> : public DMatOp<OrthoDMat<1>,1>
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
   public:
     enum { DIM_DMAT = 1 };
-    OrthoDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
+    OrthoDMat (shared_ptr<CoefficientFunction> acoef) : coef(acoef) { ; }
+    OrthoDMat (const Array<shared_ptr<CoefficientFunction>> & acoef) : coef(acoef[0]) { ; }
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -553,10 +555,13 @@ namespace ngfem
 
   template <> class OrthoDMat<2>: public DMatOp<OrthoDMat<2>,2>
   {
-    CoefficientFunction * coef1;
-    CoefficientFunction * coef2;
+    shared_ptr<CoefficientFunction> coef1, coef2;
   public:
     enum { DIM_DMAT = 2 };
+    OrthoDMat (const Array<shared_ptr<CoefficientFunction>> & acoefs)
+      : coef1(acoefs[0]), coef2(acoefs[1]) { ; }
+    
+    /*
     OrthoDMat (CoefficientFunction * acoef1,
 	       CoefficientFunction * acoef2)
       : coef1(acoef1), coef2(acoef2) { ; }
@@ -564,7 +569,7 @@ namespace ngfem
 	       CoefficientFunction * acoef2,
 	       CoefficientFunction * acoef3)
       : coef1(acoef1), coef2(acoef2) { ; }
-  
+    */
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
@@ -605,11 +610,13 @@ namespace ngfem
 
   template <> class OrthoDMat<3> : public DMatOp<OrthoDMat<3>,3>
   {
-    CoefficientFunction * coef1;
-    CoefficientFunction * coef2;
-    CoefficientFunction * coef3;
+    shared_ptr<CoefficientFunction> coef1, coef2, coef3;
+
   public:
     enum { DIM_DMAT = 3 };
+    OrthoDMat (const Array<shared_ptr<CoefficientFunction>> & acoefs)
+      : coef1(acoefs[0]), coef2(acoefs[1]), coef3(acoefs[2]) { ; }
+    /*
     OrthoDMat (CoefficientFunction * acoef1,
 	       CoefficientFunction * acoef2)
       : coef1(acoef1), coef2(acoef2), coef3(acoef2) { ; }
@@ -617,7 +624,8 @@ namespace ngfem
 	       CoefficientFunction * acoef2,
 	       CoefficientFunction * acoef3)
       : coef1(acoef1), coef2(acoef2), coef3(acoef3) { ; }
-  
+    */
+    
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const
@@ -663,9 +671,9 @@ namespace ngfem
       y(2) = Evaluate (*coef3, mip) * x(2);
     }
 
-    void SetCoefficientFunctions( CoefficientFunction * acoef1,
-				  CoefficientFunction * acoef2,
-				  CoefficientFunction * acoef3 )
+    void SetCoefficientFunctions( shared_ptr<CoefficientFunction> acoef1,
+				  shared_ptr<CoefficientFunction> acoef2,
+				  shared_ptr<CoefficientFunction> acoef3 )
     {
       // NOTE: alte coefficient-functions werden nicht geloescht!
       coef1 = acoef1;
@@ -801,10 +809,10 @@ namespace ngfem
   template <int N>
   class NGS_DLL_HEADER DVec  // : public DVecBase<N,T>
   {
-    CoefficientFunction * coefs[N];
+    shared_ptr<CoefficientFunction> coefs[N];
     bool vectorial;
   public:
-    DVec (Array<CoefficientFunction*> & acoeffs)
+    DVec (const Array<shared_ptr<CoefficientFunction>> & acoeffs)
     {
       vectorial = (N > 1) && (N == acoeffs[0]->Dimension());
 
@@ -815,18 +823,18 @@ namespace ngfem
 	  coefs[i] = acoeffs[i];
     }
   
-    DVec (CoefficientFunction * acoef)
+    DVec (shared_ptr<CoefficientFunction> acoef)
     { 
       vectorial = (N > 1) && (N == acoef->Dimension());
       coefs[0] = acoef;
     }
 
-    DVec (CoefficientFunction * acoef1,
-	  CoefficientFunction * acoef2,
-	  CoefficientFunction * acoef3 = NULL,
-	  CoefficientFunction * acoef4 = NULL,
-	  CoefficientFunction * acoef5 = NULL,
-	  CoefficientFunction * acoef6 = NULL)
+    DVec (shared_ptr<CoefficientFunction> acoef1,
+	  shared_ptr<CoefficientFunction> acoef2,
+	  shared_ptr<CoefficientFunction> acoef3 = NULL,
+	  shared_ptr<CoefficientFunction> acoef4 = NULL,
+	  shared_ptr<CoefficientFunction> acoef5 = NULL,
+	  shared_ptr<CoefficientFunction> acoef6 = NULL)
     { 
       vectorial = false;
 
@@ -897,11 +905,13 @@ namespace ngfem
   template <int N, typename T = double>  
   class DVecN
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
   public:
     typedef T TSCAL;
-    DVecN (CoefficientFunction * acoef)
+    DVecN (shared_ptr<CoefficientFunction> acoef)
       : coef(acoef) { ; }
+    DVecN (const Array<shared_ptr<CoefficientFunction>> & acoef)
+      : coef(acoef[0]) { ; }
   
     template <typename FEL, typename MIP, typename VEC>
     void GenerateVector (const FEL & fel, const MIP & mip,
@@ -979,11 +989,12 @@ namespace ngfem
   template <int DIM>
   class RotSymLaplaceDMat : public DMatOp<RotSymLaplaceDMat<DIM>,DIM>
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
   public:
     enum { DIM_DMAT = DIM };
 
-    RotSymLaplaceDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
+    RotSymLaplaceDMat (shared_ptr<CoefficientFunction> acoef) : coef(acoef) { ; }
+    RotSymLaplaceDMat (const Array<shared_ptr<CoefficientFunction>> & acoef) : coef(acoef[0]) { ; }
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -1082,13 +1093,11 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> BASE;
     
   public:
-    ///
-    LaplaceIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D> (coeff)) { ; }
+    using BASE::BASE;
+    LaplaceIntegrator (shared_ptr<CoefficientFunction> coeff) 
+      : BASE(DiagDMat<D> (coeff)) { ; }
 
-    LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
-    
     virtual ~LaplaceIntegrator () { ; }
-    
     virtual string Name () const { return "Laplace"; }
   };
 
@@ -1101,17 +1110,9 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> BASE;
   public:
-    ///
-    LaplaceBoundaryIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D>(coeff)) { ; }
-    LaplaceBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
+    using BASE::BASE;
+    LaplaceBoundaryIntegrator (shared_ptr<CoefficientFunction> coeff) : BASE(DiagDMat<D>(coeff)) { ; }
 
-    /*
-      static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-      {
-      return new LaplaceBoundaryIntegrator (coeffs[0]);
-      }
-    */
-    ///
     virtual string Name () const { return "Laplace-Boundary"; }
   };
 
@@ -1122,15 +1123,17 @@ namespace ngfem
   class RotSymLaplaceIntegrator 
     : public T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL>
   {
+    typedef T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> BASE;
   public:
     ///
-    RotSymLaplaceIntegrator (CoefficientFunction * coeff);
-
+    using BASE::BASE;
+    // RotSymLaplaceIntegrator (CoefficientFunction * coeff);
+    /*
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new RotSymLaplaceIntegrator (coeffs[0]);
     }
-  
+    */
     ///
     virtual string Name () const { return "RotSymLaplace"; }
   };
@@ -1141,8 +1144,11 @@ namespace ngfem
   class OrthoLaplaceIntegrator 
     : public T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL>
   {
+    typedef T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL> BASE;
   public:
     ///
+    using BASE::BASE;
+    /*
     OrthoLaplaceIntegrator (CoefficientFunction * coeff1, CoefficientFunction * coeff2)
       : T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL> (OrthoDMat<D> (coeff1, coeff2))
     { ; }
@@ -1157,7 +1163,7 @@ namespace ngfem
       else
 	return new OrthoLaplaceIntegrator (coeffs[0], coeffs[1], coeffs[2]);
     }
-
+    */
 
     ///
     virtual string Name () const { return "OrthoLaplace"; }
@@ -1170,17 +1176,15 @@ namespace ngfem
   class NGS_DLL_HEADER MassIntegrator 
     : public T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL >
   {
+    typedef T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> BASE;
   public:
+    using BASE::BASE;
     ///
-    MassIntegrator (CoefficientFunction * coeff)
+    /*
+    MassIntegrator (shared_ptr<CoefficientFunction> coeff)
       : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
     { ; }
-      
-    ///
-    MassIntegrator (Array<CoefficientFunction*> & coeffs)
-      : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (coeffs)
-    { ; }
-
+    */
     ///
     virtual ~MassIntegrator () { ; }
     ///
@@ -1199,14 +1203,11 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, FEL> BASE;
   public:
-    RobinIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<1> (coeff)) { ; }
-
-    RobinIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
+    using BASE::BASE;
+    RobinIntegrator (shared_ptr<CoefficientFunction> coeff) : BASE(DiagDMat<1> (coeff)) { ; }
 
     virtual ~RobinIntegrator () { ; }
-    ///
     virtual bool BoundaryForm () const { return 1; }
-    ///
     virtual string Name () const { return "Robin"; }
   };
 
@@ -1436,14 +1437,18 @@ namespace ngfem
   class NGS_DLL_HEADER SourceIntegrator 
     : public T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>
   {
+    typedef T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> BASE;
   public:
-    SourceIntegrator (CoefficientFunction * coeff)
+    using BASE::BASE;
+    SourceIntegrator (shared_ptr<CoefficientFunction> coeff)
       : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (DVec<1> (coeff))
     { ; }
 
+    /*
     SourceIntegrator (Array<CoefficientFunction*> & coeffs)
       : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (coeffs)
     { ; }
+    */
 
     virtual ~SourceIntegrator () { ; }
     virtual string Name () const { return "Source"; }
@@ -1455,16 +1460,19 @@ namespace ngfem
   class NGS_DLL_HEADER NeumannIntegrator 
     : public T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL>
   {
+    typedef  T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> BASE;
   public:
     ///
-    NeumannIntegrator (CoefficientFunction * coeff)
+    using BASE::BASE;
+
+    NeumannIntegrator (shared_ptr<CoefficientFunction> coeff)
       : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeff))
     { ; }
-
+    /*
     NeumannIntegrator (Array<CoefficientFunction*> & coeffs)
       : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeffs))
     { ; }
-    
+    */
     virtual ~NeumannIntegrator () { ; }
     ///  
     virtual bool BoundaryForm () const { return true; }
@@ -1480,7 +1488,10 @@ namespace ngfem
   class NormalNeumannIntegrator 
     : public T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL>
   {
+    typedef T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL> BASE;
   public:
+    using BASE::BASE;
+    /*
     ///
     NormalNeumannIntegrator (CoefficientFunction * coeff)
       : T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL> (DVec<1> (coeff))
@@ -1490,7 +1501,7 @@ namespace ngfem
     {
       return new NormalNeumannIntegrator (coeffs[0]);
     }
-
+    */
     ///  
     virtual bool BoundaryForm () const { return 1; }
     ///
@@ -1507,8 +1518,11 @@ namespace ngfem
   class GradSourceIntegrator 
     : public T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL>
   {
+    typedef T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL> BASE;
   public:
+    using BASE::BASE;
     ///
+    /*
     GradSourceIntegrator (CoefficientFunction * coeff1, 
 			  CoefficientFunction * coeff2, 
 			  CoefficientFunction * coeff3)
@@ -1519,6 +1533,7 @@ namespace ngfem
     {
       return new GradSourceIntegrator (coeffs[0],coeffs[1],coeffs[2]);
     }
+    */
 
     ///
     virtual string Name () const { return "GradSource"; }

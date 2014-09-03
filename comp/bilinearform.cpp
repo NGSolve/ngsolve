@@ -134,7 +134,7 @@ namespace ngcomp
 
 
   
-  void BilinearForm :: AddIntegrator (BilinearFormIntegrator * bfi, bool deletable)
+  void BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi, bool deletable)
   {
     parts.Append (bfi);
     parts_deletable.Append(deletable);
@@ -163,8 +163,10 @@ namespace ngcomp
   BilinearForm :: ~BilinearForm ()
   {
     delete low_order_bilinear_form;
+    /*
     for (int i = 0; i < parts.Size(); i++)
       if (parts_deletable[i]) delete parts[i];
+    */
   }
 
   void BilinearForm :: SetPrint (bool ap)

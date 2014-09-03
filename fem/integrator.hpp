@@ -1327,23 +1327,24 @@ namespace ngfem
   public:
 
     /// description of integrator
+    template<typename T>
     class IntegratorInfo
     {
     public:
       string name;
       int spacedim;
       int numcoeffs;
-      Integrator* (*creator)(Array<CoefficientFunction*> &);
+      shared_ptr<T> (*creator)(const Array<shared_ptr<CoefficientFunction>> &);
     
       IntegratorInfo (const string & aname,
 		      int aspacedim,
 		      int anumcoffs,		      
-		      Integrator* (*acreator)(Array<CoefficientFunction*>&));
+		      shared_ptr<T> (*acreator)(const Array<shared_ptr<CoefficientFunction>> &));
     };
   
 
-    Array<IntegratorInfo*> bfis;
-    Array<IntegratorInfo*> lfis;
+    Array<IntegratorInfo<BilinearFormIntegrator>*> bfis;
+    Array<IntegratorInfo<LinearFormIntegrator>*> lfis;
   
   public:
     ///
@@ -1352,32 +1353,34 @@ namespace ngfem
     ~Integrators();  
     ///
     void AddBFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-			  Integrator* (*acreator)(Array<CoefficientFunction*>&));
+			  shared_ptr<BilinearFormIntegrator> (*acreator)(const Array<shared_ptr<CoefficientFunction>> &));
     ///
     void AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
-			  Integrator* (*acreator)(Array<CoefficientFunction*>&));
+			  shared_ptr<LinearFormIntegrator> (*acreator)(const Array<shared_ptr<CoefficientFunction>> &));
   
     ///
-    const Array<IntegratorInfo*> & GetBFIs() const { return bfis; }
+    const Array<IntegratorInfo<BilinearFormIntegrator>*> & GetBFIs() const { return bfis; }
     ///
-    const IntegratorInfo * GetBFI(const string & name, int dim) const;
+    const IntegratorInfo<BilinearFormIntegrator> * GetBFI(const string & name, int dim) const;
     ///
-    BilinearFormIntegrator * CreateBFI(const string & name, int dim,
-				       Array<CoefficientFunction*> & coeffs) const;
+    shared_ptr<BilinearFormIntegrator> CreateBFI(const string & name, int dim,
+                                                 const Array<shared_ptr<CoefficientFunction>> & coeffs) const;
     ///
-    BilinearFormIntegrator * CreateBFI(const string & name, int dim,
-				       CoefficientFunction * coef) const;
+    shared_ptr<BilinearFormIntegrator> CreateBFI(const string & name, int dim,
+                                                 shared_ptr<CoefficientFunction> coef) const;
+    shared_ptr<BilinearFormIntegrator> CreateBFI(const string & name, int dim,
+                                                 const CoefficientFunction* coef) const;
+    
+    ///
+    const Array<IntegratorInfo<LinearFormIntegrator>*> & GetLFIs() const { return lfis; }
+    ///
+    const IntegratorInfo<LinearFormIntegrator> * GetLFI(const string & name, int dim) const;
+    ///
+    shared_ptr<LinearFormIntegrator> CreateLFI(const string & name, int dim,
+                                               const Array<shared_ptr<CoefficientFunction>> & coeffs) const;
 
-    ///
-    const Array<IntegratorInfo*> & GetLFIs() const { return lfis; }
-    ///
-    const IntegratorInfo * GetLFI(const string & name, int dim) const;
-    ///
-    LinearFormIntegrator * CreateLFI(const string & name, int dim,
-				     Array<CoefficientFunction*> & coeffs) const;
-
-    LinearFormIntegrator * CreateLFI(const string & name, int dim,
-				     CoefficientFunction * coef) const;
+    shared_ptr<LinearFormIntegrator> CreateLFI(const string & name, int dim,
+                                               shared_ptr<CoefficientFunction> coef) const;
 
     ///
     void Print (ostream & ost) const;
@@ -1389,6 +1392,37 @@ namespace ngfem
 
 
 
+  
+  class ConvertCoefs
+  {
+    Array<shared_ptr<CoefficientFunction> > coefs;
+    Array<CoefficientFunction*> pcoefs;
+  public:
+
+    ConvertCoefs (const Array<shared_ptr<CoefficientFunction>> & acoefs)
+      : coefs (acoefs)  // explicit copy !
+    { 
+      for (int i = 0; i < acoefs.Size(); i++)
+        pcoefs.Append (acoefs[i].get());
+    }
+
+    ConvertCoefs (const Array<CoefficientFunction*> & acoefs)
+      : pcoefs(acoefs)
+    {
+      for (int i = 0; i < acoefs.Size(); i++)
+        coefs.Append (shared_ptr<CoefficientFunction> (acoefs[i], NOOP_Deleter));
+    }
+
+    operator Array<shared_ptr<CoefficientFunction>> () const 
+    {
+      return Array<shared_ptr<CoefficientFunction>> (coefs); 
+    }
+
+    operator Array<CoefficientFunction*> () const 
+    {
+      return Array<CoefficientFunction*> (pcoefs);
+    }
+  };
 
 
   template <typename BFI>
@@ -1401,10 +1435,17 @@ namespace ngfem
       // cout << "register bf-integrator '" << label << "'" << endl;
     }
     
-    static Integrator * Create (Array<CoefficientFunction*> & coefs)
+    static shared_ptr<BilinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coefs)
     {
-      return new BFI (coefs);
+      // return shared_ptr<BilinearFormIntegrator> (new BFI (ConvertCoefs (coefs)));
+      return make_shared<BFI>(ConvertCoefs (coefs));
     }
+    /*
+    static shared_ptr<Integrator> Create (Array<CoefficientFunction*> & coefs)
+    {
+      return new BFI (ConvertCoefs (coefs));
+    }
+    */
   };
 
 
@@ -1419,9 +1460,10 @@ namespace ngfem
       // cout << "register lf-integrator '" << label << "'" << endl;
     }
     
-    static Integrator * Create (Array<CoefficientFunction*> & coefs)
+    static shared_ptr<LinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coefs)
     {
-      return new LFI (coefs);
+      return shared_ptr<LinearFormIntegrator> (new LFI (ConvertCoefs (coefs)));
+      // return new LFI (coefs);
     }
   };
 

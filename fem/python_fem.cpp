@@ -86,44 +86,50 @@ void ExportNgfem() {
     ;
 
   bp::def("CreateBFI", FunctionPointer 
-          ([](string name, int dim, CoefficientFunction & coef)
+          ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
-             BilinearFormIntegrator * itor =
-               GetIntegrators().CreateBFI (name, dim, &coef);
+             // shared_ptr<CoefficientFunction> coef(&rcoef); // , NOOP_Deleter);
+             auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
+             if (!bfi) cerr << "undefined integrator '" << name 
+                            << "' in " << dim << " dimension having 1 coefficient"
+                            << endl;
              
-             if (!itor) cerr << "undefined integrator '" << name 
-                             << "' in " << dim << " dimension having 1 coefficient"
-                             << endl;
-             
-             return shared_ptr<BilinearFormIntegrator> (itor);
+             return bfi;
            }),
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
     ;
 
   bp::def("CreateLFI", FunctionPointer
-          ([](string name, int dim, CoefficientFunction & coef)
+          ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
-             LinearFormIntegrator * itor =
-               GetIntegrators().CreateLFI (name, dim, &coef);
+             auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
              
-             if (!itor) cerr << "undefined integrator '" << name 
+             if (!lfi) cerr << "undefined integrator '" << name 
                              << "' in " << dim << " dimension having 1 coefficient"
                              << endl;
              
-             return shared_ptr<LinearFormIntegrator> (itor);
+             return lfi;
            }),
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
     ;
   
-  bp::class_<CoefficientFunction, boost::noncopyable>("CoefficientFunction", bp::no_init)
+  bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
+    ("CoefficientFunction", bp::no_init)
     ;
 
-  bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>>
+  bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
+    shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
     ("ConstantCF", bp::init<double>())
     ;
   
+  bp::implicitly_convertible 
+    <shared_ptr<ConstantCoefficientFunction>, 
+    shared_ptr<CoefficientFunction> >(); 
+
+  
   // we better get rid of the template argument !
-  bp::class_<DomainVariableCoefficientFunction<2>,bp::bases<CoefficientFunction>, boost::noncopyable>
+  bp::class_<DomainVariableCoefficientFunction<2>,bp::bases<CoefficientFunction>, 
+    shared_ptr<DomainVariableCoefficientFunction<2>>, boost::noncopyable>
     ("VariableCF", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](string str)
@@ -135,6 +141,9 @@ void ExportNgfem() {
                            })))
     ;
 
+  bp::implicitly_convertible
+    <shared_ptr<DomainVariableCoefficientFunction<2>>, 
+    shared_ptr<CoefficientFunction> >(); 
 
 
   bp::def("testlist", FunctionPointer

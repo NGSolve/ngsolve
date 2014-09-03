@@ -246,6 +246,11 @@ namespace ngfem
   public:
     enum { DIM_DMAT = (DIM * (DIM+1)) / 2 };  
 
+    OrthotropicElasticityDMat (const Array<shared_ptr<CoefficientFunction>> & coefs)
+      {
+        cerr << "OrthotropicElasticityDMat currently not available" << endl;
+      }
+    /*
     OrthotropicElasticityDMat (CoefficientFunction * acoefE1,
 			       CoefficientFunction * acoefE2,
 			       CoefficientFunction * acoefE3,
@@ -258,6 +263,7 @@ namespace ngfem
       : coefE1(acoefE1), coefE2(acoefE2), coefE3(acoefE3),
 	coefnu12(acoefnu12), coefnu13(acoefnu13), coefnu23(acoefnu23),
 	coefG12(acoefG12), coefG13(acoefG13), coefG23(acoefG23) { ; }
+    */
 
     template <typename SCAL>
     static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
@@ -317,6 +323,12 @@ namespace ngfem
     CoefficientFunction * coefUseCyl; // if 1 ... use cylindrical coordinates, if 0 ... standard ortot.
   public:
     enum { DIM_DMAT = (DIM * (DIM+1)) / 2 };  
+    
+    OrthotropicCylElasticityDMat (const Array<shared_ptr<CoefficientFunction>> & coefs)
+      {
+        cerr << "OrthotropicCylElasticityDMat currently not available" << endl;
+      }
+
 
     OrthotropicCylElasticityDMat (CoefficientFunction * acoefE1,
 				  CoefficientFunction * acoefE2,
@@ -453,7 +465,7 @@ namespace ngfem
       : BASE(ElasticityDMat<D> (coefe, coefnu))
     { ; }
 
-    ElasticityIntegrator (Array<CoefficientFunction*> & coeffs)
+    ElasticityIntegrator (const Array<CoefficientFunction*> & coeffs)
       : BASE(ElasticityDMat<D> (coeffs[0], coeffs[1]))
     { ; }
 
@@ -500,8 +512,11 @@ namespace ngfem
   class OrthotropicElasticityIntegrator 
     : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> >
   {
+    typedef T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
+    using BASE::BASE;
     ///
+    /*
     OrthotropicElasticityIntegrator (CoefficientFunction * coefE1,
 				     CoefficientFunction * coefE2,
 				     CoefficientFunction * coefE3,
@@ -519,7 +534,7 @@ namespace ngfem
     {
       return new OrthotropicElasticityIntegrator (coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4], coeffs[5], coeffs[6], coeffs[7], coeffs[8]);
     }
-
+    */
 
 
     ///
@@ -532,8 +547,11 @@ namespace ngfem
   class OrthotropicCylElasticityIntegrator 
     : public T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> >
   {
+    typedef T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
+    using BASE::BASE;
     ///
+    /*
     OrthotropicCylElasticityIntegrator (CoefficientFunction * coefE1,
 					CoefficientFunction * coefE2,
 					CoefficientFunction * coefE3,
@@ -547,12 +565,12 @@ namespace ngfem
       : T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> > 
     (OrthotropicCylElasticityDMat<D> (coefE1, coefE2, coefE3, coefnu12, coefnu13, coefnu23, coefG12, coefG13, coefG23, coefUseCyl))
     { ; }
-  
+
     static Integrator * Create (Array<CoefficientFunction*> & coeffs)
     {
       return new OrthotropicCylElasticityIntegrator (coeffs[0], coeffs[1], coeffs[2], coeffs[3], coeffs[4], coeffs[5], coeffs[6], coeffs[7], coeffs[8], coeffs[9]);
     }
-
+    */
 
 
     ///

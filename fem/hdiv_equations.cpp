@@ -18,7 +18,7 @@ namespace ngfem
  
   using namespace ngfem;
 
-  
+  /*
   template <int D> MassHDivIntegrator<D> ::
   MassHDivIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > (DiagDMat<D> (coeff))
@@ -64,8 +64,10 @@ namespace ngfem
                         CoefficientFunction * coeff2)
     : BaseSourceHDivIntegrator<2> (DVec<2> (coeff1, coeff2))
   { ; }
+  */
 
 
+  
   template class MassHDivIntegrator<2>;
   template class DivDivHDivIntegrator<2>;
   // template class SourceHDivIntegrator<2>;
@@ -79,51 +81,19 @@ namespace ngfem
   template class DivSourceHDivIntegrator<3>;
 
 
+  static RegisterBilinearFormIntegrator<MassHDivIntegrator<2>> init_mhd2("masshdiv", 2, 1);
+  static RegisterBilinearFormIntegrator<MassHDivIntegrator<3>> init_mhd3("masshdiv", 3, 1);
+  static RegisterBilinearFormIntegrator<DivDivHDivIntegrator<2>> init_ddhd2("divdivhdiv", 2, 1);
+  static RegisterBilinearFormIntegrator<DivDivHDivIntegrator<3>> init_ddhd3("divdivhdiv", 3, 1);
+  static RegisterBilinearFormIntegrator<RobinHDivIntegrator<2>> init_rhd2("robinhdiv", 2, 1);
+  static RegisterBilinearFormIntegrator<RobinHDivIntegrator<3>> init_rhd3("robinhdiv", 3, 1);
 
-
-  namespace hdiv_equations_cpp
-  {
-    class Init
-    {
-    public:
-      Init ();
-    };
-
-
-    
-    Init::Init()
-    {
-      GetIntegrators().AddBFIntegrator ("masshdiv", 2, 1,
-					MassHDivIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("masshdiv", 3, 1,
-					MassHDivIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("divdivhdiv", 2, 1,
-					DivDivHDivIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("divdivhdiv", 3, 1,
-					DivDivHDivIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("robinhdiv", 2, 1,
-					RobinHDivIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("robinhdiv", 3, 1,
-					RobinHDivIntegrator<3>::Create);
-
-      GetIntegrators().AddLFIntegrator ("divsource", 2, 1,
-					DivSourceHDivIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("divsource", 3, 1,
-					DivSourceHDivIntegrator<3>::Create);
-
-
-      GetIntegrators().AddLFIntegrator ("sourcehdiv", 2, 2,
-					SourceHDivIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("sourcehdiv", 3, 3,
-					SourceHDivIntegrator<3>::Create);
-      GetIntegrators().AddLFIntegrator ("neumannhdiv", 2, 1,
-					NeumannHDivIntegrator<2>::Create);
-      GetIntegrators().AddLFIntegrator ("neumannhdiv", 3, 1,
-					NeumannHDivIntegrator<3>::Create);
-    }
-
-    Init init;
-  }
+  static RegisterLinearFormIntegrator<DivSourceHDivIntegrator<2>> init_dshd2("divsource", 2, 1);
+  static RegisterLinearFormIntegrator<DivSourceHDivIntegrator<3>> init_dshd3("divsource", 3, 1);
+  static RegisterLinearFormIntegrator<SourceHDivIntegrator<2>> init_shd2("sourcehdiv", 2, 2);
+  static RegisterLinearFormIntegrator<SourceHDivIntegrator<3>> init_shd3("sourcehdiv", 3, 3);
+  static RegisterLinearFormIntegrator<NeumannHDivIntegrator<2>> init_nhd2("neumannhdiv", 2, 1);
+  static RegisterLinearFormIntegrator<NeumannHDivIntegrator<3>> init_nhd3("neumannhdiv", 3, 1);
 }
 
 

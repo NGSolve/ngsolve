@@ -23,11 +23,11 @@ namespace ngcomp
 
   LinearForm :: ~LinearForm ()
   { 
-    for (int i = 0; i < parts.Size(); i++)
-      if (parts_deletable[i]) delete parts[i];
+    // for (int i = 0; i < parts.Size(); i++)
+    // if (parts_deletable[i]) delete parts[i];
   }
 
-  void LinearForm :: AddIntegrator (LinearFormIntegrator * lfi, bool deletable)
+  void LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi, bool deletable)
   {
     parts.Append (lfi);
     parts_deletable.Append(deletable);
@@ -338,7 +338,7 @@ namespace ngcomp
 		  
 		      int elvec_size = dnums.Size()*fespace.GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
-		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j]) 
+		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get()) 
 			  -> CalcFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
 		      if (printelvec)
 			{
