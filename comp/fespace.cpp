@@ -591,7 +591,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
-    return creator;
+    return move(creator);
   }
 
   /// get coupling type of dof
