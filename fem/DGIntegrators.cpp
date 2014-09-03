@@ -34,7 +34,7 @@ namespace ngfem
     double alpha;   // interior penalyty
     CoefficientFunction *coef_lam;
   public:
-    DGInnerFacet_LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGInnerFacet_LaplaceIntegrator (const const Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
@@ -47,7 +47,7 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
     
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGInnerFacet_LaplaceIntegrator (coeffs);
     }
@@ -197,7 +197,7 @@ namespace ngfem
   protected:
     CoefficientFunction * coef_conv[D];
   public:
-    ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+    ConvectionIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : BilinearFormIntegrator()
     { 
       for (int j = 0; j < D; j++)
@@ -206,7 +206,7 @@ namespace ngfem
 
     virtual ~ConvectionIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new ConvectionIntegrator (coeffs);
     }
@@ -272,7 +272,7 @@ namespace ngfem
   protected:
     Array<CoefficientFunction *> coef_b;
   public:
-    DGInnerFacet_ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGInnerFacet_ConvectionIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_b.SetSize(D);
@@ -285,7 +285,7 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
     
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGInnerFacet_ConvectionIntegrator (coeffs);
     }
@@ -409,7 +409,7 @@ namespace ngfem
     double alpha;   // interior penalyty
     Array<CoefficientFunction *> coef_b;
   public:
-    DGBoundaryFacet_ConvectionIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGBoundaryFacet_ConvectionIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_b.SetSize(D);
@@ -422,7 +422,7 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 1; }
   
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGBoundaryFacet_ConvectionIntegrator (coeffs);
     }
@@ -509,7 +509,7 @@ namespace ngfem
     double alpha;   // interior penalyty
     CoefficientFunction *coef_lam;
   public:
-    DGBoundaryFacet_LaplaceIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGBoundaryFacet_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
@@ -522,7 +522,7 @@ namespace ngfem
 
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGBoundaryFacet_LaplaceIntegrator (coeffs);
     }
@@ -641,8 +641,8 @@ namespace ngfem
     CoefficientFunction *coef_lam;
     CoefficientFunction *coef_dir;
   public:
-    DGFacet_DirichletBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
-      : FacetLinearFormIntegrator(coeffs)
+    DGFacet_DirichletBoundaryIntegrator (const Array<CoefficientFunction*> & coeffs) 
+        : FacetLinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
       coef_dir  = coeffs[1];
@@ -654,7 +654,7 @@ namespace ngfem
     
     virtual ~DGFacet_DirichletBoundaryIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGFacet_DirichletBoundaryIntegrator (coeffs);
     }
@@ -758,7 +758,7 @@ namespace ngfem
   protected:
     CoefficientFunction *coef_lam;
   public:
-    DGFacet_NeumannBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGFacet_NeumannBoundaryIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : FacetLinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
@@ -769,7 +769,7 @@ namespace ngfem
 
     virtual ~DGFacet_NeumannBoundaryIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGFacet_NeumannBoundaryIntegrator (coeffs);
     }
@@ -850,7 +850,7 @@ namespace ngfem
     CoefficientFunction *coef_rob;
     Array<CoefficientFunction *> coef_b;
   public:
-    DGFacet_ConvectionDirichletBoundaryIntegrator (Array<CoefficientFunction*> & coeffs) 
+    DGFacet_ConvectionDirichletBoundaryIntegrator (const Array<CoefficientFunction* > & coeffs) 
       : FacetLinearFormIntegrator(coeffs)
     { 
       coef_b.SetSize(D);
@@ -864,7 +864,7 @@ namespace ngfem
     
     virtual ~DGFacet_ConvectionDirichletBoundaryIntegrator () { ; }
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const const Array<CoefficientFunction*> & coeffs)
     {
       return new DGFacet_ConvectionDirichletBoundaryIntegrator (coeffs);
     }
