@@ -128,7 +128,7 @@ namespace ngstd
   void Socket::send ( const std::string & s ) const
   {
     int length = s.length();
-    int status = ::send (m_sock, &length, sizeof(length), MSG_NOSIGNAL );    
+    int status = ::send (m_sock, (char *)&length, sizeof(length), MSG_NOSIGNAL );    
     if (status <= 0)
       throw SocketException (GetLatestError());
 
@@ -146,7 +146,7 @@ namespace ngstd
   {
     // new version by Joachim
     int length;
-    int status = ::recv (m_sock, &length, sizeof(length), 0 );
+    int status = ::recv (m_sock, (char *)&length, sizeof(length), 0 );
 
     if (status == 0)
       {
