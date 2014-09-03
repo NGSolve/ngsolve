@@ -1,14 +1,82 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
 #include <fem.hpp>
+#include <mutex>
 using namespace ngfem;
 using ngfem::ELEMENT_TYPE;
+
+struct PythonCoefficientFunction : public CoefficientFunction {
+    PythonCoefficientFunction() { }
+
+    virtual double EvaluateXY (double x, double y) const = 0;
+
+    bp::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
+        double x[3]{0};
+        int dim = bip.GetTransformation().SpaceDim();
+        const DimMappedIntegrationPoint<1,double> *ip1;
+        const DimMappedIntegrationPoint<2,double> *ip2;
+        const DimMappedIntegrationPoint<3,double> *ip3;
+        switch(dim) {
+
+            case 1:
+                ip1 = static_cast<const DimMappedIntegrationPoint<1,double>*>(&bip);
+                x[0] = ip1->GetPoint()[0];
+                break;
+            case 2:
+                ip2 = static_cast<const DimMappedIntegrationPoint<2,double>*>(&bip);
+                x[0] = ip2->GetPoint()[0];
+                x[1] = ip2->GetPoint()[1];
+                break;
+            case 3:
+                ip3 = static_cast<const DimMappedIntegrationPoint<3,double>*>(&bip);
+                x[0] = ip3->GetPoint()[0];
+                x[1] = ip3->GetPoint()[1];
+                x[2] = ip3->GetPoint()[2];
+                break;
+            default:
+                break;
+        }
+        bp::list list;
+        for(int i=0; i<dim; i++)
+            list.append(x[i]);
+
+        return list;
+    }
+};
+
+class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<PythonCoefficientFunction> {
+    static std::mutex m;
+    public:
+        PythonCFWrap () : PythonCoefficientFunction() { ; }
+        double EvaluateXY (double x, double y) const {
+            return this->get_override("EvaluateXY")(x,y);
+        }
+
+        double Evaluate (const BaseMappedIntegrationPoint & bip) const {
+            double ret = 0;
+            m.lock();
+            try { 
+                ret = this->get_override("Evaluate")(boost::ref(bip)); 
+            }
+            catch (bp::error_already_set const &) {
+                PyErr_Print();
+            }
+            catch(...) {
+                cout << "caught Exception in PythonCoefficientFunction::Evaluate" << endl;
+            }
+            m.unlock();
+            return ret;
+        }
+};
+
+std::mutex PythonCFWrap::m;
+
 
 void ExportNgfem() {
     std::string nested_name = "ngfem";
     if( bp::scope() )
       nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngfem");
-    
+
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
     cout << "exporting ngfem as " << nested_name << endl;
@@ -113,8 +181,11 @@ void ExportNgfem() {
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
     ;
   
+  bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init);  
+
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction", bp::no_init)
+    .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
     ;
 
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
@@ -124,6 +195,17 @@ void ExportNgfem() {
   
   bp::implicitly_convertible 
     <shared_ptr<ConstantCoefficientFunction>, 
+    shared_ptr<CoefficientFunction> >(); 
+
+  bp::class_<PythonCFWrap ,bp::bases<CoefficientFunction>, shared_ptr<PythonCFWrap>, boost::noncopyable>("PythonCF", bp::init<>())
+//     .def("MyEvaluate", bp::pure_virtual(static_cast<double (PythonCoefficientFunction::*)(double,double) const>(&PythonCoefficientFunction::MyEvaluate))) 
+    .def("Evaluate", bp::pure_virtual(static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))) 
+    .def("GetCoordinates", &PythonCoefficientFunction::GetCoordinates)
+//     .def("MyEvaluate", bp::pure_virtual(&PythonCoefficientFunction::MyEvaluate)) 
+    ;
+
+  bp::implicitly_convertible 
+    <shared_ptr<PythonCFWrap>, 
     shared_ptr<CoefficientFunction> >(); 
 
   
