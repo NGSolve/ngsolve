@@ -16,7 +16,7 @@
 namespace netgen
 {
 
-  extern MeshingParameters & mparam;
+  extern MeshingParameters mparam;
 
 #include "writeuser.hpp"
 

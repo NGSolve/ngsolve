@@ -25,7 +25,7 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-  extern MeshingParameters & mparam;
+  extern MeshingParameters mparam;
 
    // Mapping of entities from Netgen definitions to GMSH definitions
    enum GMSH_ELEMENTS {GMSH_TRIG = 2, GMSH_TRIG6 = 9,

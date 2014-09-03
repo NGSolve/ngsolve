@@ -17,7 +17,7 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-  extern MeshingParameters & mparam;
+  extern MeshingParameters mparam;
 
 
 void WriteElmerFormat (const Mesh &mesh,
