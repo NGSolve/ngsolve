@@ -125,15 +125,15 @@ void ExportNetgenMeshing()
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
 
     .def("Elements3D", 
-         static_cast<Array<Element>&(Mesh::*)()> (& &Mesh::VolumeElements),
+         static_cast<Array<Element>&(Mesh::*)()> (&Mesh::VolumeElements),
          bp::return_value_policy<bp::reference_existing_object>())
 
     .def("Elements2D", 
-         static_cast<Array<Element2d>&(Mesh::*)()> (& &Mesh::SurfaceElements),
+         static_cast<Array<Element2d>&(Mesh::*)()> (&Mesh::SurfaceElements),
          bp::return_value_policy<bp::reference_existing_object>())
 
     .def("Points", 
-         static_cast<Mesh::T_POINTS&(Mesh::*)()> (& &Mesh::Points),
+         static_cast<Mesh::T_POINTS&(Mesh::*)()> (&Mesh::Points),
          bp::return_value_policy<bp::reference_existing_object>())
 
 
