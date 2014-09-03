@@ -18,6 +18,10 @@
 #ifdef MSVC_EXPRESS
 
 // #include <pthread.h>
+namespace netgen
+{
+    MeshingParameters mparam;
+}
 
 static pthread_t meshingthread;
 void RunParallel ( void * (*fun)(void *), void * in)
