@@ -17,9 +17,40 @@ extern void SetScalar (double val, int n, double * dev_ptr);
 
 namespace ngla
 {
+
+  /*
   cublasHandle_t handle;
   cusparseHandle_t cusparseHandle;
+  */
 
+  cublasHandle_t Get_CuBlas_Handle ()
+  {
+    static cublasHandle_t handle;
+    static bool first_call = true;
+
+    if (first_call)
+      {
+        first_call = false;
+        cublasCreate (&handle);
+      }
+    return handle;
+  }
+  cusparseHandle_t Get_CuSparse_Handle ()
+  {
+    static cusparseHandle_t handle;
+    static bool first_call = true;
+
+    if (first_call)
+      {
+        first_call = false;
+        cusparseCreate (&handle);
+      }
+    return handle;
+  }
+
+
+  // cublasHandle_t handle;
+  // cusparseHandle_t cusparseHandle;
 
 
   UnifiedVector :: UnifiedVector (int asize)
@@ -88,7 +119,7 @@ namespace ngla
   BaseVector & UnifiedVector :: Scale (double scal)
   {
     UpdateDevice();
-    cublasDscal (handle, size, &scal, dev_data, 1);
+    cublasDscal (Get_CuBlas_Handle(), size, &scal, dev_data, 1);
     host_uptodate = false;
   }
 
@@ -112,7 +143,8 @@ namespace ngla
 	UpdateDevice();
 	v2->UpdateDevice();
 	
-	cublasDaxpy (handle, size, &scal, v2->dev_data, 1, dev_data, 1);
+	cublasDaxpy (Get_CuBlas_Handle(), 
+                     size, &scal, v2->dev_data, 1, dev_data, 1);
 	host_uptodate = false;
       }
     else
@@ -134,7 +166,8 @@ namespace ngla
 	uv2->UpdateDevice();
 	
 	double res;
-	cublasDdot (handle, size, dev_data, 1, uv2->dev_data, 1, &res);
+	cublasDdot (Get_CuBlas_Handle(), 
+                    size, dev_data, 1, uv2->dev_data, 1, &res);
 	return res;
       }
 
@@ -248,7 +281,8 @@ namespace ngla
 
     double alpha= 1;
     double beta = 0;
-    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+    cusparseDcsrmv (Get_CuSparse_Handle(), 
+                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
@@ -269,7 +303,8 @@ namespace ngla
 
     double alpha= 1;
     double beta = 1;
-    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+    cusparseDcsrmv (Get_CuSparse_Handle(), 
+                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
@@ -338,7 +373,8 @@ namespace ngla
 
     double alpha= 1;
     double beta = 0;
-    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+    cusparseDcsrmv (Get_CuSparse_Handle (), 
+                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
@@ -361,7 +397,8 @@ namespace ngla
 
     double alpha= 1;
     double beta = 1;
-    cusparseDcsrmv (cusparseHandle, CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
+    cusparseDcsrmv (Get_CuSparse_Handle (), 
+                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
@@ -385,7 +422,7 @@ namespace ngla
 
 
 
-
+  /*
   class InitCuBlasHandle
   {
   public:
@@ -399,7 +436,7 @@ namespace ngla
   };
 
   InitCuBlasHandle init;
-
+  */
 
 }
 
