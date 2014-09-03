@@ -14,12 +14,12 @@ BasePythonEnvironment & GetPythonEnvironment ()
 
 
 
-int ExportNgstd();
-int ExportNgbla();
-int ExportNgfem();
-int ExportNgla();
-int ExportNgcomp();
-int ExportNgsolve();
+void ExportNgstd();
+void ExportNgbla();
+void ExportNgfem();
+void ExportNgla();
+void ExportNgcomp();
+void ExportNgsolve();
 
 
 BOOST_PYTHON_MODULE(libngspy)
