@@ -68,7 +68,9 @@ void ExportNgcomp()
     ;
 
   bp::class_<MeshAccess>("Mesh", "meshclass doc", bp::init<string>())
+#ifdef HAVE_NETGEN_SOURCES
     .def(bp::init<netgen::Mesh*>())
+#endif
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh))
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements))
     .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
