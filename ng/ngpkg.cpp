@@ -133,7 +133,8 @@ namespace netgen
 
 
 #ifndef SMALLLIB
-  // Destination for messages, errors, ...
+//  // Destination for messages, errors, ...
+#ifndef WIN32
   DLL_HEADER void Ng_PrintDest(const char * s)
   {
     /*
@@ -156,7 +157,7 @@ namespace netgen
       (*mycout) << "p" << id << ": " << s << flush ;
     */
   }
-
+#endif
   DLL_HEADER void MyError2(const char * ch)
   {
     cout << ch;
