@@ -1205,12 +1205,12 @@ namespace netgen
   */
 
 
-
+#ifndef WIN32
    void ResetTime ()
    {
       ;
    }
-
+#endif
 
 
 
@@ -1240,3 +1240,12 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 void Ng_InitSolutionData (Ng_SolutionData * soldata) { ; }
 
 
+#ifdef NG_PYTHON
+#include <boost/python.hpp>
+void ExportNetgenMeshing();
+void ExportCSG();
+BOOST_PYTHON_MODULE(nglib) {
+    ExportCSG();
+    ExportNetgenMeshing();
+}
+#endif
