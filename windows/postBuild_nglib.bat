@@ -46,11 +46,13 @@ REM echo Embedding Manifest into the DLL: Completed OK!!
 REM *** Copy the DLL and LIB Files into the install folder ***
 echo Installing required files into %INSTALL_FOLDER% ....
 if /i "%BUILD_ARCH%" == "win32" (
-   xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y   
+   copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
    if errorlevel 1 goto DLLInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
    if errorlevel 1 goto DLLInstallFailed
 )   
 echo Installing %PROJ_EXEC%: Completed OK!!
