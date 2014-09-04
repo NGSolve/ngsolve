@@ -571,7 +571,7 @@ namespace ngfem
   {
     public:
       
-    FacetBilinearFormIntegrator(Array<CoefficientFunction*> & coeffs) 
+    FacetBilinearFormIntegrator(const Array<CoefficientFunction*> & coeffs) 
       : BilinearFormIntegrator() { ; }
 
     ~FacetBilinearFormIntegrator() { ; }
@@ -1123,7 +1123,7 @@ namespace ngfem
   {
     public:
       
-    FacetLinearFormIntegrator(Array<CoefficientFunction*> & coeffs) 
+    FacetLinearFormIntegrator(const Array<CoefficientFunction*> & coeffs) 
       : LinearFormIntegrator() { ; }
 
     ~FacetLinearFormIntegrator() { ; }
@@ -1462,7 +1462,7 @@ namespace ngfem
     
     static shared_ptr<LinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coefs)
     {
-      return shared_ptr<LinearFormIntegrator> (new LFI (ConvertCoefs (coefs)));
+      return shared_ptr<LinearFormIntegrator> (new LFI (ConvertCoefs(coefs)));
       // return new LFI (coefs);
     }
   };
