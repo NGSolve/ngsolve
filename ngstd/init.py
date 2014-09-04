@@ -7,6 +7,9 @@ def mydir(x=None):
     else:
         return [i for i in dir(x) if not '__' in i]
 
+def execfile(fname):
+    exec(open(fname).read())
+
 def startConsole():
     import code
     try:
