@@ -201,8 +201,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -217,7 +217,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;C:\Python34\libs;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -242,8 +242,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -258,7 +258,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -281,8 +281,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -297,7 +297,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zdll.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKDCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -322,8 +322,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -338,7 +338,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -353,6 +353,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\libsrc\csg\python_csg.cpp" />
+    <ClCompile Include="..\libsrc\csg\zrefine.cpp" />
     <ClCompile Include="..\libsrc\general\gzstream.cpp" />
     <ClCompile Include="..\libsrc\meshing\adfront2.cpp" />
     <ClCompile Include="..\libsrc\meshing\adfront3.cpp" />
@@ -405,6 +407,7 @@
     <ClCompile Include="..\libsrc\meshing\meshfunc2d.cpp" />
     <ClCompile Include="..\libsrc\meshing\meshing2.cpp" />
     <ClCompile Include="..\libsrc\meshing\meshing3.cpp" />
+    <ClCompile Include="..\libsrc\meshing\python_mesh.cpp" />
     <ClCompile Include="..\libsrc\stlgeom\meshstlsurface.cpp" />
     <ClCompile Include="..\libsrc\csg\meshsurf.cpp" />
     <ClCompile Include="..\libsrc\meshing\meshtool.cpp" />
@@ -485,7 +488,6 @@
     <ClCompile Include="..\libsrc\interface\writetochnog.cpp" />
     <ClCompile Include="..\libsrc\interface\writeuser.cpp" />
     <ClCompile Include="..\libsrc\interface\wuchemnitz.cpp" />
-    <ClCompile Include="..\libsrc\meshing\zrefine.cpp" />
     <ClCompile Include="..\libsrc\occ\Partition_Inter2d.cxx" />
     <ClCompile Include="..\libsrc\occ\Partition_Inter3d.cxx" />
     <ClCompile Include="..\libsrc\occ\Partition_Loop.cxx" />

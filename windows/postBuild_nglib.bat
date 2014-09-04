@@ -69,12 +69,13 @@ if /i "%BUILD_ARCH%" == "x64" (
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x64\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
    xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x64\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
-
+   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
    if errorlevel 1 goto ExternalInstallFailed
 )
 if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x86\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y
    xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x86\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
+   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"   
    if errorlevel 1 goto ExternalInstallFailed
 )
 

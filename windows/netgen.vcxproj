@@ -167,7 +167,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthread-w32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthread-w32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -210,7 +210,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl-64\include;$(SolutionDir)..\..\ext_libs\pthread-w64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl-64\include;$(SolutionDir)..\..\ext_libs\pthread-w64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -252,8 +252,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(BOOSTROOT);$(PYTHONROOT)\include;</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -270,7 +270,7 @@
       <AdditionalDependencies>pthreadVC2.lib;tcl85.lib;tk85.lib;tix84.lib;zdll.lib;Togl17.lib;glu32.lib;opengl32.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <Version />
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\win32;$(PYTHONROOT)\libs;$(BOOSTROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>true</EnableUAC>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -300,8 +300,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(SolutionDir)..\..\ext_libs\zlib\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(BOOSTROOT);$(PYTHONROOT)\include;</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MSVC_EXPRESS;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -319,7 +319,7 @@
       <ShowProgress>NotSet</ShowProgress>
       <OutputFile>$(OutDir)$(ProjectName).exe</OutputFile>
       <Version />
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\x64;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>true</EnableUAC>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -346,8 +346,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -364,7 +364,7 @@
       <AdditionalDependencies>pthreadVC2.lib;tcl85.lib;tk85.lib;tix84.lib;zdll.lib;Togl17.lib;glu32.lib;opengl32.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKDCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <Version />
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\win32;$(CASROOT)\win32\vc8\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\win32;$(CASROOT)\win32\vc8\lib;$(PYTHONROOT)\libs;$(BOOSTROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>true</EnableUAC>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -394,8 +394,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;_OCC64;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthreads-win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\FFMPEG\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WNT;NDEBUG;_CONSOLE;MSVC_EXPRESS;_OCC64;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;FFMPEG;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -412,7 +412,7 @@
       <AdditionalDependencies>pthreadVC2.lib;tcl85.lib;tk85.lib;zlib1.lib;tix84.lib;Togl17.lib;glu32.lib;opengl32.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <Version />
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\lib;$(CASROOT)\win64\vc9\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\FFMPEG\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\lib;$(CASROOT)\win64\vc9\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EnableUAC>true</EnableUAC>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -429,6 +429,10 @@
       <Message>Running POSTBUILD Script....</Message>
       <Command>"$(ProjectDir)\postBuild_netgen.bat" "$(ProjectName)" "$(TargetFileName)" "$(Configuration)" "$(Platform)" "$(ProjectDir)" "nginterface"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if NOT defined PYTHONROOT (echo You need to set up environement variable PYTHONROOT)
+if NOT defined BOOSTROOT (echo You need to set up environement variable BOOSTROOT)</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug(OCC)|Win32'">
     <BuildLog>
@@ -438,7 +442,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthread-w32\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\..\ext_libs\pthread-w32\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -481,7 +485,7 @@
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(SolutionDir)..\..\ext_libs\tcl-64\include;$(SolutionDir)..\..\ext_libs\pthread-w64\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..;$(SolutionDir)..\ng;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\libsrc\interface;$(BOOSTROOT);$(PYTHONROOT)\include;$(SolutionDir)..\..\ext_libs\tcl-64\include;$(SolutionDir)..\..\ext_libs\pthread-w64\include;$(CASROOT)\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WNT;_DEBUG;_CONSOLE;DEBUG;MSVC_EXPRESS;_OCC64;Standard_EXPORT=;OCCGEOMETRY;OPENGL;_WIN32_WINNT=0x0502;NGINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -667,7 +671,10 @@
     <ClInclude Include="..\libsrc\occ\Partition_Spliter.hxx" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libsrc\csg\python_csg.cpp" />
+    <ClCompile Include="..\libsrc\csg\zrefine.cpp" />
     <ClCompile Include="..\libsrc\general\gzstream.cpp" />
+    <ClCompile Include="..\libsrc\meshing\python_mesh.cpp" />
     <ClCompile Include="..\libsrc\occ\occpkg.cpp" />
     <ClCompile Include="..\libsrc\occ\Partition_Inter2d.cxx" />
     <ClCompile Include="..\libsrc\occ\Partition_Inter3d.cxx" />
@@ -825,7 +832,6 @@
     <ClCompile Include="..\libsrc\interface\writetochnog.cpp" />
     <ClCompile Include="..\libsrc\interface\writeuser.cpp" />
     <ClCompile Include="..\libsrc\interface\wuchemnitz.cpp" />
-    <ClCompile Include="..\libsrc\meshing\zrefine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\libsrc\occ\Partition_Inter2d.ixx" />
