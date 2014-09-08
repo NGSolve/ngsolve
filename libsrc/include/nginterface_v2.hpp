@@ -152,17 +152,17 @@ namespace netgen
 
 
 
-
+  class Mesh;
 
   class DLL_HEADER Ngx_Mesh
   {
   private:
-    class Mesh * mesh;
+    shared_ptr<Mesh> mesh;
     
   public:
     // Ngx_Mesh () { ; }
     // Ngx_Mesh(class Mesh * amesh) : mesh(amesh) { ; }
-    Ngx_Mesh(class Mesh * amesh = NULL);
+    Ngx_Mesh(shared_ptr<Mesh> amesh = NULL);
     void LoadMesh (const string & filename);
 
     void LoadMesh (istream & str);
@@ -228,6 +228,7 @@ namespace netgen
      bool build_searchtrees = false, 
      int * const indices = NULL, int numind = 0) const;
     
+    shared_ptr<Mesh> SelectMesh () const;
   };
 
 

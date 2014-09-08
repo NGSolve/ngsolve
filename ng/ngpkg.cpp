@@ -17,7 +17,6 @@ The interface between the GUI and the netgen library
 
 #include <csg.hpp>
 
-
 #ifdef SOCKETS
 #include "../libsrc/sockets/sockets.hpp"
 #include "../libsrc/sockets/socketmanager.hpp"
@@ -93,8 +92,8 @@ namespace netgen
   }
   */
 
-  extern AutoPtr<NetgenGeometry> ng_geometry;
-  extern AutoPtr<Mesh> mesh;
+  extern std::shared_ptr<NetgenGeometry> ng_geometry;
+  extern std::shared_ptr<Mesh> mesh;
   Tcl_Interp * tcl_interp;
 
 
@@ -188,7 +187,7 @@ namespace netgen
 	      int argc, tcl_const char *argv[])
   {
     if (strcmp (argv[1], "mesh") == 0)
-      mesh.Reset();
+      mesh.reset();
 
     if (strcmp (argv[1], "geom") == 0)
       {
@@ -196,7 +195,7 @@ namespace netgen
 	delete ng_geometry;
 	ng_geometry = new NetgenGeometry;
         */
-        ng_geometry.Reset (new NetgenGeometry);
+        ng_geometry = make_shared<NetgenGeometry>();
       }
 
     return TCL_OK;
@@ -222,7 +221,7 @@ namespace netgen
 
     PrintMessage (1, "load mesh from file ", filename);
 
-    mesh.Reset (new Mesh());
+    mesh = make_shared<Mesh>();
     try
       {
         istream * infile;
@@ -245,7 +244,7 @@ namespace netgen
 	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (*infile);
 	    if (hgeom)
 	      {
-                ng_geometry.Reset (hgeom);
+                ng_geometry = shared_ptr<NetgenGeometry>(hgeom);
 		break;
 	      }
 	  }
@@ -287,7 +286,7 @@ namespace netgen
 		   Tcl_Interp * interp,
 		   int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -327,7 +326,7 @@ namespace netgen
 
     try
       {
-	CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.Ptr());
+	CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
     
 	//mesh -> Merge (filename);
 	ifstream infile(filename.c_str());
@@ -362,7 +361,7 @@ namespace netgen
 		     Tcl_Interp * interp,
 		     int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -394,7 +393,7 @@ namespace netgen
     const string filename (argv[1]);
     PrintMessage (1, "import mesh from ", filename);
 
-    mesh.Reset (new Mesh());
+    mesh = make_shared<Mesh>();
 
     ReadFile (*mesh, filename);
     PrintMessage (2, mesh->GetNP(), " Points, ",
@@ -412,7 +411,7 @@ namespace netgen
 			 Tcl_Interp * interp,
 			 int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -472,7 +471,7 @@ namespace netgen
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -492,7 +491,7 @@ namespace netgen
 			    Tcl_Interp * interp,
 			    int argqc, tcl_const char *argv[])
   {
-    if (mesh.Ptr())
+    if (mesh)
       mesh -> SetNextTimeStamp();
     return TCL_OK;
   }
@@ -530,9 +529,9 @@ namespace netgen
 	      {
                 // delete ng_geometry;
 		// ng_geometry = hgeom;
-                ng_geometry.Reset (hgeom);
+                ng_geometry = shared_ptr<NetgenGeometry> (hgeom);
 		
-		mesh.Reset();
+		mesh.reset();
 		return TCL_OK;
 	      }
 	  }
@@ -597,7 +596,7 @@ namespace netgen
 	return TCL_ERROR;
       }
 
-    mesh.Reset();
+    mesh.reset();
     return TCL_OK;
   }
 
@@ -673,7 +672,7 @@ namespace netgen
 		     int argc, tcl_const char *argv[])
   {
     char buf[20], lstring[200];
-    if (mesh.Ptr())
+    if (mesh)
       {
 	sprintf (buf, "%d", mesh->GetNP());
         Tcl_SetVar  (interp, "::status_np", buf, 0);
@@ -752,14 +751,14 @@ namespace netgen
       {
 	int facenr = atoi (argv[2]);
 	int bcnr = atoi (argv[3]);
-	if (mesh.Ptr() && facenr >= 1 && facenr <= mesh->GetNFD())
+	if (mesh && facenr >= 1 && facenr <= mesh->GetNFD())
 	  mesh->GetFaceDescriptor (facenr).SetBCProperty (bcnr);
       }
 
     if (strcmp (argv[1], "setall") == 0)
       {
 	int bcnr = atoi (argv[2]);
-	if (mesh.Ptr())
+	if (mesh)
 	  {
 	    int nfd = mesh->GetNFD();
 	    for (int i = 1; i <= nfd; i++)
@@ -770,7 +769,7 @@ namespace netgen
     if (strcmp (argv[1], "getbc") == 0)
       {
 	int facenr = atoi (argv[2]);
-	if (mesh.Ptr() && facenr >= 1 && facenr <= mesh->GetNFD())
+	if (mesh && facenr >= 1 && facenr <= mesh->GetNFD())
 	  {
 	    sprintf (buf, "%d", mesh->GetFaceDescriptor(facenr).BCProperty());
 	  }
@@ -784,7 +783,7 @@ namespace netgen
     if (strcmp (argv[1], "getbcname") == 0)
       {
 	int facenr = atoi (argv[2]);
-	if (mesh.Ptr() && facenr >= 1 && facenr <= mesh->GetNFD())
+	if (mesh && facenr >= 1 && facenr <= mesh->GetNFD())
 	  {
 	    sprintf (buf, "%s", mesh->GetFaceDescriptor(facenr).GetBCName().c_str());
 	  }
@@ -805,7 +804,7 @@ namespace netgen
     if (strcmp (argv[1], "setactive") == 0)
       {
 	int facenr = atoi (argv[2]);
-	if (mesh.Ptr() && facenr >= 1 && facenr <= mesh->GetNFD())
+	if (mesh && facenr >= 1 && facenr <= mesh->GetNFD())
 	  {
 	    vsmesh.SetSelectedFace (facenr);
 	  }
@@ -813,7 +812,7 @@ namespace netgen
 
     if (strcmp (argv[1], "getnfd") == 0)
       {
-	if (mesh.Ptr())
+	if (mesh)
 	  sprintf (buf, "%d", mesh->GetNFD());
 	else
 	  sprintf (buf, "0");
@@ -831,7 +830,7 @@ namespace netgen
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -867,7 +866,7 @@ namespace netgen
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -904,7 +903,7 @@ namespace netgen
 		     Tcl_Interp * interp,
 		     int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -943,7 +942,7 @@ namespace netgen
 			       Tcl_Interp * interp,
 			       int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -965,7 +964,7 @@ namespace netgen
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -981,7 +980,7 @@ namespace netgen
 
     if (argc >= 2) opt.minref = atoi (argv[1]);
 
-    ZRefinement (*mesh, ng_geometry.Ptr(), opt);
+    ZRefinement (*mesh, ng_geometry.get(), opt);
 
     return TCL_OK;
   }
@@ -990,7 +989,7 @@ namespace netgen
 			Tcl_Interp * interp,
 			int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1014,7 +1013,7 @@ namespace netgen
 			Tcl_Interp * interp,
 			int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1034,7 +1033,7 @@ namespace netgen
 				   Tcl_Interp * interp,
 				   int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1062,7 +1061,7 @@ namespace netgen
            Tcl_Interp * interp,
            int argc, tcl_const char *argv[])
   {
-     if (!mesh.Ptr())
+     if (!mesh)
      {
         Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
         return TCL_ERROR;
@@ -1083,7 +1082,7 @@ namespace netgen
 			  Tcl_Interp * interp,
 			  int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1164,7 +1163,7 @@ namespace netgen
 
     //BaseMoveableMem::totalsize = 0;
     // 1048576 * atoi (Tcl_GetVar (interp, "::options.memory", 0));
-    if (mesh.Ptr())
+    if (mesh)
       {
 	mesh->SetGlobalH (mparam.maxh);
 	mesh->SetMinimalH (mparam.minh);
@@ -1275,7 +1274,11 @@ namespace netgen
 	      else
 	  */
 	    {
-	      int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
+              Mesh * hmesh = NULL;
+              int res = ng_geometry -> GenerateMesh (hmesh, mparam, perfstepsstart, perfstepsend);              
+              mesh = shared_ptr<Mesh> (hmesh);
+
+	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
 	      if (res != MESHING3_OK) 
 		{
 		  multithread.task = savetask;
@@ -1288,7 +1291,7 @@ namespace netgen
 	  {
 	    ZRefinementOptions opt;
 	    opt.minref = 5;
-	    ZRefinement (*mesh, ng_geometry.Ptr(), opt);
+	    ZRefinement (*mesh, ng_geometry.get(), opt);
 	    mesh -> SetNextMajorTimeStamp();
 	  }
 	
@@ -1414,7 +1417,7 @@ namespace netgen
 		    Tcl_Interp * interp,
 		    int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1455,7 +1458,7 @@ namespace netgen
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1469,7 +1472,7 @@ namespace netgen
     double angles[4];
     char buf[10];
 
-    if (mesh.Ptr())
+    if (mesh)
       mesh->CalcMinMaxAngle(mparam.badellimit, angles);
     else
       {
@@ -1491,7 +1494,7 @@ namespace netgen
 			    Tcl_Interp * interp,
 			    int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1521,7 +1524,7 @@ namespace netgen
 			   Tcl_Interp * interp,
 			   int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1541,7 +1544,7 @@ namespace netgen
 			 Tcl_Interp * interp,
 			 int argc, tcl_const char *argv[])
   {
-    if (mesh.Ptr())
+    if (mesh)
       mesh->ClearVolumeElements();
 
     return TCL_OK;
@@ -1552,7 +1555,7 @@ namespace netgen
 			      Tcl_Interp * interp,
 			      int argc, tcl_const char *argv[])
   {
-    if (mesh.Ptr())
+    if (mesh)
       mesh->SplitSeparatedFaces ();
     return TCL_OK;
   }
@@ -1563,7 +1566,7 @@ namespace netgen
 		     Tcl_Interp * interp,
 		     int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1576,7 +1579,7 @@ namespace netgen
 
     if (argc != 3)
       return TCL_OK;
-    if (!mesh.Ptr())
+    if (!mesh)
       return TCL_OK;
 
 
@@ -1608,7 +1611,7 @@ namespace netgen
 		      Tcl_Interp * interp,
 		      int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1621,7 +1624,7 @@ namespace netgen
 
     if (argc != 2)
       return TCL_OK;
-    if (!mesh.Ptr())
+    if (!mesh)
       return TCL_OK;
 
     if (strcmp (argv[1], "edge") == 0)
@@ -1687,7 +1690,7 @@ namespace netgen
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1730,7 +1733,7 @@ namespace netgen
   // 			  Tcl_Interp * interp,
   // 			  int argc, tcl_const char *argv[])
   //   {
-  //     if (!mesh.Ptr())
+  //     if (!mesh)
   //       {
   // 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
   // 	return TCL_ERROR;
@@ -1754,7 +1757,7 @@ namespace netgen
 		      Tcl_Interp * interp,
 		      int argc, tcl_const char *argv[])
   {
-    if (!mesh.Ptr())
+    if (!mesh)
       {
 	Tcl_SetResult (interp, err_needsmesh, TCL_STATIC);
 	return TCL_ERROR;
@@ -1815,7 +1818,7 @@ namespace netgen
 	  {
 	    for (int i = 0; i < geometryregister.Size(); i++)
 	      {
-		VisualScene * hvs = geometryregister[i]->GetVisualScene (ng_geometry.Ptr());
+		VisualScene * hvs = geometryregister[i]->GetVisualScene (ng_geometry.get());
 		if (hvs)
 		  {
 		    vs = hvs;
@@ -2823,10 +2826,10 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
   //extern Mesh * mesh;
 
   /*
-    if (mesh.Ptr()) mesh->DeleteMesh();
-    if (!mesh.Ptr()) mesh = new Mesh();
+    if (mesh) mesh->DeleteMesh();
+    if (!mesh) mesh = new Mesh();
   */
-  mesh.Reset (new Mesh());
+  mesh = make_shared<Mesh>();
 
   int ne, np, i;
 
@@ -3101,8 +3104,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
     MPI_Finalize();
 #endif
 
-    mesh.Reset (NULL);
-    ng_geometry.Reset (NULL);
+    mesh.reset();
+    ng_geometry.reset();
     
     if (testout != &cout)
       delete testout;

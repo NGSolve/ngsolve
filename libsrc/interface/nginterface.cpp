@@ -108,13 +108,8 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-  // global variable mesh (should not be used in libraries)
-  AutoPtr<Mesh> mesh;
-  // NetgenGeometry * ng_geometry = NULL; // new NetgenGeometry;
-  AutoPtr<NetgenGeometry> ng_geometry;
-
-  // extern NetgenGeometry * ng_geometry;
-  // extern AutoPtr<Mesh> mesh;
+  shared_ptr<Mesh> mesh;
+  shared_ptr<NetgenGeometry> ng_geometry;
 
 #ifndef NOTCL
   extern Tcl_Interp * tcl_interp;
@@ -140,7 +135,7 @@ void Ng_LoadGeometry (const char * filename)
   // can be used to reset geometry
   if (!filename || strcmp(filename,"")==0) 
     {
-      ng_geometry.Reset (new NetgenGeometry());
+      ng_geometry.reset (new NetgenGeometry());
       return;
     }
 
@@ -149,8 +144,8 @@ void Ng_LoadGeometry (const char * filename)
       NetgenGeometry * hgeom = geometryregister[i]->Load (filename);
       if (hgeom)
 	{
-          ng_geometry.Reset (hgeom);
-	  mesh.Reset();
+          ng_geometry.reset (hgeom);
+	  mesh.reset();
 	  return;
 	}
     }
@@ -163,7 +158,7 @@ void Ng_LoadGeometry (const char * filename)
 
 void Ng_LoadMeshFromStream ( istream & input )
 {
-  mesh.Reset (new Mesh());
+  mesh.reset (new Mesh());
   mesh -> Load(input);
   
   for (int i = 0; i < geometryregister.Size(); i++)
@@ -171,7 +166,7 @@ void Ng_LoadMeshFromStream ( istream & input )
       NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
       if (hgeom)
 	{
-          ng_geometry.Reset (hgeom);
+          ng_geometry.reset (hgeom);
 	  break;
 	}
     }
@@ -195,7 +190,7 @@ void Ng_LoadMesh (const char * filename)
 	   strcmp (filename + (strlen (filename)-4), ".vol") != 0 )
         */
 	{
-	  mesh.Reset (new Mesh());
+	  mesh.reset (new Mesh());
 	  ReadFile(*mesh,filename);
 	  
 	  //mesh->SetGlobalH (mparam.maxh);
@@ -280,7 +275,7 @@ void Ng_LoadMesh (const char * filename)
     }
   else
     {
-      mesh.Reset (new Mesh());
+      mesh.reset (new Mesh());
       mesh->SendRecvMesh();
     }
 #endif
@@ -636,7 +631,7 @@ void Ng_GetNormalVector (int sei, int locpi, double * nv)
 	  nv[2] = n(2);
 	}
 #endif
-      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.Ptr());
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
       if (geometry)
 	{
 	  n = geometry->GetSurface (surfi) -> GetNormalVector(p);
@@ -1505,8 +1500,8 @@ void Ng_UpdateTopology()
 
 Ng_Mesh Ng_SelectMesh (Ng_Mesh newmesh)
 {
-  Mesh * hmesh = mesh.Ptr();
-  mesh.Ptr() = (Mesh*)newmesh;
+  Mesh * hmesh = mesh.get();
+  mesh.reset((Mesh*)newmesh);
   return hmesh;
 }
 
@@ -2135,7 +2130,7 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
 #endif
     {
       // ref = new RefinementSurfaces(*geometry);
-      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.Ptr());
+      CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
       if (geometry)
 	{
 	  opt = new MeshOptimize2dSurfaces(*geometry);

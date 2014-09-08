@@ -10,7 +10,7 @@
 namespace netgen
 {
 #include "writeuser.hpp"
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<Mesh> mesh;
 }
 
 
@@ -19,33 +19,41 @@ namespace netgen
 #define NGX_INLINE
 #include "nginterface_v2_impl.hpp"
 
-  Ngx_Mesh :: Ngx_Mesh (class Mesh * amesh)
+  shared_ptr<Mesh> Ngx_Mesh :: SelectMesh () const
+  {
+    shared_ptr<Mesh> hmesh = netgen::mesh;
+    netgen::mesh = mesh;
+    return hmesh;
+  }
+  
+
+  Ngx_Mesh :: Ngx_Mesh (shared_ptr<Mesh> amesh) 
   {
     if (amesh)
       mesh = amesh;
     else
-      mesh = netgen::mesh.Ptr();
+      mesh = netgen::mesh;
   }
-
+  
   Ngx_Mesh * LoadMesh (const string & filename)
   {
-    netgen::mesh.Ptr() = NULL;
+    netgen::mesh.reset();
     Ng_LoadMesh (filename.c_str());
-    return new Ngx_Mesh (netgen::mesh.Ptr());
+    return new Ngx_Mesh (netgen::mesh);
   }
 
   void Ngx_Mesh :: LoadMesh (const string & filename)
   {
-    netgen::mesh.Ptr() = NULL;
+    netgen::mesh.reset();
     Ng_LoadMesh (filename.c_str());
-    mesh = netgen::mesh.Ptr();
+    mesh = netgen::mesh;
   }
 
   void Ngx_Mesh :: LoadMesh (istream & ist)
   {
-    netgen::mesh.Reset (new Mesh);
+    netgen::mesh = make_shared<Mesh>();
     netgen::mesh -> Load (ist);
-    mesh = netgen::mesh.Ptr();
+    mesh = netgen::mesh;
   }
 
   void Ngx_Mesh :: SaveMesh (ostream & ost) const
@@ -82,9 +90,12 @@ namespace netgen
 
   Ngx_Mesh :: ~Ngx_Mesh ()
   {
+    ;
+    /*
     if (netgen::mesh.Ptr() == mesh) 
       netgen::mesh.Ptr() = NULL;
     delete mesh;
+    */
   }
 
   int Ngx_Mesh :: GetDimension() const
