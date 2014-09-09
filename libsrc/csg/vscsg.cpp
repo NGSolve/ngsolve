@@ -17,7 +17,7 @@ namespace netgen
 
   /* *********************** Draw Geometry **************** */
 
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<Mesh> mesh;
   extern Array<SpecialPoint> specpoints;
   extern Array<Box<3> > boxes;
 
