@@ -19,8 +19,8 @@ extern "C" int Ng_STL_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern AutoPtr<NetgenGeometry>  ng_geometry;
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<NetgenGeometry>  ng_geometry;
+  extern shared_ptr<Mesh> mesh;
 
   static VisualSceneSTLGeometry vsstlgeom;
   static VisualSceneSTLMeshing vsstlmeshing;
@@ -122,7 +122,7 @@ namespace netgen
   {
     //cout << "STL doctor" << endl;
     STLGeometry * stlgeometry = 
-          dynamic_cast<STLGeometry*> (ng_geometry.Ptr());
+          dynamic_cast<STLGeometry*> (ng_geometry.get());
       
 
     stldoctor.drawmeshededges =
@@ -418,7 +418,7 @@ namespace netgen
     double data[10];
     static char buf[20];
 
-    STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry.Ptr());
+    STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry.get());
 
     if (!stlgeometry)
       {
@@ -520,8 +520,8 @@ namespace netgen
 
     Ng_SetMeshingParameters (clientData, interp, argc, argv);
 
-    STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry.Ptr());
-    if (mesh.Ptr() && stlgeometry)
+    STLGeometry * stlgeometry = dynamic_cast<STLGeometry*> (ng_geometry.get());
+    if (mesh && stlgeometry)
       {
 	mesh -> SetLocalH (stlgeometry->GetBoundingBox().PMin() - Vec3d(10, 10, 10),
 			   stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
