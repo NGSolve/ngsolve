@@ -1037,13 +1037,13 @@ namespace ngsolve
     todo.Append(gf.get());
 
     if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
-      AddCoefficientFunction (name, shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction(*gf)));
+      AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(*gf));
     
     if (addcf && gf->GetFESpace().GetFluxEvaluator())
       {
         const DifferentialOperator * diffop = gf->GetFESpace().GetFluxEvaluator();
         string fluxname = diffop->Name() + "_" + name;
-        AddCoefficientFunction (fluxname, shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction(*gf, diffop)));
+        AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(*gf, diffop));
       }
     
 
