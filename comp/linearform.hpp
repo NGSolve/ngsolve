@@ -18,11 +18,9 @@ namespace ngcomp
   {
   protected:
     ///
-    const FESpace & fespace;
+    shared_ptr<FESpace> fespace;
     ///
     Array<shared_ptr<LinearFormIntegrator>> parts;
-    ///
-    Array<bool> parts_deletable;
     /// do the integration on independent meshes
     bool independent;
     /// print the assembled vector to testout
@@ -40,19 +38,18 @@ namespace ngcomp
 
   public:
     ///
-    LinearForm (const FESpace & afespace, 
+    LinearForm (shared_ptr<FESpace> afespace, 
 		const string & aname, const Flags & flags);
 
     ///
-    virtual ~LinearForm ();
+    virtual ~LinearForm () { ; }
   
     ///
-    const FESpace & GetFESpace() const
-    { return fespace; }
-
+    const FESpace & GetFESpace() const { return *fespace; }
+    shared_ptr<FESpace> FESpacePtr() const { return fespace; }
 
     ///
-    virtual void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi, bool deletable = true);
+    virtual void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
 
     ///
     virtual shared_ptr<LinearFormIntegrator> GetIntegrator (int i) const
@@ -89,6 +86,7 @@ namespace ngcomp
 
 
     ///
+    virtual shared_ptr<BaseVector> VectorPtr() const = 0;
     virtual BaseVector & GetVector () const = 0;
     operator BaseVector& () const { return GetVector(); }
 
@@ -139,14 +137,15 @@ namespace ngcomp
     typedef SCAL TSCAL;
 
     ///
-    S_LinearForm (const FESpace & afespace, 
+    using LinearForm::LinearForm;
+    /*
+    S_LinearForm (shared_ptr<FESpace> afespace, 
 		  const string & aname,
 		  const Flags & flags)
-      : LinearForm (afespace, aname, flags)
-    {
-      ;
-    }
-  
+      : LinearForm (afespace, aname, flags) {;}
+    */
+
+
     ///
     virtual void AllocateVector () = 0;
 
@@ -174,22 +173,26 @@ namespace ngcomp
   class NGS_DLL_HEADER T_LinearForm : public S_LinearForm<typename mat_traits<TV>::TSCAL>
   {
     ///
-    ngla::VVector<TV> * vec;
-
+    shared_ptr<VVector<TV>> vec;
+    typedef S_LinearForm<typename mat_traits<TV>::TSCAL> BASE;
   public:
 
     typedef typename mat_traits<TV>::TSCAL TSCAL;
     enum { HEIGHT = mat_traits<TV>::HEIGHT };
 
     ///
+    using BASE::BASE;
+    /*
     T_LinearForm (const FESpace & afespace, const string & aname,
 		  const Flags & flags);
+    */
 
     ///
     virtual ~T_LinearForm ();
 
     ///
     virtual BaseVector & GetVector () const;
+    virtual shared_ptr<BaseVector> VectorPtr () const { return vec; }
 
     ///
     virtual void AllocateVector ();
@@ -207,9 +210,9 @@ namespace ngcomp
   };
 
 
-  extern NGS_DLL_HEADER LinearForm * CreateLinearForm (const FESpace * space,
-					const string & name,
-					const Flags & flags);
+  extern NGS_DLL_HEADER shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
+                                                                 const string & name,
+                                                                 const Flags & flags);
 
 }
 

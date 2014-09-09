@@ -71,7 +71,7 @@ namespace ngla
   }
 
  
-  BaseVector * KrylovSpaceSolver :: CreateVector () const
+  shared_ptr<BaseVector> KrylovSpaceSolver :: CreateVector () const
   {
     return 0; // return a->CreateVector();
   }
@@ -146,10 +146,13 @@ namespace ngla
 	// Solve A u = f
 	if(sh)
 	  sh->SetThreadPercentage(0);
- 
-	BaseVector & d = *f.CreateVector();
-	BaseVector & w = *f.CreateVector();
-	BaseVector & s = *f.CreateVector();
+
+	auto dp = f.CreateVector();
+	auto wp = f.CreateVector();
+	auto sp = f.CreateVector();
+	BaseVector & d = *dp;
+	BaseVector & w = *wp;
+	BaseVector & s = *sp;
 
 	int n = 0;
 	Vector<SCAL> al(dim), be(dim), wd(dim), wdn(dim), kss(dim);
@@ -240,9 +243,11 @@ namespace ngla
 	
 	const_cast<int&> (steps) = n;
 	
+        /*
 	delete &d;
 	delete &w;
 	delete &s;
+        */
       }
 
     catch (exception & e)
@@ -564,9 +569,13 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
  
-	BaseVector & d = *f.CreateVector();
-	BaseVector & w = *f.CreateVector();
-	BaseVector & s = *f.CreateVector();
+        auto dp = f.CreateVector();
+        auto wp = f.CreateVector();
+        auto sp = f.CreateVector();
+
+	BaseVector & d = *dp;
+	BaseVector & w = *wp;
+	BaseVector & s = *sp;
 
 	int n = 0;
 	SCAL al, be, wd, wdn, kss;
@@ -633,10 +642,11 @@ namespace ngla
 	  } 
 	
 	const_cast<int&> (steps) = n;
-	
+	/*
 	delete &d;
 	delete &w;
 	delete &s;
+        */
       }
 
     catch (exception & e)
@@ -894,7 +904,7 @@ namespace ngla
 	BaseVector & w = *f.CreateVector();
 	BaseVector & hv = *f.CreateVector();
 
-        Array<BaseVector*> vi(maxsteps);
+        Array<shared_ptr<BaseVector>> vi(maxsteps);
         Matrix<SCAL> h(maxsteps+1, maxsteps);
         Matrix<SCAL> h2(maxsteps+1, maxsteps);
         Vector<SCAL> gammai(maxsteps), ci(maxsteps), si(maxsteps);

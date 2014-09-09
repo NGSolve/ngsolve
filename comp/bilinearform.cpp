@@ -57,7 +57,7 @@ namespace ngcomp
     multilevel = true;
     symmetric = true;
 
-    low_order_bilinear_form = NULL;
+    // low_order_bilinear_form = NULL;
     linearform = NULL;
 
 
@@ -99,7 +99,7 @@ namespace ngcomp
 
     SetEpsRegularization (0);
 
-    low_order_bilinear_form = NULL;
+    // low_order_bilinear_form = NULL;
     linearform = NULL;
 
     timing = false;
@@ -134,12 +134,11 @@ namespace ngcomp
 
 
   
-  void BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi, bool deletable)
+  void BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
     parts.Append (bfi);
-    parts_deletable.Append(deletable);
     if (low_order_bilinear_form)
-      low_order_bilinear_form -> AddIntegrator (parts.Last(),false);
+      low_order_bilinear_form -> AddIntegrator (parts.Last());
   }
 
 
@@ -162,11 +161,7 @@ namespace ngcomp
 
   BilinearForm :: ~BilinearForm ()
   {
-    delete low_order_bilinear_form;
-    /*
-    for (int i = 0; i < parts.Size(); i++)
-      if (parts_deletable[i]) delete parts[i];
-    */
+    ; // delete low_order_bilinear_form;
   }
 
   void BilinearForm :: SetPrint (bool ap)
@@ -358,7 +353,7 @@ namespace ngcomp
 
     if (nonassemble)
       {
-        mats.Append (new BilinearFormApplication (this)); 
+        mats.Append (make_shared<BilinearFormApplication> (this)); 
       
         if (precompute)
           {
@@ -432,14 +427,14 @@ namespace ngcomp
           {
             Timer timer("bftimer");
 
-            BaseVector & vecf = *mats.Last()->CreateVector();
-            BaseVector & vecu = *mats.Last()->CreateVector();
+            auto vecf = mats.Last()->CreateVector();
+            auto vecu = mats.Last()->CreateVector();
           
-            vecu = 1;
+            *vecu = 1;
             do
               {
                 timer.Start();
-                vecf = (*mats.Last()) * vecu;
+                *vecf = (*mats.Last()) * *vecu;
                 timer.Stop();
               }
             while (timer.GetTime() < 2.0);
@@ -537,7 +532,7 @@ namespace ngcomp
 
     if (reallocate)
       {
-        delete mats.Last();
+        // delete mats.Last();
         mats.DeleteLast();
 
         Assemble(lh);
@@ -2799,8 +2794,8 @@ namespace ngcomp
   { 
     if (&this->fespace.LowOrderFESpace())
       this->low_order_bilinear_form = 
-        new T_BilinearForm<TM,TV> (this->fespace.LowOrderFESpace(),
-                                   aname+string(" low-order"), flags);
+        make_shared<T_BilinearForm<TM,TV>> 
+        (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
   }
 
   template <class TM, class TV>
@@ -2818,11 +2813,13 @@ namespace ngcomp
   T_BilinearForm<TM,TV>::
   ~T_BilinearForm ()
   {
+    /*
     for (int i = 0; i < this->mats.Size(); i++)
       {
-        delete this->mats[i];
-        this->mats[i] = NULL;
+      delete this->mats[i];
+        this->mats[i].reset();
       }
+    */
   }
 
 
@@ -2836,10 +2833,10 @@ namespace ngcomp
 
     MatrixGraph * graph = this->GetGraph (this->ma.GetNLevels()-1, false);
 
-    BaseMatrix * mat = new SparseMatrix<TM,TV,TV> (*graph, 1);
+    shared_ptr<BaseMatrix> mat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
 #ifdef PARALLEL
     if ( this->GetFESpace().IsParallel() )
-      mat = new ParallelMatrix (mat, &this->GetFESpace().GetParallelDofs());
+      mat = make-shared<ParallelMatrix> (mat, &this->GetFESpace().GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -2848,8 +2845,11 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         {
+          /*
           delete this->mats[i];
           this->mats[i] = 0;
+          */
+          this->mats[i].reset();
         }
   }
 
@@ -2861,15 +2861,18 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size(); i++)
         {
+          /*
           delete this->mats[i];
           this->mats[i] = 0;
+          */
+          this->mats[i].reset();
         }
   }
 
 
 
   template <class TM, class TV>
-  BaseVector * T_BilinearForm<TM, TV>::
+  shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
@@ -2878,7 +2881,7 @@ namespace ngcomp
       return new ParallelVVector<TV> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
 #endif
-      return new VVector<TV> (afespace.GetNDof());
+      return make_shared<VVector<TV>> (afespace.GetNDof());
   }
 
 
@@ -2922,7 +2925,7 @@ namespace ngcomp
                     ElementId id,
                     LocalHeap & lh) 
   {
-    BaseMatrix * hmat = this->mats.Last();
+    BaseMatrix * hmat = this->mats.Last().get();
     
 #ifdef PARALLEL
     ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
@@ -3029,8 +3032,8 @@ namespace ngcomp
     if (&this->fespace.LowOrderFESpace())
       {
         this->low_order_bilinear_form = 
-          new T_BilinearFormSymmetric<TM,TV> (this->fespace.LowOrderFESpace(),
-                                              aname+string(" low-order"), flags);
+          make_shared<T_BilinearFormSymmetric<TM,TV>> 
+          (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
       }
   }
 
@@ -3038,8 +3041,10 @@ namespace ngcomp
   T_BilinearFormSymmetric<TM,TV> :: 
   ~T_BilinearFormSymmetric ()
   {
+    /*
     for (int i = 0; i < this->mats.Size(); i++)
       delete this->mats[i];
+    */
   }
 
 
@@ -3054,7 +3059,7 @@ namespace ngcomp
 
 
 
-    BaseMatrix * mat = new SparseMatrixSymmetric<TM,TV> (*graph, 1);
+    shared_ptr<BaseMatrix> mat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
 #ifdef PARALLEL
     if ( this->GetFESpace().IsParallel() )
       mat = new ParallelMatrix (mat, &this->GetFESpace().GetParallelDofs());
@@ -3067,8 +3072,11 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         {
+          /*
           delete this->mats[i];
           this->mats[i] = 0;
+          */
+          this->mats[i].reset();
         }
   }
 
@@ -3080,14 +3088,17 @@ namespace ngcomp
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size(); i++)
         {
+          /*
           delete this->mats[i];
           this->mats[i] = 0;
+          */
+          this->mats[i].reset();
         }
   }
 
 
   template <class TM, class TV>
-  BaseVector * T_BilinearFormSymmetric<TM, TV>::
+  shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
@@ -3096,7 +3107,8 @@ namespace ngcomp
       return new ParallelVVector<TV> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
 #endif
-      return new VVector<TV> (afespace.GetNDof());
+      // return new VVector<TV> (afespace.GetNDof());
+      return make_shared<VVector<TV>> (afespace.GetNDof());
   }
 
 
@@ -3109,7 +3121,7 @@ namespace ngcomp
                     ElementId id, 
                     LocalHeap & lh) 
   {
-    BaseMatrix * hmat = this->mats.Last();
+    BaseMatrix * hmat = this->mats.Last().get();
 
 #ifdef PARALLEL
     ParallelMatrix * parmat = dynamic_cast<ParallelMatrix*> (hmat);
@@ -3241,8 +3253,8 @@ namespace ngcomp
     if (&this->fespace.LowOrderFESpace())
       {
         this->low_order_bilinear_form = 
-          new T_BilinearFormSymmetric<TM> (this->fespace.LowOrderFESpace(),
-                                           aname+string(" low-order"), flags);
+          make_shared<T_BilinearFormSymmetric<TM>> 
+          (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
         this->low_order_bilinear_form -> SetDiagonal (0);
       }
   }
@@ -3251,8 +3263,10 @@ namespace ngcomp
   T_BilinearFormDiagonal<TM> :: 
   ~T_BilinearFormDiagonal ()
   {
+    /*
     for (int i = 0; i < this->mats.Size(); i++)
       delete this->mats[i];
+    */
   }
 
   ///
@@ -3269,20 +3283,23 @@ namespace ngcomp
       graph->CreatePosition (i, i);
 
     // graphs.Append (graph);
-    this->mats.Append (new SparseMatrixSymmetric<TM> (*graph, 1));
+    this->mats.Append (make_shared<SparseMatrixSymmetric<TM>> (*graph, 1));
     delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         {
+          /*
           delete this->mats[i];
           this->mats[i] = 0;
+          */
+          this->mats[i].reset();
         }
   }
 
 
   template <class TM>
-  BaseVector * T_BilinearFormDiagonal<TM> :: 
+  shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateVector() const
   {
     const FESpace & afespace = this->fespace;
@@ -3291,7 +3308,8 @@ namespace ngcomp
       return new ParallelVVector<TV_COL> (afespace.GetNDof(), &afespace.GetParallelDofs());
     else
 #endif
-      return new VVector<TV_COL> (afespace.GetNDof());
+      // return new VVector<TV_COL> (afespace.GetNDof());
+      return make_shared<VVector<TV_COL>> (afespace.GetNDof());
   }
 
   ///
@@ -3510,41 +3528,41 @@ namespace ngcomp
 
 
   template <int CBSIZE>
-  BilinearForm * CreateBilinearForm1 (int cb_size,
-                                      const FESpace * space, const string & name, const Flags & flags)
+  shared_ptr<BilinearForm> CreateBilinearForm1 (int cb_size,
+                                                shared_ptr<FESpace> space, const string & name, const Flags & flags)
   {
     if (CBSIZE == cb_size)
-      return new T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex> > (*space, name, flags);
+      return make_shared<T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex>>> (*space, name, flags);
     else
-      return CreateBilinearForm1<CBSIZE-1> (cb_size, space, name, flags);
+      return shared_ptr<BilinearForm> (CreateBilinearForm1<CBSIZE-1> (cb_size, space, name, flags));
   }
 
   template <> 
-  BilinearForm * CreateBilinearForm1<1> (int cb_size,
-                                         const FESpace * space, const string & name, const Flags & flags)
+  shared_ptr<BilinearForm> CreateBilinearForm1<1> (int cb_size,
+                                         shared_ptr<FESpace> space, const string & name, const Flags & flags)
   {
-    return new T_BilinearFormSymmetric<double, Complex> (*space, name, flags);
+    return make_shared<T_BilinearFormSymmetric<double, Complex>> (*space, name, flags);
   }
 
   template <> 
-  BilinearForm * CreateBilinearForm1<0> (int cb_size,
-                                         const FESpace * space, const string & name, const Flags & flags)
+  shared_ptr<BilinearForm> CreateBilinearForm1<0> (int cb_size,
+                                                   shared_ptr<FESpace> space, const string & name, const Flags & flags)
   {
     throw Exception ("Illegal cacheblocksize" + ToString (cb_size));
   }
+  
 
-
-  BilinearForm * CreateBilinearForm (const FESpace * space,
-                                     const string & name,
-                                     const Flags & flags)
+  shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
+                                               const string & name,
+                                               const Flags & flags)
   {
-    BilinearForm * bf = 0;
+    BilinearForm * bf = NULL;
 
     if (flags.GetDefineFlag ("ebe")){
       if ( space->IsComplex() )
-        return new ElementByElement_BilinearForm<Complex> (*space, name, flags);
+        return make_shared<ElementByElement_BilinearForm<Complex>> (*space, name, flags);
       else 
-        return new ElementByElement_BilinearForm<double> (*space, name, flags);
+        return make_shared<ElementByElement_BilinearForm<double>> (*space, name, flags);
     }
     
     if (flags.GetDefineFlag ("symmetric"))
@@ -3605,7 +3623,7 @@ namespace ngcomp
                 */
               }
             else
-              return new T_BilinearFormSymmetric<double,Complex> (*space, name, flags);
+              return make_shared<T_BilinearFormSymmetric<double,Complex>> (*space, name, flags);
           }
 
         if(flags.NumFlagDefined("cacheblocksize"))
@@ -3683,7 +3701,7 @@ namespace ngcomp
                   }
               }
             else
-              return new T_BilinearForm<double,Complex> (*space, name, flags);
+              return make_shared<T_BilinearForm<double,Complex>> (*space, name, flags);
           }
         
         if(flags.NumFlagDefined("cacheblocksize"))
@@ -3707,7 +3725,7 @@ namespace ngcomp
 		}
       }
 
-    return bf;
+    return shared_ptr<BilinearForm> (bf);
   }
 
 
@@ -3731,7 +3749,7 @@ namespace ngcomp
                      int alevel);
   
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
   };
 
   ApplyFineMatrix :: 
@@ -3763,7 +3781,7 @@ namespace ngcomp
     cout << "Apply Matrix currently not implemented" << endl;
   }
 
-  BaseVector * ApplyFineMatrix :: CreateVector () const
+  shared_ptr<BaseVector> ApplyFineMatrix :: CreateVector () const
   {
     cerr << "ApplyFineMatrix::CreateVector:  Need Help !!!" << endl;
     return NULL;
@@ -3787,10 +3805,11 @@ namespace ngcomp
             ( GetMatrix( i-1 ) ) ) ) );
           */
           mats[i-1] =
+            shared_ptr<BaseMatrix>
             ( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
               Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
                                      ( GetMatrix( i-1 ) ) ) ) );
-
+          
           delete prolMat;
         }
   }
@@ -3841,7 +3860,7 @@ namespace ngcomp
   */
 
 
-  BaseVector * BilinearFormApplication :: 
+  shared_ptr<BaseVector> BilinearFormApplication :: 
   CreateVector () const
   {
     return bf -> CreateVector();
@@ -3895,14 +3914,14 @@ namespace ngcomp
   void ElementByElement_BilinearForm<SCAL> :: AllocateMatrix ()
   {
     const FESpace & fespace = this->fespace;
-    this->mats.Append (new ElementByElementMatrix<SCAL> (fespace.GetNDof(), this->ma.GetNE()+this->ma.GetNSE() ));
+    this->mats.Append (make_shared<ElementByElementMatrix<SCAL>> (fespace.GetNDof(), this->ma.GetNE()+this->ma.GetNSE() ));
   }
 
 
   template<class SCAL>
-  BaseVector * ElementByElement_BilinearForm<SCAL> :: CreateVector() const
+  shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateVector() const
   {
-    return new VVector<SCAL> (this->fespace.GetNDof());
+    return make_shared<VVector<SCAL>> (this->fespace.GetNDof());
   }
 
   template<class SCAL>

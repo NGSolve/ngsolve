@@ -86,12 +86,12 @@ void ExportNgfem() {
     bp::scope ngbla_scope(module);
 
 
-  bp::enum_<ELEMENT_TYPE>("ELEMENT_TYPE")
+  bp::enum_<ELEMENT_TYPE>("ET")
     .value("POINT", ET_POINT)     .value("SEGM", ET_SEGM)
     .value("TRIG", ET_TRIG)       .value("QUAD", ET_QUAD)
     .value("TET", ET_TET)         .value("PRISM", ET_PRISM)
     .value("PYRAMID", ET_PYRAMID) .value("HEX", ET_HEX)
-    .export_values()
+    // .export_values()
     ;
 
   bp::class_<FiniteElement, boost::noncopyable>("FiniteElement", bp::no_init)
@@ -156,12 +156,10 @@ void ExportNgfem() {
   bp::def("CreateBFI", FunctionPointer 
           ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
-             // shared_ptr<CoefficientFunction> coef(&rcoef); // , NOOP_Deleter);
              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
              if (!bfi) cerr << "undefined integrator '" << name 
                             << "' in " << dim << " dimension having 1 coefficient"
                             << endl;
-             
              return bfi;
            }),
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
@@ -171,7 +169,6 @@ void ExportNgfem() {
           ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
-             
              if (!lfi) cerr << "undefined integrator '" << name 
                              << "' in " << dim << " dimension having 1 coefficient"
                              << endl;

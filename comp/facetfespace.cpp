@@ -93,8 +93,8 @@ namespace ngcomp
 
     if (dimension > 1)
       {
-        integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
-        boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
+        integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
       }
 
     switch (ma.GetDimension())
@@ -728,7 +728,7 @@ namespace ngcomp
     if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
     
     AddSpace (info->creator(ma, l2flags));
-    AddSpace (new FacetFESpace (ma, facetflags));        
+    AddSpace (make_shared<FacetFESpace> (ma, facetflags));        
 
     if (flags.GetDefineFlag ("edges"))
       throw Exception ("HDG fespace with edges not supported");
@@ -745,10 +745,10 @@ namespace ngcomp
     else
       {
         // integrator = new HDG_MassIntegrator<3> (&one);
-        boundary_integrator.reset (new RobinIntegrator<3> (&one));
+        boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
 	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>;
       }
-    boundary_integrator.reset (new CompoundBilinearFormIntegrator (*boundary_integrator, 1));
+    boundary_integrator = make_shared<CompoundBilinearFormIntegrator> (boundary_integrator, 1);
   }
 
   HybridDGFESpace :: ~HybridDGFESpace () { ; }

@@ -31,8 +31,8 @@ void ExportNgla() {
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
-    .def("CreateVector", &BaseVector::CreateVector,
-         bp::return_value_policy<bp::manage_new_object>())
+    .def("CreateVector", &BaseVector::CreateVector)
+    // bp::return_value_policy<bp::manage_new_object>())
 
     .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
     .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
@@ -54,7 +54,7 @@ void ExportNgla() {
   typedef BaseMatrix BM;
   typedef BaseVector BV;
 
-  bp::class_<BaseMatrix,boost::noncopyable>("BaseMatrix", bp::no_init)
+  bp::class_<BaseMatrix, shared_ptr<BaseMatrix>, boost::noncopyable>("BaseMatrix", bp::no_init)
     .def("__str__", &ToString<BaseMatrix>)
     .add_property("height", &BaseMatrix::Height)
     .add_property("width", &BaseMatrix::Width)

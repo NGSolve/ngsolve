@@ -59,15 +59,15 @@ namespace ngla
       return pdata; 
     }
     
-    NGS_DLL_HEADER virtual BaseVector * Range (int begin, int end) const;
-    NGS_DLL_HEADER virtual BaseVector * Range (IntRange range) const;
+    NGS_DLL_HEADER virtual shared_ptr<BaseVector> Range (int begin, int end) const;
+    NGS_DLL_HEADER virtual shared_ptr<BaseVector> Range (IntRange range) const;
 
     FlatVector<TSCAL> operator() (int i) const
     {
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
 
-    NGS_DLL_HEADER virtual BaseVector * CreateVector () const;
+    NGS_DLL_HEADER virtual shared_ptr<BaseVector> CreateVector () const;
     /*
     {
       switch (es)

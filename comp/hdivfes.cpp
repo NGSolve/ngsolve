@@ -67,15 +67,15 @@ namespace ngcomp
   }
 
 
-  FESpace * RaviartThomasFESpace :: 
+  shared_ptr<FESpace> RaviartThomasFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 0));
 
     if (order <= 0)
-      return new RaviartThomasFESpace(ma, flags, true);      
+      return make_shared<RaviartThomasFESpace> (ma, flags, true);      
     else
-      return new HDivHighOrderFESpace(ma, flags, true);
+      return make_shared<HDivHighOrderFESpace> (ma, flags, true);
   }
 
   

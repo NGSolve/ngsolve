@@ -118,7 +118,7 @@ namespace ngsolve
     
     cout.precision(16);
 
-    Array<BaseVector*> hvec(2*num);
+    Array<shared_ptr<BaseVector>> hvec(2*num);
     for (int i = 0; i < 2*num; i++)
       hvec[i] = vecu.CreateVector();
 

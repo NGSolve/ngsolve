@@ -105,7 +105,7 @@ namespace ngmg
     void MGM (int level, BaseVector & u, 
 	      const BaseVector & f, int incsm = 1) const;
     ///
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     { return biform.GetMatrix().CreateVector(); }
   
     ///
@@ -169,7 +169,7 @@ namespace ngmg
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     ///
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
     ///
     virtual ostream & Print (ostream & s) const;
     ///

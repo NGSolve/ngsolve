@@ -41,7 +41,9 @@ namespace ngla
     void SetShift (SCAL ashift)
     { shift = ashift; }
 
-    void Calc (int numval, Array<Complex> & lam, int nev, Array<BaseVector*> & evecs, const BaseMatrix * pre = NULL) const;
+    void Calc (int numval, Array<Complex> & lam, int nev, 
+               Array<shared_ptr<BaseVector>> & evecs, 
+               const BaseMatrix * pre = NULL) const;
   };
 }
 

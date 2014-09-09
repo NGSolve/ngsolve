@@ -727,7 +727,7 @@ namespace ngcomp
   {
   protected:
     /// pointers to components
-    Array<FESpace*> spaces;
+    Array<shared_ptr<FESpace>> spaces;
     /// cummlated number of dofs of components
     Array<int> cummulative_nd;
     /// dofs on each multigrid level
@@ -740,7 +740,7 @@ namespace ngcomp
     /// generates a compound space 
     /// components are provided in aspaces
     CompoundFESpace (const MeshAccess & ama,
-		     const Array<FESpace*> & aspaces,
+		     const Array<shared_ptr<FESpace>> & aspaces,
 		     const Flags & flags, bool parseflags = false);
 
     /// not much to do.
@@ -748,7 +748,7 @@ namespace ngcomp
     virtual ~CompoundFESpace ();
 
     /// add an additional component space
-    void AddSpace (FESpace * fes);
+    void AddSpace (shared_ptr<FESpace> fes);
 
     ///
     virtual string GetClassName () const
@@ -775,9 +775,7 @@ namespace ngcomp
     }
 
     /// get component space
-    const FESpace * operator[] (int i) const { return spaces[i]; }
-    /// get component space
-    FESpace * operator[] (int i) { return const_cast<FESpace*> (spaces[i]); }
+    shared_ptr<FESpace> operator[] (int i) const { return spaces[i]; }
 
     /// returns a compound finite element
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
@@ -831,10 +829,10 @@ namespace ngcomp
       /// the name
       string name;
       /// function pointer to creator function
-      FESpace* (*creator)(const MeshAccess & ma, const Flags & flags);
+      shared_ptr<FESpace> (*creator)(const MeshAccess & ma, const Flags & flags);
       /// creates a descriptor
       FESpaceInfo (const string & aname,
-		   FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags))
+		   shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags))
 	: name(aname), creator(acreator) {;}
     };
   private:
@@ -848,7 +846,7 @@ namespace ngcomp
 
     /// add a descriptor
     void AddFESpace (const string & aname, 
-		     FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags));
+		     shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags));
   
     /// returns all creators
     const Array<FESpaceInfo*> & GetFESpaces() { return fesa; }
@@ -864,9 +862,9 @@ namespace ngcomp
   extern NGS_DLL_HEADER FESpaceClasses & GetFESpaceClasses ();
 
   /// creates a fespace of that type
-  extern NGS_DLL_HEADER FESpace * CreateFESpace (const string & type,
-						 const MeshAccess & ma,
-						 const Flags & flags);
+  extern NGS_DLL_HEADER shared_ptr<FESpace> CreateFESpace (const string & type,
+                                                           const MeshAccess & ma,
+                                                           const Flags & flags);
 
 
   /**
@@ -885,9 +883,9 @@ namespace ngcomp
     }
     
     /// creates an fespace of type FES
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags)
+    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags)
     {
-      return new FES (ma, flags);
+      return make_shared<FES> (ma, flags);
     }
   };
 

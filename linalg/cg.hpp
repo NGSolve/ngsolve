@@ -87,7 +87,7 @@ namespace ngla
     ///
     NGS_DLL_HEADER virtual void Mult (const BaseVector & v, BaseVector & prod) const = 0;
     ///
-    NGS_DLL_HEADER virtual BaseVector * CreateVector() const;
+    NGS_DLL_HEADER virtual shared_ptr<BaseVector> CreateVector() const;
 
 
     virtual int VHeight() const {return a->VWidth();}

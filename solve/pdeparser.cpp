@@ -1663,16 +1663,15 @@ namespace ngsolve
 			  if (dynamic_cast<const CompoundFESpace*> 
 			      (&pde->GetBilinearForm (name)->GetFESpace()))
 			    {
-			      integrator.reset (new CompoundBilinearFormIntegrator
-                                                (*integrator, 
-                                                 int(partflags.GetNumFlag ("comp", 1))-1));
-			    }
+			      integrator = make_shared<CompoundBilinearFormIntegrator>
+                                (integrator, int(partflags.GetNumFlag ("comp", 1))-1);
+                        }
 			  else
 			    {
-			      integrator.reset (new BlockBilinearFormIntegrator
-                                                (*integrator, 
-                                                 pde->GetBilinearForm (name)->GetFESpace().GetDimension(),
-                                                 int(partflags.GetNumFlag ("comp", 1))-1));
+			      integrator = make_shared<BlockBilinearFormIntegrator>
+                                (integrator, 
+                                 pde->GetBilinearForm (name)->GetFESpace().GetDimension(),
+                                 int(partflags.GetNumFlag ("comp", 1))-1);
 			    }
 			}
 
@@ -1886,17 +1885,15 @@ namespace ngsolve
 			  if (dynamic_cast<const CompoundFESpace*> 
 			      (&pde->GetLinearForm (name)->GetFESpace()))
 			    {
-			      integrator.reset (new CompoundLinearFormIntegrator
-                                                (*integrator, 
-                                                 int(partflags.GetNumFlag ("comp", 1))-1));
+			      integrator = make_shared<CompoundLinearFormIntegrator>
+                                (integrator, int(partflags.GetNumFlag ("comp", 1))-1);
 			    }
 			  else
 			    {
-			      integrator.reset (new BlockLinearFormIntegrator
-                                                (*integrator, 
-                                                 pde->GetLinearForm (name)->GetFESpace().GetDimension(),
-                                                 int(partflags.GetNumFlag ("comp", 1))-1));
-			    }
+			      integrator = make_shared<BlockLinearFormIntegrator>
+                                (integrator, pde->GetLinearForm (name)->GetFESpace().GetDimension(),
+                                 int(partflags.GetNumFlag ("comp", 1))-1);
+                        }
 			}
 
 		      if (partflags.NumFlagDefined ("normal"))

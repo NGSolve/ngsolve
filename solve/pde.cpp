@@ -12,6 +12,7 @@
 
 #include <parallelngs.hpp>
 
+
 namespace ngfem
 {
   // extern SymbolTable<double> * constant_table_for_FEM;
@@ -49,32 +50,6 @@ namespace ngsolve
   
   PDE :: ~PDE()
   {
-    /*
-    for (int i = 0; i < coefficients.Size(); i++)
-      delete coefficients[i];
-    coefficients.DeleteAll();
-    for (int i = 0; i < spaces.Size(); i++)
-      delete spaces[i];
-    spaces.DeleteAll();
-    for (int i = 0; i < gridfunctions.Size(); i++)
-      gridfunctions[i].reset();
-      //delete gridfunctions[i];
-    // gridfunctions.DeleteAll();
-    for (int i = 0; i < bilinearforms.Size(); i++)
-      delete bilinearforms[i];
-    bilinearforms.DeleteAll();
-    for (int i = 0; i < linearforms.Size(); i++)
-      delete linearforms[i];
-    linearforms.DeleteAll();
-    for (int i = 0; i < preconditioners.Size(); i++)
-      delete preconditioners[i];
-    preconditioners.DeleteAll();
-    for (int i = 0; i < numprocs.Size(); i++)
-      delete numprocs[i];
-    numprocs.DeleteAll();
-    for (int i = 0; i < variables.Size(); i++)
-      delete variables[i];
-    */
     for (int i = 0; i < string_constants.Size(); i++)
       delete string_constants[i];
     string_constants.DeleteAll();
@@ -95,11 +70,6 @@ namespace ngsolve
       delete mas[i];
   }
 
-  void PDE :: SavePDE (const string & filename)
-  {
-    ;
-  } 
-  
   
   void PDE :: SetFilename(const string str)
   { 
@@ -365,12 +335,19 @@ namespace ngsolve
     if (opt) return NULL;
     throw Exception (string("FESpace '") + name + "' not defined\n");
   }
+  shared_ptr<FESpace> PDE :: 
+  FESpacePtr (const string & name, bool opt)
+  { 
+    if (spaces.Used(name)) return spaces[name];
+    if (opt) return NULL;
+    throw Exception (string("FESpace '") + name + "' not defined\n");
+  }
 
-  GridFunction * PDE :: 
-  GetGridFunction (const string & name, bool opt)
+  shared_ptr<GridFunction> PDE :: 
+  GridFunctionPtr (const string & name, bool opt)
   { 
     if (gridfunctions.Used(name))
-      return gridfunctions[name].get(); 
+      return gridfunctions[name];
 
     if (opt) return NULL;
     throw Exception (string("GridFunction '") + name + "' not defined\n");
@@ -846,12 +823,12 @@ namespace ngsolve
 
             Flags flags;
             flags.SetFlag ("dim",dim);
-            FESpace * fes = CreateFESpace (type, *mas[0], flags);
+            auto fes = CreateFESpace (type, *mas[0], flags);
 
             fes -> DoArchive(archive);
             fes -> FinalizeUpdate (lh);
-            spaces.Set (name, shared_ptr<FESpace>(fes));
-            todo.Append(fes);
+            spaces.Set (name, fes);
+            todo.Append(fes.get());
           }
       }
 
@@ -875,9 +852,9 @@ namespace ngsolve
           {
             string name, fesname;
             archive & name & fesname;
-            GridFunction * gf = CreateGridFunction (GetFESpace(fesname), name, Flags());
+            auto gf = CreateGridFunction (GetFESpace(fesname), name, Flags());
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
-            AddGridFunction (name, shared_ptr<GridFunction> (gf));
+            AddGridFunction (name, gf);
             gridfunctions[i] -> DoArchive (archive);            
           }
       }
@@ -941,13 +918,13 @@ namespace ngsolve
 
 
 
-  FESpace * PDE :: AddFESpace (const string & name, const Flags & hflags)
+  shared_ptr<FESpace> PDE :: AddFESpace (const string & name, const Flags & hflags)
   {
     cout << IM(1) << "add fespace " << name << endl;
 
     Flags flags = hflags;
 
-    FESpace * space = 0;
+    // shared_ptr<FESpace> space;
     
     int meshnr = int (flags.GetNumFlag ("mesh", 1)) - 1;
     const MeshAccess & ma = GetMeshAccess (meshnr);
@@ -961,18 +938,18 @@ namespace ngsolve
 
     string type = flags.GetStringFlag("type", "");
     
-    space = CreateFESpace (type, ma, flags);
+    auto space = CreateFESpace (type, ma, flags);
     
     if (type == "compound" || flags.GetDefineFlag ("compound"))
       {
-        const Array<char*> & spacenames = flags.GetStringListFlag ("spaces");
+        const Array<string> & spacenames = flags.GetStringListFlag ("spaces");
         cout << IM(1) << "   spaces = " << spacenames << endl;
         
-        Array<FESpace*> cspaces (spacenames.Size());
+        Array<shared_ptr<FESpace>> cspaces (spacenames.Size());
         for (int i = 0; i < cspaces.Size(); i++)
-          cspaces[i] = GetFESpace (spacenames[i]);
+          cspaces[i] = FESpacePtr (spacenames[i]);
         
-        space = new CompoundFESpace (GetMeshAccess(), cspaces, flags);
+        space = make_shared<CompoundFESpace> (GetMeshAccess(), cspaces, flags);
       }
     if (!space) 
       {
@@ -1018,23 +995,23 @@ namespace ngsolve
 
     space->SetName (name);
     spaces.Set (name, shared_ptr<FESpace>(space));
-    todo.Append(space);
+    todo.Append(space.get());
     AddVariable (string("fes.")+space->GetName()+".ndof", 0.0, 6);
 
     return space;
   }
 
-  void PDE :: AddFESpace (const string & name, FESpace * space)
+  void PDE :: AddFESpace (const string & name, shared_ptr<FESpace> space)
   {
     space->SetName (name);
-    spaces.Set (name, shared_ptr<FESpace>(space));
-    todo.Append(space);
+    spaces.Set (name, space);
+    todo.Append(space.get());
   }
 
 
 
 
-  GridFunction * PDE :: AddGridFunction (const string & name, const Flags & flags)
+  shared_ptr<GridFunction> PDE :: AddGridFunction (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add grid-function " << name << endl;
 
@@ -1048,9 +1025,8 @@ namespace ngsolve
 
     const FESpace * space = GetFESpace(spacename);
  
-    GridFunction * gf = CreateGridFunction (space, name, flags);
-
-    AddGridFunction (name, shared_ptr<GridFunction>(gf), true); // flags.GetDefineFlag ("addcoef"));
+    auto gf = CreateGridFunction (space, name, flags);
+    AddGridFunction (name, gf, true); // flags.GetDefineFlag ("addcoef"));
     return gf;
   }
 
@@ -1093,18 +1069,18 @@ namespace ngsolve
 	cerr << "space " << spacename << " not defined " << endl;
 	return 0;
       }
-    const FESpace * space = spaces[spacename].get();
+    shared_ptr<FESpace> space = spaces[spacename];
 
-    const FESpace * space2 = NULL;
+    shared_ptr<FESpace> space2 = NULL;
     if (flags.StringFlagDefined ("fespace2"))
-      space2 = spaces[flags.GetStringFlag ("fespace2", "")].get();
+      space2 = spaces[flags.GetStringFlag ("fespace2", "")];
   
     if (!space2)
       {
-	bilinearforms.Set (name, shared_ptr<BilinearForm>(CreateBilinearForm (space, name, flags)));
+	bilinearforms.Set (name, CreateBilinearForm (space, name, flags));
       }
     else
-      bilinearforms.Set (name, shared_ptr<BilinearForm>(new T_BilinearForm<double > (*space, *space2, name, flags)));
+      bilinearforms.Set (name, make_shared<T_BilinearForm<double>> (*space, *space2, name, flags));
     
     if (flags.StringFlagDefined ("linearform"))
       bilinearforms[name] -> SetLinearForm (GetLinearForm (flags.GetStringFlag ("linearform", 0)));
@@ -1116,7 +1092,7 @@ namespace ngsolve
 
 
  
-  LinearForm * PDE :: AddLinearForm (const string & name, const Flags & flags)
+  shared_ptr<LinearForm> PDE :: AddLinearForm (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add linear-form " << name << endl;
 
@@ -1128,12 +1104,12 @@ namespace ngsolve
 			 "' uses undefined space '" + spacename + "'");
       }
 
-    const FESpace * space = spaces[spacename].get();
+    auto space = spaces[spacename];
 
-    linearforms.Set (name, shared_ptr<LinearForm> (CreateLinearForm (space, name, flags)));
+    linearforms.Set (name, CreateLinearForm (space, name, flags));
     todo.Append(linearforms[name].get());
 
-    return linearforms[name].get();
+    return linearforms[name];
   }
 
 
@@ -1143,7 +1119,7 @@ namespace ngsolve
     cout << IM(1) << "add preconditioner " << name << flush;
 
     Preconditioner * pre = NULL;
-    const char * type = flags.GetStringFlag ("type", NULL);
+    const string & type = flags.GetStringFlag ("type", NULL);
 
     int ntasks = MyMPI_GetNTasks ();
     
@@ -1158,35 +1134,35 @@ namespace ngsolve
 	else 
 	*/
 
-	if (strcmp (type, "local") == 0)
+	if (type == "local") 
 	  pre = new LocalPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "twolevel") == 0)
+	else if (type == "twolevel")
 	  pre = new TwoLevelPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "complex") == 0)
+	else if (type == "complex") 
 	  pre = new ComplexPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "chebychev") == 0)
+	else if (type == "chebychev") 
 	  pre = new ChebychevPreconditioner (this, flags, name);
 	
 	//  else if (strcmp (type, "constrained") == 0)
 	//    pre = new ConstrainedPreconditioner (this, flags);
 	
-	else if (strcmp (type, "amg") == 0)
+	else if (type ==  "amg")
 	  pre = new CommutingAMGPreconditioner (this, flags, name);
 	
 	// changed 08/19/2003, Bachinger
-	else if (strcmp (type, "nonsymmetric") == 0)
+	else if (type == "nonsymmetric")
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
-
+        
 	else
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
 	    {
 	      if (flags.GetDefineFlag (GetPreconditionerClasses().GetPreconditioners()[i]->name))
 		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	      
-	      if (string(type) == GetPreconditionerClasses().GetPreconditioners()[i]->name)
+	      if (type == GetPreconditionerClasses().GetPreconditioners()[i]->name)
 		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	    }
       }
@@ -1199,29 +1175,29 @@ namespace ngsolve
 	  }
 	else 
 	*/
-	if (strcmp (type, "local") == 0)
+	if (type == "local")
 	  pre = new LocalPreconditioner (this, flags, name);
 	/*
 	  else if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
 	*/
-	else if (strcmp (type, "twolevel") == 0)
+	else if (type == "twolevel") 
 	  pre = new TwoLevelPreconditioner (this, flags, name);
 
-	else if (strcmp (type, "complex") == 0)
+	else if (type == "complex") 
 	  pre = new ComplexPreconditioner (this, flags, name);
 	
-	else if (strcmp (type, "chebychev") == 0)
+	else if (type == "chebychev") 
 	  pre = new ChebychevPreconditioner (this, flags, name);
 	
 	//  else if (strcmp (type, "constrained") == 0)
 	//    pre = new ConstrainedPreconditioner (this, flags);
 	
-	else if (strcmp (type, "amg") == 0)
+	else if (type == "amg") 
 	  pre = new CommutingAMGPreconditioner (this, flags, name);
 	
 	// changed 08/19/2003, Bachinger
-	else if (strcmp (type, "nonsymmetric") == 0)
+	else if (type == "nonsymmetric")
 	  pre = new NonsymmetricPreconditioner (this, flags, name);
 	else
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
@@ -1268,7 +1244,7 @@ namespace ngsolve
     BilinearForm * form = GetBilinearForm (name);
     if (form && part)
       {
-	form->AddIntegrator (part,deletable);
+	form->AddIntegrator (part);
 	cout << IM(1) << "integrator " << part->Name() << endl;
       }
     else

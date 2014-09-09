@@ -142,7 +142,7 @@ namespace ngmg
     d = f - biform.GetMatrix(level) * u;
   }
   
-  BaseVector * GSSmoother :: CreateVector(int level) const
+  shared_ptr<BaseVector> GSSmoother :: CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
   }
@@ -221,7 +221,7 @@ namespace ngmg
     //    biform.GetMatrix (level).Residuum (u, f, d);
   }
   
-  BaseVector * AnisotropicSmoother :: 
+  shared_ptr<BaseVector> AnisotropicSmoother :: 
   CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
@@ -810,18 +810,16 @@ namespace ngmg
       jac[level] -> GSSmooth (u, f, steps);
     else
       {
-	BaseVector & d = *f.CreateVector();
-	BaseVector & w = *f.CreateVector();
+	auto d = f.CreateVector();
+	auto w = f.CreateVector();
 	for(int i=0;i<steps;i++)
 	  {
 	    jac[level] -> GSSmooth (u, f, 1); 
 	  
-	    d = f - biform.GetMatrix(level) * u;
-	    w = (*inv[level]) * d;
-	    u += w;
+	    *d = f - biform.GetMatrix(level) * u;
+	    *w = (*inv[level]) * *d;
+	    u += *w;
 	  }  
-	delete &w;
-	delete &d;
       }
   }
 
@@ -881,31 +879,31 @@ namespace ngmg
       }
     else
       {
-	BaseVector & d = *f.CreateVector();
+	auto d = f.CreateVector();
 
 	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
 	if (scinv)
 	  {
-	    d = f;
-	    biform.GetMatrix (level).MultAdd2 (-1, u, d);
+	    *d = f;
+	    biform.GetMatrix (level).MultAdd2 (-1, u, *d);
 	    for (int i = 0; i < steps; i++)
 	      {
 		if ( (!scinv->SmoothIsProjection()) || (i > 0) || (level > 0) )
-		  scinv -> Smooth (u, f, d);
-		jac[level] -> GSSmoothBackPartial (u, f, d); 
+		  scinv -> Smooth (u, f, *d);
+		jac[level] -> GSSmoothBackPartial (u, f, *d); 
 	      }
 	  }
 	else
 	  {
 	    for(int i=0;i<steps;i++)
 	      {
-		d = f - biform.GetMatrix(level) * u;
-		u += (*inv[level]) * d;
+		*d = f - biform.GetMatrix(level) * u;
+		u += (*inv[level]) * *d;
 		jac[level] -> GSSmoothBack (u, f, 1);
 	      }
 	  }
            
-	delete &d;
+	// delete &d;
       }
   }
   
@@ -922,7 +920,7 @@ namespace ngmg
     d = f - biform.GetMatrix (level) * u;
   }
   
-  BaseVector * BlockSmoother :: CreateVector(int level) const
+  shared_ptr<BaseVector> BlockSmoother :: CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
   }
@@ -975,7 +973,7 @@ namespace ngmg
     */
   }
   
-  BaseVector *   SmoothingPreconditioner :: CreateVector () const
+  shared_ptr<BaseVector> SmoothingPreconditioner :: CreateVector () const
   {
     //    return smoother.CreateVector(level);
     return 0;

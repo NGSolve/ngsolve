@@ -16,7 +16,9 @@ namespace ngla
 {
   
   template <typename SCAL>
-  void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, Array<BaseVector*> & hevecs, const BaseMatrix * pre) const
+  void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, 
+                            Array<shared_ptr<BaseVector>> & hevecs, 
+                            const BaseMatrix * pre) const
   { 
     static Timer t("arnoldi");    
     static Timer t2("arnoldi - orthogonalize");    
@@ -34,7 +36,7 @@ namespace ngla
 
 
     Matrix<SCAL> matH(m);
-    Array<BaseVector*> abv(m);
+    Array<shared_ptr<BaseVector>> abv(m);
     for (int i = 0; i < m; i++)
       abv[i] = a.CreateVector();
 

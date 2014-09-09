@@ -84,7 +84,7 @@ namespace ngla
     delete &r;
   }
 
-  BaseVector *  ChebyshevIteration :: CreateVector () const
+  shared_ptr<BaseVector> ChebyshevIteration :: CreateVector () const
   {
     return a->CreateVector();
   }

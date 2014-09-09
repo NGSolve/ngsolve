@@ -22,7 +22,7 @@ namespace ngfem
 namespace ngcomp
 {
   using netgen::Ng_Node;
-
+  
 
 
 
@@ -188,13 +188,15 @@ namespace ngcomp
 
   public:
     /// connects to Netgen - mesh
-    MeshAccess (netgen::Mesh * amesh = NULL);
+    MeshAccess (shared_ptr<netgen::Mesh> amesh = NULL);
     /// loads mesh from file
     MeshAccess (string filename)
       : MeshAccess() 
     {
       LoadMesh (filename);
     }
+    /// select this mesh in netgen visuaization
+    void SelectMesh() const;
     /// not much to do 
     virtual ~MeshAccess ();
 
@@ -248,7 +250,7 @@ namespace ngcomp
       return p;
     }
 
-    ElementRange Elements (VorB vb) const
+    ElementRange Elements (VorB vb = VOL) const
     {
       return ElementRange (vb, IntRange (0, GetNE(vb)));
     }

@@ -323,7 +323,7 @@ namespace ngcomp
 
 
 
-  MeshAccess :: MeshAccess (netgen::Mesh * amesh)
+  MeshAccess :: MeshAccess (shared_ptr<netgen::Mesh> amesh)
     : mesh(amesh)
   {
     ngstd::testout = netgen::testout;
@@ -364,6 +364,10 @@ namespace ngcomp
     if (archive.Input()) UpdateBuffers();
   }
 
+  void MeshAccess :: SelectMesh() const
+  {
+    mesh.SelectMesh();
+  }
 
 
   /*

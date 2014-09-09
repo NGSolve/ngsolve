@@ -114,9 +114,9 @@ namespace ngla
     void SetOrig (int i, int j, const TM & val)
     { Set (order[i], order[j], val); }
 
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     {
-      return new VVector<TV> (height);
+      return make_shared<VVector<TV>> (height);
     }
   };
 

@@ -1249,8 +1249,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (dimension > 1)
       {
-	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
-	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));  
+	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);  
       }
 
     if (order == 1) 
@@ -1477,8 +1477,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (dimension > 1)
       {
-	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
-	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
+	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
       }
   }
 
@@ -1620,7 +1620,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     if (dimension > 1)
-      integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+      integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
   }
   
   ElementFESpace :: ~ElementFESpace ()
@@ -1738,7 +1738,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     boundary_integrator.reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
 
     if (dimension > 1)
-      boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
+      boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
   }
 
   
@@ -1853,7 +1853,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
-				      const Array<FESpace*> & aspaces,
+				      const Array<shared_ptr<FESpace>> & aspaces,
 				      const Flags & flags, bool parseflags)
     : FESpace (ama, flags), spaces(aspaces)
   {
@@ -1873,7 +1873,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  void CompoundFESpace :: AddSpace (FESpace * fes)
+  void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
     spaces.Append (fes);
     dynamic_cast<CompoundProlongation*> (prol) -> AddProlongation (fes->GetProlongation());
@@ -2293,7 +2293,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
-	      FESpace* (*acreator)(const MeshAccess & ma, const Flags & flags))
+	      shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags))
   {
     fesa.Append (new FESpaceInfo(aname, acreator));
   }
@@ -2323,11 +2323,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return fecl;
   }
 
-  extern NGS_DLL_HEADER FESpace * CreateFESpace (const string & type,
-						 const MeshAccess & ma,
-						 const Flags & flags)
+  extern NGS_DLL_HEADER shared_ptr<FESpace> CreateFESpace (const string & type,
+                                                           const MeshAccess & ma,
+                                                           const Flags & flags)
   {
-    FESpace * space = NULL;
+    shared_ptr<FESpace> space;
     for (int i = 0; i < GetFESpaceClasses().GetFESpaces().Size(); i++)
       if (type == GetFESpaceClasses().GetFESpaces()[i]->name ||
 	  flags.GetDefineFlag (GetFESpaceClasses().GetFESpaces()[i]->name) )

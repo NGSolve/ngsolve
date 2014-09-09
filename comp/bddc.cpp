@@ -403,7 +403,7 @@ namespace ngcomp
       delete tmp2;
     }
     
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     {
       return bfa.GetMatrix().CreateVector();
     }

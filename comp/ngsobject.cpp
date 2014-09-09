@@ -42,7 +42,7 @@ void NGS_Object :: DefineStringListFlag(const char* s)
     cerr << "WARNING in NGS_Object :: DefineStringListFlag: stringlistflag '" << s << "' already defined" << endl;
     return;
   }    
-  Array<char*> as(0);
+  Array<string> as(0);
   flaglist.SetFlag(s,as); 
 }
 
@@ -62,7 +62,7 @@ int NGS_Object :: CheckFlags(const Flags& flags)
   int ret=0; // ok
   
   // parse string flags
-  const char* s;
+  string s;
   for (int i=0; i<flags.GetNStringFlags(); i++)
   {
     flags.GetStringFlag(i, s);

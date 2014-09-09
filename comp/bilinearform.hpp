@@ -48,7 +48,7 @@ namespace ngcomp
     double unuseddiag;
 
     /// low order bilinear-form, 0 if not used
-    BilinearForm * low_order_bilinear_form;
+    shared_ptr<BilinearForm> low_order_bilinear_form;
 
     /// modify linear form due to static condensation
     LinearForm * linearform;
@@ -57,13 +57,10 @@ namespace ngcomp
     Array<Preconditioner*> preconditioners; 
 
     /// matrices (sparse, application, diagonal, ...)
-    Array<BaseMatrix*> mats;
+    Array<shared_ptr<BaseMatrix>> mats;
 
     /// bilinearform-integrators
     Array<shared_ptr<BilinearFormIntegrator>> parts;
-
-    /// is biform responsible for the deallocation ?
-    Array<bool> parts_deletable;
 
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -104,18 +101,17 @@ namespace ngcomp
 		  const FESpace & afespace2, 
 		  const string & aname,
 		  const Flags & flags);
-    /// deletes integrators (if deletable)
+
     virtual ~BilinearForm ();
   
 
     ///
-    void AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi, bool deletable = true);
+    void AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
 
     /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,
 				   const int master_surface,
-				   const int slave,
-				   const bool deletable = true);
+				   const int slave)
     */
   
     ///
@@ -207,6 +203,8 @@ namespace ngcomp
 
     /// returns the assembled matrix
     BaseMatrix & GetMatrix () const { return *mats.Last(); }
+    /// returns the assembled matrix
+    shared_ptr<BaseMatrix> MatrixPtr () const { return mats.Last(); }
 
     // operator const BaseMatrix& () const { return GetMatrix(); }
 
@@ -335,7 +333,7 @@ namespace ngcomp
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
     /// creates a compatible vector
-    virtual BaseVector * CreateVector() const = 0;
+    virtual shared_ptr<BaseVector> CreateVector() const = 0;
 
     /// frees matrix 
     virtual void CleanUpLevel() { ; }
@@ -529,7 +527,7 @@ namespace ngcomp
     virtual void AllocateMatrix ();
 
     ///
-    virtual BaseVector * CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateVector() const;
 
     ///
     virtual void CleanUpLevel();
@@ -581,7 +579,7 @@ namespace ngcomp
     virtual void AllocateMatrix ();
     virtual void CleanUpLevel();
 
-    virtual BaseVector * CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -626,7 +624,7 @@ namespace ngcomp
     virtual ~T_BilinearFormDiagonal ();
 
     virtual void AllocateMatrix ();
-    virtual BaseVector * CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateVector() const;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
@@ -659,9 +657,9 @@ namespace ngcomp
      Some flags are:
      -symmetric   ... assembles a symmetric matrix
    */
-  extern NGS_DLL_HEADER BilinearForm * CreateBilinearForm (const FESpace * space,
-							   const string & name,
-							   const Flags & flags);
+  extern NGS_DLL_HEADER shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
+                                                                     const string & name,
+                                                                     const Flags & flags);
 
 
 
@@ -686,7 +684,7 @@ namespace ngcomp
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
     ///
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
     ///
     virtual int VHeight() const
     {
@@ -734,7 +732,7 @@ namespace ngcomp
     virtual ~ElementByElement_BilinearForm ();
     
     virtual void AllocateMatrix ();
-    virtual BaseVector * CreateVector() const;
+    virtual shared_ptr<BaseVector> CreateVector() const;
     
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,

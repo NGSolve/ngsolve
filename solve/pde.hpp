@@ -206,9 +206,6 @@ namespace ngsolve
     ///
     void LoadPDE (istream & input, const bool nomeshload = false, const bool nogeometryload = false);
     ///
-    void SavePDE (const string & filename);
-
-    ///
     void SaveSolution (const string & filename, const bool ascii = false);
     ///
     void LoadSolution (const string & filename, const bool ascii = false);
@@ -253,8 +250,14 @@ namespace ngsolve
     shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0);
     ///
     FESpace * GetFESpace (const string & name, bool opt = 0);
+    shared_ptr<FESpace> FESpacePtr (const string & name, bool opt = 0);
     ///
-    GridFunction * GetGridFunction (const string & name, bool opt = 0);
+    GridFunction * GetGridFunction (const string & name, bool opt = 0)
+    {
+      return GridFunctionPtr(name, opt).get();
+    }
+    ///
+    shared_ptr<GridFunction> GridFunctionPtr (const string & name, bool opt = 0);
     ///
     BilinearForm * GetBilinearForm (const string & name, bool opt = 0);
     ///
@@ -297,17 +300,17 @@ namespace ngsolve
     ///
     void AddCoefficientFunction (const string & name, shared_ptr<CoefficientFunction> fun);
     ///
-    FESpace * AddFESpace (const string & name, const Flags & flags);
+    shared_ptr<FESpace> AddFESpace (const string & name, const Flags & flags);
     ///
-    void AddFESpace (const string & name, FESpace * space);
+    void AddFESpace (const string & name, shared_ptr<FESpace> space);
     ///
-    GridFunction * AddGridFunction (const string & name, const Flags & flags);
+    shared_ptr<GridFunction> AddGridFunction (const string & name, const Flags & flags);
     ///
     void AddGridFunction (const string & name, shared_ptr<GridFunction> gf, bool addcf = false);
     ///
     BilinearForm * AddBilinearForm (const string & name, const Flags & flags);
     ///
-    LinearForm * AddLinearForm (const string & name, const Flags & flags);
+    shared_ptr<LinearForm> AddLinearForm (const string & name, const Flags & flags);
     ///
     Preconditioner * AddPreconditioner (const string & name, const Flags & flags);
     ///

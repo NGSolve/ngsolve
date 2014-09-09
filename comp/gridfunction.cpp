@@ -30,8 +30,10 @@ namespace ngcomp
 
   GridFunction :: ~GridFunction()
   {
+    /*
     for (int i = 0; i < vec.Size(); i++)
       delete vec[i];
+    */
   }
 
 
@@ -149,7 +151,7 @@ namespace ngcomp
 
 
 
-  GridFunction * GridFunction :: 
+  shared_ptr<GridFunction> GridFunction :: 
   GetComponent (int compound_comp) const
   {
     if (!compgfs.Size() || compgfs.Size() < compound_comp)
@@ -618,7 +620,7 @@ namespace ngcomp
 	int nsp = cfe->GetNSpaces();
 	this->compgfs.SetSize(nsp);
 	for (int i = 0; i < nsp; i++)
-	  this->compgfs[i] = new S_ComponentGridFunction<SCAL> (*this, i);
+	  this->compgfs[i] = make_shared<S_ComponentGridFunction<SCAL>> (*this, i);
       }    
     this->Visualize (this->name);
   }
@@ -689,7 +691,7 @@ namespace ngcomp
 	int nsp = cfe->GetNSpaces();
 	compgfs.SetSize(nsp);
 	for (int i = 0; i < nsp; i++)
-	  compgfs[i] = new S_ComponentGridFunction<TSCAL> (*this, i);
+	  compgfs[i] = make_shared<S_ComponentGridFunction<TSCAL>> (*this, i);
       }    
 
     this->Visualize (this->name);
@@ -725,21 +727,21 @@ namespace ngcomp
 	    if (vec[i] && ndof == vec[i]->Size())
 	      break;
 	    
-	    BaseVector * ovec = vec[i];
+	    shared_ptr<BaseVector> ovec = vec[i];
 	
 #ifdef PARALLEL
 	    if ( & this->GetFESpace().GetParallelDofs() )
-	      vec[i] = new ParallelVVector<TV> (ndof, &this->GetFESpace().GetParallelDofs(), CUMULATED);
+	      vec[i] = makke_shared<ParallelVVector<TV>> (ndof, &this->GetFESpace().GetParallelDofs(), CUMULATED);
 	    else
 #endif
- 	      vec[i] = new VVector<TV> (ndof);
+ 	      vec[i] = make_shared<VVector<TV>> (ndof);
 	    
-
-	    (*vec[i]) = TSCAL(0);
+            
+	    *vec[i] = TSCAL(0);
 
 	    if (this->nested && ovec && this->GetFESpace().GetProlongation())
 	      {
-		*vec[i]->Range (0, ovec->Size()) += (*ovec);
+		*vec[i]->Range (0, ovec->Size()) += *ovec;
 
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace().GetProlongation()).Update();
 		
@@ -751,7 +753,7 @@ namespace ngcomp
             // cout << "visualize" << endl;
             // Visualize (this->name);
 	    
-	    delete ovec;
+	    // delete ovec;
 	  }
 	
 	this -> level_updated = this -> ma.GetNLevels();
@@ -775,20 +777,20 @@ namespace ngcomp
   }
 
   /*
-  GridFunction * CreateGridFunction (const FESpace * space,
-				     const string & name, const Flags & flags)
+    sharedGridFunction * CreateGridFunction (const FESpace * space,
+  const string & name, const Flags & flags)
   {
     return CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), name, flags);
   }
   */
 
-  GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
-				     const string & name, const Flags & flags)
+  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+                                               const string & name, const Flags & flags)
   {
-    GridFunction * gf = 
-      CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
+    shared_ptr<GridFunction> gf 
+      ((GridFunction*)CreateVecObject  <T_GridFunction, GridFunction> // , const FESpace, const string, const Flags>
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-       space->IsComplex(), *space, name, flags);
+       space->IsComplex(), *space, name, flags));
   
     gf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
     
