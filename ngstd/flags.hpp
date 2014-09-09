@@ -22,15 +22,15 @@ namespace ngstd
   class NGS_DLL_HEADER Flags 
   {
     /// string flags
-    SymbolTable<char *> strflags;
+    SymbolTable<string> strflags;
     /// numerical flags
     SymbolTable<double> numflags;
     /// define flags
     SymbolTable<int> defflags;
     /// string list flags
-    SymbolTable<Array<char*>*> strlistflags;
+    SymbolTable<shared_ptr<Array<string>>> strlistflags;
     /// numerical list flags
-    SymbolTable<Array<double>*> numlistflags;
+    SymbolTable<shared_ptr<Array<double>>> numlistflags;
   public:
     /// no flags
     Flags ();
@@ -48,15 +48,15 @@ namespace ngstd
     /// Deletes all flags
     void DeleteFlags ();
     /// Sets string flag, overwrite if exists
-    Flags & SetFlag (const char * name, const char * val);
+    Flags & SetFlag (const string & name, const string & val);
     /// Sets numerical flag, overwrite if exists
-    Flags &  SetFlag (const char * name, double val) &;
+    Flags &  SetFlag (const string & name, double val) &;
     /// Sets boolean flag
-    Flags &  SetFlag (const char * name);
+    Flags &  SetFlag (const string & name);
     /// Sets string array flag
-    Flags &  SetFlag (const char * name, const Array<char*> & val);
+    Flags &  SetFlag (const string & name, const Array<string> & val);
     /// Sets double array flag
-    Flags &  SetFlag (const char * name, const Array<double> & val);
+    Flags &  SetFlag (const string & name, const Array<double> & val);
   
     Flags SetFlag (const char * name, double val) &&
     {
@@ -81,32 +81,32 @@ namespace ngstd
 
 
     /// Returns string flag, default value if not exists
-    const char * GetStringFlag (const char * name, const char * def) const;
+    // const string & GetStringFlag (const string & name, const char * def) const;
     /// Returns string flag, default value if not exists
-    string GetStringFlag (const char * name, const string & def) const;
+    const string & GetStringFlag (const string & name, const string & def) const;
     /// Returns numerical flag, default value if not exists
-    double GetNumFlag (const char * name, double def) const;
+    double GetNumFlag (const string & name, double def) const;
     /// Returns address of numerical flag, null if not exists
-    const double * GetNumFlagPtr (const char * name) const;
+    const double * GetNumFlagPtr (const string & name) const;
     /// Returns address of numerical flag, null if not exists
-    double * GetNumFlagPtr (const char * name);
+    double * GetNumFlagPtr (const string & name);
     /// Returns boolean flag
-    int GetDefineFlag (const char * name) const;
+    // int GetDefineFlag (const char * name) const;
     int GetDefineFlag (const string & name) const;
     /// Returns string list flag, empty array if not exist
-    const Array<char*> & GetStringListFlag (const char * name) const;
+    const Array<string> & GetStringListFlag (const string & name) const;
     /// Returns num list flag, empty array if not exist
-    const Array<double> & GetNumListFlag (const char * name) const;
+    const Array<double> & GetNumListFlag (const string & name) const;
 
 
     /// Test, if string flag is defined
-    int StringFlagDefined (const char * name) const;
+    bool StringFlagDefined (const string & name) const;
     /// Test, if num flag is defined
-    int NumFlagDefined (const char * name) const;
+    bool NumFlagDefined (const string & name) const;
     /// Test, if string list flag is defined
-    int StringListFlagDefined (const char * name) const;
+    bool StringListFlagDefined (const string & name) const;
     /// Test, if num list flag is defined
-    int NumListFlagDefined (const char * name) const;
+    bool NumListFlagDefined (const string & name) const;
 
     /// number of string flags
     int GetNStringFlags () const { return strflags.Size(); }
@@ -120,16 +120,16 @@ namespace ngstd
     int GetNNumListFlags () const { return numlistflags.Size(); }
 
     ///
-    const char * GetStringFlag (int i, const char *& name) const
-    { name = strflags.GetName(i).c_str(); return strflags[i]; }
-    double GetNumFlag (int i, const char *& name) const
-    { name = numflags.GetName(i).c_str(); return numflags[i]; }
-    void GetDefineFlag (int i, const char *& name) const
-    { name = defflags.GetName(i).c_str(); }
-    const Array<double> * GetNumListFlag (int i, const char *& name) const
+    const string & GetStringFlag (int i, string & name) const
+    { name = strflags.GetName(i); return strflags[i]; }
+    double GetNumFlag (int i, string & name) const
+    { name = numflags.GetName(i); return numflags[i]; }
+    void GetDefineFlag (int i, string & name) const
+    { name = defflags.GetName(i); }
+    const shared_ptr<Array<double>> GetNumListFlag (int i, string & name) const
     { name = numlistflags.GetName(i).c_str(); return numlistflags[i]; }
-    const Array<char*> * GetStringListFlag (int i, const char *& name) const
-    { name = strlistflags.GetName(i).c_str(); return strlistflags[i]; }
+    const shared_ptr<Array<string>> GetStringListFlag (int i, string & name) const
+    { name = strlistflags.GetName(i); return strlistflags[i]; }
 
     friend Archive & operator & (Archive & archive, Flags & flags);
   };
