@@ -15,7 +15,7 @@
 
 namespace ngfem
 {
-  // extern SymbolTable<double> * constant_table_for_FEM;
+  extern SymbolTable<double> * constant_table_for_FEM;
 }
 
 
@@ -27,7 +27,7 @@ namespace ngsolve
     levelsolved = -1;
     SetGood (true);
     pc = 0;
-    // constant_table_for_FEM = &constants;
+    constant_table_for_FEM = &constants;
 
     AddVariable ("timing.level", 0.0, 6);
 
