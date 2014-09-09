@@ -199,14 +199,15 @@ public:
     : dmatop(coeffs)
   { ; }
 
+
+  T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1)
+    : dmatop(c1) { ; }
+
   /*
-  T_BDBIntegrator  (shared_ptr<CoefficientFunction> coef, args ...)
-    : dmatop(coef, ... args) { ; }
-  */
   template <typename ... TMORE>
   T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
     : dmatop(c1, more_coefs ...) { ; }
-
+  */
 
   T_BDBIntegrator  (const CoefficientFunction * coef)
     : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
