@@ -144,8 +144,8 @@ namespace ngcomp
       }
     if (dimension > 1)
       {
-        integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
-        boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
+        integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
       }
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
@@ -324,7 +324,7 @@ namespace ngcomp
 
     if(dim==2)
       {
-	int dec_hodc = highest_order_dc ? 1 : 0;
+	// int dec_hodc = highest_order_dc ? 1 : 0;
         for (int i = 0; i < nfa; i++)
           {
             first_facet_dof[i] = ndof;

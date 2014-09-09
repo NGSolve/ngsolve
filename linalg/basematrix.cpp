@@ -90,18 +90,18 @@ namespace ngla
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }
   */
-  BaseVector * BaseMatrix :: CreateVector () const
+  shared_ptr<BaseVector> BaseMatrix :: CreateVector () const
   {
     cout << "BaseMatrix::CreateVector called" << endl;
     return 0;
   }
 
-  BaseVector * BaseMatrix :: CreateRowVector () const
+  shared_ptr<BaseVector> BaseMatrix :: CreateRowVector () const
   {
     return CreateVector();
   }
 
-  BaseVector * BaseMatrix :: CreateColVector () const
+  shared_ptr<BaseVector> BaseMatrix :: CreateColVector () const
   {
     return CreateVector();
   }
@@ -119,10 +119,9 @@ namespace ngla
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;
-    BaseVector & temp = *CreateColVector();
-    Mult (x, temp);
-    y += s * temp;
-    delete &temp;
+    auto temp = CreateColVector();
+    Mult (x, *temp);
+    y += s * *temp;
   }
 
   void BaseMatrix :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 

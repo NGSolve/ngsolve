@@ -172,7 +172,7 @@ namespace ngsolve
   class NumProcSetValues : public NumProc
   {
   protected:
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     shared_ptr<CoefficientFunction> coef;
     bool boundary;
     bool coarsegridonly;
@@ -183,7 +183,7 @@ namespace ngsolve
     NumProcSetValues (PDE & apde, const Flags & flags)
     : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      gfu = pde.GridFunctionPtr (flags.GetStringFlag ("gridfunction", ""));
       coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
@@ -225,7 +225,7 @@ namespace ngsolve
     virtual void Do(LocalHeap & lh)
     {
       if (coarsegridonly && ma.GetNLevels() > 1) return;
-      GridFunction * hgfu = gfu;
+      shared_ptr<GridFunction> hgfu = gfu;
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
 
@@ -1476,7 +1476,7 @@ namespace ngsolve
   class NumProcWriteFile : public NumProc
   {
     ofstream * outfile;
-    Array<char*> output_vars;
+    Array<string> output_vars;
   public:
     NumProcWriteFile (PDE & apde, const Flags & flags)
       : NumProc (apde)
@@ -1775,7 +1775,7 @@ namespace ngsolve
 
     title = flags.GetStringFlag("title","");
 
-    const Array<char*> & textarray = flags.GetStringListFlag("entries");
+    const Array<string> & textarray = flags.GetStringListFlag("entries");
 
     for(int i=0; i<tableentries.Size() && i<textarray.Size(); i++)
       tableentries[i] = textarray[i];

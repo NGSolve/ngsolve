@@ -83,7 +83,7 @@ namespace ngsolve
             arnoldi.SetShift (Complex(shift,shifti));
             
             int nev = gfu->GetMultiDim();
-            Array<BaseVector*> evecs(nev);
+            Array<shared_ptr<BaseVector>> evecs(nev);
 
             Array<Complex> lam(nev);
             if (pre)
@@ -111,7 +111,7 @@ namespace ngsolve
             arnoldi.SetShift (shift);
             
             int nev = gfu->GetMultiDim();
-            Array<BaseVector*> evecs(nev);
+            Array<shared_ptr<BaseVector>> evecs(nev);
             // for (int i = 0; i  < nev; i++)
             // evecs[i] = &gfu->GetVector(i);
             Array<Complex> lam(nev);

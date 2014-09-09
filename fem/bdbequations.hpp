@@ -888,11 +888,6 @@ namespace ngfem
 	for (int j = 0; j < mir.Size(); j++)
 	  for (int i = 0; i < N; i++)
 	    {
-              // CoefficientFunction * hp = coefs[i];
-              // vecs(j,i) = hp -> T_Evaluate<TSCAL> (mir[j]);
-	    
-	      // gcc 4.6 complains, why ???? (JS)
-              // vecs(j,i) = coefs[i] -> T_Evaluate<TSCAL> (mir[j]);  
               vecs(j,i) = 
                 coefs[i] -> template T_Evaluate<TSCAL> (mir[j]);  
 	    }
@@ -1094,9 +1089,10 @@ namespace ngfem
     
   public:
     using BASE::BASE;
+    /*
     LaplaceIntegrator (shared_ptr<CoefficientFunction> coeff) 
       : BASE(DiagDMat<D> (coeff)) { ; }
-
+    */
     virtual ~LaplaceIntegrator () { ; }
     virtual string Name () const { return "Laplace"; }
   };
@@ -1111,7 +1107,8 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> BASE;
   public:
     using BASE::BASE;
-    LaplaceBoundaryIntegrator (shared_ptr<CoefficientFunction> coeff) : BASE(DiagDMat<D>(coeff)) { ; }
+    LaplaceBoundaryIntegrator (shared_ptr<CoefficientFunction> coeff) 
+      : BASE(DiagDMat<D>(coeff)) { ; }
 
     virtual string Name () const { return "Laplace-Boundary"; }
   };
@@ -1127,13 +1124,6 @@ namespace ngfem
   public:
     ///
     using BASE::BASE;
-    // RotSymLaplaceIntegrator (CoefficientFunction * coeff);
-    /*
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new RotSymLaplaceIntegrator (coeffs[0]);
-    }
-    */
     ///
     virtual string Name () const { return "RotSymLaplace"; }
   };
@@ -1179,12 +1169,6 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> BASE;
   public:
     using BASE::BASE;
-    ///
-    /*
-    MassIntegrator (shared_ptr<CoefficientFunction> coeff)
-      : T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, ScalarFiniteElement<D> > (DiagDMat<1> (coeff))
-    { ; }
-    */
     ///
     virtual ~MassIntegrator () { ; }
     ///

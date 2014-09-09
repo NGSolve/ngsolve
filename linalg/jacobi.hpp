@@ -53,7 +53,7 @@ namespace ngla
     virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const
     { MultAdd (s, x, y); }
     ///
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
     ///
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
 

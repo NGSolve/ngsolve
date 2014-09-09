@@ -508,7 +508,7 @@ namespace ngfem
     : public PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>
   {
   public:
-    PML_LaplaceIntegrator (Array<CoefficientFunction*> & coefs)
+    PML_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coefs)
       : PML_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> (DiagDMat<D> (coefs[0]))
     { ; }
   
@@ -522,7 +522,7 @@ namespace ngfem
     : public PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL>
   {
   public:
-    PML_MassIntegrator (Array<CoefficientFunction*> & coefs)
+    PML_MassIntegrator (const Array<shared_ptr<CoefficientFunction>> & coefs)
       : PML_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> (DiagDMat<1> (coefs[0]))
     { ; }
     virtual string Name () const { return "PML_Mass"; }
@@ -536,8 +536,9 @@ namespace ngfem
     : public PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL>
   {
   public:
-    PML_ElasticityIntegrator (Array<CoefficientFunction*> & coefs)
-      : PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL> (ElasticityDMat<D> (coefs[0], coefs[1]))
+    PML_ElasticityIntegrator (const Array<shared_ptr<CoefficientFunction>> & coefs)
+      : PML_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, FEL> (ElasticityDMat<D> (coefs[0],
+                                                                                       coefs[1]))
     { ; }
   
     virtual string Name () const { return "PML_Elasticity"; }
@@ -579,14 +580,14 @@ namespace ngfem
   {
   public:
     ///
-    PML_CurlCurlEdgeIntegrator (CoefficientFunction * coef)
+    PML_CurlCurlEdgeIntegrator (shared_ptr<CoefficientFunction> coef)
       : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
     (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
     { ; }
     
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static shared_ptr<Integrator> Create (Array<shared_ptr<CoefficientFunction>> coeffs)
     {
-      return new PML_CurlCurlEdgeIntegrator (coeffs[0]);
+      return make_shared<PML_CurlCurlEdgeIntegrator> (coeffs[0]);
     }
 
     virtual string Name () const { return "PML_CurlCurlEdge"; }

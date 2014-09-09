@@ -33,7 +33,7 @@ namespace ngcomp
     virtual const char * GetType() 
     { return "RaviartThomas"; }
 
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
 
     ///
     virtual void Update(LocalHeap & lh);

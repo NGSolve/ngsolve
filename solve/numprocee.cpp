@@ -96,11 +96,11 @@ namespace ngsolve
 
     *testout << " ************ ZZ ErrorEstimator fesflux " << endl; 
 
-    FESpace * fesflux = new H1HighOrderFESpace (ma, fesflags);
+    shared_ptr<FESpace> fesflux = make_shared<H1HighOrderFESpace> (ma, fesflags);
     fesflux -> Update(lh);
 
-    GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", 
-					      Flags().SetFlag("novisual"));
+    shared_ptr<GridFunction> flux = CreateGridFunction (fesflux, "fluxzz", 
+                                                        Flags().SetFlag("novisual"));
     flux->Update();
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
@@ -113,8 +113,8 @@ namespace ngsolve
 	CalcError (ma, *gfu, *flux, bfi, err, k, lh);
       }
 
-    delete flux;
-    delete fesflux;
+    // delete flux;
+    // delete fesflux;
 
     double sum = 0;
     for (int i = 0; i < err.Size(); i++) 
@@ -393,13 +393,13 @@ namespace ngsolve
     if (bfa->GetFESpace().IsComplex())
       fesflags.SetFlag ("complex");
 
-    HDivHighOrderFESpace * fesflux = new HDivHighOrderFESpace (ma, fesflags);
+    auto fesflux = make_shared<HDivHighOrderFESpace> (ma, fesflags);
     fesflux -> Update(lh);
 
     // Flags flags;
     // flags.SetFlag ("novisual");
-    GridFunction * flux = CreateGridFunction (fesflux, "fluxzz", 
-					      Flags().SetFlag("novisual"));
+    auto flux = CreateGridFunction (fesflux, "fluxzz",
+                                    Flags().SetFlag("novisual"));
     flux->Update();
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
@@ -408,10 +408,6 @@ namespace ngsolve
 
     CalcFluxProject (ma, *gfu, *flux, bfi, 1, -1, lh);
     CalcError (ma, *gfu, *flux, bfi, err, -1, lh);
-
-
-    delete flux;
-    delete fesflux;
 
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)

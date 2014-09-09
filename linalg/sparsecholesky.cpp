@@ -1310,19 +1310,19 @@ namespace ngla
   void SparseFactorization  :: 
   Smooth (BaseVector & u, const BaseVector & /* f */, BaseVector & y) const
   {
-    BaseVector & hvec1 = *u.CreateVector();
-    BaseVector & hvec2 = *u.CreateVector();
+    auto hvec1 = u.CreateVector();
+    auto hvec2 = u.CreateVector();
 
-    hvec1 = 1.0 * y;
-    matrix.MultAdd1 (-1, u, hvec1, inner, cluster);
+    *hvec1 = 1.0 * y;
+    matrix.MultAdd1 (-1, u, *hvec1, inner, cluster);
 
-    hvec2 = (*this) * hvec1;
-    u += hvec2;
+    *hvec2 = (*this) * *hvec1;
+    u += *hvec2;
     
-    matrix.MultAdd2 (-1, hvec2, y, inner, cluster);
+    matrix.MultAdd2 (-1, *hvec2, y, inner, cluster);
 
-    delete & hvec2;
-    delete & hvec1;
+    // delete & hvec2;
+    // delete & hvec1;
   }
   
 

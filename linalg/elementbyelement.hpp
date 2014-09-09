@@ -36,9 +36,9 @@ namespace ngla
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
 
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     {
-      return new VVector<double> (height);
+      return make_shared<VVector<double>> (height);
     }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -56,7 +56,8 @@ namespace ngla
 
     virtual BaseVector & AsVector() 
     {
-      return *new VVector<double> (1);
+      throw Exception ("Cannot access ebe-matrix AsVector");
+      // return *new VVector<double> (1);
     }
 
     const FlatMatrix<SCAL> GetElementMatrix( int elnum ) const

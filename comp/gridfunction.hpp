@@ -31,9 +31,9 @@ namespace ngcomp
     /// used for many right-hand-sides
     int cacheblocksize = 1;
     /// the actual data, array for multi-dim 
-    Array<BaseVector*> vec;
+    Array<shared_ptr<BaseVector>> vec;
     /// component GridFunctions if fespace is a CompoundFESpace
-    Array<GridFunction*> compgfs;
+    Array<shared_ptr<GridFunction>> compgfs;
   public:
     /// 
     GridFunction (const FESpace & afespace,
@@ -50,11 +50,11 @@ namespace ngcomp
     ///
     virtual void DoArchive (Archive & archive);
     ///  
-    virtual BaseVector & GetVector (int comp = 0) { return *(vec[comp]); }
+    virtual BaseVector & GetVector (int comp = 0) { return *vec[comp]; }
     ///  
-    virtual const BaseVector & GetVector (int comp = 0) const  { return *(vec[comp]); }
-
-
+    virtual const BaseVector & GetVector (int comp = 0) const  { return *vec[comp]; }
+    ///  
+    virtual shared_ptr<BaseVector> VectorPtr (int comp = 0) const  { return vec[comp]; }
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
@@ -97,7 +97,7 @@ namespace ngcomp
 
     
     int GetNComponents () const { return compgfs.Size(); }
-    GridFunction * GetComponent (int compound_comp) const;
+    shared_ptr<GridFunction> GetComponent (int compound_comp) const;
 
 
     ///
@@ -207,19 +207,18 @@ namespace ngcomp
 
 
   extern NGS_DLL_HEADER 
-  GridFunction * CreateGridFunction (shared_ptr<FESpace> space,
-                                     const string & name, const Flags & flags);
+  shared_ptr<GridFunction> CreateGridFunction (shared_ptr<FESpace> space,
+                                               const string & name, const Flags & flags);
 
-
+  /// compatibility with old codes
   inline 
-  GridFunction * CreateGridFunction (const FESpace * space,
-                                     const string & name, const Flags & flags)
+  shared_ptr<GridFunction> CreateGridFunction (const FESpace * space,
+                                               const string & name, const Flags & flags)
   {
     return 
       CreateGridFunction (shared_ptr<FESpace> (const_cast<FESpace*>(space), NOOP_Deleter), 
                           name, flags);
   }
-
 
 
 

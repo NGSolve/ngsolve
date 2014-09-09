@@ -131,12 +131,11 @@ namespace ngcomp
 
     if (dimension > 1)
       {
-	integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
-	boundary_integrator.reset (new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
+	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
+        boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
       }
 
     prol = new LinearProlongation(*this);
-
     vefc_dofblocks = Vec<4,int> (1,1,1,1);
   }
 
@@ -1438,10 +1437,11 @@ namespace ngcomp
   }
 
   template<>
-  FESpace * RegisterFESpace<H1HighOrderFESpace> :: Create (const MeshAccess & ma, const Flags & flags)
+  shared_ptr<FESpace> RegisterFESpace<H1HighOrderFESpace> :: 
+  Create (const MeshAccess & ma, const Flags & flags)
   {
     // we will check the -periodic flag here
-    return new H1HighOrderFESpace(ma, flags);
+    return make_shared<H1HighOrderFESpace> (ma, flags);
   }
 
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");

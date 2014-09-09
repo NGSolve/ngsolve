@@ -257,10 +257,10 @@ namespace ngcomp
     mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
 
     MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
-    const char * coarse = flags.GetStringFlag ("coarsetype", "direct");
-    if (strcmp (coarse, "smoothing") == 0)
+    const string & coarse = flags.GetStringFlag ("coarsetype", "direct");
+    if (coarse == "smoothing")
       ct = MultigridPreconditioner::SMOOTHING_COARSE;
-    else if (strcmp (coarse, "cg") == 0)
+    else if (coarse == "cg")
       ct = MultigridPreconditioner::CG_COARSE;
     mgp->SetCoarseType (ct);
     
@@ -507,10 +507,10 @@ namespace ngcomp
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
-    const char * coarse = flags.GetStringFlag ("coarsetype", "nocoarse");
-    if (strcmp (coarse, "smoothing") == 0)
+    const string & coarse = flags.GetStringFlag ("coarsetype", "nocoarse");
+    if (coarse == "smoothing") 
       ct = "SMOOTHING_COARSE";
-    else if (strcmp (coarse, "direct") == 0)
+    else if (coarse == "direct")
       ct = "DIRECT_COARSE";
     
 

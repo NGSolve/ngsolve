@@ -124,7 +124,6 @@ void ExportNgsolve();
 
 PythonEnvironment::PythonEnvironment() {
 
-
     mainthread_id = std::this_thread::get_id();
     pythread_id = std::this_thread::get_id();
     cout << "Init Python environment." << endl;
@@ -139,7 +138,6 @@ PythonEnvironment::PythonEnvironment() {
 
         exec("path.append(environ['NETGENDIR'])");
         exec("path.append('.')");
-
 
         ExportNgstd();
         ExportNgbla();
@@ -272,7 +270,7 @@ int NGS_Help (ClientData clientData,
 
 
 
-NGS_DLL_HEADER AutoPtr<ngsolve::PDE> pde;
+NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
 
 
 #ifdef _NGSOLVE_SOCKETS_HPP
@@ -456,7 +454,7 @@ int NGS_LoadPDE (ClientData clientData,
 	{
 	  MyMPI_SendCmd ("ngs_pdefile");
 
-	  pde.Reset(new ngsolve::PDE);
+	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
 
 	  // make sure to have lapack loaded (important for newer MKL !!!)
@@ -714,7 +712,7 @@ int NGS_RestorePDE (ClientData clientData,
   if (argc >= 2)
     {
       TextInArchive archive (argv[1]);
-      pde.Reset(new ngsolve::PDE);
+      pde = make_shared<ngsolve::PDE>();
       pde->DoArchive (archive);
       return TCL_OK;
     }
@@ -743,7 +741,7 @@ int NGS_SocketLoad (ClientData clientData,
           socket << "pde";
           
           SocketInArchive archive (socket);
-          pde.Reset(new ngsolve::PDE);
+          pde = make_shared<PDE>();
           pde->DoArchive (archive);
           return TCL_OK;
         }
@@ -1103,7 +1101,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
   MyMPI_SendCmd ("ngs_exit");
-  pde.Reset(NULL);
+  pde.reset();
   return TCL_OK;
 }
 
@@ -1196,7 +1194,15 @@ int NGSolve_Init (Tcl_Interp * interp)
   {
     bp::scope sc(py_env.main_module);
     bp::def ("SetDefaultPDE", 
-             FunctionPointer([](PDE & apde) {  pde.Reset (&apde, false); return; }));
+             FunctionPointer([](shared_ptr<PDE> apde) 
+                             {  
+                               pde = apde;
+                               pde->GetMeshAccess().SelectMesh();
+                               Ng_Redraw();
+                               return; 
+                             }));
+    bp::def ("Redraw", 
+             FunctionPointer([]() {Ng_Redraw();}));
   }
 
   py_env.Spawn(initfile);

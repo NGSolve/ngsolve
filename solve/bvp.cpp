@@ -357,20 +357,20 @@ namespace ngsolve
     starttime = WallTime(); // clock();
 
 
-    BaseVector & hv = *vecu.CreateVector();
+    auto hv = vecu.CreateVector();
     if (solver != DIRECT)
       {
-	hv = vecf;
-        bfa->ModifyRHS (hv);
-        invmat->Mult (hv, vecu);
+	*hv = vecf;
+        bfa->ModifyRHS (*hv);
+        invmat->Mult (*hv, vecu);
       }
     else 
       {
-	hv = vecf - mat * vecu;
-        bfa->ModifyRHS (hv);
-	vecu += (*invmat2) * hv;
+	*hv = vecf - mat * vecu;
+        bfa->ModifyRHS (*hv);
+	vecu += (*invmat2) * *hv;
       }
-    delete &hv;
+    // delete &hv;
 
 
     ma.PopStatus ();
@@ -477,8 +477,8 @@ namespace ngsolve
   class ConstrainedPrecondMatrix : public BaseMatrix
   {
     const BaseMatrix * c1;
-    Array<const BaseVector*> constraints;
-    Array<BaseVector*> c1constraints;
+    Array<shared_ptr<BaseVector>> constraints;
+    Array<shared_ptr<BaseVector>> c1constraints;
     Matrix<double> projection, invprojection;
     int ncnt;
   public:
@@ -487,7 +487,7 @@ namespace ngsolve
     
     virtual ~ConstrainedPrecondMatrix () { ; }
 
-    void AddConstraint (const BaseVector * hv)
+    void AddConstraint (shared_ptr<BaseVector> hv)
     {
       constraints.Append (hv);
       c1constraints.Append (hv->CreateVector());
@@ -544,7 +544,7 @@ namespace ngsolve
       ncnt = constraints.Size();
     }
 
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     {
       return a1->CreateVector();
     }
@@ -590,7 +590,7 @@ namespace ngsolve
     // if (flags.GetDefineFlag ("ncg")) solver = NCG;
     print = flags.GetDefineFlag ("print");
 
-    const Array<char*> & cnts = flags.GetStringListFlag ("constraints");
+    const Array<string> & cnts = flags.GetStringListFlag ("constraints");
     for (int i = 0; i < cnts.Size(); i++)
       constraints.Append (apde.GetLinearForm (cnts[i]));
   }
@@ -648,7 +648,7 @@ namespace ngsolve
 	ConstrainedPrecondMatrix * hpre = new ConstrainedPrecondMatrix (premat);
 	premat = hpre;
 	for (int i = 0; i < constraints.Size(); i++)
-	  hpre->AddConstraint(&constraints[i]->GetVector());
+	  hpre->AddConstraint(constraints[i]->VectorPtr());
       }
 
     ConstrainedMatrix * hmat = new ConstrainedMatrix (&mat);

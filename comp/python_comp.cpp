@@ -45,7 +45,7 @@ void ExportNgcomp()
     .value("WIREBASKET_DOF", WIREBASKET_DOF)
     .value("EXTERNAL_DOF", EXTERNAL_DOF)
     .value("ANY_DOF", ANY_DOF)
-    .export_values()
+    // .export_values()
     ;
 
   bp::class_<ElementId> ("ElementId", bp::init<VorB,int>())
@@ -72,7 +72,10 @@ void ExportNgcomp()
     .def(bp::init<netgen::Mesh*>())
 #endif
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh))
-    .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements))
+    
+    .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
+         (bp::arg("VOL_or_BND")=VOL))
+
     .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
 
@@ -100,6 +103,12 @@ void ExportNgcomp()
 
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](const string & type, const MeshAccess & ma, const Flags & flags)
+                           {
+                             return CreateFESpace (type, ma, flags);
+                           })))
+
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
                                    {
                                      LocalHeap lh (heapsize, "FESpace::Update-heap");
@@ -136,17 +145,21 @@ void ExportNgcomp()
          (FunctionPointer ([](string name, shared_ptr<FESpace> fespace)
                            {
                              Flags flags;
-                             GridFunction * gf = CreateGridFunction (fespace, name, flags);
-                             return shared_ptr<GridFunction> (gf);
-                           })),
-         // (bp::arg("self"), bp::arg("name"), bp::arg("fespace")), // how ?
+                             return CreateGridFunction (fespace, name, flags);
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("name")="gfu", bp::arg("space"))),
          "creates a gridfunction in finite element space"
          )
 
     .def("__str__", &ToString<GF>)
     .add_property("space", &GF::FESpacePtr, "the finite element spaces")
     .def("Update", 
-         FunctionPointer([](GF & self) {self.Update();}),
+         FunctionPointer([](GF & self) 
+                         {
+                           // cout << "update gf, type = " << typeid(self).name() << endl;
+                           self.Update();
+                         }),
          "update vector size to finite element space dimension after mesh refinement"
          )
 
@@ -158,14 +171,14 @@ void ExportNgcomp()
                         }))
 
     .def("Vector", 
-         FunctionPointer([](GF & self)->BaseVector& { return self.GetVector(); }),
-         bp::return_value_policy<bp::reference_existing_object>(),
+         FunctionPointer([](GF & self) { return self.VectorPtr(); }),
          "vector of coefficients"
          )
-
+    
     .add_property("vec",
-         FunctionPointer([](GF & self)-> shared_ptr<BaseVector> { return shared_ptr<BaseVector>(&self.GetVector(), &NOOP_Deleter); }),
-         "vector of coefficients of first multidim dimension"
+                  FunctionPointer([](GF & self) { return self.VectorPtr(); }),
+                  // &GridFunction::VectorPtr,
+                  "vector of coefficients of first multidim dimension"
          )
 
     .add_property("vecs",
@@ -180,29 +193,62 @@ void ExportNgcomp()
          )
     ;
   
-  /*
-  bp::def("CreateGF",
-          FunctionPointer
-          ([](string name, shared_ptr<FESpace> fespace)
-           {
-             Flags flags;
-             GridFunction * gf = CreateGridFunction (fespace, name, flags);
-             return shared_ptr<GridFunction> (gf);
-           }),
-          (bp::arg("name"), bp::arg("fespace")),
-          "creates a gridfunction in finite element space");
-  */
+  typedef BilinearForm BF;
+  bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
+                           {
+                             return CreateBilinearForm (fespace, name, flags);
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags")))
+         )
 
-  bp::class_<BilinearForm, shared_ptr<BilinearForm>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def(PyDefToString<BilinearForm>())
-    .def("Matrix", FunctionPointer([](shared_ptr<BilinearForm> self)->BaseMatrix& { return self->GetMatrix(); }),
-         bp::return_value_policy<bp::reference_existing_object>())
+    .def("Add", FunctionPointer([](BF & self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
+                                {
+                                  self.AddIntegrator (bfi);
+                                  return self;     
+                                }),
+         bp::return_value_policy<bp::reference_existing_object>()
+         )
+    .def("Assemble", FunctionPointer([](BF & self, int heapsize)
+                                     {
+                                       LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
+                                       self.Assemble(lh);
+                                     }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+    .def("Matrix", FunctionPointer([](shared_ptr<BilinearForm> self) { return self->MatrixPtr(); }))
+    .add_property("mat", &BilinearForm::MatrixPtr)
     ;
 
-  bp::class_<LinearForm, shared_ptr<LinearForm>, boost::noncopyable>("LinearForm", bp::no_init)
-    .def(PyDefToString<LinearForm>())
-    .def("Vector", FunctionPointer([](shared_ptr<LinearForm> self)->BaseVector& { return self->GetVector(); }),
-         bp::return_value_policy<bp::reference_existing_object>())
+  typedef LinearForm LF;
+  bp::class_<LF, shared_ptr<LF>, boost::noncopyable>("LinearForm", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
+                           {
+                             return CreateLinearForm (fespace, name, flags);
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags")))
+         )
+    .def("__str__", &ToString<LF>)
+    .def("Vector", FunctionPointer([](LF & self){ return self.VectorPtr(); }))
+    .add_property("vec", &LinearForm::VectorPtr)
+    .def("Add", FunctionPointer([](LF & self, shared_ptr<LinearFormIntegrator> lfi) -> LF&
+                                {
+                                  self.AddIntegrator (lfi);
+                                  return self;     
+                                }),
+         bp::return_value_policy<bp::reference_existing_object>()
+         )
+
+    .def("Assemble", FunctionPointer([](LF & self, int heapsize)
+                                     {
+                                       LocalHeap lh (heapsize, "LinearForm::Assemble-heap");
+                                       self.Assemble(lh);
+                                     }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     ;
 
 

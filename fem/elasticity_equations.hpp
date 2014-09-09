@@ -193,13 +193,13 @@ namespace ngfem
   class ElasticityDMat : public DMatOp<ElasticityDMat<DIM>,DIM*(DIM+1)/2>
   {
   public:
-    CoefficientFunction * coefe;
-    CoefficientFunction * coefnu;
+    shared_ptr<CoefficientFunction> coefe;
+    shared_ptr<CoefficientFunction> coefnu;
   public:
     enum { DIM_DMAT = (DIM * (DIM+1)) / 2 };  
 
-    ElasticityDMat (CoefficientFunction * acoefe,
-		    CoefficientFunction * acoefnu) 
+    ElasticityDMat (shared_ptr<CoefficientFunction> acoefe,
+		    shared_ptr<CoefficientFunction> acoefnu) 
       : coefe(acoefe), coefnu(acoefnu) { ; }
 
     template <typename SCAL>
@@ -460,12 +460,12 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpStrain<D>, ElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
-    ElasticityIntegrator (CoefficientFunction * coefe,
-			  CoefficientFunction * coefnu)
+    ElasticityIntegrator (shared_ptr<CoefficientFunction> coefe,
+			  shared_ptr<CoefficientFunction> coefnu)
       : BASE(ElasticityDMat<D> (coefe, coefnu))
     { ; }
 
-    ElasticityIntegrator (const Array<CoefficientFunction*> & coeffs)
+    ElasticityIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs)
       : BASE(ElasticityDMat<D> (coeffs[0], coeffs[1]))
     { ; }
 

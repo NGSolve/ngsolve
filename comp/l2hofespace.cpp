@@ -70,7 +70,7 @@ namespace ngcomp
     integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
 
     if (dimension > 1)
-      integrator.reset (new BlockBilinearFormIntegrator (*integrator, dimension));
+      integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
 
 
 
@@ -141,14 +141,14 @@ namespace ngcomp
     ;
   }
 
-  FESpace * L2HighOrderFESpace :: 
+  shared_ptr<FESpace> L2HighOrderFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 0));
     if (order == 0)
-      return new ElementFESpace (ma, flags);
+      return make_shared<ElementFESpace> (ma, flags);
     else
-      return new L2HighOrderFESpace (ma, flags, true);
+      return make_shared<L2HighOrderFESpace> (ma, flags, true);
   }  
 
   
@@ -566,13 +566,12 @@ namespace ngcomp
       }
     else
       {
-	boundary_integrator.reset(new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+	boundary_integrator = 
+          make_shared<RobinIntegrator<3>> (make_shared<ConstantCoefficientFunction>(1));
       }
 
     if (dimension > 1)
-      {
-	boundary_integrator.reset(new BlockBilinearFormIntegrator (*boundary_integrator, dimension));
-      }
+      boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
@@ -580,10 +579,10 @@ namespace ngcomp
     ;
   }
 
-  FESpace * L2SurfaceHighOrderFESpace :: 
+  shared_ptr<FESpace> L2SurfaceHighOrderFESpace :: 
   Create (const MeshAccess & ma, const Flags & flags)
   {
-    return new L2SurfaceHighOrderFESpace (ma, flags, true);
+    return make_shared<L2SurfaceHighOrderFESpace> (ma, flags, true);
   }
 
   void L2SurfaceHighOrderFESpace :: Update(LocalHeap & lh)

@@ -40,7 +40,7 @@ public:
   virtual const char * GetType() 
     { return "Nedelec"; }
 
-  static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+  static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
 
   ///
   virtual void Update(LocalHeap & lh);

@@ -236,18 +236,15 @@ namespace ngmg
 	      u = (*coarsegridpre) * f;
 	      if (coarsesmoothingsteps > 1)
 		{
-		  BaseVector & d = *smoother->CreateVector(0);
-		  BaseVector & w = *smoother->CreateVector(0);
+		  auto d = smoother->CreateVector(0);
+		  auto w = smoother->CreateVector(0);
 		 		  
 		  for(int i=1; i<coarsesmoothingsteps; i++)
 		    {
-		      smoother->Residuum (level, u, f, d);
-		      w = (*coarsegridpre) * d;
-		      u += w;
+		      smoother->Residuum (level, u, f, *d);
+		      *w = (*coarsegridpre) * *d;
+		      u += *w;
 		    }
-		  
-		  delete &w;
-		  delete &d;
 		}
 	      break;
 	    }
@@ -276,17 +273,17 @@ namespace ngmg
 
 	else
 	  {
-	    BaseVector & d = *smoother->CreateVector(level);
-	    BaseVector & w = *smoother->CreateVector(level);
+	    auto d = smoother->CreateVector(level);
+	    auto w = smoother->CreateVector(level);
 	    //(*testout) << "u.Size() " << u.Size() << " d.Size() " << d.Size()
 	    //       << " w.Size() " << w.Size() << endl;
 
 	    // smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
-	    smoother->PreSmoothResiduum (level, u, f, d, smoothingsteps * incsm);
+	    smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
 	    
 
-	    BaseVector & dt = *d.Range (0, fespace.GetNDofLevel(level-1));
-	    BaseVector & wt = *w.Range (0, fespace.GetNDofLevel(level-1));
+	    auto dt = d->Range (0, fespace.GetNDofLevel(level-1));
+	    auto wt = w->Range (0, fespace.GetNDofLevel(level-1));
 
 
 	    // smoother->Residuum (level, u, f, d);
@@ -297,14 +294,14 @@ namespace ngmg
 	    smoother->Residuum (level, u, f, d);
 	    */
 
-	    prolongation->RestrictInline (level, d);
+	    prolongation->RestrictInline (level, *d);
 
-	    w = 0;
+	    *w = 0;
 	    for (j = 1; j <= cycle; j++)
-	      MGM (level-1, wt, dt, incsm * incsmooth);
+	      MGM (level-1, *wt, *dt, incsm * incsmooth);
 	    
-	    prolongation->ProlongateInline (level, w);
-	    u += w;
+	    prolongation->ProlongateInline (level, *w);
+	    u += *w;
 
 	    /*
 	    smoother->Residuum (level, u, f, d);
@@ -312,10 +309,10 @@ namespace ngmg
 	    u.Range (0,w.Size()) += w;
 	    */
 
-	    delete &wt;
-	    delete &dt;
-	    delete &w;
-	    delete &d;
+	    // delete &wt;
+	    // delete &dt;
+	    // delete &w;
+	    // delete &d;
 	    
 	    smoother->PostSmooth (level, u, f, smoothingsteps * incsm);
 	  }
@@ -375,45 +372,48 @@ namespace ngmg
 
   void TwoLevelMatrix :: Mult (const BaseVector & f, BaseVector & u) const
   {
-    //*testout << "TwoLevelMatrix::Mult" << endl;
-    BaseVector & cres = *cpre->CreateVector();
-    BaseVector & cw = *cpre->CreateVector();
-    BaseVector & res = *CreateVector();
+    // to be changed to shared_ptr
+    auto cres = cpre->CreateVector();
+    auto cw = cpre->CreateVector();
+    auto res = CreateVector();
 
+    /*
+    cout << "type = " << typeid(cres).name() << endl;
+    cout << "type = " << typeid(cw).name() << endl;
+    cout << "type = " << typeid(res).name() << endl;
+    */
     u = 0;
 
       {
         // smoother->PreSmooth (level, u, f, smoothingsteps);
         // res = f - (*mat) * u;    
-        smoother->PreSmoothResiduum (level, u, f, res, smoothingsteps);
+        smoother->PreSmoothResiduum (level, u, f, *res, smoothingsteps);
 
-        BaseVector & ref_cres = *res.Range(0,cres.Size());
-        BaseVector & ref_cu = *u.Range(0,cw.Size());
+
+        *cres = *res->Range (0, cres->Size());
+        *cw = *cpre * *cres;
+        *u.Range (0, cw->Size()) += *cw;
 
         /*
-        cres = *res.Range (0, cres.Size());
-        cw = (*cpre) * cres;
-        *(u.Range (0, cw.Size())) += cw;
-        */
-        cres = ref_cres;
-        cw = (*cpre) * cres;
-        ref_cu += cw;
+        auto ref_cres = res->Range(0,cres->Size());
+        auto ref_cu = u.Range(0,cw->Size());
 
-        delete &ref_cu;
-        delete &ref_cres;
+        *cres = *ref_cres;
+        *cw = (*cpre) * *cres;
+        *ref_cu += *cw;
+        */
 
         smoother->PostSmooth (level, u, f, smoothingsteps);
       }
 
-    delete &cres;
-    delete &cw;
-    delete &res;
+      // delete res;
+      // delete cw;
+      // delete cres;
   }
 
-  BaseVector * TwoLevelMatrix :: CreateVector () const
+  shared_ptr<BaseVector> TwoLevelMatrix :: CreateVector () const
   {
-    BaseVector * vec = mat->CreateVector();
-    return vec;
+    return mat->CreateVector();
   }
 
   ostream & TwoLevelMatrix :: Print (ostream & s) const

@@ -76,11 +76,11 @@ namespace ngla
     /// creates matrix of same type
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     /// creates a matching vector, size = width
-    virtual BaseVector * CreateRowVector () const;
+    virtual shared_ptr<BaseVector> CreateRowVector () const;
     /// creates a matching vector, size = height
-    virtual BaseVector * CreateColVector () const;
+    virtual shared_ptr<BaseVector> CreateColVector () const;
     /// creates a matching vector (for square matrices)
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
 
     /// y = matrix * x. Multadd should be implemented, instead
     virtual void Mult (const BaseVector & x, BaseVector & y) const;

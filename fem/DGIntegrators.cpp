@@ -34,7 +34,7 @@ namespace ngfem
     double alpha;   // interior penalyty
     CoefficientFunction *coef_lam;
   public:
-    DGInnerFacet_LaplaceIntegrator (const const Array<CoefficientFunction*> & coeffs) 
+    DGInnerFacet_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
       : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
@@ -864,7 +864,7 @@ namespace ngfem
     
     virtual ~DGFacet_ConvectionDirichletBoundaryIntegrator () { ; }
 
-    static Integrator * Create (const const Array<CoefficientFunction*> & coeffs)
+    static Integrator * Create (const Array<CoefficientFunction*> & coeffs)
     {
       return new DGFacet_ConvectionDirichletBoundaryIntegrator (coeffs);
     }

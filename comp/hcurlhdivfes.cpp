@@ -81,13 +81,13 @@ namespace ngcomp
   }
 
 
-  FESpace * NedelecFESpace :: Create (const MeshAccess & ma, const Flags & flags)
+  shared_ptr<FESpace> NedelecFESpace :: Create (const MeshAccess & ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 1)); 
     if (order >= 2) 
-      return new NedelecFESpace2 (ma, flags, true);
+      return make_shared<NedelecFESpace2> (ma, flags, true);
     else
-      return new NedelecFESpace (ma, flags, true);
+      return make_shared<NedelecFESpace> (ma, flags, true);
   }
 
 

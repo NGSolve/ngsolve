@@ -6,10 +6,10 @@ namespace ngcomp
 {
 
   LinearForm ::
-  LinearForm (const FESpace & afespace, 
+  LinearForm (shared_ptr<FESpace> afespace, 
 	      const string & aname,
 	      const Flags & flags)
-    : NGS_Object(afespace.GetMeshAccess(), aname), fespace(afespace)
+    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace)
   {
     independent = false;
     print = flags.GetDefineFlag ("print");
@@ -21,16 +21,9 @@ namespace ngcomp
     cacheblocksize = 1;
   }
 
-  LinearForm :: ~LinearForm ()
-  { 
-    // for (int i = 0; i < parts.Size(); i++)
-    // if (parts_deletable[i]) delete parts[i];
-  }
-
-  void LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi, bool deletable)
+  void LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
   {
     parts.Append (lfi);
-    parts_deletable.Append(deletable);
   }
 
   void LinearForm :: PrintReport (ostream & ost) const
@@ -63,6 +56,14 @@ namespace ngcomp
     return *vec; 
   }
 
+  /*
+  template <class TV>
+  shared_ptr<BaseVector> T_LinearForm<TV> :: VectorPtr () const 
+  { 
+    return vec; 
+  }
+  */
+
   template <class SCAL>
   void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
   {
@@ -86,7 +87,6 @@ namespace ngcomp
     try
       {
 	ma.PushStatus ("Assemble Vector");
-
 	timer1.Start();
 
         // check if integrators fit to space
@@ -98,7 +98,7 @@ namespace ngcomp
                   HeapReset hr(clh);
 		  if (!parts[i] -> SkeletonForm()){
 		    if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
-		      parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+		      parts[i] -> CheckElement (fespace->GetSFE(j, clh));
 		  }else{
 		    //TODO: get aligned volelement and check that
 		  }
@@ -116,12 +116,11 @@ namespace ngcomp
                     {
                       HeapReset hr(clh);
                       if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-                        parts[i] -> CheckElement (fespace.GetFE(j, clh));
+                        parts[i] -> CheckElement (fespace->GetFE(j, clh));
                     }
                 }
             }
-
-	if(!allocated || ( this->GetVector().Size() != this->fespace.GetNDof()))
+	if(!allocated || ( this->GetVector().Size() != this->fespace->GetNDof()))
 	  {
 	    AllocateVector();
 	    allocated=true;
@@ -139,7 +138,6 @@ namespace ngcomp
 	bool hasinner = false;
 	bool hasskeletonbound = false;
 	bool hasskeletoninner = false;
-	
 	//check hasbound, hasinner, hasskeletonbound, hasskeletoninner
 	for (int j = 0; j < parts.Size(); j++)
 	  {
@@ -173,40 +171,38 @@ namespace ngcomp
 	if (hasbound) {nrcases++; loopsteps+=nse;}
 	if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
 	if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
-	if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
+	if (fespace->specialelements.Size()>0) {nrcases++; loopsteps+=fespace->specialelements.Size();}
 	// int actcase = 0;
 	int gcnt = 0; //global count (for all cases)
 	
 	timer1.Stop();
 
-
 	if (hasinner)
 	  {
-
 	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
 	    gcnt += ne;
             
             
 	    IterateElements 
-              (fespace, VOL, clh, 
+              (*fespace, VOL, clh, 
                [&] (ElementId ei, LocalHeap & lh)
                {
                  RegionTimer reg2 (timer2);
                  timer2a.Start();
                  progress.Update ();
 
-                 const FiniteElement & fel = fespace.GetFE(ei, lh);
+                 const FiniteElement & fel = fespace->GetFE(ei, lh);
                  const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                 // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                 // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
                  Array<int> dnums (fel.GetNDof(), lh);
-                 fespace.GetDofNrs (ei, dnums);
+                 fespace->GetDofNrs (ei, dnums);
                  timer2a.Stop();
 
                  for (int j = 0; j < parts.Size(); j++)
                    {
                      if (!parts[j] -> VolumeForm()) continue;
                      if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
-                     int elvec_size = fel.GetNDof()*fespace.GetDimension();
+                     int elvec_size = fel.GetNDof()*fespace->GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
 
 		     timer2b.Start();
@@ -223,7 +219,7 @@ namespace ngcomp
                                   << "elvec = " << endl << elvec << endl;
                        }
                      timer2c.Start();
-                     fespace.TransformVec (ei, elvec, TRANSFORM_RHS);
+                     fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
                      AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
                      timer2c.Stop();
                    }
@@ -240,25 +236,25 @@ namespace ngcomp
 
 
 	    IterateElements 
-              (fespace, BND, clh, 
+              (*fespace, BND, clh, 
                [&] (ElementId ei, LocalHeap & lh)
                {
                  RegionTimer reg2 (timer2);
                  
                  progress.Update ();
 
-                 const FiniteElement & fel = fespace.GetFE(ei, lh);
+                 const FiniteElement & fel = fespace->GetFE(ei, lh);
                  ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                 // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                 // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
                  Array<int> dnums(fel.GetNDof(), lh);
-                 fespace.GetDofNrs (ei, dnums);
+                 fespace->GetDofNrs (ei, dnums);
 
                  for (int j = 0; j < parts.Size(); j++)
                    {
                      if (!parts[j] -> BoundaryForm()) continue;
                      if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
 		     
-                     int elvec_size = fel.GetNDof()*fespace.GetDimension();
+                     int elvec_size = fel.GetNDof()*fespace->GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
                      
                      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
@@ -273,7 +269,7 @@ namespace ngcomp
                                   << "elvec = " << endl << elvec << endl;
                        }
                      
-                     fespace.TransformVec (ei, elvec, TRANSFORM_RHS);
+                     fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
                      AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
                    }
                });
@@ -321,12 +317,12 @@ namespace ngcomp
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
 		  
-		  const FiniteElement & fel = fespace.GetFE (el, lh);
+		  const FiniteElement & fel = fespace->GetFE (el, lh);
 		
 		  ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
 		  ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
 
-		  fespace.GetDofNrs (el, dnums);
+		  fespace->GetDofNrs (el, dnums);
 		  ma.GetElVertices (el, vnums);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
@@ -336,7 +332,7 @@ namespace ngcomp
 		      if (!parts[j] -> DefinedOn (ma.GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
-		      int elvec_size = dnums.Size()*fespace.GetDimension();
+		      int elvec_size = dnums.Size()*fespace->GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
 		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get()) 
 			  -> CalcFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
@@ -352,7 +348,7 @@ namespace ngcomp
 			}
 
 
-		      fespace.TransformVec (i, false, elvec, TRANSFORM_RHS);
+		      fespace->TransformVec (i, false, elvec, TRANSFORM_RHS);
 		    
 #pragma omp critical (addelvec3)		    
 		      {
@@ -414,8 +410,8 @@ namespace ngcomp
 		    if(element != oldelement)
 		      { 
 			clh.CleanUp();
-			fel = &fespace.GetFE(element,clh);
-			fespace.GetDofNrs(element,dnums);
+			fel = &fespace->GetFE(element,clh);
+			fespace->GetDofNrs(element,dnums);
 		      }
 		    ElementTransformation & eltrans = ma.GetTrafo (element, false, clh);
 
@@ -471,7 +467,7 @@ namespace ngcomp
 								   g_sip,
 								   elvec,clh,true);
 		      }
-		    fespace.TransformVec (element, false, elvec, TRANSFORM_RHS);
+		    fespace->TransformVec (element, false, elvec, TRANSFORM_RHS);
 
 		    elvec *= (oldlength+length); // Des is richtig
 		    
@@ -592,7 +588,7 @@ namespace ngcomp
 	  {
 	    lh.CleanUp();
 	    
-	    const FiniteElement & sfel = fespace.GetSFE (i, lh);
+	    const FiniteElement & sfel = fespace->GetSFE (i, lh);
 	    // ma.GetSurfaceElementTransformation (i, seltrans);
 	    ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
 
@@ -618,7 +614,7 @@ namespace ngcomp
 		// (*testout) << "elnr = " << elnr << endl;
 		if (elnr == -1) continue;
 		
-		const FiniteElement & gfel = fespace.GetFE (elnr, lh);
+		const FiniteElement & gfel = fespace->GetFE (elnr, lh);
 		// ma.GetElementTransformation (elnr, geltrans);
 		ElementTransformation & geltrans = ma.GetTrafo (elnr, false, lh);
 
@@ -626,7 +622,7 @@ namespace ngcomp
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;
 
-		fespace.GetDofNrs (elnr, dnums);
+		fespace->GetDofNrs (elnr, dnums);
 		
 		for (int k = 0; k < parts.Size(); k++)
 		  {
@@ -650,7 +646,7 @@ namespace ngcomp
 		    // (*testout) << "elvec, 1 = " << elvec << endl;
 
 		    elvec *= fabs (sip.GetJacobiDet()) * ip.Weight();
-		    fespace.TransformVec (elnr, 0, elvec, TRANSFORM_RHS);
+		    fespace->TransformVec (elnr, 0, elvec, TRANSFORM_RHS);
 
 		    // (*testout) << "final vec = " << elvec << endl;
 		    // (*testout) << "dnums = " << dnums << endl;
@@ -690,7 +686,7 @@ namespace ngcomp
 
 
 
-
+  /*
   template <typename TV>
   T_LinearForm<TV> ::
   T_LinearForm (const FESpace & afespace, const string & aname, const Flags & flags)
@@ -698,25 +694,28 @@ namespace ngcomp
   { 
     ; 
   }
-  
+  */
+
   template <typename TV>
   T_LinearForm<TV> :: ~T_LinearForm ()
   {
-    delete vec;
+    ; // delete vec;
   }
 
 
   template <typename TV>
   void T_LinearForm<TV> :: AllocateVector ()
   {
-    delete vec;
-    const FESpace & fes = this->fespace;
+    // delete vec;
+    // using this::fespace;
+    auto fes = this->fespace;
 #ifdef PARALLEL
-    if ( &fes.GetParallelDofs() )
-      vec = new ParallelVVector<TV> (fes.GetNDof(), &fes.GetParallelDofs(), DISTRIBUTED);
+    if ( &fes->GetParallelDofs() )
+      vec = make_shared<ParallelVVector<TV>> (fes->GetNDof(), 
+                                              &fes.GetParallelDofs(), DISTRIBUTED);
     else
 #endif
-      vec = new VVector<TV> (fes.GetNDof());
+      vec = make_shared<VVector<TV>> (fes->GetNDof());
     (*vec) = TSCAL(0);
     vec->SetParallelStatus (DISTRIBUTED);
   }
@@ -728,8 +727,9 @@ namespace ngcomp
   template <typename TV>
   void T_LinearForm<TV> :: CleanUpLevel ()
   {
-    delete vec;
-    vec = 0;
+    // delete vec;
+    // vec = 0;
+    vec.reset();
     this -> allocated = false;
   }
 
@@ -832,17 +832,21 @@ namespace ngcomp
 
 
 
-  LinearForm * CreateLinearForm (const FESpace * space,
-				 const string & name, const Flags & flags)
+  shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
+                                           const string & name, const Flags & flags)
   {
-    LinearForm * lf = 
+    LinearForm * lfp = 
       CreateVecObject  <T_LinearForm, LinearForm> 
       (space->GetDimension() * int(flags.GetNumFlag("cacheblocksize",1)), 
-       space->IsComplex(), *space, name, flags);
+       space->IsComplex(), space, name, flags);
+  
+    shared_ptr<LinearForm> lf(lfp);
     
     lf->SetIndependent (flags.GetDefineFlag ("independent"));
     if (flags.GetDefineFlag ( "noinitialassembling" )) lf->SetNoInitialAssembling();
     lf->SetCacheBlockSize(int(flags.GetNumFlag("cacheblocksize",1)));
+
+    // cout << "type = " << typeid(*lf).name() << ", addr = " << lfp << endl;
 
     return lf;
   }

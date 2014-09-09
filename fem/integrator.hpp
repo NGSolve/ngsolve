@@ -639,21 +639,22 @@ namespace ngfem
 
   class NGS_DLL_HEADER BlockBilinearFormIntegrator : public BilinearFormIntegrator
   {
-    BilinearFormIntegrator & bfi;
+    shared_ptr<BilinearFormIntegrator> bfi;
     int dim;
     int comp;
   public:
-    BlockBilinearFormIntegrator (BilinearFormIntegrator & abfi, int adim, int acomp);
-    BlockBilinearFormIntegrator (BilinearFormIntegrator & abfi, int adim);
+    BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim, int acomp);
+    BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim);
     virtual ~BlockBilinearFormIntegrator ();
 
     virtual bool BoundaryForm () const
-    { return bfi.BoundaryForm(); }
+    { return bfi->BoundaryForm(); }
 
     virtual int DimFlux () const 
-    { return (comp == -1) ? dim * bfi.DimFlux() : bfi.DimFlux(); }
+    { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
 
-    const BilinearFormIntegrator & Block () const { return bfi; }
+    const BilinearFormIntegrator & Block () const { return *bfi; }
+    shared_ptr<BilinearFormIntegrator> BlockPtr () const { return bfi; }
 
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
@@ -905,26 +906,26 @@ namespace ngfem
 
   class NGS_DLL_HEADER CompoundBilinearFormIntegrator : public BilinearFormIntegrator
   {
-    const BilinearFormIntegrator & bfi;
+    shared_ptr<BilinearFormIntegrator> bfi;
     int comp;
   public:
-    CompoundBilinearFormIntegrator (const BilinearFormIntegrator & abfi, int acomp);
+    CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp);
   
-    const BilinearFormIntegrator * GetBFI(void) const {return &bfi;}
+    shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
 
     virtual bool BoundaryForm () const
-    { return bfi.BoundaryForm(); }
+    { return bfi->BoundaryForm(); }
 
     virtual int DimFlux () const 
-    { return bfi.DimFlux(); }
+    { return bfi->DimFlux(); }
     virtual int DimElement () const
-    { return bfi.DimElement(); }
+    { return bfi->DimElement(); }
     virtual int DimSpace () const
-    { return bfi.DimSpace(); }
+    { return bfi->DimSpace(); }
 
     virtual void CheckElement (const FiniteElement & el) const
     {
-      return bfi.CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
+      return bfi->CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
     }
 
     virtual void
@@ -1169,14 +1170,14 @@ namespace ngfem
 
   class NGS_DLL_HEADER BlockLinearFormIntegrator : public LinearFormIntegrator
   {
-    const LinearFormIntegrator & lfi;
+    shared_ptr<LinearFormIntegrator> lfi;
     int dim;
     int comp;
   public:
-    BlockLinearFormIntegrator (const LinearFormIntegrator & alfi, int adim, int acomp);
+    BlockLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int adim, int acomp);
 
     virtual bool BoundaryForm () const
-    { return lfi.BoundaryForm(); }
+    { return lfi->BoundaryForm(); }
 
 
     virtual void 
@@ -1269,14 +1270,14 @@ namespace ngfem
   
   class NGS_DLL_HEADER CompoundLinearFormIntegrator : public LinearFormIntegrator
   {
-    const LinearFormIntegrator & lfi;
+    shared_ptr<LinearFormIntegrator> lfi;
     int comp;
   public:
-    CompoundLinearFormIntegrator (const LinearFormIntegrator & alfi, int acomp)
+    CompoundLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int acomp)
       : lfi(alfi), comp(acomp) { ; }
 
     virtual bool BoundaryForm () const
-    { return lfi.BoundaryForm(); }
+    { return lfi->BoundaryForm(); }
 
 
     virtual void 
@@ -1309,7 +1310,7 @@ namespace ngfem
 
     virtual string Name () const
     {
-      return string ("CompoundIntegrator (") + lfi.Name() + ")";
+      return string ("CompoundIntegrator (") + lfi->Name() + ")";
     }
   };
 

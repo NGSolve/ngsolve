@@ -21,32 +21,40 @@ Array<T> & makeCArray(const bp::object & obj)
 void SetFlag(Flags &flags, const char * s, bp::object value) {
     bp::extract<double> vd(value);
     if (vd.check())
+      {
+        // cout << "is double" << endl;
         flags.SetFlag(s, vd());         
+      }
 
     bp::extract<char *> vs(value);
     if (vs.check())
+      {
+        // cout << "is char*" << endl;
         flags.SetFlag(s, vs());
+      }
 
     bp::extract<bp::list> vdl(value);
     if (vdl.check())
     {             
+      // cout << "is list" << endl;
         bp::extract<double> d0(vdl()[0]);
         bp::extract<char *> s0(vdl()[0]);
         if(d0.check())
             flags.SetFlag(s, makeCArray<double>(value));
         if (s0.check())
-            flags.SetFlag(s, makeCArray<char *>(value));
+          flags.SetFlag(s, makeCArray<string>(value));
     }
 
     bp::extract<bp::tuple> vdt(value);
     if (vdt.check())
     {
+      // cout << "is tuple" << endl;
         bp::extract<double> d0(vdt()[0]);
         bp::extract<char *> s0(vdt()[0]);
         if (d0.check())
             flags.SetFlag(s, makeCArray<double>(value));
         if (s0.check())
-            flags.SetFlag(s, makeCArray<char *>(value));
+            flags.SetFlag(s, makeCArray<string>(value));
     }
 }
 
@@ -63,15 +71,15 @@ struct FlagsFromPythonDict{
             bp::converter::rvalue_from_python_stage1_data* data) {
         bp::dict aflags(bp::handle<>(bp::borrowed(obj_ptr)));
         Flags self;
+        // cout << "py converter" << endl;
         for (int i=0; i<bp::len(aflags); i++) {
             char * s = bp::extract<char *>(aflags.keys()[i]);          
             SetFlag(self, s, aflags.values()[i]);
         }
-
         typedef bp::converter::rvalue_from_python_storage<Flags> storage_t;
         storage_t* the_storage = reinterpret_cast<storage_t*>(data);
         void* memory_chunk = the_storage->storage.bytes;
-        Flags* output = new (memory_chunk) Flags(std::move(self) ); // Use the contents of obj to populate output, e.g. using extract<>
+        /* Flags* output = */ new (memory_chunk) Flags(std::move(self) ); // Use the contents of obj to populate output, e.g. using extract<>
         data->convertible = memory_chunk;
     }
 
@@ -134,7 +142,9 @@ void ExportNgstd() {
     ;
     
   bp::class_<ngstd::LocalHeap>
-    ("LocalHeap",bp::init<size_t,const char*>())
+    ("LocalHeap",bp::init<size_t,const char*>()
+     //,(bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap")
+     )
     ;
 
   bp::class_<ngstd::HeapReset>
@@ -149,20 +159,23 @@ void ExportNgstd() {
     .def("__str__", &ToString<BitArray>)
   ;
 
-  bp::class_<ngstd::Flags, shared_ptr<Flags> > ("Flags")
+  bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
     .def("__init__", bp::make_constructor (FunctionPointer ([](bp::dict const & aflags) 
-    {
-        Flags & self = *(new Flags());
+                                                            {
+      cout << "Calling Flags constructor with dict input" << endl;
+      shared_ptr<Flags> self = make_shared<Flags>();
       for (int i = 0; i < bp::len(aflags); i++)
       {   
             char * s = bp::extract<char *>(aflags.keys()[i]);          
-            SetFlag(self, s, aflags.values()[i]);
+            SetFlag(*self, s, aflags.values()[i]);
       }
-      return &self;
+      cout << "flags from dict: " << endl << *self << endl;
+      return self;
                 })))
 
     .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
     {      
+      cout << "we call Set(dict)" << endl;
       for (int i = 0; i < bp::len(aflags); i++)
       {   
           char * s = bp::extract<char *>(aflags.keys()[i]);          
@@ -172,7 +185,8 @@ void ExportNgstd() {
     }), bp::return_value_policy<bp::reference_existing_object>())
 
     .def("Set", FunctionPointer([](Flags & self, const char * akey, const bp::object & value)->Flags&
-    {              
+    {             
+      cout << "we call Set(key,obj)" << endl; 
         SetFlag(self, akey, value);
         return self;
     }), bp::return_value_policy<bp::reference_existing_object>()       

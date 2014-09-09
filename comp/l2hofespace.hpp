@@ -38,11 +38,11 @@ namespace ngcomp
     ///
     virtual ~L2HighOrderFESpace ();
     // Create if order=0 ElementFESpace Constructor, else L2HOFE 
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
     // Creates also for order=0 a L2HighOrderFESpace 
-    static FESpace * CreateHO (const MeshAccess & ma, const Flags & flags) 
+    static shared_ptr<FESpace> CreateHO (const MeshAccess & ma, const Flags & flags) 
     {
-      return new L2HighOrderFESpace (ma, flags, true);
+      return make_shared<L2HighOrderFESpace> (ma, flags, true);
     }  
   
     virtual string GetClassName () const
@@ -141,7 +141,7 @@ namespace ngcomp
     ///
     virtual ~L2SurfaceHighOrderFESpace ();
 
-    static FESpace * Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
 
     virtual string GetClassName () const
     {

@@ -231,13 +231,13 @@ namespace ngla
 
     // create vector, procs is the set of processors on which the vector exists
     // default 0 pointer means all procs
-    virtual BaseVector * CreateVector () const = 0;
+    virtual shared_ptr<BaseVector> CreateVector () const = 0;
 
 
     virtual void SetRandom ();
 
-    virtual BaseVector * Range (int begin, int end) const;
-    virtual BaseVector * Range (IntRange range) const;
+    virtual shared_ptr<BaseVector> Range (int begin, int end) const;
+    virtual shared_ptr<BaseVector> Range (IntRange range) const;
 
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<double> & v) const = 0;

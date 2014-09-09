@@ -613,14 +613,14 @@ namespace ngfem
 
 
   BlockBilinearFormIntegrator :: 
-  BlockBilinearFormIntegrator (BilinearFormIntegrator & abfi, int adim, int acomp)
+  BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim, int acomp)
     : bfi(abfi), dim(adim), comp(acomp) 
   { 
     ;
   }
 
   BlockBilinearFormIntegrator ::
-  BlockBilinearFormIntegrator (BilinearFormIntegrator & abfi, int adim)
+  BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim)
     : bfi(abfi), dim(adim), comp(-1)
   {
     ; 
@@ -629,7 +629,7 @@ namespace ngfem
   BlockBilinearFormIntegrator :: 
   ~BlockBilinearFormIntegrator ()
   {
-    delete &bfi;
+    // delete &bfi;
   }
 
   void BlockBilinearFormIntegrator ::
@@ -639,7 +639,7 @@ namespace ngfem
 		     LocalHeap & lh) const
   {
     FlatMatrix<double> mat1(bfel.GetNDof(), lh);
-    bfi.CalcElementMatrix (bfel, eltrans, mat1, lh);
+    bfi->CalcElementMatrix (bfel, eltrans, mat1, lh);
     
     // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
     elmat = 0;
@@ -665,7 +665,7 @@ namespace ngfem
 		     LocalHeap & lh) const
   {
     FlatMatrix<Complex> mat1(bfel.GetNDof(), lh);
-    bfi.CalcElementMatrix (bfel, eltrans, mat1, lh);
+    bfi->CalcElementMatrix (bfel, eltrans, mat1, lh);
     
     // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
     elmat = 0;
@@ -706,7 +706,7 @@ namespace ngfem
 	      {
 		small_elx(i) = elx(i*dim+d);
 	      }
-	    bfi.ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
+	    bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
 	    for(int i=0; i<smallsizey; i++)
 	      {
 		ely(i*dim+d) = small_ely(i);
@@ -719,7 +719,7 @@ namespace ngfem
 	  {
 	    small_elx(i) = elx(i*dim+comp);
 	  }
-	bfi.ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
+	bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
 	for(int i=0; i<smallsizey; i++)
 	  {
 	    ely(i*dim+comp) = small_ely(i);
@@ -751,7 +751,7 @@ namespace ngfem
 	      {
 		small_elx(i) = elx(i*dim+d);
 	      }
-	    bfi.ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
+	    bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
 	    for(int i=0; i<smallsizey; i++)
 	      {
 		ely(i*dim+d) = small_ely(i);
@@ -764,7 +764,7 @@ namespace ngfem
 	  {
 	    small_elx(i) = elx(i*dim+comp);
 	  }
-	bfi.ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
+	bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
 	for(int i=0; i<smallsizey; i++)
 	  {
 	    ely(i*dim+comp) = small_ely(i);
@@ -792,7 +792,7 @@ namespace ngfem
 	    for(int i=0; i<smallsizelin; i++)
               small_elveclin(i) = elveclin(i*dim+d);
 
-	    bfi.CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
+	    bfi->CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
             elmat = 0;
 
 	    for (int i = 0; i < mat1.Height(); i++)
@@ -805,7 +805,7 @@ namespace ngfem
 	for(int i=0; i<smallsizelin; i++)
           small_elveclin(i) = elveclin(i*dim+comp);
 
-	bfi.CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
+	bfi->CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
 	elmat = 0;
 	for (int i = 0; i < mat1.Height(); i++)
 	  for (int j = 0; j < mat1.Width(); j++)
@@ -841,7 +841,7 @@ namespace ngfem
 	      {
 		small_elveclin(i) = elveclin(i*dim+d);
 	      }
-	    bfi.CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
+	    bfi->CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
 	    if(!allocated)
 	      {
 		elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
@@ -859,7 +859,7 @@ namespace ngfem
 	  {
 	    small_elveclin(i) = elveclin(i*dim+comp);
 	  }
-	bfi.CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
+	bfi->CalcLinearizedElementMatrix (bfel, eltrans, small_elveclin, mat1, lh);
 	elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
 	elmat = 0;
 	for (int i = 0; i < mat1.Height(); i++)
@@ -884,18 +884,18 @@ namespace ngfem
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
+	bfi->CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
       }
     else
       {
 	FlatVector<double> selx(elx.Size()/dim, lh);
-	FlatVector<double> sflux(bfi.DimFlux(), lh);
+	FlatVector<double> sflux(bfi->DimFlux(), lh);
 	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
 	      selx(i) = elx(dim*i+j);
-	    bfi.CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
+	    bfi->CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
 	    for (int i = 0; i < sflux.Size(); i++)
 	      flux(dim*i+j) = sflux(i);
 	  }
@@ -935,18 +935,18 @@ namespace ngfem
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
+	bfi->CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
       }
     else
       {
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
-	FlatVector<Complex> sflux(bfi.DimFlux(), lh);
+	FlatVector<Complex> sflux(bfi->DimFlux(), lh);
 	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
 	      selx(i) = elx(dim*i+j);
-	    bfi.CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
+	    bfi->CalcFlux (fel, eltrans(ip, lh), selx, sflux, applyd, lh);
 	    for (int i = 0; i < sflux.Size(); i++)
 	      flux(dim*i+j) = sflux(i);
 	  }
@@ -988,11 +988,11 @@ namespace ngfem
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, bmip, selx, flux, applyd, lh);
+	bfi->CalcFlux (fel, bmip, selx, flux, applyd, lh);
       }
     else
       {
-	bfi.CalcFluxMulti (fel, bmip, dim, elx, flux, applyd, lh);
+	bfi->CalcFluxMulti (fel, bmip, dim, elx, flux, applyd, lh);
 	/*
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	FlatVector<double> sflux(bfi.DimFlux(), lh);
@@ -1044,18 +1044,18 @@ namespace ngfem
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
-	bfi.CalcFlux (fel, bmip, selx, flux, applyd, lh);
+	bfi->CalcFlux (fel, bmip, selx, flux, applyd, lh);
       }
     else
       {
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
-	FlatVector<Complex> sflux(bfi.DimFlux(), lh);
+	FlatVector<Complex> sflux(bfi->DimFlux(), lh);
 	// flux.AssignMemory (DimFlux(), lh);
 	for (int j = 0; j < dim; j++)
 	  {
 	    for (int i = 0; i < selx.Size(); i++)
 	      selx(i) = elx(dim*i+j);
-	    bfi.CalcFlux (fel, bmip, selx, sflux, applyd, lh);
+	    bfi->CalcFlux (fel, bmip, selx, sflux, applyd, lh);
 	    for (int i = 0; i < sflux.Size(); i++)
 	      flux(dim*i+j) = sflux(i);
 	  }
@@ -1099,13 +1099,13 @@ namespace ngfem
       mincomp = maxcomp = comp;
     
     FlatVector<> selx(elx.Size()/dim, lh);
-    FlatMatrix<> sflux(mir.Size(), bfi.DimFlux(), lh);
+    FlatMatrix<> sflux(mir.Size(), bfi->DimFlux(), lh);
 
     for (int j = mincomp; j <= maxcomp; j++)
       {
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+j);
-	bfi.CalcFlux (fel, mir, selx, sflux, applyd, lh);
+	bfi->CalcFlux (fel, mir, selx, sflux, applyd, lh);
 	for (int k = 0; k < mir.Size(); k++)
 	  for (int i = 0; i < sflux.Width(); i++)
 	    flux.Row(k)(dim*i+j) = sflux.Row(k)(i);
@@ -1135,7 +1135,7 @@ double BlockBilinearFormIntegrator ::
       {
 	for (i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+j);
-	energy += bfi.Energy (fel, eltrans, selx, lh);
+	energy += bfi->Energy (fel, eltrans, selx, lh);
       }
     return energy;
   }
@@ -1165,7 +1165,7 @@ double BlockBilinearFormIntegrator ::
 	  selx(i) = elx(dim*i+j);
 	*/
 	selx = elx.Slice(j, dim);
-	bfi.ApplyBTrans (fel, bmip, selx, sely, lh);
+	bfi->ApplyBTrans (fel, bmip, selx, sely, lh);
 	ely.Slice(j, dim) = sely;
 	/*
 	for (int i = 0; i < sely.Size(); i++)
@@ -1196,7 +1196,7 @@ double BlockBilinearFormIntegrator ::
       {
 	for (i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+j);
-	bfi.ApplyBTrans (fel, bmip, selx, sely, lh);
+	bfi->ApplyBTrans (fel, bmip, selx, sely, lh);
 	for (i = 0; i < sely.Size(); i++)
 	  ely(dim*i+j) = sely(i);
       }
@@ -1224,7 +1224,7 @@ double BlockBilinearFormIntegrator ::
 	for (int i = 0; i < selx.Width(); i++)
 	  selx.Col(i) = elx.Col(dim*i+j);
 
-	bfi.ApplyBTrans (fel, mir, selx, sely, lh);
+	bfi->ApplyBTrans (fel, mir, selx, sely, lh);
 
         ely.Slice(j, dim) = sely;
       }
@@ -1234,7 +1234,7 @@ double BlockBilinearFormIntegrator ::
   string BlockBilinearFormIntegrator :: Name () const
   {
     return
-      string ("BlockIntegrator (") + bfi.Name() +
+      string ("BlockIntegrator (") + bfi->Name() +
       string (")");
   }
 
@@ -1413,7 +1413,7 @@ double BlockBilinearFormIntegrator ::
   */
 
   CompoundBilinearFormIntegrator :: 
-  CompoundBilinearFormIntegrator (const BilinearFormIntegrator & abfi, int acomp)
+  CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : bfi(abfi), comp(acomp) { ; }
   
 
@@ -1427,7 +1427,7 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatMatrix<double> mat1(fel[comp].GetNDof(), lh);
-    bfi.CalcElementMatrix (fel[comp], eltrans, mat1, lh);
+    bfi->CalcElementMatrix (fel[comp], eltrans, mat1, lh);
 
     elmat = 0;
 
@@ -1446,7 +1446,7 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatMatrix<Complex> mat1(fel[comp].GetNDof(), lh);
-    bfi.CalcElementMatrix (fel[comp], eltrans, mat1, lh);
+    bfi->CalcElementMatrix (fel[comp], eltrans, mat1, lh);
 
     elmat = 0;
 
@@ -1485,7 +1485,7 @@ double BlockBilinearFormIntegrator ::
     for (int j = 0; j < nd; j++)
       ellin1(j) = ellin(base+j);
 
-    bfi.CalcLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, lh);
+    bfi->CalcLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, lh);
     
     elmat = 0;
     for (int i = 0; i < mat1.Height(); i++)
@@ -1517,7 +1517,7 @@ double BlockBilinearFormIntegrator ::
     for (int j = 0; j < nd; j++)
       ellin1(j) = ellin(base+j);
 
-    bfi.CalcLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, lh);
+    bfi->CalcLinearizedElementMatrix (fel[comp], eltrans, ellin1, mat1, lh);
     
     elmat = 0;
     
@@ -1551,7 +1551,7 @@ double BlockBilinearFormIntegrator ::
     for (int j = 0; j < nd; j++)
       elx1(j) = elx(base+j);
 
-    bfi.ApplyElementMatrix (fel[comp], eltrans, elx1, ely1, 0, lh);
+    bfi->ApplyElementMatrix (fel[comp], eltrans, elx1, ely1, 0, lh);
     
     ely = 0;
     for (int j = 0; j < nd; j++)
@@ -1591,7 +1591,7 @@ double BlockBilinearFormIntegrator ::
     for (int j = 0; j < nd; j++)
       elx1(j) = elx(base+j);
 
-    bfi.ApplyElementMatrix (fel[comp], eltrans, elx1, ely1, 0, lh);
+    bfi->ApplyElementMatrix (fel[comp], eltrans, elx1, ely1, 0, lh);
     
     ely = 0;
     for (int j = 0; j < nd; j++)
@@ -1629,7 +1629,7 @@ double BlockBilinearFormIntegrator ::
 	elx1(j) = elx(base+j);
       }
 
-    bfi.ApplyLinearizedElementMatrix (fel[comp], eltrans, ellin1, 
+    bfi->ApplyLinearizedElementMatrix (fel[comp], eltrans, ellin1, 
 				      elx1, ely1, lh);
     
     ely = 0;
@@ -1664,7 +1664,7 @@ double BlockBilinearFormIntegrator ::
 	elx1(j) = elx(base+j);
       }
 
-    bfi.ApplyLinearizedElementMatrix (fel[comp], eltrans, ellin1,
+    bfi->ApplyLinearizedElementMatrix (fel[comp], eltrans, ellin1,
 				      elx1, ely1, lh);
     
     ely = 0;
@@ -1689,7 +1689,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    bfi.CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
+    bfi->CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
 		  flux, applyd, lh);
   }
 
@@ -1709,7 +1709,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    bfi.CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
+    bfi->CalcFlux (fel[comp], ip, elx.Range (base, base+fel[comp].GetNDof()), 
 		  flux, applyd, lh);
   }
 
@@ -1729,7 +1729,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    bfi.CalcFlux (fel[comp], mir, elx.Range (base, base+fel[comp].GetNDof()), 
+    bfi->CalcFlux (fel[comp], mir, elx.Range (base, base+fel[comp].GetNDof()), 
 		  flux, applyd, lh);
   }
 
@@ -1749,7 +1749,7 @@ double BlockBilinearFormIntegrator ::
     for (int i = 0; i < comp; i++)
       base += fel[i].GetNDof();
 
-    bfi.CalcFlux (fel[comp], mir, elx.Range (base, base+fel[comp].GetNDof()), 
+    bfi->CalcFlux (fel[comp], mir, elx.Range (base, base+fel[comp].GetNDof()), 
 		  flux, applyd, lh);
   }
 
@@ -1767,7 +1767,7 @@ double BlockBilinearFormIntegrator ::
 
     ely = 0;
     FlatVector<double> hy = ely.Range (fel.GetRange(comp)); 
-    bfi.ApplyBTrans (fel[comp], mip, elx, hy, lh);
+    bfi->ApplyBTrans (fel[comp], mip, elx, hy, lh);
   }
   
   void CompoundBilinearFormIntegrator :: 
@@ -1782,7 +1782,7 @@ double BlockBilinearFormIntegrator ::
 
     ely = 0;
     FlatVector<Complex> hy = ely.Range (fel.GetRange(comp)); 
-    bfi.ApplyBTrans (fel[comp], mip, elx, hy, lh);
+    bfi->ApplyBTrans (fel[comp], mip, elx, hy, lh);
   }
 
 
@@ -1790,7 +1790,7 @@ double BlockBilinearFormIntegrator ::
   string CompoundBilinearFormIntegrator :: Name () const
   {
     return
-      string ("CompoundIntegrator (") + bfi.Name() +
+      string ("CompoundIntegrator (") + bfi->Name() +
       string (")");
   }
 
@@ -1822,7 +1822,7 @@ double BlockBilinearFormIntegrator ::
 
 
   BlockLinearFormIntegrator :: 
-  BlockLinearFormIntegrator (const LinearFormIntegrator & alfi, int adim, int acomp)
+  BlockLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int adim, int acomp)
     : lfi(alfi), dim(adim), comp(acomp)
   {
     ;
@@ -1835,7 +1835,7 @@ double BlockBilinearFormIntegrator ::
 		     LocalHeap & lh) const
   {
     FlatVector<double> vec1(bfel.GetNDof(), lh);
-    lfi.CalcElementVector (bfel, eltrans, vec1, lh);
+    lfi->CalcElementVector (bfel, eltrans, vec1, lh);
     elvec = 0;
     if (comp == -1)
       for (int i = 0; i < vec1.Size(); i++)
@@ -1865,7 +1865,7 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatVector<double> vec1(fel[comp].GetNDof(), lh);
-    lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
+    lfi->CalcElementVector (fel[comp], eltrans, vec1, lh);
     
     elvec = 0;
 
@@ -1889,7 +1889,7 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (bfel);
 
     FlatVector<Complex> vec1(fel[comp].GetNDof(), lh);
-    lfi.CalcElementVector (fel[comp], eltrans, vec1, lh);
+    lfi->CalcElementVector (fel[comp], eltrans, vec1, lh);
     
     elvec = 0;
 
@@ -1915,7 +1915,7 @@ double BlockBilinearFormIntegrator ::
 
     int i;
     FlatVector<double> vec1;
-    lfi.CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    lfi->CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
     elvec.AssignMemory (fel.GetNDof(), lh);
     elvec = 0;
@@ -1940,7 +1940,7 @@ double BlockBilinearFormIntegrator ::
       dynamic_cast<const CompoundFiniteElement&> (gfel);
 
     FlatVector<Complex> vec1;
-    lfi.CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
+    lfi->CalcElementVectorIndependent (fel[comp], s_mip, g_mip, vec1, lh, curveint);
     
     elvec.AssignMemory (fel.GetNDof(), lh);
     elvec = 0;

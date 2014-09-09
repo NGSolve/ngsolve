@@ -176,9 +176,9 @@ namespace ngla
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     ///
-    virtual BaseVector * CreateVector () const
+    virtual shared_ptr<BaseVector> CreateVector () const
     {
-      return new VVector<TV> (height/entrysize);
+      return make_shared<VVector<TV>> (height/entrysize);
     }
   };
 
