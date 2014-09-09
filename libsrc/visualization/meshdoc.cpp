@@ -18,7 +18,7 @@ namespace netgen
 MeshDoctorParameters meshdoctor;
 VisualSceneMeshDoctor vsmeshdoc;
 
-extern AutoPtr<Mesh> mesh;
+extern shared_ptr<Mesh> mesh;
 
   int Ng_MeshDoctor (ClientData clientData,
 		     Tcl_Interp * interp,

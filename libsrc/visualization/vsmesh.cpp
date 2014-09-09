@@ -15,7 +15,7 @@
 
 namespace netgen
 {
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<Mesh> mesh;
   extern NetgenGeometry * ng_geometry;
 
   VisualSceneMesh vsmesh;

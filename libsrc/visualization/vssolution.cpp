@@ -16,7 +16,7 @@
 
 namespace netgen
 {
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<Mesh> mesh;
   extern VisualSceneMesh vsmesh;
 
 
