@@ -139,18 +139,18 @@ namespace ngstd
 
 
 
-  /*
-  const string & 
-  Flags :: GetStringFlag (const string & name, const string & def) const
+  string Flags :: GetStringFlag (const string & name, const char * def) const
   {
     if (strflags.Used (name))
       return strflags[name];
     else
-      return def;
+      {
+        if (!def) return string("");
+        return def;
+      }
   }
-  */
 
-  const string & Flags :: GetStringFlag (const string & name, const string & def) const
+  string Flags :: GetStringFlag (const string & name, string def) const
   {
     if (strflags.Used (name))
       return strflags[name];
@@ -423,7 +423,8 @@ namespace ngstd
 	      }
 	    else
 	      {
-		Array<string> strs;
+                // to be cleand up ...
+		Array<char *> strs;
 
 		posbrack++;
 		char * hstr = new char[strlen(posbrack)+1];
@@ -435,7 +436,7 @@ namespace ngstd
 		while (*chp && *chp != ']')
 		  {
 		    if (start)
-		      strs.Append (string(chp));
+		      strs.Append (chp);
 		    start = 0;
 		    if (*chp == ',')
 		      {
@@ -445,7 +446,11 @@ namespace ngstd
 		    chp++;
 		  }
 		*chp = 0;
-		SetFlag (name, strs);
+
+                Array<string> strings;
+                for (int i = 0; i < strs.Size(); i++)
+                  strings.Append (string (strs[i]));
+		SetFlag (name, strings);
                 delete [] hstr;
 	      }
 	  }
