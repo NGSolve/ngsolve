@@ -22,7 +22,7 @@ namespace netgen
 /* *********************** Draw STL Geometry **************** */
 
 extern STLGeometry * stlgeometry;
-extern AutoPtr<Mesh> mesh;
+extern shared_ptr<Mesh> mesh;
 
 
 // #include "../../ngtcltk/mvdraw.hpp"
