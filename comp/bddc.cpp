@@ -490,7 +490,7 @@ namespace ngcomp
     BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
       : Preconditioner (&pde, aflags, aname)
     {
-      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform", NULL)));
+      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")));
       const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");

@@ -81,9 +81,9 @@ namespace ngstd
 
 
     /// Returns string flag, default value if not exists
-    // const string & GetStringFlag (const string & name, const char * def) const;
+    string GetStringFlag (const string & name, const char * def) const;
     /// Returns string flag, default value if not exists
-    const string & GetStringFlag (const string & name, const string & def) const;
+    string GetStringFlag (const string & name, string def = "") const;
     /// Returns numerical flag, default value if not exists
     double GetNumFlag (const string & name, double def) const;
     /// Returns address of numerical flag, null if not exists

@@ -105,7 +105,7 @@ namespace ngsolve
     tau = flags.GetNumFlag ("tau", 1);
     taui = flags.GetNumFlag ("taui", 0);
     solver = CG;
-    
+
     if (flags.GetDefineFlag ("qmr")) solver = QMR;
 // old flag-style: no longer supported. only qmr for compatibility 
     if (flags.GetDefineFlag ("gmres")) 
@@ -114,7 +114,6 @@ namespace ngsolve
       cout << "*** warning: flag -ncg deprecated: use -solver=ncg instead" << endl;
     if (flags.GetDefineFlag ("direct"))
       cout << "*** warning: flag -direct deprecated: use -solver=direct instead" << endl;
-
     
     // new style: -solver=cg|qmr|gmres|direct|bicgstab
     {

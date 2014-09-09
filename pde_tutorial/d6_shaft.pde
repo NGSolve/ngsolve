@@ -64,7 +64,7 @@ define preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=2
 # define preconditioner c -type=direct -bilinearform=a
 
 
-numproc constrainedbvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=50 -constraints=[cnsty1,cnstz1,cnsty2,cnstz2,cnsty3,cnstz3]
+numproc constrainedbvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=50 -constraints=[cnsty1,cnstz1,cnsty2,cnstz2,cnsty3,cnstz3] 
 
 numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
 numproc drawflux np2a -bilinearform=a -solution=u -label=stress -applyd

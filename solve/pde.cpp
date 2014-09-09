@@ -1117,10 +1117,8 @@ namespace ngsolve
   Preconditioner * PDE :: AddPreconditioner (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add preconditioner " << name << flush;
-
     Preconditioner * pre = NULL;
-    const string & type = flags.GetStringFlag ("type", NULL);
-
+    const string & type = flags.GetStringFlag ("type");
     int ntasks = MyMPI_GetNTasks ();
     
     if ( ntasks == 1 )
