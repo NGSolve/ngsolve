@@ -181,11 +181,13 @@ namespace ngcomp
     enum { HEIGHT = mat_traits<TV>::HEIGHT };
 
     ///
-    using BASE::BASE;
-    /*
-    T_LinearForm (const FESpace & afespace, const string & aname,
-		  const Flags & flags);
-    */
+    //using BASE::BASE;   // not working on MSVC
+    
+    T_LinearForm(shared_ptr<FESpace> afespace, const string & aname,
+        const Flags & flags)
+        : BASE(afespace, aname, flags) {
+        ;
+    }
 
     ///
     virtual ~T_LinearForm ();
