@@ -21,7 +21,7 @@ void ExportNgbla() {
     bp::object expr_namespace = expr_module.attr("__dict__");
     
     typedef FlatVector<double> FVD;
-    bp::class_<FVD >("FlatVector")
+    bp::class_<FVD, shared_ptr<FVD> >("FlatVector")
         .def(PyDefVector<FVD, double>()) 
         .def(PyDefToString<FVD >())
         .def("Assign", FunctionPointer( [](FVD &self, FVD &v, double s) { self  = s*v; }) )
@@ -38,8 +38,23 @@ void ExportNgbla() {
         .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
         ;
 
-    bp::class_<Vector<double>, bp::bases<FlatVector<double> > >("Vector")
-        .def(bp::init<int>())
+//     bp::class_<Vector<double>, shared_ptr<Vector<double>> , bp::bases<FlatVector<double> > >("Vector")
+    bp::class_<Vector<double>,  bp::bases<FlatVector<double> > >("Vector")
+//         .def(bp::init<int>())
+        .def("__init__", bp::make_constructor (FunctionPointer ([](bp::object const & x)
+            {
+                bp::extract<int> en(x); 
+                if(en.check()) {
+                    // call ordinary constructor Vector(int)
+                    return shared_ptr<Vector<double>>(new Vector<double>(en()));
+                }
+                // Assume x is of type VecExpr
+                int s = bp::len(x);
+                shared_ptr<Vector<double>> tmp (new Vector<double>(s));
+                bp::object exp =  bp::object(tmp).attr("expr");
+                x.attr("AssignTo")(exp);
+                return tmp;
+            })))
         ;
 
     typedef FlatMatrix<double> FMD;
