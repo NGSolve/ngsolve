@@ -141,7 +141,7 @@ AX_PYTHON_DEVEL([>= '3.2'])
 # CXXFLAGS+=" $PYTHON_CPPFLAGS"
 # LDFLAGS+=" $PYTHON_LDFLAGS"
 
-AX_BOOST_BASE([1.55])
+AX_BOOST_BASE([1.54])
 AX_BOOST_PYTHON
 
 echo "from path python:   python version = $PYTHON_VERSION"
