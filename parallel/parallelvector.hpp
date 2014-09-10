@@ -130,7 +130,7 @@ namespace ngla
     virtual void  IRecvVec ( int dest, MPI_Request & request );
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender );
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
 
     virtual double L2Norm () const;
   };

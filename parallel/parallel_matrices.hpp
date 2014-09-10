@@ -48,7 +48,7 @@ namespace ngla
 
     BaseMatrix & GetMatrix() const { return const_cast<BaseMatrix&> (mat); }
     virtual BaseMatrix * CreateMatrix () const;
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
 
     virtual ostream & Print (ostream & ost) const;
 

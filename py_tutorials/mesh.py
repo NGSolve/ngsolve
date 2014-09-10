@@ -10,7 +10,7 @@ from libngspy import *
 # mesh = pde.Mesh()
 
 # mesh = ngcomp.Mesh("square.vol")
-mesh = ngcomp.Mesh("cube.vol.gz")
+mesh = ngcomp.Mesh("../pde_tutorial/cube.vol")
 
 # from tkinter import filedialog
 # filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])

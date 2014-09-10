@@ -368,10 +368,10 @@ namespace ngla
     return new ParallelMatrix (mat.CreateMatrix(), paralleldofs);
   }
 
-  BaseVector * ParallelMatrix :: CreateVector () const
+  shared_ptr<BaseVector> ParallelMatrix :: CreateVector () const
   {
     if (dynamic_cast<const SparseMatrix<double>*> (&mat))
-      return new ParallelVVector<double> (mat.Height(), paralleldofs);
+      return make_shared<ParallelVVector<double>> (mat.Height(), paralleldofs);
 
     cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
 	 << typeid(mat).name()

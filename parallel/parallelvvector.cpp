@@ -330,11 +330,16 @@ namespace ngla
 
 
   template <typename SCAL>
-  BaseVector * S_ParallelBaseVectorPtr<SCAL> :: CreateVector () const
+  shared_ptr<BaseVector> S_ParallelBaseVectorPtr<SCAL> :: 
+  CreateVector () const
   {
+    return make_shared<S_ParallelBaseVectorPtr<TSCAL>>
+      (this->size, this->es, paralleldofs, status);
+    /*
     S_ParallelBaseVectorPtr<TSCAL> * parvec = 
       new S_ParallelBaseVectorPtr<TSCAL> (this->size, this->es, paralleldofs, status);
     return parvec;
+    */
   }
 
 

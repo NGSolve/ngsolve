@@ -138,7 +138,7 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
     /*
     {
       return new ParallelVVector<TV> (height, paralleldofs);
