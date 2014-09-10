@@ -24,7 +24,7 @@ v.Update (heapsize=1000000)
 lh = ngstd.LocalHeap (10000, "heap")
 
 lam = ngfem.ConstantCF (4.8)
-lap = ngfem.CreateBFI (name="laplace", dim=2, coef=lam)
+lap = ngfem.BFI (name="laplace", dim=2, coef=lam)
 
 
 

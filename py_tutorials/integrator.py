@@ -12,8 +12,8 @@ mesh = pde.Mesh()
 lh = ngstd.LocalHeap (10000, "heap")
 v = pde.spaces["v"]
 
-lap = ngfem.CreateBFI (name="laplace", dim=2, coef=ngfem.VariableCF ("x*y"))
-src = ngfem.CreateLFI (name="source", dim=2, coef=ngfem.ConstantCF (4.8))
+lap = ngfem.BFI (name="laplace", dim=2, coef=ngfem.VariableCF ("x*y"))
+src = ngfem.LFI (name="source", dim=2, coef=ngfem.ConstantCF (4.8))
 
 i = ngcomp.ElementId(ngcomp.VOL,1)
 el = v.GetFE(i, lh)
