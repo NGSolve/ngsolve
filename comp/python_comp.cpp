@@ -123,6 +123,7 @@ void ExportNgcomp()
 
     .def("CouplingType", &FESpace::GetDofCouplingType)
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
+    .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
     .def(PyDefToString<FESpace>())
     .def ("GetFE", 
           static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>

@@ -332,46 +332,46 @@ namespace ngla
 
   }
 
-  ParallelMatrix :: ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs)
-    : BaseMatrix(apardofs), mat(*amat)
+  ParallelMatrix :: ParallelMatrix (shared_ptr<BaseMatrix> amat, const ParallelDofs * apardofs)
+    : BaseMatrix(apardofs), mat(amat)
   { 
-    const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);
+    mat->SetParallelDofs (apardofs);
 #ifdef USE_MUMPS
-    mat.SetInverseType(MUMPS);
+    mat->SetInverseType(MUMPS);
 #else
-    mat.SetInverseType(MASTERINVERSE);
+    mat->SetInverseType(MASTERINVERSE);
 #endif
   }
 
 
   ParallelMatrix :: ~ParallelMatrix ()
   {
-    delete &mat;
+    ; // delete &mat;
   }
 
   void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     x.Cumulate();
     y.Distribute();
-    mat.MultAdd (s, x, y);
+    mat->MultAdd (s, x, y);
   }
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     x.Cumulate();
     y.Distribute();
-    mat.MultTransAdd (s, x, y);
+    mat->MultTransAdd (s, x, y);
   }
 
   BaseMatrix * ParallelMatrix :: CreateMatrix () const
   {
-    return new ParallelMatrix (mat.CreateMatrix(), paralleldofs);
+    return new ParallelMatrix (shared_ptr<BaseMatrix> (mat->CreateMatrix()), paralleldofs);
   }
 
   shared_ptr<BaseVector> ParallelMatrix :: CreateVector () const
   {
-    if (dynamic_cast<const SparseMatrix<double>*> (&mat))
-      return make_shared<ParallelVVector<double>> (mat.Height(), paralleldofs);
+    if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
+      return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
 
     cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
 	 << typeid(mat).name()
@@ -381,18 +381,18 @@ namespace ngla
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
   {
-    ost << mat;
+    ost << *mat;
     return ost;
   }
 
   int ParallelMatrix :: VHeight() const
   {
-    return mat.VHeight();
+    return mat->VHeight();
   }
 
   int ParallelMatrix :: VWidth() const
   {
-    return mat.VWidth();
+    return mat->VWidth();
   }
 
 
@@ -416,18 +416,17 @@ namespace ngla
   template <typename TM>
   BaseMatrix * ParallelMatrix::InverseMatrixTM (const BitArray * subset) const
   {
-    const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (&mat);
+    const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
     if (!dmat) return NULL;
 
-    bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (&mat) != NULL;
+    bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (mat.get()) != NULL;
 
 #ifdef USE_MUMPS
-    if (mat.GetInverseType() == MUMPS)
+    if (mat->GetInverseType() == MUMPS)
       return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, paralleldofs, symmetric);
     else 
 #endif
       return new MasterInverse<TM> (*dmat, subset, paralleldofs);
-    
   }
 
 
@@ -439,17 +438,17 @@ namespace ngla
 
   INVERSETYPE ParallelMatrix::SetInverseType (INVERSETYPE ainversetype) const
   {
-    return mat.SetInverseType (ainversetype);
+    return mat->SetInverseType (ainversetype);
   }
 
   INVERSETYPE ParallelMatrix::SetInverseType (string ainversetype) const
   {
-    return mat.SetInverseType (ainversetype);
+    return mat->SetInverseType (ainversetype);
   }
   
   INVERSETYPE ParallelMatrix::GetInverseType () const
   {
-    return mat.GetInverseType ();
+    return mat->GetInverseType ();
   }
 
 

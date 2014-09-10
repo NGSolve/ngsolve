@@ -2836,7 +2836,7 @@ namespace ngcomp
     shared_ptr<BaseMatrix> mat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
 #ifdef PARALLEL
     if ( this->GetFESpace().IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat.get(), &this->GetFESpace().GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace().GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -3062,7 +3062,7 @@ namespace ngcomp
     shared_ptr<BaseMatrix> mat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
 #ifdef PARALLEL
     if ( this->GetFESpace().IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat.get(), &this->GetFESpace().GetParallelDofs());
+      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace().GetParallelDofs());
 #endif
     this->mats.Append (mat);
 

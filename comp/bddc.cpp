@@ -360,7 +360,7 @@ namespace ngcomp
 	    {
 	      ParallelDofs * pardofs = &bfa.GetFESpace().GetParallelDofs();
 
-	      pwbmat = new ParallelMatrix (pwbmat, pardofs);
+	      pwbmat = new ParallelMatrix (shared_ptr<BaseMatrix> (pwbmat, NOOP_Deleter), pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
 #ifdef HYPRE
@@ -371,10 +371,10 @@ namespace ngcomp
 		inv = pwbmat -> InverseMatrix (free_dofs);
 
 	      tmp = new ParallelVVector<TV>(ndof, pardofs);
-	      innersolve = new ParallelMatrix (innersolve, pardofs);
-	      harmonicext = new ParallelMatrix (harmonicext, pardofs);
+	      innersolve = new ParallelMatrix (shared_ptr<BaseMatrix> (innersolve, NOOP_Deleter), pardofs);
+	      harmonicext = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicext, NOOP_Deleter), pardofs);
 	      if (harmonicexttrans)
-		harmonicexttrans = new ParallelMatrix (harmonicexttrans, pardofs);
+		harmonicexttrans = new ParallelMatrix (shared_ptr<BaseMatrix> (harmonicexttrans, NOOP_Deleter), pardofs);
 	    }
 	  else
 #endif
