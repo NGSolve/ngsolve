@@ -32,10 +32,10 @@ namespace ngla
 
   class ParallelMatrix : public BaseMatrix
   {
-    const BaseMatrix & mat;
+    shared_ptr<BaseMatrix> mat;
     // const ParallelDofs & pardofs;
   public:
-    ParallelMatrix (const BaseMatrix * amat, const ParallelDofs * apardofs);
+    ParallelMatrix (shared_ptr<BaseMatrix> amat, const ParallelDofs * apardofs);
     // : mat(*amat), pardofs(*apardofs) 
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
@@ -43,10 +43,10 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
-    virtual BaseVector & AsVector() { return const_cast<BaseMatrix&> (mat).AsVector(); }
-    virtual const BaseVector & AsVector() const { return mat.AsVector(); }
+    virtual BaseVector & AsVector() { return mat->AsVector(); }
+    virtual const BaseVector & AsVector() const { return mat->AsVector(); }
 
-    BaseMatrix & GetMatrix() const { return const_cast<BaseMatrix&> (mat); }
+    BaseMatrix & GetMatrix() const { return const_cast<BaseMatrix&> (*mat); }
     virtual BaseMatrix * CreateMatrix () const;
     virtual shared_ptr<BaseVector> CreateVector () const;
 

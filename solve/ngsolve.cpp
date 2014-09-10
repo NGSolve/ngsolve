@@ -144,9 +144,10 @@ PythonEnvironment::PythonEnvironment() {
         ExportNgfem();
         ExportNgla();
         ExportNgcomp();
-        ExportNgsolve();
+        ExportNgsolve(); 
 
-        cout << "ngs-python objects are available in ngstd, ngbla, ...\n"
+        cout << IM(1)
+	     << "ngs-python objects are available in ngstd, ngbla, ...\n"
              << "to import the whole bunch of objets enter\n\n"
              << "from ngstd import *\n"
              << "from ngbla import *\n"
@@ -1204,8 +1205,9 @@ int NGSolve_Init (Tcl_Interp * interp)
     bp::def ("Redraw", 
              FunctionPointer([]() {Ng_Redraw();}));
   }
-
-  py_env.Spawn(initfile);
+  
+  if (MyMPI_GetId() == 0)
+    py_env.Spawn(initfile);
 
 #endif
 
