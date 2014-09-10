@@ -1382,7 +1382,7 @@ void NGS_ParallelRun (const string & message)
       // ngs_comm = MPI_COMM_WORLD;
 
       // ma.Reset(new ngcomp::MeshAccess());
-      pde.Reset(new PDE);
+      pde = make_shared<PDE>(); // .Reset(new PDE);
 
       /*
       // transfer file contents, not filename
@@ -1411,7 +1411,7 @@ void NGS_ParallelRun (const string & message)
 
   else if ( message == "ngs_exit" )
     {
-      pde.Reset(NULL);
+      pde.reset(); 
     }
 
   return;

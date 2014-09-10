@@ -731,7 +731,7 @@ namespace ngcomp
 	
 #ifdef PARALLEL
 	    if ( & this->GetFESpace().GetParallelDofs() )
-	      vec[i] = makke_shared<ParallelVVector<TV>> (ndof, &this->GetFESpace().GetParallelDofs(), CUMULATED);
+	      vec[i] = make_shared<ParallelVVector<TV>> (ndof, &this->GetFESpace().GetParallelDofs(), CUMULATED);
 	    else
 #endif
  	      vec[i] = make_shared<VVector<TV>> (ndof);

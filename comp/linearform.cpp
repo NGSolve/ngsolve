@@ -712,7 +712,7 @@ namespace ngcomp
 #ifdef PARALLEL
     if ( &fes->GetParallelDofs() )
       vec = make_shared<ParallelVVector<TV>> (fes->GetNDof(), 
-                                              &fes.GetParallelDofs(), DISTRIBUTED);
+                                              &fes->GetParallelDofs(), DISTRIBUTED);
     else
 #endif
       vec = make_shared<VVector<TV>> (fes->GetNDof());
