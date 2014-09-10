@@ -107,7 +107,7 @@ void ParallelRun()
       else if ( message == "mesh" )
 	{
 	  VT_USER_START ("Mesh::ReceiveParallelMesh");
-	  mesh.Reset( new netgen::Mesh);
+	  mesh.reset( new netgen::Mesh);
 	  mesh->SendRecvMesh();
 	  VT_USER_END ("Mesh::ReceiveParallelMesh");
 	}
