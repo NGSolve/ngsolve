@@ -1645,8 +1645,8 @@ namespace netgen
 
 
 
-  Array< AutoPtr < IntegrationPointData > > ipdtet;
-  Array< AutoPtr < IntegrationPointData > > ipdtet10;
+  Array< shared_ptr < IntegrationPointData > > ipdtet;
+  Array< shared_ptr < IntegrationPointData > > ipdtet10;
 
 
 
@@ -2235,8 +2235,8 @@ namespace netgen
 
         switch (GetType())
           {
-          case TET: ipdtet.Elem(i).Reset(ipd); break;
-          case TET10: ipdtet10.Elem(i).Reset(ipd); break;
+          case TET: ipdtet.Elem(i).reset(ipd); break;
+          case TET10: ipdtet10.Elem(i).reset(ipd); break;
           default:
             PrintSysError ("Element::ComputeIntegrationPoint(2), illegal type ", int(typ));
           }
