@@ -247,17 +247,18 @@ namespace ngsolve
     ///
     double & GetVariable (const string & aname, bool opt = 0);
     ///
-    shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0);
+    CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
+    shared_ptr<CoefficientFunction> CoefficientFunctionPtr (const string & name, bool opt = 0) const;
     ///
     FESpace * GetFESpace (const string & name, bool opt = 0);
-    shared_ptr<FESpace> FESpacePtr (const string & name, bool opt = 0);
+    shared_ptr<FESpace> FESpacePtr (const string & name, bool opt = 0) const;
     ///
     GridFunction * GetGridFunction (const string & name, bool opt = 0)
     {
       return GridFunctionPtr(name, opt).get();
     }
     ///
-    shared_ptr<GridFunction> GridFunctionPtr (const string & name, bool opt = 0);
+    shared_ptr<GridFunction> GridFunctionPtr (const string & name, bool opt = 0) const;
     ///
     BilinearForm * GetBilinearForm (const string & name, bool opt = 0);
     ///

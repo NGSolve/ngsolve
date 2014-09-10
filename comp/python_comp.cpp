@@ -140,13 +140,13 @@ void ExportNgcomp()
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
 
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, shared_ptr<FESpace> fespace)
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
                            {
                              Flags flags;
                              return CreateGridFunction (fespace, name, flags);
                            }),
           bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("name")="gfu", bp::arg("space"))),
+          (bp::arg("space"), bp::arg("name")="gfu")),
          "creates a gridfunction in finite element space"
          )
 
@@ -310,13 +310,13 @@ void ExportNgcomp()
   typedef BilinearForm BF;
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, const Flags & flags) 
                            {
+                             cout << "biform: flags = " << flags << "----------" << endl;
                              return CreateBilinearForm (fespace, name, flags);
                            }),
           bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags")))
-         )
+          (bp::arg("space"), bp::arg("name")="bfa", bp::arg("flags") = bp::dict())))
 
     .def(PyDefToString<BilinearForm>())
     .def("Add", FunctionPointer([](BF & self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
@@ -344,7 +344,7 @@ void ExportNgcomp()
                              return CreateLinearForm (fespace, name, flags);
                            }),
           bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags")))
+          (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags") = bp::dict()))
          )
     .def("__str__", &ToString<LF>)
     .def("Vector", FunctionPointer([](LF & self){ return self.VectorPtr(); }))

@@ -830,9 +830,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     while (&bfa->GetLowOrderBilinearForm())
       bfa = &bfa->GetLowOrderBilinearForm();
 
-    coefse = pde->GetCoefficientFunction (flags.GetStringFlag ("coefse", ""),1);    
-    coefe = pde->GetCoefficientFunction (flags.GetStringFlag ("coefe", ""),1);    
-    coeff = pde->GetCoefficientFunction (flags.GetStringFlag ("coeff", ""),1);    
+    coefse = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coefse", ""),1);    
+    coefe = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coefe", ""),1);    
+    coeff = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coeff", ""),1);    
 
     hcurl = dynamic_cast<const NedelecFESpace*> (&bfa->GetFESpace()) != 0;
     levels = int (flags.GetNumFlag ("levels", 10));

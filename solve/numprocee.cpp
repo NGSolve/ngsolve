@@ -204,9 +204,9 @@ namespace ngsolve
       }
     else
       {
-	coef_real = pde.GetCoefficientFunction(flags.GetStringFlag("function",""));
+	coef_real = pde.CoefficientFunctionPtr(flags.GetStringFlag("function",""));
 	if ( flags.StringFlagDefined("function_imag"))
-	  coef_imag = pde.GetCoefficientFunction(flags.GetStringFlag("function_imag",""));
+	  coef_imag = pde.CoefficientFunctionPtr(flags.GetStringFlag("function_imag",""));
       }
 
     gfdiff = pde.GetGridFunction (flags.GetStringFlag ("diff", ""), 1);

@@ -17,26 +17,25 @@ import numpy as np
 
 mesh = Mesh("square.vol")
 
-v = FESpace ("h1ho", mesh, { "order" : 3, "dirichlet" : [1] })
+v = FESpace ("h1ho", mesh, { "order" : 6, "dirichlet" : [1] })
 v.Update()
 
-u = GridFunction (space=v)
+u = GridFunction (v)
 u.Update()
 
-f = LinearForm (v,"lff", { } )
-f.Add (CreateLFI ("source", 2, ConstantCF(1)))
+f = LinearForm (v)
+f.Add (LFI ("source", 2, ConstantCF(1)))
 f.Assemble()
 
-a = BilinearForm (v,"bfa", { } )
-a.Add (CreateBFI ("mass", 2, ConstantCF(1)))
-a.Add (CreateBFI ("laplace", 2, ConstantCF(1)))
+a = BilinearForm (v, flags = { "symmetric" : True })
+a.Add (BFI ("mass", 2, ConstantCF(1)))
+a.Add (BFI ("laplace", 2, ConstantCF(1)))
 a.Assemble()
 
 inv = a.mat.Inverse(v.FreeDofs())
 u.vec.data = inv * f.vec
 
-pnts = [ (x,y) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6)]
-vals = [ u(p[0], p[1]) for p in pnts ]
+sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6)]
 
 
 

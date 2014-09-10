@@ -58,13 +58,20 @@ namespace ngfem
     enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
     enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
     enum { DIM         = DIFFOP::DIM };
-  
+
     ///
+
+    PML_BDBIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+      : T_BDBIntegrator<DIFFOP,DMATOP,FEL> (coeffs)
+    { 
+      SetPMLParameters();
+    }
+    
+
     PML_BDBIntegrator (const DMATOP & admat)
       : T_BDBIntegrator<DIFFOP,DMATOP,FEL> (admat)
     { 
       SetPMLParameters();
-
     }
 
     ///

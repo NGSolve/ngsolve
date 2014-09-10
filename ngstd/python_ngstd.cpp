@@ -19,6 +19,14 @@ Array<T> & makeCArray(const bp::object & obj)
 
 
 void SetFlag(Flags &flags, const char * s, bp::object value) {
+
+    bp::extract<bool> vb(value);
+    if (vb.check() && vb())
+      {
+        // cout << "is double" << endl;
+        flags.SetFlag(s);
+      }
+
     bp::extract<double> vd(value);
     if (vd.check())
       {

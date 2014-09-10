@@ -317,8 +317,18 @@ namespace ngsolve
     throw Exception (string ("Variable '") + name + "' not defined\n");
   }
 
-  shared_ptr<CoefficientFunction> PDE :: 
-  GetCoefficientFunction (const string & name, bool opt)
+  CoefficientFunction * 
+  PDE :: GetCoefficientFunction (const string & name, bool opt)
+  { 
+    if (coefficients.Used(name))
+      return coefficients[name].get();
+
+    if (opt) return NULL;
+    throw Exception (string ("CoefficientFunction '") + name + "' not defined\n");
+  }
+
+  shared_ptr<CoefficientFunction>
+  PDE :: CoefficientFunctionPtr (const string & name, bool opt) const
   { 
     if (coefficients.Used(name))
       return coefficients[name];
@@ -336,7 +346,7 @@ namespace ngsolve
     throw Exception (string("FESpace '") + name + "' not defined\n");
   }
   shared_ptr<FESpace> PDE :: 
-  FESpacePtr (const string & name, bool opt)
+  FESpacePtr (const string & name, bool opt) const
   { 
     if (spaces.Used(name)) return spaces[name];
     if (opt) return NULL;
@@ -344,7 +354,7 @@ namespace ngsolve
   }
 
   shared_ptr<GridFunction> PDE :: 
-  GridFunctionPtr (const string & name, bool opt)
+  GridFunctionPtr (const string & name, bool opt) const
   { 
     if (gridfunctions.Used(name))
       return gridfunctions[name];
