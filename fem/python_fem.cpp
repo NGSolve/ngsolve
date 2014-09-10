@@ -139,7 +139,19 @@ void ExportNgfem() {
     ;
   
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
-    ("BilinearFormIntegrator", bp::no_init)
+    ("BFI", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
+                           {
+                             auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
+                             if (!bfi) cerr << "undefined integrator '" << name 
+                                            << "' in " << dim << " dimension having 1 coefficient"
+                                            << endl;
+                             return bfi;
+                           }),
+          bp::default_call_policies(),        // need it to use named arguments
+          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"))))
+    
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
                                                       const ElementTransformation&,
@@ -147,12 +159,25 @@ void ExportNgfem() {
          (&BilinearFormIntegrator::CalcElementMatrix))
     ;
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
-    ("LinearFormIntegrator", bp::no_init)
+    ("LFI", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
+                           {
+                             auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
+                             if (!lfi) cerr << "undefined integrator '" << name 
+                                            << "' in " << dim << " dimension having 1 coefficient"
+                                            << endl;
+                             return lfi;
+                           }),
+          bp::default_call_policies(),        // need it to use named arguments
+          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"))))
+
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>&,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
     ;
 
+  /*
   bp::def("CreateBFI", FunctionPointer 
           ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
@@ -164,7 +189,6 @@ void ExportNgfem() {
            }),
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
     ;
-
   bp::def("CreateLFI", FunctionPointer
           ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
            {
@@ -177,6 +201,7 @@ void ExportNgfem() {
            }),
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
     ;
+  */
   
   bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init);  
 

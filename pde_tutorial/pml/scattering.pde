@@ -29,7 +29,7 @@ numproc bvp np2 -bilinearform=a -linearform=f -gridfunction=uscat -preconditione
 define coefficient utot  uscat-uin
 
 numproc draw npd1 -coefficient=utot -label=utot
-numproc draw npd1 -coefficient=uin -label=uin
+numproc draw npd2 -coefficient=uin -label=uin
 
 
 numproc visualization npv1 -scalarfunction=uscat -subdivision=1 -nolineartexture

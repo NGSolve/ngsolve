@@ -1245,7 +1245,7 @@ double BlockBilinearFormIntegrator ::
 
   
   ComplexBilinearFormIntegrator :: 
-  ComplexBilinearFormIntegrator (const BilinearFormIntegrator & abfi, 
+  ComplexBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, 
 				 Complex afactor)
     : bfi(abfi), factor(afactor)
   {
@@ -1271,7 +1271,7 @@ double BlockBilinearFormIntegrator ::
 		     LocalHeap & lh) const
   {
     FlatMatrix<double> rmat(elmat.Height(), lh);
-    bfi.CalcElementMatrix (fel, eltrans, rmat, lh);
+    bfi->CalcElementMatrix (fel, eltrans, rmat, lh);
     elmat = factor * rmat; 
   }  
 
@@ -1284,7 +1284,7 @@ double BlockBilinearFormIntegrator ::
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    bfi.ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
+    bfi->ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
     ely *= factor;
   }
 
@@ -1322,7 +1322,7 @@ double BlockBilinearFormIntegrator ::
 				    LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi.CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
+    bfi->CalcElementMatrixIndependent(bfel_master,bfel_master_element,bfel_slave,
                                      eltrans_master, eltrans_master_element, eltrans_slave,
                                      ip_master, ip_master_element, ip_slave,
                                      rmat, lh);
@@ -1358,7 +1358,7 @@ double BlockBilinearFormIntegrator ::
                                 LocalHeap & lh) const
   {
     FlatMatrix<double> rmat;
-    bfi.CalcElementMatrixIndependent(bfel_master,bfel_slave,
+    bfi->CalcElementMatrixIndependent(bfel_master,bfel_slave,
 					 eltrans_master, eltrans_slave,
 					 ip_master, ip_slave,
 					 rmat, lh);
@@ -1379,7 +1379,7 @@ double BlockBilinearFormIntegrator ::
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    bfi.CalcFlux (fel, eltrans(ip, lh), elx, flux, applyd, lh);
+    bfi->CalcFlux (fel, eltrans(ip, lh), elx, flux, applyd, lh);
     flux *= factor;
   }
 
@@ -1391,14 +1391,14 @@ double BlockBilinearFormIntegrator ::
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    bfi.CalcFlux (fel, bmip, elx, flux, applyd, lh);
+    bfi->CalcFlux (fel, bmip, elx, flux, applyd, lh);
     flux *= factor;
   }
 
   string ComplexBilinearFormIntegrator :: Name () const
   {
     return
-      string ("ComplexIntegrator (") + bfi.Name() +
+      string ("ComplexIntegrator (") + bfi->Name() +
       string (")");
   }
 
@@ -1408,7 +1408,7 @@ double BlockBilinearFormIntegrator ::
   const IntegrationRule & ComplexBilinearFormIntegrator :: GetIntegrationRule (const FiniteElement & fel,
 									       const bool use_higher_integration_order) const
   {
-    return bfi.GetIntegrationRule(fel,use_higher_integration_order);
+    return bfi->GetIntegrationRule(fel,use_higher_integration_order);
   }
   */
 

@@ -184,7 +184,7 @@ namespace ngsolve
     : NumProc (apde)
     {
       gfu = pde.GridFunctionPtr (flags.GetStringFlag ("gridfunction", ""));
-      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
+      coef = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
@@ -436,7 +436,7 @@ namespace ngsolve
   NumProcDrawCoefficient :: NumProcDrawCoefficient (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
-    cf = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
+    cf = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", ""));
     label = flags.GetStringFlag ("label", "");
 
     vis = new VisualizeCoefficientFunction (ma, cf);
@@ -1387,7 +1387,7 @@ namespace ngsolve
       : NumProc (apde, flags)
     {
       order = int (flags.GetNumFlag ("order", 2));
-      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
+      coef = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", "") );
 
       if (!coef->IsComplex())
 	pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);

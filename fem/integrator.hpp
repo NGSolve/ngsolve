@@ -781,28 +781,28 @@ namespace ngfem
 
   class NGS_DLL_HEADER ComplexBilinearFormIntegrator : public BilinearFormIntegrator
   {
-    const BilinearFormIntegrator & bfi;
+    shared_ptr<BilinearFormIntegrator> bfi;
     Complex factor;
   public:
-    ComplexBilinearFormIntegrator (const BilinearFormIntegrator & abfi,
+    ComplexBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi,
 				   Complex afactor);
 
     virtual bool BoundaryForm () const
-    { return bfi.BoundaryForm(); }
+    { return bfi->BoundaryForm(); }
 
     virtual int DimFlux () const
-    { return bfi.DimFlux(); }
+    { return bfi->DimFlux(); }
     virtual int DimElement () const
-    { return bfi.DimElement(); }
+    { return bfi->DimElement(); }
     virtual int DimSpace () const
-    { return bfi.DimSpace(); }
+    { return bfi->DimSpace(); }
 
     virtual void GetFactor(Complex & fac) const {fac = factor;}
     virtual void GetFactor(double & fac) const {fac = factor.real();}
   
-    virtual const BilinearFormIntegrator & GetBFI(void) const {return bfi;}
+    virtual shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
 
-    virtual void CheckElement (const FiniteElement & el) const { bfi.CheckElement(el); }
+    virtual void CheckElement (const FiniteElement & el) const { bfi->CheckElement(el); }
 
 
     virtual void

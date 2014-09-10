@@ -26,12 +26,12 @@ namespace ngla
 
     RegionTimer reg(t);
 
-    BaseVector & hv  = *a.CreateVector();
-    BaseVector & hv2 = *a.CreateVector();
-    BaseVector & hva = *a.CreateVector();
-    BaseVector & hvm = *a.CreateVector();
+    auto hv  = a.CreateVector();
+    auto hv2 = a.CreateVector();
+    auto hva = a.CreateVector();
+    auto hvm = a.CreateVector();
    
-    int n = hv.FV<SCAL>().Size();    
+    int n = hv->FV<SCAL>().Size();    
     int m = min2 (numval, n);
 
 
@@ -54,20 +54,20 @@ namespace ngla
         inv = itso;
       }
 
-    hv.SetRandom();
-    hv.SetParallelStatus (CUMULATED);
-    FlatVector<SCAL> fv = hv.FV<SCAL>();
+    hv->SetRandom();
+    hv->SetParallelStatus (CUMULATED);
+    FlatVector<SCAL> fv = hv->FV<SCAL>();
     if (freedofs)
-      for (int i = 0; i < hv.Size(); i++)
+      for (int i = 0; i < hv->Size(); i++)
 	if (! (*freedofs)[i] ) fv(i) = 0;
 
     t2.Start();
     // matV = SCAL(0.0);   why ?
     matH = SCAL(0.0);
 
-    hv2 = hv;
-    SCAL len = sqrt (S_InnerProduct<SCAL> (hv, hv2)); // parallel
-    hv /= len;
+    *hv2 = *hv;
+    SCAL len = sqrt (S_InnerProduct<SCAL> (*hv, *hv2)); // parallel
+    *hv /= len;
     
     for (int i = 0; i < m; i++)
       {
@@ -76,10 +76,10 @@ namespace ngla
 	for (int j = 0; j < n; j++)
 	  matV(i,j) = hv.FV<SCAL>()(j);
 	*/
-	*abv[i] = hv;
+	*abv[i] = *hv;
 
-	hva = b * hv;
-	hvm = *inv * hva;
+	*hva = b * *hv;
+	*hvm = *inv * *hva;
 
 	for (int j = 0; j <= i; j++)
 	  {
@@ -102,16 +102,16 @@ namespace ngla
 	      fv_hvm(k) -= sum * abvj(k);
             */
 
-	    matH(j,i) = S_InnerProduct<SCAL> (hvm, *abv[j]);
-	    hvm -= matH(j,i) * *abv[j];
+	    matH(j,i) = S_InnerProduct<SCAL> (*hvm, *abv[j]);
+	    *hvm -= matH(j,i) * *abv[j];
 	  }
 		
-	hv = hvm;
-	hv2 = hv;
-	SCAL len = sqrt (S_InnerProduct<SCAL> (hv, hv2));
+	*hv = *hvm;
+	*hv2 = *hv;
+	SCAL len = sqrt (S_InnerProduct<SCAL> (*hv, *hv2));
 	if (i<m-1) matH(i+1,i) = len; 
 	
-	hv /= len;
+	*hv /= len;
       }
       
     delete inv;

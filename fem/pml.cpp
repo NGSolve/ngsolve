@@ -578,18 +578,21 @@ namespace ngfem
   class PML_CurlCurlEdgeIntegrator
     : public PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> >
   {
+    typedef  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > BASE;
   public:
     ///
+    using BASE::BASE;
+    /*
     PML_CurlCurlEdgeIntegrator (shared_ptr<CoefficientFunction> coef)
       : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
     (DiagDMat<DIM_CURL_TRAIT<D>::DIM> (coef))
     { ; }
-    
+
     static shared_ptr<Integrator> Create (Array<shared_ptr<CoefficientFunction>> coeffs)
     {
       return make_shared<PML_CurlCurlEdgeIntegrator> (coeffs[0]);
     }
-
+    */
     virtual string Name () const { return "PML_CurlCurlEdge"; }
   };
 
@@ -598,7 +601,10 @@ namespace ngfem
   class PML_MassEdgeIntegrator
     : public PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> >
   {
+    typedef PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > BASE;
   public:
+    using BASE::BASE;
+    /*
     PML_MassEdgeIntegrator (CoefficientFunction * coef)
       : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > 
     (DiagDMat<D> (coef))
@@ -608,7 +614,7 @@ namespace ngfem
     {
       return new PML_MassEdgeIntegrator (coeffs[0]);
     }
-
+    */
     ///
     virtual string Name () const { return "PML_Massedge"; }
   };
@@ -620,8 +626,11 @@ namespace ngfem
   class PML_DivDivHDivIntegrator
     : public PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
   {
+    typedef  PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > BASE;
   public:
     ///
+    using BASE::BASE;
+    /*
     PML_DivDivHDivIntegrator (CoefficientFunction * coef)
       : PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > 
     (DiagDMat<1> (coef))
@@ -631,7 +640,7 @@ namespace ngfem
     {
       return new PML_DivDivHDivIntegrator (coeffs[0]);
     }
-
+    */
     ///
     virtual string Name () const { return "PML_DivDivHDiv"; }
   };
@@ -642,7 +651,10 @@ namespace ngfem
   class PML_MassHDivIntegrator
     : public PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >
   {
+    typedef PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > BASE;
   public:
+    using BASE::BASE;
+    /*
     ///
     PML_MassHDivIntegrator (CoefficientFunction * coef)
       : PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > 
@@ -653,7 +665,7 @@ namespace ngfem
     {
       return new PML_MassHDivIntegrator (coeffs[0]);
     }
-
+    */
     ///
     virtual string Name () const { return "PML_MassHDiv"; }
   };
@@ -701,44 +713,12 @@ namespace ngfem
     static RegisterBilinearFormIntegrator<PML_ElasticityIntegrator<2> > initpmlel2 ("PML_elasticity", 2, 2);
     static RegisterBilinearFormIntegrator<PML_ElasticityIntegrator<3> > initpmlel3 ("PML_elasticity", 3, 2);
 
-
-    class Init
-    { 
-    public: 
-      Init ();
-    };        
-    
-
-    Init::Init()
-    {
-      /*
-	GetIntegrators().AddBFIntegrator ("PML_elasticity", 3, 2,
-	PML_ElasticityIntegrator<3>::Create);
-	GetIntegrators().AddBFIntegrator ("PML_elasticity", 2, 2,
-	PML_ElasticityIntegrator<2>::Create);
-      */
-
-      cout << "PML Integrators currently not available" << endl;
-      /*
-      GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 3, 1,
-					PML_CurlCurlEdgeIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_curlcurledge", 2, 1,
-					PML_CurlCurlEdgeIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_massedge", 3, 1,
-					PML_MassEdgeIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_massedge", 2, 1,
-					PML_MassEdgeIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_divdivhdiv", 2, 1,
-					PML_DivDivHDivIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("PML_masshdiv", 2, 1,
-					PML_MassHDivIntegrator<2>::Create);
-      //      GetIntegrators().AddBFIntegrator ("PML_robinhdiv", 2, 1,
-      //					PML_RobinHDivIntegrator<2>::Create);
-      */
-    }
-    
-    Init init;
-    
+    static RegisterBilinearFormIntegrator<PML_CurlCurlEdgeIntegrator<3>> initpmlcc3 ("PML_curlcurledge", 3, 1);
+    static RegisterBilinearFormIntegrator<PML_CurlCurlEdgeIntegrator<2>> initpmlcc2 ("PML_curlcurledge", 2, 1);
+    static RegisterBilinearFormIntegrator<PML_MassEdgeIntegrator<3>> initpmlme3 ("PML_massedge", 3, 1);
+    static RegisterBilinearFormIntegrator<PML_MassEdgeIntegrator<2>> initpmlme2 ("PML_massedge", 2, 1);
+    static RegisterBilinearFormIntegrator<PML_DivDivHDivIntegrator<2>> initpmlddhd ("PML_divdivhdiv", 2, 1);
+    static RegisterBilinearFormIntegrator<PML_MassHDivIntegrator<2>> initpmlmhd ("PML_masshdiv", 2, 1);
   }
 }
 
