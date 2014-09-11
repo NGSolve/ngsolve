@@ -119,5 +119,30 @@ namespace ngstd
       if (Test(i)) cnt++;
     return cnt;
   }
+
+  Archive & operator & (Archive & archive, BitArray & ba)
+  {
+    if (archive.Output())
+      {
+        archive << ba.Size();
+        for (int i = 0; i < ba.Size(); i++)
+          archive << ba[i];
+      }
+    else
+      {
+        int size;
+        archive & size;
+        ba.SetSize (size);
+        ba.Clear();
+        for (int i = 0; i < size; i++)
+          {
+            bool b;
+            archive & b;
+            if (b) ba.Set(i);
+          }
+      }
+    return archive;
+  }
+
   
 }

@@ -13,7 +13,15 @@ namespace ngstd
   LocalHeap :: LocalHeap (size_t asize, const char * aname)
   {
     totsize = asize;
-    data = new char[asize];
+    try
+      {
+        data = new char[asize];
+      }
+    catch (exception & e)
+      {
+        throw Exception (ToString ("Could not allocate localheap, heapsize = ") + ToString(asize));
+      }
+
     next = data + totsize;
     p = data;
     owner = true;

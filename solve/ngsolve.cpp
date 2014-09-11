@@ -715,6 +715,11 @@ int NGS_RestorePDE (ClientData clientData,
       TextInArchive archive (argv[1]);
       pde = make_shared<ngsolve::PDE>();
       pde->DoArchive (archive);
+
+#ifdef NGS_PYTHON
+      AcquireGIL gil_lock;
+      PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+#endif
       return TCL_OK;
     }
 

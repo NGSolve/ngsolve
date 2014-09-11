@@ -722,8 +722,8 @@ namespace ngcomp
 
     if (flags.NumFlagDefined ("relorder")) facetflags.SetFlag("variableorder");
     
-    const FESpaceClasses::FESpaceInfo * info;
-    info = GetFESpaceClasses().GetFESpace("DGhotp");
+    // const FESpaceClasses::FESpaceInfo * info;
+    auto info = GetFESpaceClasses().GetFESpace("DGhotp");
     if (!info) info = GetFESpaceClasses().GetFESpace("l2hotp");
     if (!info) info = GetFESpaceClasses().GetFESpace("l2ho");
     

@@ -909,9 +909,10 @@ namespace ngsolve
 	      fun->Parse (*scan->scanin);
 
 	      if (fun->IsConstant())
-		val = fun->Eval ((double*)(0));
+		val = fun->EvalConstant();
 	      else
 		scan->Error  ("Expression not constant");
+              delete fun;
 	    }
           /*
 	  else if (scan->GetToken() == NUMBER)

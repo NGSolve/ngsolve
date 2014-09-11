@@ -122,6 +122,7 @@ private:
 /// prints BitArray
 NGS_DLL_HEADER ostream & operator<<(ostream & s, const BitArray & ba);
 
+  extern Archive & operator & (Archive & archive, BitArray & ba);
 
 }
 

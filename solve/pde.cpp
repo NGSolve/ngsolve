@@ -483,7 +483,7 @@ namespace ngsolve
     size_t heapsize = 1000000;
     if (constants.Used ("heapsize"))
       heapsize = size_t(constants["heapsize"]);
-
+    
 #ifdef _OPENMP
     if (constants.Used ("numthreads"))
       omp_set_num_threads (int (constants["numthreads"]));
@@ -491,13 +491,12 @@ namespace ngsolve
       AddConstant ("numthreads", omp_get_max_threads());      
     heapsize *= omp_get_max_threads();
 #endif
-
+    cout << "heap size = " << heapsize << endl;
     LocalHeap lh(heapsize, "PDE - main heap");
 
     double starttime = WallTime();
 
     MyMPI_Barrier();
-
     if (pc == 0 || pc == todo.Size())
       {
         pc = 0;
@@ -565,8 +564,6 @@ namespace ngsolve
         for (int i = 0; i < mas.Size(); i++)
           mas[i]->UpdateBuffers();   // update global mesh infos
       }
-
-
 
     cout << IM(1) << "Solve at level " << mas[0]->GetNLevels()-1
 	 << ", NE = " << mas[0]->GetNE() 
@@ -752,7 +749,7 @@ namespace ngsolve
         if (np) AddVariable (string("timing.np.")+np->GetName(), np->GetTimer().GetTime(), 6);
       }
 
-#ifndef NGS_PYTHON
+#ifndef NGS_PYTHONxx
     // we want to keep objects in python
     for (int i = 0; i < preconditioners.Size(); i++)
       if(!preconditioners[i]->SkipCleanUp())
@@ -862,10 +859,11 @@ namespace ngsolve
           {
             string name, fesname;
             archive & name & fesname;
-            auto gf = CreateGridFunction (GetFESpace(fesname), name, Flags());
+            auto gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
             AddGridFunction (name, gf);
             gridfunctions[i] -> DoArchive (archive);            
+            gridfunctions[i] -> Visualize(name);
           }
       }
   }

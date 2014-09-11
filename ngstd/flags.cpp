@@ -322,6 +322,9 @@ namespace ngstd
     cout << flags << endl;
     archive & flags.strflags;
     archive & flags.numflags;
+    archive & flags.defflags;
+    archive & flags.numlistflags;
+    archive & flags.strlistflags;
     return archive;
   }
 

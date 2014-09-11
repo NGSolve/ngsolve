@@ -1038,14 +1038,14 @@ namespace ngstd
 
 
 
-  template <typename T> 
-  Archive & operator & (Archive & archive, Array<T> & a)
+  template <typename T, typename TSIZE> 
+  Archive & operator & (Archive & archive, Array<T,TSIZE> & a)
   {
     if (archive.Output())
       archive << a.Size();
     else
       {
-        int size;
+        TSIZE size;
         archive & size;
         a.SetSize (size);
       }

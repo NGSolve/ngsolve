@@ -64,6 +64,21 @@ namespace ngstd
     return ar;
   }
 
+  // archive a shared pointer ...
+  template <typename T>
+  Archive & operator& (Archive & ar, shared_ptr<T> & p)
+  {
+    if (ar.Output())
+      ar & (*p);
+    else
+      {
+        p = make_shared<T>();
+        ar & *p;
+      }
+    return ar;
+  }
+
+
 
   // cannot archive type T
   template <typename T>
