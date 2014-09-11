@@ -555,7 +555,7 @@ namespace ngcomp
     
     for (int facet = 0; facet < ma.GetNFacets(); facet++)
       {
-        ctofdof[facet] = WIREBASKET_DOF;
+        ctofdof[facet] = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
         ctofdof[GetFacetDofs(facet)] = INTERFACE_DOF;
       }
     
