@@ -338,6 +338,15 @@ void ExportNgcomp()
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     .def("Matrix", FunctionPointer([](shared_ptr<BilinearForm> self) { return self->MatrixPtr(); }))
+    .def("Energy", &BilinearForm::Energy)
+    .def("Apply", &BilinearForm::ApplyMatrix)
+    .def("AssembleLinearization", FunctionPointer
+	 ([](BF & self, BaseVector & ulin, int heapsize)
+	  {
+	    LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
+	    self.AssembleLinearization (ulin, lh);
+	  }),
+         (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
     .add_property("mat", &BilinearForm::MatrixPtr)
     ;
 
