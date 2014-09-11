@@ -836,7 +836,7 @@ namespace ngcomp
 	: name(aname), creator(acreator) {;}
     };
   private:
-    Array<FESpaceInfo*> fesa;
+    Array<shared_ptr<FESpaceInfo>> fesa;
 
   public:
     /// initialize 
@@ -849,10 +849,10 @@ namespace ngcomp
 		     shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags));
   
     /// returns all creators
-    const Array<FESpaceInfo*> & GetFESpaces() { return fesa; }
+    const Array<shared_ptr<FESpaceInfo>> & GetFESpaces() { return fesa; }
 
     /// returns a creator structure
-    const FESpaceInfo * GetFESpace(const string & name);
+    const shared_ptr<FESpaceInfo> GetFESpace(const string & name);
 
     /// print available fespaces to stream
     void Print (ostream & ost) const;

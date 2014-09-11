@@ -180,7 +180,7 @@ public:
         for (int i = 0; i < s; i++)
           {
             string name;
-            T entry(0);
+            T entry;
             ar & name & entry;
             table.Set (name, entry);
           }

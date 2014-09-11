@@ -28,13 +28,7 @@ namespace ngcomp
   }
 
 
-  GridFunction :: ~GridFunction()
-  {
-    /*
-    for (int i = 0; i < vec.Size(); i++)
-      delete vec[i];
-    */
-  }
+  GridFunction :: ~GridFunction() { ; }
 
 
   void GridFunction :: Update ()

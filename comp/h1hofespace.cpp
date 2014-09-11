@@ -495,7 +495,6 @@ namespace ngcomp
   void H1HighOrderFESpace :: DoArchive (Archive & archive)
   {
     low_order_space -> DoArchive (archive);
-
     FESpace::DoArchive(archive);
     archive & level;
     archive & first_edge_dof & first_face_dof & first_element_dof;

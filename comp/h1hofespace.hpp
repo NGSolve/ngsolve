@@ -21,7 +21,7 @@ namespace ngcomp
   protected:
     int level;
 
-    Array<int,index_edge> first_edge_dof;
+    Array<int> first_edge_dof;
     Array<int> first_face_dof;
     Array<int> first_element_dof;
 

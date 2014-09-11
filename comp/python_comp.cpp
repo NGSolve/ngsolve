@@ -123,8 +123,7 @@ void ExportNgcomp()
 
     .def("CouplingType", &FESpace::GetDofCouplingType)
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
-    .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
-    .def(PyDefToString<FESpace>())
+    .def("__str__", &ToString<FESpace>)
     .def ("GetFE", 
           static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
           (&FESpace::GetFE), 
@@ -136,6 +135,11 @@ void ExportNgcomp()
          (bp::arg("self"), bp::arg("coupling")=0))
     ;
   
+  bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
+    ("CompoundFESpace", bp::no_init)
+    ;
+
+
   typedef GridFunction GF;
   bp::class_<GF, shared_ptr<GF>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)

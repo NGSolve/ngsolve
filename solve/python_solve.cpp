@@ -39,6 +39,7 @@ void ExportNgsolve() {
     bp::scope local_scope(module);
 
   PyExportSymbolTable<shared_ptr<FESpace>> ();
+  PyExportSymbolTable<shared_ptr<CoefficientFunction>> ();
   PyExportSymbolTable<shared_ptr<GridFunction>> ();
   PyExportSymbolTable<shared_ptr<BilinearForm>> ();
   PyExportSymbolTable<shared_ptr<LinearForm>> ();
@@ -126,6 +127,7 @@ void ExportNgsolve() {
 
     .add_property ("constants", FunctionPointer([](PDE & self) { return bp::object(self.GetConstantTable()); }))
     .add_property ("variables", FunctionPointer([](PDE & self) { return bp::object(self.GetVariableTable()); }))
+    .add_property ("coefficients", FunctionPointer([](PDE & self) { return bp::object(self.GetCoefficientTable()); }))
     .add_property ("spaces", FunctionPointer([](PDE & self) { return bp::object(self.GetSpaceTable()); }))
     .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return bp::object(self.GetGridFunctionTable()); }))
     .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetBilinearFormTable()); }))

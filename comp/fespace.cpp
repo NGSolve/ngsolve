@@ -745,7 +745,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & definedon & definedonbound;
     archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
-
   }
 
 
@@ -2287,18 +2286,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FESpaceClasses :: ~FESpaceClasses()
   {
+    ;
+    /*
     for (int i = 0; i < fesa.Size(); i++)
       delete fesa[i];
+    */
   }
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
 	      shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags))
   {
-    fesa.Append (new FESpaceInfo(aname, acreator));
+    fesa.Append (make_shared<FESpaceInfo> (aname, acreator));
   }
 
-  const FESpaceClasses::FESpaceInfo * 
+  const shared_ptr<FESpaceClasses::FESpaceInfo> 
   FESpaceClasses::GetFESpace(const string & name)
   {
     for (int i = 0; i < fesa.Size(); i++)
