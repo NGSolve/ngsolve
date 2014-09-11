@@ -749,8 +749,9 @@ namespace ngsolve
         if (np) AddVariable (string("timing.np.")+np->GetName(), np->GetTimer().GetTime(), 6);
       }
 
-#ifndef NGS_PYTHONxx
-    // we want to keep objects in python
+    // #ifndef NGS_PYTHON
+    /*
+    // now we have enough memory to keep the data ...
     for (int i = 0; i < preconditioners.Size(); i++)
       if(!preconditioners[i]->SkipCleanUp())
 	preconditioners[i]->CleanUpLevel();
@@ -760,7 +761,10 @@ namespace ngsolve
     for (int i = 0; i < linearforms.Size(); i++)
       if(!linearforms[i]->SkipCleanUp())
 	linearforms[i]->CleanUpLevel();
-#endif
+    */
+    // #endif
+
+
     // set solution data
     // for (int i = 0; i < gridfunctions.Size(); i++)
     //   gridfunctions[i]->Visualize(gridfunctions.GetName(i));
