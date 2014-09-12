@@ -48,7 +48,7 @@ namespace ngcomp
     int uniform_order_trig;
     Array<INT<3> > dom_order_min; 
     Array<INT<3> > dom_order_max;
-    int smoother; 
+    // int smoother; 
   
     Array<int> ndlevel;
 

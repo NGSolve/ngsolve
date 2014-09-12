@@ -21,7 +21,20 @@ namespace ngfem
     return ost;
   }
   
-
+  FlatVector<> BaseMappedIntegrationPoint :: GetPoint() const
+  {
+    switch (eltrans->SpaceDim())
+      {
+      case 1: return static_cast<const DimMappedIntegrationPoint<1>&> (*this).GetPoint();
+      case 2: return static_cast<const DimMappedIntegrationPoint<2>&> (*this).GetPoint();
+      case 3: return static_cast<const DimMappedIntegrationPoint<3>&> (*this).GetPoint();
+      }
+    return FlatVector<>(0,(double*)NULL);
+  }
+  int BaseMappedIntegrationPoint :: Dim() const
+  {
+    return eltrans->SpaceDim();
+  }
 
   template <int S, int R, typename SCAL>
   MappedIntegrationPoint<S,R,SCAL> :: 

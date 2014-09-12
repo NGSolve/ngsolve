@@ -6,7 +6,7 @@
 #define VERSION "6.0"
 #endif
 
-#define NGS_VERSION 530
+#define NGS_VERSION 600
 
 
 

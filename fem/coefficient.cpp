@@ -119,8 +119,7 @@ namespace ngfem
 
 
 
-  template <int DIM>
-  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const EvalFunction & afun)
     : fun(1)
   {
@@ -128,8 +127,7 @@ namespace ngfem
     numarg = 3;
   }
 
-  template <int DIM>
-  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const EvalFunction & afun,
 				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(1), depends_on(adepends_on)
@@ -141,8 +139,7 @@ namespace ngfem
   }
 
 
-  template <int DIM>
-  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun)
     : fun(afun.Size())
   {
@@ -154,8 +151,7 @@ namespace ngfem
     numarg = 3;
   }
 
-  template <int DIM>
-  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
 				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(afun.Size()), depends_on(adepends_on)
@@ -172,16 +168,14 @@ namespace ngfem
   }
 
 
-  template <int DIM>
-  DomainVariableCoefficientFunction<DIM> ::
+  DomainVariableCoefficientFunction ::
   ~DomainVariableCoefficientFunction ()
   {
     for (int i = 0; i < fun.Size(); i++)
       delete fun[i];
   }
 
-  template <int DIM>
-  double DomainVariableCoefficientFunction<DIM> ::
+  double DomainVariableCoefficientFunction ::
   Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     Vec<1> result;
@@ -202,23 +196,20 @@ namespace ngfem
     */
   }
 
-  template <int DIM>
-  bool DomainVariableCoefficientFunction<DIM> :: IsComplex() const 
+  bool DomainVariableCoefficientFunction :: IsComplex() const 
   {
     for (int i = 0; i < fun.Size(); i++)
       if (fun[i]->IsResultComplex()) return true;
     return false;
   }
   
-  template <int DIM>
-  int DomainVariableCoefficientFunction<DIM> :: Dimension() const
+  int DomainVariableCoefficientFunction :: Dimension() const
   { 
     return fun[0]->Dimension(); 
   }
 
 
-  template <int DIM>
-  Complex DomainVariableCoefficientFunction<DIM> ::
+  Complex DomainVariableCoefficientFunction ::
   EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
   {
     Vec<1, Complex> result;
@@ -233,8 +224,7 @@ namespace ngfem
     */
   }
   
-  template <int DIM>
-  void DomainVariableCoefficientFunction<DIM> ::
+  void DomainVariableCoefficientFunction ::
   Evaluate(const BaseMappedIntegrationPoint & ip,
 	   FlatVector<> result) const
   {
@@ -244,7 +234,8 @@ namespace ngfem
     if (! fun[elind] -> IsComplex ())
       {
 	VectorMem<10> args(numarg);
-	args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+        args.Range(0,ip.Dim()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -257,7 +248,8 @@ namespace ngfem
     else
       {
 	VectorMem<10, Complex> args(numarg);
-	args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+	// args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+        args.Range(0,ip.Dim()) = ip.GetPoint();
 	
 	for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	  {
@@ -270,29 +262,28 @@ namespace ngfem
   }
 
 
-template <int DIM>
-void DomainVariableCoefficientFunction<DIM> ::
-Evaluate(const BaseMappedIntegrationPoint & ip,
-	 FlatVector<Complex> result) const
-{
-  VectorMem<10,Complex> args(numarg);
-  args = -47;
-  args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
-  for (int i = 0, an = 3; i < depends_on.Size(); i++)
-    {
-      int dim = depends_on[i]->Dimension();
-      depends_on[i] -> Evaluate (ip, args.Range(an,an+dim));
-      an += dim;
-    }
-
-  int elind = ip.GetTransformation().GetElementIndex();
-  if (fun.Size() == 1) elind = 0;
-  fun[elind]->Eval (&args(0), &result(0), result.Size());
-}
-
+  void DomainVariableCoefficientFunction ::
+  Evaluate(const BaseMappedIntegrationPoint & ip,
+           FlatVector<Complex> result) const
+  {
+    VectorMem<10,Complex> args(numarg);
+    args = -47;
+    // args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
+    args.Range(0,ip.Dim()) = ip.GetPoint();
+    for (int i = 0, an = 3; i < depends_on.Size(); i++)
+      {
+        int dim = depends_on[i]->Dimension();
+        depends_on[i] -> Evaluate (ip, args.Range(an,an+dim));
+        an += dim;
+      }
+    
+    int elind = ip.GetTransformation().GetElementIndex();
+    if (fun.Size() == 1) elind = 0;
+    fun[elind]->Eval (&args(0), &result(0), result.Size());
+  }
   
-template <int DIM>
-void DomainVariableCoefficientFunction<DIM> ::
+  
+void DomainVariableCoefficientFunction ::
 Evaluate (const BaseMappedIntegrationRule & ir, 
 	  FlatMatrix<double> values) const
 {
@@ -304,9 +295,11 @@ Evaluate (const BaseMappedIntegrationRule & ir,
       ArrayMem<double,2000> mem(ir.Size()*numarg);
       FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
       for (int i = 0; i < ir.Size(); i++)
+        args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
+      /*
 	args.Row(i).Range(0,DIM) = 
 	  static_cast<const DimMappedIntegrationPoint<DIM> & > (ir[i]).GetPoint();
-      
+      */
       for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	{
 	  int dim = depends_on[i]->Dimension();
@@ -322,8 +315,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
     {
       Matrix<Complex> args(ir.Size(), numarg);
       for (int i = 0; i < ir.Size(); i++)
-	args.Row(i).Range(0,DIM) = 
-	  static_cast<const DimMappedIntegrationPoint<DIM> & > (ir[i]).GetPoint();
+	args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
       
       for (int i = 0, an = 3; i < depends_on.Size(); i++)
 	{
@@ -340,8 +332,7 @@ Evaluate (const BaseMappedIntegrationRule & ir,
 }
 
   
-template <int DIM>
-void DomainVariableCoefficientFunction<DIM> :: PrintReport (ostream & ost) const
+void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
 {
   *testout << "DomainVariableCoefficientFunction, functios are: " << endl;
   for (int i = 0; i < fun.Size(); i++)
@@ -349,11 +340,11 @@ void DomainVariableCoefficientFunction<DIM> :: PrintReport (ostream & ost) const
 }
 
 
-
-template class DomainVariableCoefficientFunction<1>;
+  /*
+  template class DomainVariableCoefficientFunction<1>;
 template class DomainVariableCoefficientFunction<2>;
 template class DomainVariableCoefficientFunction<3>;
-
+  */
 
 PolynomialCoefficientFunction::PolynomialCoefficientFunction(const Array < Array< Array<double>* >* > & polycoeffs_in,
 							     const Array < Array<double>* > & polybounds_in)

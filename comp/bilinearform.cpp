@@ -2448,7 +2448,7 @@ namespace ngcomp
 		    IterateElements 
 		      (fespace, VOL, clh, 
 		       [&] (ElementId ei, LocalHeap & lh)
-		       
+                       
 		       {
 			 if (!fespace.DefinedOn (ei)) return;
 			 
@@ -2459,28 +2459,6 @@ namespace ngcomp
 			 
 			 ApplyElementMatrix(x,y,val,dnums,eltrans, ei.Nr(),0,cnt,lh,&fel);
 		       });
-                    /*
-                    RegionTimer reg (timervol);
-#pragma omp parallel
-                    {
-                      LocalHeap lh(lh_size, "biform-AddMatrix (a)");
-                      Array<int> dnums;
-                      int ne = ma.GetNE();
-#pragma omp for schedule(dynamic)
-                      for (int i = 0; i < ne; i++)
-                        {
-                          HeapReset hr(lh);
-                        
-                          if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
-                        
-                          const FiniteElement & fel = fespace.GetFE (i, lh);
-                          ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
-                          fespace.GetDofNrs (i, dnums);
-                        
-                          ApplyElementMatrix(x,y,val,dnums,eltrans,i,0,cnt,lh,&fel);
-                        }
-                    }
-                    */
                   }
 
                         
@@ -2678,8 +2656,6 @@ namespace ngcomp
 
     if (!MixedSpaces())
       {
-        Array<int> dnums;
-      
         LocalHeap lh (2000000, "biform-energy");
 
         bool hasbound = false;
@@ -2699,38 +2675,32 @@ namespace ngcomp
             (fespace, VOL, lh, 
              [&] (ElementId ei, LocalHeap & lh)
              {
-               /*
-                 for (int i = 0; i < ne; i++)
-                 {
-                 HeapReset hr(lh);
-               */
-               
                const FiniteElement & fel = fespace.GetFE (ei, lh);
                ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
                Array<int> dnums (fel.GetNDof(), lh);
                fespace.GetDofNrs (ei, dnums);
                
-               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace().GetDimension(), 
-                                        lh);
+               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace().GetDimension(), lh);
                
                x.GetIndirect (dnums, elvecx);
-               fespace.TransformVec (ei.Nr(), false, elvecx, TRANSFORM_SOL);
+               fespace.TransformVec (ei, elvecx, TRANSFORM_SOL);
                
                double energy_T = 0;
                for (int j = 0; j < NumIntegrators(); j++)
                  {
-                   const BilinearFormIntegrator & bfi = *parts[j];
+                   auto bfi = parts[j];
                    
-                   if (bfi.BoundaryForm()) continue;
-		   if (!bfi.DefinedOn (ma.GetElIndex (ei))) continue;
+                   if (bfi->BoundaryForm()) continue;
+		   if (!bfi->DefinedOn (ma.GetElIndex (ei))) continue;
 
-                   energy_T += bfi.Energy (fel, eltrans, elvecx, lh);
+                   energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                  }
 #pragma omp atomic
                energy += energy_T;
              });
 
         int nse = ma.GetNSE();
+        Array<int> dnums;
         if (hasbound)
           for (int i = 0; i < nse; i++)
             {

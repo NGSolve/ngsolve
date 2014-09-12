@@ -168,6 +168,9 @@ namespace ngfem
     INLINE double GetMeasure() const { return measure; }
     ///
     INLINE double GetWeight() const { return measure * ip->Weight(); }
+
+    FlatVector<> GetPoint() const;
+    int Dim() const;
   };
 
 
