@@ -32,21 +32,41 @@ def startConsole():
     shell.interact()
 
 class InteractiveMPIConsole(code.InteractiveConsole):
+# Function copied from /usr/lib/python3.4/code.py line 38 
     def runsource(self, source, filename="<input>", symbol="single"):
+        try:
+            compiled_code = self.compile(source, filename, symbol)
+        except (OverflowError, SyntaxError, ValueError):
+            # Case 1
+            self.showsyntaxerror(filename)
+            return False
+
+        if compiled_code is None:
+            # Case 2
+            return True
+
+        # Case 3 -- first send code to other mpi processes
         ngmpi.SendCommand('ngs_py '+source)
-        code.InteractiveConsole.runsource(self, source, filename, symbol)
+        # then run it on master
+        code.InteractiveConsole.runcode(self, compiled_code)
+
+        # Avoid the prompt to show up before other processes' output
         self.Barrier()
+        return False
+
     def interact(self):
         self.write("MPI Shell\n")
         self.write("================\n")
         self.write("Use pprint(str) to print with MPI ranks\n\n")
-        self.runsource("from ngmpi import *")
-        self.runsource("pprint=lambda p='':print('Process ' + str(ngmpi.Rank()) + '\\n'+str(p)+'\\n')")
+        self.runsource("from ngmpi import *\n")
+        self.runsource("pprint=lambda p='':print('Process ' + str(ngmpi.Rank()) + '\\n'+str(p)+'\\n')\n")
         self.locals.update(locals())
         self.locals.update(globals())
         sys.ps1 = "MPI >>> "
         sys.ps2 = "MPI ... "
         code.InteractiveConsole.interact(self,'')
+        sys.ps1 = ">>> "
+        sys.ps2 = "... "
     def Barrier(self):
         source = 'ngmpi.Barrier()'
         ngmpi.SendCommand('ngs_py '+source)
