@@ -175,6 +175,7 @@ PythonEnvironment::PythonEnvironment() {
              << "dir()\n"
              << endl << endl;
 
+        cout << IM(1) << "To start mpi shell call" << endl << "MpiShell()" << endl << endl;
 //         PyEval_ReleaseLock();
     }
     catch(bp::error_already_set const &) {
