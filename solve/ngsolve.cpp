@@ -58,9 +58,23 @@ class AcquireGIL
   PyGILState_STATE state;
 };
 
+class ReleaseGIL
+{
+    public:
+        inline ReleaseGIL() {
+            m_thread_state = PyEval_SaveThread();
+        }
+
+        inline ~ReleaseGIL() {
+            PyEval_RestoreThread(m_thread_state);
+            m_thread_state = NULL;
+        }
+
+    private:
+        PyThreadState * m_thread_state;
+};
 
 class PythonEnvironment : public BasePythonEnvironment {
-    bool is_init;
     public:
     static PythonEnvironment py_env;
 
@@ -77,7 +91,6 @@ class PythonEnvironment : public BasePythonEnvironment {
     }
     
   virtual void exec(const string s) {
-    AcquireGIL gil_lock;
     try{
       bp::exec(s.c_str(), main_namespace, main_namespace);
     }
@@ -92,8 +105,9 @@ class PythonEnvironment : public BasePythonEnvironment {
             cout << "Python thread already running!" << endl;
         }
         else {
+//             PyEval_ReleaseLock();
             std::thread([](string init_file_) {
-                AcquireGIL gil_lock;
+                    AcquireGIL gil_lock;
             try{
                 py_env.pythread_id = std::this_thread::get_id();
                 py_env.exec_file(init_file_.c_str());
@@ -121,6 +135,7 @@ void ExportNgfem();
 void ExportNgla();
 void ExportNgcomp();
 void ExportNgsolve();
+void ExportNgmpi();
 
 PythonEnvironment::PythonEnvironment() {
 
@@ -144,7 +159,8 @@ PythonEnvironment::PythonEnvironment() {
         ExportNgfem();
         ExportNgla();
         ExportNgcomp();
-        ExportNgsolve(); 
+        ExportNgsolve();
+        ExportNgmpi(); 
 
         cout << IM(1)
 	     << "ngs-python objects are available in ngstd, ngbla, ...\n"
@@ -155,10 +171,11 @@ PythonEnvironment::PythonEnvironment() {
              << "from ngla import *\n"
              << "from ngcomp import *\n"
              << "from ngsolve import *\n"
+             << "from ngmpi import *\n"
              << "dir()\n"
              << endl << endl;
 
-        PyEval_ReleaseLock();
+//         PyEval_ReleaseLock();
     }
     catch(bp::error_already_set const &) {
         PyErr_Print();
@@ -469,7 +486,7 @@ int NGS_LoadPDE (ClientData clientData,
           cout << "set python mesh" << endl;
           // PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
           {
-            AcquireGIL gil_lock;
+//             AcquireGIL gil_lock;
             PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
           }
 #endif
@@ -528,7 +545,7 @@ void * SolveBVP(void *)
 #endif
 
 #ifdef NGS_PYTHON
-  AcquireGIL gil_lock;
+//   AcquireGIL gil_lock;
 #endif
 
   try
@@ -585,7 +602,7 @@ int NGS_SolvePDE (ClientData clientData,
     }
 
 #ifdef NGS_PYTHON
-  AcquireGIL gil_lock;
+//   AcquireGIL gil_lock;
 #endif
 
   cout << "Solve PDE" << endl;
@@ -1211,8 +1228,10 @@ int NGSolve_Init (Tcl_Interp * interp)
              FunctionPointer([]() {Ng_Redraw();}));
   }
   
-  if (MyMPI_GetId() == 0)
-    py_env.Spawn(initfile);
+  if (MyMPI_GetId() == 0) {
+      PyEval_ReleaseLock();
+      py_env.Spawn(initfile);
+  }
 
 #endif
 
@@ -1409,6 +1428,14 @@ void NGS_ParallelRun (const string & message)
 
       string dummy;
       pde -> LoadPDE (dummy, false, 0);
+#ifdef NGS_PYTHON
+          cout << "set python mesh" << endl;
+          {
+//             AcquireGIL gil_lock;
+            PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+          }
+#endif
+
     } 
 
   else if ( message == "ngs_solvepde" )
@@ -1419,6 +1446,14 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_exit" )
     {
       pde.reset(); 
+    }
+
+  else if (message.substr(0,7) == "ngs_py " ) 
+    {
+      string command = message.substr(7);
+      AcquireGIL gil_lock;
+      PythonEnvironment & py_env = PythonEnvironment::getInstance();
+      py_env.exec(command);
     }
 
   return;

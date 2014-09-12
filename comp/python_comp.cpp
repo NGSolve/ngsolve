@@ -123,6 +123,9 @@ void ExportNgcomp()
 
     .def("CouplingType", &FESpace::GetDofCouplingType)
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
+
+    // Define function instead of property because the python autocomplete package (rlcompleter) tries to evaluate properties -> lock in mpi function
+    .def("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
     .def("__str__", &ToString<FESpace>)
     .def ("GetFE", 
           static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
