@@ -19,9 +19,9 @@ namespace ngfem
   {
   protected:
     double alpha;   // interior penalyty
-    CoefficientFunction *coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
-    HDG_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
+    HDG_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -46,18 +46,13 @@ namespace ngfem
 
       RegionTimer reg (timer);
 
-
-      const CompoundFiniteElement & cfel = 
-        dynamic_cast<const CompoundFiniteElement&> (fel);
-      const ScalarFiniteElement<D> & fel_l2 = 
-        dynamic_cast<const ScalarFiniteElement<D>&> (cfel[0]);
-      const FacetVolumeFiniteElement<D> & fel_facet = 
-        dynamic_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
-      
+      auto & cfel      = static_cast<const CompoundFiniteElement&> (fel);
+      auto & fel_l2    = static_cast<const ScalarFiniteElement<D>&> (cfel[0]);
+      auto & fel_facet = static_cast<const FacetVolumeFiniteElement<D> &> (cfel[1]);
   
       ELEMENT_TYPE eltype = cfel.ElementType();
       
-      IntRange l2_dofs = cfel.GetRange (0);
+      IntRange l2_dofs    = cfel.GetRange (0);
       IntRange facet_dofs = cfel.GetRange (1);
 
       int nd_l2 = fel_l2.GetNDof();

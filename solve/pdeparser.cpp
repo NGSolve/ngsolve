@@ -837,13 +837,8 @@ namespace ngsolve
                   static int cnt = 0;
                   cnt++;
                   string coefname = "assigncoef" + ToString(cnt);
-		  if (pde->GetMeshAccess().GetDimension() == 2)
-		    pde->AddCoefficientFunction
-		      (coefname, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(*fun, depends)));
-		  else
-		    pde->AddCoefficientFunction
-		      (coefname, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(*fun, depends)));
-                  
+                  pde->AddCoefficientFunction
+                    (coefname, make_shared<DomainVariableCoefficientFunction>(*fun, depends));
                   Flags flags = ParseFlags();
                   flags.SetFlag ("gridfunction", gfname.c_str());
                   flags.SetFlag ("coefficient", coefname.c_str());
@@ -1053,7 +1048,7 @@ namespace ngsolve
 		      EvalFunction * fun = new PDEEvalFunction (*pde);
                       /*
 		      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
-			fun->DefineConstant (pde->GetConstantTable().GetName(i),
+                       fun->DefineConstant (pde->GetConstantTable().GetName(i),
 					     pde->GetConstantTable()[i]);
 		      for (int i = 0; i < pde->GetVariableTable().Size(); i++)
 			fun->DefineGlobalVariable (pde->GetVariableTable().GetName(i),
@@ -1168,12 +1163,8 @@ namespace ngsolve
 	      else
 		{
 		  (*testout) << "material coefficients variable " << endl;
-		  if (pde->GetMeshAccess().GetDimension() == 2)
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs)));
-		  else
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs)));
+                  pde->AddCoefficientFunction
+                    (name, make_shared<DomainVariableCoefficientFunction>(coeffs));
 		}
 	      
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
@@ -1327,12 +1318,8 @@ namespace ngsolve
 	      else
 		{
 		  (*testout) << "material coefficients variable " << endl;
-		  if (pde->GetMeshAccess().GetDimension() == 2)
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs)));
-		  else
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs)));
+                  pde->AddCoefficientFunction
+                    (name, make_shared<DomainVariableCoefficientFunction>(coeffs));
 		}
 	      
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
@@ -1505,13 +1492,9 @@ namespace ngsolve
 			  }
 		    }
 
-		  if (pde->GetMeshAccess().GetDimension() == 2)
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2>(coeffs, depends)));
-		  else
-		    pde->AddCoefficientFunction
-		      (name, shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3>(coeffs, depends)));
-
+                  pde->AddCoefficientFunction
+                    (name, make_shared<DomainVariableCoefficientFunction>(coeffs, depends));
+                  
 		  for (int hi = 0; hi < coeffs.Size(); hi++)
 		    delete coeffs[hi];
 		}
@@ -1600,17 +1583,7 @@ namespace ngsolve
                                   if (fun->IsConstant())
                                     coeffs[i] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction (fun->EvalConstant()));
                                   else
-                                    {
-                                      switch (pde->GetMeshAccess().GetDimension())
-                                        {
-                                        case 2:
-                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2> (*fun));
-                                          break;
-                                        case 3:
-                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3> (*fun));
-                                          break;
-                                        }
-                                    }
+                                    coeffs[i] = make_shared<DomainVariableCoefficientFunction> (*fun);
                                 }
                               delete fun;
                             }
@@ -1815,19 +1788,9 @@ namespace ngsolve
                               if (fun->Parse(*scan->scanin))
                                 {
                                   if (fun->IsConstant())
-                                    coeffs[i] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction (fun->EvalConstant()));
+                                    coeffs[i] = make_shared<ConstantCoefficientFunction> (fun->EvalConstant());
                                   else
-                                    {
-                                      switch (pde->GetMeshAccess().GetDimension())
-                                        {
-                                        case 2:
-                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<2> (*fun));
-                                          break;
-                                        case 3:
-                                          coeffs[i] = shared_ptr<CoefficientFunction> (new DomainVariableCoefficientFunction<3> (*fun));
-                                          break;
-                                        }
-                                    }
+                                    coeffs[i] = make_shared<DomainVariableCoefficientFunction> (*fun);
                                 }
                               delete fun;
                             }

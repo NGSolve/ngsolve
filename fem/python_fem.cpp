@@ -231,40 +231,22 @@ void ExportNgfem() {
     shared_ptr<CoefficientFunction> >(); 
 
   
-  // we better get rid of the template argument !
-  bp::class_<DomainVariableCoefficientFunction<2>,bp::bases<CoefficientFunction>, 
-    shared_ptr<DomainVariableCoefficientFunction<2>>, boost::noncopyable>
+  bp::class_<DomainVariableCoefficientFunction,bp::bases<CoefficientFunction>, 
+    shared_ptr<DomainVariableCoefficientFunction>, boost::noncopyable>
     ("VariableCF", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](string str)
                            {
                              // mem-leak -> smart pointer !!!
                              EvalFunction * ef = new EvalFunction (str);
-                             return shared_ptr<DomainVariableCoefficientFunction<2>>
-                               (new DomainVariableCoefficientFunction<2> (*ef));
+                             return shared_ptr<DomainVariableCoefficientFunction>
+                               (new DomainVariableCoefficientFunction (*ef));
                            })))
     ;
 
   bp::implicitly_convertible
-    <shared_ptr<DomainVariableCoefficientFunction<2>>, 
+    <shared_ptr<DomainVariableCoefficientFunction>, 
     shared_ptr<CoefficientFunction> >(); 
-
-
-  bp::def("testlist", FunctionPointer
-          ([](bp::object const & x) { cout << "any object"; }))
-    ;
-
-  bp::def("testlist", FunctionPointer
-          ([](bp::list const & x) 
-           { 
-             cout << "got list of length "  << bp::len(x) << endl;
-             for (int i = 0; i < bp::len(x); i++)
-               {
-                 cout << "list[" << i << "] = ";
-                 CoefficientFunction & cf = bp::extract<CoefficientFunction&> (x[i]);
-                 cf.PrintReport(cout);
-               }
-           }));
 }
 
 

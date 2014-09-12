@@ -504,7 +504,7 @@ namespace ngcomp
     archive & ndof & uniform_order_inner & uniform_order_face 
       & uniform_order_edge & uniform_order_quad & uniform_order_trig;
     archive & dom_order_min & dom_order_max;
-    archive & smoother;
+    // archive & smoother;
     archive & ndlevel;
     archive & level_adapted_order & nodalp2;
   }
@@ -833,7 +833,7 @@ namespace ngcomp
     int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
    
     cout << " blocktype " << smoothing_type << endl; 
-    cout << " Use H1-Block Smoother:  "; 
+    // cout << " Use H1-Block Smoother:  "; 
 
     FilteredTableCreator creator(GetFreeDofs());
     for ( ; !creator.Done(); creator++)
