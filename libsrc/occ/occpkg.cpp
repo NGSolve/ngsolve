@@ -21,8 +21,8 @@ extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern AutoPtr<NetgenGeometry> ng_geometry;
-  extern AutoPtr<Mesh> mesh;
+  extern shared_ptr<NetgenGeometry> ng_geometry;
+  extern shared_ptr<Mesh> mesh;
  
   char * err_needsoccgeometry = (char*) "This operation needs an OCC geometry";
   extern char * err_needsmesh;
@@ -59,7 +59,7 @@ namespace netgen
   {
 #ifdef OCCGEOMETRY
     int showvolume;
-	OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.get());
 
     showvolume = atoi (Tcl_GetVar (interp, "::occoptions.showvolumenr", 0));
 
@@ -123,7 +123,7 @@ namespace netgen
 		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.get());
 
     static char buf[1000];
     buf[0] = 0;
@@ -153,7 +153,7 @@ namespace netgen
 		     int argc, tcl_const char *argv[])
   {
 #ifdef OCCGEOMETRY
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.get());
 
     stringstream str;
     if (argc >= 2)
@@ -572,7 +572,7 @@ namespace netgen
 	   return TCL_ERROR;
     }
 
-    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
+    OCCGeometry * occgeometry = dynamic_cast<OCCGeometry*> (ng_geometry.get());
     if (!occgeometry)
     {
       Tcl_SetResult (interp, (char *)"Ng_SurfaceMeshSize currently supports only OCC (STEP/IGES) Files", TCL_STATIC);
@@ -673,7 +673,7 @@ namespace netgen
         return TCL_ERROR;
      }
 
-     if(!mesh.Ptr())
+     if(!mesh)
      {
         Tcl_SetResult (interp, (char *)"Ng_GetCurrentFaceColours: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
 	     return TCL_ERROR;
@@ -846,7 +846,7 @@ namespace netgen
         return TCL_ERROR;
      }
 
-     if(!mesh.Ptr())
+     if(!mesh)
      {
         Tcl_SetResult (interp, (char *)"Ng_AutoColourBcProps: Valid netgen mesh required...please mesh the Geometry first", TCL_STATIC);
 	     return TCL_ERROR;
@@ -945,7 +945,7 @@ namespace netgen
 
   VisualScene * OCCGeometryRegister :: GetVisualScene (const NetgenGeometry * geom) const
   {
-    OCCGeometry * geometry = dynamic_cast<OCCGeometry*> (ng_geometry.Ptr());
+    OCCGeometry * geometry = dynamic_cast<OCCGeometry*> (ng_geometry.get());
     if (geometry)
       {
 	vsoccgeom.SetGeometry (geometry);
