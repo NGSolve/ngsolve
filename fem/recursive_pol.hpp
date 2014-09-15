@@ -810,6 +810,8 @@ namespace ngfem
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
 	}
       */
+
+      /*
       S p1 = c * static_cast<const REC&>(*this).P0(x);
       S p2 = c * static_cast<const REC&>(*this).Pm1(x);
       
@@ -825,13 +827,38 @@ namespace ngfem
 
       for ( ; i < n; i+=2)
 	{	
-          /*
-	  values[i] = EvalNext2 (i, x, p1, p2);
-	  values[i+1] = EvalNext2 (i+1, x, p1, p2);
-          */
+          // values[i] = EvalNext2 (i, x, p1, p2);
+          // values[i+1] = EvalNext2 (i+1, x, p1, p2);
 	  values[i] = EvalNextTicTac2 (i, x, p2, p1);
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
 	}
+      */
+      S p1 = c * static_cast<const REC&>(*this).P0(x);
+      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      
+      if (n < 0) return;
+      values[0] = p1;
+      
+      // int i = 1;
+      for (int i = 1; i < n; i+=2)
+	{	
+          // values[i] = EvalNext2 (i, x, p1, p2);
+          // values[i+1] = EvalNext2 (i+1, x, p1, p2);
+	  values[i] = EvalNextTicTac2 (i, x, p2, p1);
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
+	}
+      if (n & 1)
+        values[n] = EvalNextTicTac2 (n, x, p2, p1);
+      
+      /*
+      S p1 = c * static_cast<const REC&>(*this).P0(x);
+      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      
+      if (n < 0) return;
+      values[0] = p1;
+      for (int i = 1 ; i <= n; i++)
+        values[i] = EvalNext2 (i, x, p1, p2);
+      */
     }
 
     template <class S, class Sc, class T>
