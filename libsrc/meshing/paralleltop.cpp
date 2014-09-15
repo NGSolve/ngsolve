@@ -236,7 +236,7 @@ namespace netgen
     Array<int> sendarray, recvarray;
 
 
-    static int timerv = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex vertices");
+    // static int timerv = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex vertices");
     static int timere = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex edges");
     static int timerf = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex faces");
 
