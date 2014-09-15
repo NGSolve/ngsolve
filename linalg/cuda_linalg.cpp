@@ -219,9 +219,9 @@ namespace ngla
     return host_data;
   }
 
-  BaseVector * UnifiedVector :: CreateVector () const
+  shared_ptr<BaseVector> UnifiedVector :: CreateVector () const
   {
-    return new UnifiedVector (size);
+    return make_shared<UnifiedVector> (size);
   }
 
   

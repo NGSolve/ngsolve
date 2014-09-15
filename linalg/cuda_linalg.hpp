@@ -41,7 +41,7 @@ namespace ngla
 
 
     virtual ostream & Print (ostream & ost) const;    
-    virtual BaseVector * CreateVector () const;
+    virtual shared_ptr<BaseVector> CreateVector () const;
 
     virtual FlatVector<double> FVDouble () const;
     virtual FlatVector<Complex> FVComplex () const;
