@@ -1,0 +1,72 @@
+--blank-before-sizeof
+--blank-lines-after-declarations
+--blank-lines-after-procedures
+--blank-lines-before-block-comments
+--braces-after-struct-decl-line
+--braces-on-if-line
+--break-before-boolean-operator
+--case-brace-indentation0
+--case-indentation2
+--comment-line-length80
+--continuation-indentation8
+--cuddle-do-while
+--cuddle-else
+--declaration-indentation8
+--dont-line-up-parentheses
+--format-all-comments
+--format-first-column-comments
+--indent-level4
+--leave-optional-blank-lines
+--line-length80
+--no-space-after-function-call-names
+--no-space-after-parentheses
+--no-tabs
+--parameter-indentation8
+--preprocessor-indentation2
+--procnames-start-lines
+--space-after-cast
+--space-after-for
+--space-after-if
+--space-after-while
+--space-special-semicolon
+--start-left-side-of-comments
+--struct-brace-indentation0
+--tab-size8
+-T AGLContext 
+-T CALLBACK 
+-T ClientData 
+-T Colormap
+-T Display
+-T GLXContext 
+-T GLbitfield
+-T GLboolean
+-T GLenum
+-T GLfloat 
+-T GLint 
+-T GLuint
+-T HDC 
+-T HGLRC 
+-T HWND 
+-T LPARAM 
+-T PIXELFORMATDESCRIPTOR
+-T Tcl_Command 
+-T Tcl_Interp 
+-T TkClassCreateProc
+-T TkClassGeometryProc
+-T TkClassModalProc
+-T TkClassProcs
+-T TkWinColormap
+-T Tk_ConfigSpec 
+-T Tk_Cursor 
+-T Tk_Window
+-T Togl_Callback
+-T Togl_CmdProc
+-T UINT
+-T WPARAM 
+-T WinFont
+-T Window
+-T XColor
+-T XEvent 
+-T XVisualInfo
+-T TOGL_EXTERN
+-T Togl

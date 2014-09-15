@@ -239,14 +239,15 @@ AM_CONDITIONAL([NGPYTHON], [test x$pythonon = xtrue])
 # echo "libs = $LIBS"
 # echo "TOGL_LIB = $MYTOGL_LIB"
 
+AC_CONFIG_SUBDIRS([ng/Togl-1.7])
 
 AC_CONFIG_FILES(Makefile libsrc/Makefile libsrc/csg/Makefile 
 libsrc/general/Makefile  libsrc/geom2d/Makefile libsrc/gprim/Makefile
 libsrc/include/Makefile libsrc/interface/Makefile 
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
-  libsrc/stlgeom/Makefile
-  libsrc/visualization/Makefile ng/Makefile nglib/Makefile
-  tutorials/Makefile doc/Makefile windows/Makefile )
+libsrc/stlgeom/Makefile
+libsrc/visualization/Makefile ng/Makefile nglib/Makefile
+tutorials/Makefile doc/Makefile windows/Makefile )
 
 AC_OUTPUT
 

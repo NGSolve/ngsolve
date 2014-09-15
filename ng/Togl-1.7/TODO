@@ -1,0 +1,20 @@
+In no particular order:
+-----------------------
+
+stubify C API.
+
+replace EPS support with TK photo image support
+
+Add command arguments for create, destroy, etc. so there would be a
+-createcommand option to the togl command (etc.) (and phase out
+Togl_*Func from the C API)
+
+multisampling support (can be worked-around by passing in a pixelformat)
+
+add vertical sync control
+
+update documention
+	- update build instructions
+	- update stereo documentation
+	- separate Tcl API from C API
+	- say togl hides window system dependent (glX/wgl/agl) calls
