@@ -1449,6 +1449,7 @@ void NGS_ParallelRun (const string & message)
       pde.reset(); 
     }
 
+#ifdef NGS_PYTHON
   else if (message.substr(0,7) == "ngs_py " ) 
     {
       string command = message.substr(7);
@@ -1456,7 +1457,7 @@ void NGS_ParallelRun (const string & message)
       PythonEnvironment & py_env = PythonEnvironment::getInstance();
       py_env.exec(command);
     }
-
+#endif
   return;
 }
 
