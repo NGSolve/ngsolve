@@ -476,8 +476,8 @@ namespace ngfem
         {
 	  values[i] = p1;
           if (i == n) break;
-          EvalNext2 (i, x, p1, p2);
           i++;
+          EvalNext2 (i, x, p1, p2);
         }
 
     }
@@ -527,8 +527,8 @@ namespace ngfem
         {
 	  values[i] = p1;
           if (i == n) break;
-          EvalScaledNext2 (i, x, y, p1, p2);
           i++;
+          EvalScaledNext2 (i, x, y, p1, p2);
         }
     }
 
