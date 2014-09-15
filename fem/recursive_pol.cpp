@@ -85,6 +85,7 @@ namespace ngfem
             double al = a, be = 0;
             coefs[a*(n+1)+1][0] = 0.5 * (al+be+2);
             coefs[a*(n+1)+1][1] = 0.5 * (2*(al+1)-(al+be+2));
+            coefs[a*(n+1)+1][2] = 0.0;
           }
 
         maxn = n;
@@ -117,6 +118,7 @@ namespace ngfem
             double alpha = a;
             coefs[a*(n+1)+1][0] = 0.25 * (alpha+2);
             coefs[a*(n+1)+1][1] = 0.25 * (alpha-2);
+            coefs[a*(n+1)+1][2] = 0.0;
           }
 
         maxn = n;
