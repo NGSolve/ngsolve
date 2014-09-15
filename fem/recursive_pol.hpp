@@ -476,8 +476,8 @@ namespace ngfem
         {
 	  values[i] = p1;
           if (i == n) break;
-          EvalNext2 (i, x, p1, p2);
           i++;
+          EvalNext2 (i, x, p1, p2);
         }
 
     }
@@ -527,8 +527,8 @@ namespace ngfem
         {
 	  values[i] = p1;
           if (i == n) break;
-          EvalScaledNext2 (i, x, y, p1, p2);
           i++;
+          EvalScaledNext2 (i, x, y, p1, p2);
         }
     }
 
@@ -663,7 +663,6 @@ namespace ngfem
     {
       double a,b,c;
       static_cast<const REC&> (*this).ABC (i, a, b, c);
-      
       if (REC::ZERO_B)
 	{
 	  p1 *= c;
@@ -790,6 +789,7 @@ namespace ngfem
     template <class S, class Sc, class T>
     INLINE void EvalMult (int n, S x, Sc c, T && values) const
     {
+      /*
       S p1, p2;
 
       if (n < 0) return;
@@ -800,16 +800,37 @@ namespace ngfem
       values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
 
-      /*
-      for (int i = 2; i <= n; i++)
-        values[i] = EvalNext2 (i, x, p1, p2);
-      */
+      // for (int i = 2; i <= n; i++)
+      // values[i] = EvalNext2 (i, x, p1, p2);
 
       for (int i = 2; i <= n; i+=2)
 	{	
 	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
           if (i == n) break;
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+      */
+      S p1 = c * static_cast<const REC&>(*this).P0(x);
+      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      
+      if (n < 0) return;
+      values[0] = p1;
+      
+      int i = 1;
+      if (n & 1)
+        {
+          values[1] = EvalNext2 (i, x, p1,p2);
+          i = 2;
+        }
+
+      for ( ; i < n; i+=2)
+	{	
+          /*
+	  values[i] = EvalNext2 (i, x, p1, p2);
+	  values[i+1] = EvalNext2 (i+1, x, p1, p2);
+          */
+	  values[i] = EvalNextTicTac2 (i, x, p2, p1);
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
 	}
     }
 
@@ -852,10 +873,21 @@ namespace ngfem
     template <class S, class Sy, class Sc, class T>
     INLINE void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values) const
     {
+      /*
       S p1(0.0), p2(0.0);
       for (int i = 0; i <= n; i++)
         values[i] = EvalScaledMultNext (i, x, y, c, p1, p2);
-
+      */
+      int i = 0;
+      S p1 = c * static_cast<const REC&>(*this).P0(x);
+      S p2 = c * static_cast<const REC&>(*this).Pm1(x,y);
+      while (true)
+        {
+	  values[i] = p1;
+          if (i == n) break;
+          i++;
+          EvalScaledNext2 (i, x, y, p1, p2);
+        }
     }
 
     enum { ZERO_B = 0 };
@@ -1169,6 +1201,12 @@ namespace ngfem
 #endif
     }
 
+    template <class S>
+    INLINE S Pm1(S x) const { return 0.0; }
+    template <class S, class Sy>
+    INLINE S Pm1(S x, Sy y) const { return 0.0; }
+
+
 #ifndef __CUDA_ARCH__
     INLINE double A (int i) const { return coefsal[i][0]; } 
     INLINE double B (int i) const { return coefsal[i][1]; } 
@@ -1308,6 +1346,12 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       return coefsal[1][0]*x+coefsal[1][1]*y; 
       // return 0.25 * (alpha+2)*x + 0.25*(alpha-2) * y;
     }
+
+    template <class S>
+    INLINE S Pm1(S x) const { return 0.0; }
+    template <class S, class Sy>
+    INLINE S Pm1(S x, Sy y) const { return 0.0; }
+
 
     INLINE double A (int i) const { return coefsal[i][0]; } 
     INLINE double B (int i) const { return coefsal[i][1]; } 

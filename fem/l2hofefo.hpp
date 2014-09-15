@@ -346,11 +346,11 @@ namespace ngfem
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,0>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,1>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,2>, ET_TRIG, DGFiniteElement<2>>;
+  /*
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,3>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,4>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,5>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,6>, ET_TRIG, DGFiniteElement<2>>;
-  /*
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,7>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,8>, ET_TRIG, DGFiniteElement<2>>;
   */
@@ -359,11 +359,11 @@ namespace ngfem
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,2>>;
+  /*
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,3>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,4>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,5>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,6>>;
-  /*
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,7>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,8>>;
   // L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,9>>;
@@ -373,11 +373,11 @@ namespace ngfem
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,0>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,1>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
+  /*
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,4>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,6>;
-  /*
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,7>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,8>;
   */

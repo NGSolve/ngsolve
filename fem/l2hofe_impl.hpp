@@ -432,6 +432,7 @@ namespace ngfem
     */
 
     int ii = 0;
+    int order = this->order;
     LegendrePolynomial leg;
     leg.EvalScaled1Assign 
       (order, lamis[2]-lamis[3], lamis[2]+lamis[3],
@@ -443,8 +444,17 @@ namespace ngfem
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                  /*
                                   jac.EvalMult(this->order - k - j, 2 * lamis[0] - 1, polsy, shape + ii);
                                   ii += this->order-k-j+1;
+                                  */
+                                  jac.EvalMult(order - k - j, 2 * lamis[0] - 1, polsy, 
+                                               SBLambda([&](int j, Tx val)
+                                                        {
+                                                          shape[ii] = val; 
+                                                          ii++;
+                                                        }));
+                                  
                                 }));
                  }));
   }
