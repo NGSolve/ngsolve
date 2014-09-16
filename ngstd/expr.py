@@ -29,7 +29,7 @@ def expr_rmul(b,a): # rmul -> swap a,b
     return float(a) * Expr(b)
 
 def expr_data(a,b):
-    Expr(b).AssignTo(a.expr)
+    Expr(b).AssignTo(Expr(a))
 
 class BaseExpr:
     def copy(self):
@@ -95,6 +95,9 @@ class MatExpr(BaseExpr):
         except:
             return None
 
+    def __len__(self):
+        return self.a.Height()
+
 
 class TransExpr(MatExpr):
     def __init__(self, matexpr):
@@ -156,6 +159,7 @@ class MatVecExpr(BinExpr):
 
     def __str__(self):
         return str(self.a) + ' + ' + str(self.b)
+
         
 def GetSlice(self, index):
     if not isinstance(index,slice):
