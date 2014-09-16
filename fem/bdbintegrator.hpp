@@ -195,7 +195,7 @@ public:
   // typedef typename DMATOP::TSCAL TSCAL;
 
   ///
-  T_BDBIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+  INLINE T_BDBIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     : dmatop(coeffs)
   { ; }
 

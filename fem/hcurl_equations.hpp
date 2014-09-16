@@ -371,7 +371,7 @@ namespace ngfem
   {
     typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     /*
     CurlCurlEdgeIntegrator (CoefficientFunction * coeff) 
       : BASE(DiagDMat<DIM_CURL_TRAIT<D>::DIM>(coeff)) { ; }
@@ -389,7 +389,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     ///
     /*
     CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff);
@@ -415,7 +415,7 @@ namespace ngfem
   {
     typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     ///
     /*
     CurlCurlEdgeOrthoIntegrator (CoefficientFunction * coeff1,
@@ -444,7 +444,7 @@ namespace ngfem
   {
     typedef  T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     /*
     ///
     MassEdgeIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D>(coeff)) { ; }
@@ -536,7 +536,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     /*
     ///
     RobinEdgeIntegrator (CoefficientFunction * coeff)
@@ -566,7 +566,7 @@ namespace ngfem
   {
     typedef T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BIntegrator;
     /*
     SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
 
@@ -618,7 +618,7 @@ namespace ngfem
   {
     typedef T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DVec<D>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BIntegrator;
     ///
     /*
     NeumannEdgeIntegrator (CoefficientFunction * coeff1,
@@ -666,7 +666,7 @@ namespace ngfem
   {
     typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BIntegrator;
     /*
     ///
     CurlEdgeIntegrator (CoefficientFunction * coeff1)
@@ -712,7 +712,10 @@ namespace ngfem
   class CurlBoundaryEdgeIntegrator 
     : public T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL>
   {
+    typedef T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL> BASE;
   public:
+    using BASE::T_BIntegrator;
+    /*
     ///
     CurlBoundaryEdgeIntegrator (CoefficientFunction * coeff1)
       : T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL> 
@@ -723,7 +726,7 @@ namespace ngfem
     {
       return new CurlBoundaryEdgeIntegrator (coeffs[0]);
     }
-  
+    */
     ///
     virtual bool BoundaryForm () const { return 1; }
     ///
