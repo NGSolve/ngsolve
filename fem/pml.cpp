@@ -581,7 +581,7 @@ namespace ngfem
     typedef  PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > BASE;
   public:
     ///
-    using BASE::BASE;
+    using BASE::PML_BDBIntegrator;
     /*
     PML_CurlCurlEdgeIntegrator (shared_ptr<CoefficientFunction> coef)
       : PML_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D> > 
@@ -603,7 +603,7 @@ namespace ngfem
   {
     typedef PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > BASE;
   public:
-    using BASE::BASE;
+    using BASE::PML_BDBIntegrator;
     /*
     PML_MassEdgeIntegrator (CoefficientFunction * coef)
       : PML_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D> > 
@@ -626,10 +626,10 @@ namespace ngfem
   class PML_DivDivHDivIntegrator
     : public PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >
   {
-    typedef  PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > BASE;
+    typedef PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > BASE;
   public:
     ///
-    using BASE::BASE;
+    using BASE::PML_BDBIntegrator;
     /*
     PML_DivDivHDivIntegrator (CoefficientFunction * coef)
       : PML_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > 
@@ -653,7 +653,7 @@ namespace ngfem
   {
     typedef PML_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > BASE;
   public:
-    using BASE::BASE;
+    using BASE::PML_BDBIntegrator;
     /*
     ///
     PML_MassHDivIntegrator (CoefficientFunction * coef)
