@@ -415,8 +415,8 @@ namespace ngfem
     template <class S, class Sc, class T>
     INLINE static void EvalMult (int n, S x, Sc c, T && values) 
     {
+      /*
       S p1, p2;
-
       if (n < 0) return;
 
       values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
@@ -432,6 +432,32 @@ namespace ngfem
 	}
       if ( (n&1) == 0 )
         values[n] = EvalNextTicTac2 (n, x, p1, p2);
+      */
+
+
+      S p1 = c * REC::P0(x);
+      S p2 = c * REC::Pm1(x);
+      
+      if (n < 0) return;
+
+      values[0] = p1;
+      for (int i = 1; i < n; i+=2)
+	{	
+	  values[i] = EvalNextTicTac2 (i, x, p2, p1);
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
+	}
+      if (n & 1)
+        values[n] = EvalNextTicTac2 (n, x, p2, p1);
+
+      /*
+      if (n < 0) return;
+
+      S p2 = c*REC::Pm1(x);
+      S p1 = c*REC::P0(x);
+      values[0] = p1;
+      for (int i = 1; i <= n; i++)
+        values[i] = EvalNext2(i,x,p1,p2);
+      */
     }
 
 
@@ -864,9 +890,23 @@ namespace ngfem
     template <class S, class Sc, class T>
     INLINE void EvalMult1Assign (int n, S x, Sc c, T && values)
     {
+      /*
       S p1(0.0), p2(0.0); // initialize for surpressing warning
       for (int i = 0; i <= n; i++)
         values[i] = EvalNextMult (i, x, c, p1, p2);
+      */
+      int i = 0;
+      // S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
+      S p1 = c * static_cast<const REC&>(*this).P0(x);
+      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      while (true)
+        {
+	  values[i] = p1;
+          if (i == n) break;
+          i++;
+          EvalNext2 (i, x, p1, p2);
+        }
+
     }
 
     template <class S, class Sy, class T>
@@ -1025,6 +1065,8 @@ namespace ngfem
     static INLINE double P0(S x)  { return -0.5; }
     template <class S>
     static INLINE S P1(S x)  { return -0.5*x; }
+    template <class S>
+    static INLINE S Pm1(S x)  { return 0; }
 
 #ifndef __CUDA_ARCH__    
     static INLINE double A (int i) { return coefs[i][0]; } 
