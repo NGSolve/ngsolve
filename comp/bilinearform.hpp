@@ -24,9 +24,9 @@ namespace ngcomp
   {
   protected:
     /// Finite element space
-    const FESpace & fespace;
-    /// Test-space if different from trial-space, otherwise NULL (non operational)
-    const FESpace * fespace2;
+    shared_ptr<FESpace> fespace;
+    /// Test-space if different from trial-space, otherwise NULL
+    shared_ptr<FESpace> fespace2;
 
     /// don't assemble matrix
     bool nonassemble;
@@ -46,7 +46,7 @@ namespace ngcomp
     double eps_regularization; 
     /// diagonal value for unused dofs
     double unuseddiag;
-
+    
     /// low order bilinear-form, 0 if not used
     shared_ptr<BilinearForm> low_order_bilinear_form;
 
@@ -92,13 +92,13 @@ namespace ngcomp
 
   public:
     /// generate a bilinear-form
-    BilinearForm (const FESpace & afespace,
+    BilinearForm (shared_ptr<FESpace> afespace,
 		  const string & aname, 
 		  const Flags & flags);
 
     /// generate a bilinear-form
-    BilinearForm (const FESpace & afespace, 
-		  const FESpace & afespace2, 
+    BilinearForm (shared_ptr<FESpace> afespace, 
+		  shared_ptr<FESpace> afespace2, 
 		  const string & aname,
 		  const Flags & flags);
 
@@ -251,7 +251,7 @@ namespace ngcomp
 
 
     /// the finite element space
-    const FESpace & GetFESpace() const { return fespace; }
+    const FESpace & GetFESpace() const { return *fespace; }
 
 
     /// uses mixed spaces (non operational)
@@ -259,6 +259,11 @@ namespace ngcomp
 
     /// returns the second space (form mixed spaces)
     const FESpace & GetFESpace2() const { return *fespace2; }
+
+    /// the finite element space
+    shared_ptr<FESpace> FESpacePtr() const { return fespace; }
+    /// the finite element test space
+    shared_ptr<FESpace> FESpacePtr2() const { return fespace2; }
 
     ///
     int GetNLevels() const { return mats.Size(); }
@@ -359,34 +364,38 @@ namespace ngcomp
   {
   protected:
 
-    ElementByElementMatrix<SCAL> * harmonicext;
-    BaseMatrix * harmonicexttrans;
-    ElementByElementMatrix<SCAL> * innersolve;
-    ElementByElementMatrix<SCAL> * innermatrix;
+    ElementByElementMatrix<SCAL> * harmonicext = NULL;
+    BaseMatrix * harmonicexttrans = NULL;
+    ElementByElementMatrix<SCAL> * innersolve = NULL;
+    ElementByElementMatrix<SCAL> * innermatrix = NULL;
 
         
   public:
     /// 
-    S_BilinearForm (const FESpace & afespace, const string & aname,
+    S_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
 		    const Flags & flags)
       : BilinearForm (afespace, aname, flags) 
     { 
+      /*
       harmonicext = NULL;
       harmonicexttrans = NULL;
       innersolve = NULL;
       innermatrix = NULL;
+      */
     }
 
     ///
-    S_BilinearForm (const FESpace & afespace, 
-		    const FESpace & afespace2,
+    S_BilinearForm (shared_ptr<FESpace> afespace, 
+		    shared_ptr<FESpace> afespace2,
 		    const string & aname, const Flags & flags)
       : BilinearForm (afespace, afespace2, aname, flags) 
     {
+      /*
       harmonicext = NULL;
       harmonicexttrans = NULL;
       innersolve = NULL;
       innermatrix = NULL;
+      */
     }
 
 
@@ -514,10 +523,10 @@ namespace ngcomp
 
   public:
     ///
-    T_BilinearForm (const FESpace & afespace, const string & aname, const Flags & flags);
+    T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags);
     ///
-    T_BilinearForm (const FESpace & afespace, 
-		    const FESpace & afespace2,
+    T_BilinearForm (shared_ptr<FESpace> afespace, 
+		    shared_ptr<FESpace> afespace2,
 		    const string & aname,
 		    const Flags & flags);
     ///
@@ -572,7 +581,7 @@ namespace ngcomp
     
 
   public:
-    T_BilinearFormSymmetric (const FESpace & afespace, const string & aname,
+    T_BilinearFormSymmetric (shared_ptr<FESpace> afespace, const string & aname,
 			     const Flags & flags);
     virtual ~T_BilinearFormSymmetric ();
 
@@ -619,7 +628,7 @@ namespace ngcomp
   protected:
 
   public:
-    T_BilinearFormDiagonal (const FESpace & afespace, const string & aname,
+    T_BilinearFormDiagonal (shared_ptr<FESpace> afespace, const string & aname,
 			    const Flags & flags);
     virtual ~T_BilinearFormDiagonal ();
 
@@ -727,8 +736,9 @@ namespace ngcomp
   class ElementByElement_BilinearForm : public S_BilinearForm<SCAL>
   {
   public:
-    ElementByElement_BilinearForm (const FESpace & afespace, const string & aname,
-		    const Flags & flags);
+    ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, 
+                                   const string & aname,
+                                   const Flags & flags);
     virtual ~ElementByElement_BilinearForm ();
     
     virtual void AllocateMatrix ();

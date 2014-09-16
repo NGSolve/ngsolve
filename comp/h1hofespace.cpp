@@ -92,36 +92,36 @@ namespace ngcomp
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
-    low_order_space = new NodalFESpace (ma, loflags);
+    low_order_space = make_shared<NodalFESpace> (ma, loflags);
     switch (ma.GetDimension())
       {
       case 1:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<1> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<1> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<1> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<2> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<3> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1)
       {
-	evaluator = new BlockDifferentialOperator (*evaluator, dimension);
+	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
 	boundary_evaluator = 
-	  new BlockDifferentialOperator (*boundary_evaluator, dimension);
+	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
       }
 
     // static ConstantCoefficientFunction one(1);
@@ -135,7 +135,7 @@ namespace ngcomp
         boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);
       }
 
-    prol = new LinearProlongation(*this);
+    prol = make_shared<LinearProlongation> (*this);
     vefc_dofblocks = Vec<4,int> (1,1,1,1);
   }
 

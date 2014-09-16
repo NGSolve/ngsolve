@@ -1,6 +1,6 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
-#include <mpiwrapper.hpp>
+#include "../ngstd/mpiwrapper.hpp"
 
 using namespace ngstd;
 

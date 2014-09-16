@@ -78,31 +78,31 @@ namespace ngcomp
       {
       case 1:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<1> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<1> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<1> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           break;
         }
       case 2:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<2> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<2> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<2> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           break;
         }
       case 3:
         {
-          evaluator = new T_DifferentialOperator<DiffOpId<3> >;
-          flux_evaluator = new T_DifferentialOperator<DiffOpGradient<3> >;
-          boundary_evaluator = new T_DifferentialOperator<DiffOpIdBoundary<3> >;
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
           break;
         }
       }
     if (dimension > 1)
       {
-	evaluator = new BlockDifferentialOperator (*evaluator, dimension);
+	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
 	boundary_evaluator = 
-	  new BlockDifferentialOperator (*boundary_evaluator, dimension);
+	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
       }
 
 
@@ -119,11 +119,11 @@ namespace ngcomp
 
 
     if(all_dofs_together)
-      prol = new L2HoProlongation(ma,first_element_dof);
+      prol = make_shared<L2HoProlongation>(ma,first_element_dof);
     else
       {
-        low_order_space = new ElementFESpace (ma, loflags);
-        prol = new ElementProlongation (*static_cast<ElementFESpace*> (low_order_space));
+        low_order_space = make_shared<ElementFESpace> (ma, loflags);
+        prol = make_shared<ElementProlongation> (*static_cast<ElementFESpace*> (low_order_space.get()));
       }
 
     switch (ma.GetDimension())

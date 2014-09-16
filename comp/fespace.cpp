@@ -221,8 +221,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     prol = NULL;
 
 
-    element_coloring = NULL;
-    selement_coloring = NULL;
+    // element_coloring = NULL;
+    // selement_coloring = NULL;
     paralleldofs = NULL;
 
     vefc_dofblocks = 2;
@@ -233,13 +233,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   FESpace :: ~FESpace ()
   {
-    delete low_order_space;
-    delete boundary_evaluator;
-    delete evaluator;
-    delete flux_evaluator;
+    // delete low_order_space;
+    // delete boundary_evaluator;
+    // delete evaluator;
+    // delete flux_evaluator;
     // delete integrator;
     // delete boundary_integrator;
-    delete prol;
+    // delete prol;
 
     delete tet;
     delete pyramid;
@@ -259,8 +259,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_segm;
     delete dummy_point;
 
-    delete element_coloring;
-    delete selement_coloring;
+    // delete element_coloring;
+    // delete selement_coloring;
     delete paralleldofs;
   }
   
@@ -464,21 +464,28 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         if (vb == VOL)
           {
+            /*
             delete element_coloring;
             element_coloring = new Table<int> (cntcol);
+            */
+            element_coloring = Table<int> (cntcol);
+
             cntcol = 0;
             for (int i = 0; i < ma.GetNE(vb); i++)
               if (DefinedOn (ElementId(vb,i))) 
-                (*element_coloring)[col[i]][cntcol[col[i]]++] = i;
+                element_coloring[col[i]][cntcol[col[i]]++] = i;
           }
         else
           {
+            /*
             delete selement_coloring;
             selement_coloring = new Table<int> (cntcol);
+            */
+            selement_coloring = Table<int> (cntcol);
             cntcol = 0;
             for (int i = 0; i < ma.GetNE(vb); i++)
               if (DefinedOn (ElementId(vb,i))) 
-                (*selement_coloring)[col[i]][cntcol[col[i]]++] = i;
+                selement_coloring[col[i]][cntcol[col[i]]++] = i;
           }
 
 
@@ -1186,7 +1193,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     name="NodalFESpace";
     
-    prol = new LinearProlongation(*this);
+    prol = make_shared<LinearProlongation> (*this);
 
     if (order >= 2)
       {
@@ -1195,7 +1202,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	loflags.SetFlag ("dim", dimension);
 	if (dgjumps) loflags.SetFlag ("dgjumps");
 	if (iscomplex) loflags.SetFlag ("complex");
-	low_order_space = new NodalFESpace (ma, loflags);
+	low_order_space = make_shared<NodalFESpace> (ma, loflags);
       }
 
     if (order == 1)
@@ -1575,7 +1582,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     order = int(flags.GetNumFlag ("order", 0));
 
-    prol = new ElementProlongation (*this);
+    prol = make_shared<ElementProlongation> (*this);
 
     if (order == 0)
     {
@@ -1845,7 +1852,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineStringListFlag("spaces");
     if (parseflags) CheckFlags(flags);
     
-    prol = new CompoundProlongation (this);
+    prol = make_shared<CompoundProlongation> (this);
     vefc_dofblocks = 0;
   }
 
@@ -1861,7 +1868,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     DefineStringListFlag("spaces");
     if(parseflags) CheckFlags(flags);
     
-    CompoundProlongation * hprol = new CompoundProlongation (this);
+    auto hprol = make_shared<CompoundProlongation> (this);
     for (int i = 0; i < spaces.Size(); i++)
       hprol -> AddProlongation (spaces[i]->GetProlongation());
     prol = hprol;
@@ -1875,7 +1882,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
     spaces.Append (fes);
-    dynamic_cast<CompoundProlongation*> (prol) -> AddProlongation (fes->GetProlongation());
+    dynamic_cast<CompoundProlongation*> (prol.get()) -> AddProlongation (fes->GetProlongation());
     vefc_dofblocks += fes -> vefc_dofblocks;
   }
 

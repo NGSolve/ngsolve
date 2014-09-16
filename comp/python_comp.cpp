@@ -203,7 +203,7 @@ void ExportNgcomp()
                  const FESpace & space = self.GetFESpace();
                  IntegrationPoint ip;
                  int dim_mesh = space.GetMeshAccess().GetDimension();
-                 const DifferentialOperator * evaluator = space.GetEvaluator();
+                 auto evaluator = space.GetEvaluator();
                  int dim = evaluator->Dim();
                  LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
                  int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
@@ -261,7 +261,7 @@ void ExportNgcomp()
                  const FESpace & space = self.GetFESpace();
                  IntegrationPoint ip;
                  int dim_mesh = space.GetMeshAccess().GetDimension();
-                 const DifferentialOperator * evaluator = space.GetFluxEvaluator();
+                 auto evaluator = space.GetFluxEvaluator();
                  cout << evaluator->Name() << endl;
                  int dim = evaluator->Dim();
                  LocalHeap lh(10000, "ngcomp::GridFunction::Eval");

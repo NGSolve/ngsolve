@@ -209,19 +209,19 @@ namespace ngfem
 
   class BlockDifferentialOperator : public DifferentialOperator
   {
-    const DifferentialOperator & diffop;
+    shared_ptr<DifferentialOperator> diffop;
     int dim;
     int comp;
   public:
-    BlockDifferentialOperator (const DifferentialOperator & adiffop, 
+    BlockDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
 			       int adim, int acomp = -1)
       : diffop(adiffop), dim(adim), comp(acomp) { ; }
 
     virtual ~BlockDifferentialOperator ();
 
     /// dimension of range
-    virtual int Dim() const { return dim*diffop.Dim(); }
-    virtual bool Boundary() const { return diffop.Boundary(); }
+    virtual int Dim() const { return dim*diffop->Dim(); }
+    virtual bool Boundary() const { return diffop->Boundary(); }
 
 
 

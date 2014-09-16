@@ -740,13 +740,13 @@ namespace ngcomp
       {
 	// integrator = new HDG_MassIntegrator<2> (&one);
         boundary_integrator.reset (new RobinIntegrator<2> (&one));
-	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>;
+	evaluator = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<2>>>();
       }
     else
       {
         // integrator = new HDG_MassIntegrator<3> (&one);
         boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
-	evaluator = new T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>;
+	evaluator = make_shared<T_DifferentialOperator<ngcomp::DiffOpIdHDG<3>>>();
       }
     boundary_integrator = make_shared<CompoundBilinearFormIntegrator> (boundary_integrator, 1);
   }

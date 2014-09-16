@@ -39,7 +39,7 @@ namespace ngmg
     ///
     Smoother * smoother;
     ///
-    Prolongation * prolongation;
+    shared_ptr<Prolongation> prolongation;
     ///
     BaseMatrix * coarsegridpre;
     ///
@@ -65,7 +65,7 @@ namespace ngmg
 			     const FESpace & afespace,
 			     const BilinearForm & abiform,
 			     Smoother * asmoother,
-			     Prolongation * aprolongation);
+			     shared_ptr<Prolongation> aprolongation);
     ///
     ~MultigridPreconditioner ();
 

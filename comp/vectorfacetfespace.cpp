@@ -31,7 +31,7 @@ namespace ngcomp
 
     loflags.SetFlag ("low_order");
     if (!flags.GetDefineFlag ("low_order"))
-      low_order_space = new VectorFacetFESpace(ma, loflags);
+      low_order_space = make_shared<VectorFacetFESpace>(ma, loflags);
 
     order = int (flags.GetNumFlag ("order",0)); 
 

@@ -34,8 +34,8 @@ namespace ngcomp
     bool fixed_order;
     bool wb_loedge;
     Array<TORDER> order_edge;
-    Array<INT<2,TORDER> > order_face;
-    Array<INT<3,TORDER> > order_inner;
+    Array<INT<2,TORDER>> order_face;
+    Array<INT<3,TORDER>> order_inner;
     Array<bool> used_vertex; 
     Array<bool> used_edge; 
     Array<bool> used_face; 
@@ -46,8 +46,8 @@ namespace ngcomp
     int uniform_order_edge;
     int uniform_order_quad;
     int uniform_order_trig;
-    Array<INT<3> > dom_order_min; 
-    Array<INT<3> > dom_order_max;
+    Array<INT<3>> dom_order_min; 
+    Array<INT<3>> dom_order_max;
     // int smoother; 
   
     Array<int> ndlevel;

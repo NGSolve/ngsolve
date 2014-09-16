@@ -99,10 +99,10 @@ namespace ngcomp
     if (flags.NumListFlagDefined ("dirichlet")) 
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     */
-    low_order_space = new  NedelecFESpace (ma, loflags);
+    low_order_space = make_shared<NedelecFESpace> (ma, loflags);
 
     if (low_order_space)
-      prol = new ngmg::EdgeProlongation (*static_cast<NedelecFESpace*> (low_order_space));
+      prol = make_shared<ngmg::EdgeProlongation> (*static_cast<NedelecFESpace*> (low_order_space.get()));
     
  
    
@@ -137,13 +137,13 @@ namespace ngcomp
     
     if (ma.GetDimension() == 2)
       {
-        evaluator = new T_DifferentialOperator<DiffOpIdEdge<2> >;
-        flux_evaluator = new T_DifferentialOperator<DiffOpCurlEdge<2> >;
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
       }
     else
       {
-        evaluator = new T_DifferentialOperator<DiffOpIdEdge<3> >;
-        flux_evaluator = new T_DifferentialOperator<DiffOpCurlEdge<3> >;
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
       }
 
     vefc_dofblocks = Vec<4,int> (0,2,1,1);

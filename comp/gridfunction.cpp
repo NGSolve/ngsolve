@@ -811,7 +811,7 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (const GridFunction & agf, 
-				   const DifferentialOperator * adiffop, int acomp)
+				   shared_ptr<DifferentialOperator> adiffop, int acomp)
     : gf(agf), diffop (adiffop), comp (acomp) 
   {
     ;
@@ -1647,7 +1647,7 @@ namespace ngcomp
     LocalHeapMem<100000> lh("visgf::getsegmentvalue");
 
     const FESpace & fes = gf->GetFESpace();
-    const DifferentialOperator * eval = fes.GetEvaluator (VOL);
+    auto eval = fes.GetEvaluator (VOL);
     FlatVector<> fvvalues (eval->Dim(), values);
 
     const FiniteElement & fel = fes.GetFE (segnr, VOL, lh);

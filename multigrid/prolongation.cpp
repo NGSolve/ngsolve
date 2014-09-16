@@ -515,7 +515,7 @@ namespace ngmg
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace,
-		       Array<const Prolongation*> & aprols)
+		       Array<shared_ptr<Prolongation>> & aprols)
     : space(aspace), prols(aprols) { ; }
 
   CompoundProlongation :: ~CompoundProlongation() { ; }
@@ -525,7 +525,7 @@ namespace ngmg
   {
     for (int i = 0; i < prols.Size(); i++)
       if (prols[i])
-	const_cast<Prolongation*>(prols[i]) -> Update();
+	prols[i] -> Update();
   }
 
   void CompoundProlongation :: 
