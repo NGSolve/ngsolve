@@ -684,7 +684,7 @@ namespace ngcomp
   {
     typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
   public:
-    using BASE::BASE;
+    using BASE::T_BDBIntegrator;
     /*
     HDG_MassIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs)
       : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeffs[0]))
