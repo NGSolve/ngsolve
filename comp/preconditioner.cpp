@@ -245,10 +245,9 @@ namespace ngcomp
     if (!sm)
       throw Exception ("smoother could not be allocated"); 
 
-    const Prolongation * prol = lo_fes->GetProlongation();
+    auto prol = lo_fes->GetProlongation();
 
-    mgp = new MultigridPreconditioner (ma, *lo_fes, *lo_bfa, sm, 
-				       const_cast<Prolongation*> (prol));
+    mgp = new MultigridPreconditioner (ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetOwnProlongation (0);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));

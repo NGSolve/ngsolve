@@ -136,14 +136,7 @@ namespace ngfem
   }
   
 
-
-
-
-  BlockDifferentialOperator ::
-  ~BlockDifferentialOperator ()
-  {
-    delete &diffop;
-  }
+  BlockDifferentialOperator :: ~BlockDifferentialOperator ()  { ; }
 
 
   void BlockDifferentialOperator ::
@@ -153,8 +146,8 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    FlatMatrix<double,ColMajor> mat1(diffop.Dim(), fel.GetNDof(), lh);
-    diffop.CalcMatrix (fel, mip, mat1, lh);
+    FlatMatrix<double,ColMajor> mat1(diffop->Dim(), fel.GetNDof(), lh);
+    diffop->CalcMatrix (fel, mip, mat1, lh);
     mat = 0;
     
     if (comp == -1)
@@ -177,21 +170,21 @@ namespace ngfem
          LocalHeap & lh) const
   {
     FlatVector<> hx(fel.GetNDof(), lh);
-    FlatVector<> hflux(diffop.Dim(), lh);
+    FlatVector<> hflux(diffop->Dim(), lh);
     
     if (comp == -1)
       {
         for (int k = 0; k < dim; k++)
           {
             hx = x.Slice(k, dim);
-            diffop.Apply(fel, mip, hx, hflux, lh);
+            diffop->Apply(fel, mip, hx, hflux, lh);
             flux.Slice(k,dim) = hflux;
           }
       }
     else
       {
         hx = x.Slice(comp, dim);
-        diffop.Apply(fel, mip, hx, hflux, lh);
+        diffop->Apply(fel, mip, hx, hflux, lh);
         flux.Slice(comp,dim) = hflux;
       }
   }

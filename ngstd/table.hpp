@@ -124,6 +124,8 @@ protected:
   */
 
 public:
+  ///
+  INLINE Table () : FlatTable<T> (0,NULL,NULL) { ; }
   /// Construct table of uniform entrysize
   INLINE Table (int asize, int entrysize)
   // : BaseTable (asize, entrysize) 
@@ -153,8 +155,8 @@ public:
     data = new T[cnt];
   }
 
-  INLINE Table (const Table<int> & tab2) = delete;
-  INLINE Table (Table<int> && tab2)
+  INLINE Table (const Table<T> & tab2) = delete;
+  INLINE Table (Table<T> && tab2)
   {
     size = 0;
     index = NULL;
@@ -164,6 +166,15 @@ public:
     Swap (index, tab2.index);
     Swap (data, tab2.data);
   }
+
+  INLINE Table & operator= (Table<T> && tab2)
+  {
+    Swap (size, tab2.size);
+    Swap (index, tab2.index);
+    Swap (data, tab2.data);
+    return *this;
+  }
+
 
 
   /// Delete data

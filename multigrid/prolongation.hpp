@@ -413,13 +413,13 @@ namespace ngmg
     ///
     const CompoundFESpace * space;
     ///
-    Array<const Prolongation*> prols;
+    Array<shared_ptr<Prolongation>> prols;
   public:
     ///
     CompoundProlongation(const CompoundFESpace * aspace);
     ///
     CompoundProlongation(const CompoundFESpace * aspace,
-			 Array<const Prolongation*> & aprols);
+			 Array<shared_ptr<Prolongation>> & aprols);
     ///
     virtual ~CompoundProlongation();
     // { ; }
@@ -427,7 +427,7 @@ namespace ngmg
     ///
     virtual void Update ();
 
-    void AddProlongation (const Prolongation * prol)
+    void AddProlongation (shared_ptr<Prolongation> prol)
     {
       prols.Append (prol);
     }

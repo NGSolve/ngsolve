@@ -1053,7 +1053,7 @@ namespace ngsolve
     
     if (addcf && gf->GetFESpace().GetFluxEvaluator())
       {
-        const DifferentialOperator * diffop = gf->GetFESpace().GetFluxEvaluator();
+        auto diffop = gf->GetFESpace().GetFluxEvaluator();
         string fluxname = diffop->Name() + "_" + name;
         AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(*gf, diffop));
       }
@@ -1092,7 +1092,7 @@ namespace ngsolve
 	bilinearforms.Set (name, CreateBilinearForm (space, name, flags));
       }
     else
-      bilinearforms.Set (name, make_shared<T_BilinearForm<double>> (*space, *space2, name, flags));
+      bilinearforms.Set (name, make_shared<T_BilinearForm<double>> (space, space2, name, flags));
     
     if (flags.StringFlagDefined ("linearform"))
       bilinearforms[name] -> SetLinearForm (GetLinearForm (flags.GetStringFlag ("linearform", 0)));

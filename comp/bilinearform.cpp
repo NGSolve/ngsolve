@@ -47,10 +47,10 @@ namespace ngcomp
 
 
   BilinearForm :: 
-  BilinearForm (const FESpace & afespace,
+  BilinearForm (shared_ptr<FESpace> afespace,
                 const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace.GetMeshAccess(), aname), fespace(afespace)
+    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace)
   {
     fespace2 = NULL;
 
@@ -86,10 +86,10 @@ namespace ngcomp
 
 
   BilinearForm :: 
-  BilinearForm (const FESpace & afespace,
-                const FESpace & afespace2, const string & aname,
+  BilinearForm (shared_ptr<FESpace> afespace,
+                shared_ptr<FESpace> afespace2, const string & aname,
                 const Flags & flags)
-    : NGS_Object(afespace.GetMeshAccess(), aname), fespace(afespace), fespace2(&afespace2)
+    : NGS_Object(afespace->GetMeshAccess(), aname), fespace(afespace), fespace2(afespace2)
   {
     multilevel = true;
     galerkin = false;
@@ -192,11 +192,11 @@ namespace ngcomp
     static Timer timer ("BilinearForm::GetGraph");
     RegionTimer reg (timer);
 
-    int ndof = fespace.GetNDof();
+    int ndof = fespace->GetNDof();
     int ne = GetMeshAccess().GetNE();
     int nse = GetMeshAccess().GetNSE();
     int nf = GetMeshAccess().GetNFacets();
-    const Array<SpecialElement*> & specialelements = fespace.GetSpecialElements();
+    const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     int nspe = specialelements.Size();
 
     Array<int> dnums;
@@ -206,19 +206,19 @@ namespace ngcomp
 
 
     int maxind = ne + nse + specialelements.Size();
-    if (fespace.UsesDGCoupling()) maxind += nf;
+    if (fespace->UsesDGCoupling()) maxind += nf;
 
     TableCreator<int> creator(maxind);
     for ( ; !creator.Done(); creator++)
       {
         for (int i = 0; i < ne; i++)
           {
-            if (!fespace.DefinedOn (ma.GetElIndex(i))) continue;
+            if (!fespace->DefinedOn (ma.GetElIndex(i))) continue;
 
             if (eliminate_internal)
-              fespace.GetDofNrs (i, dnums, EXTERNAL_DOF);
+              fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
             else
-              fespace.GetDofNrs (i, dnums);
+              fespace->GetDofNrs (i, dnums);
 
             for (int j = 0; j < dnums.Size(); j++)
               if (dnums[j] != -1)
@@ -227,9 +227,9 @@ namespace ngcomp
         
         for (int i = 0; i < nse; i++)
           {
-            if (!fespace.DefinedOnBoundary (ma.GetSElIndex(i))) continue;
+            if (!fespace->DefinedOnBoundary (ma.GetSElIndex(i))) continue;
             
-            fespace.GetSDofNrs (i, dnums);
+            fespace->GetSDofNrs (i, dnums);
             for (int j = 0; j < dnums.Size(); j++)
               if (dnums[j] != -1)
                 creator.Add (ne+i, dnums[j]);
@@ -245,7 +245,7 @@ namespace ngcomp
                 creator.Add (ne+nse+i, dnums[j]);
           }
 
-        if (fespace.UsesDGCoupling())
+        if (fespace->UsesDGCoupling())
           //add dofs of neighbour elements as well
           for (int i = 0; i < nf; i++)
             {
@@ -256,8 +256,8 @@ namespace ngcomp
 
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
-                if (!fespace.DefinedOn (ma.GetElIndex(elnr))) continue;
-                fespace.GetDofNrs (elnr, dnums);
+                if (!fespace->DefinedOn (ma.GetElIndex(elnr))) continue;
+                fespace->GetDofNrs (elnr, dnums);
                 for (int j = 0; j < dnums.Size(); j++)
                   if (dnums[j] != -1)
                     creator.Add (ne+nse+nspe+i, dnums[j]);
@@ -383,11 +383,11 @@ namespace ngcomp
                 {
                   lh.CleanUp();
                   
-                  if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+                  if (!fespace->DefinedOn (ma.GetElIndex (i))) continue;
           
-                  const FiniteElement & fel = fespace.GetFE (i, lh);
+                  const FiniteElement & fel = fespace->GetFE (i, lh);
                   ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
-                  fespace.GetDofNrs (i, dnums);
+                  fespace->GetDofNrs (i, dnums);
           
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
@@ -406,10 +406,10 @@ namespace ngcomp
                 {
                   lh.CleanUp();
                   
-                  const FiniteElement & fel = fespace.GetSFE (i, lh);
+                  const FiniteElement & fel = fespace->GetSFE (i, lh);
                   ElementTransformation & eltrans = ma.GetTrafo (i, 1, lh);
 
-                  fespace.GetSDofNrs (i, dnums);
+                  fespace->GetSDofNrs (i, dnums);
           
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
@@ -624,12 +624,12 @@ namespace ngcomp
             {
               HeapReset hr(clh);
               if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
-                parts[i] -> CheckElement (fespace.GetSFE(j, clh));
+                parts[i] -> CheckElement (fespace->GetSFE(j, clh));
             }
         }
       else if (parts[i] -> SkeletonForm() && !parts[i] -> BoundaryForm()) 
         { 
-          if (!fespace.UsesDGCoupling()) 
+          if (!fespace->UsesDGCoupling()) 
             throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
           //TODO: Check each facet for the neighbouring elements - necessary?
         }
@@ -644,7 +644,7 @@ namespace ngcomp
             {
               HeapReset hr(clh);
               if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
-                parts[i] -> CheckElement (fespace.GetFE(j, clh));
+                parts[i] -> CheckElement (fespace->GetFE(j, clh));
             }
         }
     mattimer1.Stop();    
@@ -657,7 +657,7 @@ namespace ngcomp
 	    mattimer1a.Start();
             ma.PushStatus ("Assemble Matrix");
  
-            int ndof = fespace.GetNDof();
+            int ndof = fespace->GetNDof();
             BitArray useddof(ndof);
             useddof = false;
 
@@ -704,7 +704,7 @@ namespace ngcomp
             if (hasbound) {nrcases++; loopsteps+=nse;}
             if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
             if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
-            if (fespace.specialelements.Size()>0) {nrcases++; loopsteps+=fespace.specialelements.Size();}
+            if (fespace->specialelements.Size()>0) {nrcases++; loopsteps+=fespace->specialelements.Size();}
             int gcnt = 0; //global count (for all cases)
 
             for (int j = 0; j < preconditioners.Size(); j++)
@@ -737,7 +737,7 @@ namespace ngcomp
 
                 
                 IterateElements 
-                  (fespace, VOL, clh, 
+                  (*fespace, VOL, clh, 
                    [&] (ElementId ei, LocalHeap & lh)
                    {
                      if (elmat_ev) 
@@ -747,11 +747,11 @@ namespace ngcomp
 
                      timer1.Start();
 
-                     const FiniteElement & fel = fespace.GetFE (ei, lh);
+                     const FiniteElement & fel = fespace->GetFE (ei, lh);
                      const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
 		     Array<int> dnums (fel.GetNDof(), lh);
-		     fespace.GetDofNrs (ei, dnums);
+		     fespace->GetDofNrs (ei, dnums);
 
                      if (fel.GetNDof() != dnums.Size())
                        {
@@ -766,7 +766,7 @@ namespace ngcomp
                          throw Exception ( "Inconsistent number of degrees of freedom " );
                        }
 
-                     int elmat_size = dnums.Size()*fespace.GetDimension();
+                     int elmat_size = dnums.Size()*fespace->GetDimension();
                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                      sum_elmat = 0;
 
@@ -832,7 +832,7 @@ namespace ngcomp
 
                      timer2.Stop();
                      timer3.Start();
-                     fespace.TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                     fespace->TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
                      if (elmat_ev)
@@ -849,7 +849,7 @@ namespace ngcomp
 
                          Array<int> idofs1(dnums.Size(), lh);
 
-                         fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
+                         fespace->GetDofNrs (i, idofs1, LOCAL_DOF);
                          for (int j = 0; j < idofs1.Size(); j++)
                            idofs1[j] = dnums.Pos(idofs1[j]);
 
@@ -909,8 +909,8 @@ namespace ngcomp
                                {
 				 Array<int> idnums1(dnums.Size(), lh), 
 				   ednums1(dnums.Size(), lh);
-                                 fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
-                                 fespace.GetDofNrs(i,ednums1,EXTERNAL_DOF);
+                                 fespace->GetDofNrs(i,idnums1,LOCAL_DOF);
+                                 fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
 				 
 				 Array<int> idnums(dim*idnums1.Size(), lh);
 				 Array<int> ednums(dim*ednums1.Size(), lh);
@@ -1058,13 +1058,13 @@ namespace ngcomp
                 
                     clh.CleanUp(heapp);
                   
-                    if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+                    if (!fespace->DefinedOn (ma.GetElIndex (i))) continue;
                   
-                    const FiniteElement & fel = fespace.GetFE (i, clh);
+                    const FiniteElement & fel = fespace->GetFE (i, clh);
                     ElementTransformation & eltrans = ma.GetTrafo (i, VOL, clh);
-                    fespace.GetDofNrs (i, dnums);
+                    fespace->GetDofNrs (i, dnums);
                   
-                    FlatVector<SCAL> sum_diag(dnums.Size()*fespace.GetDimension(), clh);
+                    FlatVector<SCAL> sum_diag(dnums.Size()*fespace->GetDimension(), clh);
                     sum_diag = 0;
                     for (int j = 0; j < NumIntegrators(); j++)
                       {
@@ -1121,22 +1121,22 @@ namespace ngcomp
 
                 
                 IterateElements 
-                  (fespace, BND, clh, 
+                  (*fespace, BND, clh, 
                    [&] (ElementId ei, LocalHeap & lh)
                    {
                      int i = ei.Nr();
                      progress.Update ();                  
                      
-                     if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) return;
+                     if (!fespace->DefinedOnBoundary (ma.GetSElIndex (i))) return;
                      
                      timerb1.Start();
                       
-                     const FiniteElement & fel = fespace.GetFE (ei, lh);
+                     const FiniteElement & fel = fespace->GetFE (ei, lh);
                      ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 
-                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
 		     Array<int> dnums  (fel.GetNDof(), lh);
-                     fespace.GetDofNrs (ei, dnums);
+                     fespace->GetDofNrs (ei, dnums);
                      
                      if(fel.GetNDof() != dnums.Size())
                        {
@@ -1150,7 +1150,7 @@ namespace ngcomp
                        }
                      
                       timerb1.Stop();
-                      int elmat_size = dnums.Size()*fespace.GetDimension();
+                      int elmat_size = dnums.Size()*fespace->GetDimension();
                       FlatMatrix<SCAL> elmat(elmat_size, lh);
                       FlatMatrix<SCAL> sumelmat(elmat_size, lh);
                       sumelmat = SCAL (0.0);
@@ -1170,7 +1170,7 @@ namespace ngcomp
                           timerb2.Start();
 
                           bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
-                          fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                          fespace->TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
                           timerb2.Stop();
 
@@ -1186,7 +1186,7 @@ namespace ngcomp
                                 if (dnums[j] == -1)
                                   *testout << "0 ";
                                 else
-                                  *testout << fespace.GetDofCouplingType (dnums[j]) << " ";
+                                  *testout << fespace->GetDofCouplingType (dnums[j]) << " ";
                               *testout << endl;
                               (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
                               (*testout) << "elmat = " << endl << elmat << endl;
@@ -1245,14 +1245,14 @@ namespace ngcomp
                   
                       HeapReset hr(lh);
                       
-                      if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+                      if (!fespace->DefinedOnBoundary (ma.GetSElIndex (i))) continue;
                       ma.GetSElFacets(i,fnums);
                       int fac = fnums[0];
                       ma.GetFacetElements(fac,elnums);
                       int el = elnums[0];
                       ma.GetElFacets(el,fnums);
                                   
-                      const FiniteElement & fel = fespace.GetFE (el, lh);
+                      const FiniteElement & fel = fespace->GetFE (el, lh);
                       int facnr = 0;
                       for (int k=0; k<fnums.Size(); k++)
                         if(fac==fnums[k]) facnr = k;
@@ -1261,7 +1261,7 @@ namespace ngcomp
                       ElementTransformation & eltrans = ma.GetTrafo (el, VOL, lh);
                       ElementTransformation & seltrans = ma.GetTrafo (i, BND, lh);
                       
-                      fespace.GetDofNrs (el, dnums);
+                      fespace->GetDofNrs (el, dnums);
                       if(fel.GetNDof() != dnums.Size())
                         {
                           cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
@@ -1286,7 +1286,7 @@ namespace ngcomp
                             if (dnums[k] != -1)
                               useddof.Set (dnums[k]);
 
-                          int elmat_size = dnums.Size()*fespace.GetDimension();
+                          int elmat_size = dnums.Size()*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
                           // original version did not compile on MacOS V
@@ -1295,7 +1295,7 @@ namespace ngcomp
                           fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
                           
 
-                          fespace.TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                          fespace->TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                     
                           if (printelmat)
                             {
@@ -1396,16 +1396,16 @@ namespace ngcomp
                       }
                       
                   
-                      const FiniteElement & fel1 = fespace.GetFE (el1, lh);
-                      const FiniteElement & fel2 = fespace.GetFE (el2, lh);
+                      const FiniteElement & fel1 = fespace->GetFE (el1, lh);
+                      const FiniteElement & fel2 = fespace->GetFE (el2, lh);
 
                       ElementTransformation & eltrans1 = ma.GetTrafo (el1, false, lh);
                       ElementTransformation & eltrans2 = ma.GetTrafo (el2, false, lh);
 
 
-                      fespace.GetDofNrs (el1, dnums1);
+                      fespace->GetDofNrs (el1, dnums1);
                       dnums=dnums1;
-                      fespace.GetDofNrs (el2, dnums2);
+                      fespace->GetDofNrs (el2, dnums2);
                       for (int d=0; d < dnums2.Size(); d++)
                         dnums.Append(dnums2[d]);
                       ma.GetElVertices (el1, vnums1);
@@ -1431,7 +1431,7 @@ namespace ngcomp
                             if (dnums[k] != -1)
                               useddof.Set (dnums[k]);
 
-                          int elmat_size = (dnums1.Size()+dnums2.Size())*fespace.GetDimension();
+                          int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
                           const FacetBilinearFormIntegrator & fbfi = 
@@ -1440,10 +1440,10 @@ namespace ngcomp
                                                 fel2,facnr2,eltrans2,vnums2, elmat, lh);
                           *testout << "elmat : \n" << elmat << endl;
 
-                          fespace.TransformMat (el1, false, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
-                          fespace.TransformMat (el2, false, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
-                          fespace.TransformMat (el1, false, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
-                          fespace.TransformMat (el2, false, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
+                          fespace->TransformMat (el1, false, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (el2, false, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (el1, false, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
+                          fespace->TransformMat (el2, false, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
 
                           if (printelmat)
                             {
@@ -1512,18 +1512,18 @@ namespace ngcomp
               Array<int> dnums;
               
 #pragma omp for 
-              for (int i = 0; i < fespace.specialelements.Size(); i++)
+              for (int i = 0; i < fespace->specialelements.Size(); i++)
                 {
 #pragma omp critical(printmatspecel)
                   {
                     gcnt++;
                     nspecel++;
                     if (i % 10 == 0)
-                      cout << "\rassemble special element " << nspecel << "/" << fespace.specialelements.Size() << flush;
+                      cout << "\rassemble special element " << nspecel << "/" << fespace->specialelements.Size() << flush;
                     ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                   }
                   
-                  const SpecialElement & el = *fespace.specialelements[i];
+                  const SpecialElement & el = *fespace->specialelements[i];
                 
                   el.GetDofNrs (dnums);
                 
@@ -1544,11 +1544,11 @@ namespace ngcomp
                 }
             }
             if(assembledspecialelements) cout << "\rassemble special element " 
-                                              << fespace.specialelements.Size() << "/" << fespace.specialelements.Size() << endl;
+                                              << fespace->specialelements.Size() << "/" << fespace->specialelements.Size() << endl;
             
           
             // add eps to avoid empty lines
-            FlatMatrix<SCAL> elmat (fespace.GetDimension(), clh);
+            FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
             elmat = 0;
             Array<int> dnums;
             dnums.SetSize(1);
@@ -1598,11 +1598,11 @@ namespace ngcomp
             if (MyMPI_GetNTasks() == 1)
               for (int i = 0; i < useddof.Size(); i++)
                 if (useddof.Test(i) != 
-                    ((fespace.GetDofCouplingType(i) & MASK) != 0) )
+                    ((fespace->GetDofCouplingType(i) & MASK) != 0) )
                   {
                     *testout << "used dof inconsistency: " 
                              << " dof " << i << " used = " << int(useddof.Test(i))
-                             << " ct = " << fespace.GetDofCouplingType(i) << endl;
+                             << " ct = " << fespace->GetDofCouplingType(i) << endl;
                   
                     if (first_time)
                       cerr << "used dof inconsistency" << endl;
@@ -1638,16 +1638,16 @@ namespace ngcomp
             
             if (hasinner)
               IterateElements 
-                (fespace, VOL, clh,          // coloring for 1 space is enough
+                (*fespace, VOL, clh,          // coloring for 1 space is enough
                  [&] (ElementId ei, LocalHeap & lh)
                  {
-                   const FiniteElement & fel1 = fespace.GetFE (ei, lh);
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
                    const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
                    
                    Array<int> dnums1(fel1.GetNDof(), lh);
                    Array<int> dnums2(fel2.GetNDof(), lh);
                    const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                   fespace.GetDofNrs (ei, dnums1);
+                   fespace->GetDofNrs (ei, dnums1);
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
@@ -1665,7 +1665,7 @@ namespace ngcomp
                        bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
 
                        /*
-                        fespace.Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                        fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
                         fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
                        */
 
@@ -1676,16 +1676,16 @@ namespace ngcomp
 
             if (hasbound)
               IterateElements 
-                (fespace, BND, clh,          // coloring for 1 space is enough
+                (*fespace, BND, clh,          // coloring for 1 space is enough
                  [&] (ElementId ei, LocalHeap & lh)
                  {
-                   const FiniteElement & fel1 = fespace.GetFE (ei, lh);
+                   const FiniteElement & fel1 = fespace->GetFE (ei, lh);
                    const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
                    
                    Array<int> dnums1(fel1.GetNDof(), lh);
                    Array<int> dnums2(fel2.GetNDof(), lh);
                    const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                   fespace.GetDofNrs (ei, dnums1);
+                   fespace->GetDofNrs (ei, dnums1);
                    fespace2->GetDofNrs (ei, dnums2);
           
                    FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
@@ -1703,7 +1703,7 @@ namespace ngcomp
                        bfi.CalcElementMatrix (cfel, eltrans, elmat, lh);
 
                        /*
-                        fespace.Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
+                        fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
                         fespace2->Transform (i, true, elmat, TRANFORM_MAT_LEFT);
                        */
 
@@ -1776,7 +1776,7 @@ namespace ngcomp
                   {
                     HeapReset hr(clh);
                     Array<int> dnums;
-                    fespace.GetDofNrs (i, dnums, LOCAL_DOF);            
+                    fespace->GetDofNrs (i, dnums, LOCAL_DOF);            
                     FlatVector<SCAL> elu (dnums.Size(), clh);
                     elu = 0.0;
                     u.SetIndirect (dnums, elu);
@@ -1795,24 +1795,24 @@ namespace ngcomp
                 ProgressOutput progress (ma, "compute internal element", ma.GetNE());
 
                 IterateElements 
-                  (fespace, VOL, clh, 
+                  (*fespace, VOL, clh, 
                    [&] (ElementId ei, LocalHeap & lh)
                    {
                      progress.Update ();
 
-                     const FiniteElement & fel = fespace.GetFE (ei, lh);
+                     const FiniteElement & fel = fespace->GetFE (ei, lh);
                      ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
-                     // FlatArray<int> dnums = fespace.GetDofNrs (ei, lh);
+                     // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
                      Array<int> dnums (fel.GetNDof(), lh);
-                     fespace.GetDofNrs (ei, dnums);
+                     fespace->GetDofNrs (ei, dnums);
 
                      Array<int> idofs(dnums.Size(), lh);
-                     fespace.GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
+                     fespace->GetDofNrs (ei.Nr(), idofs, LOCAL_DOF);
                      if (!idofs.Size()) return;
                      for (int j = 0; j < idofs.Size(); j++)
                        idofs[j] = dnums.Pos(idofs[j]);
                      
-                     int elmat_size = dnums.Size()*fespace.GetDimension();
+                     int elmat_size = dnums.Size()*fespace->GetDimension();
                      FlatMatrix<SCAL> sum_elmat(elmat_size, lh);
                      sum_elmat = 0;
                      for (int j = 0; j < NumIntegrators(); j++)
@@ -1829,7 +1829,7 @@ namespace ngcomp
                          sum_elmat += elmat;
                        }
                 
-                     fespace.TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                     fespace->TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
                      
                      if (idofs.Size())
                        {
@@ -1921,7 +1921,7 @@ namespace ngcomp
 
     try
       {
-        int ndof = fespace.GetNDof();
+        int ndof = fespace->GetNDof();
         BitArray useddof(ndof);
         useddof.Clear();
       
@@ -1956,7 +1956,7 @@ namespace ngcomp
             RegionTimer reg(timervol);
             int cnt = 0;
             
-            const Table<int> * element_coloring = &fespace.ElementColoring();
+            const Table<int> * element_coloring = &fespace->ElementColoring();
             int ncolors = (element_coloring) ? element_coloring->Size() : 1;
 
             ProgressOutput progress (ma, "assemble element", ma.GetNE());
@@ -1983,12 +1983,12 @@ namespace ngcomp
                           
                       HeapReset hr(lh);
               
-                      if (!fespace.DefinedOn (ma.GetElIndex (i))) continue;
+                      if (!fespace->DefinedOn (ma.GetElIndex (i))) continue;
                       
-                      const FiniteElement & fel = fespace.GetFE (i, lh);
+                      const FiniteElement & fel = fespace->GetFE (i, lh);
                       ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
 
-                      fespace.GetDofNrs (i, dnums);
+                      fespace->GetDofNrs (i, dnums);
                       
                       if(fel.GetNDof() != dnums.Size())
                         {
@@ -2000,13 +2000,13 @@ namespace ngcomp
                         if (dnums[j] != -1)
                           useddof.Set (dnums[j]);
                       
-                      FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace.GetDimension(), lh);
-                      FlatMatrix<SCAL> elmat(dnums.Size()*fespace.GetDimension(), lh);
+                      FlatMatrix<SCAL> sum_elmat(dnums.Size()*fespace->GetDimension(), lh);
+                      FlatMatrix<SCAL> elmat(dnums.Size()*fespace->GetDimension(), lh);
                       sum_elmat = 0;
                       
-                      FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
+                      FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
                       lin.GetIndirect (dnums, elveclin);
-                      fespace.TransformVec (i, false, elveclin, TRANSFORM_SOL);
+                      fespace->TransformVec (i, false, elveclin, TRANSFORM_SOL);
                       
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
@@ -2038,11 +2038,11 @@ namespace ngcomp
                               cout << " assemble linearization, elmat: " << endl;
                               cout << elmat << endl;
 
-                              FlatMatrix<SCAL> new_elmat(dnums.Size()*fespace.GetDimension(), lh);
-                              FlatVector<SCAL> e(dnums.Size()*fespace.GetDimension(), lh);
-                              FlatVector<SCAL> temp(dnums.Size()*fespace.GetDimension(), lh);
-                              FlatVector<SCAL> y1(dnums.Size()*fespace.GetDimension(), lh);
-                              FlatVector<SCAL> y2(dnums.Size()*fespace.GetDimension(), lh);
+                              FlatMatrix<SCAL> new_elmat(dnums.Size()*fespace->GetDimension(), lh);
+                              FlatVector<SCAL> e(dnums.Size()*fespace->GetDimension(), lh);
+                              FlatVector<SCAL> temp(dnums.Size()*fespace->GetDimension(), lh);
+                              FlatVector<SCAL> y1(dnums.Size()*fespace->GetDimension(), lh);
+                              FlatVector<SCAL> y2(dnums.Size()*fespace->GetDimension(), lh);
 
                               double eps = 1e-5;
                               for ( int ii=0; ii<e.Size(); ii++ )
@@ -2077,7 +2077,7 @@ namespace ngcomp
                           sum_elmat += elmat;
                         }
               
-                      fespace.TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                      fespace->TransformMat (i, false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
                        
                       if (printelmat)
                         *testout << "summat = " << sum_elmat << endl;
@@ -2088,7 +2088,7 @@ namespace ngcomp
                           static Timer statcondtimer("static condensation");
                           RegionTimer regstat (statcondtimer);
                           
-                          fespace.GetDofNrs (i, idofs1, LOCAL_DOF);
+                          fespace->GetDofNrs (i, idofs1, LOCAL_DOF);
                           for (int j = 0; j < idofs1.Size(); j++)
                             idofs1[j] = dnums.Pos(idofs1[j]);
                           
@@ -2152,8 +2152,8 @@ namespace ngcomp
                                   ArrayMem<int,50> idnums1, idnums;
                                   ArrayMem<int,50> ednums1, ednums;
 
-                                  fespace.GetDofNrs(i,idnums1,LOCAL_DOF);
-                                  fespace.GetDofNrs(i,ednums1,EXTERNAL_DOF);
+                                  fespace->GetDofNrs(i,idnums1,LOCAL_DOF);
+                                  fespace->GetDofNrs(i,ednums1,EXTERNAL_DOF);
 
                                   for (int j = 0; j < idnums1.Size(); j++)
                                     idnums += dim*IntRange(idnums1[j], idnums1[j]+1);
@@ -2236,25 +2236,25 @@ namespace ngcomp
                   cnt++;
                   progress.Update (cnt);
                   
-                  if (!fespace.DefinedOnBoundary (ma.GetSElIndex (i))) continue;
+                  if (!fespace->DefinedOnBoundary (ma.GetSElIndex (i))) continue;
                   
-                  const FiniteElement & fel = fespace.GetSFE (i, lh);
+                  const FiniteElement & fel = fespace->GetSFE (i, lh);
                   
                   ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
 
-                  fespace.GetSDofNrs (i, dnums);
+                  fespace->GetSDofNrs (i, dnums);
                     
                   for (int j = 0; j < dnums.Size(); j++)
                     if (dnums[j] != -1)
                       useddof.Set (dnums[j]);
                   
-                  FlatVector<SCAL> elveclin (dnums.Size()*fespace.GetDimension(), lh);
-                  FlatMatrix<SCAL> elmat (dnums.Size()*fespace.GetDimension(), lh);
-                  FlatMatrix<SCAL> sum_elmat (dnums.Size()*fespace.GetDimension(), lh);
+                  FlatVector<SCAL> elveclin (dnums.Size()*fespace->GetDimension(), lh);
+                  FlatMatrix<SCAL> elmat (dnums.Size()*fespace->GetDimension(), lh);
+                  FlatMatrix<SCAL> sum_elmat (dnums.Size()*fespace->GetDimension(), lh);
                   sum_elmat = SCAL(0.0);
                   
                   lin.GetIndirect (dnums, elveclin);
-                  fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
+                  fespace->TransformVec (i, true, elveclin, TRANSFORM_SOL);
                   
                   for (int j = 0; j < NumIntegrators(); j++)
                     {
@@ -2264,7 +2264,7 @@ namespace ngcomp
                       
                       bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                       
-                      fespace.TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                      fespace->TransformMat (i, true, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                       
                       sum_elmat += elmat;
                       
@@ -2297,13 +2297,13 @@ namespace ngcomp
           }
         
       
-        if (fespace.specialelements.Size())
-          cout << "special elements: " << fespace.specialelements.Size() << endl;
+        if (fespace->specialelements.Size())
+          cout << "special elements: " << fespace->specialelements.Size() << endl;
 
-        for (int i = 0; i < fespace.specialelements.Size(); i++)
+        for (int i = 0; i < fespace->specialelements.Size(); i++)
           {
             HeapReset hr(lh);
-            const SpecialElement & el = *fespace.specialelements[i];
+            const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
           
             for (int j = 0; j < dnums.Size(); j++)
@@ -2318,7 +2318,7 @@ namespace ngcomp
       
       
         // add eps to avoid empty lines
-        FlatMatrix<SCAL> elmat (fespace.GetDimension(), lh);
+        FlatMatrix<SCAL> elmat (fespace->GetDimension(), lh);
         elmat = 0;
         dnums.SetSize(1);
       
@@ -2446,16 +2446,16 @@ namespace ngcomp
 		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
 #endif
 		    IterateElements 
-		      (fespace, VOL, clh, 
+		      (*fespace, VOL, clh, 
 		       [&] (ElementId ei, LocalHeap & lh)
                        
 		       {
-			 if (!fespace.DefinedOn (ei)) return;
+			 if (!fespace->DefinedOn (ei)) return;
 			 
-			 const FiniteElement & fel = fespace.GetFE (ei, lh);
+			 const FiniteElement & fel = fespace->GetFE (ei, lh);
 			 ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 			 Array<int> dnums (fel.GetNDof(), lh);
-			 fespace.GetDofNrs (ei, dnums);
+			 fespace->GetDofNrs (ei, dnums);
 			 
 			 ApplyElementMatrix(x,y,val,dnums,eltrans, ei.Nr(),0,cnt,lh,&fel);
 		       });
@@ -2476,9 +2476,9 @@ namespace ngcomp
                         {
                           HeapReset hr(lh);
                           
-                          const FiniteElement & fel = fespace.GetSFE (i, lh);
+                          const FiniteElement & fel = fespace->GetSFE (i, lh);
                           ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
-                          fespace.GetSDofNrs (i, dnums);
+                          fespace->GetSDofNrs (i, dnums);
                           
                           ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
                         }
@@ -2488,15 +2488,15 @@ namespace ngcomp
                 if (hasskeletonbound||hasskeletoninner)
                   throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                   
-                if (fespace.specialelements.Size())
+                if (fespace->specialelements.Size())
                   {
                     LocalHeap lh(lh_size, "biform-AddMatrix (c)");
                     Array<int> dnums;
                     ElementTransformation * dummy_eltrans = NULL;
-                    for (int i = 0; i < fespace.specialelements.Size(); i++)
+                    for (int i = 0; i < fespace->specialelements.Size(); i++)
                       {
                         HeapReset hr(lh);
-                        const SpecialElement & el = *fespace.specialelements[i];
+                        const SpecialElement & el = *fespace->specialelements[i];
                         el.GetDofNrs (dnums);
                         
                         ApplyElementMatrix(x,y,val,dnums,*dummy_eltrans,i,2,cnt,lh,NULL,&el);
@@ -2556,19 +2556,19 @@ namespace ngcomp
             {
               HeapReset hr(lh);
           
-              const FiniteElement & fel = fespace.GetFE (i, lh);
+              const FiniteElement & fel = fespace->GetFE (i, lh);
               ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
-              fespace.GetDofNrs (i, dnums);
+              fespace->GetDofNrs (i, dnums);
           
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecy (dnums.Size() * dim, lh);
 
               lin.GetIndirect (dnums, elveclin);
-              fespace.TransformVec (i, false, elveclin, TRANSFORM_SOL);
+              fespace->TransformVec (i, false, elveclin, TRANSFORM_SOL);
 
               x.GetIndirect (dnums, elvecx);
-              fespace.TransformVec (i, false, elvecx, TRANSFORM_SOL);
+              fespace->TransformVec (i, false, elvecx, TRANSFORM_SOL);
 
               for (int j = 0; j < NumIntegrators(); j++)
                 {
@@ -2580,7 +2580,7 @@ namespace ngcomp
 
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
 
-                  fespace.TransformVec (i, false, elvecy, TRANSFORM_RHS);
+                  fespace->TransformVec (i, false, elvecy, TRANSFORM_RHS);
 
                   elvecy *= val;
 
@@ -2593,18 +2593,18 @@ namespace ngcomp
           for (int i = 0; i < nse; i++)
             {
               HeapReset hr(lh);
-              const FiniteElement & fel = fespace.GetSFE (i, lh);
+              const FiniteElement & fel = fespace->GetSFE (i, lh);
               ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
-              fespace.GetSDofNrs (i, dnums);
+              fespace->GetSDofNrs (i, dnums);
             
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
               FlatVector<SCAL> elvecy (dnums.Size() * dim, lh);
             
               lin.GetIndirect (dnums, elveclin);
-              fespace.TransformVec (i, true, elveclin, TRANSFORM_SOL);
+              fespace->TransformVec (i, true, elveclin, TRANSFORM_SOL);
               x.GetIndirect (dnums, elvecx);
-              fespace.TransformVec (i, true, elvecx, TRANSFORM_SOL);
+              fespace->TransformVec (i, true, elvecx, TRANSFORM_SOL);
           
               for (int j = 0; j < NumIntegrators(); j++)
                 {
@@ -2614,16 +2614,16 @@ namespace ngcomp
                   if (!bfi.DefinedOn (eltrans.GetElementIndex())) continue;
               
                   bfi.ApplyLinearizedElementMatrix (fel, eltrans, elveclin, elvecx, elvecy, lh);
-                  fespace.TransformVec (i, true, elvecy, TRANSFORM_RHS);
+                  fespace->TransformVec (i, true, elvecy, TRANSFORM_RHS);
                   elvecy *= val;
                   y.AddIndirect (dnums, elvecy);
                 }
             }
 
-        for (int i = 0; i < fespace.specialelements.Size(); i++)
+        for (int i = 0; i < fespace->specialelements.Size(); i++)
           {
             HeapReset hr(lh);
-            const SpecialElement & el = *fespace.specialelements[i];
+            const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
           
             FlatVector<SCAL> elvecx (dnums.Size() * dim, lh);
@@ -2672,18 +2672,18 @@ namespace ngcomp
 
         if (hasinner)
           IterateElements 
-            (fespace, VOL, lh, 
+            (*fespace, VOL, lh, 
              [&] (ElementId ei, LocalHeap & lh)
              {
-               const FiniteElement & fel = fespace.GetFE (ei, lh);
+               const FiniteElement & fel = fespace->GetFE (ei, lh);
                ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
                Array<int> dnums (fel.GetNDof(), lh);
-               fespace.GetDofNrs (ei, dnums);
+               fespace->GetDofNrs (ei, dnums);
                
                FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace().GetDimension(), lh);
                
                x.GetIndirect (dnums, elvecx);
-               fespace.TransformVec (ei, elvecx, TRANSFORM_SOL);
+               fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
                
                double energy_T = 0;
                for (int j = 0; j < NumIntegrators(); j++)
@@ -2706,13 +2706,13 @@ namespace ngcomp
             {
               HeapReset hr(lh);
 
-              const FiniteElement & fel = fespace.GetSFE (i, lh);
+              const FiniteElement & fel = fespace->GetSFE (i, lh);
               ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
-              fespace.GetSDofNrs (i, dnums);
+              fespace->GetSDofNrs (i, dnums);
             
               FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), lh);
               x.GetIndirect (dnums, elvecx);
-              fespace.TransformVec (i, true, elvecx, TRANSFORM_SOL);
+              fespace->TransformVec (i, true, elvecx, TRANSFORM_SOL);
           
               for (int j = 0; j < NumIntegrators(); j++)
                 {
@@ -2724,11 +2724,11 @@ namespace ngcomp
                 }
             }
 
-        for (int i = 0; i < fespace.specialelements.Size(); i++)
+        for (int i = 0; i < fespace->specialelements.Size(); i++)
           {
             HeapReset hr(lh);
 
-            const SpecialElement & el = *fespace.specialelements[i];
+            const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
 
             FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), lh);
@@ -2759,19 +2759,19 @@ namespace ngcomp
 
   template <class TM, class TV>
   T_BilinearForm<TM,TV>::
-  T_BilinearForm (const FESpace & afespace, const string & aname, const Flags & flags)
+  T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, aname, flags)
   { 
-    if (&this->fespace.LowOrderFESpace())
+    if (this->fespace->LowOrderFESpacePtr())
       this->low_order_bilinear_form = 
         make_shared<T_BilinearForm<TM,TV>> 
-        (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
+        (this->fespace->LowOrderFESpacePtr(), aname+string(" low-order"), flags);
   }
 
   template <class TM, class TV>
   T_BilinearForm<TM,TV>::
-  T_BilinearForm (const FESpace & afespace, 
-                  const FESpace & afespace2,
+  T_BilinearForm (shared_ptr<FESpace> afespace, 
+                  shared_ptr<FESpace> afespace2,
                   const string & aname,
                   const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, afespace2, aname, flags) 
@@ -2845,13 +2845,13 @@ namespace ngcomp
   shared_ptr<BaseVector> T_BilinearForm<TM, TV>::
   CreateVector() const
   {
-    const FESpace & afespace = this->fespace;
+    auto afespace = this->fespace;
 #ifdef PARALLEL
-    if ( afespace.IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace.GetNDof(), &afespace.GetParallelDofs());
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
     else
 #endif
-      return make_shared<VVector<TV>> (afespace.GetNDof());
+      return make_shared<VVector<TV>> (afespace->GetNDof());
   }
 
 
@@ -2944,7 +2944,7 @@ namespace ngcomp
 
     if(type == 0 || type == 1)
       {
-        this->fespace.TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
+        this->fespace->TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
 
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
@@ -2995,15 +2995,15 @@ namespace ngcomp
 
   template <class TM, class TV>
   T_BilinearFormSymmetric<TM,TV> :: 
-  T_BilinearFormSymmetric (const FESpace & afespace, const string & aname,
+  T_BilinearFormSymmetric (shared_ptr<FESpace> afespace, const string & aname,
                            const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, aname, flags) 
   {
-    if (&this->fespace.LowOrderFESpace())
+    if (this->fespace->LowOrderFESpacePtr())
       {
         this->low_order_bilinear_form = 
           make_shared<T_BilinearFormSymmetric<TM,TV>> 
-          (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
+          (this->fespace->LowOrderFESpacePtr(), aname+string(" low-order"), flags);
       }
   }
 
@@ -3071,14 +3071,14 @@ namespace ngcomp
   shared_ptr<BaseVector> T_BilinearFormSymmetric<TM, TV>::
   CreateVector() const
   {
-    const FESpace & afespace = this->fespace;
+    auto afespace = this->fespace;
 #ifdef PARALLEL
-    if ( afespace.IsParallel() )
-      return make_shared<ParallelVVector<TV>> (afespace.GetNDof(), &afespace.GetParallelDofs());
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV>> (afespace->GetNDof(), &afespace->GetParallelDofs());
     else
 #endif
-      // return new VVector<TV> (afespace.GetNDof());
-      return make_shared<VVector<TV>> (afespace.GetNDof());
+      // return new VVector<TV> (afespace->GetNDof());
+      return make_shared<VVector<TV>> (afespace->GetNDof());
   }
 
 
@@ -3111,7 +3111,7 @@ namespace ngcomp
   template <class TM, class TV>
   void T_BilinearFormSymmetric<TM,TV>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const
   {
-    if ( !this->fespace.IsComplex() )
+    if ( !this->fespace->IsComplex() )
       {
         Vector<TSCAL> lami(elmat.Height());
         Matrix<TSCAL> evecs(elmat.Height());
@@ -3157,7 +3157,7 @@ namespace ngcomp
 
     if(type == 0 || type == 1)
       {
-        this->fespace.TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
+        this->fespace->TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
 
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
@@ -3213,18 +3213,18 @@ namespace ngcomp
 
   template <class TM>
   T_BilinearFormDiagonal<TM> :: 
-  T_BilinearFormDiagonal (const FESpace & afespace, const string & aname,
+  T_BilinearFormDiagonal (shared_ptr<FESpace> afespace, const string & aname,
                           const Flags & flags)
     : S_BilinearForm<TSCAL> (afespace, aname, flags) 
   { 
     this->diagonal = 1;
     cout << " !!!!!!!!!!!!!!!!!! allocated diagonal matrix !!!!!!!!!!!!!" << endl;
 
-    if (&this->fespace.LowOrderFESpace())
+    if (this->fespace->LowOrderFESpacePtr())
       {
         this->low_order_bilinear_form = 
           make_shared<T_BilinearFormSymmetric<TM>> 
-          (this->fespace.LowOrderFESpace(), aname+string(" low-order"), flags);
+          (this->fespace->LowOrderFESpacePtr(), aname+string(" low-order"), flags);
         this->low_order_bilinear_form -> SetDiagonal (0);
       }
   }
@@ -3247,7 +3247,7 @@ namespace ngcomp
     if (this->mats.Size() == this->ma.GetNLevels())
       return;
 
-    int ndof = this->fespace.GetNDof();
+    int ndof = this->fespace->GetNDof();
     MatrixGraph * graph = new MatrixGraph (ndof, 1);
     for (int i = 0; i < ndof; i++)
       graph->CreatePosition (i, i);
@@ -3272,14 +3272,14 @@ namespace ngcomp
   shared_ptr<BaseVector> T_BilinearFormDiagonal<TM> :: 
   CreateVector() const
   {
-    const FESpace & afespace = this->fespace;
+    auto afespace = this->fespace;
 #ifdef PARALLEL
-    if ( afespace.IsParallel() )
-      return make_shared<ParallelVVector<TV_COL>> (afespace.GetNDof(), &afespace.GetParallelDofs());
+    if ( afespace->IsParallel() )
+      return make_shared<ParallelVVector<TV_COL>> (afespace->GetNDof(), &afespace->GetParallelDofs());
     else
 #endif
-      // return new VVector<TV_COL> (afespace.GetNDof());
-      return make_shared<VVector<TV_COL>> (afespace.GetNDof());
+      // return new VVector<TV_COL> (afespace->GetNDof());
+      return make_shared<VVector<TV_COL>> (afespace->GetNDof());
   }
 
   ///
@@ -3376,7 +3376,7 @@ namespace ngcomp
 
     if(type == 0 || type == 1)
       {
-        this->fespace.TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
+        this->fespace->TransformVec (elnum, (type == 1), elvecx, TRANSFORM_SOL);
 
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
@@ -3502,7 +3502,7 @@ namespace ngcomp
                                                 shared_ptr<FESpace> space, const string & name, const Flags & flags)
   {
     if (CBSIZE == cb_size)
-      return make_shared<T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex>>> (*space, name, flags);
+      return make_shared<T_BilinearFormSymmetric<double, Vec<CBSIZE,Complex>>> (space, name, flags);
     else
       return shared_ptr<BilinearForm> (CreateBilinearForm1<CBSIZE-1> (cb_size, space, name, flags));
   }
@@ -3511,7 +3511,7 @@ namespace ngcomp
   shared_ptr<BilinearForm> CreateBilinearForm1<1> (int cb_size,
                                          shared_ptr<FESpace> space, const string & name, const Flags & flags)
   {
-    return make_shared<T_BilinearFormSymmetric<double, Complex>> (*space, name, flags);
+    return make_shared<T_BilinearFormSymmetric<double, Complex>> (space, name, flags);
   }
 
   template <> 
@@ -3530,9 +3530,9 @@ namespace ngcomp
 
     if (flags.GetDefineFlag ("ebe")){
       if ( space->IsComplex() )
-        return make_shared<ElementByElement_BilinearForm<Complex>> (*space, name, flags);
+        return make_shared<ElementByElement_BilinearForm<Complex>> (space, name, flags);
       else 
-        return make_shared<ElementByElement_BilinearForm<double>> (*space, name, flags);
+        return make_shared<ElementByElement_BilinearForm<double>> (space, name, flags);
     }
     
     if (flags.GetDefineFlag ("symmetric"))
@@ -3593,7 +3593,7 @@ namespace ngcomp
                 */
               }
             else
-              return make_shared<T_BilinearFormSymmetric<double,Complex>> (*space, name, flags);
+              return make_shared<T_BilinearFormSymmetric<double,Complex>> (space, name, flags);
           }
 
         if(flags.NumFlagDefined("cacheblocksize"))
@@ -3602,17 +3602,17 @@ namespace ngcomp
                                  space->GetDimension(),
                                  int(flags.GetNumFlag("cacheblocksize",1)),
                                  space->IsComplex(),   
-                                 *space, name, flags);
+                                 space, name, flags);
           }
-		else
-		{
-			//bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
-			//  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-
-			CreateSymMatObject3(bf, T_BilinearFormSymmetric,
-				space->GetDimension(), space->IsComplex(),
-				*space, name, flags);
-		}
+        else
+          {
+            //bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
+            //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
+            
+            CreateSymMatObject3(bf, T_BilinearFormSymmetric,
+                                space->GetDimension(), space->IsComplex(),
+                                space, name, flags);
+          }
       }
     else if (flags.GetDefineFlag ("diagonal"))
       {
@@ -3621,9 +3621,9 @@ namespace ngcomp
           (space->GetDimension(), space->IsComplex(), *space, name, flags);
 	*/
         
-          CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
-          space->GetDimension(), space->IsComplex(),   
-          *space, name, flags);
+        CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
+                             space->GetDimension(), space->IsComplex(),   
+                             space, name, flags);
       }
     else
       {
@@ -3671,7 +3671,7 @@ namespace ngcomp
                   }
               }
             else
-              return make_shared<T_BilinearForm<double,Complex>> (*space, name, flags);
+              return make_shared<T_BilinearForm<double,Complex>> (space, name, flags);
           }
         
         if(flags.NumFlagDefined("cacheblocksize"))
@@ -3680,19 +3680,18 @@ namespace ngcomp
                                  space->GetDimension(),
                                  int(flags.GetNumFlag("cacheblocksize",1)),
                                  space->IsComplex(),   
-                                 *space, name, flags);
+                                 space, name, flags);
           }
-		else
-		{
-			//bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
-			//  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-
-			
-			  CreateSymMatObject3 (bf, T_BilinearForm,
-			  space->GetDimension(), space->IsComplex(),
-			  *space, name, flags);
-			  
-		}
+        else
+          {
+            //bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
+            //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
+            
+            
+            CreateSymMatObject3 (bf, T_BilinearForm,
+                                 space->GetDimension(), space->IsComplex(),
+                                 space, name, flags);
+          }
       }
 
     return shared_ptr<BilinearForm> (bf);
@@ -3760,7 +3759,7 @@ namespace ngcomp
 
   void BilinearForm :: GalerkinProjection ()
   {
-    const ngmg::Prolongation* prol = fespace.GetProlongation();
+    auto prol = fespace->GetProlongation();
     SparseMatrix<double>* prolMat = NULL;
 
     if ( !low_order_bilinear_form )
@@ -3868,7 +3867,7 @@ namespace ngcomp
 
   template <class SCAL>
   ElementByElement_BilinearForm<SCAL> :: 
-  ElementByElement_BilinearForm (const FESpace & afespace, const string & aname,
+  ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
                                  const Flags & flags)
     : S_BilinearForm<SCAL> (afespace, aname, flags)
   { ; }
@@ -3883,15 +3882,15 @@ namespace ngcomp
   template <class SCAL>
   void ElementByElement_BilinearForm<SCAL> :: AllocateMatrix ()
   {
-    const FESpace & fespace = this->fespace;
-    this->mats.Append (make_shared<ElementByElementMatrix<SCAL>> (fespace.GetNDof(), this->ma.GetNE()+this->ma.GetNSE() ));
+    auto fespace = this->fespace;
+    this->mats.Append (make_shared<ElementByElementMatrix<SCAL>> (fespace->GetNDof(), this->ma.GetNE()+this->ma.GetNSE() ));
   }
 
 
   template<class SCAL>
   shared_ptr<BaseVector> ElementByElement_BilinearForm<SCAL> :: CreateVector() const
   {
-    return make_shared<VVector<SCAL>> (this->fespace.GetNDof());
+    return make_shared<VVector<SCAL>> (this->fespace->GetNDof());
   }
 
   template<class SCAL>

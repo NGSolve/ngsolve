@@ -44,6 +44,7 @@ namespace ngcomp
 
   NGS_DLL_HEADER ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
 
+  using ngmg::Prolongation;
 
   /**
      Base class for finite element space.
@@ -67,7 +68,7 @@ namespace ngcomp
     bool print; 
 
     /// prolongation operators between multigrid levels
-    ngmg::Prolongation * prol;// = NULL;
+    shared_ptr<Prolongation> prol;// = NULL;
     /// highest multigrid-level for which Update was called (memory allocation)
     int level_updated;
 
@@ -118,11 +119,11 @@ namespace ngcomp
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    DifferentialOperator * evaluator; // = NULL; 
+    shared_ptr<DifferentialOperator> evaluator; // = NULL; 
     /// Evaluator for visualization of boundary data
-    DifferentialOperator * boundary_evaluator; // = NULL;
+    shared_ptr<DifferentialOperator> boundary_evaluator; // = NULL;
     /// Evaluator for flux
-    DifferentialOperator * flux_evaluator; // = NULL;
+    shared_ptr<DifferentialOperator> flux_evaluator; // = NULL;
 
     /// Evaluator for visualization (old style)
     shared_ptr<BilinearFormIntegrator> integrator; // = NULL;
@@ -132,7 +133,7 @@ namespace ngcomp
 
 
     /// if non-zero, pointer to low order space
-    FESpace * low_order_space; // = NULL;
+    shared_ptr<FESpace> low_order_space; 
 
     /// if directsolverclustered[i] is true, then the unknowns of domain i are clustered
     Array<bool> directsolverclustered;
@@ -146,8 +147,8 @@ namespace ngcomp
     Array<int> directfaceclusters;
     Array<int> directelementclusters;
 
-    Table<int> * element_coloring; // = NULL;
-    Table<int> * selement_coloring; // = NULL;
+    Table<int> element_coloring; // = NULL;
+    Table<int> selement_coloring; // = NULL;
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs; // = NULL;
@@ -182,7 +183,7 @@ namespace ngcomp
     int GetLevelUpdated() const { return level_updated; }
 
     const Table<int> & ElementColoring(VorB vb = VOL) const 
-    { return (vb == VOL) ? *element_coloring : *selement_coloring; }
+    { return (vb == VOL) ? element_coloring : selement_coloring; }
 
     /// print report to stream
     virtual void PrintReport (ostream & ost) const;
@@ -331,6 +332,7 @@ namespace ngcomp
     FESpace & LowOrderFESpace () { return *low_order_space; }
     /// according low-order FESpace (if available)
     const FESpace & LowOrderFESpace () const { return *low_order_space; }
+    shared_ptr<FESpace> LowOrderFESpacePtr () const { return low_order_space; }
     ///
     // void SetLowOrderSpace (bool los) { is_low_order_space = los; }
     ///
@@ -429,15 +431,14 @@ namespace ngcomp
   
   
     /// Returns multigrid-prolongation
-    virtual const ngmg::Prolongation * GetProlongation () const
-    { return prol; }
+    virtual shared_ptr<Prolongation> GetProlongation () const { return prol; }
     /// Set multigrid prolongation
     // void SetProlongation (ngmg::Prolongation * aprol)
     // { prol = aprol; }
 
 
     /// returns function-evaluator
-    const DifferentialOperator * GetEvaluator (bool vb = VOL) const
+    shared_ptr<DifferentialOperator> GetEvaluator (bool vb = VOL) const
     { 
       if (vb == BND)
 	return boundary_evaluator; 
@@ -445,7 +446,7 @@ namespace ngcomp
 	return evaluator; 
     }
 
-    const DifferentialOperator * GetFluxEvaluator () const
+    shared_ptr<DifferentialOperator> GetFluxEvaluator () const
     {
       return flux_evaluator;
     }
@@ -461,7 +462,7 @@ namespace ngcomp
 
 
     /// returns function-evaluator for boundary values
-    const DifferentialOperator * GetBoundaryEvaluator () const
+    shared_ptr<DifferentialOperator> GetBoundaryEvaluator () const
     { return boundary_evaluator; }
     shared_ptr<BilinearFormIntegrator> GetBoundaryIntegrator () const
     { return boundary_integrator; }

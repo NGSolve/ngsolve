@@ -18,7 +18,7 @@ namespace ngmg
 			   const FESpace & afespace,
 			   const BilinearForm & abiform,
 			   Smoother * asmoother,
-			   Prolongation * aprolongation)
+			   shared_ptr<Prolongation> aprolongation)
     : BaseMatrix (), ma(ama), fespace(afespace), biform(abiform), 
       smoother(asmoother), prolongation(aprolongation)
   {
@@ -44,8 +44,7 @@ namespace ngmg
   {
     if (ownsmoother)
       delete smoother;
-    if (ownprolongation)
-      delete prolongation;
+    // if (ownprolongation) delete prolongation;
     if (owncoarsegridpre)
       delete coarsegridpre;
   }

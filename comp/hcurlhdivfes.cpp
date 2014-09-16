@@ -44,7 +44,7 @@ namespace ngcomp
 
     SetDummyFE<HCurlDummyFE> ();
 
-    prol = new EdgeProlongation (*this);
+    prol = make_shared<EdgeProlongation> (*this);
     order = 1;
 
     // Integrator for shape tester 
@@ -862,10 +862,10 @@ namespace ngcomp
     loflags.SetFlag ("order", 1);
     loflags.SetFlag ("dim", dimension);
     if (iscomplex) loflags.SetFlag ("complex");
-    low_order_space = new NedelecFESpace (ma, loflags);
+    low_order_space = make_shared<NedelecFESpace> (ma, loflags);
     // low_order_space = new NedelecFESpace (ama, 1, dimension, iscomplex);
 
-    prol = new EdgeProlongation (*static_cast<NedelecFESpace*> (low_order_space));
+    prol = make_shared<EdgeProlongation> (*static_cast<NedelecFESpace*> (low_order_space.get()));
     /*
       CreateVecObject1(prol, EdgeProlongation,
       dimension, iscomplex, 
