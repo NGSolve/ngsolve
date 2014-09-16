@@ -62,30 +62,87 @@ void ExportGeom2d()
 		  self.geompoints.Append(GeomPoint<2>(p,1));
 		  return self.geompoints.Size()-1;
 	  }))
-	.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2)//, int leftdomain, int rightdomain)
+	.def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain)
 	  {
-		  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1), self.GetPoint(point_index2));
-		  SplineSegExt * seg = new SplineSegExt(*l);
-		  seg->leftdom = 1;// leftdomain;
-		  seg->rightdom = 0;// rightdomain;
+		  bp::extract<std::string> segtype(segment[0]);
+
+		  SplineSegExt * seg;
+		  if (segtype().compare("line") == 0)
+		  {
+			  bp::extract<int> point_index1(segment[1]);
+			  bp::extract<int> point_index2(segment[2]);
+			  //point_index1.check()
+
+			  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()));
+			  seg = new SplineSegExt(*l);
+		  }
+		  else if (segtype().compare("spline3") == 0)
+		  {
+			  bp::extract<int> point_index1(segment[1]);
+			  bp::extract<int> point_index2(segment[2]);
+			  bp::extract<int> point_index3(segment[3]);
+
+			  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()), self.GetPoint(point_index3()));
+			  seg = new SplineSegExt(*seg3);
+		  }
+		  else
+		  {
+			  cout << "Appended segment is not a line or a spline3" << endl;
+		  }
+		  seg->leftdom = leftdomain;
+		  seg->rightdom = rightdomain;
 		  seg->hmax = 1e99;
 		  seg->reffak = 1;
 		  seg->copyfrom = -1;
-
 		  self.AppendSegment(seg);
-	  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0) )
-	.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2, int point_index3)//, int leftdomain, int rightdomain)
-	  {
-		  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1), self.GetPoint(point_index2), self.GetPoint(point_index3));
-		  SplineSegExt * seg = new SplineSegExt(*seg3);
-		  seg->leftdom = 1;// leftdomain;
-		  seg->rightdom = 0;// rightdomain;
+	  }), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0))
+	.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, bp::list point_indices, int leftdomain, int rightdomain)
+		{
+		  int npts = bp::len(point_indices);
+		  SplineSegExt * seg;
+		  //int a = bp::extract<int>(point_indices[0]);
+		  if (npts == 2)
+		  {
+			  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(bp::extract<int>(point_indices[0])), self.GetPoint(bp::extract<int>(point_indices[1])));
+			  seg = new SplineSegExt(*l);
+			  
+		  }
+		  else if (npts == 3)
+		  {
+			  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(bp::extract<int>(point_indices[0])), self.GetPoint(bp::extract<int>(point_indices[1])), self.GetPoint(bp::extract<int>(point_indices[2])));
+			  seg = new SplineSegExt(*seg3);
+
+		  }
+		  seg->leftdom = leftdomain;
+		  seg->rightdom = rightdomain;
 		  seg->hmax = 1e99;
 		  seg->reffak = 1;
 		  seg->copyfrom = -1;
-
 		  self.AppendSegment(seg);
-	  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("point_index3"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0 ) )
+		}), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0) )
+	//.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2)//, int leftdomain, int rightdomain)
+	//  {
+	//	  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1), self.GetPoint(point_index2));
+	//	  SplineSegExt * seg = new SplineSegExt(*l);
+	//	  seg->leftdom = 1;// leftdomain;
+	//	  seg->rightdom = 0;// rightdomain;
+	//	  seg->hmax = 1e99;
+	//	  seg->reffak = 1;
+	//	  seg->copyfrom = -1;
+
+	//	  self.AppendSegment(seg);
+	//  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0) )
+	//.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, int point_index1, int point_index2, int point_index3)//, int leftdomain, int rightdomain)
+	//  {
+	//	  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1), self.GetPoint(point_index2), self.GetPoint(point_index3));
+	//	  SplineSegExt * seg = new SplineSegExt(*seg3);
+	//	  seg->leftdom = 1;// leftdomain;
+	//	  seg->rightdom = 0;// rightdomain;
+	//	  seg->hmax = 1e99;
+	//	  seg->reffak = 1;
+	//	  seg->copyfrom = -1;
+	//	  self.AppendSegment(seg);
+	//  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("point_index3"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0 ) )
 	.def("PlotData", FunctionPointer([](SplineGeometry2d &self)
 	  {
 		  Box<2> box(self.GetBoundingBox());
@@ -95,34 +152,37 @@ void ExportGeom2d()
 		  bp::tuple ylim = bp::make_tuple(box.PMin()(1) - 0.1*ydist, box.PMax()(1) + 0.1*ydist);
 
 		  bp::list xpoints, ypoints;
-		  GeomPoint<2> point = self.splines[0]->StartPI();
-		  xpoints.append(point(0));
-		  ypoints.append(point(1));
 
 		  for (int i = 0; i < self.splines.Size(); i++)
 		  {
+			  bp::list xp, yp;
 			  if (self.splines[i]->GetType().compare("line")==0)
 			  {
-				  GeomPoint<2> point = self.splines[i]->EndPI();
-				  xpoints.append(point(0));
-				  ypoints.append(point(1));
+				  GeomPoint<2> p1 = self.splines[i]->StartPI();
+				  GeomPoint<2> p2 = self.splines[i]->EndPI();
+				  xp.append(p1(0));
+				  xp.append(p2(0));
+				  yp.append(p1(1));
+				  yp.append(p2(1));
 			  }
 			  else if (self.splines[i]->GetType().compare("spline3")==0)
 			  {
 				  double len = self.splines[i]->Length();
 				  int n = floor(len/(0.05*min(xdist,ydist)));
-				  //cout << n << endl;
-				  for (int j = 1; j <= n; j++)
+				  
+				  for (int j = 0; j <= n; j++)
 				  {
 					  GeomPoint<2> point = self.splines[i]->GetPoint(j*1./n);
-					  xpoints.append(point(0));
-					  ypoints.append(point(1));
+					  xp.append(point(0));
+					  yp.append(point(1));
 				  }
 			  }
 			  else
 			  {
 				  cout << "spline is neither line nor spline3" << endl;
 			  }
+			  xpoints.append(xp);
+			  ypoints.append(yp);
 				  
 		  }
 		  return bp::tuple(bp::make_tuple(xlim, ylim, xpoints, ypoints));
