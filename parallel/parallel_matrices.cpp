@@ -419,9 +419,8 @@ namespace ngla
     const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
     if (!dmat) return NULL;
 
-    bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (mat.get()) != NULL;
-
 #ifdef USE_MUMPS
+    bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (mat.get()) != NULL;
     if (mat->GetInverseType() == MUMPS)
       return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, paralleldofs, symmetric);
     else 
