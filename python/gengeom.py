@@ -1,10 +1,5 @@
-from nglib.meshing import *
-from nglib.geom2d import *
 
 geom = SplineGeometry()
-SplineGeometry.Plot = plotgeom
-SplineGeometry.ShowPoints = plotpointindex
-SplineGeometry.ShowDomains = plotdomainindex
 
 # Define Points
 pi1 = geom.AppendPoint(0,0)
@@ -13,10 +8,10 @@ pi3 = geom.AppendPoint(1,1)
 pi4 = geom.AppendPoint(0,1)
 
 # Define Segments
-geom.AppendSegment(pi1,pi2)
-geom.AppendSegment(pi2,pi3)
-geom.AppendSegment(pi3,pi4)
-geom.AppendSegment(pi4,pi1)
+geom.AppendSegment([pi1,pi2])
+geom.AppendSegment([pi2,pi3])
+geom.AppendSegment([pi3,pi4])
+geom.AppendSegment([pi4,pi1])
 
 # Plot Geometry
 geom.Plot()
