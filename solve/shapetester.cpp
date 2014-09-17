@@ -26,7 +26,7 @@ namespace ngsolve
   {
   protected:
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
     BilinearForm * bfa;
     ///

@@ -10,9 +10,9 @@ namespace ngsolve
     ///
     BilinearForm * bfa;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gferr;
+    shared_ptr<GridFunction> gferr;
     ///
     string filename; 
     ///
@@ -154,18 +154,18 @@ namespace ngsolve
     /// use flux from bfa1
     BilinearForm * bfa1;
     /// first gridfunction
-    GridFunction * gfu1;
+    shared_ptr<GridFunction> gfu1;
     /// use flux from bfa2
     BilinearForm * bfa2;
     /// second gridfunction
-    GridFunction * gfu2;
+    shared_ptr<GridFunction> gfu2;
     /// use coefficient function ( coef_real, i * coef_imag )
     shared_ptr<CoefficientFunction> coef_real;
     /// imaginary part of function
     shared_ptr<CoefficientFunction> coef_imag;
 
     /// difference function
-    GridFunction * gfdiff;
+    shared_ptr<GridFunction> gfdiff;
     /// output to file
     string filename; 
     ofstream * file;
@@ -348,9 +348,9 @@ namespace ngsolve
     ///
     BilinearForm * bfa;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gferr;
+    shared_ptr<GridFunction> gferr;
   public:
     NumProcRTZZErrorEstimator (PDE & apde, const Flags & flags);
     virtual ~NumProcRTZZErrorEstimator();
@@ -445,9 +445,9 @@ namespace ngsolve
     ///
     LinearForm * lff;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gferr;
+    shared_ptr<GridFunction> gferr;
     ///
     FESpace * vtest;
   public:
@@ -528,9 +528,9 @@ namespace ngsolve
   {
   protected:
     ///
-    GridFunction * gferr;
+    shared_ptr<GridFunction> gferr;
     ///
-    GridFunction * gferr2;
+    shared_ptr<GridFunction> gferr2;
     ///
     int minlevel;
     ///
@@ -754,11 +754,11 @@ namespace ngsolve
     ///
     BilinearForm * bfa;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gfflux;
+    shared_ptr<GridFunction> gfflux;
     ///
-    GridFunction * gferr;
+    shared_ptr<GridFunction> gferr;
   public:
     NumProcPrimalDualErrorEstimator (PDE & apde, const Flags & flags);
     virtual ~NumProcPrimalDualErrorEstimator() { ; }

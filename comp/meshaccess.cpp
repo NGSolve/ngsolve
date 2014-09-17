@@ -335,7 +335,7 @@ namespace ngcomp
   MeshAccess :: ~MeshAccess ()
   {
     // delete mesh;
-    Ng_LoadGeometry("");
+    // Ng_LoadGeometry("");
   }
 
 

@@ -16,7 +16,7 @@ namespace ngsolve
     BilinearForm * bfa;
     BilinearForm * bfm;
 
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     Preconditioner * pre;
     int num;
 

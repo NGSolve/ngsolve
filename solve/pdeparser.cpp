@@ -825,7 +825,7 @@ namespace ngsolve
                 {
                   cout << "add GridFunction assignment" << endl;
                   string gfname = scan->GetStringValue();
-                  GridFunction * gf = pde->GetGridFunction(gfname);
+                  shared_ptr<GridFunction> gf = pde->GetGridFunction(gfname);
                   scan -> ReadNext(); // '='
 
                   PDEEvalFunction * fun = new PDEEvalFunction(*pde);
@@ -1570,8 +1570,8 @@ namespace ngsolve
 			  coeffs[i] = pde->CoefficientFunctionPtr (scan->GetStringValue(), 1);
 			  if (!coeffs[i])
 			    {
-                              GridFunction * gf = pde->GetGridFunction (scan->GetStringValue(), 1);
-			      if (gf) coeffs[i] = shared_ptr<CoefficientFunction> (new GridFunctionCoefficientFunction (*gf));
+                              shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);
+			      if (gf) coeffs[i] = make_shared<GridFunctionCoefficientFunction> (*gf);
 			    }
 
                           if (!coeffs[i])
@@ -1776,9 +1776,9 @@ namespace ngsolve
 			  coeffs[i] = pde->CoefficientFunctionPtr (scan->GetStringValue(),true);
 			  if (!coeffs[i])
 			    {
-			      GridFunction * gf = pde->GetGridFunction (scan->GetStringValue(), 1);
+			      shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);
 			      if (gf)
-				coeffs[i] = shared_ptr<CoefficientFunction>(new GridFunctionCoefficientFunction (*gf));
+				coeffs[i] = make_shared<GridFunctionCoefficientFunction> (*gf);
 			    }
 
                           if (!coeffs[i])

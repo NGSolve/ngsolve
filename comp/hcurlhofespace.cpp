@@ -100,11 +100,8 @@ namespace ngcomp
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     */
     low_order_space = make_shared<NedelecFESpace> (ma, loflags);
-
-    if (low_order_space)
-      prol = make_shared<ngmg::EdgeProlongation> (*static_cast<NedelecFESpace*> (low_order_space.get()));
-    
- 
+    prol = make_shared<ngmg::EdgeProlongation> 
+      (*static_cast<NedelecFESpace*> (low_order_space.get()));
    
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     uniform_order_face = int (flags.GetNumFlag ("orderface", -1));
@@ -119,20 +116,11 @@ namespace ngcomp
        
     augmented = int (flags.GetNumFlag ("augmented", 0));
 
-    /*    if (flags.GetDefineFlag ("optext"))
-	  { 
-	  trig = new HCurlHighOrderTrig<TrigExtensionMin> (order);
-	  tet =  new HCurlHighOrderTet<TrigExtensionMin> (order);
-	  prism =  new HCurlHighOrderPrism<TrigExtensionMin> (order);
-	  }
-	  else
-    */
-
 
     // Evaluator 
     static ConstantCoefficientFunction one(1);
     integrator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
-    if ( !discontinuous )
+    if (!discontinuous)
       boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one); 
     
     if (ma.GetDimension() == 2)
@@ -149,10 +137,7 @@ namespace ngcomp
     vefc_dofblocks = Vec<4,int> (0,2,1,1);
   }
   
-  HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace ()
-  {
-    ;
-  }
+  HCurlHighOrderFESpace :: ~HCurlHighOrderFESpace () { ; }
 
   void HCurlHighOrderFESpace :: Update(LocalHeap & lh)
   {

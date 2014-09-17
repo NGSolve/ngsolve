@@ -119,16 +119,16 @@ namespace ngcomp
     FiniteElement * dummy_point; // = new DummyFE<ET_POINT>();
 
     /// Evaluator for visualization (new style)
-    shared_ptr<DifferentialOperator> evaluator; // = NULL; 
+    shared_ptr<DifferentialOperator> evaluator;
     /// Evaluator for visualization of boundary data
-    shared_ptr<DifferentialOperator> boundary_evaluator; // = NULL;
+    shared_ptr<DifferentialOperator> boundary_evaluator; 
     /// Evaluator for flux
-    shared_ptr<DifferentialOperator> flux_evaluator; // = NULL;
+    shared_ptr<DifferentialOperator> flux_evaluator; 
 
     /// Evaluator for visualization (old style)
-    shared_ptr<BilinearFormIntegrator> integrator; // = NULL;
+    shared_ptr<BilinearFormIntegrator> integrator; 
     /// Evaluator for visualization of boundary data
-    shared_ptr<BilinearFormIntegrator> boundary_integrator; // = NULL;
+    shared_ptr<BilinearFormIntegrator> boundary_integrator; 
 
 
 
