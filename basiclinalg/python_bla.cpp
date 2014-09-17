@@ -331,7 +331,9 @@ void ExportNgbla() {
         .add_property("w", &FMD::Width )
         .add_property("T", FunctionPointer( [](FMD &self) { return Matrix<double>(Trans(self)); }) ) 
         .add_property("A", FunctionPointer( [](FMD &self) { return Vector<double>(FlatVector<double>( self.Width()* self.Height(), &self(0,0)) ); }) ) 
+        .def("__len__", FunctionPointer( []( FMD& self) { return self.Height();} ) )
         ;
+
 
     bp::class_<Matrix<double>, bp::bases<FMD> >("MatrixD")
         .def(bp::init<int, int>())
@@ -421,6 +423,7 @@ void ExportNgbla() {
         .def("__rmul__" , FunctionPointer( [](FMC &self, double s) { return Matrix<Complex>(s*self); }) )
         .def("Height", &FMC::Height )
         .def("Width", &FMC::Width )
+        .def("__len__", FunctionPointer( []( FMC& self) { return self.Height();} ) )
         .add_property("h", &FMC::Height )
         .add_property("w", &FMC::Width )
         .add_property("A", FunctionPointer( [](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); })  )
