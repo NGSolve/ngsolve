@@ -63,3 +63,10 @@ for i in range(10):
         B[k,i] = complex(k*k+i+1, i+1+k)
 
 v = A*w
+
+
+# Create numpy matrix from Matrix
+from numpy import *
+AA = mat(A)
+xx = mat(x).T
+print( AA*xx - mat(A*x).T )
