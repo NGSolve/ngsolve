@@ -24,14 +24,13 @@ static void Init( const bp::slice &inds, int len, int &start, int &step, int &n 
 
 }
 
+
 template <typename TMAT, typename TNEW=TMAT>
 struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> > {
     // TODO: correct typedefs
     typedef typename TMAT::TSCAL TSCAL;
     typedef Vector<TSCAL> TROW;
     typedef Vector<TSCAL> TCOL;
-//     typedef decltype(TMAT::Row(0)) TROW;
-//     typedef decltype(TMAT::Col(0)) TCOL;
 
     template <class Tclass>
     void visit(Tclass& c) const {
@@ -47,7 +46,6 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
         c.def("__setitem__", &PyMatAccess<TMAT, TNEW>::RowSetSlice);
         c.def("__setitem__", &PyMatAccess<TMAT, TNEW>::RowSetSliceScal);
     }
-
 
     static bp::object GetTuple( TMAT & self, bp::tuple t) {
         bp::object rows = t[0];
@@ -331,6 +329,8 @@ void ExportNgbla() {
         .def("Width", &FMD::Width )
         .add_property("h", &FMD::Height )
         .add_property("w", &FMD::Width )
+        .add_property("T", FunctionPointer( [](FMD &self) { return Matrix<double>(Trans(self)); }) ) 
+        .add_property("A", FunctionPointer( [](FMD &self) { return Vector<double>(FlatVector<double>( self.Width()* self.Height(), &self(0,0)) ); }) ) 
         ;
 
     bp::class_<Matrix<double>, bp::bases<FMD> >("MatrixD")
@@ -410,6 +410,9 @@ void ExportNgbla() {
         .def("__add__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }) )
         .def("__sub__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self*m); }) )
+        .def("__radd__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }) )
+        .def("__rsub__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }) )
+        .def("__rmul__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(m*self); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, FVC &v) { return Vector<Complex>(self*v); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, FVD &v) { return Vector<Complex>(self*v); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, Complex s) { return Matrix<Complex>(s*self); }) )
@@ -420,6 +423,22 @@ void ExportNgbla() {
         .def("Width", &FMC::Width )
         .add_property("h", &FMC::Height )
         .add_property("w", &FMC::Width )
+        .add_property("A", FunctionPointer( [](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); })  )
+        .add_property("T", FunctionPointer( [](FMC &self) { return Matrix<Complex>(Trans(self)); }) ) 
+        .add_property("C", FunctionPointer( [](FMC &self) { 
+            Matrix<Complex> result( self.Height(), self.Width() );
+            for (int i=0; i<self.Height(); i++)
+                for (int j=0; j<self.Width(); j++) 
+                    result(i,j) = Conj(self(i,j));
+            return result;
+            }) ) 
+        .add_property("H", FunctionPointer( [](FMC &self) { 
+            Matrix<Complex> result( self.Width(), self.Height() );
+            for (int i=0; i<self.Height(); i++)
+                for (int j=0; j<self.Width(); j++) 
+                    result(j,i) = Conj(self(i,j));
+            return result;
+            }) ) 
         ;
 
     bp::class_<Matrix<Complex>, bp::bases<FMC> >("MatrixC")
