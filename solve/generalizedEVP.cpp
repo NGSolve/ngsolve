@@ -21,7 +21,7 @@ namespace ngsolve
   protected:
     BilinearForm * bfa;
     BilinearForm * bfm;
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     Preconditioner * pre;
 
     int maxsteps, nr, maxnewton;

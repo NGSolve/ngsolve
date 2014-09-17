@@ -17,7 +17,7 @@ namespace ngsolve
     ///
     LinearForm * lff;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
     Preconditioner * pre;
     ///
@@ -425,7 +425,7 @@ namespace ngsolve
     ///
     LinearForm * lff;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
     Preconditioner * pre;
     ///

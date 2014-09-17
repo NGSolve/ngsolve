@@ -1106,6 +1106,8 @@ namespace ngfem
     static INLINE S P0(S x)  { return S(-1.0); }
     template <class S>
     static INLINE S P1(S x)  { return x; }
+    template <class S>
+    static INLINE S Pm1(S x)  { return S(0.0); }
     
     static INLINE double A (int i) { return (2*i-3)/double(i); }
     static INLINE double B (int i) { return 0; }

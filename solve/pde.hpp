@@ -253,12 +253,14 @@ namespace ngsolve
     FESpace * GetFESpace (const string & name, bool opt = 0);
     shared_ptr<FESpace> FESpacePtr (const string & name, bool opt = 0) const;
     ///
+    /*
     GridFunction * GetGridFunction (const string & name, bool opt = 0)
     {
       return GridFunctionPtr(name, opt).get();
     }
+    */
     ///
-    shared_ptr<GridFunction> GridFunctionPtr (const string & name, bool opt = 0) const;
+    shared_ptr<GridFunction> GetGridFunction (const string & name, bool opt = 0) const;
     ///
     BilinearForm * GetBilinearForm (const string & name, bool opt = 0);
     ///
@@ -274,7 +276,7 @@ namespace ngsolve
     ///
     const FESpace * GetFESpace (const string & name, bool opt = 0) const;
     ///
-    const GridFunction * GetGridFunction (const string & name, bool opt = 0) const;
+    // const GridFunction * GetGridFunction (const string & name, bool opt = 0) const;
     ///
     const BilinearForm * GetBilinearForm (const string & name, bool opt = 0) const;
     ///

@@ -354,7 +354,7 @@ namespace ngsolve
   }
 
   shared_ptr<GridFunction> PDE :: 
-  GridFunctionPtr (const string & name, bool opt) const
+  GetGridFunction (const string & name, bool opt) const
   { 
     if (gridfunctions.Used(name))
       return gridfunctions[name];
@@ -422,7 +422,8 @@ namespace ngsolve
     throw Exception (string("FESpace '") + name + "' not defined\n");
   }
 
-  const GridFunction * PDE :: 
+  /*
+  shared_ptr<GridFunction> PDE :: 
   GetGridFunction (const string & name, bool opt) const
   { 
     if (gridfunctions.Used(name))
@@ -431,7 +432,7 @@ namespace ngsolve
     if (opt) return NULL;
     throw Exception (string("Grid-function '") + name + "' not defined\n");
   }
-
+  */
   const BilinearForm * PDE :: 
   GetBilinearForm (const string & name, bool opt) const
   { 

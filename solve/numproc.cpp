@@ -55,9 +55,9 @@ namespace ngsolve
     ///
     BilinearForm * bfa;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gfflux;
+    shared_ptr<GridFunction> gfflux;
     /// compute flux, not gradient
     bool applyd;
     ///
@@ -183,7 +183,7 @@ namespace ngsolve
     NumProcSetValues (PDE & apde, const Flags & flags)
     : NumProc (apde)
     {
-      gfu = pde.GridFunctionPtr (flags.GetStringFlag ("gridfunction", ""));
+      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       coef = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
@@ -261,7 +261,7 @@ namespace ngsolve
     ///
     BilinearForm * bfa;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     /// compute flux, not gradient
     bool applyd;
     ///
@@ -355,9 +355,9 @@ namespace ngsolve
     */
 
     if (!bfa->GetFESpace().IsComplex())
-      vis = new VisualizeGridFunction<double> (ma, gfu, bfi2d, bfi3d, applyd);
+      vis = new VisualizeGridFunction<double> (ma, gfu.get(), bfi2d, bfi3d, applyd);
     else
-      vis = new VisualizeGridFunction<Complex> (ma, gfu, bfi2d, bfi3d, applyd);
+      vis = new VisualizeGridFunction<Complex> (ma, gfu.get(), bfi2d, bfi3d, applyd);
 
     Ng_SolutionData soldata;
     Ng_InitSolutionData (&soldata);
@@ -495,9 +495,9 @@ namespace ngsolve
     ///
     LinearForm * lff;
     ///
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
-    GridFunction * gfv;
+    shared_ptr<GridFunction> gfv;
     ///
     Vector<double> point;
     ///
@@ -1030,7 +1030,7 @@ namespace ngsolve
   class NumProcAnalyze : public NumProc
   {
   protected:
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     ///
     string variablename;
     ///
@@ -1202,7 +1202,7 @@ namespace ngsolve
 
 	// const FESpace & fes = gfu->GetFESpace();
 
-	VisualizeGridFunction<double> vgfu(pde.GetMeshAccess(),gfu,
+	VisualizeGridFunction<double> vgfu(pde.GetMeshAccess(),gfu.get(),
 					   BoundaryIntegrator_ptr,
 					   Integrator_ptr,false);
 
@@ -2154,7 +2154,7 @@ namespace ngsolve
   class NumProcLoadSolution2 : public NumProc
   {
   protected:
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     string filename;
 
   public:
@@ -2183,7 +2183,7 @@ namespace ngsolve
   class NumProcSaveSolution2 : public NumProc
   {
   protected:
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
     string filename;
 
   public:
@@ -2213,7 +2213,7 @@ namespace ngsolve
   {
   protected:
     BilinearForm * bf;
-    GridFunction * gfu;
+    shared_ptr<GridFunction> gfu;
 
   public:
     NumProcAssembleLinearization (PDE & apde, const Flags & flags)
@@ -2593,7 +2593,7 @@ namespace ngsolve
   class NumProcGenerateOne : public NumProc
   {
   protected:
-    GridFunction * gfone;
+    shared_ptr<GridFunction> gfone;
     
 
   public:
@@ -2638,8 +2638,8 @@ namespace ngsolve
     const NodalFESpace * h1fespace = dynamic_cast<const NodalFESpace *>(&gfone->GetFESpace());
     const L2HighOrderFESpace * l2hofespace = dynamic_cast<const L2HighOrderFESpace *>(&gfone->GetFESpace());
     
-    S_GridFunction<double> * gfoned = dynamic_cast<S_GridFunction<double> *>(gfone);
-    S_GridFunction<Complex> * gfonec = dynamic_cast<S_GridFunction<Complex> *>(gfone);
+    S_GridFunction<double> * gfoned = dynamic_cast<S_GridFunction<double> *>(gfone.get());
+    S_GridFunction<Complex> * gfonec = dynamic_cast<S_GridFunction<Complex> *>(gfone.get());
 
     if(hcurlhofespace)
       {
@@ -3021,7 +3021,7 @@ namespace ngsolve
   class NumProcClearGridFunctions : public NumProc
   {
   protected:
-    Array<GridFunction *> gf;
+    Array<shared_ptr<GridFunction>> gf;
 
   public:
     NumProcClearGridFunctions (PDE & apde, const Flags & flags) : NumProc(apde)

@@ -987,7 +987,7 @@ int NGS_GetData (ClientData clientData,
 	}
       else if (strcmp (argv[1], "gridfunctionspace") == 0)
 	{
-	  ngcomp::GridFunction * gf = pde->GetGridFunction(argv[2]);
+	  shared_ptr<ngcomp::GridFunction> gf = pde->GetGridFunction(argv[2]);
 	  if (gf)
 	    sprintf (buf, "%s", 
 		     gf->GetFESpace().GetName().c_str()); 
