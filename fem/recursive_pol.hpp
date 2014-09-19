@@ -409,6 +409,7 @@ namespace ngfem
     template <class S, class T>
     INLINE static void Eval (int n, S x, T && values) 
     {
+      if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
@@ -438,7 +439,7 @@ namespace ngfem
       S p1 = c * REC::P0(x);
       S p2 = c * REC::Pm1(x);
       
-      if (n < 0) return;
+      // if (n < 0) return;
 
       values[0] = p1;
       for (int i = 1; i < n; i+=2)
@@ -490,6 +491,7 @@ namespace ngfem
     template <class S, class T>
     INLINE static void Eval1Assign (int n, S x, T && values)
     {
+      if (n < 0) return;
       EvalMult1Assign (n, x, 1.0, values);
     }
 
@@ -516,18 +518,21 @@ namespace ngfem
     template <class S, class Sy, class T>
     INLINE static void EvalScaled (int n, S x, Sy y, T && values)
     {
+      if (n < 0) return;
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
     INLINE static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
     {
+      /*
       S p1, p2;
+      
+      // if (n < 0) return;
 
-      if (n < 0) return;
       values[0] = p2 = c * REC::P0(x);
-      if (n < 1) return;
 
+      if (n < 1) return;
       values[1] = p1 = c * REC::P1(x);
 
       for (int i = 2; i <= n; i++)
@@ -535,12 +540,22 @@ namespace ngfem
 	  EvalScaledNext2 (i, x, y, p1, p2);
 	  values[i] = p1;
 	}
+      */
+
+      S p1, p2;
+      
+      p2 = c * REC::Pm1(x,y);
+      values[0] = p1 = c * REC::P0(x);
+
+      for (int i = 1; i <= n; i++)
+        values[i] = EvalScaledNext2 (i, x, y, p1, p2);
     }
 
 
     template <class S, class Sy, class T>
     INLINE static void EvalScaled1Assign (int n, S x, Sy y, T && values)
     {
+      if (n  < 0) return;
       EvalScaledMult1Assign (n, x, y, 1.0, values);
     }
 
@@ -548,7 +563,8 @@ namespace ngfem
     INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
     {
       int i = 0;
-      S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
+      S p2 = REC::ZERO_Pm1 ? S(0.0) : c * REC::Pm1(x);
+      S p1 = c*REC::P0(x);
       while (true)
         {
 	  values[i] = p1;
@@ -592,6 +608,7 @@ namespace ngfem
     }
 
     enum { ZERO_B = 0 };
+    enum { ZERO_Pm1 = 1 };
   };
 
 
@@ -803,12 +820,14 @@ namespace ngfem
     template <class S, class T>
     INLINE void Eval (int n, S x, T && values) const
     {
+      if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
     template <class S, class T>
     INLINE void Eval1Assign (int n, S x, T && values) const
     {
+      if (n < 0) return;
       EvalMult1Assign (n, x, 1.0, values);
     }
 
@@ -859,22 +878,25 @@ namespace ngfem
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
 	}
       */
+
       S p1 = c * static_cast<const REC&>(*this).P0(x);
-      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      S p2;
+      if (REC::ZERO_Pm1)
+        p2 = S(0.0);
+      else
+        p2 = c * static_cast<const REC&>(*this).Pm1(x);
       
-      if (n < 0) return;
+      // if (n < 0) return;
       values[0] = p1;
       
-      // int i = 1;
-      for (int i = 1; i < n; i+=2)
+      int i = 1;
+      for ( ; i < n; i+=2)
 	{	
-          // values[i] = EvalNext2 (i, x, p1, p2);
-          // values[i+1] = EvalNext2 (i+1, x, p1, p2);
 	  values[i] = EvalNextTicTac2 (i, x, p2, p1);
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p1, p2);
 	}
       if (n & 1)
-        values[n] = EvalNextTicTac2 (n, x, p2, p1);
+        values[i] = EvalNextTicTac2 (i, x, p2, p1);
       
       /*
       S p1 = c * static_cast<const REC&>(*this).P0(x);
@@ -888,17 +910,22 @@ namespace ngfem
     }
 
     template <class S, class Sc, class T>
-    INLINE void EvalMult1Assign (int n, S x, Sc c, T && values)
+    INLINE void EvalMult1Assign (int n, S x, Sc c, T && values) const
     {
       /*
       S p1(0.0), p2(0.0); // initialize for surpressing warning
       for (int i = 0; i <= n; i++)
         values[i] = EvalNextMult (i, x, c, p1, p2);
       */
-      int i = 0;
-      // S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
+
       S p1 = c * static_cast<const REC&>(*this).P0(x);
-      S p2 = c * static_cast<const REC&>(*this).Pm1(x);
+      S p2;
+      if (REC::ZERO_Pm1)
+        p2 = S(0.0);
+      else
+        p2 = c * static_cast<const REC&>(*this).Pm1(x);
+
+      int i = 0;
       while (true)
         {
 	  values[i] = p1;
@@ -958,6 +985,7 @@ namespace ngfem
     }
 
     enum { ZERO_B = 0 };
+    enum { ZERO_Pm1 = 1 };
   };
 
 
@@ -1017,6 +1045,8 @@ namespace ngfem
 
     template <class S>
     static INLINE double Pm1(S x)  { return 0.0; }
+    template <class S, class Sy>
+    static INLINE double Pm1(S x, Sy y)  { return 0.0; }
     template <class S>
     static INLINE double P0(S x)  { return 1.0; }
     template <class S>
@@ -1067,6 +1097,8 @@ namespace ngfem
     static INLINE S P1(S x)  { return -0.5*x; }
     template <class S>
     static INLINE S Pm1(S x)  { return 0; }
+    template <class S, class Sy>
+    static INLINE S Pm1(S x, Sy y)  { return 0; }
 
 #ifndef __CUDA_ARCH__    
     static INLINE double A (int i) { return coefs[i][0]; } 
@@ -1129,11 +1161,14 @@ namespace ngfem
     }
 
     template <class S>
-    static INLINE S Pm1(S x)  { return x; }
-    template <class S>
     static INLINE double P0(S x)  { return 1.0; }
     template <class S>
     static INLINE S P1(S x)  { return x; }
+    enum { ZERO_Pm1 = 0 };
+    template <class S>
+    static INLINE S Pm1(S x)  { return x; }
+    template <class S, class Sy>
+    static INLINE S Pm1(S x, Sy y)  { return x; }
     
     static INLINE double A (int i) { return 2; } 
     static INLINE double B (int i) { return 0; }
@@ -1221,18 +1256,18 @@ namespace ngfem
   {
   public:
 #ifndef __CUDA_ARCH__
-    static Array< Vec<3> > coefs;
-    static int maxn, maxalpha;
+    static Array< Vec<4> > coefs;
+    static int maxnp, maxalpha;
 #endif
     int alpha;
 
-    Vec<3> * coefsal;
+    Vec<4> * coefsal;
   public:
     INLINE JacobiPolynomialAlpha (int a) : alpha(a) 
     { 
-      // offset = alpha*(maxn+1);
+      // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
-      coefsal = &coefs[alpha*(maxn+1)];
+      coefsal = &coefs[alpha*maxnp];
 #else
       // coefsal = &jacobialpha_coefs[alpha*(jacobialpha_maxn+1)];      
 #endif
@@ -1244,7 +1279,7 @@ namespace ngfem
     { 
       // offset = alpha*(maxn+1);
 #ifndef __CUDA_ARCH__
-      coefsal = &coefs[alpha*(maxn+1)];
+      coefsal = &coefs[alpha*maxnp];
 #endif
       Eval (n, x, values);
     }
@@ -1375,10 +1410,10 @@ class IntJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntJacobiPo
 class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<IntegratedJacobiPolynomialAlpha>
   {
   public:
-    static Array< Vec<3> > coefs;
+    static Array< Vec<4> > coefs;
     int alpha;
     static int maxn, maxalpha;
-    Vec<3> * coefsal;
+    Vec<4> * coefsal;
 
   public:
     IntegratedJacobiPolynomialAlpha (int a) : alpha(a) 

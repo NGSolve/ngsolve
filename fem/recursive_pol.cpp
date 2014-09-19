@@ -62,9 +62,9 @@ namespace ngfem
 
 
 
-  int JacobiPolynomialAlpha :: maxn;
+  int JacobiPolynomialAlpha :: maxnp;
   int JacobiPolynomialAlpha :: maxalpha;
-  Array< Vec<3> > JacobiPolynomialAlpha :: coefs;
+  Array< Vec<4> > JacobiPolynomialAlpha :: coefs;
 
 
   void JacobiPolynomialAlpha :: Calc (int n, int alpha)
@@ -88,7 +88,7 @@ namespace ngfem
             coefs[a*(n+1)+1][2] = 0.0;
           }
 
-        maxn = n;
+        maxnp = n+1;
         maxalpha = alpha;
       }
   }
@@ -97,7 +97,7 @@ namespace ngfem
 
   int IntegratedJacobiPolynomialAlpha :: maxn;
   int IntegratedJacobiPolynomialAlpha :: maxalpha;
-  Array< Vec<3> > IntegratedJacobiPolynomialAlpha :: coefs;
+  Array< Vec<4> > IntegratedJacobiPolynomialAlpha :: coefs;
 
 
   void IntegratedJacobiPolynomialAlpha :: Calc (int n, int alpha)
