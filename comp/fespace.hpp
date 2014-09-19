@@ -152,7 +152,8 @@ namespace ngcomp
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs; // = NULL;
-    
+
+    bool no_low_order_space;
   public:
     Vec<4,int> vefc_dofblocks;  // = 2;
     string type;
