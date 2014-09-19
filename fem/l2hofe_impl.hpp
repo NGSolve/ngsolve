@@ -373,6 +373,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       lamis[i] = lami[sort[i]];
 
+
     /*
     ArrayMem<Tx, 20> memx(sqr(order+1));
     ArrayMem<Tx, 20> memy(sqr(order+1));
@@ -398,38 +399,8 @@ namespace ngfem
       for (int j = 0; j <= order-i; j++)
         for (int k = 0; k <= order-i-j; k++, ii++)
           shape[ii] = polsz(k) * polsy(k, j) * polsx(j+k, i);
-
-
     */
 
-
-
-    /*
-#ifdef VLA
-    // Tx mem[2*order+2];
-    // Tx * polsy = &mem[0];
-    // Tx * polsz = &mem[order+1];
-#else
-    // VectorMem<20, Tx> polsy(order+1);
-    // VectorMem<20, Tx> polsz(order+1);
-#endif
-
-    LegendrePolynomial leg;
-    leg.EvalScaled (order, lamis[2]-lamis[3], lamis[2]+lamis[3], polsz);
-
-    for (int k = 0, ii = 0; k <= order; k++)
-      {
-        JacobiPolynomialAlpha jac(2*k+1);
-        jac.EvalScaledMult (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polsz[k], polsy);
-
-        for (int j = 0; j <= order-k; j++)
-          {
-            JacobiPolynomialAlpha jac(2*(j+k)+2);
-            jac.EvalMult1Assign (order-k-j, 2*lamis[0]-1, polsy[j], shape+ii);
-            ii += order-k-j+1;
-          }
-      }
-    */
 
     int ii = 0;
     int order = this->order;
@@ -444,16 +415,12 @@ namespace ngfem
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                  /*
-                                  jac.EvalMult(this->order - k - j, 2 * lamis[0] - 1, polsy, shape + ii);
-                                  ii += this->order-k-j+1;
-                                  */
-                                  jac.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
-                                                      SBLambda([&](int j, Tx val)
-                                                               {
-                                                                 shape[ii] = val; 
-                                                                 ii++;
-                                                               }));
+                                  jac.EvalMult(order - k - j, 2 * lamis[0] - 1, polsy, 
+                                               SBLambda([&](int j, Tx val)
+                                                        {
+                                                          shape[ii] = val; 
+                                                          ii++;
+                                                        }));
                                   
                                 }));
                  }));
