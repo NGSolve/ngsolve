@@ -46,6 +46,7 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
+    no_low_order_space = flags.GetDefineFlag("no_low_order_space");
     if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
 lot of new non-zero entries in the matrix!\n" << endl;

@@ -92,7 +92,8 @@ namespace ngcomp
       loflags.SetFlag ("dirichlet", flags.GetNumListFlag ("dirichlet"));
     if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
 
-    low_order_space = make_shared<NodalFESpace> (ma, loflags);
+    if (!no_low_order_space)
+      low_order_space = make_shared<NodalFESpace> (ma, loflags);
     switch (ma.GetDimension())
       {
       case 1:
