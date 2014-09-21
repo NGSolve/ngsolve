@@ -35,7 +35,8 @@ a.Assemble()
 inv = a.mat.Inverse(v.FreeDofs())
 u.vec.data = inv * f.vec
 
-sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6)]
+sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) ]
+# sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
 
 
 

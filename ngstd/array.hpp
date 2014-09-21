@@ -11,6 +11,7 @@
 #define CHECK_RANGE
 #endif
 
+#include "tuple.hpp"
 
 namespace ngstd
 {
@@ -152,6 +153,13 @@ namespace ngstd
     return s;
   }
 
+  template <typename ... ARGS>
+  ostream & operator<< (ostream & ost, Tuple<IntRange, ARGS...> tup)
+  {
+    ost << tup.Head() << ", " << tup.Tail();
+    return ost;
+  }
+
 
   template <class T, class TSIZE = int> class FlatArray;
 
@@ -258,7 +266,8 @@ namespace ngstd
     template <typename T2>
     INLINE const FlatArray & operator= (const BaseArrayObject<T2> & a2) const
     {
-      for (int i = 0; i < size; i++) (*this)[i] = a2.Spec()[i];
+      T * hdata = data;
+      for (int i = 0; i < size; i++) hdata[i] = a2.Spec()[i];
       return *this;
     }
 
@@ -537,6 +546,12 @@ namespace ngstd
       size = nsize; 
     }
 
+    ///
+    INLINE void SetSize0()
+    {
+      size = 0; 
+    }
+
     /// Change physical size. Keeps logical size. Keeps contents.
     INLINE void SetAllocSize (int nallocsize)
     {
@@ -687,6 +702,15 @@ namespace ngstd
       return *this;
     }
 
+    template <typename ...ARGS>
+    Array & operator= (Tuple<ARGS...> tup)
+    {
+      SetSize (ArraySize (tup));
+      StoreToArray (*this, tup);
+      return *this;
+    }
+      
+
     INLINE void Swap (Array & b)
     {
       ngstd::Swap (size, b.size);
@@ -832,6 +856,46 @@ namespace ngstd
 
 
 
+
+  template <typename ... ARGS>
+  int ArraySize (Tuple<ARGS...> tup)  
+  { return 0;}
+  
+  template <typename ... ARGS>
+  int ArraySize (Tuple<int,ARGS...> tup) 
+  { return 1+ArraySize(tup.Tail()); }
+  
+  template <typename ... ARGS>
+  int ArraySize (Tuple<IntRange,ARGS...> tup) 
+  { return tup.Head().Size()+ArraySize(tup.Tail()); }
+
+  
+  template <typename ... ARGS>
+  void StoreToArray (FlatArray<int> a, Tuple<ARGS...> tup) { ; }
+  
+  template <typename ... ARGS>
+  void StoreToArray (FlatArray<int> a, Tuple<int,ARGS...> tup)
+  {
+    a[0] = tup.Head();
+    StoreToArray (a.Range(1, a.Size()), tup.Tail());
+  }
+  
+  template <typename ... ARGS>
+  void StoreToArray (FlatArray<int> a, Tuple<IntRange,ARGS...> tup)
+  {
+    IntRange r = tup.Head();
+    a.Range(0,r.Size()) = r;
+    StoreToArray (a.Range(r.Size(), a.Size()), tup.Tail());
+  }
+
+  /*
+  template <typename T> template <typename ...ARGS>
+  INLINE Array<T> & Array<T> :: operator= (Tuple<ARGS...> tup)
+  {
+    SetSize (ArraySize (tup));
+    StoreToArray (*this, tup);
+  }
+  */
 
   /*
   /// append integers to array

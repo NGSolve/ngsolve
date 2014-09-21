@@ -108,16 +108,19 @@ namespace ngcomp
 
     virtual void GetVertexDofNrs ( int nr, Array<int> & dnums ) const
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
     }
 
     virtual void GetEdgeDofNrs ( int nr, Array<int> & dnums ) const
     {
-      dnums.SetSize(0);
+      dnums.SetSize0();
       if ( ma.GetDimension() == 3 ) return;
 
+      /*
       dnums += nr;
       dnums += GetFacetDofs(nr);
+      */
+      dnums = MakeTuple (nr, GetFacetDofs(nr));
     }
 
     virtual void GetFaceDofNrs (int nr, Array<int> & dnums) const

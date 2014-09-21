@@ -345,8 +345,7 @@ namespace ngcomp
     int dim   = fes.GetDimension();
 
     shared_ptr<BilinearFormIntegrator> bli = fes.GetIntegrator(bound);
-
-    if (&bli == NULL)
+    if (!bli)
       throw Exception ("no integrator available");
 
     int dimflux = diffop ? diffop->Dim() : bli->DimFlux(); 

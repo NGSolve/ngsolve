@@ -95,6 +95,21 @@ namespace ngfem
       y = Trans (mat) * x;
     }
 
+    /// Computes Transpose (B-matrix) times point value
+    template <typename FEL, typename MIP, class TVX, class TVY>
+    static void ApplyTransAdd (const FEL & fel, const MIP & mip,
+                               const TVX & x, TVY & y,
+                               LocalHeap & lh) 
+    {
+      typedef typename MIP::TSCAL TSCAL;
+
+      HeapReset hr(lh);
+
+      FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
+      DOP::GenerateMatrix (fel, mip, mat, lh);
+      y += Trans (mat) * x;
+    }
+
 
     /// Computes Transpose (B-matrix) times point value
     template <typename FEL, typename MIR, class TVX, class TVY>
@@ -102,18 +117,9 @@ namespace ngfem
 			      const TVX & x, TVY & y,
 			      LocalHeap & lh) 
     {
-      // cout << "ApplyTransIR::Base called, diffop = " << typeid(DOP).name() << endl;
-      typedef typename TVY::TSCAL TSCAL;
-
-      HeapReset hr(lh);
-      FlatVector<TSCAL> hy(y.Size(), lh);
-
       y = 0.0;
       for (int i = 0; i < mir.Size(); i++)
-	{
-	  ApplyTrans (fel, mir[i], x.Row(i), hy, lh);
-	  y += hy;
-	}
+        ApplyTransAdd (fel, mir[i], x.Row(i), y, lh);
     }
   };
 

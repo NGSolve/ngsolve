@@ -7,6 +7,7 @@
    Finite Element Integrators
 */
 
+#pragma implementation "integrator.hpp"
 
 #include <fem.hpp>
   
@@ -139,11 +140,6 @@ namespace ngfem
     cerr << "SetFileName not defined for Integrator base class" << endl;
   }
   
-
-  BilinearFormIntegrator :: BilinearFormIntegrator () throw()
-  {
-    ;
-  }
 
   BilinearFormIntegrator :: ~BilinearFormIntegrator ()
   {

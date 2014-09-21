@@ -125,10 +125,9 @@ namespace ngcomp
 	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
       }
 
-    // static ConstantCoefficientFunction one(1);
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), one);
-    boundary_integrator = GetIntegrators().CreateBFI("robin", ma.GetDimension(), one);
+    integrator = CreateBFI("mass", ma.GetDimension(), one);
+    boundary_integrator = CreateBFI("robin", ma.GetDimension(), one);
 
     if (dimension > 1)
       {
@@ -173,17 +172,6 @@ namespace ngcomp
     used_face = false; 
     used_vertex = false; 
 
-    /*
-    for (int i = 0; i < ne; i++)
-      if (DefinedOn (ma.GetElIndex (i))) 
-	{
-	  Ngs_Element ngel = ma.GetElement(i);
-	  used_vertex[ngel.Vertices()] = true;
-	  if (dim >= 2) used_edge[ngel.Edges()] = true;
-	  if (dim == 3) used_face[ngel.Faces()] = true;
-	}
-    */
-    
     for (ElementId ei : ma.Elements<VOL>())
       if (DefinedOn (ei))
 	{
@@ -192,20 +180,6 @@ namespace ngcomp
 	  if (dim >= 2) used_edge[ngel.Edges()] = true;
 	  if (dim == 3) used_face[ngel.Faces()] = true;
 	}
-
-    /*
-    Array<int> eledges, elfaces, vnums;
-    for (int i = 0; i < ma.GetNSE(); i++)
-      if (DefinedOnBoundary (ma.GetSElIndex (i))) 
-	{
-	  ma.GetSElVertices (i, vnums);
-	  ma.GetSElEdges (i, eledges);		
-	  
-	  for (int j=0;j<vnums.Size();j++) used_vertex[vnums[j]] = 1; 
-	  if (dim >= 2) for (int j=0;j<eledges.Size();j++) used_edge[eledges[j]] = 1; 
-	  if (dim == 3) used_face[ma.GetSElFace(i)] = 1; 
-	}
-    */
 
     for (ElementId ei : ma.Elements<BND>())
       if (DefinedOn (ei))
@@ -234,7 +208,6 @@ namespace ngcomp
 	
     Array<int> eledges, elfaces, vnums;
     if(var_order) 
-      // for (int i = 0; i < ne; i++)
       for (ElementId ei : ma.Elements(VOL))
         {	
           if (!DefinedOn (ei)) continue;
@@ -778,9 +751,9 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
+    dnums.SetSize0();
     if (ma.GetDimension() < 3) return;
-    dnums += GetFaceDofs (fanr);
+    dnums = GetFaceDofs (fanr);
   }
 
   void H1HighOrderFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
@@ -793,7 +766,7 @@ namespace ngcomp
   {
     if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
       {
-	dnums.SetSize(0);
+	dnums.SetSize0();
 	return;
       }
 
