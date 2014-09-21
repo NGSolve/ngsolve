@@ -7,6 +7,8 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#pragma interface
+
 namespace ngfem
 {
 
@@ -190,7 +192,7 @@ namespace ngfem
   public:
     // typedef double TSCAL;
     ///
-    BilinearFormIntegrator () throw ();
+    BilinearFormIntegrator () throw () { ; }
     ///
     virtual ~BilinearFormIntegrator ();
 
@@ -1390,9 +1392,17 @@ namespace ngfem
   /// 
   extern NGS_DLL_HEADER Integrators & GetIntegrators ();
 
+  template <typename ... ARGS>
+  inline shared_ptr<BilinearFormIntegrator> CreateBFI (ARGS ... args)
+  {
+    return GetIntegrators().CreateBFI (args...);
+  }
 
-
-
+  template <typename ... ARGS>
+  inline shared_ptr<LinearFormIntegrator> CreateLFI (ARGS ... args)
+  {
+    return GetIntegrators().CreateLFI (args...);
+  }
   
   class ConvertCoefs
   {

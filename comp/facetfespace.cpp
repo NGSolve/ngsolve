@@ -82,13 +82,13 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma.GetDimension() == 2)
       {
-        integrator.reset (new MassIntegrator<2> (&one));
-        boundary_integrator.reset (new RobinIntegrator<2> (&one));
+        integrator = make_shared<MassIntegrator<2>> (&one);
+        boundary_integrator = make_shared<RobinIntegrator<2>> (&one);
       }
     else
       {
-        integrator.reset (new MassIntegrator<3> (&one));
-        boundary_integrator.reset (new RobinIntegrator<3> (&one));
+        integrator = make_shared<MassIntegrator<3>> (&one);
+        boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
       }
 
     if (dimension > 1)
@@ -105,13 +105,10 @@ namespace ngcomp
         vefc_dofblocks = Vec<4,int> (0,0,2,0);
       }
   }
-
   
 
   FacetFESpace :: ~FacetFESpace ()
   { ; }
-
-
 
 
   void FacetFESpace :: Update(LocalHeap & lh)
@@ -669,11 +666,10 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       mat = 0.0;
       if (facetnr < 0)
-        mat.Row(0).Range(fel.GetRange(0)) = fel_vol.GetShape(mip.IP(), lh);
-      // DiffOpId<D>::GenerateMatrix (fel_vol, mip, mat.Cols(fel.GetRange(0)), lh);
+        fel_vol.CalcShape(mip.IP(), mat.Row(0).Range(fel.GetRange(0)));
       else
-        mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)) = 
-          fel_facet.Facet(facetnr).GetShape(mip.IP(), lh);
+        fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
+                                           mat.Row(0).Range(fel.GetRange(1)).Range(fel_facet.GetFacetDofs(facetnr)));
     }
   }; 
 
@@ -685,15 +681,8 @@ namespace ngcomp
     typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
   public:
     using BASE::T_BDBIntegrator;
-    /*
-    HDG_MassIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs)
-      : T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > (DiagDMat<1> (coeffs[0]))
-    { ; }
-    */
-    virtual ~HDG_MassIntegrator () { ; }
     virtual string Name () const { return "Mass-HDG"; }
   };
-
 
   template class HDG_MassIntegrator<1>;
   template class HDG_MassIntegrator<2>;

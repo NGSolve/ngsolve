@@ -51,5 +51,4 @@ namespace ngstd
     str << where << ": index " << ind << " out of range [" << imin << "," << imax << "]\n";
     Append (str.str());
   }
-
 }

@@ -169,6 +169,117 @@ public:
   
   
 
+  template <class DMATOP, int DIM_ELEMENT, int DIM_SPACE>
+  class T_BDBIntegrator_DMat : public BilinearFormIntegrator
+  {
+  protected:
+    DMATOP dmatop;
+  public:
+  
+    INLINE T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+      : dmatop(coeffs)
+    { ; }
+
+    
+    T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1)
+      : dmatop(c1) { ; }
+    
+    /*
+      template <typename ... TMORE>
+      T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
+      : dmatop(c1, more_coefs ...) { ; }
+    */
+    
+    T_BDBIntegrator_DMat  (const CoefficientFunction * coef)
+      : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
+    { ; }
+    
+    ///
+    T_BDBIntegrator_DMat (const DMATOP & admat) : dmatop(admat) { ; }
+    
+    ///
+    virtual bool BoundaryForm () const
+    { return int(DIM_SPACE) > int(DIM_ELEMENT); }
+    
+    virtual int DimElement () const
+    { return DIM_ELEMENT; }
+    
+    virtual int DimSpace () const
+  { return DIM_SPACE; }
+    
+    virtual int DimFlux () const
+    { return DMATOP::DIM_DMAT; }
+    
+    DMATOP & DMat () { return dmatop; }
+    const DMATOP & DMat () const { return dmatop; }
+    
+    virtual void ApplyDMat (const FiniteElement & bfel,
+                            const BaseMappedIntegrationPoint & bmip,
+                            const FlatVector<double> & elx, 
+                            FlatVector<double> & eldx,
+                            LocalHeap & lh) const
+    {
+      dmatop.Apply(bfel,
+                   static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
+                   elx, eldx ,lh);
+    }
+
+    virtual void ApplyDMat (const FiniteElement & bfel,
+                            const BaseMappedIntegrationPoint & bmip,
+                            const FlatVector<Complex> & elx, 
+                            FlatVector<Complex> & eldx,
+                            LocalHeap & lh) const
+    {
+      dmatop.Apply(bfel,
+                   static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
+                   elx,eldx,lh);
+    }
+    
+    virtual void ApplyDMat (const FiniteElement & bfel,
+                            const BaseMappedIntegrationRule & bmir,
+                            const FlatMatrix<double> & elx, 
+                            FlatMatrix<double> & eldx,
+                            LocalHeap & lh) const
+    {
+      // const FEL & fel = static_cast<const FEL&> (bfel);
+      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      
+      for (int i = 0; i < mir.Size(); i++)
+        dmatop.Apply (bfel, mir[i], elx.Row(i), eldx.Row(i), lh);
+    }
+    
+    virtual void ApplyDMatInv (const FiniteElement & bfel,
+                               const BaseMappedIntegrationRule & bmir,
+                               const FlatMatrix<double> & elx, 
+                               FlatMatrix<double> & eldx,
+                               LocalHeap & lh) const
+    {
+      // const FEL & fel = static_cast<const FEL&> (bfel);
+      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      
+      for (int i = 0; i < mir.Size(); i++)
+        dmatop.ApplyInv (bfel, mir[i], elx.Row(i), eldx.Row(i), lh);
+    }
+
+    
+    virtual void ApplyDMat (const FiniteElement & bfel,
+                            const BaseMappedIntegrationRule & bmir,
+                            const FlatMatrix<Complex> & elx, 
+                            FlatMatrix<Complex> & eldx,
+                            LocalHeap & lh) const
+    {
+      // const FEL & fel = static_cast<const FEL&> (bfel);
+      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      
+      for (int i = 0; i < mir.Size(); i++)
+        dmatop.Apply (bfel, mir[i], elx.Row(i), eldx.Row(i), lh);
+    }
+    
+  };
+
 
  
 /**
@@ -181,19 +292,27 @@ public:
    HCurlFiniteElement, FE_Trig1, ...)
  */
 template <class DIFFOP, class DMATOP, class FEL = FiniteElement>
-class T_BDBIntegrator : public BilinearFormIntegrator
+class T_BDBIntegrator : public T_BDBIntegrator_DMat<DMATOP, DIFFOP::DIM_ELEMENT, DIFFOP::DIM_SPACE> // BilinearFormIntegrator
 {
-protected:
-  DMATOP dmatop;
+  // protected:
+  // DMATOP dmatop;
 public:
-  // typedef double TSCAL;  // necessary ?
+  typedef T_BDBIntegrator_DMat<DMATOP, DIFFOP::DIM_ELEMENT, DIFFOP::DIM_SPACE> BASE;
 
   enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
   enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
   enum { DIM         = DIFFOP::DIM };
-  // typedef typename DMATOP::TSCAL TSCAL;
 
+  using BASE::Name;
+  using BASE::integration_order;
+  using BASE::higher_integration_order;
+  using BASE::common_integration_order;
+
+  using BASE::dmatop;
+  using BASE::T_BDBIntegrator_DMat;
+  
+  /*
   ///
   INLINE T_BDBIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     : dmatop(coeffs)
@@ -203,11 +322,9 @@ public:
   T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1)
     : dmatop(c1) { ; }
 
-  /*
-  template <typename ... TMORE>
-  T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
-    : dmatop(c1, more_coefs ...) { ; }
-  */
+//   template <typename ... TMORE>
+//  T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
+//    : dmatop(c1, more_coefs ...) { ; }
 
   T_BDBIntegrator  (const CoefficientFunction * coef)
     : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
@@ -215,25 +332,12 @@ public:
 
   ///
   T_BDBIntegrator (const DMATOP & admat) : dmatop(admat) { ; }
+  */
+
 
   ///
   virtual ~T_BDBIntegrator () { ; }
 
-  ///
-  virtual bool BoundaryForm () const
-  { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-
-  virtual int DimElement () const
-  { return DIM_ELEMENT; }
-
-  virtual int DimSpace () const
-  { return DIM_SPACE; }
-
-  virtual int DimFlux () const
-  { return DIM_DMAT; }
-
-  DMATOP & DMat () { return dmatop; }
-  const DMATOP & DMat () const { return dmatop; }
 
   virtual void CheckElement (const FiniteElement & el) const
   {
@@ -244,7 +348,7 @@ public:
                        string (" integrator is ") + Name());
   }
 
-
+  /*
   virtual void ApplyDMat (const FiniteElement & bfel,
 			  const BaseMappedIntegrationPoint & bmip,
 			  const FlatVector<double> & elx, 
@@ -281,7 +385,6 @@ public:
       dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
   }
 
-
   virtual void ApplyDMatInv (const FiniteElement & bfel,
 			     const BaseMappedIntegrationRule & bmir,
 			     const FlatMatrix<double> & elx, 
@@ -296,11 +399,6 @@ public:
       dmatop.ApplyInv (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
   }
 
-
-
-
-
-
   virtual void ApplyDMat (const FiniteElement & bfel,
 			  const BaseMappedIntegrationRule & bmir,
 			  const FlatMatrix<Complex> & elx, 
@@ -314,6 +412,7 @@ public:
     for (int i = 0; i < mir.Size(); i++)
       dmatop.Apply (fel, mir[i], elx.Row(i), eldx.Row(i), lh);
   }
+  */
 
 
 
@@ -409,7 +508,7 @@ public:
 			    LocalHeap & lh) const
   {
     // static Timer timer(string ("Elementmatrix, ") + Name()); RegionTimer reg (timer);
-
+    
     try
       {
 	int ndof = fel.GetNDof();
@@ -693,13 +792,14 @@ public:
     FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv1(ir.GetNIP(), lh);
 
     DIFFOP::ApplyIR (fel, mir, elx, hv1, lh);
-
+    dmatop.ApplyIR (fel, mir, hv1, lh);
+    /*
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         dmatop.Apply1 (fel, mir[i], hv1.Row(i), lh);       
         hv1.Row(i) *= mir[i].GetWeight();
       }
-
+    */
     DIFFOP::ApplyTransIR (fel, mir, hv1, ely, lh);    
   }
 
@@ -778,13 +878,6 @@ public:
   {
     return IntegrationRule (fel.ElementType(), GetIntegrationOrder(fel, use_higher_integration_order));
   }
-
-
-
-
-
-
-
 
 
 
@@ -884,9 +977,6 @@ public:
 	  }
       }
   }
-
-
-
 
 
   virtual void
@@ -1293,6 +1383,10 @@ public:
   ///
   T_BIntegrator  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     : dvecop(coeffs)
+  { ; }
+
+  T_BIntegrator  (shared_ptr<CoefficientFunction> coef)
+    : dvecop(coef)
   { ; }
 
   T_BIntegrator  (const CoefficientFunction * coef)

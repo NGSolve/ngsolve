@@ -16,17 +16,6 @@ To do: *Internal External Dofs (eliminate internal)
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-/*
-// #include <../fem/l2hofe.hpp>
-#include <../fem/l2hofe_impl.hpp>
-#ifdef GOLD
-#include <../gold/tscalarfe_impl.hpp>
-#else
-#include <../fem/tscalarfe_impl.hpp>
-#endif
-#include <../fem/l2hofefo.hpp>
-*/
-
 using namespace ngmg;
 
 namespace ngcomp
@@ -66,8 +55,8 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
     
-    static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("mass", ma.GetDimension(), &one);
+    integrator = CreateBFI("mass", ma.GetDimension(),
+                           make_shared<ConstantCoefficientFunction>(1));
 
     if (dimension > 1)
       integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);

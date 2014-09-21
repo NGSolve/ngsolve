@@ -514,9 +514,7 @@ namespace ngfem
 
 
 
-
-
-
+  
 
 
   /// orthotropic tensor. 
@@ -1418,6 +1416,13 @@ namespace ngfem
 #else
 #define BDBEQUATIONS_EXTERN extern
 #endif
+
+
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,2,2>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,3,3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<2>,2,2>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<3>,3,3>;
+
 
 
   BDBEQUATIONS_EXTERN template class MassIntegrator<1>;
