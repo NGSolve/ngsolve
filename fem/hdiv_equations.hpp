@@ -478,6 +478,35 @@ public:
 
 }
 
+  
+#ifdef FILE_HDIV_EQUATIONS_CPP
+#define HDIV_EQUATIONS_EXTERN
+#else
+#define HDIV_EQUATIONS_EXTERN extern
+#endif
+  
+namespace ngfem
+{
+
+HDIV_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdHDiv<2> >;
+HDIV_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdHDiv<3> >;
+
+HDIV_EQUATIONS_EXTERN template class MassHDivIntegrator<2>;
+HDIV_EQUATIONS_EXTERN template class DivDivHDivIntegrator<2>;
+  // HDIV_EQUATIONS_EXTERN template class SourceHDivIntegrator<2>;
+HDIV_EQUATIONS_EXTERN template class SourceHDivIntegratorN<2>;
+HDIV_EQUATIONS_EXTERN template class DivSourceHDivIntegrator<2>;
+
+HDIV_EQUATIONS_EXTERN template class MassHDivIntegrator<3>;
+HDIV_EQUATIONS_EXTERN template class DivDivHDivIntegrator<3>;
+// HDIV_EQUATIONS_EXTERN template class SourceHDivIntegrator<3>;
+HDIV_EQUATIONS_EXTERN template class SourceHDivIntegratorN<3>;
+HDIV_EQUATIONS_EXTERN template class DivSourceHDivIntegrator<3>;
+
+
+
+}
+
 
 #endif
 

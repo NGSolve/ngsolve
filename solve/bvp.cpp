@@ -13,13 +13,13 @@ namespace ngsolve
   {
   protected:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
-    LinearForm * lff;
+    shared_ptr<LinearForm> lff;
     ///
     shared_ptr<GridFunction> gfu;
     ///
-    Preconditioner * pre;
+    shared_ptr<Preconditioner> pre;
     ///
     int maxsteps;
     ///
@@ -421,13 +421,13 @@ namespace ngsolve
   {
   protected:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
-    LinearForm * lff;
+    shared_ptr<LinearForm> lff;
     ///
     shared_ptr<GridFunction> gfu;
     ///
-    Preconditioner * pre;
+    shared_ptr<Preconditioner> pre;
     ///
     int maxsteps;
     ///
@@ -439,7 +439,7 @@ namespace ngsolve
     ///
     SOLVER solver;
     ///
-    Array<LinearForm*> constraints;
+    Array<shared_ptr<LinearForm>> constraints;
     
   public:
     ///

@@ -118,11 +118,11 @@ namespace ngcomp
     ///
     ngmg::TwoLevelMatrix * tlp;
     ///
-    const BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     MGPreconditioner * low_order_preconditioner;
     ///
-    const Preconditioner * coarse_pre;
+    shared_ptr<Preconditioner> coarse_pre;
     ///
     int finesmoothingsteps;
     ///
@@ -177,7 +177,7 @@ namespace ngcomp
   {
   protected:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     BaseMatrix * jacobi;
     ///
@@ -186,7 +186,7 @@ namespace ngcomp
     string locprecfile; 
 
     string ct;
-    const Preconditioner * coarse_pre;
+    shared_ptr<Preconditioner> coarse_pre;
   public:
     ///
     LocalPreconditioner (PDE * pde, const Flags & aflags,
@@ -217,9 +217,9 @@ namespace ngcomp
     ///
     PDE * pde;
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
-    Preconditioner * cpre;
+    shared_ptr<Preconditioner> cpre;
     ///
     ngmg::TwoLevelMatrix * premat;
     ///
@@ -253,7 +253,7 @@ namespace ngcomp
   {
   protected:
     ///
-    Preconditioner * creal;
+    shared_ptr<Preconditioner> creal;
     ///
     // Real2ComplexMatrix<double,Complex> cm;
     int dim;
@@ -284,11 +284,11 @@ namespace ngcomp
   {
   protected:
     ///
-    Preconditioner * csimple;
+    shared_ptr<Preconditioner> csimple;
     /// 
     ChebyshevIteration * cm;
     /// 
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     int steps; 
   public:
@@ -321,7 +321,7 @@ namespace ngcomp
   {
   protected:
     PDE * pde;
-    const BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     // CommutingAMG * amg;
     BaseMatrix * amg;
     shared_ptr<CoefficientFunction> coefe, coeff, coefse;
@@ -376,7 +376,7 @@ namespace ngcomp
   {
   protected:
     ///
-    Preconditioner * cbase;
+    shared_ptr<Preconditioner> cbase;
     ///
     int dim;
     BaseMatrix * cm;

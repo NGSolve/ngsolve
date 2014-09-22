@@ -65,10 +65,10 @@ namespace ngla
   {
     int retval = 0;
 
-    BaseVector & v = *a->CreateVector();
-    BaseVector & u = *a->CreateVector();
-    BaseVector & w = *a->CreateVector();
-    BaseVector & cv = *a->CreateVector();
+    auto v = a->CreateVector();
+    auto u = a->CreateVector();
+    auto w = a->CreateVector();
+    auto cv = a->CreateVector();
 
     int it;
     double gamma, err;
@@ -78,7 +78,7 @@ namespace ngla
     ai.SetSize(0);
     bi.SetSize(0);
 
-    bool is_real = (dynamic_cast< S_BaseVector<double> *>(&cv));// ||
+    bool is_real = (dynamic_cast< S_BaseVector<double> *>(cv.get()));// ||
 		    //dynamic_cast< S_BaseVector<float> *>(&cv));
 
     /*    
@@ -92,40 +92,40 @@ namespace ngla
     */
     if (is_real)
       {
-        for(int i = 0; i < v.FVDouble().Size(); i++)
-          v.FVDouble()(i) = double (rand()) / RAND_MAX;
+        for(int i = 0; i < v->FVDouble().Size(); i++)
+          v->FVDouble()(i) = double (rand()) / RAND_MAX;
       }
     else
-      for(int i = 0; i < v.FVComplex().Size(); i++)
-        v.FVComplex()(i) = double (rand()) / RAND_MAX;
+      for(int i = 0; i < v->FVComplex().Size(); i++)
+        v->FVComplex()(i) = double (rand()) / RAND_MAX;
       
-    cv = 0;
+    *cv = 0;
 
     if (c)
-      cv = (*c) * v;
+      *cv = (*c) * *v;
     else
-      cv = v;
+      *cv = *v;
 
     if(is_real)
-      gamma = InnerProduct (cv, v);
+      gamma = InnerProduct (*cv, *v);
     else
-      gamma = (S_InnerProduct<Complex>(cv,v)).real();
+      gamma = (S_InnerProduct<Complex>(*cv,*v)).real();
 
     if (gamma < -1e-20)
       {
 	cerr << "Eigensystem: Preconditioner negative" << endl;
 	(*testout) << "Eigensystem: Preconditioner negative" << endl;
-	(*testout) << "|v| = " << L2Norm(v) << endl;
-	(*testout) << "|cv| = " << L2Norm(cv) << endl;
+	(*testout) << "|v| = " << L2Norm(*v) << endl;
+	(*testout) << "|cv| = " << L2Norm(*cv) << endl;
 	(*testout) << "(v,cv) = " << gamma << endl;
 	return 1;
       }
 
     gamma = sqrt (gamma);
-    v /= gamma;
-    cv /= gamma;
+    *v /= gamma;
+    *cv /= gamma;
   
-    u = (*a) * cv;
+    *u = (*a) * *cv;
     it = 0;
     bi.Append (0);
     err = 1;
@@ -136,29 +136,29 @@ namespace ngla
 	it++;
 	double cvu;
 	if(is_real)
-	  cvu = InnerProduct (cv, u);
+	  cvu = InnerProduct (*cv, *u);
 	else
-	  cvu = (S_InnerProduct<Complex>(cv,u)).real();
+	  cvu = (S_InnerProduct<Complex>(*cv,*u)).real();
 
 	ai.Append (cvu);
 
-	w = u - ai[it-1] * v;
+	*w = *u - ai[it-1] * *v;
 
 	if (c)
-	  cv = (*c) * w;
+	  *cv = (*c) * *w;
 	else
-	  cv = w;
+	  *cv = *w;
 
 	if(is_real)
-	  gamma = InnerProduct (cv, w);
+	  gamma = InnerProduct (*cv, *w);
 	else
-	  gamma = (S_InnerProduct<Complex>(cv,w)).real();
+	  gamma = (S_InnerProduct<Complex>(*cv,*w)).real();
 
 	if (gamma < -1e-20)
 	  {
 	    (*testout) << "Eigensystem: Preconditioner negative" << endl;
-	    (*testout) << "|w| = " << L2Norm(w) << endl;
-	    (*testout) << "|cw| = " << L2Norm(cv) << endl;
+	    (*testout) << "|w| = " << L2Norm(*w) << endl;
+	    (*testout) << "|cw| = " << L2Norm(*cv) << endl;
 	    (*testout) << "(w,cw) = " << gamma << endl;
 	    cerr << "Eigensystem: Preconditioner negative" << endl;
 	    retval = 1;
@@ -169,12 +169,12 @@ namespace ngla
 	gamma = sqrt (gamma);
 
 	bi.Append (gamma);
-	cv /= gamma;
-	w /= gamma;
+	*cv /= gamma;
+	*w /= gamma;
       
-	u = (*a) * cv;
-	u -= gamma * v;
-	v = w;
+	*u = (*a) * *cv;
+	*u -= gamma * *v;
+	*v = *w;
 	err *= fabs (gamma / ai[it-1]);
 
 	//(*testout) << "|w| = " << L2Norm(w) << endl;
@@ -197,11 +197,6 @@ namespace ngla
 	cout << "maxsteps " << maxsteps << " exceeded !!" << endl;
 	retval = 2;
       }
-
-    delete & v;
-    delete & u;
-    delete & w;
-    delete & cv;
 
     return retval;
   }

@@ -53,7 +53,7 @@ namespace ngsolve
   {
   protected:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     shared_ptr<GridFunction> gfu;
     ///
@@ -184,7 +184,7 @@ namespace ngsolve
     : NumProc (apde)
     {
       gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-      coef = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", ""));
+      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
@@ -259,7 +259,7 @@ namespace ngsolve
   protected:
     netgen::SolutionData * vis;
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     shared_ptr<GridFunction> gfu;
     /// compute flux, not gradient
@@ -436,7 +436,7 @@ namespace ngsolve
   NumProcDrawCoefficient :: NumProcDrawCoefficient (PDE & apde, const Flags & flags)
     : NumProc (apde)
   {
-    cf = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", ""));
+    cf = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
     label = flags.GetStringFlag ("label", "");
 
     vis = new VisualizeCoefficientFunction (ma, cf);
@@ -491,9 +491,9 @@ namespace ngsolve
   {
   protected:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
-    LinearForm * lff;
+    shared_ptr<LinearForm> lff;
     ///
     shared_ptr<GridFunction> gfu;
     ///
@@ -1387,7 +1387,7 @@ namespace ngsolve
       : NumProc (apde, flags)
     {
       order = int (flags.GetNumFlag ("order", 2));
-      coef = pde.CoefficientFunctionPtr (flags.GetStringFlag ("coefficient", "") );
+      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
 
       if (!coef->IsComplex())
 	pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
@@ -2212,7 +2212,7 @@ namespace ngsolve
   class NumProcAssembleLinearization : public NumProc
   {
   protected:
-    BilinearForm * bf;
+    shared_ptr<BilinearForm> bf;
     shared_ptr<GridFunction> gfu;
 
   public:

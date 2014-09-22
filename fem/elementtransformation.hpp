@@ -39,7 +39,7 @@ namespace ngfem
     ///
     ElementTransformation () { higher_integration_order = false; } 
     ///
-    virtual ~ElementTransformation() { ; } // delete specific; }
+    virtual ~ElementTransformation() { ; } 
     /// set data: is it a boundary, element number, and element index
     virtual void SetElement (bool /* aboundary */, int aelnr, int aelindex)
     {

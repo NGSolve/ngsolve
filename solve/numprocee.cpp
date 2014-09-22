@@ -8,7 +8,7 @@ namespace ngsolve
   {
   private:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     shared_ptr<GridFunction> gfu;
     ///
@@ -152,11 +152,11 @@ namespace ngsolve
   {
   private:
     /// use flux from bfa1
-    BilinearForm * bfa1;
+    shared_ptr<BilinearForm> bfa1;
     /// first gridfunction
     shared_ptr<GridFunction> gfu1;
     /// use flux from bfa2
-    BilinearForm * bfa2;
+    shared_ptr<BilinearForm> bfa2;
     /// second gridfunction
     shared_ptr<GridFunction> gfu2;
     /// use coefficient function ( coef_real, i * coef_imag )
@@ -204,9 +204,9 @@ namespace ngsolve
       }
     else
       {
-	coef_real = pde.CoefficientFunctionPtr(flags.GetStringFlag("function",""));
+	coef_real = pde.GetCoefficientFunction(flags.GetStringFlag("function",""));
 	if ( flags.StringFlagDefined("function_imag"))
-	  coef_imag = pde.CoefficientFunctionPtr(flags.GetStringFlag("function_imag",""));
+	  coef_imag = pde.GetCoefficientFunction(flags.GetStringFlag("function_imag",""));
       }
 
     gfdiff = pde.GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
@@ -346,7 +346,7 @@ namespace ngsolve
   {
   private:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     shared_ptr<GridFunction> gfu;
     ///
@@ -439,17 +439,17 @@ namespace ngsolve
   {
   private:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
-    BilinearForm * bfa2;
+    shared_ptr<BilinearForm> bfa2;
     ///
-    LinearForm * lff;
+    shared_ptr<LinearForm> lff;
     ///
     shared_ptr<GridFunction> gfu;
     ///
     shared_ptr<GridFunction> gferr;
     ///
-    FESpace * vtest;
+    shared_ptr<FESpace> vtest;
   public:
     NumProcHierarchicalErrorEstimator (PDE & apde, const Flags & flags)
       : NumProc (apde)
@@ -752,7 +752,7 @@ namespace ngsolve
   {
   private:
     ///
-    BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     ///
     shared_ptr<GridFunction> gfu;
     ///

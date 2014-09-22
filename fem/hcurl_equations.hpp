@@ -747,6 +747,9 @@ namespace ngfem
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<3> >;
 
+  HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
+  HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<3> >;
+
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
 

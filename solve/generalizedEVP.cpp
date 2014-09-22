@@ -19,10 +19,10 @@ namespace ngsolve
   class NumProcEVP_AM : public NumProc
   {
   protected:
-    BilinearForm * bfa;
-    BilinearForm * bfm;
+    shared_ptr<BilinearForm> bfa;
+    shared_ptr<BilinearForm> bfm;
     shared_ptr<GridFunction> gfu;
-    Preconditioner * pre;
+    shared_ptr<Preconditioner> pre;
 
     int maxsteps, nr, maxnewton;
     double prec;

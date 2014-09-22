@@ -158,7 +158,8 @@ namespace ngfem
     const IntegrationRule & ir = SelectIntegrationRule (eltype, order);
     size = ir.Size();
     data = &ir[0];
-    ownmem = 0;
+    // ownmem = 0;
+    mem_to_delete = NULL;
   }
   
   IntegrationRule :: IntegrationRule (int asize, double (*pts)[3], double * weights)
@@ -169,6 +170,7 @@ namespace ngfem
 	ip.SetNr(i);
 	AddIntegrationPoint (ip);
       }
+    // mem_to_delete = NULL;
   }
 
   ostream & operator<< (ostream & ost, const IntegrationRule & ir)

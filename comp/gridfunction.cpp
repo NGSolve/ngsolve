@@ -854,6 +854,7 @@ namespace ngcomp
     
     int elnr = trafo.GetElementNr();
     bool boundary = trafo.Boundary();
+    ElementId ei(boundary ? BND : VOL, elnr);
 
     const FESpace & fes = gf.GetFESpace();
     const MeshAccess & ma = fes.GetMeshAccess();
@@ -875,11 +876,11 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
     int dim = fes.GetDimension();
     
     ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (elnr, boundary, dnums);
+    fes.GetDofNrs (ei, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
 
@@ -902,6 +903,7 @@ namespace ngcomp
     
     const int elnr = ip.GetTransformation().GetElementNr();
     bool boundary = ip.GetTransformation().Boundary();
+    ElementId ei(boundary ? BND : VOL, elnr);
 
     const FESpace & fes = gf.GetFESpace();
 
@@ -911,11 +913,11 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
     int dim = fes.GetDimension();
     
     ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (elnr, boundary, dnums);
+    fes.GetDofNrs (ei, dnums);
     
     VectorMem<50, Complex> elu(dnums.Size()*dim);
 
@@ -940,6 +942,7 @@ namespace ngcomp
     
     int elnr = trafo.GetElementNr();
     bool boundary = trafo.Boundary();
+    ElementId ei(boundary ? BND : VOL, elnr);
 
     const FESpace & fes = gf.GetFESpace();
 
@@ -956,11 +959,11 @@ namespace ngcomp
         return;
       }
     
-    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh2);
+    const FiniteElement & fel = fes.GetFE (ei, lh2);
     int dim = fes.GetDimension();
 
     ArrayMem<int, 50> dnums;
-    fes.GetDofNrs (elnr, boundary, dnums);
+    fes.GetDofNrs (ei, dnums);
     
     VectorMem<50> elu(dnums.Size()*dim);
 
@@ -1339,15 +1342,16 @@ namespace ngcomp
 	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
 	bool bound = (ma.GetDimension() == 3);
+        ElementId ei(bound ? BND : VOL, elnr);
 	const FESpace & fes = gf->GetFESpace();
 
 	int dim = fes.GetDimension();
 
 	LocalHeapMem<100000> lh("VisGF::GetSurfValue");
-	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
+	const FiniteElement * fel = &fes.GetFE (ei, lh);
 
 	ArrayMem<int, 100> dnums;
-	fes.GetDofNrs (elnr, bound, dnums);
+	fes.GetDofNrs (ei, dnums);
 
 	FlatVector<SCAL> elu (dnums.Size() * dim, lh);
 
@@ -1416,18 +1420,20 @@ namespace ngcomp
         if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
         bool bound = (ma.GetDimension() == 3);
+        ElementId ei(bound ? BND : VOL, elnr);
+
         const FESpace & fes = gf->GetFESpace();
 
         int dim     = fes.GetDimension();
 
 	// lh.CleanUp();
         LocalHeapMem<100000> lh("VisGF::GetSurfValue");
-	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
+	const FiniteElement * fel = &fes.GetFE (ei, lh);
 	
 	Array<int> dnums(fel->GetNDof(), lh);
 	FlatVector<SCAL> elu (fel->GetNDof()*dim, lh);
 
-	fes.GetDofNrs (elnr, bound, dnums);
+	fes.GetDofNrs (ei, dnums);
 	
 	if(gf->GetCacheBlockSize() == 1)
 	  {
@@ -1531,18 +1537,19 @@ namespace ngcomp
         if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
 
         bool bound = (ma.GetDimension() == 3);
-	
+        ElementId ei(bound ? BND : VOL, elnr);
+
         const FESpace & fes = gf->GetFESpace();
         int dim = fes.GetDimension();
         
         
         LocalHeapMem<1000000> lh("visgf::getmultisurfvalue");
 
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 
         ArrayMem<int, 100> dnums;
-	fes.GetDofNrs (elnr, bound, dnums);
-	const FiniteElement * fel = &fes.GetFE (elnr, bound, lh);
+	fes.GetDofNrs (ei, dnums);
+	const FiniteElement * fel = &fes.GetFE (ei, lh);
 
         FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
@@ -1649,15 +1656,16 @@ namespace ngcomp
     const FESpace & fes = gf->GetFESpace();
     auto eval = fes.GetEvaluator (VOL);
     FlatVector<> fvvalues (eval->Dim(), values);
+    ElementId ei (VOL, segnr);  // ???? VOL
 
-    const FiniteElement & fel = fes.GetFE (segnr, VOL, lh);
+    const FiniteElement & fel = fes.GetFE (ei, lh);
     Array<int> dnums(fel.GetNDof(), lh);
     fes.GetDofNrs (segnr, dnums);
 
     FlatVector<> elvec(fes.GetDimension()*dnums.Size(), lh);
     gf->GetElementVector (dnums, elvec);
     
-    const ElementTransformation & trafo = ma.GetTrafo (segnr, VOL, lh);
+    const ElementTransformation & trafo = ma.GetTrafo (ei, lh);
     IntegrationPoint ip (xref);
 
     eval -> Apply (fel, trafo(ip, lh), elvec, fvvalues, lh);

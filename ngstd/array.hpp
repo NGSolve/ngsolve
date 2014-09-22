@@ -433,7 +433,8 @@ namespace ngstd
     TSIZE allocsize;
     // unsigned int allocsize;
     /// memory is responsibility of container
-    bool ownmem;
+    // bool ownmem;
+    T * mem_to_delete;
 
     using FlatArray<T,TSIZE>::size;
     using FlatArray<T,TSIZE>::data;
@@ -443,14 +444,16 @@ namespace ngstd
       : FlatArray<T,TSIZE> (0, NULL)
     {
       allocsize = 0; 
-      ownmem = 1;
+      mem_to_delete = NULL;
+      // ownmem = 1;
     }
 
     INLINE explicit Array(TSIZE asize)
       : FlatArray<T,TSIZE> (asize, new T[asize])
     {
       allocsize = asize; 
-      ownmem = 1;
+      mem_to_delete = data;
+      // ownmem = 1;
     }
 
 
@@ -459,7 +462,8 @@ namespace ngstd
       : FlatArray<T,TSIZE> (asize, adata)
     {
       allocsize = asize; 
-      ownmem = 0;
+      mem_to_delete = NULL;
+      // ownmem = 0;
     }
 
     /// Generate array in user data
@@ -467,20 +471,22 @@ namespace ngstd
       : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 
-      ownmem = 0;
+      mem_to_delete = NULL;
+      // ownmem = 0;
     }
 
     INLINE Array (Array && a2) 
     {
       allocsize = 0;
-      ownmem = false;
+      // ownmem = false;
+      mem_to_delete = NULL;
       size = 0;
       data = NULL;
 
       ngstd::Swap (size, a2.size);
       ngstd::Swap (data, a2.data);
       ngstd::Swap (allocsize, a2.allocsize);
-      ngstd::Swap (ownmem, a2.ownmem);
+      ngstd::Swap (mem_to_delete, a2.mem_to_delete);
     }
 
     /// array copy 
@@ -488,7 +494,8 @@ namespace ngstd
       : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : NULL)
     {
       allocsize = size;
-      ownmem = 1;
+      // ownmem = 1;
+      mem_to_delete = data;
       for (int i = 0; i < size; i++)
         (*this)[i] = a2[i];
     }
@@ -500,7 +507,8 @@ namespace ngstd
                             a2.Spec().Size() ? new T[a2.Spec().Size()] : NULL)
     {
       allocsize = size;
-      ownmem = 1;
+      // ownmem = 1;
+      mem_to_delete = data;
       for (int i = 0; i < size; i++)
         (*this)[i] = a2.Spec()[i];
     }
@@ -510,7 +518,8 @@ namespace ngstd
                             list.size() ? new T[list.size()] : NULL)
     {
       allocsize = size;
-      ownmem = 1;
+      // ownmem = 1;
+      mem_to_delete = data;
       int cnt = 0;
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
@@ -523,7 +532,8 @@ namespace ngstd
                       a2.Size()+a3.Size() ? new T[a2.Size()+a3.Size()] : 0)
     {
       allocsize = size;
-      ownmem = 1;
+      // ownmem = 1;
+      mem_to_delete = data;
       for(int i = 0; i <  a2.Size(); i++)
         (*this)[i] = a2[i];
       for (int i = a2.Size(), j=0; i < size; i++,j++)
@@ -533,11 +543,16 @@ namespace ngstd
     /// if responsible, deletes memory
     INLINE ~Array()
     {
-      if (ownmem) delete [] data;
+      // if (ownmem) delete [] data;
+      delete [] mem_to_delete;
     }
 
     /// we tell the compiler that there is no need for deleting the array ..
-    INLINE void NothingToDelete () { ownmem = false; }
+    INLINE void NothingToDelete () 
+    { 
+      mem_to_delete = NULL; 
+      // ownmem = false; 
+    }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
     INLINE void SetSize(TSIZE nsize)
@@ -569,10 +584,12 @@ namespace ngstd
     /// assigns memory from local heap
     INLINE const Array & Assign (TSIZE asize, LocalHeap & lh)
     {
-      if (ownmem) delete [] data;
+      // if (ownmem) delete [] data;
+      delete [] mem_to_delete;
       size = allocsize = asize;
       data = lh.Alloc<T> (asize);
-      ownmem = false;
+      // ownmem = false;
+      mem_to_delete = NULL;
       return *this;
     }
 
@@ -644,7 +661,9 @@ namespace ngstd
     /// Deallocate memory
     INLINE void DeleteAll ()
     {
-      if (ownmem) delete [] data;
+      // if (ownmem) delete [] data;
+      delete [] mem_to_delete;
+      mem_to_delete = NULL;
       data = 0;
       size = allocsize = 0;
     }
@@ -716,7 +735,8 @@ namespace ngstd
       ngstd::Swap (size, b.size);
       ngstd::Swap (data, b.data);
       ngstd::Swap (allocsize, b.allocsize);
-      ngstd::Swap (ownmem, b.ownmem);
+      // ngstd::Swap (ownmem, b.ownmem);
+      ngstd::Swap (mem_to_delete, b.mem_to_delete);
     }
 
   private:
@@ -757,25 +777,18 @@ namespace ngstd
     TSIZE nsize = 2 * allocsize;
     if (nsize < minsize) nsize = minsize;
     
-    if (data)
-        {
-          T * p = new T[nsize];
-	
-          TSIZE mins = (nsize < size) ? nsize : size; 
-          // memcpy (p, data, mins * sizeof(T));
-          for (TSIZE i = 0; i < mins; i++) p[i] = data[i];
+    T * hdata = data;
+    data = new T[nsize];
 
-          if (ownmem) delete [] data;
-          ownmem = 1;
-          data = p;
-        }
-      else
-        {
-          data = new T[nsize];
-          ownmem = 1;
-        }
-    
-      allocsize = nsize;
+    if (hdata)
+      {
+        TSIZE mins = (nsize < size) ? nsize : size; 
+        for (TSIZE i = 0; i < mins; i++) data[i] = hdata[i];
+        delete [] mem_to_delete;
+      }
+
+    mem_to_delete = data;
+    allocsize = nsize;
   }
 
   //extern template class Array<int,int>;
@@ -795,7 +808,8 @@ namespace ngstd
     using Array<T>::size;
     using Array<T>::allocsize;
     using Array<T>::data;
-    using Array<T>::ownmem;
+    using Array<T>::mem_to_delete;
+    // using Array<T>::ownmem;
 
   public:
     /// Generate array of logical and physical size asize
@@ -807,7 +821,8 @@ namespace ngstd
         {
           data = new T[asize];
           allocsize = size;
-          ownmem = 1;
+          // ownmem = 1;
+          mem_to_delete = data;
         }
     }
 

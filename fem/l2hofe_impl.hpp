@@ -373,7 +373,6 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       lamis[i] = lami[sort[i]];
 
-
     /*
     ArrayMem<Tx, 20> memx(sqr(order+1));
     ArrayMem<Tx, 20> memy(sqr(order+1));
@@ -466,7 +465,8 @@ namespace ngfem
     VectorMem<10, Tx> polsz(q+1);
 
     for (int i = 0; i <= p; i++)
-      JacobiPolynomial (p, 2*x-1, 2*i+1, 0, polsx.Row(i));
+      // JacobiPolynomial (p, 2*x-1, 2*i+1, 0, polsx.Row(i));
+      JacobiPolynomialAlpha (p, 2*x-1, 2*i+1, polsx.Row(i));
 
     // ScaledLegendrePolynomial (order, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
     LegendrePolynomial::EvalScaled (p, lamis[1]-lamis[2], lamis[1]+lamis[2], polsy);
@@ -507,7 +507,8 @@ namespace ngfem
     Tx fac(1.0);
     for (int i = 0; i <= order; i++)
       {
-	JacobiPolynomial (order, 2*z-1, 2*i+2, 0, polsz.Row(i));
+	// JacobiPolynomial (order, 2*z-1, 2*i+2, 0, polsz.Row(i));
+        JacobiPolynomialAlpha (order, 2*z-1, 2*i+2, polsz.Row(i));
 	polsz.Row(i) *= fac;
 	fac *= (1-z);
       }
