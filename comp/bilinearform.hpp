@@ -234,9 +234,9 @@ namespace ngcomp
     bool HasLowOrderBilinearForm () const { return low_order_bilinear_form != NULL; }
 
     /// returns the low-order biform
-    BilinearForm & GetLowOrderBilinearForm() const
+    shared_ptr<BilinearForm> GetLowOrderBilinearForm() const
     {
-      return *low_order_bilinear_form;
+      return low_order_bilinear_form;
     }
 
 

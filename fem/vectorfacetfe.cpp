@@ -831,11 +831,10 @@ namespace ngfem
 
 
 
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >  > initrvf3 ("robinvectorfacet", 3, 1);
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >  > initrvf2 ("robinvectorfacet", 2, 1);
-
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3, VectorFacetFacetFiniteElement<2> >  > initnvf3 ("neumannvectorfacet", 3, 1);
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2, VectorFacetFacetFiniteElement<1> >  > initnvf2 ("neumannvectorfacet", 2, 1);
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , VectorFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , VectorFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3 /*, VectorFacetFacetFiniteElement<2> */ >  > initnvf3 ("neumannvectorfacet", 3, 1);
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2 /*, VectorFacetFacetFiniteElement<1> */ >  > initnvf2 ("neumannvectorfacet", 2, 1);
 }
 
 

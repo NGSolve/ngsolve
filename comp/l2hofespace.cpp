@@ -61,7 +61,7 @@ namespace ngcomp
     if (dimension > 1)
       integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
 
-
+    
 
     switch (ma.GetDimension())
       {

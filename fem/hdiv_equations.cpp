@@ -8,9 +8,11 @@
    Finite Element Integrators
 */
 
+#define FILE_HDIV_EQUATIONS_CPP 
 
 
 #include <fem.hpp>
+#include <diffop_impl.hpp>
 
 namespace ngfem
 {
@@ -67,18 +69,6 @@ namespace ngfem
   */
 
 
-  
-  template class MassHDivIntegrator<2>;
-  template class DivDivHDivIntegrator<2>;
-  // template class SourceHDivIntegrator<2>;
-  template class SourceHDivIntegratorN<2>;
-  template class DivSourceHDivIntegrator<2>;
-
-  template class MassHDivIntegrator<3>;
-  template class DivDivHDivIntegrator<3>;
-  // template class SourceHDivIntegrator<3>;
-  template class SourceHDivIntegratorN<3>;
-  template class DivSourceHDivIntegrator<3>;
 
 
   static RegisterBilinearFormIntegrator<MassHDivIntegrator<2>> init_mhd2("masshdiv", 2, 1);

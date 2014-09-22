@@ -234,12 +234,13 @@ namespace ngcomp
 
     const S_GridFunction<SCAL> & u = 
       dynamic_cast<const S_GridFunction<SCAL>&> (bu);
+    ElementId ei (boundary ? BND : VOL, elnr);
 
     const FESpace & fes = u.GetFESpace();
-    const FiniteElement & fel = fes.GetFE (elnr, boundary, lh);
-    const ElementTransformation & eltrans = ma.GetTrafo (elnr, boundary, lh);
+    const FiniteElement & fel = fes.GetFE (ei, lh);
+    const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
     Array<int> dnums(fel.GetNDof(), lh);
-    fes.GetDofNrs (elnr, boundary, dnums);
+    fes.GetDofNrs (ei, dnums);
 	
     FlatVector<SCAL> elu(dnums.Size() * fes.GetDimension(), lh);
 	
@@ -674,12 +675,13 @@ namespace ngcomp
 	if ((domain != -1) && (domain != eldom))
 	  continue;
 
-	const FiniteElement & fel1 = fes1.GetFE (i, bound1, lh);
-	const FiniteElement & fel2 = fes2.GetFE (i, bound1, lh);
-	ElementTransformation & eltrans = ma.GetTrafo (i, bound1, lh);
+        ElementId ei(bound1 ? BND : VOL, i);
+	const FiniteElement & fel1 = fes1.GetFE (ei, lh);
+	const FiniteElement & fel2 = fes2.GetFE (ei, lh);
+	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
 
-	fes1.GetDofNrs (i, bound1, dnums1);
-	fes2.GetDofNrs (i, bound1, dnums2);
+	fes1.GetDofNrs (ei, dnums1);
+	fes2.GetDofNrs (ei, dnums2);
 
 	/*
 	if (bound1)
@@ -701,9 +703,9 @@ namespace ngcomp
 
 
 	u1.GetElementVector (dnums1, elu1);
-	fes1.TransformVec (i, bound1, elu1, TRANSFORM_SOL);
+	fes1.TransformVec (ei, elu1, TRANSFORM_SOL);
 	u2.GetElementVector (dnums2, elu2);
-	fes2.TransformVec (i, bound2, elu2, TRANSFORM_SOL);
+	fes2.TransformVec (ei, elu2, TRANSFORM_SOL);
 
 	double elerr = 0;
 
@@ -779,8 +781,10 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
-	ma.SetThreadPercentage ( 100.0*i / ne );
+        ElementId ei(bound1 ? BND : VOL, i);
 
+	ma.SetThreadPercentage ( 100.0*i / ne );
+        
 	lh.CleanUp();
 
 	int eldom = 
@@ -792,8 +796,8 @@ namespace ngcomp
 	const FiniteElement & fel1 = 
 	  bound1 ? fes1.GetSFE(i, lh) : fes1.GetFE (i, lh);
 
-	ElementTransformation & eltrans = ma.GetTrafo (i, bound1, lh);
-	fes1.GetDofNrs (i, bound1, dnums1);
+	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+	fes1.GetDofNrs (ei, dnums1);
 	/*
 	if (bound1)
 	  {
@@ -813,7 +817,7 @@ namespace ngcomp
 
 
 	u1.GetElementVector (dnums1, elu1);
-	fes1.TransformVec (i, bound1, elu1, TRANSFORM_SOL);
+	fes1.TransformVec (ei, elu1, TRANSFORM_SOL);
 
 	double elerr = 0;
 

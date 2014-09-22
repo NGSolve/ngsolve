@@ -193,18 +193,18 @@ namespace ngcomp
     const MeshAccess & ma = pde.GetMeshAccess();
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
 
-    const LinearForm * lfconstraint = 
+    shared_ptr<LinearForm> lfconstraint = 
       pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
-    const FESpace & fes = bfa->GetFESpace();
+    shared_ptr<FESpace> fes = bfa->FESpacePtr();
     
 
-    const BilinearForm * lo_bfa = bfa;
-    const FESpace * lo_fes = &fes;
+    shared_ptr<BilinearForm> lo_bfa = bfa;
+    shared_ptr<FESpace> lo_fes = fes;
 
-    if (&bfa->GetLowOrderBilinearForm())
+    if (bfa->GetLowOrderBilinearForm())
       {
-	lo_bfa = &bfa->GetLowOrderBilinearForm();
-	lo_fes = &fes.LowOrderFESpace();
+	lo_bfa = bfa->GetLowOrderBilinearForm();
+	lo_fes = fes->LowOrderFESpacePtr();
       }
     /*
     else if (id == 0 && ntasks > 1 )  // not supported anymore
@@ -292,7 +292,7 @@ namespace ngcomp
 
   void MGPreconditioner :: Update ()
   {
-    const BilinearForm * lo_bfa = &bfa->GetLowOrderBilinearForm();
+    shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
 
     INVERSETYPE invtype, loinvtype;
     invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
@@ -308,7 +308,7 @@ namespace ngcomp
 	mgp->SetOwnCoarseGridPreconditioner(false);
       }
 
-    if (&bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
+    if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
 	delete tlp;
 
@@ -339,7 +339,7 @@ namespace ngcomp
   
   void MGPreconditioner :: CleanUpLevel () 
   { 
-    if (&bfa->GetLowOrderBilinearForm())
+    if (bfa->GetLowOrderBilinearForm())
       {
 	delete tlp;
 	tlp = 0;
@@ -418,7 +418,7 @@ namespace ngcomp
 
   class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
   {
-    const BilinearForm * bfa;
+    shared_ptr<BilinearForm> bfa;
     BaseMatrix * inverse;
     string inversetype;
 
@@ -491,8 +491,7 @@ namespace ngcomp
 
   LocalPreconditioner :: LocalPreconditioner (PDE * pde, const Flags & aflags, 
 					      const string aname)
-    : Preconditioner (pde,aflags,aname),
-      coarse_pre(0)
+    : Preconditioner (pde,aflags,aname), coarse_pre(0)
   {
     bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
     block = flags.GetDefineFlag ("block");
@@ -564,7 +563,7 @@ namespace ngcomp
 	  flags.SetFlag("eliminate_internal");
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre, parallel, bfa->GetFESpace().GetFreeDofs());
+	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre.get(), parallel, bfa->GetFESpace().GetFreeDofs());
 	// dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
       }
     else if (block)
@@ -826,12 +825,12 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     : Preconditioner (apde,aflags,aname), pde(apde)
   {
     bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    while (&bfa->GetLowOrderBilinearForm())
-      bfa = &bfa->GetLowOrderBilinearForm();
+    while (bfa->GetLowOrderBilinearForm())
+      bfa = bfa->GetLowOrderBilinearForm();
 
-    coefse = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coefse", ""),1);    
-    coefe = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coefe", ""),1);    
-    coeff = pde->CoefficientFunctionPtr (flags.GetStringFlag ("coeff", ""),1);    
+    coefse = pde->GetCoefficientFunction (flags.GetStringFlag ("coefse", ""),1);    
+    coefe = pde->GetCoefficientFunction (flags.GetStringFlag ("coefe", ""),1);    
+    coeff = pde->GetCoefficientFunction (flags.GetStringFlag ("coeff", ""),1);    
 
     hcurl = dynamic_cast<const NedelecFESpace*> (&bfa->GetFESpace()) != 0;
     levels = int (flags.GetNumFlag ("levels", 10));

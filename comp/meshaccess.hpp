@@ -176,7 +176,8 @@ namespace ngcomp
     int nelements[4];  
     /// number of elements of co-dimension i
     int nelements_cd[4];
-
+    ///
+    int ne_vb[2];  // index with VorB
     /// number of multigrid levels 
     int nlevels;
 
@@ -216,8 +217,7 @@ namespace ngcomp
     int GetNSE() const { return nelements_cd[1]; }  
 
     /// number of volume or boundary elements
-    int GetNE(VorB vb) const { return (vb == VOL) ? GetNE() : GetNSE(); }
-
+    int GetNE(VorB vb) const { return ne_vb[vb]; } 
 
     /// number of edges in the whole mesh
     int GetNEdges() const { return nnodes[1]; }     
@@ -650,7 +650,7 @@ namespace ngcomp
 				   bool build_searchtree,
 				   int index) const;
 
-    /// is element straiht or curved ?
+    /// is element straight or curved ?
     bool IsElementCurved (int elnr) const
     { return bool (Ng_IsElementCurved (elnr+1)); }
     

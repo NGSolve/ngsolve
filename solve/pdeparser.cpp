@@ -500,7 +500,7 @@ namespace ngsolve
         if (names[i])
           {
             cout << "depend on " << names[i] << endl;
-            depends.Append (pde.CoefficientFunctionPtr(names[i]));
+            depends.Append (pde.GetCoefficientFunction(names[i]));
           }
       return ok;
     }
@@ -1488,7 +1488,7 @@ namespace ngsolve
 			if (names[i])
 			  {
 			    cout << "depend on " << names[i] << endl;
-			    depends.Append (pde->CoefficientFunctionPtr(names[i]));
+			    depends.Append (pde->GetCoefficientFunction(names[i]));
 			  }
 		    }
 
@@ -1538,8 +1538,7 @@ namespace ngsolve
 	  //
 	  if(flags.StringFlagDefined("useintegratorsof"))
 	    {
-	      BilinearForm * source = pde->GetBilinearForm(flags.GetStringFlag("useintegratorsof",""));
-	      
+	      auto source = pde->GetBilinearForm(flags.GetStringFlag("useintegratorsof",""));
 	      for(int i = 0; i < source->NumIntegrators(); i++)
 		pde->AddBilinearFormIntegrator(name,source->GetIntegrator(i),false);
 	    
@@ -1567,7 +1566,7 @@ namespace ngsolve
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
-			  coeffs[i] = pde->CoefficientFunctionPtr (scan->GetStringValue(), 1);
+			  coeffs[i] = pde->GetCoefficientFunction (scan->GetStringValue(), 1);
 			  if (!coeffs[i])
 			    {
                               shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);
@@ -1773,7 +1772,7 @@ namespace ngsolve
 		      scan->ReadNext();
 		      for (int i = 0; i < info->numcoeffs; i++)
 			{
-			  coeffs[i] = pde->CoefficientFunctionPtr (scan->GetStringValue(),true);
+			  coeffs[i] = pde->GetCoefficientFunction (scan->GetStringValue(),true);
 			  if (!coeffs[i])
 			    {
 			      shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);

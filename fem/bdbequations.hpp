@@ -449,18 +449,19 @@ namespace ngfem
   public:
     // typedef SCAL TSCAL;
     enum { DIM_DMAT = DIM };
-    DiagDMat (shared_ptr<CoefficientFunction> acoef) : coef(acoef) { ; }
-
+    DiagDMat (shared_ptr<CoefficientFunction> acoef)
+      : coef(acoef) { ; }
+    
     // compatibility
-    DiagDMat (const CoefficientFunction * acoef) 
+    DiagDMat (const CoefficientFunction * acoef)
       : coef(const_cast<CoefficientFunction*>(acoef), NOOP_Deleter) { ; }
-
-    DiagDMat (const Array<shared_ptr<CoefficientFunction>> & acoefs) 
+    
+    DiagDMat (const Array<shared_ptr<CoefficientFunction>> & acoefs)
       : coef(acoefs[0]) { ; }
-
+    
     template <typename SCAL>
     static DiagMat<DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
-
+    
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
 			 MAT & mat, LocalHeap & lh) const

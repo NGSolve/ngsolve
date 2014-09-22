@@ -13,11 +13,11 @@ namespace ngsolve
   class NumProcEVP : public NumProc
   {
   protected:
-    BilinearForm * bfa;
-    BilinearForm * bfm;
+    shared_ptr<BilinearForm> bfa;
+    shared_ptr<BilinearForm> bfm;
 
     shared_ptr<GridFunction> gfu;
-    Preconditioner * pre;
+    shared_ptr<Preconditioner> pre;
     int num;
 
     double prec, shift, shifti;

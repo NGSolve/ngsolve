@@ -247,11 +247,11 @@ namespace ngsolve
     ///
     double & GetVariable (const string & aname, bool opt = 0);
     ///
-    CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
-    shared_ptr<CoefficientFunction> CoefficientFunctionPtr (const string & name, bool opt = 0) const;
+    // CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
+    shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0) const;
     ///
-    FESpace * GetFESpace (const string & name, bool opt = 0);
-    shared_ptr<FESpace> FESpacePtr (const string & name, bool opt = 0) const;
+    // FESpace * GetFESpace (const string & name, bool opt = 0);
+    shared_ptr<FESpace> GetFESpace (const string & name, bool opt = 0) const;
     ///
     /*
     GridFunction * GetGridFunction (const string & name, bool opt = 0)
@@ -262,29 +262,27 @@ namespace ngsolve
     ///
     shared_ptr<GridFunction> GetGridFunction (const string & name, bool opt = 0) const;
     ///
-    BilinearForm * GetBilinearForm (const string & name, bool opt = 0);
+    shared_ptr<BilinearForm> GetBilinearForm (const string & name, bool opt = 0) const;
     ///
-    LinearForm * GetLinearForm (const string & name, bool opt = 0);
+    shared_ptr<LinearForm> GetLinearForm (const string & name, bool opt = 0) const;
     ///
-    Preconditioner * GetPreconditioner (const string & name, bool opt = 0);
+    shared_ptr<Preconditioner> GetPreconditioner (const string & name, bool opt = 0) const;
     ///
-    NumProc * GetNumProc (const string & name, bool opt = 0);
-
-
+    shared_ptr<NumProc> GetNumProc (const string & name, bool opt = 0) const;
     ///
-    const CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0) const;
+    // shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0) const;
     ///
-    const FESpace * GetFESpace (const string & name, bool opt = 0) const;
+    // const FESpace * GetFESpace (const string & name, bool opt = 0) const;
     ///
     // const GridFunction * GetGridFunction (const string & name, bool opt = 0) const;
     ///
-    const BilinearForm * GetBilinearForm (const string & name, bool opt = 0) const;
+    // const BilinearForm * GetBilinearForm (const string & name, bool opt = 0) const;
     ///
-    const LinearForm * GetLinearForm (const string & name, bool opt = 0) const;
+    // const LinearForm * GetLinearForm (const string & name, bool opt = 0) const;
     ///
-    const Preconditioner * GetPreconditioner (const string & name, bool opt = 0) const;
+    // const Preconditioner * GetPreconditioner (const string & name, bool opt = 0) const;
     ///
-    const NumProc * GetNumProc (const string & name, bool opt = 0) const;
+    // const NumProc * GetNumProc (const string & name, bool opt = 0) const;
 
 
 

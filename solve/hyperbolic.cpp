@@ -29,11 +29,11 @@ class NumProcHyperbolic : public NumProc
 {
 protected:
   // bilinear-form for the stiffness matrix
-  BilinearForm * bfa;
+  shared_ptr<BilinearForm> bfa;
   // bilinear-form for the mass-matrix
-  BilinearForm * bfm;
+  shared_ptr<BilinearForm> bfm;
   // linear-form providing the right hand side
-  LinearForm * lff;
+  shared_ptr<LinearForm> lff;
   // solution vector
   shared_ptr<GridFunction> gfu;
 

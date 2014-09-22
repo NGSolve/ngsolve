@@ -110,7 +110,7 @@ namespace ngcomp
     FiniteElement * point;// = NULL;
 
 
-    FiniteElement * dummy_tet; //  = new DummyFE<ET_TET>();
+    FiniteElement * dummy_tet; // = new <DummyFE<ET_TET>();
     FiniteElement * dummy_pyramid; // = new DummyFE<ET_PYRAMID>();
     FiniteElement * dummy_prism; // = new DummyFE<ET_PRISM>();
     FiniteElement * dummy_hex; //  = new DummyFE<ET_HEX>();
@@ -169,11 +169,8 @@ namespace ngcomp
     */
     FESpace (const MeshAccess & ama, const Flags & flags, 
              bool checkflags = false);
-    ///
+    /// cleanup
     virtual ~FESpace ();
-  
-    /// update dof-tables, old style
-    // virtual void Update();
 
     /// update dof-table
     virtual void Update(LocalHeap & lh);
@@ -203,16 +200,18 @@ namespace ngcomp
     bool IsComplex () const { return iscomplex; }
 
 
-    /// number of dofs of process
+    /// number of (process-local) dofs
     virtual int GetNDof () const = 0;
     /// number of dofs on the level
     virtual int GetNDofLevel (int level) const;
-  
+
+    /*
     /// returns finite element. 
     const FiniteElement & GetFE (int elnr, bool boundary, LocalHeap & lh) const
     {
       return boundary ? GetSFE(elnr, lh) : GetFE(elnr, lh);
     }
+    */
 
     /// returns finite element. 
     const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const
@@ -226,6 +225,7 @@ namespace ngcomp
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const = 0;
 
+    /*
     /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (int elnr, bool boundary, Array<int> & dnums) const
     {
@@ -234,6 +234,7 @@ namespace ngcomp
       else
 	GetDofNrs (elnr, dnums);
     }
+    */
 
     /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (ElementId ei, Array<int> & dnums) const

@@ -391,7 +391,7 @@ namespace ngcomp
             nelements_cd[i] = 0;
           }
         dim = -1;
-
+        ne_vb[VOL] = ne_vb[BND] = 0;
         return;
       }
 
@@ -407,6 +407,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
+        ne_vb[VOL] = ne_vb[BND] = 0;
       }
     else
       {
@@ -420,6 +421,8 @@ namespace ngcomp
 	    nnodes_cd[i] = nnodes[dim-i];
 	    nelements_cd[i] = nelements[dim-i];
 	  }
+        ne_vb[VOL] = nelements_cd[0];
+        ne_vb[BND] = nelements_cd[1];
       }
 
     ndomains = -1;

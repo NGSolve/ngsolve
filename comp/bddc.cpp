@@ -64,7 +64,8 @@ namespace ngcomp
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
 	  {
-	    fes.GetDofNrs (i, bound, dnums);
+            ElementId ei (bound ? BND : VOL, i);
+	    fes.GetDofNrs (ei, dnums);
 	    for (int j = 0; j < dnums.Size(); j++)
 	      {
 		if (dnums[j] == -1) continue;
@@ -85,7 +86,8 @@ namespace ngcomp
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
 	  {
-	    fes.GetDofNrs (i, bound, dnums);
+            ElementId ei (bound ? BND : VOL, i);
+	    fes.GetDofNrs (ei, dnums);
 	    
 	    int lifcnt = 0;
 	    int lwbcnt = 0;
@@ -490,7 +492,7 @@ namespace ngcomp
     BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
       : Preconditioner (&pde, aflags, aname)
     {
-      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")));
+      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")).get());
       const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");

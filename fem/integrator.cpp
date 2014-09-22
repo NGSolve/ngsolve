@@ -877,9 +877,12 @@ namespace ngfem
   {
     if (comp >= 0)
       {
+        FlatVector<double> selx = flux.Slice(comp, dim) | lh; 
+        /*
 	FlatVector<double> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
 	  selx(i) = elx(dim*i+comp);
+        */
 	bfi->CalcFlux (fel, eltrans(ip, lh), selx, flux, applyd, lh);
       }
     else
@@ -926,7 +929,7 @@ namespace ngfem
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-        if (comp >= 0)
+    if (comp >= 0)
       {
 	FlatVector<Complex> selx(elx.Size()/dim, lh);
 	for (int i = 0; i < selx.Size(); i++)
