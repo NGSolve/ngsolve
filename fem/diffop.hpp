@@ -299,6 +299,13 @@ namespace ngfem
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
+
+    virtual void
+    ApplyTrans (const FiniteElement & bfel,
+		const BaseMappedIntegrationPoint & bmip,
+		FlatVector<Complex> flux,
+		FlatVector<Complex> x, 
+		LocalHeap & lh) const;
   };
 
 

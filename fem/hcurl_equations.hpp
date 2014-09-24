@@ -7,6 +7,9 @@
 /* Date:   10. Feb. 2002                                             */
 /*********************************************************************/
 
+
+#pragma interface
+
 namespace ngfem
 {
 
@@ -253,9 +256,7 @@ namespace ngfem
       Vec<D> tv_JI = mip.GetJacobianInverse () * tv;
    
       mat = Trans ( fel.GetShape(mip.IP(), lh) * tv_JI );
-    
     }
-
   };
 
 
@@ -363,7 +364,7 @@ namespace ngfem
 
 
 
-
+  /*
   /// 
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class CurlCurlEdgeIntegrator 
@@ -372,15 +373,13 @@ namespace ngfem
     typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
     using BASE::T_BDBIntegrator;
-    /*
-    CurlCurlEdgeIntegrator (CoefficientFunction * coeff) 
-      : BASE(DiagDMat<DIM_CURL_TRAIT<D>::DIM>(coeff)) { ; }
-    CurlCurlEdgeIntegrator (Array<CoefficientFunction*> & coeffs) 
-      : BASE(coeffs) { ; }
-    */
     virtual string Name () const { return "CurlCurlEdge"; }
   };
+  */
 
+  template <int D>
+  using CurlCurlEdgeIntegrator = T_BDBIntegrator<DiffOpCurlEdge<D>, DiagDMat<DIM_CURL_TRAIT<D>::DIM>, HCurlFiniteElement<D>>;
+  
 
 
   /// 
@@ -390,18 +389,6 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > BASE;
   public:
     using BASE::T_BDBIntegrator;
-    ///
-    /*
-    CurlCurlBoundaryEdgeIntegrator (CoefficientFunction * coeff);
-    CurlCurlBoundaryEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
-    */
-    /*
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new CurlCurlBoundaryEdgeIntegrator (coeffs[0]);
-    }
-    */
-
     ///
     virtual bool BoundaryForm () const { return 1; }
     ///
@@ -417,26 +404,12 @@ namespace ngfem
   public:
     using BASE::T_BDBIntegrator;
     ///
-    /*
-    CurlCurlEdgeOrthoIntegrator (CoefficientFunction * coeff1,
-				 CoefficientFunction * coeff2,
-				 CoefficientFunction * coeff3)
-      : T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> 
-    (OrthoDMat<DIM_CURL_TRAIT<D>::DIM> (coeff1, coeff2, coeff3))
-    { ; }
-  
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new CurlCurlEdgeOrthoIntegrator (coeffs[0], coeffs[1], coeffs[2]);
-    }
-    */
-    ///
     virtual string Name () const { return "CurlCurlEdgeOrtho"; }
   };
 
 
 
-
+  /*
   ///
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class MassEdgeIntegrator 
@@ -445,15 +418,13 @@ namespace ngfem
     typedef  T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, FEL> BASE;
   public:
     using BASE::T_BDBIntegrator;
-    /*
-    ///
-    MassEdgeIntegrator (CoefficientFunction * coeff) : BASE(DiagDMat<D>(coeff)) { ; }
-    MassEdgeIntegrator (Array<CoefficientFunction*> & coeffs) : BASE(coeffs) { ; }
-    */
     ///
     virtual string Name () const { return "MassEdge"; }
   };
+  */
 
+  template <int D>
+  using MassEdgeIntegrator = T_BDBIntegrator<DiffOpIdEdge<D>, DiagDMat<D>, HCurlFiniteElement<D>>;
 
 
   ///
@@ -537,22 +508,8 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> BASE;
   public:
     using BASE::T_BDBIntegrator;
-    /*
-    ///
-    RobinEdgeIntegrator (CoefficientFunction * coeff)
-      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> (DiagDMat<D> (coeff))
-    { ; }
-    RobinEdgeIntegrator (Array<CoefficientFunction*> & coeffs)
-      : T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> (DiagDMat<D> (coeffs[0]))
-    { ; }
-    */
-    ///
-    virtual bool BoundaryForm () const { return 1; }
-
-    ///
     virtual string Name () const { return "RobinEdge"; }
   };
-
 
 
 
@@ -746,20 +703,42 @@ namespace ngfem
 
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<3> >;
-
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<3> >;
-
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
+  HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlBoundaryEdge<> >;
 
+  // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
+  // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;
+  HCURL_EQUATIONS_EXTERN template class RobinEdgeIntegrator<2>;
+  HCURL_EQUATIONS_EXTERN template class RobinEdgeIntegrator<3>;
+  // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<2>;
+  // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<3>;
+  HCURL_EQUATIONS_EXTERN template class MassEdgeAnisotropicIntegrator<3>;
 
-  HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
-  HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<2>, DiagDMat<2>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<3>, DiagDMat<3>, HCurlFiniteElement<3>>;
+  // HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdBoundaryEdge<2>, DiagDMat<2>, HCurlFiniteElement<1>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdBoundaryEdge<3>, DiagDMat<3>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpCurlEdge<2>, DiagDMat<1>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpCurlEdge<3>, DiagDMat<3>, HCurlFiniteElement<3>>;
+  HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> >;
 
-  HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<2>;
-  HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<3>;
+  HCURL_EQUATIONS_EXTERN template class SourceEdgeIntegrator<2, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class SourceEdgeIntegrator<3, HCurlFiniteElement<3>>;
 
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdEdge<2>, DVec<2>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdEdge<3>, DVec<3>, HCurlFiniteElement<3>>;
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundaryEdge<2>, DVec<2>, HCurlFiniteElement<1>>;
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundaryEdge<3>, DVec<3>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpCurlEdge<2>, DVec<1>, HCurlFiniteElement<2>>;
+  HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpCurlEdge<3>, DVec<3>, HCurlFiniteElement<3>>;
+  /*
+    HCURL_EQUATIONS_EXTERN template class 
+    HCURL_EQUATIONS_EXTERN template class 
+  */
 }
 
 #endif

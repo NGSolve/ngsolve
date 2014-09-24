@@ -174,7 +174,7 @@ public:
   {
   protected:
     DMATOP dmatop;
-    shared_ptr<DifferentialOperator> diffop;
+    DifferentialOperator * diffop = NULL;
   public:
   
     INLINE T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
@@ -182,7 +182,7 @@ public:
     { ; }
 
     
-    T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1)
+    T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> & c1)
       : dmatop(c1) { ; }
     
     /*
@@ -198,7 +198,7 @@ public:
     ///
     T_BDBIntegrator_DMat (const DMATOP & admat) : dmatop(admat) { ; }
 
-    virtual ~T_BDBIntegrator_DMat () { ; }
+    virtual ~T_BDBIntegrator_DMat () { delete diffop; }
     
     ///
     virtual bool BoundaryForm () const
@@ -218,57 +218,57 @@ public:
     
     virtual void ApplyDMat (const FiniteElement & bfel,
                             const BaseMappedIntegrationPoint & bmip,
-                            const FlatVector<double> & elx, 
-                            FlatVector<double> & eldx,
+                            FlatVector<double> elx, 
+                            FlatVector<double> eldx,
                             LocalHeap & lh) const
     {
-      dmatop.Apply(bfel,
-                   static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
+      dmatop.Apply(bfel, bmip,
+                   // static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
                    elx, eldx ,lh);
     }
 
     virtual void ApplyDMat (const FiniteElement & bfel,
                             const BaseMappedIntegrationPoint & bmip,
-                            const FlatVector<Complex> & elx, 
-                            FlatVector<Complex> & eldx,
+                            FlatVector<Complex> elx, 
+                            FlatVector<Complex> eldx,
                             LocalHeap & lh) const
     {
-      dmatop.Apply(bfel,
-                   static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
+      dmatop.Apply(bfel, bmip,
+                   // static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> &>(bmip),
                    elx,eldx,lh);
     }
     
     virtual void ApplyDMat (const FiniteElement & bfel,
                             const BaseMappedIntegrationRule & bmir,
-                            const FlatMatrix<double> & elx, 
-                            FlatMatrix<double> & eldx,
+                            FlatMatrix<double> elx, 
+                            FlatMatrix<double> eldx,
                             LocalHeap & lh) const
     {
-      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
       
-      for (int i = 0; i < mir.Size(); i++)
-        dmatop.Apply (bfel, mir[i], elx.Row(i), eldx.Row(i), lh);
+      for (int i = 0; i < bmir.Size(); i++)
+        dmatop.Apply (bfel, bmir[i], elx.Row(i), eldx.Row(i), lh);
     }
     
     virtual void ApplyDMatInv (const FiniteElement & bfel,
                                const BaseMappedIntegrationRule & bmir,
-                               const FlatMatrix<double> & elx, 
-                               FlatMatrix<double> & eldx,
+                               FlatMatrix<double> elx, 
+                               FlatMatrix<double> eldx,
                                LocalHeap & lh) const
     {
-      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      // const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      // static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
       
-      for (int i = 0; i < mir.Size(); i++)
-        dmatop.ApplyInv (bfel, mir[i], elx.Row(i), eldx.Row(i), lh);
+      for (int i = 0; i < bmir.Size(); i++)
+        dmatop.ApplyInv (bfel, bmir[i], elx.Row(i), eldx.Row(i), lh);
     }
 
     
     virtual void ApplyDMat (const FiniteElement & bfel,
                             const BaseMappedIntegrationRule & bmir,
-                            const FlatMatrix<Complex> & elx, 
-                            FlatMatrix<Complex> & eldx,
+                            FlatMatrix<Complex> elx, 
+                            FlatMatrix<Complex> eldx,
                             LocalHeap & lh) const
     {
       const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
@@ -285,17 +285,14 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & bmip,
-              const FlatVector<double> & elx, 
-              FlatVector<double> & flux,
+              FlatVector<double> elx, 
+              FlatVector<double> flux,
               bool applyd,
               LocalHeap & lh) const
     {
-      // const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-      // static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      
-      FlatVec<DMATOP::DIM_DMAT,double> hflux(&flux(0));
-      // DIFFOP::Apply (fel, mip, elx, hflux, lh);
       diffop -> Apply (fel, bmip, elx, flux, lh);
+
+      FlatVec<DMATOP::DIM_DMAT,double> hflux(&flux(0));
       if (applyd)
         dmatop.Apply1 (fel, bmip, hflux, lh);
     }
@@ -303,36 +300,53 @@ public:
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationRule & bmir,
-              const FlatVector<double> & elx, 
-              FlatMatrix<double> & flux,
+              FlatVector<double> elx, 
+              FlatMatrix<double> flux,
               bool applyd,
               LocalHeap & lh) const
     {
-      const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-        static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      diffop->Apply (fel, bmir, elx, flux, lh);
       
       FlatMatrixFixWidth<DMATOP::DIM_DMAT,double> hflux(flux.Height(), &flux(0,0));
-      // DIFFOP::ApplyIR (fel, mir, elx, hflux, lh);
-      diffop->Apply (fel, mir, elx, hflux, lh);
       if (applyd)
-        dmatop.ApplyIR (fel, mir, hflux, lh);
+        dmatop.ApplyIR (fel, bmir, hflux, lh);
     }
 
     virtual void
     CalcFlux (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & bmip,
-              const FlatVector<Complex> & elx, 
-              FlatVector<Complex> & flux,
+              FlatVector<Complex> elx, 
+              FlatVector<Complex> flux,
               bool applyd,
               LocalHeap & lh) const
     {
-      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-        static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      
+      diffop->Apply (fel, bmip, elx, flux, lh);
+
       FlatVec<DMATOP::DIM_DMAT,Complex> hflux(&flux(0));
-      diffop->Apply (fel, mip, elx, hflux, lh);
       if (applyd)
-        dmatop.Apply1 (fel, mip, hflux, lh);
+        dmatop.Apply1 (fel, bmip, hflux, lh);
+    }
+
+
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+                 const BaseMappedIntegrationPoint & bmip,
+                 FlatVector<double> elx, 
+                 FlatVector<double> ely,
+                 LocalHeap & lh) const
+    {
+      diffop->ApplyTrans (fel, bmip, elx, ely, lh);
+    }
+  
+    
+    virtual void
+    ApplyBTrans (const FiniteElement & fel,
+                 const BaseMappedIntegrationPoint & bmip,
+                 FlatVector<Complex> elx, 
+                 FlatVector<Complex> ely,
+                 LocalHeap & lh) const
+    {
+      diffop->ApplyTrans (fel, bmip, elx, ely, lh);
     }
 
   };
@@ -376,15 +390,37 @@ public:
   T_BDBIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     : BASE(coeffs)
   {
-    diffop = make_shared<T_DifferentialOperator<DIFFOP>>(); 
+    diffop = new T_DifferentialOperator<DIFFOP>; 
   }
 
+  T_BDBIntegrator  (const shared_ptr<CoefficientFunction> & c1)
+    : BASE(c1) 
+  { 
+    diffop = new T_DifferentialOperator<DIFFOP>; 
+  }
+  
+  T_BDBIntegrator  (const CoefficientFunction * coef)
+    : BASE (coef) 
+  { 
+    diffop = new T_DifferentialOperator<DIFFOP>; 
+  } 
+
+  T_BDBIntegrator (const DMATOP & admat)
+    : BASE(admat) 
+  { 
+    diffop = new T_DifferentialOperator<DIFFOP>; 
+  }
+
+
+  
+  /*
   template <typename ... ARGS>
   T_BDBIntegrator (ARGS ... args)
     : BASE(args...)
   {
     diffop = make_shared<T_DifferentialOperator<DIFFOP>>(); 
   }
+  */
 
   ///
   virtual ~T_BDBIntegrator () { ; }
@@ -401,7 +437,7 @@ public:
   virtual void
   CalcElementMatrix (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<double> & elmat,
+		     FlatMatrix<double> elmat,
 		     LocalHeap & lh) const
   {
     T_CalcElementMatrix<double> (bfel, eltrans, elmat, lh);
@@ -410,7 +446,7 @@ public:
   virtual void
   CalcElementMatrix (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<Complex> & elmat,
+		     FlatMatrix<Complex> elmat,
 		     LocalHeap & lh) const
   {
     T_CalcElementMatrix<Complex> (bfel, eltrans, elmat, lh);
@@ -422,7 +458,7 @@ public:
   template <typename TSCAL>
   void T_CalcElementMatrix (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
-			    FlatMatrix<TSCAL> & elmat,
+			    FlatMatrix<TSCAL> elmat,
 			    LocalHeap & lh) const
   {
 
@@ -486,7 +522,7 @@ public:
   template <typename TSCAL>
   void T_CalcElementMatrix (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
-			    FlatMatrix<TSCAL> & elmat,
+			    FlatMatrix<TSCAL> elmat,
 			    LocalHeap & lh) const
   {
     // static Timer timer(string ("Elementmatrix, ") + Name()); RegionTimer reg (timer);
@@ -605,7 +641,7 @@ public:
   template <typename TSCAL>
   void T_CalcElementMatrix (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
-			    FlatMatrix<TSCAL> & elmat,
+			    FlatMatrix<TSCAL> elmat,
 			    LocalHeap & lh) const
   {
     static Timer timer (string ("Elementmatrix, ") + Name(), 2);
@@ -679,7 +715,7 @@ public:
   virtual void
   CalcElementMatrixDiag (const FiniteElement & bfel,
 			     const ElementTransformation & eltrans, 
-			     FlatVector<double> & diag,
+			     FlatVector<double> diag,
 			     LocalHeap & lh) const
   {
     try
@@ -748,8 +784,8 @@ public:
   virtual void 
   ApplyElementMatrix (const FiniteElement & bfel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<Complex> & elx, 
-		      FlatVector<Complex> & ely,
+                      FlatVector<Complex> elx, 
+		      FlatVector<Complex> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -760,14 +796,11 @@ public:
   template <typename TSCAL>
   void T_ApplyElementMatrix (const FiniteElement & fel, 
 			     const ElementTransformation & eltrans, 
-			     const FlatVector<TSCAL> & elx, 
-			     FlatVector<TSCAL> & ely,
+                             FlatVector<TSCAL> elx, 
+			     FlatVector<TSCAL> ely,
 			     void * precomputed,
 			     LocalHeap & lh) const
   {
-    // static Timer timer (string ("BDBIntegrator::ApplyElementMatrix<") + typeid(TSCAL).name() + ">" + Name(), 2);
-    // RegionTimer reg (timer);
-
     const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
     MappedIntegrationRule<DIM_ELEMENT, DIM_SPACE> mir(ir, eltrans, lh);
     
@@ -775,13 +808,6 @@ public:
 
     DIFFOP::ApplyIR (fel, mir, elx, hv1, lh);
     dmatop.ApplyIR (fel, mir, hv1, lh);
-    /*
-    for (int i = 0; i < ir.GetNIP(); i++)
-      {
-        dmatop.Apply1 (fel, mir[i], hv1.Row(i), lh);       
-        hv1.Row(i) *= mir[i].GetWeight();
-      }
-    */
     DIFFOP::ApplyTransIR (fel, mir, hv1, ely, lh);    
   }
 
@@ -796,15 +822,13 @@ public:
   ApplyMixedElementMatrix (const FiniteElement & bfel1, 
 			   const FiniteElement & bfel2, 
 			   const ElementTransformation & eltrans, 
-			   const FlatVector<double> & elx, 
-			   FlatVector<double> & ely,
+                           FlatVector<double> elx, 
+			   FlatVector<double> ely,
 			   LocalHeap & lh) const
   {
-    const FEL & fel1 = dynamic_cast<const FEL&> (bfel1);
-    const FEL & fel2 = dynamic_cast<const FEL&> (bfel2);
-    // int ndof1 = fel1.GetNDof ();
-    int ndof2 = fel2.GetNDof ();
-    
+    HeapReset hr1 (lh);
+
+    int ndof2 = bfel2.GetNDof ();
     ely = 0;
     
     Vec<DIM_DMAT,double> hv1;
@@ -812,22 +836,18 @@ public:
     
     FlatVector<double> hely (ndof2*DIM, lh);
 
-    const IntegrationRule & ir = GetIntegrationRule (fel2,eltrans.HigherIntegrationOrderSet());
+    const IntegrationRule & ir = GetIntegrationRule (bfel2,eltrans.HigherIntegrationOrderSet());
 
-    void * heapp = lh.GetPointer();
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-	const IntegrationPoint & ip = ir[i];
-	
+        HeapReset hr (lh);
 	MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip (ir[i], eltrans);
 
-	DIFFOP::Apply (fel1, mip, elx, hv1, lh);
-	dmatop.Apply (fel1, mip, hv1, hv2, lh);
-	DIFFOP::ApplyTrans (fel2, mip, hv2, hely, lh);
+	diffop->Apply (bfel1, mip, elx, hv1, lh);
+	dmatop.Apply (bfel1, mip, hv1, hv2, lh);
+	diffop->ApplyTrans (bfel2, mip, hv2, hely, lh);
 
-	double fac = fabs (mip.GetJacobiDet()) * ip.Weight();
-	ely += fac * hely;
-	lh.CleanUp (heapp);
+	ely += mip.GetWeight() * hely;
       }     
   }
 
@@ -922,8 +942,8 @@ public:
   CalcFluxMulti (const FiniteElement & fel,
 		 const BaseMappedIntegrationPoint & bmip,		
 		 int m,
-		 const FlatVector<double> & elx, 
-		 FlatVector<double> & flux,
+                 FlatVector<double> elx, 
+		 FlatVector<double> flux,
 		 bool applyd,
 		 LocalHeap & lh) const
   {
@@ -961,15 +981,14 @@ public:
       }
   }
 
-
+  /*
   virtual void
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatVector<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
-    // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
 
@@ -980,8 +999,8 @@ public:
   virtual void
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<Complex> & elx, 
-	       FlatVector<Complex> & ely,
+               FlatVector<Complex> elx, 
+	       FlatVector<Complex> ely,
 	       LocalHeap & lh) const
   {
     // const FEL & fel = static_cast<const FEL&> (bfel);
@@ -990,22 +1009,23 @@ public:
 
     DIFFOP::ApplyTrans (fel, mip, elx, ely, lh);
   }
+  */
 
 
   virtual void
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationRule & bmir,
-	       const FlatMatrix<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatMatrix<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     // const FEL & fel = static_cast<const FEL&> (bfel);
     const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
       static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
 
-    DIFFOP::ApplyTransIR (fel, mir, elx, ely, lh);
+    // DIFFOP::ApplyTransIR (fel, mir, elx, ely, lh);
+    diffop->ApplyTrans (fel, mir, elx, ely, lh);
   }
-
   ///
   virtual int GetDimension () const { return DIM; }
 };
@@ -1058,8 +1078,8 @@ public:
   virtual void
   CalcLinearizedElementMatrix (const FiniteElement & fel, 
 				   const ElementTransformation & eltrans, 
-				   FlatVector<double> & elveclin,
-				   FlatMatrix<double> & elmat,
+				   FlatVector<double> elveclin,
+				   FlatMatrix<double> elmat,
 				   LocalHeap & lh) const 
   {
     static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name(), 2);
@@ -1123,8 +1143,8 @@ public:
   virtual void
   CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<Complex> & elveclin,
-			       FlatMatrix<Complex> & elmat,
+			       FlatVector<Complex> elveclin,
+			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const 
   {
     static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name(), 2);
@@ -1211,9 +1231,9 @@ public:
   virtual void 
   ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<double> & ellin, 
-				const FlatVector<double> & elx, 
-				FlatVector<double> & ely,
+                                FlatVector<double> ellin, 
+                                FlatVector<double> elx, 
+				FlatVector<double> ely,
 				LocalHeap & lh) const
   {
     // const FEL & fel = dynamic_cast<const FEL&> (bfel);
@@ -1251,9 +1271,9 @@ public:
   virtual void 
   ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<Complex> & ellin, 
-				const FlatVector<Complex> & elx, 
-				FlatVector<Complex> & ely,
+                                FlatVector<Complex> ellin, 
+                                FlatVector<Complex> elx, 
+				FlatVector<Complex> ely,
 				LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
@@ -1294,7 +1314,7 @@ public:
 
   virtual double Energy (const FiniteElement & bfel, 
 			 const ElementTransformation & eltrans, 
-			 const FlatVector<double> & elx, 
+                         FlatVector<double> elx, 
 			 LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
@@ -1410,7 +1430,7 @@ public:
   virtual void
   CalcElementVector (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatVector<double> & elvec,
+		     FlatVector<double> elvec,
 		     LocalHeap & lh) const
   {
     T_CalcElementVector<double> (bfel, eltrans, elvec, lh);
@@ -1419,7 +1439,7 @@ public:
   virtual void
   CalcElementVector (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatVector<Complex> & elvec,
+		     FlatVector<Complex> elvec,
 		     LocalHeap & lh) const
   {
     T_CalcElementVector<Complex> (bfel, eltrans, elvec, lh);
@@ -1430,7 +1450,7 @@ public:
   template <typename TSCAL>
   void T_CalcElementVector (const FiniteElement & fel,
 			    const ElementTransformation & eltrans, 
-			    FlatVector<TSCAL> & elvec,
+			    FlatVector<TSCAL> elvec,
 			    LocalHeap & lh) const
   {
     try

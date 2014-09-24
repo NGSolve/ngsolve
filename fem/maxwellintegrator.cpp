@@ -10,6 +10,7 @@
 */
 
 #define FILE_HCURL_EQUATIONS_CPP 
+#pragma implementation "hcurl_equations.hpp"
 
 #include <fem.hpp>
 #include <diffop_impl.hpp>
@@ -97,7 +98,7 @@ namespace ngfem
   */
 
 
-
+  /*
   template class RobinEdgeIntegrator<2>;
   template class RobinEdgeIntegrator<3>;
 
@@ -106,10 +107,11 @@ namespace ngfem
 
   template class NeumannEdgeIntegrator<2>;
   template class NeumannEdgeIntegrator<3>;
-
+  */
 
   namespace maxwellint {
     
+
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<3> > initcce3 ("curlcurledge", 3, 1);
 
@@ -129,7 +131,6 @@ namespace ngfem
 
     static RegisterLinearFormIntegrator<CurlEdgeIntegrator<2> > initcurle2 ("curledge", 2, 1);
     static RegisterLinearFormIntegrator<CurlEdgeIntegrator<3> > initcurle3 ("curledge", 3, 3);
-
 
     class Init
     { 

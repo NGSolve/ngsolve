@@ -54,7 +54,7 @@ namespace ngfem
     
     virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
+                                        FlatMatrix<double> elmat,
                                         LocalHeap & lh) const
     {
       throw Exception("DGInnerFacet_LaplaceIntegrator::CalcElementMatrix - not implemented!");
@@ -216,7 +216,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
+                                        FlatMatrix<double> elmat,
                                         LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("ConvectionIntegrator");
@@ -291,9 +291,9 @@ namespace ngfem
     }
     
     virtual void CalcElementMatrix (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatMatrix<double> elmat,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGInnerFacet_ConvectionIntegrator::CalcElementMatrix - not implemented!");
     }
@@ -428,9 +428,9 @@ namespace ngfem
     }
     
     virtual void CalcElementMatrix (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatMatrix<double> elmat,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGBoundaryFacet_ConvectionIntegrator::CalcElementMatrix - not implemented!");
     }
@@ -528,9 +528,9 @@ namespace ngfem
     }
     
     virtual void CalcElementMatrix (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatMatrix<double> & elmat,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatMatrix<double> elmat,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGBoundaryFacet_LaplaceIntegrator::CalcElementMatrix - not implemented!");
     }

@@ -35,7 +35,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       static Timer timer ("HDG laplace");
@@ -172,8 +172,8 @@ namespace ngfem
 
     virtual void ApplyElementMatrix (const FiniteElement & fel,
 				     const ElementTransformation & eltrans, 
-				     const FlatVector<double> & elx, 
-				     FlatVector<double> & ely,
+                                     FlatVector<double> elx, 
+				     FlatVector<double> ely,
 				     void * precomputed,
 				     LocalHeap & lh) const
     {
@@ -342,8 +342,8 @@ namespace ngfem
     CalcFlux (const FiniteElement & fel,
 	      const FiniteElement & felflux,
 	      const ElementTransformation & eltrans,
-	      const FlatVector<> & elu, 
-	      FlatVector<> & elflux,
+              FlatVector<> elu, 
+	      FlatVector<> elflux,
 	      bool applyd,
 	      LocalHeap & lh) const
     {
@@ -525,7 +525,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       static Timer timer ("HDG laplace");      
@@ -705,7 +705,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       static Timer timer ("HDG laplace");
@@ -893,7 +893,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       static Timer timer ("HDGBRF laplace");
@@ -1100,7 +1100,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       double alpha = 0.1; // 0.01;
@@ -1311,7 +1311,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       // double alpha = 0.1; // 0.01;
@@ -1521,7 +1521,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       // double alpha = 0.1; // 0.01;
@@ -1743,7 +1743,7 @@ namespace ngfem
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
-				    FlatMatrix<double> & elmat,
+				    FlatMatrix<double> elmat,
 				    LocalHeap & lh) const
     {
       static Timer timer ("HDG convection");
