@@ -1,6 +1,6 @@
 print ("Hello from init.py")
 import code
-import ngfem_cf
+import ngfemcf
 import ngmpi
 import sys
 
