@@ -155,7 +155,7 @@ void ExportNgfem() {
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
                                                       const ElementTransformation&,
-                                                      FlatMatrix<double>&,LocalHeap&)const>
+                                                      FlatMatrix<double>,LocalHeap&)const>
          (&BilinearFormIntegrator::CalcElementMatrix))
     ;
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
@@ -173,7 +173,7 @@ void ExportNgfem() {
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"))))
 
     .def("CalcElementVector", 
-         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>&,LocalHeap&)const>
+         static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
     ;
 

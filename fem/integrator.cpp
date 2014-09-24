@@ -150,7 +150,7 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcElementMatrix (const FiniteElement & fel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<Complex> & elmat,
+		     FlatMatrix<Complex> elmat,
 		     LocalHeap & lh) const
   {
     FlatMatrix<double> rmat (elmat.Height(), elmat.Width(), lh);
@@ -161,7 +161,7 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcElementMatrixDiag (const FiniteElement & fel,
 			     const ElementTransformation & eltrans, 
-			     FlatVector<double> & diag,
+			     FlatVector<double> diag,
 			     LocalHeap & lh) const
   {
     cout << "base class, assemble diag" << endl;
@@ -178,8 +178,8 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcLinearizedElementMatrix (const FiniteElement & fel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<double> & elveclin,
-			       FlatMatrix<double> & elmat,
+			       FlatVector<double> elveclin,
+			       FlatMatrix<double> elmat,
 			       LocalHeap & lh) const
   {
     CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -188,8 +188,8 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcLinearizedElementMatrix (const FiniteElement & fel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<Complex> & elveclin,
-			       FlatMatrix<Complex> & elmat,
+			       FlatVector<Complex> elveclin,
+			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const
   {
     CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -200,8 +200,8 @@ namespace ngfem
   void BilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & fel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<double> & elx, 
-		      FlatVector<double> & ely,
+                      FlatVector<double> elx, 
+		      FlatVector<double> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -220,8 +220,8 @@ namespace ngfem
   void BilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & fel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<Complex> & elx, 
-		      FlatVector<Complex> & ely,
+                      FlatVector<Complex> elx, 
+		      FlatVector<Complex> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -241,9 +241,9 @@ namespace ngfem
   void BilinearFormIntegrator ::
   ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<double> & ellin,
-				const FlatVector<double> & elx, 
-				FlatVector<double> & ely,
+                                FlatVector<double> ellin,
+                                FlatVector<double> elx, 
+				FlatVector<double> ely,
 				LocalHeap & lh) const
   {
     ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
@@ -252,9 +252,9 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<Complex> & ellin, 
-				const FlatVector<Complex> & elx, 
-				FlatVector<Complex> & ely,
+                                FlatVector<Complex> ellin, 
+                                FlatVector<Complex> elx, 
+				FlatVector<Complex> ely,
 				LocalHeap & lh) const
   {
     ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
@@ -264,7 +264,7 @@ namespace ngfem
   double BilinearFormIntegrator ::
   Energy (const FiniteElement & fel, 
 	  const ElementTransformation & eltrans, 
-	  const FlatVector<double> & elx, 
+          FlatVector<double> elx, 
 	  LocalHeap & lh) const
   {
     FlatVector<double> ely (elx.Size(), lh);
@@ -276,7 +276,7 @@ namespace ngfem
   double BilinearFormIntegrator :: 
   Energy (const FiniteElement & fel, 
 	  const ElementTransformation & eltrans, 
-	  const FlatVector<Complex> & elx, 
+          FlatVector<Complex> elx, 
 	  LocalHeap & lh) const
   {
     cout << "error: Energy for Complex vector called" << endl;
@@ -287,8 +287,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
+            FlatVector<double> elx, 
+	    FlatVector<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -301,8 +301,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -317,8 +317,8 @@ namespace ngfem
   CalcFlux (const FiniteElement & fel,
 	    const FiniteElement & felflux,
 	    const ElementTransformation & eltrans,
-	    const FlatVector<> & elx, 
-	    FlatVector<> & flux,
+            FlatVector<> elx, 
+	    FlatVector<> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -331,8 +331,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationRule & mir,
-	    const FlatVector<double> & elx, 
-	    FlatMatrix<double> & flux,
+            FlatVector<double> elx, 
+	    FlatMatrix<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -347,8 +347,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationRule & mir,
-	    const FlatVector<Complex> & elx, 
-	    FlatMatrix<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatMatrix<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -367,8 +367,8 @@ namespace ngfem
   CalcFluxMulti (const FiniteElement & fel,
 		 const BaseMappedIntegrationPoint & bmip,
 		 int m,
-		 const FlatVector<double> & elx, 
-		 FlatVector<double> & flux,
+                 FlatVector<double> elx, 
+		 FlatVector<double> flux,
 		 bool applyd,
 		 LocalHeap & lh) const
   {
@@ -389,8 +389,8 @@ namespace ngfem
   CalcFluxMulti (const FiniteElement & fel,
 		 const BaseMappedIntegrationPoint & bmip,
 		 int n,
-		 const FlatVector<Complex> & elx, 
-		 FlatVector<Complex> & flux,
+                 FlatVector<Complex> elx, 
+		 FlatVector<Complex> flux,
 		 bool applyd,
 		 LocalHeap & lh) const
   {
@@ -417,8 +417,8 @@ namespace ngfem
 	       // const ElementTransformation & eltrans,
 	       // const IntegrationPoint & ip,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatVector<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     cerr << "ApplyBTrans<double> called for class " 
@@ -429,8 +429,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<Complex> & elx, 
-	       FlatVector<Complex> & ely,
+               FlatVector<Complex> elx, 
+	       FlatVector<Complex> ely,
 	       LocalHeap & lh) const
   {
     cerr << "ApplyBTrans<Complex> called for class " 
@@ -441,8 +441,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationRule & mir,
-	       const FlatMatrix<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatMatrix<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     FlatVector<> hv(ely.Size(), lh);
@@ -458,8 +458,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationRule & mir,
-	       const FlatMatrix<Complex> & elx, 
-	       FlatVector<Complex> & ely,
+               FlatMatrix<Complex> elx, 
+	       FlatVector<Complex> ely,
 	       LocalHeap & lh) const
   {
     FlatVector<Complex> hv(ely.Size(), lh);
@@ -480,8 +480,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMat (const FiniteElement & bfel,
 	     const BaseMappedIntegrationPoint & bmip,
-	     const FlatVector<double> & elx, 
-	     FlatVector<double> & eldx,
+             FlatVector<double> elx, 
+	     FlatVector<double> eldx,
 	     LocalHeap & lh) const
   {
     cerr << "ApplyDMat<double> called for class " 
@@ -492,8 +492,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMat (const FiniteElement & bfel,
 	     const BaseMappedIntegrationPoint & bmip,
-	     const FlatVector<Complex> & elx, 
-	     FlatVector<Complex> & eldx,
+             FlatVector<Complex> elx, 
+	     FlatVector<Complex> eldx,
 	     LocalHeap & lh) const
   {
     cerr << "ApplyDMat<Complex> called for class " 
@@ -506,8 +506,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMat (const FiniteElement & bfel,
 	     const BaseMappedIntegrationRule & mir,
-	     const FlatMatrix<double> & elx, 
-	     FlatMatrix<double> & eldx,
+             FlatMatrix<double> elx, 
+	     FlatMatrix<double> eldx,
 	     LocalHeap & lh) const
   {
     cerr << "ApplyDMat<double>, MappedIR called for class " 
@@ -519,8 +519,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMat (const FiniteElement & bfel,
 	     const BaseMappedIntegrationRule & mir,
-	     const FlatMatrix<Complex> & elx, 
-	     FlatMatrix<Complex> & eldx,
+             FlatMatrix<Complex> elx, 
+	     FlatMatrix<Complex> eldx,
 	     LocalHeap & lh) const
   {
     cerr << "ApplyDMat<Complex>, MappedIR called for class " 
@@ -531,10 +531,10 @@ namespace ngfem
   
   void BilinearFormIntegrator :: 
   ApplyDMatInv (const FiniteElement & bfel,
-	     const BaseMappedIntegrationPoint & bmip,
-	     const FlatVector<double> & elx, 
-	     FlatVector<double> & eldx,
-	     LocalHeap & lh) const
+                const BaseMappedIntegrationPoint & bmip,
+                FlatVector<double> elx, 
+                FlatVector<double> eldx,
+                LocalHeap & lh) const
   {
     cerr << "ApplyDMatInv<double> called for class " 
 	 << typeid(*this).name()
@@ -543,10 +543,10 @@ namespace ngfem
 
   void BilinearFormIntegrator :: 
   ApplyDMatInv (const FiniteElement & bfel,
-	     const BaseMappedIntegrationPoint & bmip,
-	     const FlatVector<Complex> & elx, 
-	     FlatVector<Complex> & eldx,
-	     LocalHeap & lh) const
+                const BaseMappedIntegrationPoint & bmip,
+                FlatVector<Complex> elx, 
+                FlatVector<Complex> eldx,
+                LocalHeap & lh) const
   {
     cerr << "ApplyDMatInv<Complex> called for class " 
 	 << typeid(*this).name()
@@ -558,8 +558,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMatInv (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & mir,
-		const FlatMatrix<double> & elx, 
-		FlatMatrix<double> & eldx,
+                FlatMatrix<double> elx, 
+		FlatMatrix<double> eldx,
 		LocalHeap & lh) const
   {
     cerr << "ApplyDMatInv<double>, MappedIR called for class " 
@@ -571,8 +571,8 @@ namespace ngfem
   void BilinearFormIntegrator :: 
   ApplyDMatInv (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & mir,
-		const FlatMatrix<Complex> & elx, 
-		FlatMatrix<Complex> & eldx,
+                FlatMatrix<Complex> elx, 
+		FlatMatrix<Complex> eldx,
 		LocalHeap & lh) const
   {
     cerr << "ApplyDMatInv<Complex>, MappedIR called for class " 
@@ -631,7 +631,7 @@ namespace ngfem
   void BlockBilinearFormIntegrator ::
   CalcElementMatrix (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans,
-		     FlatMatrix<double> & elmat,
+		     FlatMatrix<double> elmat,
 		     LocalHeap & lh) const
   {
     FlatMatrix<double> mat1(bfel.GetNDof(), lh);
@@ -657,7 +657,7 @@ namespace ngfem
   void BlockBilinearFormIntegrator :: 
   CalcElementMatrix (const FiniteElement & bfel, 
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<Complex> & elmat,
+		     FlatMatrix<Complex> elmat,
 		     LocalHeap & lh) const
   {
     FlatMatrix<Complex> mat1(bfel.GetNDof(), lh);
@@ -682,8 +682,8 @@ namespace ngfem
   void BlockBilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & bfel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<double> & elx, 
-		      FlatVector<double> & ely,
+                      FlatVector<double> elx, 
+		      FlatVector<double> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -727,8 +727,8 @@ namespace ngfem
   void BlockBilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & bfel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<Complex> & elx, 
-		      FlatVector<Complex> & ely,
+                      FlatVector<Complex> elx, 
+		      FlatVector<Complex> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -772,8 +772,8 @@ namespace ngfem
   void BlockBilinearFormIntegrator ::
   CalcLinearizedElementMatrix (const FiniteElement & bfel,
 			       const ElementTransformation & eltrans,
-			       FlatVector<double> & elveclin,
-			       FlatMatrix<double> & elmat,
+			       FlatVector<double> elveclin,
+			       FlatMatrix<double> elmat,
 			       LocalHeap & lh) const
   {
     FlatMatrix<double> mat1(bfel.GetNDof(), lh);
@@ -815,8 +815,8 @@ namespace ngfem
   void BlockBilinearFormIntegrator :: 
   CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<Complex> & elveclin,
-			       FlatMatrix<Complex> & elmat,
+			       FlatVector<Complex> elveclin,
+			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const
   {
     throw Exception ("old style matrix allocation in BlockBilinearFormIntegrator :: CalcLinearizedElementMatrix");
@@ -870,8 +870,8 @@ namespace ngfem
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
 	    const IntegrationPoint & ip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
+            FlatVector<double> elx, 
+	    FlatVector<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -924,8 +924,8 @@ namespace ngfem
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
 	    const IntegrationPoint & ip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -977,8 +977,8 @@ namespace ngfem
   void  BlockBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
+            FlatVector<double> elx, 
+	    FlatVector<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1033,8 +1033,8 @@ namespace ngfem
   void  BlockBilinearFormIntegrator ::
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1087,8 +1087,8 @@ namespace ngfem
   void  BlockBilinearFormIntegrator ::
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationRule & mir,
-	    const FlatVector<double> & elx, 
-	    FlatMatrix<double> & flux,
+            FlatVector<double> elx, 
+	    FlatMatrix<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1116,10 +1116,10 @@ namespace ngfem
 
 
 
-double BlockBilinearFormIntegrator :: 
+  double BlockBilinearFormIntegrator :: 
   Energy (const FiniteElement & fel, 
 	  const ElementTransformation & eltrans, 
-	  const FlatVector<double> & elx, 
+          FlatVector<double> elx, 
 	  LocalHeap & lh) const
   {
     int i, j;
@@ -1145,8 +1145,8 @@ double BlockBilinearFormIntegrator ::
   void  BlockBilinearFormIntegrator ::
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatVector<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     int mincomp = 0;
@@ -1179,8 +1179,8 @@ double BlockBilinearFormIntegrator ::
   void  BlockBilinearFormIntegrator ::
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationPoint & bmip,
-	       const FlatVector<Complex> & elx, 
-	       FlatVector<Complex> & ely,
+               FlatVector<Complex> elx, 
+	       FlatVector<Complex> ely,
 	       LocalHeap & lh) const
   {
     int i, j;
@@ -1205,8 +1205,8 @@ double BlockBilinearFormIntegrator ::
   void  BlockBilinearFormIntegrator ::
   ApplyBTrans (const FiniteElement & fel,
 	       const BaseMappedIntegrationRule & mir,
-	       const FlatMatrix<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatMatrix<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     int mincomp = 0;
@@ -1255,7 +1255,7 @@ double BlockBilinearFormIntegrator ::
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrix (const FiniteElement & fel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<double> & elmat,
+		     FlatMatrix<double> elmat,
 		     LocalHeap & lh) const
   {
     throw Exception ("ComplexBilinearFormIntegrator: cannot assemble double matrix");
@@ -1266,7 +1266,7 @@ double BlockBilinearFormIntegrator ::
   void ComplexBilinearFormIntegrator :: 
   CalcElementMatrix (const FiniteElement & fel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<Complex> & elmat,
+		     FlatMatrix<Complex> elmat,
 		     LocalHeap & lh) const
   {
     FlatMatrix<double> rmat(elmat.Height(), lh);
@@ -1278,8 +1278,8 @@ double BlockBilinearFormIntegrator ::
   void ComplexBilinearFormIntegrator :: 
   ApplyElementMatrix (const FiniteElement & fel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<Complex> & elx, 
-		      FlatVector<Complex> & ely,
+                      FlatVector<Complex> elx, 
+		      FlatVector<Complex> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -1373,8 +1373,8 @@ double BlockBilinearFormIntegrator ::
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
 	    const IntegrationPoint & ip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1385,8 +1385,8 @@ double BlockBilinearFormIntegrator ::
   void ComplexBilinearFormIntegrator ::
   CalcFlux (const FiniteElement & fel,
 	    const BaseMappedIntegrationPoint & bmip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1419,7 +1419,7 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcElementMatrix (const FiniteElement & bfel,
 		     const ElementTransformation & eltrans, 
-		     FlatMatrix<double> & elmat,
+		     FlatMatrix<double> elmat,
 		     LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1438,7 +1438,7 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcElementMatrix (const FiniteElement & bfel,
 			 const ElementTransformation & eltrans, 
-			 FlatMatrix<Complex> & elmat,
+			 FlatMatrix<Complex> elmat,
 			 LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1466,8 +1466,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<double> & ellin,
-			       FlatMatrix<double> & elmat,
+			       FlatVector<double> ellin,
+			       FlatMatrix<double> elmat,
 			       LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1496,8 +1496,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcLinearizedElementMatrix (const FiniteElement & bfel, 
 			       const ElementTransformation & eltrans, 
-			       FlatVector<Complex> & ellin,
-			       FlatMatrix<Complex> & elmat,
+			       FlatVector<Complex> ellin,
+			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1531,8 +1531,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyElementMatrix (const FiniteElement & bfel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<double> & elx,
-		      FlatVector<double> & ely,
+                      FlatVector<double> elx,
+		      FlatVector<double> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -1570,8 +1570,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyElementMatrix (const FiniteElement & bfel, 
 		      const ElementTransformation & eltrans, 
-		      const FlatVector<Complex> & elx,
-		      FlatVector<Complex> & ely,
+                      FlatVector<Complex> elx,
+		      FlatVector<Complex> ely,
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
@@ -1605,9 +1605,9 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<double> & ellin,
-				const FlatVector<double> & elx,
-				FlatVector<double> & ely,
+                                FlatVector<double> ellin,
+                                FlatVector<double> elx,
+				FlatVector<double> ely,
 				LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1640,9 +1640,9 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyLinearizedElementMatrix (const FiniteElement & bfel, 
 				const ElementTransformation & eltrans, 
-				const FlatVector<Complex> & ellin,
-				const FlatVector<Complex> & elx,
-				FlatVector<Complex> & ely,
+                                FlatVector<Complex> ellin,
+                                FlatVector<Complex> elx,
+				FlatVector<Complex> ely,
 				LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1676,8 +1676,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & bfel,
 	    const BaseMappedIntegrationPoint & ip,
-	    const FlatVector<double> & elx, 
-	    FlatVector<double> & flux,
+            FlatVector<double> elx, 
+	    FlatVector<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1696,8 +1696,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & bfel,
 	    const BaseMappedIntegrationPoint & ip,
-	    const FlatVector<Complex> & elx, 
-	    FlatVector<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatVector<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1716,8 +1716,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & bfel,
 	    const BaseMappedIntegrationRule & mir,
-	    const FlatVector<double> & elx, 
-	    FlatMatrix<double> & flux,
+            FlatVector<double> elx, 
+	    FlatMatrix<double> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1736,8 +1736,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & bfel,
 	    const BaseMappedIntegrationRule & mir,
-	    const FlatVector<Complex> & elx, 
-	    FlatMatrix<Complex> & flux,
+            FlatVector<Complex> elx, 
+	    FlatMatrix<Complex> flux,
 	    bool applyd,
 	    LocalHeap & lh) const
   {
@@ -1757,8 +1757,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & bfel,
 	       const BaseMappedIntegrationPoint & mip,
-	       const FlatVector<double> & elx, 
-	       FlatVector<double> & ely,
+               FlatVector<double> elx, 
+	       FlatVector<double> ely,
 	       LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1772,8 +1772,8 @@ double BlockBilinearFormIntegrator ::
   void CompoundBilinearFormIntegrator :: 
   ApplyBTrans (const FiniteElement & bfel,
 	       const BaseMappedIntegrationPoint & mip,
-	       const FlatVector<Complex> & elx, 
-	       FlatVector<Complex> & ely,
+               FlatVector<Complex> elx, 
+	       FlatVector<Complex> ely,
 	       LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1798,9 +1798,9 @@ double BlockBilinearFormIntegrator ::
 
   void LinearFormIntegrator ::
   CalcElementVector (const FiniteElement & fel,
-			 const ElementTransformation & eltrans, 
-			 FlatVector<double> & elvec,
-			 LocalHeap & lh) const
+                     const ElementTransformation & eltrans, 
+                     FlatVector<double> elvec,
+                     LocalHeap & lh) const
   { 
     cerr << "LinearFormIntegrator::CalcElementVector: base class called" << endl;
   }
@@ -1809,7 +1809,7 @@ double BlockBilinearFormIntegrator ::
   void LinearFormIntegrator ::
   CalcElementVector (const FiniteElement & fel,
                      const ElementTransformation & eltrans, 
-                     FlatVector<Complex> & elvec,
+                     FlatVector<Complex> elvec,
                      LocalHeap & lh) const
   {
     FlatVector<double> rvec(elvec.Size(), lh);
@@ -1830,7 +1830,7 @@ double BlockBilinearFormIntegrator ::
   void BlockLinearFormIntegrator :: 
   CalcElementVector (const FiniteElement & bfel, 
 		     const ElementTransformation & eltrans, 
-		     FlatVector<double> & elvec,
+		     FlatVector<double> elvec,
 		     LocalHeap & lh) const
   {
     FlatVector<double> vec1(bfel.GetNDof(), lh);
@@ -1857,7 +1857,7 @@ double BlockBilinearFormIntegrator ::
   void CompoundLinearFormIntegrator ::  
   CalcElementVector (const FiniteElement & bfel, 
 		     const ElementTransformation & eltrans, 
-		     FlatVector<double> & elvec,
+		     FlatVector<double> elvec,
 		     LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =
@@ -1881,7 +1881,7 @@ double BlockBilinearFormIntegrator ::
   void CompoundLinearFormIntegrator ::  
   CalcElementVector (const FiniteElement & bfel, 
 		     const ElementTransformation & eltrans, 
-		     FlatVector<Complex> & elvec,
+		     FlatVector<Complex> elvec,
 		     LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel =

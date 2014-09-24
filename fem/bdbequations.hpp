@@ -498,7 +498,9 @@ namespace ngfem
 		 const VECX & x, LocalHeap & lh) const
     {
       typedef typename VECX::TSCAL TSCAL;
-      x *= coef -> T_Evaluate<TSCAL> (mip);
+      auto val = coef -> T_Evaluate<TSCAL> (mip); 
+      for (int i = 0; i < DIM; i++)
+        x(i) *= val;
     }
 
     template <typename FEL, typename MIR, typename TVX>
@@ -509,7 +511,8 @@ namespace ngfem
       FlatMatrix<TSCAL> values(mir.Size(), 1, lh);
       coef -> Evaluate (mir, values);
       for (int i = 0; i < mir.Size(); i++)
-	x.Row(i) *=  values(i, 0);
+        for (int j = 0; j < DIM; j++)
+          x(i,j) *=  values(i, 0);
     }
   };
 
@@ -1421,8 +1424,13 @@ namespace ngfem
 
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,2,2>;
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,3,3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,1,2>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<1>,2,3>;
+
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<2>,2,2>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<2>,1,2>;
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<3>,3,3>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<3>,2,3>;
 
 
 

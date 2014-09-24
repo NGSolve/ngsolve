@@ -77,6 +77,19 @@ namespace ngfem
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
     DIFFOP::ApplyTrans (bfel, mip, flux, x, lh);
   }    
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & bmip,
+              FlatVector<Complex> flux,
+              FlatVector<Complex> x, 
+              LocalHeap & lh) const 
+  {
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
+    DIFFOP::ApplyTrans (bfel, mip, flux, x, lh);
+  }    
   
 }
 
