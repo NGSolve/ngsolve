@@ -791,7 +791,7 @@ namespace ngcomp
                                bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
                              else
                                {
-                                 FlatVector<double> diag;
+                                 FlatVector<double> diag(fel.GetNDof(), lh);
                                  bfi.CalcElementMatrixDiag (fel, eltrans, diag, lh);
                                  elmat = 0.0;
                                  for (int k = 0; k < diag.Size(); k++)

@@ -134,6 +134,9 @@ namespace ngcomp
         coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
         integrator = GetIntegrators().CreateBFI("masshdiv", 2, coeffs);
         boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 2, coeffs);
+
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
       }
     else
       {
@@ -141,6 +144,9 @@ namespace ngcomp
         coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
         integrator = GetIntegrators().CreateBFI("masshdiv", 3, coeffs);
         boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 3, coeffs);
+
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
+        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
       }
     if (dimension > 1)
       {

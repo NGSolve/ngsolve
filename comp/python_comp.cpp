@@ -198,121 +198,126 @@ void ExportNgcomp()
          "list of vectors of coefficients"
          )
 
-         .def("__call__", FunctionPointer([](GF & self, const double &x, const double &y, const double &z)
-             {
-                 const FESpace & space = self.GetFESpace();
-                 IntegrationPoint ip;
-                 int dim_mesh = space.GetMeshAccess().GetDimension();
-                 auto evaluator = space.GetEvaluator();
-                 int dim = evaluator->Dim();
-                 LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-                 int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
-                 Array<int> dnums;
-                 space.GetDofNrs(elnr, dnums);
-                 const FiniteElement & fel = space.GetFE(elnr, lh);
-                 if (space.IsComplex())
-                 {
-                     Vector<Complex> elvec;
-                     Vector<Complex> values(dim);
-                     elvec.SetSize(fel.GetNDof());
-                     self.GetElementVector(dnums, elvec);
-                     if (dim_mesh == 2)
-                     {
-                         MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     else if (dim_mesh == 3)
-                     {
-                         MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     if (dim > 1)
-                         return bp::object(values);
-                     else
-                         return bp::object(values(0));
-                 }
-                 else
-                 {
-                     Vector<> elvec;
-                     Vector<> values(dim);
-                     elvec.SetSize(fel.GetNDof());
-                     self.GetElementVector(dnums, elvec);
-                     if (dim_mesh == 2)
-                     {
-                         MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     else if (dim_mesh == 3)
-                     {
-                         MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     if (dim > 1)
-                         return bp::object(values);
-                     else
-                         return bp::object(values(0));
-                 }
-             }
-                 ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
+    .def("__call__", FunctionPointer
+         ([](GF & self, const double &x, const double &y, const double &z)
+          {
+            const FESpace & space = self.GetFESpace();
+            IntegrationPoint ip;
+            int dim_mesh = space.GetMeshAccess().GetDimension();
+            auto evaluator = space.GetEvaluator();
+            int dim = evaluator->Dim();
+            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
+            int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            if (elnr < 0) throw Exception ("point out of domain");
+
+            Array<int> dnums;
+            space.GetDofNrs(elnr, dnums);
+
+            const FiniteElement & fel = space.GetFE(elnr, lh);
+            if (space.IsComplex())
+              {
+                Vector<Complex> elvec(fel.GetNDof()*space.GetDimension());
+                Vector<Complex> values(dim);
+
+                self.GetElementVector(dnums, elvec);
+                if (dim_mesh == 2)
+                  {
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                else if (dim_mesh == 3)
+                  {
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                if (dim > 1)
+                  return bp::object(values);
+                else
+                  return bp::object(values(0));
+              }
+            else
+              {
+                Vector<> elvec(fel.GetNDof()*space.GetDimension());
+                Vector<> values(dim);
+
+                self.GetElementVector(dnums, elvec);
+                if (dim_mesh == 2)
+                  {
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                else if (dim_mesh == 3)
+                  {
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                if (dim > 1)
+                  return bp::object(values);
+                else
+                  return bp::object(values(0));
+              }
+          }
+          ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
 
 
-                 .def("D", FunctionPointer([](GF & self, const double &x, const double &y, const double &z)
-             {
-                 const FESpace & space = self.GetFESpace();
-                 IntegrationPoint ip;
-                 int dim_mesh = space.GetMeshAccess().GetDimension();
-                 auto evaluator = space.GetFluxEvaluator();
-                 cout << evaluator->Name() << endl;
-                 int dim = evaluator->Dim();
-                 LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-                 int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
-                 Array<int> dnums;
-                 space.GetDofNrs(elnr, dnums);
-                 const FiniteElement & fel = space.GetFE(elnr, lh);
-                 if (space.IsComplex())
-                 {
-                     Vector<Complex> elvec;
-                     Vector<Complex> values(dim);
-                     elvec.SetSize(fel.GetNDof());
-                     self.GetElementVector(dnums, elvec);
-                     if (dim_mesh == 2)
-                     {
-                         MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     else if (dim_mesh == 3)
-                     {
-                         MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     if (dim > 1)
-                         return bp::object(values);
-                     else
-                         return bp::object(values(0));
-                 }
-                 else
-                 {
-                     Vector<> elvec;
-                     Vector<> values(dim);
-                     elvec.SetSize(fel.GetNDof());
-                     self.GetElementVector(dnums, elvec);
-                     if (dim_mesh == 2)
-                     {
-                         MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     else if (dim_mesh == 3)
-                     {
-                         MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
-                         evaluator->Apply(fel, mip, elvec, values, lh);
-                     }
-                     if (dim > 1)
-                         return bp::object(values);
-                     else
-                         return bp::object(values(0));
-                 }
-             }
-                 ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
+    .def("D", FunctionPointer
+         ([](GF & self, const double &x, const double &y, const double &z)
+          {
+            const FESpace & space = self.GetFESpace();
+            IntegrationPoint ip;
+            int dim_mesh = space.GetMeshAccess().GetDimension();
+            auto evaluator = space.GetFluxEvaluator();
+            cout << evaluator->Name() << endl;
+            int dim = evaluator->Dim();
+            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
+            int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            Array<int> dnums;
+            space.GetDofNrs(elnr, dnums);
+            const FiniteElement & fel = space.GetFE(elnr, lh);
+            if (space.IsComplex())
+              {
+                Vector<Complex> elvec;
+                Vector<Complex> values(dim);
+                elvec.SetSize(fel.GetNDof());
+                self.GetElementVector(dnums, elvec);
+                if (dim_mesh == 2)
+                  {
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                else if (dim_mesh == 3)
+                  {
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                if (dim > 1)
+                  return bp::object(values);
+                else
+                  return bp::object(values(0));
+              }
+            else
+              {
+                Vector<> elvec;
+                Vector<> values(dim);
+                elvec.SetSize(fel.GetNDof());
+                self.GetElementVector(dnums, elvec);
+                if (dim_mesh == 2)
+                  {
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                else if (dim_mesh == 3)
+                  {
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    evaluator->Apply(fel, mip, elvec, values, lh);
+                  }
+                if (dim > 1)
+                  return bp::object(values);
+                else
+                  return bp::object(values(0));
+              }
+          }
+          ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
     ;
   
   typedef BilinearForm BF;
