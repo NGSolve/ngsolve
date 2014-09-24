@@ -51,4 +51,4 @@ libngfem_la_LIBADD += $(top_builddir)/fem/fem_kernels.o $(top_builddir)/fem/tmp.
 
 endif
 
-dist_bin_SCRIPTS = ngfem_cf.py
+dist_bin_SCRIPTS = ngfemcf.py
