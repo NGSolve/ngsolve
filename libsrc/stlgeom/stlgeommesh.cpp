@@ -1329,8 +1329,8 @@ void STLGeometry :: RestrictHChartDistOneChart(int chartnum, Array<int>& acttrig
 }
 
 
-int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & mparam,
-			    int perfstepsstart, int perfstepsend)
+int STLMeshingDummy (STLGeometry* stlgeometry, shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
+                     int perfstepsstart, int perfstepsend)
 {
   if (perfstepsstart > perfstepsend) return 0;
 
@@ -1341,7 +1341,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, Mesh*& mesh, MeshingParameters & 
   if (perfstepsstart <= MESHCONST_MESHEDGES)
     {
 
-      mesh = new Mesh();
+      mesh = make_shared<Mesh>();
       mesh->geomtype = Mesh::GEOM_STL;
 
       mesh -> SetGlobalH (mparam.maxh);

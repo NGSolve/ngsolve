@@ -95,7 +95,7 @@ public:
 
 
 void MeshFromSpline2D (SplineGeometry2d & geometry,
-		       Mesh *& mesh, 
+		       shared_ptr<Mesh> & mesh, 
 		       MeshingParameters & mp);
 
 #endif

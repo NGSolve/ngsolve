@@ -653,7 +653,7 @@ namespace netgen
 
 
   int CSGGenerateMesh (CSGeometry & geom, 
-		       Mesh *& mesh, MeshingParameters & mparam,
+		       shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 		       int perfstepsstart, int perfstepsend)
   {
     if (mesh && mesh->GetNSE() &&
@@ -668,7 +668,7 @@ namespace netgen
         if (mesh)
           mesh -> DeleteMesh();
         else
-          mesh = new Mesh();
+          mesh = make_shared<Mesh>();
 
 	mesh->SetGlobalH (mparam.maxh);
 	mesh->SetMinimalH (mparam.minh);

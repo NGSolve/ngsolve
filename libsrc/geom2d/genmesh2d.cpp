@@ -350,7 +350,7 @@ namespace netgen
 
 
   void MeshFromSpline2D (SplineGeometry2d & geometry,
-			 Mesh *& mesh, 
+			 shared_ptr<Mesh> & mesh, 
 			 MeshingParameters & mp)
   {
     PrintMessage (1, "Generate Mesh from spline geometry");
@@ -365,7 +365,7 @@ namespace netgen
 	mp.maxh = h;
       }
 
-    mesh = new Mesh;
+    mesh = make_shared<Mesh>();
     mesh->SetDimension (2);
 
     Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());

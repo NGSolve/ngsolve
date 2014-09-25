@@ -928,11 +928,11 @@ namespace netgen
 
 
   extern void MeshFromSpline2D (SplineGeometry2d & geometry,
-				Mesh *& mesh, 
+				shared_ptr<Mesh> & mesh, 
 				MeshingParameters & mp);
 
 
-  int SplineGeometry2d :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+  int SplineGeometry2d :: GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 					int perfstepsstart, int perfstepsend)
   {
     MeshFromSpline2D (*this, mesh, mparam);

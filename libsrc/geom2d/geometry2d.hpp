@@ -151,8 +151,8 @@ namespace netgen
     }
 
     
-    DLL_HEADER virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
-			      int perfstepsstart, int perfstepsend);
+    DLL_HEADER virtual int GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
+                                         int perfstepsstart, int perfstepsend);
     
     void PartitionBoundary (MeshingParameters & mp, double h, Mesh & mesh2d);
 

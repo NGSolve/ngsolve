@@ -22,10 +22,6 @@ namespace netgen
   extern Array<Box<3> > boxes;
 
 
-  extern Array<Point<3> > project1, project2;
-
-
-  // extern AutoPtr<CSGeometry> geometry;
 
 
   VisualSceneGeometry :: VisualSceneGeometry ()

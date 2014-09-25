@@ -129,11 +129,11 @@ namespace netgen
 
 
   extern int CSGGenerateMesh (CSGeometry & geom, 
-			      Mesh *& mesh, MeshingParameters & mparam,
+			      shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 			      int perfstepsstart, int perfstepsend);
 
 
-  int CSGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+  int CSGeometry :: GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 				 int perfstepsstart, int perfstepsend)
   {
     return CSGGenerateMesh (*this, mesh, mparam, perfstepsstart, perfstepsend);
@@ -182,7 +182,7 @@ namespace netgen
 
   void CSGeometry :: Save (string filename) const
   {
-    fstream ost (filename.c_str());
+    ofstream ost (filename.c_str());
     Save (ost);
   }
   

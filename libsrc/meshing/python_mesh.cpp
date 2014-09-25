@@ -84,13 +84,15 @@ void ExportNetgenMeshing()
     .def("__str__", &ToString<PointIndex>)
     .add_property("nr", &PointIndex::operator int)
     ;
-  
+
+  /*  
   bp::class_<Point<3>> ("Point")
     .def(bp::init<double,double,double>())
     ;
-  
-  bp::class_<MeshPoint,bp::bases<Point<3>>>("MeshPoint")
-    .def(bp::init<Point<3>>())
+  */
+
+  bp::class_<MeshPoint /* ,bp::bases<Point<3>> */ >("MeshPoint")
+    // .def(bp::init<Point<3>>())
     .add_property("p", FunctionPointer([](const MeshPoint & self)
                                        {
                                          bp::list l;

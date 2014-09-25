@@ -14,7 +14,7 @@ namespace netgen
 
 
   
-  int NetgenGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+  int NetgenGeometry :: GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 				      int perfstepsstart, int perfstepsend)
   {
     if (!mesh) return 1;

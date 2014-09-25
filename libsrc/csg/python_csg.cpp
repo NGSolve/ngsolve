@@ -46,7 +46,10 @@ public:
   enum optyp { TERM, SECTION, UNION, SUB };
 
   SPSolid (Solid * as) : solid(as), owner(true), op(TERM) { ; }
-
+  ~SPSolid () 
+  {
+    if (owner) delete solid;
+  }  
   SPSolid (optyp aop, shared_ptr<SPSolid> as1, shared_ptr<SPSolid> as2) 
     : s1(as1), s2(as2), owner(true), op(aop) 
   { 
@@ -55,7 +58,7 @@ public:
     else if (aop == SECTION)
       solid = new Solid (Solid::SECTION, s1->GetSolid(), s2->GetSolid());
     else if (aop == SUB)
-      solid = new Solid (Solid::SUB, s1->GetSolid(), s2->GetSolid());
+      solid = new Solid (Solid::SUB, s1->GetSolid()); // , s2->GetSolid());
   }
 
   Solid * GetSolid() { return solid; }
@@ -106,7 +109,9 @@ void ExportCSG()
     ;
 
   bp::class_<Point<3>> ("Point3d", bp::init<double,double,double>()) 
+    .def(bp::self-bp::self)
     .def(bp::self+Vec<3>())
+    .def(bp::self-Vec<3>())
     ;
 
   bp::def ("Pnt", FunctionPointer( [] (double x, double y, double z) { return Point<3>(x,y,z); } ) );
@@ -132,24 +137,30 @@ void ExportCSG()
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
     .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::UNION, self, other); } ) )
     .def ("__mul__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SECTION, self, other); } ) )
-    .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SUB, self, other); } ) )
+    .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) 
+                                      { return make_shared<SPSolid> (SPSolid::SECTION, self, make_shared<SPSolid> (SPSolid::SUB, other, nullptr)); } ) )
 //     .def ("__neg__", FunctionPointer( [] ( shared_ptr<SPSolid> self ) { return make_shared<SPSolid> (SPSolid::SUB, self); } ) ) COMPLEMENT?
   ;
 
-  bp::def ("Sphere", FunctionPointer([](const Point<3> c, double r)
+  bp::def ("Sphere", FunctionPointer([](Point<3> c, double r)
                                      {
                                        Sphere * sp = new Sphere (c, r);
                                        Solid * sol = new Solid (sp);
                                        return make_shared<SPSolid> (sol);
                                      }));
-  bp::def ("Plane", FunctionPointer([](const Point<3> p, Vec<3> n)
+  bp::def ("Plane", FunctionPointer([](Point<3> p, Vec<3> n)
                                     {
                                       Plane * sp = new Plane (p,n);
                                       Solid * sol = new Solid (sp);
                                       return make_shared<SPSolid> (sol);
                                     }));
-
-  bp::def ("OrthoBrick", FunctionPointer([](const Point<3> p1, Point<3> p2)
+  bp::def ("Cylinder", FunctionPointer([](Point<3> a, Point<3> b, double r)
+                                       {
+                                         Cylinder * cyl = new Cylinder (a, b, r);
+                                         Solid * sol = new Solid (cyl);
+                                         return make_shared<SPSolid> (sol);
+                                       }));
+  bp::def ("OrthoBrick", FunctionPointer([](Point<3> p1, Point<3> p2)
                                          {
                                            OrthoBrick * brick = new OrthoBrick (p1,p2);
                                            Solid * sol = new Solid (brick);
@@ -177,6 +188,11 @@ void ExportCSG()
                                               return geom;
                                             })))
 
+    .def("Save", FunctionPointer([] (CSGeometry & self, string filename)
+                                 {
+                                   cout << "save geometry to file " << filename << endl;
+                                   self.Save (filename);
+                                 }))
     .def("Add", FunctionPointer([] (CSGeometry & self, shared_ptr<SPSolid> solid)
                                 {
                                   solid->AddSurfaces (self);
@@ -190,11 +206,11 @@ void ExportCSG()
   bp::def("GenerateMesh", FunctionPointer
           ([](CSGeometry & geo, MeshingParameters & param)
            {
-             Mesh * dummy = NULL;
+             shared_ptr<Mesh> dummy;
              cout << "Genrate Mesh, params = "; //  << param << endl;
              geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
              geo.GenerateMesh (dummy, param, 0, 6);
-             return shared_ptr<Mesh> (dummy);
+             return dummy;
            }));
   
 }

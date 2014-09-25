@@ -91,7 +91,7 @@ void STLGeometry :: Save (string filename) const
 
 
 
-int STLGeometry :: GenerateMesh (Mesh*& mesh, MeshingParameters & mparam,
+int STLGeometry :: GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam,
 				 int perfstepsstart, int perfstepsend)
 {
   return STLMeshingDummy (this, mesh, mparam, perfstepsstart, perfstepsend);
