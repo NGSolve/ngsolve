@@ -28,7 +28,7 @@
 
 namespace netgen {
    extern void MeshFromSpline2D (SplineGeometry2d & geometry,
-                                 Mesh *& mesh, 
+                                 shared_ptr<Mesh> & mesh, 
                                  MeshingParameters & mp);
 }
 
@@ -502,8 +502,6 @@ namespace nglib
    }
 
 
-
-
    DLL_HEADER Ng_Result Ng_GenerateMesh_2D (Ng_Geometry_2D * geom,
                                             Ng_Mesh ** mesh,
                                             Ng_Meshing_Parameters * mp)
@@ -512,12 +510,13 @@ namespace nglib
       //  MeshingParameters mparam;  
       mp->Transfer_Parameters();
 
-      Mesh * m;
+      shared_ptr<Mesh> m;
       MeshFromSpline2D (*(SplineGeometry2d*)geom, m, mparam);
+      new shared_ptr<Mesh> (m);  // hack to keep mesh m alive 
 
       cout << m->GetNSE() << " elements, " << m->GetNP() << " points" << endl;
 
-      *mesh = (Ng_Mesh*)m;
+      *mesh = (Ng_Mesh*)m.get();
       return NG_OK;
    }
 

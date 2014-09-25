@@ -238,7 +238,6 @@ namespace netgen
 	MyMPI_SendCmd ("mesh");
 	mesh -> Distribute();
 #endif
-
 	for (int i = 0; i < geometryregister.Size(); i++)
 	  {
 	    NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (*infile);
@@ -1274,9 +1273,13 @@ namespace netgen
 	      else
 	  */
 	    {
+              /*
               Mesh * hmesh = NULL;
-              int res = ng_geometry -> GenerateMesh (hmesh, mparam, perfstepsstart, perfstepsend);              
+              int res = ng_geometry -> GenerateMesh (hmesh, mparam, perfstepsstart, perfstepsend);
               mesh = shared_ptr<Mesh> (hmesh);
+              */
+              mesh = make_shared<Mesh> ();
+              int res = ng_geometry -> GenerateMesh (mesh, mparam, perfstepsstart, perfstepsend);
 
 	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
 	      if (res != MESHING3_OK) 
