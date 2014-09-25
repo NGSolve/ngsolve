@@ -58,12 +58,12 @@ namespace ngfem
 
   // template <> 
   MassEdgeAnisotropicIntegrator<3, HCurlFiniteElement<3> > ::
-  MassEdgeAnisotropicIntegrator (CoefficientFunction * coeff00,
-				 CoefficientFunction * coeff10,
-				 CoefficientFunction * coeff11,
-				 CoefficientFunction * coeff20,
-				 CoefficientFunction * coeff21,
-				 CoefficientFunction * coeff22)
+  MassEdgeAnisotropicIntegrator (shared_ptr<CoefficientFunction> coeff00,
+				 shared_ptr<CoefficientFunction> coeff10,
+				 shared_ptr<CoefficientFunction> coeff11,
+				 shared_ptr<CoefficientFunction> coeff20,
+				 shared_ptr<CoefficientFunction> coeff21,
+				 shared_ptr<CoefficientFunction> coeff22)
     : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
   (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
   { ; }
@@ -111,7 +111,6 @@ namespace ngfem
 
   namespace maxwellint {
     
-
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<3> > initcce3 ("curlcurledge", 3, 1);
 
@@ -131,6 +130,7 @@ namespace ngfem
 
     static RegisterLinearFormIntegrator<CurlEdgeIntegrator<2> > initcurle2 ("curledge", 2, 1);
     static RegisterLinearFormIntegrator<CurlEdgeIntegrator<3> > initcurle3 ("curledge", 3, 3);
+
 
     class Init
     { 

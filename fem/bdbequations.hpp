@@ -704,11 +704,12 @@ namespace ngfem
 
   template <> class SymDMat<1> : public DMatOp<SymDMat<1>,1>
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
   public:
     enum { DIM_DMAT = 1 };
 
-    SymDMat (CoefficientFunction * acoef) : coef(acoef) { ; }
+    SymDMat (shared_ptr<CoefficientFunction> acoef) : coef(acoef) { ; }
+    SymDMat (const Array<shared_ptr<CoefficientFunction>> & coefs) : coef(coefs[0]) { ; }
 
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -721,16 +722,20 @@ namespace ngfem
 
   template <> class SymDMat<2> : public DMatOp<SymDMat<2>,3>
   {
-    CoefficientFunction * coef00;
-    CoefficientFunction * coef01;
-    CoefficientFunction * coef11;
+    shared_ptr<CoefficientFunction> coef00;
+    shared_ptr<CoefficientFunction> coef01;
+    shared_ptr<CoefficientFunction> coef11;
   public:
     enum { DIM_DMAT = 2 };
 
-    SymDMat (CoefficientFunction * acoef00,
-	     CoefficientFunction * acoef01,
-	     CoefficientFunction * acoef11)
+    SymDMat (shared_ptr<CoefficientFunction> acoef00,
+	     shared_ptr<CoefficientFunction> acoef01,
+	     shared_ptr<CoefficientFunction> acoef11)
       : coef00(acoef00), coef01(acoef01), coef11(acoef11) { ; }
+
+    SymDMat (const Array<shared_ptr<CoefficientFunction>> & coefs) 
+      : coef00(coefs[0]), coef01(coefs[1]), coef11(coefs[2]) { ; }
+
   
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -745,23 +750,29 @@ namespace ngfem
 
   template <> class SymDMat<3> : public DMatOp<SymDMat<3>,6>
   {
-    CoefficientFunction * coef00;
-    CoefficientFunction * coef10;
-    CoefficientFunction * coef11;
-    CoefficientFunction * coef20;
-    CoefficientFunction * coef21;
-    CoefficientFunction * coef22;
+    shared_ptr<CoefficientFunction> coef00;
+    shared_ptr<CoefficientFunction> coef10;
+    shared_ptr<CoefficientFunction> coef11;
+    shared_ptr<CoefficientFunction> coef20;
+    shared_ptr<CoefficientFunction> coef21;
+    shared_ptr<CoefficientFunction> coef22;
   public:
     enum { DIM_DMAT = 3 };
 
-    SymDMat (CoefficientFunction * acoef00,
-	     CoefficientFunction * acoef10,
-	     CoefficientFunction * acoef11,
-	     CoefficientFunction * acoef20,
-	     CoefficientFunction * acoef21,
-	     CoefficientFunction * acoef22)
+    SymDMat (shared_ptr<CoefficientFunction> acoef00,
+	     shared_ptr<CoefficientFunction> acoef10,
+	     shared_ptr<CoefficientFunction> acoef11,
+	     shared_ptr<CoefficientFunction> acoef20,
+	     shared_ptr<CoefficientFunction> acoef21,
+	     shared_ptr<CoefficientFunction> acoef22)
       : coef00(acoef00), coef10(acoef10), coef11(acoef11),
 	coef20(acoef20), coef21(acoef21), coef22(acoef22) { ; }
+
+    SymDMat (const Array<shared_ptr<CoefficientFunction>> & coefs) 
+      : coef00(coefs[0]), coef10(coefs[1]), coef11(coefs[2]), 
+      coef20(coefs[3]), coef21(coefs[4]), coef22(coefs[5]) 
+    { ; }
+
   
     template <typename FEL, typename MIP, typename MAT>
     void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -1432,6 +1443,8 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<3>,3,3>;
   BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<DiagDMat<3>,2,3>;
 
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<SymDMat<3>,2,2>;
+  BDBEQUATIONS_EXTERN template class T_BDBIntegrator_DMat<SymDMat<3>,3,3>;
 
 
   BDBEQUATIONS_EXTERN template class MassIntegrator<1>;
