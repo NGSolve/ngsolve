@@ -78,8 +78,6 @@ namespace ngstd
        -names=[Joe,Jim] -values=[1,3,4]
     */
     void SetCommandLineFlag (const char * st);
-
-
     /// Returns string flag, default value if not exists
     string GetStringFlag (const string & name, const char * def) const;
     /// Returns string flag, default value if not exists
