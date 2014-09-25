@@ -3,7 +3,7 @@
 
 namespace netgen
 {
-  extern DLL_HEADER MeshingParameters mparam;
+  // extern DLL_HEADER MeshingParameters mparam;
 
   extern void Optimize2d (Mesh & mesh, MeshingParameters & mp);
 
@@ -371,7 +371,7 @@ namespace netgen
     Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());
     Point3d pmax(bbox.PMax()(0), bbox.PMax()(1), bbox.Diam());
 
-    mesh->SetLocalH (pmin, pmax, mparam.grading);
+    mesh->SetLocalH (pmin, pmax, mp.grading);
     mesh->SetGlobalH (h);
 
     
@@ -426,11 +426,11 @@ namespace netgen
       (*mesh)[si].SetBCName ( (*mesh).GetBCNamePtr( (*mesh)[si].si-1 ) );
 
   
-    mesh->CalcLocalH(mparam.grading);
+    mesh->CalcLocalH(mp.grading);
 
     int bnp = mesh->GetNP(); // boundary points
 
-    int hquad = mparam.quad;
+    int hquad = mp.quad;
 
 
     for (int domnr = 1; domnr <= maxdomnr; domnr++)
@@ -526,9 +526,9 @@ namespace netgen
 
 	int oldnf = mesh->GetNSE();
 
-        mparam.quad = hquad || geometry.GetDomainQuadMeshing (domnr);
+        mp.quad = hquad || geometry.GetDomainQuadMeshing (domnr);
 
-	Meshing2 meshing (mparam, Box<3> (pmin, pmax));
+	Meshing2 meshing (mp, Box<3> (pmin, pmax));
 
 	Array<int, PointIndex::BASE> compress(bnp);
 	compress = -1;
@@ -560,9 +560,9 @@ namespace netgen
 	  }
 
 
-	mparam.checkoverlap = 0;
+	mp.checkoverlap = 0;
 
-	meshing.GenerateMesh (*mesh, mparam, h, domnr);
+	meshing.GenerateMesh (*mesh, mp, h, domnr);
 
 	for (SurfaceElementIndex sei = oldnf; sei < mesh->GetNSE(); sei++)
 	  (*mesh)[sei].SetIndex (domnr);
@@ -578,7 +578,7 @@ namespace netgen
 
       }
 
-    mparam.quad = hquad;
+    mp.quad = hquad;
 
 
 
