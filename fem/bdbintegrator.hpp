@@ -177,26 +177,27 @@ public:
     DifferentialOperator * diffop = NULL;
   public:
   
-    INLINE T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
-      : dmatop(coeffs)
-    { ; }
+    T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs);
+    // : dmatop(coeffs) { ; }
 
     
+    /*
     T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> & c1)
       : dmatop(c1) { ; }
+    */
+
+    template <typename ... TMORE>
+    T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs);
+    // : dmatop(c1, more_coefs ...) { ; }
     
     /*
-      template <typename ... TMORE>
-      T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
-      : dmatop(c1, more_coefs ...) { ; }
-    */
-    
     T_BDBIntegrator_DMat  (const CoefficientFunction * coef)
       : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
     { ; }
-    
+    */
     ///
-    T_BDBIntegrator_DMat (const DMATOP & admat) : dmatop(admat) { ; }
+    T_BDBIntegrator_DMat (const DMATOP & admat);
+    // : dmatop(admat) { ; }
 
     virtual ~T_BDBIntegrator_DMat () { delete diffop; }
     
@@ -352,6 +353,28 @@ public:
   };
 
 
+
+  
+  template <class DMATOP, int DIM_ELEMENT, int DIM_SPACE>
+  T_BDBIntegrator_DMat<DMATOP,DIM_ELEMENT, DIM_SPACE>:: 
+  T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+    : dmatop(coeffs) { ; }
+    
+  template <class DMATOP, int DIM_ELEMENT, int DIM_SPACE> template <typename ... TMORE>
+  T_BDBIntegrator_DMat<DMATOP,DIM_ELEMENT, DIM_SPACE>:: 
+  T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
+    : dmatop(c1, more_coefs ...) { ; }
+    
+  
+  template <class DMATOP, int DIM_ELEMENT, int DIM_SPACE>
+  T_BDBIntegrator_DMat<DMATOP,DIM_ELEMENT, DIM_SPACE>:: 
+  T_BDBIntegrator_DMat (const DMATOP & admat) 
+    : dmatop(admat) { ; }
+
+
+
+
+
  
 /**
    Element assembling.
@@ -398,12 +421,21 @@ public:
   { 
     diffop = new T_DifferentialOperator<DIFFOP>; 
   }
+
+  template <typename ... TMORE>
+  T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
+    : BASE(c1, more_coefs ...) 
+  { 
+    diffop = new T_DifferentialOperator<DIFFOP>; 
+  }
   
+  /*
   T_BDBIntegrator  (const CoefficientFunction * coef)
     : BASE (coef) 
   { 
     diffop = new T_DifferentialOperator<DIFFOP>; 
   } 
+  */
 
   T_BDBIntegrator (const DMATOP & admat)
     : BASE(admat) 
@@ -731,9 +763,9 @@ public:
 
 	const IntegrationRule & ir = GetIntegrationRule (fel,eltrans.HigherIntegrationOrderSet());
 
-	void * heapp = lh.GetPointer();
 	for (int i = 0; i < ir.GetNIP(); i++)
 	  {
+            HeapReset hr(lh);
 	    MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mip(ir[i], eltrans);
 
 	    DIFFOP::GenerateMatrix (fel, mip, bmat, lh);
@@ -747,8 +779,6 @@ public:
 		Vec<DIM_DMAT> hv = dmat * bmat.Col(j);
 		diag(j) += fac * InnerProduct (bmat.Col(j), hv);
 	      }
-
-	    lh.CleanUp (heapp);
 	  } 
       }
 
@@ -806,9 +836,15 @@ public:
     
     FlatMatrixFixWidth<DIM_DMAT, TSCAL> hv1(ir.GetNIP(), lh);
 
+    /*
     DIFFOP::ApplyIR (fel, mir, elx, hv1, lh);
     dmatop.ApplyIR (fel, mir, hv1, lh);
     DIFFOP::ApplyTransIR (fel, mir, hv1, ely, lh);    
+    */
+    diffop->Apply (fel, mir, elx, hv1, lh);
+    dmatop.ApplyIR (fel, mir, hv1, lh);
+    diffop->ApplyTrans (fel, mir, hv1, ely, lh);    
+
   }
 
 

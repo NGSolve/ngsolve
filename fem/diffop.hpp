@@ -294,6 +294,13 @@ namespace ngfem
 	   LocalHeap & lh) const;
 
     virtual void
+    Apply (const FiniteElement & bfel,
+	   const BaseMappedIntegrationRule & bmir,
+	   FlatVector<Complex> x, 
+	   FlatMatrix<Complex> flux,
+	   LocalHeap & lh) const;
+
+    virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
@@ -304,6 +311,20 @@ namespace ngfem
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<Complex> flux,
+		FlatVector<Complex> x, 
+		LocalHeap & lh) const;
+
+    virtual void
+    ApplyTrans (const FiniteElement & bfel,
+		const BaseMappedIntegrationRule & bmir,
+		FlatMatrix<double> flux,
+		FlatVector<double> x, 
+		LocalHeap & lh) const;
+
+    virtual void
+    ApplyTrans (const FiniteElement & bfel,
+		const BaseMappedIntegrationRule & bmir,
+		FlatMatrix<Complex> flux,
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
   };

@@ -17,9 +17,9 @@ namespace ngfem
               FlatMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const
   {
-      const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-	static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-      DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
+    DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
   }
 
   template <typename DIFFOP>
@@ -62,6 +62,19 @@ namespace ngfem
     DIFFOP::Apply (bfel, mip, x, flux, lh);
   }
   
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationRule & bmir,
+         FlatVector<Complex> x, 
+         FlatMatrix<Complex> flux,
+         LocalHeap & lh) const
+  {
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplyIR (bfel, mir, x, flux, lh);
+  }
+
 
 
   
@@ -90,6 +103,33 @@ namespace ngfem
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
     DIFFOP::ApplyTrans (bfel, mip, flux, x, lh);
   }    
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationRule & bmir,
+              FlatMatrix<double> flux,
+              FlatVector<double> x, 
+              LocalHeap & lh) const 
+  {
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplyTransIR (bfel, mir, flux, x, lh);
+  }    
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationRule & bmir,
+              FlatMatrix<Complex> flux,
+              FlatVector<Complex> x, 
+              LocalHeap & lh) const 
+  {
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplyTransIR (bfel, mir, flux, x, lh);
+  }    
+
   
 }
 

@@ -83,11 +83,22 @@ namespace ngfem
     {
       typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
-
       Vec<D,TSCAL> hx;
       hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
+
+    template <typename FEL1, class TVX, class TVY>
+    static void Apply (const FEL1 & fel, const MappedIntegrationPoint<D,D> & mip,
+		       const TVX & x, TVY && y,
+		       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
+      y = Trans(shape) * x;
+    }
+
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
     static void ApplyTrans (const FEL1 & fel, const MIP & mip,
@@ -96,10 +107,20 @@ namespace ngfem
     {
       typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
-
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
       y = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+    }
+
+    template <typename FEL1, class TVX, class TVY>
+    static void ApplyTrans (const FEL1 & fel, const MappedIntegrationPoint<D,D> & mip,
+			    const TVX & x, TVY & y,
+			    LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
+      static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
+      y = shape * x;
     }
   };
 
@@ -473,22 +494,22 @@ namespace ngfem
   {
   public:
     ///
-    MassEdgeAnisotropicIntegrator (CoefficientFunction * coeff00,
-				   CoefficientFunction * coeff10,
-				   CoefficientFunction * coeff11,
-				   CoefficientFunction * coeff20,
-				   CoefficientFunction * coeff21,
-				   CoefficientFunction * coeff22);
+    MassEdgeAnisotropicIntegrator (shared_ptr<CoefficientFunction> coeff00,
+				   shared_ptr<CoefficientFunction> coeff10,
+				   shared_ptr<CoefficientFunction> coeff11,
+				   shared_ptr<CoefficientFunction> coeff20,
+				   shared_ptr<CoefficientFunction> coeff21,
+				   shared_ptr<CoefficientFunction> coeff22);
     /*
       : T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3> >
     (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
     { ; }
     */
 
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
+    static shared_ptr<Integrator> Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
-      return new MassEdgeAnisotropicIntegrator (coeffs[0], coeffs[1], coeffs[2],
-						coeffs[3], coeffs[4], coeffs[5]);
+      return make_shared<MassEdgeAnisotropicIntegrator> (coeffs[0], coeffs[1], coeffs[2],
+                                                         coeffs[3], coeffs[4], coeffs[5]);
     }
   
     ///
@@ -524,18 +545,6 @@ namespace ngfem
     typedef T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> BASE;
   public:
     using BASE::T_BIntegrator;
-    /*
-    SourceEdgeIntegrator (Array<CoefficientFunction*> & coeffs);
-
-    SourceEdgeIntegrator (CoefficientFunction * coeff1);
-
-    SourceEdgeIntegrator (CoefficientFunction * coeff1,
-			  CoefficientFunction * coeff2);
-
-    SourceEdgeIntegrator (CoefficientFunction * coeff1,
-			  CoefficientFunction * coeff2,
-			  CoefficientFunction * coeff3);
-    */
     virtual string Name () const { return "SourceEdge"; }
   };
 
@@ -700,7 +709,6 @@ namespace ngfem
 #define HCURL_EQUATIONS_EXTERN extern
 #endif
 
-
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<2> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<3> >;
   HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
@@ -711,12 +719,15 @@ namespace ngfem
 
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;
+
   HCURL_EQUATIONS_EXTERN template class RobinEdgeIntegrator<2>;
   HCURL_EQUATIONS_EXTERN template class RobinEdgeIntegrator<3>;
+
   // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<2>;
   // HCURL_EQUATIONS_EXTERN template class CurlCurlEdgeIntegrator<3>;
-  HCURL_EQUATIONS_EXTERN template class MassEdgeAnisotropicIntegrator<3>;
 
+  HCURL_EQUATIONS_EXTERN template class MassEdgeAnisotropicIntegrator<3>;
+  
   HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<2>, DiagDMat<2>, HCurlFiniteElement<2>>;
   HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<3>, DiagDMat<3>, HCurlFiniteElement<3>>;
   // HCURL_EQUATIONS_EXTERN template class T_BDBIntegrator<DiffOpIdEdge<3>, SymDMat<3>, HCurlFiniteElement<3>>;
@@ -735,6 +746,8 @@ namespace ngfem
   HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundaryEdge<3>, DVec<3>, HCurlFiniteElement<2>>;
   HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpCurlEdge<2>, DVec<1>, HCurlFiniteElement<2>>;
   HCURL_EQUATIONS_EXTERN template class T_BIntegrator<DiffOpCurlEdge<3>, DVec<3>, HCurlFiniteElement<3>>;
+
+
   /*
     HCURL_EQUATIONS_EXTERN template class 
     HCURL_EQUATIONS_EXTERN template class 
