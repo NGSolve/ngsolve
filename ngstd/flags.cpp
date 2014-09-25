@@ -365,9 +365,18 @@ namespace ngstd
 
 	pos++;
 	char * endptr = NULL;
-
 	val = strtod (pos, &endptr);
 
+        /*
+        cout << "val = " << val << endl;
+        cout << "isfinite = " << std::isfinite (val) << endl;
+        cout << "isinf = " << std::isinf (val) << endl;
+        cout << "pos = " << pos << ", endpos = " << endptr << endl;
+        */
+        if (endptr != pos && !isfinite (val))
+          endptr = const_cast<char *>(pos);          
+
+        /*
 #ifdef WIN32
 	if(endptr != pos && !_finite(val))
 	  endptr = const_cast<char *>(pos);
@@ -383,7 +392,7 @@ namespace ngstd
 #endif
 #endif
 #endif
-
+        */
 	
 	//cout << "val = " << val << endl;
 
