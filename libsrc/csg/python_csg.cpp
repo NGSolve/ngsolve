@@ -54,6 +54,8 @@ public:
       solid = new Solid (Solid::UNION, s1->GetSolid(), s2->GetSolid());
     else if (aop == SECTION)
       solid = new Solid (Solid::SECTION, s1->GetSolid(), s2->GetSolid());
+    else if (aop == SUB)
+      solid = new Solid (Solid::SUB, s1->GetSolid(), s2->GetSolid());
   }
 
   Solid * GetSolid() { return solid; }
@@ -99,15 +101,40 @@ void ExportCSG()
   bp::scope local_scope(module);
 
 
+  bp::class_<Point<2>> ("Point2d", bp::init<double,double>()) 
+    .def(bp::self+Vec<2>())
+    ;
+
   bp::class_<Point<3>> ("Point3d", bp::init<double,double,double>()) 
     .def(bp::self+Vec<3>())
     ;
-  bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) 
+
+  bp::def ("Pnt", FunctionPointer( [] (double x, double y, double z) { return Point<3>(x,y,z); } ) );
+  bp::def ("Pnt", FunctionPointer( [] (double x, double y) { return Point<2>(x,y); } ) );
+
+  bp::class_<Vec<2>> ("Vec2d", bp::init<double,double>()) 
     .def(bp::self+bp::self)
+//     .def(bp::self*double())
+    .def(double()*bp::self)
     ;
 
+  bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) 
+    .def(bp::self+bp::self)
+//     .def(bp::self*double())
+    .def(double()*bp::self)
+    ;
 
-  bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init) ;
+  bp::def ("Vec", FunctionPointer( [] (double x, double y, double z) { return Vec<3>(x,y,z); } ) );
+  bp::def ("Vec", FunctionPointer( [] (double x, double y) { return Vec<2>(x,y); } ) );
+
+    
+
+  bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
+    .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::UNION, self, other); } ) )
+    .def ("__mul__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SECTION, self, other); } ) )
+    .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SUB, self, other); } ) )
+//     .def ("__neg__", FunctionPointer( [] ( shared_ptr<SPSolid> self ) { return make_shared<SPSolid> (SPSolid::SUB, self); } ) ) COMPLEMENT?
+  ;
 
   bp::def ("Sphere", FunctionPointer([](const Point<3> c, double r)
                                      {
