@@ -99,8 +99,13 @@ void ExportCSG()
   bp::scope local_scope(module);
 
 
-  bp::class_<Point<3>> ("Point3d", bp::init<double,double,double>()) ;
-  bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) ;
+  bp::class_<Point<3>> ("Point3d", bp::init<double,double,double>()) 
+    .def(bp::self+Vec<3>())
+    ;
+  bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) 
+    .def(bp::self+bp::self)
+    ;
+
 
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init) ;
 
