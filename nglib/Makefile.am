@@ -48,4 +48,5 @@ ng_stl_LDADD = libnglib.la \
 # ng_occ_SOURCES = ng_occ.cpp
 # ng_occ_LDADD = libnglib.la 
 
+dist_bin_SCRIPTS = netgen.py
 
