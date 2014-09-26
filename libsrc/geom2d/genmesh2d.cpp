@@ -597,9 +597,7 @@ namespace netgen
     mesh->Compress();
     mesh -> SetNextMajorTimeStamp();
 
-
-    extern DLL_HEADER void Render();
-    Render();
+    mp.Render();
   }
 
 
