@@ -1,22 +1,16 @@
-print ("Hello from init.py")
-# import ngfem_cf
+try:
+	# Linux
+    from libgeom2d.geom2d import *
+except:
+	# Windows
+    from nglib.geom2d import *
 
-def mydir(x=None):
-    if x==None:
-        return []
-    else:
-        return [i for i in dir(x) if not '__' in i]
-
-def execfile(fname):
-    exec(open(fname).read())
-
-	
 import matplotlib.pyplot as plt
 
-def plotgeom(self):
-	if plotgeom.plot:
-		plt.close()
+############################################################################
 
+def plotgeom(self):
+	plt.close()
 	coords = self.PlotData()
 	for i in range(0,len(coords[2])):
 		plt.plot(coords[2][i],coords[3][i],color='b')
@@ -24,35 +18,48 @@ def plotgeom(self):
 	plt.axis('equal')
 	plt.xlim(coords[0])
 	plt.ylim(coords[1])
-	plotgeom.plot = True
 	plt.show(block=False)
 
-plotgeom.plot = False
+SplineGeometry.Plot = plotgeom
+del plotgeom
+
+############################################################################
 
 def plotpointindex(self,show = True):
+	try:
+		self._txt
+	except:
+		self._txt = list()
 	if show:
-		if len(plotpointindex.txt) == 0:
+		if len(self._txt) == 0:
 			pi = self.PointData()
 			for i in range(0,len(pi[0])):
-				plotpointindex.txt.append(plt.text(pi[0][i],pi[1][i],str(pi[2][i])))
-				plotpointindex.txt.append(plt.plot(pi[0][i],pi[1][i],'ro'))
+				self._txt.append(plt.text(pi[0][i],pi[1][i],str(pi[2][i])))
+				self._txt.append(plt.plot(pi[0][i],pi[1][i],'ro'))
 		else:
 			pass
 	else:
-		for i in range(0,len(plotpointindex.txt)):
+		for i in range(0,len(self._txt)):
 			try:
-				plotpointindex.txt[i].remove()
+				self._txt[i].remove()
 			except:
-				plotpointindex.txt[i][0].remove()
-		plotpointindex.txt.clear()
+				self._txt[i][0].remove()
+		self._txt.clear()
 	#plt.draw()
 	plt.show(block=False)
-
-plotpointindex.txt = list()
 	
+SplineGeometry.ShowPoints = plotpointindex
+del plotpointindex
+
+############################################################################
+
 def plotdomainindex(self, show = True):
+	try:
+		self._dom
+	except:
+		self._dom = list()
 	if show:
-		if len(plotdomainindex.txt) == 0:
+		if len(self._dom) == 0:
 			segdata = self.SegmentData()
 			for i in range(0,len(segdata[0])):
 				if segdata[0][i][2]:
@@ -67,26 +74,21 @@ def plotdomainindex(self, show = True):
 				else:
 					vertr = 'bottom'
 					vertl = 'top'
-				plotdomainindex.txt.append(plt.text(segdata[0][i][0],segdata[0][i][1],str(segdata[2][i]),horizontalalignment=horl,verticalalignment=vertl))
-				plotdomainindex.txt.append(plt.text(segdata[1][i][0],segdata[1][i][1],str(segdata[3][i]),horizontalalignment=horr,verticalalignment=vertr))
+				self._dom.append(plt.text(segdata[0][i][0],segdata[0][i][1],str(segdata[2][i]),horizontalalignment=horl,verticalalignment=vertl))
+				self._dom.append(plt.text(segdata[1][i][0],segdata[1][i][1],str(segdata[3][i]),horizontalalignment=horr,verticalalignment=vertr))
 		else:
 			pass
 	else:
-		for i in range(0,len(plotdomainindex.txt)):
-			plotdomainindex.txt[i].remove()
-		plotdomainindex.txt.clear()
+		for i in range(0,len(self._dom)):
+			self._dom[i].remove()
+		self._dom.clear()
 	#plt.draw()
 	plt.show(block=False)
-	
-plotdomainindex.txt = list()
 
-
-from nglib.meshing import *
-from nglib.geom2d import *
-
-SplineGeometry.Plot = plotgeom
-SplineGeometry.ShowPoints = plotpointindex
 SplineGeometry.ShowDomains = plotdomainindex
+del plotdomainindex
+	
+############################################################################
 
 def Line(point_index1,point_index2):
 	return ["line",point_index1,point_index2]
@@ -94,25 +96,3 @@ def Line(point_index1,point_index2):
 def Spline3(point_index1,point_index2,point_index3):
 	return ["spline3",point_index1,point_index2,point_index3]
 	
-def startConsole():
-    import code
-    try:
-        import readline
-        import rlcompleter
-        readline.parse_and_bind("tab:complete") # autocomplete
-    except:
-        try:
-            import pyreadline as readline
-            import rlcompleter
-            readline.parse_and_bind("tab:complete") # autocomplete
-        except:
-            print('readline not found')
-    vars = globals()
-    vars.update(locals())
-    shell = code.InteractiveConsole(vars)
-    shell.interact()
-
-
-startConsole()
-
-
