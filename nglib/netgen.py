@@ -1,3 +1,4 @@
+import sys
 try:
     # Linux
     from libmesh import meshing
@@ -6,4 +7,9 @@ try:
 except:
     # Windows
     from nglib import *
+
+sys.modules['netgen.meshing'] = meshing
+sys.modules['netgen.geom2d'] = geom2d
+sys.modules['netgen.csg'] = csg
+del sys
 
