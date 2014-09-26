@@ -240,9 +240,9 @@ void ExportGeom2d()
 	  }))
 	  .def("GenerateMesh", FunctionPointer([](SplineGeometry2d &self, MeshingParameters & mparam)
 		{
-		  Mesh * mesh = NULL;
+		  shared_ptr<Mesh> mesh;
 		  self.GenerateMesh(mesh, mparam, 0, 0);
-		  return shared_ptr<Mesh>(mesh);
+		  return mesh;
 	  }))
 	  
 	  ;

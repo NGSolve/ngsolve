@@ -12,7 +12,7 @@ endif
 
 
 
-libgeom2d_la_SOURCES = genmesh2d.cpp geom2dmesh.cpp geometry2d.cpp
+libgeom2d_la_SOURCES = genmesh2d.cpp geom2dmesh.cpp geometry2d.cpp python_geom2d.cpp
 libgeom2d_la_LIBADD = 	$(top_builddir)/libsrc/meshing/libmesh.la
 
 libgeom2dvis_la_SOURCES = geom2dpkg.cpp vsgeom2d.cpp
