@@ -249,6 +249,9 @@ void ExportGeom2d()
   
 }
 
+BOOST_PYTHON_MODULE(libgeom2d) {
+	ExportGeom2d();
+}
 
 #endif
 
