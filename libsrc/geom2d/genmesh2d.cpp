@@ -377,6 +377,8 @@ namespace netgen
     
 
     geometry.PartitionBoundary (mp, h, *mesh);
+    
+    PrintMessage (3, "Boundary mesh done, np = ", mesh->GetNP());
 
 
     // marks mesh points for hp-refinement
@@ -413,18 +415,15 @@ namespace netgen
     // number of bcnames
     int maxsegmentindex = 0;
     for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
-      {
-	if ( (*mesh)[si].si > maxsegmentindex) maxsegmentindex = (*mesh)[si].si;
-      }
+      if ( (*mesh)[si].si > maxsegmentindex) maxsegmentindex = (*mesh)[si].si;
 
-    mesh->SetNBCNames(maxsegmentindex);
+    mesh->SetNBCNames(maxsegmentindex+1);
 
-    for ( int sindex = 0; sindex < maxsegmentindex; sindex++ )
+    for ( int sindex = 0; sindex <= maxsegmentindex; sindex++ )
       mesh->SetBCName ( sindex, geometry.GetBCName( sindex+1 ) );
 
     for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
       (*mesh)[si].SetBCName ( (*mesh).GetBCNamePtr( (*mesh)[si].si-1 ) );
-
   
     mesh->CalcLocalH(mp.grading);
 
