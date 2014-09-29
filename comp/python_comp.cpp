@@ -387,7 +387,15 @@ void ExportNgcomp()
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     ;
 
-
+  typedef Preconditioner PRE;
+  bp::class_<PRE, shared_ptr<PRE>, boost::noncopyable>("Preconditioner", bp::no_init)
+    .add_property("mat", FunctionPointer
+                  ([](shared_ptr<Preconditioner> self) 
+                   {
+                     return shared_ptr<BaseMatrix> (const_cast<BaseMatrix*> (&self->GetMatrix()),
+                                                    NOOP_Deleter);
+                   }))
+    ;
 }
 
 
