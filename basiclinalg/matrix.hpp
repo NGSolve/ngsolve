@@ -1153,6 +1153,12 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
+    operator FlatMatrix<T,ColMajor> () const
+    {
+      static_assert(H==SLICE, "MatrixFixHeight to FlatMatrix, but slice != height");
+      return FlatMatrix<T,ColMajor> (H, w, data);
+    }
+
     operator SliceMatrix<T,ColMajor> () const
     {
       return SliceMatrix<T,ColMajor> (H, w, SLICE, data);
