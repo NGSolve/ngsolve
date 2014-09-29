@@ -146,8 +146,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual int Dim() const = 0;
     /// does it live on the boundary ?
     virtual bool Boundary() const { return false; }
-    /// calculates the matrix
 
+    /// total polynomial degree is reduced by this order (i.e. minimal difforder)
+    virtual int DiffOrder() const = 0; 
+
+    /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
@@ -228,7 +231,7 @@ namespace ngfem
     /// dimension of range
     virtual int Dim() const { return dim*diffop->Dim(); }
     virtual bool Boundary() const { return diffop->Boundary(); }
-
+    virtual int DiffOrder() const { return diffop->DiffOrder(); }
 
 
     NGS_DLL_HEADER virtual void
@@ -265,6 +268,7 @@ namespace ngfem
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
+    virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
     
     virtual void
     CalcMatrix (const FiniteElement & bfel,
@@ -272,6 +276,7 @@ namespace ngfem
 		FlatMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
 
+#ifndef FASTCOMPILE
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
@@ -327,6 +332,7 @@ namespace ngfem
 		FlatMatrix<Complex> flux,
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
+#endif
   };
 
 

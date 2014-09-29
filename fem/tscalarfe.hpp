@@ -35,9 +35,14 @@ namespace ngfem
     
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationPoint & ip, 
 					      SliceVector<> shape) const;
+
+    HD NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
+					       SliceMatrix<> dshape) const;
+
     
+#ifndef FASTCOMPILE
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
-					   SliceMatrix<> shape) const;
+                                              SliceMatrix<> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
 					       FlatVector<double> x) const;
@@ -58,8 +63,6 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
 
-    HD NGS_DLL_HEADER virtual void CalcDShape (const IntegrationPoint & ip, 
-					       SliceMatrix<> dshape) const;
 /*    
     virtual void CalcDShape (const IntegrationPoint & ip, 
 			     const std::function<void(int,Vec<DIM>)> & callback) const;
@@ -70,6 +73,8 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
+
+#endif
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     

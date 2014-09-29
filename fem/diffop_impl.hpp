@@ -22,6 +22,7 @@ namespace ngfem
     DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
   }
 
+#ifndef FASTCOMPILE
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
@@ -130,7 +131,7 @@ namespace ngfem
     DIFFOP::ApplyTransIR (bfel, mir, flux, x, lh);
   }    
 
-  
+#endif  
 }
 
 

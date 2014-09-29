@@ -124,7 +124,10 @@ namespace ngfem
 
     /// dimension of space
     virtual int DimSpace () const { return -1; }
-
+    
+    /// how many copies of the same element (e.g. elasticity)
+    virtual int GetDimension () const { return 1; }
+    
     /// 
     void SetName (const string & aname);
     ///
