@@ -39,7 +39,7 @@ namespace ngfem
 
   public:
     enum { DIM = D };
-    // enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
+    enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
     // enum { DIM_CURL = DIM_CURL_(D) };
 
 

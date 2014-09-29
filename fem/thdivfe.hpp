@@ -453,7 +453,8 @@ namespace ngfem
     
     virtual void CalcDivShape (const IntegrationPoint & ip, 
 			       SliceVector<> divshape) const;
-    
+
+#ifndef FASTCOMPILE    
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
 
@@ -463,6 +464,7 @@ namespace ngfem
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
 			   FlatMatrixFixWidth<DIM> vals) const;
+#endif
   };
 
 }

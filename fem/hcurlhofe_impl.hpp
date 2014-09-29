@@ -230,7 +230,7 @@ namespace ngfem
 
     for (int i = 0; i < 4; i++)
       {
-	int p = order_edge[i]; 
+	// int p = order_edge[i]; 
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	Tx xi  = sigma[e[1]]-sigma[e[0]];
@@ -243,12 +243,21 @@ namespace ngfem
 	// High Order edges ... Gradient fields 
 	if(usegrad_edge[i])
 	  {
+            /*
 	    LegendrePolynomial::
 	      EvalMult (order_edge[i]-1, 
 			xi, bub, pol_xi);
 
 	    for (int j = 0; j < p; j++)
               shape[ii++] = Du<2> (pol_xi[j]);
+            */
+	    LegendrePolynomial::
+	      EvalMult (order_edge[i]-1, 
+			xi, bub, SBLambda ([&](int i, Tx val)
+                                           {
+                                             shape[ii++] = Du (val);
+                                           }));
+
 	  }
       }
 
@@ -263,8 +272,8 @@ namespace ngfem
         Vec<2,Tx> xi = ET_trait<ET_QUAD>::XiFace(0, hx, vnums);
 	Tx bub = 1.0/16 * (1-xi(0)*xi(0))*(1-xi(1)*xi(1));
         
-        LegendrePolynomial::EvalMult(p[0]-1, xi(0), bub,
-              SBLambda ([&](int i, Tx val) // ALWAYS_INLINE // clang
+        LegendrePolynomial::EvalMult1Assign(p[0]-1, xi(0), bub,
+              SBLambda ([&](int i, Tx val) LAMBDA_INLINE 
                     {  
                       LegendrePolynomial::EvalMult (p[1]-1, xi(1), val, 
                                                     SBLambda([&](int i2, Tx v2)

@@ -37,7 +37,7 @@ namespace ngfem
   {    
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_Shape<DIM> s) 
-                                    { shape.Row(i) = s; }));
+                                    { FlatVec<DIM> (&shape(i,0)) = s; }));
   }
   
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -46,9 +46,9 @@ namespace ngfem
   {  
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                    { shape.Row(i) = s; }));
+                                    { FlatVec<DIM_CURL> (&shape(i,0)) = s; }));
   } 
-
+#ifndef FASTCOMPILE
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
@@ -127,7 +127,7 @@ namespace ngfem
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }
 
-
+#endif
 }
 
 

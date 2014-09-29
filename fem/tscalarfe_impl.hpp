@@ -34,6 +34,18 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcDShape (const IntegrationPoint & ip, 
+              SliceMatrix<> dshape) const
+  {
+    Vec<DIM, AutoDiff<DIM> > adp = ip; 
+    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                                    { shape.StoreGradient (&dshape(i,0)) ; }));
+  }
+
+#ifndef FASTCOMPILE
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationRule & ir, SliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
@@ -177,15 +189,6 @@ namespace ngfem
   }
   */
 
-  template <class FEL, ELEMENT_TYPE ET, class BASE>
-  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  CalcDShape (const IntegrationPoint & ip, 
-              SliceMatrix<> dshape) const
-  {
-    Vec<DIM, AutoDiff<DIM> > adp = ip; 
-    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
-                                    { shape.StoreGradient (&dshape(i,0)) ; }));
-  }
 
 
   /*
@@ -269,6 +272,10 @@ namespace ngfem
     // did not work for old tensor productelements: order cancelation for lam_e
   }
   */
+
+
+#endif
+
 }
 
 
