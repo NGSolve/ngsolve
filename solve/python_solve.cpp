@@ -43,6 +43,7 @@ void ExportNgsolve() {
   PyExportSymbolTable<shared_ptr<GridFunction>> ();
   PyExportSymbolTable<shared_ptr<BilinearForm>> ();
   PyExportSymbolTable<shared_ptr<LinearForm>> ();
+  PyExportSymbolTable<shared_ptr<Preconditioner>> ();
   PyExportSymbolTable<shared_ptr<NumProc>> ();
   PyExportSymbolTable<double> ();
   PyExportSymbolTable<shared_ptr<double>> ();
@@ -132,6 +133,7 @@ void ExportNgsolve() {
     .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return bp::object(self.GetGridFunctionTable()); }))
     .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetBilinearFormTable()); }))
     .add_property ("linearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetLinearFormTable()); }))
+    .add_property ("preconditioners", FunctionPointer([](PDE & self) { return bp::object(self.GetPreconditionerTable()); }))
     .add_property ("numprocs", FunctionPointer([](PDE & self) { return bp::object(self.GetNumProcTable()); }))
     ;
 }
