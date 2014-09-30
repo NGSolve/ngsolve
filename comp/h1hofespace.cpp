@@ -13,8 +13,58 @@
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 
-
 using namespace ngmg; 
+
+#include "../parallel/dump.hpp"
+
+#ifdef PARALLEL
+
+
+template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+class NodalArray
+{
+  const MeshAccess & ma;
+  Array<TELEM,TSIZE> & a;
+public:
+  NodalArray (const MeshAccess & ama, Array<TELEM,TSIZE> & aa) : ma(ama), a(aa) { ; }
+  const MeshAccess & GetMeshAccess() const { return ma; }
+  Array<TELEM,TSIZE> & A() { return a; }
+};
+
+template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+auto NodalData (const MeshAccess & ama, Array<TELEM,TSIZE> & a) -> NodalArray<NT,TELEM,TSIZE> 
+{ return NodalArray<NT,TELEM,TSIZE> (ama, a); }
+
+
+
+template <NODE_TYPE NT, typename T, typename TSIZE> 
+Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
+{
+  if (MyMPI_GetNTasks() == 1) return archive & a.A();
+  cout << "we do Archive for nodalarray" << endl;
+  
+  auto g = [] (int size) { cout << "total size: " << size << endl; };    
+
+  auto f2 = [] (INT<2> key, double val) 
+    { 
+      cout << "key = ";
+      for(int k=0;k<2;k++)
+	cout << " " << key[k];
+      cout << ", val = " << val << endl;
+    };
+      
+  GatherNodalData<NT_EDGE> (a.GetMeshAccess(), a.A(), g, f2);
+
+  return archive;
+}
+
+
+
+
+#else
+template <NODE_TYPE NT, typename TELEM>
+auto NodalData (Array<TELEM> & a) -> Array<TELEM> & { return a; }
+#endif
 
 
 namespace ngcomp
@@ -473,7 +523,7 @@ namespace ngcomp
     archive & level;
     cout << "proc " << MyMPI_GetId() << " send order edge array" << endl;
     MyMPI_Barrier();
-    archive & order_edge;
+    archive & NodalData<NT_EDGE> (ma, order_edge);
     MyMPI_Barrier();
     cout << "all alive" << endl;
 
