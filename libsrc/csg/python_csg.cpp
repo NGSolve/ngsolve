@@ -41,6 +41,7 @@ class SPSolid
 {
   shared_ptr<SPSolid> s1, s2;
   Solid * solid;
+  int bc = -1;
   bool owner;
 public:
   enum optyp { TERM, SECTION, UNION, SUB };
@@ -48,7 +49,7 @@ public:
   SPSolid (Solid * as) : solid(as), owner(true), op(TERM) { ; }
   ~SPSolid () 
   {
-    if (owner) delete solid;
+    ; // if (owner) delete solid;
   }  
   SPSolid (optyp aop, shared_ptr<SPSolid> as1, shared_ptr<SPSolid> as2) 
     : s1(as1), s2(as2), owner(true), op(aop) 
@@ -77,7 +78,23 @@ public:
     if (s1) s1 -> AddSurfaces (geom);
     if (s2) s2 -> AddSurfaces (geom);
   }
-
+  
+  void SetBC(int abc) 
+  {
+    if (bc == -1) 
+      {
+        bc = abc;
+        if (s1) s1 -> SetBC(bc);
+        if (s2) s2 -> SetBC(bc);
+        if (op == TERM)
+          {
+            Primitive * prim = solid -> GetPrimitive();
+            for (int i = 0; i < prim->GetNSurfaces(); i++)
+              prim->GetSurface(i).SetBCProperty (abc);
+            cout << "set " << prim->GetNSurfaces() << " surfaces to bc " << bc << endl;
+          }
+      }
+  }
 private:
   optyp op;
 };
@@ -140,6 +157,8 @@ void ExportCSG()
     .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) 
                                       { return make_shared<SPSolid> (SPSolid::SECTION, self, make_shared<SPSolid> (SPSolid::SUB, other, nullptr)); } ) )
 //     .def ("__neg__", FunctionPointer( [] ( shared_ptr<SPSolid> self ) { return make_shared<SPSolid> (SPSolid::SUB, self); } ) ) COMPLEMENT?
+    .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
+                                { self->SetBC(nr); return self; }))
   ;
 
   bp::def ("Sphere", FunctionPointer([](Point<3> c, double r)
@@ -206,12 +225,15 @@ void ExportCSG()
   bp::def("GenerateMesh", FunctionPointer
           ([](CSGeometry & geo, MeshingParameters & param)
            {
+             // testout = new ofstream ("test.out");
              shared_ptr<Mesh> dummy;
-             cout << "Genrate Mesh, params = "; //  << param << endl;
+             cout << "Genrate Mesh, params = " << param << endl;
+             cout << "geom, bbox = " << geo.BoundingBox() << endl;
              geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
              geo.GenerateMesh (dummy, param, 0, 6);
              return dummy;
-           }));
+           }))
+    ;
   
 }
 
