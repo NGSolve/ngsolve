@@ -188,10 +188,12 @@ public:
       : dmatop(c1) { ; }
     */
 
+    /*
     template <typename ... TMORE>
     T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs);
     // : dmatop(c1, more_coefs ...) { ; }
-    
+    */
+
     /*
     T_BDBIntegrator_DMat  (const CoefficientFunction * coef)
       : dmatop(shared_ptr<CoefficientFunction> (const_cast<CoefficientFunction*>(coef), NOOP_Deleter))
@@ -593,11 +595,12 @@ public:
   T_BDBIntegrator_DMat  (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     : dmatop(coeffs) { ; }
     
+  /*
   template <class DMATOP> template <typename ... TMORE>
   T_BDBIntegrator_DMat<DMATOP>:: 
   T_BDBIntegrator_DMat  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
     : dmatop(c1, more_coefs ...) { ; }
-    
+  */
   
   template <class DMATOP>
   T_BDBIntegrator_DMat<DMATOP>:: 
@@ -656,13 +659,15 @@ public:
     diffop = new T_DifferentialOperator<DIFFOP>; 
   }
 
+  /*
   template <typename ... TMORE>
   T_BDBIntegrator  (shared_ptr<CoefficientFunction> c1, TMORE ... more_coefs)
     : BASE(c1, more_coefs ...) 
   { 
     diffop = new T_DifferentialOperator<DIFFOP>; 
   }
-  
+  */
+
   /*
   T_BDBIntegrator  (const CoefficientFunction * coef)
     : BASE (coef) 
@@ -1448,7 +1453,6 @@ public:
         // DIFFOP::ApplyTransIR (fel, mir, dvecs, elvec, lh);
         diffop->ApplyTrans (fel, mir, dvecs, elvec, lh);
       }
-    
     catch (Exception & e)
       {
         e.Append ("in CalcElementVector, type = ");
