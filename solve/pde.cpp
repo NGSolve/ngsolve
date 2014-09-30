@@ -810,6 +810,7 @@ namespace ngsolve
         AddMeshAccess(ma);
       }
 
+    cout << "mesh complete" << endl;
 
     archive & constants;
     archive & string_constants;
@@ -817,6 +818,8 @@ namespace ngsolve
 
     // archive & evaluators;
     // archive & coefficients;
+
+    cout << "constants & variables done" << endl;
 
     // archive spaces
     if (archive.Output())
@@ -827,7 +830,12 @@ namespace ngsolve
             archive << string(spaces.GetName(i));
             archive << spaces[i] -> type;
             archive << spaces[i] -> GetDimension();
+
+	    MyMPI_SendCmd ("ngs_archive_space");
+	    MyMPI_Bcast (i);
+
             spaces[i] -> DoArchive(archive);
+	    cout << "space complete" << endl;
           }
       }
     else

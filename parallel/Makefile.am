@@ -3,12 +3,12 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include $(MUMPS_INCLUDES) $(HYPR
 
 lib_LTLIBRARIES = libparallel.la
 
-libparallel_la_SOURCES = parallelvvector.cpp parallel_matrices.cpp
+libparallel_la_SOURCES = parallelvvector.cpp parallel_matrices.cpp 
 
 # libparallel_la_LIBADD = $(top_builddir)/comp/libngcomp.la
 # libparallel_la_LIBADD = /opt/hypre-2.8.0b/lib hy/o$(top_builddir)/comp/libngcomp.la
 
-include_HEADERS = parallelngs.hpp parallelvector.hpp parallel_matrices.hpp
+include_HEADERS = parallelngs.hpp parallelvector.hpp parallel_matrices.hpp dump.hpp
 
 
 libparallel_la_LDFLAGS = -avoid-version

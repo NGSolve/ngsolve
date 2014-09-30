@@ -384,6 +384,47 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
     }
   };
 
+
+  class WorkerOutArchive : public Archive
+  {
+    // Socket & sock;
+  public:
+    WorkerOutArchive () { ; }
+
+    virtual bool Output () { return true; }
+    virtual bool Input () { return false; }
+
+    virtual Archive & operator & (double & d) 
+    {
+      return *this; 
+    }
+    virtual Archive & operator & (int & i) 
+    {
+      return *this; 
+    }
+    virtual Archive & operator & (short int & i) 
+    {
+      return *this; 
+    }
+    virtual Archive & operator & (unsigned char & i) 
+    { 
+      return *this; 
+    }
+    virtual Archive & operator & (bool & b) 
+    { 
+      return *this; 
+    }
+    virtual Archive & operator & (string & str) 
+    {
+      return *this; 
+    }
+    virtual Archive & operator & (char *& str) 
+    {
+      return *this; 
+    }
+  };
+
+
 #endif
 
 #ifndef WIN32
@@ -433,6 +474,7 @@ void * SocketThread (void * data)
               */
               else if (str == "pde") 
                 {
+		  cout << "socket: got command 'pde'" << endl;
                   SocketOutArchive archive(new_sock);
                   pde -> DoArchive (archive);
                   cout << "PDE completely sent" << endl;
@@ -1442,6 +1484,15 @@ void NGS_ParallelRun (const string & message)
   else if ( message == "ngs_solvepde" )
     {
       RunParallel (SolveBVP2, NULL);
+    }
+
+  else if ( message == "ngs_archive_space" )
+    {
+      int nr;
+      MyMPI_Bcast (nr);
+      cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
+      WorkerOutArchive archive;
+      pde->GetSpaceTable()[nr] -> DoArchive (archive);
     }
 
   else if ( message == "ngs_exit" )
