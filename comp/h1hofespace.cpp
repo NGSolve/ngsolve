@@ -15,9 +15,10 @@
 
 using namespace ngmg; 
 
-#include "../parallel/dump.hpp"
 
 #ifdef PARALLEL
+
+#include "../parallel/dump.hpp"
 
 
 template <NODE_TYPE NT, typename TELEM, typename TSIZE>
@@ -63,7 +64,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
 
 #else
 template <NODE_TYPE NT, typename TELEM>
-auto NodalData (Array<TELEM> & a) -> Array<TELEM> & { return a; }
+auto NodalData (const MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
 #endif
 
 
