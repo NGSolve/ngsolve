@@ -857,9 +857,12 @@ namespace ngfem
 
   public:
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
-			       const ElementTransformation & aeltrans)
+                                      const ElementTransformation & aeltrans)
       : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
-
+    INLINE ~BaseMappedIntegrationRule ()
+    {
+      ir.NothingToDelete();
+    }
     INLINE int Size() const { return ir.Size(); }
     INLINE const IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
@@ -878,18 +881,18 @@ namespace ngfem
 			   LocalHeap & lh);
 
     INLINE MappedIntegrationRule (const IntegrationRule & ir, 
-			   const ElementTransformation & eltrans, 
-			   int dummy,
-			   LocalHeap & lh)
-      : BaseMappedIntegrationRule (ir, eltrans), mips(ir.GetNIP(), lh)
+                                  const ElementTransformation & eltrans, 
+                                  int dummy,
+                                  LocalHeap & lh)
+      : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
       incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
     }
 
     INLINE MappedIntegrationRule (const IntegrationRule & air, 
-			   const ElementTransformation & aeltrans, 
-                           FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > amips)
+                                  const ElementTransformation & aeltrans, 
+                                  FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > amips)
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);

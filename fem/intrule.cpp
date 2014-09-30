@@ -188,7 +188,6 @@ namespace ngfem
 			 LocalHeap & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
-    // static Timer t ("mapped-IR"); RegionTimer reg(t);
     baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
     incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
 
