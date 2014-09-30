@@ -294,7 +294,7 @@ namespace ngcomp
   {
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
 
-    INVERSETYPE invtype, loinvtype;
+    INVERSETYPE invtype, loinvtype = default_inversetype;
     invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     if (lo_bfa)
       loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType (inversetype);
