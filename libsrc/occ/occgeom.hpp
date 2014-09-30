@@ -387,7 +387,7 @@ namespace netgen
 
      void WriteOCC_STL(char * filename);
 
-     virtual int GenerateMesh (Mesh*& mesh, MeshingParameters & mparam, 
+     virtual int GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam, 
          int perfstepsstart, int perfstepsend);
 
       virtual const Refinement & GetRefinement () const;
@@ -441,7 +441,7 @@ namespace netgen
    // Philippose - 31.09.2009
    // External access to the mesh generation functions within the OCC
    // subsystem (Not sure if this is the best way to implement this....!!)
-   extern int OCCGenerateMesh (OCCGeometry & occgeometry, Mesh*& mesh,
+   extern int OCCGenerateMesh (OCCGeometry & occgeometry, shared_ptr<Mesh> & mesh,
 			       MeshingParameters & mparam,
 			       int perfstepsstart, int perfstepsend);
 
