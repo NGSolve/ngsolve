@@ -114,7 +114,18 @@ void ExportNetgenMeshing()
                                      return li;
                                    }))
     ;
-  
+
+	bp::class_<Element2d>("Element2D")
+		.add_property("index", &Element2d::GetIndex, &Element2d::SetIndex)
+		.add_property("vertices",
+		FunctionPointer([](const Element2d & self) -> bp::list
+	{
+		bp::list li;
+		for (int i = 0; i < self.GetNV(); i++)
+			li.append(self[i]);
+		return li;
+	}))
+	;
   ExportArray<Element>();
   ExportArray<Element2d>();
   ExportArray<MeshPoint,PointIndex::BASE,PointIndex>();
