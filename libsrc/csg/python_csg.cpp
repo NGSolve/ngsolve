@@ -63,6 +63,7 @@ public:
   }
 
   Solid * GetSolid() { return solid; }
+  const Solid * GetSolid() const { return solid; }
 
   void GiveUpOwner() 
   { 
@@ -99,6 +100,11 @@ private:
   optyp op;
 };
 
+inline ostream & operator<< (ostream & ost, const SPSolid & sol)
+{
+  ost << *sol.GetSolid();
+  return ost;
+}
 
 namespace netgen
 {
@@ -152,11 +158,13 @@ void ExportCSG()
     
 
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
+    .def ("__str__", &ToString<SPSolid>)
     .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::UNION, self, other); } ) )
     .def ("__mul__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SECTION, self, other); } ) )
     .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) 
                                       { return make_shared<SPSolid> (SPSolid::SECTION, self, make_shared<SPSolid> (SPSolid::SUB, other, nullptr)); } ) )
 //     .def ("__neg__", FunctionPointer( [] ( shared_ptr<SPSolid> self ) { return make_shared<SPSolid> (SPSolid::SUB, self); } ) ) COMPLEMENT?
+
     .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
                                 { self->SetBC(nr); return self; }))
   ;
