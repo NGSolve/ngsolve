@@ -350,6 +350,10 @@ public:
   inline T MyMPI_Reduce (T d, int op = 0, MPI_Comm comm = ngs_comm) { return d; }
 
 
+  template <class T>
+  inline void MyMPI_Bcast (T & s, MPI_Comm comm = 0) { ; }
+  template <class T>
+  inline void MyMPI_Bcast (Array<T> & s, MPI_Comm comm = 0) { ; }
   inline void MyMPI_Bcast (string & s, MPI_Comm comm = 0) { ; }
   
   class MyMPI
