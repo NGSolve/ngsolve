@@ -151,6 +151,12 @@ AX_PYTHON_DEVEL([>= '3.2'])
 AX_BOOST_BASE([1.54])
 AX_BOOST_PYTHON
 
+echo "pythondir = $pythondir"
+# AC_SUBST([pythondir], \${prefix}/python/netgen)
+AC_SUBST([pythondir], $pythondir/netgen)
+# echo "pythondir changed to  = $pythondir"
+
+
 pythonon=false
 AC_ARG_ENABLE([python],
         [AS_HELP_STRING([--enable-python],[link boost python, necessary for ngsolve])],
@@ -247,7 +253,7 @@ libsrc/include/Makefile libsrc/interface/Makefile
 libsrc/linalg/Makefile libsrc/meshing/Makefile libsrc/occ/Makefile 
 libsrc/stlgeom/Makefile
 libsrc/visualization/Makefile ng/Makefile nglib/Makefile
-tutorials/Makefile doc/Makefile windows/Makefile )
+tutorials/Makefile python/Makefile doc/Makefile windows/Makefile )
 
 AC_OUTPUT
 
