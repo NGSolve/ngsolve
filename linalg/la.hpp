@@ -3,12 +3,13 @@
 
 #include <bla.hpp>
 
-
+/*
 namespace ngcomp
 {
   class Preconditioner;
   class LocalPreconditioner;
 }
+*/
 
 /** namespace for linear algebra.
  */

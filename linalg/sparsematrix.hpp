@@ -203,7 +203,6 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, 
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
@@ -404,7 +403,6 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, 
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
@@ -616,7 +614,6 @@ namespace ngla
     virtual BaseBlockJacobiPrecond * 
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
-			      const ngcomp::Preconditioner * acoarsegridprecond = 0, 
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 

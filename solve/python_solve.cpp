@@ -91,10 +91,19 @@ void ExportNgsolve() {
                                   self.AddNumProc ("pynumproc", np);
                                 }))
 
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<FESpace> space)
+                                {
+                                  self.AddFESpace (space->GetName(), space);
+                                }))
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<GridFunction> gf)
                                 {
                                   self.AddGridFunction (gf->GetName(), gf);
+                                }))
+
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<BilinearForm> bf)
+                                {
+                                  self.AddBilinearForm (bf->GetName(), bf);
                                 }))
 
     .def("Add", FunctionPointer([](PDE & self, const bp::list &l)
@@ -138,7 +147,11 @@ void ExportNgsolve() {
     ;
 }
 
-
+/*
+BOOST_PYTHON_MODULE(libngsolve) {
+  ExportNgsolve();
+}
+*/
 
 
 #endif

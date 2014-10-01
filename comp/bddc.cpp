@@ -1,5 +1,5 @@
 #include <comp.hpp>
-#include <solve.hpp>
+// #include <solve.hpp>
 
 
 namespace ngcomp

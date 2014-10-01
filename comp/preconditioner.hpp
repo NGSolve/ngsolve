@@ -8,15 +8,17 @@
 /*********************************************************************/
 
 
-
+/*
 namespace ngsolve
 {
   class PDE;
 }
+*/
 
 namespace ngcomp
 {
-  using ngsolve::PDE;
+  // using ngsolve::PDE;
+  class PDE;
 
   /**
      Base class for preconditioners.
