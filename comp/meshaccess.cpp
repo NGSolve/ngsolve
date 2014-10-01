@@ -326,7 +326,10 @@ namespace ngcomp
   MeshAccess :: MeshAccess (shared_ptr<netgen::Mesh> amesh)
     : mesh(amesh)
   {
+    // the connection to netgen global variables
     ngstd::testout = netgen::testout;
+    ngstd::printmessage_importance = netgen::printmessage_importance;
+
     Ng_UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }

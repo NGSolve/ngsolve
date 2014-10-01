@@ -10,6 +10,7 @@
 namespace ngstd
 {
   ostream * testout = &cout;
+  int printmessage_importance = 5;
   bool NGSOStream :: glob_active = true;
 
 #ifdef PARALLEL

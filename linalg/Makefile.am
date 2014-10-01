@@ -6,7 +6,8 @@ lib_LTLIBRARIES = libngla.la
 libngla_la_SOURCES = linalg_kernels.cu basematrix.cpp basevector.cpp blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp sparsematrix.cpp special_matrix.cpp superluinverse.cpp mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp cuda_linalg.cpp python_linalg.cpp
 
 libngla_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la \
- $(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS) -L$(libdir) -lnglib -linterface
+ $(top_builddir)/ngstd/libngstd.la $(LAPACK_LIBS)
+#  -L$(libdir) -lnglib -linterface
 
 
 if NGSCUDA
