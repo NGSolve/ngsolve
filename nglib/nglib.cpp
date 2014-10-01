@@ -1243,8 +1243,10 @@ void Ng_InitSolutionData (Ng_SolutionData * soldata) { ; }
 #include <boost/python.hpp>
 void ExportNetgenMeshing();
 void ExportCSG();
+void ExportGeom2d();
 BOOST_PYTHON_MODULE(nglib) {
     ExportCSG();
     ExportNetgenMeshing();
+	ExportGeom2d();
 }
 #endif
