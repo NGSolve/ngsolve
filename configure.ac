@@ -144,6 +144,8 @@ AX_PYTHON_DEVEL([>= '3.2'])
 AX_BOOST_BASE([1.54])
 AX_BOOST_PYTHON
 
+AC_SUBST([pythondir], $pythondir/ngsolve)
+
 echo "from path python:   python version = $PYTHON_VERSION"
 echo "from pythond devel: python cpp = $PYTHON_CPPFLAGS"
 echo "from pythond devel: python ld = $PYTHON_LDFLAGS"
@@ -175,9 +177,11 @@ AC_DEFINE(BUILDDATE, "builddate", [build date])
 AC_SUBST(GOLD_INCLUDE, $GOLD_INCLUDE)
 
 AC_CONFIG_HEADERS(config.h) 
+
 AC_CONFIG_FILES(Makefile include/Makefile
 ngstd/Makefile basiclinalg/Makefile linalg/Makefile fem/Makefile
-comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile 
-pde_tutorial/Makefile pde_tutorial/pml/Makefile windows/Makefile)
+comp/Makefile solve/Makefile multigrid/Makefile parallel/Makefile
+python/Makefile pde_tutorial/Makefile pde_tutorial/pml/Makefile
+windows/Makefile)
 
 AC_OUTPUT
