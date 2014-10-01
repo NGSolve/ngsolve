@@ -1,6 +1,6 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
-#include <solve.hpp>
+// #include <solve.hpp>
 #include <parallelngs.hpp>
 
 namespace ngcomp
@@ -563,7 +563,7 @@ namespace ngcomp
 	  flags.SetFlag("eliminate_internal");
 	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, coarse_pre.get(), parallel, bfa->GetFESpace().GetFreeDofs());
+	  .CreateBlockJacobiPrecond(*blocks, 0, /* coarse_pre.get(), */ parallel, bfa->GetFESpace().GetFreeDofs());
 	// dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
       }
     else if (block)

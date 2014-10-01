@@ -57,6 +57,9 @@ namespace ngcomp
 #include "bilinearform.hpp"
 #include "linearform.hpp"
 #include "preconditioner.hpp"
+#include "numproc.hpp"
+#include "pde.hpp"
+
 #include "postproc.hpp"
 
 #include "hcurlhdivfes.hpp"

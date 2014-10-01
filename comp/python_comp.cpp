@@ -22,14 +22,11 @@ void ExportNgcomp()
   
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
   
-  cout << "exporting ngstd as " << nested_name << endl;
+  cout << "exporting ngcomp as " << nested_name << endl;
   bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
   parent.attr("ngcomp") = module;
   
   bp::scope local_scope(module);
-    
-
-
 
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
@@ -54,7 +51,7 @@ void ExportNgcomp()
     .def("IsVolume", &ElementId::IsVolume)
     .def("IsBoundary", &ElementId::IsBoundary)
     ;
-  //
+
   bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())
     .def(PyDefIterable2<ElementRange>())
     // .def("__iter__", bp::iterator<ElementRange>())
@@ -98,7 +95,6 @@ void ExportNgcomp()
                                             return self.GetName();
                                           }))
     ;
-
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
@@ -319,7 +315,7 @@ void ExportNgcomp()
           }
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
     ;
-  
+
   typedef BilinearForm BF;
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -407,9 +403,11 @@ void ExportNgbla();
 void ExportNgfem();
 
 BOOST_PYTHON_MODULE(libngcomp) {
+  /*
   ExportNgstd();
   ExportNgbla();
   ExportNgfem();
+  */
   ExportNgcomp();
 }
 

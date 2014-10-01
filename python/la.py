@@ -1,9 +1,7 @@
 try:
     # Linux
-    from libngfem.ngfem import *
+    from libngla.ngla import *
 except:
-    # Windows
-    print ("windows todo ngfem")
+    print ("windows todo la")
 #    from nglib.csg import *
 #    from nglib.meshing import *
-

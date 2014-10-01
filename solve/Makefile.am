@@ -7,9 +7,9 @@ bin_PROGRAMS =  ngs
 
 
 libngsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
-numproc.cpp evp.cpp hyperbolic.cpp  \
-numprocee.cpp pde.cpp pdeparser.cpp python_solve.cpp python_mpi.cpp
-
+numproc.cpp  evp.cpp hyperbolic.cpp  \
+numprocee.cpp python_solve.cpp python_mpi.cpp
+# basenumproc.cpp  pde.cpp pdeparser.cpp
 if NGSGUI
   libngsolve_la_SOURCES += ngsolve.cpp shapetester.cpp
   AM_CPPFLAGS += -DTCL
@@ -36,7 +36,7 @@ if NGSPY
 lib_LTLIBRARIES += libngspy.la
 libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \
 numproc.cpp evp.cpp hyperbolic.cpp  \
-numprocee.cpp pde.cpp pdeparser.cpp  python_solve.cpp python_mpi.cpp
+numprocee.cpp python_solve.cpp python_mpi.cpp
 
 libngspy_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
 $(top_builddir)/ngstd/libngstd.la 		\
@@ -72,7 +72,7 @@ ngs_LDADD = libngsolve.la \
 
 
 
-include_HEADERS = solve.hpp pde.hpp numproc.hpp 
+include_HEADERS = solve.hpp
 
 
 

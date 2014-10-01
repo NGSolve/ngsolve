@@ -254,8 +254,8 @@ void ExportNgstd();
 void ExportNgbla();
 
 BOOST_PYTHON_MODULE(libngfem) {
-  ExportNgstd();
-  ExportNgbla();
+  // ExportNgstd();
+  // ExportNgbla();
   ExportNgfem();
 }
 

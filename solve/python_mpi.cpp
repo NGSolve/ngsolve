@@ -27,7 +27,7 @@ void ExportNgmpi() {
 
     bp::def("Barrier", FunctionPointer( [] () {
         MyMPI_Barrier();
-    }));
+    })); 
 }
 
 

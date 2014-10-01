@@ -26,11 +26,13 @@ BOOST_PYTHON_MODULE(libngspy)
 {
     try
     {
+      /*
         ExportNgstd();
         ExportNgbla();
         ExportNgfem();
         ExportNgla();
         ExportNgcomp();
+      */
         ExportNgsolve();
     }
     catch (ngstd::Exception & e)
@@ -43,3 +45,5 @@ BOOST_PYTHON_MODULE(libngspy)
         PyErr_Print();
     }
 }
+
+

@@ -86,7 +86,7 @@ void ExportNgla() {
 void ExportNgbla();
 
 BOOST_PYTHON_MODULE(libngla) {
-  ExportNgbla();
+  // ExportNgbla();
   ExportNgla();
 }
 
