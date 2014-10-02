@@ -24,9 +24,6 @@ void ExportNgla() {
     bp::object expr_namespace = expr_module.attr("__dict__");
 
 
-
-
-
   
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
@@ -58,7 +55,14 @@ void ExportNgla() {
     .def("__str__", &ToString<BaseMatrix>)
     .add_property("height", &BaseMatrix::Height)
     .add_property("width", &BaseMatrix::Width)
-    
+
+    .def("CreateMatrix", &BaseMatrix::CreateMatrix)
+    .def("CreateRowVector", &BaseMatrix::CreateRowVector)
+    .def("CreateColVector", &BaseMatrix::CreateColVector)
+    .def("AsVector", FunctionPointer( [] (BM & m)
+                                      {
+                                        return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
+                                      }))
     .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
     .def("MultAdd",     FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.MultAdd (s, x, y); }))
     // .def("MultTrans",   FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y  = s*Trans(m)*x; }) )
