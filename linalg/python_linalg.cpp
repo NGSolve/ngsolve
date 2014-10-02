@@ -8,15 +8,15 @@ using namespace ngla;
 
 
 void ExportNgla() {
-    std::string nested_name = "ngla";
+    std::string nested_name = "la";
     if( bp::scope() )
-         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngla");
+         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".la");
     
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-    cout << "exporting ngla as " << nested_name << endl;
+    cout << "exporting la as " << nested_name << endl;
     bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("ngla") = module ;
+    parent.attr("la") = module ;
 
     bp::scope ngla_scope(module);
 

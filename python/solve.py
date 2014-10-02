@@ -1,7 +1,9 @@
+from . import comp
+
 from ngsolve import __platform
 if __platform.startswith('linux') or __platform.startswith('darwin'):
     # Linux or Mac OS X
-    from libngspy.ngsolve import *
+    from libngspy.solve import *
 
 if __platform.startswith('win'):
     # Windows

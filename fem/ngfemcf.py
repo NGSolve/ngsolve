@@ -17,9 +17,9 @@ cf = X*X + Y**5
 """
 print('Importing ngfem_cf')
 
-from ngfem import PythonCF
-from ngfem import CoefficientFunction
-from ngfem import ConstantCF
+from fem import PythonCF
+from fem import CoefficientFunction
+from fem import ConstantCF
 
 def ToExpr(a):
     if isinstance(a,CoefficientFunction):

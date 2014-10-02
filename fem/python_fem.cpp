@@ -73,15 +73,15 @@ std::mutex PythonCFWrap::m;
 
 
 void ExportNgfem() {
-    std::string nested_name = "ngfem";
+    std::string nested_name = "fem";
     if( bp::scope() )
-      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngfem");
+      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".fem");
 
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-    cout << "exporting ngfem as " << nested_name << endl;
+    cout << "exporting fem as " << nested_name << endl;
     bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("ngfem") = module ;
+    parent.attr("fem") = module ;
 
     bp::scope ngbla_scope(module);
 
