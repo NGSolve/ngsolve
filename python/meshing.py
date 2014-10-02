@@ -1,7 +1,7 @@
-from netgen import _platform
-if _platform.startswith('linux') or _platform.startswith('darwin'):
+from netgen import __platform
+if __platform.startswith('linux') or __platform.startswith('darwin'):
     # Linux or Mac OS X
     from libmesh.meshing import *
-if _platform.startswith('win'):
+if __platform.startswith('win'):
     # Windows
     from nglib.meshing import *
