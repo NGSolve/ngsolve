@@ -7,3 +7,5 @@ if __platform.startswith('win'):
     # Windows
     from ngslib.la import *
 
+__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct']
+
