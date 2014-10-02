@@ -19,6 +19,6 @@ cuda_ngstd.cpp python_ngstd.cpp
 
 libngstd_la_LDFLAGS = -avoid-version
 
-dist_bin_SCRIPTS = init.py expr.py
+dist_bin_SCRIPTS = init.py #expr.py
 # python_PYTHON = init.py expr.py
 
