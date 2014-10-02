@@ -91,7 +91,7 @@ void ExportNgfem() {
     .value("TRIG", ET_TRIG)       .value("QUAD", ET_QUAD)
     .value("TET", ET_TET)         .value("PRISM", ET_PRISM)
     .value("PYRAMID", ET_PYRAMID) .value("HEX", ET_HEX)
-    // .export_values()
+    .export_values()
     ;
 
   bp::class_<FiniteElement, boost::noncopyable>("FiniteElement", bp::no_init)
