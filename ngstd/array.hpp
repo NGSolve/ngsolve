@@ -110,6 +110,21 @@ namespace ngstd
 
 
 
+  template <typename TSIZE>
+  class ArrayIterator
+  {
+    TSIZE ind;
+  public:
+    INLINE ArrayIterator (TSIZE ai) : ind(ai) { ; }
+    INLINE ArrayIterator operator++ (int) { return ind++; }
+    INLINE ArrayIterator operator++ () { return ++ind; }
+    INLINE ArrayIterator operator*() const { return ind; }
+    INLINE TSIZE Index() { return ind; }
+    INLINE operator TSIZE () const { return ind; }
+    INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+  };
+
+
 
 
   /// a range of intergers
@@ -125,7 +140,30 @@ namespace ngstd
     INLINE int Size() const { return next-first; }
     INLINE int operator[] (int i) const { return first+i; }
     INLINE bool Contains (int i) const { return ((i >= first) && (i < next)); }
+
+    INLINE ArrayIterator<int> begin() const { return first; }
+    INLINE ArrayIterator<int> end() const { return next; }
   };
+
+  /// a range of intergers
+  template <typename T>
+  class T_Range : public BaseArrayObject <T_Range<T>>
+  {
+    T first, next;
+  public: 
+    INLINE T_Range () { ; }
+    INLINE T_Range (T f, T n) : first(f), next(n) {;} 
+    INLINE T First() const { return first; }
+    INLINE T Next() const { return next; }
+    INLINE T Size() const { return next-first; }
+    INLINE T operator[] (T i) const { return first+i; }
+    INLINE bool Contains (T i) const { return ((i >= first) && (i < next)); }
+
+    INLINE ArrayIterator<T> begin() const { return first; }
+    INLINE ArrayIterator<T> end() const { return next; }
+  };
+
+
 
   INLINE IntRange operator+ (const IntRange & range, int shift)
   {
@@ -195,21 +233,6 @@ namespace ngstd
       return IndirectArray (ba, ia);
     }
 
-  };
-
-
-  template <typename TSIZE>
-  class ArrayIterator
-  {
-    TSIZE ind;
-  public:
-    INLINE ArrayIterator (TSIZE ai) : ind(ai) { ; }
-    INLINE ArrayIterator operator++ (int) { return ind++; }
-    INLINE ArrayIterator operator++ () { return ++ind; }
-    INLINE ArrayIterator operator*() const { return ind; }
-    INLINE TSIZE Index() { return ind; }
-    INLINE operator TSIZE () const { return ind; }
-    INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
   };
 
 
@@ -307,7 +330,11 @@ namespace ngstd
       return data[i]; 
     }
   
-
+    INLINE T_Range<TSIZE> Range () const
+    {
+      return T_Range<TSIZE> (0, Size());
+    }
+    
     INLINE const CArray<T> Addr (int pos)
     { return CArray<T> (data+pos); }
 
