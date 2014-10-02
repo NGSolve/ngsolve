@@ -20,7 +20,7 @@ void ExportNgla() {
 
     bp::scope ngla_scope(module);
 
-    bp::object expr_module = bp::import("expr");
+    bp::object expr_module = bp::import("ngsolve.__expr");
     bp::object expr_namespace = expr_module.attr("__dict__");
 
 
