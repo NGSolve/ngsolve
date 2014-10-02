@@ -343,23 +343,12 @@ namespace ngcomp
     if(uniform_order_edge > -1)   
       order_edge = uniform_order_edge; 
 
-    for(int i = 0; i < ned; i++) 
-      if (!used_edge[i]) order_edge[i] = 1; 
-    for(int i = 0; i < nfa; i++) 
-      if (!used_face[i]) order_face[i] = 1; 
-
-    /*
-    for (int i = 0; i < ne; i++)
-      if (!DefinedOn (ma.GetElIndex (i)))
-	order_inner[i] = 1; 
-    */
-    /*
-    for (auto i : used_edge)
+    for (auto i : used_edge.Range())
       if (!used_edge[i]) order_edge[i] = 1; 
 
-    for (auto i : used_face)
+    for (auto i : used_face.Range())
       if (!used_face[i]) order_face[i] = 1; 
-    */
+
     for (ElementId ei : ma.Elements<VOL>())
       if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
 
