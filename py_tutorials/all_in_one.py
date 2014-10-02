@@ -1,17 +1,20 @@
-import sys
-import os
-from os import environ
-sys.path.append(environ['NETGENDIR']+"/../lib")
+##import sys
+##import os
+##from os import environ
+##sys.path.append(environ['NETGENDIR']+"/../lib")
 
-from libngspy import *
+##from libngspy import *
 
-# being sloppy ....
-from libngspy.ngstd import *
-from libngspy.ngbla import *
-from libngspy.ngfem import *
-from libngspy.ngcomp import *
-from libngspy.ngsolve import *
+### being sloppy ....
+##from libngspy.ngstd import *
+##from libngspy.ngbla import *
+##from libngspy.ngfem import *
+##from libngspy.ngcomp import *
+##from libngspy.ngsolve import *
 
+
+from ngsolve.fem import *
+from ngsolve.comp import *
 
 import numpy as np
 
