@@ -72,7 +72,7 @@ namespace ngla
     // virtual void * Data();
 
     /// creates matrix of same type
-    virtual BaseMatrix * CreateMatrix () const;
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const;
     /// creates matrix of same type
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     /// creates a matching vector, size = width

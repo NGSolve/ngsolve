@@ -80,7 +80,7 @@ namespace ngla
   }
   */
 
-  BaseMatrix * BaseMatrix :: CreateMatrix () const
+  shared_ptr<BaseMatrix> BaseMatrix :: CreateMatrix () const
   {
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }

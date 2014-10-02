@@ -389,7 +389,7 @@ namespace ngla
     SparseMatrix (const SparseMatrixTM<TM> & amat)
       : SparseMatrixTM<TM> (amat) { ; }
 
-    virtual BaseMatrix * CreateMatrix () const;
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;
     ///
     virtual shared_ptr<BaseVector> CreateVector () const;
@@ -594,9 +594,9 @@ namespace ngla
       return *this;
     }
 
-    virtual BaseMatrix * CreateMatrix () const
+    virtual shared_ptr<BaseMatrix> CreateMatrix () const
     {
-      return new SparseMatrixSymmetric (*this);
+      return make_shared<SparseMatrixSymmetric> (*this);
     }
 
     /*
