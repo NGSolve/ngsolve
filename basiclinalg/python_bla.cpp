@@ -239,15 +239,15 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
 
 
 void ExportNgbla() {
-    std::string nested_name = "ngbla";
+    std::string nested_name = "bla";
     if( bp::scope() )
-         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngbla");
+         nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".bla");
     
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-    cout << "exporting ngbla as " << nested_name << endl;
+    cout << "exporting bla as " << nested_name << endl;
     bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("ngbla") = module ;
+    parent.attr("bla") = module ;
 
     bp::scope ngbla_scope(module);
 

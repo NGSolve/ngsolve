@@ -16,15 +16,15 @@ public:
 
 void ExportNgcomp() 
 {
-  std::string nested_name = "ngcomp";
+  std::string nested_name = "comp";
   if( bp::scope() )
-    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngcomp");
+    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".comp");
   
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
   
-  cout << "exporting ngcomp as " << nested_name << endl;
+  cout << "exporting comp as " << nested_name << endl;
   bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-  parent.attr("ngcomp") = module;
+  parent.attr("comp") = module;
   
   bp::scope local_scope(module);
 

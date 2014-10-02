@@ -1,7 +1,9 @@
+from . import ngstd
+
 from ngsolve import __platform
 if __platform.startswith('linux') or __platform.startswith('darwin'):
     # Linux or Mac OS X
-    from libngbla.ngbla import *
+    from libngbla.bla import *
 
 if __platform.startswith('win'):
     # Windows
