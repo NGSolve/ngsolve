@@ -1,9 +1,9 @@
-try:
-    # Linux
+from ngsolve import __platform
+if __platform.startswith('linux') or __platform.startswith('darwin'):
+    # Linux or Mac OS X
     from libngfem.ngfem import *
-except:
+
+if __platform.startswith('win'):
     # Windows
-    print ("windows todo ngfem")
-#    from nglib.csg import *
-#    from nglib.meshing import *
+    from ngslib.fem import *
 

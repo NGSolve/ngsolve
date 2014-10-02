@@ -1,7 +1,9 @@
-try:
-    # Linux
+from ngsolve import __platform
+if __platform.startswith('linux') or __platform.startswith('darwin'):
+    # Linux or Mac OS X
     from libngla.ngla import *
-except:
-    print ("windows todo la")
-#    from nglib.csg import *
-#    from nglib.meshing import *
+
+if __platform.startswith('win'):
+    # Windows
+    from ngslib.la import *
+
