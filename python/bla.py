@@ -7,3 +7,6 @@ if __platform.startswith('win'):
     # Windows
     from ngslib.bla import *
 
+
+__all__ = ['Matrix', 'Vector']
+
