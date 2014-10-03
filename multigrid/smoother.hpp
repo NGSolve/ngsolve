@@ -89,7 +89,7 @@ namespace ngmg
     ///
     const BilinearForm & biform;
     ///
-    Array<ngla::BaseJacobiPrecond*> jac;
+    Array<shared_ptr<BaseJacobiPrecond>> jac;
   
   public:
     ///
@@ -131,7 +131,7 @@ namespace ngmg
     ///
     const BilinearForm & biform;
     ///
-    Array<BaseBlockJacobiPrecond*> jac;
+    Array<shared_ptr<BaseBlockJacobiPrecond>> jac;
   
   public:
     ///
@@ -172,9 +172,9 @@ namespace ngmg
     ///
     const LinearForm * constraint;
     ///
-    Array<ngla::BaseBlockJacobiPrecond*> jac;
+    Array<shared_ptr<BaseBlockJacobiPrecond>> jac;
     ///
-    Array<BaseMatrix*> inv;
+    Array<shared_ptr<BaseMatrix>> inv;
     ///
     Array<int> * direct;
   

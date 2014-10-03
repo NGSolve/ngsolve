@@ -5,8 +5,7 @@ noinst_LTLIBRARIES = libngmg.la
 libngmg_la_SOURCES = mgpre.cpp  prolongation.cpp  smoother.cpp
 
 # libngmg_la_LIBADD = $(top_builddir)/ngstd/libngcomp.la
-libngmg_la_LIBADD = -L$(libdir) -lnglib -linterface
-
+# libngmg_la_LIBADD = -L$(libdir) -lnglib -linterface
 
 include_HEADERS = mgpre.hpp  multigrid.hpp  prolongation.hpp  smoother.hpp
 

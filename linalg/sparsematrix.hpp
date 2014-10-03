@@ -195,12 +195,12 @@ namespace ngla
       return *this;
     }
 
-    virtual BaseJacobiPrecond * CreateJacobiPrecond (const BitArray * inner = 0) const 
+    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (const BitArray * inner = 0) const 
     {
       throw Exception ("BaseSparseMatrix::CreateJacobiPrecond");
     }
 
-    virtual BaseBlockJacobiPrecond * 
+    virtual shared_ptr<BaseBlockJacobiPrecond>
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
 			      bool parallel  = 1,
@@ -210,13 +210,13 @@ namespace ngla
     }
 
 
-    virtual BaseMatrix * 
+    virtual shared_ptr<BaseMatrix>
     InverseMatrix (const BitArray * subset = 0) const
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
     }
 
-    virtual BaseMatrix * 
+    virtual shared_ptr<BaseMatrix>
     InverseMatrix (const Array<int> * clusters) const
     { 
       throw Exception ("BaseSparseMatrix::CreateInverse called");
@@ -394,23 +394,23 @@ namespace ngla
     ///
     virtual shared_ptr<BaseVector> CreateVector () const;
 
-    virtual BaseJacobiPrecond * 
+    virtual shared_ptr<BaseJacobiPrecond>
     CreateJacobiPrecond (const BitArray * inner) const
     { 
-      return new JacobiPrecond<TM,TV_ROW,TV_COL> (*this, inner);
+      return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> (*this, inner);
     }
 
-    virtual BaseBlockJacobiPrecond * 
+    virtual shared_ptr<BaseBlockJacobiPrecond>
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
-      return new BlockJacobiPrecond<TM,TV_ROW,TV_COL> (*this, blocks );
+      return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks );
     }
 
-    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
-    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const BitArray * subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
 
     virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
 					 BaseSparseMatrix* cmat = NULL ) const
@@ -606,18 +606,18 @@ namespace ngla
     }
     */
 
-    virtual BaseJacobiPrecond * CreateJacobiPrecond (const BitArray * inner) const
+    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (const BitArray * inner) const
     { 
-      return new JacobiPrecondSymmetric<TM,TV> (*this, inner);
+      return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);
     }
 
-    virtual BaseBlockJacobiPrecond * 
+    virtual shared_ptr<BaseBlockJacobiPrecond>
     CreateBlockJacobiPrecond (Table<int> & blocks,
 			      const BaseVector * constraint = 0,
 			      bool parallel  = 1,
 			      const BitArray * freedofs = NULL) const
     { 
-      return new BlockJacobiPrecondSymmetric<TM,TV> (*this, blocks);
+      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
     }
 
 
@@ -714,8 +714,8 @@ namespace ngla
   
     BaseSparseMatrix & AddMerge (double s, const SparseMatrixSymmetric  & m2);
 
-    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
-    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const BitArray * subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
 
 

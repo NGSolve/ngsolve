@@ -443,18 +443,15 @@ inline ostream & operator<< (ostream & ost, PyRef<T> ref)
 
 template<typename T>
 struct PyNameTraits<SymbolTable<T>> {
-  static string GetName()
-  { return string("SymbolTable_") + GetPyName<T>(); }
+  static string GetName() { return string("SymbolTable_") + GetPyName<T>(); }
 };
-
 
 template<typename T>
 struct PyNameTraits<PyRef<T>> {
-  static string GetName()
-  { return string("Ref_") + GetPyName<T>(); }
+  static string GetName() { return string("Ref_") + GetPyName<T>(); }
 };
 
-
+/*
 template <typename T> struct T_MyRemovePtr 
 { typedef T type; typedef T & ref_type; };
 
@@ -470,67 +467,26 @@ struct cl_remove_pointer<T*>
 
 template <class T> inline auto MyRemovePtr (T d) -> decltype(cl_remove_pointer<T>::Val(d))
 { return cl_remove_pointer<T>::Val(d); }
-
-
+*/
 
 
 template <typename T>
 struct PythonDictFromSymbolTable {
-    static PyObject* convert(const SymbolTable<T> & st)
+  static PyObject* convert(const SymbolTable<T> & st)
     {
-        bp::dict res;
-        for(int i=0; i<st.Size(); i++) {
-            string key = st.GetName(i);
-            T value = st[i];
-            res[key] = value;
-        }
-        return bp::incref(res.ptr());
+      bp::dict res;
+      for(int i = 0; i < st.Size(); i++) 
+        res[st.GetName(i)] = st[i];
+      return bp::incref(res.ptr());
     }
 };
 
 template <typename T> void PyExportSymbolTable ()
 {
-    boost::python::to_python_converter< SymbolTable<T>, PythonDictFromSymbolTable<T> >();
-
-//   typedef SymbolTable<T> ST;
-//   
-//   string name = GetPyName<SymbolTable<T>>();
-//   bp::class_<SymbolTable<T>>(name.c_str())
-//     .def("__str__", &ToString<SymbolTable<T>>)
-//     .def("__len__", &SymbolTable<T>::Size)
-//     .def("__contains__", &SymbolTable<T>::Used)
-//     .def("GetName", FunctionPointer([](ST & self, int i) 
-//                                     { return string(self.GetName(i)); }))
-//     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, string name)
-//                                         {
-//                                           if (!self.Used(name))
-//                                             {
-//                                               // bp::exec("raise KeyError()\n");
-//                                               bp::exec("raise KeyError()\n");
-//                                               cerr << "symboltable out of range - but should not get here anyway" << endl;
-//                                               return self[0]; 
-//                                             }
-//                                           return self[name]; 
-//                                         })
-//          )
-//     .def("__getitem__", FunctionPointer([](SymbolTable<T> & self, int i)
-//                                         {
-//                                           if (i < 0 || i >= self.Size())
-//                                             {
-//                                               bp::exec("raise IndexError()\n");
-//                                               cerr << "symboltable out of range - but should not get here anyway" << endl;
-//                                               return self[i]; 
-//                                             }
-//                                           return self[i];  
-//                                         })
-//          )
-//     ;
-
+  boost::python::to_python_converter< SymbolTable<T>, PythonDictFromSymbolTable<T> >();
 }
 
-
-
-
+// convertion not possible for shared_ptr<double>, so we have a special treatment:
 template <> inline void PyExportSymbolTable<shared_ptr<double>> ()
 {
   typedef SymbolTable<shared_ptr<double>> ST;
@@ -545,17 +501,14 @@ template <> inline void PyExportSymbolTable<shared_ptr<double>> ()
                                         {
                                           if (!self.Used(name)) bp::exec("raise KeyError()\n");
                                           return *self[name]; 
-                                        })
-         )
-    .def("__getitem__", FunctionPointer([](ST & self, int i)
-                                        {
-                                          if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
-                                          return *self[i];  
-                                        })
-         )
+                                        }))
+    .def("__getitem__", FunctionPointer ([](ST & self, int i)
+                                         {
+                                           if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
+                                           return *self[i];  
+                                         }))
     ;
 }  
-
 
 
 

@@ -42,13 +42,12 @@ namespace ngla
 
     BaseMatrix & mat_shift = *a.CreateMatrix();
     mat_shift.AsVector() = a.AsVector() - shift*b.AsVector();  
-    BaseMatrix * inv = NULL;
+    shared_ptr<BaseMatrix> inv;
     if (!pre)
       inv = mat_shift.InverseMatrix (freedofs);
     else
       {
-        GMRESSolver<double> * itso
-          = new GMRESSolver<double> (mat_shift, *pre);
+        auto itso = make_shared<GMRESSolver<double>> (mat_shift, *pre);
         itso->SetPrintRates(1);
         itso->SetMaxSteps(2000);
         inv = itso;
@@ -114,7 +113,6 @@ namespace ngla
 	*hv /= len;
       }
       
-    delete inv;
     t2.Stop();
     t2.AddFlops (double(n)*m*m);
     cout << "n = " << n << ", m = " << m << " n*m*m = " << n*m*m << endl;

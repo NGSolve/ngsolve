@@ -41,7 +41,7 @@ namespace ngmg
     ///
     shared_ptr<Prolongation> prolongation;
     ///
-    BaseMatrix * coarsegridpre;
+    shared_ptr<BaseMatrix> coarsegridpre;
     ///
     double checksumcgpre;
     ///
@@ -81,7 +81,7 @@ namespace ngmg
     ///
     void SetCoarseType (COARSETYPE ctyp);
     ///
-    void SetCoarseGridPreconditioner (const BaseMatrix * acoarsegridpre);
+    void SetCoarseGridPreconditioner (shared_ptr<BaseMatrix> acoarsegridpre);
     ///
     void SetCoarseSmoothingSteps (int cstep);
 

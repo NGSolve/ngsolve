@@ -23,8 +23,8 @@ namespace ngcomp
     bool block;
     bool hypre;
 
-    BaseMatrix * inv;
-    BaseMatrix * inv_coarse;
+    shared_ptr<BaseMatrix> inv;
+    shared_ptr<BaseMatrix> inv_coarse;
     string inversetype;
     BitArray * free_dofs;
 
@@ -393,9 +393,9 @@ namespace ngcomp
 
     ~BDDCMatrix()
     {
-      delete inv;
+      // delete inv;
       delete pwbmat;
-      delete inv_coarse;
+      // delete inv_coarse;
       delete harmonicext;
       delete harmonicexttrans;
       delete innersolve;
@@ -440,11 +440,11 @@ namespace ngcomp
 	{
 	  if (true) //GS
 	    {
-	      dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
+	      dynamic_cast<BaseBlockJacobiPrecond*>(inv.get())->GSSmoothResiduum (*tmp, y, *tmp2 ,1);
 	      
 	      if (inv_coarse)
 		*tmp += (*inv_coarse) * *tmp2; 
-	      dynamic_cast<BaseBlockJacobiPrecond*>(inv)->GSSmoothBack (*tmp, y);
+	      dynamic_cast<BaseBlockJacobiPrecond*>(inv.get())->GSSmoothBack (*tmp, y);
 	    }
 	  else
 	    { //jacobi only (old)

@@ -265,7 +265,7 @@ namespace ngsolve
 
 
 	mata.AsVector() = mata1.AsVector() - shift*matm.AsVector();  
-	BaseMatrix * inva = mata.InverseMatrix(bfa->GetFESpace().GetFreeDofs());	    
+	auto inva = mata.InverseMatrix(bfa->GetFESpace().GetFreeDofs());	    
 	
 	// BaseMatrix * inva = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix()).InverseMatrix();
 

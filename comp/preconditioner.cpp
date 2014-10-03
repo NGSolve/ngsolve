@@ -304,7 +304,7 @@ namespace ngcomp
 
     if (coarse_pre)
       {
-	mgp->SetCoarseGridPreconditioner (&coarse_pre->GetMatrix());
+	mgp->SetCoarseGridPreconditioner (shared_ptr<BaseMatrix> (const_cast<BaseMatrix*>(&coarse_pre->GetMatrix()), NOOP_Deleter));
 	mgp->SetOwnCoarseGridPreconditioner(false);
       }
 
@@ -419,7 +419,7 @@ namespace ngcomp
   class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
   {
     shared_ptr<BilinearForm> bfa;
-    BaseMatrix * inverse;
+    shared_ptr<BaseMatrix> inverse;
     string inversetype;
 
   public:
@@ -428,21 +428,21 @@ namespace ngcomp
       : Preconditioner(&pde,aflags,aname)
     {
       bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-      inverse = NULL;
+      // inverse = NULL;
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype)); // "sparsecholesky");
     }
     
     ///
     virtual ~DirectPreconditioner()
     {
-      delete inverse;
+      ; //delete inverse;
     }
     
     
     ///
     virtual void Update ()
     {
-      delete inverse;
+      // delete inverse;
       
       try
 	{
@@ -459,8 +459,8 @@ namespace ngcomp
 
     virtual void CleanUpLevel ()
     {
-      delete inverse;
-      inverse = NULL;
+      // delete inverse;
+      inverse = nullptr;
     }
 
     virtual const BaseMatrix & GetMatrix() const
@@ -522,13 +522,13 @@ namespace ngcomp
 
   LocalPreconditioner :: ~LocalPreconditioner()
   {
-    delete jacobi;
+    ; // delete jacobi;
   }
 
   void LocalPreconditioner :: Update ()
   {
     cout << IM(1) << "Update Local Preconditioner" << flush;
-    delete jacobi;
+    // delete jacobi;
     
     // const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
     // 	if ( inversetype != "none" )

@@ -304,7 +304,7 @@ namespace ngcomp
     void SetPrint (bool ap);
     void SetPrintElmat (bool ap);
     void SetElmatEigenValues (bool ee);
-
+    
     /// computes low-order matrices from fines matrix
     void GalerkinProjection ();
 

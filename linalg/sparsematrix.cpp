@@ -812,7 +812,7 @@ namespace ngla
 
 
   template <class TM, class TV_ROW, class TV_COL>
-  BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
+  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const BitArray * subset) const
   {
     if ( this->GetInverseType() == SUPERLU_DIST )
@@ -830,7 +830,7 @@ namespace ngla
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
 #ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset);
+	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
@@ -838,13 +838,13 @@ namespace ngla
     else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS)
       {
 #ifdef USE_MUMPS
-	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, subset);
+	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, subset);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
 #endif
       }
     else
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
     //#endif
   }
 
@@ -852,7 +852,7 @@ namespace ngla
   // BaseMatrix * SparseMatrix<TM> :: 
 
   template <class TM, class TV_ROW, class TV_COL>
-  BaseMatrix * SparseMatrix<TM,TV_ROW,TV_COL> ::
+  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (const Array<int> * clusters) const
   {
     // #ifndef ASTRID
@@ -875,7 +875,7 @@ namespace ngla
     if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
 #ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+	return make_shared<SuperLUInverse<TM,TV_ROW,TV_COL>> (*this, 0, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
 #endif
@@ -883,7 +883,7 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
 #ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
@@ -891,13 +891,13 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
       {
 #ifdef USE_MUMPS
-	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, 0, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif
       }
     else
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
     // #endif
   }
 
@@ -1221,7 +1221,7 @@ namespace ngla
   
 
   template <class TM, class TV>
-  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const BitArray * subset) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1243,7 +1243,7 @@ namespace ngla
     if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
 #ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset, nullptr, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
 #endif
@@ -1251,7 +1251,7 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
 #ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
@@ -1259,18 +1259,18 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
       {
 #ifdef USE_MUMPS
-	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, subset, 0, 1);
+	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif
       }
     else
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, subset);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
     // #endif
   }
 
   template <class TM, class TV>
-  BaseMatrix * SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (const Array<int> * clusters) const
   {
     // #ifndef ASTRID
     // #ifdef USE_SUPERLU
@@ -1293,7 +1293,7 @@ namespace ngla
     if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
       {
 #ifdef USE_SUPERLU
-	return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters, 1);
+	return make_shared<SuperLUInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
 #endif
@@ -1301,7 +1301,7 @@ namespace ngla
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
 #ifdef USE_PARDISO
-	return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters, 1);
+	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
@@ -1309,13 +1309,13 @@ namespace ngla
     else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS )
       {
 #ifdef USE_MUMPS
-	return new MumpsInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters, 1);
+	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif
       }
     else
-      return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
     // #endif
   }
 

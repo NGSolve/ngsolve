@@ -19,9 +19,9 @@ namespace ngla
     SparseMatrixTM<double> * prol;
   
     BaseSparseMatrix * coarsemat;
-    BaseJacobiPrecond * jacobi;
-    BaseBlockJacobiPrecond * bjacobi;
-    BaseMatrix * inv;
+    shared_ptr<BaseJacobiPrecond> jacobi;
+    shared_ptr<BaseBlockJacobiPrecond> bjacobi;
+    shared_ptr<BaseMatrix> inv;
 
   public:
     CommutingAMG ()
