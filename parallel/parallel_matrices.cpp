@@ -363,9 +363,9 @@ namespace ngla
     mat->MultTransAdd (s, x, y);
   }
 
-  BaseMatrix * ParallelMatrix :: CreateMatrix () const
+  shared_ptr<BaseMatrix> ParallelMatrix :: CreateMatrix () const
   {
-    return new ParallelMatrix (shared_ptr<BaseMatrix> (mat->CreateMatrix()), paralleldofs);
+    return make_shared<ParallelMatrix> (mat->CreateMatrix(), paralleldofs);
   }
 
   shared_ptr<BaseVector> ParallelMatrix :: CreateVector () const
