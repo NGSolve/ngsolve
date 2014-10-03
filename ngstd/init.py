@@ -1,8 +1,7 @@
 print ("Hello from init.py")
 import code
-import ngfemcf
-import ngmpi
-import sys
+# import ngfemcf
+# import ngmpi
 
 def mydir(x=None):
     if x==None:
@@ -12,24 +11,6 @@ def mydir(x=None):
 
 def execfile(fname):
     exec(open(fname).read())
-
-def startConsole():
-    import code
-    try:
-        import readline
-        import rlcompleter
-        readline.parse_and_bind("tab:complete") # autocomplete
-    except:
-        try:
-            import pyreadline as readline
-            import rlcompleter
-            readline.parse_and_bind("tab:complete") # autocomplete
-        except:
-            print('readline not found')
-    vars = globals()
-    vars.update(locals())
-    shell = code.InteractiveConsole(vars)
-    shell.interact()
 
 class InteractiveMPIConsole(code.InteractiveConsole):
 # Function copied from /usr/lib/python3.4/code.py line 38 
@@ -55,6 +36,7 @@ class InteractiveMPIConsole(code.InteractiveConsole):
         return False
 
     def interact(self):
+        import sys
         self.write("MPI Shell\n")
         self.write("================\n")
         self.write("Use pprint(str) to print with MPI ranks\n\n")
@@ -71,6 +53,7 @@ class InteractiveMPIConsole(code.InteractiveConsole):
         source = 'ngmpi.Barrier()'
         ngmpi.SendCommand('ngs_py '+source)
         code.InteractiveConsole.runsource(self, source)
+
 
 
 def MpiShell():
@@ -90,6 +73,26 @@ def MpiShell():
     vars.update(locals())
     mshell = InteractiveMPIConsole(vars)
     mshell.interact()
+
+def startConsole():
+    try:
+        import readline
+        import rlcompleter
+        readline.parse_and_bind("tab:complete") # autocomplete
+    except:
+        try:
+            import pyreadline as readline
+            import rlcompleter
+            readline.parse_and_bind("tab:complete") # autocomplete
+        except:
+            print('readline not found')
+    vars = globals()
+    vars.update(locals())
+#     shell = code.InteractiveConsole({'execfile':execfile,'MpiShell':MpiShell})
+    shell = code.InteractiveConsole(vars)
+    shell.push('from netgen import *')
+    shell.push('from ngsolve import *')
+    shell.interact()
 
 startConsole()
 

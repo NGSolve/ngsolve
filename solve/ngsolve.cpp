@@ -147,35 +147,37 @@ PythonEnvironment::PythonEnvironment() {
     try{
         main_module = bp::import("__main__");
         main_namespace = main_module.attr("__dict__");
-        exec("from sys import path");
+//         exec("from sys import path");
         //         exec("from runpy import run_module");
-        exec("from os import environ");
+//         exec("from os import environ");
 
-        exec("path.append(environ['NETGENDIR'])");
-        exec("path.append('.')");
-
-        ExportNgstd();
-        ExportNgbla();
-        ExportNgfem();
-        ExportNgla();
-        ExportNgcomp();
-        ExportNgsolve();
-        ExportNgmpi(); 
+//         exec("path.append(environ['NETGENDIR'])");
+//         exec("path.append('.')");
+// 
+//         ExportNgstd();
+//         ExportNgbla();
+//         ExportNgfem();
+//         ExportNgla();
+//         ExportNgcomp();
+//         ExportNgsolve();
+//         ExportNgmpi(); 
 
         cout << IM(1)
-	     << "ngs-python objects are available in ngstd, ngbla, ...\n"
+	     << "ngs-python objects are available in ngstd, bla, ...\n"
              << "to import the whole bunch of objets enter\n\n"
-             << "from ngstd import *\n"
-             << "from bla import *\n"
-             << "from fem import *\n"
-             << "from la import *\n"
-             << "from comp import *\n"
-             << "from solve import *\n"
-             << "from ngmpi import *\n"
+             << "from ngsolve.ngstd import *\n"
+             << "from ngsolve.bla import *\n"
+             << "from ngsolve.fem import *\n"
+             << "from ngsolve.la import *\n"
+             << "from ngsolve.comp import *\n"
+             << "from ngsolve.solve import *\n"
+//              << "from ngsolve.ngmpi import *\n"
              << "dir()\n"
              << endl << endl;
 
-        cout << IM(1) << "To start mpi shell call" << endl << "MpiShell()" << endl << endl;
+#ifdef PARALLEL
+        cout << IM(1) << "To start the mpi shell call" << endl << "MpiShell()" << endl << endl;
+#endif
 //         PyEval_ReleaseLock();
     }
     catch(bp::error_already_set const &) {
