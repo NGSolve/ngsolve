@@ -1167,7 +1167,7 @@ int NGSolve_Init (Tcl_Interp * interp)
        << "from ngsolve.fem import *\n"
        << "from ngsolve.la import *\n"
        << "from ngsolve.comp import *\n"
-       << "from ngsolve.solve import *\n"
+    // << "from ngsolve.solve import *\n"
     //              << "from ngsolve.ngmpi import *\n"
        << "dir()\n"
        << endl << endl;

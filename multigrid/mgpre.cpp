@@ -45,8 +45,7 @@ namespace ngmg
     if (ownsmoother)
       delete smoother;
     // if (ownprolongation) delete prolongation;
-    if (owncoarsegridpre)
-      delete coarsegridpre;
+    // if (owncoarsegridpre) delete coarsegridpre;
   }
 
 
@@ -54,7 +53,7 @@ namespace ngmg
   {
     delete smoother; smoother = NULL;
     //delete prolongation; prolongation = NULL;
-    delete coarsegridpre; coarsegridpre = NULL;
+    // delete coarsegridpre; coarsegridpre = NULL;
   }
 
 
@@ -79,10 +78,10 @@ namespace ngmg
   }
 
   void MultigridPreconditioner :: 
-  SetCoarseGridPreconditioner (const BaseMatrix * acoarsegridpre)
+  SetCoarseGridPreconditioner (shared_ptr<BaseMatrix> acoarsegridpre)
   {
     coarsetype = USER_COARSE;
-    coarsegridpre = const_cast<BaseMatrix*> (acoarsegridpre);
+    coarsegridpre = acoarsegridpre;
   }
 
   void MultigridPreconditioner :: SetCoarseSmoothingSteps (int cstep)
@@ -142,7 +141,7 @@ namespace ngmg
 	      cout << "factor coarse" << endl;
 	      checksumcgpre = checksum;
 	    */
-	    delete coarsegridpre;
+	    // delete coarsegridpre;
 
 	    const BitArray * freedofs = fespace.GetFreeDofs(); // change to const BitArray * 
 	    if (!freedofs)

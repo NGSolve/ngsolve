@@ -14,10 +14,10 @@ using std::ostringstream;
 template<typename T>
 Array<T> & makeCArray(const bp::object & obj)
 {     
-    Array<T> * C_vdL = new Array<T>(bp::len(obj));    
-    for (int i = 0; i < bp::len(obj); i++)    
-        (*C_vdL)[i] = bp::extract<T>(obj[i]);        
-    return *C_vdL;
+  Array<T> * C_vdL = new Array<T>(bp::len(obj));    
+  for (int i = 0; i < bp::len(obj); i++)    
+    (*C_vdL)[i] = bp::extract<T>(obj[i]);        
+  return *C_vdL;
 }
 
 
@@ -46,27 +46,27 @@ void SetFlag(Flags &flags, const char * s, bp::object value) {
 
     bp::extract<bp::list> vdl(value);
     if (vdl.check())
-    {             
-      // cout << "is list" << endl;
+      {             
+        // cout << "is list" << endl;
         bp::extract<double> d0(vdl()[0]);
         bp::extract<char *> s0(vdl()[0]);
         if(d0.check())
-            flags.SetFlag(s, makeCArray<double>(value));
+          flags.SetFlag(s, makeCArray<double>(value));
         if (s0.check())
           flags.SetFlag(s, makeCArray<string>(value));
-    }
+      }
 
     bp::extract<bp::tuple> vdt(value);
     if (vdt.check())
-    {
-      // cout << "is tuple" << endl;
+      {
+        // cout << "is tuple" << endl;
         bp::extract<double> d0(vdt()[0]);
         bp::extract<char *> s0(vdt()[0]);
         if (d0.check())
-            flags.SetFlag(s, makeCArray<double>(value));
+          flags.SetFlag(s, makeCArray<double>(value));
         if (s0.check())
             flags.SetFlag(s, makeCArray<string>(value));
-    }
+      }
 }
 
 struct FlagsFromPythonDict{
@@ -101,37 +101,37 @@ struct FlagsFromPythonDict{
 
 
 void ExportNgstd() {
-    std::string nested_name = "ngstd";
-    if( bp::scope() )
-      nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngstd");
-    
-    bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+  std::string nested_name = "ngstd";
+  if( bp::scope() )
+    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngstd");
+  
+  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+  
+  cout << "exporting ngstd as " << nested_name << endl;
+  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+  parent.attr("ngstd") = module ;
+  
+  bp::scope ngbla_scope(module);
 
-    cout << "exporting ngstd as " << nested_name << endl;
-    bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-    parent.attr("ngstd") = module ;
-
-    bp::scope ngbla_scope(module);
-
-
-    bp::def("TestFlags", FunctionPointer( [] (bp::dict const &d) { cout << bp::extract<Flags>(d)() << endl; } ) );
-
+  bp::def("TestFlags", FunctionPointer( [] (bp::dict const &d) { cout << bp::extract<Flags>(d)() << endl; } ) );
+  
   bp::class_<FlatArray<double> >("FlatArrayD")
     .def(PyDefVector<FlatArray<double>, double>()) 
     .def(PyDefToString<FlatArray<double> >())
     .def(bp::init<int, double *>())
     ;
-    
+  
   bp::class_<Array<double>, bp::bases<FlatArray<double> > >("ArrayD")
     .def(bp::init<int>())
-    .def("__init__", bp::make_constructor (FunctionPointer ([](bp::list const & x)
-                                                            {
-                  int s = bp::len(x);
-                  shared_ptr<Array<double>> tmp (new Array<double>(s));
-                  for (int i = 0; i < s; i++)
-                    (*tmp)[i] = bp::extract<double> (x[i]); 
-                  return tmp;
-                })))
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](bp::list const & x)
+                           {
+                             int s = bp::len(x);
+                             auto tmp = make_shared<Array<double>> (s);
+                             for (int i = 0; i < s; i++)
+                               (*tmp)[i] = bp::extract<double> (x[i]); 
+                             return tmp;
+                           })))
     ;
 
   bp::class_<FlatArray<int> >("FlatArrayI")
@@ -142,16 +142,17 @@ void ExportNgstd() {
 
   bp::class_<Array<int>, bp::bases<FlatArray<int> > >("ArrayI")
     .def(bp::init<int>())
-    .def("__init__", bp::make_constructor (FunctionPointer ([](bp::list const & x)
-                {
-                  int s = bp::len(x);
-                  shared_ptr<Array<int>> tmp (new Array<int>(s));
-                  for (int i = 0; i < s; i++)
-                    (*tmp)[i] = bp::extract<int> (x[i]); 
-                  return tmp;
-                })))
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](bp::list const & x)
+                           {
+                             int s = bp::len(x);
+                             shared_ptr<Array<int>> tmp (new Array<int>(s));
+                             for (int i = 0; i < s; i++)
+                               (*tmp)[i] = bp::extract<int> (x[i]); 
+                             return tmp;
+                           })))
     ;
-    
+  
   bp::class_<ngstd::LocalHeap>
     ("LocalHeap",bp::init<size_t,const char*>()
      //,(bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap")
@@ -168,6 +169,7 @@ void ExportNgstd() {
   bp::class_<ngstd::BitArray>
     ("BitArray")
     .def("__str__", &ToString<BitArray>)
+    .def("__getitem__", &BitArray::Test)
   ;
 
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)

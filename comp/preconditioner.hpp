@@ -181,7 +181,7 @@ namespace ngcomp
     ///
     shared_ptr<BilinearForm> bfa;
     ///
-    BaseMatrix * jacobi;
+    shared_ptr<BaseMatrix> jacobi;
     ///
     bool block;
     bool locprectest; 

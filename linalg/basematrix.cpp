@@ -175,13 +175,13 @@ namespace ngla
 
 
 
-  BaseMatrix * BaseMatrix :: InverseMatrix (const BitArray * subset) const 
+  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (const BitArray * subset) const 
   {
     cerr << "BaseMatrix::InverseMatrix not available" << endl;
     return NULL;
   }
   
-  BaseMatrix * BaseMatrix :: InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (const Array<int> * clusters) const
   {
     cerr << "BaseMatrix::InverseMatrix not available" << endl;
     return NULL;

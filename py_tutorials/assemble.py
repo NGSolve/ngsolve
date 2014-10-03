@@ -15,7 +15,7 @@
 
 from ngsolve import *
 
-pde = solve.PDE("../pde_tutorial/d1_square.pde")
+pde = comp.PDE("../pde_tutorial/d1_square.pde")
 # SetDefaultPDE (pde)
 mesh = pde.Mesh()
 

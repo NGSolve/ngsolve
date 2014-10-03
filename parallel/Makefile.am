@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include $(MUMPS_INCLUDES) $(HYPRE_INCLUDES)
 #  -I/opt/hypre-2.8.0b/include
 
-lib_LTLIBRARIES = libparallel.la
+noinst_LTLIBRARIES = libparallel.la
 
 libparallel_la_SOURCES = parallelvvector.cpp parallel_matrices.cpp 
 

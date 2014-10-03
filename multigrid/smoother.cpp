@@ -50,8 +50,7 @@ namespace ngmg
 
   GSSmoother :: ~GSSmoother()
   {
-    for (int i = 0; i < jac.Size(); i++)
-      delete jac[i];
+    ; // for (int i = 0; i < jac.Size(); i++) delete jac[i];
   }
 
   void GSSmoother :: Update (bool force_update)
@@ -162,8 +161,7 @@ namespace ngmg
 
   AnisotropicSmoother :: ~AnisotropicSmoother()
   {
-    for (int i = 0; i < jac.Size(); i++)
-      delete jac[i];
+    ; // for (int i = 0; i < jac.Size(); i++) delete jac[i];
   }
   
   void AnisotropicSmoother :: Update (bool force_update)
@@ -692,10 +690,8 @@ namespace ngmg
 
   BlockSmoother :: ~BlockSmoother()
   {
-    for (int i = 0; i < jac.Size(); i++)
-      delete jac[i];
-    for (int i = 0; i < inv.Size(); i++)
-      delete inv[i];
+    // for (int i = 0; i < jac.Size(); i++) delete jac[i];
+    // for (int i = 0; i < inv.Size(); i++) delete inv[i];
     delete direct;
   }
   
@@ -707,10 +703,8 @@ namespace ngmg
 
     if(updateall)
       {
-	for (int i = 0; i < jac.Size(); i++)
-	  delete jac[i];
-	for (int i = 0; i < inv.Size(); i++)
-	  delete inv[i];
+	// for (int i = 0; i < jac.Size(); i++) delete jac[i];
+	// for (int i = 0; i < inv.Size(); i++) delete inv[i];
 
 	jac.DeleteAll();
 	inv.DeleteAll();
@@ -729,7 +723,7 @@ namespace ngmg
 #ifndef PARALLELxxx
     if (!constraint)
       {
-	delete jac[level-1];
+	// delete jac[level-1];
 	jac[level-1] = dynamic_cast<const BaseSparseMatrix&> 
 	  (biform.GetMatrix()).CreateBlockJacobiPrecond(*it);
       }
@@ -839,7 +833,7 @@ namespace ngmg
       }
     else
       {
-	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
+	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level].get());
 	if (scinv)
 	  {
 	    for(int i=0;i<steps;i++)
@@ -881,7 +875,7 @@ namespace ngmg
       {
 	auto d = f.CreateVector();
 
-	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level]);
+	SparseFactorization * scinv = dynamic_cast<SparseFactorization*> (inv[level].get());
 	if (scinv)
 	  {
 	    *d = f;

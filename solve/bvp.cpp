@@ -230,7 +230,7 @@ GetReturnValue (Function func) {
     if (pre)  premat = &(pre->GetMatrix());
     
     KrylovSpaceSolver * invmat = NULL;
-    BaseMatrix * invmat2 = NULL; 
+    shared_ptr<BaseMatrix> invmat2;
 
     if (!bfa->GetFESpace().IsComplex())
       {
@@ -419,9 +419,10 @@ GetReturnValue (Function func) {
 
     if (solver != DIRECT)
       delete invmat;
+    /*
     else
       delete invmat2;
-
+    */
     timer.Stop();
 
     bfa -> ComputeInternal (vecu, vecf, lh);

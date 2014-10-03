@@ -76,11 +76,13 @@ void ExportNgla() {
         m.AsVector()+=m2.AsVector();
     }))
 
-    .def("Inverse", FunctionPointer( [](BM &m, BitArray & freedofs) { return m.InverseMatrix(&freedofs); }),
-         bp::return_value_policy<bp::manage_new_object>(),
-         (bp::arg("self"), bp::arg("freedofs")))
-    .def("Inverse", FunctionPointer( [](BM &m) { return m.InverseMatrix(); }),
-         bp::return_value_policy<bp::manage_new_object>())
+    .def("Inverse", FunctionPointer( [](BM &m, BitArray & freedofs)->shared_ptr<BaseMatrix>
+                                     { return m.InverseMatrix(&freedofs); }))
+    // bp::return_value_policy<bp::manage_new_object>(),
+    // (bp::arg("self"), bp::arg("freedofs")))
+    .def("Inverse", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
+                                     { return m.InverseMatrix(); }))
+    // bp::return_value_policy<bp::manage_new_object>())
     ;
   
 }

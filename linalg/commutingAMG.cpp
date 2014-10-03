@@ -224,9 +224,9 @@ namespace ngla
     delete prol;
     delete recAMG;
 
-    delete jacobi;
+    // delete jacobi;
     delete coarsemat;
-    delete inv;
+    // delete inv;
   }
   
 
