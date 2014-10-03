@@ -16,7 +16,7 @@
 from ngsolve import *
 
 pde = solve.PDE("../pde_tutorial/d1_square.pde")
-SetDefaultPDE (pde)
+# SetDefaultPDE (pde)
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]

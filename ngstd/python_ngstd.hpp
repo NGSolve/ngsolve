@@ -18,25 +18,34 @@ using namespace ngstd;
 
 
 
-class BasePythonEnvironment
+class PythonEnvironment
 {
-  // protected:
-public:
-  BasePythonEnvironment () { ; }
-
   bp::object main_module; 
   bp::object main_namespace; 
 
 public:
-  virtual ~BasePythonEnvironment() { }
+
+  PythonEnvironment () { ; }
+  PythonEnvironment (bp::object _module)
+    : main_module(_module), 
+      main_namespace(main_module.attr("__dict__")) 
+  { ; }
+
+  virtual ~PythonEnvironment() { }
   
-  auto operator[] ( const char *s ) -> decltype(main_namespace[s]) {
+  auto operator[] ( const char *s ) -> decltype(main_namespace[s]) 
+  {
     return main_namespace[s];
   }
   
-
-  virtual void exec(const string s) {
-    bp::exec(s.c_str(), main_namespace, main_namespace);
+  virtual void exec(const string s) 
+  {
+    try{
+      bp::exec(s.c_str(), main_namespace, main_namespace);
+    }
+    catch (bp::error_already_set const &) {
+      PyErr_Print();
+    }
   }
 
   virtual void exec_file(const string fstr) {
@@ -73,6 +82,44 @@ public:
 
   
 };
+
+
+
+extern PythonEnvironment pyenv;
+
+class AcquireGIL 
+{
+public:
+  inline AcquireGIL(){
+    state = PyGILState_Ensure();
+  }
+  
+  inline ~AcquireGIL(){
+    PyGILState_Release(state);
+  }
+private:
+  PyGILState_STATE state;
+};
+
+class ReleaseGIL
+{
+public:
+  inline ReleaseGIL() {
+    m_thread_state = PyEval_SaveThread();
+  }
+  
+  inline ~ReleaseGIL() {
+    PyEval_RestoreThread(m_thread_state);
+    m_thread_state = NULL;
+  }
+  
+private:
+  PyThreadState * m_thread_state;
+};
+
+
+
+
 
 
 
@@ -338,39 +385,35 @@ public:
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for matrix class
-inline void PyEnableMatExpr(BasePythonEnvironment & py_env, const char *class_name) {
-  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
-
+inline void PyEnableMatExpr(const char *class_name) {
   string cn(class_name);
-  py_env.exec(cn + ".expr = property(lambda self: MatExpr(self))");
-  py_env.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  py_env.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  py_env.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  py_env.exec(cn + ".__mul__ = lambda self,y: MatVecExpr(self.expr, Expr(y))");
+  pyenv.exec(cn + ".expr = property(lambda self: MatExpr(self))");
+  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
+  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
+  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
+  pyenv.exec(cn + ".__mul__ = lambda self,y: MatVecExpr(self.expr, Expr(y))");
 }
 
 //////////////////////////////////////////////////////////////////////
 // Enable numeric expressions for vector class
-inline void PyEnableVecExpr(BasePythonEnvironment & py_env, const char *class_name) {
-  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
+inline void PyEnableVecExpr(const char *class_name) {
 
   string cn(class_name);
-  py_env.exec(cn + ".expr = property(lambda self: VecExpr(self))");
-  py_env.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
-  py_env.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
-  py_env.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
-  py_env.exec(cn + ".__getitem__ = GetSlice");
-  py_env.exec(cn + ".__setitem__ = SetSlice");
+  pyenv.exec(cn + ".expr = property(lambda self: VecExpr(self))");
+  pyenv.exec(cn + ".data = property(lambda self: None, lambda self, a: Expr(a).AssignTo(self.expr))");
+  pyenv.exec(cn + ".__add__ = lambda self,y: self.expr+Expr(y)");
+  pyenv.exec(cn + ".__rmul__ = lambda self,y: y*self.expr ");
+  pyenv.exec(cn + ".__getitem__ = GetSlice");
+  pyenv.exec(cn + ".__setitem__ = SetSlice");
 }
 
 //////////////////////////////////////////////////////////////////////
 // Enable Slicing support
-inline void PyEnableSlicing(BasePythonEnvironment & py_env, const char *class_name) {
-  // PythonEnvironment &py_env = PythonEnvironment::getInstance();
+inline void PyEnableSlicing(const char *class_name) {
 
   string cn(class_name);
-  py_env.exec(cn + ".__getitem__ = GetSlice");
-  py_env.exec(cn + ".__setitem__ = SetSlice");
+  pyenv.exec(cn + ".__getitem__ = GetSlice");
+  pyenv.exec(cn + ".__setitem__ = SetSlice");
 }
 
 
