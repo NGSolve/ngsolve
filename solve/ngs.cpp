@@ -6,6 +6,8 @@ namespace netgen
   char ** h_argv;
 }
 
+extern int dummy_bvp;
+
 int main(int argc, char ** argv)
 {
   if (argc < 2)
@@ -16,7 +18,7 @@ int main(int argc, char ** argv)
 
   netgen::h_argc = argc;
   netgen::h_argv = argv;
-
+  dummy_bvp = 17;
 
   ngsolve::MyMPI mympi(argc, argv);
 
@@ -48,3 +50,4 @@ int main(int argc, char ** argv)
 
   return 0;
 }
+

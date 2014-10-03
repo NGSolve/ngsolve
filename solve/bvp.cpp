@@ -1,6 +1,9 @@
 #include "../include/solve.hpp"
 #include <parallelngs.hpp>
 
+
+int dummy_bvp = -1;
+
 namespace ngsolve
 {
 

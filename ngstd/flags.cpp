@@ -373,7 +373,7 @@ namespace ngstd
         cout << "isinf = " << std::isinf (val) << endl;
         cout << "pos = " << pos << ", endpos = " << endptr << endl;
         */
-        if (endptr != pos && !isfinite (val))
+        if (endptr != pos && !std::isfinite (val))
           endptr = const_cast<char *>(pos);          
 
         /*

@@ -121,17 +121,20 @@ namespace ngla
     UpdateDevice();
     cublasDscal (Get_CuBlas_Handle(), size, &scal, dev_data, 1);
     host_uptodate = false;
+    return *this;
   }
 
   BaseVector & UnifiedVector :: SetScalar (double scal)
   {
     (*this) = scal;
+    return *this;
   }
   
   BaseVector & UnifiedVector :: Set (double scal, const BaseVector & v)
   {
     (*this) = 0.0;
     Add (scal, v);
+    return *this;
   }
   
   
@@ -153,6 +156,7 @@ namespace ngla
 	VFlatVector<> (size, host_data) += scal * v;
 	dev_uptodate = false;
       }
+    return *this;
   }
   
   double UnifiedVector :: InnerProduct (const BaseVector & v2) const
