@@ -6,6 +6,9 @@
 
 #include "python_ngstd.hpp"
 
+PythonEnvironment pyenv;
+
+
 using std::ostringstream;
 
 template<typename T>
@@ -168,7 +171,7 @@ void ExportNgstd() {
   ;
 
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
-    .def("__init__", bp::make_constructor (FunctionPointer ([](bp::dict const & aflags) 
+    .def("__init__", bp::make_constructor (FunctionPointer ([](const bp::dict & aflags) 
                                                             {
       cout << "Calling Flags constructor with dict input" << endl;
       shared_ptr<Flags> self = make_shared<Flags>();
@@ -181,7 +184,7 @@ void ExportNgstd() {
       return self;
                 })))
 
-    .def("Set", FunctionPointer([](Flags & self,bp::dict const & aflags)->Flags&
+    .def("Set", FunctionPointer([](Flags & self,const bp::dict & aflags)->Flags&
     {      
       cout << "we call Set(dict)" << endl;
       for (int i = 0; i < bp::len(aflags); i++)

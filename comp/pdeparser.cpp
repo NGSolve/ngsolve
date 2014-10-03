@@ -9,9 +9,8 @@
 #endif
 
 
-#ifdef NGS_PYTHONxx
+#ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
-BasePythonEnvironment & GetPythonEnvironment ();
 #endif
 
 
@@ -631,15 +630,14 @@ namespace ngcomp
 		  
               string module_name = scan->GetStringValue();
 	      scan->ReadNext();
-#ifdef NGS_PYTHONxx
-              cout << "*********** load py-module " << module_name << endl;
-              BasePythonEnvironment & py_env = GetPythonEnvironment();
-              string command = string("import ") + module_name;
-              // py_env.exec (command.c_str());
-
-              py_env.exec("from runpy import run_module");
-              py_env.exec("globals().update(run_module('module1',globals()))");
-
+#ifdef NGS_PYTHON
+              {
+                cout << "*********** load py-module " << module_name << endl;
+                AcquireGIL gil_lock;
+                string command = string("import ") + module_name;
+                // py_env.exec (command.c_str());
+                pyenv.exec("from module1 import *");
+              }
 
 #else
               cout << "want to load py-module, but python not enabled" << endl;
@@ -731,21 +729,18 @@ namespace ngcomp
 	      CheckFlags (flags);
 	      flags.SetFlag ("name", name.c_str());
               
-#ifdef NGS_PYTHONxx
-              cout << "*********** create py-numproc " << npid << ", name = " << name << endl;
-              BasePythonEnvironment & py_env = GetPythonEnvironment();
-
-              py_env["temppde"] = bp::ptr(pde);
-              string command = string("np = ") + npid + " (temppde, ngstd.Flags()) \n";
-              command += "temppde.Add(np)\n";
-              cout << "command = " << endl << command << endl;
-              py_env.exec (command);
-
-//               auto temp_np = py_env[npid]( pde, flags ) ;
-//               py_env["print"](temp_np);
+#ifdef NGS_PYTHON
+              {
+                cout << "*********** create py-numproc " << npid << ", name = " << name << endl;
+                // BasePythonEnvironment & py_env = GetPythonEnvironment();
+                AcquireGIL gil_lock;
                 
-//               pde.Add(bp::extract<??>( py_env[npid]( pde, flags ) ) );
-                
+                pyenv["temppde"] = bp::ptr(pde);
+                string command = string("np = ") + npid + " (temppde, { } ) \n";
+                command += "temppde.Add(np)\n";
+                cout << "command = " << endl << command << endl;
+                pyenv.exec (command);
+              }
 #else
               cerr << "sorry, python not enabled" << endl;
 #endif

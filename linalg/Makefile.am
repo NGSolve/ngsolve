@@ -29,4 +29,4 @@ libngla_la_LDFLAGS = -avoid-version  $(PARDISO_LIBS) $(MUMPS_LIBS) $(SUPERLU_LIB
 
 
 
-dist_bin_SCRIPTS = la.py
+# dist_bin_SCRIPTS = la.py

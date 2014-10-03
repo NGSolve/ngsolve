@@ -19,6 +19,7 @@ public:
   NumProcWrap (PDE & pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
   void Do(LocalHeap & lh)  {
     // cout << "numproc wrap - do" << endl;
+    AcquireGIL gil_lock;
     this->get_override("Do")(lh);
   }
 };

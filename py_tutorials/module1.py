@@ -1,10 +1,12 @@
 print ("**** this is my first ngs-py module *******")
 
+from ngsolve import solve
+
 def Hi():
      print ("hello")
 
 
-class pyNP1(ngsolve.NumProc1):
+class pyNP1(solve.PyNumProc):
 
    def __init__(self, pde, flags):
         print ('********* pyNP1 constructor ********')

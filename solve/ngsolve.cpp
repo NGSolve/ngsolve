@@ -44,153 +44,36 @@ namespace netgen
 void * ptr = (void*)PyOS_InputHook;
 
 
-class AcquireGIL 
+
+std::thread::id pythread_id = std::this_thread::get_id();
+std::thread::id mainthread_id = std::this_thread::get_id();
+
+
+void SpawnPython (string initfile)
 {
-    public:
-        inline AcquireGIL(){
-            state = PyGILState_Ensure();
-        }
-
-        inline ~AcquireGIL(){
-            PyGILState_Release(state);
-        }
-    private:
-  PyGILState_STATE state;
-};
-
-class ReleaseGIL
-{
-    public:
-        inline ReleaseGIL() {
-            m_thread_state = PyEval_SaveThread();
-        }
-
-        inline ~ReleaseGIL() {
-            PyEval_RestoreThread(m_thread_state);
-            m_thread_state = NULL;
-        }
-
-    private:
-        PyThreadState * m_thread_state;
-};
-
-class PythonEnvironment : public BasePythonEnvironment {
-    public:
-    static PythonEnvironment py_env;
-
-    std::thread::id pythread_id;
-    std::thread::id mainthread_id;
-
-    // Private constructor
-    PythonEnvironment();
-
-    public:
-    // Singleton pattern
-    static PythonEnvironment &getInstance() {
-        return py_env;
+  if(pythread_id != mainthread_id) 
+    {
+      cout << "Python thread already running!" << endl;
     }
-    
-  virtual void exec(const string s) {
-    try{
-      bp::exec(s.c_str(), main_namespace, main_namespace);
-    }
-    catch (bp::error_already_set const &) {
-      PyErr_Print();
-    }
-  }
-
-
-    void Spawn(string initfile) {
-        if(pythread_id != mainthread_id) {
-            cout << "Python thread already running!" << endl;
-        }
-        else {
-//             PyEval_ReleaseLock();
-            std::thread([](string init_file_) {
+  else
+    {
+      std::thread([](string init_file_) 
+                  {
                     AcquireGIL gil_lock;
-            try{
-                py_env.pythread_id = std::this_thread::get_id();
-                py_env.exec_file(init_file_.c_str());
-                // py_env.exec("from runpy import run_module");
-                // py_env.exec("globals().update(run_module('init',globals()))");
-            }
-            catch (bp::error_already_set const &) {
-                PyErr_Print();
-            }
-            cout << "Python shell finished." << endl;
-
-            py_env.pythread_id = py_env.mainthread_id;
-        
-              }, initfile).detach();
-        }
-    }
-
-
-    virtual ~PythonEnvironment() { }
-};
-
-void ExportNgstd();
-void ExportNgbla();
-void ExportNgfem();
-void ExportNgla();
-void ExportNgcomp();
-void ExportNgsolve();
-void ExportNgmpi();
-
-PythonEnvironment::PythonEnvironment() {
-
-    mainthread_id = std::this_thread::get_id();
-    pythread_id = std::this_thread::get_id();
-    cout << "Init Python environment." << endl;
-    Py_Initialize();
-    PyEval_InitThreads();
-    try{
-        main_module = bp::import("__main__");
-        main_namespace = main_module.attr("__dict__");
-//         exec("from sys import path");
-        //         exec("from runpy import run_module");
-//         exec("from os import environ");
-
-//         exec("path.append(environ['NETGENDIR'])");
-//         exec("path.append('.')");
-// 
-//         ExportNgstd();
-//         ExportNgbla();
-//         ExportNgfem();
-//         ExportNgla();
-//         ExportNgcomp();
-//         ExportNgsolve();
-//         ExportNgmpi(); 
-
-        cout << IM(1)
-	     << "ngs-python objects are available in ngstd, bla, ...\n"
-             << "to import the whole bunch of objets enter\n\n"
-             << "from ngsolve.ngstd import *\n"
-             << "from ngsolve.bla import *\n"
-             << "from ngsolve.fem import *\n"
-             << "from ngsolve.la import *\n"
-             << "from ngsolve.comp import *\n"
-             << "from ngsolve.solve import *\n"
-//              << "from ngsolve.ngmpi import *\n"
-             << "dir()\n"
-             << endl << endl;
-
-#ifdef PARALLEL
-        cout << IM(1) << "To start the mpi shell call" << endl << "MpiShell()" << endl << endl;
-#endif
-//         PyEval_ReleaseLock();
-    }
-    catch(bp::error_already_set const &) {
-        PyErr_Print();
+                    try{
+                      pythread_id = std::this_thread::get_id();
+                      pyenv.exec_file(init_file_.c_str());
+                    }
+                    catch (bp::error_already_set const &) {
+                      PyErr_Print();
+                    }
+                    cout << "Python shell finished." << endl;
+                    
+                    pythread_id = mainthread_id;
+                    
+                  }, initfile).detach();
     }
 }
-
-
-PythonEnvironment PythonEnvironment::py_env;
-
-
-BasePythonEnvironment & GetPythonEnvironment () { return PythonEnvironment::getInstance(); }
-
 
 #endif
 
@@ -528,11 +411,10 @@ int NGS_LoadPDE (ClientData clientData,
 	  pde->PrintReport (*testout);
 
 #ifdef NGS_PYTHON
-          cout << "set python mesh" << endl;
-          // PythonEnvironment::getInstance()["mesh"] = bp::ptr(&pde->GetMeshAccess(0));
           {
-//             AcquireGIL gil_lock;
-            PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+            cout << "set python pde" << endl;
+            AcquireGIL gil_lock;
+            pyenv["pde"] = bp::ptr(&*pde);
           }
 #endif
 
@@ -589,10 +471,6 @@ void * SolveBVP(void *)
     omp_set_num_threads (1);
 #endif
 
-#ifdef NGS_PYTHON
-//   AcquireGIL gil_lock;
-#endif
-
   try
     {
       if (pde && pde->IsGood())
@@ -645,10 +523,6 @@ int NGS_SolvePDE (ClientData clientData,
       Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
       return TCL_ERROR;
     }
-
-#ifdef NGS_PYTHON
-//   AcquireGIL gil_lock;
-#endif
 
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
@@ -769,8 +643,8 @@ int NGS_DumpPDE (ClientData clientData,
 }
 
 int NGS_RestorePDE (ClientData clientData,
-                         Tcl_Interp * interp,
-                         int argc, tcl_const char *argv[])
+                    Tcl_Interp * interp,
+                    int argc, tcl_const char *argv[])
 {
   if (argc >= 2)
     {
@@ -779,8 +653,10 @@ int NGS_RestorePDE (ClientData clientData,
       pde->DoArchive (archive);
 
 #ifdef NGS_PYTHON
-      AcquireGIL gil_lock;
-      PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
+      {
+        AcquireGIL gil_lock;
+        pyenv["pde"] = bp::ptr(&*pde);
+      }
 #endif
       return TCL_OK;
     }
@@ -834,8 +710,7 @@ int NGS_PythonShell (ClientData clientData,
 #ifdef NGS_PYTHON
   string initfile = netgen::ngdir + dirslash + "init.py";
   cout << "python init file = " << initfile << endl;
-  auto py_env = PythonEnvironment::getInstance();
-  py_env.Spawn(initfile);
+  SpawnPython(initfile);
   return TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
@@ -1257,10 +1132,14 @@ int NGSolve_Init (Tcl_Interp * interp)
 
   string initfile = netgen::ngdir + dirslash + "init.py";
   cout << "python init file = " << initfile << endl;
-  auto py_env = PythonEnvironment::getInstance();
 
+  Py_Initialize();
+  PyEval_InitThreads();
+  
+  pyenv = PythonEnvironment (bp::import("__main__"));
+  
   {
-    bp::scope sc(py_env.main_module);
+    bp::scope sc(bp::import("__main__"));
     bp::def ("SetDefaultPDE", 
              FunctionPointer([](shared_ptr<PDE> apde) 
                              {  
@@ -1272,11 +1151,31 @@ int NGSolve_Init (Tcl_Interp * interp)
     bp::def ("Redraw", 
              FunctionPointer([]() {Ng_Redraw();}));
   }
-  
-  if (MyMPI_GetId() == 0) {
+
+  if (MyMPI_GetId() == 0) 
+    {
+      pyenv.exec("from ngsolve import *");
       PyEval_ReleaseLock();
-      py_env.Spawn(initfile);
-  }
+      SpawnPython (initfile);
+    }
+
+  cout << IM(1)
+       << "ngs-python objects are available in ngstd, bla, ...\n"
+       << "to import the whole bunch of objets enter\n\n"
+       << "from ngsolve.ngstd import *\n"
+       << "from ngsolve.bla import *\n"
+       << "from ngsolve.fem import *\n"
+       << "from ngsolve.la import *\n"
+       << "from ngsolve.comp import *\n"
+       << "from ngsolve.solve import *\n"
+    //              << "from ngsolve.ngmpi import *\n"
+       << "dir()\n"
+       << endl << endl;
+#ifdef PARALLEL
+  cout << IM(1) << "To start the mpi shell call" << endl << "MpiShell()" << endl << endl;
+#endif
+  
+
 
 #endif
 
@@ -1474,11 +1373,11 @@ void NGS_ParallelRun (const string & message)
       string dummy;
       pde -> LoadPDE (dummy, false, 0);
 #ifdef NGS_PYTHON
-          cout << "set python mesh" << endl;
-          {
-//             AcquireGIL gil_lock;
-            PythonEnvironment::getInstance()["pde"] = bp::ptr(&*pde);
-          }
+      cout << "set python mesh" << endl;
+      {
+        AcquireGIL gil_lock;
+        pyenv["pde"] = bp::ptr(&*pde);
+      }
 #endif
 
     } 
@@ -1507,8 +1406,8 @@ void NGS_ParallelRun (const string & message)
     {
       string command = message.substr(7);
       AcquireGIL gil_lock;
-      PythonEnvironment & py_env = PythonEnvironment::getInstance();
-      py_env.exec(command);
+      // PythonEnvironment & py_env = PythonEnvironment::getInstance();
+      pyenv.exec(command);
     }
 #endif
   return;
