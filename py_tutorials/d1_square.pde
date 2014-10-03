@@ -14,9 +14,9 @@ define coefficient one 1
 linearform f -fespace=v
 source cf
 
-bilinearform a -fespace=v -symmetric -eliminate_internal
+bilinearform a -fespace=v -symmetric -xxeliminate_internal
 laplace one
-
+# robin 100
 
 preconditioner c -type=direct -bilinearform=a
 

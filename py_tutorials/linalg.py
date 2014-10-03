@@ -14,7 +14,6 @@ mata.height
 mata.width
 
 vecv = vecu.CreateVector()
-vecv = u2.Vector()
 vecw = vecu.CreateVector()
 
 # atn: don't use eliminate_internal
@@ -23,5 +22,5 @@ inva = mata.Inverse(v.FreeDofs())
 vecv.data = inva * vecf
 vecw.data = vecu - vecv
 
-print ("diff^2 : ", ngla.InnerProduct (vecw, vecw))
+print ("diff^2 : ", la.InnerProduct (vecw, vecw))
 

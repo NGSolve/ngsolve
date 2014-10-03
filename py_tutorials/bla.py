@@ -1,9 +1,4 @@
-import sys
-import os
-sys.path.append(os.environ["NETGENDIR"]+'/../lib')
-sys.path.append(os.environ["NETGENDIR"])
-
-from libngspy.ngbla import *
+from ngsolve.bla import *
 
 # number of rows
 n = 10

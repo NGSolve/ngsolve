@@ -1,23 +1,24 @@
-import sys
-import os
-from os import environ
-sys.path.append(environ['NETGENDIR']+"/../lib")
+# import sys
+# import os
+# from os import environ
+# sys.path.append(environ['NETGENDIR']+"/../lib")
 
-from libngspy import *
+# from libngspy import *
+from ngsolve import *
 
 
-# pde = ngsolve.PDE("../pde_tutorial/d1_square.pde")
+# pde = solve.PDE("../pde_tutorial/d1_square.pde")
 # mesh = pde.Mesh()
 
-# mesh = ngcomp.Mesh("square.vol")
-mesh = ngcomp.Mesh("../pde_tutorial/cube.vol")
+# mesh = comp.Mesh("square.vol")
+mesh = comp.Mesh("../pde_tutorial/cube.vol")
 
 # from tkinter import filedialog
 # filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
-# mesh = ngcomp.Mesh(filename)
+# mesh = comp.Mesh(filename)
 
 
-for i in mesh.Elements(ngcomp.VOL):
+for i in mesh.Elements(comp.VOL):
     print (i)
     print (mesh[i])
     print (mesh[i].vertices)
