@@ -163,7 +163,18 @@ void ExportNetgenMeshing()
   
 
   typedef MeshingParameters MP;
-  bp::class_<MP> ("MeshingParameters")
+  bp::class_<MP> ("MeshingParameters", bp::init<>())
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](double maxh)
+                           {
+                             auto tmp = new MeshingParameters;
+                             tmp->maxh = maxh;
+                             return tmp;
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("maxh")=1000)),
+         "create meshing parameters"
+         )
     .def("__str__", &ToString<MP>)
     .add_property("maxh", 
                   FunctionPointer ([](const MP & mp ) { return mp.maxh; }),
