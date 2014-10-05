@@ -42,6 +42,7 @@ class SPSolid
   shared_ptr<SPSolid> s1, s2;
   Solid * solid;
   int bc = -1;
+  string material;
   bool owner;
 public:
   enum optyp { TERM, SECTION, UNION, SUB };
@@ -79,7 +80,25 @@ public:
     if (s1) s1 -> AddSurfaces (geom);
     if (s2) s2 -> AddSurfaces (geom);
   }
-  
+
+  void SetMaterial (string mat)  { material = mat; }
+
+  string GetMaterial ()
+  {
+    if (!material.empty()) return material;
+    if (s1)
+      {
+        string s1mat = s1->GetMaterial();
+        if (!s1mat.empty()) return s1mat;
+      }
+    if (s2)
+      {
+        string s2mat = s2->GetMaterial();
+        if (!s2mat.empty()) return s2mat;
+      }
+    return material;
+  }
+
   void SetBC(int abc) 
   {
     if (bc == -1) 
@@ -167,7 +186,10 @@ void ExportCSG()
 
     .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
                                 { self->SetBC(nr); return self; }))
-  ;
+    .def ("mat", FunctionPointer([](shared_ptr<SPSolid> & self, string mat) -> shared_ptr<SPSolid> 
+                                 { self->SetMaterial(mat); return self; }))
+    .def ("mat", &SPSolid::GetMaterial)
+    ;
 
   bp::def ("Sphere", FunctionPointer([](Point<3> c, double r)
                                      {
@@ -215,17 +237,43 @@ void ExportCSG()
                                               return geom;
                                             })))
 
+    .def("__init__", bp::make_constructor (FunctionPointer
+                                           ([](const bp::list & solidlist)
+                                            {
+                                              cout << "csg from list";
+                                              auto geom = make_shared<CSGeometry>();
+                                              for (int i = 0; i < len(solidlist); i++)
+                                                {
+                                                  bp::object obj = solidlist[i];
+                                                  cout << "obj " << i << endl;
+
+                                                  bp::extract<shared_ptr<SPSolid>> solid(solidlist[i]);
+                                                  if(solid.check())
+                                                    {
+                                                      cout << "its a solid" << endl;
+                                                      solid()->AddSurfaces (*geom);
+                                                      solid()->GiveUpOwner();
+                                                      int tlonr = geom->SetTopLevelObject (solid()->GetSolid());
+                                                      geom->GetTopLevelObject(tlonr) -> SetMaterial(solid()->GetMaterial());
+                                                    }
+                                                }
+                                              geom -> FindIdenticSurfaces(1e-8 * geom->MaxSize()); 
+                                              return geom;
+                                            })))
+
     .def("Save", FunctionPointer([] (CSGeometry & self, string filename)
                                  {
                                    cout << "save geometry to file " << filename << endl;
                                    self.Save (filename);
                                  }))
-    .def("Add", FunctionPointer([] (CSGeometry & self, shared_ptr<SPSolid> solid)
-                                {
-                                  solid->AddSurfaces (self);
-                                  solid->GiveUpOwner();
-                                  self.SetTopLevelObject (solid->GetSolid());
-                                }))
+    .def("Add", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> solid)
+          {
+            solid->AddSurfaces (self);
+            solid->GiveUpOwner();
+            int tlonr = self.SetTopLevelObject (solid->GetSolid());
+            self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
+          }))
 
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
