@@ -64,7 +64,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
 
 #else
 template <NODE_TYPE NT, typename TELEM>
-auto NodalData (const MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
+auto NodalData (shared_ptr<MeshAccess> ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
 #endif
 
 
@@ -72,7 +72,7 @@ namespace ngcomp
 {
 
   H1HighOrderFESpace ::  
-  H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name = "H1HighOrderFESpace(h1ho)";
@@ -95,7 +95,7 @@ namespace ngcomp
     DefineDefineFlag("wb_withedges");
     if (parseflags) CheckFlags(flags);
 
-    wb_loedge = ma.GetDimension() == 3;
+    wb_loedge = ma->GetDimension() == 3;
     if (flags.GetDefineFlag("wb_withedges")) wb_loedge = true;
     if (flags.GetDefineFlag("wb_withoutedges")) wb_loedge = false;
 
@@ -145,7 +145,7 @@ namespace ngcomp
 
     if (!no_low_order_space)
       low_order_space = make_shared<NodalFESpace> (ma, loflags);
-    switch (ma.GetDimension())
+    switch (ma->GetDimension())
       {
       case 1:
         {
@@ -177,8 +177,8 @@ namespace ngcomp
       }
 
     auto one = make_shared<ConstantCoefficientFunction> (1);
-    integrator = CreateBFI("mass", ma.GetDimension(), one);
-    boundary_integrator = CreateBFI("robin", ma.GetDimension(), one);
+    integrator = CreateBFI("mass", ma->GetDimension(), one);
+    boundary_integrator = CreateBFI("robin", ma->GetDimension(), one);
 
     if (dimension > 1)
       {
@@ -187,7 +187,6 @@ namespace ngcomp
       }
 
     prol = make_shared<LinearProlongation> (*this);
-    vefc_dofblocks = Vec<4,int> (1,1,1,1);
   }
 
 
@@ -209,11 +208,11 @@ namespace ngcomp
 
     if (low_order_space) low_order_space -> Update(lh);
     
-    int dim = ma.GetDimension();
-    int nv = ma.GetNV();
-    int ned = (dim <= 1) ? 0 : ma.GetNEdges();
-    int nfa = (dim <= 2) ? 0 : ma.GetNFaces();
-    int ne = ma.GetNE();
+    int dim = ma->GetDimension();
+    int nv = ma->GetNV();
+    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    int nfa = (dim <= 2) ? 0 : ma->GetNFaces();
+    int ne = ma->GetNE();
 
     used_edge.SetSize(ned); 
     used_face.SetSize(nfa); 
@@ -223,27 +222,27 @@ namespace ngcomp
     used_face = false; 
     used_vertex = false; 
 
-    for (ElementId ei : ma.Elements<VOL>())
+    for (ElementId ei : ma->Elements<VOL>())
       if (DefinedOn (ei))
 	{
-	  Ngs_Element ngel = ma[ei];
+	  Ngs_Element ngel = (*ma)[ei];
 	  used_vertex[ngel.Vertices()] = true;
 	  if (dim >= 2) used_edge[ngel.Edges()] = true;
 	  if (dim == 3) used_face[ngel.Faces()] = true;
 	}
 
-    for (ElementId ei : ma.Elements<BND>())
+    for (ElementId ei : ma->Elements<BND>())
       if (DefinedOn (ei))
 	{
-	  Ngs_Element ngel = ma[ei];
+	  Ngs_Element ngel = (*ma)[ei];
 	  used_vertex[ngel.Vertices()] = true;
 	  if (dim >= 2) used_edge[ngel.Edges()] = true;
 	  if (dim == 3) used_face[ngel.Faces()] = true;
 	}
     
-    ma.AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
-    ma.AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
-    ma.AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
+    ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
+    ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
+    ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
 
 
     
@@ -259,27 +258,30 @@ namespace ngcomp
 	
     Array<int> eledges, elfaces, vnums;
     if(var_order) 
-      for (ElementId ei : ma.Elements(VOL))
+      for (ElementId ei : ma->Elements(VOL))
         {	
           if (!DefinedOn (ei)) continue;
           int i = ei.Nr();
           
-          ELEMENT_TYPE eltype = ma.GetElType(ei); 
+          ELEMENT_TYPE eltype = ma->GetElType(ei); 
           const FACE * faces = ElementTopology::GetFaces (eltype);
           const EDGE * edges = ElementTopology::GetEdges (eltype);
           const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
-          ma.GetElVertices (ei, vnums);
-          ma.GetElEdges (i, eledges);		
+          ma->GetElVertices (ei, vnums);
+          ma->GetElEdges (i, eledges);		
 	
-          INT<3,TORDER> el_orders = ma.GetElOrders(i); 
-          for(int l=0;l<3;l++) el_orders[l] += rel_order; 
+          INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order); 
+          // for(int l=0;l<3;l++) el_orders[l] += rel_order; 
 
-          for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
-          for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
-	
+          maxorder = max (maxorder, Max(el_orders));
+          minorder = min (minorder, Min(el_orders));
+          // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
+          // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
+          
+          order_inner[i] = Max (order_inner[i], el_orders);
+          // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
 
-          for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
           for(int j=0;j<eledges.Size();j++)
             {
               for(int k=0;k<dim;k++)
@@ -324,11 +326,11 @@ namespace ngcomp
         }
     
     /* 
-       if (ma.GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
+       if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {
        for (int i = 0; i < nel; i++)
        {
-       if (ma.GetElType(i) == ET_TRIG)
+       if (ma->GetElType(i) == ET_TRIG)
        order_inner = INT<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
        else
        order_inner = INT<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
@@ -349,7 +351,7 @@ namespace ngcomp
     for (auto i : used_face.Range())
       if (!used_face[i]) order_face[i] = 1; 
 
-    for (ElementId ei : ma.Elements<VOL>())
+    for (ElementId ei : ma->Elements<VOL>())
       if (!DefinedOn(ei)) order_inner[ei.Nr()] = 1;
 
     if(print) 
@@ -383,11 +385,11 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: UpdateDofTables ()
   {
-    int dim = ma.GetDimension();
-    int nv = ma.GetNV();
-    int ned = (dim <= 1) ? 0 : ma.GetNEdges();
-    int nfa = (dim <= 2) ? 0 : ma.GetNFaces();
-    int ne = ma.GetNE();
+    int dim = ma->GetDimension();
+    int nv = ma->GetNV();
+    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    int nfa = (dim <= 2) ? 0 : ma->GetNFaces();
+    int ne = ma->GetNE();
 
     ndof = nv;
 
@@ -405,7 +407,7 @@ namespace ngcomp
       {
 	first_face_dof[i] = ndof;
 	INT<2> p = order_face[i];
-	switch(ma.GetFacetType(i))
+	switch(ma->GetFacetType(i))
 	  {
 	  case ET_TRIG:
 	     if (p[0] > 2)
@@ -426,7 +428,7 @@ namespace ngcomp
       {
 	first_element_dof[i] = ndof;
 	INT<3> p = order_inner[i];	
-	switch (ma.GetElType(i))
+	switch (ma->GetElType(i))
 	  {
 	  case ET_TRIG:
 	    if(p[0] > 2)
@@ -471,7 +473,7 @@ namespace ngcomp
       }
 
 
-    while (ma.GetNLevels() > ndlevel.Size())
+    while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
@@ -483,10 +485,10 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
 
-    for (int i = 0; i < ma.GetNV(); i++)
+    for (int i = 0; i < ma->GetNV(); i++)
       ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
 
-    for (int edge = 0; edge < ma.GetNEdges(); edge++)
+    for (int edge = 0; edge < ma->GetNEdges(); edge++)
       {
 	IntRange range = GetEdgeDofs (edge);
 	ctofdof[range] = INTERFACE_DOF;
@@ -494,11 +496,11 @@ namespace ngcomp
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
 
-    if (ma.GetDimension() == 3)
-      for (int face = 0; face < ma.GetNFaces(); face++)
+    if (ma->GetDimension() == 3)
+      for (int face = 0; face < ma->GetNFaces(); face++)
 	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
 
-    for (int el = 0; el < ma.GetNE(); el++)
+    for (int el = 0; el < ma->GetNE(); el++)
       ctofdof[GetElementDofs(el)] = LOCAL_DOF;
     
     if (print)
@@ -531,7 +533,7 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(elnr);
     ELEMENT_TYPE eltype = ngel.GetType();
 
     if (!DefinedOn (ElementId (VOL, elnr)))
@@ -605,7 +607,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -648,9 +650,9 @@ namespace ngcomp
 
   const FiniteElement & H1HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
+    if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
       {
-        switch (ma.GetSElType(elnr))
+        switch (ma->GetSElType(elnr))
           {
           case ET_POINT:   return * new (lh) ScalarDummyFE<ET_POINT> (); 
           case ET_SEGM:    return * new (lh) ScalarDummyFE<ET_SEGM> (); 
@@ -662,7 +664,7 @@ namespace ngcomp
 
     try
       {
-        switch (ma.GetSElType(elnr))
+        switch (ma->GetSElType(elnr))
           {
           case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, lh);
           case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, lh);
@@ -685,7 +687,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -707,7 +709,7 @@ namespace ngcomp
       case 2: default:  
         {
           hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
-	  hofe -> SetOrderFace (0, order_face[ma.GetSElFace(elnr)]);
+	  hofe -> SetOrderFace (0, order_face[ma->GetSElFace(elnr)]);
           break;
         }
       }
@@ -732,21 +734,21 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!DefinedOn (ma.GetElIndex (elnr)))
+    if (!DefinedOn (ma->GetElIndex (elnr)))
       {
 	dnums.SetSize(0);
 	return;
       }
     
-    Ngs_Element ngel = ma.GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(elnr);
 
     dnums = ngel.Vertices();
 
-    if (ma.GetDimension() >= 2)
+    if (ma->GetDimension() >= 2)
       for (int i = 0; i < ngel.edges.Size(); i++)
         dnums += GetEdgeDofs (ngel.Edges()[i]);
 
-    if (ma.GetDimension() == 3)
+    if (ma->GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
         dnums += GetFaceDofs (ngel.Faces()[i]);
 
@@ -760,17 +762,17 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!DefinedOn (ei)) return;
-    Ngs_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma->GetElement(ei);
 
     for (int i = 0; i < ngel.vertices.Size(); i++)
       dranges.Append (ngel.vertices[i]);
          
-    if (ma.GetDimension() >= 2)
+    if (ma->GetDimension() >= 2)
       for (int i = 0; i < ngel.edges.Size(); i++)
         if (GetEdgeDofs (ngel.edges[i]).Size())
           dranges += GetEdgeDofs (ngel.edges[i]);
 
-    if (ma.GetDimension() == 3)
+    if (ma->GetDimension() == 3)
       for (int i = 0; i < ngel.faces.Size(); i++)
         if (GetFaceDofs (ngel.faces[i]).Size())
           dranges += GetFaceDofs (ngel.faces[i]);
@@ -798,7 +800,7 @@ namespace ngcomp
   void H1HighOrderFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
     dnums.SetSize0();
-    if (ma.GetDimension() < 3) return;
+    if (ma->GetDimension() < 3) return;
     dnums = GetFaceDofs (fanr);
   }
 
@@ -810,20 +812,20 @@ namespace ngcomp
   void H1HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!DefinedOnBoundary (ma.GetSElIndex (elnr)))
+    if (!DefinedOnBoundary (ma->GetSElIndex (elnr)))
       {
 	dnums.SetSize0();
 	return;
       }
 
-    Ngs_Element ngel = ma.GetSElement(elnr);
+    Ngs_Element ngel = ma->GetSElement(elnr);
 
     dnums = ngel.Vertices();
 
     for (int i = 0; i < ngel.edges.Size(); i++)
       dnums += GetEdgeDofs (ngel.edges[i]);
 
-    if (ma.GetDimension() == 3)
+    if (ma->GetDimension() == 3)
       dnums += GetFaceDofs (ngel.faces[0]);
   }
   
@@ -847,10 +849,10 @@ namespace ngcomp
     int smoothing_type = int(precflags.GetNumFlag("blocktype",4)); 
     if (subassembled) smoothing_type = 51;
 
-    int nv = ma.GetNV();
-    int ned = ma.GetNEdges();
-    int nfa = (ma.GetDimension() == 2) ? 0 : ma.GetNFaces();
-    int ni = (eliminate_internal) ? 0 : ma.GetNE(); 
+    int nv = ma->GetNV();
+    int ned = ma->GetNEdges();
+    int nfa = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
+    int ni = (eliminate_internal) ? 0 : ma->GetNE(); 
    
     cout << " blocktype " << smoothing_type << endl; 
     // cout << " Use H1-Block Smoother:  "; 
@@ -887,7 +889,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
@@ -927,7 +929,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
@@ -950,7 +952,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
@@ -960,7 +962,7 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(i);
 		for (int j = 0; j < ngel.faces.Size(); j++)
 		  creator.Add (nv+ngel.faces[j], GetElementDofs(i));
 	      }
@@ -977,7 +979,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
@@ -985,7 +987,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < nfa; i++)
 	      {
-		Ng_Node<2> face = ma.GetNode<2> (i);
+		Ng_Node<2> face = ma->GetNode<2> (i);
 		for (int k = 0; k < face.vertices.Size(); k++)
 		  creator.Add (face.vertices[k], GetFaceDofs(i));
 	      }
@@ -1005,21 +1007,21 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
 
 	    for (int i = 0; i < nfa; i++)
 	      {
-		Ng_Node<2> face = ma.GetNode<2> (i);
+		Ng_Node<2> face = ma->GetNode<2> (i);
 		for (int k = 0; k < face.vertices.Size(); k++)
 		  creator.Add (face.vertices[k], GetFaceDofs(i));
 	      }
 	    
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(i);
 		for (int j = 0; j < ngel.vertices.Size(); j++)
 		  creator.Add (ngel.vertices[j], GetElementDofs(i));
 	      }
@@ -1041,7 +1043,7 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(i);
 		for (int j = 0; j < ngel.faces.Size(); j++)
 		  creator.Add (nv+ned+ngel.faces[j], GetElementDofs(i));
 	      }
@@ -1063,12 +1065,12 @@ namespace ngcomp
 	      for (int i = 0; i < nfa; i++)
 		{
 		  /*
-		    Ng_Node<2> face = ma.GetNode<2> (i);
+		    Ng_Node<2> face = ma->GetNode<2> (i);
 		    for (int k = 0; k < face.edges.Size(); k++)
 		    creator.Add (face.edges[k], GetFaceDofs(i));
 		  */
 		  
-		  ma.GetFaceEdges (i, f2ed);
+		  ma->GetFaceEdges (i, f2ed);
 		  for (int k = 0; k < f2ed.Size(); k++)
 		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
 		}
@@ -1085,16 +1087,16 @@ namespace ngcomp
 	      cout << " V + E + F +I (Cluster)  " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      creator.Add(ma.GetClusterRepVertex(i), i);
+	      creator.Add(ma->GetClusterRepVertex(i), i);
 
 	    for (int i = 0; i < ned; i++)
-	      creator.Add (ma.GetClusterRepEdge(i), GetEdgeDofs(i));
+	      creator.Add (ma->GetClusterRepEdge(i), GetEdgeDofs(i));
 
 	    for (int i = 0; i < nfa; i++)
-	      creator.Add(ma.GetClusterRepFace(i), GetFaceDofs(i));
+	      creator.Add(ma->GetClusterRepFace(i), GetFaceDofs(i));
 
 	    for (int i = 0; i < ni; i++)
-	      creator.Add (ma.GetClusterRepElement(i), GetElementDofs(i));
+	      creator.Add (ma->GetClusterRepElement(i), GetElementDofs(i));
 
 	    break; 
 
@@ -1107,14 +1109,14 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		for (int k = 0; k < 2; k++)
 		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma.GetElement(i);
+		const Ngs_Element & ngel = ma->GetElement(i);
 		for (int j = 0; j < ngel.vertices.Size(); j++)
 		  creator.Add (ngel.vertices[j], GetElementDofs(i));
 	      }
@@ -1127,14 +1129,14 @@ namespace ngcomp
 	      cout << " VEFI Cluster " << endl; 
 
 	    for (int i = 0; i < nv; i++)
-	      creator.Add(ma.GetClusterRepVertex(i), i);
+	      creator.Add(ma->GetClusterRepVertex(i), i);
 
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		int rep[2];
 		for (int k = 0; k < 2; k++)
-		  rep[k] = ma.GetClusterRepVertex(edge.vertices[k]);
+		  rep[k] = ma->GetClusterRepVertex(edge.vertices[k]);
 		
 		creator.Add (rep[0], GetEdgeDofs(i));
 		if (rep[0] != rep[1])
@@ -1143,12 +1145,12 @@ namespace ngcomp
 
 	    for (int i = 0; i < nfa; i++)
 	      {
-		Ng_Node<2> face = ma.GetNode<2> (i);
+		Ng_Node<2> face = ma->GetNode<2> (i);
 		int rep[4];
 		
 		for (int k = 0; k < face.vertices.Size(); k++)
 		  {
-		    rep[k] = ma.GetClusterRepVertex(face.vertices[k]);
+		    rep[k] = ma->GetClusterRepVertex(face.vertices[k]);
 		    
 		    bool ok = true;
 		    for (int j = 0; j < k; j++)
@@ -1159,12 +1161,12 @@ namespace ngcomp
 
 	    for (int i = 0; i < ni; i++)
 	      {
-		Ngs_Element ngel = ma.GetElement (i);
+		Ngs_Element ngel = ma->GetElement (i);
 		int rep[8];
 		      
 		for (int k = 0; k < ngel.vertices.Size(); k++)
 		  {
-		    rep[k] = ma.GetClusterRepVertex(ngel.vertices[k]);
+		    rep[k] = ma->GetClusterRepVertex(ngel.vertices[k]);
 			
 		    bool ok = true;
 		    for (int j = 0; j < k; j++)
@@ -1185,7 +1187,7 @@ namespace ngcomp
 	      for (int i = 0; i < ned; i++)
 		{
 		  creator.Add (nv+i, GetEdgeDofs(i));
-		  Ng_Node<1> edge = ma.GetNode<1> (i);
+		  Ng_Node<1> edge = ma->GetNode<1> (i);
 		  for (int k = 0; k < 2; k++)
 		    creator.Add (edge.vertices[k], GetEdgeDofs(i));
 		}
@@ -1193,7 +1195,7 @@ namespace ngcomp
 	      Array<int> f2ed;
 	      for (int i = 0; i < nfa; i++)
 		{
-		  ma.GetFaceEdges (i, f2ed);
+		  ma->GetFaceEdges (i, f2ed);
 		  for (int k = 0; k < f2ed.Size(); k++)
 		    creator.Add (nv+f2ed[k], GetFaceDofs(i));
 		}
@@ -1236,7 +1238,7 @@ namespace ngcomp
 	    
 	    for (int i = 0; i < ned; i++)
 	      {
-		Ng_Node<1> edge = ma.GetNode<1> (i);
+		Ng_Node<1> edge = ma->GetNode<1> (i);
 		IntRange edgedofs = GetEdgeDofs(i);
 
 		for (int k = 0; k < 2; k++)
@@ -1262,7 +1264,7 @@ namespace ngcomp
 	cout << "creating bddc-coarse grid(vertices)" << endl;
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
-	int nv = ma.GetNV();
+	int nv = ma->GetNV();
 	for (int i = 0; i < nv; i++)
 	  if (!IsDirichletVertex(i))
 	    clusters[i] = 1;		
@@ -1276,8 +1278,8 @@ namespace ngcomp
 	Array<int> & clusters = *new Array<int> (GetNDof());
 	clusters = 0;
 	
-	int ned = ma.GetNEdges();
-	int nv = ma.GetNV();
+	int ned = ma->GetNEdges();
+	int nv = ma->GetNV();
 
 	for (int i = 0; i < nv; i++)
 	  clusters[i] = 1;
@@ -1291,7 +1293,7 @@ namespace ngcomp
 	  }
 
 	/*
-	  int nfa = ma.GetNFaces();
+	  int nfa = ma->GetNFaces();
 	  for (int i = 0; i < nfa; i++)
 	  {
 	  int first = first_face_dof[i];
@@ -1326,9 +1328,9 @@ namespace ngcomp
 
     // return 0;
 
-    // int nv = ma.GetNV();
+    // int nv = ma->GetNV();
     // int nd = GetNDof();
-    int ne = ma.GetNE();
+    int ne = ma->GetNE();
     Array<int> & clusters = *new Array<int> (GetNDof());
     clusters = 0;
 
@@ -1355,13 +1357,13 @@ namespace ngcomp
     
     for (int i = 0; i < ne; i++)
       {
-	if (ma.GetElType(i) == ET_PRISM)
+	if (ma->GetElType(i) == ET_PRISM)
 	  {
-	    ma.GetElEdges (i, ednums);
+	    ma->GetElEdges (i, ednums);
 	    for (int j = 6; j < 9; j++)  //vertical Edges 
               clusters[GetEdgeDofs(ednums[j])] = 2;
 	    
-	    ma.GetElFaces(i,fnums); // vertical faces 
+	    ma->GetElFaces(i,fnums); // vertical faces 
 	    for (int j =2;j<5;j++) 
 	      {
                 clusters[GetFaceDofs(fnums[j])] = 0;
@@ -1379,13 +1381,13 @@ namespace ngcomp
 	      }
 	  }
 
-	else if (ma.GetElType(i) == ET_HEX)  
+	else if (ma->GetElType(i) == ET_HEX)  
 	  {
-	    ma.GetElEdges (i, ednums);
+	    ma->GetElEdges (i, ednums);
 	    for (int j = 8; j < 12; j++) //vertical edges
               clusters[GetEdgeDofs(ednums[j])] = 2;
 
-	    ma.GetElFaces(i,fnums); // vertical faces 
+	    ma->GetElFaces(i,fnums); // vertical faces 
 	    for (int j = 2; j < 6; j++) 
               clusters[GetFaceDofs(fnums[j])] = 3;
 	  } 
@@ -1394,7 +1396,7 @@ namespace ngcomp
    
     for (int i =0; directsolverclustered.Size() > 0 && i<ne; i++)
       {
-	if(directsolverclustered[ma.GetElIndex(i)])
+	if(directsolverclustered[ma->GetElIndex(i)])
 	  {
 	    GetDofNrs(i,ednums);
 	    for (int k = 0; k<ednums.Size(); k++)
@@ -1457,7 +1459,7 @@ namespace ngcomp
 
   template<>
   shared_ptr<FESpace> RegisterFESpace<H1HighOrderFESpace> :: 
-  Create (const MeshAccess & ma, const Flags & flags)
+  Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     // we will check the -periodic flag here
     return make_shared<H1HighOrderFESpace> (ma, flags);

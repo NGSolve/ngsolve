@@ -52,17 +52,17 @@ namespace ngcomp
       RegionTimer reg(timer);
 
       const FESpace & fes = bfa.GetFESpace();
-      const MeshAccess & ma = fes.GetMeshAccess();
+      shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
 
-      Array<int> wbdcnt(ma.GetNE()+ma.GetNSE());
-      Array<int> ifcnt(ma.GetNE()+ma.GetNSE());
+      Array<int> wbdcnt(ma->GetNE()+ma->GetNSE());
+      Array<int> ifcnt(ma->GetNE()+ma->GetNSE());
       wbdcnt = 0;
       ifcnt = 0;
       const BitArray & freedofs = *fes.GetFreeDofs();
       
       Array<int> dnums;
       for (int bound = 0, ii = 0; bound <= 1; bound++)
-	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
+	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
 	  {
             ElementId ei (bound ? BND : VOL, i);
 	    fes.GetDofNrs (ei, dnums);
@@ -84,7 +84,7 @@ namespace ngcomp
       Table<int> el2ifdofs(ifcnt);    // interface dofs on each element
       
       for (int bound = 0, ii = 0; bound <= 1; bound++)
-	for (int i = 0; i < (bound ? ma.GetNSE() : ma.GetNE()); i++, ii++)
+	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
 	  {
             ElementId ei (bound ? BND : VOL, i);
 	    fes.GetDofNrs (ei, dnums);

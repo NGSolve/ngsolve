@@ -66,8 +66,7 @@ namespace ngcomp
 
     Ng_ClearSolutionData ();
     
-    for (int i = 0; i < mas.Size(); i++)
-      delete mas[i];
+    // for (int i = 0; i < mas.Size(); i++) delete mas[i];
   }
 
   
@@ -805,7 +804,7 @@ namespace ngcomp
       }
     else
       {
-        MeshAccess * ma = new MeshAccess;
+        auto ma = make_shared<MeshAccess>();
         ma -> ArchiveMesh (archive);
         AddMeshAccess(ma);
       }
@@ -852,7 +851,7 @@ namespace ngcomp
 
             Flags flags;
             flags.SetFlag ("dim",dim);
-            auto fes = CreateFESpace (type, *mas[0], flags);
+            auto fes = CreateFESpace (type, mas[0], flags);
 
             fes -> DoArchive(archive);
             fes -> FinalizeUpdate (lh);
@@ -957,14 +956,14 @@ namespace ngcomp
     // shared_ptr<FESpace> space;
     
     int meshnr = int (flags.GetNumFlag ("mesh", 1)) - 1;
-    const MeshAccess & ma = GetMeshAccess (meshnr);
+    shared_ptr<MeshAccess> ma = GetMeshAccess (meshnr);
 
     if (flags.GetDefineFlag ("vec"))
-      flags.SetFlag ("dim", ma.GetDimension());
+      flags.SetFlag ("dim", ma->GetDimension());
     if (flags.GetDefineFlag ("tensor")) 
-      flags.SetFlag ("dim", sqr (ma.GetDimension()));
+      flags.SetFlag ("dim", sqr (ma->GetDimension()));
     if (flags.GetDefineFlag ("symtensor")) 
-      flags.SetFlag ("dim", ma.GetDimension()*(ma.GetDimension()+1) / 2);
+      flags.SetFlag ("dim", ma->GetDimension()*(ma->GetDimension()+1) / 2);
 
     string type = flags.GetStringFlag("type", "");
     auto space = CreateFESpace (type, ma, flags);
@@ -994,7 +993,7 @@ namespace ngcomp
     
     if (flags.NumListFlagDefined ("dirichletboundaries"))
       {
-	BitArray dirbnds(ma.GetNBoundaries());
+	BitArray dirbnds(ma->GetNBoundaries());
 	dirbnds.Clear();
 	const Array<double> & array = flags.GetNumListFlag ("dirichletboundaries");
 	for (int i = 0; i < array.Size(); i++)
@@ -1004,7 +1003,7 @@ namespace ngcomp
   
     if (flags.NumListFlagDefined ("domains"))
       {
-	BitArray definedon(ma.GetNDomains());
+	BitArray definedon(ma->GetNDomains());
 	definedon.Clear();
 	const Array<double> & domains = flags.GetNumListFlag ("domains");
 	for (int i = 0; i < domains.Size(); i++)
@@ -1014,7 +1013,7 @@ namespace ngcomp
 
     if (flags.NumListFlagDefined ("boundaries"))
       {
-	BitArray definedon(ma.GetNBoundaries());
+	BitArray definedon(ma->GetNBoundaries());
 	definedon.Clear();
 	const Array<double> & boundaries = flags.GetNumListFlag ("boundaries");
 	for (int i = 0; i < boundaries.Size(); i++)

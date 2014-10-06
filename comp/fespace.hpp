@@ -156,7 +156,6 @@ namespace ngcomp
 
     bool no_low_order_space;
   public:
-    Vec<4,int> vefc_dofblocks;  // = 2;
     string type;
 
     /**
@@ -167,7 +166,7 @@ namespace ngcomp
        -complex:      complex space \\
        -dirichlet=<int-list>: dirichlet boundaries, 1-based \\
     */
-    FESpace (const MeshAccess & ama, const Flags & flags, 
+    FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
              bool checkflags = false);
     /// cleanup
     virtual ~FESpace ();
@@ -312,12 +311,12 @@ namespace ngcomp
       if (id.IsBoundary())
         {
           if (!definedonbound.Size()) return true;
-          return DefinedOnBoundary (ma.GetElIndex(id));
+          return DefinedOnBoundary (ma->GetElIndex(id));
         }
       else
         {
           if (!definedon.Size()) return true;
-          return DefinedOn (ma.GetElIndex(id));
+          return DefinedOn (ma->GetElIndex(id));
         }
     }
 
@@ -567,7 +566,7 @@ namespace ngcomp
   public:
 
     ///
-    NodalFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    NodalFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~NodalFESpace ();
 
@@ -612,7 +611,7 @@ namespace ngcomp
     Array<int> ndlevel;
 
   public:
-    NonconformingFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    NonconformingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     virtual ~NonconformingFESpace ();
 
     virtual string GetClassName () const
@@ -642,7 +641,7 @@ namespace ngcomp
     int n_el_dofs;
   public:
     ///
-    ElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
+    ElementFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags=false);
 
     ///
     ~ElementFESpace ();
@@ -691,7 +690,7 @@ namespace ngcomp
     int n_el_dofs;
   public:
     ///
-    SurfaceElementFESpace (const MeshAccess & ama, const Flags& flags, 
+    SurfaceElementFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, 
                            bool checkflags = false);
 
     ///
@@ -739,11 +738,11 @@ namespace ngcomp
   public:
     /// generates a compound space.
     /// components will be added later
-    CompoundFESpace (const MeshAccess & ama,
+    CompoundFESpace (shared_ptr<MeshAccess> ama,
 		     const Flags & flags, bool parseflags = false);
     /// generates a compound space 
     /// components are provided in aspaces
-    CompoundFESpace (const MeshAccess & ama,
+    CompoundFESpace (shared_ptr<MeshAccess> ama,
 		     const Array<shared_ptr<FESpace>> & aspaces,
 		     const Flags & flags, bool parseflags = false);
 
@@ -833,10 +832,10 @@ namespace ngcomp
       /// the name
       string name;
       /// function pointer to creator function
-      shared_ptr<FESpace> (*creator)(const MeshAccess & ma, const Flags & flags);
+      shared_ptr<FESpace> (*creator)(shared_ptr<MeshAccess> ma, const Flags & flags);
       /// creates a descriptor
       FESpaceInfo (const string & aname,
-		   shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags))
+		   shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
 	: name(aname), creator(acreator) {;}
     };
   private:
@@ -850,7 +849,7 @@ namespace ngcomp
 
     /// add a descriptor
     void AddFESpace (const string & aname, 
-		     shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags));
+		     shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags));
   
     /// returns all creators
     const Array<shared_ptr<FESpaceInfo>> & GetFESpaces() { return fesa; }
@@ -867,7 +866,7 @@ namespace ngcomp
 
   /// creates a fespace of that type
   extern NGS_DLL_HEADER shared_ptr<FESpace> CreateFESpace (const string & type,
-                                                           const MeshAccess & ma,
+                                                           shared_ptr<MeshAccess> ma,
                                                            const Flags & flags);
 
 
@@ -887,7 +886,7 @@ namespace ngcomp
     }
     
     /// creates an fespace of type FES
-    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags)
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags)
     {
       return make_shared<FES> (ma, flags);
     }
@@ -911,10 +910,10 @@ namespace ngcomp
 
   class ParallelMeshDofs : public ParallelDofs
   {
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     Array<Node> dofnodes;
   public:
-    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<Node> & adofnodes, 
 		      int dim = 1, bool iscomplex = false);
 
     const MeshAccess & GetMeshAccess() const { return ma; }
@@ -927,7 +926,7 @@ namespace ngcomp
   class ParallelMeshDofs : public ParallelDofs 
   {
   public:
-    ParallelMeshDofs (const MeshAccess & ama, const Array<Node> & adofnodes, 
+    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<Node> & adofnodes, 
 		      int dim = 1, bool iscomplex = false)
     { ndof = adofnodes.Size(); }
   };

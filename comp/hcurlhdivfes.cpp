@@ -23,7 +23,7 @@ namespace ngcomp
 
 
   // Nedelec FE Space
-  NedelecFESpace :: NedelecFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
+  NedelecFESpace :: NedelecFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="NedelecFESpace(hcurl)";
@@ -50,18 +50,18 @@ namespace ngcomp
     // Integrator for shape tester 
 
     static ConstantCoefficientFunction one(1);
-    integrator = GetIntegrators().CreateBFI("massedge", ma.GetDimension(), &one);
-    boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma.GetDimension(), &one);
+    integrator = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
+    boundary_integrator = GetIntegrators().CreateBFI("robinedge", ma->GetDimension(), &one);
 
     /*
     static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	Array<CoefficientFunction*> coeffs(1);
 	coeffs[0] = &one;
 	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
-    else if(ma.GetDimension() == 3) 
+    else if(ma->GetDimension() == 3) 
       {
 	Array<CoefficientFunction*> coeffs(1); 
 	coeffs[0] = &one;
@@ -81,7 +81,7 @@ namespace ngcomp
   }
 
 
-  shared_ptr<FESpace> NedelecFESpace :: Create (const MeshAccess & ma, const Flags & flags)
+  shared_ptr<FESpace> NedelecFESpace :: Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 1)); 
     if (order >= 2) 
@@ -95,14 +95,13 @@ namespace ngcomp
   
   void NedelecFESpace :: Update(LocalHeap & lh)
   {
-    const MeshAccess & ma = GetMeshAccess();
-    int ne = ma.GetNE();
-    int nse = ma.GetNSE();
-    int ned = ma.GetNEdges();
+    int ne = ma->GetNE();
+    int nse = ma->GetNSE();
+    int ned = ma->GetNEdges();
     
     Array<int> pnums, enums;
     
-    int level = ma.GetNLevels();
+    int level = ma->GetNLevels();
     
     if (level == nelevel.Size())
       return;
@@ -121,10 +120,10 @@ namespace ngcomp
     finelevelofedge.Range (oldned, ned) = -1;
 
     for (int i = 0; i < ne; i++)
-      finelevelofedge[ma.GetElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetElement(i).Edges()] = level-1;
 
     for (int i = 0; i < nse; i++)
-      finelevelofedge[ma.GetSElement(i).Edges()] = level-1;
+      finelevelofedge[ma->GetSElement(i).Edges()] = level-1;
 
 
     // generate edge points, and temporary hash table
@@ -135,7 +134,7 @@ namespace ngcomp
     for (int i = 0; i < ned; i++)
       {
 	INT<2> edge;
-	ma.GetEdgePNums (i, edge[0], edge[1]);
+	ma->GetEdgePNums (i, edge[0], edge[1]);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
 	node2edge.Set (edge, i);
@@ -152,8 +151,8 @@ namespace ngcomp
       {
 	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
-	ma.GetParentNodes (i2[0], pa1);
-	ma.GetParentNodes (i2[1], pa2);
+	ma->GetParentNodes (i2[0], pa1);
+	ma->GetParentNodes (i2[1], pa2);
 	
 	if (pa1[0] == -1 && pa2[0] == -1)
 	  continue;
@@ -317,11 +316,11 @@ namespace ngcomp
 
   void  NedelecFESpace :: UpdateCouplingDofArray ()
   {
-    int level = ma.GetNLevels()-1;
+    int level = ma->GetNLevels()-1;
 
     ctofdof.SetSize(GetNDof());
 
-    for (int edge = 0; edge < ma.GetNEdges(); edge++) 
+    for (int edge = 0; edge < ma->GetNEdges(); edge++) 
       ctofdof[edge] = 
 	(FineLevelOfEdge(edge) == level) ? WIREBASKET_DOF : UNUSED_DOF; 
   }
@@ -344,7 +343,7 @@ namespace ngcomp
     dranges.SetSize (0);
     if (!DefinedOn (ei)) return;
 
-    Ngs_Element ngel = ma.GetElement(ei);
+    Ngs_Element ngel = ma->GetElement(ei);
     for (int i = 0; i < ngel.edges.Size(); i++)
       dranges.Append (ngel.edges[i]);
   }
@@ -352,14 +351,14 @@ namespace ngcomp
   
   void NedelecFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (DefinedOn (ma.GetElIndex (elnr)))
-      ma.GetElEdges (elnr, dnums);
+    if (DefinedOn (ma->GetElIndex (elnr)))
+      ma->GetElEdges (elnr, dnums);
     else
       dnums.SetSize(0);
 
     /*
-    ma.GetElEdges (elnr, dnums);
-    if (!DefinedOn (ma.GetElIndex (elnr)))
+    ma->GetElEdges (elnr, dnums);
+    if (!DefinedOn (ma->GetElIndex (elnr)))
       dnums = -1;
     */
   }
@@ -367,8 +366,8 @@ namespace ngcomp
 
   void NedelecFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    GetMeshAccess().GetSElEdges (selnr, dnums);
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+    ma->GetSElEdges (selnr, dnums);
+    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
       dnums = -1;
   }
 
@@ -379,7 +378,7 @@ namespace ngcomp
   void NedelecFESpace::TransformMat (int elnr, bool boundary,
 				     MAT & mat, TRANSFORM_TYPE tt) const
   {
-    Ngs_Element ngel = ma.GetElement(elnr, boundary);
+    Ngs_Element ngel = ma->GetElement(elnr, boundary);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -424,7 +423,7 @@ namespace ngcomp
     */
 
 
-    Ngs_Element ngel = boundary ? ma.GetSElement (elnr) : ma.GetElement(elnr);
+    Ngs_Element ngel = boundary ? ma->GetSElement (elnr) : ma->GetElement(elnr);
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -457,8 +456,8 @@ namespace ngcomp
     cout << "NedelecFESpace::CreateSmoothingBlocks" << endl;
 
     int nd = GetNDof();
-    int nv = ma.GetNV();
-    int level = ma.GetNLevels()-1;
+    int nv = ma->GetNV();
+    int level = ma->GetNLevels()-1;
 
     Table<int> *node2edge = 0;
     //type = SB_AFW;  
@@ -485,8 +484,8 @@ namespace ngcomp
 
 		
 		  // for anisotropic connections:
-		  int cep1 = ma.GetClusterRepVertex(ep1);
-		  int cep2 = ma.GetClusterRepVertex(ep2);
+		  int cep1 = ma->GetClusterRepVertex(ep1);
+		  int cep2 = ma->GetClusterRepVertex(ep2);
 
 		  if (k == 2)
 		    {
@@ -562,8 +561,8 @@ namespace ngcomp
 
 		
 	// 		// for anisotropic connections:
-	// 		int cep1 = ma.GetClusterRepVertex(ep1);
-	// 		int cep2 = ma.GetClusterRepVertex(ep2);
+	// 		int cep1 = ma->GetClusterRepVertex(ep1);
+	// 		int cep2 = ma->GetClusterRepVertex(ep2);
 
 	// 		if (k == 2)
 	// 		  {
@@ -605,7 +604,7 @@ namespace ngcomp
 		{
 		  if (FineLevelOfEdge(j) < level) continue;
 
-		  int ecl = ma.GetClusterRepEdge (j);
+		  int ecl = ma->GetClusterRepEdge (j);
 		  if (ecl < nv)
 		    ecl = j;
 		  else
@@ -637,7 +636,7 @@ namespace ngcomp
 	    
 	      for (int j = 0; j < nv; j++)
 		{
-		  int vcl = ma.GetClusterRepVertex (j);
+		  int vcl = ma->GetClusterRepVertex (j);
 		  if (k == 2)
 		    {
 		      (*node2edge)[vcl][cnts[vcl]] = j;
@@ -661,7 +660,7 @@ namespace ngcomp
   {
     int i;
     int ned = GetNDof();
-    int level = ma.GetNLevels()-1;
+    int level = ma->GetNLevels()-1;
 
     Array<int> cnts(ned);
     for (i = 0; i < ned; i++)
@@ -710,7 +709,7 @@ namespace ngcomp
 
 
 
-  NedelecFESpace2 :: NedelecFESpace2 (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  NedelecFESpace2 :: NedelecFESpace2 (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="NedelecFESpace2(hcurl)";
@@ -833,9 +832,9 @@ namespace ngcomp
     if (!curlprism) curlprism = prism;
 
 
-    gradientdomains.SetSize (ma.GetNDomains());
+    gradientdomains.SetSize (ma->GetNDomains());
     gradientdomains.Set();
-    gradientboundaries.SetSize (ma.GetNBoundaries());
+    gradientboundaries.SetSize (ma->GetNBoundaries());
     gradientboundaries.Set();
 
     if (flags.NumListFlagDefined("gradientdomains"))
@@ -873,13 +872,13 @@ namespace ngcomp
       */
 
     // Evaluator for shape tester 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	Array<shared_ptr<CoefficientFunction>> coeffs(1);
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
 	integrator = GetIntegrators().CreateBFI("massedge", 2, coeffs);
       }
-    else if(ma.GetDimension() == 3) 
+    else if(ma->GetDimension() == 3) 
       {
 	Array<shared_ptr<CoefficientFunction>> coeffs(1); 
 	coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1)); 
@@ -891,7 +890,7 @@ namespace ngcomp
 
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
-	directsolverclustered.SetSize(ama.GetNDomains());
+	directsolverclustered.SetSize(ama->GetNDomains());
 	directsolverclustered = false;
 	Array<double> clusters(flags.GetNumListFlag("directsolverdomains"));
 	for(int i=0; i<clusters.Size(); i++) 
@@ -919,18 +918,17 @@ namespace ngcomp
       low_order_space -> Update(lh);
 
     int i, j;
-    const MeshAccess & ma = GetMeshAccess();
 
-    int level = ma.GetNLevels();
-    int ne = ma.GetNE();
-    int nse = ma.GetNSE();
-    // int np = ma.GetNP();
+    int level = ma->GetNLevels();
+    int ne = ma->GetNE();
+    int nse = ma->GetNSE();
+    // int np = ma->GetNP();
 
-    ned = ma.GetNEdges();
-    nfa = ma.GetNFaces(); 
-    nel = ma.GetNE(); 
+    ned = ma->GetNEdges();
+    nfa = ma->GetNFaces(); 
+    nel = ma->GetNE(); 
 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       nfa = nel;
 
     Array<int> pnums;
@@ -950,7 +948,7 @@ namespace ngcomp
     /*
       for (i = 0; i < nse; i++)
       {
-      ma.GetSElEdges (i, enums, eorient);
+      ma->GetSElEdges (i, enums, eorient);
       for (j = 0; j < enums.Size(); j++)
       gradientedge[enums[j]] = 1;
       }
@@ -963,7 +961,7 @@ namespace ngcomp
     first_face_dof[0] = n_edge_dofs * ned;
     for (i = 0; i < nfa; i++)
       {
-	ma.GetFacePNums (i, pnums);
+	ma->GetFacePNums (i, pnums);
 	if (pnums.Size() == 3)
 	  first_face_dof[i+1] = first_face_dof[i] + n_trig_face_dofs;
 	else
@@ -973,8 +971,8 @@ namespace ngcomp
     first_el_dof[0] = first_face_dof[nfa];
     for (i = 0; i < ne; i++)
       {
-	bool gradel = gradientdomains[ma.GetElIndex(i)];
-	switch (ma.GetElType (i))
+	bool gradel = gradientdomains[ma->GetElIndex(i)];
+	switch (ma->GetElType (i))
 	  {
 	  case ET_TET:
 	    first_el_dof[i+1] = first_el_dof[i] + n_tet_el_dofs; 
@@ -1004,12 +1002,12 @@ namespace ngcomp
 
 	for (i = 0; i < ne; i++)
 	  {
-	    if (gradientdomains[ma.GetElIndex(i)])
+	    if (gradientdomains[ma->GetElIndex(i)])
 	      {
-		ma.GetElEdges (i, enums);
+		ma->GetElEdges (i, enums);
 		for (j = 0; j < enums.Size(); j++)
 		  gradientedge[enums[j]] = 1;
-		ma.GetElFaces (i, fnums, forient);
+		ma->GetElFaces (i, fnums, forient);
 		for (j = 0; j < fnums.Size(); j++)
 		  gradientface[fnums[j]] = 1;
 	      }
@@ -1022,12 +1020,12 @@ namespace ngcomp
     if (gradientboundaries.Size())
       for (i = 0; i < nse; i++)
 	{
-	  if (gradientboundaries[ma.GetSElIndex(i)])
+	  if (gradientboundaries[ma->GetSElIndex(i)])
 	    {
-	      ma.GetSElEdges (i, enums);
+	      ma->GetSElEdges (i, enums);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
-	      ma.GetSElFace (i, fnums[0], forient[0]);
+	      ma->GetSElFace (i, fnums[0], forient[0]);
 	      gradientface[fnums[0]] = 1;
 	    }
 	}
@@ -1058,7 +1056,7 @@ namespace ngcomp
   const FiniteElement & NedelecFESpace2 :: GetFE (int elnr, LocalHeap & lh) const
   {
     FiniteElement * fe = 0;
-    ELEMENT_TYPE typ = ma.GetElType(elnr);
+    ELEMENT_TYPE typ = ma->GetElType(elnr);
 
     switch (typ)
       {
@@ -1078,7 +1076,7 @@ namespace ngcomp
 	fe = 0;
       }
 
-    if (!gradientdomains[ma.GetElIndex(elnr)])
+    if (!gradientdomains[ma->GetElIndex(elnr)])
       {
 	switch (typ)
 	  {
@@ -1098,7 +1096,7 @@ namespace ngcomp
 	stringstream str;
 	str << "FESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma.GetElType(elnr))
+	    << ElementTopology::GetElementName(ma->GetElType(elnr))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -1115,21 +1113,21 @@ namespace ngcomp
     ArrayMem<int,6> fnums, forient;
     ArrayMem<int,12> enums;
 
-    ma.GetElEdges (elnr, enums);
-    ma.GetElFaces (elnr, fnums, forient);
+    ma->GetElEdges (elnr, enums);
+    ma->GetElFaces (elnr, fnums, forient);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetDofNrs");
     int nd = GetFE (elnr, lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
 
-    int index = ma.GetElIndex (elnr);
+    int index = ma->GetElIndex (elnr);
 
     if (!DefinedOn (index)) return;
 
     bool graddom = gradientdomains[index];
 
-    switch (ma.GetElType(elnr))
+    switch (ma->GetElType(elnr))
       {
       case ET_TRIG:
 	{
@@ -1404,18 +1402,18 @@ namespace ngcomp
     int ena[4];
     Array<int> enums(4, ena);
 
-    ma.GetSElFace (selnr, fnum, forient);
-    ma.GetSElEdges (selnr, enums);
+    ma->GetSElFace (selnr, fnum, forient);
+    ma->GetSElEdges (selnr, enums);
 
     LocalHeapMem<1000> lh("NedelecFESpace2, GetSDofNrs");
     int nd = GetSFE (selnr, lh).GetNDof();
     dnums.SetSize(nd);
     dnums = -1;
 
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
       return;
 
-    switch (ma.GetSElType(selnr))
+    switch (ma->GetSElType(selnr))
       {
       case ET_TRIG:
 	{
@@ -1547,7 +1545,7 @@ namespace ngcomp
 					    const Array<int> & forient,
 					    FlatVector<double> & fac) const
   {
-    bool graddom = gradientdomains[ma.GetElIndex(elnr)];
+    bool graddom = gradientdomains[ma->GetElIndex(elnr)];
 
     fac = 1.0;
     switch (eltype)
@@ -1840,16 +1838,16 @@ namespace ngcomp
     if (boundary)
       {
 	nd = GetSFE (elnr, lh).GetNDof();
-	et = ma.GetSElType (elnr);
-	ma.GetSElEdges (elnr, enums, eorient);
-	ma.GetSElFace (elnr, fnums[0], forient[0]);
+	et = ma->GetSElType (elnr);
+	ma->GetSElEdges (elnr, enums, eorient);
+	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
 	nd = GetFE (elnr, lh).GetNDof();
-	et = ma.GetElType (elnr);
-	ma.GetElEdges (elnr, enums, eorient);
-	ma.GetElFaces (elnr, fnums, forient);
+	et = ma->GetElType (elnr);
+	ma->GetElEdges (elnr, enums, eorient);
+	ma->GetElFaces (elnr, fnums, forient);
       }
 
   
@@ -1897,16 +1895,16 @@ namespace ngcomp
     if (boundary)
       {
 	nd = GetSFE (elnr, lh).GetNDof();
-	et = ma.GetSElType (elnr);
-	ma.GetSElEdges (elnr, enums, eorient);
-	ma.GetSElFace (elnr, fnums[0], forient[0]);
+	et = ma->GetSElType (elnr);
+	ma->GetSElEdges (elnr, enums, eorient);
+	ma->GetSElFace (elnr, fnums[0], forient[0]);
       }
     else
       {
 	nd = GetFE (elnr, lh).GetNDof();
-	et = ma.GetElType (elnr);
-	ma.GetElEdges (elnr, enums, eorient);
-	ma.GetElFaces (elnr, fnums, forient);
+	et = ma->GetElType (elnr);
+	ma->GetElEdges (elnr, enums, eorient);
+	ma->GetElFaces (elnr, fnums, forient);
       }
 
     ArrayMem<double, 100> mem(nd);
@@ -1967,11 +1965,11 @@ namespace ngcomp
   CreateSmoothingBlocks (int type) const
   {
     cout << "Ned2, CreateSmoothingblocks, type = " << type << endl;
-    int ne = ma.GetNE();
-    // int nse = ma.GetNSE();
-    int nv = ma.GetNV();
+    int ne = ma->GetNE();
+    // int nse = ma->GetNSE();
+    int nv = ma->GetNV();
     // int nd = nv+ned + nfa + ne;
-    // int level = ma.GetNLevels()-1;
+    // int level = ma->GetNLevels()-1;
 
     int i, j, k, l;
 
@@ -2007,7 +2005,7 @@ namespace ngcomp
 	      for (i = 0; i < ned; i++)
 		{
 		  int nd, cl;
-		  int ecl = ma.GetClusterRepEdge(i);
+		  int ecl = ma->GetClusterRepEdge(i);
 		  if (ecl < 0) continue;
 		  if (ecl < nv)
 		    { // vertical edge -> assign to edge-block (not ecluster = vertex)
@@ -2032,7 +2030,7 @@ namespace ngcomp
 	    
 	      for (i = 0; i < nfa; i++)
 		{
-		  int cl = ma.GetClusterRepFace (i);
+		  int cl = ma->GetClusterRepFace (i);
 		  if (cl < 0) continue;
 
 		  int nd = first_face_dof[i+1] - first_face_dof[i];
@@ -2053,7 +2051,7 @@ namespace ngcomp
 		}
 	      for (i = 0; i < nel; i++)
 		{
-		  int cl = ma.GetClusterRepElement (i);
+		  int cl = ma->GetClusterRepElement (i);
 		  int nd = first_el_dof[i+1] - first_el_dof[i];
 		
 		  if (k == 1)
@@ -2063,12 +2061,12 @@ namespace ngcomp
 		      (*it)[cl][cnts[cl]++] = first_el_dof[i] + l;
 
 		  // test ... 
-		  // if (ma.GetElType(i) == ET_PYRAMID)
+		  // if (ma->GetElType(i) == ET_PYRAMID)
 		  {
-		    ma.GetElFaces (i, fnums, forient);
+		    ma->GetElFaces (i, fnums, forient);
 		    for (j = 0; j < forient.Size(); j++)
 		      {		
-			int fcl = ma.GetClusterRepFace (fnums[j]);
+			int fcl = ma->GetClusterRepFace (fnums[j]);
 			// int fcl = nv+ned+fnums[j];
 			if (fcl != cl)
 			  {
@@ -2084,13 +2082,13 @@ namespace ngcomp
 
 	      for (i = 0; i < ned; i++)
 		{
-		  int ecl = ma.GetClusterRepEdge (i);
+		  int ecl = ma->GetClusterRepEdge (i);
 		  if (ecl < 0) continue;
 
 		  int pi1, pi2;
-		  ma.GetEdgePNums (i, pi1, pi2);
-		  pi1 = ma.GetClusterRepVertex (pi1);
-		  pi2 = ma.GetClusterRepVertex (pi2);
+		  ma->GetEdgePNums (i, pi1, pi2);
+		  pi1 = ma->GetClusterRepVertex (pi1);
+		  pi2 = ma->GetClusterRepVertex (pi2);
 
 		  int nd = (pi1 == pi2) 
 		    ? n_z_edge_dofs
@@ -2119,10 +2117,10 @@ namespace ngcomp
 
 	      for (i = 0; i < nfa; i++)
 		{
-		  int cl = ma.GetClusterRepFace (i);
+		  int cl = ma->GetClusterRepFace (i);
 		  if (cl < 0) continue;
 		
-		  ma.GetFaceEdges (i, enums);
+		  ma->GetFaceEdges (i, enums);
 
 		  int nd = first_face_dof[i+1] - first_face_dof[i];
 		  if (nd == n_quad_face_dofs) continue;
@@ -2136,7 +2134,7 @@ namespace ngcomp
 		  for (j = 0; j < enums.Size(); j++)
 		    {
 		      //		    int pi = nv + enums[j];
-		      int ecl = ma.GetClusterRepEdge (enums[j]);
+		      int ecl = ma->GetClusterRepEdge (enums[j]);
 
 		      if (ecl == cl) continue;
 
@@ -2144,9 +2142,9 @@ namespace ngcomp
 		      /*
 		      // edges on face cluster
 		      int pi1, pi2;
-		      ma.GetEdgePNums (enums[j], pi1, pi2);
-		      pi1 = ma.GetClusterRepVertex (pi1);
-		      pi2 = ma.GetClusterRepVertex (pi2);
+		      ma->GetEdgePNums (enums[j], pi1, pi2);
+		      pi1 = ma->GetClusterRepVertex (pi1);
+		      pi2 = ma->GetClusterRepVertex (pi2);
 
 		      int nedof;
 		      if (pi1 == pi2)
@@ -2176,7 +2174,7 @@ namespace ngcomp
 		prism_faces.Clear();
 		for (i = 0; i < -nel; i++)
 		{
-		ma.GetElFaces (i, fnums, forient);
+		ma->GetElFaces (i, fnums, forient);
 		if (fnums.Size() == 4)
 		for (j = 0; j < 4; j++)
 		prism_faces.Set(fnums[j]);
@@ -2184,7 +2182,7 @@ namespace ngcomp
 		for (i = 0; i < -nse; i++)
 		{
 		int fnr, fori;
-		ma.GetSElFace (i, fnr, fori);
+		ma->GetSElFace (i, fnr, fori);
 		prism_faces.Set(fnr);
 		}
 
@@ -2192,10 +2190,10 @@ namespace ngcomp
 		{
 		if (!prism_faces[i]) continue;
 
-		int cl = ma.GetClusterRepFace (i);
+		int cl = ma->GetClusterRepFace (i);
 		if (cl < 0) continue;
 		
-		ma.GetFacePNums (i, pnums);
+		ma->GetFacePNums (i, pnums);
 		int nd = first_face_dof[i+1] - first_face_dof[i];
 		
 		if (pnums.Size() == 4)
@@ -2206,7 +2204,7 @@ namespace ngcomp
 
 		for (j = 0; j < pnums.Size(); j++)
 		{
-		int pi = ma.GetClusterRepVertex (pnums[j]);
+		int pi = ma->GetClusterRepVertex (pnums[j]);
 		if (k == 1)
 		cnts[pi] += nd;
 		else
@@ -2220,9 +2218,9 @@ namespace ngcomp
 		Array<int> fpnums;
 		for (i = 0; i < nfa; i++)
 		{
-		ma.GetFacePNums (i, fpnums);
+		ma->GetFacePNums (i, fpnums);
 		for (j = 0; j < fpnums.Size(); j++)
-		fpnums[j] = ma.GetClusterRepVertex (fpnums[j]);
+		fpnums[j] = ma->GetClusterRepVertex (fpnums[j]);
 	      
 		for (j = 0; j < fpnums.Size(); j++)
 		{
@@ -2276,7 +2274,7 @@ namespace ngcomp
 	      for (i = 0; i < ned; i++)
 		{
 		  int nd, cl;
-		  int ecl = ma.GetClusterRepEdge(i);
+		  int ecl = ma->GetClusterRepEdge(i);
 		  if (ecl < 0) continue;
 		  if (ecl < nv)
 		    {
@@ -2302,7 +2300,7 @@ namespace ngcomp
 	    
 	      for (i = 0; i < nfa; i++)
 		{
-		  int cl = ma.GetClusterRepFace (i);
+		  int cl = ma->GetClusterRepFace (i);
 		  if (cl < 0) continue;
 
 		  int nd = first_face_dof[i+1] - first_face_dof[i];
@@ -2320,7 +2318,7 @@ namespace ngcomp
 	    
 	      for (i = 0; i < nel; i++)
 		{
-		  int cl = ma.GetClusterRepElement (i);
+		  int cl = ma->GetClusterRepElement (i);
 		  int nd = first_el_dof[i+1] - first_el_dof[i];
 		
 		  if (k == 1)
@@ -2353,7 +2351,7 @@ namespace ngcomp
 	    
 	      for (int j = 0; j < nv; j++)
 		{
-		  int vcl = ma.GetClusterRepVertex (j);
+		  int vcl = ma->GetClusterRepVertex (j);
 		  if (k == 2)
 		    {
 		      (*it)[vcl][cnts[vcl]++] = j;
@@ -2368,7 +2366,7 @@ namespace ngcomp
 	      for (i = 0; i < ned; i++)
 		{
 		  int nd, cl;
-		  int ecl = ma.GetClusterRepEdge(i);
+		  int ecl = ma->GetClusterRepEdge(i);
 		  if (ecl < 0) continue;
 
 		  if (ecl < nv)
@@ -2414,10 +2412,10 @@ namespace ngcomp
     for (i = 0; i < ned; i++)
       {
 	int pi1, pi2;
-	ma.GetEdgePNums (i, pi1, pi2);
+	ma->GetEdgePNums (i, pi1, pi2);
 	  
-	if (ma.GetClusterRepVertex (pi1) ==
-	    ma.GetClusterRepVertex (pi2))
+	if (ma->GetClusterRepVertex (pi1) ==
+	    ma->GetClusterRepVertex (pi2))
 	  {
 	    for (int l = 1; l < n_z_edge_dofs; l++)
 	      ba.Set (i + l * ned);
@@ -2494,9 +2492,9 @@ namespace ngcomp
   {
     (*testout) << "CreateDirectSolverClusters" << endl;
 
-    // int nv = ma.GetNV();
+    // int nv = ma->GetNV();
     int nd = GetNDof();
-    int ne = ma.GetNE();
+    int ne = ma->GetNE();
 
 
     Array<int> & clusters = *new Array<int> (nd);
@@ -2506,17 +2504,17 @@ namespace ngcomp
     int i,k;
   
     //lo 
-    //for(i=0;i<ma.GetNEdges();i++)
+    //for(i=0;i<ma->GetNEdges();i++)
     //  clusters[i]=1; 
 
     //
     for (i = 0; i < ned; i++)
       {
 	int pi1, pi2;
-	ma.GetEdgePNums (i, pi1, pi2);
+	ma->GetEdgePNums (i, pi1, pi2);
 	  
-	if (ma.GetClusterRepVertex (pi1) ==
-	    ma.GetClusterRepVertex (pi2))
+	if (ma->GetClusterRepVertex (pi1) ==
+	    ma->GetClusterRepVertex (pi2))
 	  {
 	    for (int l = 1; l < n_z_edge_dofs; l++)
 	      clusters[i + l * ned] = 1;
@@ -2589,10 +2587,10 @@ namespace ngcomp
 
     for(i=0; i<ne && (directsolverclustered.Size() > 0 || directsolvermaterials.Size() > 0); i++)
       {
-	if((directsolverclustered.Size() > 0 && directsolverclustered[ma.GetElIndex(i)]) || 
-	   directsolvermaterials.Contains(ma.GetElMaterial(i)))
+	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(i)]) || 
+	   directsolvermaterials.Contains(ma->GetElMaterial(i)))
 	  {     
-	    ELEMENT_TYPE eltype = ma.GetElType(i);
+	    ELEMENT_TYPE eltype = ma->GetElType(i);
 	    if(eltype != ET_PRISM) continue;
 
 	    GetDofNrs(i,dnums);
@@ -2611,7 +2609,7 @@ namespace ngcomp
     //   int clusternum = 2;
     //   for(i=0; i<ne; i++)
     //     {
-    //       ELEMENT_TYPE eltype = ma.GetElType(i);
+    //       ELEMENT_TYPE eltype = ma->GetElType(i);
     //       if(eltype == ET_PRISM)
     // 	{
     // 	  GetDofNrs(i,dnums);
@@ -2636,8 +2634,8 @@ namespace ngcomp
   {
     cout << "update gradient, N2" << endl;
     int i, j;
-    int nv = ma.GetNV();
-    int level = ma.GetNLevels()-1;
+    int nv = ma->GetNV();
+    int level = ma->GetNLevels()-1;
     const NedelecFESpace & fe1 = 
       dynamic_cast<const NedelecFESpace&> (*low_order_space);
 
@@ -2660,7 +2658,7 @@ namespace ngcomp
       {
 	if (fe1.FineLevelOfEdge(i) < level) continue;
 	int pi1, pi2;
-	ma.GetEdgePNums (i, pi1, pi2);
+	ma->GetEdgePNums (i, pi1, pi2);
 	grad.CreatePosition (i, pi1);
 	grad.CreatePosition (i, pi2);
       }
@@ -2669,7 +2667,7 @@ namespace ngcomp
       {
 	if (fe1.FineLevelOfEdge(i) < level) continue;
 	int pi1, pi2;
-	ma.GetEdgePNums (i, pi1, pi2);
+	ma->GetEdgePNums (i, pi1, pi2);
 	grad(i, pi1) = 1;
 	grad(i, pi2) = -1;
       }
@@ -2708,7 +2706,7 @@ namespace ngcomp
 
     // int eled, elfa;
     int i, j, k;
-    int ne = ma.GetNE();
+    int ne = ma->GetNE();
     // eled = 8;
     // elfa = 5;
 
@@ -2730,12 +2728,12 @@ namespace ngcomp
     for (i = 0; i < ne; i++)
       {
 	lock.SetSize (0);
-	switch (ma.GetElType(i))
+	switch (ma->GetElType(i))
 	  {
 	  case ET_PRISM:
 	    {
-	      ma.GetElFaces (i, fnums, forient);
-	      ma.GetElEdges (i, enums);
+	      ma->GetElFaces (i, fnums, forient);
+	      ma->GetElEdges (i, enums);
 	    
 	      if (order == 3)
 		{
@@ -2768,7 +2766,7 @@ namespace ngcomp
 
 
     /*
-      if (ma.GetElType(elnr) == ET_PYRAMID)
+      if (ma->GetElType(elnr) == ET_PYRAMID)
       {
 
       switch (type)
@@ -2853,9 +2851,9 @@ namespace ngcomp
   // void NedelecFESpace2 :: 
   // AddGradient (double fac, const BaseVector & pot, BaseVector & grad) const
   // {
-  //   const MeshAccess & ma = GetMeshAccess();
+  //   shared_ptr<MeshAccess> ma = GetMeshAccess();
 
-  //   int ned = ma.GetNEdges();
+  //   int ned = ma->GetNEdges();
   
   //   const BaseSystemVector & svpot = 
   //     dynamic_cast<const BaseSystemVector&> (pot);

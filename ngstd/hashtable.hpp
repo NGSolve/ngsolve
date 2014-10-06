@@ -180,7 +180,34 @@ namespace ngstd
     return m;
   }
 
+  template <int D, typename T>
+  INLINE T Min (const INT<D,T> & i)
+  {
+    if (D == 0) return 0;
+    T m = i[0];
+    for (int j = 1; j < D; j++)
+      if (i[j] < m) m = i[j];
+    return m;
+  }
 
+  template <int D, typename T>
+  INLINE INT<D,T> Max (INT<D,T> i1, INT<D,T> i2)
+  {
+    INT<D,T> tmp;
+    for (int i = 0; i < D; i++)
+      tmp[i] = max(i1[i], i2[i]);
+    return tmp;
+  }
+
+  template <int D, typename T>
+  INLINE INT<D,T> operator+ (INT<D,T> i1, INT<D,T> i2)
+  {
+    INT<D,T> tmp;
+    for (int i = 0; i < D; i++)
+      tmp[i] = i1[i]+i2[i];
+    return tmp;
+  }
+  
 
 
 

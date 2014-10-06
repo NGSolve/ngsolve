@@ -225,7 +225,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh)
     {
-      if (coarsegridonly && ma.GetNLevels() > 1) return;
+      if (coarsegridonly && ma->GetNLevels() > 1) return;
       shared_ptr<GridFunction> hgfu = gfu;
       if (component != -1)
 	hgfu = gfu->GetComponent(component);
@@ -866,7 +866,7 @@ namespace ngsolve
 			if(firstone)
 			  {
 			    IntegrationPoint dummyip;
-			    ma.FindElementOfPoint(p,dummyip,true);
+			    ma->FindElementOfPoint(p,dummyip,true);
 			    firstone = false;
 			  }
 			
@@ -1175,7 +1175,7 @@ namespace ngsolve
 
 	    Integrator_ptr = fes.GetIntegrator();
 	    BoundaryIntegrator_ptr = NULL;
-	    ndomains = pde.GetMeshAccess().GetNDomains();
+	    ndomains = pde.GetMeshAccess()->GetNDomains();
 
 	  }
 	if(count == 1)
@@ -1186,7 +1186,7 @@ namespace ngsolve
 
 	    Integrator_ptr = NULL;
 	    BoundaryIntegrator_ptr = fes.GetBoundaryIntegrator();
-	    ndomains = pde.GetMeshAccess().GetNBoundaries();
+	    ndomains = pde.GetMeshAccess()->GetNBoundaries();
 	  }
 
 	Array<int> & domains = ((count == 0) ? voldomains : surfdomains);
@@ -1423,16 +1423,16 @@ namespace ngsolve
     SCAL DoScal (LocalHeap & lh)
     {
       SCAL sum = 0;
-      cout << "np integrate,ne = " << ma.GetNE() << endl;
+      cout << "np integrate,ne = " << ma->GetNE() << endl;
 #pragma omp parallel
       {
 	LocalHeap slh = lh.Split(), lh = slh;
 	SCAL lsum = 0;
 #pragma omp for
-	for (int i = 0; i < ma.GetNE(); i++)
+	for (int i = 0; i < ma->GetNE(); i++)
 	  {
 	    HeapReset hr(lh);
-	    ElementTransformation & eltrans = ma.GetTrafo (i, 0, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (i, 0, lh);
 	    IntegrationRule ir (eltrans.GetElementType(), order);
 	    const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	      
@@ -2655,7 +2655,7 @@ namespace ngsolve
 	vecd(0) = 1.;
 	vecc(0) = 1.;
 
-	for(dnums[0]=0; dnums[0] < ma.GetNV(); dnums[0]++)
+	for(dnums[0]=0; dnums[0] < ma->GetNV(); dnums[0]++)
 	  {
 	    if(gfoned)
 	      gfoned->SetElementVector(dnums,vecd);

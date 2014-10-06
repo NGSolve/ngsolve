@@ -43,14 +43,14 @@ namespace ngmg
   class LinearProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const FESpace & space;
     ///
     Array<int> nvlevel;
   public:
     ///
-    LinearProlongation(const MeshAccess & ama,
+    LinearProlongation(shared_ptr<MeshAccess> ama,
 		       const FESpace & aspace)
       : ma(ama), space(aspace) { ; }
     ///
@@ -62,8 +62,8 @@ namespace ngmg
                       ///
     virtual void Update () 
     { 
-      if (ma.GetNLevels() > nvlevel.Size())
-	nvlevel.Append (ma.GetNV());
+      if (ma->GetNLevels() > nvlevel.Size())
+	nvlevel.Append (ma->GetNV());
     }
 
 
@@ -93,7 +93,7 @@ namespace ngmg
 
       for (i = nc; i < nf; i++)
 	{
-	  ma.GetParentNodes (i, parents);
+	  ma->GetParentNodes (i, parents);
 	  fv(i) = 0.5 * (fv(parents[0]) + fv(parents[1]));
 	}
     }
@@ -122,7 +122,7 @@ namespace ngmg
       int i;
       for (i = nf-1; i >= nc; i--)
 	{
-	  ma.GetParentNodes (i, parents);
+	  ma->GetParentNodes (i, parents);
 	  fv(parents[0]) += 0.5 * fv(i);
 	  fv(parents[1]) += 0.5 * fv(i);
 	}
@@ -138,12 +138,12 @@ namespace ngmg
   class NonConformingProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const NonConformingFESpace & space;
   public:
     ///
-    NonConformingProlongation(const MeshAccess & ama,
+    NonConformingProlongation(shared_ptr<MeshAccess> ama,
 			      const NonConformingFESpace & aspace);
     ///
     virtual ~NonConformingProlongation();
@@ -166,7 +166,7 @@ namespace ngmg
   class ElementProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const ElementFESpace & space;
   public:
@@ -196,7 +196,7 @@ namespace ngmg
 
       for (int i = nc; i < nf; i++)
 	{
-	  int parent = ma.GetParentElement (i);
+	  int parent = ma->GetParentElement (i);
 	  fv(i) = fv(parent);
 	}
     
@@ -216,7 +216,7 @@ namespace ngmg
 
       for (int i = nf-1; i >= nc; i--)
 	{
-	  int parent = ma.GetParentElement (i);
+	  int parent = ma->GetParentElement (i);
 	  fv(parent) += fv(i);
 	  fv(i) = 0;
 	}
@@ -229,12 +229,12 @@ namespace ngmg
   class SurfaceElementProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const SurfaceElementFESpace & space;
   public:
     ///
-    SurfaceElementProlongation(const MeshAccess & ama,
+    SurfaceElementProlongation(shared_ptr<MeshAccess> ama,
 			       const SurfaceElementFESpace & aspace);
     ///
     virtual ~SurfaceElementProlongation();
@@ -258,7 +258,7 @@ namespace ngmg
   class EdgeProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const NedelecFESpace & space;
   public:
@@ -377,12 +377,12 @@ namespace ngmg
   class L2HoProlongation : public Prolongation
   {
     ///
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     ///
     const Array<int> & first_dofs;
   public:
     ///
-    L2HoProlongation(const MeshAccess & ama, const Array<int> & afirst_dofs);
+    L2HoProlongation(shared_ptr<MeshAccess> ama, const Array<int> & afirst_dofs);
     ///
     virtual ~L2HoProlongation()
     { ; }

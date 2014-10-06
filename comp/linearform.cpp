@@ -86,18 +86,18 @@ namespace ngcomp
 
     try
       {
-	ma.PushStatus ("Assemble Vector");
+	ma->PushStatus ("Assemble Vector");
 	timer1.Start();
 
         // check if integrators fit to space
         for (int i = 0; i < NumIntegrators(); i++)
           if (parts[i] -> BoundaryForm())
             {
-              for (int j = 0; j < ma.GetNSE(); j++)
+              for (int j = 0; j < ma->GetNSE(); j++)
                 {
                   HeapReset hr(clh);
 		  if (!parts[i] -> SkeletonForm()){
-		    if (parts[i] -> DefinedOn (ma.GetSElIndex(j)))
+		    if (parts[i] -> DefinedOn (ma->GetSElIndex(j)))
 		      parts[i] -> CheckElement (fespace->GetSFE(j, clh));
 		  }else{
 		    //TODO: get aligned volelement and check that
@@ -112,10 +112,10 @@ namespace ngcomp
                 }
               else
                 {
-                  for (int j = 0; j < ma.GetNE(); j++)
+                  for (int j = 0; j < ma->GetNE(); j++)
                     {
                       HeapReset hr(clh);
-                      if (parts[i] -> DefinedOn (ma.GetElIndex(j)))
+                      if (parts[i] -> DefinedOn (ma->GetElIndex(j)))
                         parts[i] -> CheckElement (fespace->GetFE(j, clh));
                     }
                 }
@@ -130,9 +130,9 @@ namespace ngcomp
 	    this->GetVector() = TSCAL(0);
 	  }
 
-	int ne = ma.GetNE();
-	int nf = ma.GetNFacets();
-	int nse = ma.GetNSE();
+	int ne = ma->GetNE();
+	int nf = ma->GetNFacets();
+	int nse = ma->GetNSE();
 
 	bool hasbound = false;
 	bool hasinner = false;
@@ -179,7 +179,7 @@ namespace ngcomp
 
 	if (hasinner)
 	  {
-	    ProgressOutput progress (ma, "assemble element", ma.GetNE());
+	    ProgressOutput progress (ma, "assemble element", ma->GetNE());
 	    gcnt += ne;
             
             
@@ -192,7 +192,7 @@ namespace ngcomp
                  progress.Update ();
 
                  const FiniteElement & fel = fespace->GetFE(ei, lh);
-                 const ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+                 const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
                  // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
                  Array<int> dnums (fel.GetNDof(), lh);
                  fespace->GetDofNrs (ei, dnums);
@@ -231,7 +231,7 @@ namespace ngcomp
 
 	if (hasbound)
 	  {
-	    ProgressOutput progress (ma, "assemble surface element", ma.GetNSE());
+	    ProgressOutput progress (ma, "assemble surface element", ma->GetNSE());
 	    gcnt += nse;
 
 
@@ -244,7 +244,7 @@ namespace ngcomp
                  progress.Update ();
 
                  const FiniteElement & fel = fespace->GetFE(ei, lh);
-                 ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+                 ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
                  // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
                  Array<int> dnums(fel.GetNDof(), lh);
                  fespace->GetDofNrs (ei, dnums);
@@ -302,34 +302,34 @@ namespace ngcomp
 		    gcnt++;
 		    if (i % 10 == 0)
 		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
-		    ma.SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+		    ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 
 		  HeapReset hr(lh);
 		  
 		  
-		  ma.GetSElFacets(i,fnums);
+		  ma->GetSElFacets(i,fnums);
 		  int fac = fnums[0];
-		  ma.GetFacetElements(fac,elnums);
+		  ma->GetFacetElements(fac,elnums);
 		  int el = elnums[0];
-		  ma.GetElFacets(el,fnums);
+		  ma->GetElFacets(el,fnums);
 		  int facnr = 0;
 		  for (int k=0; k<fnums.Size(); k++)
 		    if(fac==fnums[k]) facnr = k;
 		  
 		  const FiniteElement & fel = fespace->GetFE (el, lh);
 		
-		  ElementTransformation & eltrans = ma.GetTrafo (el, false, lh);
-		  ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+		  ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
+		  ElementTransformation & seltrans = ma->GetTrafo (i, true, lh);
 
 		  fespace->GetDofNrs (el, dnums);
-		  ma.GetElVertices (el, vnums);		
+		  ma->GetElVertices (el, vnums);		
 	      
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
 		      if (!parts[j] -> BoundaryForm()) continue;
-		      if (!parts[j] -> DefinedOn (ma.GetSElIndex (i))) continue;
+		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
@@ -378,7 +378,7 @@ namespace ngcomp
 
 	    if(parts[j]->DefinedOnSubdomainsOnly())
 	      {
-		for(int i=0; i<ma.GetNDomains(); i++)
+		for(int i=0; i<ma->GetNDomains(); i++)
 		  if(parts[j]->DefinedOn(i))
 		    domains.Append(i);
 	      }
@@ -395,15 +395,15 @@ namespace ngcomp
 		    if (i%500 == 0)
 		      {
 			cout << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
-			ma.SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
+			ma->SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
 		      }
 		    
 		    FlatVector<TSCAL> elvec;
 		    IntegrationPoint ip;
 		    if(domains.Size() > 0)
-		      element = ma.FindElementOfPoint(parts[j]->CurvePoint(i),ip,true,&domains);
+		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true,&domains);
 		    else
-		      element = ma.FindElementOfPoint(parts[j]->CurvePoint(i),ip,true);
+		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true);
 		    if(element < 0)
 		      throw Exception("element for curvepoint not found");
 		    
@@ -413,7 +413,7 @@ namespace ngcomp
 			fel = &fespace->GetFE(element,clh);
 			fespace->GetDofNrs(element,dnums);
 		      }
-		    ElementTransformation & eltrans = ma.GetTrafo (element, false, clh);
+		    ElementTransformation & eltrans = ma->GetTrafo (element, false, clh);
 
 		    
 		    void * heapp = clh.GetPointer();
@@ -506,7 +506,7 @@ namespace ngcomp
                << setprecision(16) << L2Norm (GetVector()) << endl;
 
 
-	ma.PopStatus ();
+	ma->PopStatus ();
       }
 
     catch (Exception & e)
@@ -577,8 +577,8 @@ namespace ngcomp
       {
 	AllocateVector();
 
-	// int ne = ma.GetNE();
-	int nse = ma.GetNSE();
+	// int ne = ma->GetNE();
+	int nse = ma->GetNSE();
 	
 	
 	Array<int> dnums;
@@ -589,12 +589,12 @@ namespace ngcomp
 	    lh.CleanUp();
 	    
 	    const FiniteElement & sfel = fespace->GetSFE (i, lh);
-	    // ma.GetSurfaceElementTransformation (i, seltrans);
-	    ElementTransformation & seltrans = ma.GetTrafo (i, true, lh);
+	    // ma->GetSurfaceElementTransformation (i, seltrans);
+	    ElementTransformation & seltrans = ma->GetTrafo (i, true, lh);
 
 	      	
-	    // (*testout) << "el = " << i << ", ind = " << ma.GetSElIndex(i) << endl;
-	    if (!parts[0]->DefinedOn (ma.GetSElIndex(i))) continue;
+	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
+	    if (!parts[0]->DefinedOn (ma->GetSElIndex(i))) continue;
 	    // (*testout) << "integrate surf el " << endl;
 	    
 	    const IntegrationRule & ir = SelectIntegrationRule (sfel.ElementType(), 5);
@@ -608,15 +608,15 @@ namespace ngcomp
 		
 		IntegrationPoint gip;
 		int elnr;
-		// elnr = ma.FindElementOfPoint (FlatVector<>(sip.GetPoint()), gip, 1);
-                elnr = ma.FindElementOfPoint (sip.GetPoint(), gip, 1);
+		// elnr = ma->FindElementOfPoint (FlatVector<>(sip.GetPoint()), gip, 1);
+                elnr = ma->FindElementOfPoint (sip.GetPoint(), gip, 1);
 		
 		// (*testout) << "elnr = " << elnr << endl;
 		if (elnr == -1) continue;
 		
 		const FiniteElement & gfel = fespace->GetFE (elnr, lh);
-		// ma.GetElementTransformation (elnr, geltrans);
-		ElementTransformation & geltrans = ma.GetTrafo (elnr, false, lh);
+		// ma->GetElementTransformation (elnr, geltrans);
+		ElementTransformation & geltrans = ma->GetTrafo (elnr, false, lh);
 
 		MappedIntegrationPoint<3,3> gsip(gip, geltrans);
 		

@@ -109,7 +109,7 @@ namespace ngcomp
 
     shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	bfi2d = fespace->GetIntegrator();
       }
@@ -187,7 +187,7 @@ namespace ngcomp
 	
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  {
-	    int nnodes = ma.GetNNodes (nt);
+	    int nnodes = ma->GetNNodes (nt);
 
 	    
 	    Array<Vec<8, int> > nodekeys;
@@ -200,9 +200,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma.GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma.GetElPNums (i, pnums); break;
+		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
+		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
+		  case NT_CELL: ma->GetElPNums (i, pnums); break;
 		  }
 		Vec<8> key; 
 		key = -1;
@@ -259,7 +259,7 @@ namespace ngcomp
     
     if(id > 0)
       {
-	int nnodes = ma.GetNNodes (NTYPE);
+	int nnodes = ma->GetNNodes (NTYPE);
 	
 	Array<Vec<N+1, int> > nodekeys;
 	Array<int> master_nodes;
@@ -277,15 +277,15 @@ namespace ngcomp
 	    switch (NTYPE)
 	      {
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-	      case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
-	      case NT_FACE: ma.GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma.GetElPNums (i, pnums); break;
+	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
+	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
+	      case NT_CELL: ma->GetElPNums (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> key;
 	    key = -1;
 	    for (int j = 0; j < pnums.Size(); j++)
-	      key[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	      key[j] = ma->GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
 	    key[N] = dnums.Size();
 	    
 	    nodekeys.Append (key);	
@@ -391,7 +391,7 @@ namespace ngcomp
 	Array<int> dnums;	    
 	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
 	  {
-	    int nnodes = ma.GetNNodes (nt);
+	    int nnodes = ma->GetNNodes (nt);
 
 	    Array<Vec<8, int> > nodekeys;
 	    Array<int> pnums, compress;
@@ -403,9 +403,9 @@ namespace ngcomp
 		switch (nt)
 		  {
 		  case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-		  case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
-		  case NT_FACE: ma.GetFacePNums (i, pnums); break;
-		  case NT_CELL: ma.GetElPNums (i, pnums); break;
+		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
+		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
+		  case NT_CELL: ma->GetElPNums (i, pnums); break;
 		  }
 		Vec<8> key; 
 		key = -1;
@@ -486,7 +486,7 @@ namespace ngcomp
     
     if(id > 0)
       { 
-	int nnodes = ma.GetNNodes (NTYPE);
+	int nnodes = ma->GetNNodes (NTYPE);
 	
 	Array<Vec<N+1,int> > nodenums;
 	Array<SCAL> data;
@@ -503,15 +503,15 @@ namespace ngcomp
 	    switch (NTYPE)
 	      {
 	      case NT_VERTEX: pnums.SetSize(1); pnums[0] = i; break;
-	      case NT_EDGE: ma.GetEdgePNums (i, pnums); break;
-	      case NT_FACE: ma.GetFacePNums (i, pnums); break;
-	      case NT_CELL: ma.GetElPNums (i, pnums); break;
+	      case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
+	      case NT_FACE: ma->GetFacePNums (i, pnums); break;
+	      case NT_CELL: ma->GetElPNums (i, pnums); break;
 	      }
 
 	    Vec<N+1, int> points;
 	    points = -1;
 	    for( int j = 0; j < pnums.Size(); j++)
-	      points[j] = ma.GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
+	      points[j] = ma->GetGlobalNodeNum (Node(NT_VERTEX, pnums[j]));
 	    points[N] = dnums.Size();
 	    
 	    nodenums.Append(points);
@@ -636,7 +636,7 @@ namespace ngcomp
     for (int i = 0; i < gf_parent.GetMultiDim(); i++)
       (this->vec)[i] = gf_parent.GetVector(i).Range (cfes.GetRange(comp));
   
-    this -> level_updated = this -> ma.GetNLevels();
+    this -> level_updated = this -> ma->GetNLevels();
 
     for (int i = 0; i < this->compgfs.Size(); i++)
       this->compgfs[i]->Update();
@@ -705,7 +705,7 @@ namespace ngcomp
   {
     try
       {
-        if (this->GetFESpace().GetLevelUpdated() < this->ma.GetNLevels())
+        if (this->GetFESpace().GetLevelUpdated() < this->ma->GetNLevels())
           {
             LocalHeap llh (1000000, "gridfunction update");
             const_cast<FESpace&> (this->GetFESpace()).Update (llh);
@@ -740,7 +740,7 @@ namespace ngcomp
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace().GetProlongation()).Update();
 		
 		this->GetFESpace().GetProlongation()->ProlongateInline
-		  (this->GetMeshAccess().GetNLevels()-1, *vec[i]);
+		  (this->GetMeshAccess()->GetNLevels()-1, *vec[i]);
 	      }
 
 	    //	    if (i == 0)
@@ -750,7 +750,7 @@ namespace ngcomp
 	    // delete ovec;
 	  }
 	
-	this -> level_updated = this -> ma.GetNLevels();
+	this -> level_updated = this -> ma->GetNLevels();
 
 	// const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace *>(&GridFunction :: GetFESpace());
 	// if (cfe)
@@ -857,15 +857,15 @@ namespace ngcomp
     ElementId ei(boundary ? BND : VOL, elnr);
 
     const FESpace & fes = gf.GetFESpace();
-    const MeshAccess & ma = fes.GetMeshAccess();
+    shared_ptr<MeshAccess>  ma = fes.GetMeshAccess();
 
     if (!trafo.BelongsToMesh (&ma))
       {
         IntegrationPoint rip;
-        int elnr = ma.FindElementOfPoint 
+        int elnr = ma->FindElementOfPoint 
           (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
            rip, true);  // buildtree not yet threadsafe
-        const ElementTransformation & trafo2 = ma.GetTrafo(elnr, boundary, lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(elnr, boundary, lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
 
@@ -946,7 +946,7 @@ namespace ngcomp
 
     const FESpace & fes = gf.GetFESpace();
 
-    if (!trafo.BelongsToMesh ((void*)(&fes.GetMeshAccess())))
+    if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
       {
         for (int i = 0; i < ir.Size(); i++)
           Evaluate (ir[i], values.Row(i));
@@ -982,7 +982,7 @@ namespace ngcomp
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::
-  VisualizeGridFunction (const MeshAccess & ama,
+  VisualizeGridFunction (shared_ptr<MeshAccess>  ama,
 			 const GridFunction * agf,
 			 shared_ptr<BilinearFormIntegrator> abfi2d,
 			 shared_ptr<BilinearFormIntegrator> abfi3d,
@@ -1005,7 +1005,7 @@ namespace ngcomp
 
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::
-  VisualizeGridFunction (const MeshAccess & ama,
+  VisualizeGridFunction (shared_ptr<MeshAccess>  ama,
 			 const GridFunction * agf,
 			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
 			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
@@ -1048,7 +1048,7 @@ namespace ngcomp
       {
 	LocalHeapMem<100000> lh("visgf::getvalue");
 	if (!bfi3d.Size()) return false;
-	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return false;
+	if (gf -> GetLevelUpdated() < ma->GetNLevels()) return false;
 	const FESpace & fes = gf->GetFESpace();
 
 	int dim     = fes.GetDimension();
@@ -1058,7 +1058,7 @@ namespace ngcomp
 
 	HeapReset hr(lh);
 	
-	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	const FiniteElement & fel = fes.GetFE (ei, lh);
 
 	Array<int> dnums (fel.GetNDof(), lh);
@@ -1088,7 +1088,7 @@ namespace ngcomp
 
         bool ok = false;
 	for(int j = 0; j < bfi3d.Size(); j++)
-          if (bfi3d[j]->DefinedOn(ma.GetElIndex(ei)))
+          if (bfi3d[j]->DefinedOn(ma->GetElIndex(ei)))
             {
               HeapReset hr(lh);
               FlatVector<SCAL> flux(bfi3d[j] -> DimFlux(), lh);
@@ -1131,7 +1131,7 @@ namespace ngcomp
 	LocalHeapMem<100000> lh("visgf::getvalue");
         
 	if (!bfi3d.Size()) return 0;
-	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	if (gf -> GetLevelUpdated() < ma->GetNLevels()) return 0;
 	
 	const FESpace & fes = gf->GetFESpace();
 	
@@ -1173,7 +1173,7 @@ namespace ngcomp
 	      mdxdxref(i,j) = dxdxref[3*i+j];
 	  }
 	
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
 	IntegrationPoint ip(xref[0], xref[1], xref[2], 0);
 	MappedIntegrationPoint<3,3> sip (ip, eltrans, vx, mdxdxref);
 	
@@ -1181,7 +1181,7 @@ namespace ngcomp
         bool ok = false;
 
 	for(int j = 0; j < bfi3d.Size(); j++)
-          if (bfi3d[j]->DefinedOn(ma.GetElIndex(ei)))
+          if (bfi3d[j]->DefinedOn(ma->GetElIndex(ei)))
             {
               FlatVector<SCAL> flux (bfi3d[j]->DimFlux(), lh);
               bfi3d[j]->CalcFlux (*fel, sip, elu, flux, applyd, lh); 
@@ -1224,7 +1224,7 @@ namespace ngcomp
     try
       {
         if (!bfi3d.Size()) return 0;
-        if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+        if (gf -> GetLevelUpdated() < ma->GetNLevels()) return 0;
 
         const FESpace & fes = gf->GetFESpace();
         int dim = fes.GetDimension();
@@ -1232,7 +1232,7 @@ namespace ngcomp
         // HeapReset hr(lh);
         LocalHeapMem<1000000> lh("visgf::GetMultiValue");
 
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
 
 
@@ -1339,9 +1339,9 @@ namespace ngcomp
     try
       {
 	if (!bfi2d.Size()) return 0;
-	if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+	if (gf -> GetLevelUpdated() < ma->GetNLevels()) return 0;
 
-	bool bound = (ma.GetDimension() == 3);
+	bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, elnr);
 	const FESpace & fes = gf->GetFESpace();
 
@@ -1370,7 +1370,7 @@ namespace ngcomp
 
 	fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
 
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (elnr, bound, lh);
 	if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
 
 	IntegrationPoint ip(lam1, lam2, 0, 0);
@@ -1417,9 +1417,9 @@ namespace ngcomp
     try
       {
         if (!bfi2d.Size()) return 0;
-        if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+        if (gf -> GetLevelUpdated() < ma->GetNLevels()) return 0;
 
-        bool bound = (ma.GetDimension() == 3);
+        bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, elnr);
 
         const FESpace & fes = gf->GetFESpace();
@@ -1451,7 +1451,7 @@ namespace ngcomp
 	fes.TransformVec (elnr, bound, elu, TRANSFORM_SOL);
 	
 	HeapReset hr(lh);
-	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (elnr, bound, lh);
         if (!fes.DefinedOn(eltrans.GetElementIndex(), bound)) return false;
 
         IntegrationPoint ip(xref[0], xref[1], 0, 0);
@@ -1534,9 +1534,9 @@ namespace ngcomp
     try
       {
         if (!bfi2d.Size()) return 0;
-        if (gf -> GetLevelUpdated() < ma.GetNLevels()) return 0;
+        if (gf -> GetLevelUpdated() < ma->GetNLevels()) return 0;
 
-        bool bound = (ma.GetDimension() == 3);
+        bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, elnr);
 
         const FESpace & fes = gf->GetFESpace();
@@ -1545,7 +1545,7 @@ namespace ngcomp
         
         LocalHeapMem<1000000> lh("visgf::getmultisurfvalue");
 
-	ElementTransformation & eltrans = ma.GetTrafo (ei, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
         ArrayMem<int, 100> dnums;
 	fes.GetDofNrs (ei, dnums);
@@ -1649,7 +1649,7 @@ namespace ngcomp
   bool VisualizeGridFunction<SCAL> ::
   GetSegmentValue (int segnr, double xref, double * values)
   {
-    if (ma.GetDimension() != 1) return false;
+    if (ma->GetDimension() != 1) return false;
 
     LocalHeapMem<100000> lh("visgf::getsegmentvalue");
 
@@ -1665,7 +1665,7 @@ namespace ngcomp
     FlatVector<> elvec(fes.GetDimension()*dnums.Size(), lh);
     gf->GetElementVector (dnums, elvec);
     
-    const ElementTransformation & trafo = ma.GetTrafo (ei, lh);
+    const ElementTransformation & trafo = ma->GetTrafo (ei, lh);
     IntegrationPoint ip (xref);
 
     eval -> Apply (fel, trafo(ip, lh), elvec, fvvalues, lh);
@@ -1691,9 +1691,9 @@ namespace ngcomp
     int ndomains = 0;
 
     if (bfi3d.Size()) 
-      ndomains = ma.GetNDomains();
+      ndomains = ma->GetNDomains();
     else if(bfi2d.Size()) 
-      ndomains = ma.GetNBoundaries();
+      ndomains = ma->GetNBoundaries();
 
     Array<double> volumes(ndomains);
 
@@ -1724,8 +1724,8 @@ namespace ngcomp
 
     /*
       int ndomains;
-      if(bfi3d.Size()) ndomains = ma.GetNDomains();
-      else if(bfi2d.Size()) ndomains = ma.GetNBoundaries();
+      if(bfi3d.Size()) ndomains = ma->GetNDomains();
+      else if(bfi2d.Size()) ndomains = ma->GetNBoundaries();
     */
 
     Array<double> posx;
@@ -1738,7 +1738,7 @@ namespace ngcomp
     val = new double[components];
 			
 
-    for(int i=0; i<minima.Size(); i++)
+    for(int i = 0; i < minima.Size(); i++)
       {
 	minima[i] = 1e100;
 	maxima[i] = -1e100;
@@ -1750,13 +1750,13 @@ namespace ngcomp
     void * heapp = lh2.GetPointer();
     if(bfi3d.Size())
       {
-	for(int i=0; i<ma.GetNE(); i++)
+	for(int i=0; i<ma->GetNE(); i++)
 	  {
 	    const FiniteElement & fel = fes.GetFE(i,lh2);
 	    
-	    domain = ma.GetElIndex(i);
+	    domain = ma->GetElIndex(i);
 	    
-	    vol = ma.ElementVolume(i);
+	    vol = ma->ElementVolume(i);
 	    
 	    volumes[domain] += vol;
 	    
@@ -1827,13 +1827,13 @@ namespace ngcomp
       }
     else if (bfi2d.Size())
       {
-	for(int i=0; i<ma.GetNSE(); i++)
+	for(int i=0; i<ma->GetNSE(); i++)
 	  {
 	    const FiniteElement & fel = fes.GetSFE(i,lh2);
 
-	    domain = ma.GetSElIndex(i);
+	    domain = ma->GetSElIndex(i);
 
-	    vol = ma.SurfaceElementVolume(i);
+	    vol = ma->SurfaceElementVolume(i);
 
 	    volumes[domain] += vol;
 
@@ -1898,7 +1898,7 @@ namespace ngcomp
 
 
   VisualizeCoefficientFunction :: 
-  VisualizeCoefficientFunction (const MeshAccess & ama,
+  VisualizeCoefficientFunction (shared_ptr<MeshAccess> ama,
 				shared_ptr<CoefficientFunction> acf)
     : SolutionData ("coef", acf->Dimension(), false /* complex */),
       ma(ama), cf(acf)
@@ -1915,7 +1915,7 @@ namespace ngcomp
   {
     LocalHeapMem<100000> lh("viscf::GetValue");
     IntegrationPoint ip(lam1, lam2, lam3);
-    ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
+    ElementTransformation & trafo = ma->GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -1931,7 +1931,7 @@ namespace ngcomp
   {
     LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
-    ElementTransformation & trafo = ma.GetTrafo (elnr, VOL, lh);
+    ElementTransformation & trafo = ma->GetTrafo (elnr, VOL, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
@@ -1959,8 +1959,8 @@ namespace ngcomp
     LocalHeapMem<1000000> lh("viscf::GetSurfValue");
     IntegrationPoint ip(lam1, lam2);
     ip.FacetNr() = facetnr;
-    bool bound = ma.GetDimension() == 3;
-    ElementTransformation & trafo = ma.GetTrafo (elnr, bound, lh);
+    bool bound = ma->GetDimension() == 3;
+    ElementTransformation & trafo = ma->GetTrafo (elnr, bound, lh);
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));

@@ -190,7 +190,7 @@ namespace ngcomp
    
  
 
-    const MeshAccess & ma = pde.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = pde.GetMeshAccess();
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
 
     shared_ptr<LinearForm> lfconstraint = 
@@ -220,18 +220,18 @@ namespace ngcomp
 
     if (smoothertype == "point")
       {
-	sm = new GSSmoother (ma, *lo_bfa);
+	sm = new GSSmoother (*ma, *lo_bfa);
       }
     else if (smoothertype == "line")
       {
-	sm = new AnisotropicSmoother (ma, *lo_bfa);
+	sm = new AnisotropicSmoother (*ma, *lo_bfa);
       }
     else if (smoothertype == "block") 
       {
 	if (!lfconstraint)
-	  sm = new BlockSmoother (ma, *lo_bfa, flags);
+	  sm = new BlockSmoother (*ma, *lo_bfa, flags);
 	else
-	  sm = new BlockSmoother (ma, *lo_bfa, *lfconstraint, flags);
+	  sm = new BlockSmoother (*ma, *lo_bfa, *lfconstraint, flags);
       }
     /*
     else if (smoothertype == "potential")
@@ -247,7 +247,7 @@ namespace ngcomp
 
     auto prol = lo_fes->GetProlongation();
 
-    mgp = new MultigridPreconditioner (ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp = new MultigridPreconditioner (*ma, *lo_fes, *lo_bfa, sm, prol);
     mgp->SetOwnProlongation (0);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
@@ -314,12 +314,12 @@ namespace ngcomp
 
 	Smoother * fine_smoother = NULL;
 
-	fine_smoother = new BlockSmoother (bfa->GetMeshAccess(), *bfa, flags);
+	fine_smoother = new BlockSmoother (*bfa->GetMeshAccess(), *bfa, flags);
 
 	tlp = new TwoLevelMatrix (&bfa->GetMatrix(),
 				  mgp,
 				  fine_smoother,
-				  bfa->GetMeshAccess().GetNLevels()-1);
+				  bfa->GetMeshAccess()->GetNLevels()-1);
 	
 	tlp -> SetSmoothingSteps (finesmoothingsteps);
 	tlp -> Update();
@@ -856,13 +856,13 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
       }
 #endif
 
-    const MeshAccess & ma = pde->GetMeshAccess();
+    shared_ptr<MeshAccess> ma = pde->GetMeshAccess();
 
-    int nedge = ma.GetNEdges(); 
-    int nface = ma.GetNFaces(); 
-    int nel = ma.GetNE();
+    int nedge = ma->GetNEdges(); 
+    int nface = ma->GetNFaces(); 
+    int nel = ma->GetNE();
 
-    if (coarsegrid && ma.GetNLevels() > 1)
+    if (coarsegrid && ma->GetNLevels() > 1)
       return;
       
 
@@ -873,8 +873,8 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     Array<INT<2> > e2v (nedge);
     e2v = INT<2> (-1, -1);
     for (int i = 0; i < nedge; i++)
-      if (ma.GetClusterRepEdge (i) >= 0)
-	ma.GetEdgePNums (i, e2v[i][0], e2v[i][1]);
+      if (ma->GetClusterRepEdge (i) >= 0)
+	ma->GetEdgePNums (i, e2v[i][0], e2v[i][1]);
 
     // cout << "get faces" << endl;
 
@@ -882,9 +882,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     Array<int> fpnums;
     for (int i = 0; i < nface; i++)
       {
-	if (ma.GetClusterRepFace (i) >= 0)
+	if (ma->GetClusterRepFace (i) >= 0)
 	  {
-	    ma.GetFacePNums (i, fpnums);
+	    ma->GetFacePNums (i, fpnums);
 	    
 	    f2v[i][3] = -1;
 	    for (int j = 0; j < fpnums.Size(); j++)
@@ -912,8 +912,8 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
       if (e2v[i][0] != -1)
 	{
 	  Vec<3> v = 
-	    ma.GetPoint<3> (e2v[i][0]) -
-	    ma.GetPoint<3> (e2v[i][1]);
+	    ma->GetPoint<3> (e2v[i][0]) -
+	    ma->GetPoint<3> (e2v[i][1]);
 	  hi[i] = L2Norm (v);
 	}
     
@@ -922,9 +922,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	ai.SetSize(nface);
 	for (int i = 0; i < nface; i++)
 	  {
-	    Vec<3> p1 = ma.GetPoint<3> (f2v[i][0]);
-	    Vec<3> p2 = ma.GetPoint<3> (f2v[i][1]);
-	    Vec<3> p3 = ma.GetPoint<3> (f2v[i][2]);
+	    Vec<3> p1 = ma->GetPoint<3> (f2v[i][0]);
+	    Vec<3> p2 = ma->GetPoint<3> (f2v[i][1]);
+	    Vec<3> p3 = ma->GetPoint<3> (f2v[i][2]);
 	    Vec<3> vn = Cross (Vec<3> (p2-p1), Vec<3> (p3-p1));
 	    ai[i] = L2Norm (vn);
 	  }
@@ -941,12 +941,12 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     for (int i = 0; i < nel; i++)
       {
 	HeapReset hr(lh);
-	ma.GetElEdges (i, ednums);
+	ma->GetElEdges (i, ednums);
 
-	ElementTransformation & eltrans = ma.GetTrafo (i, false, lh);
+	ElementTransformation & eltrans = ma->GetTrafo (i, false, lh);
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
-	double vol = ma.ElementVolume (i);
+	double vol = ma->ElementVolume (i);
 	double vale = Evaluate (*coefe, sip);
 
 	for (int j = 0; j < ednums.Size(); j++)
@@ -954,24 +954,24 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
 	if (hcurl)
 	  {
-	    ma.GetElFaces (i, fanums);
+	    ma->GetElFaces (i, fanums);
 	    double valf = Evaluate (*coeff, sip);
 	    for (int j = 0; j < fanums.Size(); j++)
 	      weightf[fanums[j]] += valf * vol / sqr (ai[fanums[j]]);
 	  }
       }
 
-    int nsel = ma.GetNSE();
+    int nsel = ma->GetNSE();
     if (coefse)
       for (int i = 0; i < nsel; i++)
 	{
 	  HeapReset hr(lh);
-	  ma.GetSElEdges (i, ednums);
-	  ElementTransformation & eltrans = ma.GetTrafo (i, true, lh);
+	  ma->GetSElEdges (i, ednums);
+	  ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
 
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
 
-	  double vol = ma.SurfaceElementVolume (i);
+	  double vol = ma->SurfaceElementVolume (i);
 	  double vale = Evaluate (*coefse, sip);
 
 	  for (int j = 0; j < ednums.Size(); j++)
@@ -984,10 +984,10 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     timer_coarse.Start();
     Array< Vec<3> > vertices;
 
-    int nv = ma.GetNV();
+    int nv = ma->GetNV();
     vertices.SetSize(nv);
     for (int i = 0; i < nv; i++)
-      ma.GetPoint(i, vertices[i]);
+      ma->GetPoint(i, vertices[i]);
 
     CommutingAMG * amgmat;
     if (hcurl)

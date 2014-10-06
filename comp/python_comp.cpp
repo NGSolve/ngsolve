@@ -102,9 +102,9 @@ void ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  bp::class_<MeshAccess>("Mesh", 
-                         "the mesh", 
-                         bp::init<string>())
+  bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
+                                                 "the mesh", 
+                                                 bp::init<string>())
     .def(bp::init<shared_ptr<netgen::Mesh>>())
 
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
@@ -142,7 +142,7 @@ void ExportNgcomp()
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](const string & type, const MeshAccess & ma, const Flags & flags)
+         (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, const Flags & flags)
                            { return CreateFESpace (type, ma, flags); } )))
 
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
@@ -241,7 +241,7 @@ void ExportNgcomp()
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             IntegrationPoint ip;
-            int elnr = space->GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
             if (elnr < 0) throw Exception ("point out of domain");
 
             const FiniteElement & fel = space->GetFE(elnr, lh);
@@ -255,7 +255,7 @@ void ExportNgcomp()
                 Vector<Complex> values(evaluator->Dim());
                 self.GetElementVector(dnums, elvec);
 
-                auto & trafo = space->GetMeshAccess().GetTrafo(elnr, false, lh);
+                auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, false, lh);
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
 
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
@@ -266,15 +266,15 @@ void ExportNgcomp()
                 Vector<> values(evaluator->Dim());
 
                 self.GetElementVector(dnums, elvec);
-                int dim_mesh = space->GetMeshAccess().GetDimension();
+                int dim_mesh = space->GetMeshAccess()->GetDimension();
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space->GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space->GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space->GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space->GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (values.Size() > 1)
@@ -291,12 +291,12 @@ void ExportNgcomp()
           {
             const FESpace & space = self.GetFESpace();
             IntegrationPoint ip;
-            int dim_mesh = space.GetMeshAccess().GetDimension();
+            int dim_mesh = space.GetMeshAccess()->GetDimension();
             auto evaluator = space.GetFluxEvaluator();
             cout << evaluator->Name() << endl;
             int dim = evaluator->Dim();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-            int elnr = space.GetMeshAccess().FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
             Array<int> dnums;
             space.GetDofNrs(elnr, dnums);
             const FiniteElement & fel = space.GetFE(elnr, lh);
@@ -308,12 +308,12 @@ void ExportNgcomp()
                 self.GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
@@ -329,12 +329,12 @@ void ExportNgcomp()
                 self.GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
-                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 else if (dim_mesh == 3)
                   {
-                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess().GetTrafo(elnr, false, lh));
+                    MappedIntegrationPoint<3, 3> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
                     evaluator->Apply(fel, mip, elvec, values, lh);
                   }
                 if (dim > 1)
@@ -459,11 +459,15 @@ void ExportNgcomp()
           boost::python::arg("meshload")=0, 
           boost::python::arg("nogeometryload")=0))
 
-    .def("Mesh",  static_cast<MeshAccess&(PDE::* const)(int)>(&PDE::GetMeshAccess),
-         bp::return_value_policy<bp::reference_existing_object>(),
-         (bp::arg("nr")=0))
+    .def("Mesh",  &PDE::GetMeshAccess,
+         (bp::arg("meshnr")=0))
 
     .def("Solve", &PDE::Solve)
+
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<MeshAccess> mesh)
+                                {
+                                  self.AddMeshAccess (mesh);
+                                }))
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<FESpace> space)
                                 {

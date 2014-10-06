@@ -56,7 +56,7 @@ namespace ngcomp
     // discontinuous facet pairs:
     Array<INT<2>> dc_pairs;
   public:
-    HDivHighOrderFESpace (const MeshAccess & ama, const Flags & flags, 
+    HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                           bool parseflags=false);
     ///
     virtual ~HDivHighOrderFESpace ();
@@ -104,8 +104,8 @@ namespace ngcomp
     /// 
     virtual void GetFacetDofNrs(int fanr, Array<int> & dnums) const 
     { 
-      if (ma.GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
-      else if (ma.GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
+      if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
+      else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
     } 
     ///
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const; 

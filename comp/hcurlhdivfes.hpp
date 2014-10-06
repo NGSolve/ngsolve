@@ -32,7 +32,7 @@ protected:
   
 public:
   ///
-  NedelecFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+  NedelecFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
   ///
   virtual ~NedelecFESpace ();
 
@@ -40,7 +40,7 @@ public:
   virtual const char * GetType() 
     { return "Nedelec"; }
 
-  static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
+  static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
   ///
   virtual void Update(LocalHeap & lh);
@@ -196,7 +196,7 @@ private:
 
 public:
   ///
-  NedelecFESpace2 (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+  NedelecFESpace2 (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
   ///
   ~NedelecFESpace2 ();
 

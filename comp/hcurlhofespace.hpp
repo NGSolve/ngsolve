@@ -70,7 +70,7 @@ namespace ngcomp
   
   public:
 
-    HCurlHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~HCurlHighOrderFESpace ();
   

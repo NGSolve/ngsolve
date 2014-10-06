@@ -12,7 +12,7 @@
 namespace ngcomp
 {
 
-  VectorFacetFESpace :: VectorFacetFESpace (const MeshAccess & ama, const Flags & flags, 
+  VectorFacetFESpace :: VectorFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
 					    bool parseflags )
     : FESpace(ama, flags )
   {
@@ -81,7 +81,7 @@ namespace ngcomp
     // Array<CoefficientFunction*> coeffs(1);
     // coeffs[0] = &one;
     // evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
-    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma.GetDimension(), &one); 
+    boundary_integrator = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
@@ -103,8 +103,8 @@ namespace ngcomp
     if ( low_order_space ) 
       low_order_space -> Update(lh);
 
-    int nel = ma.GetNE();
-    int nfacets = ma.GetNFacets();
+    int nel = ma->GetNE();
+    int nfacets = ma->GetNFacets();
  
     int p = 0; 
     if (!var_order) p = order; 
@@ -119,14 +119,14 @@ namespace ngcomp
         
     for (int i = 0; i < nel; i++)
       {
-	INT<3> el_orders = ma.GetElOrders(i); 
+	INT<3> el_orders = ma->GetElOrders(i); 
 
-	ELEMENT_TYPE eltype=ma.GetElType(i); 
+	ELEMENT_TYPE eltype=ma->GetElType(i); 
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);	
 	
-	if (ma.GetDimension() == 2)
+	if (ma->GetDimension() == 2)
 	  {
-	    ma.GetElEdges (i, fanums);
+	    ma->GetElEdges (i, fanums);
 	    for (int j=0;j<fanums.Size();j++) 
 	      fine_facet[fanums[j]] = 1; 
 	    
@@ -145,12 +145,12 @@ namespace ngcomp
 	else
 	  {
 	    Array<int> elfaces,vnums;
-	    ma.GetElFaces(i,elfaces);
+	    ma->GetElFaces(i,elfaces);
 	    for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
 	    if(var_order) 
 	      {
-		ma.GetElVertices (i, vnums);
+		ma->GetElVertices (i, vnums);
 		const FACE * faces = ElementTopology::GetFaces (eltype);
 		for(int j=0;j<elfaces.Size();j++)
 		  {
@@ -188,20 +188,20 @@ namespace ngcomp
       }
     
 
-    ma.AllReduceNodalData ((ma.GetDimension()==2) ? NT_EDGE : NT_FACE, 
+    ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
 			   fine_facet, MPI_LOR);
 
 
     // update dofs
 
     // ncfacets = 0;
-    int ndof_lo = (ma.GetDimension() == 2) ? nfacets : 2*nfacets;
+    int ndof_lo = (ma->GetDimension() == 2) ? nfacets : 2*nfacets;
     ndof = ndof_lo;
 
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
 
-    if ( ma.GetDimension() == 2 )
+    if ( ma->GetDimension() == 2 )
       {
 	for ( int i = 0; i < nfacets; i++ )
 	  {
@@ -213,7 +213,7 @@ namespace ngcomp
 	
 	if (highest_order_dc)
 	  {
-	    int ne = ma.GetNE();
+	    int ne = ma->GetNE();
 	    first_inner_dof.SetSize(ne+1);
 	    Array<int> fnums;
 	    for (int i = 0; i < ne; i++)
@@ -221,7 +221,7 @@ namespace ngcomp
 		first_inner_dof[i] = ndof;
 		
 		// only trigs supported:
-		ma.GetElFacets(i,fnums);
+		ma->GetElFacets(i,fnums);
 		ndof += fnums.Size();
 	      }
 	    first_inner_dof[ne] = ndof;
@@ -239,7 +239,7 @@ namespace ngcomp
 	    if (highest_order_dc)
 	      { p[0]--; p[1]--; }
 
-	    ma.GetFacePNums(i, pnums);
+	    ma->GetFacePNums(i, pnums);
 
 	    inci = ( pnums.Size() == 3 ) ?
 	      ( ((p[0]+1)*(p[0]+2)) - 2) :  ( 2 * (p[0]+1) * (p[1]+1) - 2 );
@@ -252,12 +252,12 @@ namespace ngcomp
 
 	if (highest_order_dc)
 	  {
-	    int ne = ma.GetNE();
+	    int ne = ma->GetNE();
 	    first_inner_dof.SetSize(ne+1);
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
-		switch (ma.GetElType(i))
+		switch (ma->GetElType(i))
 		  {
 		  case ET_TET: ndof += 4*(order+1)*2; break;
 		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
@@ -268,7 +268,7 @@ namespace ngcomp
 	  }
       }
 
-    while (ma.GetNLevels() > ndlevel.Size())
+    while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
       
@@ -292,9 +292,9 @@ namespace ngcomp
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
     int first,next;
-    for(int facet=0; facet<ma.GetNFacets(); facet++)
+    for(int facet=0; facet<ma->GetNFacets(); facet++)
       {
-	if ( ma.GetDimension() == 2 )
+	if ( ma->GetDimension() == 2 )
 	  ctofdof[facet] = WIREBASKET_DOF; // low_order
 	else
 	  {
@@ -311,7 +311,7 @@ namespace ngcomp
 	}
       }
     if (highest_order_dc)	  
-      for(int el=0; el<ma.GetNE(); el++)	      
+      for(int el=0; el<ma->GetNE(); el++)	      
 	{
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
 	    ctofdof[k] = LOCAL_DOF;
@@ -324,7 +324,7 @@ namespace ngcomp
   {
     VectorFacetVolumeFiniteElement<2> * fe2d = 0;
     VectorFacetVolumeFiniteElement<3> * fe3d = 0;
-    switch (ma.GetElType(elnr))
+    switch (ma->GetElType(elnr))
       {
       case ET_TRIG: fe2d = new (lh)  VectorFacetVolumeTrig (); break;
       case ET_QUAD: fe2d = new (lh) VectorFacetVolumeQuad (); break;
@@ -334,17 +334,17 @@ namespace ngcomp
       case ET_HEX:   fe3d = new (lh) VectorFacetVolumeHex (); break;
       default:
         throw Exception (string("VectorFacetFESpace::GetFE: unsupported element ")+
-                         ElementTopology::GetElementName(ma.GetElType(elnr)));
+                         ElementTopology::GetElementName(ma->GetElType(elnr)));
       }
 
     Array<int> vnums;
     ArrayMem<int, 6> fanums, order_fa;
     
-    ma.GetElVertices(elnr, vnums);
+    ma->GetElVertices(elnr, vnums);
 
     if (fe2d)
       {
-	ma.GetElEdges(elnr, fanums);
+	ma->GetElEdges(elnr, fanums);
     
 	order_fa.SetSize(fanums.Size());
 	for (int j = 0; j < fanums.Size(); j++)
@@ -358,7 +358,7 @@ namespace ngcomp
       }    
     else
       {
-	ma.GetElFaces(elnr, fanums);
+	ma->GetElFaces(elnr, fanums);
     
 	order_fa.SetSize(fanums.Size());
 	for (int j = 0; j < fanums.Size(); j++)
@@ -379,7 +379,7 @@ namespace ngcomp
     VectorFacetFacetFiniteElement<1> * fe1d = 0;
     VectorFacetFacetFiniteElement<2> * fe2d = 0;
 
-    switch (ma.GetSElType(selnr))
+    switch (ma->GetSElType(selnr))
       {
       case ET_SEGM: fe1d = new (lh) VectorFacetFacetSegm (); break;
       case ET_TRIG: fe2d = new (lh) VectorFacetFacetTrig (); break;
@@ -393,7 +393,7 @@ namespace ngcomp
 	stringstream str;
 	str << "VectorFacetFESpace " << GetClassName()
 	    << ", undefined eltype "
-	    << ElementTopology::GetElementName(ma.GetSElType(selnr))
+	    << ElementTopology::GetElementName(ma->GetSElType(selnr))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -401,13 +401,13 @@ namespace ngcomp
     ArrayMem<int,4> vnums;
     ArrayMem<int, 4> ednums;
     
-    ma.GetSElVertices(selnr, vnums);
+    ma->GetSElVertices(selnr, vnums);
     int reduceorder = highest_order_dc ? 1 : 0;
-    switch (ma.GetSElType(selnr))
+    switch (ma->GetSElType(selnr))
       {
       case ET_SEGM:
         fe1d -> SetVertexNumbers (vnums);
-        ma.GetSElEdges(selnr, ednums);
+        ma->GetSElEdges(selnr, ednums);
         fe1d -> SetOrder (order_facet[ednums[0]][0]-reduceorder); 
         fe1d -> ComputeNDof();
 	return *fe1d;
@@ -415,7 +415,7 @@ namespace ngcomp
       case ET_TRIG: 
       case ET_QUAD:
         fe2d -> SetVertexNumbers (vnums);
-        fe2d -> SetOrder (order_facet[ma.GetSElFace(selnr)][0]-reduceorder);
+        fe2d -> SetOrder (order_facet[ma->GetSElFace(selnr)][0]-reduceorder);
         fe2d -> ComputeNDof();
 	return *fe2d;
         break;
@@ -435,14 +435,14 @@ namespace ngcomp
 	dnums.SetSize(0);
 	
 	
-	if(ma.GetDimension() == 3)
-	  ma.GetElFaces (elnr, fanums);
+	if(ma->GetDimension() == 3)
+	  ma->GetElFaces (elnr, fanums);
 	else // dim=2
-	  ma.GetElEdges (elnr, fanums);
+	  ma->GetElEdges (elnr, fanums);
 	
 	for(int i=0; i<fanums.Size(); i++)
 	  {
-	    if ( ma.GetDimension() == 2 )
+	    if ( ma->GetDimension() == 2 )
 	      dnums.Append(fanums[i]); // low_order
 	    else
 	      {
@@ -458,14 +458,14 @@ namespace ngcomp
       }
     else
       {
-	if (ma.GetDimension() == 2)
+	if (ma->GetDimension() == 2)
 	  {
 	    Array<int> fanums; // facet numbers
 	    
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
-	    ma.GetElEdges (elnr, fanums);
+	    ma->GetElEdges (elnr, fanums);
 	    
 	    int innerdof = first_inner_dof[elnr];
 	    for(int i=0; i<fanums.Size(); i++)
@@ -495,8 +495,8 @@ namespace ngcomp
 	    fanums.SetSize(0);
 	    dnums.SetSize(0);
 	    
-	    ELEMENT_TYPE et = ma.GetElType (elnr);
-	    ma.GetElFaces (elnr, fanums);
+	    ELEMENT_TYPE et = ma->GetElType (elnr);
+	    ma->GetElFaces (elnr, fanums);
 	    
 	    int innerdof = first_inner_dof[elnr];
 	    for(int i=0; i<fanums.Size(); i++)
@@ -553,7 +553,7 @@ namespace ngcomp
 	  }
       }
       
-    if (!DefinedOn (ma.GetElIndex (elnr)))
+    if (!DefinedOn (ma->GetElIndex (elnr)))
       dnums = -1;
     // *testout << "dnums = " << endl << dnums << endl;
   }
@@ -566,9 +566,9 @@ namespace ngcomp
     int first, next;
 
 
-    if ( ma.GetDimension() == 2 )
+    if ( ma->GetDimension() == 2 )
       {
-	ma.GetSElEdges ( selnr, fanums );
+	ma->GetSElEdges ( selnr, fanums );
 	dnums.Append(fanums[0]);
 
 	first = first_facet_dof[fanums[0]];
@@ -578,7 +578,7 @@ namespace ngcomp
       } 
     else // 3D
       {
-	fanums[0] = ma.GetSElFace(selnr);
+	fanums[0] = ma->GetSElFace(selnr);
 	dnums.Append( 2*fanums[0] );
 	dnums.Append( 2*fanums[0]+1 );
 
@@ -603,7 +603,7 @@ namespace ngcomp
   void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
-    if ( ma.GetDimension() == 3 )
+    if ( ma->GetDimension() == 3 )
       {
 	dnums.Append( 2*felnr );
 	dnums.Append (2*felnr+1);
@@ -632,7 +632,7 @@ namespace ngcomp
   
   void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
   { 
-    ma.GetElVertices(elnr, vnums); 
+    ma->GetElVertices(elnr, vnums); 
   };
 
   ///
@@ -650,7 +650,7 @@ namespace ngcomp
   void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize(0);
-    if ( ma.GetDimension() == 3 )
+    if ( ma->GetDimension() == 3 )
       return;
 
     dnums.Append(elnum);
@@ -661,7 +661,7 @@ namespace ngcomp
   void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
   {
     dnums.SetSize(0);
-    if ( ma.GetDimension() == 2 ) return;
+    if ( ma->GetDimension() == 2 ) return;
 
     dnums.Append( 2*felnr);
     dnums.Append (2*felnr+1);
