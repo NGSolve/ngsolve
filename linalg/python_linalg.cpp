@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+#include <boost/python/slice.hpp>
 #include <la.hpp>
 using namespace ngla;
 
@@ -38,7 +39,9 @@ void ExportNgla() {
     .def("__add__" , bp::object(expr_namespace["expr_add"]) )
     .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
     .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
-
+    .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds ) {
+        return self.FVDouble();
+    } ))
     .def(bp::self+=bp::self)
     .def(bp::self-=bp::self)
     .def(bp::self*=double())
