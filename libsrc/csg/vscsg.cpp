@@ -548,14 +548,25 @@ BOOST_PYTHON_MODULE(libcsgvis)
     ;
 
   bp::def ("VS", FunctionPointer 
-           ([] (const CSGeometry & geom)
+           ([] (CSGeometry & geom)
             // ([] (shared_ptr<CSGeometry> geom)
             {
-              auto vs = make_shared<VisualSceneGeometry>();
+                geom.FindIdenticSurfaces (1e-6);
+                geom.CalcTriangleApproximation (0.01, 20);
+
+                auto vs = make_shared<VisualSceneGeometry>();
               vs->SetGeometry(const_cast<CSGeometry*>(&geom));
               // vs->SetGeometry(geom.get());
               return vs;
             }));
+
+  bp::def ("MouseMove", FunctionPointer 
+           ([] ( VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
+            // ([] (shared_ptr<CSGeometry> geom)
+            {
+                vsgeom.MouseMove(oldx,oldy,newx,newy,mode);
+            }));
+
 }
 #endif
 
