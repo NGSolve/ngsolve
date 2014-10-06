@@ -1,8 +1,5 @@
-import sys
-sys.path.append("/opt/netgen/lib")
-
-from libcsg.csg import *
-from libmesh.meshing import *
+from netgen.csg import *
+import netgen.meshing as meshing
 
 
 sp1 = Sphere (Point3d(1,0,0), 1)
@@ -16,9 +13,10 @@ geom = CSGeometry()
 geom.Add (all)
 
 
+vis = VS(geom)
+vis.Draw()
 
-param = MeshingParameters()
-param.maxh = 0.2
-mesh = GenerateMesh (geom, param)
 
-mesh.Save ("test.vol")
+# param = meshing.MeshingParameters(maxh=0.2)
+# mesh = GenerateMesh (geom, param)
+# mesh.Save ("test.vol")

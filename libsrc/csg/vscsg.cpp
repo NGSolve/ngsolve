@@ -44,6 +44,7 @@ namespace netgen
 
   void VisualSceneGeometry :: DrawScene ()
   {
+    cout << "vs-csg::Draw" << endl;
     if (changeval != geometry->GetChangeVal())
       BuildScene();
     changeval = geometry->GetChangeVal();
@@ -127,6 +128,7 @@ namespace netgen
 
   void VisualSceneGeometry :: BuildScene (int zoomall)
   {
+    cout << "vs-csg::Build" << endl;
     Box<3> box;
     int hasp = 0;
     for (int i = 0; i < geometry->GetNTopLevelObjects(); i++)
@@ -486,6 +488,46 @@ namespace netgen
 }
 
 
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+// Lambda to function pointer conversion
+template <typename Function>
+struct function_traits
+  : public function_traits<decltype(&Function::operator())> {};
+
+template <typename ClassType, typename ReturnType, typename... Args>
+struct function_traits<ReturnType(ClassType::*)(Args...) const> {
+  typedef ReturnType (*pointer)(Args...);
+  typedef ReturnType return_type;
+};
+
+template <typename Function>
+typename function_traits<Function>::pointer
+FunctionPointer (const Function& lambda) {
+  return static_cast<typename function_traits<Function>::pointer>(lambda);
+}
+
+template <class T>
+inline string ToString (const T& t)
+{
+  stringstream ss;
+  ss << t;
+  return ss.str();
+}
+
+
+
+
+
 void Hi () { cout << "hi from csgvis" << endl; }
 
 #ifdef NG_PYTHON
@@ -494,8 +536,26 @@ namespace bp = boost::python;
 
 BOOST_PYTHON_MODULE(libcsgvis) 
 {
+  using namespace netgen;
+
   cout << "exporting csg-vis " << endl;
   bp::def("hi", &Hi);
+
+
+  bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>> 
+    ("VisualSceneGeometry", bp::no_init)
+    .def ("Draw", &VisualSceneGeometry::DrawScene)
+    ;
+
+  bp::def ("VS", FunctionPointer 
+           ([] (const CSGeometry & geom)
+            // ([] (shared_ptr<CSGeometry> geom)
+            {
+              auto vs = make_shared<VisualSceneGeometry>();
+              vs->SetGeometry(const_cast<CSGeometry*>(&geom));
+              // vs->SetGeometry(geom.get());
+              return vs;
+            }));
 }
 #endif
 

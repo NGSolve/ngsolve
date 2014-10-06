@@ -230,6 +230,7 @@ namespace netgen
 
 	// ifstream infile(filename.c_str());
 	mesh -> Load(*infile);
+        vsmesh.SetMesh (mesh);
 
 #ifdef PARALLEL
 	MyMPI_SendCmd ("mesh");
