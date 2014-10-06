@@ -1,2 +1,2 @@
-dist_noinst_DATA = NGSolve.sln NGSolve.vcxproj NGSLib.sln NGSLib.vcxproj 
+dist_noinst_DATA = NGSolve.sln NGSolve.vcxproj ngslib.sln NGSLib.vcxproj 
 
