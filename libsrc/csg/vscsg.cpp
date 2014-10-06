@@ -43,7 +43,7 @@ namespace netgen
 
 
   void VisualSceneGeometry :: DrawScene ()
-  {
+  {  
     cout << "vs-csg::Draw" << endl;
     if (changeval != geometry->GetChangeVal())
       BuildScene();
@@ -74,7 +74,6 @@ namespace netgen
 
     double shine = vispar.shininess;
     double transp = vispar.transp;
-
     glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shine);
     glLogicOp (GL_COPY);
   
@@ -92,7 +91,6 @@ namespace netgen
 	    glCallList (trilists[i]);
 	  }
       }
-
 
     glPolygonOffset (1, 1);
     glEnable (GL_POLYGON_OFFSET_FILL);
@@ -185,8 +183,7 @@ namespace netgen
 
 	    glDisableClientState(GL_VERTEX_ARRAY);
 	    glDisableClientState(GL_NORMAL_ARRAY);
-
-	    /*
+            /*
 	    for (int j = 0; j < ta.GetNT(); j++)
 	      {
 		glBegin (GL_TRIANGLES);
@@ -195,10 +192,11 @@ namespace netgen
 		    int pi = ta.GetTriangle(j)[k];
 		    glNormal3dv (ta.GetNormal(pi));
 		    glVertex3dv (ta.GetPoint(pi));
+                    cout << "v = " << ta.GetPoint(pi) << endl;
 		  }
 		glEnd ();
 	      }
-	    */
+            */
 	  }
 	glEndList ();
       }
@@ -528,8 +526,6 @@ inline string ToString (const T& t)
 
 
 
-void Hi () { cout << "hi from csgvis" << endl; }
-
 #ifdef NG_PYTHON
 #include <boost/python.hpp>
 namespace bp = boost::python;
@@ -549,24 +545,21 @@ BOOST_PYTHON_MODULE(libcsgvis)
 
   bp::def ("VS", FunctionPointer 
            ([] (CSGeometry & geom)
-            // ([] (shared_ptr<CSGeometry> geom)
             {
-                geom.FindIdenticSurfaces (1e-6);
-                geom.CalcTriangleApproximation (0.01, 20);
+              geom.FindIdenticSurfaces (1e-6);
+              geom.CalcTriangleApproximation (0.01, 20);
+              auto vs = make_shared<VisualSceneGeometry>();
 
-                auto vs = make_shared<VisualSceneGeometry>();
-              vs->SetGeometry(const_cast<CSGeometry*>(&geom));
-              // vs->SetGeometry(geom.get());
+              vs->SetGeometry(&geom);
               return vs;
             }));
 
   bp::def ("MouseMove", FunctionPointer 
            ([] ( VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
-            // ([] (shared_ptr<CSGeometry> geom)
             {
-                vsgeom.MouseMove(oldx,oldy,newx,newy,mode);
+              vsgeom.MouseMove(oldx,oldy,newx,newy,mode);
             }));
-
+  
 }
 #endif
 
