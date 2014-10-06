@@ -1,7 +1,8 @@
 #ifndef FILE_VSSOLUTION
 #define FILE_VSSOLUTION
 
-
+namespace netgen
+{
 
 #ifndef SMALLLIB
 #ifndef NOTCL
@@ -173,7 +174,7 @@ private:
   void BuildFieldLinesFromFace(Array<Point3d> & startpoints);
   void BuildFieldLinesFromBox(Array<Point3d> & startpoints);
   void BuildFieldLinesFromLine(Array<Point3d> & startpoints);
-
+  weak_ptr<Mesh> wp_mesh;
 public:
   VisualSceneSolution ();
   virtual ~VisualSceneSolution ();
@@ -181,6 +182,9 @@ public:
   virtual void BuildScene (int zoomall = 0);
   virtual void DrawScene ();
   virtual void MouseDblClick (int px, int py);
+
+  void SetMesh (shared_ptr<Mesh> amesh) { wp_mesh = amesh; }
+  shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
 
   void BuildFieldLinesPlot ();
 
@@ -437,7 +441,7 @@ public:
 extern VisualSceneSolution vssolution;
 
 
-
+}
 
 #endif
 

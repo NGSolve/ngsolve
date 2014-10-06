@@ -24,8 +24,8 @@ namespace netgen
   static VisualSceneGeometry vsgeom;
  
   char * err_needscsgeometry = (char*) "This operation needs an CSG geometry";
-  extern char * err_needsmesh;
-  extern char * err_jobrunning;
+  char * err_needsmesh = (char*) "This operation needs a mesh";
+  char * err_jobrunning = (char*) "Meshing Job already running";
 
  
 

@@ -24,12 +24,7 @@ Visualization
 #include "mvdraw.hpp"
 
 #include <complex>
-
-namespace netgen
-{
 #include "vssolution.hpp"
 #include "meshdoc.hpp"
-}
-
 
 #endif

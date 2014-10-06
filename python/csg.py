@@ -2,7 +2,9 @@ from netgen import __platform
 if __platform.startswith('linux') or __platform.startswith('darwin'):
     # Linux or Mac OS X
     from libcsg.csg import *
-    from libmesh.meshing import *
+    from libcsgvis import *
+    import libmesh.meshing
+#    from libmesh.meshing import *
 if __platform.startswith('win'):
     # Windows
     from nglib.csg import *

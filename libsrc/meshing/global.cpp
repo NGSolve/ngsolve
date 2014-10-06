@@ -16,10 +16,11 @@ namespace netgen
   ostream * mycout = &cout;
   ostream * myerr = &cerr;
 
+  // some functions (visualization) still need a global mesh 
+  shared_ptr<Mesh> mesh;
+  shared_ptr<NetgenGeometry> ng_geometry;
 
   //  Flags parameters;
-
-
   int silentflag = 0;
   int testmode = 0;
 

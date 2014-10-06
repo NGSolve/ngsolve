@@ -483,11 +483,20 @@ namespace netgen
     CalcTransformationMatrices();
   }
 
-
-
-
-
-
 }
+
+
+void Hi () { cout << "hi from csgvis" << endl; }
+
+#ifdef NG_PYTHON
+#include <boost/python.hpp>
+namespace bp = boost::python;
+
+BOOST_PYTHON_MODULE(libcsgvis) 
+{
+  cout << "exporting csg-vis " << endl;
+  bp::def("hi", &Hi);
+}
+#endif
 
 

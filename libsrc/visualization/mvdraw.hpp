@@ -5,16 +5,6 @@
 namespace netgen
 {
 
-  /*
-  extern void InitDrawMesh ();
-  extern void DrawMesh ();
-  extern void MouseMove(int oldx, int oldy,
-                        int newx, int newy,
-                        char mode);
-
-  extern void Render ();
-  */
-
 
   class VisualScene
   {
@@ -44,11 +34,9 @@ namespace netgen
     static int selecttimestamp;
 
   public:
-	static int viewport[4];
-    // static GLubyte * colortexture;
+    static int viewport[4];
     static GLuint coltexname;
     static int ntexcols;
-    // static bool linear_colors;
     int invcolor;
 
 
@@ -168,6 +156,8 @@ namespace netgen
 
     double minh, maxh; // for meshsize coloring
 
+    weak_ptr<Mesh> wp_mesh;
+
   public:
     VisualSceneMesh ();
     virtual ~VisualSceneMesh ();
@@ -175,6 +165,9 @@ namespace netgen
     virtual void BuildScene (int zoomall = 0);
     virtual void DrawScene ();
     virtual void MouseDblClick (int px, int py);
+
+    void SetMesh (shared_ptr<Mesh> mesh) { wp_mesh = mesh; }
+    shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
 
     void SetMouseEventHandler (MouseEventHandler * handler)
     { user_me_handler = handler; }
@@ -207,7 +200,8 @@ namespace netgen
     void BuildDomainSurfList();
   };
 
-
+  extern VisualSceneMesh vsmesh;
+  
 
   class VisualSceneSpecPoints : public VisualScene
   {

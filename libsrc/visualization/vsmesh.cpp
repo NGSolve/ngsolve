@@ -15,7 +15,7 @@
 
 namespace netgen
 {
-  extern shared_ptr<Mesh> mesh;
+  // extern shared_ptr<Mesh> mesh;
   extern NetgenGeometry * ng_geometry;
 
   VisualSceneMesh vsmesh;
@@ -73,6 +73,10 @@ namespace netgen
 
   void VisualSceneMesh :: DrawScene ()
   {
+    try
+      {
+        shared_ptr<Mesh> mesh(wp_mesh);
+
     if (!mesh)
       {
 	VisualScene::DrawScene();
@@ -301,12 +305,25 @@ namespace netgen
       }
     
     glFinish();
+
+    
+      }
+    catch (bad_weak_ptr e)
+      {
+        cout << "don't have a mesh to visualize" << endl;
+        VisualScene::DrawScene();      
+      }
+
   }
 
 
   void VisualSceneMesh :: BuildScene (int zoomall)
   {
-    if (!mesh)
+    try
+      {
+        shared_ptr<Mesh> mesh(wp_mesh);
+        
+        if (!mesh)
       {
 	VisualScene::BuildScene (zoomall);
 	return;
@@ -880,6 +897,13 @@ namespace netgen
       }
 
     vstimestamp = meshtimestamp;
+      }
+    catch (bad_weak_ptr e)
+      {
+        cout << "vsmesh::buildscene: don't have a mesh to visualize" << endl;
+        VisualScene::BuildScene (zoomall);
+      }
+
   }
 
 
@@ -887,6 +911,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildFilledList (bool names)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+    
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
 
@@ -1275,6 +1301,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildLineList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildLineList");
     NgProfiler::RegionTimer reg (timer);
 
@@ -1555,6 +1583,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildEdgeList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (!lock)
       {
 	lock = new NgLock (mesh->Mutex());
@@ -1730,6 +1760,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildTetList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (tettimestamp > mesh->GetTimeStamp () &&
 	tettimestamp > vispar.clipping.timestamp )
       return;
@@ -2078,6 +2110,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildPrismList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+    
     if (prismtimestamp > mesh->GetTimeStamp () &&
 	prismtimestamp > vispar.clipping.timestamp )
       return;
@@ -2406,6 +2440,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildHexList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+    
     if (hextimestamp > mesh->GetTimeStamp () &&
 	hextimestamp > vispar.clipping.timestamp )
       return;
@@ -2614,6 +2650,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildPyramidList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+    
     if (pyramidtimestamp > mesh->GetTimeStamp () &&
 	pyramidtimestamp > vispar.clipping.timestamp )
       return;
@@ -2968,6 +3006,8 @@ namespace netgen
 
   void VisualSceneMesh :: BuildDomainSurfList()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+    
     if (domainsurflist)
       glDeleteLists (domainsurflist, 1);
 
@@ -3084,6 +3124,8 @@ namespace netgen
 
   void VisualSceneMesh :: MouseDblClick (int px, int py)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     BuildFilledList (true);
 
     MouseDblClickSelect(px,py,clipplane,backcolor,transformationmat,center,rad,
@@ -3302,6 +3344,8 @@ namespace netgen
 			    int & selelement, int & selface, int & seledge, int & selpoint,
 			    int & selpoint2, int & locpi)
   {
+    auto mesh = vsmesh.GetMesh();
+
     int i, hits;
 
     // select surface triangle by mouse click

@@ -1221,10 +1221,9 @@ namespace netgen
 
 
 
-   void Render()
-   {
-      ; 
-   }
+  void Render() { ; }
+  void MyOpenGLText (const char * text) { ; }
+
 } // End of namespace netgen
 
 

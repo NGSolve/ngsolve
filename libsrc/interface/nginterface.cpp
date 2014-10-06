@@ -9,7 +9,8 @@
 #endif
 
 #include "nginterface.h"
-#include "../visualization/soldata.hpp"
+// #include "../visualization/soldata.hpp"
+#include <visual.hpp>
 
 
 #ifdef _MSC_VER
@@ -160,7 +161,9 @@ void Ng_LoadMeshFromStream ( istream & input )
 {
   mesh.reset (new Mesh());
   mesh -> Load(input);
-  
+  vssolution.SetMesh(mesh);
+  vsmesh.SetMesh(mesh);
+
   for (int i = 0; i < geometryregister.Size(); i++)
     {
       NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);

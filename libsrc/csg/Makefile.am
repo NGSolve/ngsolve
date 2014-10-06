@@ -26,7 +26,7 @@ if NGGUI
 lib_LTLIBRARIES += libcsgvis.la 
 
 libcsgvis_la_SOURCES = vscsg.cpp csgpkg.cpp
-libcsgvis_la_LIBADD = libcsg.la
+libcsgvis_la_LIBADD = libcsg.la $(top_builddir)/libsrc/visualization/libvisual.la
 endif
 
 #   $(top_builddir)/libsrc/geom2d/libgeom2d.la 

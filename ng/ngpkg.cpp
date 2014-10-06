@@ -111,12 +111,9 @@ namespace netgen
 
   static VisualScene vscross;
   extern VisualSceneSurfaceMeshing vssurfacemeshing;
-  extern VisualSceneMesh vsmesh;
   extern VisualSceneMeshDoctor vsmeshdoc;
 
   static VisualSceneSpecPoints vsspecpoints;
-
-  VisualSceneSolution vssolution;
 
 
 
@@ -1279,6 +1276,7 @@ namespace netgen
               mesh = shared_ptr<Mesh> (hmesh);
               */
               mesh = make_shared<Mesh> ();
+              vsmesh.SetMesh (mesh);
               int res = ng_geometry -> GenerateMesh (mesh, mparam, perfstepsstart, perfstepsend);
 
 	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
@@ -1845,7 +1843,7 @@ namespace netgen
 
 	// if (strcmp (vismode, "surfmeshing") == 0) vs = &vssurfacemeshing;
 	if (strcmp (vismode, "specpoints") == 0) vs = &vsspecpoints;
-	//      if (strcmp (vismode, "solution") == 0) vs = &vssolution;
+        if (strcmp (vismode, "solution") == 0) vs = &vssolution;
       }
   }
 
@@ -2737,44 +2735,6 @@ namespace netgen
 
 
 using namespace netgen;
-void Ng_InitSolutionData (Ng_SolutionData * soldata)
-{
-
-  soldata -> name = NULL;
-  soldata -> data = NULL;
-  soldata -> components = 1;
-  soldata -> dist = 1;
-  soldata -> order = 1;
-  soldata -> iscomplex = 0;
-  soldata -> draw_surface = 1;
-  soldata -> draw_volume = 1;
-  soldata -> soltype = NG_SOLUTION_NODAL;
-  soldata -> solclass = 0;
-}
-
-void Ng_SetSolutionData (Ng_SolutionData * soldata)
-{
-#ifdef OPENGL
-  if (nodisplay)
-    return;
-  //   vssolution.ClearSolutionData ();
-  VisualSceneSolution::SolData * vss = new VisualSceneSolution::SolData;
-
-  vss->name = new char[strlen (soldata->name)+1];
-  strcpy (vss->name, soldata->name);
-
-  vss->data = soldata->data;
-  vss->components = soldata->components;
-  vss->dist = soldata->dist;
-  vss->order = soldata->order;
-  vss->iscomplex = bool(soldata->iscomplex);
-  vss->draw_surface = soldata->draw_surface;
-  vss->draw_volume = soldata->draw_volume;
-  vss->soltype = VisualSceneSolution::SolType (soldata->soltype);
-  vss->solclass = soldata->solclass;
-  vssolution.AddSolutionData (vss);
-#endif
-}
 
 void Ng_SetMouseEventHandler (netgen::MouseEventHandler * handler)
 {
@@ -2786,14 +2746,6 @@ void Ng_SetUserVisualizationObject (netgen::UserVisualizationObject * vis)
   vssolution.AddUserVisualizationObject (vis);
 }
 
-void Ng_ClearSolutionData ()
-{
-#ifdef OPENGL
-  if (nodisplay)
-    return;
-  vssolution.ClearSolutionData();
-#endif
-}
 
 
 

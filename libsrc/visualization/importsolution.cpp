@@ -16,7 +16,7 @@
 namespace netgen
 {
 
-
+  extern shared_ptr<Mesh> mesh;
 
 void ImportSolution (const char * filename)
 {
@@ -56,7 +56,7 @@ void ImportSolution (const char * filename)
 	  flags.PrintFlags (*testout);
 	  (*testout) << "done" << endl;
 
-	  size = int(flags.GetNumFlag ("size", Ng_GetNP()));
+	  size = int(flags.GetNumFlag ("size", mesh->GetNP())); // Ng_GetNP()));
 	  comps = int(flags.GetNumFlag ("components", 1));
 	  type = flags.GetStringFlag ("type", "nodal");
 	  order = int(flags.GetNumFlag ("order", 1));

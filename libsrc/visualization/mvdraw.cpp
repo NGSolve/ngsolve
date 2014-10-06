@@ -35,6 +35,13 @@ namespace netgen
 #endif
   */
 
+
+  void MyOpenGLText (const char * text)
+  {
+    cout << "MyOpenGLText: " << text << endl;
+  }
+
+
   // texture for color decoding
   // GLubyte * VisualScene :: colortexture = NULL;
   GLuint VisualScene :: coltexname = 1;

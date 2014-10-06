@@ -14,9 +14,12 @@
 
 #include <limits>
 
+
 namespace netgen
 {
-  extern shared_ptr<Mesh> mesh;
+
+  VisualSceneSolution vssolution;
+  // extern shared_ptr<Mesh> mesh;
   extern VisualSceneMesh vsmesh;
 
 
@@ -60,7 +63,7 @@ namespace netgen
     surface_vector_timestamp = GetTimeStamp();
     isosurface_timestamp = GetTimeStamp();
     timetimestamp = GetTimeStamp();
-    AddVisualizationScene ("solution", &vssolution);
+    // AddVisualizationScene ("solution", &vssolution);
   }
   
   VisualSceneSolution :: ~VisualSceneSolution ()
@@ -70,6 +73,8 @@ namespace netgen
 
   void VisualSceneSolution :: AddSolutionData (SolData * sd)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     NgLock meshlock1 (mesh->MajorMutex(), 1);
     int funcnr = -1;
     for (int i = 0; i < soldata.Size(); i++)
@@ -152,6 +157,8 @@ namespace netgen
 
   void VisualSceneSolution :: SaveSolutionData (const char * filename) 
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     PrintMessage (1, "Write solution data to file ", filename);
 
 
@@ -339,6 +346,10 @@ namespace netgen
 
   void VisualSceneSolution :: DrawScene ()
   {
+    try
+      {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (!mesh) 
       {
         VisualScene::DrawScene();      
@@ -600,6 +611,12 @@ namespace netgen
     
     // delete lock;
     // mem_lock.UnLock();
+      }
+    catch (bad_weak_ptr e)
+      {
+        cout << "don't have a mesh to visualize" << endl;
+        VisualScene::DrawScene();      
+      }
   }
   
 
@@ -678,6 +695,10 @@ namespace netgen
 
   void VisualSceneSolution :: BuildScene (int zoomall)
   {
+    try
+      {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (!mesh)
       {
         VisualScene::BuildScene (zoomall);
@@ -1090,10 +1111,18 @@ namespace netgen
       }
   
     clipplanetimestamp = max2 (vispar.clipping.timestamp, solutiontimestamp);
+      }
+    catch (bad_weak_ptr e)
+      {
+        cout << "vssolution::buildscene: don't have a mesh to visualize" << endl;
+        VisualScene::BuildScene (zoomall);
+      }
   }
   
   void  VisualSceneSolution :: Draw1DElements ()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (element1dlist)
       glDeleteLists (element1dlist, 1);
  
@@ -1144,6 +1173,8 @@ namespace netgen
   
   void  VisualSceneSolution :: DrawSurfaceElements ()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     static int timer = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements");
     NgProfiler::RegionTimer reg (timer);
   
@@ -1585,6 +1616,8 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceElementLines ()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
 #ifdef PARALLELGL
     if (id == 0 && ntasks > 1)
       {
@@ -1692,6 +1725,8 @@ namespace netgen
                                              const SolData * vsol,
                                              int comp)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     if (!draw_isosurface) return;
     if (!sol) return;
 
@@ -1941,6 +1976,8 @@ namespace netgen
                                                       const Point<3> & pmin, const Point<3> & pmax,
                                                       const int sei, const SolData * vsol)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     int dir,dir1,dir2;
     double s,t;
 
@@ -2051,6 +2088,8 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceVectors ()
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     SurfaceElementIndex sei;
 
     const SolData * vsol = NULL;
@@ -2385,6 +2424,8 @@ namespace netgen
   void VisualSceneSolution :: 
   GetMinMax (int funcnr, int comp, double & minv, double & maxv) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     static int timer1 = NgProfiler::CreateTimer ("getminmax, vol");
     static int timer2 = NgProfiler::CreateTimer ("getminmax, surf");
 
@@ -2532,6 +2573,7 @@ namespace netgen
             const double xref[], const double x[], const double dxdxref[], 
             int comp, double & val) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
 
     double lam1 = xref[0];
     double lam2 = xref[1];
@@ -2704,6 +2746,7 @@ namespace netgen
             double lam1, double lam2, double lam3,
             int comp, double & val) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
 
     val = 0;
     bool ok = 0;
@@ -2874,6 +2917,8 @@ namespace netgen
                    double lam1, double lam2, double lam3,
                    int comp, complex<double> & val) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     val = 0.0;
     bool ok = 0;
 
@@ -3117,6 +3162,8 @@ namespace netgen
                 double lam1, double lam2, 
                 int comp, double & val) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     bool ok;
     if (comp == 0)
       {
@@ -3349,6 +3396,8 @@ namespace netgen
                 const double xref[], const double x[], const double dxdxref[], 
                 int comp, double & val) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     double lam1 = xref[0], lam2 = xref[1];
 
     bool ok;
@@ -3596,6 +3645,8 @@ namespace netgen
   Vec<3> VisualSceneSolution :: 
   GetSurfDeformation (SurfaceElementIndex elnr, int facetnr, double lam1, double lam2) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     Vec<3> def;
     if (deform && vecfunction != -1)
       {
@@ -3621,6 +3672,8 @@ namespace netgen
   void VisualSceneSolution :: GetPointDeformation (int pnum, Point<3> & p, 
                                                    SurfaceElementIndex elnr) const
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     p = mesh->Point (pnum+1);
     if (deform && vecfunction != -1)
       {
@@ -3659,6 +3712,8 @@ namespace netgen
   void VisualSceneSolution :: GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs,
                                                      Array<ClipPlanePoint> & pts)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     static int timer_vals = NgProfiler::CreateTimer ("ClipPlaneTrigs - vertex values");
     static int timer1 = NgProfiler::CreateTimer ("ClipPlaneTrigs1");
     // static int timer1a = NgProfiler::CreateTimer ("ClipPlaneTrigs1a");
@@ -4000,6 +4055,8 @@ namespace netgen
 
   void VisualSceneSolution :: GetClippingPlaneGrid (Array<ClipPlanePoint> & pts)
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
     Vec3d n(clipplane[0], clipplane[1], clipplane[2]);
 
     double mu = -clipplane[3] / n.Length2();
@@ -4056,6 +4113,8 @@ namespace netgen
 
   void VisualSceneSolution :: DrawClipPlaneTrigs () 
   {
+    shared_ptr<Mesh> mesh(wp_mesh);
+
 #ifdef PARALLELGL
 
     if (id == 0 && ntasks > 1)
@@ -4764,6 +4823,7 @@ namespace netgen
                     Tcl_Interp * interp,
                     int argc, tcl_const char *argv[])
   {
+    auto mesh = vssolution.GetMesh();
     int i;
     char buf[1000];
     buf[0] = 0;
@@ -4850,6 +4910,62 @@ namespace netgen
 
     return TCL_OK;
   }
+
+
+
+
+
+
+void Ng_ClearSolutionData ()
+{
+#ifdef OPENGL
+  // if (nodisplay) return;
+  vssolution.ClearSolutionData();
+#endif
 }
+}
+
+#include "../include/nginterface.h"
+
+// namespace netgen
+// {
+void Ng_InitSolutionData (Ng_SolutionData * soldata)
+{
+  soldata -> name = NULL;
+  soldata -> data = NULL;
+  soldata -> components = 1;
+  soldata -> dist = 1;
+  soldata -> order = 1;
+  soldata -> iscomplex = 0;
+  soldata -> draw_surface = 1;
+  soldata -> draw_volume = 1;
+  soldata -> soltype = NG_SOLUTION_NODAL;
+  soldata -> solclass = 0;
+}
+
+void Ng_SetSolutionData (Ng_SolutionData * soldata)
+{
+#ifdef OPENGL
+  // if (nodisplay) return;
+  //   vssolution.ClearSolutionData ();
+  netgen::VisualSceneSolution::SolData * vss = new netgen::VisualSceneSolution::SolData;
+
+  vss->name = new char[strlen (soldata->name)+1];
+  strcpy (vss->name, soldata->name);
+
+  vss->data = soldata->data;
+  vss->components = soldata->components;
+  vss->dist = soldata->dist;
+  vss->order = soldata->order;
+  vss->iscomplex = bool(soldata->iscomplex);
+  vss->draw_surface = soldata->draw_surface;
+  vss->draw_volume = soldata->draw_volume;
+  vss->soltype = netgen::VisualSceneSolution::SolType (soldata->soltype);
+  vss->solclass = soldata->solclass;
+  netgen::vssolution.AddSolutionData (vss);
+#endif
+}
+
+// }
 
 #endif // NOTCL

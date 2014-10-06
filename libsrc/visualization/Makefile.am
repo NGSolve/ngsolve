@@ -7,7 +7,9 @@ AM_CPPFLAGS =  $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include  -DOPENGL -D$(TOGL
 METASOURCES = AUTO
 
 if NGGUI
-noinst_LTLIBRARIES = libvisual.la
+lib_LTLIBRARIES = libvisual.la
+libvisual_la_LIBADD =  $(LIBGLU) $(TCL_LIB_SPEC)
+
 endif
 
 

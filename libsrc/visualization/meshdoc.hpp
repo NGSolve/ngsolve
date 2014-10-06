@@ -1,3 +1,6 @@
+namespace netgen
+
+{
 
 class VisualSceneMeshDoctor : public VisualScene
 {
@@ -35,3 +38,5 @@ public:
 
 
 extern MeshDoctorParameters meshdoctor;
+
+}
