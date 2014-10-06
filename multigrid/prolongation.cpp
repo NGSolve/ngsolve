@@ -50,7 +50,7 @@ namespace ngmg
       indicesPerRow[ i ]++;
     for( i=nc; i<nf; i++ )
       {
-        ma.GetParentNodes( i, parents );
+        ma->GetParentNodes( i, parents );
         if ( parents[ 0 ] != -1 )
           indicesPerRow[ i ]++;
         if ( parents[ 1 ] != -1 )
@@ -63,7 +63,7 @@ namespace ngmg
       mg.CreatePosition( i, i );
     for( i=nc; i<nf; i++ )
       {
-        ma.GetParentNodes( i, parents );
+        ma->GetParentNodes( i, parents );
         if ( parents[ 0 ] != -1 )
           mg.CreatePosition( i, parents[ 0 ] ); 
         if ( parents[ 1 ] != -1 )
@@ -76,7 +76,7 @@ namespace ngmg
       (*prol)( i, i ) = 1;
     for( i=nc; i<nf; i++ )
       {
-        ma.GetParentNodes( i, parents );
+        ma->GetParentNodes( i, parents );
         if ( parents[ 0 ] != -1 )
           (*prol)( i, parents[ 0 ] ) = 0.5; 
         if ( parents[ 1 ] != -1 )
@@ -373,7 +373,7 @@ namespace ngmg
 
     for (i = nc+1; i <= nf; i++)
     {
-    parent = ma.GetParentElement (i);
+    parent = ma->GetParentElement (i);
     for (j = 1; j <= sdim; j++)
     sv.VElem(i, j) = sv.VElem(parent, j);
     }
@@ -393,7 +393,7 @@ namespace ngmg
 
     for (i = nf; i > nc; i--)
     {
-    parent = ma.GetParentElement (i);
+    parent = ma->GetParentElement (i);
     for (j = 1; j <= sdim; j++)
     {
     sv.VElem(parent, j) += sv.VElem(i, j);
@@ -412,7 +412,7 @@ namespace ngmg
 
 
   SurfaceElementProlongation :: 
-  SurfaceElementProlongation(const MeshAccess & ama, 
+  SurfaceElementProlongation(shared_ptr<MeshAccess> ama, 
 			     const SurfaceElementFESpace & aspace)
     : ma(ama), space(aspace)
   {
@@ -448,7 +448,7 @@ namespace ngmg
 
     for (i = nc+1; i <= nf; i++)
     {
-    parent = ma.GetParentSElement (i);
+    parent = ma->GetParentSElement (i);
     for (j = 1; j <= sdim; j++)
     sv.VElem(i, j) = sv.VElem(parent, j);
     }
@@ -471,7 +471,7 @@ namespace ngmg
 
       for (i = nf; i > nc; i--)
       {
-      parent = ma.GetParentSElement (i);
+      parent = ma->GetParentSElement (i);
       for (j = 1; j <= sdim; j++)
       {
       sv.VElem(parent, j) += sv.VElem(i, j);
@@ -486,7 +486,7 @@ namespace ngmg
 
 
   L2HoProlongation::
-  L2HoProlongation(const MeshAccess & ama, const Array<int> & afirst_dofs)
+  L2HoProlongation(shared_ptr<MeshAccess> ama, const Array<int> & afirst_dofs)
     : ma(ama), first_dofs(afirst_dofs) 
   { ; }
   
@@ -494,12 +494,12 @@ namespace ngmg
   {   
     FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
     
-    int ne = ma.GetNE();
+    int ne = ma->GetNE();
     int ndel = first_dofs[1];
     
     for (int i = 0; i <ne; i++)
       {
-        int parent = ma.GetParentElement (i);
+        int parent = ma->GetParentElement (i);
         if(parent!=-1)
           fv(ndel*i) = fv(ndel*parent);
         for(int j = 1; j<ndel; j++)

@@ -22,7 +22,7 @@ namespace ngcomp
 {
 
   L2HighOrderFESpace ::  
-  L2HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="L2HighOrderFESpace(l2ho)";
@@ -55,7 +55,7 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
     
-    integrator = CreateBFI("mass", ma.GetDimension(),
+    integrator = CreateBFI("mass", ma->GetDimension(),
                            make_shared<ConstantCoefficientFunction>(1));
 
     if (dimension > 1)
@@ -63,7 +63,7 @@ namespace ngcomp
 
     
 
-    switch (ma.GetDimension())
+    switch (ma->GetDimension())
       {
       case 1:
         {
@@ -114,24 +114,13 @@ namespace ngcomp
         low_order_space = make_shared<ElementFESpace> (ma, loflags);
         prol = make_shared<ElementProlongation> (*static_cast<ElementFESpace*> (low_order_space.get()));
       }
-
-    switch (ma.GetDimension())
-      {
-      case 1: vefc_dofblocks = Vec<4,int> (0,2,0,0); break;
-      case 2: vefc_dofblocks = Vec<4,int> (0,0,2,0); break;
-      case 3: default:
-        vefc_dofblocks = Vec<4,int> (0,0,0,2);
-      }
   }
-
 
   L2HighOrderFESpace :: ~L2HighOrderFESpace ()
-  {
-    ;
-  }
+  { ; }
 
   shared_ptr<FESpace> L2HighOrderFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
+  Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 0));
     if (order == 0)
@@ -145,36 +134,25 @@ namespace ngcomp
   {
     FESpace::Update(lh);
     if(low_order_space) low_order_space -> Update(lh);
-    nel = ma.GetNE();
+
+    nel = ma->GetNE();
     order_inner.SetSize(nel); 
  
- 
-    int p  = (var_order ? 0 : order); 
-    order_inner = INT<3>(p,p,p); 
-    
-    int dim = ma.GetDimension(); 
+    order_inner = INT<3>(order);
 
     if(var_order) 
       for(int i = 0; i < nel; i++) 
-	{
-	  INT<3> el_orders = ma.GetElOrders(i);
-	  	  
-	  for(int j=0;j<dim;j++)
-	    order_inner[i][j] =  int(max2(el_orders[j]+rel_order,0)); 
-
-	} 
+        order_inner[i] = Max(ma->GetElOrders(i)+INT<3>(rel_order), INT<3>(0));
 
     for(int i = 0; i < nel; i++) 
-      if (!DefinedOn (ma.GetElIndex (i))) 
+      if (!DefinedOn (ma->GetElIndex (i))) 
         order_inner[i] = 0;
 
     if(print) 
       *testout << " order_inner (l2ho) " << order_inner << endl; 
 
-    ndof = nel;
-    
     UpdateDofTables();
-    while (ma.GetNLevels() > ndlevel.Size())
+    while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
@@ -189,9 +167,9 @@ namespace ngcomp
     ctofdof = WIREBASKET_DOF;
 
     if (!all_dofs_together)
-      for (int i=0; i<ma.GetNE(); i++)
+      for (int i=0; i<ma->GetNE(); i++)
 	{
-          if (!DefinedOn (ma.GetElIndex (i)))
+          if (!DefinedOn (ma->GetElIndex (i)))
             {
               ctofdof[i] = UNUSED_DOF;
               continue;
@@ -204,7 +182,7 @@ namespace ngcomp
 	    ctofdof[j] = LOCAL_DOF; //higher order
 	}
     else
-      for (int i=0; i<ma.GetNE(); i++)
+      for (int i=0; i<ma->GetNE(); i++)
 	{
 	  int first = first_element_dof[i];
 	  int next = first_element_dof[i+1];
@@ -223,7 +201,7 @@ namespace ngcomp
       {
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i]; 
-	switch (ma.GetElType(i))
+	switch (ma->GetElType(i))
 	  {
 	  case ET_SEGM:
 	    ndof += pi[0]+1;
@@ -258,7 +236,7 @@ namespace ngcomp
     if(print) 
       *testout << " first_element dof (l2hofe) " << first_element_dof << endl;  
 
-    while (ma.GetNLevels() > ndlevel.Size())
+    while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
 
@@ -270,10 +248,10 @@ namespace ngcomp
   {
     try
       { 
-        Ngs_Element ngel = ma.GetElement(elnr);
+        Ngs_Element ngel = ma->GetElement(elnr);
         ELEMENT_TYPE eltype = ngel.GetType();
         
-        if (!DefinedOn (ma.GetElIndex (elnr)))
+        if (!DefinedOn (ma->GetElIndex (elnr)))
           {
             switch (eltype)
               {
@@ -288,28 +266,11 @@ namespace ngcomp
               }
           }
 
-	if (ma.GetElType(elnr) == ET_TRIG) //  && order <= 3)
+	if (ma->GetElType(elnr) == ET_TRIG) 
 	  {
 	    ArrayMem<int,3> vnums(3);
-	    ma.GetElVertices (elnr, vnums);
+	    ma->GetElVertices (elnr, vnums);
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
-
-	    /*
-	    DGFiniteElement<2> * hofe2d = 0;
-	    switch (order)
-	      {
-	      case 0: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,0> (); break;
-	      case 1: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,1> (); break;
-	      case 2: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,2> (); break;
-	      case 3: hofe2d = new (lh)  L2HighOrderFEFO<ET_TRIG,3> (); break;
-	      }
-	    
-	    Ngs_Element ngel = ma.GetElement<2> (elnr);
-	    for (int j = 0; j < 3; j++)
-	      hofe2d->SetVertexNumber (j, ngel.vertices[j]);
-
-	    return *hofe2d;
-	    */
 	  }
 
         switch (eltype)
@@ -340,7 +301,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma.GetElement<ET_trait<ET>::DIM>(elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM>(elnr);
     L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
     
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -355,35 +316,15 @@ namespace ngcomp
 
   const FiniteElement & L2HighOrderFESpace :: GetFacetFE (int fnr, LocalHeap & lh) const
   {
-    DGFiniteElement<1> * fe1d = 0;
-    DGFiniteElement<2> * fe2d = 0;
+    DGFiniteElement<2> * fe2d = NULL;
 
     ArrayMem<int,4> vnums;
-    ma.GetFacetPNums (fnr, vnums);
+    ma->GetFacetPNums (fnr, vnums);
 
     switch (vnums.Size())
       {
       case 1: return *new (lh) L2HighOrderFE<ET_POINT> (0); 
-      case 2: 
-	return *CreateL2HighOrderFE<ET_SEGM> (order, vnums, lh);
-	/*
-	{
-	  switch (order)
-	    {
-	    case 0: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,0> (); break;
-	    case 1: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,1> (); break;
-	    case 2: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,2> (); break;
-	    case 3: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,3> (); break;
-	    case 4: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,4> (); break;
-	    case 5: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,5> (); break;
-	    case 6: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,6> (); break;
-	    case 7: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,7> (); break;
-	    case 8: fe1d = new (lh) L2HighOrderFEFO<ET_SEGM,8> (); break;
-	    default: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); 
-	    }
-	  break;
-	}
-	*/
+      case 2: return *CreateL2HighOrderFE<ET_SEGM> (order, vnums, lh);
       case 3: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
       case 4: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
       default:
@@ -395,20 +336,10 @@ namespace ngcomp
 	}
       }
     
-    if (fe1d)
-      {
-	fe1d-> SetVertexNumbers (vnums); 
-	fe1d-> SetOrder(order);
-	fe1d-> ComputeNDof(); 
-	return *fe1d;
-      }
-    else
-      {
-	fe2d-> SetVertexNumbers (vnums); 
-	fe2d-> SetOrder(order);
-	fe2d-> ComputeNDof(); 
-	return *fe2d;
-      }
+    fe2d-> SetVertexNumbers (vnums); 
+    fe2d-> SetOrder(order);
+    fe2d-> ComputeNDof(); 
+    return *fe2d;
   } 
 
 
@@ -420,24 +351,20 @@ namespace ngcomp
  
   const FiniteElement & L2HighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    FiniteElement * fe = 0;
-    
-    switch (ma.GetSElType(elnr))
+    switch (ma->GetSElType(elnr))
       {
-      case ET_POINT: fe = new DummyFE<ET_POINT>; break;
-      case ET_SEGM:  fe = new DummyFE<ET_SEGM>; break;
-      case ET_TRIG:  fe = new DummyFE<ET_TRIG>; break;
-      case ET_QUAD:  fe = new DummyFE<ET_QUAD>; break;
+      case ET_POINT: return *new (lh) DummyFE<ET_POINT>; 
+      case ET_SEGM:  return *new (lh) DummyFE<ET_SEGM>; break;
+      case ET_TRIG:  return *new (lh) DummyFE<ET_TRIG>; break;
+      case ET_QUAD:  return *new (lh) DummyFE<ET_QUAD>; break;
 
       default:
 	stringstream str;
 	str << "FESpace " << GetClassName() 
-	    << ", undefined surface eltype " << ma.GetSElType(elnr) 
+	    << ", undefined surface eltype " << ma->GetSElType(elnr) 
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
-
-    return *fe;
   }
 
   int L2HighOrderFESpace :: GetNDof () const
@@ -456,7 +383,7 @@ namespace ngcomp
     dranges.SetSize(0);
 
     if (!ei.IsVolume()) return;
-    if (!DefinedOn (ma.GetElIndex (ei))) return;
+    if (!DefinedOn (ma->GetElIndex (ei))) return;
     
     if (!all_dofs_together)
       dranges.Append (ei.Nr());
@@ -466,8 +393,8 @@ namespace ngcomp
 
   void L2HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    dnums.SetSize(0);
-    if (!DefinedOn (ma.GetElIndex (elnr))) return;
+    dnums.SetSize0();
+    if (!DefinedOn (ma->GetElIndex (elnr))) return;
 
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
@@ -477,7 +404,7 @@ namespace ngcomp
   void L2HighOrderFESpace :: 
   GetSDofNrs (int elnr, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
+    dnums.SetSize0 ();
   }
   
   Table<int> * L2HighOrderFESpace :: 
@@ -502,17 +429,17 @@ namespace ngcomp
 
   void  L2HighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { 
-    dnums.SetSize(0);
+    dnums.SetSize0();
   }
   
   void  L2HighOrderFESpace ::GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   { 
-    dnums.SetSize(0); 
+    dnums.SetSize0(); 
   }
   
   void  L2HighOrderFESpace ::GetFaceDofNrs (int fanr, Array<int> & dnums) const
   { 
-    dnums.SetSize(0); 
+    dnums.SetSize0(); 
   }
   
   void  L2HighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
@@ -530,7 +457,7 @@ namespace ngcomp
 
 
   L2SurfaceHighOrderFESpace ::  
-  L2SurfaceHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="L2SurfaceHighOrderFESpace(l2surf)";
@@ -547,7 +474,7 @@ namespace ngcomp
     trig = new L2HighOrderFE<ET_TRIG> (order);
     quad = new L2HighOrderFE<ET_QUAD> (order);
 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	// boundary_integrator.reset (new RobinIntegrator<2> (new ConstantCoefficientFunction(1)));
         boundary_integrator = 
@@ -569,21 +496,21 @@ namespace ngcomp
   }
 
   shared_ptr<FESpace> L2SurfaceHighOrderFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
+  Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     return make_shared<L2SurfaceHighOrderFESpace> (ma, flags, true);
   }
 
   void L2SurfaceHighOrderFESpace :: Update(LocalHeap & lh)
   {
-    nel = ma.GetNSE();
+    nel = ma->GetNSE();
 
     ndof = 0;
     first_element_dof.SetSize(nel+1);
     for (int i = 0; i < nel; i++)
       {
 	first_element_dof[i] = ndof;
-	switch (ma.GetSElType(i))
+	switch (ma->GetSElType(i))
 	  {
 	  case ET_SEGM:
 	    ndof += order+1;
@@ -603,11 +530,11 @@ namespace ngcomp
 
   const FiniteElement & L2SurfaceHighOrderFESpace :: GetSFE (int elnr, LocalHeap & lh) const
   {
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	DGFiniteElement<1> * fe1d = 0;
 	
-	Ngs_Element ngel = ma.GetElement<1> (elnr);
+	Ngs_Element ngel = ma->GetElement<1> (elnr);
 
 	switch (ngel.GetType())
 	  {
@@ -625,7 +552,7 @@ namespace ngcomp
       {
 	DGFiniteElement<2> * fe2d = 0;
 	
-	Ngs_Element ngel = ma.GetElement<2> (elnr);
+	Ngs_Element ngel = ma->GetElement<2> (elnr);
 	
 	switch (ngel.GetType())
 	  {
@@ -644,7 +571,7 @@ namespace ngcomp
 
     FiniteElement * fe = 0;
     
-    switch (ma.GetSElType(elnr))
+    switch (ma->GetSElType(elnr))
       {
       case ET_SEGM:
 	fe = segm; break;
@@ -657,14 +584,14 @@ namespace ngcomp
       }
     
     ArrayMem<int,12> vnums; // calls GetElPNums -> max 12 for PRISM12
-    ma.GetSElVertices(elnr, vnums);
+    ma->GetSElVertices(elnr, vnums);
 
     if (!fe)
       {
 	stringstream str;
 	str << "L2SurfaceHighOrderFESpace " << GetClassName() 
 	    << ", undefined eltype " 
-	    << ElementTopology::GetElementName(ma.GetSElType(elnr))
+	    << ElementTopology::GetElementName(ma->GetSElType(elnr))
 	    << ", order = " << order << endl;
 	throw Exception (str.str());
       }
@@ -693,7 +620,7 @@ namespace ngcomp
     for (int j = 0; j < neldofs; j++)
       dnums.Append (first+j);
 
-    if (!DefinedOn (ma.GetSElIndex (elnr)))
+    if (!DefinedOn (ma->GetSElIndex (elnr)))
       dnums = -1;
   }
   

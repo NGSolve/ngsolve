@@ -42,7 +42,7 @@ namespace ngcomp
 
   public:
     ///
-    VectorFacetFESpace (const MeshAccess & ama, const Flags & flags, 
+    VectorFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
 			bool parseflags = false );
 
     virtual ~VectorFacetFESpace () { ; }

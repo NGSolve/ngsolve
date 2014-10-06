@@ -21,7 +21,7 @@ using namespace ngmg;
 
 namespace ngcomp
 {
-  FESpace :: FESpace (const MeshAccess & ama, const Flags & flags, bool checkflags)
+  FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, "FESpace")
   {
     // register flags
@@ -57,7 +57,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
-	directsolverclustered.SetSize(ama.GetNDomains());
+	directsolverclustered.SetSize(ama->GetNDomains());
 	directsolverclustered = false;
 	Array<double> clusters(flags.GetNumListFlag("directsolverdomains"));
 	for(int i=0; i<clusters.Size(); i++) 
@@ -66,7 +66,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if(flags.NumListFlagDefined("dirichlet"))
       {
-	dirichlet_boundaries.SetSize (ma.GetNBoundaries());
+	dirichlet_boundaries.SetSize (ma->GetNBoundaries());
 	dirichlet_boundaries.Clear();
 	Array<double> db (flags.GetNumListFlag("dirichlet"));
 	for(int i = 0; i< db.Size(); i++) 
@@ -87,7 +87,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
        flags.NumFlagDefined("definedon") ||
        flags.StringListFlagDefined("definedon"))
       {
-	definedon.SetSize (ma.GetNDomains());
+	definedon.SetSize (ma->GetNDomains());
 	definedon = 0;
 	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
@@ -98,7 +98,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    defon[0] = flags.GetNumFlag("definedon",0);
 	  }
 	for(int i=0; i< defon.Size(); i++)
-	  if(defon[i] <= ma.GetNDomains() && defon[i] > 0)
+	  if(defon[i] <= ma->GetNDomains() && defon[i] > 0)
 	    definedon[int(defon[i])-1] = 1;
 
 	if(flags.StringListFlagDefined("definedon"))
@@ -106,10 +106,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    Array<string> dmaterials(flags.GetStringListFlag ("definedon").Size());
 	    for(int i=0; i<dmaterials.Size(); i++)
 	      dmaterials[i] = flags.GetStringListFlag ("definedon")[i];
-	    for(int i = 0; i < ma.GetNDomains(); i++)
+	    for(int i = 0; i < ma->GetNDomains(); i++)
 	      {
 		for(int j = 0; j < dmaterials.Size(); j++)
-		  if(StringFitsPattern(ma.GetDomainMaterial(i),dmaterials[j]))
+		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
 		    {
 		      definedon[i] = 1;
 		      break;
@@ -119,13 +119,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
-	definedonbound.SetSize (ma.GetNBoundaries());
+	definedonbound.SetSize (ma->GetNBoundaries());
 	definedonbound = 0;
-	for ( int sel=0; sel<ma.GetNSE(); sel++ )
+	for ( int sel=0; sel<ma->GetNSE(); sel++ )
 	  {
-	    int index = ma.GetSElIndex(sel);
+	    int index = ma->GetSElIndex(sel);
 	    int dom1, dom2;
-	    ma.GetSElNeighbouringDomains(sel, dom1, dom2);
+	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
 	    if ( dom1 >= 0 )
 	      if ( definedon[dom1] )
@@ -142,7 +142,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	if ( definedonbound.Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma.GetNBoundaries());
+	    definedonbound.SetSize (ma->GetNBoundaries());
 	    definedonbound = 0;
 	  }
 	Array<double> defon;
@@ -155,7 +155,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 
 	for(int i=0; i< defon.Size(); i++) 
-	  if(defon[i] <= ma.GetNBoundaries() && defon[i] > 0)
+	  if(defon[i] <= ma->GetNBoundaries() && defon[i] > 0)
 	    definedonbound[int(defon[i])-1] = 1;
       }
     
@@ -164,7 +164,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	if ( definedonbound.Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma.GetNBoundaries());
+	    definedonbound.SetSize (ma->GetNBoundaries());
 	    definedonbound = 0;
 	  }
 
@@ -176,15 +176,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  for(int i=0; i<flags.GetStringListFlag ("definedonbound").Size(); i++)
 	    defon.Append(new string(flags.GetStringListFlag("definedonbound")[i]));
 	
-	for(int selnum = 0; selnum < ma.GetNSE(); selnum++)
+	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedonbound[ma.GetSElIndex(selnum)]!=1)
+	    if(definedonbound[ma->GetSElIndex(selnum)]!=1)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
-		    if(StringFitsPattern(ma.GetSElBCName(selnum),*(defon[i])))	
+		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
 		      {		
-		 	definedonbound[ma.GetSElIndex(selnum)] =1;
+		 	definedonbound[ma->GetSElIndex(selnum)] =1;
 			continue;
 		      }
 		  }
@@ -228,8 +228,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // element_coloring = NULL;
     // selement_coloring = NULL;
     paralleldofs = NULL;
-
-    vefc_dofblocks = 2;
 
     ctofdof.SetSize(0);
   }
@@ -282,24 +280,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
     specialelements.SetSize(0);
 
 
-    int dim = ma.GetDimension();
+    int dim = ma->GetDimension();
     
-    dirichlet_vertex.SetSize (ma.GetNV());
-    dirichlet_edge.SetSize (ma.GetNEdges());
+    dirichlet_vertex.SetSize (ma->GetNV());
+    dirichlet_edge.SetSize (ma->GetNEdges());
     if (dim == 3)
-      dirichlet_face.SetSize (ma.GetNFaces());
+      dirichlet_face.SetSize (ma->GetNFaces());
     
     dirichlet_vertex = false;
     dirichlet_edge = false;
     dirichlet_face = false;
 
     if (dirichlet_boundaries.Size())
-      for (int i = 0; i < ma.GetNSE(); i++)
+      for (int i = 0; i < ma->GetNSE(); i++)
 	{
-	  int ind = ma.GetSElIndex (i);
+	  int ind = ma->GetSElIndex (i);
 	  if (dirichlet_boundaries.Test(ind))
 	    {
-	      Ngs_Element ngel = ma.GetSElement(i);
+	      Ngs_Element ngel = ma->GetSElement(i);
 	      for (int j = 0; j < ngel.vertices.Size(); j++)
 		dirichlet_vertex[ngel.vertices[j]] = true;
 	      
@@ -319,9 +317,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
 
-    ma.AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR);
-    ma.AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR);
-    ma.AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR);
+    ma->AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR);
+    ma->AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR);
+    ma->AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR);
     
     if (print)
       {
@@ -344,9 +342,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<int> dnums;
 
     if (dirichlet_boundaries.Size())
-      for (int i = 0; i < ma.GetNSE(); i++)
+      for (int i = 0; i < ma->GetNSE(); i++)
 	{
-	  if (dirichlet_boundaries[ma.GetSElIndex(i)])
+	  if (dirichlet_boundaries[ma->GetSElIndex(i)])
 	    {
 	      GetSDofNrs (i, dnums);
 	      for (int j = 0; j < dnums.Size(); j++)
@@ -409,7 +407,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     for (auto vb = VOL; vb <= BND; vb++)
       {
-        Array<int> col(ma.GetNE(vb));
+        Array<int> col(ma->GetNE(vb));
         col = -1;
         bool found;
         int maxcolor = 0;
@@ -422,7 +420,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             mask = 0;
             found = false;
             
-            for (int i = 0; i < ma.GetNE(vb); i++)
+            for (int i = 0; i < ma->GetNE(vb); i++)
               {
                 ElementId ei(vb, i);
 
@@ -462,7 +460,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
-        for (int i = 0; i < ma.GetNE(vb); i++)
+        for (int i = 0; i < ma->GetNE(vb); i++)
           if (DefinedOn (ElementId(vb,i))) 
             cntcol[col[i]]++;
 
@@ -475,7 +473,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             element_coloring = Table<int> (cntcol);
 
             cntcol = 0;
-            for (int i = 0; i < ma.GetNE(vb); i++)
+            for (int i = 0; i < ma->GetNE(vb); i++)
               if (DefinedOn (ElementId(vb,i))) 
                 element_coloring[col[i]][cntcol[col[i]]++] = i;
           }
@@ -487,7 +485,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             */
             selement_coloring = Table<int> (cntcol);
             cntcol = 0;
-            for (int i = 0; i < ma.GetNE(vb); i++)
+            for (int i = 0; i < ma->GetNE(vb); i++)
               if (DefinedOn (ElementId(vb,i))) 
                 selement_coloring[col[i]][cntcol[col[i]]++] = i;
           }
@@ -499,7 +497,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
 
-    level_updated = ma.GetNLevels();
+    level_updated = ma->GetNLevels();
     if (timing) Timing();
   }
 
@@ -510,7 +508,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     if (DefinedOn (ElementId (VOL, elnr)))
       {
-        switch (ma.GetElType(elnr))
+        switch (ma->GetElType(elnr))
           {
           case ET_TET: fe = tet; break;
           case ET_PYRAMID: fe = pyramid; break;
@@ -524,7 +522,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else
       {
-        switch (ma.GetElType(elnr))
+        switch (ma->GetElType(elnr))
           {
           case ET_TET: fe = dummy_tet; break;
           case ET_PYRAMID: fe = dummy_pyramid; break;
@@ -541,7 +539,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         Exception ex;
         ex << "FESpace" << GetClassName() << ", undefined eltype " 
-           << ElementTopology::GetElementName(ma.GetElType(elnr))
+           << ElementTopology::GetElementName(ma->GetElType(elnr))
            << ", order = " << ToString (order) << "\n";
         throw ex;
       }
@@ -565,7 +563,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   /*
   FlatArray<int> FESpace :: GetDofNrs (ElementId ei, LocalHeap & lh) const
   {
-    Vec<4,int> nnodes = ElementTopology::GetNNodes (ma.GetElType (ei));
+    Vec<4,int> nnodes = ElementTopology::GetNNodes (ma->GetElType (ei));
     Array<IntRange> dranges(InnerProduct (nnodes, vefc_dofblocks), lh);
     dranges.SetSize(0);
     GetDofRanges (ei, dranges);
@@ -595,7 +593,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<int> dnums;
     for ( ; !creator.Done(); creator++)
       {
-	for (int i = 0; i < ma.GetNE(vorb); i++)
+	for (int i = 0; i < ma->GetNE(vorb); i++)
 	  {
 	    GetDofNrs (ElementId(vorb,i), dnums);
 	    creator.Add (i, dnums);
@@ -658,7 +656,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       case NT_VERTEX: GetVertexDofNrs(nr, dnums); break;
       case NT_EDGE:   GetEdgeDofNrs(nr, dnums); break;
       case NT_FACE:   
-        if (ma.GetDimension() == 3)
+        if (ma->GetDimension() == 3)
           GetFaceDofNrs(nr, dnums); 
         else
           GetInnerDofNrs(nr, dnums); 
@@ -697,7 +695,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
   {
-    switch (ma.GetSElType(selnr))
+    switch (ma->GetSElType(selnr))
       {
       case ET_TRIG:  return *trig; 
       case ET_QUAD:  return *quad; 
@@ -783,7 +781,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
 #pragma omp for
-	  for (int i = 0; i < ma.GetNE(); i++)
+	  for (int i = 0; i < ma->GetNE(); i++)
 	    {
               ArrayMem<int,100> dnums;
 	      GetDofNrs (i, dnums);
@@ -794,7 +792,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
+    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs (parallel)" << endl;
 
     /*
     starttime = WallTime();
@@ -805,7 +803,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
 #pragma omp for
-	  for (int i = 0; i < ma.GetNE(); i++)
+	  for (int i = 0; i < ma->GetNE(); i++)
 	    {
               HeapReset hr(lh);
               // FlatArray<int> dnums = 
@@ -817,7 +815,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
+    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs(lh) (parallel)" << endl;
     */
 
 
@@ -832,7 +830,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  LocalHeap &clh = lh, lh = clh.Split();
 
 #pragma omp for
-	  for (int i = 0; i < ma.GetNE(); i++)
+	  for (int i = 0; i < ma->GetNE(); i++)
 	    {
 	      HeapReset hr(lh);
 	      GetFE (i, lh);
@@ -843,7 +841,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE (parallel)" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE (parallel)" << endl;
 
 
 
@@ -853,16 +851,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     do
       {
 #pragma omp parallel for
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
           {
-	    /* Ng_Element ngel = */ ma.GetElement(i);
+	    /* Ng_Element ngel = */ ma->GetElement(i);
           }
         steps++;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element (parallel)" << endl;
 
 
     starttime = WallTime();
@@ -873,10 +871,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
 #pragma omp for
-          for (int i = 0; i < ma.GetNE(); i++)
+          for (int i = 0; i < ma->GetNE(); i++)
             {
               HeapReset hr(lh);
-              /* ElementTransformation & trafo = */ ma.GetTrafo(i, VOL, lh);
+              /* ElementTransformation & trafo = */ ma->GetTrafo(i, VOL, lh);
             }
         }
         steps++;
@@ -884,7 +882,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo(parallel)" << endl;
 
 
 
@@ -896,7 +894,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
 	  {
 	    ArrayMem<int,100> dnums;
 	    GetDofNrs (i, dnums);
@@ -906,7 +904,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs" << endl;
+    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs" << endl;
 
     // ***************************
 
@@ -914,7 +912,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
 	  {
             HeapReset hr(lh);
 	    /* FlatArray<int> dnums = */ GetDofNrs (ElementId(VOL, i), lh);
@@ -924,7 +922,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9*time / (ma.GetNE()*steps) << " ns per GetDofNrs(lh)" << endl;
+    cout << 1e9*time / (ma->GetNE()*steps) << " ns per GetDofNrs(lh)" << endl;
 
     // ***************************
 
@@ -933,7 +931,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
           {
             HeapReset hr(lh);
             GetFE (i, lh);
@@ -943,40 +941,40 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetFE" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetFE" << endl;
 
 
     starttime = WallTime();
     steps = 0;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
           {
-	    /* Ng_Element ngel = */ ma.GetElement(i);
+	    /* Ng_Element ngel = */ ma->GetElement(i);
           }
         steps++;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per Get - Ng_Element" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per Get - Ng_Element" << endl;
 
 
     starttime = WallTime();
     steps = 0;
     do
       {
-        for (int i = 0; i < ma.GetNE(); i++)
+        for (int i = 0; i < ma->GetNE(); i++)
           {
             HeapReset hr(lh);
-            /* ElementTransformation & trafo = */ ma.GetTrafo(i, VOL, lh);
+            /* ElementTransformation & trafo = */ ma->GetTrafo(i, VOL, lh);
           }
         steps++;
         time = WallTime()-starttime;
       }
     while (time < 2.0);
     
-    cout << 1e9 * time / (ma.GetNE()*steps) << " ns per GetTrafo" << endl;
+    cout << 1e9 * time / (ma->GetNE()*steps) << " ns per GetTrafo" << endl;
 
 #endif
 
@@ -1161,7 +1159,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<int> dnums;
 
     for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
-      for ( int nr = 0; nr < ma.GetNNodes (nt); nr++ )
+      for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
 	  GetNodeDofNrs (nt, nr, dnums);
 	  for (int j = 0; j < dnums.Size(); j++)
@@ -1190,7 +1188,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  NodalFESpace :: NodalFESpace (const MeshAccess & ama,
+  NodalFESpace :: NodalFESpace (shared_ptr<MeshAccess> ama,
 				const Flags & flags,
                                 bool parseflags)
     : FESpace (ama, flags)
@@ -1246,7 +1244,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
     static ConstantCoefficientFunction one(1);
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	integrator.reset (new MassIntegrator<2> (&one));
 	boundary_integrator.reset (new RobinIntegrator<2> (&one));
@@ -1262,11 +1260,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
 	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);  
       }
-
-    if (order == 1) 
-      vefc_dofblocks = Vec<4> (1,0,0,0);
-    else
-      vefc_dofblocks = Vec<4> (1,1,1,1);
   }
 
   NodalFESpace :: ~NodalFESpace ()
@@ -1284,12 +1277,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     FESpace :: Update (lh);
     if (low_order_space) low_order_space -> Update(lh);
 
-    if (ma.GetNLevels() > ndlevel.Size())
+    if (ma->GetNLevels() > ndlevel.Size())
       {
 	Array<int> dnums;
-	int ne = ma.GetNE();
-	int nse = ma.GetNSE();
-	int ndof = ma.GetNV();
+	int ne = ma->GetNE();
+	int nse = ma->GetNSE();
+	int ndof = ma->GetNV();
 	for (int i = 0; i < ne; i++)
 	  {
 	    GetDofNrs (i, dnums);
@@ -1313,9 +1306,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
 	Array<int> dnums;
-	for (int i = 0; i < ma.GetNSE(); i++)
+	for (int i = 0; i < ma->GetNSE(); i++)
 	  {
-	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
+	    if (dirichlet_boundaries[ma->GetSElIndex(i)])
 	      {
 		GetSDofNrs (i, dnums);
 		for (int j = 0; j < dnums.Size(); j++)
@@ -1351,9 +1344,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ArrayMem<int,27> pnums;
 
     if (order == 1)
-      ma.GetElVertices(ei, pnums);
+      ma->GetElVertices(ei, pnums);
     else
-      ma.GetElPNums (ei, pnums);
+      ma->GetElPNums (ei, pnums);
 
     dranges.SetSize(pnums.Size());
     for (int i = 0; i < pnums.Size(); i++)
@@ -1366,9 +1359,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void NodalFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     if (order == 1)
-      ma.GetElVertices (elnr, dnums);
+      ma->GetElVertices (elnr, dnums);
     else
-      ma.GetElPNums (elnr, dnums);
+      ma->GetElPNums (elnr, dnums);
 
     if (!DefinedOn (ElementId (VOL, elnr))) dnums = -1;
   }
@@ -1376,12 +1369,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    ma.GetSElPNums (selnr, dnums);
+    ma->GetSElPNums (selnr, dnums);
 
     if (order == 1)
       { // Ng-mesh may be second order, but FE space is 1st order
 	int np = dnums.Size();
-	switch (ma.GetSElType(selnr))
+	switch (ma->GetSElType(selnr))
 	  {
 	  case ET_SEGM: np = 2; break;
 	  case ET_TRIG: np = 3; break;
@@ -1392,7 +1385,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if (dnums.Size() > np) dnums.SetSize (np);
       }
 
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
       dnums = -1;
   }
   
@@ -1461,7 +1454,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   NonconformingFESpace :: 
-  NonconformingFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags)
+  NonconformingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
     name="NonconformingFESpace(nonconforming)";
@@ -1474,7 +1467,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     trig = new FE_NcTrig1;
 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	integrator.reset (new MassIntegrator<2> (new ConstantCoefficientFunction(1)));
 	boundary_integrator = 0;
@@ -1500,19 +1493,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   int NonconformingFESpace :: GetNDof () const
   {
-    return ma.GetNEdges();
+    return ma->GetNEdges();
   }
 
 
   void NonconformingFESpace :: Update(LocalHeap & lh)
   {
     /*
-    if (ma.GetNLevels() > ndlevel.Size())
+    if (ma->GetNLevels() > ndlevel.Size())
       {
 	Array<int> dnums;
 	int i, j;
-	int ne = ma.GetNE();
-	int nse = ma.GetNSE();
+	int ne = ma->GetNE();
+	int nse = ma->GetNSE();
 	int ndof = 0;
 	for (i = 0; i < ne; i++)
 	  {
@@ -1539,9 +1532,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
 	Array<int> dnums;
-	for (int i = 0; i < ma.GetNSE(); i++)
+	for (int i = 0; i < ma->GetNSE(); i++)
 	  {
-	    if (dirichlet_boundaries[ma.GetSElIndex(i)])
+	    if (dirichlet_boundaries[ma->GetSElIndex(i)])
 	      {
 		GetSDofNrs (i, dnums);
 		for (int j = 0; j < dnums.Size(); j++)
@@ -1556,16 +1549,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
  
   void NonconformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    ma.GetElEdges (elnr, dnums);
-    if (!DefinedOn (ma.GetElIndex (elnr)))
+    ma->GetElEdges (elnr, dnums);
+    if (!DefinedOn (ma->GetElIndex (elnr)))
       dnums = -1;
   }
 
 
   void NonconformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    ma.GetSElEdges (selnr, dnums);
-    if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+    ma->GetSElEdges (selnr, dnums);
+    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
       dnums = -1;
   }
   
@@ -1577,7 +1570,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  ElementFESpace :: ElementFESpace (const MeshAccess & ama, const Flags& flags, 
+  ElementFESpace :: ElementFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, 
                                     bool parseflags)
     : FESpace (ama, flags)
   {
@@ -1609,7 +1602,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       quad    = new FE_Quad1;
       segm    = new FE_Segm1;
 
-      if (ma.GetDimension() == 2)
+      if (ma->GetDimension() == 2)
         n_el_dofs = 4;
       else
         n_el_dofs = 6;
@@ -1618,7 +1611,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     SetDummyFE<ScalarDummyFE> ();
     static ConstantCoefficientFunction one(1);
 
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
         integrator.reset (new MassIntegrator<2> (&one));
         boundary_integrator = 0;
@@ -1640,8 +1633,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void ElementFESpace :: Update(LocalHeap & lh)
   {
-    while (ma.GetNLevels() > ndlevel.Size())
-      ndlevel.Append (n_el_dofs * ma.GetNE());
+    while (ma->GetNLevels() > ndlevel.Size())
+      ndlevel.Append (n_el_dofs * ma->GetNE());
   }
 
   void ElementFESpace :: DoArchive (Archive & archive)
@@ -1659,7 +1652,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 1)
       {
-	switch (GetMeshAccess().GetElType(elnr))
+	switch (ma->GetElType(elnr))
 	  {
 	  case ET_TRIG:
 	    dnums.SetSize(3);
@@ -1704,7 +1697,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
  
   SurfaceElementFESpace :: 
-      SurfaceElementFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
+      SurfaceElementFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
   : FESpace (ama, flags)
   {
     name="SurfaceElementFESpace(surfl2)";
@@ -1727,7 +1720,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       quad    = new FE_Quad1;
       segm    = new FE_Segm1;
 	
-      if (ma.GetDimension() == 2)
+      if (ma->GetDimension() == 2)
         n_el_dofs = 2;
       else
         n_el_dofs = 4;
@@ -1739,7 +1732,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       quad    = new FE_Quad1;
       segm    = new FE_Segm2;
 
-      if (ma.GetDimension() == 2)
+      if (ma->GetDimension() == 2)
         n_el_dofs = 3;
       else
         n_el_dofs = 9;
@@ -1759,10 +1752,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void SurfaceElementFESpace :: Update(LocalHeap & lh)
   {
-    const MeshAccess & ma = GetMeshAccess();
+    // const MeshAccess & ma = GetMeshAccess();
 
-    while (ma.GetNLevels() > ndlevel.Size())
-      ndlevel.Append (n_el_dofs * ma.GetNSE());
+    while (ma->GetNLevels() > ndlevel.Size())
+      ndlevel.Append (n_el_dofs * ma->GetNSE());
   }
 
   const FiniteElement & SurfaceElementFESpace :: GetFE (int elnr, LocalHeap & lh) const
@@ -1791,7 +1784,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 1)
       {
-	switch (GetMeshAccess().GetSElType(elnr))
+	switch (ma->GetSElType(elnr))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(2);
@@ -1811,7 +1804,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     else if (order == 2)
       {
-	switch (GetMeshAccess().GetSElType(elnr))
+	switch (ma->GetSElType(elnr))
 	  {
 	  case ET_SEGM:
 	    dnums.SetSize(3);
@@ -1847,7 +1840,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
+  CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
 				      const Flags & flags, bool parseflags)
     : FESpace (ama, flags)
   {
@@ -1857,12 +1850,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (parseflags) CheckFlags(flags);
     
     prol = make_shared<CompoundProlongation> (this);
-    vefc_dofblocks = 0;
   }
 
 
 
-  CompoundFESpace :: CompoundFESpace (const MeshAccess & ama,
+  CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
 				      const Array<shared_ptr<FESpace>> & aspaces,
 				      const Flags & flags, bool parseflags)
     : FESpace (ama, flags), spaces(aspaces)
@@ -1876,10 +1868,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     for (int i = 0; i < spaces.Size(); i++)
       hprol -> AddProlongation (spaces[i]->GetProlongation());
     prol = hprol;
-
-    vefc_dofblocks = 0;
-    for (int i = 0; i < spaces.Size(); i++)
-      vefc_dofblocks += spaces[i] -> vefc_dofblocks;
   }
 
 
@@ -1887,7 +1875,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     spaces.Append (fes);
     dynamic_cast<CompoundProlongation*> (prol.get()) -> AddProlongation (fes->GetProlongation());
-    vefc_dofblocks += fes -> vefc_dofblocks;
   }
 
   CompoundFESpace :: ~CompoundFESpace ()
@@ -1907,7 +1894,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cummulative_nd[i+1] = cummulative_nd[i] + spaces[i]->GetNDof();
       }
 
-    while (ma.GetNLevels() > ndlevel.Size())
+    while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (cummulative_nd.Last());
 
 
@@ -2280,11 +2267,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 #ifdef PARALLEL
-  ParallelMeshDofs :: ParallelMeshDofs (const MeshAccess & ama, 
+  ParallelMeshDofs :: ParallelMeshDofs (shared_ptr<MeshAccess> ama, 
 					const Array<Node> & adofnodes, 
 					int dim, bool iscomplex)
-    : ParallelDofs (ma.GetCommunicator(),
-		    Nodes2Table (ama, adofnodes), dim, iscomplex),		    
+    : ParallelDofs (ma->GetCommunicator(),
+		    Nodes2Table (*ama, adofnodes), dim, iscomplex),		    
       ma(ama), dofnodes(adofnodes)
   { ; }
 #endif
@@ -2306,7 +2293,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
-	      shared_ptr<FESpace> (*acreator)(const MeshAccess & ma, const Flags & flags))
+	      shared_ptr<FESpace> (*acreator)(shared_ptr<MeshAccess> ma, const Flags & flags))
   {
     fesa.Append (make_shared<FESpaceInfo> (aname, acreator));
   }
@@ -2337,7 +2324,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
   extern NGS_DLL_HEADER shared_ptr<FESpace> CreateFESpace (const string & type,
-                                                           const MeshAccess & ma,
+                                                           shared_ptr<MeshAccess> ma,
                                                            const Flags & flags)
   {
     shared_ptr<FESpace> space;

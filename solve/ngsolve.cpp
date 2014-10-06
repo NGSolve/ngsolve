@@ -346,9 +346,9 @@ void * SocketThread (void * data)
               if (str == "")
                 break;
               else if (str == "np") 
-                new_sock << ToString (pde->GetMeshAccess().GetNP());
+                new_sock << ToString (pde->GetMeshAccess()->GetNP());
               else if (str == "ne") 
-                new_sock << ToString (pde->GetMeshAccess().GetNE());
+                new_sock << ToString (pde->GetMeshAccess()->GetNE());
               /*
               else if (str == "mesh") 
                 {
@@ -1144,7 +1144,7 @@ int NGSolve_Init (Tcl_Interp * interp)
              FunctionPointer([](shared_ptr<PDE> apde) 
                              {  
                                pde = apde;
-                               pde->GetMeshAccess().SelectMesh();
+                               pde->GetMeshAccess()->SelectMesh();
                                Ng_Redraw();
                                return; 
                              }));

@@ -17,7 +17,7 @@ namespace ngcomp
 
   /*
   RaviartThomasFESpace :: 
-  RaviartThomasFESpace (const MeshAccess & ama,
+  RaviartThomasFESpace (shared_ptr<MeshAccess> ama,
 			int adim, bool acomplex)
     
     : FESpace (ama, 1, adim, acomplex)
@@ -36,7 +36,7 @@ namespace ngcomp
   }
   */
 
-  RaviartThomasFESpace :: RaviartThomasFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags)
+  RaviartThomasFESpace :: RaviartThomasFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
   : FESpace (ama, flags)
   {
     name="RaviartThomasFESpace(hdiv)";
@@ -53,7 +53,7 @@ namespace ngcomp
 
     SetDummyFE<HDivDummyFE> ();
     
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
     {
       Array<shared_ptr<CoefficientFunction>> coeffs(1);
       coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
@@ -68,7 +68,7 @@ namespace ngcomp
 
 
   shared_ptr<FESpace> RaviartThomasFESpace :: 
-  Create (const MeshAccess & ma, const Flags & flags)
+  Create (shared_ptr<MeshAccess> ma, const Flags & flags)
   {
     int order = int(flags.GetNumFlag ("order", 0));
 
@@ -81,16 +81,16 @@ namespace ngcomp
   
   void RaviartThomasFESpace :: Update(LocalHeap & lh)
   {
-    const MeshAccess & ma = GetMeshAccess();
-    int level = ma.GetNLevels();
+    shared_ptr<MeshAccess> ma = GetMeshAccess();
+    int level = ma->GetNLevels();
     
     if (level == ndlevel.Size())
       return;
     
-    if (ma.GetDimension() == 2)
-      ndlevel.Append (ma.GetNEdges());
+    if (ma->GetDimension() == 2)
+      ndlevel.Append (ma->GetNEdges());
     else
-      ndlevel.Append (ma.GetNFaces());
+      ndlevel.Append (ma->GetNFaces());
 
     // FinalizeUpdate (lh);
   }
@@ -112,13 +112,13 @@ namespace ngcomp
   {
     Array<int> forient(6);
     
-    if (ma.GetDimension() == 2)
-      GetMeshAccess().GetElEdges (elnr, dnums, forient);
+    if (ma->GetDimension() == 2)
+      ma->GetElEdges (elnr, dnums, forient);
     else
-      GetMeshAccess().GetElFaces (elnr, dnums, forient);
+      ma->GetElFaces (elnr, dnums, forient);
     
     
-    if (!DefinedOn (ma.GetElIndex (elnr)))
+    if (!DefinedOn (ma->GetElIndex (elnr)))
       dnums = -1;
 
     
@@ -128,13 +128,13 @@ namespace ngcomp
   
   void RaviartThomasFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
-    if (ma.GetDimension() == 2)
+    if (ma->GetDimension() == 2)
       {
 	int eoa[12];
 	Array<int> eorient(12, eoa);
-	GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
+	ma->GetSElEdges (selnr, dnums, eorient);
 	
-	if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+	if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
 	  dnums = -1;
 
 	return;
@@ -146,7 +146,7 @@ namespace ngcomp
       Array<int> eorient(12, eoa);
       GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
       
-      if (!DefinedOnBoundary (ma.GetSElIndex (selnr)))
+      if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
       dnums = -1;
     */
     dnums.SetSize (1);
@@ -198,7 +198,7 @@ namespace ngcomp
     if (boundary) 
       {
 	ArrayMem<int,4> edge_nums, edge_orient;
-	ma.GetSElEdges (elnr, edge_nums, edge_orient);
+	ma->GetSElEdges (elnr, edge_nums, edge_orient);
 	vec *= edge_orient[0];
 	return;
       }
@@ -222,7 +222,7 @@ namespace ngcomp
     
     fac = 1;
 
-    ma.GetElEdges (elnr, edge_nums, edge_orient);
+    ma->GetElEdges (elnr, edge_nums, edge_orient);
     for (int i = 0; i < 3; i++)
       fac(i) = edge_orient[i];
   }

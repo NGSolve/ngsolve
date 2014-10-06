@@ -47,7 +47,7 @@ namespace ngcomp
     bool nowirebasket;
   public:
     ///
-    FacetFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~FacetFESpace ();
     ///
@@ -114,7 +114,7 @@ namespace ngcomp
     virtual void GetEdgeDofNrs ( int nr, Array<int> & dnums ) const
     {
       dnums.SetSize0();
-      if ( ma.GetDimension() == 3 ) return;
+      if (ma->GetDimension() == 3) return;
 
       /*
       dnums += nr;
@@ -126,7 +126,7 @@ namespace ngcomp
     virtual void GetFaceDofNrs (int nr, Array<int> & dnums) const
     {
       dnums.SetSize(0);
-      if (ma.GetDimension() == 2) return;
+      if (ma->GetDimension() == 2) return;
 
       dnums += nr;
       dnums += GetFacetDofs(nr);
@@ -146,7 +146,7 @@ namespace ngcomp
   class NGS_DLL_HEADER HybridDGFESpace : public CompoundFESpace
   {
   public:
-    HybridDGFESpace (const MeshAccess & ama, 
+    HybridDGFESpace (shared_ptr<MeshAccess> ama, 
                      const Flags & flags);
 
     virtual ~HybridDGFESpace ();

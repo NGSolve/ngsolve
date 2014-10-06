@@ -267,7 +267,7 @@ namespace ngcomp
   template <class SCAL>
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     const S_GridFunction<SCAL> * gf;
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
@@ -282,12 +282,12 @@ namespace ngcomp
     // FlatVector<SCAL> elu;
 
   public:
-    VisualizeGridFunction (const MeshAccess & ama,
+    VisualizeGridFunction (shared_ptr<MeshAccess> ama,
 			   const GridFunction * agf,
 			   const shared_ptr<BilinearFormIntegrator> abfi2d,
 			   const shared_ptr<BilinearFormIntegrator> abfi3d,
 			   bool aapplyd);
-    VisualizeGridFunction (const MeshAccess & ama,
+    VisualizeGridFunction (shared_ptr<MeshAccess> ama,
 			   const GridFunction * agf,
 			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
 			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
@@ -352,11 +352,11 @@ namespace ngcomp
 
   class NGS_DLL_HEADER VisualizeCoefficientFunction : public netgen::SolutionData
   {
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     shared_ptr<CoefficientFunction> cf;
     // LocalHeap lh;
   public:
-    VisualizeCoefficientFunction (const MeshAccess & ama,
+    VisualizeCoefficientFunction (shared_ptr<MeshAccess> ama,
 				  shared_ptr<CoefficientFunction> acf);
     
     virtual ~VisualizeCoefficientFunction ();

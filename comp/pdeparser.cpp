@@ -562,26 +562,26 @@ namespace ngcomp
                   if (ifstream (meshfile.c_str()))
 		    {
 		      cout << IM(1) << "Load mesh from file " << meshfile << endl;
-                      MeshAccess * ma = new MeshAccess;
+                      auto ma = make_shared<MeshAccess>();
                       ma -> LoadMesh (meshfile);
                       pde -> AddMeshAccess(ma);
 		    }
 		  else
 		    {
 		      cout << IM(1) << "Load mesh from file " << scan->GetStringValue() << endl;
-                      MeshAccess * ma = new MeshAccess;
+                      auto ma = make_shared<MeshAccess>();
                       ma -> LoadMesh (scan->GetStringValue());
                       pde -> AddMeshAccess(ma);
 		    }
 		}
 
               // pde->GetMeshAccess().UpdateBuffers();
-	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess().GetNLevels(), 6);
-	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess().GetNE(), 6);
-	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess().GetNV(), 6);
+	      pde->AddVariable ("mesh.levels", pde->GetMeshAccess()->GetNLevels(), 6);
+	      pde->AddVariable ("mesh.ne", pde->GetMeshAccess()->GetNE(), 6);
+	      pde->AddVariable ("mesh.nv", pde->GetMeshAccess()->GetNV(), 6);
 	      
 	      // if (!pde->GetMeshAccess().GetNP())
-	      if (pde->GetMeshAccess().GetDimension() == -1)
+	      if (pde->GetMeshAccess()->GetDimension() == -1)
 		throw Exception ("No mesh or empty mesh file\n");
 	      scan->ReadNext();
 	      break;
@@ -702,7 +702,7 @@ namespace ngcomp
 	      CheckFlags (flags);
 	      flags.SetFlag ("name", name.c_str());
 
-	      int dim = pde->GetMeshAccess().GetDimension();
+	      int dim = pde->GetMeshAccess()->GetDimension();
 	      if (GetNumProcs().GetNumProc(npid, dim))
 		{
 		  pde -> AddNumProc (name, GetNumProcs().GetNumProc(npid, dim)->creator(*pde, flags));
@@ -839,7 +839,7 @@ namespace ngcomp
                   flags.SetFlag ("coefficient", coefname.c_str());
 
                   string npname = "assignnp" + ToString(cnt);
-                  pde -> AddNumProc (npname, GetNumProcs().GetNumProc("setvalues", pde->GetMeshAccess().GetDimension())
+                  pde -> AddNumProc (npname, GetNumProcs().GetNumProc("setvalues", pde->GetMeshAccess()->GetDimension())
                                      -> creator (*pde, flags));
                 }
 
@@ -1086,9 +1086,9 @@ namespace ngcomp
 	      //cout << "values = " << endl << values << endl;
 
 	      int maxdom = -1;
-	      int ne = pde->GetMeshAccess().GetNE();
+	      int ne = pde->GetMeshAccess()->GetNE();
 	      for (int i = 0; i < ne; i++)
-		maxdom = max2 (maxdom, pde->GetMeshAccess().GetElIndex(i));
+		maxdom = max2 (maxdom, pde->GetMeshAccess()->GetElIndex(i));
 	      maxdom++;
 
 	      dcoeffs.SetSize(maxdom);
@@ -1098,10 +1098,10 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
-		  int index = pde->GetMeshAccess().GetElIndex(i);
+		  int index = pde->GetMeshAccess()->GetElIndex(i);
 		  if (coeffs[index]) continue;
 
-		  string mat = pde->GetMeshAccess().GetElMaterial(i);
+		  string mat = pde->GetMeshAccess()->GetElMaterial(i);
 		  // cout << "mat = " << mat << ", ind = " << index << endl;
 
 		  EvalFunction * fun = NULL;
@@ -1260,9 +1260,9 @@ namespace ngcomp
 	      //cout << "values = " << endl << values << endl;
 
 	      int maxbc = -1;
-	      int nse = pde->GetMeshAccess().GetNSE();
+	      int nse = pde->GetMeshAccess()->GetNSE();
 	      for (int i = 0; i < nse; i++)
-		maxbc = max2 (maxbc, pde->GetMeshAccess().GetSElIndex(i));
+		maxbc = max2 (maxbc, pde->GetMeshAccess()->GetSElIndex(i));
 	      maxbc++;
 
 	      dcoeffs.SetSize(maxbc);
@@ -1272,11 +1272,11 @@ namespace ngcomp
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
-		  int index = pde->GetMeshAccess().GetSElIndex(i);
+		  int index = pde->GetMeshAccess()->GetSElIndex(i);
 		  if (coeffs[index]) continue;
 
 		  EvalFunction * fun = NULL;
-		  string bcname = pde->GetMeshAccess().GetSElBCName(i);
+		  string bcname = pde->GetMeshAccess()->GetSElBCName(i);
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
 
 		  bool used = false;
@@ -1553,7 +1553,7 @@ namespace ngcomp
 		  string integrator_name = scan->GetStringValue();
 		  //const ngfem::Integrators::IntegratorInfo
                   auto info = ngfem::GetIntegrators() 
-		    . GetBFI(integrator_name, pde->GetMeshAccess().GetDimension());
+		    . GetBFI(integrator_name, pde->GetMeshAccess()->GetDimension());
 
 		  if (info)
 		    {
@@ -1665,8 +1665,8 @@ namespace ngcomp
 
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
 			{
-			  int size = max2 (pde->GetMeshAccess().GetNDomains(), 
-					   pde->GetMeshAccess().GetNBoundaries());
+			  int size = max2 (pde->GetMeshAccess()->GetNDomains(), 
+					   pde->GetMeshAccess()->GetNBoundaries());
 			  BitArray definedon(size);
 			  definedon.Clear();
 
@@ -1688,7 +1688,7 @@ namespace ngcomp
 		      integrator -> SetConstantCoefficient (partflags.GetDefineFlag("const"));
 
 		      int numregions = integrator -> BoundaryForm() ? 
-			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
+			pde->GetMeshAccess()->GetNBoundaries() : pde->GetMeshAccess()->GetNDomains();
 		      while (numregions > 0 && !integrator->DefinedOn(numregions-1))
 			numregions--;
 
@@ -1759,7 +1759,7 @@ namespace ngcomp
 		  string integrator_name = scan->GetStringValue();
 
 		  auto info =
-		    ngfem::GetIntegrators().GetLFI(integrator_name, pde->GetMeshAccess().GetDimension());
+		    ngfem::GetIntegrators().GetLFI(integrator_name, pde->GetMeshAccess()->GetDimension());
 		
 		  if (info)
 		    {
@@ -1812,7 +1812,7 @@ namespace ngcomp
                       */
                       auto integrator = info->creator(coeffs);
 		      int numregions = integrator -> BoundaryForm() ? 
-			pde->GetMeshAccess().GetNBoundaries() : pde->GetMeshAccess().GetNDomains();
+			pde->GetMeshAccess()->GetNBoundaries() : pde->GetMeshAccess()->GetNDomains();
 		      for (int i = 0; i < coeffs.Size(); i++)
 			{
 			  if (coeffs[i] -> NumRegions () < numregions)
@@ -1870,8 +1870,8 @@ namespace ngcomp
 
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
 			{
-			  int size = max2 (pde->GetMeshAccess().GetNDomains(), 
-					   pde->GetMeshAccess().GetNBoundaries());
+			  int size = max2 (pde->GetMeshAccess()->GetNDomains(), 
+					   pde->GetMeshAccess()->GetNBoundaries());
 			  BitArray definedon(size);
 			  definedon.Clear();
 

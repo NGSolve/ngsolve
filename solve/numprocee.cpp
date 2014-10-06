@@ -106,7 +106,7 @@ namespace ngsolve
     FlatVector<double> err = gferr->GetVector().FV<double>();
     err = 0;
   
-    int ndom = ma.GetNDomains();
+    int ndom = ma->GetNDomains();
     for (int k = 0; k < ndom; k++)
       {
 	CalcFluxProject (ma, *gfu, *flux, bfi, 1, k, lh);
@@ -124,7 +124,7 @@ namespace ngsolve
     pde.AddVariable (string("ZZerrest.")+GetName()+".err", sqrt(sum));
     
 
-    outfile << ma.GetNLevels() 
+    outfile << ma->GetNLevels() 
 	    << "  "<< bfa->GetFESpace().GetNDof() 
 	    << " " << sqrt(sum) << endl;
   }
@@ -269,7 +269,7 @@ namespace ngsolve
 	FlatVector<double> diff = gfdiff->GetVector().FV<double> ();
 	diff = 0;
 
-	int ndom = ma.GetNDomains();
+	int ndom = ma->GetNDomains();
 
 	if ( bfa2 )
 	  {
@@ -312,7 +312,7 @@ namespace ngsolve
 
     if (file)
       {
-	(*file) << ma.GetNLevels() 
+	(*file) << ma->GetNLevels() 
 		<< "  " << ndof
 		<< "  " << sqrt(double (ndof))
 		<< " " << sqrt(sum) << endl;
@@ -417,7 +417,7 @@ namespace ngsolve
     pde.AddVariable (string("RTZZerrest.")+GetName()+".err", sqrt(sum));
 
     static ofstream errout ("error.out");
-    errout << ma.GetNLevels() 
+    errout << ma->GetNLevels() 
 	   << "  " << bfa->GetFESpace().GetNDof() 
 	   << " " << sqrt(sum) << endl;
   }
@@ -575,7 +575,7 @@ namespace ngsolve
   {
     cout << "Element marker, " << flush;
 
-    if (ma.GetNLevels() < minlevel) 
+    if (ma->GetNLevels() < minlevel) 
       {
 	cout << endl;
 	return;
@@ -641,10 +641,10 @@ namespace ngsolve
       }
 
     /*
-    for(i = 0; i< ma.GetNSE(); i++)
+    for(i = 0; i< ma->GetNSE(); i++)
       {
 	Array<int> elts;
-	ma.GetFaceElements(ma.GetSElFace(i),elts);
+	ma->GetFaceElements(ma->GetSElFace(i),elts);
 	for(int j=0; j<elts.Size(); j++)
 	  if(refine[elts[j]])
 	    Ng_SetSurfaceRefinementFlag(i+1,1);
@@ -662,9 +662,9 @@ namespace ngsolve
 
     cout << nref << "/" << err.Size() << " elements marked." << endl;
 
-    if (ma.GetDimension() == 3)
+    if (ma->GetDimension() == 3)
       {
-	int nse = ma.GetNSE();
+	int nse = ma->GetNSE();
 	for (int i = 0; i < nse; i++)
 	  Ng_SetSurfaceRefinementFlag (i+1, 0);
       }

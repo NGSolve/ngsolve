@@ -15,7 +15,7 @@ namespace ngcomp
   using namespace ngcomp;
 
   template <class SCAL>
-  void CalcErrorHierarchical (const MeshAccess & ma, 
+  void CalcErrorHierarchical (shared_ptr<MeshAccess> ma, 
 			      const S_BilinearForm<SCAL> & bfa,
 			      const S_BilinearForm<SCAL> & bfa2,
 			      const S_LinearForm<SCAL> & lff,
@@ -117,7 +117,7 @@ namespace ngcomp
  
 
   template
-  void CalcErrorHierarchical<double> (const MeshAccess & ma, 
+  void CalcErrorHierarchical<double> (shared_ptr<MeshAccess> ma, 
 				      const S_BilinearForm<double> & bfa,
 				      const S_BilinearForm<double> & bfa2,
 				      const S_LinearForm<double> & lff,

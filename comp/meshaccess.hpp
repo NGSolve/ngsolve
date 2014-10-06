@@ -734,7 +734,7 @@ namespace ngcomp
    */
   class ProgressOutput
   {
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
     string task;
     int total;
     double prevtime;
@@ -743,7 +743,7 @@ namespace ngcomp
     int cnt;
     bool done_called;
   public:
-    NGS_DLL_HEADER ProgressOutput (const MeshAccess & ama,
+    NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,
 		    string atask, int atotal);
     NGS_DLL_HEADER ~ProgressOutput();
 

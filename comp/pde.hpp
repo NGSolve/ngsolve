@@ -21,7 +21,7 @@ namespace ngcomp
     double * variable;
     EvalFunction * evaluator;
   public:
-    EvalVariable(const MeshAccess & ama, const string & aname,
+    EvalVariable(shared_ptr<MeshAccess> ama, const string & aname,
                  EvalFunction * aevaluator)
       : NGS_Object(ama,aname), variable(NULL), evaluator(aevaluator)
     { ; }
@@ -57,7 +57,7 @@ namespace ngcomp
   {
     string label;
   public:
-    LabelStatement(const MeshAccess & ama, const string & aname,
+    LabelStatement(shared_ptr<MeshAccess> ama, const string & aname,
                   string alabel)
       : NGS_Object(ama,aname)
     { 
@@ -71,7 +71,7 @@ namespace ngcomp
   {
     string target;
   public:
-    GotoStatement(const MeshAccess & ama, const string & aname,
+    GotoStatement(shared_ptr<MeshAccess> ama, const string & aname,
                   string atarget)
       : NGS_Object(ama,aname)
     { 
@@ -89,7 +89,7 @@ namespace ngcomp
     EvalFunction * fun;
     string target;
   public:
-    ConditionalGotoStatement(const MeshAccess & ama, const string & aname,
+    ConditionalGotoStatement(shared_ptr<MeshAccess> ama, const string & aname,
                   EvalFunction * afun, string atarget)
       : NGS_Object(ama,aname)
     { 
@@ -111,7 +111,7 @@ namespace ngcomp
   class StopStatement : public NGS_Object
   {
   public:
-    StopStatement(const MeshAccess & ama, const string & aname)
+    StopStatement(shared_ptr<MeshAccess> ama, const string & aname)
       : NGS_Object(ama,aname) 
     { ; }
   };
@@ -134,7 +134,7 @@ namespace ngcomp
   class NGS_DLL_HEADER PDE
   {
     ///
-    Array<ngcomp::MeshAccess*> mas;
+    Array<shared_ptr<MeshAccess>> mas;
 
     ///
     string geometryfilename;
@@ -223,17 +223,12 @@ namespace ngcomp
     void PrintMemoryUsage (ostream & ost);
 
     ///
-    const MeshAccess & GetMeshAccess (int nr = 0) const  
+    shared_ptr<MeshAccess> GetMeshAccess (int nr = 0) const  
     { 
-      return *mas[nr]; 
+      return mas[nr]; 
     }
     ///
-    MeshAccess & GetMeshAccess (int nr = 0) 
-    {
-      return *mas[nr]; 
-    }
-    ///
-    void AddMeshAccess (MeshAccess * ma) { mas.Append (ma); }
+    void AddMeshAccess (shared_ptr<MeshAccess> ma) { mas.Append (ma); }
     ///
     bool ConstantUsed (const string & aname) const;
     ///

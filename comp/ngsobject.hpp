@@ -23,7 +23,7 @@ namespace ngcomp
     Flags flaglist; 
 
     /// access to the mesh
-    const MeshAccess & ma;
+    shared_ptr<MeshAccess> ma;
 
     /// profiling
     Timer timer;
@@ -34,7 +34,7 @@ namespace ngcomp
   public:
 
     /// 
-    NGS_Object (const MeshAccess & ama, const string & aname = "noname", 
+    NGS_Object (shared_ptr<MeshAccess> ama, const string & aname = "noname", 
                 bool checkflags = false)
       : name(aname), ma(ama), timer(aname), skipCleanUp(0)
     { 
@@ -58,7 +58,7 @@ namespace ngcomp
     }
 
     ///
-    const MeshAccess & GetMeshAccess() const
+    shared_ptr<MeshAccess> GetMeshAccess() const
     { 
       return ma; 
     }

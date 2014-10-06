@@ -371,16 +371,16 @@ GetReturnValue (Function func) {
 
     if (solver != DIRECT)  
       {
-        ma.PushStatus ("Iterative solver");
+        ma->PushStatus ("Iterative solver");
         invmat->SetMaxSteps (maxsteps);
         invmat->SetPrecision (prec);
         invmat->SetPrintRates ();
         invmat->SetInitialize (0);
-        invmat->SetStatusHandler(ma);
+        invmat->SetStatusHandler(*ma);
 	invmat->UseSeed(useseedvariant);
       }
     else
-      ma.PushStatus ("Direct solver");
+      ma->PushStatus ("Direct solver");
 
       
     double starttime, endtime;
@@ -403,7 +403,7 @@ GetReturnValue (Function func) {
     // delete &hv;
 
 
-    ma.PopStatus ();
+    ma->PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
@@ -714,7 +714,7 @@ GetReturnValue (Function func) {
 	  }
       }
 
-    ma.PushStatus ("Iterative solver");
+    ma->PushStatus ("Iterative solver");
 
     invmat->SetMaxSteps (maxsteps);
     invmat->SetPrecision (prec);
@@ -726,7 +726,7 @@ GetReturnValue (Function func) {
 
     invmat->Mult (vecf, vecu);
 
-    ma.PopStatus ();
+    ma->PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;

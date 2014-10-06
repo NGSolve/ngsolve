@@ -21,11 +21,11 @@ namespace ngcomp
   public:
     ///
     /*
-      RaviartThomasFESpace (const MeshAccess & ama,
+      RaviartThomasFESpace (shared_ptr<MeshAccess> ama,
       int adim, bool acomplex);
     */
     ///
-    RaviartThomasFESpace (const MeshAccess & ama, const Flags& flags, bool parseflags=false);
+    RaviartThomasFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags=false);
     ///
     virtual ~RaviartThomasFESpace ();
   
@@ -33,7 +33,7 @@ namespace ngcomp
     virtual const char * GetType() 
     { return "RaviartThomas"; }
 
-    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
     ///
     virtual void Update(LocalHeap & lh);

@@ -34,13 +34,13 @@ namespace ngcomp
     bool all_dofs_together;
   public:
 
-    L2HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~L2HighOrderFESpace ();
     // Create if order=0 ElementFESpace Constructor, else L2HOFE 
-    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
     // Creates also for order=0 a L2HighOrderFESpace 
-    static shared_ptr<FESpace> CreateHO (const MeshAccess & ma, const Flags & flags) 
+    static shared_ptr<FESpace> CreateHO (shared_ptr<MeshAccess> ma, const Flags & flags) 
     {
       return make_shared<L2HighOrderFESpace> (ma, flags, true);
     }  
@@ -137,11 +137,11 @@ namespace ngcomp
 
   public:
 
-    L2SurfaceHighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool parseflags=false);
+    L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
     ///
     virtual ~L2SurfaceHighOrderFESpace ();
 
-    static shared_ptr<FESpace> Create (const MeshAccess & ma, const Flags & flags);
+    static shared_ptr<FESpace> Create (shared_ptr<MeshAccess> ma, const Flags & flags);
 
     virtual string GetClassName () const
     {

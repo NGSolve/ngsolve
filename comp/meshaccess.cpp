@@ -1201,7 +1201,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
 
   
-  ProgressOutput :: ProgressOutput (const MeshAccess & ama,
+  ProgressOutput :: ProgressOutput (shared_ptr<MeshAccess> ama,
 				    string atask, int atotal)
     : ma(ama), task(atask), total(atotal)
   {
@@ -1236,7 +1236,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 	  if (is_root)
 	    {
 	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;
-	      ma.SetThreadPercentage ( 100.0*nr / total);
+	      ma->SetThreadPercentage ( 100.0*nr / total);
 	    }
 #ifdef PARALLEL
 	  else
@@ -1291,7 +1291,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 		cout << IM(3) 
 		     << "\r" << task << " " << sum << "/" << total
 		     << " (" << num_working << " procs working) " << flush;
-		ma.SetThreadPercentage ( 100.0*sum / total );
+		ma->SetThreadPercentage ( 100.0*sum / total );
 		if (!num_working) break;
 		if (!got_flag) usleep (1000);
 	      }

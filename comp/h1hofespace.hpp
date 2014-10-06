@@ -56,7 +56,7 @@ namespace ngcomp
     bool nodalp2;
   public:
 
-    H1HighOrderFESpace (const MeshAccess & ama, const Flags & flags, bool checkflags=false);
+    H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
     ///
     virtual ~H1HighOrderFESpace ();
 
