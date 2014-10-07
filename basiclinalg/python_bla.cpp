@@ -54,7 +54,6 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
         // First element of tuple is of type int
         bp::extract<int> row_ind(rows);
         if(row_ind.check()) {
-            cout << "Case 1" << endl;
             bp::object row( self.Row(row_ind()) );
             return row.attr("__getitem__")(cols);
         }
@@ -62,7 +61,6 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
         // Second element of tuple is of type int
         bp::extract<int> col_ind(cols);
         if(col_ind.check()) {
-            cout << "Case 2" << endl;
             bp::object col( TROW(self.Col(col_ind())) );
             return col.attr("__getitem__")(rows);
         }
