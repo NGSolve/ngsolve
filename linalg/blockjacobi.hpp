@@ -130,7 +130,7 @@ namespace ngla
     virtual int VWidth() const { return mat.Width(); }
     
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const 
+    virtual AutoVector CreateVector () const 
     {
       return mat.CreateVector();
     }
@@ -347,7 +347,7 @@ namespace ngla
     virtual void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const 
+    virtual AutoVector CreateVector () const 
     {
       return mat.CreateVector();
     }

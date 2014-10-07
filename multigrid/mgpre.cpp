@@ -223,7 +223,6 @@ namespace ngmg
   MGM (int level, BaseVector & u, 
        const BaseVector & f, int incsm) const
   {
-    int j;
     if (level <= 0 )
       {
 	switch (coarsetype)
@@ -239,9 +238,9 @@ namespace ngmg
 		 		  
 		  for(int i=1; i<coarsesmoothingsteps; i++)
 		    {
-		      smoother->Residuum (level, u, f, *d);
-		      *w = (*coarsegridpre) * *d;
-		      u += *w;
+		      smoother->Residuum (level, u, f, d);
+		      w = (*coarsegridpre) * d;
+		      u += w;
 		    }
 		}
 	      break;
@@ -280,8 +279,8 @@ namespace ngmg
 	    smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
 	    
 
-	    auto dt = d->Range (0, fespace.GetNDofLevel(level-1));
-	    auto wt = w->Range (0, fespace.GetNDofLevel(level-1));
+	    auto dt = d.Range (0, fespace.GetNDofLevel(level-1));
+	    auto wt = w.Range (0, fespace.GetNDofLevel(level-1));
 
 
 	    // smoother->Residuum (level, u, f, d);
@@ -292,14 +291,14 @@ namespace ngmg
 	    smoother->Residuum (level, u, f, d);
 	    */
 
-	    prolongation->RestrictInline (level, *d);
+	    prolongation->RestrictInline (level, d);
 
-	    *w = 0;
-	    for (j = 1; j <= cycle; j++)
-	      MGM (level-1, *wt, *dt, incsm * incsmooth);
+	    w = 0;
+	    for (int j = 1; j <= cycle; j++)
+	      MGM (level-1, wt, dt, incsm * incsmooth);
 	    
-	    prolongation->ProlongateInline (level, *w);
-	    u += *w;
+	    prolongation->ProlongateInline (level, w);
+	    u += w;
 
 	    /*
 	    smoother->Residuum (level, u, f, d);
@@ -307,11 +306,6 @@ namespace ngmg
 	    u.Range (0,w.Size()) += w;
 	    */
 
-	    // delete &wt;
-	    // delete &dt;
-	    // delete &w;
-	    // delete &d;
-	    
 	    smoother->PostSmooth (level, u, f, smoothingsteps * incsm);
 	  }
 
@@ -388,9 +382,9 @@ namespace ngmg
         smoother->PreSmoothResiduum (level, u, f, *res, smoothingsteps);
 
 
-        *cres = *res->Range (0, cres->Size());
+        *cres = *res.Range (0, cres.Size());
         *cw = *cpre * *cres;
-        *u.Range (0, cw->Size()) += *cw;
+        *u.Range (0, cw.Size()) += *cw;
 
         /*
         auto ref_cres = res->Range(0,cres->Size());
@@ -409,7 +403,7 @@ namespace ngmg
       // delete cres;
   }
 
-  shared_ptr<BaseVector> TwoLevelMatrix :: CreateVector () const
+  AutoVector TwoLevelMatrix :: CreateVector () const
   {
     return mat->CreateVector();
   }

@@ -200,7 +200,7 @@ void ExportNgcomp()
          )
 
     .def("__str__", &ToString<GF>)
-    .add_property("space", &GF::FESpacePtr, "the finite element spaces")
+    .add_property("space", &GF::GetFESpace, "the finite element spaces")
 
     .def("Update", FunctionPointer ([](GF & self) { self.Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
@@ -220,7 +220,7 @@ void ExportNgcomp()
     */
     
     .add_property("vec",
-                  FunctionPointer([](GF & self) { return self.VectorPtr(); }),
+                  FunctionPointer([](GF & self) { return self.GetVectorPtr(); }),
                   "vector of coefficients of first multidim dimension")
 
     .add_property("vecs", FunctionPointer
@@ -228,7 +228,7 @@ void ExportNgcomp()
                    { 
                      bp::list vecs;
                      for (int i = 0; i < self.GetMultiDim(); i++) 
-                       vecs.append(self.VectorPtr(i));
+                       vecs.append(self.GetVectorPtr(i));
                      return vecs;
                    }),
                   "list of vectors of coefficients")
@@ -236,7 +236,7 @@ void ExportNgcomp()
     .def("__call__", FunctionPointer
          ([](GF & self, double x, double y, double z)
           {
-            auto space = self.FESpacePtr();
+            auto space = self.GetFESpace();
             auto evaluator = space->GetEvaluator();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
@@ -289,7 +289,7 @@ void ExportNgcomp()
     .def("D", FunctionPointer
          ([](GF & self, const double &x, const double &y, const double &z)
           {
-            const FESpace & space = self.GetFESpace();
+            const FESpace & space = *self.GetFESpace();
             IntegrationPoint ip;
             int dim_mesh = space.GetMeshAccess()->GetDimension();
             auto evaluator = space.GetFluxEvaluator();
@@ -370,7 +370,7 @@ void ExportNgcomp()
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 
-    .add_property("mat", &BilinearForm::MatrixPtr)
+    .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     // .def("Matrix", FunctionPointer([](const BF & self) { return self.MatrixPtr(); }))
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
@@ -397,7 +397,7 @@ void ExportNgcomp()
          )
     .def("__str__", &ToString<LF>)
 
-    .add_property("vec", &LinearForm::VectorPtr)
+    .add_property("vec", &LinearForm::GetVectorPtr)
 
     .def("Add", FunctionPointer
          ([](LF & self, shared_ptr<LinearFormIntegrator> lfi) -> LF&

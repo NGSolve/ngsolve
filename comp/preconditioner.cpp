@@ -195,7 +195,7 @@ namespace ngcomp
 
     shared_ptr<LinearForm> lfconstraint = 
       pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
-    shared_ptr<FESpace> fes = bfa->FESpacePtr();
+    shared_ptr<FESpace> fes = bfa->GetFESpace();
     
 
     shared_ptr<BilinearForm> lo_bfa = bfa;
@@ -399,7 +399,7 @@ namespace ngcomp
 
     // double cond;
 
-    condout << bfa->GetFESpace().GetNDof() << "\t" << bfa->GetFESpace().GetOrder() << "\t" << eigen.EigenValue(mgnumber) << "\t" << eigen.MaxEigenValue() << "\t" 
+    condout << bfa->GetFESpace()->GetNDof() << "\t" << bfa->GetFESpace()->GetOrder() << "\t" << eigen.EigenValue(mgnumber) << "\t" << eigen.MaxEigenValue() << "\t" 
 	    << eigen.MaxEigenValue()/eigen.EigenValue(mgnumber) <<  "\t" << endl;
     
     if(testresult_ok) *testresult_ok = eigenretval;
@@ -448,7 +448,7 @@ namespace ngcomp
 	{
 	  bfa->GetMatrix().SetInverseType (inversetype);
 	  const BitArray * freedofs = 
-	    bfa->GetFESpace().GetFreeDofs (bfa->UsesEliminateInternal());
+	    bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
 	  inverse = bfa->GetMatrix().InverseMatrix(freedofs);
 	}
       catch (exception &)
@@ -561,9 +561,9 @@ namespace ngcomp
 	// new: blocktypes, specified in fespace
 	if (bfa->UsesEliminateInternal())
 	  flags.SetFlag("eliminate_internal");
-	Table<int> * blocks = bfa->GetFESpace().CreateSmoothingBlocks(flags);
+	Table<int> * blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, /* coarse_pre.get(), */ parallel, bfa->GetFESpace().GetFreeDofs());
+	  .CreateBlockJacobiPrecond(*blocks, 0, /* coarse_pre.get(), */ parallel, bfa->GetFESpace()->GetFreeDofs());
 	// dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
       }
     else if (block)
@@ -578,7 +578,7 @@ namespace ngcomp
 	  mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
 #endif
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
-	  .CreateJacobiPrecond(bfa->GetFESpace().GetFreeDofs(bfa->UsesEliminateInternal()));
+	  .CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
       }
 
 
@@ -616,7 +616,7 @@ namespace ngcomp
 
     // double cond;
 
-    condout << bfa->GetFESpace().GetNDof() << "\t" << bfa->GetFESpace().GetOrder() << "\t" << eigen.EigenValue(1) << "\t" << eigen.MaxEigenValue() << "\t" 
+    condout << bfa->GetFESpace()->GetNDof() << "\t" << bfa->GetFESpace()->GetOrder() << "\t" << eigen.EigenValue(1) << "\t" << eigen.MaxEigenValue() << "\t" 
 	    << eigen.MaxEigenValue()/eigen.EigenValue(1) <<  "\t" << endl;
     
     if(testresult_ok) *testresult_ok = eigenretval;
@@ -832,7 +832,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     coefe = pde->GetCoefficientFunction (flags.GetStringFlag ("coefe", ""),1);    
     coeff = pde->GetCoefficientFunction (flags.GetStringFlag ("coeff", ""),1);    
 
-    hcurl = dynamic_cast<const NedelecFESpace*> (&bfa->GetFESpace()) != 0;
+    hcurl = dynamic_cast<const NedelecFESpace*> (bfa->GetFESpace().get()) != 0;
     levels = int (flags.GetNumFlag ("levels", 10));
     coarsegrid = flags.GetDefineFlag ("coarsegrid");
 

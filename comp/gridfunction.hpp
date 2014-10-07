@@ -36,9 +36,11 @@ namespace ngcomp
     Array<shared_ptr<GridFunction>> compgfs;
   public:
     /// 
+    /*
     GridFunction (const FESpace & afespace,
                   const string & name = "gfu", 
 		  const Flags & flags = Flags());
+    */
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
@@ -51,10 +53,9 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive);
     ///  
     virtual BaseVector & GetVector (int comp = 0) { return *vec[comp]; }
-    ///  
     virtual const BaseVector & GetVector (int comp = 0) const  { return *vec[comp]; }
     ///  
-    virtual shared_ptr<BaseVector> VectorPtr (int comp = 0) const  { return vec[comp]; }
+    virtual shared_ptr<BaseVector> GetVectorPtr (int comp = 0) const  { return vec[comp]; }
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
@@ -70,9 +71,9 @@ namespace ngcomp
     int GetLevelUpdated() const { return level_updated; }
     ///
 
-    const FESpace & GetFESpace() const { return *fespace; }
+    // const FESpace & GetFESpace() const { return *fespace; }
     ///
-    shared_ptr<FESpace> FESpacePtr() const { return fespace; }
+    shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
     virtual string GetClassName () const
@@ -239,12 +240,12 @@ namespace ngcomp
   class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
   {
   protected:
-    const GridFunction & gf;
+    shared_ptr<GridFunction> gf;
     shared_ptr<DifferentialOperator> diffop;
     int comp;
   public:
-    GridFunctionCoefficientFunction (const GridFunction & agf, int acomp = 0);
-    GridFunctionCoefficientFunction (const GridFunction & agf, 
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<DifferentialOperator> adiffop, int acomp = 0);
     
     virtual ~GridFunctionCoefficientFunction ();

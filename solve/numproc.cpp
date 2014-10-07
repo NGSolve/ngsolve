@@ -355,7 +355,7 @@ namespace ngsolve
       << endl;
     */
 
-    if (!bfa->GetFESpace().IsComplex())
+    if (!bfa->GetFESpace()->IsComplex())
       vis = new VisualizeGridFunction<double> (ma, gfu.get(), bfi2d, bfi3d, applyd);
     else
       vis = new VisualizeGridFunction<Complex> (ma, gfu.get(), bfi2d, bfi3d, applyd);
@@ -711,7 +711,7 @@ namespace ngsolve
 	  throw Exception ("evaluate linear-form needs an argument -gridfunction=u");
 
 	cout << "<" << lff->GetName() << ", " << gfu->GetName() << "> = " << flush;
-	if (!lff->GetFESpace().IsComplex())
+	if (!lff->GetFESpace()->IsComplex())
 	  {
 	    result = S_InnerProduct<double>(lff->GetVector(), gfu->GetVector());
 	    cout << result << endl;
@@ -721,7 +721,7 @@ namespace ngsolve
       }
     else if (point.Size() >= 2)
       {
-	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace().GetIntegrator();
+	auto bfi = (bfa) ? bfa->GetIntegrator(0) : gfu->GetFESpace()->GetIntegrator();
 
 	if (point2.Size() >= 2)
 	  {
@@ -747,7 +747,7 @@ namespace ngsolve
 		    FlatVector<double> p(point.Size(), lh);
 		    p = point + (double(i)/numpoints) * (point2-point);
 		    
-		    if (!gfu->GetFESpace().IsComplex())
+		    if (!gfu->GetFESpace()->IsComplex())
 		      {
 			FlatVector<double> pflux(bfi->DimFlux(), lh);
 			bool ok =
@@ -870,7 +870,7 @@ namespace ngsolve
 			    firstone = false;
 			  }
 			
-			if (!gfu->GetFESpace().IsComplex())
+			if (!gfu->GetFESpace()->IsComplex())
 			  {
 			    FlatVector<double> pflux(bfi->DimFlux(), lh);
                             CalcPointFlux (ma, *gfu, p,
@@ -947,7 +947,7 @@ namespace ngsolve
 	      cout << "," << point(i);
 	    cout << ") = " << flush;
 
-	    if (!gfu->GetFESpace().IsComplex())
+	    if (!gfu->GetFESpace()->IsComplex())
 	      {
 		FlatVector<double> pflux(bfi->DimFlux(), lh);
 		CalcPointFlux (ma, *gfu, point, domains,
@@ -979,11 +979,11 @@ namespace ngsolve
 	cout << bfa->GetName() << "(" << gfu->GetName() << ", " << gfv->GetName() << ") = " << flush;
 	BaseVector & vecu = gfu->GetVector();
 	BaseVector & vecv = gfv->GetVector();
-	BaseVector & hv = *vecu.CreateVector();
-	bfa->GetMatrix().Mult (vecu, hv);
-	if (!bfa->GetFESpace().IsComplex())
+	auto hv = vecu.CreateVector();
+	bfa->GetMatrix().Mult (vecu, *hv);
+	if (!bfa->GetFESpace()->IsComplex())
 	  {
-	    result = S_InnerProduct<double>(vecv, hv);
+	    result = S_InnerProduct<double>(vecv, *hv);
 	    //cout << setprecision(16) << result << endl;
 
 	    cout << "bf(gf,gf2) = " << result << endl;
@@ -995,7 +995,7 @@ namespace ngsolve
 	else
 	  {
 	    if (!hermitsch)
-	      cout << S_InnerProduct<Complex>(vecv, hv) << endl;
+	      cout << S_InnerProduct<Complex>(vecv, *hv) << endl;
 	    else
 	      {
 		FlatVector<Complex> fvecv = vecv.FVComplex();
@@ -1006,7 +1006,6 @@ namespace ngsolve
 		cout << sum << endl;
 	      }
 	  }
-	delete &hv;
       }
     
     pde.GetVariable(variablename,true) = result;
@@ -1158,7 +1157,7 @@ namespace ngsolve
     shared_ptr<BilinearFormIntegrator> BoundaryIntegrator_ptr;
     
 
-    const FESpace & fes = gfu->GetFESpace();
+    const FESpace & fes = *gfu->GetFESpace();
 
     const int components = fes.GetIntegrator()->DimFlux();
     int ndomains;
@@ -2634,10 +2633,10 @@ namespace ngsolve
 
   void NumProcGenerateOne :: Do(LocalHeap & lh)
   {
-    const HCurlHighOrderFESpace * hcurlhofespace = dynamic_cast<const HCurlHighOrderFESpace *>(&gfone->GetFESpace());
-    const H1HighOrderFESpace * h1hofespace = dynamic_cast<const H1HighOrderFESpace *>(&gfone->GetFESpace());
-    const NodalFESpace * h1fespace = dynamic_cast<const NodalFESpace *>(&gfone->GetFESpace());
-    const L2HighOrderFESpace * l2hofespace = dynamic_cast<const L2HighOrderFESpace *>(&gfone->GetFESpace());
+    const HCurlHighOrderFESpace * hcurlhofespace = dynamic_cast<const HCurlHighOrderFESpace *>(gfone->GetFESpace().get());
+    const H1HighOrderFESpace * h1hofespace = dynamic_cast<const H1HighOrderFESpace *>(gfone->GetFESpace().get());
+    const NodalFESpace * h1fespace = dynamic_cast<const NodalFESpace *>(gfone->GetFESpace().get());
+    const L2HighOrderFESpace * l2hofespace = dynamic_cast<const L2HighOrderFESpace *>(gfone->GetFESpace().get());
     
     S_GridFunction<double> * gfoned = dynamic_cast<S_GridFunction<double> *>(gfone.get());
     S_GridFunction<Complex> * gfonec = dynamic_cast<S_GridFunction<Complex> *>(gfone.get());

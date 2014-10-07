@@ -61,7 +61,7 @@ namespace ngmg
       {
 	if (&biform.GetMatrix(i))
 	  jac[i] = dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(i))
-	    .CreateJacobiPrecond(biform.GetFESpace().GetFreeDofs());
+	    .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
 	else
 	  jac[i] = NULL;
       }
@@ -141,7 +141,7 @@ namespace ngmg
     d = f - biform.GetMatrix(level) * u;
   }
   
-  shared_ptr<BaseVector> GSSmoother :: CreateVector(int level) const
+  AutoVector GSSmoother :: CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
   }
@@ -219,7 +219,7 @@ namespace ngmg
     //    biform.GetMatrix (level).Residuum (u, f, d);
   }
   
-  shared_ptr<BaseVector> AnisotropicSmoother :: 
+  AutoVector AnisotropicSmoother :: 
   CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
@@ -714,7 +714,7 @@ namespace ngmg
     
     if (biform.UsesEliminateInternal())
       flags.SetFlag("eliminate_internal");
-    Table<int> * it = biform.GetFESpace().CreateSmoothingBlocks(flags);
+    Table<int> * it = biform.GetFESpace()->CreateSmoothingBlocks(flags);
 
 
     while (jac.Size() < level)
@@ -780,13 +780,13 @@ namespace ngmg
     //     {
   
     delete direct;
-    direct = biform.GetFESpace().CreateDirectSolverClusters(flags);
+    direct = biform.GetFESpace()->CreateDirectSolverClusters(flags);
 
     if (direct)
       {
 	if (biform.UsesEliminateInternal())
 	  {
-	    const FESpace & fes = biform.GetFESpace();
+	    const FESpace & fes = *biform.GetFESpace();
 	    for (int j = 0; j < direct->Size(); j++)
 	      if (fes.GetDofCouplingType(j) == LOCAL_DOF)
 		(*direct)[j] = 0;
@@ -914,7 +914,7 @@ namespace ngmg
     d = f - biform.GetMatrix (level) * u;
   }
   
-  shared_ptr<BaseVector> BlockSmoother :: CreateVector(int level) const
+  AutoVector BlockSmoother :: CreateVector(int level) const
   {
     return biform.GetMatrix(level).CreateVector();
   }
@@ -967,10 +967,10 @@ namespace ngmg
     */
   }
   
-  shared_ptr<BaseVector> SmoothingPreconditioner :: CreateVector () const
+  AutoVector SmoothingPreconditioner :: CreateVector () const
   {
     //    return smoother.CreateVector(level);
-    return 0;
+    return shared_ptr<BaseVector>();
   }
 
 

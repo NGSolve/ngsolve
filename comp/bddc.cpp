@@ -51,26 +51,26 @@ namespace ngcomp
       free_dofs = NULL;
       RegionTimer reg(timer);
 
-      const FESpace & fes = bfa.GetFESpace();
-      shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
+      auto fes = bfa.GetFESpace();
+      shared_ptr<MeshAccess> ma = fes->GetMeshAccess();
 
       Array<int> wbdcnt(ma->GetNE()+ma->GetNSE());
       Array<int> ifcnt(ma->GetNE()+ma->GetNSE());
       wbdcnt = 0;
       ifcnt = 0;
-      const BitArray & freedofs = *fes.GetFreeDofs();
+      const BitArray & freedofs = *fes->GetFreeDofs();
       
       Array<int> dnums;
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
 	  {
             ElementId ei (bound ? BND : VOL, i);
-	    fes.GetDofNrs (ei, dnums);
+	    fes->GetDofNrs (ei, dnums);
 	    for (int j = 0; j < dnums.Size(); j++)
 	      {
 		if (dnums[j] == -1) continue;
 		if (!freedofs.Test(dnums[j])) continue;
-		COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
+		COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[j]);
 		if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
 		
 		if (ct == WIREBASKET_DOF)
@@ -87,7 +87,7 @@ namespace ngcomp
 	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
 	  {
             ElementId ei (bound ? BND : VOL, i);
-	    fes.GetDofNrs (ei, dnums);
+	    fes->GetDofNrs (ei, dnums);
 	    
 	    int lifcnt = 0;
 	    int lwbcnt = 0;
@@ -96,7 +96,7 @@ namespace ngcomp
 	      {
 		if (dnums[j] == -1) continue;
 		if (!freedofs.Test(dnums[j])) continue;
-		COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[j]);
+		COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[j]);
 		if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
 		
 		if (ct == WIREBASKET_DOF)
@@ -106,7 +106,7 @@ namespace ngcomp
 	      } 
 	  }
       
-      int ndof = fes.GetNDof();      
+      int ndof = fes->GetNDof();      
       
       if (!bfa.IsSymmetric())
 	{
@@ -133,7 +133,7 @@ namespace ngcomp
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
       
-      weight.SetSize (fes.GetNDof());
+      weight.SetSize (fes->GetNDof());
       weight = 0;
     }
 
@@ -148,13 +148,13 @@ namespace ngcomp
 
       HeapReset hr(lh);
 
-      const FESpace & fes = bfa.GetFESpace();
+      auto fes = bfa.GetFESpace();
       
       ArrayMem<int, 100> localwbdofs, localintdofs;
       
       for (int k = 0; k < dnums.Size(); k++)
 	{
-	  COUPLING_TYPE ct = fes.GetDofCouplingType(dnums[k]);	      
+	  COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[k]);	      
 	  if (ct == WIREBASKET_DOF)
 	    localwbdofs.Append (k);
 	  else
@@ -267,12 +267,12 @@ namespace ngcomp
       static Timer timer ("BDDC Finalize");
       RegionTimer reg(timer);
 
-      const FESpace & fes = bfa.GetFESpace();
-      int ndof = fes.GetNDof();      
+      auto fes = bfa.GetFESpace();
+      int ndof = fes->GetNDof();      
 
 
 #ifdef PARALLEL
-      AllReduceDofData (weight, MPI_SUM, fes.GetParallelDofs());
+      AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
 #endif
 
       for (int i = 0; i < sparse_innersolve->Height(); i++)
@@ -313,12 +313,12 @@ namespace ngcomp
 
       // *free_dofs = wbdof;
       for (int i = 0; i < ndof; i++)
-	if (fes.GetDofCouplingType(i) == WIREBASKET_DOF)
+	if (fes->GetDofCouplingType(i) == WIREBASKET_DOF)
 	  free_dofs -> Set(i);
 
 
-      if (fes.GetFreeDofs())
-	free_dofs -> And (*fes.GetFreeDofs());
+      if (fes->GetFreeDofs())
+	free_dofs -> And (*fes->GetFreeDofs());
       int cntfreedofs = 0;
       for (int i = 0; i < free_dofs->Size(); i++)
 	if (free_dofs->Test(i)) cntfreedofs++;
@@ -330,8 +330,8 @@ namespace ngcomp
 	  Flags flags;
 	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
-	  cout << "call Create Smoothing Blocks of " << bfa.GetFESpace().GetName() << endl;
-	  Table<int> & blocks = *(bfa.GetFESpace().CreateSmoothingBlocks(flags));
+	  cout << "call Create Smoothing Blocks of " << bfa.GetFESpace()->GetName() << endl;
+	  Table<int> & blocks = *(bfa.GetFESpace()->CreateSmoothingBlocks(flags));
 	  cout << "has blocks" << endl << endl;
 	  // *testout << "blocks = " << endl << blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
@@ -345,7 +345,7 @@ namespace ngcomp
 	  
 	  //Coarse Grid of Wirebasket
 	  cout << "call directsolverclusters inverse" << endl;
-	  Array<int> & clusters = *(bfa.GetFESpace().CreateDirectSolverClusters(flags));
+	  Array<int> & clusters = *(bfa.GetFESpace()->CreateDirectSolverClusters(flags));
 	  cout << "has clusters" << endl << endl;
 	  
 	  cout << "call coarse wirebasket grid inverse" << endl;
@@ -405,7 +405,7 @@ namespace ngcomp
       delete tmp2;
     }
     
-    virtual shared_ptr<BaseVector> CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return bfa.GetMatrix().CreateVector();
     }
@@ -572,16 +572,16 @@ namespace ngcomp
 		    bool inner_element, int elnr,
 		    LocalHeap & lh)
   {
-    const FESpace & fes = bfa->GetFESpace();
+    auto fes = bfa->GetFESpace();
 
     int used = 0;
     for (int i = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) used++;
+      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) used++;
     
     FlatArray<int> compress(used, lh);
     int cnt = 0;
     for (int i = 0; i < dnums.Size(); i++)
-      if (dnums[i] != -1 && fes.GetFreeDofs()->Test(dnums[i])) 
+      if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) 
         compress[cnt++] = i;
 
     FlatArray<int> hdnums(used, lh);

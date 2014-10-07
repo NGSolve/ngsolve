@@ -45,8 +45,8 @@ namespace ngcomp
     virtual ~LinearForm () { ; }
   
     ///
-    const FESpace & GetFESpace() const { return *fespace; }
-    shared_ptr<FESpace> FESpacePtr() const { return fespace; }
+    // const FESpace & GetFESpace() const { return *fespace; }
+    shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
     virtual void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
@@ -86,9 +86,9 @@ namespace ngcomp
 
 
     ///
-    virtual shared_ptr<BaseVector> VectorPtr() const = 0;
+    virtual shared_ptr<BaseVector> GetVectorPtr() const = 0;
     virtual BaseVector & GetVector () const = 0;
-    operator BaseVector& () const { return GetVector(); }
+    // operator BaseVector& () const { return GetVector(); }
 
     ///
     virtual string GetClassName () const
@@ -193,8 +193,8 @@ namespace ngcomp
     virtual ~T_LinearForm ();
 
     ///
-    virtual BaseVector & GetVector () const;
-    virtual shared_ptr<BaseVector> VectorPtr () const { return vec; }
+    virtual BaseVector & GetVector () const { return *vec; }
+    virtual shared_ptr<BaseVector> GetVectorPtr () const { return vec; }
 
     ///
     virtual void AllocateVector ();

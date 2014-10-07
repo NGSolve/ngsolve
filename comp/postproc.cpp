@@ -25,8 +25,8 @@ namespace ngcomp
     
     ma->PushStatus ("Post-processing");
 
-    const FESpace & fes = u.GetFESpace();
-    const FESpace & fesflux = flux.GetFESpace();
+    const FESpace & fes = *u.GetFESpace();
+    const FESpace & fesflux = *flux.GetFESpace();
 
     bool bound = bli->BoundaryForm();
 
@@ -175,7 +175,7 @@ namespace ngcomp
 			shared_ptr<BilinearFormIntegrator> bli,
 			bool applyd, int domain, LocalHeap & lh)
   {
-    if (bu.GetFESpace().IsComplex())
+    if (bu.GetFESpace()->IsComplex())
       {
 	CalcFluxProject (ma, 
 			 dynamic_cast<const S_GridFunction<Complex>&> (bu),
@@ -236,7 +236,7 @@ namespace ngcomp
       dynamic_cast<const S_GridFunction<SCAL>&> (bu);
     ElementId ei (boundary ? BND : VOL, elnr);
 
-    const FESpace & fes = u.GetFESpace();
+    const FESpace & fes = *u.GetFESpace();
     const FiniteElement & fel = fes.GetFE (ei, lh);
     const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
     Array<int> dnums(fel.GetNDof(), lh);
@@ -337,7 +337,7 @@ namespace ngcomp
 
     S_GridFunction<SCAL> & u = dynamic_cast<S_GridFunction<SCAL> &> (bu);
 
-    const FESpace & fes = u.GetFESpace();
+    const FESpace & fes = *u.GetFESpace();
     shared_ptr<MeshAccess> ma = fes.GetMeshAccess();
 
     ma->PushStatus ("setvalues");
@@ -462,7 +462,7 @@ namespace ngcomp
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh)
   {
-    if (u.GetFESpace().IsComplex())
+    if (u.GetFESpace()->IsComplex())
       SetValues<Complex> (coef, u, bound, diffop, clh);
     else
       SetValues<double> (coef, u, bound, diffop, clh);
@@ -485,8 +485,8 @@ namespace ngcomp
 
     ma->PushStatus ("Error estimator");
 
-    const FESpace & fes = u.GetFESpace();
-    const FESpace & fesflux = flux.GetFESpace();
+    const FESpace & fes = *u.GetFESpace();
+    const FESpace & fesflux = *flux.GetFESpace();
 
     bool bound = bli->BoundaryForm();
 
@@ -600,7 +600,7 @@ namespace ngcomp
 		  FlatVector<double> & err,
 		  int domain, LocalHeap & lh)
   {
-    if (bu.GetFESpace().IsComplex())
+    if (bu.GetFESpace()->IsComplex())
       {
 	CalcError (ma, 
 		   dynamic_cast<const S_GridFunction<Complex>&> (bu),
@@ -628,8 +628,8 @@ namespace ngcomp
   {
     ma->PushStatus ("Calc Difference");
 
-    const FESpace & fes1 = u1.GetFESpace();
-    const FESpace & fes2 = u2.GetFESpace();
+    const FESpace & fes1 = *u1.GetFESpace();
+    const FESpace & fes2 = *u2.GetFESpace();
 
     bool bound1 = bli1->BoundaryForm();
     bool bound2 = bli2->BoundaryForm();
@@ -765,7 +765,7 @@ namespace ngcomp
   {
     ma->PushStatus ("Calc Difference");
 
-    const FESpace & fes1 = u1.GetFESpace();
+    const FESpace & fes1 = *u1.GetFESpace();
 
     bool bound1 = bli1->BoundaryForm();
 
@@ -906,7 +906,7 @@ namespace ngcomp
 				      FlatVector<double> & diff,
 				      int domain, LocalHeap & lh)
   {
-    if (u1.GetFESpace().IsComplex())
+    if (u1.GetFESpace()->IsComplex())
       CalcDifference (ma, 
 		      dynamic_cast<const S_GridFunction<Complex>&> (u1), 
 		      bfi1, coef, diff, domain, lh);

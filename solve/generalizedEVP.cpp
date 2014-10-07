@@ -108,10 +108,10 @@ namespace ngsolve
 
     BaseVector & vecu = gfu->GetVector(0);
 	
-    BaseVector & d = *vecu.CreateVector();
-    BaseVector & w = *vecu.CreateVector();
-    BaseVector & au = *vecu.CreateVector();
-    BaseVector & mu = *vecu.CreateVector();
+    auto d = vecu.CreateVector();
+    auto w = vecu.CreateVector();
+    auto au = vecu.CreateVector();
+    auto mu = vecu.CreateVector();
     
     Vector<double> lami(2*num);
 
@@ -143,31 +143,31 @@ namespace ngsolve
 	  {
 	    BaseVector & vecu = gfu->GetVector (ei);
 
-	    au = mata * vecu;
-	    mu = matm * vecu;
+	    *au = mata * vecu;
+	    *mu = matm * vecu;
 	    
 	    double lam = 
-	      InnerProduct (vecu, au) /
-	      InnerProduct (vecu, mu);
+	      InnerProduct (vecu, *au) /
+	      InnerProduct (vecu, *mu);
 	    
-	    d = au - lam * mu;
-	    w = matpre * d;
-	    double norm = InnerProduct (w, mu=matm*w);
+	    *d = *au - lam * *mu;
+	    *w = matpre * *d;
+	    double norm = InnerProduct (*w, *mu = matm* *w);
 
 	    *hvec[ei] = vecu;
-	    *hvec[num+ei] = (1.0 / sqrt(norm)) * w;
+	    *hvec[num+ei] = (1.0 / sqrt(norm)) * *w;
 	  }
 	    
 	    
 	for (int ei = 0; ei < 2*num; ei++)
 	  {
-	    au = mata * *hvec[ei];
-	    mu = matm * *hvec[ei];
+	    *au = mata * *hvec[ei];
+	    *mu = matm * *hvec[ei];
 		
 	    for (int ej  = 0; ej < 2*num; ej++)
 	      {
-		ha(ei, ej) = InnerProduct (au, *hvec[ej]);
-		hm(ei, ej) = InnerProduct (mu, *hvec[ej]);
+		ha(ei, ej) = InnerProduct (*au, *hvec[ej]);
+		hm(ei, ej) = InnerProduct (*mu, *hvec[ej]);
 	      } 
 	  }
 
@@ -185,10 +185,10 @@ namespace ngsolve
 	    
 	for (int ei = 0; ei < num; ei++)
 	  {
-	    au = 0;
+	    *au = 0;
 	    for (int i = 0; i < 2*num; i++)
-	      au += evecs(ei, i) * *hvec[i];
-	    gfu->GetVector (ei) = au;
+	      *au += evecs(ei, i) * *hvec[i];
+	    gfu->GetVector (ei) = *au;
 	  }
       }
 
@@ -331,7 +331,7 @@ namespace ngsolve
 	    for (int i = 0; i < nc; i++)
 	      for (int j = 0; j < nc; j++)
 		{
-		  matac2(i,j) -= matac(i,j);
+                  matac2(i,j) -= matac(i,j);
 		  matmc2(i,j) -= matmc(i,j);
 		}
 

@@ -14,9 +14,9 @@ namespace ngla
 {
 
   class BaseVector;
-  typedef auto_ptr<BaseVector> TempVector;
-  template <class SCAL> class S_BaseVector;
+  class AutoVector;
 
+  template <class SCAL> class S_BaseVector;
 
   class NGS_DLL_HEADER ComplexConjugate;
   class NGS_DLL_HEADER ComplexConjugate2;
@@ -229,15 +229,15 @@ namespace ngla
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
-    // create vector, procs is the set of processors on which the vector exists
-    // default 0 pointer means all procs
-    virtual shared_ptr<BaseVector> CreateVector () const = 0;
+    // 
+    // virtual shared_ptr<BaseVector> CreateVector () const = 0;
+    virtual AutoVector CreateVector () const = 0;
 
 
     virtual void SetRandom ();
 
-    virtual shared_ptr<BaseVector> Range (int begin, int end) const;
-    virtual shared_ptr<BaseVector> Range (IntRange range) const;
+    virtual AutoVector Range (int begin, int end) const;
+    virtual AutoVector Range (IntRange range) const;
 
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<double> & v) const = 0;
@@ -332,6 +332,86 @@ namespace ngla
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
   };
 
+
+
+  class AutoVector : public BaseVector
+  {
+    shared_ptr<BaseVector> vec;
+  public:
+    AutoVector () { ; }
+
+    AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) 
+    { size = vec->Size(), entrysize = vec->EntrySize(); }
+
+    template<typename U>
+    AutoVector (shared_ptr<U> hvec) : vec(hvec) 
+    { size = vec->Size(), entrysize = vec->EntrySize(); }
+
+    template <typename T> 
+    BaseVector & operator= (const VVecExpr<T> & v)
+    {
+      v.AssignTo (1.0, *vec);
+      return *this;
+    }
+
+    ///
+    BaseVector & operator= (const BaseVector & v)
+    {
+      vec->Set (1.0, v);
+      return *this;
+    }
+    ///
+    BaseVector & operator= (double s)
+    {
+      vec->SetScalar (s);
+      return *this;
+    }
+    ///
+    BaseVector & operator= (Complex s)
+    {
+      vec->SetScalar (s);
+      return *this;
+    }
+
+    operator shared_ptr<BaseVector> () { return vec; }
+    BaseVector & operator* () { return *vec; }
+    const BaseVector & operator* () const { return *vec; }
+
+
+    virtual AutoVector Range (int begin, int end) const { return vec->Range(begin,end); }
+    virtual AutoVector Range (IntRange range) const { return vec->Range(range); }
+
+
+    virtual void * Memory () const throw () 
+    {
+      return vec->Memory();
+    }
+
+    virtual FlatVector<double> FVDouble () const 
+    {
+      return vec->FVDouble();
+    }
+    virtual FlatVector<Complex> FVComplex () const
+    {
+      return vec->FVComplex();
+    }
+
+    virtual AutoVector CreateVector () const
+    {
+      return std::move(vec->CreateVector());
+    }
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<double> & v) const
+    {
+      vec -> GetIndirect (ind, v);
+    }
+    virtual void GetIndirect (const FlatArray<int> & ind, 
+			      const FlatVector<Complex> & v) const
+    {
+      vec -> GetIndirect (ind, v);
+    }
+
+  };
 
 
   template <>

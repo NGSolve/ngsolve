@@ -75,14 +75,14 @@ namespace ngsolve
 
     Flags fesflags;
      
-    if(bfa->GetFESpace().VarOrder())
+    if(bfa->GetFESpace()->VarOrder())
       {
-	cout << " Set Flux Space Relorder "  << bfa->GetFESpace().GetRelOrder() << endl; 
-	fesflags.SetFlag("relorder",bfa->GetFESpace().GetRelOrder()); 
+	cout << " Set Flux Space Relorder "  << bfa->GetFESpace()->GetRelOrder() << endl; 
+	fesflags.SetFlag("relorder",bfa->GetFESpace()->GetRelOrder()); 
       }
     else 
       {
-	int order = bfa->GetFESpace().GetOrder();
+	int order = bfa->GetFESpace()->GetOrder();
 	if(order == 0)
 	  order = 1;
 	cout << "Set Flux Space order " << order << endl;
@@ -90,7 +90,7 @@ namespace ngsolve
       } 
     
     fesflags.SetFlag ("dim", bfi->DimFlux());
-    if (bfa->GetFESpace().IsComplex())
+    if (bfa->GetFESpace()->IsComplex())
       fesflags.SetFlag ("complex");
     
 
@@ -125,7 +125,7 @@ namespace ngsolve
     
 
     outfile << ma->GetNLevels() 
-	    << "  "<< bfa->GetFESpace().GetNDof() 
+	    << "  "<< bfa->GetFESpace()->GetNDof() 
 	    << " " << sqrt(sum) << endl;
   }
 
@@ -277,7 +277,7 @@ namespace ngsolve
     
 	    for (int k = 0; k < ndom; k++)
 	      {
-		if (!bfa1->GetFESpace().IsComplex())
+		if (!bfa1->GetFESpace()->IsComplex())
 		  {
 		    CalcDifference (ma, 
 				dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
@@ -308,7 +308,7 @@ namespace ngsolve
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
     pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
     
-    int ndof = bfa1 -> GetFESpace().GetNDofGlobal();
+    int ndof = bfa1 -> GetFESpace()->GetNDofGlobal();
 
     if (file)
       {
@@ -389,8 +389,8 @@ namespace ngsolve
     auto bfi = bfa->GetIntegrator(0);
 
     Flags fesflags;
-    fesflags.SetFlag ("order", bfa->GetFESpace().GetOrder());
-    if (bfa->GetFESpace().IsComplex())
+    fesflags.SetFlag ("order", bfa->GetFESpace()->GetOrder());
+    if (bfa->GetFESpace()->IsComplex())
       fesflags.SetFlag ("complex");
 
     auto fesflux = make_shared<HDivHighOrderFESpace> (ma, fesflags);
@@ -418,7 +418,7 @@ namespace ngsolve
 
     static ofstream errout ("error.out");
     errout << ma->GetNLevels() 
-	   << "  " << bfa->GetFESpace().GetNDof() 
+	   << "  " << bfa->GetFESpace()->GetNDof() 
 	   << " " << sqrt(sum) << endl;
   }
 
@@ -480,7 +480,7 @@ namespace ngsolve
       cout << "Hierarchical error-estimator" << endl;
       
       FlatVector<double> err = gferr->GetVector().FVDouble();
-      if (!bfa->GetFESpace().IsComplex())
+      if (!bfa->GetFESpace()->IsComplex())
 	{
 	  CalcErrorHierarchical (ma, 
 				 dynamic_cast<const S_BilinearForm<double>&> (*bfa), 
@@ -588,7 +588,7 @@ namespace ngsolve
 
     if (gferr2)
       {
-	const FlatVector<double> & err2 = gferr2->GetVector().FV<double>();
+	FlatVector<double> err2 = gferr2->GetVector().FV<double>();
       
 	for (int i = 0; i < err.Size(); i++)
 	  {

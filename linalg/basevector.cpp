@@ -79,7 +79,7 @@ namespace ngla
   BaseVector & BaseVector :: Set (double scal, const BaseVector & v)
   {
     if(Size() != v.Size())
-        throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
+      throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
     FVDouble() = scal * v.FVDouble();
     return *this;
   }
@@ -109,12 +109,12 @@ namespace ngla
   }
 
 
-  shared_ptr<BaseVector> BaseVector ::Range (int begin, int end) const
+  AutoVector BaseVector ::Range (int begin, int end) const
   {
     throw Exception ("BaseVector::Range const called");
   }
 
-  shared_ptr<BaseVector> BaseVector :: Range (IntRange range) const
+  AutoVector BaseVector :: Range (IntRange range) const
   {
     throw Exception ("BaseVector::Range (IntRange) const called");
   }
@@ -647,7 +647,8 @@ namespace ngla
 
 
   template <typename TSCAL>
-  shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: CreateVector () const
+  // shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: CreateVector () const
+  AutoVector S_BaseVectorPtr<TSCAL> :: CreateVector () const
   {
     switch (es)
       {
@@ -659,13 +660,13 @@ namespace ngla
   }
 
   template <typename TSCAL>
-  shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: Range (int begin, int end) const
+  AutoVector S_BaseVectorPtr<TSCAL> :: Range (int begin, int end) const
   {
     return make_shared<S_BaseVectorPtr<TSCAL>> (end-begin, es, pdata+begin*es);
   }
   
   template <typename TSCAL>
-  shared_ptr<BaseVector> S_BaseVectorPtr<TSCAL> :: Range (IntRange range) const
+  AutoVector S_BaseVectorPtr<TSCAL> :: Range (IntRange range) const
   {
     return make_shared<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
   }
