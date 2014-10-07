@@ -535,8 +535,6 @@ BOOST_PYTHON_MODULE(libcsgvis)
   using namespace netgen;
 
   cout << "exporting csg-vis " << endl;
-  bp::def("hi", &Hi);
-
 
   bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>> 
     ("VisualSceneGeometry", bp::no_init)
