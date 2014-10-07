@@ -1189,7 +1189,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
 	
         // HeapReset hr(lh);
-        LocalHeapMem<1000000> lh("visgf::GetMultiValue");
+        LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
@@ -1498,7 +1498,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
         
         
-        LocalHeapMem<1000000> lh("visgf::getmultisurfvalue");
+        LocalHeapMem<100000> lh("visgf::getmultisurfvalue");
 
 	ElementTransformation & eltrans = ma.GetTrafo (elnr, bound, lh);
 
@@ -1910,7 +1910,7 @@ namespace ngcomp
 		double lam1, double lam2, 
 		double * values) 
   {
-    LocalHeapMem<1000000> lh("viscf::GetSurfValue");
+    LocalHeapMem<100000> lh("viscf::GetSurfValue");
     IntegrationPoint ip(lam1, lam2);
     ip.FacetNr() = facetnr;
     bool bound = ma.GetDimension() == 3;
