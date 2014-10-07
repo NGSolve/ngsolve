@@ -3,9 +3,9 @@
 
 pde.Solve()
 
-vecu = pde.gridfunctions["u"].Vector()
-vecf = pde.linearforms["f"].Vector()
-mata = pde.bilinearforms["a"].Matrix()
+vecu = pde.gridfunctions["u"].vec
+vecf = pde.linearforms["f"].vec
+mata = pde.bilinearforms["a"].mat
 
 v = pde.spaces["v"]
 
