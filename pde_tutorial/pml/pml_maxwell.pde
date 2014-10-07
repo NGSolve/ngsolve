@@ -31,7 +31,7 @@ PML_curlcurledge one -definedon=2
 PML_massedge mkk     -definedon=2
 robinedge alpha -imag
 
-define preconditioner c -type=direct -bilinearform=a -inverse=pardiso
+define preconditioner c -type=direct -bilinearform=a # -inverse=pardiso
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c
 

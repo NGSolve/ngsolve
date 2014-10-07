@@ -3,10 +3,10 @@
 #endif
 
 #ifndef VERSION
-#define VERSION "5.3-dev"
+#define VERSION "5.3"
 #endif
 
-#define NGS_VERSION 530
+#define NGS_VERSION 531
 
 
 
