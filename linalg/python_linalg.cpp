@@ -29,8 +29,8 @@ void ExportNgla() {
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
-    .def("CreateVector", &BaseVector::CreateVector)
-    // bp::return_value_policy<bp::manage_new_object>())
+    .def("CreateVector", FunctionPointer( [] ( BaseVector & self)
+        { return shared_ptr<BaseVector>(self.CreateVector()); } ))
 
     .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
     .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
@@ -60,8 +60,12 @@ void ExportNgla() {
     .add_property("width", &BaseMatrix::Width)
 
     .def("CreateMatrix", &BaseMatrix::CreateMatrix)
-    .def("CreateRowVector", &BaseMatrix::CreateRowVector)
-    .def("CreateColVector", &BaseMatrix::CreateColVector)
+
+    .def("CreateRowVector", FunctionPointer( [] ( BaseMatrix & self)
+        { return shared_ptr<BaseVector>(self.CreateRowVector()); } ))
+    .def("CreateColVector", FunctionPointer( [] ( BaseMatrix & self)
+        { return shared_ptr<BaseVector>(self.CreateColVector()); } ))
+
     .def("AsVector", FunctionPointer( [] (BM & m)
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
