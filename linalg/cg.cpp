@@ -71,9 +71,9 @@ namespace ngla
   }
 
  
-  shared_ptr<BaseVector> KrylovSpaceSolver :: CreateVector () const
+  AutoVector KrylovSpaceSolver :: CreateVector () const
   {
-    return 0; // return a->CreateVector();
+    return shared_ptr<BaseVector>(); // return a->CreateVector();
   }
 
 
@@ -904,7 +904,7 @@ namespace ngla
 	BaseVector & w = *f.CreateVector();
 	BaseVector & hv = *f.CreateVector();
 
-        Array<shared_ptr<BaseVector>> vi(maxsteps);
+        Array<AutoVector> vi(maxsteps);
         Matrix<SCAL> h(maxsteps+1, maxsteps);
         Matrix<SCAL> h2(maxsteps+1, maxsteps);
         Vector<SCAL> gammai(maxsteps), ci(maxsteps), si(maxsteps);

@@ -946,7 +946,7 @@ namespace ngla
   */
 
   template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseVector> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  AutoVector SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateVector () const
   {
     return make_shared<VVector<TVY>> (this->size);

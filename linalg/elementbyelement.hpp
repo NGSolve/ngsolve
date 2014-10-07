@@ -36,7 +36,7 @@ namespace ngla
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return height; }
 
-    virtual shared_ptr<BaseVector> CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return make_shared<VVector<double>> (height);
     }

@@ -867,7 +867,7 @@ namespace ngcomp
         for (int i = 0; i < gridfunctions.Size(); i++)
           {
             archive << string (gridfunctions.GetName(i));
-            archive << gridfunctions[i]->GetFESpace().GetName();
+            archive << gridfunctions[i]->GetFESpace()->GetName();
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
           }
@@ -1071,24 +1071,24 @@ namespace ngcomp
     gridfunctions.Set (name, gf);
     todo.Append(gf.get());
 
-    if (addcf && (gf->GetFESpace().GetIntegrator()||gf->GetFESpace().GetEvaluator()) )
-      AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(*gf));
+    if (addcf && (gf->GetFESpace()->GetIntegrator()||gf->GetFESpace()->GetEvaluator()) )
+      AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(gf));
     
-    if (addcf && gf->GetFESpace().GetFluxEvaluator())
+    if (addcf && gf->GetFESpace()->GetFluxEvaluator())
       {
-        auto diffop = gf->GetFESpace().GetFluxEvaluator();
+        auto diffop = gf->GetFESpace()->GetFluxEvaluator();
         string fluxname = diffop->Name() + "_" + name;
-        AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(*gf, diffop));
+        AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(gf, diffop));
       }
     
 
-    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(&gf->GetFESpace());
+    const CompoundFESpace * cfe = dynamic_cast<const CompoundFESpace*>(gf->GetFESpace().get());
     if (cfe)
       {
 	for (int i = 0; i < cfe->GetNSpaces(); i++)
 	  {
             string nname = name + "." + ToString(i+1);
-	    AddGridFunction (nname, shared_ptr<GridFunction>(gf->GetComponent(i)), addcf);
+	    AddGridFunction (nname, gf->GetComponent(i), addcf);
 	  }
       }
   }

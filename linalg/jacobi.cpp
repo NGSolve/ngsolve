@@ -64,7 +64,7 @@ namespace ngla
 
   ///
   template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseVector> JacobiPrecond<TM,TV_ROW,TV_COL> :: CreateVector () const 
+  AutoVector JacobiPrecond<TM,TV_ROW,TV_COL> :: CreateVector () const 
   {
     return mat.CreateVector();
   }

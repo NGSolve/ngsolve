@@ -81,23 +81,23 @@ public:
     BaseVector & vecu = gfu->GetVector();
 
     // creates a matrix of same type:
-    BaseMatrix & summat = *matm.CreateMatrix();
+    auto summat = matm.CreateMatrix();
 
     // create additional vectors:
-    BaseVector & d = *vecu.CreateVector();
-    BaseVector & w = *vecu.CreateVector();
-    BaseVector & v = *vecu.CreateVector();
-    BaseVector & a = *vecu.CreateVector();
-    BaseVector & anew = *vecu.CreateVector();
+    auto d = vecu.CreateVector();
+    auto w = vecu.CreateVector();
+    auto v = vecu.CreateVector();
+    auto a = vecu.CreateVector();
+    auto anew = vecu.CreateVector();
 
 
     // matrices matm and mata have the same memory layout. The arrays of values 
     // can be accessed and manipulated as vectors:
 
-    summat.AsVector() = matm.AsVector() + (dt*dt/4) * mata.AsVector();
+    summat->AsVector() = matm.AsVector() + (dt*dt/4) * mata.AsVector();
 
     // A sparse matrix can compute a sparse factorization. One has to cast to a sparse matrix:
-    BaseMatrix & invmat = * dynamic_cast<BaseSparseMatrix&> (summat) . InverseMatrix();
+    auto invmat = * dynamic_cast<BaseSparseMatrix&> (*summat) . InverseMatrix();
 
 
     // implicite Euler method
@@ -109,16 +109,16 @@ public:
       {
 	cout << "t = " << t << endl;
 
-	w = vecu + dt * v + (dt*dt/4) * a;
+	*w = vecu + dt * *v + (dt*dt/4) * *a;
 
 	double fac = (t < 1) ? 1 : 0;
-	d = fac * vecf - mata * w;
-	anew = invmat * d;
+	*d = fac * vecf - mata * *w;
+	*anew = invmat * *d;
 	
-	vecu += dt * v + (dt*dt/4) * a + (dt*dt/4) * anew;
-	v += (dt/2) * a + (dt/2) * anew;
+	vecu += dt * *v + (dt*dt/4) * *a + (dt*dt/4) * *anew;
+	*v += (dt/2) * *a + (dt/2) * *anew;
 
-	a = anew;
+	*a = *anew;
 
 	// update visualization
 	Ng_Redraw ();	  

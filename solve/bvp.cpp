@@ -232,7 +232,7 @@ GetReturnValue (Function func) {
     KrylovSpaceSolver * invmat = NULL;
     shared_ptr<BaseMatrix> invmat2;
 
-    if (!bfa->GetFESpace().IsComplex())
+    if (!bfa->GetFESpace()->IsComplex())
       {
 	switch (solver)
 	  {
@@ -262,7 +262,7 @@ GetReturnValue (Function func) {
             }
           case DIRECT:
             cout << IM(1) << "direct solve for real system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs(eliminate_internal)); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
 	  }
       }
@@ -296,7 +296,8 @@ GetReturnValue (Function func) {
             }
           case DIRECT:
             cout << IM(1) << "direct solve for complex system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs(eliminate_internal)); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) 
+              . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
           }
       }
@@ -330,7 +331,7 @@ GetReturnValue (Function func) {
             }
           case DIRECT:
             cout << IM(1) << "direct solve for complex system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs(eliminate_internal)); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
           }
       }
@@ -364,7 +365,7 @@ GetReturnValue (Function func) {
             }
           case DIRECT:
             cout << IM(1) << "direct solve for complex system" << endl;
-            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace().GetFreeDofs(eliminate_internal)); 
+            invmat2 = dynamic_cast<const BaseSparseMatrix&> (mat) . InverseMatrix(bfa->GetFESpace()->GetFreeDofs(eliminate_internal)); 
             break;
           }
       }
@@ -575,7 +576,7 @@ GetReturnValue (Function func) {
       ncnt = constraints.Size();
     }
 
-    virtual shared_ptr<BaseVector> CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return a1->CreateVector();
     }
@@ -661,7 +662,7 @@ GetReturnValue (Function func) {
 
     const BaseMatrix & mat = bfa->GetMatrix();
     const BaseVector & vecf = lff->GetVector();
-    BaseVector & vecu = gfu->GetVector();
+    auto & vecu = gfu->GetVector();
 
     if (print)
       {
@@ -679,7 +680,7 @@ GetReturnValue (Function func) {
 	ConstrainedPrecondMatrix * hpre = new ConstrainedPrecondMatrix (premat);
 	premat = hpre;
 	for (int i = 0; i < constraints.Size(); i++)
-	  hpre->AddConstraint(constraints[i]->VectorPtr());
+	  hpre->AddConstraint(constraints[i]->GetVectorPtr());
       }
 
     ConstrainedMatrix * hmat = new ConstrainedMatrix (&mat);
@@ -689,7 +690,7 @@ GetReturnValue (Function func) {
 
     KrylovSpaceSolver * invmat = NULL;
 
-    if (!bfa->GetFESpace().IsComplex())
+    if (!bfa->GetFESpace()->IsComplex())
       {
 	switch (solver)
 	  {

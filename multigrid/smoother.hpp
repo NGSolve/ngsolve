@@ -71,7 +71,7 @@ namespace ngmg
     int Additive () const { return additive; }
 
     ///
-    virtual shared_ptr<BaseVector> CreateVector(int level) const = 0;
+    virtual AutoVector CreateVector(int level) const = 0;
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
     { ; }
@@ -116,7 +116,7 @@ namespace ngmg
     virtual void Residuum (int level, ngla::BaseVector & u, 
 			   const ngla::BaseVector & f, ngla::BaseVector & d) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector(int level) const;
+    virtual AutoVector CreateVector(int level) const;
   };
 
 
@@ -152,7 +152,7 @@ namespace ngmg
     virtual void Residuum (int level, ngla::BaseVector & u, 
 			   const ngla::BaseVector & f, ngla::BaseVector & d) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector(int level) const;
+    virtual AutoVector CreateVector(int level) const;
   };
 
 
@@ -209,7 +209,7 @@ namespace ngmg
     virtual void Residuum (int level, ngla::BaseVector & u, 
 			   const ngla::BaseVector & f, ngla::BaseVector & d) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector(int level) const;
+    virtual AutoVector CreateVector(int level) const;
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
   };
@@ -235,7 +235,7 @@ namespace ngmg
     ///
     virtual void Mult (const ngla::BaseVector & f, ngla::BaseVector & u) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
   };
 
 }

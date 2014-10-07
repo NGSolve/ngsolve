@@ -90,18 +90,18 @@ namespace ngla
     throw Exception ("BaseMatrix::CraeteMatrix called");
   }
   */
-  shared_ptr<BaseVector> BaseMatrix :: CreateVector () const
+  AutoVector BaseMatrix :: CreateVector () const
   {
     cout << "BaseMatrix::CreateVector called" << endl;
-    return 0;
+    return shared_ptr<BaseVector>();
   }
 
-  shared_ptr<BaseVector> BaseMatrix :: CreateRowVector () const
+  AutoVector BaseMatrix :: CreateRowVector () const
   {
     return CreateVector();
   }
 
-  shared_ptr<BaseVector> BaseMatrix :: CreateColVector () const
+  AutoVector BaseMatrix :: CreateColVector () const
   {
     return CreateVector();
   }
@@ -109,7 +109,7 @@ namespace ngla
 
 
 
-
+  
   void BaseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     y = 0;

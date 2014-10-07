@@ -1565,7 +1565,7 @@ namespace ngcomp
 			  if (!coeffs[i])
 			    {
                               shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);
-			      if (gf) coeffs[i] = make_shared<GridFunctionCoefficientFunction> (*gf);
+			      if (gf) coeffs[i] = make_shared<GridFunctionCoefficientFunction> (gf);
 			    }
 
                           if (!coeffs[i])
@@ -1629,7 +1629,7 @@ namespace ngcomp
 		      if (partflags.NumFlagDefined ("comp"))
 			{
 			  if (dynamic_cast<const CompoundFESpace*> 
-			      (&pde->GetBilinearForm (name)->GetFESpace()))
+			      (pde->GetBilinearForm (name)->GetFESpace().get()))
 			    {
 			      integrator = make_shared<CompoundBilinearFormIntegrator>
                                 (integrator, int(partflags.GetNumFlag ("comp", 1))-1);
@@ -1638,7 +1638,7 @@ namespace ngcomp
 			    {
 			      integrator = make_shared<BlockBilinearFormIntegrator>
                                 (integrator, 
-                                 pde->GetBilinearForm (name)->GetFESpace().GetDimension(),
+                                 pde->GetBilinearForm (name)->GetFESpace()->GetDimension(),
                                  int(partflags.GetNumFlag ("comp", 1))-1);
 			    }
 			}
@@ -1772,7 +1772,7 @@ namespace ngcomp
 			    {
 			      shared_ptr<GridFunction> gf = pde->GetGridFunction (scan->GetStringValue(), 1);
 			      if (gf)
-				coeffs[i] = make_shared<GridFunctionCoefficientFunction> (*gf);
+				coeffs[i] = make_shared<GridFunctionCoefficientFunction> (gf);
 			    }
 
                           if (!coeffs[i])
@@ -1839,7 +1839,7 @@ namespace ngcomp
 		      if (partflags.NumFlagDefined ("comp"))
 			{
 			  if (dynamic_cast<const CompoundFESpace*> 
-			      (&pde->GetLinearForm (name)->GetFESpace()))
+			      (pde->GetLinearForm (name)->GetFESpace().get()))
 			    {
 			      integrator = make_shared<CompoundLinearFormIntegrator>
                                 (integrator, int(partflags.GetNumFlag ("comp", 1))-1);
@@ -1847,7 +1847,7 @@ namespace ngcomp
 			  else
 			    {
 			      integrator = make_shared<BlockLinearFormIntegrator>
-                                (integrator, pde->GetLinearForm (name)->GetFESpace().GetDimension(),
+                                (integrator, pde->GetLinearForm (name)->GetFESpace()->GetDimension(),
                                  int(partflags.GetNumFlag ("comp", 1))-1);
                         }
 			}

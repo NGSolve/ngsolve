@@ -909,7 +909,7 @@ int NGS_GetData (ClientData clientData,
 	  shared_ptr<ngcomp::GridFunction> gf = pde->GetGridFunction(argv[2]);
 	  if (gf)
 	    sprintf (buf, "%s", 
-		     gf->GetFESpace().GetName().c_str()); 
+		     gf->GetFESpace()->GetName().c_str()); 
 	  else
 	    sprintf (buf, "v");
 	}

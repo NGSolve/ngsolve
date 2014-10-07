@@ -36,10 +36,10 @@ namespace ngla
     int m;
     double sigma, kappa;
 
-    BaseVector & xold = *b.CreateVector();
-    BaseVector & xoold = *b.CreateVector();
-    BaseVector & w = *b.CreateVector();
-    BaseVector & r = *b.CreateVector();
+    auto xold = b.CreateVector();
+    auto xoold = b.CreateVector();
+    auto w = b.CreateVector();
+    auto r = b.CreateVector();
 
     xold = 0;
 
@@ -77,14 +77,9 @@ namespace ngla
 	    */
 	  }
       }
-
-    delete &xold;
-    delete &xoold;
-    delete &w;
-    delete &r;
   }
 
-  shared_ptr<BaseVector> ChebyshevIteration :: CreateVector () const
+  AutoVector ChebyshevIteration :: CreateVector () const
   {
     return a->CreateVector();
   }

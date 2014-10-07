@@ -550,7 +550,7 @@ namespace ngcomp
 
   void BilinearForm :: PrintReport (ostream & ost) const
   {
-    ost << "on space " << GetFESpace().GetName() << endl
+    ost << "on space " << GetFESpace()->GetName() << endl
         << "symmetric   = " << symmetric << endl
         << "multilevel  = " << multilevel << endl
         << "nonassemble = " << nonassemble << endl
@@ -1783,7 +1783,7 @@ namespace ngcomp
                   }
                 
                 if (linearform)
-                  u += GetInnerSolve() * linearform -> GetVector();
+                  u += GetInnerSolve() * linearform->GetVector();
                 else
                   u += GetInnerSolve() * f;
                 
@@ -2535,7 +2535,7 @@ namespace ngcomp
         Array<int> dnums;
       
         int ne = ma->GetNE();
-        int dim = GetFESpace().GetDimension(); 
+        int dim = GetFESpace()->GetDimension(); 
         LocalHeap lh (2000000, "biform-ApplyLinearized");
 
         bool hasbound = false;
@@ -2680,7 +2680,7 @@ namespace ngcomp
                Array<int> dnums (fel.GetNDof(), lh);
                fespace->GetDofNrs (ei, dnums);
                
-               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace().GetDimension(), lh);
+               FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
                
                x.GetIndirect (dnums, elvecx);
                fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
@@ -2710,7 +2710,7 @@ namespace ngcomp
               ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
               fespace->GetSDofNrs (i, dnums);
             
-              FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), lh);
+              FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);
               x.GetIndirect (dnums, elvecx);
               fespace->TransformVec (i, true, elvecx, TRANSFORM_SOL);
           
@@ -2731,7 +2731,7 @@ namespace ngcomp
             const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
 
-            FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace().GetDimension(), lh);
+            FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);
             x.GetIndirect (dnums, elvecx);
           
             energy += el.Energy (elvecx, lh);
@@ -2937,8 +2937,8 @@ namespace ngcomp
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
 
     x.GetIndirect (dnums, elvecx);
 
@@ -2969,7 +2969,7 @@ namespace ngcomp
 
             // elementtimer.Stop();
             
-            BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
+            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
 
@@ -3031,8 +3031,8 @@ namespace ngcomp
 
     shared_ptr<BaseMatrix> mat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
 #ifdef PARALLEL
-    if ( this->GetFESpace().IsParallel() )
-      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace().GetParallelDofs());
+    if ( this->GetFESpace()->IsParallel() )
+      mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
 #endif
     this->mats.Append (mat);
 
@@ -3150,8 +3150,8 @@ namespace ngcomp
                                                           const FiniteElement * fel,
                                                           const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
                       
     x.GetIndirect (dnums, elvecx);
 
@@ -3188,7 +3188,7 @@ namespace ngcomp
               << "elx = " << elvecx 
               << "ely = " << elvecy << endl;
             */
-            BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
+            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
             elvecy *= val;
 #pragma omp critical(addapply)
             {
@@ -3369,8 +3369,8 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TV_ROW TV_ROW;
     typedef typename mat_traits<TM>::TV_COL TV_COL;
 
-    FlatVector<typename mat_traits<TV_ROW>::TSCAL> elvecx (dnums.Size() * this->GetFESpace().GetDimension(), lh);
-    FlatVector<typename mat_traits<TV_COL>::TSCAL> elvecy (dnums.Size() * this->GetFESpace().GetDimension(), lh);
+    FlatVector<typename mat_traits<TV_ROW>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV_COL>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
                       
     x.GetIndirect (dnums, elvecx);
 
@@ -3403,7 +3403,7 @@ namespace ngcomp
               << "elx = " << elvecx 
               << "ely = " << elvecy << endl;
             */
-            BilinearForm::GetFESpace().TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
+            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
 #pragma omp critical(addapply)
@@ -3718,7 +3718,7 @@ namespace ngcomp
                      int alevel);
   
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
   };
 
   ApplyFineMatrix :: 
@@ -3750,10 +3750,10 @@ namespace ngcomp
     cout << "Apply Matrix currently not implemented" << endl;
   }
 
-  shared_ptr<BaseVector> ApplyFineMatrix :: CreateVector () const
+  AutoVector ApplyFineMatrix :: CreateVector () const
   {
     cerr << "ApplyFineMatrix::CreateVector:  Need Help !!!" << endl;
-    return NULL;
+    return shared_ptr<BaseVector>();
   }
 
 
@@ -3775,9 +3775,9 @@ namespace ngcomp
           */
           mats[i-1] =
             shared_ptr<BaseMatrix>
-            ( dynamic_cast< const BaseSparseMatrix& >( GetMatrix( i ) ).
+            ( dynamic_cast< const BaseSparseMatrix& >(GetMatrix(i) ).
               Restrict( *prolMat, &( dynamic_cast< BaseSparseMatrix& >
-                                     ( GetMatrix( i-1 ) ) ) ) );
+                                     (GetMatrix( i-1 ) ) ) ) );
           
           delete prolMat;
         }
@@ -3829,7 +3829,7 @@ namespace ngcomp
   */
 
 
-  shared_ptr<BaseVector> BilinearFormApplication :: 
+  AutoVector BilinearFormApplication :: 
   CreateVector () const
   {
     return bf -> CreateVector();
@@ -3903,7 +3903,7 @@ namespace ngcomp
   {
     int nr = id.Nr();
     if (id.IsBoundary()) nr += this->ma->GetNE();
-    dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()) . AddElementMatrix (nr, dnums1, dnums2, elmat);
+    dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()).AddElementMatrix (nr, dnums1, dnums2, elmat);
   }
   
 

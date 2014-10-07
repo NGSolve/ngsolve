@@ -64,7 +64,7 @@ namespace ngla
   int EigenSystem :: Calc ()
   {
     int retval = 0;
-
+    
     auto v = a->CreateVector();
     auto u = a->CreateVector();
     auto w = a->CreateVector();
@@ -78,7 +78,7 @@ namespace ngla
     ai.SetSize(0);
     bi.SetSize(0);
 
-    bool is_real = (dynamic_cast< S_BaseVector<double> *>(cv.get()));// ||
+    bool is_real = (dynamic_cast< S_BaseVector<double> *>(&*cv));// ||
 		    //dynamic_cast< S_BaseVector<float> *>(&cv));
 
     /*    
@@ -92,14 +92,14 @@ namespace ngla
     */
     if (is_real)
       {
-        for(int i = 0; i < v->FVDouble().Size(); i++)
-          v->FVDouble()(i) = double (rand()) / RAND_MAX;
+        for(int i = 0; i < v.FVDouble().Size(); i++)
+          v.FVDouble()(i) = double (rand()) / RAND_MAX;
       }
     else
-      for(int i = 0; i < v->FVComplex().Size(); i++)
-        v->FVComplex()(i) = double (rand()) / RAND_MAX;
+      for(int i = 0; i < v.FVComplex().Size(); i++)
+        v.FVComplex()(i) = double (rand()) / RAND_MAX;
       
-    *cv = 0;
+    cv = 0;
 
     if (c)
       *cv = (*c) * *v;

@@ -74,12 +74,12 @@ namespace ngsolve
       {
         cout << "new version using linalg - Arnoldi" << endl;
 
-        if (bfa->GetFESpace().IsComplex())
+        if (bfa->GetFESpace()->IsComplex())
           {
             cout << "complex evp" << endl;
             
             Arnoldi<Complex> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
-                                      bfa->GetFESpace().GetFreeDofs() );
+                                      bfa->GetFESpace()->GetFreeDofs() );
             arnoldi.SetShift (Complex(shift,shifti));
             
             int nev = gfu->GetMultiDim();
@@ -107,7 +107,7 @@ namespace ngsolve
           {
             cout << "real evp" << endl;
             Arnoldi<double> arnoldi (bfa->GetMatrix(), bfm->GetMatrix(), 
-                                     bfa->GetFESpace().GetFreeDofs() );
+                                     bfa->GetFESpace()->GetFreeDofs() );
             arnoldi.SetShift (shift);
             
             int nev = gfu->GetMultiDim();
@@ -134,9 +134,9 @@ namespace ngsolve
         return;
       }
 
-    int dim = bfa->GetFESpace().GetDimension();
+    int dim = bfa->GetFESpace()->GetDimension();
     int size = bfa->GetMatrix().Height();
-    bool iscomplex = bfa->GetFESpace().IsComplex();
+    bool iscomplex = bfa->GetFESpace()->IsComplex();
 
     
     if (solver == DENSE)
@@ -265,7 +265,7 @@ namespace ngsolve
 
 
 	mata.AsVector() = mata1.AsVector() - shift*matm.AsVector();  
-	auto inva = mata.InverseMatrix(bfa->GetFESpace().GetFreeDofs());	    
+	auto inva = mata.InverseMatrix(bfa->GetFESpace()->GetFreeDofs());	    
 	
 	// BaseMatrix * inva = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix()).InverseMatrix();
 

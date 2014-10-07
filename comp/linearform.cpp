@@ -28,7 +28,7 @@ namespace ngcomp
 
   void LinearForm :: PrintReport (ostream & ost) const
   {
-    ost << "on space " << GetFESpace().GetName() << endl
+    ost << "on space " << GetFESpace()->GetName() << endl
 	<< "integrators: " << endl;
     for (int i = 0; i < parts.Size(); i++)
       ost << "  " << parts[i]->Name() << endl;
@@ -50,13 +50,13 @@ namespace ngcomp
 
   bool LinearForm :: IsAssembled (void) { return assembled; }
 
+  /*
   template <class TV>
   BaseVector & T_LinearForm<TV> :: GetVector () const 
   { 
     return *vec; 
   }
 
-  /*
   template <class TV>
   shared_ptr<BaseVector> T_LinearForm<TV> :: VectorPtr () const 
   { 

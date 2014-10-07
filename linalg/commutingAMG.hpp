@@ -37,7 +37,7 @@ namespace ngla
     virtual int VWidth() const { return pmat->Width(); }
 
     virtual int NZE() const = 0;
-    virtual shared_ptr<BaseVector> CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return pmat->CreateVector();
     }

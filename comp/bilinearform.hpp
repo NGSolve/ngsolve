@@ -202,18 +202,18 @@ namespace ngcomp
     virtual double Energy (const BaseVector & x) const = 0;
 
     /// returns the assembled matrix
-    BaseMatrix & GetMatrix () const { return *mats.Last(); }
+    const BaseMatrix & GetMatrix () const { return *mats.Last(); }
+    const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
     /// returns the assembled matrix
-    shared_ptr<BaseMatrix> MatrixPtr () const { return mats.Last(); }
+    shared_ptr<BaseMatrix> GetMatrixPtr () const { return mats.Last(); }
 
     // operator const BaseMatrix& () const { return GetMatrix(); }
 
     /// returns the assembled matrix on a given level
-    BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
+    shared_ptr<BaseMatrix> GetMatrixPtr (int level) const { return mats[level]; }
 
-
-    // BaseMatrix & GetMatrix ()  { return *mats.Last(); }
-    // BaseMatrix & GetMatrix (int level)  { return *mats[level]; }
+    BaseMatrix & GetMatrix ()  { return *mats.Last(); }
+    BaseMatrix & GetMatrix (int level)  { return *mats[level]; }
 
     /// reconstruct internal dofs from static condensation 
     /// -A_ii^{-1} A_ib
@@ -251,19 +251,19 @@ namespace ngcomp
 
 
     /// the finite element space
-    const FESpace & GetFESpace() const { return *fespace; }
+    // const FESpace & GetFESpace() const { return *fespace; }
 
 
     /// uses mixed spaces (non operational)
     bool MixedSpaces () const { return fespace2 != NULL; }
 
     /// returns the second space (form mixed spaces)
-    const FESpace & GetFESpace2() const { return *fespace2; }
+    // const FESpace & GetFESpace2() const { return *fespace2; }
 
     /// the finite element space
-    shared_ptr<FESpace> FESpacePtr() const { return fespace; }
+    shared_ptr<FESpace> GetFESpace() const { return fespace; }
     /// the finite element test space
-    shared_ptr<FESpace> FESpacePtr2() const { return fespace2; }
+    shared_ptr<FESpace> GetFESpace2() const { return fespace2; }
 
     ///
     int GetNLevels() const { return mats.Size(); }
@@ -693,16 +693,16 @@ namespace ngcomp
     ///
     virtual void MultAdd (Complex val, const BaseVector & v, BaseVector & prod) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
     ///
     virtual int VHeight() const
     {
-      return bf->GetFESpace().GetNDof(); 
+      return bf->GetFESpace()->GetNDof(); 
     }
     ///
     virtual int VWidth() const
     {
-      return bf->GetFESpace().GetNDof(); 
+      return bf->GetFESpace()->GetNDof(); 
     }
   };
 

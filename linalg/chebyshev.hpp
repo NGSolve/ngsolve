@@ -30,7 +30,7 @@ namespace ngla
     ///
     virtual void Mult (const BaseVector & v, BaseVector & prod) const;
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
   };
 
 }

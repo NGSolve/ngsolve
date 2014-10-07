@@ -230,7 +230,7 @@ namespace ngfem
   {
     int elind = ip.GetTransformation().GetElementIndex();
     if (fun.Size() == 1) elind = 0;
-
+    
     if (! fun[elind] -> IsComplex ())
       {
 	VectorMem<10> args(numarg);
@@ -516,7 +516,7 @@ void FileCoefficientFunction :: Reset(void)
 FileCoefficientFunction :: ~FileCoefficientFunction()
 {
   if(writeips)
-    StopWriteIps();
+    StopWriteIps(); 
 
   EmptyValues();
 }
