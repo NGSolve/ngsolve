@@ -1,6 +1,8 @@
 #ifdef NG_PYTHON
 
 #include <boost/python.hpp>
+#include <../general/ngpython.hpp>
+
 #include <meshing.hpp>
 #include <geometry2d.hpp>
 
@@ -8,49 +10,9 @@ using namespace netgen;
 namespace bp = boost::python;
 
 
-//////////////////////////////////////////////////////////////////////
-// Lambda to function pointer conversion
-template <typename Function>
-struct function_traits
-  : public function_traits<decltype(&Function::operator())> {};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct function_traits<ReturnType(ClassType::*)(Args...) const> {
-  typedef ReturnType (*pointer)(Args...);
-  typedef ReturnType return_type;
-};
-
-template <typename Function>
-typename function_traits<Function>::pointer
-FunctionPointer (const Function& lambda) {
-  return static_cast<typename function_traits<Function>::pointer>(lambda);
-}
-
-
-template <class T>
-inline string ToString (const T& t)
-{
-  stringstream ss;
-  ss << t;
-  return ss.str();
-}
-
-
-
 void ExportGeom2d() 
 {
-  
-  std::string nested_name = "geom2d";
-  if( bp::scope() )
-    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".geom2d");
-                                           
-  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-  
-  cout << "exporting geom2d " << nested_name << endl;
-  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-  parent.attr("geom2d") = module ;
-  
-  bp::scope local_scope(module);
+  ModuleScope module("geom2d");
 
   bp::class_<SplineGeometry2d, boost::noncopyable>("SplineGeometry")
 	.def("Load",&SplineGeometry2d::Load)

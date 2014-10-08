@@ -2,6 +2,7 @@
 
 #include <boost/python.hpp>
 #include <boost/python/slice.hpp>
+#include <../general/ngpython.hpp>
 
 #include <mystdlib.h>
 #include "meshing.hpp"
@@ -9,35 +10,6 @@
 
 using namespace netgen;
 namespace bp = boost::python;
-
-
-//////////////////////////////////////////////////////////////////////
-// Lambda to function pointer conversion
-template <typename Function>
-struct function_traits
-  : public function_traits<decltype(&Function::operator())> {};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct function_traits<ReturnType(ClassType::*)(Args...) const> {
-  typedef ReturnType (*pointer)(Args...);
-  typedef ReturnType return_type;
-};
-
-template <typename Function>
-typename function_traits<Function>::pointer
-FunctionPointer (const Function& lambda) {
-  return static_cast<typename function_traits<Function>::pointer>(lambda);
-}
-
-
-template <class T>
-inline string ToString (const T& t)
-{
-  stringstream ss;
-  ss << t;
-  return ss.str();
-}
-
 
 
 template <typename T, int BASE = 0, typename TIND = int>
@@ -67,17 +39,7 @@ void ExportArray ()
 void ExportNetgenMeshing() 
 {
   
-  std::string nested_name = "meshing";
-  if( bp::scope() )
-    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".meshing");
-                                           
-  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-  
-  cout << "exporting meshing " << nested_name << endl;
-  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-  parent.attr("meshing") = module ;
-  
-  bp::scope local_scope(module);
+  ModuleScope module("meshing");
 
   bp::class_<PointIndex>("PointId", bp::init<int>())
     .def("__repr__", &ToString<PointIndex>)

@@ -106,19 +106,7 @@ namespace netgen
 
 void ExportCSG() 
 {
-  
-  std::string nested_name = "csg";
-  if( bp::scope() )
-    nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".csg");
-                                           
-  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-  
-  cout << "exporting csg " << nested_name << endl;
-  bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-  parent.attr("csg") = module ;
-  
-  bp::scope local_scope(module);
-
+  ModuleScope module("csg");
 
   bp::class_<Point<2>> ("Point2d", bp::init<double,double>()) 
     .def(bp::self+Vec<2>())
