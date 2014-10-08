@@ -255,7 +255,7 @@ namespace ngcomp
     int id = MyMPI_GetId();
     int ntasks = MyMPI_GetNTasks();
     
-    const FESpace & fes = GetFESpace();
+    const FESpace & fes = *GetFESpace();
     ParallelDofs & par = fes.GetParallelDofs ();
     
     if(id > 0)
@@ -482,7 +482,7 @@ namespace ngcomp
     int id = MyMPI_GetId();
     int ntasks = MyMPI_GetNTasks();
     
-    const FESpace & fes = GetFESpace();
+    const FESpace & fes = *GetFESpace();
     ParallelDofs & par = fes.GetParallelDofs ();
     
     if(id > 0)

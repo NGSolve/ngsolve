@@ -223,7 +223,7 @@ namespace ngla
     return host_data;
   }
 
-  shared_ptr<BaseVector> UnifiedVector :: CreateVector () const
+  AutoVector UnifiedVector :: CreateVector () const
   {
     return make_shared<UnifiedVector> (size);
   }

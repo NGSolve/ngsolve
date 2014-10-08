@@ -64,7 +64,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
 
 #else
 template <NODE_TYPE NT, typename TELEM>
-auto NodalData (shared_ptr<MeshAccess> ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
+auto NodalData (const MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
 #endif
 
 
@@ -515,7 +515,7 @@ namespace ngcomp
     archive & level;
     cout << "proc " << MyMPI_GetId() << " send order edge array" << endl;
     MyMPI_Barrier();
-    archive & NodalData<NT_EDGE> (ma, order_edge);
+    archive & NodalData<NT_EDGE> (*ma, order_edge);
     MyMPI_Barrier();
     cout << "all alive" << endl;
 

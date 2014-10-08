@@ -358,9 +358,9 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (bfa.GetFESpace().IsParallel())
+	  if (bfa.GetFESpace()->IsParallel())
 	    {
-	      ParallelDofs * pardofs = &bfa.GetFESpace().GetParallelDofs();
+	      ParallelDofs * pardofs = &bfa.GetFESpace()->GetParallelDofs();
 
 	      pwbmat = new ParallelMatrix (shared_ptr<BaseMatrix> (pwbmat, NOOP_Deleter), pardofs);
 	      pwbmat -> SetInverseType (inversetype);

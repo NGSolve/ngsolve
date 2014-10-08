@@ -153,11 +153,11 @@ namespace ngla
 	if (mat.GetInverseType() == MUMPS)
 	  {
 	    SparseMatrixSymmetric<TM> dummy_matrix (1,1);
-	    inv = new MumpsInverse<TM> (dummy_matrix, 0, 0, true);
+	    inv = make_shared<MumpsInverse<TM>> (dummy_matrix, nullptr, nullptr, true);
 	  }
 	else
 #endif 
-	  inv = NULL;
+	  inv = nullptr;
       }
 
     else
@@ -252,7 +252,7 @@ namespace ngla
   template <typename TM>
   MasterInverse<TM> :: ~MasterInverse ()
   {
-    delete inv;
+    ; // delete inv;
   }
 
   template <typename TM>
@@ -368,7 +368,7 @@ namespace ngla
     return make_shared<ParallelMatrix> (mat->CreateMatrix(), paralleldofs);
   }
 
-  shared_ptr<BaseVector> ParallelMatrix :: CreateVector () const
+  AutoVector ParallelMatrix :: CreateVector () const
   {
     if (dynamic_cast<const SparseMatrix<double>*> (mat.get()))
       return make_shared<ParallelVVector<double>> (mat->Height(), paralleldofs);
@@ -376,7 +376,7 @@ namespace ngla
     cerr << "ParallelMatrix::CreateVector not implemented for matrix type " 
 	 << typeid(mat).name()
 	 << endl;
-    return NULL;
+    return shared_ptr<BaseVector>();
   }
 
   ostream & ParallelMatrix :: Print (ostream & ost) const
@@ -396,9 +396,9 @@ namespace ngla
   }
 
 
-  BaseMatrix * ParallelMatrix::InverseMatrix (const BitArray * subset) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (const BitArray * subset) const
   {
-    BaseMatrix * inv;
+    shared_ptr<BaseMatrix> inv;
     inv = InverseMatrixTM<double> (subset);   if (inv) return inv;
     inv = InverseMatrixTM<Complex> (subset);  if (inv) return inv;
     inv = InverseMatrixTM<Mat<2> > (subset);   if (inv) return inv;
@@ -414,7 +414,7 @@ namespace ngla
 
   
   template <typename TM>
-  BaseMatrix * ParallelMatrix::InverseMatrixTM (const BitArray * subset) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrixTM (const BitArray * subset) const
   {
     const SparseMatrixTM<TM> * dmat = dynamic_cast<const SparseMatrixTM<TM>*> (mat.get());
     if (!dmat) return NULL;
@@ -425,12 +425,12 @@ namespace ngla
       return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, paralleldofs, symmetric);
     else 
 #endif
-      return new MasterInverse<TM> (*dmat, subset, paralleldofs);
+      return make_shared<MasterInverse<TM>> (*dmat, subset, paralleldofs);
   }
 
 
 
-  BaseMatrix * ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
+  shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (const Array<int> * clusters) const
   {
     throw Exception ("ParallelMatrix::Inverse(cluster) not available");
   }
