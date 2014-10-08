@@ -71,9 +71,9 @@ namespace ngla
   public:
     ///
     MumpsInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-                  const BitArray * ainner = NULL,
-                  const Array<int> * acluster = NULL,
-                  bool symmetric = 0);
+                  const BitArray * ainner = nullptr,
+                  const Array<int> * acluster = nullptr,
+                  bool symmetric = false);
 
     ///
     ~MumpsInverse ();
