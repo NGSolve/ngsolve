@@ -31,8 +31,23 @@ if defined NETGENDIR (
       set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-instNoOCC_%BUILD_ARCH%
    )   
 )
+
+if defined PYTHONROOT (
+    set PY_PACKAGE_FOLDER=%PYTHONROOT%\lib\site-packages\netgen
+    echo "%PYTHONROOT%\lib\site-packages\netgen"
+    echo %PY_PACKAGE_FOLDER%
+    if not exist "%PYTHONROOT%\lib\site-packages\netgen" (
+         mkdir "%PYTHONROOT%\lib\site-packages\netgen"
+         echo "%PY_PACKAGE_FOLDER%" created
+    )
+) else (
+    echo Environment variable PYTHONTOOT not found
+)
+
    
 set NGLIB_LIBINC=%PROJ_DIR%..\nglib
+
+set NGLIB_PYTHON_SOURCE=%PROJ_DIR%..\python
 
 
 echo POSTBUILD Script for %PROJ_NAME% ........
@@ -54,7 +69,7 @@ if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
    copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
    if errorlevel 1 goto DLLInstallFailed
-)   
+)
 echo Installing %PROJ_EXEC%: Completed OK!!
 
 if /i "%BUILD_ARCH%" == "win32" (
@@ -92,6 +107,17 @@ if errorlevel 1 goto LibInstallFailed
 echo Installing %PROJ_NAME%.h: Completed OK!!
 
 
+if defined PYTHONROOT (
+    REM *** Copy the python package into python\lib folder ***
+    echo Installing Python package
+    REM xcopy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\" /i /d /y
+    copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\csg.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\meshing.py" "%PY_PACKAGE_FOLDER%\"
+    if errorlevel 1 goto PythonPackageInstallFailed
+    echo Installing Python package: Completed OK!!
+)
+
 REM *** Clean up the build directory by deleting the OBJ files ***
 REM echo Deleting the %PROJ_NAME% build folder %PROJ_DIR%%PROJ_NAME% ....
 REM rmdir %PROJ_DIR%%PROJ_NAME% /s /q
@@ -111,6 +137,9 @@ echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying the %PROJ_NAME% 
 exit 1
 :LibInstallFailed
 echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying %PROJ_NAME%.lib or %PROJ_NAME%.h into install folder!!!
+exit 1
+:PythonPackageInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying Python files into Python library folder!!!
 exit 1
 :ExternalInstallFailed
 echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying pthreadVC2.dll into install folder!!!
