@@ -16,7 +16,7 @@ namespace ngla
   template <typename TM>
   class MasterInverse : public BaseMatrix
   {
-    BaseMatrix * inv;
+    shared_ptr<BaseMatrix> inv;
     const BitArray * subset;
     DynamicTable<int> loc2glob;
     Array<int> select;
@@ -48,7 +48,7 @@ namespace ngla
 
     BaseMatrix & GetMatrix() const { return const_cast<BaseMatrix&> (*mat); }
     virtual shared_ptr<BaseMatrix> CreateMatrix () const;
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
 
     virtual ostream & Print (ostream & ost) const;
 
@@ -58,11 +58,11 @@ namespace ngla
     // virtual const ParallelDofs * GetParallelDofs () const {return &pardofs;}
 
 
-    virtual BaseMatrix * InverseMatrix (const BitArray * subset = 0) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const BitArray * subset = 0) const;
     template <typename TM>
-    BaseMatrix * InverseMatrixTM (const BitArray * subset = 0) const;
+    shared_ptr<BaseMatrix> InverseMatrixTM (const BitArray * subset = 0) const;
 
-    virtual BaseMatrix * InverseMatrix (const Array<int> * clusters) const;
+    virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;

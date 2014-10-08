@@ -330,7 +330,7 @@ namespace ngla
 
 
   template <typename SCAL>
-  shared_ptr<BaseVector> S_ParallelBaseVectorPtr<SCAL> :: 
+  AutoVector S_ParallelBaseVectorPtr<SCAL> :: 
   CreateVector () const
   {
     return make_shared<S_ParallelBaseVectorPtr<TSCAL>>

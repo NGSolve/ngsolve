@@ -916,7 +916,7 @@ namespace ngcomp
     ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<Node> & adofnodes, 
 		      int dim = 1, bool iscomplex = false);
 
-    const MeshAccess & GetMeshAccess() const { return ma; }
+    shared_ptr<MeshAccess> GetMeshAccess() const { return ma; }
     const Array<Node> & GetDofNodes() const { return dofnodes; }
   };
   
