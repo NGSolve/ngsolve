@@ -530,34 +530,50 @@ inline string ToString (const T& t)
 #include <boost/python.hpp>
 namespace bp = boost::python;
 
+void ExportCSGVis()
+{
+
+	std::string nested_name = "csgvis";
+	if (bp::scope())
+		nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".csgvis");
+
+	bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
+
+	cout << "exporting csgvis " << nested_name << endl;
+	bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
+	parent.attr("csgvis") = module;
+
+	bp::scope local_scope(module);
+
+	using namespace netgen;
+
+	cout << "exporting csg-vis " << endl;
+
+	bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>>
+		("VisualSceneGeometry", bp::no_init)
+		.def("Draw", &VisualSceneGeometry::DrawScene)
+		;
+
+	bp::def("VS", FunctionPointer
+		([](CSGeometry & geom)
+	{
+		geom.FindIdenticSurfaces(1e-6);
+		geom.CalcTriangleApproximation(0.01, 20);
+		auto vs = make_shared<VisualSceneGeometry>();
+
+		vs->SetGeometry(&geom);
+		return vs;
+	}));
+
+	bp::def("MouseMove", FunctionPointer
+		([](VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
+	{
+		vsgeom.MouseMove(oldx, oldy, newx, newy, mode);
+	}));
+}
 BOOST_PYTHON_MODULE(libcsgvis) 
 {
-  using namespace netgen;
-
-  cout << "exporting csg-vis " << endl;
-
-  bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>> 
-    ("VisualSceneGeometry", bp::no_init)
-    .def ("Draw", &VisualSceneGeometry::DrawScene)
-    ;
-
-  bp::def ("VS", FunctionPointer 
-           ([] (CSGeometry & geom)
-            {
-              geom.FindIdenticSurfaces (1e-6);
-              geom.CalcTriangleApproximation (0.01, 20);
-              auto vs = make_shared<VisualSceneGeometry>();
-
-              vs->SetGeometry(&geom);
-              return vs;
-            }));
-
-  bp::def ("MouseMove", FunctionPointer 
-           ([] ( VisualSceneGeometry &vsgeom, int oldx, int oldy, int newx, int newy, char mode)
-            {
-              vsgeom.MouseMove(oldx,oldy,newx,newy,mode);
-            }));
-  
+	ExportCSGVis();  
 }
 #endif
 
