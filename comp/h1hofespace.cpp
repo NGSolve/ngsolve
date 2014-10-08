@@ -64,7 +64,7 @@ Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
 
 #else
 template <NODE_TYPE NT, typename TELEM>
-auto NodalData (const MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
+auto NodalData (MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
 #endif
 
 

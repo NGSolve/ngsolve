@@ -21,7 +21,7 @@ namespace ngla
     : loc2glob(MyMPI_GetNTasks (hpardofs -> GetCommunicator())),
       pardofs(hpardofs)
   {
-    inv = NULL;
+    inv = nullptr;
     
     int id = MyMPI_GetId (pardofs -> GetCommunicator());
     int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
@@ -422,7 +422,7 @@ namespace ngla
 #ifdef USE_MUMPS
     bool symmetric = dynamic_cast<const SparseMatrixSymmetricTM<TM>*> (mat.get()) != NULL;
     if (mat->GetInverseType() == MUMPS)
-      return new ParallelMumpsInverse<TM> (*dmat, subset, NULL, paralleldofs, symmetric);
+      return make_shared<ParallelMumpsInverse<TM>> (*dmat, subset, nullptr, paralleldofs, symmetric);
     else 
 #endif
       return make_shared<MasterInverse<TM>> (*dmat, subset, paralleldofs);

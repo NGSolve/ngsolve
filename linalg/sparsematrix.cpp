@@ -891,7 +891,7 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
       {
 #ifdef USE_MUMPS
-	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, 0, clusters);
+	return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
 #endif

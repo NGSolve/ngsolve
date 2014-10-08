@@ -9,6 +9,7 @@
 // #include <solve.hpp>
 // using namespace ngsolve;
 
+
 template <NODE_TYPE NT>
 class key_trait { };
 
@@ -183,14 +184,13 @@ void SetMPIType(MPI_Datatype * type)
       sz = 4;
       break;
     }
-  cout << "set mpi type - contiguous MPI_INT size " << sz << endl;
   MPI_Type_contiguous(sz, MPI_INT, type);
   MPI_Type_commit(type);
 }
 
 
 
-template <class DT> struct MPIT {};
+template <typename DT> struct MPIT {};
 template<> struct MPIT<double> {static MPI_Datatype mpi_type;};
 MPI_Datatype MPIT<double> :: mpi_type = MPI_DOUBLE;
 template <> struct MPIT<int> {static MPI_Datatype mpi_type;};
@@ -204,7 +204,7 @@ void find_SRRMS (int rank, int np, int* p1, int* p2, int* p3, bool ignore_in, bo
 void find_ROMS (int rank, int np, int* p1, int* p2); 
 
 
-template<class DT, NODE_TYPE NT>
+template<typename DT, NODE_TYPE NT>
 void packaged_buffered_send(int rank, int np, DT* a, typename key_trait<NT>::TKEY* b, int n, int pkg_size, int p)
 {
   MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
@@ -238,12 +238,12 @@ void packaged_buffered_send(int rank, int np, DT* a, typename key_trait<NT>::TKE
    	}
       MPI_Bsend ( a_ext, pkg_size, mpi_type_array, p, 700001, MPI_COMM_WORLD); 
       MPI_Bsend ( b_ext, pkg_size, mpi_type_key,   p, 700001, MPI_COMM_WORLD); 
-      cout << "rank " << rank << " pbs extra  package sent!!" << endl;
+      
     }
-  cout << "packaged_buffered_send done  - " << rank << endl;
+
 }
 
-template<class DT, NODE_TYPE NT>
+template<typename DT, NODE_TYPE NT>
 void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key_trait<NT>::TKEY *array_dnrs, int n, int p_in, int p_out)
 {
   MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
@@ -266,12 +266,12 @@ void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key
 
   //out-buffer 
   int n_out = base_array_size + n_in;
-  cout << "proc " << rank << " n_in: " << n_in << ", n_out: " << n_out << endl;
+  
   MPI_Send(&n_out, 1, MPI_INT, p_out, 700001, MPI_COMM_WORLD);
   int out_buf_size = pkg_size;
   DT* out_buf = (DT*) malloc ( sizeof(DT) * out_buf_size);
   tkey* out_dnrs = (tkey*) malloc ( sizeof(tkey) * out_buf_size);
-
+  /*
   for(int k=0;k<out_buf_size;k++)
     {
       out_buf[k] = -1;
@@ -282,6 +282,7 @@ void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key
       in_buf[k] = -1;
       in_dnrs[k] = -1;
     }
+  */
   // int start_out_buf = 0;
   int index_out = 0;
   bool has_extra = (n_out%pkg_size)?1:0;
@@ -303,16 +304,6 @@ void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key
 	}
     }
   
-  int PO = 4;
-  if(rank == PO)
-    {
-      cout << "rank " << rank << "own_ín_merge start package: " << endl;
-      for(int k=0;k<in_buf_size;k++)
-	{
-	  cout << "v: " << in_buf[k] << ", k: " << in_dnrs[k] << endl;
-	}
-    }
-
   bool have1[2];
   have1[0] = true;
   have1[1] = true;
@@ -421,7 +412,7 @@ void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key
   free(out_dnrs);
 }
 
-template<class DT, NODE_TYPE NT>
+template<typename DT, NODE_TYPE NT>
 void merge_in_in_out (int pkg_size, int rank, int np, int p1, int p2, int p_out)
 {
   MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
@@ -653,7 +644,7 @@ void merge_in_in_out (int pkg_size, int rank, int np, int p1, int p2, int p_out)
 
 void find_ROMS (int rank, int np, int* p1, int* p2)
 {
-  cout << "rank " << rank << " called _roms " << endl;
+  //cout << "rank " << rank << " called _roms " << endl;
   int p_in, p_out;
   p_in = rank - 1;
   if(rank%4==1 && rank+1<np)
@@ -668,7 +659,7 @@ void find_ROMS (int rank, int np, int* p1, int* p2)
     p_out = rank-1;
   *p1 = p_in;
   *p2 = p_out;
-   cout << "rank " << rank << " _roms " << p_in << "/" << p_out << endl;
+  //cout << "rank " << rank << " _roms " << p_in << "/" << p_out << endl;
   
 }
 
@@ -754,7 +745,7 @@ void find_SRRMS (int rank, int np, int* p1, int* p2, int* p3, bool ignore_in, bo
 
 }
 
-template<class DT, NODE_TYPE NT, typename TSIZEFUNC, typename TFUNC>
+template<typename DT, NODE_TYPE NT, typename TSIZEFUNC, typename TFUNC>
 void streamed_key_merge_templated (DT* array, 
 				   typename key_trait<NT>::TKEY* array_keys, 
 				   int base_array_size, int pkg_size,
@@ -786,35 +777,27 @@ void streamed_key_merge_templated (DT* array,
       int n;
       MPI_Recv(&n, 1, MPI_INT, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       int n_pkg = n/pkg_size + ( (n%pkg_size)?1:0);
-      cout << "0 received size " << endl;
+      //cout << "0 received size " << endl;
       
       sf(n);
       // cout << "total size = " << n << endl;
       // cout << "n_pkg:" << endl << n_pkg << endl;
 
-      DT* end = (DT*) malloc(n_pkg * pkg_size * sizeof(DT));
-      tkey*    end_keys = (tkey*)    malloc(n_pkg * pkg_size * sizeof(tkey));
-      
-      for(int j=0;j<n;j++)
+      DT* end = (DT*) malloc(pkg_size * sizeof(DT));
+      tkey*    end_keys = (tkey*)    malloc(pkg_size * sizeof(tkey));
+            
+      for(int k=0;k<n_pkg-1;k++)
 	{
-	  end[j] = -1;
-	  end_keys[j] = -1;
+	  MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	  MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	  //cout << "0 received pkg " << k << "/" << n_pkg << endl;
+	  for(int j=0;j<pkg_size;j++)
+	    f(end_keys[j], end[j]);
 	}
-      
-      for(int k=0;k<n_pkg;k++)
-	{
-	  MPI_Recv(&end[k*pkg_size]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  MPI_Recv(&end_keys[k*pkg_size], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  cout << "0 received pkg " << k << "/" << n_pkg << endl;
-	  //for(int j=0;j<pkg_size;j++)
-	  //f(end_keys[k*pkg_size+j], end[k*pkg_size + j]);
-	}
-      
-      //for(int j=0;j<n;j++)
-      //cout << j << "array: " << end[j] << ", key: " << end_keys[j] << endl;
-      for(int j=0;j<n;j++)
-	f(end_keys[j], end[j]);
-      
+      MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      for(int j=0;(n_pkg-1)*pkg_size+j < n;j++)
+	f(end_keys[j], end[j]);      
       free(end);
       free(end_keys);
     }
@@ -825,19 +808,14 @@ void streamed_key_merge_templated (DT* array,
      find_SRRMS (rank, np, &p_in1, &p_in2, &p_out, false, false);
      if(np-1 == rank) //is on right border
        {
-	 cout << "rank " << rank << " (irregularly) gets from " << p_in1 << " and sends to " << p_out << endl;
-	 //merge_own_in_out()
-	merge_own_in_out <DT,NT> (rank, np, pkg_size, array, array_keys, base_array_size, p_in1, p_out);
-	 cout << "I am done, rank = " << rank << endl;
+	 //cout << "rank " << rank << " (irregularly) gets from " << p_in1 << " and sends to " << p_out << endl;
+	 merge_own_in_out <DT,NT> (rank, np, pkg_size, array, array_keys, base_array_size, p_in1, p_out);
        }
      else //regular
        {
-	 cout << "rank " << rank << " sends to " << rank+1 << " then gets from " << p_in1 << "/" << p_in2 << " and sends to " << p_out << endl;
-	 //packaged_send
+	 //cout << "rank " << rank << " sends to " << rank+1 << " then gets from " << p_in1 << "/" << p_in2 << " and sends to " << p_out << endl;
 	 packaged_buffered_send<DT,NT>(rank, np, array, array_keys, base_array_size, pkg_size, rank+1);
-	 //merge_in_in_out()
 	 merge_in_in_out<DT,NT>(pkg_size, rank, np, p_in1, p_in2, p_out);
-	 cout << "I am done, rank = " << rank << endl;
        }
    }
  else
@@ -845,10 +823,8 @@ void streamed_key_merge_templated (DT* array,
      // ROM ->
      int p_in,p_out;
      find_ROMS(rank, np, &p_in, &p_out);
-     cout << "rank " << rank << " gets from " << p_in << " and sends to " << p_out << endl;
-     //merge_own_in_out();
+     //cout << "rank " << rank << " gets from " << p_in << " and sends to " << p_out << endl;
      merge_own_in_out<DT,NT>(rank, np, pkg_size, array, array_keys, base_array_size, p_in, p_out);
-     cout << "I am done, rank = " << rank << endl;
    }
 }
 
@@ -912,21 +888,17 @@ void GatherNodalData (const MeshAccess & ma, FlatArray<T> data,
       if (ismaster)
 	{
 	  local_data.Append (data[i]);
-	  global_keys.Append (GetGlobalNodeId<NT> (ma, i));
+	  TKEY key1 = GetGlobalNodeId<NT>(ma,i);
+	  global_keys.Append (key1);
 	}
     }
-
-  // local_data.Append (-1000);
-  // global_keys.Append (1000+myid);
-  // local sort
-  if(myid == 1)
-    cout << endl << "   KEYS: " << global_keys << endl;
-  Array<int> index (data.Size());
+  
+  Array<int> index (local_data.Size());
   for(int k=0;k<index.Size();k++)
     index[k] = k;
   MyQuickSortI(global_keys, index);
-  Array<double> data2 (data.Size());
-  Array<TKEY> global_keys2 (data.Size());
+  Array<T> data2 (local_data.Size());
+  Array<TKEY> global_keys2 (local_data.Size());
   for(int k=0;k<index.Size();k++)
     {
       data2[k] = data[index[k]];
@@ -937,27 +909,20 @@ void GatherNodalData (const MeshAccess & ma, FlatArray<T> data,
       data[k] = data2[k];
       global_keys[k] = global_keys2[k];
     }
-  //QuickSortI_fully_templated(data, global_keys);
-  if(myid==1)
-    cout << endl << "  --- KEYS  sorted: " << global_keys << endl;
 
-  /*
-    template<class DT, NODE_TYPE NT, typename TSIZEFUNC, typename TFUNC>
+    /*
+    template<typename DT, NODE_TYPE NT, typename TSIZEFUNC, typename TFUNC>
     void streamed_key_merge_templated (DT* array, 
-				   typename key_trait<NT>::TKEY* array_keys, 
-				   int base_array_size, int pkg_size,
-				   TSIZEFUNC sf, TFUNC f)
-  */
-  
-  streamed_key_merge_templated<T,NT> (&local_data[0], &global_keys[0], local_data.Size(), 10, sf, f);
+    typename key_trait<NT>::TKEY* array_keys, 
+    int base_array_size, int pkg_size,
+    TSIZEFUNC sf, TFUNC f)
+    */
+    
+    streamed_key_merge_templated<T,NT> (&local_data[0], &global_keys[0], local_data.Size(), 10, sf, f);
 }
 
 
-
-
 #ifdef NONE
-
-
 class NumProcDump : public NumProc
 {
 protected:
@@ -1024,18 +989,22 @@ public:
     */
     
     
-    /*
-      auto f2 = [] (INT<2> key, double val) 
+    
+      auto f2 = [] (INT<2> key, unsigned char val) 
       { 
       cout << "key = ";
       for(int k=0;k<2;k++)
       cout << " " << key[k];
       cout << ", val = " << val << endl;
       };
-      Array<double> data (ma.GetNNodes(NT_EDGE));
-      data = MyMPI_GetId();
+      Array<unsigned char> data (ma.GetNNodes(NT_EDGE));
+      //data = MyMPI_GetId();
+      unsigned char d;
+      //int myid = MyMPI_GetId();
+      d = 'a';
+      data = d;
       GatherNodalData<NT_EDGE> (ma, data, g, f2);
-    */
+      
     
     /*
       auto f3 = [] (INT<3> key, double val) 
@@ -1050,6 +1019,7 @@ public:
       GatherNodalData<NT_FACE> (ma, data, g, f3);
     */
     
+    /*
     auto f4 = [] (INT<4> key, double val) 
       { 
 	cout << "key = ";
@@ -1060,6 +1030,8 @@ public:
     Array<double> data (ma.GetNNodes(NT_CELL));
     data = MyMPI_GetId();
     GatherNodalData<NT_CELL> (ma, data, g, f4);
+    */
+
     /*
     GatherNodalData<NT_EDGE> (ma, data,
 			      [] (int size)
@@ -1096,5 +1068,4 @@ public:
 
 // register the numproc 'Dump' 
 static RegisterNumProc<NumProcDump> npinit1("dump");
-
 #endif
