@@ -491,11 +491,10 @@ namespace ngcomp
 
   LocalPreconditioner :: LocalPreconditioner (PDE * pde, const Flags & aflags, 
 					      const string aname)
-    : Preconditioner (pde,aflags,aname), coarse_pre(0)
+    : Preconditioner (pde,aflags,aname)
   {
     bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
     block = flags.GetDefineFlag ("block");
-    jacobi = NULL;
     locprectest = flags.GetDefineFlag ("mgtest");
     locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
 
@@ -510,19 +509,16 @@ namespace ngcomp
       ct = "SMOOTHING_COARSE";
     else if (coarse == "direct")
       ct = "DIRECT_COARSE";
-    
 
     coarse_pre = 
       pde->GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
     if (coarse_pre)
       ct = "USER_COARSE";
-
   }
-   
 
   LocalPreconditioner :: ~LocalPreconditioner()
   {
-    ; // delete jacobi;
+    ; 
   }
 
   void LocalPreconditioner :: Update ()
@@ -563,8 +559,7 @@ namespace ngcomp
 	  flags.SetFlag("eliminate_internal");
 	Table<int> * blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
 	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, /* coarse_pre.get(), */ parallel, bfa->GetFESpace()->GetFreeDofs());
-	// dynamic_cast<BaseBlockJacobiPrecond&> (*jacobi) . InitCoarseType(ct, bfa->GetFESpace().GetFreeDofs());
+	  .CreateBlockJacobiPrecond(*blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
       }
     else if (block)
       {

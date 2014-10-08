@@ -36,15 +36,9 @@ namespace ngcomp
     Array<shared_ptr<GridFunction>> compgfs;
   public:
     /// 
-    /*
-    GridFunction (const FESpace & afespace,
-                  const string & name = "gfu", 
-		  const Flags & flags = Flags());
-    */
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
-
     ///
     virtual ~GridFunction ();
     ///

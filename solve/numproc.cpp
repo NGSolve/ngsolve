@@ -1476,6 +1476,7 @@ namespace ngsolve
   class NumProcWriteFile : public NumProc
   {
     ofstream * outfile;
+    int outputprecision;
     Array<string> output_vars;
   public:
     NumProcWriteFile (PDE & apde, const Flags & flags)
@@ -1484,6 +1485,10 @@ namespace ngsolve
       outfile = NULL;
 
       string filename = flags.GetStringFlag ("filename","");
+
+      outputprecision = (pde.ConstantUsed("outputprecision")) ? int(pde.GetConstant("outputprecision")) : -1;
+      if(flags.NumFlagDefined("outputprecision"))
+        outputprecision = int(flags.GetNumFlag("outputprecision",-1));
       
       if (filename.length() && (MyMPI_GetId() == 0) )
 	{
@@ -1493,6 +1498,9 @@ namespace ngsolve
             outfile = new ofstream (filename.c_str());
           else
             outfile = new ofstream (filename.c_str(), ios_base::app);
+
+          if(outputprecision > 0)
+            outfile->precision(outputprecision);
 	}
       else
 	outfile = 0;
