@@ -16,7 +16,7 @@
 #include <geometry2d.hpp>
 #include <stlgeom.hpp>
 #include <meshing.hpp>
-#include "incvis.hpp"
+#include "inctcl.hpp"
 #include <visual.hpp>
 
 namespace netgen {  

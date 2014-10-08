@@ -4,7 +4,7 @@
 */
 
 #include <mystdlib.h>
-#include "incvis.hpp"
+#include <inctcl.hpp>
 #include <meshing.hpp>
 
 #ifdef NGPYTHON

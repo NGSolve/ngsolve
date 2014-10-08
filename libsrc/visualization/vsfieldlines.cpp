@@ -1,7 +1,7 @@
 #ifndef NOTCL
 
 #include <mystdlib.h>
-#include "incvis.hpp"
+#include <incopengl.hpp>
 
 
 #include <myadt.hpp>

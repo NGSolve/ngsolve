@@ -17,7 +17,7 @@ Visualization
 #define PARALLELGL
 #endif
 
-#include "../include/incvis.hpp"
+#include "../include/incopengl.hpp"
 
 #include "vispar.hpp"
 #include "soldata.hpp"

@@ -14,6 +14,7 @@ endif
 
 
 libvisual_la_SOURCES = meshdoc.cpp mvdraw.cpp \
-	vsfieldlines.cpp vsmesh.cpp vssolution.cpp importsolution.cpp
+	vsfieldlines.cpp vsmesh.cpp vssolution.cpp importsolution.cpp visualpkg.cpp
+
 
 

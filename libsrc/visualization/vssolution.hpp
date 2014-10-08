@@ -1,22 +1,25 @@
 #ifndef FILE_VSSOLUTION
 #define FILE_VSSOLUTION
 
+
+typedef void * ClientData;
+struct Tcl_Interp;
+
+
 namespace netgen
 {
-
-#ifndef SMALLLIB
-#ifndef NOTCL
 
 extern 
 void ImportSolution (const char * filename);
 
-extern int Ng_Vis_Set (ClientData clientData,
-		       Tcl_Interp * interp,
-		       int argc, tcl_const char *argv[]);
-#endif
-#endif
 
 class FieldLineCalc;
+  
+  extern int Ng_Vis_Set (ClientData clientData,
+                         Tcl_Interp * interp,
+                         int argc, const char *argv[]);
+
+
 
 class VisualSceneSolution : public VisualScene
 {
@@ -324,15 +327,10 @@ public:
   // 0 .. non, 1 .. scalar, 2 .. complex
   void SetTextureMode (int texturemode) const;
 
-#ifndef SMALLLIB  
-#ifndef NOTCL
 
   friend int Ng_Vis_Set (ClientData clientData,
-			 Tcl_Interp * interp,
-			 int argc, tcl_const char *argv[]);
-
-#endif
-#endif
+                         Tcl_Interp * interp,
+			 int argc, const char *argv[]);
 
 
 #ifdef PARALLELGL

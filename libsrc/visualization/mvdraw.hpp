@@ -82,7 +82,7 @@ namespace netgen
 
 
   DLL_HEADER extern void MyOpenGLText (const char * text);
-
+  DLL_HEADER extern void Set_OpenGLText_Callback ( void (*fun) (const char * text) );
 
 
 

@@ -11,7 +11,7 @@ The interface between the GUI and the netgen library
 #include <meshing.hpp>
 
 
-#include <incvis.hpp>
+#include <inctcl.hpp>
 #include <visual.hpp>
 
 
@@ -1860,7 +1860,7 @@ namespace netgen
   
   static int fontbase = 0;
 
-  void MyOpenGLText (const char * text)
+  void MyOpenGLText_GUI (const char * text)
   {
     if (nodisplay)
       return;
@@ -1877,7 +1877,8 @@ namespace netgen
       return;
       
     fontbase = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
-
+    Set_OpenGLText_Callback (&MyOpenGLText_GUI);
+    
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);

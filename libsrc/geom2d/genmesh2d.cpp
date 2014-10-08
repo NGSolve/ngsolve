@@ -365,7 +365,7 @@ namespace netgen
 	mp.maxh = h;
       }
 
-    mesh = make_shared<Mesh>();
+    // mesh = make_shared<Mesh>();
     mesh->SetDimension (2);
 
     Point3d pmin(bbox.PMin()(0), bbox.PMin()(1), -bbox.Diam());

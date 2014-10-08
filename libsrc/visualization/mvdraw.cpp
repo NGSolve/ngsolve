@@ -35,10 +35,17 @@ namespace netgen
 #endif
   */
 
+  void (*opengl_text_function)(const char * text) = NULL;
+  void Set_OpenGLText_Callback ( void (*fun) (const char * text) )
+  {
+    opengl_text_function = fun;
+  }
 
   void MyOpenGLText (const char * text)
   {
-    cout << "MyOpenGLText: " << text << endl;
+    if (opengl_text_function)
+      (*opengl_text_function) (text);
+    // cout << "MyOpenGLText: " << text << endl;
   }
 
 
