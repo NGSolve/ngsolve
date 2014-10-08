@@ -109,18 +109,10 @@ namespace netgen
 {
 #include "writeuser.hpp"
 
-#ifndef WIN32
-  shared_ptr<Mesh> mesh;
-  shared_ptr<NetgenGeometry> ng_geometry;
-#else
   extern shared_ptr<Mesh> mesh;
   extern shared_ptr<NetgenGeometry> ng_geometry;
-#endif
 
-#ifndef NOTCL
   extern Tcl_Interp * tcl_interp;
-#endif
-
 
 #ifdef SOCKETS
   extern AutoPtr<ClientSocket> clientsocket;
