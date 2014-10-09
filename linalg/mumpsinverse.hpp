@@ -88,7 +88,7 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return make_shared<VVector<TV>> (height);
     }
@@ -138,7 +138,7 @@ namespace ngla
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
     ///
-    virtual shared_ptr<BaseVector> CreateVector () const;
+    virtual AutoVector CreateVector () const;
     /*
     {
       return new ParallelVVector<TV> (height, paralleldofs);

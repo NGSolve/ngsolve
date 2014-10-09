@@ -1322,6 +1322,42 @@ void * SolveBVP2(void *)
 
 extern "C" void NGS_ParallelRun (const string & message);
 
+
+void Parallel_InitPython ()
+{
+  static bool python_initialized = false;
+  if (!python_initialized)
+    {
+      cout << "ini python" << endl;
+      Py_Initialize();
+      PyEval_InitThreads();
+      pyenv = PythonEnvironment (bp::import("__main__"));
+      {
+	bp::scope sc(bp::import("__main__"));
+	bp::def ("SetDefaultPDE", 
+		 FunctionPointer([](shared_ptr<PDE> apde) 
+				 {  
+				   pde = apde;
+				   pde->GetMeshAccess()->SelectMesh();
+				   Ng_Redraw();
+				   return; 
+				 }));
+	bp::def ("Redraw", 
+		 FunctionPointer([]() {Ng_Redraw();}));
+      }
+      
+      cout << "ini python complete" << endl;	  
+
+      pyenv.exec("from ngsolve import *");
+      PyEval_ReleaseLock();
+
+      python_initialized = true;
+    }
+}
+
+
+
+
 void NGS_ParallelRun (const string & message)
 {
 #ifdef _OPENMP
@@ -1373,6 +1409,9 @@ void NGS_ParallelRun (const string & message)
       string dummy;
       pde -> LoadPDE (dummy, false, 0);
 #ifdef NGS_PYTHON
+
+      Parallel_InitPython ();
+
       cout << "set python mesh" << endl;
       {
         AcquireGIL gil_lock;
@@ -1404,6 +1443,8 @@ void NGS_ParallelRun (const string & message)
 #ifdef NGS_PYTHON
   else if (message.substr(0,7) == "ngs_py " ) 
     {
+      Parallel_InitPython ();
+
       string command = message.substr(7);
       AcquireGIL gil_lock;
       // PythonEnvironment & py_env = PythonEnvironment::getInstance();

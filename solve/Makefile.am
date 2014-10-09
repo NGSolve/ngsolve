@@ -27,7 +27,7 @@ lib_LTLIBRARIES += libngsolve.la
   AM_CPPFLAGS += -DTCL
   libngsolve_la_LDFLAGS = " -avoid-version -rdynamic"
 
-  libngsolve_la_LIBADD = $(top_builddir)/solve/libsolve.la \
+  libngsolve_la_LIBADD = libsolve.la \
 	$(top_builddir)/comp/libngcomp.la		  \
 	$(top_builddir)/ngstd/libngstd.la		  \
 	$(top_builddir)/fem/libngfem.la			  \

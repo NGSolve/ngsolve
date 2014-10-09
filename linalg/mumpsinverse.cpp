@@ -931,11 +931,10 @@ namespace ngla
 
 
   template <class TM, class TV>
-  shared_ptr<BaseVector> ParallelMumpsInverse<TM,TV> :: CreateVector () const
-    {
-      return make_shared<ParallelVVector<TV>> (height, paralleldofs);
-      // return new VVector<TV> (height);
-    }
+  AutoVector ParallelMumpsInverse<TM,TV> :: CreateVector () const
+  {
+    return make_shared<ParallelVVector<TV>> (height, paralleldofs);
+  }
 
 
 

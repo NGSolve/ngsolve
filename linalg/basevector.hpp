@@ -411,6 +411,17 @@ namespace ngla
       vec -> GetIndirect (ind, v);
     }
 
+    virtual void Cumulate () const 
+    { vec -> Cumulate(); }
+
+    virtual void Distribute() const
+    { vec -> Distribute(); }
+
+    virtual PARALLEL_STATUS GetParallelStatus () const
+    { return vec -> GetParallelStatus(); }
+
+    virtual void SetParallelStatus (PARALLEL_STATUS stat) const
+    { vec -> SetParallelStatus(stat); }
   };
 
 
