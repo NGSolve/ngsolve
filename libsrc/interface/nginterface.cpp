@@ -276,6 +276,8 @@ void Ng_LoadMesh (const char * filename)
   else
     {
       mesh.reset (new Mesh());
+      vssolution.SetMesh(mesh);
+      vsmesh.SetMesh(mesh);
       mesh->SendRecvMesh();
     }
 #endif

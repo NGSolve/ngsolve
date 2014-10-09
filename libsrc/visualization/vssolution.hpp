@@ -186,7 +186,7 @@ public:
   virtual void DrawScene ();
   virtual void MouseDblClick (int px, int py);
 
-  void SetMesh (shared_ptr<Mesh> amesh) { wp_mesh = amesh; }
+  void SetMesh (shared_ptr<Mesh> amesh);
   shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
 
   void BuildFieldLinesPlot ();

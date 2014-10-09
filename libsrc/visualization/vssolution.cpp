@@ -68,6 +68,12 @@ namespace netgen
     ClearSolutionData();
   }
 
+  void VisualSceneSolution :: SetMesh (shared_ptr<Mesh> amesh)
+  { 
+    wp_mesh = amesh; 
+  }
+
+
   void VisualSceneSolution :: AddSolutionData (SolData * sd)
   {
     shared_ptr<Mesh> mesh(wp_mesh);
