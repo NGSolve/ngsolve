@@ -257,7 +257,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
@@ -356,6 +356,7 @@
     <ClCompile Include="..\libsrc\csg\python_csg.cpp" />
     <ClCompile Include="..\libsrc\csg\zrefine.cpp" />
     <ClCompile Include="..\libsrc\general\gzstream.cpp" />
+    <ClCompile Include="..\libsrc\geom2d\python_geom2d.cpp" />
     <ClCompile Include="..\libsrc\meshing\adfront2.cpp" />
     <ClCompile Include="..\libsrc\meshing\adfront3.cpp" />
     <ClCompile Include="..\libsrc\gprim\adtree.cpp" />
@@ -419,6 +420,9 @@
     <ClCompile Include="..\libsrc\general\ngexception.cpp" />
     <ClCompile Include="..\libsrc\interface\nginterface.cpp" />
     <ClCompile Include="..\libsrc\interface\nginterface_v2.cpp" />
+    <ClCompile Include="..\libsrc\visualization\mvdraw.cpp" />
+    <ClCompile Include="..\libsrc\visualization\vsmesh.cpp" />
+    <ClCompile Include="..\libsrc\visualization\vssolution.cpp" />
     <ClCompile Include="..\nglib\nglib.cpp" />
     <ClCompile Include="..\libsrc\occ\occgenmesh.cpp" />
     <ClCompile Include="..\libsrc\occ\occgeom.cpp" />
