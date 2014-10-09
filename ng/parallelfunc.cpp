@@ -50,6 +50,7 @@ void Parallel_Exit();
 namespace netgen {
   extern shared_ptr<Mesh>  mesh;
   extern VisualSceneMesh vsmesh;
+  extern VisualSceneSolution vssolution;
   extern Flags parameters;
   extern DLL_HEADER MeshingParameters mparam;
 }
@@ -109,6 +110,8 @@ void ParallelRun()
 	  VT_USER_START ("Mesh::ReceiveParallelMesh");
 	  mesh.reset( new netgen::Mesh);
 	  mesh->SendRecvMesh();
+	  vsmesh.SetMesh (mesh);
+	  vssolution.SetMesh (mesh);
 	  VT_USER_END ("Mesh::ReceiveParallelMesh");
 	}
 
