@@ -67,7 +67,6 @@ namespace ngcomp
 	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
-    // cout << "AddNumProc: " << aname << ", dim = " << adim << endl;
     npa.Append (new NumProcInfo(aname, adim, acreator, printdoc));
   }
 

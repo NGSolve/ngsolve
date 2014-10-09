@@ -40,14 +40,14 @@ namespace ngla
     for (int i = 0; i < m; i++)
       abv[i] = a.CreateVector();
 
-    BaseMatrix & mat_shift = *a.CreateMatrix();
-    mat_shift.AsVector() = a.AsVector() - shift*b.AsVector();  
+    auto mat_shift = a.CreateMatrix();
+    mat_shift->AsVector() = a.AsVector() - shift*b.AsVector();  
     shared_ptr<BaseMatrix> inv;
     if (!pre)
-      inv = mat_shift.InverseMatrix (freedofs);
+      inv = mat_shift->InverseMatrix (freedofs);
     else
       {
-        auto itso = make_shared<GMRESSolver<double>> (mat_shift, *pre);
+        auto itso = make_shared<GMRESSolver<double>> (*mat_shift, *pre);
         itso->SetPrintRates(1);
         itso->SetMaxSteps(2000);
         inv = itso;
