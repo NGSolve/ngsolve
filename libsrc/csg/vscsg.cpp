@@ -127,6 +127,7 @@ namespace netgen
   void VisualSceneGeometry :: BuildScene (int zoomall)
   {
     cout << "vs-csg::Build" << endl;
+    VisualScene::BuildScene(zoomall); // setting light ...
     Box<3> box;
     int hasp = 0;
     for (int i = 0; i < geometry->GetNTopLevelObjects(); i++)
@@ -532,7 +533,7 @@ namespace bp = boost::python;
 
 void ExportCSGVis()
 {
-
+  
 	std::string nested_name = "csgvis";
 	if (bp::scope())
 		nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".csgvis");

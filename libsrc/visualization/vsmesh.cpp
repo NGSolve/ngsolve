@@ -35,21 +35,21 @@ namespace netgen
     pointnumberlist = 0;
     domainsurflist = 0;
 
-    vstimestamp = GetTimeStamp();
-    selecttimestamp = GetTimeStamp();
-    filledtimestamp = GetTimeStamp();
-    linetimestamp = GetTimeStamp();
-    edgetimestamp = GetTimeStamp();
-    pointnumbertimestamp = GetTimeStamp();
+    vstimestamp = -1; // GetTimeStamp();
+    selecttimestamp = -1; // GetTimeStamp();
+    filledtimestamp = -1; // GetTimeStamp();
+    linetimestamp = -1; // GetTimeStamp();
+    edgetimestamp = -1; // GetTimeStamp();
+    pointnumbertimestamp = -1; // GetTimeStamp();
 
-    tettimestamp = GetTimeStamp();
-    prismtimestamp = GetTimeStamp();
-    hextimestamp = GetTimeStamp();
-    pyramidtimestamp = GetTimeStamp();
+    tettimestamp = -1; // GetTimeStamp();
+    prismtimestamp = -1; // GetTimeStamp();
+    hextimestamp = -1; // GetTimeStamp();
+    pyramidtimestamp = -1; // GetTimeStamp();
 
-    badeltimestamp = GetTimeStamp();
-    identifiedtimestamp = GetTimeStamp();
-    domainsurftimestamp = GetTimeStamp();
+    badeltimestamp = -1; // GetTimeStamp();
+    identifiedtimestamp = -1; // GetTimeStamp();
+    domainsurftimestamp = -1; // GetTimeStamp();
 
 
     selface = -1;
@@ -3524,3 +3524,48 @@ namespace netgen
 }
 
 
+
+
+#ifdef NG_PYTHON
+#include <boost/python.hpp>
+#include <../general/ngpython.hpp>
+namespace bp = boost::python;
+
+void ExportMeshVis()
+{
+  using namespace netgen;
+  ModuleScope myscope("meshvis");
+  vispar.drawcolorbar = true;
+  vispar.drawnetgenlogo = true;
+  vispar.drawcoordinatecross = true;
+  vispar.drawfilledtrigs = true;
+  vispar.drawdomainsurf = true;
+  vispar.drawhexes = true;
+  vispar.drawtets = true;
+  vispar.drawprisms = true;
+  vispar.drawoutline = true;
+  bp::class_<VisualSceneMesh, shared_ptr<VisualSceneMesh>>
+    ("VisualSceneMesh", bp::no_init)
+    .def("Draw", &VisualSceneMesh::DrawScene)
+    ;
+
+  bp::def("VS", FunctionPointer
+          ([](shared_ptr<Mesh> mesh)
+           {
+             auto vs = make_shared<VisualSceneMesh>();
+             vs->SetMesh(mesh);
+             return vs;
+           }));
+
+  bp::def("MouseMove", FunctionPointer
+          ([](VisualSceneMesh &vsmesh, int oldx, int oldy, int newx, int 
+              newy, char mode)
+           {
+             vsmesh.MouseMove(oldx, oldy, newx, newy, mode);
+           }));
+}
+BOOST_PYTHON_MODULE(libvisual)
+{
+  ExportMeshVis();
+}
+#endif
