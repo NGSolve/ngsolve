@@ -704,6 +704,7 @@ if NOT defined BOOSTROOT (echo You need to set up environement variable BOOSTROO
     <ClCompile Include="..\libsrc\meshing\delaunay.cpp" />
     <ClCompile Include="..\libsrc\meshing\delaunay2d.cpp" />
     <ClCompile Include="..\libsrc\occ\vsocc.cpp" />
+    <ClCompile Include="..\libsrc\visualization\visualpkg.cpp" />
     <ClCompile Include="..\ng\demoview.cpp" />
     <ClCompile Include="..\libsrc\linalg\densemat.cpp" />
     <ClCompile Include="..\libsrc\general\dynamicmem.cpp" />
