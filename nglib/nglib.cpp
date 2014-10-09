@@ -1221,7 +1221,7 @@ namespace netgen
 
 
 
-  void Render() { ; }
+  //void Render() { ; }
 
 } // End of namespace netgen
 
