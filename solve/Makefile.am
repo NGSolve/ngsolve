@@ -1,63 +1,66 @@
 AM_CPPFLAGS =  -I$(top_builddir) -I$(top_srcdir)/include $(PARDISO_INCLUDES) $(MUMPS_INCLUDES) $(SUPERLU_INCLUDES) $(TCL_INCLUDES) 
 
-lib_LTLIBRARIES = libngsolve.la
+lib_LTLIBRARIES = libsolve.la
 bin_PROGRAMS =  ngs
 
 
-
-
-libngsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
+libsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
 numproc.cpp  evp.cpp hyperbolic.cpp  \
 numprocee.cpp python_solve.cpp python_mpi.cpp
 # basenumproc.cpp  pde.cpp pdeparser.cpp
-if NGSGUI
-  libngsolve_la_SOURCES += ngsolve.cpp shapetester.cpp
-  AM_CPPFLAGS += -DTCL
-endif
 
-libngsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
-$(top_builddir)/ngstd/libngstd.la 		\
-$(top_builddir)/fem/libngfem.la 		\
-$(top_builddir)/parallel/libparallel.la		\
-$(top_builddir)/linalg/libngla.la		\
-$(top_builddir)/basiclinalg/libngbla.la		\
-$(top_builddir)/multigrid/libngmg.la		\
-$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)
+libsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la		    \
+$(top_builddir)/ngstd/libngstd.la $(top_builddir)/fem/libngfem.la   \
+$(top_builddir)/parallel/libparallel.la				    \
+$(top_builddir)/linalg/libngla.la				    \
+$(top_builddir)/basiclinalg/libngbla.la				    \
+$(top_builddir)/multigrid/libngmg.la $(PARDISO_LIBS) $(LAPACK_LIBS) 
 
-
-libngsolve_la_LDFLAGS = " -avoid-version -rdynamic"
+libsolve_la_LDFLAGS = " -avoid-version -rdynamic"
 # libngsolve_la_LDFLAGS += -lboost_python-py34 -lpython3.4m
 # libngsolve_la_LDFLAGS += $(PYTHON_LIBS)
 #   -rdynamic
 
+if NGSGUI
+lib_LTLIBRARIES += libngsolve.la	
+  libngsolve_la_SOURCES = ngsolve.cpp shapetester.cpp
+  AM_CPPFLAGS += -DTCL
+  libngsolve_la_LDFLAGS = " -avoid-version -rdynamic"
 
-
-if NGSPY
-lib_LTLIBRARIES += libngspy.la
-libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \
-numproc.cpp evp.cpp hyperbolic.cpp  \
-numprocee.cpp python_solve.cpp python_mpi.cpp
-
-libngspy_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
-$(top_builddir)/ngstd/libngstd.la 		\
-$(top_builddir)/fem/libngfem.la 		\
-$(top_builddir)/parallel/libparallel.la		\
-$(top_builddir)/linalg/libngla.la		\
-$(top_builddir)/basiclinalg/libngbla.la		\
-$(top_builddir)/multigrid/libngmg.la		\
-$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)  \
--L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
-libngspy_la_LDFLAGS = -avoid-version
+  libngsolve_la_LIBADD = $(top_builddir)/solve/libsolve.la \
+	$(top_builddir)/comp/libngcomp.la		  \
+	$(top_builddir)/ngstd/libngstd.la		  \
+	$(top_builddir)/fem/libngfem.la			  \
+	$(top_builddir)/parallel/libparallel.la		  \
+	$(top_builddir)/linalg/libngla.la		  \
+	$(top_builddir)/basiclinalg/libngbla.la		  \
+	$(top_builddir)/multigrid/libngmg.la		  \
+	$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)	  
 endif
 
 
 
+# if NGSPY
+# lib_LTLIBRARIES += libngspy.la
+# libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \
+# numproc.cpp evp.cpp hyperbolic.cpp  \
+# numprocee.cpp python_solve.cpp python_mpi.cpp
 
-
+# libngspy_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
+# $(top_builddir)/ngstd/libngstd.la 		\
+# $(top_builddir)/fem/libngfem.la 		\
+# $(top_builddir)/parallel/libparallel.la		\
+# $(top_builddir)/linalg/libngla.la		\
+# $(top_builddir)/basiclinalg/libngbla.la		\
+# $(top_builddir)/multigrid/libngmg.la		\
+# $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)  \
+# -L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
+# libngspy_la_LDFLAGS = -avoid-version
+# endif
 
 
 ngs_SOURCES = ngs.cpp
-ngs_LDADD = libngsolve.la \
+ngs_LDADD = libsolve.la \
 	$(top_builddir)/comp/libngcomp.la \
 	$(top_builddir)/multigrid/libngmg.la \
 	$(top_builddir)/fem/libngfem.la \
