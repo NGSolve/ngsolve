@@ -121,8 +121,8 @@ namespace netgen
 
 
 
-  char * err_needsmesh = (char*) "This operation needs a mesh";
-  char * err_jobrunning = (char*) "Meshing Job already running";
+  extern char * err_needsmesh;// = (char*) "This operation needs a mesh";
+  extern char * err_jobrunning;// = (char*) "Meshing Job already running";
 
 
 
