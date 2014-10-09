@@ -14,22 +14,18 @@ void ExportNgsolve() {
     
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
-    cout << "exporting ngstd as " << nested_name << endl;
+    cout << "exporting solve as " << nested_name << endl;
     bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
     parent.attr("solve") = module ;
 
     bp::scope local_scope(module);
-
-
-
-  
 }
 
-/*
-BOOST_PYTHON_MODULE(libngsolve) {
+
+
+BOOST_PYTHON_MODULE(libsolve) {
   ExportNgsolve();
 }
-*/
 
 
 #endif
