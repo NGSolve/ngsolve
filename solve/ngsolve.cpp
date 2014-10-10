@@ -1322,7 +1322,7 @@ void * SolveBVP2(void *)
 
 extern "C" void NGS_ParallelRun (const string & message);
 
-
+#ifdef NGS_PYTHON
 void Parallel_InitPython ()
 {
   static bool python_initialized = false;
@@ -1354,6 +1354,7 @@ void Parallel_InitPython ()
       python_initialized = true;
     }
 }
+#endif
 
 
 
