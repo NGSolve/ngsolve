@@ -21,6 +21,7 @@ geom = CSGeometry()
 geom.Add (all)
 
 
+
 vis = VS(geom)
 # vis.Draw()
 

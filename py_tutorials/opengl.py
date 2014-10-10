@@ -1,5 +1,6 @@
 from netgen.csg import *
 import netgen.meshing as meshing
+import libvisual
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -9,17 +10,21 @@ from OpenGL.GLUT import *
 
 sp1 = Sphere (Pnt(0,0,0), 0.2)
 sp2 = Sphere (Pnt(0.5,0,0), 0.2)
-sp3 = Sphere (Pnt(0,0,0.5), 0.2)
-sp4 = Sphere (Pnt(0,0.2,0.7), 0.2)
-sp5 = Sphere (Pnt(0,0,0.3), 0.2)
 
-
-all = sp1+sp2+sp3+sp4+sp5
+all = sp1+sp2
 
 
 geom = CSGeometry()
 geom.Add (all)
 
+
+param = meshing.MeshingParameters()
+param.maxh = 0.1
+m1 = GenerateMesh (geom, param)
+
+
+
+vismesh = libvisual.meshvis.VS(m1)
 
 vis = VS(geom)
 # vis.Draw()
@@ -44,7 +49,8 @@ def myMotionHandler( x, y ):
     MouseMove(vis,xold,yold, x,y, mode)  # 'm','z'
     xold = x
     yold = y
-    mydraw()
+    glutPostRedisplay()
+#    mydraw()
 
 def myPassiveMotionHandler( x, y ):
     global xold, yold
@@ -87,7 +93,17 @@ glMatrixMode(GL_MODELVIEW);
 
 
 
-glutMainLoop()        
+glutMainLoop()
+
+
+# import threading
+# threading.start_new_thread (glutMainLoop, [])
+
+
+# from threading import Thread
+# thread = Thread(target = glutMainLoop)        
+# thread.start()
+# thread.join()
 
 
 
