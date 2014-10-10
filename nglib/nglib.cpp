@@ -1228,7 +1228,7 @@ namespace netgen
 
 
 void Ng_Redraw () { ; }
-void Ng_ClearSolutionData();// {; }
+void Ng_ClearSolutionData() { ; }
 /*
 void Ng_SetSolutionData (Ng_SolutionData * soldata) 
 { 
