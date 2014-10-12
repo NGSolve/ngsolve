@@ -1148,8 +1148,6 @@ int NGSolve_Init (Tcl_Interp * interp)
                                Ng_Redraw();
                                return; 
                              }));
-    bp::def ("Redraw", 
-             FunctionPointer([]() {Ng_Redraw();}));
   }
 
   if (MyMPI_GetId() == 0) 

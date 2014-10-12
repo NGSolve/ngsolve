@@ -121,6 +121,11 @@ namespace ngfem
     static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3> > initrobin3 ("robinedge", 3, 1);
     static RegisterBilinearFormIntegrator<CurlCurlBoundaryEdgeIntegrator> initccb ("curlcurlboundaryedge", 3, 1);
 
+    static RegisterBilinearFormIntegrator<CurlCurlEdgeOrthoIntegrator<3>> initorthocc("orthocurlcurledge", 3, 3);
+    static RegisterBilinearFormIntegrator<MassEdgeOrthoIntegrator<2>> initmoe2("orthomassedge", 2, 2);
+    static RegisterBilinearFormIntegrator<MassEdgeOrthoIntegrator<3>> initmoe3("orthomassedge", 3, 3);
+
+
 
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<2> > initse2 ("sourceedge", 2, 2);
     static RegisterLinearFormIntegrator<SourceEdgeIntegrator<3> > initse3 ("sourceedge", 3, 3);
@@ -132,36 +137,22 @@ namespace ngfem
     static RegisterLinearFormIntegrator<CurlEdgeIntegrator<3> > initcurle3 ("curledge", 3, 3);
 
 
+
+    static RegisterLinearFormIntegrator<TangentialSourceEdgeIntegrator<2> > initts2 ("tangentialsourceedge", 2, 1);
+    static RegisterLinearFormIntegrator<TangentialSourceEdgeIntegrator<3> > initts3 ("tangentialsourceedge", 3, 1);
+    static RegisterLinearFormIntegrator<CurlBoundaryEdgeIntegrator<> > initcbe3 ("curlboundaryedge", 3, 1);
+
+
     class Init
     { 
     public: 
       Init ();
-
     };
     
     Init::Init()
     {
-      cout << "skipping maxwell integrators (orthocurledge, masedgeaniso, tangsource, curlbound) !?!!!!!!!!!!!!!!" << endl;
-
-      /*
-      GetIntegrators().AddBFIntegrator ("orthocurlcurledge", 3, 3,
-					CurlCurlEdgeOrthoIntegrator<3>::Create);
-      GetIntegrators().AddBFIntegrator ("orthomassedge", 2, 2,
-					MassEdgeOrthoIntegrator<2>::Create);
-      GetIntegrators().AddBFIntegrator ("orthomassedge", 3, 3,
-					MassEdgeOrthoIntegrator<3>::Create);
-
       GetIntegrators().AddBFIntegrator ("massedgeanisotropic", 3, 6,
 					MassEdgeAnisotropicIntegrator<3>::Create);
-
-      GetIntegrators().AddLFIntegrator ("curlboundaryedge", 3, 1,
-					CurlBoundaryEdgeIntegrator<>::Create);
-
-      GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 3, 1,
-					TangentialSourceEdgeIntegrator<3>::Create);
-      GetIntegrators().AddLFIntegrator ("tangentialsourceedge", 2, 1,
-					TangentialSourceEdgeIntegrator<2>::Create);
-      */
     }
 
     Init init;

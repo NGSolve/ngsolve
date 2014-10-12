@@ -19,6 +19,9 @@ void ExportNgsolve() {
     parent.attr("solve") = module ;
 
     bp::scope local_scope(module);
+
+    bp::def ("Redraw", 
+             FunctionPointer([]() {Ng_Redraw();}));
 }
 
 

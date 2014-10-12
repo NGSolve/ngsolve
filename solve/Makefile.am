@@ -4,10 +4,9 @@ lib_LTLIBRARIES = libsolve.la
 bin_PROGRAMS =  ngs
 
 
-libsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp \
-numproc.cpp  evp.cpp hyperbolic.cpp  \
-numprocee.cpp python_solve.cpp python_mpi.cpp
-# basenumproc.cpp  pde.cpp pdeparser.cpp
+libsolve_la_SOURCES = bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp \
+hyperbolic.cpp numprocee.cpp python_solve.cpp python_mpi.cpp
+
 
 libsolve_la_LIBADD = $(top_builddir)/comp/libngcomp.la		    \
 $(top_builddir)/ngstd/libngstd.la $(top_builddir)/fem/libngfem.la   \
@@ -17,9 +16,7 @@ $(top_builddir)/basiclinalg/libngbla.la				    \
 $(top_builddir)/multigrid/libngmg.la $(PARDISO_LIBS) $(LAPACK_LIBS) 
 
 libsolve_la_LDFLAGS = " -avoid-version -rdynamic"
-# libngsolve_la_LDFLAGS += -lboost_python-py34 -lpython3.4m
-# libngsolve_la_LDFLAGS += $(PYTHON_LIBS)
-#   -rdynamic
+
 
 if NGSGUI
 lib_LTLIBRARIES += libngsolve.la	
@@ -27,36 +24,18 @@ lib_LTLIBRARIES += libngsolve.la
   AM_CPPFLAGS += -DTCL
   libngsolve_la_LDFLAGS = " -avoid-version -rdynamic"
 
-  libngsolve_la_LIBADD = libsolve.la \
-	$(top_builddir)/comp/libngcomp.la		  \
-	$(top_builddir)/ngstd/libngstd.la		  \
-	$(top_builddir)/fem/libngfem.la			  \
-	$(top_builddir)/parallel/libparallel.la		  \
-	$(top_builddir)/linalg/libngla.la		  \
-	$(top_builddir)/basiclinalg/libngbla.la		  \
-	$(top_builddir)/multigrid/libngmg.la		  \
+  libngsolve_la_LIBADD = libsolve.la			   \
+	$(top_builddir)/comp/libngcomp.la		   \
+	$(top_builddir)/ngstd/libngstd.la		   \
+	$(top_builddir)/fem/libngfem.la			   \
+	$(top_builddir)/parallel/libparallel.la		   \
+	$(top_builddir)/linalg/libngla.la		   \
+	$(top_builddir)/basiclinalg/libngbla.la		   \
+	$(top_builddir)/multigrid/libngmg.la		   \
+	-linterface					   \
 	$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)	  
 endif
 
-
-
-# if NGSPY
-# lib_LTLIBRARIES += libngspy.la
-# libngspy_la_SOURCES = ngspy.cpp bvp.cpp generalizedEVP.cpp \
-# numproc.cpp evp.cpp hyperbolic.cpp  \
-# numprocee.cpp python_solve.cpp python_mpi.cpp
-
-# libngspy_la_LIBADD = $(top_builddir)/comp/libngcomp.la	    \
-# $(top_builddir)/ngstd/libngstd.la 		\
-# $(top_builddir)/fem/libngfem.la 		\
-# $(top_builddir)/parallel/libparallel.la		\
-# $(top_builddir)/linalg/libngla.la		\
-# $(top_builddir)/basiclinalg/libngbla.la		\
-# $(top_builddir)/multigrid/libngmg.la		\
-# $(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)  \
-# -L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
-# libngspy_la_LDFLAGS = -avoid-version
-# endif
 
 
 ngs_SOURCES = ngs.cpp
@@ -69,10 +48,7 @@ ngs_LDADD = libsolve.la \
 	$(top_builddir)/basiclinalg/libngbla.la		\
 	$(top_builddir)/ngstd/libngstd.la \
 	$(PARDISO_LIBS) $(LAPACK_LIBS) $(MUMPS_LIBS) \
-	-L$(libdir) -lnglib -linterface -lmesh -lstl -locc -lgeom2d -lcsg 
-#	-L/opt/OpenCASCADE/lib -lTKernel -lTKGeomBase -lTKMath -lTKG2d -lTKG3d -lTKXSBase -lTKOffset -lTKFillet -lTKShHealing -lTKMesh -lTKMeshVS -lTKTopAlgo -lTKGeomAlgo -lTKBool -lTKPrim -lTKBO -lTKIGES -lTKBRep -lTKSTEPBase -lTKSTEP -lTKSTL -lTKSTEPAttr -lTKSTEP209 -lTKXDESTEP -lTKXDEIGES -lTKXCAF -lTKLCAF -lFWOSPlugin
-
-
+	-L$(libdir) -linterface
 
 
 include_HEADERS = solve.hpp

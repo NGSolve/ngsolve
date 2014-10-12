@@ -45,10 +45,17 @@ void ExportNgla() {
     .def(bp::self+=bp::self)
     .def(bp::self-=bp::self)
     .def(bp::self*=double())
+    .def("InnerProduct", FunctionPointer( [](BaseVector & self, BaseVector & other)
+                                          {
+                                            return bp::object (InnerProduct (self, other));
+                                          }))
     ;       
 
-  bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
-    ;
+  // bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
+  bp::def ("InnerProduct",
+           FunctionPointer( [] (bp::object x, bp::object y) -> bp::object
+                            { return x.attr("InnerProduct") (y); }));
+  ;
   
 
   typedef BaseMatrix BM;
