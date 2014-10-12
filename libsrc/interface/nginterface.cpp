@@ -607,6 +607,7 @@ char * Ng_GetBCNumBCName (int bcnr)
 //    strcpy(name,mesh->GetBCName(bcnr).c_str());
 //}
 
+/*
 void Ng_GetNormalVector (int sei, int locpi, double * nv)
 {
   nv[0] = 0; 
@@ -643,7 +644,7 @@ void Ng_GetNormalVector (int sei, int locpi, double * nv)
 	}
     }
 }
-
+*/
 
 
 void Ng_SetPointSearchStartElement(const int el)
@@ -2132,12 +2133,15 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
 #endif
     {
       // ref = new RefinementSurfaces(*geometry);
+      /*
+        // joachim, oct 2014
       CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
       if (geometry)
 	{
 	  opt = new MeshOptimize2dSurfaces(*geometry);
 	  ref->Set2dOptimizer(opt);
 	}
+      */
     }
 
   if(!mesh->LocalHFunctionGenerated())

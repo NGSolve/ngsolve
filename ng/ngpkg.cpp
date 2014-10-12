@@ -2753,27 +2753,6 @@ void Ng_SetUserVisualizationObject (netgen::UserVisualizationObject * vis)
 
 namespace netgen
 {
-  extern void Render ();
-}
-
-void Ng_Redraw ()
-{
-#ifdef OPENGL
-  extern bool nodisplay; // he: global in ngappinit.cpp
-  if (!nodisplay)
-    {
-      netgen::vssolution.UpdateSolutionTimeStamp();
-      Render();
-    }
-#endif
-}
-
-
-
-
-
-namespace netgen
-{
 
 
 int firsttime = 1;

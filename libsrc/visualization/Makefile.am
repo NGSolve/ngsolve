@@ -9,7 +9,6 @@ METASOURCES = AUTO
 if NGGUI
 lib_LTLIBRARIES = libvisual.la
 libvisual_la_LIBADD =  $(LIBGLU) $(TCL_LIB_SPEC)
-
 endif
 
 

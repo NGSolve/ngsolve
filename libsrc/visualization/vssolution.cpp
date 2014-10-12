@@ -4555,22 +4555,19 @@ namespace netgen
   
 #endif
 
+}
 
 
+#include "../include/nginterface.h"
 
 void Ng_ClearSolutionData ()
 {
 #ifdef OPENGL
   // if (nodisplay) return;
-  vssolution.ClearSolutionData();
+  netgen::vssolution.ClearSolutionData();
 #endif
 }
-}
 
-#include "../include/nginterface.h"
-
-// namespace netgen
-// {
 void Ng_InitSolutionData (Ng_SolutionData * soldata)
 {
   soldata -> name = NULL;
@@ -4608,4 +4605,18 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 #endif
 }
 
+
+
+namespace netgen
+{
+  extern void Render ();
+}
+
+void Ng_Redraw ()
+{
+#ifdef OPENGL
+  netgen::vssolution.UpdateSolutionTimeStamp();
+  netgen::Render();
+#endif
+}
 

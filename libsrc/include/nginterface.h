@@ -126,7 +126,7 @@ extern "C" {
   //void Ng_GetBCNumBCName (int bcnr, char * name);
 
   // Get normal vector of surface element node
-  DLL_HEADER void Ng_GetNormalVector (int sei, int locpi, double * nv);     
+  // DLL_HEADER void Ng_GetNormalVector (int sei, int locpi, double * nv);     
   
 
   DLL_HEADER void Ng_SetPointSearchStartElement(int el);
