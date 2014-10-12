@@ -10,5 +10,5 @@ if __platform.startswith('win'):
     from ngslib.bla import *
 
 
-__all__ = ['Matrix', 'Vector']
+__all__ = ['Matrix', 'Vector', 'InnerProduct']
 

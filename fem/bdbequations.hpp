@@ -949,11 +949,12 @@ namespace ngfem
   template <int N>
   class TVec
   {
-    CoefficientFunction * coef;
+    shared_ptr<CoefficientFunction> coef;
 
   public:
     typedef double TSCAL;
-    TVec (CoefficientFunction * acoef) : coef(acoef) {;}
+    TVec (shared_ptr<CoefficientFunction> acoef) : coef(acoef) {;}
+    TVec (const Array<shared_ptr<CoefficientFunction>> & coefs) : coef(coefs[0]) {;}
 
   
 

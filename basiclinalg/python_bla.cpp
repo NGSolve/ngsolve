@@ -292,6 +292,8 @@ void ExportNgbla() {
                 }
                 return res;
             } ) )
+      .def("InnerProduct", FunctionPointer ( [](FVD & x, FVD & y)
+                                 { return InnerProduct (x, y); }))
         ;
 
     bp::class_<Vector<double>,  bp::bases<FlatVector<double> > >("VectorD")
@@ -455,6 +457,10 @@ void ExportNgbla() {
             boost::python::arg("width"), 
             boost::python::arg("complex")=false)
            );
+
+    bp::def ("InnerProduct",
+             FunctionPointer( [] (bp::object x, bp::object y) -> bp::object
+                              { return x.attr("InnerProduct") (y); }));
 }
 
 

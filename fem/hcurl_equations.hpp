@@ -454,6 +454,8 @@ namespace ngfem
     : public T_BDBIntegrator<DiffOpIdEdge<D>, OrthoDMat<D>, FEL>
   {
   public:
+    using T_BDBIntegrator<DiffOpIdEdge<D>, OrthoDMat<D>, FEL>::T_BDBIntegrator;
+    /*
     ///
     MassEdgeOrthoIntegrator (CoefficientFunction * coeff1,
 			     CoefficientFunction * coeff2)
@@ -473,7 +475,7 @@ namespace ngfem
       else
 	return new MassEdgeOrthoIntegrator (coeffs[0], coeffs[1], coeffs[2]);
     }
-  
+    */  
     ///
     virtual string Name () const { return "MassEdgeOrtho"; }
   };
@@ -506,7 +508,7 @@ namespace ngfem
     { ; }
     */
 
-    static shared_ptr<Integrator> Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
+    static shared_ptr<BilinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
       return make_shared<MassEdgeAnisotropicIntegrator> (coeffs[0], coeffs[1], coeffs[2],
                                                          coeffs[3], coeffs[4], coeffs[5]);
@@ -561,6 +563,8 @@ namespace ngfem
     : public T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL>
   {
   public:
+    using  T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL>::T_BIntegrator;
+    /*
     ///
     TangentialSourceEdgeIntegrator (CoefficientFunction * coeff)
       : T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL> 
@@ -571,7 +575,7 @@ namespace ngfem
     {
       return new TangentialSourceEdgeIntegrator<D,FEL> (coeffs[0]);
     }
-  
+    */
     ///
     virtual string Name () const { return "TangentialSourceEdge"; }
   };

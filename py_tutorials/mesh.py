@@ -11,11 +11,11 @@ from ngsolve import *
 # mesh = pde.Mesh()
 
 # mesh = comp.Mesh("square.vol")
-mesh = comp.Mesh("../pde_tutorial/cube.vol")
+# mesh = comp.Mesh("../pde_tutorial/cube.vol")
 
-# from tkinter import filedialog
-# filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
-# mesh = comp.Mesh(filename)
+from tkinter import filedialog
+filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
+mesh = comp.Mesh(filename)
 
 
 for i in mesh.Elements(comp.VOL):
