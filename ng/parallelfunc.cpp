@@ -48,6 +48,7 @@ void Parallel_Exit();
 
 
 namespace netgen {
+  extern std::shared_ptr<NetgenGeometry> ng_geometry;
   extern shared_ptr<Mesh>  mesh;
   extern VisualSceneMesh vsmesh;
   extern VisualSceneSolution vssolution;
@@ -310,6 +311,8 @@ void ParallelRun()
 
       else if ( message ==  "end" )
 	{
+	  mesh.reset();
+	  ng_geometry.reset();
 	  break;
 	}
       
