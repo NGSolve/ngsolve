@@ -26,7 +26,7 @@ preconditioner c -type=local -bilinearform=a
 # numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture
 
 
-# pynumproc pyNP1  myname1 -flag1=27
+pynumproc pyNP1  myname1 -flag1=27
 
 pynumproc pybvp np2
 
