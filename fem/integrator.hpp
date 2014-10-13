@@ -1197,17 +1197,17 @@ namespace ngfem
 
   class NGS_DLL_HEADER ComplexLinearFormIntegrator : public LinearFormIntegrator
   {
-    const LinearFormIntegrator & lfi;
+    shared_ptr<LinearFormIntegrator> lfi;
     Complex factor;
   public:
-    ComplexLinearFormIntegrator (const LinearFormIntegrator & alfi, 
+    ComplexLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, 
 				 Complex afactor)
       : lfi(alfi), factor(afactor)
     { ; }
 
-    virtual bool BoundaryForm () const { return lfi.BoundaryForm(); } 
+    virtual bool BoundaryForm () const { return lfi->BoundaryForm(); } 
 
-    virtual void CheckElement (const FiniteElement & el) const { lfi.CheckElement(el); }
+    virtual void CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
 
 
     virtual void
@@ -1226,7 +1226,7 @@ namespace ngfem
 		       LocalHeap & lh) const
     {
       FlatVector<Complex> rvec(elvec.Size(), lh);
-      lfi.CalcElementVector (fel, eltrans, rvec, lh);
+      lfi->CalcElementVector (fel, eltrans, rvec, lh);
       elvec = factor * rvec;
     }  
 
@@ -1253,7 +1253,7 @@ namespace ngfem
     { 
       FlatVector<double> rvec;
 
-      lfi.CalcElementVectorIndependent (gfel, s_mip, g_mip,
+      lfi->CalcElementVectorIndependent (gfel, s_mip, g_mip,
 					    rvec, lh, curveint);
       elvec.AssignMemory (rvec.Size(), lh);
       elvec = factor * rvec;
@@ -1264,7 +1264,7 @@ namespace ngfem
 
     virtual string Name () const
     {
-      return string ("ComplexIntegrator (") + lfi.Name() + ")";
+      return string ("ComplexIntegrator (") + lfi->Name() + ")";
     }
 
   };

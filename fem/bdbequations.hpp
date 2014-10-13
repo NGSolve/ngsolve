@@ -953,9 +953,9 @@ namespace ngfem
 
   public:
     typedef double TSCAL;
+
     TVec (shared_ptr<CoefficientFunction> acoef) : coef(acoef) {;}
     TVec (const Array<shared_ptr<CoefficientFunction>> & coefs) : coef(coefs[0]) {;}
-
   
 
     template <typename FEL, typename MIP, typename VEC>
