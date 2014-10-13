@@ -200,12 +200,17 @@ namespace ngla
     template <typename T>
     FlatVector<T> FV () const;
 
+    /*
     template <class TSCAL>
     TSCAL InnerProduct (const BaseVector & v2) const 
     {
       return dynamic_cast<const S_BaseVector<TSCAL>&> (*this) . 
 	InnerProduct (v2);
     }
+    */
+
+    virtual double InnerProductD (const BaseVector & v2) const;
+    virtual Complex InnerProductC (const BaseVector & v2) const;
 
     virtual double L2Norm () const;
 
@@ -400,6 +405,18 @@ namespace ngla
     {
       return std::move(vec->CreateVector());
     }
+
+    virtual double InnerProductD (const BaseVector & v2) const
+    {
+      return vec->InnerProductD (v2);
+    }
+
+    virtual Complex InnerProductC (const BaseVector & v2) const
+    {
+      return vec->InnerProductC (v2);
+    }
+
+
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<double> & v) const
     {
@@ -820,7 +837,8 @@ namespace ngla
   ///
   inline double InnerProduct (const BaseVector & v1, const BaseVector & v2)
   {
-    return dynamic_cast<const S_BaseVector<double>&>(v1).InnerProduct(v2); 
+    // return dynamic_cast<const S_BaseVector<double>&>(v1).InnerProduct(v2); 
+    return v1.InnerProductD(v2); 
   }
 
 
@@ -831,8 +849,20 @@ namespace ngla
     return dynamic_cast<const S_BaseVector<typename SCAL_TRAIT<IPTYPE>::SCAL>&>(v1).InnerProduct(v2); 
   }
 
-  template <>
-  inline Complex 
+  template <> inline double 
+  S_InnerProduct<double> (const BaseVector & v1, const BaseVector & v2)
+  {
+    return v1.InnerProductD (v2);
+  }
+
+  template <> inline Complex 
+  S_InnerProduct<Complex> (const BaseVector & v1, const BaseVector & v2)
+  {
+    return v1.InnerProductC (v2);
+  }
+
+
+  template <> inline Complex 
   S_InnerProduct<ComplexConjugate> (const BaseVector & v1, const BaseVector & v2)
   {
     return InnerProduct( v1.FVComplex(), Conj(v2.FVComplex()) );

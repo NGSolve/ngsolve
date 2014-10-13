@@ -109,6 +109,20 @@ namespace ngla
   }
 
 
+  double BaseVector :: InnerProductD (const BaseVector & v2) const
+  {
+    return dynamic_cast<const S_BaseVector<double>&> (*this) . 
+      InnerProduct (v2);
+  }
+  
+  Complex BaseVector :: InnerProductC (const BaseVector & v2) const
+  {
+    return dynamic_cast<const S_BaseVector<Complex>&> (*this) . 
+      InnerProduct (v2);
+  }
+
+
+
   AutoVector BaseVector ::Range (int begin, int end) const
   {
     throw Exception ("BaseVector::Range const called");
@@ -601,8 +615,8 @@ namespace ngla
   template <class SCAL>
   SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
   {
-    return ngbla::InnerProduct (FVScal(), 
-                                dynamic_cast<const S_BaseVector&>(v2).FVScal());
+    return ngbla::InnerProduct (FVScal(), v2.FV<SCAL>());
+    // dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
 
   //template <> 
