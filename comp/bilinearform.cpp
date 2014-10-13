@@ -2466,23 +2466,27 @@ namespace ngcomp
                 if (hasbound)
                   {
                     RegionTimer reg (timerbound);
-#pragma omp parallel
-                    {
-                      LocalHeap lh(lh_size, "biform-AddMatrix (b)");
-                      Array<int> dnums;
-                      
-#pragma omp for
-                      for (int i = 0; i < nse; i++)
-                        {
-                          HeapReset hr(lh);
-                          
-                          const FiniteElement & fel = fespace->GetSFE (i, lh);
-                          ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
-                          fespace->GetSDofNrs (i, dnums);
-                          
-                          ApplyElementMatrix(x,y,val,dnums,eltrans,i,1,cnt,lh,&fel);
-                        }
-                    }
+
+#ifdef _OPENMP
+		    LocalHeap clh (lh_size*omp_get_max_threads(), "biform-AddMatrix - Heap");
+#else
+		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
+#endif
+                    
+		    IterateElements 
+		      (*fespace, BND, clh, 
+		       [&] (ElementId ei, LocalHeap & lh)
+                       
+		       {
+                         HeapReset hr(lh);
+                         
+                         const FiniteElement & fel = fespace->GetFE (ei, lh);
+                         ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+			 Array<int> dnums (fel.GetNDof(), lh);
+                         fespace->GetDofNrs (ei, dnums);
+                         
+                         ApplyElementMatrix(x,y,val,dnums,eltrans,ei.Nr(),1,cnt,lh,&fel);
+                       });
                   }
 
                 if (hasskeletonbound||hasskeletoninner)
@@ -2972,14 +2976,7 @@ namespace ngcomp
             BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
-
-	    if (type == 1)
-#pragma omp critical(addapply)
-	      {
-		y.AddIndirect (dnums, elvecy);
-	      }
-	    else
-	      y.AddIndirect (dnums, elvecy);  // coloring	      
+            y.AddIndirect (dnums, elvecy);  // coloring	      
           }
         *testout << "||y|| = " << L2Norm(y) << endl;
       }
@@ -3190,10 +3187,7 @@ namespace ngcomp
             */
             BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
             elvecy *= val;
-#pragma omp critical(addapply)
-            {
-              y.AddIndirect (dnums, elvecy);
-            }
+            y.AddIndirect (dnums, elvecy);
           }
       }
     else if (type == 2)
@@ -3406,10 +3400,7 @@ namespace ngcomp
             BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
-#pragma omp critical(addapply)
-            {
-              y.AddIndirect (dnums, elvecy);
-            }
+            y.AddIndirect (dnums, elvecy);
           }
       }
     else if (type == 2)
