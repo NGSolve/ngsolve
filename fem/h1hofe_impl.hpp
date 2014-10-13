@@ -118,16 +118,17 @@ namespace ngfem
      
     // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
-      {
-	int p = order_edge[i];
+      if (order_edge[i] >= 2)
+        {
+          int p = order_edge[i];
 
-        Tx xi = ET_trait<ET_QUAD>::XiEdge(i, hx, vnums);
-        Tx lam_e = ET_trait<ET_QUAD>::LamEdge(i, hx);
-
-        Tx bub = 0.25 * lam_e * (1 - xi*xi);
-	EdgeOrthoPol::EvalMult (p-2, xi, bub, shape+ii);
-	ii += p-1;
-      }    
+          Tx xi = ET_trait<ET_QUAD>::XiEdge(i, hx, vnums);
+          Tx lam_e = ET_trait<ET_QUAD>::LamEdge(i, hx);
+          
+          Tx bub = 0.25 * lam_e * (1 - xi*xi);
+          EdgeOrthoPol::EvalMult (p-2, xi, bub, shape+ii);
+          ii += p-1;
+        }
     
     // inner shapes
     INT<2> p = order_face[0];
