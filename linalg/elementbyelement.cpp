@@ -119,8 +119,8 @@ namespace ngla
       {    
 	ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
 	
-	FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-	FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+	FlatVector<SCAL> vx = x.FV<SCAL>(); // dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
+	FlatVector<SCAL> vy = y.FV<SCAL>(); // dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 	
 	for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
 	  {
