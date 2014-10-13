@@ -27,7 +27,14 @@ public:
   virtual void Do(LocalHeap & lh)  {
     // cout << "numproc wrap - do" << endl;
     AcquireGIL gil_lock;
-    this->get_override("Do")(lh);
+    try
+      {
+        this->get_override("Do")(lh);
+      }
+    catch (bp::error_already_set const &) {
+      cout << "caught a python error:" << endl;
+      PyErr_Print();
+    }
   }
 };
 

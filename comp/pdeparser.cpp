@@ -634,9 +634,9 @@ namespace ngcomp
               {
                 cout << "*********** load py-module " << module_name << endl;
                 AcquireGIL gil_lock;
-                string command = string("import ") + module_name;
-                // py_env.exec (command.c_str());
-                pyenv.exec("from module1 import *");
+                string command = string("from ") + module_name + " import*";
+                pyenv.exec (command.c_str());
+                // pyenv.exec("from module1 import *");
               }
 
 #else
@@ -732,7 +732,6 @@ namespace ngcomp
 #ifdef NGS_PYTHON
               {
                 cout << "*********** create py-numproc " << npid << ", name = " << name << endl;
-                // BasePythonEnvironment & py_env = GetPythonEnvironment();
                 AcquireGIL gil_lock;
 
                 static int pynp_cnt = 0;
