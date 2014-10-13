@@ -489,66 +489,16 @@ namespace netgen
 
 
 
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////
-// Lambda to function pointer conversion
-template <typename Function>
-struct function_traits
-  : public function_traits<decltype(&Function::operator())> {};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct function_traits<ReturnType(ClassType::*)(Args...) const> {
-  typedef ReturnType (*pointer)(Args...);
-  typedef ReturnType return_type;
-};
-
-template <typename Function>
-typename function_traits<Function>::pointer
-FunctionPointer (const Function& lambda) {
-  return static_cast<typename function_traits<Function>::pointer>(lambda);
-}
-
-template <class T>
-inline string ToString (const T& t)
-{
-  stringstream ss;
-  ss << t;
-  return ss.str();
-}
-
-
-
-
-
 #ifdef NG_PYTHON
 #include <boost/python.hpp>
+#include <../general/ngpython.hpp>
 namespace bp = boost::python;
 
 void ExportCSGVis()
 {
-  
-	std::string nested_name = "csgvis";
-	if (bp::scope())
-		nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".csgvis");
-
-	bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
-
-	cout << "exporting csgvis " << nested_name << endl;
-	bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
-	parent.attr("csgvis") = module;
-
-	bp::scope local_scope(module);
-
 	using namespace netgen;
 
-	cout << "exporting csg-vis " << endl;
+	ModuleScope module("csgvis");
 
 	bp::class_<VisualSceneGeometry, shared_ptr<VisualSceneGeometry>>
 		("VisualSceneGeometry", bp::no_init)
