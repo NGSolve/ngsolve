@@ -734,12 +734,20 @@ namespace ngcomp
                 cout << "*********** create py-numproc " << npid << ", name = " << name << endl;
                 // BasePythonEnvironment & py_env = GetPythonEnvironment();
                 AcquireGIL gil_lock;
-                
+
+                static int pynp_cnt = 0;
+                string pyname = "_pynumproc"+ToString(pynp_cnt++);
+
                 pyenv["temppde"] = bp::ptr(pde);
-                string command = string("np = ") + npid + " (temppde, { } ) \n";
-                command += "temppde.Add(np)\n";
-                cout << "command = " << endl << command << endl;
+                string command = pyname + " = " + npid + " (temppde, { } ) \n";
                 pyenv.exec (command);
+                bp::object pynp = pyenv[pyname.c_str()];
+
+                bp::extract<shared_ptr<NumProc>> np(pynp);
+                if(np.check())
+                  pde->AddNumProc (name, np());
+                else
+                  cout << "sorry, I cannot make it a numproc" << endl;
               }
 #else
               cerr << "sorry, python not enabled" << endl;

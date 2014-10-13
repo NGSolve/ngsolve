@@ -18,13 +18,13 @@ class PyNumProc : public NumProc
 public:
   PyNumProc (PDE & pde, const Flags & flags) : NumProc (pde, flags) { ; }
   shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (&pde,&NOOP_Deleter); }
-  // virtual void Do (LocalHeap & lh) { ; }
+  // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
 };
 
 class NumProcWrap : public PyNumProc, public bp::wrapper<PyNumProc> {
 public:
   NumProcWrap (PDE & pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
-  void Do(LocalHeap & lh)  {
+  virtual void Do(LocalHeap & lh)  {
     // cout << "numproc wrap - do" << endl;
     AcquireGIL gil_lock;
     this->get_override("Do")(lh);
@@ -431,11 +431,13 @@ void ExportNgcomp()
     ;
 
   // die geht
-  bp::class_<NumProcWrap,bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<PDE&, const Flags&>())
+  bp::class_<NumProcWrap,shared_ptr<NumProcWrap>, bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<PDE&, const Flags&>())
     .def("Do", bp::pure_virtual(&PyNumProc::Do)) 
     .add_property("pde", &PyNumProc::GetPDE)
     ;
   
+  bp::implicitly_convertible 
+    <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -484,10 +486,10 @@ void ExportNgcomp()
                                   self.AddBilinearForm (bf->GetName(), bf);
                                 }))
 
-    .def("Add", FunctionPointer([](PDE & self, PyNumProc &np)
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProcWrap> np)
                                 {
                                   cout << "add pynumproc - ref" << endl;
-                                  self.AddNumProc ("pynumproc", shared_ptr<NumProc> (&np, &NOOP_Deleter));
+                                  self.AddNumProc ("pynumproc", np);
                                 }))
     
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProc> np)
