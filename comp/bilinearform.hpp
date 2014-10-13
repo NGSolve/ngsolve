@@ -353,7 +353,7 @@ namespace ngcomp
 
 
 
-
+  
 
 
   /**
@@ -681,11 +681,11 @@ namespace ngcomp
   {
   protected:
     ///
-    const BilinearForm * bf;
+    shared_ptr<BilinearForm> bf;
 
   public:
     ///
-    BilinearFormApplication (const BilinearForm * abf);
+    BilinearFormApplication (shared_ptr<BilinearForm> abf);
     ///
     virtual void Mult (const BaseVector & v, BaseVector & prod) const;
     ///
@@ -717,7 +717,7 @@ namespace ngcomp
 
   public:
     ///
-    LinearizedBilinearFormApplication (const BilinearForm * abf,
+    LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
 				       const BaseVector * aveclin);
 
     ///
