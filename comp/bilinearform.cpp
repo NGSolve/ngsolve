@@ -353,7 +353,7 @@ namespace ngcomp
 
     if (nonassemble)
       {
-        mats.Append (make_shared<BilinearFormApplication> (this)); 
+        mats.Append (make_shared<BilinearFormApplication> (shared_ptr<BilinearForm>(this, NOOP_Deleter))); 
       
         if (precompute)
           {
@@ -3785,7 +3785,7 @@ namespace ngcomp
 
   
   BilinearFormApplication :: 
-  BilinearFormApplication (const BilinearForm * abf)
+  BilinearFormApplication (shared_ptr<BilinearForm> abf)
     : bf (abf)
   {
     ;
@@ -3836,7 +3836,7 @@ namespace ngcomp
   }
 
   LinearizedBilinearFormApplication ::
-  LinearizedBilinearFormApplication (const BilinearForm * abf,
+  LinearizedBilinearFormApplication (shared_ptr<BilinearForm> abf,
                                      const BaseVector * aveclin)
     : BilinearFormApplication (abf), veclin(aveclin)
   {

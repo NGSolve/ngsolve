@@ -1860,12 +1860,12 @@ namespace ngcomp
 		      if (partflags.GetDefineFlag ("imag"))
 			{
 			  integrator = shared_ptr<LinearFormIntegrator> (new ComplexLinearFormIntegrator
-                                                                        (*integrator, Complex(0,1)));
+                                                                         (integrator, Complex(0,1)));
 			} 
 
 		      if (partflags.GetDefineFlag ("real"))
 			{
-			  integrator = shared_ptr<LinearFormIntegrator> (new ComplexLinearFormIntegrator (*integrator, Complex(1,0)));
+			  integrator = shared_ptr<LinearFormIntegrator> (new ComplexLinearFormIntegrator (integrator, Complex(1,0)));
 			} 
 
 		      if (partflags.NumFlagDefined ("definedon") || partflags.NumListFlagDefined("definedon"))
