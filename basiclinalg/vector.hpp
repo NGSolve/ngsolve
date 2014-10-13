@@ -1603,7 +1603,81 @@ namespace ngbla
   };
 
 
+
+  
+  template <typename T>
+  INLINE T xxxRemoveConstV (const T & x)
+  {
+    return x;
+  }
+
+
+
+  template <int S, typename T>
+  INLINE  auto operator* (double a, const Vec<S,T> & vec) 
+    -> Vec<S, decltype(xxxRemoveConstV(a*vec(0)))>
+  {
+    typedef decltype(xxxRemoveConstV(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator* (double a, FlatVec<S,T> vec) 
+    -> Vec<S, decltype(xxxRemoveConstV(a*vec(0)))>
+  {
+    typedef decltype(xxxRemoveConstV(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
+    -> Vec<S, decltype(xxxRemoveConstV(a*vec(0)))>
+  {
+    typedef decltype(xxxRemoveConstV(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator* (Complex a, FlatVec<S,T> vec) 
+    -> Vec<S, decltype(xxxRemoveConstV(a*vec(0)))>
+  {
+    typedef decltype(xxxRemoveConstV(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+
+  template <int S, typename T>
+  INLINE auto operator+ (FlatVec<S,T> x, FlatVec<S,T> y) -> Vec<S,T>
+  {
+    Vec<S,T> tmp = x;
+    tmp += y;
+    return tmp;
+  }
+
+  template <int S, typename T>
+  INLINE auto operator- (FlatVec<S,T> x, FlatVec<S,T> y) -> Vec<S,T>
+  {
+    Vec<S,T> tmp = x;
+    tmp -= y;
+    return tmp;
+  }
+
 }
+
+
+
 
 #ifdef PARALLEL
 namespace ngstd

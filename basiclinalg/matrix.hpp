@@ -1740,51 +1740,6 @@ template <typename T>
 
 
 
-  template <int S, typename T>
-  INLINE  auto operator* (double a, const Vec<S,T> & vec) 
-    -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
-  {
-    typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
-
-  template <int S, typename T>
-  INLINE auto operator* (double a, FlatVec<S,T> vec) 
-    -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
-  {
-    typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
-
-  template <int S, typename T>
-  INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
-    -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
-  {
-    typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
-
-  template <int S, typename T>
-  INLINE auto operator* (Complex a, FlatVec<S,T> vec) 
-    -> Vec<S, decltype(xxxRemoveConst(a*vec(0)))>
-  {
-    typedef decltype(xxxRemoveConst(a*vec(0))) TRES;
-    Vec<S, TRES> res;
-    for (int i = 0; i < S; i++)
-      res(i) = a * vec(i);
-    return res;
-  }
-
-
 
 
   template <int H, int W, int W2, typename T1, typename T2>
