@@ -7,44 +7,14 @@ int dummy_bvp = -1;
 namespace ngsolve
 {
 
-template <typename Function>
-struct function_traits
-  : public function_traits<decltype(&Function::operator())> {};
-
-template <typename ClassType, typename ReturnType, typename... Args>
-struct function_traits<ReturnType(ClassType::*)(Args...) const> {
-  typedef ReturnType (*pointer)(Args...);
-  typedef ReturnType return_type;
-};
-
-template <typename Function>
-typename function_traits<Function>::pointer
-FunctionPointer (const Function& lambda) {
-  return static_cast<typename function_traits<Function>::pointer>(lambda);
-}
-
-template <typename Function>
-typename function_traits<Function>::return_type
-GetReturnValue (Function func) {
-  typename function_traits<Function>::return_type *dummy;
-  return *dummy;
-}
-
-
-
-
   /* *************************** Numproc BVP ********************** */
-
 
   ///
   class NumProcBVP : public NumProc
   {
   protected:
-    // shared_ptr<BilinearForm> bfa;
-
-    // decltype( dummy_pde::GetBilinearForm("a") ) bfa;
-    // function_traits<decltype (&PDE::GetBilinearForm)>::return_type bfa;
-    decltype ( GetReturnValue (&PDE::GetBilinearForm) ) bfa;
+    shared_ptr<BilinearForm> bfa;
+    // decltype ( GetReturnValue (&PDE::GetBilinearForm) ) 
     ///
     shared_ptr<LinearForm> lff;
     ///
