@@ -471,9 +471,10 @@ public:
       BaseMappedIntegrationRule & mir = eltrans(ir, lh); 
       
       FlatMatrixFixWidth<DMATOP::DIM_DMAT, TSCAL> hv1(ir.GetNIP(), lh);
-      
       diffop->Apply (fel, mir, elx, hv1, lh);
       dmatop.ApplyIR (fel, mir, hv1, lh);
+      for (int i = 0; i < mir.Size(); i++)
+        hv1.Row(i) *= mir[i].GetWeight();
       diffop->ApplyTrans (fel, mir, hv1, ely, lh);    
     }
     
@@ -623,6 +624,7 @@ public:
 template <class DIFFOP, class DMATOP, class FEL = FiniteElement>
 class T_BDBIntegrator : public T_BDBIntegrator_DMat<DMATOP /* , DIFFOP::DIM_ELEMENT, DIFFOP::DIM_SPACE */ > 
 {
+protected:
   typedef T_BDBIntegrator_DMat<DMATOP /* , DIFFOP::DIM_ELEMENT, DIFFOP::DIM_SPACE */ > BASE;
 
   using BASE::diffop;
