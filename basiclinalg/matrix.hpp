@@ -1731,22 +1731,14 @@ namespace ngbla
     return res;
   }
   
-template <typename T>
-  INLINE T xxxRemoveConst (const T & x)
-  {
-    return x;
-  }
-
-
-
 
 
 
   template <int H, int W, int W2, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat1, const Mat<W,W2,T2> & mat2) 
-    -> Mat<H,W2,decltype( xxxRemoveConst(mat1(0,0)*mat2(0,0)))>
+    -> Mat<H,W2,decltype( RemoveConst(mat1(0,0)*mat2(0,0)))>
   {
-    typedef decltype( xxxRemoveConst(mat1(0,0)*mat2(0))) TRES;
+    typedef decltype( RemoveConst(mat1(0,0)*mat2(0))) TRES;
     Mat<H,W2,TRES> res;
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W2; j++)
@@ -1762,9 +1754,9 @@ template <typename T>
 
   template <int H, int W, int W2, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat, const Vec<W2,T2> & vec) 
-    -> Vec<H, decltype(xxxRemoveConst(mat(0,0)*vec(0)))>
+    -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
-    typedef decltype(xxxRemoveConst(mat(0,0)*vec(0))) TRES;
+    typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
     Vec<H, TRES> res = TRES(0);
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
@@ -1774,9 +1766,9 @@ template <typename T>
 
   template <int H, int W, typename T1, typename T2>
   INLINE auto operator* (const Mat<H,W,T1> & mat, const FlatVec<W,T2> & vec) 
-    -> Vec<H, decltype(xxxRemoveConst(mat(0,0)*vec(0)))>
+    -> Vec<H, decltype(RemoveConst(mat(0,0)*vec(0)))>
   {
-    typedef decltype(xxxRemoveConst(mat(0,0)*vec(0))) TRES;
+    typedef decltype(RemoveConst(mat(0,0)*vec(0))) TRES;
     Vec<H, TRES> res = TRES(0);
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
