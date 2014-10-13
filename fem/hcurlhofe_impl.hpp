@@ -459,7 +459,7 @@ namespace ngfem
         shape[i] = wuDv_minus_wvDu<3> (lam[e[0]], lam[e[1]], muz[e[1]]);
    
 	//high order \nabla (P_edge(x,y) * muz)
-	if(usegrad_edge[i])
+	if (p > 0 && usegrad_edge[i])
 	  {
 	    /*
               T_ORTHOPOL::CalcTrigExt(p+1, lam[e[1]]-lam[e[0]],
@@ -472,7 +472,7 @@ namespace ngfem
             Tx bub = lam[e[0]]*lam[e[1]]*muz[e[1]];
 
 	    LegendrePolynomial::
-	      EvalScaledMult (order_edge[i]-1, xi, eta, bub, adpolxy1);
+	      EvalScaledMult (p-1, xi, eta, bub, adpolxy1);
 	    for(int j = 0; j <= p-1; j++)
               shape[ii++] = Du<3> (adpolxy1[j]);
 	  }
@@ -487,14 +487,14 @@ namespace ngfem
         shape[i] = wuDv_minus_wvDu<3> (muz[e[0]], muz[e[1]], lam[e[1]]);
 	
 	//high order edges:  \nabla (T_ORTHOPOL^{p+1}(2z-1) * lam(x,y))
-	if(usegrad_edge[i])
+	if(p > 0 && usegrad_edge[i])
 	  {
 	    // T_ORTHOPOL::Calc (p+1, muz[e[1]]-muz[e[0]], adpolz);
 	    // for (int j = 0; j < p; j++)
 	    //   shape[ii++] = Du<3> (adpolz[j] * lam[e[1]]);
 
 	    LegendrePolynomial::
-	      EvalMult (order_edge[i]-1, 
+	      EvalMult (p-1, 
 			muz[e[1]]-muz[e[0]], 
 			muz[e[0]]*muz[e[1]]*lam[e[1]], adpolz);
 	    
@@ -729,10 +729,10 @@ namespace ngfem
 	shape[i] = uDv<3> (0.5 * lam_e, xi); 
 
 	// High Order edges ... Gradient fields 
-	if(usegrad_edge[i])
+	if(p > 0 && usegrad_edge[i])
 	  {
 	    LegendrePolynomial::
-	      EvalMult (order_edge[i]-1, 
+	      EvalMult (p-1, 
 			xi, bub, pol_xi);
 
 	    for (int j = 0; j < p; j++)
@@ -914,7 +914,7 @@ namespace ngfem
         
         shape[i] = uDv<3> (0.5 * (1-z)*(1-z)*lam_t, xi);
 
-	if(usegrad_edge[i])
+	if(p > 0 && usegrad_edge[i])
 	  {
             Tx bub = 0.25*(1-xi*xi)*(1-z)*(1-z)*lam_t;
 	    LegendrePolynomial::
@@ -935,7 +935,7 @@ namespace ngfem
 
         shape[i] = uDv_minus_vDu<3> (lami[e[0]], lami[e[1]]);
 
-	if (usegrad_edge[i])
+	if (p > 0 && usegrad_edge[i])
 	  {
             Tx xi = lami[e[1]]-lami[e[0]]; 
             Tx lam_e = lami[e[0]]+lami[e[1]];

@@ -564,18 +564,6 @@ namespace ngfem
   {
   public:
     using  T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL>::T_BIntegrator;
-    /*
-    ///
-    TangentialSourceEdgeIntegrator (CoefficientFunction * coeff)
-      : T_BIntegrator<DiffOpIdEdge<D>, TVec<D>, FEL> 
-    (TVec<D> (coeff))
-    { ; }
-
-    static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-    {
-      return new TangentialSourceEdgeIntegrator<D,FEL> (coeffs[0]);
-    }
-    */
     ///
     virtual string Name () const { return "TangentialSourceEdge"; }
   };
