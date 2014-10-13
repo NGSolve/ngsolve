@@ -10,7 +10,9 @@
 #endif
 
 
+
 #include <parallelngs.hpp>
+
 
 
 namespace ngfem
@@ -749,6 +751,7 @@ namespace ngcomp
             e.Append (todo[pc]->GetName());
             throw;
           }
+
         
 	AddVariable ("timing.level", WallTime()-starttime, 6);
         if (bf) AddVariable (string("timing.bf.")+bf->GetName(), bf->GetTimer().GetTime(), 6);
