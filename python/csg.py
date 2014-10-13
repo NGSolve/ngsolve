@@ -9,10 +9,9 @@ if __platform.startswith('linux') or __platform.startswith('darwin'):
 if __platform.startswith('win'):
     # Windows
     from nglib.csg import *
-    from nglib.csgvis import *
+    import nglib.csgvis as csgvis
+    from nglib.csgvis import MouseMove
     from nglib.meshing import *
-
-
 
 
 CSGeometry.VS = csgvis.VS
