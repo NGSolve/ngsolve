@@ -32,7 +32,7 @@ lib_LTLIBRARIES += libngsolve.la
 	$(top_builddir)/linalg/libngla.la		   \
 	$(top_builddir)/basiclinalg/libngbla.la		   \
 	$(top_builddir)/multigrid/libngmg.la		   \
-	-linterface					   \
+	-L$(libdir) -linterface				   \
 	$(PARDISO_LIBS) $(LAPACK_LIBS) $(TCL_LIB_SPEC)	  
 endif
 
