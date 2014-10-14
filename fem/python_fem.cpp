@@ -161,16 +161,26 @@ void ExportNgfem() {
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
+         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef,
+                              bp::object definedon)
                            {
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
+                             
+                             if (bp::extract<bp::list> (definedon).check())
+                               {
+                                 Array<int> defon (makeCArray<int> (definedon));
+                                 cout << "locally defined on  = " << defon << endl;
+                                 cout << "(not yet functional)" << endl;
+                               }
+ 
                              if (!lfi) cerr << "undefined integrator '" << name 
                                             << "' in " << dim << " dimension having 1 coefficient"
                                             << endl;
                              return lfi;
                            }),
-          bp::default_call_policies(),        // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"))))
+          bp::default_call_policies(),     // need it to use named arguments
+          (bp::arg("name")=NULL,bp::arg("dim")=2,
+           bp::arg("coef"),bp::arg("definedon")=bp::object() )))
 
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
