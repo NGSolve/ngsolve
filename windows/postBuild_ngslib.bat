@@ -28,9 +28,23 @@ if defined NETGENDIR (
    echo Environment variable NETGENDIR not found.... using default location!!!
    set INSTALL_FOLDER=%PROJ_DIR%..\..\%PROJ_NAME%-inst_%BUILD_ARCH%
 )
-   
+
+if defined PYTHONROOT (
+    set PY_PACKAGE_FOLDER=%PYTHONROOT%\lib\site-packages\ngsolve
+    echo "%PYTHONROOT%\lib\site-packages\ngsolve"
+    echo %PY_PACKAGE_FOLDER%
+    if not exist "%PYTHONROOT%\lib\site-packages\ngsolve" (
+         mkdir "%PYTHONROOT%\lib\site-packages\ngsolve"
+         echo "%PY_PACKAGE_FOLDER%" created
+    )
+) else (
+    echo Environment variable PYTHONTOOT not found
+)
+
 set NGSOLVE_TCLSRC=%PROJ_DIR%..
 set NGSOLVE_INCROOT=%PROJ_DIR%..
+
+set NGLIB_PYTHON_SOURCE=%PROJ_DIR%..\python
 
 REM *** Start the Installation procedure ***
 echo POSTBUILD Script for %PROJ_NAME% ........
@@ -41,10 +55,12 @@ REM *** Copy the primary NGSolve DLL into the Install Folder ***
 echo Installing %PROJ_EXEC% into %INSTALL_FOLDER%\bin ....
 if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   copy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
    if errorlevel 1 goto ExecInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
+   copy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
    if errorlevel 1 goto ExecInstallFailed
 )   
 echo Installing %PROJ_EXEC%: Completed OK!!
@@ -85,7 +101,20 @@ if /i "%BUILD_ARCH%"=="win32" (
 )	
 )
 
-
+if defined PYTHONROOT (
+    REM *** Copy the python package into python\lib folder ***
+    echo Installing Python package
+    copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\__expr.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\bla.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\comp.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\fem.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\la.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\ngstd.py" "%PY_PACKAGE_FOLDER%\"
+    copy "%NGLIB_PYTHON_SOURCE%\solve.py" "%PY_PACKAGE_FOLDER%\"
+    if errorlevel 1 goto PythonPackageInstallFailed
+    echo Installing Python package: Completed OK!!
+)
 
 REM *** Done with the installation routine ***
 
@@ -108,6 +137,9 @@ echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying the %PROJ_NAME% 
 exit 1
 :LibInstallFailed
 echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying %LIB_NAME%.lib or %LIB_NAME%.h into install folder!!!
+exit 1
+:PythonPackageInstallFailed
+echo POSTBUILD Script for %PROJ_NAME% FAILED..... Error copying Python files into Python library folder!!!
 exit 1
 
 :BuildEventOK
