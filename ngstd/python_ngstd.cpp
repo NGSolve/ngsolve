@@ -11,15 +11,6 @@ PythonEnvironment pyenv;
 
 using std::ostringstream;
 
-template<typename T>
-Array<T> & makeCArray(const bp::object & obj)
-{     
-  Array<T> * C_vdL = new Array<T>(bp::len(obj));    
-  for (int i = 0; i < bp::len(obj); i++)    
-    (*C_vdL)[i] = bp::extract<T>(obj[i]);        
-  return *C_vdL;
-}
-
 
 void SetFlag(Flags &flags, const char * s, bp::object value) {
 

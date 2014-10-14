@@ -27,7 +27,7 @@ u = GridFunction (v)
 u.Update()
 
 f = LinearForm (v)
-f.Add (LFI ("source", 2, ConstantCF(1)))
+f.Add (LFI ("source", 2, ConstantCF(1), definedon=[2,3] ))
 f.Assemble()
 
 a = BilinearForm (v, flags = { "symmetric" : True })
