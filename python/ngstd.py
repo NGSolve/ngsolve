@@ -5,7 +5,7 @@ if __platform.startswith('linux') or __platform.startswith('darwin'):
 
 if __platform.startswith('win'):
     # Windows
-    from ngslib.std import *
+    from ngslib.ngstd import *
 
 
 

@@ -1,10 +1,15 @@
 from os import environ
 from sys import path
 path.append(environ['NETGENDIR']+'/../lib')
-del environ
-del path
 
 from sys import platform as __platform
+if __platform.startswith('linux') or __platform.startswith('darwin'):
+    path.append(environ['NETGENDIR']+'/../lib')
+if __platform.startswith('win'):
+    path.append(environ['NETGENDIR'])
+    
+del environ
+del path
 
 __all__ = ['ngstd','bla','fem','la','comp','solve'];
  
