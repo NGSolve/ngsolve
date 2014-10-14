@@ -22,17 +22,17 @@ void ExportNgcomp();
 void ExportNgsolve();
 
 
-BOOST_PYTHON_MODULE(libngspy)
+BOOST_PYTHON_MODULE(ngslib)
 {
     try
     {
-      /*
+      
         ExportNgstd();
         ExportNgbla();
         ExportNgfem();
         ExportNgla();
         ExportNgcomp();
-      */
+      
         ExportNgsolve();
     }
     catch (ngstd::Exception & e)
