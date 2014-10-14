@@ -301,7 +301,7 @@ void ExportNgbla() {
         ;
 
     bp::def("Vector",
-            FunctionPointer( [] (int n, bool is_complex = false) {
+            FunctionPointer( [] (int n, bool is_complex) {
                 if(is_complex) return bp::object(Vector<Complex>(n));
                 else return bp::object(Vector<double>(n));
                 }),
@@ -449,7 +449,7 @@ void ExportNgbla() {
         ;
 
     bp::def("Matrix",
-            FunctionPointer( [] (int h, int w, bool is_complex = false) {
+            FunctionPointer( [] (int h, int w, bool is_complex) {
                 if(is_complex) return bp::object(Matrix<Complex>(h,w));
                 else return bp::object(Matrix<double>(h,w));
                 }),
