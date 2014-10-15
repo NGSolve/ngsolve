@@ -47,7 +47,10 @@ void ExportNgla() {
     .def(bp::self*=double())
     .def("InnerProduct", FunctionPointer( [](BaseVector & self, BaseVector & other)
                                           {
-                                            return bp::object (InnerProduct (self, other));
+                                            if (self.IsComplex())
+                                              return bp::object (S_InnerProduct<Complex> (self, other));
+                                            else
+                                              return bp::object (InnerProduct (self, other));
                                           }))
     ;       
 

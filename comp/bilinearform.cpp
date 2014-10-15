@@ -2462,7 +2462,7 @@ namespace ngcomp
                   }
 
                         
-                int nse = ma->GetNSE();
+                // int nse = ma->GetNSE();
                 if (hasbound)
                   {
                     RegionTimer reg (timerbound);

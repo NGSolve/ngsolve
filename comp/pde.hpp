@@ -438,6 +438,13 @@ namespace ngcomp
     ///
   };
 
+
+  inline ostream & operator<< (ostream & ost, const PDE & pde)
+  {
+    pde.PrintReport (ost);
+    return ost;
+  }
+
 }
 
 #endif
