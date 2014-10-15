@@ -464,6 +464,11 @@ namespace ngla
       return vec->Add (scal,v);
     }
 
+    virtual ostream & Print (ostream & ost) const
+    {
+      return vec->Print (ost);
+    }
+
 
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<double> & v) const

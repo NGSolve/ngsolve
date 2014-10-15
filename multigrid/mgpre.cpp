@@ -382,9 +382,9 @@ namespace ngmg
         smoother->PreSmoothResiduum (level, u, f, *res, smoothingsteps);
 
 
-        *cres = *res.Range (0, cres.Size());
-        *cw = *cpre * *cres;
-        *u.Range (0, cw.Size()) += *cw;
+        cres = *res.Range (0, cres.Size());
+        cw = *cpre * cres;
+        u.Range (0, cw.Size()) += cw;
 
         /*
         auto ref_cres = res->Range(0,cres->Size());
