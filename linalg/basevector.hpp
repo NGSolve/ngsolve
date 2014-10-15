@@ -366,6 +366,12 @@ namespace ngla
       return *this;
     }
     ///
+    BaseVector & operator= (const AutoVector & v)
+    {
+      vec->Set (1.0, *v);
+      return *this;
+    }
+    ///
     BaseVector & operator= (double s)
     {
       vec->SetScalar (s);
@@ -414,6 +420,48 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2) const
     {
       return vec->InnerProductC (v2);
+    }
+
+    virtual double L2Norm () const
+    {
+      return vec->L2Norm();
+    }
+
+    virtual BaseVector & Scale (double scal)
+    {
+      return vec->Scale(scal);
+    }
+
+    virtual BaseVector & Scale (Complex scal)
+    {
+      return vec->Scale(scal);
+    }
+
+    virtual BaseVector & SetScalar (double scal)
+    {
+      return vec->SetScalar(scal);
+    }
+    virtual BaseVector & SetScalar (Complex scal)
+    {
+      return vec->SetScalar(scal);
+    }
+
+    virtual BaseVector & Set (double scal, const BaseVector & v)
+    {
+      vec->Set (scal,v);
+    }
+    virtual BaseVector & Set (Complex scal, const BaseVector & v)
+    {
+      vec->Set (scal,v);
+    }
+
+    virtual BaseVector & Add (double scal, const BaseVector & v)
+    {
+      vec->Add (scal,v);
+    }
+    virtual BaseVector & Add (Complex scal, const BaseVector & v)
+    {
+      vec->Add (scal,v);
     }
 
 

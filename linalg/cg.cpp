@@ -147,12 +147,9 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
 
-	auto dp = f.CreateVector();
-	auto wp = f.CreateVector();
-	auto sp = f.CreateVector();
-	BaseVector & d = *dp;
-	BaseVector & w = *wp;
-	BaseVector & s = *sp;
+	auto d = f.CreateVector();
+	auto w = f.CreateVector();
+	auto s = f.CreateVector();
 
 	int n = 0;
 	Vector<SCAL> al(dim), be(dim), wd(dim), wdn(dim), kss(dim);
@@ -569,13 +566,9 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
  
-        auto dp = f.CreateVector();
-        auto wp = f.CreateVector();
-        auto sp = f.CreateVector();
-
-	BaseVector & d = *dp;
-	BaseVector & w = *wp;
-	BaseVector & s = *sp;
+        auto d = f.CreateVector();
+        auto w = f.CreateVector();
+        auto s = f.CreateVector();
 
 	int n = 0;
 	SCAL al, be, wd, wdn, kss;
@@ -642,11 +635,6 @@ namespace ngla
 	  } 
 	
 	const_cast<int&> (steps) = n;
-	/*
-	delete &d;
-	delete &w;
-	delete &s;
-        */
       }
 
     catch (exception & e)

@@ -8,7 +8,7 @@ namespace ngla
 
   class UnifiedVector : public S_BaseVector<double>
   {
-    int size;
+    // using int size;
     double * host_data;
     double * dev_data;
     mutable bool host_uptodate;
