@@ -94,6 +94,53 @@ namespace ngla
     */
   };
 
+
+
+
+
+  inline ParallelBaseVector * dynamic_cast_ParallelBaseVector (BaseVector * x)
+  {
+    // cout << "my dynamic * cast" << endl;
+    AutoVector * ax = dynamic_cast<AutoVector*> (x);
+    if (ax)
+      return dynamic_cast<ParallelBaseVector*> (&**ax);
+    return dynamic_cast<ParallelBaseVector*> (x);
+  }
+
+  inline const ParallelBaseVector * dynamic_cast_ParallelBaseVector (const BaseVector * x)
+  {
+    // cout << "my dynamic const * cast" << endl;
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (x);
+    if (ax)
+      { 
+        // cout << "is an autovector" << endl; 
+        return dynamic_cast<const ParallelBaseVector*> (&**ax);
+      }
+    return dynamic_cast<const ParallelBaseVector*> (x);
+  }
+  
+  inline ParallelBaseVector & dynamic_cast_ParallelBaseVector (BaseVector & x)
+  {
+    // cout << "my dynamic cast" << endl;
+    AutoVector * ax = dynamic_cast<AutoVector*> (&x);
+    if (ax)
+      return dynamic_cast<ParallelBaseVector&> (**ax);
+    return dynamic_cast<ParallelBaseVector&> (x);
+  }
+  inline const ParallelBaseVector & dynamic_cast_ParallelBaseVector (const BaseVector & x)
+  {
+    // cout << "my dynamic cast" << endl;
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
+    if (ax)
+      return dynamic_cast<const ParallelBaseVector&> (**ax);
+    return dynamic_cast<const ParallelBaseVector&> (x);
+  }
+
+
+
+
+
+
   
   template <class SCAL>
   class NGS_DLL_HEADER S_ParallelBaseVector 

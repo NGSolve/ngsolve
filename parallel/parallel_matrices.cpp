@@ -263,7 +263,7 @@ namespace ngla
     int id = MyMPI_GetId (pardofs -> GetCommunicator());
     int ntasks = MyMPI_GetNTasks (pardofs -> GetCommunicator());
 
-    bool is_x_cum = (dynamic_cast<const ParallelBaseVector&> (x) . Status() == CUMULATED);
+    bool is_x_cum = (dynamic_cast_ParallelBaseVector(x) . Status() == CUMULATED);
     x.Distribute();
     y.Cumulate();
 
@@ -328,7 +328,7 @@ namespace ngla
       }
 
     if (is_x_cum)
-      dynamic_cast<const ParallelBaseVector&> (x) . Cumulate(); // AllReduce(&hoprocs);
+      dynamic_cast_ParallelBaseVector(x) . Cumulate(); // AllReduce(&hoprocs);
 
   }
 

@@ -216,27 +216,29 @@ namespace ngla
 	    }
 	  default: ;
 	  }
-
+	
 	cout << "symmetric = " << symmetric << endl;
 	cout << "spd = " << spd << endl;
 	cout << "compressed = " << compressed << endl;
 	cout << "inner = " << inner << endl;
 	cout << "cluster = " << cluster << endl;
-
-	ofstream err("pardiso.err");
-	err << "ngsolve-matrix = " << endl << a << endl;
-	err << "pardiso matrix = " << endl;
-	for (int i = 0; i < compressed_height; i++)
-	  {
-	    err << "Row " << i << " start " << rowstart[i] << ": ";
-	    if ( inner ) err << " free=" << inner->Test(i) << " ";
-	    if ( cluster ) err << " cluster=" << (*cluster)[i] << " ";
-	    for (int j = rowstart[i]; j < rowstart[i+1]; j++)
-	      err << "c=" << indices[j-1]-1 << ", v=" << matrix[j-1] << "   ";
-	    err << "\n";
-	  }
 	
-	cout << "wrote matrix to file 'pardiso.err', please check" << endl;
+	if (compressed_height < 1000)
+	  {
+	    ofstream err("pardiso.err");
+	    err << "ngsolve-matrix = " << endl << a << endl;
+	    err << "pardiso matrix = " << endl;
+	    for (int i = 0; i < compressed_height; i++)
+	      {
+		err << "Row " << i << " start " << rowstart[i] << ": ";
+		if ( inner ) err << " free=" << inner->Test(i) << " ";
+		if ( cluster ) err << " cluster=" << (*cluster)[i] << " ";
+		for (int j = rowstart[i]; j < rowstart[i+1]; j++)
+		  err << "c=" << indices[j-1]-1 << ", v=" << matrix[j-1] << "   ";
+		err << "\n";
+	      }
+	    cout << "wrote matrix to file 'pardiso.err', please check" << endl;
+	  }
 	throw Exception("PardisoInverse: Setup and Factorization failed.");
       }
 

@@ -248,6 +248,24 @@ namespace ngla
   }
 
 
+  template<> double S_BaseVector<double> :: InnerProductD (const BaseVector & v2) const
+  {
+    return InnerProduct(v2);
+  }
+  template<> Complex S_BaseVector<double> :: InnerProductC (const BaseVector & v2) const
+  {
+    throw Exception ("InnerProductC for real vector");
+  }
+
+  template<> double S_BaseVector<Complex> :: InnerProductD (const BaseVector & v2) const
+  {
+    throw Exception ("InnerProductD for complex vector");
+  }
+  template<> Complex S_BaseVector<Complex> :: InnerProductC (const BaseVector & v2) const
+  {
+    return InnerProduct(v2);
+  }
+
 
 
 

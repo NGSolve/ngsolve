@@ -31,7 +31,7 @@ namespace ngla
   BaseVector & ParallelBaseVector :: Set (double scal, const BaseVector & v)
   {
     FVDouble() = scal * v.FVDouble();
-    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+    const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( parv && parv->IsParallelVector() )
       {
@@ -49,7 +49,7 @@ namespace ngla
   BaseVector & ParallelBaseVector :: Set (Complex scal, const BaseVector & v)
   {
     FVComplex() = scal * v.FVComplex();
-    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+    const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( parv->IsParallelVector() )
       this->SetParallelDofs(parv->GetParallelDofs());
@@ -62,7 +62,7 @@ namespace ngla
     
   BaseVector & ParallelBaseVector :: Add (double scal, const BaseVector & v)
   {
-    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+    const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( (*this).Status() != parv->Status() )
       {
@@ -77,7 +77,7 @@ namespace ngla
 
   BaseVector & ParallelBaseVector :: Add (Complex scal, const BaseVector & v)
   {
-    const ParallelBaseVector * parv = dynamic_cast<const ParallelBaseVector *> (&v);
+    const ParallelBaseVector * parv = dynamic_cast_ParallelBaseVector (&v);
 
     if ( (*this).Status() != parv->Status() )
       {
@@ -159,7 +159,7 @@ namespace ngla
   template <class SCAL>
   SCAL S_ParallelBaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
   {
-    const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+    const ParallelBaseVector * parv2 = dynamic_cast_ParallelBaseVector(&v2);
 
     if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
       return ngbla::InnerProduct (this->FVScal(), 
@@ -186,7 +186,7 @@ namespace ngla
   template <>
   Complex S_ParallelBaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
   {
-    const ParallelBaseVector * parv2 = dynamic_cast<const ParallelBaseVector *> (&v2);
+    const ParallelBaseVector * parv2 = dynamic_cast_ParallelBaseVector(&v2);
   
     // not parallel
     if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
