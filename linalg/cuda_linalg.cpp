@@ -18,6 +18,45 @@ extern void SetScalar (double val, int n, double * dev_ptr);
 namespace ngla
 {
 
+  UnifiedVector * dynamic_cast_UnifiedVector (BaseVector * x)
+  {
+    // cout << "my dynamic * cast" << endl;
+    AutoVector * ax = dynamic_cast<AutoVector*> (x);
+    if (ax)
+      return dynamic_cast<UnifiedVector*> (&**ax);
+    return dynamic_cast<UnifiedVector*> (x);
+  }
+
+  const UnifiedVector * dynamic_cast_UnifiedVector (const BaseVector * x)
+  {
+    // cout << "my dynamic const * cast" << endl;
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (x);
+    if (ax)
+      { 
+        // cout << "is an autovector" << endl; 
+        return dynamic_cast<const UnifiedVector*> (&**ax);
+      }
+    return dynamic_cast<const UnifiedVector*> (x);
+  }
+  
+  UnifiedVector & dynamic_cast_UnifiedVector (BaseVector & x)
+  {
+    // cout << "my dynamic cast" << endl;
+    AutoVector * ax = dynamic_cast<AutoVector*> (&x);
+    if (ax)
+      return dynamic_cast<UnifiedVector&> (**ax);
+    return dynamic_cast<UnifiedVector&> (x);
+  }
+  const UnifiedVector & dynamic_cast_UnifiedVector (const BaseVector & x)
+  {
+    // cout << "my dynamic cast" << endl;
+    const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
+    if (ax)
+      return dynamic_cast<const UnifiedVector&> (**ax);
+    return dynamic_cast<const UnifiedVector&> (x);
+  }
+
+
   /*
   cublasHandle_t handle;
   cusparseHandle_t cusparseHandle;
@@ -82,7 +121,7 @@ namespace ngla
 
   BaseVector & UnifiedVector :: operator= (BaseVector & v2)
   {
-    UnifiedVector * uv2 = dynamic_cast<UnifiedVector*> (&v2);
+    UnifiedVector * uv2 = dynamic_cast_UnifiedVector (&v2);
     if (uv2)
       {
         if (uv2->dev_uptodate)
@@ -140,7 +179,7 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Add (double scal, const BaseVector & v)
   {
-    const UnifiedVector * v2 = dynamic_cast<const UnifiedVector*> (&v);
+    const UnifiedVector * v2 = dynamic_cast_UnifiedVector (&v);
     if (v2)
       {
 	UpdateDevice();
@@ -161,9 +200,9 @@ namespace ngla
   
   double UnifiedVector :: InnerProduct (const BaseVector & v2) const
   {
-    cout << "Inner Prod" << endl;
+    // cout << "Inner Prod" << endl;
 
-    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
+    const UnifiedVector * uv2 = dynamic_cast_UnifiedVector (&v2);
     if (uv2)
       {
 	UpdateDevice();
@@ -275,9 +314,9 @@ namespace ngla
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    cout << "device mult sparse" << endl;
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    // cout << "device mult sparse" << endl;
+    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
+    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
 
     ux.UpdateDevice();
     uy = 0.0;
@@ -292,15 +331,15 @@ namespace ngla
 		    ux.dev_data, &beta, uy.dev_data);
 
     uy.host_uptodate = false;
-    cout << "mult complete" << endl;
+    // cout << "mult complete" << endl;
   }
 
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    cout << "device multadd sparse matrix" << endl;
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    // cout << "device multadd sparse matrix" << endl;
+    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
+    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -315,7 +354,7 @@ namespace ngla
 
     uy.host_uptodate = false;
 
-    cout << "mult complete" << endl;
+    // cout << "mult complete" << endl;
   }
   
 
@@ -366,10 +405,10 @@ namespace ngla
   
   void DevJacobiPreconditioner :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    cout << "device mult precond" << endl;
+    // cout << "device mult precond" << endl;
 
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
+    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
 
     ux.UpdateDevice();
     uy = 0.0;
@@ -385,7 +424,7 @@ namespace ngla
 
     uy.host_uptodate = false;
 
-    cout << "mult complete" << endl;
+    // cout << "mult complete" << endl;
   }
 
 
@@ -393,8 +432,8 @@ namespace ngla
   {
     cout << "device multadd precond" << endl;
 
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    const UnifiedVector & ux = dynamic_cast_UnifiedVector(x);
+    UnifiedVector & uy = dynamic_cast_UnifiedVector(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();

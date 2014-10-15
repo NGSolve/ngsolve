@@ -19,7 +19,7 @@ libngla_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la \
 
 if NGSCUDA
 
-NVCC = /usr/local/cuda-6.5/bin/nvcc
+NVCC = /usr/local/cuda-6.5/bin/nvcc -ccbin=gcc-4.8
 SUFFIXES = .cu
 .cu.o:
 	$(NVCC) -Xcompiler -fpic -c -o $@ $<
