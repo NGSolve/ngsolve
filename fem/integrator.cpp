@@ -39,14 +39,33 @@ namespace ngfem
   bool Integrator :: DefinedOn (int mat) const
   {
     if (definedon.Size())
-      return definedon.Test(mat);
-    return 1;
+      {
+        if (mat >= definedon.Size()) return false;
+        return definedon.Test(mat);
+      }
+    return true;
   }
   
 
   void Integrator :: SetDefinedOn (const BitArray & adefinedon)
   {
     definedon = adefinedon;
+  }
+
+  void Integrator :: SetDefinedOn (const Array<int> & regions)
+  {
+    int maxval = 0;
+    for (int i = 0; i < regions.Size(); i++)
+      maxval = max(maxval, regions[i]);
+
+    definedon.SetSize (maxval+1);
+    definedon.Clear();
+
+    for (int i = 0; i < regions.Size(); i++)
+      if (regions[i] >= 0)
+        definedon.Set (regions[i]);
+      else
+        throw Exception ("SetDefineon called with negative index");
   }
 
   void Integrator :: SetName (const string & aname)
