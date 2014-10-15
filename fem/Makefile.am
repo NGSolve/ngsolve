@@ -39,7 +39,7 @@ if NGSCUDA
 
 # dost not yet work. we need the legendre coefficients extern, so we need -dc cuda compilation
 # 
-NVCC = /usr/local/cuda-6.5/bin/nvcc
+NVCC = /usr/local/cuda-6.5/bin/nvcc -ccbin=gcc-4.8
 SUFFIXES = .cu
 .cu.o:
 	$(NVCC) -arch compute_35 -code sm_35 -std=c++11 -O2 -I$(top_srcdir)/include  -rdc true -Xcompiler -fpic -DUSE_MYCOMPLEX -DHD="__host__ __device__" -c -o tmp.o $<
