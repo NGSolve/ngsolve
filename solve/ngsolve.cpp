@@ -412,7 +412,8 @@ int NGS_LoadPDE (ClientData clientData,
 
 #ifdef NGS_PYTHON
           {
-            cout << "set python pde" << endl;
+            cout << "set python object 'pde'" << endl;
+            cout << "Type 'help(pde)' or 'print(pde)' for more information" << endl;
             AcquireGIL gil_lock;
             pyenv["pde"] = bp::ptr(&*pde);
           }

@@ -152,6 +152,13 @@ void ExportNgcomp()
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, const Flags & flags)
                            { return CreateFESpace (type, ma, flags); } )))
 
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](bp::list spaces)->shared_ptr<FESpace>
+                           {
+                             auto sp (makeCArray<shared_ptr<FESpace>> (spaces));
+                             return make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, Flags());
+                           } )))
+
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
                                    { 
                                      LocalHeap lh (heapsize, "FESpace::Update-heap");
@@ -467,6 +474,8 @@ void ExportNgcomp()
          (boost::python::arg("filename"), 
           boost::python::arg("meshload")=0, 
           boost::python::arg("nogeometryload")=0))
+
+    .def("__str__", &ToString<PDE>)
 
     .def("Mesh",  &PDE::GetMeshAccess,
          (bp::arg("meshnr")=0))

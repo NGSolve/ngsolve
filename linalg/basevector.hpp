@@ -213,6 +213,7 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2) const;
 
     virtual double L2Norm () const;
+    virtual bool IsComplex() const = 0;
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & Scale (Complex scal);
@@ -427,6 +428,11 @@ namespace ngla
       return vec->L2Norm();
     }
 
+    virtual bool IsComplex() const 
+    {
+      return vec->IsComplex();
+    }
+
     virtual BaseVector & Scale (double scal)
     {
       return vec->Scale(scal);
@@ -533,6 +539,9 @@ namespace ngla
     virtual ~S_BaseVector() { ; }
 
     S_BaseVector & operator= (double s);
+
+    virtual bool IsComplex() const 
+    { return typeid(SCAL) == typeid(Complex); }
 
     virtual SCAL InnerProduct (const BaseVector & v2) const;
 
