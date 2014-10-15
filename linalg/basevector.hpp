@@ -448,20 +448,20 @@ namespace ngla
 
     virtual BaseVector & Set (double scal, const BaseVector & v)
     {
-      vec->Set (scal,v);
+      return vec->Set (scal,v);
     }
     virtual BaseVector & Set (Complex scal, const BaseVector & v)
     {
-      vec->Set (scal,v);
+      return vec->Set (scal,v);
     }
 
     virtual BaseVector & Add (double scal, const BaseVector & v)
     {
-      vec->Add (scal,v);
+      return vec->Add (scal,v);
     }
     virtual BaseVector & Add (Complex scal, const BaseVector & v)
     {
-      vec->Add (scal,v);
+      return vec->Add (scal,v);
     }
 
 
