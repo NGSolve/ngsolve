@@ -170,7 +170,7 @@ void ExportNgfem() {
                                {
                                  Array<int> defon (makeCArray<int> (definedon));
                                  cout << "locally defined on  = " << defon << endl;
-                                 cout << "(not yet functional)" << endl;
+                                 lfi -> SetDefinedOn (defon);
                                }
  
                              if (!lfi) cerr << "undefined integrator '" << name 
