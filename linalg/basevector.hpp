@@ -536,6 +536,10 @@ namespace ngla
 
     virtual SCAL InnerProduct (const BaseVector & v2) const;
 
+    virtual double InnerProductD (const BaseVector & v2) const;
+    virtual Complex InnerProductC (const BaseVector & v2) const;
+
+
     virtual FlatVector<double> FVDouble () const;
     virtual FlatVector<Complex> FVComplex () const;
 
