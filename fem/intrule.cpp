@@ -183,6 +183,7 @@ namespace ngfem
     eltrans.CalcMultiPointJacobian (ir, *this);
   }
 
+  template class MappedIntegrationRule<0,0>;
   template class MappedIntegrationRule<0,1>;
   template class MappedIntegrationRule<1,1>;
   template class MappedIntegrationRule<2,2>;
