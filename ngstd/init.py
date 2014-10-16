@@ -92,7 +92,8 @@ def startConsole():
     shell = code.InteractiveConsole(vars)
     shell.push('from netgen import *')
     shell.push('from ngsolve import *')
-    shell.interact()
+    shell.interact(banner="NGS-Python console is up ...")
+
 
 startConsole()
 
