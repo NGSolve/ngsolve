@@ -9,5 +9,5 @@ if __platform.startswith('win'):
     # Windows
     from ngslib.solve import *
 
-__all__ = [ ]
+__all__ = ['Redraw']
 
