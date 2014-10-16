@@ -6,19 +6,13 @@ from time import sleep
 
 
 class npParabolic(PyNumProc):
-
-    def __init__(self, pde, flags):
-        super(npParabolic,self).__init__(pde,flags)
-        self.mypde = pde
-
         
     def Do(self, heap):
         print ("solve parabolic equation")
-            
-        pde = self.pde
         
         tau = 0.1
         
+        pde = self.pde
         v = pde.spaces["v"]
         u = pde.gridfunctions["u"].vec
         f = pde.linearforms["f"].vec
