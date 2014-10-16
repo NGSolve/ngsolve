@@ -32,8 +32,42 @@ void ExportNgla() {
     .def("CreateVector", FunctionPointer( [] ( BaseVector & self)
         { return shared_ptr<BaseVector>(self.CreateVector()); } ))
 
+    /*
     .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Set(s, v2); }))
     .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, double s)->void { self.Add(s, v2); }))
+    .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, Complex s)->void { self.Set(s, v2); }))
+    .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, Complex s)->void { self.Add(s, v2); }))
+    */
+    .def("Assign", FunctionPointer([](BaseVector & self, BaseVector & v2, bp::object s)->void 
+                                   { 
+                                     if ( bp::extract<double>(s).check() )
+                                       {
+                                         self.Set (bp::extract<double>(s)(), v2);
+                                         return;
+                                       }
+                                     if ( bp::extract<Complex>(s).check() )
+                                       {
+                                         self.Set (bp::extract<Complex>(s)(), v2);
+                                         return;
+                                       }
+                                     throw Exception ("BaseVector::Assign called with non-scalar type");
+                                   }))
+    .def("Add", FunctionPointer([](BaseVector & self, BaseVector & v2, bp::object s)->void 
+                                   { 
+                                     if ( bp::extract<double>(s).check() )
+                                       {
+                                         self.Add (bp::extract<double>(s)(), v2);
+                                         return;
+                                       }
+                                     if ( bp::extract<Complex>(s).check() )
+                                       {
+                                         self.Add (bp::extract<Complex>(s)(), v2);
+                                         return;
+                                       }
+                                     throw Exception ("BaseVector::Assign called with non-scalar type");
+                                   }))
+
+
     .add_property("expr", bp::object(expr_namespace["VecExpr"]) )
     .add_property("data", bp::object(expr_namespace["VecExpr"]), bp::object(expr_namespace["expr_data"] ))
     .def("__add__" , bp::object(expr_namespace["expr_add"]) )
@@ -101,7 +135,7 @@ void ExportNgla() {
                                      { return m.InverseMatrix(); }))
     // bp::return_value_policy<bp::manage_new_object>())
     ;
-  
+
 }
 
 

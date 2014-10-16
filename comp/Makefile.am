@@ -25,3 +25,8 @@ include_HEADERS = bilinearform.hpp comp.hpp facetfespace.hpp	   \
 
 libngcomp_la_LDFLAGS = -avoid-version
 #  -L/opt/hypre-2.8.0b/lib -lHYPRE
+
+
+if NGSGUI
+  AM_CPPFLAGS += -DTCL
+endif

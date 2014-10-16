@@ -26,7 +26,7 @@ def expr_mul(a,b):
     return Expr(a) * Expr(b)
 
 def expr_rmul(b,a): # rmul -> swap a,b
-    return float(a) * Expr(b)
+    return a * Expr(b)
 
 def expr_data(a,b):
     Expr(b).AssignTo(Expr(a))
@@ -45,7 +45,7 @@ class BaseExpr:
         self.s = s
     
     def __rmul__(self, other):
-        return self.Scale(float(other))
+        return self.Scale(other)
 
     def __add__(self, other):
         return SumExpr(self, Expr(other))
@@ -62,15 +62,17 @@ class BaseExpr:
 
 class VecExpr(BaseExpr):
     def AssignTo(self, v, s = 1.0):
-        try:
+#        try:
             v.a.Assign(self.a,s*self.s)
-        except:
-            v.a = self.a
+#        except:
+#            print ("WARNING: assign to exception")
+#            v.a = self.a
     
     def AddTo(self, v, s = 1.0):
         try:
             v.a.Add(self.a,s*self.s)     
         except:
+            print ("WARNING: add to exception")
             v.a += self.a
 
 
