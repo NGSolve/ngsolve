@@ -42,7 +42,7 @@ namespace ngcomp
     // Creates also for order=0 a L2HighOrderFESpace 
     static shared_ptr<FESpace> CreateHO (shared_ptr<MeshAccess> ma, const Flags & flags) 
     {
-      return make_shared<L2HighOrderFESpace> (ma, flags, true);
+      return make_shared<L2HighOrderFESpace> (ma, flags);
     }  
   
     virtual string GetClassName () const
