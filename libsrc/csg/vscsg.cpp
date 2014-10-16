@@ -44,7 +44,6 @@ namespace netgen
 
   void VisualSceneGeometry :: DrawScene ()
   {  
-    cout << "vs-csg::Draw" << endl;
     if (changeval != geometry->GetChangeVal())
       BuildScene();
     changeval = geometry->GetChangeVal();
@@ -126,7 +125,6 @@ namespace netgen
 
   void VisualSceneGeometry :: BuildScene (int zoomall)
   {
-    cout << "vs-csg::Build" << endl;
     VisualScene::BuildScene(zoomall); // setting light ...
     Box<3> box;
     int hasp = 0;
