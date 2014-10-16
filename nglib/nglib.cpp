@@ -1226,9 +1226,10 @@ namespace netgen
 } // End of namespace netgen
 
 
-
+#ifndef WIN32
 void Ng_Redraw () { ; }
 void Ng_ClearSolutionData() { ; }
+#endif
 /*
 void Ng_SetSolutionData (Ng_SolutionData * soldata) 
 { 
