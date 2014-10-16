@@ -22,17 +22,14 @@ class pyNP1(PyNumProc):
 
 
 class pybvp(PyNumProc):
-   def __init__(self, pde, flags):
-        super(pybvp,self).__init__(pde,flags)
-        self.mypde = pde
-        
+
    def Do(self, heap):
         print('******** pybvp::Do ********************')
 
-        A = self.mypde.bilinearforms["a"]
-        C = self.mypde.preconditioners["c"]
-        f = self.mypde.linearforms["f"]
-        u = self.mypde.gridfunctions["u"]
+        A = self.pde.bilinearforms["a"]
+        C = self.pde.preconditioners["c"]
+        f = self.pde.linearforms["f"]
+        u = self.pde.gridfunctions["u"]
 
         u.vec.data = pcg (mat = A.mat, pre = C.mat, rhs = f.vec, maxits = 50)
         Redraw()
