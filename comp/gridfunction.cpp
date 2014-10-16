@@ -1229,7 +1229,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
 	
         // HeapReset hr(lh);
-        LocalHeapMem<1000000> lh("visgf::GetMultiValue");
+        LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
 	ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);
@@ -1542,7 +1542,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
         
         
-        LocalHeapMem<1000000> lh("visgf::getmultisurfvalue");
+        LocalHeapMem<100000> lh("visgf::getmultisurfvalue");
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
