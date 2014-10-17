@@ -83,7 +83,7 @@ namespace ngfem
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
-			   FlatMatrix<double> & elmat,
+			   FlatMatrix<double> elmat,
 			   LocalHeap & locheap) const
     {
       throw Exception ("PML cannot generate real matrices");
@@ -93,7 +93,7 @@ namespace ngfem
     virtual void
     CalcElementMatrix (const FiniteElement & bfel, 
 			   const ElementTransformation & eltrans, 
-			   FlatMatrix<Complex> & elmat,
+			   FlatMatrix<Complex> elmat,
 			   LocalHeap & locheap) const
     {
       try
@@ -157,8 +157,8 @@ namespace ngfem
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
 			const ElementTransformation & eltrans, 
-			const FlatVector<double> & elx, 
-			FlatVector<double> & ely,
+			const FlatVector<double> elx, 
+			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & locheap) const
     { ; }
@@ -167,8 +167,8 @@ namespace ngfem
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
 			const ElementTransformation & eltrans, 
-			const FlatVector<Complex> & elx, 
-			FlatVector<Complex> & ely,
+			const FlatVector<Complex> elx, 
+			FlatVector<Complex> ely,
 			void * precomputed,
 			LocalHeap & locheap) const
     {
