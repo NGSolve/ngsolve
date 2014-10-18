@@ -16,6 +16,7 @@ class SPSolid
   shared_ptr<SPSolid> s1, s2;
   Solid * solid;
   int bc = -1;
+  double maxh = -1;
   string material;
   bool owner;
 public:
@@ -89,6 +90,24 @@ public:
           }
       }
   }
+
+  void SetMaxH(int amaxh) 
+  {
+    if (maxh == -1) 
+      {
+        maxh = amaxh;
+        if (s1) s1 -> SetMaxH(maxh);
+        if (s2) s2 -> SetMaxH(maxh);
+        if (op == TERM)
+          {
+            Primitive * prim = solid -> GetPrimitive();
+            for (int i = 0; i < prim->GetNSurfaces(); i++)
+              prim->GetSurface(i).SetMaxH (maxh);
+          }
+      }
+  }
+
+
 private:
   optyp op;
 };
@@ -148,6 +167,8 @@ void ExportCSG()
 
     .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
                                 { self->SetBC(nr); return self; }))
+    .def ("maxh", FunctionPointer([](shared_ptr<SPSolid> & self, double maxh) -> shared_ptr<SPSolid> 
+                                { self->SetMaxH(maxh); return self; }))
     .def ("mat", FunctionPointer([](shared_ptr<SPSolid> & self, string mat) -> shared_ptr<SPSolid> 
                                  { self->SetMaterial(mat); return self; }))
     .def ("mat", &SPSolid::GetMaterial)
