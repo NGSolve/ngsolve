@@ -6,6 +6,7 @@
 
 #include "nginterface.h"
 #include "nginterface_v2.hpp"
+#include <visual.hpp>
 
 namespace netgen
 {
@@ -22,7 +23,11 @@ namespace netgen
   shared_ptr<Mesh> Ngx_Mesh :: SelectMesh () const
   {
     shared_ptr<Mesh> hmesh = netgen::mesh;
+
     netgen::mesh = mesh;
+    vssolution.SetMesh(mesh);
+    vsmesh.SetMesh(mesh);
+
     return hmesh;
   }
   
@@ -80,6 +85,11 @@ namespace netgen
       }
   }
 
+  void Ngx_Mesh :: UpdateTopology ()
+  {
+    if (mesh)
+      mesh -> UpdateTopology();
+  }
 
 
   /*

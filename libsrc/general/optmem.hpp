@@ -48,6 +48,7 @@ public:
   ///
   void Free (void * p)
   {
+    if (!bablocks.Size()) return;
     *(void**)p = freelist;
     freelist = p;
   }

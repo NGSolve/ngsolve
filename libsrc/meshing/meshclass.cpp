@@ -47,6 +47,7 @@ namespace netgen
 
   Mesh :: ~Mesh()
   {
+    // cout << "******************** deleting Mesh **********" << endl;
     delete lochfunc;
     delete boundaryedges;
     delete surfelementht;
