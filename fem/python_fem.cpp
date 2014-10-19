@@ -247,16 +247,34 @@ void ExportNgfem() {
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](string str)
                            {
-                             // mem-leak -> smart pointer !!!
-                             EvalFunction * ef = new EvalFunction (str);
-                             return shared_ptr<DomainVariableCoefficientFunction>
-                               (new DomainVariableCoefficientFunction (*ef));
+                             auto ef = make_shared<EvalFunction> (str);
+                             return make_shared<DomainVariableCoefficientFunction> 
+                               (Array<shared_ptr<EvalFunction>> ({ ef }));
                            })))
     ;
 
   bp::implicitly_convertible
     <shared_ptr<DomainVariableCoefficientFunction>, 
     shared_ptr<CoefficientFunction> >(); 
+
+
+  bp::class_<DomainConstantCoefficientFunction,bp::bases<CoefficientFunction>, 
+    shared_ptr<DomainConstantCoefficientFunction>, boost::noncopyable>
+    ("DomainConstantCF", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](bp::object coefs)->shared_ptr<DomainConstantCoefficientFunction>
+                           {
+                             Array<double> darray (makeCArray<double> (coefs));
+                             cout << "create DomainConstantCF, coefs = " << darray << endl;
+                             return make_shared<DomainConstantCoefficientFunction> (darray);
+                           })))
+    ;
+
+  bp::implicitly_convertible
+    <shared_ptr<DomainConstantCoefficientFunction>, 
+    shared_ptr<CoefficientFunction> >(); 
+
+
 }
 
 

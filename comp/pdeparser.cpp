@@ -1023,7 +1023,7 @@ namespace ngcomp
       case KW_COEFFICIENT:
 	{
 	  Array<double> dcoeffs;
-	  Array<EvalFunction*> coeffs;
+	  Array<shared_ptr<EvalFunction>> coeffs;
 	  Array < Array < Array<double>* >* > polycoeffs;
 	  Array < Array<double>* > polybounds;
 	  scan->ReadNext();
@@ -1101,7 +1101,7 @@ namespace ngcomp
 	      dcoeffs.SetSize(maxdom);
 	      dcoeffs = 0;
 	      coeffs.SetSize(maxdom);
-	      coeffs = NULL;
+	      coeffs = nullptr;
 	      bool only_constant = true;
 	      for (int i = 0; i < ne; i++)
 		{
@@ -1138,7 +1138,7 @@ namespace ngcomp
 		    }
 		  
 			 
-		  coeffs[index] = new EvalFunction(*fun);
+		  coeffs[index] = make_shared<EvalFunction> (*fun);
 		  if(fun->IsConstant())
 		    dcoeffs[index] = fun->Eval( (double*)(0));
 		  else
@@ -1146,12 +1146,12 @@ namespace ngcomp
 		}
 
 	      // iff not all indices are in use ...
-	      EvalFunction * some_fun = NULL;
+	      shared_ptr<EvalFunction> some_fun;
 	      for (int i = 0; i < coeffs.Size(); i++)
 		if (coeffs[i]) some_fun = coeffs[i];
 	      for (int i = 0; i < coeffs.Size(); i++)
 		if (!coeffs[i])
-		  coeffs[i] = new EvalFunction (*some_fun);
+		  coeffs[i] = some_fun; // new EvalFunction (*some_fun);
 
 	      for(int i=0; i<funs.Size(); i++)
 		delete funs[i];
@@ -1168,10 +1168,11 @@ namespace ngcomp
                   pde->AddCoefficientFunction
                     (name, make_shared<DomainVariableCoefficientFunction>(coeffs));
 		}
-	      
+
+              /*
 	      for (int hi = 0; hi < coeffs.Size(); hi++)
 		delete coeffs[hi];
-	      
+              */
 	    }
 
 	  else if (strcmp (scan->GetStringValueC(), "files") == 0)
@@ -1213,7 +1214,7 @@ namespace ngcomp
 
 	      scan->ReadNext();
 	      //SymbolTable<double> values;
-	      SymbolTable<EvalFunction * > funs;
+	      SymbolTable<shared_ptr<EvalFunction>> funs;
 	      while (scan->GetToken() == STRING)
 		{
 		  string bcname = scan->GetStringValue();
@@ -1223,7 +1224,7 @@ namespace ngcomp
 
 		  if (scan->GetToken() == LP)
 		    {
-		      EvalFunction * fun = new EvalFunction ();
+		      auto fun = make_shared<EvalFunction> ();
 		      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
 			fun->DefineConstant (pde->GetConstantTable().GetName(i),
 					     pde->GetConstantTable()[i]);
@@ -1252,7 +1253,7 @@ namespace ngcomp
 			scan->Error ("number expected");
 		      val *= scan->GetNumValue();
 
-		      EvalFunction * fun = new EvalFunction ();
+		      auto fun = make_shared<EvalFunction> ();
 		      fun->AddConstant (val);
 		      funs.Set (bcname,fun);
 		      
@@ -1275,14 +1276,14 @@ namespace ngcomp
 	      dcoeffs.SetSize(maxbc);
 	      dcoeffs = 0;
 	      coeffs.SetSize(maxbc);
-	      coeffs = NULL;
+	      coeffs = nullptr;
 	      bool only_constant = true;
 	      for (int i = 0; i < nse; i++)
 		{
 		  int index = pde->GetMeshAccess()->GetSElIndex(i);
 		  if (coeffs[index]) continue;
 
-		  EvalFunction * fun = NULL;
+		  shared_ptr<EvalFunction> fun = NULL;
 		  string bcname = pde->GetMeshAccess()->GetSElBCName(i);
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
 
@@ -1301,15 +1302,15 @@ namespace ngcomp
 			throw Exception (string ("No value defined for boundary condition ")+bcname); 
 		    }
 			 
-		  if(coeffs[index] == NULL) coeffs[index] = new EvalFunction(*fun);
+		  if(coeffs[index] == NULL) coeffs[index] = fun; // new EvalFunction(*fun);
 		  if(fun->IsConstant())
 		    dcoeffs[index] = fun->Eval( (double*)(0) );
 		  else
 		    only_constant = false;
 		}
 
-	      for(int i=0; i<funs.Size(); i++)
-		delete funs[i];
+	      // for(int i=0; i<funs.Size(); i++)
+              // delete funs[i];
 
 	      if(only_constant)
 		{
@@ -1324,8 +1325,8 @@ namespace ngcomp
                     (name, make_shared<DomainVariableCoefficientFunction>(coeffs));
 		}
 	      
-	      for (int hi = 0; hi < coeffs.Size(); hi++)
-		delete coeffs[hi];
+	      // for (int hi = 0; hi < coeffs.Size(); hi++)
+              // delete coeffs[hi];
 	    }
 
 	  else
@@ -1347,7 +1348,7 @@ namespace ngcomp
 		  // if (scan->GetToken() == LP)
                   if (scan->GetToken() != LSB)
 		    {
-		      EvalFunction * fun = new EvalFunction ();
+		      auto fun = make_shared<EvalFunction> ();
 		      for (int i = 0; i < pde->GetConstantTable().Size(); i++)
 			fun->DefineConstant (pde->GetConstantTable().GetName(i),
 					     pde->GetConstantTable()[i]);
@@ -1467,8 +1468,8 @@ namespace ngcomp
 		  else
 		    pde->AddCoefficientFunction
 		      (name, shared_ptr<CoefficientFunction> (new DomainConstantCoefficientFunction(dcoeffs)));
-		  for (int hi = 0; hi < coeffs.Size(); hi++)
-		    delete coeffs[hi];
+		  // for (int hi = 0; hi < coeffs.Size(); hi++)
+                  // delete coeffs[hi];
 		}
 	      else
 		{
@@ -1497,8 +1498,8 @@ namespace ngcomp
                   pde->AddCoefficientFunction
                     (name, make_shared<DomainVariableCoefficientFunction>(coeffs, depends));
                   
-		  for (int hi = 0; hi < coeffs.Size(); hi++)
-		    delete coeffs[hi];
+		  // for (int hi = 0; hi < coeffs.Size(); hi++)
+                  // delete coeffs[hi];
 		}
 	    }
 

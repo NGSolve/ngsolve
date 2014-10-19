@@ -123,7 +123,7 @@ namespace ngfem
   DomainVariableCoefficientFunction (const EvalFunction & afun)
     : fun(1)
   {
-    fun[0] = new EvalFunction (afun);
+    fun[0] = make_shared<EvalFunction> (afun);
     numarg = 3;
   }
 
@@ -132,7 +132,7 @@ namespace ngfem
 				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(1), depends_on(adepends_on)
   {
-    fun[0] = new EvalFunction (afun);
+    fun[0] = make_shared<EvalFunction> (afun);
     numarg = 3;
     for (int i = 0; i < depends_on.Size(); i++)
       numarg += depends_on[i]->Dimension();
@@ -140,27 +140,29 @@ namespace ngfem
 
 
   DomainVariableCoefficientFunction ::
-  DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun)
+  DomainVariableCoefficientFunction (const Array<shared_ptr<EvalFunction>> & afun)
     : fun(afun.Size())
   {
     for (int i = 0; i < fun.Size(); i++)
       if (afun[i])
-        fun[i] = new EvalFunction (*afun[i]);
+        // fun[i] = new EvalFunction (*afun[i]);
+        fun[i] = afun[i];
       else
-        fun[i] = 0;
+        fun[i] = nullptr;
     numarg = 3;
   }
 
   DomainVariableCoefficientFunction ::
-  DomainVariableCoefficientFunction (const Array<EvalFunction*> & afun,
+  DomainVariableCoefficientFunction (const Array<shared_ptr<EvalFunction>> & afun,
 				     const Array<shared_ptr<CoefficientFunction>> & adepends_on)
     : fun(afun.Size()), depends_on(adepends_on)
   {
     for (int i = 0; i < fun.Size(); i++)
       if (afun[i])
-        fun[i] = new EvalFunction (*afun[i]);
+        // fun[i] = new EvalFunction (*afun[i]);
+        fun[i] = afun[i];
       else
-        fun[i] = 0;
+        fun[i] = nullptr;
 
     numarg = 3;
     for (int i = 0; i < depends_on.Size(); i++)
@@ -171,8 +173,11 @@ namespace ngfem
   DomainVariableCoefficientFunction ::
   ~DomainVariableCoefficientFunction ()
   {
+    ;
+    /*
     for (int i = 0; i < fun.Size(); i++)
       delete fun[i];
+    */
   }
 
   double DomainVariableCoefficientFunction ::
