@@ -2335,6 +2335,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  space = GetFESpaceClasses().GetFESpaces()[i]->creator (ma, flags);
           space -> type = type;
 	}
+    if (!space)
+      throw Exception (string ("undefined fespace '") + type + '\'');
     return space;
   }
 

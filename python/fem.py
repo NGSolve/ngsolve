@@ -9,6 +9,6 @@ if __platform.startswith('win'):
     # Windows
     from ngslib.fem import *
 
-__all__ = ['BFI', 'CoefficientFunction', 'ConstantCF', 'ET', 'ElementTransformation', 'FiniteElement', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF' ]
+__all__ = ['BFI', 'CoefficientFunction', 'ConstantCF', 'DomainConstantCF', 'ET', 'ElementTransformation', 'FiniteElement', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF' ]
 
 

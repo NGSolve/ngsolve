@@ -330,7 +330,8 @@ namespace ngcomp
     ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
 
-    Ng_UpdateTopology();  // for netgen/ngsolve stand alone
+    mesh.SelectMesh();
+    mesh.UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
   }
 
