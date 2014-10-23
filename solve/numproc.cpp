@@ -2958,7 +2958,6 @@ namespace ngsolve
     char *dummy; dummy = new char[tclstring.str().size()+1];
     strcpy(dummy,tclstring.str().c_str());
 
-    cout << "eval tcl - string: " << endl << tclstring.str() << endl;
     pde.Tcl_Eval(tclstring.str());
     
     delete [] dummy;
