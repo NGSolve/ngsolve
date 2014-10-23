@@ -969,8 +969,7 @@ namespace ngcomp
       flags.SetFlag ("dim", ma->GetDimension()*(ma->GetDimension()+1) / 2);
 
     string type = flags.GetStringFlag("type", "");
-    auto space = CreateFESpace (type, ma, flags);
-    
+    shared_ptr<FESpace> space;
     if (type == "compound" || flags.GetDefineFlag ("compound"))
       {
         const Array<string> & spacenames = flags.GetStringListFlag ("spaces");
@@ -982,6 +981,9 @@ namespace ngcomp
         
         space = make_shared<CompoundFESpace> (GetMeshAccess(), cspaces, flags);
       }
+    else
+      space = CreateFESpace (type, ma, flags);
+
     if (!space) 
       {
         stringstream out;
