@@ -510,9 +510,9 @@ namespace ngfem
   class HDG_IR_LaplaceIntegrator : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction * coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
-    HDG_IR_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
+    HDG_IR_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -690,9 +690,9 @@ namespace ngfem
   class HDGBR_LaplaceIntegrator : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction *coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
-    HDGBR_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
+    HDGBR_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -878,9 +878,9 @@ namespace ngfem
   class HDGBRF_LaplaceIntegrator : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction *coef_lam;
+    shared_ptr<CoefficientFunction>coef_lam;
   public:
-    HDGBRF_LaplaceIntegrator (const Array<CoefficientFunction*> & coeffs) 
+    HDGBRF_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -1084,9 +1084,9 @@ namespace ngfem
   class HDG_LaplaceIntegrator2 : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction * coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
-    HDG_LaplaceIntegrator2 (Array<CoefficientFunction*> & coeffs) 
+    HDG_LaplaceIntegrator2 (Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -1295,9 +1295,9 @@ namespace ngfem
   class HDG_LaplaceIntegrator3 : public BilinearFormIntegrator
   {
   protected:
-    CoefficientFunction * coef_lam;
+    shared_ptr<CoefficientFunction> coef_lam;
   public:
-    HDG_LaplaceIntegrator3 (Array<CoefficientFunction*> & coeffs) 
+    HDG_LaplaceIntegrator3 (Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -1507,7 +1507,7 @@ namespace ngfem
   protected:
     CoefficientFunction * coef_lam;
   public:
-    HDG_LaplaceIntegrator4 (Array<CoefficientFunction*> & coeffs) 
+    HDG_LaplaceIntegrator4 (Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator()
     { 
       coef_lam  = coeffs[0];
@@ -1727,9 +1727,9 @@ namespace ngfem
   class HDG_ConvectionIntegrator : public BilinearFormIntegrator
   {
   protected:
-    Array<CoefficientFunction *> coef_conv;
+    Array<shared_ptr<CoefficientFunction>> coef_conv;
   public:
-    HDG_ConvectionIntegrator (const Array<CoefficientFunction*> & coeffs) 
+    HDG_ConvectionIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
     { 
       coef_conv.SetSize(coeffs.Size());
       for (int j = 0; j < coeffs.Size(); j++)

@@ -578,7 +578,7 @@ namespace ngfem
   {
     public:
       
-    FacetBilinearFormIntegrator(const Array<CoefficientFunction*> & coeffs) 
+    FacetBilinearFormIntegrator(const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator() { ; }
 
     ~FacetBilinearFormIntegrator() { ; }
@@ -1131,7 +1131,7 @@ namespace ngfem
   {
     public:
       
-    FacetLinearFormIntegrator(const Array<CoefficientFunction*> & coeffs) 
+    FacetLinearFormIntegrator(const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : LinearFormIntegrator() { ; }
 
     ~FacetLinearFormIntegrator() { ; }
@@ -1408,7 +1408,8 @@ namespace ngfem
   {
     return GetIntegrators().CreateLFI (args...);
   }
-  
+
+  /*
   class ConvertCoefs
   {
     Array<shared_ptr<CoefficientFunction> > coefs;
@@ -1439,7 +1440,7 @@ namespace ngfem
       return Array<CoefficientFunction*> (pcoefs);
     }
   };
-
+  */
 
   template <typename BFI>
   class RegisterBilinearFormIntegrator
@@ -1454,14 +1455,14 @@ namespace ngfem
     static shared_ptr<BilinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coefs)
     {
       // return shared_ptr<BilinearFormIntegrator> (new BFI (ConvertCoefs (coefs)));
-      return make_shared<BFI>(ConvertCoefs (coefs));
+      // return make_shared<BFI>(ConvertCoefs (coefs));
+      return make_shared<BFI>(coefs);
     }
-    /*
-    static shared_ptr<Integrator> Create (Array<CoefficientFunction*> & coefs)
-    {
-      return new BFI (ConvertCoefs (coefs));
-    }
-    */
+
+    // static shared_ptr<Integrator> Create (Array<CoefficientFunction*> & coefs)
+    // {
+    // return new BFI (ConvertCoefs (coefs));
+    // }
   };
 
 
@@ -1478,7 +1479,8 @@ namespace ngfem
     
     static shared_ptr<LinearFormIntegrator> Create (const Array<shared_ptr<CoefficientFunction>> & coefs)
     {
-      return shared_ptr<LinearFormIntegrator> (new LFI (ConvertCoefs(coefs)));
+      // return shared_ptr<LinearFormIntegrator> (new LFI (ConvertCoefs(coefs)));
+      return make_shared<LFI> (coefs);
       // return new LFI (coefs);
     }
   };
