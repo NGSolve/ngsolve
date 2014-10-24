@@ -37,6 +37,22 @@ lib_LTLIBRARIES += libngsolve.la
 endif
 
 
+lib_LTLIBRARIES += ngslib.la	
+ngslib_la_SOURCES = ngspy.cpp
+ngslib_la_LDFLAGS = -avoid-version -module
+
+ngslib_la_LIBADD = libsolve.la			   \
+	$(top_builddir)/comp/libngcomp.la		   \
+	$(top_builddir)/ngstd/libngstd.la		   \
+	$(top_builddir)/fem/libngfem.la			   \
+	$(top_builddir)/parallel/libparallel.la		   \
+	$(top_builddir)/linalg/libngla.la		   \
+	$(top_builddir)/basiclinalg/libngbla.la		   \
+	$(top_builddir)/multigrid/libngmg.la		   \
+	-L$(libdir) -linterface				   \
+	$(PARDISO_LIBS) $(LAPACK_LIBS)
+
+
 
 ngs_SOURCES = ngs.cpp
 ngs_LDADD = libsolve.la \
