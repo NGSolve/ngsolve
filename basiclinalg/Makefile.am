@@ -14,6 +14,6 @@ include_HEADERS = bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp \
 vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h     \
 tensor.hpp cuda_bla.hpp
 
-libngbla_la_LDFLAGS = -avoid-version 
+libngbla_la_LDFLAGS = -avoid-version
 
 dist_bin_SCRIPTS = bla.py
