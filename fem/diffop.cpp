@@ -36,6 +36,7 @@ namespace ngfem
 #ifndef FASTCOMPILE
     cout << "called base class apply, type = " << typeid(*this).name() << endl;
 #endif
+    HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
@@ -51,6 +52,7 @@ namespace ngfem
 #ifndef FASTCOMPILE
     cout << "called base class apply, complex" << endl;
 #endif
+    HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     flux = mat * x;
@@ -89,6 +91,7 @@ namespace ngfem
 #ifndef FASTCOMPILE
     cout << "called base class apply trans" << endl;
 #endif
+    HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
@@ -105,6 +108,7 @@ namespace ngfem
 #ifndef FASTCOMPILE
     cout << "called base class apply trans, complex" << endl;
 #endif
+    HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
     CalcMatrix (fel, mip, mat, lh);
     x = Trans(mat) * flux;
@@ -118,6 +122,7 @@ namespace ngfem
               FlatVector<double> x, 
               LocalHeap & lh) const 
   {
+    HeapReset hr(lh);
     FlatVector<double> hx(x.Size(), lh);
     x = 0.0;
     for (int i = 0; i < mir.Size(); i++)
@@ -134,6 +139,7 @@ namespace ngfem
               FlatVector<Complex> x, 
               LocalHeap & lh) const 
   {
+    HeapReset hr(lh);
     FlatVector<Complex> hx(x.Size(), lh);
     x = 0.0;
     for (int i = 0; i < mir.Size(); i++)
@@ -177,6 +183,7 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
+    HeapReset hr(lh);
     FlatVector<> hx(fel.GetNDof(), lh);
     FlatVector<> hflux(diffop->Dim(), lh);
     
