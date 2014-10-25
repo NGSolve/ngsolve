@@ -114,6 +114,32 @@ void ExportNgla() {
                                       {
                                         return shared_ptr<BaseVector> (&m.AsVector(), NOOP_Deleter);
                                       }))
+    .def("COO", FunctionPointer( [] (BM & m) -> bp::object
+                                 {
+                                   SparseMatrix<double> * sp = dynamic_cast<SparseMatrix<double>*> (&m);
+                                   if (sp)
+                                     {
+                                       Array<int> ri, ci;
+                                       Array<double> vals;
+                                       for (int i = 0; i < sp->Height(); i++)
+                                         {
+                                           FlatArray<int> ind = sp->GetRowIndices(i);
+                                           FlatVector<double> rv = sp->GetRowValues(i);
+                                           for (int j = 0; j < ind.Size(); j++)
+                                             {
+                                               ri.Append (i);
+                                               ci.Append (ind[j]);
+                                               vals.Append (rv[j]);
+                                             }
+                                         }
+
+                                       bp::list pyri (ri);
+                                       bp::list pyci (ci);
+                                       bp::list pyvals (vals);
+                                       return bp::make_tuple (pyri, pyci, pyvals);
+                                     }
+                                 }))
+
     .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
     .def("MultAdd",     FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.MultAdd (s, x, y); }))
     // .def("MultTrans",   FunctionPointer( [](BM &m, BV &x, BV &y, double s) { y  = s*Trans(m)*x; }) )
