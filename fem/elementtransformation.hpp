@@ -165,6 +165,8 @@ namespace ngfem
     /// normal vectors (only surfelements)
     FlatMatrix<> nvmat;
   public:
+    /// type of element, np x dim point-matrix
+    FE_ElementTransformation (ELEMENT_TYPE type, FlatMatrix<> pmat);
     ///
     FE_ElementTransformation ();
 

@@ -134,6 +134,11 @@ void ExportNgfem() {
           );
     
   bp::class_<ElementTransformation, boost::noncopyable>("ElementTransformation", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](ELEMENT_TYPE et, Matrix<> pmat) -> ElementTransformation*
+                           {
+                             return new FE_ElementTransformation<2,2> (et, pmat); 
+                           })))
     .def ("IsBoundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
     ;
@@ -157,6 +162,15 @@ void ExportNgfem() {
                                                       const ElementTransformation&,
                                                       FlatMatrix<double>,LocalHeap&)const>
          (&BilinearFormIntegrator::CalcElementMatrix))
+    .def("CalcElementMatrix",
+         FunctionPointer([] (const BilinearFormIntegrator & self, 
+                             const FiniteElement & fe, const ElementTransformation & trafo)
+                         {
+                           Matrix<> mat(fe.GetNDof());
+                           LocalHeap lh(100000, "dummy");
+                           self.CalcElementMatrix (fe, trafo, mat, lh);
+                           return mat;
+                         }))
     ;
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
     ("LFI", bp::no_init)
