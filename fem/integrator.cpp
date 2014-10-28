@@ -644,7 +644,7 @@ namespace ngfem
   BlockBilinearFormIntegrator :: 
   ~BlockBilinearFormIntegrator ()
   {
-    // delete &bfi;
+    ;
   }
 
   void BlockBilinearFormIntegrator ::
@@ -656,7 +656,6 @@ namespace ngfem
     FlatMatrix<double> mat1(bfel.GetNDof(), lh);
     bfi->CalcElementMatrix (bfel, eltrans, mat1, lh);
     
-    // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
     elmat = 0;
 
     if (comp == -1)
@@ -682,7 +681,6 @@ namespace ngfem
     FlatMatrix<Complex> mat1(bfel.GetNDof(), lh);
     bfi->CalcElementMatrix (bfel, eltrans, mat1, lh);
     
-    // elmat.AssignMemory (mat1.Height()*dim, mat1.Width()*dim, lh);
     elmat = 0;
 
     if (comp == -1)
@@ -706,8 +704,8 @@ namespace ngfem
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    const int smallsizex = elx.Size()/dim;
-    const int smallsizey = ely.Size()/dim;
+    int smallsizex = elx.Size()/dim;
+    int smallsizey = ely.Size()/dim;
 
     Vector<double> small_elx(smallsizex);
     Vector<double> small_ely(smallsizey);
@@ -715,17 +713,17 @@ namespace ngfem
     ely = 0;
     if(comp == -1)
       {
-	for(int d=0; d<dim; d++)
+	for(int d = 0; d < dim; d++)
 	  {
-	    for(int i=0; i<smallsizex; i++)
-	      {
-		small_elx(i) = elx(i*dim+d);
-	      }
-	    bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely,0, lh);
-	    for(int i=0; i<smallsizey; i++)
-	      {
-		ely(i*dim+d) = small_ely(i);
-	      }
+            small_elx = elx.Slice(d, dim);
+	    // for(int i=0; i<smallsizex; i++)
+            // small_elx(i) = elx(i*dim+d);
+
+	    bfi->ApplyElementMatrix(bfel,eltrans,small_elx,small_ely, 0, lh);
+            ely.Slice(d, dim) = small_ely;
+
+	    // for(int i=0; i<smallsizey; i++)
+            // ely(i*dim+d) = small_ely(i);
 	  }
       }
     else
