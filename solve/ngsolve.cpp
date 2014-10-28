@@ -209,6 +209,7 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
     }
     virtual Archive & operator & (bool & b) 
     { 
+      sock.Tsend (b);
       return *this; 
     }
     virtual Archive & operator & (string & str) 
@@ -251,7 +252,11 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
       sock.Trecv(i);
       return *this; 
     }
-    virtual Archive & operator & (bool & b) { return *this; }
+    virtual Archive & operator & (bool & b) 
+    {
+      sock.Trecv(b);
+      return *this; 
+    }
 
     virtual Archive & operator & (string & str) 
     { 

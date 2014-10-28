@@ -15,14 +15,14 @@
 
 namespace ngla
 {
-
+  
   ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> * adist_procs, 
 				int dim, bool iscomplex)
     : comm(acomm), dist_procs(adist_procs)
     
   {
-      int ntasks = MyMPI_GetNTasks(comm);
-      int id = MyMPI_GetId(comm);
+    int ntasks = MyMPI_GetNTasks(comm);
+    int id = MyMPI_GetId(comm);
       
       ndof = dist_procs->Size();
     

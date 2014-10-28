@@ -40,6 +40,7 @@ namespace ngcomp
     int nr;
   public:
     ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
+    ElementId (int anr) : vb(VOL), nr(anr) { ; }
     int Nr() const { return nr; }
     // operator int () const { return nr; }
     bool IsVolume() const { return vb == VOL; }

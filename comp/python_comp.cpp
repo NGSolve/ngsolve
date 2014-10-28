@@ -84,11 +84,14 @@ void ExportNgcomp()
                          "an element identifier containing element number and Volume/Boundary flag",
                          bp::no_init)
     .def(bp::init<VorB,int>())
+    .def(bp::init<int>())
     .def("__str__", &ToString<ElementId>)
     .add_property("nr", &ElementId::Nr, "the element number")    
     .def("IsVolume", &ElementId::IsVolume, "is it a boundary element ?")
     .def("IsBoundary", &ElementId::IsBoundary, "is it a volume element ?")
     ;
+  
+  bp::def("BndElementId", FunctionPointer([] (int nr) { return ElementId(BND,nr); })) ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 

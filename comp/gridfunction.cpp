@@ -42,14 +42,14 @@ namespace ngcomp
     archive & nested & visual & multidim & level_updated;
     archive & cacheblocksize;
 
-    if (!archive.Output()) Update();
-    
+    if (archive.Input()) Update();
     for (int i = 0; i < vec.Size(); i++)
       {
         FlatVector<double> fv = vec[i] -> FVDouble();
         for (int i = 0; i < fv.Size(); i++)
           archive & fv(i);
       }
+    if (archive.Input()) Visualize(name);
   }
 
 
