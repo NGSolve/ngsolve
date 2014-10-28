@@ -19,6 +19,8 @@ class SPSolid
   double maxh = -1;
   string material;
   bool owner;
+  double red, green, blue;
+  bool transp = false;
 public:
   enum optyp { TERM, SECTION, UNION, SUB };
 
@@ -107,6 +109,19 @@ public:
       }
   }
 
+  void SetColor(double ared, double agreen, double ablue)
+  {
+	  red = ared;
+	  green = agreen;
+	  blue = ablue;
+  }
+
+  double GetRed() const { return red; }
+  double GetGreen() const { return green; }
+  double GetBlue() const { return blue; }
+
+  void SetTransparent() { transp = true; }
+  bool IsTransparent() { return transp; }
 
 private:
   optyp op;
@@ -144,12 +159,14 @@ void ExportCSG()
     .def(bp::self+bp::self)
 //     .def(bp::self*double())
     .def(double()*bp::self)
+	.def("Norm", &Vec<2>::Length)
     ;
 
   bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) 
     .def(bp::self+bp::self)
 //     .def(bp::self*double())
     .def(double()*bp::self)
+	.def("Norm", &Vec<3>::Length)
     ;
 
   bp::def ("Vec", FunctionPointer( [] (double x, double y, double z) { return Vec<3>(x,y,z); } ) );
@@ -172,6 +189,14 @@ void ExportCSG()
     .def ("mat", FunctionPointer([](shared_ptr<SPSolid> & self, string mat) -> shared_ptr<SPSolid> 
                                  { self->SetMaterial(mat); return self; }))
     .def ("mat", &SPSolid::GetMaterial)
+	.def("col", FunctionPointer([](shared_ptr<SPSolid> & self, bp::list rgb) -> shared_ptr<SPSolid>
+		{ 
+			bp::extract<double> red(rgb[0]);
+			bp::extract<double> green(rgb[1]);
+			bp::extract<double> blue(rgb[2]);
+			self->SetColor(red(),green(),blue());
+			return self; }))
+	.def("transp", FunctionPointer([](shared_ptr<SPSolid> & self)->shared_ptr < SPSolid > { self->SetTransparent(); return self; }))
     ;
 
   bp::def ("Sphere", FunctionPointer([](Point<3> c, double r)
@@ -256,6 +281,8 @@ void ExportCSG()
             solid->GiveUpOwner();
             int tlonr = self.SetTopLevelObject (solid->GetSolid());
             self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
+			self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
+			self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
           }))
 
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
