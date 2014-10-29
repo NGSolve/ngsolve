@@ -3,7 +3,7 @@
   This file is a modification of tkAppInit.c from the Tcl/Tk package
 */
 
-#include <mystdlib.h>
+#include <mystdlib.h> 
 #include <inctcl.hpp>
 #include <meshing.hpp>
 
@@ -32,7 +32,7 @@ namespace netgen
 
 namespace netgen
 {
-#include "writeuser.hpp"
+#include "../libsrc/interface/writeuser.hpp"
   extern string ngdir;
   Flags parameters;
 }
