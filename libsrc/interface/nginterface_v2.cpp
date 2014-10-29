@@ -59,6 +59,8 @@ namespace netgen
     netgen::mesh = make_shared<Mesh>();
     netgen::mesh -> Load (ist);
     mesh = netgen::mesh;
+    vssolution.SetMesh(mesh);
+    vsmesh.SetMesh(mesh);
   }
 
   void Ngx_Mesh :: SaveMesh (ostream & ost) const
