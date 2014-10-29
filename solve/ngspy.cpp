@@ -26,7 +26,8 @@ BOOST_PYTHON_MODULE(ngslib)
 {
     try
     {
-      
+      ngsolve::MyMPI mympi(); // (argc, argv);
+     
         ExportNgstd();
         ExportNgbla();
         ExportNgfem();
