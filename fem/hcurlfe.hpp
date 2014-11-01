@@ -114,6 +114,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void 
     EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
 
+    NGS_DLL_HEADER virtual void 
+    EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
+                        FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
+
   protected:
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 

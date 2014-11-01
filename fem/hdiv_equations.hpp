@@ -125,11 +125,13 @@ public:
   enum { DIM_DMAT = 1 };
   enum { DIFFORDER = 1 };
 
+  static string Name() { return "div"; }
+
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
   {
-    
+    HeapReset hr(lh);
     mat = 1.0/mip.GetJacobiDet() *
       Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
   }
@@ -138,6 +140,7 @@ public:
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               FlatVector<double> & mat, LocalHeap & lh)
   {
+    HeapReset hr(lh);
     mat = 1.0/mip.GetJacobiDet() * 
       (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
   }
@@ -148,8 +151,8 @@ public:
                      const TVX & x, TVY & y,
                      LocalHeap & lh) 
   {
+    HeapReset hr(lh);
     typedef typename TVX::TSCAL TSCAL;
-      
     Vec<DIM,TSCAL> hv = Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh)) * x;
     y = (1.0/mip.GetJacobiDet()) * hv;
   }
@@ -159,6 +162,7 @@ public:
 			  const TVX & x, TVY & y,
 			  LocalHeap & lh) 
   {
+    HeapReset hr(lh);      
     typedef typename TVX::TSCAL TSCAL;
     Vec<DIM,TSCAL> hv = x;
     hv *= (1.0/mip.GetJacobiDet());

@@ -110,7 +110,7 @@ namespace ngfem
                    SliceMatrix<> shape) const
   {
     for (int i = 0; i < mir.Size(); i++)
-      CalcMappedShape (mir[i], shape.Cols(D, (i+1)*D));
+      CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
   }
 
 

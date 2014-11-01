@@ -188,6 +188,24 @@ namespace ngfem
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }
 
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
+                      FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
+  {
+    LocalHeapMem<1000> lhdummy("dummy");
+    if (D == 2)
+      for (int i = 0; i < mir.Size(); i++)
+        curl.Row(i) = (1.0/mir[i].GetJacobiDet())*EvaluateCurlShape (mir[i].IP(), coefs, lhdummy);
+    else
+      {
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            Mat<DIM_CURL_(D)> trans = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian();
+            curl.Row(i) = trans*EvaluateCurlShape (mir[i].IP(), coefs, lhdummy);
+          }
+      }
+  }
 
 
   template <int D>

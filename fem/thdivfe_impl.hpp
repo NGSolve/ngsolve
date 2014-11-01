@@ -31,7 +31,7 @@ namespace ngfem
                                       }));
   }
 
-#ifndef FASTCOMPILE    
+#ifndef FASTCOMPILE
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
   CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
