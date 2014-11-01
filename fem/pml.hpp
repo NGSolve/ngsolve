@@ -152,6 +152,27 @@ namespace ngfem
 	}
     }
 
+    virtual void
+    CalcFlux (const FiniteElement & fel,
+              const BaseMappedIntegrationPoint & bmip,
+              FlatVector<Complex> elx, 
+              FlatVector<Complex> flux,
+              bool applyd,
+              LocalHeap & lh) const
+    {
+      HeapReset hr(lh);
+      MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
+        mip(bmip.IP(), bmip.GetTransformation());
+      cout << "bmip.jacobi = " << static_cast<const MappedIntegrationPoint<3,3>&> (bmip).GetJacobianInverse() << endl;
+      cout << "mip.jacobi = " << mip.GetJacobianInverse() << endl;
+      this->diffop->Apply (fel, bmip, elx, flux, lh);
+
+      FlatVec<DMATOP::DIM_DMAT,Complex> hflux(&flux(0));
+      if (applyd)
+        this->dmatop.Apply1 (fel, bmip, hflux, lh);
+    }
+
+
 
 
     virtual void 
