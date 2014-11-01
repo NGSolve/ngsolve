@@ -97,10 +97,13 @@ namespace ngcomp
 
 	if(gridfunctions[i]->IsUpdated())
 	  {
-	    if(ascii)
-	      gridfunctions[i]->GetVector().SaveText (outfile);
-	    else
-	      gridfunctions[i]->GetVector().Save (outfile);
+            for (int j = 0; j < gridfunctions[i]->GetMultiDim(); j++)
+              {
+                if(ascii)
+                  gridfunctions[i]->GetVector(j).SaveText (outfile);
+                else
+                  gridfunctions[i]->GetVector(j).Save (outfile);
+              }
 	  }
 	else
 	  {
@@ -143,10 +146,13 @@ namespace ngcomp
       {
 	gridfunctions[i]->Update();
 	cout << IM(1) << "Loading gridfunction " << gridfunctions.GetName(i) << endl;
-	if(ascii)
-	  gridfunctions[i]->GetVector().LoadText (infile);
-	else
-	  gridfunctions[i]->GetVector().Load (infile);
+        for (int j = 0; j < gridfunctions[i]->GetMultiDim(); j++)
+          {
+            if(ascii)
+              gridfunctions[i]->GetVector(j).LoadText (infile);
+            else
+              gridfunctions[i]->GetVector(j).Load (infile);
+          }
       }
     infile.close();
   }

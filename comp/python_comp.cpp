@@ -152,15 +152,30 @@ void ExportNgcomp()
 
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, const Flags & flags)
-                           { return CreateFESpace (type, ma, flags); } )))
+         (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
+                              Flags flags, int order, const bp::list & dirichlet )
+                           { 
+                             if (order > -1) flags.SetFlag ("order", order);
+                             if (dirichlet)
+                               flags.SetFlag("dirichlet", makeCArray<double>(dirichlet));
+                             return CreateFESpace (type, ma, flags); 
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
+           bp::arg("order")=-1, bp::arg("dirichlet")= bp::list() )),
+         "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
+         )
 
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](bp::list spaces)->shared_ptr<FESpace>
                            {
                              auto sp (makeCArray<shared_ptr<FESpace>> (spaces));
                              return make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, Flags());
-                           } )))
+                           }),
+          bp::default_call_policies(),       
+          (bp::arg("spaces"))),
+         "construct compound-FESpace from list of component spaces"
+         )
 
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
                                    { 

@@ -1542,7 +1542,7 @@ namespace ngcomp
         int dim = fes.GetDimension();
         
         
-        LocalHeapMem<100000> lh("visgf::getmultisurfvalue");
+        LocalHeapMem<200000> lh("visgf::getmultisurfvalue");
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
@@ -1613,7 +1613,6 @@ namespace ngcomp
 		FlatVec<2> vx( (double*)x + k*sx);
 		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
 	      }
-
             ta.Stop();
             bool isdefined = false;
 	    for(int j = 0; j < bfi2d.Size(); j++)
