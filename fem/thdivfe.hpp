@@ -454,7 +454,7 @@ namespace ngfem
     virtual void CalcDivShape (const IntegrationPoint & ip, 
 			       SliceVector<> divshape) const;
 
-#ifndef FASTCOMPILE    
+#ifndef FASTCOMPILE
     virtual void CalcMappedShape (const MappedIntegrationPoint<DIM,DIM> & mip,
 				  SliceMatrix<> shape) const;
 

@@ -181,11 +181,7 @@ void ExportNgfem() {
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
                              if (bp::extract<bp::list> (definedon).check())
-                               {
-                                 Array<int> defon (makeCArray<int> (definedon));
-                                 cout << "locally defined on  = " << defon << endl;
-                                 lfi -> SetDefinedOn (defon);
-                               }
+                               lfi -> SetDefinedOn (makeCArray<int> (definedon));
  
                              if (!lfi) cerr << "undefined integrator '" << name 
                                             << "' in " << dim << " dimension having 1 coefficient"
@@ -194,7 +190,8 @@ void ExportNgfem() {
                            }),
           bp::default_call_policies(),     // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,
-           bp::arg("coef"),bp::arg("definedon")=bp::object() )))
+           bp::arg("coef"),bp::arg("definedon")=bp::object() ))
+         )
 
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>

@@ -641,6 +641,40 @@ namespace ngfem
     */
   }
 
+  
+  template<>
+  void HDivHighOrderFE<ET_QUAD> :: 
+  CalcNormalShape (const IntegrationPoint & ip, 
+                   SliceVector<> nshape) const
+  {
+    // Vector<> nshape1(nshape.Size());
+    // HDivFiniteElement<2>::CalcNormalShape (ip, nshape1);
+
+    int fnr = ip.FacetNr();
+    double lam[] = { (1-ip(0))*(1-ip(1)), ip(0)*(1-ip(1)), ip(0)*ip(1),(1-ip(0))*ip(1) };
+
+    INT<2> e0 = ET_trait<ET_QUAD>::GetEdge (fnr);
+    double fac = vnums[e0[0]] > vnums[e0[1]] ? 1 : -1;
+    INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (fnr, vnums);
+    AutoDiff<1> xi (lam[e[1]]-lam[e[0]], 0);
+    
+    ArrayMem<AutoDiff<1>,10> adpol1(order);
+    
+    nshape[0] = fac*xi.DValue(0);
+
+    int p = order_inner[0]; 
+    IntLegNoBubble:: EvalMult (p-1, xi, 0.25*(1-xi*xi), adpol1);
+    
+    for(int j = 0; j < p; j++) 	      
+      nshape[j+1] = -2*fac*adpol1[j].DValue(0);
+    /*
+    cout << "nshape = " << nshape << endl;
+    cout << "nshape1 = " << nshape1 << endl;
+    cout << "************************************ diff = " << L2Norm (nshape-nshape1) << endl;
+    */
+  }
+
+
 
   template<>
   void HDivHighOrderFE<ET_TET> :: 
