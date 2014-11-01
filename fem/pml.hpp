@@ -163,16 +163,15 @@ namespace ngfem
       HeapReset hr(lh);
       MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> 
         mip(bmip.IP(), bmip.GetTransformation());
-      cout << "bmip.jacobi = " << static_cast<const MappedIntegrationPoint<3,3>&> (bmip).GetJacobianInverse() << endl;
-      cout << "mip.jacobi = " << mip.GetJacobianInverse() << endl;
-      this->diffop->Apply (fel, bmip, elx, flux, lh);
+      // cout << "bmip.jacobi = " << static_cast<const MappedIntegrationPoint<3,3>&> (bmip).GetJacobiDet() << endl;
+      // cout << "mip.jacobi = " << mip.GetJacobiDet() << endl;
+
+      DIFFOP::Apply (fel, mip, elx, flux, lh);
 
       FlatVec<DMATOP::DIM_DMAT,Complex> hflux(&flux(0));
       if (applyd)
-        this->dmatop.Apply1 (fel, bmip, hflux, lh);
+        this->dmatop.Apply1 (fel, mip, hflux, lh);
     }
-
-
 
 
     virtual void 
