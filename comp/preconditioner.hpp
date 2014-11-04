@@ -413,11 +413,10 @@ namespace ngcomp
     struct PreconditionerInfo
     {
       string name;
-      Preconditioner* (*creator)(const PDE & pde, const Flags & aflags, const string & name);
+      shared_ptr<Preconditioner> (*creator)(const PDE & pde, const Flags & aflags, const string & name);
       PreconditionerInfo (const string & aname,
-			  Preconditioner* (*acreator)(const PDE & pde, 
-						      const Flags & aflags,
-						      const string & name));
+			  shared_ptr<Preconditioner> (*acreator)
+                          (const PDE & pde, const Flags & aflags, const string & name));
     };
   
     Array<PreconditionerInfo*> prea;
@@ -425,9 +424,8 @@ namespace ngcomp
     PreconditionerClasses();
     ~PreconditionerClasses();  
     void AddPreconditioner (const string & aname, 
-			    Preconditioner* (*acreator)(const PDE & pde, 
-							const Flags & aflags, 
-							const string & name));
+			    shared_ptr<Preconditioner> (*acreator)
+                            (const PDE & pde, const Flags & aflags, const string & name));
   
     const Array<PreconditionerInfo*> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
@@ -447,9 +445,9 @@ namespace ngcomp
       // cout << "register preconditioner '" << label << "'" << endl;
     }
     
-    static Preconditioner * Create (const PDE & pde, const Flags & flags, const string & name)
+    static shared_ptr<Preconditioner> Create (const PDE & pde, const Flags & flags, const string & name)
     {
-      return new PRECOND (pde, flags, name);
+      return make_shared<PRECOND> (pde, flags, name);
     }
   };
 
