@@ -305,13 +305,13 @@ namespace ngcomp
     ///
     void AddGridFunction (const string & name, shared_ptr<GridFunction> gf, bool addcf = false);
     ///
-    BilinearForm * AddBilinearForm (const string & name, const Flags & flags);
+    shared_ptr<BilinearForm> AddBilinearForm (const string & name, const Flags & flags);
     ///
     void AddBilinearForm (const string & name, shared_ptr<BilinearForm> bf);
     ///
     shared_ptr<LinearForm> AddLinearForm (const string & name, const Flags & flags);
     ///
-    Preconditioner * AddPreconditioner (const string & name, const Flags & flags);
+    shared_ptr<Preconditioner> AddPreconditioner (const string & name, const Flags & flags);
     ///
     void AddNumProc (const string & name, shared_ptr<NumProc> np);
 

@@ -410,7 +410,8 @@ namespace ngcomp
 
 	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (ei.Nr(), bound, elflux, TRANSFORM_RHS);
-              
+              *testout << "elmat = " << endl << elmat << endl;
+              *testout << "elflux = " << endl << elflux << endl;
               if (dnums.Size() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
@@ -421,6 +422,7 @@ namespace ngcomp
                   LapackInverse (elmat);
                   elfluxi = elmat * elflux;
                 }
+              *testout << "elfluxi = " << endl << elfluxi << endl;
 	    }
 
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);

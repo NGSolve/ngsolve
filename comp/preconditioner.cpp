@@ -1034,7 +1034,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
-		      Preconditioner* (*acreator)(const PDE & pde, const Flags & flags, const string & name))
+		      shared_ptr<Preconditioner> (*acreator)(const PDE & pde, const Flags & flags, const string & name))
     : name(aname), creator(acreator) 
   {
     ;
@@ -1053,9 +1053,8 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
-		     Preconditioner* (*acreator)(const PDE & pde, 
-						 const Flags & flags,
-						 const string & name))
+		     shared_ptr<Preconditioner> (*acreator)
+                     (const PDE & pde, const Flags & flags, const string & name))
   {
     prea.Append (new PreconditionerInfo(aname, acreator));
   }

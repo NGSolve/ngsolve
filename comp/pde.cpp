@@ -1105,7 +1105,7 @@ namespace ngcomp
   }
 
 
-  BilinearForm * PDE :: AddBilinearForm (const string & name, const Flags & flags)
+  shared_ptr<BilinearForm> PDE :: AddBilinearForm (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add bilinear-form " << name << endl;
     string spacename = flags.GetStringFlag ("fespace", "");
@@ -1133,7 +1133,7 @@ namespace ngcomp
 
     todo.Append(bilinearforms[name].get());
 
-    return bilinearforms[name].get();
+    return bilinearforms[name];
   }
 
 
@@ -1160,10 +1160,10 @@ namespace ngcomp
 
 
 
-  Preconditioner * PDE :: AddPreconditioner (const string & name, const Flags & flags)
+  shared_ptr<Preconditioner> PDE :: AddPreconditioner (const string & name, const Flags & flags)
   {
     cout << IM(1) << "add preconditioner " << name << flush;
-    Preconditioner * pre = NULL;
+    shared_ptr<Preconditioner> pre;
     const string & type = flags.GetStringFlag ("type");
     int ntasks = MyMPI_GetNTasks ();
     
@@ -1179,26 +1179,26 @@ namespace ngcomp
 	*/
 
 	if (type == "local") 
-	  pre = new LocalPreconditioner (this, flags, name);
+	  pre = make_shared<LocalPreconditioner> (this, flags, name);
 	
 	else if (type == "twolevel")
-	  pre = new TwoLevelPreconditioner (this, flags, name);
+	  pre = make_shared<TwoLevelPreconditioner> (this, flags, name);
 	
 	else if (type == "complex") 
-	  pre = new ComplexPreconditioner (this, flags, name);
+	  pre = make_shared<ComplexPreconditioner> (this, flags, name);
 	
 	else if (type == "chebychev") 
-	  pre = new ChebychevPreconditioner (this, flags, name);
+	  pre = make_shared<ChebychevPreconditioner> (this, flags, name);
 	
 	//  else if (strcmp (type, "constrained") == 0)
 	//    pre = new ConstrainedPreconditioner (this, flags);
 	
 	else if (type ==  "amg")
-	  pre = new CommutingAMGPreconditioner (this, flags, name);
+	  pre = make_shared<CommutingAMGPreconditioner> (this, flags, name);
 	
 	// changed 08/19/2003, Bachinger
 	else if (type == "nonsymmetric")
-	  pre = new NonsymmetricPreconditioner (this, flags, name);
+	  pre = make_shared<NonsymmetricPreconditioner> (this, flags, name);
         
 	else
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
@@ -1220,29 +1220,29 @@ namespace ngcomp
 	else 
 	*/
 	if (type == "local")
-	  pre = new LocalPreconditioner (this, flags, name);
+	  pre = make_shared<LocalPreconditioner> (this, flags, name);
 	/*
 	  else if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
 	*/
 	else if (type == "twolevel") 
-	  pre = new TwoLevelPreconditioner (this, flags, name);
+	  pre = make_shared<TwoLevelPreconditioner> (this, flags, name);
 
 	else if (type == "complex") 
-	  pre = new ComplexPreconditioner (this, flags, name);
+	  pre = make_shared<ComplexPreconditioner> (this, flags, name);
 	
 	else if (type == "chebychev") 
-	  pre = new ChebychevPreconditioner (this, flags, name);
+	  pre = make_shared<ChebychevPreconditioner> (this, flags, name);
 	
 	//  else if (strcmp (type, "constrained") == 0)
 	//    pre = new ConstrainedPreconditioner (this, flags);
 	
 	else if (type == "amg") 
-	  pre = new CommutingAMGPreconditioner (this, flags, name);
+	  pre = make_shared<CommutingAMGPreconditioner> (this, flags, name);
 	
 	// changed 08/19/2003, Bachinger
 	else if (type == "nonsymmetric")
-	  pre = new NonsymmetricPreconditioner (this, flags, name);
+	  pre = make_shared<NonsymmetricPreconditioner> (this, flags, name);
 	else
 	  for (int i = 0; i < GetPreconditionerClasses().GetPreconditioners().Size(); i++)
 	    {
@@ -1252,19 +1252,17 @@ namespace ngcomp
 	      if (string(type) == GetPreconditionerClasses().GetPreconditioners()[i]->name)
 		pre = GetPreconditionerClasses().GetPreconditioners()[i]->creator (*this, flags, name);
 	      
-	      
 	    }
       }
-
 	
     if (!pre)
       throw Exception ("Unknown preconditioner type " + string(type));
     
-    preconditioners.Set (name, shared_ptr<Preconditioner> (pre));
+    preconditioners.Set (name, pre);
     cout << IM(1) << ", type = " << pre->ClassName() << endl;
     
     if (!flags.GetDefineFlag ("ondemand"))
-      todo.Append(pre);
+      todo.Append(pre.get());
     
     return pre;
   }

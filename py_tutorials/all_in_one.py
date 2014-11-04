@@ -1,18 +1,3 @@
-##import sys
-##import os
-##from os import environ
-##sys.path.append(environ['NETGENDIR']+"/../lib")
-
-##from libngspy import *
-
-### being sloppy ....
-##from libngspy.ngstd import *
-##from libngspy.ngbla import *
-##from libngspy.ngfem import *
-##from libngspy.ngcomp import *
-##from libngspy.ngsolve import *
-
-
 from ngsolve.fem import *
 from ngsolve.comp import *
 
@@ -20,7 +5,8 @@ import numpy as np
 
 mesh = Mesh("square.vol")
 
-v = FESpace ("h1ho", mesh, { "order" : 6, "dirichlet" : [1] })
+
+v = FESpace ("h1ho", mesh, order=6, dirichlet=[1])
 v.Update()
 
 u = GridFunction (v)
@@ -39,6 +25,7 @@ inv = a.mat.Inverse(v.FreeDofs())
 u.vec.data = inv * f.vec
 
 sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) ]
+
 # sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
 
 
