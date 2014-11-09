@@ -107,21 +107,40 @@ namespace ngstd
     INLINE operator T* () const { return data; }
   };
 
+  template <class T, class TSIZE = int> class FlatArray;
+
+
+  template <typename TELEM, typename TSIZE>
+  class ArrayIterator
+  {
+    FlatArray<TELEM> ar;
+    TSIZE ind;
+  public:
+    INLINE ArrayIterator (FlatArray<TELEM> aar, TSIZE ai) 
+      : ar(aar), ind(ai) { ; }
+    INLINE ArrayIterator operator++ (int) 
+    { return ArrayIterator(ar, ind++); }
+    INLINE ArrayIterator operator++ ()
+    { return ArrayIterator(ar, ++ind); }
+    INLINE TELEM operator*() const { return ar[ind]; }
+    INLINE TELEM & operator*() { return ar[ind]; }
+    INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+  };
 
 
 
   template <typename TSIZE>
-  class ArrayIterator
+  class ArrayRangeIterator
   {
     TSIZE ind;
   public:
-    INLINE ArrayIterator (TSIZE ai) : ind(ai) { ; }
-    INLINE ArrayIterator operator++ (int) { return ind++; }
-    INLINE ArrayIterator operator++ () { return ++ind; }
-    INLINE ArrayIterator operator*() const { return ind; }
+    INLINE ArrayRangeIterator (TSIZE ai) : ind(ai) { ; }
+    INLINE ArrayRangeIterator operator++ (int) { return ind++; }
+    INLINE ArrayRangeIterator operator++ () { return ++ind; }
+    INLINE ArrayRangeIterator operator*() const { return ind; }
     INLINE TSIZE Index() { return ind; }
     INLINE operator TSIZE () const { return ind; }
-    INLINE bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+    INLINE bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
   };
 
 
@@ -141,8 +160,8 @@ namespace ngstd
     INLINE int operator[] (int i) const { return first+i; }
     INLINE bool Contains (int i) const { return ((i >= first) && (i < next)); }
 
-    INLINE ArrayIterator<int> begin() const { return first; }
-    INLINE ArrayIterator<int> end() const { return next; }
+    INLINE ArrayRangeIterator<int> begin() const { return first; }
+    INLINE ArrayRangeIterator<int> end() const { return next; }
   };
 
   /// a range of intergers
@@ -159,8 +178,8 @@ namespace ngstd
     INLINE T operator[] (T i) const { return first+i; }
     INLINE bool Contains (T i) const { return ((i >= first) && (i < next)); }
 
-    INLINE ArrayIterator<T> begin() const { return first; }
-    INLINE ArrayIterator<T> end() const { return next; }
+    INLINE ArrayRangeIterator<T> begin() const { return first; }
+    INLINE ArrayRangeIterator<T> end() const { return next; }
   };
 
 
@@ -199,7 +218,6 @@ namespace ngstd
   }
 
 
-  template <class T, class TSIZE = int> class FlatArray;
 
   template <typename T, typename INDEX_ARRAY>
   class IndirectArray : public BaseArrayObject<IndirectArray<T, INDEX_ARRAY> >
@@ -413,10 +431,10 @@ namespace ngstd
       return ( Pos(elem) >= 0 );
     }
     
-    /*
-    ArrayIterator<TSIZE> begin() { return 0; }
-    ArrayIterator<TSIZE> end() { return size; }
-    */
+    ArrayIterator<T, TSIZE> begin() 
+    { return ArrayIterator<T,TSIZE> (*this, 0); }
+    ArrayIterator<T, TSIZE> end() 
+    { return ArrayIterator<T,TSIZE> (*this, size); }
   };
 
 

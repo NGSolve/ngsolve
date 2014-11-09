@@ -7,9 +7,9 @@ namespace ngcomp
 {
 
 
-  NumProc :: NumProc (PDE & apde, const Flags & flags) // , const int acallposition)
+  NumProc :: NumProc (PDE & apde, const Flags & flags) 
     : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
-      pde(apde) // , callposition(acallposition) 
+      pde(apde)
   {
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
@@ -47,19 +47,21 @@ namespace ngcomp
     ;
   }
 
+  /*
   NumProcs :: ~NumProcs()
   {
     for (int i = 0; i < npa.Size(); i++)
       delete npa[i];
   }
-  
+  */
+
   void NumProcs :: 
   AddNumProc (const string & aname,
 	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     // cout << "AddNumProc: " << aname << endl;
-    npa.Append (new NumProcInfo(aname, -1, acreator, printdoc));
+    npa.Append (make_shared<NumProcInfo> (aname, -1, acreator, printdoc));
   }
 
   void NumProcs :: 
@@ -67,21 +69,33 @@ namespace ngcomp
 	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
-    npa.Append (new NumProcInfo(aname, adim, acreator, printdoc));
+    npa.Append (make_shared<NumProcInfo> (aname, adim, acreator, printdoc));
   }
 
 
 
-  const NumProcs::NumProcInfo * 
+  shared_ptr<NumProcs::NumProcInfo>
   NumProcs::GetNumProc(const string & name, int dim)
   {
+    /*
     for (int i = 0; i < npa.Size(); i++)
       {
 	if (name == npa[i]->name &&
 	    ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
 	  return npa[i];
       }
-    return 0;
+    */
+    /*
+    for (auto i : npa.Range())
+      if (name == npa[i]->name && ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
+        return npa[i];
+    */
+
+    for (auto & np : npa)
+      if (name == np->name && ( (dim == np->dim) || (np->dim==-1) ))
+        return np;
+
+    return nullptr;
   }
 
   void NumProcs :: Print (ostream & ost) const
