@@ -106,7 +106,7 @@ int NGS_Help (ClientData clientData,
       if (topics == "numprocs")
 	{
 	  stringstream str;
-	  const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
+	  const Array<shared_ptr<NumProcs::NumProcInfo>> & npi = GetNumProcs().GetNumProcs();
 	  
 	  Array<int> sort(npi.Size());
 	  Array<string> names(npi.Size());
@@ -155,7 +155,7 @@ int NGS_Help (ClientData clientData,
 
       if (argc >= 3 && strcmp (argv[1], "numproc") == 0)
 	{
-	  const Array<NumProcs::NumProcInfo*> & npi =
+	  const Array<shared_ptr<NumProcs::NumProcInfo>> & npi =
 	    GetNumProcs().GetNumProcs();
 	  for (int i = 0; i < npi.Size(); i++)
 	    {
