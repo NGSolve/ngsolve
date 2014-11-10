@@ -33,13 +33,11 @@ protected:
   
   // int callposition;
 public:
-  /// 
-  // NumProc (PDE & apde); // , const int acallposition = 0);
   /**
      Generate a numproc. 
      Use objects of pde container, parameterized by flags
   */
-  NumProc (PDE & apde, const Flags & flags = Flags()); // , const int acallposition = 0);
+  NumProc (PDE & apde, const Flags & flags = Flags()); 
   ///
   virtual ~NumProc();
   ///
@@ -48,8 +46,6 @@ public:
   virtual void PrintReport (ostream & ost);
   ///
   static void PrintDoc (ostream & ost);
-
-  // int GetCallPosition (void) const { return callposition;} 
 };
 
 
@@ -76,7 +72,7 @@ public:
   Array<shared_ptr<NumProcInfo>> npa;
 public:
   NumProcs();
-  // ~NumProcs();  
+
   void AddNumProc (const string & aname, 
 		   shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);

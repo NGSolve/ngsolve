@@ -431,9 +431,9 @@ namespace ngstd
       return ( Pos(elem) >= 0 );
     }
     
-    ArrayIterator<T, TSIZE> begin() 
+    ArrayIterator<T, TSIZE> begin() const
     { return ArrayIterator<T,TSIZE> (*this, 0); }
-    ArrayIterator<T, TSIZE> end() 
+    ArrayIterator<T, TSIZE> end() const
     { return ArrayIterator<T,TSIZE> (*this, size); }
   };
 

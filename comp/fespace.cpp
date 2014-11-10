@@ -2282,14 +2282,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-  FESpaceClasses :: ~FESpaceClasses()
-  {
-    ;
-    /*
-    for (int i = 0; i < fesa.Size(); i++)
-      delete fesa[i];
-    */
-  }
+  FESpaceClasses :: ~FESpaceClasses() { ; }
   
   void FESpaceClasses :: 
   AddFESpace (const string & aname,
@@ -2301,9 +2294,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
   const shared_ptr<FESpaceClasses::FESpaceInfo> 
   FESpaceClasses::GetFESpace(const string & name)
   {
-    for (int i = 0; i < fesa.Size(); i++)
-      if (name == fesa[i]->name)
-	return fesa[i];
+    for (auto & fes : fesa)
+      if (name == fes->name) return fes;
     return NULL;
   }
 
@@ -2312,8 +2304,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ost << endl << "FESpaces:" << endl;
     ost <<         "---------" << endl;
     ost << setw(20) << "Name" << endl;
-    for (int i = 0; i < fesa.Size(); i++)
-      ost << setw(20) << fesa[i]->name << endl;
+    for (auto & fes : fesa)
+      ost << setw(20) << fes->name << endl;
   }
 
  

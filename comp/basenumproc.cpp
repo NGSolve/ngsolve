@@ -47,20 +47,11 @@ namespace ngcomp
     ;
   }
 
-  /*
-  NumProcs :: ~NumProcs()
-  {
-    for (int i = 0; i < npa.Size(); i++)
-      delete npa[i];
-  }
-  */
-
   void NumProcs :: 
   AddNumProc (const string & aname,
 	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
-    // cout << "AddNumProc: " << aname << endl;
     npa.Append (make_shared<NumProcInfo> (aname, -1, acreator, printdoc));
   }
 
@@ -73,7 +64,6 @@ namespace ngcomp
   }
 
 
-
   shared_ptr<NumProcs::NumProcInfo>
   NumProcs::GetNumProc(const string & name, int dim)
   {
@@ -84,11 +74,6 @@ namespace ngcomp
 	    ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
 	  return npa[i];
       }
-    */
-    /*
-    for (auto i : npa.Range())
-      if (name == npa[i]->name && ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
-        return npa[i];
     */
 
     for (auto & np : npa)
@@ -103,8 +88,8 @@ namespace ngcomp
     ost << endl << "NumProcs:" << endl;
     ost <<         "---------" << endl;
     ost << setw(20) << "Name" << endl;
-    for (int i = 0; i < npa.Size(); i++)
-      ost << setw(20) << npa[i]->name << endl;
+    for (auto & np : npa)
+      ost << setw(20) << np->name << endl;
   }
 
 
