@@ -22,6 +22,7 @@ namespace ngla
     Array<FlatArray<int> > rowdnums;
     Array<FlatArray<int> > coldnums;
     int height;
+    int width;
     int ne;
     bool symmetric;
     bool disjointrows;
@@ -29,12 +30,13 @@ namespace ngla
     BitArray clone;
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
+    ElementByElementMatrix (int h, int w, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
     ~ElementByElementMatrix(); 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
     virtual int VHeight() const { return height; }
-    virtual int VWidth() const { return height; }
+    virtual int VWidth() const { return width; }
 
     virtual AutoVector CreateVector () const
     {

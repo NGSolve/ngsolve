@@ -245,6 +245,10 @@ namespace ngla
       bm.MultAdd (s, x, y);
     }  
 
+    virtual int VHeight() const { return bm.VWidth(); }
+    virtual int VWidth() const { return bm.VHeight(); }
+
+
     virtual ostream & Print (ostream & ost) const
     {
       ost << "Transpose of " << endl;
@@ -282,6 +286,9 @@ namespace ngla
     {
       bm.MultTransAdd (s*scale, x, y);
     }  
+
+    virtual int VHeight() const { return bm.VHeight(); }
+    virtual int VWidth() const { return bm.VWidth(); }
   };
 
   inline VScaleMatrix operator* (double d, const BaseMatrix & m)
