@@ -22,6 +22,7 @@ namespace ngla
     clone.Clear();
     symmetric=isymmetric;
     height = h; 
+    width = h; 
     ne = ane; 
     elmats.SetSize(ne);
     rowdnums.SetSize(ne);
@@ -39,6 +40,36 @@ namespace ngla
 	*/
       }
   }
+
+
+  template <class SCAL> class ElementByElementMatrix;
+  template <class SCAL>
+  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int w, int ane, bool isymmetric) 
+  {
+    clone.SetSize(ane);
+    clone.Clear();
+    symmetric=isymmetric;
+    height = h; 
+    width = w; 
+    ne = ane; 
+    elmats.SetSize(ne);
+    rowdnums.SetSize(ne);
+    coldnums.SetSize(ne);
+    disjointrows = false;
+    disjointcols = false;
+    for (int i = 0; i < ne; i++)
+      {
+        elmats[i].AssignMemory (0, 0, NULL);
+	new (&rowdnums[i]) FlatArray<int> (0, NULL);
+	new (&coldnums[i]) FlatArray<int> (0, NULL);
+	/*
+        rowdnums[i] = FlatArray<int> (0, NULL);
+	coldnums[i] = FlatArray<int> (0, NULL);
+	*/
+      }
+  }
+
+
   
   template <class SCAL>
   ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
@@ -47,6 +78,7 @@ namespace ngla
     clone.Clear();
     symmetric=isymmetric;
     height = h; 
+    width = h; 
     ne = ane; 
     elmats.SetSize(ne);
     rowdnums.SetSize(ne);
