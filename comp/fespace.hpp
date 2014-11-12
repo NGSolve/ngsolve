@@ -256,9 +256,10 @@ namespace ngcomp
     /// get coupling types of dof
     virtual COUPLING_TYPE GetDofCouplingType (int dof) const; 
     
-    /// get dof-nrs of the element of certain coupling type
-    void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;
+    void CheckCouplingTypes() const;
 
+    /// get dof-nrs of the element of certain coupling type
+    void GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const;    
 
     /// get dofs on nr'th node of type nt.
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const;

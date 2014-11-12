@@ -332,9 +332,15 @@ namespace ngcomp
         for (int i = 0; i < nfa; i++)
           {
             first_facet_dof[i] = ndof;
+            int inc = fine_facet[i] ? order_facet[i][0] : 0;
+	    if (highest_order_dc && !boundary_facet[i]) inc--;
+            if (inc > 0) ndof += inc;
+
+            /*
             if(fine_facet[i])
 	      ndof += order_facet[i][0];
 	    if (highest_order_dc && !boundary_facet[i]) ndof--;
+            */
           }
 
         first_facet_dof[nfa] = ndof;
