@@ -186,7 +186,9 @@ namespace ngcomp
 	  }
 	
       }
-    
+
+    for (int i = 0; i < fine_facet.Size(); i++)
+      if (!fine_facet[i]) order_facet[i] = 0;
 
     ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
 			   fine_facet, MPI_LOR);
@@ -206,8 +208,9 @@ namespace ngcomp
 	for ( int i = 0; i < nfacets; i++ )
 	  {
 	    first_facet_dof[i] = ndof;
-	    ndof += order_facet[i][0];
-	    if (highest_order_dc) ndof--;
+            int inc = order_facet[i][0];
+	    if (highest_order_dc) inc--;
+            if (inc > 0) ndof += inc;
 	  }
 	first_facet_dof[nfacets] = ndof;
 	
@@ -294,21 +297,19 @@ namespace ngcomp
     int first,next;
     for(int facet=0; facet<ma->GetNFacets(); facet++)
       {
+        COUPLING_TYPE ct = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
 	if ( ma->GetDimension() == 2 )
-	  ctofdof[facet] = WIREBASKET_DOF; // low_order
+	  ctofdof[facet] = ct; // low_order
 	else
 	  {
-	    ctofdof[2*facet] = WIREBASKET_DOF;
-	    ctofdof[2*facet+1] = WIREBASKET_DOF;
-	    // ctofdof[2*facet] = INTERFACE_DOF;
-	    // ctofdof[2*facet+1] = INTERFACE_DOF;
+	    ctofdof[2*facet] = ct;
+	    ctofdof[2*facet+1] = ct;
 	  }
 	
 	first = first_facet_dof[facet];
 	next = first_facet_dof[facet+1];
-	for(int j=first ; j<next; j++){
+	for(int j=first ; j<next; j++)
 	  ctofdof[j] = INTERFACE_DOF;
-	}
       }
     if (highest_order_dc)	  
       for(int el=0; el<ma->GetNE(); el++)	      

@@ -499,6 +499,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     level_updated = ma->GetNLevels();
     if (timing) Timing();
+
+    // CheckCouplingTypes();
   }
 
 
@@ -628,6 +630,49 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	ctypes[i] = ctofdof[dnums[i]];
     }
   }
+
+  void FESpace :: CheckCouplingTypes() const
+  {
+    cout << "checking coupling-types, type = " << typeid(*this).name() << endl;
+    int ndof = GetNDof();
+    if (ctofdof.Size() != ndof) 
+      cout << "ndof = " << ndof
+           << ", but couplingtype.size = " << ctofdof.Size() << endl;
+
+    Array<int> cnt(ndof);
+    cnt = 0;
+
+    Array<int> dnums;
+    for (ElementId id : ma->Elements<VOL>())
+      {
+        GetDofNrs(id, dnums);
+        for (auto d : dnums) cnt[d]++;
+      }
+    for (int i : IntRange(0,ndof))
+      {
+        if (cnt[i] == 0 && ctofdof[i] != UNUSED_DOF)
+          cout << "dof " << i << " not used, but coupling-type = " << ctofdof[i] << endl;
+      }
+
+
+    cout << "check dofs" << endl;
+    for (ElementId id : ma->Elements<VOL>())
+      {
+        GetDofNrs (id, dnums);
+        for (auto d : dnums)
+          if (d < 0 || d >= ndof)
+            cout << "dof out of range: " << d << endl;
+      }
+    for (ElementId id : ma->Elements<BND>())
+      {
+        GetDofNrs (id, dnums);
+        for (auto d : dnums)
+          if (d < 0 || d >= ndof)
+            cout << "dof out of range: " << d << endl;
+      }
+
+  }
+
 
   void FESpace :: GetDofNrs (int elnr, Array<int> & dnums, COUPLING_TYPE ctype) const
   {
