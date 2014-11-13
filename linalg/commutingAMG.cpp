@@ -294,9 +294,9 @@ namespace ngla
 	return;
       }
 
-    BaseVector & hv = *pmat->CreateVector();
-    BaseVector & wc = *coarsemat->CreateVector();
-    BaseVector & dc = *coarsemat->CreateVector();
+    auto hv = pmat->CreateVector();
+    auto wc = coarsemat->CreateVector();
+    auto dc = coarsemat->CreateVector();
 
     y = 0;
     jacobi->GSSmooth (y, x);
@@ -313,10 +313,6 @@ namespace ngla
       }
 
     jacobi->GSSmoothBack (y, x);
-
-    delete &hv;
-    delete &wc;
-    delete &dc;
   }
       
 
@@ -1151,13 +1147,13 @@ namespace ngla
 	return;
       }
 
-    BaseVector & hv = *pmat->CreateVector();
-    BaseVector & res = *pmat->CreateVector();
-    BaseVector & wc = *coarsemat->CreateVector();
-    BaseVector & dc = *coarsemat->CreateVector();
+    auto hv = pmat->CreateVector();
+    auto res = pmat->CreateVector();
+    auto wc = coarsemat->CreateVector();
+    auto dc = coarsemat->CreateVector();
 
-    BaseVector & wh1 = *h1mat->CreateVector();
-    BaseVector & dh1 = *h1mat->CreateVector();
+    auto wh1 = h1mat->CreateVector();
+    auto dh1 = h1mat->CreateVector();
     
     y = 0;
     res = x;
@@ -1192,14 +1188,6 @@ namespace ngla
 
     // for (int k = 0; k < 5; k++)
       jacobi->GSSmoothBack (y, x);
-
-
-    delete &dh1;
-    delete &wh1;
-    delete &dc;
-    delete &wc;
-    delete &res;
-    delete &hv;
   }
 }
 
