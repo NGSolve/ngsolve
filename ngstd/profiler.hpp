@@ -106,6 +106,7 @@ namespace ngstd
       // starttimes[nr] = time.tv_sec + 1e-6 * time.tv_usec;
 #pragma omp atomic
       tottimes[nr] -= time.tv_sec + 1e-6 * time.tv_usec;
+#pragma omp atomic
       counts[nr]++; 
       VT_USER_START (const_cast<char*> (names[nr].c_str())); 
     }

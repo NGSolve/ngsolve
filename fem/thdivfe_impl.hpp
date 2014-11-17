@@ -76,6 +76,26 @@ namespace ngfem
         vals.Row(i) = sum;
       }
   }
-#endif
 
+
+  template <class FEL, ELEMENT_TYPE ET>
+  void  T_HDivFiniteElement<FEL,ET> :: 
+  EvaluateTrans (const IntegrationRule & ir, 
+                 FlatMatrixFixWidth<DIM> vals,
+                 FlatVector<double> coefs) const  
+  {    
+    coefs = 0;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
+
+        Vec<DIM> val = vals.Row(i);
+        static_cast<const FEL*> (this) -> 
+          T_CalcShape (&adp(0), SBLambda([&] (int j, THDiv2Shape<DIM> vshape)
+                                         {
+                                           coefs(j) += InnerProduct (val, Vec<DIM> (vshape));
+                                         }));
+      }
+  }
+#endif
 }

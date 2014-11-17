@@ -464,6 +464,10 @@ namespace ngfem
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
 			   FlatMatrixFixWidth<DIM> vals) const;
+
+    virtual void EvaluateTrans (const IntegrationRule & ir, 
+                                FlatMatrixFixWidth<DIM> vals,
+                                FlatVector<double> coefs) const;
 #endif
   };
 

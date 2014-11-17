@@ -87,6 +87,21 @@ namespace ngfem
 	}
     }
 
+    virtual void EvaluateTrans (const IntegrationRule & ir, 
+                                FlatMatrixFixWidth<D> vals,
+                                FlatVector<double> coefs) const
+    {
+      MatrixFixWidth<D> shape(ndof);
+      coefs = 0;
+      for (int i = 0; i < ir.GetNIP(); i++)
+	{
+	  CalcShape (ir[i], shape);
+          coefs += shape * vals.Row(i);
+	}
+    }
+
+
+
     virtual void GetFacetDofs(int i, Array<int> & dnums) const
     { cout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 
 
