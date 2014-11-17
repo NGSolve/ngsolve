@@ -730,8 +730,7 @@ void STLSurfaceMeshing1 (STLGeometry & geom,
 	compress[icompress[i]] = 0;
       
       
-      extern void Render();
-      Render();
+      mparam.Render();
     }     
   
   // NgProfiler::Print(stdout);

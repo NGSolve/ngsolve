@@ -1459,8 +1459,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, shared_ptr<Mesh> & mesh, MeshingP
 	      (*statout) << GetTime() << " & ";
 #endif
 
-	      extern void Render();
-	      Render();
+	      mparam.Render();
 	    }
 	  stlgeometry->surfaceoptimized = 1;
 	}
@@ -1576,8 +1575,7 @@ int STLMeshingDummy (STLGeometry* stlgeometry, shared_ptr<Mesh> & mesh, MeshingP
 		     << mesh->GetNP() << " " << '\\' << '\\' << " \\" << "hline" << endl;
 #endif
 
-	  extern void Render();
-	  Render();
+	  mparam.Render();
 	}
     }
   
