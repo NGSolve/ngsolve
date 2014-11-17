@@ -167,10 +167,12 @@ namespace ngfem
 	    LegendrePolynomial::
 	      EvalScaledMult (order_edge[i]-1, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-			      lam[e[0]]*lam[e[1]], adpol1);
-	    
-	    for(int j = 0; j < p; j++) 	      
-              shape[ii++] = Du<2> (adpol1[j]);
+			      lam[e[0]]*lam[e[1]], 
+                              // adpol1
+                              SBLambda ([&](int nr, Tx val)
+                                        {
+                                          shape[ii++] = Du<2> (val);
+                                        }));
 	  }
       }   
      
