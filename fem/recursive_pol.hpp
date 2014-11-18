@@ -2627,7 +2627,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     values[1] = p1 = x;
     if (n < 2) return;
 
-    for (int j=2; j < n-1; j+=2)
+    for (int j=2; j < n; j+=2)
       {
 	/*
 	  double invj = 1.0/j; 
