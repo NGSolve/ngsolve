@@ -607,6 +607,25 @@ namespace ngfem
 	  faces = &hfaces[0];
 	}
 
+      if (eltype == ET_HEX)
+        {
+          for (int i = 0; i < 6; i++)
+            {
+              int jmin = 0;
+              for (int j = 1; j < 4; j++)
+                if (vnums[faces[i][j]] < vnums[faces[i][jmin]]) jmin = j;
+              int j1 = (jmin+1)%4;
+              int j2 = (jmin+2)%4;
+              int j3 = (jmin+3)%4;
+              if (vnums[faces[i][j3]] < vnums[faces[i][j1]]) swap (j1, j3);
+              
+              hfaces[i][0] = faces[i][jmin];
+              hfaces[i][1] = faces[i][j1];
+              hfaces[i][2] = faces[i][j2];
+              hfaces[i][3] = faces[i][j3];
+            }
+          faces = &hfaces[0];          
+        }
     }
 
 
