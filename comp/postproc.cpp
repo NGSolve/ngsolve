@@ -369,7 +369,7 @@ namespace ngcomp
 
 	  const FiniteElement & fel = fes.GetFE (ei, lh);
 	  const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
-          // FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
+
           Array<int> dnums(fel.GetNDof(), lh);
           fes.GetDofNrs (ei, dnums);
 

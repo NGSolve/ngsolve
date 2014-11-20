@@ -156,6 +156,8 @@ namespace ngcomp
       Internally, MeshAccess calls functions from Netgen.
   */
 
+  class GridFunction;
+
   class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler
   {
     netgen::Ngx_Mesh mesh;
@@ -187,6 +189,9 @@ namespace ngcomp
 
     /// max boundary index
     int nboundaries;
+
+    /// for ALE
+    shared_ptr<GridFunction> deformation;  
 
   public:
     /// connects to Netgen - mesh
@@ -431,6 +436,11 @@ namespace ngcomp
       return mesh.GetElement<DIM> (elnr);
     }
 
+
+    void SetDeformation (shared_ptr<GridFunction> def)
+    {
+      deformation = def;
+    }
     
     /**
        returns node topology.

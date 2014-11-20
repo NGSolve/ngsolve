@@ -155,7 +155,123 @@ namespace ngcomp
 
 
 
+  template <int DIMS, int DIMR>
+  class ALE_ElementTransformation : public Ng_ElementTransformation<DIMS,DIMR>
+  {
+    const GridFunction * deform;
+    LocalHeap & lh;
+    const ScalarFiniteElement<DIMR> * fel;
+    FlatVector<> elvec;
+    FlatMatrix<> elvecs;
+  public:
+    ALE_ElementTransformation (const MeshAccess * amesh, 
+                               const GridFunction * adeform,
+                               LocalHeap & alh)
+      : Ng_ElementTransformation<DIMS,DIMR> (amesh), deform(adeform), lh(alh) { ; }
 
+    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
+    {
+      Ng_ElementTransformation<DIMS,DIMR> :: SetElement (aboundary, aelnr, aelindex);
+
+      ElementId id(aboundary ? BND : VOL, aelnr);
+      fel = dynamic_cast<const ScalarFiniteElement<DIMR>*> (&deform->GetFESpace()->GetFE(id, lh));
+
+      Array<int> dnums;
+      deform->GetFESpace()->GetDofNrs(id, dnums);
+
+      elvec.AssignMemory(DIMR*dnums.Size(), lh);
+      deform->GetElementVector(dnums, elvec);
+
+      elvecs.AssignMemory(DIMR, dnums.Size(), lh);
+      for (int j = 0; j < DIMR; j++)
+        elvecs.Row(j) = elvec.Slice(j,DIMR);
+    }
+
+
+    virtual ~ALE_ElementTransformation() { ; }
+
+
+
+    virtual void CalcJacobian (const IntegrationPoint & ip,
+			       FlatMatrix<> dxdxi) const
+    {
+      /*
+      Mat<DIMR,DIMS> tmp, itmp;
+      Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
+      itmp = Inv (tmp);
+
+      Mat<DIMR,DIMR> def, mdef;
+      for (int i = 0; i < DIMR; i++)
+        def.Row(i) = fel->EvaluateGrad (ip, elvecs.Row(i));
+      
+      mdef = def*itmp;
+      mdef += Id<DIMR>();
+      dxdxi = mdef * tmp;
+      */
+
+      Mat<DIMR,DIMS> tmp;
+      Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
+
+      Mat<DIMR,DIMR> def;
+      for (int i = 0; i < DIMR; i++)
+        def.Row(i) = fel->EvaluateGrad (ip, elvecs.Row(i));
+      dxdxi = def + tmp;
+    }
+    
+    virtual void CalcPoint (const IntegrationPoint & ip,
+			    FlatVector<> point) const
+    {
+      Vec<DIMR> tmp;
+      Ng_ElementTransformation<DIMS,DIMR>::CalcPoint (ip, tmp);
+
+      Vec<DIMR> def;
+      for (int i = 0; i < DIMR; i++)
+        def(i) = fel->Evaluate (ip, elvecs.Row(i));
+      point = tmp + def;
+    }
+
+    virtual void CalcPointJacobian (const IntegrationPoint & ip,
+				    FlatVector<> point, FlatMatrix<> dxdxi) const
+    {
+      CalcJacobian (ip, dxdxi);
+      CalcPoint (ip, point);
+      // this->mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), &dxdxi(0));
+    }
+
+    virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
+					 BaseMappedIntegrationRule & bmir) const
+    {
+      if (sizeof(IntegrationPoint) % 8 != 0)
+        {
+          cerr << "Integration must should have 8-byte alignment" << endl;
+          exit(1);
+        }
+
+      MappedIntegrationRule<DIMS,DIMR> & mir = 
+	static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+
+      for (int i = 0; i < ir.Size(); i++)
+        {
+          CalcPointJacobian (ir[i], mir[i].Point(), mir[i].Jacobian());
+          mir[i].Compute();
+        }
+
+      /*
+      MappedIntegrationRule<DIMS,DIMR> & mir = 
+	static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      mesh->mesh.MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
+                                                         &ir[0](0), &ir[1](0)-&ir[0](0),
+                                                         &mir[0].Point()(0), 
+                                                         &mir[1].Point()(0)-&mir[0].Point()(0), 
+                                                         &mir[0].Jacobian()(0,0), 
+                                                         &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0));
+    
+      for (int i = 0; i < ir.Size(); i++)
+        mir[i].Compute();
+      */
+  }
+
+  };
 
 
 
@@ -783,7 +899,19 @@ namespace ngcomp
     
     if (!boundary)
       {
-        if (Ng_IsElementCurved (elnr+1))
+        if (deformation)
+          {
+            switch (dim)
+              {
+              case 1: eltrans = new (lh) ALE_ElementTransformation<1,1> (this, deformation.get(), lh); break;
+              case 2: eltrans = new (lh) ALE_ElementTransformation<2,2> (this, deformation.get(), lh); break;
+              case 3: eltrans = new (lh) ALE_ElementTransformation<3,3> (this, deformation.get(), lh); break;
+              default:
+                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+              }
+          }
+
+        else if (Ng_IsElementCurved (elnr+1))
           {
             switch (dim)
               {
