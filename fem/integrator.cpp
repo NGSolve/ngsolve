@@ -1428,6 +1428,19 @@ namespace ngfem
   }
   */
 
+  void TransposeBilinearFormIntegrator :: 
+  CalcElementMatrix (const FiniteElement & bfel,
+		     const ElementTransformation & eltrans, 
+		     FlatMatrix<double> elmat,
+		     LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> temp (bfel.GetNDof(), lh);
+    bfi->CalcElementMatrix (bfel, eltrans, temp, lh);
+    elmat = Trans (temp);
+  }
+
+
   CompoundBilinearFormIntegrator :: 
   CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : bfi(abfi), comp(acomp) { ; }

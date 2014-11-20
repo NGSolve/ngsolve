@@ -195,13 +195,16 @@ namespace ngfem
   class ConvectionIntegrator : public BilinearFormIntegrator
   {
   protected:
-    shared_ptr<CoefficientFunction>  coef_conv[D];
+    // shared_ptr<CoefficientFunction>  coef_conv[D];
+    DVec<D> coef_conv;
   public:
     ConvectionIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : BilinearFormIntegrator()
+      : BilinearFormIntegrator(), coef_conv (coeffs)
     { 
+      /*
       for (int j = 0; j < D; j++)
         coef_conv[j] = coeffs[j];
+      */
     }
 
     virtual ~ConvectionIntegrator () { ; }
@@ -247,9 +250,12 @@ namespace ngfem
 	HeapReset hr(lh);
 	const MappedIntegrationPoint<D,D> sip(ir_vol[l], eltrans);
 	Vec<D> conv;
+        coef_conv.GenerateVector (fel_l2, sip, conv, lh);
+        /*
 	for (int j = 0; j < D; j++)
 	  conv(j) = coef_conv[j]->Evaluate(sip);
-	
+        */
+
 	fel_l2.CalcShape (sip.IP(), shape);
 	fel_l2.CalcMappedDShape (sip, dshape);
 	
@@ -257,7 +263,7 @@ namespace ngfem
 
 	conv_dshape *= sip.GetJacobiDet() * ir_vol[l].Weight();
 	
-	elmat  -= conv_dshape * Trans (shape);
+        elmat  -= conv_dshape * Trans (shape);
       }
     }//end of CalcElementMatrix
     
