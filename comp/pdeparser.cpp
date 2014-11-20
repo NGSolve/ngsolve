@@ -1594,6 +1594,15 @@ namespace ngcomp
                             throw Exception (string("undefined coefficient ") + scan->GetStringValue());
 
 			  scan->ReadNext();
+
+			  // for vector valued coefficient functions
+			  if (i == 0 &&
+			      coeffs[i]->Dimension() == info->numcoeffs)
+			    {
+			      coeffs.SetSize(1);
+			      break;
+			    }
+
 			}
 		    
 		      Flags partflags;
@@ -1663,6 +1672,11 @@ namespace ngcomp
 		      if (partflags.GetDefineFlag ("imag"))
 			{
 			  integrator = make_shared<ComplexBilinearFormIntegrator> (integrator, Complex(0,1));
+			}
+
+		      if (partflags.GetDefineFlag ("transpose"))
+			{
+			  integrator = make_shared<TransposeBilinearFormIntegrator> (integrator);
 			}
 
 		      if (partflags.GetDefineFlag ("real"))
