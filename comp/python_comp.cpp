@@ -138,6 +138,8 @@ void ExportNgcomp()
     // first attempts, but keep for a moment ...
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
          (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
+
+    .def("SetDeformation", &MeshAccess::SetDeformation)
     ;
 
 
@@ -402,6 +404,13 @@ void ExportNgcomp()
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 
+    .def("ReAssemble", FunctionPointer([](BF & self, int heapsize)
+                                       {
+                                         LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
+                                         self.ReAssemble(lh);
+                                       }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+
     .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     // .def("Matrix", FunctionPointer([](const BF & self) { return self.MatrixPtr(); }))
     .def("Energy", &BilinearForm::Energy)
@@ -437,6 +446,13 @@ void ExportNgcomp()
          bp::return_value_policy<bp::reference_existing_object>())
 
     .def("Assemble", FunctionPointer
+         ([](LF & self, int heapsize)
+          {
+            LocalHeap lh (heapsize, "LinearForm::Assemble-heap");
+            self.Assemble(lh);
+          }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+    .def("ReAssemble", FunctionPointer
          ([](LF & self, int heapsize)
           {
             LocalHeap lh (heapsize, "LinearForm::Assemble-heap");
