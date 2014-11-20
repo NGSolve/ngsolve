@@ -910,6 +910,39 @@ namespace ngfem
 
 
 
+  class NGS_DLL_HEADER TransposeBilinearFormIntegrator : public BilinearFormIntegrator
+  {
+    shared_ptr<BilinearFormIntegrator> bfi;
+  public:
+    TransposeBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi)
+      : bfi(abfi) { ; }
+    virtual ~TransposeBilinearFormIntegrator () { ; }
+  
+    shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
+
+    virtual bool BoundaryForm () const
+    { return bfi->BoundaryForm(); }
+
+    virtual int DimFlux () const 
+    { return bfi->DimFlux(); }
+    virtual int DimElement () const
+    { return bfi->DimElement(); }
+    virtual int DimSpace () const
+    { return bfi->DimSpace(); }
+
+    virtual void CheckElement (const FiniteElement & el) const
+    {
+      return bfi->CheckElement (el);
+    }
+
+    virtual void
+    CalcElementMatrix (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatMatrix<double> elmat,
+		       LocalHeap & lh) const;
+  };
+
+
 
   class NGS_DLL_HEADER CompoundBilinearFormIntegrator : public BilinearFormIntegrator
   {
