@@ -58,10 +58,10 @@ void ExportNetgenMeshing()
     .add_property("p", FunctionPointer([](const MeshPoint & self)
                                        {
                                          bp::list l;
-                                         l.append ( (self)[0] );
-                                         l.append ( (self)[1] );
-                                         l.append ( (self)[2] );
-                                         return l;
+                                         l.append ( self[0] );
+                                         l.append ( self[1] );
+                                         l.append ( self[2] );
+                                         return bp::tuple(l);
                                        }))
     ;
 
