@@ -65,7 +65,7 @@ namespace ngcomp
   */
 
   template <class SCAL>
-  void S_LinearForm<SCAL> :: Assemble (LocalHeap & clh)
+  void S_LinearForm<SCAL> :: Assemble (LocalHeap clh)
   {
     static Timer timer("Vector assembling");
     static Timer timer1("Vector assembling 1", 2);
@@ -569,7 +569,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void S_LinearForm<SCAL> :: AssembleIndependent (LocalHeap & lh)
+  void S_LinearForm<SCAL> :: AssembleIndependent (LocalHeap lh)
   {
     assembled = true;
 

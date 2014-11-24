@@ -423,7 +423,7 @@ inline ostream & operator<< (ostream & ost, PyRef<T> ref)
 }
 
 
-
+/*
 template<typename T>
 Array<T> & makeCArray(const bp::object & obj)
 {     
@@ -432,7 +432,15 @@ Array<T> & makeCArray(const bp::object & obj)
     (*C_vdL)[i] = bp::extract<T>(obj[i]);        
   return *C_vdL;
 }
-
+*/
+template<typename T>
+Array<T> makeCArray(const bp::object & obj)
+{     
+  Array<T> C_vdL(bp::len(obj));   
+  for (int i = 0; i < bp::len(obj); i++)    
+    C_vdL[i] = bp::extract<T>(obj[i]);        
+  return std::move(C_vdL);
+}
 
 
 

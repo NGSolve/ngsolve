@@ -6,6 +6,7 @@ from ngsolve.comp import *
 from ngsolve.fem import *
 from ngsolve.la import *
 from ngsolve.bla import *
+from ngsolve.ngstd import *
 
 from math import sin
 from time import sleep
@@ -31,8 +32,8 @@ class npALE(PyNumProc):
         a = pde.bilinearforms["a"]
         f = pde.linearforms["f"]
 
-        a.ReAssemble()
-        f.ReAssemble()
+        a.Assemble()
+        f.Assemble()
         inv = a.mat.Inverse(v.FreeDofs())
 
         u.vec.data = inv * f.vec
@@ -90,9 +91,10 @@ class npALE_instat(PyNumProc):
 
             pde.Mesh().SetDeformation (d)
 
-            a.ReAssemble()
-            b.ReAssemble()
-            m.ReAssemble()
+            a.Assemble()
+            b.Assemble()
+            m.Assemble()
+            f.Assemble(1000000)
 
             mstar.AsVector().data = m.mat.AsVector() + tau * a.mat.AsVector()
             inv = mstar.Inverse(v.FreeDofs())

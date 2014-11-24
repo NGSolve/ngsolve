@@ -4,6 +4,39 @@
 using namespace ngcomp;
 
 
+template <typename T>
+struct PythonTupleFromFlatArray {
+  static PyObject* convert(FlatArray<T> ar)
+    {
+      bp::list res;
+      for(int i = 0; i < ar.Size(); i++) 
+        res.append (ar[i]);
+      bp::tuple tup(res);
+      return bp::incref(tup.ptr());
+    }
+};
+
+template <typename T>
+struct PythonTupleFromArray {
+  static PyObject* convert(const Array<T> & ar)
+    {
+      bp::list res;
+      for(int i = 0; i < ar.Size(); i++) 
+        res.append (ar[i]);
+      bp::tuple tup(res);
+      return bp::incref(tup.ptr());
+    }
+};
+
+
+template <typename T> void PyExportArray ()
+{
+  boost::python::to_python_converter< FlatArray<T>, PythonTupleFromFlatArray<T> >();
+  boost::python::to_python_converter< Array<T>, PythonTupleFromArray<T> >();
+}
+
+
+
 
 template <> class cl_NonElement<ElementId>
 {
@@ -123,23 +156,25 @@ void ExportNgcomp()
     .def("Elements", static_cast<ElementRange(MeshAccess::*)(VorB)const> (&MeshAccess::Elements),
          (bp::arg("VOL_or_BND")=VOL))
 
-    .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
     .def("__getitem__", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::operator[]))
 
     .def ("GetNE", static_cast<int(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE))
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
-    .add_property ("ne", static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE))
 
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,LocalHeap&)const>
           (&MeshAccess::GetTrafo), 
           bp::return_value_policy<bp::reference_existing_object>())
 
+    .def("SetDeformation", &MeshAccess::SetDeformation)
+
+    /*
     // first attempts, but keep for a moment ...
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
          (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
-
-    .def("SetDeformation", &MeshAccess::SetDeformation)
+    .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
+    .add_property ("ne", static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE))
+    */
     ;
 
 
@@ -246,16 +281,9 @@ void ExportNgcomp()
             SetValues (cf, self, false, NULL, lh);
           }))
 
-    /*
-    .def("Vector", 
-         FunctionPointer([](GF & self) { return self.VectorPtr(); }),
-         "vector of coefficients"
-         )
-    */
-    
     .add_property("vec",
                   FunctionPointer([](GF & self) { return self.GetVectorPtr(); }),
-                  "vector of coefficients of first multidim dimension")
+                  "coefficient vector")
 
     .add_property("vecs", FunctionPointer
                   ([](GF & self)-> bp::list 
@@ -265,7 +293,7 @@ void ExportNgcomp()
                        vecs.append(self.GetVectorPtr(i));
                      return vecs;
                    }),
-                  "list of vectors of coefficients")
+                  "list of coefficient vectors for multi-dim gridfunction")
     
     .def("__call__", FunctionPointer
          ([](GF & self, double x, double y, double z)
@@ -282,6 +310,7 @@ void ExportNgcomp()
 
             Array<int> dnums(fel.GetNDof(), lh);
             space->GetDofNrs(elnr, dnums);
+            auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, false, lh);
 
             if (space->IsComplex())
               {
@@ -289,32 +318,17 @@ void ExportNgcomp()
                 Vector<Complex> values(evaluator->Dim());
                 self.GetElementVector(dnums, elvec);
 
-                auto & trafo = space->GetMeshAccess()->GetTrafo(elnr, false, lh);
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
-
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
               }
             else
               {
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
-
                 self.GetElementVector(dnums, elvec);
-                int dim_mesh = space->GetMeshAccess()->GetDimension();
-                if (dim_mesh == 2)
-                  {
-                    MappedIntegrationPoint<2, 2> mip(ip, space->GetMeshAccess()->GetTrafo(elnr, false, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
-                  }
-                else if (dim_mesh == 3)
-                  {
-                    MappedIntegrationPoint<3, 3> mip(ip, space->GetMeshAccess()->GetTrafo(elnr, false, lh));
-                    evaluator->Apply(fel, mip, elvec, values, lh);
-                  }
-                if (values.Size() > 1)
-                  return bp::object(values);
-                else
-                  return bp::object(values(0));
+
+                evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
+                return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
               }
           }
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
@@ -382,6 +396,8 @@ void ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
+
   typedef BilinearForm BF;
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -392,27 +408,22 @@ void ExportNgcomp()
 
     .def("__str__", &ToString<BF>)
 
-    .def("Add", FunctionPointer([](BF & self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
-                                { self.AddIntegrator (bfi); return self; }),
+    .def("Add", FunctionPointer ([](BF & self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
+                                 { self.AddIntegrator (bfi); return self; }),
          bp::return_value_policy<bp::reference_existing_object>(),
          "add integrator to bilinear-form")
-
+    
+    .add_property("integrators", FunctionPointer
+                  ([](BF & self) { return bp::object (self.Integrators());} ))
+    
     .def("Assemble", FunctionPointer([](BF & self, int heapsize)
                                      {
                                        LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
-                                       self.Assemble(lh);
+                                       self.ReAssemble(lh);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 
-    .def("ReAssemble", FunctionPointer([](BF & self, int heapsize)
-                                       {
-                                         LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
-                                         self.ReAssemble(lh);
-                                       }),
-         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
-
     .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
-    // .def("Matrix", FunctionPointer([](const BF & self) { return self.MatrixPtr(); }))
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
     .def("AssembleLinearization", FunctionPointer
@@ -447,17 +458,7 @@ void ExportNgcomp()
 
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)
-          {
-            LocalHeap lh (heapsize, "LinearForm::Assemble-heap");
-            self.Assemble(lh);
-          }),
-         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
-    .def("ReAssemble", FunctionPointer
-         ([](LF & self, int heapsize)
-          {
-            LocalHeap lh (heapsize, "LinearForm::Assemble-heap");
-            self.Assemble(lh);
-          }),
+          { self.Assemble(LocalHeap(heapsize, "LinearForm::Assemble-heap")); }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     ;
 

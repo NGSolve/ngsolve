@@ -424,9 +424,9 @@ namespace ngfem
 	  Tx xi = sigma[e[1]]-sigma[e[0]]; 
 	  Tx lam_e = lambda[e[0]]+lambda[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
-	  
+	  Tx ximz = xi*(1-z);
 	  LegendrePolynomial::
-	    EvalScaledMult (p-2, xi*(1-z), 1-z, bub, shape+ii);
+	    EvalScaledMult (p-2, ximz, 1-z, bub, shape+ii);
 	  ii += p-1;
 	}
     

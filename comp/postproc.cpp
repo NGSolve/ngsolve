@@ -53,7 +53,6 @@ namespace ngcomp
          progress.Update ();
 
          int eldom = ma->GetElIndex (ei);
-	  
          if (!domains[eldom]) return;;
 	 
          const FiniteElement & fel = fes.GetFE (ei, lh);
@@ -61,10 +60,6 @@ namespace ngcomp
 	 
          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
-         /*
-         FlatArray<int> dnums = fes.GetDofNrs (ei, lh);
-         FlatArray<int> dnumsflux = fesflux.GetDofNrs (ei, lh);
-         */
          Array<int> dnums(fel.GetNDof(), lh);
          Array<int> dnumsflux(felflux.GetNDof(), lh);
          fes.GetDofNrs (ei, dnums);
@@ -81,7 +76,6 @@ namespace ngcomp
          IntegrationRule ir(fel.ElementType(), 
                             max(fel.Order(),felflux.Order())+felflux.Order());
          
-
          BaseMappedIntegrationRule & mir = eltrans(ir, lh);
          FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
 	 
@@ -119,9 +113,10 @@ namespace ngcomp
          flux.GetElementVector (dnumsflux, elflux);
          elfluxi += elflux;
          flux.SetElementVector (dnumsflux, elfluxi);
-	 
-         for (int j = 0; j < dnumsflux.Size(); j++)
-           cnti[dnumsflux[j]]++;
+
+         // for (int j = 0; j < dnumsflux.Size(); j++)
+         //   cnti[dnumsflux[j]]++;
+         for (auto d : dnumsflux) cnti[d]++;
        });
     
     progress.Done();
@@ -410,8 +405,6 @@ namespace ngcomp
 
 	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (ei.Nr(), bound, elflux, TRANSFORM_RHS);
-              *testout << "elmat = " << endl << elmat << endl;
-              *testout << "elflux = " << endl << elflux << endl;
               if (dnums.Size() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
@@ -422,7 +415,6 @@ namespace ngcomp
                   LapackInverse (elmat);
                   elfluxi = elmat * elflux;
                 }
-              *testout << "elfluxi = " << endl << elfluxi << endl;
 	    }
 
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
@@ -500,8 +492,6 @@ namespace ngcomp
     shared_ptr<BilinearFormIntegrator> fluxbli =
       bound ? fesflux.GetBoundaryIntegrator() : fesflux.GetIntegrator();
 
-    // ElementTransformation eltrans;
-
     Array<int> dnums;
     Array<int> dnumsflux;
 
@@ -525,13 +515,11 @@ namespace ngcomp
 	ElementTransformation & eltrans = ma->GetTrafo (i, bound, lh);
 	if (bound)
 	  {
-	    // ma->GetSurfaceElementTransformation (i, eltrans, lh);
 	    fes.GetSDofNrs (i, dnums);
 	    fesflux.GetSDofNrs (i, dnumsflux);
 	  }
 	else
 	  {
-	    // ma->GetElementTransformation (i, eltrans, lh);
 	    fes.GetDofNrs (i, dnums);
 	    fesflux.GetDofNrs (i, dnumsflux);
 	  }
