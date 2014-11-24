@@ -1,5 +1,5 @@
-# mesh = square.vol
-mesh = squaref.vol.gz
+mesh = square.vol
+# mesh = squaref.vol.gz
 
 pymodule = ale
 

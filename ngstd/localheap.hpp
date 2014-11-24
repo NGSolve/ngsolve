@@ -37,12 +37,13 @@ namespace ngstd
     char * next;
     char * p;
     size_t totsize;
+  public:
     bool owner;
     const char * name;
     enum { ALIGN = 32 };
   public:
     /// Allocate one block of size asize.
-    NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname);
+    NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname = "noname");
 
     /// Use provided memory for the LocalHeap
     INLINE LocalHeap (char * adata, size_t asize, const char  * aname) throw ()
@@ -58,10 +59,20 @@ namespace ngstd
 
     /// Use provided memory for the LocalHeap
     INLINE LocalHeap (const LocalHeap & lh2)
-      : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false)
+      : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false),
+        name(lh2.name)
     {
       next = data + totsize;
     }
+
+    INLINE LocalHeap (LocalHeap && lh2)
+      : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(lh2.owner),
+        name(lh2.name)
+    {
+      next = data + totsize;
+      lh2.owner = false;
+    }
+
   
     /// free memory
     INLINE ~LocalHeap ()

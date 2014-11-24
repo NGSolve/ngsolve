@@ -114,6 +114,11 @@ namespace ngcomp
 				   const int slave)
     */
   
+    const Array<shared_ptr<BilinearFormIntegrator>> & Integrators() const
+    {
+      return parts;
+    }
+
     ///
     int NumIntegrators () const 
     {

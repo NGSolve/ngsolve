@@ -749,7 +749,6 @@ namespace ngcomp
 
                      const FiniteElement & fel = fespace->GetFE (ei, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-                     // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
 		     Array<int> dnums (fel.GetNDof(), lh);
 		     fespace->GetDofNrs (ei, dnums);
 
@@ -794,8 +793,7 @@ namespace ngcomp
                                  FlatVector<double> diag(fel.GetNDof(), lh);
                                  bfi.CalcElementMatrixDiag (fel, eltrans, diag, lh);
                                  elmat = 0.0;
-                                 for (int k = 0; k < diag.Size(); k++)
-                                   elmat(k,k) = diag(k);
+                                 elmat.Diag() = diag;
                                }
 
                              elementtimer.Stop();
