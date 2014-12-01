@@ -8,7 +8,7 @@ using ngfem::ELEMENT_TYPE;
 struct PythonCoefficientFunction : public CoefficientFunction {
     PythonCoefficientFunction() { }
 
-    virtual double EvaluateXY (double x, double y) const = 0;
+    virtual double EvaluateXYZ (double x, double y, double z) const = 0;
 
     bp::list GetCoordinates(const BaseMappedIntegrationPoint &bip ) {
         double x[3]{0};
@@ -37,9 +37,11 @@ struct PythonCoefficientFunction : public CoefficientFunction {
                 break;
         }
         bp::list list;
-        for(int i=0; i<dim; i++)
+        int i;
+        for(i=0; i<dim; i++)
             list.append(x[i]);
-
+        for(i=0; i<3; i++)
+            list.append(0.0);
         return list;
     }
 };
@@ -48,8 +50,8 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
     static std::mutex m;
     public:
         PythonCFWrap () : PythonCoefficientFunction() { ; }
-        double EvaluateXY (double x, double y) const {
-            return this->get_override("EvaluateXY")(x,y);
+        double EvaluateXYZ (double x, double y, double z) const {
+            return this->get_override("EvaluateXYZ")(x,y,z);
         }
 
         double Evaluate (const BaseMappedIntegrationPoint & bip) const {
