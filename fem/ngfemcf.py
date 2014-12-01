@@ -5,12 +5,12 @@ There are three ways to generate a function
 
 -- derive from BaseCF and implement EvaluateXY
 class MyCF(BaseCF):
-    def EvaluateXY(self,x,y):
+    def EvaluateXYZ(self,x,y,z):
         return x*x + y**5
 cf = MyCF()
 
 -- from a python lambda expression
-cf = GeneratePythonCF( lambda x,y: x*x + y**5 )
+cf = GeneratePythonCF( lambda x,y,z: x*x + y**5 )
 
 -- use the predefined coefficient functions X and Y
 cf = X*X + Y**5
@@ -30,7 +30,7 @@ def ToExpr(a):
 class BaseCF(PythonCF):
     def Evaluate(self,ip):
         x = self.GetCoordinates(ip) 
-        return self.EvaluateXY(x[0], x[1])
+        return self.EvaluateXYZ(x[0], x[1], x[2])
 
 class CFExpr(PythonCF):
     def __init__(self,a):
@@ -69,8 +69,9 @@ CoefficientFunction.__radd__ = lambda a,b: CFSumExpr(a,ToExpr(b))
 CoefficientFunction.__rmul__ = lambda a,b: CFMulExpr(a,ToExpr(b))
 CoefficientFunction.__rpow__ = lambda a,b: CFPowExpr(a,ToExpr(b))
 
-X = GeneratePythonCF(lambda x,y: x)
-Y = GeneratePythonCF(lambda x,y: y)
+X = GeneratePythonCF(lambda x,y,z: x)
+Y = GeneratePythonCF(lambda x,y,z: y)
+Z = GeneratePythonCF(lambda x,y,z: z)
 
 
 
