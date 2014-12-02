@@ -2,6 +2,7 @@
 using namespace ngsolve;
 #include "../ngstd/python_ngstd.hpp"
 
+#ifdef NGS_PYTHON
 
 /*
 BasePythonEnvironment py_env;
@@ -46,3 +47,4 @@ BOOST_PYTHON_MODULE(ngslib)
 }
 
 
+#endif

@@ -742,6 +742,13 @@ namespace ngcomp
        Currently, this function works only for vertex-nodes.
      */
     int GetGlobalNodeNum (Node node) const;
+    
+    
+    FlatArray<int> GetDistantProcs (Node node) const
+    {
+      std::tuple<int,int*> tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
+      return FlatArray<int> (std::get<0>(tup), std::get<1>(tup));
+    }
 
 
     /// Reduces MPI - distributed data associated with mesh-nodes

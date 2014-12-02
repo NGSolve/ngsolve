@@ -345,7 +345,7 @@ namespace ngcomp
 
     Ngs_Element ngel = ma->GetElement(ei);
     for (int i = 0; i < ngel.edges.Size(); i++)
-      dranges.Append (ngel.edges[i]);
+      dranges.Append (IntRange (ngel.edges[i], ngel.edges[i]+1));
   }
 
   

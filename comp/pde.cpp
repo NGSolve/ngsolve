@@ -506,7 +506,6 @@ namespace ngcomp
       AddConstant ("numthreads", omp_get_max_threads());      
     heapsize *= omp_get_max_threads();
 #endif
-    cout << "heap size = " << heapsize << endl;
     LocalHeap lh(heapsize, "PDE - main heap");
 
     double starttime = WallTime();

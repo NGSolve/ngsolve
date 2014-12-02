@@ -1157,7 +1157,7 @@ namespace ngbla
     auto operator() (int i, int j) const -> decltype(a(rows[i])) { return a(rows[i], j); }
     auto operator() (int i) const -> decltype(a(rows[i])) { return a(rows[i]); }
 
-    auto Row (int i) const -> decltype (a.Rows(rows[i])) { return a.Row(rows[i]); }
+    auto Row (int i) const -> decltype (a.Row(rows[i])) { return a.Row(rows[i]); }
 
     enum { IS_LINEAR = 0 };
 

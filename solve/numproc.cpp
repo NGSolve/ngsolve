@@ -710,14 +710,14 @@ namespace ngsolve
 	if (!gfu)
 	  throw Exception ("evaluate linear-form needs an argument -gridfunction=u");
 
-	cout << "<" << lff->GetName() << ", " << gfu->GetName() << "> = " << flush;
+	cout << IM(1) << "<" << lff->GetName() << ", " << gfu->GetName() << "> = " << flush;
 	if (!lff->GetFESpace()->IsComplex())
 	  {
 	    result = S_InnerProduct<double>(lff->GetVector(), gfu->GetVector());
-	    cout << result << endl;
+	    cout << IM(1) << result << endl;
 	  }
 	else
-	  cout << S_InnerProduct<Complex>(lff->GetVector(), gfu->GetVector()) << endl;
+	  cout << IM(1) << S_InnerProduct<Complex>(lff->GetVector(), gfu->GetVector()) << endl;
       }
     else if (point.Size() >= 2)
       {
