@@ -42,13 +42,13 @@ public:
 
 
   /// set all bits
-  NGS_DLL_HEADER void Set ();
+  NGS_DLL_HEADER void Set () throw();
 
   /// clear all bits
-  NGS_DLL_HEADER void Clear ();
+  NGS_DLL_HEADER void Clear () throw();
 
   /// set bit i
-  void Set (int i)
+  void Set (unsigned int i)
   {
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -63,7 +63,7 @@ public:
   }
 
   /// clear bit i
-  void Clear (int i)
+  void Clear (unsigned int i)
   { 
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -73,7 +73,7 @@ public:
   }
 
   /// check bit i
-  bool Test (int i) const
+  bool Test (unsigned int i) const
   {
     return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
   }
@@ -87,7 +87,7 @@ public:
   }
   
   /// check bit i
-  bool operator[] (int i) const
+  bool operator[] (unsigned int i) const
   {
     return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
   }
@@ -108,11 +108,11 @@ public:
   int NumSet () const;
 private:
   ///
-  unsigned char Mask (int i) const
+  unsigned char Mask (unsigned int i) const
   { return char(1) << (i % CHAR_BIT); }
     
   ///
-  int Addr (int i) const
+  int Addr (unsigned int i) const
   { return (i / CHAR_BIT); }
 
 

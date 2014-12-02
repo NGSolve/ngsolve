@@ -37,7 +37,7 @@ namespace ngstd
     /// copy flags 
     Flags (const Flags & flags);
     /// steal flags
-    Flags (Flags && flags) = default;
+    Flags (Flags && flags);
     ///
     Flags (std::initializer_list<string> list);
     /// 
@@ -47,24 +47,30 @@ namespace ngstd
   
     /// Deletes all flags
     void DeleteFlags ();
+
+    /// Sets string flag, overwrite if exists
+    Flags & SetFlag (const char * name, const string & val);
+    /// Sets numerical flag, overwrite if exists
+    Flags & SetFlag (const char * name, double val) &;
+    /// Sets boolean flag
+    Flags & SetFlag (const char * name) &;
+
     /// Sets string flag, overwrite if exists
     Flags & SetFlag (const string & name, const string & val);
     /// Sets numerical flag, overwrite if exists
-    Flags &  SetFlag (const string & name, double val) &;
+    Flags &  SetFlag (const string & name, double val);
     /// Sets boolean flag
     Flags &  SetFlag (const string & name);
     /// Sets string array flag
     Flags &  SetFlag (const string & name, const Array<string> & val);
     /// Sets double array flag
     Flags &  SetFlag (const string & name, const Array<double> & val);
-  
-    Flags SetFlag (const char * name, double val) &&
-    {
-      cout << "rvalue setflag" << endl;
-      Flags tmp = std::move(*this);
-      tmp.SetFlag (name, val);
-      return std::move(tmp);
-    }
+
+
+    Flags SetFlag (const char * name) &&;
+    Flags SetFlag (const char * name, double val) &&;
+
+
 
     /// Save flags to file
     void SaveFlags (const char * filename) const;
@@ -90,7 +96,7 @@ namespace ngstd
     double * GetNumFlagPtr (const string & name);
     /// Returns boolean flag
     // int GetDefineFlag (const char * name) const;
-    int GetDefineFlag (const string & name) const;
+    bool GetDefineFlag (const string & name) const throw();
     /// Returns string list flag, empty array if not exist
     const Array<string> & GetStringListFlag (const string & name) const;
     /// Returns num list flag, empty array if not exist

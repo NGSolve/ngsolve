@@ -36,7 +36,7 @@ namespace ngstd
 
   BitArray :: ~BitArray ()
   {
-    if (data) delete [] data;
+    delete [] data;
   }
 
   void BitArray :: SetSize (int asize)
@@ -48,19 +48,17 @@ namespace ngstd
     data = new unsigned char [Addr (size)+1];
   }
 
-  void BitArray :: Set ()
+  void BitArray :: Set () throw()
   {
-    int i;
     if (!size) return;
-    for (i = 0; i <= Addr (size); i++)
+    for (int i = 0; i <= Addr (size); i++)
       data[i] = UCHAR_MAX;
   }
 
-  void BitArray :: Clear ()
+  void BitArray :: Clear () throw()
   {
-    int i;
     if (!size) return;
-    for (i = 0; i <= Addr (size); i++)
+    for (int i = 0; i <= Addr (size); i++)
       data[i] = 0;
   }
 

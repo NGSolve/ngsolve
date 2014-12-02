@@ -13,10 +13,8 @@
 
 namespace ngstd
 {
-  Flags :: Flags ()
-  {
-    ;
-  }
+
+  Flags :: Flags () { ; }
 
   Flags :: Flags (const Flags & flags)
   {
@@ -47,14 +45,16 @@ namespace ngstd
 	SetFlag (name, *stra);
       }
   }
+  
+  Flags :: Flags (Flags && flags)
+    : strflags(flags.strflags), numflags(flags.numflags),
+      defflags(flags.defflags), strlistflags(flags.strlistflags),
+      numlistflags(flags.numlistflags) { ; }
 
   Flags :: Flags (std::initializer_list<string> list)
   {
     for (auto i = list.begin(); i < list.end(); i++)
       SetCommandLineFlag ((string("-")+*i).c_str());      
-    // data[cnt] = *i;
-    // for (int i = 0; i < list.size(); i++)
-    //   SetCommandLineFlag ((string("-")+list[i]).c_str());      
   }
 
 
@@ -74,24 +74,46 @@ namespace ngstd
   
   void Flags :: DeleteFlags ()
   {
-    // for (int i = 0; i < strflags.Size(); i++)
-    // delete [] strflags[i];
     strflags.DeleteAll();
     numflags.DeleteAll();
     defflags.DeleteAll();
-    /*
-    for(int i=0; i<strlistflags.Size(); i++)
-      {
-        // for (int j = 0; j < strlistflags[i]->Size(); j++)
-        // delete [] (*strlistflags[i])[j];
-        delete strlistflags[i];
-      }
-    */
     strlistflags.DeleteAll();
-    // for(int i=0; i<numlistflags.Size(); i++)
-    // delete numlistflags[i];
     numlistflags.DeleteAll();
   }
+
+
+  Flags Flags :: SetFlag (const char * name) &&
+  {
+    this -> SetFlag (name);
+    return std::move(*this);
+  }
+
+  Flags Flags :: SetFlag (const char * name, double val) &&
+  {
+    this -> SetFlag (name, val);
+    return std::move(*this);
+  }
+
+
+
+  Flags & Flags :: SetFlag (const char * name, const string & val)
+  {
+    strflags.Set (name, val);
+    return *this;
+  }
+  
+  Flags & Flags :: SetFlag (const char * name, double val) &
+  {
+    numflags.Set (name, val);
+    return *this;
+  }
+  
+  Flags & Flags :: SetFlag (const char * name) &
+  {
+    defflags.Set (name, 1);
+    return *this;
+  }
+
   
   Flags & Flags :: SetFlag (const string & name, const string & val)
   {
@@ -101,7 +123,7 @@ namespace ngstd
     return *this;
   }
   
-  Flags & Flags :: SetFlag (const string & name, double val) &
+  Flags & Flags :: SetFlag (const string & name, double val) 
   {
     numflags.Set (name, val);
     return *this;
@@ -189,7 +211,7 @@ namespace ngstd
     return defflags.Used (name);
   }
   */
-  int Flags :: GetDefineFlag (const string & name) const
+  bool Flags :: GetDefineFlag (const string & name) const throw()
   {
     return defflags.Used (name);
   }
