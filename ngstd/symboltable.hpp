@@ -22,7 +22,11 @@ protected:
   
 public:
   /// 
-  NGS_DLL_HEADER BaseSymbolTable ();
+  NGS_DLL_HEADER BaseSymbolTable () = default;
+  ///
+  NGS_DLL_HEADER BaseSymbolTable (const BaseSymbolTable & tab2);
+  NGS_DLL_HEADER BaseSymbolTable (BaseSymbolTable && tab2) = default;
+
   /// deletes identifiers
   NGS_DLL_HEADER ~BaseSymbolTable ();
   /// delete all symbols
@@ -58,6 +62,7 @@ public:
   /// Creates a symboltable
   SymbolTable () = default;
   SymbolTable (const SymbolTable & tab2) = default;
+  SymbolTable (SymbolTable && tab2) = default;
 
   /// number of identifiers
   int Size() const
@@ -116,25 +121,10 @@ public:
 	AppendName (name);
       }
   }
-  /*
-  void Set (const string & name, const T & el)
-  {
-    Set (name.c_str(), el);
-  }
-  */
-
-  /*
-  /// Checks whether name is used
-  bool Used (const char * name) const
-  {
-    return (CheckIndex(name) >= 0) ? 1 : 0;
-  }
-  */
 
   bool Used (const string & name) const
   {
     return (CheckIndex(name) >= 0) ? 1 : 0;
-    // return Used (name.c_str());
   }
 
   /// Deletes symboltable

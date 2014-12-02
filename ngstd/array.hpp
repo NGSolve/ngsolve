@@ -54,6 +54,27 @@ namespace ngstd
       ost << i << ":" << array.Spec()[i] << endl;
     return ost;
   }
+
+
+
+  template <typename AO>
+  class AOWrapperIterator
+  {
+    const AO & ao;
+    int ind;
+  public:
+    INLINE AOWrapperIterator (const AO &  aao, int ai) 
+      : ao(aao), ind(ai) { ; }
+    INLINE AOWrapperIterator operator++ (int) 
+    { return AOWrapperIterator(ao, ind++); }
+    INLINE AOWrapperIterator operator++ ()
+    { return AOWrapperIterator(ao, ++ind); }
+    INLINE auto operator*() const -> decltype(ao[ind]) { return ao[ind]; }
+    INLINE decltype(ao[ind]) operator*()  { return ao[ind]; }
+    INLINE bool operator != (AOWrapperIterator d2) { return ind != d2.ind; }
+  };
+
+
   
   template <typename T>
   class AOWrapper : public BaseArrayObject<AOWrapper<T>>
@@ -65,6 +86,8 @@ namespace ngstd
     INLINE int Size() const { return ar.Size(); }
     INLINE auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
     INLINE auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
+    INLINE AOWrapperIterator<AOWrapper> begin () { return AOWrapperIterator<AOWrapper> (*this, 0); }
+    INLINE AOWrapperIterator<AOWrapper> end () { return AOWrapperIterator<AOWrapper> (*this, Size()); }
   };
 
   template <typename T>
@@ -476,21 +499,19 @@ namespace ngstd
   protected:
     /// physical size of array
     TSIZE allocsize;
-    // unsigned int allocsize;
-    /// memory is responsibility of container
-    // bool ownmem;
+    /// that's the data we have to delete, nullptr for not owning the memory
     T * mem_to_delete;
 
     using FlatArray<T,TSIZE>::size;
     using FlatArray<T,TSIZE>::data;
+
   public:
     /// Generate array of logical and physical size asize
     INLINE explicit Array()
-      : FlatArray<T,TSIZE> (0, NULL)
+      : FlatArray<T,TSIZE> (0, nullptr)
     {
       allocsize = 0; 
-      mem_to_delete = NULL;
-      // ownmem = 1;
+      mem_to_delete = nullptr;
     }
 
     INLINE explicit Array(TSIZE asize)
@@ -498,7 +519,6 @@ namespace ngstd
     {
       allocsize = asize; 
       mem_to_delete = data;
-      // ownmem = 1;
     }
 
 
@@ -507,8 +527,7 @@ namespace ngstd
       : FlatArray<T,TSIZE> (asize, adata)
     {
       allocsize = asize; 
-      mem_to_delete = NULL;
-      // ownmem = 0;
+      mem_to_delete = nullptr;
     }
 
     /// Generate array in user data
@@ -516,17 +535,15 @@ namespace ngstd
       : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 
-      mem_to_delete = NULL;
-      // ownmem = 0;
+      mem_to_delete = nullptr;
     }
 
     INLINE Array (Array && a2) 
     {
       allocsize = 0;
-      // ownmem = false;
-      mem_to_delete = NULL;
+      mem_to_delete = nullptr;
       size = 0;
-      data = NULL;
+      data = nullptr;
 
       ngstd::Swap (size, a2.size);
       ngstd::Swap (data, a2.data);
@@ -536,10 +553,9 @@ namespace ngstd
 
     /// array copy 
     INLINE explicit Array (const Array & a2)
-      : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : NULL)
+      : FlatArray<T,TSIZE> (a2.Size(), a2.Size() ? new T[a2.Size()] : nullptr)
     {
       allocsize = size;
-      // ownmem = 1;
       mem_to_delete = data;
       for (int i = 0; i < size; i++)
         (*this)[i] = a2[i];
@@ -548,11 +564,10 @@ namespace ngstd
     
     template <typename TA>
     explicit Array (const BaseArrayObject<TA> & a2)
-      : FlatArray<T,TSIZE> (a2. /* Spec(). */ Size(), 
-                            a2.Spec().Size() ? new T[a2.Spec().Size()] : NULL)
+      : FlatArray<T,TSIZE> (a2.Size(), 
+                            a2.Size() ? new T[a2.Size()] : nullptr)
     {
       allocsize = size;
-      // ownmem = 1;
       mem_to_delete = data;
       for (int i = 0; i < size; i++)
         (*this)[i] = a2.Spec()[i];
@@ -563,13 +578,11 @@ namespace ngstd
                             list.size() ? new T[list.size()] : NULL)
     {
       allocsize = size;
-      // ownmem = 1;
       mem_to_delete = data;
       int cnt = 0;
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
     }
-    
 
     /// array merge-copy
     explicit Array (const Array<T> & a2, const Array<T> & a3)
@@ -577,7 +590,6 @@ namespace ngstd
                       a2.Size()+a3.Size() ? new T[a2.Size()+a3.Size()] : 0)
     {
       allocsize = size;
-      // ownmem = 1;
       mem_to_delete = data;
       for(int i = 0; i <  a2.Size(); i++)
         (*this)[i] = a2[i];
@@ -588,15 +600,13 @@ namespace ngstd
     /// if responsible, deletes memory
     INLINE ~Array()
     {
-      // if (ownmem) delete [] data;
       delete [] mem_to_delete;
     }
 
     /// we tell the compiler that there is no need for deleting the array ..
     INLINE void NothingToDelete () 
     { 
-      mem_to_delete = NULL; 
-      // ownmem = false; 
+      mem_to_delete = nullptr;
     }
 
     /// Change logical size. If necessary, do reallocation. Keeps contents.
@@ -629,12 +639,10 @@ namespace ngstd
     /// assigns memory from local heap
     INLINE const Array & Assign (TSIZE asize, LocalHeap & lh)
     {
-      // if (ownmem) delete [] data;
       delete [] mem_to_delete;
       size = allocsize = asize;
       data = lh.Alloc<T> (asize);
-      // ownmem = false;
-      mem_to_delete = NULL;
+      mem_to_delete = nullptr;
       return *this;
     }
 
@@ -706,7 +714,6 @@ namespace ngstd
     /// Deallocate memory
     INLINE void DeleteAll ()
     {
-      // if (ownmem) delete [] data;
       delete [] mem_to_delete;
       mem_to_delete = NULL;
       data = 0;
@@ -719,15 +726,6 @@ namespace ngstd
       FlatArray<T,TSIZE>::operator= (val);
       return *this;
     }
-
-    /*
-    Array & operator= (const std::function<T(int)> & func) 
-    {
-      for (TSIZE i = 0; i < size; i++)
-        data[i] = func(i);
-      return *this;
-    }
-    */
 
     /// array copy
     INLINE Array & operator= (const Array & a2)
