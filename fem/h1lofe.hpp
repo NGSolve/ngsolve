@@ -13,6 +13,20 @@ namespace ngfem
 {
 
 
+  template <ELEMENT_TYPE ET, int ORDER>
+  class ScalarFE : public T_ScalarFiniteElement<ScalarFE<ET,ORDER>,ET>
+  {
+  public:
+    INLINE ScalarFE ()
+    {
+      this->ndof = ET_trait<ET>::PolDimension(ORDER);
+      this->order = ORDER; 
+    }
+
+    template<typename Tx, typename TFA>  
+      static INLINE void T_CalcShape (Tx x[1], TFA & shape);
+  };
+  
 
   class FE_Point : public T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>
   {
@@ -171,6 +185,7 @@ namespace ngfem
 
   /* ***************************** Trig Elements *************************************** */
 
+  /*
   ///
   class FE_Trig0 : public T_ScalarFiniteElement<FE_Trig0,ET_TRIG>
   {
@@ -182,7 +197,16 @@ namespace ngfem
       shape[0] = 1;
     }
   }; 
+  */
 
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TRIG,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = 1.0;
+  }
+
+
+  /*
   ///
   class FE_Trig1 : public T_ScalarFiniteElement<FE_Trig1,ET_TRIG>
   {
@@ -196,7 +220,14 @@ namespace ngfem
       shape[2] = 1-x[0]-x[1];
     }
   }; 
-
+  */
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TRIG,1> :: T_CalcShape (Tx x[], TFA & shape) 
+  {
+    shape[0] = x[0];
+    shape[1] = x[1];      
+    shape[2] = 1-x[0]-x[1];
+  }
 
   ///
   class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,ET_TRIG>
@@ -262,7 +293,13 @@ namespace ngfem
 
   /* ***************************** Quad *************************************** */
 
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_QUAD,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = 1.0;
+  }
 
+  /*
   class FE_Quad0 : public T_ScalarFiniteElementFO<FE_Quad0,ET_QUAD,1,0>
   {
   public:
@@ -272,8 +309,8 @@ namespace ngfem
       shape[0] = 1.0;
     }
   };
-
-
+  */
+  /*
   /// quad of order 1
   class FE_Quad1 : public T_ScalarFiniteElementFO<FE_Quad1,ET_QUAD,4,1>
   {
@@ -290,6 +327,19 @@ namespace ngfem
       shape[3] = (1-x) *  y;
     }
   }; 
+  */
+
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_QUAD,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    Tx x = hx[0];
+    Tx y = hx[1];
+    
+    shape[0] = (1-x) * (1-y);
+    shape[1] =    x  * (1-y);
+    shape[2] =    x  *  y;
+    shape[3] = (1-x) *  y;
+  }
 
 
   /// quad or order 2
@@ -341,7 +391,7 @@ namespace ngfem
   /* ***************************** Tet *************************************** */
 
 
-
+  /*
   ///
   class FE_Tet0 : public T_ScalarFiniteElementFO<FE_Tet0,ET_TET,1,0>
   {
@@ -352,9 +402,27 @@ namespace ngfem
       shape[0] = 1;
     }
   };
+  */
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TET,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = 1.0;
+  }
 
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TET,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    Tx x = hx[0];
+    Tx y = hx[1];
+    Tx z = hx[2];
+    
+    shape[0] = x;
+    shape[1] = y;
+    shape[2] = z;
+    shape[3] = 1-x-y-z;
+  }
 
-  ///
+  /*
   class FE_Tet1 : public T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>
   {
   public:
@@ -371,7 +439,7 @@ namespace ngfem
       shape[3] = 1-x-y-z;
     }
   };
-
+  */
 
   ///
   class FE_Tet2 : public T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>
@@ -725,36 +793,37 @@ namespace ngfem
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_TSegmL2<3>,ET_SEGM>;
 
 
-  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig0,ET_TRIG>;
-  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig1,ET_TRIG>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TRIG,0>,ET_TRIG>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TRIG,1>,ET_TRIG>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2,ET_TRIG>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG>;
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Quad0,ET_QUAD>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Quad1,ET_QUAD>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Quad2,ET_QUAD>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Quad2aniso,ET_QUAD>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_QUAD,0>,ET_QUAD>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_QUAD,1>,ET_QUAD>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Quad2,ET_QUAD>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Quad2aniso,ET_QUAD>;
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Tet0,ET_TET>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Tet1,ET_TET>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Tet2,ET_TET>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Tet2HB,ET_TET>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_NcTet1,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,0>,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,1>,ET_TET>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet1,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet2,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet2HB,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_NcTet1,ET_TET>;
 
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Prism0,ET_PRISM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Prism1,ET_PRISM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Prism2,ET_PRISM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Prism2HBaniso,ET_PRISM>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism0,ET_PRISM>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism1,ET_PRISM>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism2,ET_PRISM>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism2HBaniso,ET_PRISM>;
 
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex0,ET_HEX>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex1,ET_HEX>;
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Pyramid0,ET_PYRAMID>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElement<FE_Pyramid1,ET_PYRAMID>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Pyramid0,ET_PYRAMID>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Pyramid1,ET_PYRAMID>;
 
 
 
@@ -791,31 +860,45 @@ namespace ngfem
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2,ET_TRIG>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG>;
   */
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TRIG,0>,ET_TRIG,1,0>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TRIG,1>,ET_TRIG,3,1>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_NcTrig1,ET_TRIG,3,1>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Quad0,ET_QUAD,1,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Quad1,ET_QUAD,4,1>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Quad2,ET_QUAD,9,2>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Quad2aniso,ET_QUAD,6,2>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_QUAD,0>,ET_QUAD,1,0>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_QUAD,1>,ET_QUAD,4,1>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2,ET_QUAD,9,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2aniso,ET_QUAD,6,2>;
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Tet0,ET_TET,1,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Tet2HB,ET_TET,10,2>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_NcTet1,ET_TET,4,1>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,0>,ET_TET,1,0>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,1>,ET_TET,4,1>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet2HB,ET_TET,10,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_NcTet1,ET_TET,4,1>;
 
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Prism0,ET_PRISM,1,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Prism1,ET_PRISM,6,1>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Prism2,ET_PRISM,18,2>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Prism2aniso,ET_PRISM,12,2>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Prism2HBaniso,ET_PRISM,12,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Prism0,ET_PRISM,1,0>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Prism1,ET_PRISM,6,1>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Prism2,ET_PRISM,18,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Prism2aniso,ET_PRISM,12,2>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Prism2HBaniso,ET_PRISM,12,2>;
 
 
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Hex0,ET_HEX,1,0>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Hex1,ET_HEX,8,1>;
 
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>;
-  H1LOFE_EXTERN template class  T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Pyramid0,ET_PYRAMID,1,0>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Pyramid1,ET_PYRAMID,5,1>;
+
+
+
+  H1LOFE_EXTERN template class ScalarFE<ET_TRIG,0>;
+  H1LOFE_EXTERN template class ScalarFE<ET_TRIG,1>;
+
+  H1LOFE_EXTERN template class ScalarFE<ET_QUAD,0>;
+  H1LOFE_EXTERN template class ScalarFE<ET_QUAD,1>;
+
+  H1LOFE_EXTERN template class ScalarFE<ET_TET,0>;
+  H1LOFE_EXTERN template class ScalarFE<ET_TET,1>;
 
 
 }

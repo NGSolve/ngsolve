@@ -961,7 +961,7 @@ static Matrix<> trans;
     ///
     // static class FE_Quad1 quad1;
     // static class FE_Quad2 quad2;
-    typedef FE_Quad1 quad1;
+    typedef ScalarFE<ET_QUAD,1> quad1;
     typedef FE_Quad2 quad2;
 
     FE_NedelecPyramid1 pyramid1;
@@ -1027,7 +1027,7 @@ static Matrix<> trans;
     ///
     // static class FE_Quad1 quad1;
     // static class FE_Quad2 quad2;
-    typedef FE_Quad1 quad1;
+    typedef ScalarFE<ET_QUAD,1> quad1;
     typedef FE_Quad2 quad2;
 
     FE_Quad3 quad3;

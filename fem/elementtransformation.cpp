@@ -18,9 +18,8 @@ namespace ngfem
 {
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation ()
-    : /* pointmat(0,0,0), pointmat_ownmem(false), */ nvmat(0,0,0)
+    : nvmat(0,0,0)
   { ; }
-  
 
   template <int DIM> ScalarFiniteElement<DIM> * GetP1FE (ELEMENT_TYPE type);
 
@@ -36,8 +35,8 @@ namespace ngfem
   }
   template <> ScalarFiniteElement<2> * GetP1FE (ELEMENT_TYPE type)
   {
-    static FE_Trig1 trig;
-    static FE_Quad1 quad;
+    static ScalarFE<ET_TRIG,1> trig;
+    static ScalarFE<ET_QUAD,1> quad;
     switch (type)
       {
       case ET_TRIG: return (&trig);
@@ -48,7 +47,7 @@ namespace ngfem
   }
   template <> ScalarFiniteElement<3> * GetP1FE (ELEMENT_TYPE type)
   {
-    static FE_Tet1 tet;
+    static ScalarFE<ET_TET,1> tet;
     static FE_Hex1 hex;
     static FE_Prism1 prism;
     static FE_Pyramid1 pyr;

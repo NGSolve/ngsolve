@@ -719,7 +719,7 @@ namespace ngfem
     enum { N_CELL = 0 };
     enum { N_FACET = 3 };
 
-    // static int PolDimension (int order) { return (order+1)*(order+2)/2; }
+    static constexpr int PolDimension (int order) { return (order+1)*(order+2)/2; }
     static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
     static INLINE int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[0]-2)/2; }
 
@@ -819,7 +819,7 @@ namespace ngfem
     enum { N_FACET = 4 };
 
 
-    // static int PolDimension (int order) { return (order+1)*(order+1); }
+    static constexpr INLINE int PolDimension (int order) { return (order+1)*(order+1); }
     static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
     static INLINE int PolBubbleDimension (INT<2> order) { return (order[0]-1)*(order[1]-1); }
 
@@ -974,6 +974,7 @@ namespace ngfem
     enum { N_CELL = 1 };
     enum { N_FACET = 4 };
 
+    static constexpr INLINE int PolDimension (int p) { return (p+1)*(p+2)*(p+3)/6; }
     static INLINE int PolDimension (INT<3> p) { return (p[0]+1)*(p[0]+2)*(p[0]+3)/6; }
     static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
 
