@@ -376,7 +376,7 @@ namespace netgen
     /// Calculates localh 
     DLL_HEADER void CalcLocalH (double grading);
     ///
-    DLL_HEADER void SetLocalH (const Point3d & pmin, const Point3d & pmax, double grading);
+    DLL_HEADER void SetLocalH (netgen::Point<3> pmin, netgen::Point<3> pmax, double grading);
     ///
     DLL_HEADER void RestrictLocalH (const Point3d & p, double hloc);
     ///
@@ -682,10 +682,8 @@ namespace netgen
 	  area += Cross ( mesh[sel[1]]-mesh[sel[0]],
 			  mesh[sel[2]]-mesh[sel[0]] ).Length() / 2;
 	else
-	  area += Cross (Vec3d (mesh.Point (sel.PNum(1)),
-				mesh.Point (sel.PNum(3))),
-			 Vec3d (mesh.Point (sel.PNum(1)),
-				mesh.Point (sel.PNum(4)))).Length() / 2;;
+	  area += Cross (Vec3d (mesh[sel.PNum(1)], mesh[sel.PNum(3)]),
+			 Vec3d (mesh[sel.PNum(1)], mesh[sel.PNum(4)])).Length() / 2;;
       }
       void ReCalc ()
       {

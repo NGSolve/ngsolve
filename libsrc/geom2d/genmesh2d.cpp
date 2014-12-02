@@ -428,6 +428,7 @@ namespace netgen
     mesh->CalcLocalH(mp.grading);
 
     int bnp = mesh->GetNP(); // boundary points
+    auto BndPntRange = mesh->Points().Range();
 
     int hquad = mp.quad;
 
@@ -532,10 +533,10 @@ namespace netgen
 	Array<int, PointIndex::BASE> compress(bnp);
 	compress = -1;
 	int cnt = 0;
-	for (PointIndex pi = PointIndex::BASE; pi < bnp+PointIndex::BASE; pi++)
+        for (PointIndex pi : BndPntRange)
 	  if ( (*mesh)[pi].GetLayer() == geometry.GetDomainLayer(domnr))
 	    {
-	      meshing.AddPoint ( (*mesh)[pi], pi);
+	      meshing.AddPoint ((*mesh)[pi], pi);
 	      cnt++;
 	      compress[pi] = cnt;
 	    }
@@ -546,35 +547,29 @@ namespace netgen
 	  {
 	    if ( (*mesh)[si].domin == domnr)
 	      {
-		meshing.AddBoundaryElement ( compress[(*mesh)[si][0]], 
-					     compress[(*mesh)[si][1]], gi, gi);
+		meshing.AddBoundaryElement (compress[(*mesh)[si][0]], 
+                                            compress[(*mesh)[si][1]], gi, gi);
 	      }
 	    if ( (*mesh)[si].domout == domnr)
 	      {
-		meshing.AddBoundaryElement ( compress[(*mesh)[si][1]],
-					     compress[(*mesh)[si][0]], gi, gi);
-		
+		meshing.AddBoundaryElement (compress[(*mesh)[si][1]],
+                                            compress[(*mesh)[si][0]], gi, gi);
 	      }
-
 	  }
 
-
-	mp.checkoverlap = 0;
-
-	meshing.GenerateMesh (*mesh, mp, h, domnr);
+        // not complete, use at own risk ...
+        // meshing.Delaunay(*mesh, domnr, mp);
+        mp.checkoverlap = 0;
+        meshing.GenerateMesh (*mesh, mp, h, domnr);
 
 	for (SurfaceElementIndex sei = oldnf; sei < mesh->GetNSE(); sei++)
 	  (*mesh)[sei].SetIndex (domnr);
 
-
 	// astrid
 	char * material;
-	geometry.GetMaterial( domnr, material );
-	if ( material )
-	  {
-	    (*mesh).SetMaterial ( domnr,  material );
-	  }
-
+	geometry.GetMaterial (domnr, material);
+	if (material)
+          mesh->SetMaterial (domnr, material);
       }
 
     mp.quad = hquad;

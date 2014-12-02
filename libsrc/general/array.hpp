@@ -16,6 +16,54 @@ namespace netgen
 
 
 
+
+  template <typename TSIZE>
+  class ArrayRangeIterator
+  {
+    TSIZE ind;
+  public:
+    ArrayRangeIterator (TSIZE ai) : ind(ai) { ; }
+    ArrayRangeIterator operator++ (int) { return ind++; }
+    ArrayRangeIterator operator++ () { return ++ind; }
+    TSIZE operator*() const { return ind; }
+    bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
+  };
+
+  /// a range of intergers
+  template <typename T>
+  class T_Range
+  {
+    T first, next;
+  public: 
+    T_Range (T f, T n) : first(f), next(n) {;} 
+    T Size() const { return next-first; }
+    T operator[] (T i) const { return first+i; }
+    bool Contains (T i) const { return ((i >= first) && (i < next)); }
+
+    ArrayRangeIterator<T> begin() const { return first; }
+    ArrayRangeIterator<T> end() const { return next; }
+  };
+
+
+  template <typename T, int BASE = 0, typename TIND = int>
+  class FlatArray;
+
+  template <typename T, int BASE, typename TIND>
+  class ArrayIterator
+  {
+    FlatArray<T,BASE,TIND> ar;
+    TIND ind;
+  public:
+    ArrayIterator (FlatArray<T,BASE,TIND> aar, TIND ai) : ar(aar), ind(ai) { ; }
+    ArrayIterator operator++ (int)  { return ArrayIterator(ar, ind++); }
+    ArrayIterator operator++ ()   { return ArrayIterator(ar, ++ind); }
+    T operator*() const { return ar[ind]; }
+    T & operator*() { return ar[ind]; }
+    bool operator != (ArrayIterator d2) { return ind != d2.ind; }
+  };
+
+
+
   /**
      A simple array container.
      Array represented by size and data-pointer.
@@ -24,7 +72,7 @@ namespace netgen
      Optional range check by macro RANGE_CHECK
   */
 
-  template <typename T, int BASE = 0, typename TIND = int>
+  template <typename T, int BASE, typename TIND>
   class FlatArray
   {
   protected:
@@ -42,8 +90,14 @@ namespace netgen
     /// the size
     int Size() const { return size; }
 
+    ArrayIterator<T,BASE,TIND> begin() const
+    { return ArrayIterator<T,BASE,TIND> (*this, BASE); }
+    ArrayIterator<T,BASE,TIND> end() const
+    { return ArrayIterator<T,BASE,TIND> (*this, BASE+size); }
+
     TIND Begin() const { return TIND(BASE); }
     TIND End() const { return TIND(size+BASE); }
+    T_Range<TIND> Range() const { return T_Range<TIND>(BASE, size+BASE); }
 
     /// Access array. BASE-based
     T & operator[] (TIND i) const

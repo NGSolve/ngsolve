@@ -23,28 +23,28 @@ namespace netgen
 	    case 's': 
 	      {  // topological swap
 		MeshOptimize2d meshopt;
-		meshopt.SetMetricWeight (0);
+                meshopt.SetMetricWeight (mp.elsizeweight);
 		meshopt.EdgeSwapping (mesh, 0);
 		break;
 	      }
 	    case 'S': 
 	      {  // metric swap
 		MeshOptimize2d meshopt;
-		meshopt.SetMetricWeight (0);
+                meshopt.SetMetricWeight (mp.elsizeweight);
 		meshopt.EdgeSwapping (mesh, 1);
 		break;
 	      }
 	    case 'm': 
 	      {
 		MeshOptimize2d meshopt;
-		meshopt.SetMetricWeight (1);
+                meshopt.SetMetricWeight (mp.elsizeweight);
 		meshopt.ImproveMesh(mesh, mp);
 		break;
 	      }
 	    case 'c': 
 	      {
 		MeshOptimize2d meshopt;
-		meshopt.SetMetricWeight (0.2);
+                meshopt.SetMetricWeight (mp.elsizeweight);
 		meshopt.CombineImprove(mesh);
 		break;
 	      }

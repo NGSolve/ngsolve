@@ -172,8 +172,11 @@ namespace netgen
 
            mesh3d.FindOpenElements(k);
 
-
+           /*
            for (PointIndex pi = mesh3d.Points().Begin(); pi < mesh3d.Points().End(); pi++)
+              meshing.AddPoint (mesh3d[pi], pi);
+           */
+           for (PointIndex pi : mesh3d.Points().Range())
               meshing.AddPoint (mesh3d[pi], pi);
 
            for (int i = 1; i <= mesh3d.GetNOpenElements(); i++)

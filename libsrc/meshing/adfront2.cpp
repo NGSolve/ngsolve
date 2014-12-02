@@ -492,4 +492,72 @@ namespace netgen
     
     return ((cnt % 2) != 0);
   }
+
+  bool AdFront2 :: SameSide (const Point<2> & lp1, const Point<2> & lp2, 
+                             const Array<int> * testfaces) const
+  {
+    int cnt = 0;
+
+    if (testfaces)
+      {
+        for (int ii = 0; ii < testfaces->Size(); ii++)
+          if (lines[(*testfaces)[ii]].Valid())
+            {
+              int i = (*testfaces)[ii];
+              const Point<3> & p13d = points[lines[i].L().I1()].P();
+              const Point<3> & p23d = points[lines[i].L().I2()].P();
+              
+              Point<2> p1(p13d(0), p13d(1));
+              Point<2> p2(p23d(0), p23d(1));
+              
+              // p1 + alpha v = lp1 + beta vl
+              Vec<2> v = p2-p1;
+              Vec<2> vl = lp2 - lp1;
+              Mat<2,2> mat, inv;
+              Vec<2> rhs, sol;
+              mat(0,0) = v(0);
+              mat(1,0) = v(1);
+              mat(0,1) = -vl(0);
+              mat(1,1) = -vl(1);
+              rhs = lp1-p1;
+              
+              if (Det(mat) == 0) continue;
+              CalcInverse (mat, inv);
+              sol = inv * rhs;
+              if (sol(0) >= 0 && sol(0) <= 1 & sol(1) >= 0 && sol(1) <= 1)
+                { cnt++; }
+            }
+
+      }
+    else
+      {
+        for (int i = 0; i < lines.Size(); i++)
+          if (lines[i].Valid())
+            {
+              const Point<3> & p13d = points[lines[i].L().I1()].P();
+              const Point<3> & p23d = points[lines[i].L().I2()].P();
+              
+              Point<2> p1(p13d(0), p13d(1));
+              Point<2> p2(p23d(0), p23d(1));
+              
+              // p1 + alpha v = lp1 + beta vl
+              Vec<2> v = p2-p1;
+              Vec<2> vl = lp2 - lp1;
+              Mat<2,2> mat, inv;
+              Vec<2> rhs, sol;
+              mat(0,0) = v(0);
+              mat(1,0) = v(1);
+              mat(0,1) = -vl(0);
+              mat(1,1) = -vl(1);
+              rhs = lp1-p1;
+              
+              if (Det(mat) == 0) continue;
+              CalcInverse (mat, inv);
+              sol = inv * rhs;
+              if (sol(0) >= 0 && sol(0) <= 1 & sol(1) >= 0 && sol(1) <= 1)
+                { cnt++; }
+            }
+      }
+    return ((cnt % 2) == 0);
+  }
 }

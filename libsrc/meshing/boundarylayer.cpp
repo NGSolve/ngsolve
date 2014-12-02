@@ -44,12 +44,12 @@ namespace netgen
       }
 
       for (i = 1; i <= np; i++)
-      {
-         if (bndnodes.Test(i))
+        {
+          if (bndnodes.Test(i))
             mapto.Elem(i) = mesh.AddPoint (mesh.Point (i));
-         else
+          else
             mapto.Elem(i) = 0;
-      }
+        }
 
       for (i = 1; i <= mesh.GetNSE(); i++)
       {
@@ -116,8 +116,8 @@ namespace netgen
 
       Vec3d Vect_A,Vect_B;
       
-      Vect_A = mesh.Point(el.PNum(Vertex_A)) - mesh.Point(el.PNum(Vertex));
-      Vect_B = mesh.Point(el.PNum(Vertex_B)) - mesh.Point(el.PNum(Vertex));
+      Vect_A = mesh[el.PNum(Vertex_A)] - mesh[el.PNum(Vertex)];
+      Vect_B = mesh[el.PNum(Vertex_B)] - mesh[el.PNum(Vertex)];
 
       SurfaceNormal = Cross(Vect_A,Vect_B);
       SurfaceNormal.Normalize();

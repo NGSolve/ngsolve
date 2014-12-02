@@ -120,12 +120,7 @@ namespace netgen
     PointIndex () { ; }
     PointIndex (int ai) : i(ai) { ; }
     PointIndex & operator= (const PointIndex &ai) { i = ai.i; return *this; }
-    // PointIndex & operator= (int ai) { i = ai; return *this; }
     operator int () const { return i; }
-    // int GetInt () const { return i; }
-    // PointIndex operator+ (int i2) { return PointIndex (i+i2); }
-    // PointIndex operator++ (int) { int hi = i; i++; return PointIndex(hi); }
-    // PointIndex operator-- (int) { int hi = i; i--; return PointIndex(hi); }
     PointIndex operator++ (int) { PointIndex hi(*this); i++; return hi; }
     PointIndex operator-- (int) { PointIndex hi(*this); i--; return hi; }
     PointIndex operator++ () { i++; return *this; }

@@ -52,68 +52,35 @@ namespace netgen
   }
   
 
-  LocalH :: LocalH (const Point3d & pmin, const Point3d & pmax, double agrading)
+  LocalH :: LocalH (Point<3> pmin, Point<3> pmax, double agrading, int adimension)
+    : dimension(adimension)
   {
     double x1[3], x2[3];
     double hmax;
 
-    boundingbox = Box3d (pmin, pmax);
+    boundingbox = Box<3> (pmin, pmax);
     grading = agrading;
 
     // a small enlargement, non-regular points 
     double val = 0.0879;
-    for (int i = 1; i <= 3; i++)
+    for (int i = 0; i < dimension; i++)
       {
-	x1[i-1] = (1 + val * i) * pmin.X(i) - val * i * pmax.X(i);
-	x2[i-1] = 1.1 * pmax.X(i) - 0.1 * pmin.X(i);
+	x1[i] = (1 + val * (i+1)) * pmin(i) - val * (i+1) * pmax(i);
+	x2[i] = 1.1 * pmax(i) - 0.1 * pmin(i);
       }
+    for (int i = dimension; i < 3; i++)
+      x1[i] = x2[i] = 0;
 
     hmax = x2[0] - x1[0];
-    for (int i = 1; i <= 2; i++)
-      if (x2[i] - x1[i] > hmax)
-	hmax = x2[i] - x1[i];
+    for (int i = 1; i < dimension; i++)
+      hmax = max2(x2[i]-x1[i], hmax);
 
-    for (int i = 0; i <= 2; i++)
+    for (int i = 0; i < dimension; i++)
       x2[i] = x1[i] + hmax;
 
     root = new GradingBox (x1, x2);
     boxes.Append (root);
   }
-
-
-  LocalH :: LocalH (const Box<3> & box, double agrading)
-  {
-    Point3d pmin = box.PMin();
-    Point3d pmax = box.PMax();
-
-    double x1[3], x2[3];
-    double hmax;
-
-    boundingbox = Box3d (pmin, pmax);
-    grading = agrading;
-
-    // a small enlargement, non-regular points 
-    double val = 0.0879;
-    for (int i = 1; i <= 3; i++)
-      {
-	x1[i-1] = (1 + val * i) * pmin.X(i) - val * i * pmax.X(i);
-	x2[i-1] = 1.1 * pmax.X(i) - 0.1 * pmin.X(i);
-      }
-
-    hmax = x2[0] - x1[0];
-    for (int i = 1; i <= 2; i++)
-      if (x2[i] - x1[i] > hmax)
-	hmax = x2[i] - x1[i];
-
-    for (int i = 0; i <= 2; i++)
-      x2[i] = x1[i] + hmax;
-
-    root = new GradingBox (x1, x2);
-    boxes.Append (root);
-  }
-
-
-
 
   LocalH :: ~LocalH ()
   {
@@ -126,147 +93,227 @@ namespace netgen
     root->DeleteChilds();
   }
 
-  void LocalH :: SetH (const Point3d & p, double h)
+  void LocalH :: SetH (Point<3> p, double h)
   {
-    /*
-      (*testout) << "Set h at " << p << " to " << h << endl;
-      if (h < 1e-8)
+    if (dimension == 2)
       {
-      cout << "do not set h to " << h << endl;
-      return;
-      }
-    */
+        if (fabs (p(0) - root->xmid[0]) > root->h2 ||
+            fabs (p(1) - root->xmid[1]) > root->h2)
+          return;
+        
+        if (GetH(p) <= 1.2 * h) return;
+        
+        GradingBox * box = root;
+        GradingBox * nbox = root;
+        GradingBox * ngb;
+        int childnr;
+        double x1[3], x2[3];
+        
+        while (nbox)
+          {
+            box = nbox;
+            childnr = 0;
+            if (p(0) > box->xmid[0]) childnr += 1;
+            if (p(1) > box->xmid[1]) childnr += 2;
+            nbox = box->childs[childnr];
+          };
+        
+        while (2 * box->h2 > h)
+          {
+            childnr = 0;
+            if (p(0) > box->xmid[0]) childnr += 1;
+            if (p(1) > box->xmid[1]) childnr += 2;
+            
+            double h2 = box->h2;
+            if (childnr & 1)
+              {
+                x1[0] = box->xmid[0];
+                x2[0] = x1[0]+h2;   // box->x2[0];
+              }
+            else
+              {
+                x2[0] = box->xmid[0];
+                x1[0] = x2[0]-h2;   // box->x1[0];
+              }
+            
+            if (childnr & 2)
+              {
+                x1[1] = box->xmid[1];
+                x2[1] = x1[1]+h2;   // box->x2[1];
+              }
+            else
+              {
+                x2[1] = box->xmid[1];
+                x1[1] = x2[1]-h2;   // box->x1[1];
+              }
+            x1[2] = x2[2] = 0;
 
-    if (fabs (p.X() - root->xmid[0]) > root->h2 ||
-	fabs (p.Y() - root->xmid[1]) > root->h2 ||
-	fabs (p.Z() - root->xmid[2]) > root->h2)
-      return;
+            ngb = new GradingBox (x1, x2);
+            box->childs[childnr] = ngb;
+            ngb->father = box;
+            
+            boxes.Append (ngb);
+            box = box->childs[childnr];
+          }
 
-    /*      
-	    if (p.X() < root->x1[0] || p.X() > root->x2[0] ||
-	    p.Y() < root->x1[1] || p.Y() > root->x2[1] ||
-	    p.Z() < root->x1[2] || p.Z() > root->x2[2])
-	    return;
-    */
+        box->hopt = h;
+        
+        double hbox = 2 * box->h2;  // box->x2[0] - box->x1[0];
+        double hnp = h + grading * hbox;
+        
+        Point<3> np;
+        for (int i = 0; i < 2; i++)
+          {
+            np = p;
+            np(i) = p(i) + hbox;
+            SetH (np, hnp);
+            
+            np(i) = p(i) - hbox;
+            SetH (np, hnp);
+          }
 
-
-    if (GetH(p) <= 1.2 * h) return;
-
-
-    GradingBox * box = root;
-    GradingBox * nbox = root;
-    GradingBox * ngb;
-    int childnr;
-    double x1[3], x2[3];
-
-    while (nbox)
-      {
-	box = nbox;
-	childnr = 0;
-	if (p.X() > box->xmid[0]) childnr += 1;
-	if (p.Y() > box->xmid[1]) childnr += 2;
-	if (p.Z() > box->xmid[2]) childnr += 4;
-	nbox = box->childs[childnr];
-      };
-
-
-    while (2 * box->h2 > h)
-      {
-	childnr = 0;
-	if (p.X() > box->xmid[0]) childnr += 1;
-	if (p.Y() > box->xmid[1]) childnr += 2;
-	if (p.Z() > box->xmid[2]) childnr += 4;
-
-	double h2 = box->h2;
-	if (childnr & 1)
-	  {
-	    x1[0] = box->xmid[0];
-	    x2[0] = x1[0]+h2;   // box->x2[0];
-	  }
-	else
-	  {
-	    x2[0] = box->xmid[0];
-	    x1[0] = x2[0]-h2;   // box->x1[0];
-	  }
-
-	if (childnr & 2)
-	  {
-	    x1[1] = box->xmid[1];
-	    x2[1] = x1[1]+h2;   // box->x2[1];
-	  }
-	else
-	  {
-	    x2[1] = box->xmid[1];
-	    x1[1] = x2[1]-h2;   // box->x1[1];
-	  }
-
-	if (childnr & 4)
-	  {
-	    x1[2] = box->xmid[2];
-	    x2[2] = x1[2]+h2;  // box->x2[2];
-	  }
-	else
-	  {
-	    x2[2] = box->xmid[2];
-	    x1[2] = x2[2]-h2;  // box->x1[2];
-	  }
-
-	ngb = new GradingBox (x1, x2);
-	box->childs[childnr] = ngb;
-	ngb->father = box;
-
-	boxes.Append (ngb);
-	box = box->childs[childnr];
       }
 
-    box->hopt = h;
-
-
-    double hbox = 2 * box->h2;  // box->x2[0] - box->x1[0];
-    double hnp = h + grading * hbox;
-
-    Point3d np;
-    for (int i = 1; i <= 3; i++)
+    else
       {
-	np = p;
-	np.X(i) = p.X(i) + hbox;
-	SetH (np, hnp);
+        if (fabs (p(0) - root->xmid[0]) > root->h2 ||
+            fabs (p(1) - root->xmid[1]) > root->h2 ||
+            fabs (p(2) - root->xmid[2]) > root->h2)
+          return;
+        
+        if (GetH(p) <= 1.2 * h) return;
+        
+        GradingBox * box = root;
+        GradingBox * nbox = root;
+        GradingBox * ngb;
+        int childnr;
+        double x1[3], x2[3];
+        
+        while (nbox)
+          {
+            box = nbox;
+            childnr = 0;
+            if (p(0) > box->xmid[0]) childnr += 1;
+            if (p(1) > box->xmid[1]) childnr += 2;
+            if (p(2) > box->xmid[2]) childnr += 4;
+            nbox = box->childs[childnr];
+          };
+        
+        
+        while (2 * box->h2 > h)
+          {
+            childnr = 0;
+            if (p(0) > box->xmid[0]) childnr += 1;
+            if (p(1) > box->xmid[1]) childnr += 2;
+            if (p(2) > box->xmid[2]) childnr += 4;
+            
+            double h2 = box->h2;
+            if (childnr & 1)
+              {
+                x1[0] = box->xmid[0];
+                x2[0] = x1[0]+h2;   // box->x2[0];
+              }
+            else
+              {
+                x2[0] = box->xmid[0];
+                x1[0] = x2[0]-h2;   // box->x1[0];
+              }
+            
+            if (childnr & 2)
+              {
+                x1[1] = box->xmid[1];
+                x2[1] = x1[1]+h2;   // box->x2[1];
+              }
+            else
+              {
+                x2[1] = box->xmid[1];
+                x1[1] = x2[1]-h2;   // box->x1[1];
+              }
+            
+            if (childnr & 4)
+              {
+                x1[2] = box->xmid[2];
+                x2[2] = x1[2]+h2;  // box->x2[2];
+              }
+            else
+              {
+                x2[2] = box->xmid[2];
+                x1[2] = x2[2]-h2;  // box->x1[2];
+              }
+            
+            ngb = new GradingBox (x1, x2);
+            box->childs[childnr] = ngb;
+            ngb->father = box;
+            
+            boxes.Append (ngb);
+            box = box->childs[childnr];
+          }
 
-	np.X(i) = p.X(i) - hbox;
-	SetH (np, hnp);
+        box->hopt = h;
+        
+        double hbox = 2 * box->h2;  // box->x2[0] - box->x1[0];
+        double hnp = h + grading * hbox;
+        
+        Point<3> np;
+        for (int i = 0; i < 3; i++)
+          {
+            np = p;
+            np(i) = p(i) + hbox;
+            SetH (np, hnp);
+            
+            np(i) = p(i) - hbox;
+            SetH (np, hnp);
+          }
       }
   }
 
 
 
-  double LocalH :: GetH (const Point3d & x) const
+  double LocalH :: GetH (Point<3> x) const
   {
     const GradingBox * box = root;
-
-    while (1)
+    if (dimension == 2)
       {
-	int childnr = 0;
-	if (x.X() > box->xmid[0]) childnr += 1;
-	if (x.Y() > box->xmid[1]) childnr += 2;
-	if (x.Z() > box->xmid[2]) childnr += 4;
-
-	if (box->childs[childnr])
-	  box = box->childs[childnr];
-	else
-	  return box->hopt;
+        while (1)
+          {
+            int childnr = 0;
+            if (x(0) > box->xmid[0]) childnr += 1;
+            if (x(1) > box->xmid[1]) childnr += 2;
+            
+            if (box->childs[childnr])
+              box = box->childs[childnr];
+            else
+              return box->hopt;
+          }
       }
+    else
+      {
+        while (1)
+          {
+            int childnr = 0;
+            if (x(0) > box->xmid[0]) childnr += 1;
+            if (x(1) > box->xmid[1]) childnr += 2;
+            if (x(2) > box->xmid[2]) childnr += 4;
+            
+            if (box->childs[childnr])
+              box = box->childs[childnr];
+            else
+              return box->hopt;
+          }
+      }
+      
   }
 
 
   /// minimal h in box (pmin, pmax)
-  double LocalH :: GetMinH (const Point3d & pmin, const Point3d & pmax) const
+  double LocalH :: GetMinH (Point<3> pmin, Point<3> pmax) const
   { 
-    Point3d pmin2, pmax2;
-    for (int j = 1; j <= 3; j++)
-      if (pmin.X(j) < pmax.X(j))
-	{ pmin2.X(j) = pmin.X(j); pmax2.X(j) = pmax.X(j); }
+    Point<3> pmin2, pmax2;
+    for (int j = 0; j < 3; j++)
+      if (pmin(j) < pmax(j))
+	{ pmin2(j) = pmin(j); pmax2(j) = pmax(j); }
       else
-	{ pmin2.X(j) = pmax.X(j); pmax2.X(j) = pmin.X(j); }
+	{ pmin2(j) = pmax(j); pmax2(j) = pmin(j); }
 
     return GetMinHRec (pmin2, pmax2, root); 
   }
@@ -275,31 +322,64 @@ namespace netgen
   double LocalH :: GetMinHRec (const Point3d & pmin, const Point3d & pmax,
 			       const GradingBox * box) const
   {
-    double h2 = box->h2;
-    if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
-	pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2 ||
-	pmax.Z() < box->xmid[2]-h2 || pmin.Z() > box->xmid[2]+h2)
-      return 1e8;
-      
-    double hmin = 2 * box->h2; // box->x2[0] - box->x1[0];
-  
-    for (int i = 0; i < 8; i++)
-      if (box->childs[i])
-	hmin = min2 (hmin, GetMinHRec (pmin, pmax, box->childs[i]));
-
-    return hmin;
+    if (dimension == 2)
+      {
+        double h2 = box->h2;
+        if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
+            pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2)
+          return 1e8;
+        
+        double hmin = 2 * box->h2; // box->x2[0] - box->x1[0];
+        
+        for (int i = 0; i < 8; i++)
+          if (box->childs[i])
+            hmin = min2 (hmin, GetMinHRec (pmin, pmax, box->childs[i]));
+        
+        return hmin;
+      }
+    else
+      {
+        double h2 = box->h2;
+        if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
+            pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2 ||
+            pmax.Z() < box->xmid[2]-h2 || pmin.Z() > box->xmid[2]+h2)
+          return 1e8;
+        
+        double hmin = 2 * box->h2; // box->x2[0] - box->x1[0];
+        
+        for (int i = 0; i < 8; i++)
+          if (box->childs[i])
+            hmin = min2 (hmin, GetMinHRec (pmin, pmax, box->childs[i]));
+        
+        return hmin;
+      }
   }
+
+
+
+
+
+
+
 
 
   void LocalH :: CutBoundaryRec (const Point3d & pmin, const Point3d & pmax,
 				 GradingBox * box)
   {
     double h2 = box->h2;
-    if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
-	pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2 ||
-	pmax.Z() < box->xmid[2]-h2 || pmin.Z() > box->xmid[2]+h2)
-      return;
-
+    if (dimension == 2)
+      {
+        if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
+            pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2)
+          return;
+      }
+    else
+      {
+        if (pmax.X() < box->xmid[0]-h2 || pmin.X() > box->xmid[0]+h2 ||
+            pmax.Y() < box->xmid[1]-h2 || pmin.Y() > box->xmid[1]+h2 ||
+            pmax.Z() < box->xmid[2]-h2 || pmin.Z() > box->xmid[2]+h2)
+          return;
+      }
 
     box->flags.cutboundary = 1;
     for (int i = 0; i < 8; i++)
@@ -309,10 +389,13 @@ namespace netgen
 
 
 
-
   void LocalH :: FindInnerBoxes (AdFront3 * adfront,
 				 int (*testinner)(const Point3d & p1))
   {
+    static int timer = NgProfiler::CreateTimer ("LocalH::FindInnerBoxes");
+    NgProfiler::RegionTimer reg (timer);
+
+
     int nf = adfront->GetNF();
 
     for (int i = 0; i < boxes.Size(); i++)
@@ -327,11 +410,11 @@ namespace netgen
 
 
     root->flags.pinner = !adfront->SameSide (rpmid, rx2);
-  
+    
     if (testinner)
       (*testout) << "inner = " << root->flags.pinner << " =?= " 
 		 << testinner(Point3d(root->xmid[0], root->xmid[1], root->xmid[2])) << endl;
-  
+
     Array<int> faceinds(nf);
     Array<Box3d> faceboxes(nf);
 
@@ -461,13 +544,11 @@ namespace netgen
 
 
 
-
-
-
   void LocalH :: FindInnerBoxes (AdFront2 * adfront,
 				 int (*testinner)(const Point<2> & p1))
   {
-    int nf = adfront->GetNFL();
+    static int timer = NgProfiler::CreateTimer ("LocalH::FindInnerBoxes 2d");
+    NgProfiler::RegionTimer reg (timer);
 
     for (int i = 0; i < boxes.Size(); i++)
       boxes[i] -> flags.isinner = 0;
@@ -485,7 +566,9 @@ namespace netgen
     if (testinner)
       (*testout) << "inner = " << root->flags.pinner << " =?= "
 		 << testinner(rpmid) << endl;
-  
+
+
+    int nf = adfront->GetNFL();
     Array<int> faceinds(nf);
     Array<Box<3> > faceboxes(nf);
 
@@ -497,7 +580,6 @@ namespace netgen
 	const FrontLine & line = adfront->GetLine(i);
 	faceboxes[i].Set (adfront->GetPoint (line.L().I1()));
 	faceboxes[i].Add (adfront->GetPoint (line.L().I2()));
-
       }
   
     for (int i = 0; i < 8; i++)
@@ -512,43 +594,40 @@ namespace netgen
 		      Array<int> & faceinds, int nfinbox)
   {
     if (!box) return;
-  
+    
     GradingBox * father = box -> father;
   
-    Point3d c(box->xmid[0], box->xmid[1], box->xmid[2]);
+    Point3d c(box->xmid[0], box->xmid[1], 0); // box->xmid[2]);
     Vec3d v(box->h2, box->h2, box->h2);
     Box3d boxc(c-v, c+v);
 
-    Point3d fc(father->xmid[0], father->xmid[1], father->xmid[2]);
+    Point3d fc(father->xmid[0], father->xmid[1], 0); // father->xmid[2]);
     Vec3d fv(father->h2, father->h2, father->h2);
     Box3d fboxc(fc-fv, fc+fv);
-
     Box3d boxcfc(c,fc);
 
     ArrayMem<int, 100> faceused;
     ArrayMem<int, 100> faceused2;
     ArrayMem<int, 100> facenotused;
 
-
-    for (int j = 1; j <= nfinbox; j++)
+    for (int j = 0; j < nfinbox; j++)
       {
 	//      adfront->GetFaceBoundingBox (faceinds.Get(j), facebox);
-	const Box3d & facebox = faceboxes.Get(faceinds.Get(j));
+	const Box3d & facebox = faceboxes[faceinds[j]];
   
 	if (boxc.Intersect (facebox))
-	  faceused.Append(faceinds.Get(j));
+	  faceused.Append(faceinds[j]);
 	else
-	  facenotused.Append(faceinds.Get(j));
+	  facenotused.Append(faceinds[j]);
 
 	if (boxcfc.Intersect (facebox))
-	  faceused2.Append (faceinds.Get(j));
+	  faceused2.Append (faceinds[j]);
       }
   
-    for (int j = 1; j <= faceused.Size(); j++)
-      faceinds.Elem(j) = faceused.Get(j);
-    for (int j = 1; j <= facenotused.Size(); j++)
-      faceinds.Elem(j+faceused.Size()) = facenotused.Get(j);
-
+    for (int j = 0; j < faceused.Size(); j++)
+      faceinds[j] = faceused[j];
+    for (int j = 0; j < facenotused.Size(); j++)
+      faceinds[j+faceused.Size()] = facenotused[j];
   
     if (!father->flags.cutboundary)
       {
@@ -560,12 +639,15 @@ namespace netgen
 	Point3d cf(father->xmid[0], father->xmid[1], father->xmid[2]);
       
 	if (father->flags.isinner)
-	  box->flags.pinner = 1;
+          {
+            box->flags.pinner = 1;
+          }
 	else
 	  {
 	    Point<2> c2d (c.X(), c.Y());
 	    Point<2> cf2d (cf.X(), cf.Y());
-	    if (adfront->SameSide (c2d, cf2d, &faceused2))
+            bool sameside = adfront->SameSide (c2d, cf2d, &faceused2);
+            if (sameside)
 	      box->flags.pinner = father->flags.pinner;
 	    else
 	      box->flags.pinner = 1 - father->flags.pinner;
@@ -655,9 +737,19 @@ namespace netgen
 
   void LocalH :: GetInnerPoints (Array<Point<3> > & points)
   {
-    for (int i = 0; i < boxes.Size(); i++)
-      if (boxes[i] -> flags.isinner)
-	points.Append ( boxes[i] -> PMid() );
+    if (dimension == 2)
+      {
+        for (int i = 0; i < boxes.Size(); i++)
+          if (boxes[i] -> flags.isinner && boxes[i] -> HasChilds())
+            points.Append ( boxes[i] -> PMid() );
+      }
+    else
+      {
+        for (int i = 0; i < boxes.Size(); i++)
+          if (boxes[i] -> flags.isinner)
+            points.Append ( boxes[i] -> PMid() );
+      }
+          
   }
 
 

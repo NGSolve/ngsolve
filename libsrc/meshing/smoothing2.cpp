@@ -743,7 +743,6 @@ namespace netgen
 
     Array<SurfaceElementIndex> seia;
     mesh.GetSurfaceElementsOfFace (faceindex, seia);
-
     bool mixed = 0;
     for (int i = 0; i < seia.Size(); i++)
       if (mesh[seia[i]].GetNP() != 3)

@@ -45,6 +45,13 @@ namespace netgen
     Point<3> PMid() const { return Point<3> (xmid[0], xmid[1], xmid[2]); }
     double H2() const { return h2; }
 
+    bool HasChilds() const
+    {
+      for (int i = 0; i < 8; i++)
+        if (childs[i]) return true;
+      return false;
+    }
+    
     friend class LocalH;
 
     static BlockAllocator ball;
@@ -67,12 +74,15 @@ namespace netgen
     ///
     Array<GradingBox*> boxes;
     ///
-    Box3d boundingbox;
+    Box<3> boundingbox;
+    /// octree or quadtree
+    int dimension;
   public:
     ///
-    LocalH (const Point3d & pmin, const Point3d & pmax, double grading);
+    LocalH (Point<3> pmin, Point<3> pmax, double grading, int adimension = 3);
     ///
-    LocalH (const Box<3> & box, double grading);
+    LocalH (const Box<3> & box, double grading, int adimension = 3)
+      : LocalH (box.PMin(), box.PMax(), grading, adimension) { ; }
     ///
     ~LocalH();
     ///
@@ -80,15 +90,16 @@ namespace netgen
     ///
     void SetGrading (double agrading) { grading = agrading; }
     ///
-    void SetH (const Point3d & x, double h);
+    void SetH (Point<3> x, double h);
     ///
-    double GetH (const Point3d & x) const;
+    double GetH (Point<3> x) const;
     /// minimal h in box (pmin, pmax)
-    double GetMinH (const Point3d & pmin, const Point3d & pmax) const;
+    double GetMinH (Point<3> pmin, Point<3> pmax) const;
 
     /// mark boxes intersecting with boundary-box
     // void CutBoundary (const Point3d & pmin, const Point3d & pmax)
     // { CutBoundaryRec (pmin, pmax, root); }
+
     void CutBoundary (const Box<3> & box)
     { CutBoundaryRec (box.PMin(), box.PMax(), root); }
   
@@ -117,7 +128,7 @@ namespace netgen
     void Convexify ();
     ///
     int GetNBoxes () { return boxes.Size(); } 
-    const Box3d & GetBoundingBox () const
+    const Box<3> & GetBoundingBox () const
     { return boundingbox; }
     ///
     void PrintMemInfo (ostream & ost) const;

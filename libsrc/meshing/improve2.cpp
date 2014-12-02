@@ -722,9 +722,12 @@ namespace netgen
 
 	    if (should)
 	      {
-		// (*testout) << "combine !" << endl;
-		// (*testout) << "bad1 = " << bad1 << ", bad2 = " << bad2 << endl;
-
+                /*
+                (*testout) << "combine !" << endl;
+                (*testout) << "bad1 = " << bad1 << ", bad2 = " << bad2 << endl;
+                (*testout) << "illegal1 = " << illegal1 << ", illegal2 = " << illegal2 << endl;
+                (*testout) << "loch = " << loch << endl;
+                */
 
 		mesh[pi1] = pnew;
 		PointGeomInfo gi;

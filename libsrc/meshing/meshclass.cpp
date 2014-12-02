@@ -2416,19 +2416,19 @@ namespace netgen
 
 
 
-  void Mesh :: SetLocalH (const Point3d & pmin, const Point3d & pmax, double grading)
+  void Mesh :: SetLocalH (netgen::Point<3> pmin, netgen::Point<3> pmax, double grading)
   {
-    Point3d c = Center (pmin, pmax);
-    double d = max3 (pmax.X()-pmin.X(),
-                     pmax.Y()-pmin.Y(),
-                     pmax.Z()-pmin.Z());
+    using netgen::Point;
+    Point<3> c = Center (pmin, pmax);
+    double d = max3 (pmax(0)-pmin(0),
+                     pmax(1)-pmin(1),
+                     pmax(2)-pmin(2));
     d /= 2;
-    Point3d pmin2 = c - Vec3d (d, d, d);
-    Point3d pmax2 = c + Vec3d (d, d, d);
-
+    Point<3> pmin2 = c - Vec<3> (d, d, d);
+    Point<3> pmax2 = c + Vec<3> (d, d, d);
 
     delete lochfunc;
-    lochfunc = new LocalH (pmin2, pmax2, grading);
+    lochfunc = new LocalH (pmin2, pmax2, grading, dimension);
   }
 
   void Mesh :: RestrictLocalH (const Point3d & p, double hloc)
