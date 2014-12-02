@@ -35,8 +35,8 @@ robin penalty
 
 
 # preconditioner c -type=direct -bilinearform=a
-preconditioner c -type=local -bilinearform=a
-# preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest -blocktype=9
+# preconditioner c -type=local -bilinearform=a
+preconditioner c -type=multigrid -bilinearform=a -smoothingsteps=1 -smoother=block -notest -blocktype=9
 # preconditioner c -type=amg -bilinearform=a -coefe=lam -notiming -test
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200 -noprint -prec=1e-8
