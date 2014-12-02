@@ -1731,7 +1731,7 @@ namespace ngcomp
     Array<double> posz;
     ELEMENT_TYPE cache_type = ET_SEGM;
 	
-    LocalHeapMem<10000> lh2("Gridfunction - Analyze");
+    LocalHeapMem<100000> lh2("Gridfunction - Analyze");
 	
     val = new double[components];
 			
