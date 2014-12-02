@@ -84,7 +84,7 @@ namespace ngcomp
     ///
     virtual void DoArchive (Archive & archive);
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///

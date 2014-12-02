@@ -58,7 +58,7 @@ namespace ngcomp
     }
 
     ///
-    shared_ptr<MeshAccess> GetMeshAccess() const
+    const shared_ptr<MeshAccess> & GetMeshAccess() const
     { 
       return ma; 
     }

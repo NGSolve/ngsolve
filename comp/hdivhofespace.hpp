@@ -73,7 +73,7 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh);
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual int GetNDofLevel (int level) const;
     ///

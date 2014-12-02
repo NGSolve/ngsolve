@@ -128,7 +128,7 @@ void ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<VorB,IntRange>())
+  bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<const MeshAccess&,VorB,IntRange>())
     .def(PyDefIterable2<ElementRange>())
     // .def("__iter__", bp::iterator<ElementRange>())
     ;

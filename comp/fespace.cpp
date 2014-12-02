@@ -19,6 +19,8 @@
 
 using namespace ngmg;
 
+using FE_Quad1 = ScalarFE<ET_QUAD,1>;
+
 namespace ngcomp
 {
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
@@ -1254,12 +1256,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 1)
       {
-	tet     = new FE_Tet1;
+	tet     = new ScalarFE<ET_TET,1>;
 	prism   = new FE_Prism1;
 	pyramid = new FE_Pyramid1;
 	hex     = new FE_Hex1;
-	trig    = new FE_Trig1;
-	quad    = new FE_Quad1;
+	trig    = new ScalarFE<ET_TRIG,1>;
+	quad    = new ScalarFE<ET_QUAD,1>;
 	segm    = new FE_Segm1;
       }
     else
@@ -1270,7 +1272,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    prism   = new FE_Prism1;
 	    pyramid = new FE_Pyramid1;
 	    trig    = new FE_Trig2HB;
-	    quad    = new FE_Quad1;
+	    quad    = new ScalarFE<ET_QUAD,1>;
 	    segm    = new FE_Segm2;
 	  }
 	else
@@ -1279,7 +1281,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    prism   = new FE_Prism1;
 	    pyramid = new FE_Pyramid1;
 	    trig    = new FE_Trig2;
-	    quad    = new FE_Quad1;
+	    quad    = new ScalarFE<ET_QUAD,1>;
 	    segm    = new FE_Segm2;
 	  }
       }
@@ -1312,7 +1314,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ;
   }
 
-  int NodalFESpace :: GetNDof () const
+  int NodalFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
@@ -1536,7 +1538,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
-  int NonconformingFESpace :: GetNDof () const
+  int NonconformingFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
   }
@@ -1628,23 +1630,23 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
-      tet     = new FE_Tet0;
+      tet     = new ScalarFE<ET_TET,0>;
       prism   = new FE_Prism0;
       pyramid = new FE_Pyramid0;
       hex     = new FE_Hex0;
-      trig    = new FE_Trig0;
-      quad    = new FE_Quad0;
+      trig    = new ScalarFE<ET_TRIG,0>;
+      quad    = new ScalarFE<ET_QUAD,0>;
       segm    = new FE_Segm0;
 
       n_el_dofs = 1;
     }
     else
     {
-      tet     = new FE_Tet1;
+      tet     = new ScalarFE<ET_TET,1>;
       prism   = new FE_Prism1;
       pyramid = new FE_Pyramid1;
-      trig    = new FE_Trig1;
-      quad    = new FE_Quad1;
+      trig    = new ScalarFE<ET_TRIG,1>;
+      quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm1;
 
       if (ma->GetDimension() == 2)
@@ -1752,8 +1754,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
-      trig    = new FE_Trig0;
-      quad    = new FE_Quad0;
+      trig    = new ScalarFE<ET_TRIG,0>;
+      quad    = new ScalarFE<ET_QUAD,0>;
       segm    = new FE_Segm0;
 
       n_el_dofs = 1;
@@ -1761,8 +1763,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     else if (order == 1)
     {
-      trig    = new FE_Trig1;
-      quad    = new FE_Quad1;
+      trig    = new ScalarFE<ET_TRIG,1>;
+      quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm1;
 	
       if (ma->GetDimension() == 2)
@@ -1774,7 +1776,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else if (order == 2)
     {
       trig    = new FE_Trig2HB;
-      quad    = new FE_Quad1;
+      quad    = new ScalarFE<ET_QUAD,1>;
       segm    = new FE_Segm2;
 
       if (ma->GetDimension() == 2)

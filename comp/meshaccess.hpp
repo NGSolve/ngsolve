@@ -23,7 +23,8 @@ namespace ngcomp
 {
   using netgen::Ng_Node;
   
-
+  class MeshAccess;
+  class Ngs_Element;
 
 
   enum VorB { VOL, BND };
@@ -59,55 +60,11 @@ namespace ngcomp
   }
 
 
-  class ElementIterator
-  {
-    VorB vb;
-    int nr;
-  public:
-    ElementIterator (VorB avb, int anr) : vb(avb), nr(anr) { ; }
-    ElementIterator operator++ () { return ElementIterator(vb,++nr); }
-    ElementId operator*() const { return ElementId(vb,nr); }
-    bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
-  };
-  
-  class ElementRange : public IntRange
-  {
-    VorB vb;
-    // IntRange r;
-  public:
-    ElementRange (VorB avb, IntRange ar) : IntRange(ar), vb(avb) { ; }
-    ElementId First() const { return ElementId(vb, IntRange::First()); }
-    ElementIterator begin () const { return ElementIterator(vb,IntRange::First()); }
-    ElementIterator end () const { return ElementIterator(vb,IntRange::Next()); }
-    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
-  };
-
-  template <VorB VB>
-  class TElementIterator
-  {
-    int nr;
-  public:
-    TElementIterator (int anr) : nr(anr) { ; }
-    TElementIterator operator++ () { return TElementIterator(++nr); }
-    ElementId operator*() const { return ElementId(VB,nr); }
-    bool operator!=(TElementIterator id2) const { return nr != id2.nr; }
-  };
-  
-  template <VorB VB>
-  class TElementRange
-  {
-    IntRange r;
-  public:
-    TElementRange (IntRange ar) : r(ar) { ; }
-    TElementIterator<VB> begin () const { return TElementIterator<VB>(r.First()); }
-    TElementIterator<VB> end () const { return TElementIterator<VB>(r.Next()); }
-  };
-  
-
-  class Ngs_Element : public netgen::Ng_Element
+  class Ngs_Element : public netgen::Ng_Element, public ElementId
   {
   public:
-    Ngs_Element (const netgen::Ng_Element & el) : netgen::Ng_Element(el) { ; }
+    Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
+      : netgen::Ng_Element(el), ElementId(id) { ; }
     auto Vertices() const -> decltype (ArrayObject(vertices)) { return vertices; }
     auto Edges() const -> decltype (ArrayObject(edges)) { return edges; }
     auto Faces() const -> decltype (ArrayObject(faces)) { return faces; }
@@ -142,7 +99,61 @@ namespace ngcomp
   };
 
 
+
+
+  class ElementIterator
+  {
+    const MeshAccess & ma;
+    VorB vb;
+    int nr;
+  public:
+    ElementIterator (const MeshAccess & ama, VorB avb, int anr) 
+      : ma(ama), vb(avb), nr(anr) { ; }
+    ElementIterator operator++ () { return ElementIterator(ma, vb,++nr); }
+    // ElementId operator*() const { return ElementId(vb,nr); }
+    // Ngs_Element operator*() const { return ma[ElementId(vb,nr)]; }
+    INLINE Ngs_Element operator*() const;
+    bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
+  };
   
+  class ElementRange : public IntRange
+  {
+    const MeshAccess & ma;
+    VorB vb;
+    // IntRange r;
+  public:
+    ElementRange (const MeshAccess & ama, VorB avb, IntRange ar) 
+      : IntRange(ar), ma(ama), vb(avb) { ; }
+    ElementId First() const { return ElementId(vb, IntRange::First()); }
+    ElementIterator begin () const { return ElementIterator(ma, vb,IntRange::First()); }
+    ElementIterator end () const { return ElementIterator(ma, vb,IntRange::Next()); }
+    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
+  };
+
+  template <VorB VB>
+  class TElementIterator
+  {
+    const MeshAccess & ma;
+    int nr;
+  public:
+    INLINE TElementIterator (const MeshAccess & ama, int anr) : ma(ama), nr(anr) { ; }
+    INLINE TElementIterator operator++ () { return TElementIterator(ma, ++nr); }
+    // ElementId operator*() const { return ElementId(VB,nr); }
+    INLINE Ngs_Element operator*() const; 
+    INLINE bool operator!=(TElementIterator id2) const { return nr != id2.nr; }
+  };
+  
+  template <VorB VB>
+  class TElementRange
+  {
+    const MeshAccess & ma;
+    IntRange r;
+  public:
+    INLINE TElementRange (const MeshAccess & ama, IntRange ar) : ma(ama), r(ar) { ; }
+    INLINE TElementIterator<VB> begin () const { return TElementIterator<VB>(ma, r.First()); }
+    INLINE TElementIterator<VB> end () const { return TElementIterator<VB>(ma, r.Next()); }
+  };
+    
 
   /** 
       Access to mesh topology and geometry.
@@ -258,13 +269,13 @@ namespace ngcomp
 
     ElementRange Elements (VorB vb = VOL) const
     {
-      return ElementRange (vb, IntRange (0, GetNE(vb)));
+      return ElementRange (*this, vb, IntRange (0, GetNE(vb)));
     }
 
     template <VorB VB>
     TElementRange<VB> Elements () const
     {
-      return TElementRange<VB> (IntRange (0, GetNE(VB)));
+      return TElementRange<VB> (*this, IntRange (0, GetNE(VB)));
     }
 
     /// the geometry type of the element
@@ -384,10 +395,13 @@ namespace ngcomp
     {
       switch (dim-boundary)
 	{
-	case 1:	return mesh.GetElement<1> (elnr);
-	case 2: return mesh.GetElement<2> (elnr);
+	case 1:	return Ngs_Element (mesh.GetElement<1> (elnr), 
+                                    ElementId(boundary ? BND : VOL, elnr));
+	case 2: return Ngs_Element (mesh.GetElement<2> (elnr), 
+                                    ElementId(boundary ? BND : VOL, elnr));
 	case 3:
-        default: return mesh.GetElement<3> (elnr);
+        default: return Ngs_Element (mesh.GetElement<3> (elnr), 
+                                     ElementId(boundary ? BND : VOL, elnr));
 	}
     }
 
@@ -397,10 +411,10 @@ namespace ngcomp
       if (ei.IsBoundary()) hdim--;
       switch (hdim)
 	{
-	case 1:	return mesh.GetElement<1> (ei.Nr());
-	case 2: return mesh.GetElement<2> (ei.Nr());
+	case 1:	return Ngs_Element (mesh.GetElement<1> (ei.Nr()), ei);
+	case 2: return Ngs_Element (mesh.GetElement<2> (ei.Nr()), ei);
 	case 3:
-        default: return mesh.GetElement<3> (ei.Nr());
+        default: return Ngs_Element (mesh.GetElement<3> (ei.Nr()), ei);
 	}
     }
 
@@ -420,20 +434,20 @@ namespace ngcomp
     {
       switch (dim)
 	{
-	case 1:	return mesh.GetElement<0> (elnr);
-	case 2: return mesh.GetElement<1> (elnr);
+	case 1:	return Ngs_Element (mesh.GetElement<0> (elnr), ElementId(BND,elnr));
+	case 2: return Ngs_Element (mesh.GetElement<1> (elnr), ElementId(BND,elnr));
 	case 3: 
-        default: return mesh.GetElement<2> (elnr);
+        default: return Ngs_Element (mesh.GetElement<2> (elnr), ElementId(BND,elnr));
 	}
     }
 
     /**
        returns element of compile-time fixed dimension
      */
-    template <int DIM>
+    template <int DIM, VorB vb>
     Ngs_Element GetElement (int elnr) const
     {
-      return mesh.GetElement<DIM> (elnr);
+      return Ngs_Element (mesh.GetElement<DIM> (elnr), ElementId(vb, elnr));
     }
 
 
@@ -734,6 +748,21 @@ namespace ngcomp
     template <typename T>
     void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const;
   };
+
+
+
+
+
+  INLINE Ngs_Element ElementIterator :: operator*() const
+  {
+    return ma[ElementId(vb,nr)]; 
+  }
+  
+  template <VorB VB>
+  INLINE Ngs_Element TElementIterator<VB>::operator*() const 
+  {
+    return ma[ElementId(VB,nr)]; 
+  }
 
 
 

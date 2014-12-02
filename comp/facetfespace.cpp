@@ -451,7 +451,7 @@ namespace ngcomp
 
 
   // ------------------------------------------------------------------------
-  int FacetFESpace :: GetNDof () const
+  int FacetFESpace :: GetNDof () const throw()
   {
     return ndof;
   }

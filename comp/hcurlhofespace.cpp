@@ -183,12 +183,12 @@ namespace ngcomp
 	usegrad_face = 0; 
       } 
 
-    usegrad_edge = 0;                                
-    usegrad_cell = 0; 
+    usegrad_edge = false;                                
+    usegrad_cell = false; 
 
     Array<int> eledges, elfaces, vnums;
 
-
+    /*
     for(int i = 0; i < ne; i++) 
       if(gradientdomains[ma->GetElIndex(i)]) 
 	{
@@ -205,6 +205,17 @@ namespace ngcomp
 	    }
 	  usegrad_cell[i] = 1; 
 	} 
+    */
+    for (ElementId ei : ma->Elements<VOL>())
+      if (gradientdomains[ma->GetElIndex(ei)]) 
+        {
+          Ngs_Element el = (*ma)[ei];
+          usegrad_edge[el.Edges()] = true;
+          if (ma->GetDimension() == 3)
+            usegrad_face[el.Faces()] = true;
+          usegrad_cell[ei.Nr()] = true;
+        }
+
 
     for(int i=0; i<nse && gradientboundaries.Size(); i++)
       if(gradientboundaries[ma->GetSElIndex(i)])
@@ -824,7 +835,7 @@ namespace ngcomp
     if (!DefinedOn (ma->GetElIndex (elnr)))
       return * new (lh) HCurlDummyFE<ET>();
 
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
 
     HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
     
@@ -999,7 +1010,7 @@ namespace ngcomp
 
 
 
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (selnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (selnr);
 
     HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -1034,7 +1045,7 @@ namespace ngcomp
 
 
 
-  int HCurlHighOrderFESpace :: GetNDof () const
+  int HCurlHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }

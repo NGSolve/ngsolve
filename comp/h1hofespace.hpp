@@ -71,7 +71,7 @@ namespace ngcomp
     virtual void DoArchive (Archive & archive);
 
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw() { return ndof; }
     ///
     virtual int GetNDofLevel (int alevel) const;
     ///

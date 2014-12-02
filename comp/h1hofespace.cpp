@@ -222,22 +222,20 @@ namespace ngcomp
     used_face = false; 
     used_vertex = false; 
 
-    for (ElementId ei : ma->Elements<VOL>())
-      if (DefinedOn (ei))
+    for (Ngs_Element el : ma->Elements<VOL>())
+      if (DefinedOn (el))
 	{
-	  Ngs_Element ngel = (*ma)[ei];
-	  used_vertex[ngel.Vertices()] = true;
-	  if (dim >= 2) used_edge[ngel.Edges()] = true;
-	  if (dim == 3) used_face[ngel.Faces()] = true;
+	  used_vertex[el.Vertices()] = true;
+	  if (dim >= 2) used_edge[el.Edges()] = true;
+	  if (dim == 3) used_face[el.Faces()] = true;
 	}
 
-    for (ElementId ei : ma->Elements<BND>())
-      if (DefinedOn (ei))
+    for (Ngs_Element el : ma->Elements<BND>())
+      if (DefinedOn (el))
 	{
-	  Ngs_Element ngel = (*ma)[ei];
-	  used_vertex[ngel.Vertices()] = true;
-	  if (dim >= 2) used_edge[ngel.Edges()] = true;
-	  if (dim == 3) used_face[ngel.Faces()] = true;
+	  used_vertex[el.Vertices()] = true;
+	  if (dim >= 2) used_edge[el.Edges()] = true;
+	  if (dim == 3) used_face[el.Faces()] = true;
 	}
     
     ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
@@ -607,7 +605,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -687,7 +685,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (elnr);
 
     H1HighOrderFE<ET> * hofe =  new (lh) H1HighOrderFE<ET> ();
     
@@ -719,13 +717,6 @@ namespace ngcomp
   }
  
 
-
-  int H1HighOrderFESpace :: GetNDof () const
-  {
-    return ndof;
-  }
-
-
   int H1HighOrderFESpace :: GetNDofLevel (int alevel) const
   {
     return ndlevel[alevel];
@@ -736,7 +727,7 @@ namespace ngcomp
   {
     if (!DefinedOn (ma->GetElIndex (elnr)))
       {
-	dnums.SetSize(0);
+	dnums.SetSize0();
 	return;
       }
     
@@ -745,12 +736,12 @@ namespace ngcomp
     dnums = ngel.Vertices();
 
     if (ma->GetDimension() >= 2)
-      for (int i = 0; i < ngel.edges.Size(); i++)
-        dnums += GetEdgeDofs (ngel.Edges()[i]);
+      for (auto edge : ngel.Edges())
+        dnums += GetEdgeDofs (edge);
 
     if (ma->GetDimension() == 3)
-      for (int i = 0; i < ngel.faces.Size(); i++)
-        dnums += GetFaceDofs (ngel.Faces()[i]);
+      for (auto face : ngel.Faces())
+        dnums += GetFaceDofs (face);
 
     dnums += GetElementDofs (elnr);
   }
@@ -953,8 +944,8 @@ namespace ngcomp
 	    for (int i = 0; i < ned; i++)
 	      {
 		Ng_Node<1> edge = ma->GetNode<1> (i);
-		for (int k = 0; k < 2; k++)
-		  creator.Add (edge.vertices[k], GetEdgeDofs(i));
+                for (int k = 0; k < 2; k++)
+                  creator.Add (edge.vertices[k], GetEdgeDofs(i));
 	      }
 	    
 	    for (int i = 0; i < nfa; i++)
@@ -1020,11 +1011,8 @@ namespace ngcomp
 	      }
 	    
 	    for (int i = 0; i < ni; i++)
-	      {
-		const Ngs_Element & ngel = ma->GetElement(i);
-		for (int j = 0; j < ngel.vertices.Size(); j++)
-		  creator.Add (ngel.vertices[j], GetElementDofs(i));
-	      }
+              for (auto v : ma->GetElement(i).Vertices())
+                creator.Add (v, GetElementDofs(i));
 
 	    break; 
 	    
@@ -1043,9 +1031,9 @@ namespace ngcomp
 		
 	    for (int i = 0; i < ni; i++)
 	      {
-		const Ngs_Element & ngel = ma->GetElement(i);
-		for (int j = 0; j < ngel.faces.Size(); j++)
-		  creator.Add (nv+ned+ngel.faces[j], GetElementDofs(i));
+		Ngs_Element ngel = ma->GetElement(i);
+                for (auto f : ngel.Faces())
+		  creator.Add (nv+ned+f, GetElementDofs(i));                  
 	      }
 	    break;
 

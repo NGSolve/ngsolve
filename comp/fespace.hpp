@@ -254,7 +254,7 @@ namespace ngcomp
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
     /// get coupling types of dof
-    virtual COUPLING_TYPE GetDofCouplingType (int dof) const; 
+    virtual COUPLING_TYPE GetDofCouplingType (int dof) const;
     
     void CheckCouplingTypes() const;
 
@@ -276,7 +276,7 @@ namespace ngcomp
     /// get dofs on element (=cell) elnr
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
 
-    virtual bool UsesDGCoupling () const {return dgjumps;};
+    virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
     /// returns surface element for boundary interals
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
@@ -582,7 +582,7 @@ namespace ngcomp
     
     virtual void DoArchive (Archive & archive);
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual int GetNDofLevel (int level) const;
     ///
@@ -621,7 +621,7 @@ namespace ngcomp
     ///
     virtual void Update(LocalHeap & lh);
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
@@ -657,7 +657,7 @@ namespace ngcomp
     /// 
     virtual void DoArchive (Archive & archive);
     ///
-    virtual int GetNDof () const { return ndlevel.Last(); }
+    virtual int GetNDof () const throw() { return ndlevel.Last(); }
   
     ///
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
@@ -705,7 +705,7 @@ namespace ngcomp
     virtual void Update(LocalHeap & lh);
 
     ///
-    virtual int GetNDof () const { return ndlevel.Last(); } 
+    virtual int GetNDof () const throw() { return ndlevel.Last(); } 
 
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
@@ -769,7 +769,7 @@ namespace ngcomp
     virtual void UpdateCouplingDofArray();
 
     /// 
-    virtual int GetNDof () const { return cummulative_nd.Last();} //ndlevel.Last(); }
+    virtual int GetNDof () const throw() { return cummulative_nd.Last();} //ndlevel.Last(); }
     ///
     virtual int GetNDofLevel (int level) const { return ndlevel[level]; }
 

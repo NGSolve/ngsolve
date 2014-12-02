@@ -58,7 +58,7 @@ namespace ngcomp
     ///
     virtual void UpdateCouplingDofArray();    
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual int GetNDofLevel (int level) const;
     ///
@@ -153,7 +153,7 @@ namespace ngcomp
     /// 
     //virtual void UpdateDofTables();
     ///
-    virtual int GetNDof () const;
+    virtual int GetNDof () const throw();
     ///
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
     ///

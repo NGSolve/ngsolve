@@ -301,7 +301,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM>(elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
     L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
     
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -367,7 +367,7 @@ namespace ngcomp
       }
   }
 
-  int L2HighOrderFESpace :: GetNDof () const
+  int L2HighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
@@ -534,7 +534,7 @@ namespace ngcomp
       {
 	DGFiniteElement<1> * fe1d = 0;
 	
-	Ngs_Element ngel = ma->GetElement<1> (elnr);
+	Ngs_Element ngel = ma->GetElement<1,BND> (elnr);
 
 	switch (ngel.GetType())
 	  {
@@ -552,7 +552,7 @@ namespace ngcomp
       {
 	DGFiniteElement<2> * fe2d = 0;
 	
-	Ngs_Element ngel = ma->GetElement<2> (elnr);
+	Ngs_Element ngel = ma->GetElement<2,BND> (elnr);
 	
 	switch (ngel.GetType())
 	  {
@@ -607,7 +607,7 @@ namespace ngcomp
     throw Exception ("Volume elements not available for L2SurfaceHighOrderFESpace");
   }
  
-  int L2SurfaceHighOrderFESpace :: GetNDof () const
+  int L2SurfaceHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
