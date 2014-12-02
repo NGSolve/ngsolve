@@ -452,6 +452,28 @@ namespace ngbla
       CMCPMatExpr<FlatMatrix<T> >::operator= (m2);
     }
 
+    Matrix (initializer_list<initializer_list<T>> llist) 
+      : FlatMatrix<T> (0,0,nullptr)
+    {
+      int h = llist.size();
+      int w = 0;
+      for (auto row : llist)
+        w = max(w, int(row.size()));
+
+      SetSize (h, w);
+      (*this) = 0.0;
+
+      int r = 0;
+      for (auto row : llist)
+        {
+          int c = 0;
+          for (auto col : row)
+            (*this)(r,c++) = col;
+          r++;
+        }
+    }
+
+
 
     /// delete memory
     ~Matrix() { delete [] this->data; }
