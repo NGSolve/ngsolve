@@ -386,7 +386,7 @@ namespace ngcomp
     if (!DefinedOn (ma->GetElIndex (ei))) return;
     
     if (!all_dofs_together)
-      dranges.Append (ei.Nr());
+      dranges.Append (IntRange (ei.Nr(), ei.Nr()+1));
     dranges.Append (GetElementDofs(ei.Nr()));
   }
 

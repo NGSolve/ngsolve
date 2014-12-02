@@ -175,7 +175,7 @@ namespace ngstd
     int first, next;
   public: 
     INLINE IntRange () { ; }
-    INLINE IntRange (int f) : first(f), next(f+1) {;} 
+    // INLINE IntRange (int f) : first(f), next(f+1) {;} 
     INLINE IntRange (int f, int n) : first(f), next(n) {;} 
     INLINE int First() const { return first; }
     INLINE int Next() const { return next; }

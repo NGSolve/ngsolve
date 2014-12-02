@@ -475,7 +475,7 @@ namespace ngcomp
           GetSDofNrs (ei.Nr(), dnums);
         dranges.SetSize (0);
         for (int j = 0; j < dnums.Size(); j++)
-          dranges.Append (dnums[j]);
+          dranges.Append (IntRange (dnums[j], dnums[j+1]));
         return;
       }
 
@@ -486,16 +486,16 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     
     if (ma->GetDimension() == 2)
-      for (int i = 0; i < ngel.edges.Size(); i++)
+      for (int e : ngel.Edges())
         {
-          dranges.Append (ngel.edges[i]);
-          dranges.Append (GetFacetDofs(ngel.edges[i]));
+          dranges.Append (IntRange (e,e+1));
+          dranges.Append (GetFacetDofs(e));
         }
     else
-      for (int i = 0; i < ngel.faces.Size(); i++)
+      for (int f : ngel.Faces())
         {
-          dranges.Append (ngel.faces[i]);
-          dranges.Append (GetFacetDofs(ngel.faces[i]));
+          dranges.Append (IntRange (f, f+1));
+          dranges.Append (GetFacetDofs(f));
         }
   }
 

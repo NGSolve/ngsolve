@@ -1058,9 +1058,13 @@ namespace ngcomp
 
     Ngs_Element ngel = ma->GetElement(ei);
 
+    /*
     for (int i = 0; i < ngel.edges.Size(); i++)
       dranges.Append (ngel.edges[i]);
-         
+    */
+    for (int e : ngel.Edges())
+      dranges.Append (IntRange (e, e+1));
+
     for (int i = 0; i < ngel.edges.Size(); i++)
       dranges += GetEdgeDofs (ngel.edges[i]);
 

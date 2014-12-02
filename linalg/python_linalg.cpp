@@ -138,6 +138,7 @@ void ExportNgla() {
                                        bp::list pyvals (vals);
                                        return bp::make_tuple (pyri, pyci, pyvals);
                                      }
+				   throw Exception ("COO needs sparse matrix");
                                  }))
 
     .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
