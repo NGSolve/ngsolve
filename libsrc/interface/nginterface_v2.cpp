@@ -660,6 +660,7 @@ namespace netgen
   }
 
 
+#ifdef PARALLEL
   
   std::tuple<int,int*>  Ngx_Mesh :: GetDistantProcs (int nodetype, int locnum) const
   {
@@ -685,6 +686,8 @@ namespace netgen
 	return std::tuple<int,int*>(0,nullptr);
       }
   }
+
+#endif
 
 }
 
