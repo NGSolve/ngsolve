@@ -526,7 +526,7 @@ void FE_BDMTet1 :: Orthogonalize()
   fiphij = 0;
   
   Matrix<> moments(3,nd);
-  FE_Trig1 trig1;
+  ScalarFE<ET_TRIG,1> trig1;
   
   for (int i = 0; i < 4; i++)
     {

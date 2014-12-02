@@ -437,8 +437,8 @@ namespace ngfem
 
 
       S p1 = c * REC::P0(x);
-      S p2 = c * REC::Pm1(x);
-      
+      // S p2 = c * REC::Pm1(x);
+      S p2 = REC::ZERO_Pm1 ? S(0.0) : c * REC::Pm1(x);
       // if (n < 0) return;
 
       values[0] = p1;
@@ -1503,6 +1503,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     { 
       return 0.5 * (2*(al+1)+(al+be+2)*(x-1));
     }
+    template <class S>
+    INLINE S Pm1(S x) const { return 0.0; }
 
     enum { ZERO_B = 0 };
 
