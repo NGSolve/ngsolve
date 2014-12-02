@@ -746,8 +746,12 @@ namespace ngcomp
     
     FlatArray<int> GetDistantProcs (Node node) const
     {
+#ifdef PARALLEL
       std::tuple<int,int*> tup = mesh.GetDistantProcs(node.GetType(), node.GetNr());
       return FlatArray<int> (std::get<0>(tup), std::get<1>(tup));
+#else
+      return FlatArray<int>(0,nullptr);
+#endif
     }
 
 

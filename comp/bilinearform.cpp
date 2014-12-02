@@ -220,9 +220,8 @@ namespace ngcomp
             else
               fespace->GetDofNrs (i, dnums);
 
-            for (int j = 0; j < dnums.Size(); j++)
-              if (dnums[j] != -1)
-                creator.Add (i, dnums[j]);
+            for (int d : dnums)
+              if (d != -1) creator.Add (i, d);
           }
         
         for (int i = 0; i < nse; i++)
@@ -230,19 +229,15 @@ namespace ngcomp
             if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
             
             fespace->GetSDofNrs (i, dnums);
-            for (int j = 0; j < dnums.Size(); j++)
-              if (dnums[j] != -1)
-                creator.Add (ne+i, dnums[j]);
+            for (int d : dnums)
+              if (d != -1) creator.Add (ne+i, d);
           }
-
 
         for (int i = 0; i < specialelements.Size(); i++)
           {
             specialelements[i]->GetDofNrs (dnums);
-            
-            for (int j = 0; j < dnums.Size(); j++)
-              if (dnums[j] != -1)
-                creator.Add (ne+nse+i, dnums[j]);
+            for (int d : dnums)
+              if (d != -1) creator.Add (ne+nse+i, d);
           }
 
         if (fespace->UsesDGCoupling())
