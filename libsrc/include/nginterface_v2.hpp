@@ -229,6 +229,9 @@ namespace netgen
      bool build_searchtrees = false, 
      int * const indices = NULL, int numind = 0) const;
     
+
+    std::tuple<int,int*> GetDistantProcs (int nodetype, int locnum) const;
+
     shared_ptr<Mesh> SelectMesh () const;
   };
 

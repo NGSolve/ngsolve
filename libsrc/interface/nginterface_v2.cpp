@@ -660,6 +660,31 @@ namespace netgen
   }
 
 
+  
+  std::tuple<int,int*>  Ngx_Mesh :: GetDistantProcs (int nodetype, int locnum) const
+  {
+    
+    switch (nodetype)
+      {
+      case 0:
+	{
+	  FlatArray<int> dn = mesh->GetParallelTopology().GetDistantPNums(locnum);
+	  return std::tuple<int,int*>(dn.Size(), &dn[0]);
+	}
+      case 1:
+	{
+	  FlatArray<int> dn = mesh->GetParallelTopology().GetDistantEdgeNums(locnum);
+	  return std::tuple<int,int*>(dn.Size(), &dn[0]);
+	}
+      case 2:
+	{
+	  FlatArray<int> dn = mesh->GetParallelTopology().GetDistantFaceNums(locnum);
+	  return std::tuple<int,int*>(dn.Size(), &dn[0]);
+	}
+      default:
+	return std::tuple<int,int*>(0,nullptr);
+      }
+  }
 
 }
 

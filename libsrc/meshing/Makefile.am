@@ -34,5 +34,5 @@ libmesh_la_SOURCES = adfront2.cpp adfront3.cpp bisect.cpp boundarylayer.cpp \
 libmesh_la_LIBADD =  $(top_builddir)/libsrc/linalg/libla.la \
 	$(top_builddir)/libsrc/gprim/libgprim.la \
 	$(top_builddir)/libsrc/general/libgen.la \
-	-lz
+	-lz  $(MPI_LIBS)
 

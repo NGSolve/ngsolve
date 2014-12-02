@@ -93,6 +93,10 @@ namespace netgen
       distedgenums = loc2distedge[locedgenum-1];
     } 
 
+    FlatArray<int> GetDistantPNums (int locnum) const { return loc2distvert[locnum]; }
+    FlatArray<int> GetDistantFaceNums (int locnum) const { return loc2distface[locnum]; }
+    FlatArray<int> GetDistantEdgeNums (int locnum) const { return loc2distedge[locnum]; }
+
     bool IsExchangeVert (int dest, int vnum) const
     {
       return loc2distvert[vnum-1].Contains (dest);
