@@ -55,7 +55,7 @@ namespace ngcomp
     {
       int vnums[12];
 
-      Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
+      Ngs_Element nel = mesh -> GetElement<DIMS, (DIMS==DIMR)?VOL:BND> (elnr);
       for (int j = 0; j  < nel.vertices.Size(); j++)
         vnums[j] = nel.vertices[j];
 
@@ -296,7 +296,7 @@ namespace ngcomp
 
       if (eltype == ET_TET)
         {
-          Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
           // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
           p0 = FlatVec<3, const double> (mesh->mesh.GetPoint (nel.Vertices()[3]));
 	  for (int j = 0; j < 3; j++)
@@ -338,7 +338,7 @@ namespace ngcomp
     {
       int vnums[12];
 
-      Ngs_Element nel = mesh -> GetElement<DIMS> (elnr);
+      Ngs_Element nel = mesh -> GetElement<DIMS, (DIMS==DIMR)?VOL:BND> (elnr);
       for (int j = 0; j  < nel.vertices.Size(); j++)
         vnums[j] = nel.vertices[j];
 
@@ -804,10 +804,10 @@ namespace ngcomp
   {
     switch (dim)
       {
-      case 1: fnums = GetElement<1> (elnr).Vertices(); break;
-      case 2: fnums = GetElement<2> (elnr).Edges(); break;
+      case 1: fnums = GetElement<1,VOL> (elnr).Vertices(); break;
+      case 2: fnums = GetElement<2,VOL> (elnr).Edges(); break;
       default:
-        fnums = GetElement<3> (elnr).Faces();
+        fnums = GetElement<3,VOL> (elnr).Faces();
       }
   } 
     
@@ -980,9 +980,9 @@ namespace ngcomp
   double MeshAccess :: ElementVolume (int elnr) const
   {
     static FE_Segm0 segm0;
-    static FE_Trig0 trig0;
-    static FE_Quad0 quad0;
-    static FE_Tet0 tet0;
+    static ScalarFE<ET_TRIG,0> trig0;
+    static ScalarFE<ET_QUAD,0> quad0;
+    static ScalarFE<ET_TET,0> tet0;
     static FE_Prism0 prism0;
     static FE_Pyramid0 pyramid0;
     FE_Hex0 hex0;
@@ -1035,8 +1035,8 @@ namespace ngcomp
   
   double MeshAccess :: SurfaceElementVolume (int selnr) const
   {
-    static FE_Trig0 trig0;
-    static FE_Quad0 quad0;
+    static ScalarFE<ET_TRIG,0> trig0;
+    static ScalarFE<ET_QUAD,0> quad0;
 
     const FiniteElement * fe;
     switch (GetSElType (selnr))

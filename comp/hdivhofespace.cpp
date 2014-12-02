@@ -577,7 +577,7 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, LocalHeap & lh) const
   {
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM> (elnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
 
     hofe -> SetVertexNumbers (ngel.Vertices());
@@ -950,7 +950,7 @@ namespace ngcomp
     return *fe;
   }
   
-  int HDivHighOrderFESpace :: GetNDof () const
+  int HDivHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }

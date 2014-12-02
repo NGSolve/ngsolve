@@ -327,7 +327,7 @@ namespace ngcomp
 
 
 
-  int NedelecFESpace :: GetNDof () const
+  int NedelecFESpace :: GetNDof () const throw()
   {
     return nelevel.Last();
   }
@@ -1041,7 +1041,7 @@ namespace ngcomp
 
 
 
-  int NedelecFESpace2 :: GetNDof () const
+  int NedelecFESpace2 :: GetNDof () const throw()
   {
     return ndlevel.Last();
   }
