@@ -1030,11 +1030,9 @@ namespace ngcomp
 	      creator.Add(nv+ned+i, GetFaceDofs(i));
 		
 	    for (int i = 0; i < ni; i++)
-	      {
-		Ngs_Element ngel = ma->GetElement(i);
-                for (auto f : ngel.Faces())
-		  creator.Add (nv+ned+f, GetElementDofs(i));                  
-	      }
+	      for (int f : ma->GetElement(i).Faces())
+		creator.Add (nv+ned+f, GetElementDofs(i));                  
+
 	    break;
 
 
