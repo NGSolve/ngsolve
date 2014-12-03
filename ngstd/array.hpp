@@ -70,7 +70,8 @@ namespace ngstd
     INLINE AOWrapperIterator operator++ ()
     { return AOWrapperIterator(ao, ++ind); }
     INLINE auto operator*() const -> decltype(ao[ind]) { return ao[ind]; }
-    INLINE decltype(ao[ind]) operator*()  { return ao[ind]; }
+    INLINE auto operator*() -> decltype(ao[ind]) { return ao[ind]; }
+    //   INLINE decltype(ao[ind]) operator*()  { return ao[ind]; }
     INLINE bool operator != (AOWrapperIterator d2) { return ind != d2.ind; }
   };
 
