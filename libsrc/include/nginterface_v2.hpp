@@ -73,8 +73,10 @@ namespace netgen
 
   public:
     NG_ELEMENT_TYPE type;
+    int index;           // material / boundary condition 
+
     NG_ELEMENT_TYPE GetType() const { return type; }
-    
+    int GetIndex() const { return index; }
     Ng_Points points;      // all points
     Ng_Vertices vertices;
     Ng_Edges edges;

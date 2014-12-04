@@ -30,7 +30,7 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
 
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
-
+  ret.index = el.si;
   ret.points.num = el.GetNP();
   ret.points.ptr = (int*)&(el[0]);
 
@@ -53,6 +53,7 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<2> (int nr) const
   
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
+  ret.index = mesh->GetFaceDescriptor(el.GetIndex()).BCProperty();
   ret.points.num = el.GetNP();
   ret.points.ptr  = (int*)&el[0];
 
@@ -75,6 +76,7 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<3> (int nr) const
   
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
+  ret.index = el.GetIndex();
   ret.points.num = el.GetNP();
   ret.points.ptr = (int*)&el[0];
 
