@@ -1371,7 +1371,8 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 	  else
 	    {
 	      static Timer t("dummy - progressreport"); RegionTimer r(t);
-	      MPI_Bsend (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	      MPI_Send (&nr, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+              // changed from BSend (VSC-problem)
 	    }
 #endif
 	  
@@ -1432,7 +1433,7 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
     else
       {
 #ifdef PARALLEL
-	MPI_Bsend (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
+	MPI_Send (&total, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 	int final = -1;
 	MPI_Send (&final, 1, MPI_INT, 0, MPI_TAG_SOLVE, ngs_comm);
 #endif

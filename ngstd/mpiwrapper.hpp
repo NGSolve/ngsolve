@@ -296,7 +296,8 @@ namespace ngstd
     int ntasks;
     MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
     for (int dest = 1; dest < ntasks; dest++)
-      MPI_Bsend( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+      MPI_Send( &buf, 100, MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
+    // changed from BSend (for VSC)
   }
 
 
