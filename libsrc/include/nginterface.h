@@ -324,7 +324,7 @@ extern "C" {
   /// delete gridfunctions
   DLL_HEADER void Ng_ClearSolutionData();
   // redraw 
-  DLL_HEADER void Ng_Redraw();
+  DLL_HEADER void Ng_Redraw(bool blocking = false);
   ///
   DLL_HEADER void Ng_SetMouseEventHandler (netgen::MouseEventHandler * handler);
   ///

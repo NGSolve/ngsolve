@@ -971,6 +971,7 @@ proc timer2 { } {
     Ng_ReadStatus 
 
     if { $multithread_redraw == 1 } {
+        # non-blocking redraw
 	set multithread_redraw 0;
 	redraw;
         
@@ -980,6 +981,20 @@ proc timer2 { } {
             .ndraw Ng_VideoClip addframe
         }
     }
+    if { $multithread_redraw == 2 } {
+        # blocking redraw
+	redraw;
+	set multithread_redraw 0;
+        
+        global videoactive
+        if { $videoactive == 1 } {
+            puts "addframe"
+            .ndraw Ng_VideoClip addframe
+        }
+        after 1 { timer2 }
+        return
+    }
+
 
     # global mem_moveable
     # set mem_moveable [Ng_MemInfo moveable]

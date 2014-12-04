@@ -1364,7 +1364,7 @@ namespace netgen
     multithread.running = 1;
     multithread.terminate = 0;
     
-    extern void Render();
+    extern void Render(bool blocking);
     mparam.render_function = &Render;
 
     for (int i = 0; i < geometryregister.Size(); i++)

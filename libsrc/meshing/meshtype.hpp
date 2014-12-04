@@ -1110,11 +1110,11 @@ namespace netgen
     // void CopyFrom(const MeshingParameters & other);
     
 
-    void (*render_function)() = NULL;
-    void Render()
+    void (*render_function)(bool) = NULL;
+    void Render(bool blocking = false)
     {
       if (render_function) 
-        (*render_function)();
+        (*render_function)(blocking);
     }
   };
 

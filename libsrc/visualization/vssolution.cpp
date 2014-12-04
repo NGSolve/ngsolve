@@ -4609,14 +4609,14 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 
 namespace netgen
 {
-  extern void Render ();
+  extern void Render (bool blocking);
 }
 
-void Ng_Redraw ()
+void Ng_Redraw (bool blocking)
 {
 #ifdef OPENGL
   netgen::vssolution.UpdateSolutionTimeStamp();
-  netgen::Render();
+  netgen::Render(blocking);
 #endif
 }
 
