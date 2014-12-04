@@ -693,6 +693,14 @@ int NGS_SocketLoad (ClientData clientData,
           SocketInArchive archive (socket);
           pde = make_shared<PDE>();
           pde->DoArchive (archive);
+
+#ifdef NGS_PYTHON
+	  {
+	    AcquireGIL gil_lock;
+	    pyenv["pde"] = bp::ptr(&*pde);
+	  }
+#endif
+
           return TCL_OK;
         }
       catch (SocketException & e)
