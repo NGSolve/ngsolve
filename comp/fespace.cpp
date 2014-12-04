@@ -344,24 +344,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<int> dnums;
 
     if (dirichlet_boundaries.Size())
-      for (int i = 0; i < ma->GetNSE(); i++)
-	{
-	  if (dirichlet_boundaries[ma->GetSElIndex(i)])
-	    {
-	      GetSDofNrs (i, dnums);
-	      for (int j = 0; j < dnums.Size(); j++)
-		if (dnums[j] != -1)
-		  dirichlet_dofs.Set (dnums[j]);
-	    }
-	}	 
+      for (ElementId ei : ma->Elements<BND>())
+	if (dirichlet_boundaries[ma->GetElIndex(ei)])
+	  {
+	    GetDofNrs (ei, dnums);
+	    for (int d : dnums)
+	      if (d != -1) dirichlet_dofs.Set (d);
+	  }
 	
     for (int i = 0; i < dirichlet_vertex.Size(); i++)
       if (dirichlet_vertex[i])
 	{
 	  GetVertexDofNrs (i, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1)
-	      dirichlet_dofs.Set (dnums[j]);
+	  for (int d : dnums)
+	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
     for (int i = 0; i < dirichlet_edge.Size(); i++)
@@ -468,12 +464,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
         if (vb == VOL)
           {
-            /*
-            delete element_coloring;
-            element_coloring = new Table<int> (cntcol);
-            */
             element_coloring = Table<int> (cntcol);
-
             cntcol = 0;
             for (int i = 0; i < ma->GetNE(vb); i++)
               if (DefinedOn (ElementId(vb,i))) 
@@ -481,10 +472,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         else
           {
-            /*
-            delete selement_coloring;
-            selement_coloring = new Table<int> (cntcol);
-            */
             selement_coloring = Table<int> (cntcol);
             cntcol = 0;
             for (int i = 0; i < ma->GetNE(vb); i++)
@@ -1368,7 +1355,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: DoArchive (Archive & archive)
   {
-    archive & ndlevel;
+    // archive & ndlevel;
+    if (archive.Input())
+      {
+	ndlevel.SetSize(1);
+	ndlevel[0] = ma->GetNV();
+      }
   }
 
 

@@ -42,23 +42,16 @@ template <NODE_TYPE NT, typename T, typename TSIZE>
 Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
 {
   if (MyMPI_GetNTasks() == 1) return archive & a.A();
-  cout << "we do Archive for nodalarray" << endl;
   
-  auto g = [] (int size) { cout << "total size: " << size << endl; };    
+  auto g = [&] (int size) { archive & size; };    
 
-  auto f2 = [] (INT<2> key, double val) 
-    { 
-      cout << "key = ";
-      for(int k=0;k<2;k++)
-	cout << " " << key[k];
-      cout << ", val = " << val << endl;
-    };
+  typedef typename key_trait<NT>::TKEY TKEY;
+  auto f = [&] (TKEY key, T val) { archive & val; };
       
-  GatherNodalData<NT_EDGE> (a.GetMeshAccess(), a.A(), g, f2);
+  GatherNodalData<NT> (a.GetMeshAccess(), a.A(), g, f);
 
   return archive;
 }
-
 
 
 
@@ -511,17 +504,17 @@ namespace ngcomp
     low_order_space -> DoArchive (archive);
     FESpace::DoArchive(archive);
     archive & level;
-    cout << "proc " << MyMPI_GetId() << " send order edge array" << endl;
-    MyMPI_Barrier();
-    archive & NodalData<NT_EDGE> (*ma, order_edge);
-    MyMPI_Barrier();
-    cout << "all alive" << endl;
 
-    archive & order_face & order_inner;
-    archive & first_edge_dof & first_face_dof & first_element_dof;
+    archive & NodalData<NT_EDGE> (*ma, order_edge);
+    archive & NodalData<NT_FACE> (*ma, order_face);
+    archive & NodalData<NT_CELL> (*ma, order_inner);
+
+    if (archive.Input())
+      UpdateDofTables();
+
     archive & rel_order & var_order & fixed_order & wb_loedge;
     archive & used_vertex & used_edge & used_face;
-    archive & ndof & uniform_order_inner & uniform_order_face 
+    archive & uniform_order_inner & uniform_order_face 
       & uniform_order_edge & uniform_order_quad & uniform_order_trig;
     archive & dom_order_min & dom_order_max;
     // archive & smoother;
