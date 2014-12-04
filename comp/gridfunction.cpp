@@ -6,6 +6,55 @@
 
 
 
+#ifdef PARALLEL
+
+using namespace ngcomp; 
+
+#include "../parallel/dump.hpp"
+
+
+template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+class NodalArray
+{
+  const MeshAccess & ma;
+  Array<TELEM,TSIZE> & a;
+public:
+  NodalArray (const MeshAccess & ama, Array<TELEM,TSIZE> & aa) : ma(ama), a(aa) { ; }
+  const MeshAccess & GetMeshAccess() const { return ma; }
+  Array<TELEM,TSIZE> & A() { return a; }
+};
+
+template <NODE_TYPE NT, typename TELEM, typename TSIZE>
+auto NodalData (const MeshAccess & ama, Array<TELEM,TSIZE> & a) -> NodalArray<NT,TELEM,TSIZE> 
+{ return NodalArray<NT,TELEM,TSIZE> (ama, a); }
+
+
+
+template <NODE_TYPE NT, typename T, typename TSIZE> 
+Archive & operator & (Archive & archive, NodalArray<NT,T,TSIZE> && a)
+{
+  if (MyMPI_GetNTasks() == 1) return archive & a.A();
+  
+  auto g = [&] (int size) { archive & size; };    
+
+  typedef typename key_trait<NT>::TKEY TKEY;
+  auto f = [&] (TKEY key, T val) { archive & val; };
+      
+  GatherNodalData<NT> (a.GetMeshAccess(), a.A(), g, f);
+
+  return archive;
+}
+
+
+
+#else
+template <NODE_TYPE NT, typename TELEM>
+auto NodalData (MeshAccess & ma, Array<TELEM> & a) -> Array<TELEM> & { return a; }
+#endif
+
+
+
+
 namespace ngcomp
 {
   using namespace ngmg;
@@ -46,8 +95,70 @@ namespace ngcomp
     for (int i = 0; i < vec.Size(); i++)
       {
         FlatVector<double> fv = vec[i] -> FVDouble();
+
+	/*
         for (int i = 0; i < fv.Size(); i++)
           archive & fv(i);
+	*/
+
+	if (archive.Output())
+	  {
+	    Array<int> dnums;
+	    Array<double> temp (ma->GetNV());
+	    temp = 0;
+	    for (int i = 0; i < ma->GetNV(); i++)
+	      {
+		fespace->GetNodeDofNrs (NT_VERTEX, i, dnums);
+		if (dnums.Size())
+		  temp[i] = fv(dnums[0]);
+	      }
+	    archive & NodalData<NT_VERTEX> (*ma, temp);
+	  }
+	else
+	  {
+	    Array<double> temp;
+	    archive & NodalData<NT_VERTEX> (*ma, temp);
+
+	    Array<int> dnums;
+	    for (int i = 0; i < ma->GetNV(); i++)
+	      {
+		fespace->GetNodeDofNrs (NT_VERTEX, i, dnums);
+		if (dnums.Size())
+		  fv(dnums[0]) = temp[i];
+	      }
+
+	  }
+
+	if (archive.Output())
+	  {
+	    Array<int> dnums;
+	    Array<double> temp (ma->GetNEdges());
+	    temp = 0;
+	    for (int i = 0; i < ma->GetNEdges(); i++)
+	      {
+		fespace->GetNodeDofNrs (NT_EDGE, i, dnums);
+		if (dnums.Size())
+		  temp[i] = fv(dnums[0]);
+	      }
+	    archive & NodalData<NT_EDGE> (*ma, temp);
+	  }
+	else
+	  {
+	    Array<double> temp;
+	    archive & NodalData<NT_EDGE> (*ma, temp);
+
+	    Array<int> dnums;
+	    for (int i = 0; i < ma->GetNEdges(); i++)
+	      {
+		fespace->GetNodeDofNrs (NT_EDGE, i, dnums);
+		if (dnums.Size())
+		  fv(dnums[0]) = temp[i];
+	      }
+
+	  }
+
+
+
       }
     if (archive.Input()) Visualize(name);
   }

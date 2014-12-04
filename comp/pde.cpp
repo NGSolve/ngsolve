@@ -867,7 +867,6 @@ namespace ngcomp
           }
       }
 
-    /*
     // archive gridfunctions
     if (archive.Output())
       {
@@ -876,6 +875,10 @@ namespace ngcomp
           {
             archive << string (gridfunctions.GetName(i));
             archive << gridfunctions[i]->GetFESpace()->GetName();
+
+	    MyMPI_SendCmd ("ngs_archive_gridfunction");
+	    MyMPI_Bcast (i);
+
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
           }
@@ -895,7 +898,6 @@ namespace ngcomp
             gridfunctions[i] -> Visualize(name);
           }
       }
-    */
   }
 
 
