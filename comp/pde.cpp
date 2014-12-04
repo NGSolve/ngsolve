@@ -819,8 +819,6 @@ namespace ngcomp
     
     cout << "mesh complete" << endl;
 
-    cout << "mesh complete" << endl;
-
     archive & constants;
     archive & string_constants;
     archive & variables;
@@ -844,7 +842,7 @@ namespace ngcomp
 	    MyMPI_Bcast (i);
 
             spaces[i] -> DoArchive(archive);
-	    cout << "space complete" << endl;
+	    cout << "space " << i << " complete" << endl;
           }
       }
     else
@@ -865,9 +863,11 @@ namespace ngcomp
             fes -> FinalizeUpdate (lh);
             spaces.Set (name, fes);
             todo.Append(fes.get());
+	    cout << "space " << i << " complete" << endl;
           }
       }
 
+    /*
     // archive gridfunctions
     if (archive.Output())
       {
@@ -895,6 +895,7 @@ namespace ngcomp
             gridfunctions[i] -> Visualize(name);
           }
       }
+    */
   }
 
 
