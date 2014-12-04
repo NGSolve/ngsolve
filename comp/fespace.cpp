@@ -1196,8 +1196,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
 	  GetNodeDofNrs (nt, nr, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    dofnodes[dnums[j]] = Node (nt, nr);
+	  for (int d : dnums)
+	    dofnodes[d] = Node (nt, nr);
 	} 
 
     paralleldofs = new ParallelMeshDofs (ma, dofnodes, dimension, iscomplex);
