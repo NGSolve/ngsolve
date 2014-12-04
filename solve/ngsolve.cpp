@@ -1448,6 +1448,16 @@ void NGS_ParallelRun (const string & message)
       pde->GetSpaceTable()[nr] -> DoArchive (archive);
     }
 
+  else if ( message == "ngs_archive_gridfunction" )
+    {
+      int nr;
+      MyMPI_Bcast (nr);
+      cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
+      WorkerOutArchive archive;
+      pde->GetGridFunctionTable()[nr] -> DoArchive (archive);
+    }
+
+
   else if ( message == "ngs_exit" )
     {
       pde.reset(); 
