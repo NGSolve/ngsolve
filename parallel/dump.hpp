@@ -109,21 +109,21 @@ namespace ngstd
   */
 
   template <NODE_TYPE NT>
-  auto GetGlobalNodeId (const MeshAccess & ma, int nr) -> typename key_trait<NT>::TKEY
+  inline auto GetGlobalNodeId (const MeshAccess & ma, int nr) -> typename key_trait<NT>::TKEY
   { 
     cout << "called base GetGlobalNodeId!!" << endl;
     return 1;
   }
 
   template <>
-  auto GetGlobalNodeId<NT_VERTEX> (const MeshAccess & ma, int nr) 
+  inline auto GetGlobalNodeId<NT_VERTEX> (const MeshAccess & ma, int nr) 
     -> typename key_trait<NT_VERTEX>::TKEY 
   { 
     return ma.GetGlobalNodeNum (Node(NT_VERTEX, nr));
   }
 
   template <>
-  auto GetGlobalNodeId<NT_EDGE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_EDGE>::TKEY 
+  inline auto GetGlobalNodeId<NT_EDGE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_EDGE>::TKEY 
   {
     int pi1,pi2;
     ma.GetEdgePNums (nr, pi1, pi2);
@@ -132,7 +132,7 @@ namespace ngstd
   }
 
   template <>
-  auto GetGlobalNodeId<NT_FACE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_FACE>::TKEY 
+  inline auto GetGlobalNodeId<NT_FACE> (const MeshAccess & ma, int nr) -> typename key_trait<NT_FACE>::TKEY 
   {
     Array<int> edges (3);
     Array<int> verts;
@@ -151,7 +151,7 @@ namespace ngstd
   }
 
   template <>
-  auto GetGlobalNodeId<NT_CELL> (const MeshAccess & ma, int nr) -> typename key_trait<NT_CELL>::TKEY 
+  inline auto GetGlobalNodeId<NT_CELL> (const MeshAccess & ma, int nr) -> typename key_trait<NT_CELL>::TKEY 
   {
     Array<int> faces(4);
     Array<int> verts;
@@ -201,7 +201,7 @@ namespace ngstd
   }
 
 
-
+  /*
   template <typename DT> struct MPIT {};
   template<> struct MPIT<double> {static MPI_Datatype mpi_type;};
   MPI_Datatype MPIT<double> :: mpi_type = MPI_DOUBLE;
@@ -228,17 +228,18 @@ namespace ngstd
     }
   };
   static class_init_mpi_types init_mpi_types;
-
+  */
 
   //provides the place in merge-tree
-  void find_SRRMS (int rank, int np, int* p1, int* p2, int* p3, bool ignore_in, bool ignore_out);
-  void find_ROMS (int rank, int np, int* p1, int* p2); 
+  inline void find_SRRMS (int rank, int np, int* p1, int* p2, int* p3, bool ignore_in, bool ignore_out);
+  inline void find_ROMS (int rank, int np, int* p1, int* p2); 
 
 
   template<typename DT, NODE_TYPE NT>
   void packaged_buffered_send(int rank, int np, DT* a, typename key_trait<NT>::TKEY* b, int n, int pkg_size, int p)
   {
-    MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
     //get type for keys
     MPI_Datatype mpi_type_key;
     SetMPIType<NT>(&mpi_type_key);
@@ -277,7 +278,8 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key_trait<NT>::TKEY *array_dnrs, int n, int p_in, int p_out)
   {
-    MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
     //get type for keys
     MPI_Datatype mpi_type_key;
     SetMPIType<NT>(&mpi_type_key);
@@ -470,7 +472,8 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_in_in_out (int pkg_size, int rank, int np, int p1, int p2, int p_out)
   {
-    MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
     //get type for keys
     MPI_Datatype mpi_type_key;
     SetMPIType<NT>(&mpi_type_key);
@@ -807,7 +810,8 @@ namespace ngstd
 				     TSIZEFUNC sf, TFUNC f)
   {
     //get type for array
-    MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
     //get type for keys
     MPI_Datatype mpi_type_key;
     SetMPIType<NT>(&mpi_type_key);
