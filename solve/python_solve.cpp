@@ -21,7 +21,9 @@ void ExportNgsolve() {
     bp::scope local_scope(module);
 
     bp::def ("Redraw", 
-             FunctionPointer([]() {Ng_Redraw();}));
+             FunctionPointer([](bool blocking = false) {Ng_Redraw(blocking);}),
+             (bp::arg("blocking")=false)
+             );
 }
 
 
