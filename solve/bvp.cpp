@@ -13,8 +13,9 @@ namespace ngsolve
   class NumProcBVP : public NumProc
   {
   protected:
-    shared_ptr<BilinearForm> bfa;
-    // decltype ( GetReturnValue (&PDE::GetBilinearForm) ) 
+    // shared_ptr<BilinearForm> bfa;
+    // std::result_of<PDE.GetBilinearForm(const string&,bool)>::type bfa;
+    decltype ( GetReturnValue (&PDE::GetBilinearForm) ) bfa;
     ///
     shared_ptr<LinearForm> lff;
     ///

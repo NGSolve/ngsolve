@@ -35,8 +35,8 @@ class npParabolic(PyNumProc):
             u.data += tau * w
             
             print ("t = ", t)
-            Redraw()
-            sleep (0.05)
+            Redraw(blocking=True)
+            # sleep (0.001)
            
        
    
