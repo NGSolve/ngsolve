@@ -75,7 +75,30 @@ namespace ngstd
     static MPI_Datatype MPIType () { return MPI_SHORT; }
   }; 
 
-  
+  template <>
+  class MPI_Traits<unsigned char>
+  {
+  public:
+    static MPI_Datatype MPIType () { return MPI_BYTE; }
+  }; 
+
+
+  template<int S, typename T>
+  class MPI_Traits<INT<S, T> >
+  {
+  public:
+    /// gets the MPI datatype
+    static MPI_Datatype MPIType () 
+    { 
+      static MPI_Datatype MPI_T = 0;
+      if (!MPI_T)
+	{
+	  MPI_Type_contiguous ( S, MPI_Traits<T>::MPIType(), &MPI_T);
+	  MPI_Type_commit ( &MPI_T );
+	}
+      return MPI_T;
+    }
+  };
 
 
   template <class T>
@@ -193,31 +216,31 @@ namespace ngstd
 
 
   template <class T>
-  inline void MyMPI_Send (FlatArray<T> s, int dest, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Send (FlatArray<T> s, int dest, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Send( &s[0], s.Size(), MPI_T, dest, tag, ngs_comm);
+    MPI_Send( &s[0], s.Size(), MPI_T, dest, tag, comm);
   }
 
   template <class T>
-  inline void MyMPI_Recv (FlatArray <T> s, int src, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Recv (FlatArray <T> s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Recv (&s[0], s.Size(), MPI_T, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&s[0], s.Size(), MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
 
   template <class T>
-  inline void MyMPI_Recv (Array <T> & s, int src, int tag = MPI_TAG_SOLVE)
+  inline void MyMPI_Recv (Array <T> & s, int src, int tag = MPI_TAG_SOLVE, MPI_Comm comm = ngs_comm)
   {
     MPI_Status status;
     int len;
     const MPI_Datatype MPI_T  = MyGetMPIType<T> ();
-    MPI_Probe (src, tag, ngs_comm, &status);
+    MPI_Probe (src, tag, comm, &status);
     MPI_Get_count (&status, MPI_T, &len);
 
     s.SetSize (len);
-    MPI_Recv (&s[0], len, MPI_T, src, tag, ngs_comm, MPI_STATUS_IGNORE);
+    MPI_Recv (&s[0], len, MPI_T, src, tag, comm, MPI_STATUS_IGNORE);
   }
 
   template <class T>
