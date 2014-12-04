@@ -321,6 +321,21 @@ namespace ngcomp
         }
     }
 
+    bool DefinedOn (Ngs_Element el) const
+    {
+      if (el.IsBoundary())
+        {
+          if (!definedonbound.Size()) return true;
+          return DefinedOnBoundary (el.GetIndex());
+        }
+      else
+        {
+          if (!definedon.Size()) return true;
+          return DefinedOn (el.GetIndex());
+        }
+    }
+
+
     ///
     void SetDefinedOn (const BitArray & defon);
     ///

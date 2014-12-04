@@ -63,7 +63,8 @@ class npALE_instat(PyNumProc):
     
         mstar = a.mat.CreateMatrix()
 
-        d.Set(VariableCF("(4*y*(1-y)*x*(1-x),(4*y*(1-y)*x*(1-x))"))
+        # d.Set(VariableCF("(4*y*(1-y)*x*(1-x),(4*y*(1-y)*x*(1-x))"))
+        d.Set(VariableCF("(1*y*x*(1-x),(1*y*x*(1-x))"))
         dmax = d.vec.CreateVector()
         dold = d.vec.CreateVector()
         
