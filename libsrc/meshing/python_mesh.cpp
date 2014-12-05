@@ -143,6 +143,12 @@ void ExportNetgenMeshing()
                   FunctionPointer ([](MP & mp, double maxh) { return mp.maxh = maxh; }))
                   
     ;
+
+  bp::def("SetTestoutFile", FunctionPointer ([] (const string & filename)
+                                             {
+                                               delete testout;
+                                               testout = new ofstream (filename);
+                                             }));
 }
 
 

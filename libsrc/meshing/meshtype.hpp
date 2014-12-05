@@ -1091,7 +1091,7 @@ namespace netgen
     ///
     int secondorder = 0;
     /// high order element curvature
-    int elementorder;
+    int elementorder = 1;
     /// quad-dominated surface meshing
     int quad = 0;
     ///

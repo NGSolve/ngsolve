@@ -634,7 +634,7 @@ void WriteFEPPFormat (const Mesh & mesh,
       int np = mesh.GetNP();
       int ne = mesh.GetNE();
       int nse = mesh.GetNSE();
-      int ns = mesh.GetNFD();
+      // int ns = mesh.GetNFD();
       int i, j;
 
       outfile.precision(5);
