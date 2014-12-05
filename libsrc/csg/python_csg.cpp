@@ -93,7 +93,7 @@ public:
       }
   }
 
-  void SetMaxH(int amaxh) 
+  void SetMaxH(double amaxh) 
   {
     if (maxh == -1) 
       {

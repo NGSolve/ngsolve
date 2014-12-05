@@ -41,9 +41,8 @@ namespace netgen
     PrintMessage (1, "Find edges");
     PushStatus ("Find edges");
 
-    for (int i = 1; i <= mesh.GetNP(); i++)
-      meshpoint_tree->Insert (mesh.Point(i), i);
-
+    for (PointIndex pi : mesh.Points().Range())    
+      meshpoint_tree->Insert (mesh[pi], pi);
 
     // add all special points before edge points (important for periodic identification)
     // JS, Jan 2007
@@ -63,6 +62,7 @@ namespace netgen
               meshpoint_tree -> Insert (p, pi); 
             }
         }
+           
 
     /*
       // slow version
@@ -856,11 +856,9 @@ namespace netgen
 	if (uselocalh)
 	  {
 	    double lh = mesh.GetH(np);
-	    if (lh < loch)
-	      loch = lh;
+	    if (lh < loch) loch = lh;
 	  }
-      
-      
+        
 	len += Dist (p, np) / loch;
 	edgepoints.Append (np);
 	curvelength.Append (len);

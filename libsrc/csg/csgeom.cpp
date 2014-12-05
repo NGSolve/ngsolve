@@ -511,7 +511,7 @@ namespace netgen
  
   void CSGeometry :: AddSurface (char * name, Surface * surf)
   { 
-    (*testout) << "Adding surface " << name << endl;
+    (*testout) << "Adding surface " << name << ": " << (*surf) << endl;
     surfaces.Set (name, surf); 
     surf->SetName (name);
     changeval++; 

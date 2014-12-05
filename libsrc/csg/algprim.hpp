@@ -44,7 +44,7 @@ namespace netgen
     virtual Point<3> GetSurfacePoint () const;
 
 
-    virtual void Print (ostream & ist) const;
+    virtual void Print (ostream & str) const;
     virtual void Read (istream & ist);
     void PrintCoeff (ostream & ost) const;
   };
@@ -70,6 +70,8 @@ namespace netgen
     static Primitive * CreateDefault ();
 
     virtual Primitive * Copy () const;
+    virtual void Print (ostream & str) const;
+
     virtual void Transform (Transformation<3> & trans);
 
 
@@ -190,6 +192,8 @@ namespace netgen
     static Primitive * CreateDefault ();
 
     virtual Primitive * Copy () const;
+    virtual void Print (ostream & str) const;
+
     virtual void Transform (Transformation<3> & trans);
 
     ///
