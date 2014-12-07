@@ -73,6 +73,7 @@ namespace netgen
     void GetTangentialSurfaceIndices2 (const Point<3> & p, const Vec<3> & v, Array<int> & surfids, double eps) const;
     void GetTangentialSurfaceIndices3 (const Point<3> & p, const Vec<3> & v, const Vec<3> & v2, Array<int> & surfids, double eps) const;
 
+    void ForEachSurface (const std::function<void(Surface*,bool)> & lambda, bool inv = false) const;
 
     Primitive * GetPrimitive ()
     { return (op == TERM || op == TERM_REF) ? prim : NULL; }

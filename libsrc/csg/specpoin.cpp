@@ -199,15 +199,22 @@ namespace netgen
 	throw NgException (err.c_str());
       }
 
+    if (level == 40 || level == 41 || level == 45)
+      {
+        *testout << "level = " << level << " cp = " << calccp << " ep = " << calcep << ", box = " << box << ", solid = " << *sol << endl;
+      }
+
+
 
     bool decision;
     bool possiblecrossp, possibleexp;  // possible cross or extremalpoint
     bool surecrossp = 0, sureexp = 0;          // sure ...
   
-    static Array<int> locsurf;  // attention: array is static
+    // static Array<int> locsurf;  // attention: array is static
+    ArrayMem<int,100> locsurf; 
 
-    static int cntbox = 0;
-    cntbox++;
+    // static int cntbox = 0;
+    // cntbox++;
 
     if (level <= boxesinlevel.Size())
       boxesinlevel.Elem(level)++;
@@ -619,8 +626,10 @@ namespace netgen
 		      Point<3> pp;
 		      if (IsEdgeExtremalPoint (surf1, surf2, p, pp, box.Diam()/2))
 			{
-			  (*testout) << "extremalpoint (nearly) found:" << pp << endl;
-
+			  (*testout) << "extremalpoint (nearly) found:" << pp 
+                                     << "box.diam = " << box.Diam() << ", dist = " << Dist(pp,box.Center())
+                                     << endl;
+                          
 			  if (Dist (pp, box.Center()) < box.Diam()/2 &&
 			      sol -> IsIn (pp, 1e-6*size) && !sol->IsStrictIn (pp, 1e-6*size) )
 			    {

@@ -63,7 +63,8 @@ namespace netgen
   public:
     ///
     Plane (const Point<3> & ap, Vec<3> an);
-
+    Point<3> P() const { return p; }
+    Vec<3> N() const { return n; }
     virtual void GetPrimitiveData (const char *& classname, 
 				   Array<double> & coeffs) const;
     virtual void SetPrimitiveData (Array<double> & coeffs);
@@ -186,7 +187,9 @@ namespace netgen
   public:
     Cylinder (const Point<3> & aa, const Point<3> & ab, double ar);
     Cylinder (Array<double> & coeffs);
-
+    Point<3> A() const { return a; }
+    Point<3> B() const { return b; }
+    double R() const { return r; }
     virtual void GetPrimitiveData (const char *& classname, Array<double> & coeffs) const;
     virtual void SetPrimitiveData (Array<double> & coeffs);
     static Primitive * CreateDefault ();

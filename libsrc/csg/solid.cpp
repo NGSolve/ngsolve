@@ -1231,6 +1231,88 @@ namespace netgen
 
   Solid * Solid :: RecGetReducedSolid (const BoxSphere<3> & box, INSOLID_TYPE & in) const
   {
+
+
+    {
+      // checking special case for degenerated plane - cylinder, Dec 2014
+      int cnt_plane = 0, cnt_cyl = 0;
+      bool inv_plane, inv_cyl;
+      Plane * plane;
+      Cylinder * cyl;
+
+      ForEachSurface ( [&] (Surface * surf, bool inv)
+                       {
+                         if (dynamic_cast<Plane*>(surf))
+                           {
+                             cnt_plane++;
+                             plane = dynamic_cast<Plane*>(surf);
+                             inv_plane = inv;
+                           }
+                         if (dynamic_cast<Cylinder*>(surf))
+                           {
+                             cnt_cyl++;
+                             cyl = dynamic_cast<Cylinder*>(surf);
+                             inv_cyl = inv;
+                           }
+                       });
+
+      if (cnt_plane == 1 && cnt_cyl == 1)
+        {
+          double scala = (cyl->A()-plane->P()) * plane->N();
+          double scalb = (cyl->B()-plane->P()) * plane->N();
+          double scal = plane->N() * plane->N();
+          if ( ( fabs (scala*scala - cyl->R()*cyl->R()*scal) < 1e-10*cyl->R()*cyl->R() ) &&
+               ( fabs (scalb*scalb - cyl->R()*cyl->R()*scal) < 1e-10*cyl->R()*cyl->R() ) )
+            {
+              // intersection edge in box ?
+              Point<3> p0 = cyl->A() - (scala/scal) * plane->N();
+              Vec<3> vedge = cyl->B() - cyl->A();
+              Vec<3> ve_center = box.Center()-p0;
+
+              // dist(lam) = \| ve_center \|^2 - 2 lam (vedge, ve_center) + lam^2 \| vedge \|^2
+
+              double num = vedge*ve_center;
+              double den = vedge*vedge;
+
+              double dist_edge_center2 = ve_center*ve_center  - num * num /den;
+              
+                
+              bool edge_in_box =  dist_edge_center2 < sqr (box.Diam());
+
+                
+              if (!edge_in_box)
+                {
+                  if (op == SECTION)
+                    {
+                      // cout << "solid = " << *this << endl;
+                      if (!inv_cyl && !inv_plane && scala < 0) 
+                        {
+                          cout << "fix for degenerated cyl-plane edge: just the cylinder" << endl;
+                          Solid * sol = new Solid (cyl);
+                          sol -> op = TERM_REF;
+                          return sol;
+                        }
+                    }
+
+                  if (op == UNION)
+                    {
+                      // cout << "solid = " << *this << ", inv_plane = " << inv_plane << " inv_cyl = " << inv_cyl << " scalb " << scalb << endl;
+                      if (!inv_plane && !inv_cyl && (scala < 0))
+                        {
+                          cout << "fix for degenerated cyl-plane edge: just the plane" << endl;
+                          // return new Solid (plane);
+                          Solid * sol = new Solid (plane);
+                          sol -> op = TERM_REF;
+                          return sol;
+                        }
+                    }
+                  ; // *testout << "have 1 plane and 1 cyl, degenerated" << endl;
+                }
+            }
+        }
+    }
+
+
     Solid * redsol = NULL;
 
     switch (op)
@@ -1417,6 +1499,36 @@ namespace netgen
       }
   }
 
+  void Solid :: ForEachSurface (const std::function<void(Surface*,bool)> & lambda, bool inv) const
+  {
+    switch (op)
+      {
+      case TERM: case TERM_REF:
+	{
+	  for (int j = 0; j < prim->GetNSurfaces(); j++)
+	    if (prim->SurfaceActive (j))
+              lambda (&prim->GetSurface(j), inv);
+	  break;
+	}
+      case UNION:
+      case SECTION:
+	{
+	  s1 -> ForEachSurface (lambda, inv);
+	  s2 -> ForEachSurface (lambda, inv);
+	  break;
+	}
+      case SUB:
+        {
+	  s1 -> ForEachSurface (lambda, !inv);
+	  break;
+        }
+      case ROOT:
+	{
+	  s1 -> ForEachSurface (lambda, inv);
+	  break;
+	}
+      }
+  }
 
 
   void Solid :: GetTangentialSurfaceIndices (const Point<3> & p, Array<int> & surfind, double eps) const

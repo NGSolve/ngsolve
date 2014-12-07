@@ -111,9 +111,9 @@ public:
 
   void SetColor(double ared, double agreen, double ablue)
   {
-	  red = ared;
-	  green = agreen;
-	  blue = ablue;
+    red = ared;
+    green = agreen;
+    blue = ablue;
   }
 
   double GetRed() const { return red; }
@@ -285,6 +285,27 @@ void ExportCSG()
 			self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
           }))
 
+    .def("CloseSurfaces", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, int reflevels)
+          {
+            Array<int> si1, si2;
+            s1->GetSolid()->GetSurfaceIndices (si1);
+            s2->GetSolid()->GetSurfaceIndices (si2);
+            cout << "surface ids1 = " << si1 << endl;
+            cout << "surface ids2 = " << si2 << endl;
+
+            Flags flags;
+            const TopLevelObject * domain = nullptr;
+            self.AddIdentification 
+              (new CloseSurfaceIdentification 
+               (self.GetNIdentifications()+1, self, 
+                self.GetSurface (si1[0]), self.GetSurface (si2[0]),
+                domain,
+                flags));
+          }),
+         (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("reflevels")=2)
+         )
+          
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
 
@@ -300,7 +321,14 @@ void ExportCSG()
              return dummy;
            }))
     ;
-  
+  bp::def("ZRefinement", FunctionPointer
+          ([](Mesh & mesh, CSGeometry & geom)
+          {
+            ZRefinementOptions opt;
+            opt.minref = 5;
+            ZRefinement (mesh, &geom, opt);
+          }))
+    ;
 }
 
 
