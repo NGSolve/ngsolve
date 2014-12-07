@@ -145,6 +145,7 @@ void ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  PyExportArray<string>();
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
                                                  "the mesh", 
                                                  bp::init<string>())
@@ -167,6 +168,16 @@ void ExportNgcomp()
           bp::return_value_policy<bp::reference_existing_object>())
 
     .def("SetDeformation", &MeshAccess::SetDeformation)
+    
+    .def("GetMaterials", FunctionPointer([](const MeshAccess & ma)
+                                         {
+                                           Array<string> materials(ma.GetNDomains());
+                                           for (int i : materials.Range())
+                                            materials[i] = ma.GetDomainMaterial(i);
+                                           cout << "materials: " << materials << endl;
+                                           return bp::tuple(materials);
+                                         }))
+
 
     /*
     // first attempts, but keep for a moment ...

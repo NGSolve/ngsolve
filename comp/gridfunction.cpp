@@ -5,13 +5,10 @@
 #include <stdlib.h>
 
 
-
-#ifdef PARALLEL
-
 using namespace ngcomp; 
 
+#ifdef PARALLEL
 #include "../parallel/dump.hpp"
-
 
 template <NODE_TYPE NT, typename TELEM, typename TSIZE>
 class NodalArray
