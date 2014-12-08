@@ -52,6 +52,8 @@ namespace ngcomp
     ///
     Preconditioner (const PDE * const apde, const Flags & aflags,
 		    const string aname = "precond");
+    Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		    const string aname = "precond");
     ///
     virtual ~Preconditioner ();
   
@@ -140,6 +142,8 @@ namespace ngcomp
     ///
     MGPreconditioner (const PDE & pde, const Flags & aflags,
 		      const string aname = "mgprecond");
+    MGPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		      const string aname = "mgprecond");
     ///
     virtual ~MGPreconditioner();
 
@@ -192,6 +196,8 @@ namespace ngcomp
   public:
     ///
     LocalPreconditioner (PDE * pde, const Flags & aflags,
+			 const string aname = "localprecond");
+    LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
 			 const string aname = "localprecond");
     ///
     virtual ~LocalPreconditioner();
@@ -414,9 +420,12 @@ namespace ngcomp
     {
       string name;
       shared_ptr<Preconditioner> (*creator)(const PDE & pde, const Flags & aflags, const string & name);
+      shared_ptr<Preconditioner> (*creatorbf)(shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name);
       PreconditionerInfo (const string & aname,
 			  shared_ptr<Preconditioner> (*acreator)
-                          (const PDE & pde, const Flags & aflags, const string & name));
+                          (const PDE & pde, const Flags & aflags, const string & name),
+			  shared_ptr<Preconditioner> (*acreatorbf)
+                          (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name));
     };
   
     Array<PreconditionerInfo*> prea;
@@ -425,7 +434,9 @@ namespace ngcomp
     ~PreconditionerClasses();  
     void AddPreconditioner (const string & aname, 
 			    shared_ptr<Preconditioner> (*acreator)
-                            (const PDE & pde, const Flags & aflags, const string & name));
+                            (const PDE & pde, const Flags & aflags, const string & name),
+			    shared_ptr<Preconditioner> (*acreatorbf)
+                            (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name));
   
     const Array<PreconditionerInfo*> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
@@ -441,13 +452,18 @@ namespace ngcomp
   public:
     RegisterPreconditioner (string label, bool isparallel = true)
     {
-      GetPreconditionerClasses().AddPreconditioner (label, Create);
+      GetPreconditionerClasses().AddPreconditioner (label, Create, CreateBF);
       // cout << "register preconditioner '" << label << "'" << endl;
     }
     
     static shared_ptr<Preconditioner> Create (const PDE & pde, const Flags & flags, const string & name)
     {
       return make_shared<PRECOND> (pde, flags, name);
+    }
+
+    static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+    {
+      return make_shared<PRECOND> (bfa, flags, name);
     }
   };
 

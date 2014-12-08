@@ -477,6 +477,15 @@ void ExportNgcomp()
 
   typedef Preconditioner PRE;
   bp::class_<PRE, shared_ptr<PRE>, boost::noncopyable>("Preconditioner", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](shared_ptr<BilinearForm> bfa, const string & type, 
+                              Flags flags)
+                           { 
+                             return GetPreconditionerClasses().GetPreconditioner(type)->creatorbf(bfa, flags, "noname-pre");
+                           })
+          ))
+
+    .def ("Update", &Preconditioner::Update)
     .add_property("mat", FunctionPointer
                   ([](shared_ptr<Preconditioner> self) 
                    {

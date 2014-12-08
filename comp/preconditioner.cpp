@@ -34,6 +34,25 @@ namespace ngcomp
 
     on_proc = int ( flags.GetNumFlag("only_on", -1));
   }
+
+
+  Preconditioner :: Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+                                    const string aname)
+    : NGS_Object(bfa->GetMeshAccess(), aname), flags(aflags)
+  {
+    test = flags.GetDefineFlag ("test");
+    timing = flags.GetDefineFlag ("timing");
+    print = flags.GetDefineFlag ("print");
+    laterupdate = flags.GetDefineFlag ("laterupdate");
+    testresult_ok = testresult_min = testresult_max = NULL;
+    // using lapack for testing EV
+    uselapack = flags.GetDefineFlag ("lapacktest");
+    if ( uselapack ) test = 1;
+
+    on_proc = int ( flags.GetNumFlag("only_on", -1));
+  }
+  
+
   
   Preconditioner :: ~Preconditioner ()
   {
@@ -187,8 +206,7 @@ namespace ngcomp
     mgtest = flags.GetDefineFlag ("mgtest");
     mgfile = flags.GetStringFlag ("mgfile","mgtest.out"); 
     mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
-   
- 
+    
 
     shared_ptr<MeshAccess> ma = pde.GetMeshAccess();
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
@@ -275,6 +293,105 @@ namespace ngcomp
     tlp = 0;
     inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
   }
+
+
+
+  MGPreconditioner :: MGPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags, const string aname)
+    : Preconditioner (abfa,aflags,aname)
+  {
+    // cout << "*** MGPreconditioner constructor called" << endl;
+    mgtest = flags.GetDefineFlag ("mgtest");
+    mgfile = flags.GetStringFlag ("mgfile","mgtest.out"); 
+    mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
+    
+
+    shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
+    bfa = abfa;
+
+    // shared_ptr<LinearForm> lfconstraint = pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
+    shared_ptr<FESpace> fes = bfa->GetFESpace();
+    
+
+    shared_ptr<BilinearForm> lo_bfa = bfa;
+    shared_ptr<FESpace> lo_fes = fes;
+
+    if (bfa->GetLowOrderBilinearForm())
+      {
+	lo_bfa = bfa->GetLowOrderBilinearForm();
+	lo_fes = fes->LowOrderFESpacePtr();
+      }
+    /*
+    else if (id == 0 && ntasks > 1 )  // not supported anymore
+      {
+	lo_bfa = bfa;
+	lo_fes = &fes;
+      }
+    */
+
+    Smoother * sm = NULL;
+    //    const char * smoother = flags.GetStringFlag ("smoother", "point");
+    smoothertype = flags.GetStringFlag ("smoother", "point");
+
+    if (smoothertype == "point")
+      {
+	sm = new GSSmoother (*ma, *lo_bfa);
+      }
+    else if (smoothertype == "line")
+      {
+	sm = new AnisotropicSmoother (*ma, *lo_bfa);
+      }
+    else if (smoothertype == "block") 
+      {
+	// if (!lfconstraint)
+	  sm = new BlockSmoother (*ma, *lo_bfa, flags);
+          /*
+            else
+            sm = new BlockSmoother (*ma, *lo_bfa, *lfconstraint, flags);
+          */
+      }
+    /*
+    else if (smoothertype == "potential")
+      {
+	sm = new PotentialSmoother (ma, *lo_bfa);
+      }
+    */
+    else
+      cerr << "Unknown Smoother " << smoothertype << endl;
+
+    if (!sm)
+      throw Exception ("smoother could not be allocated"); 
+
+    auto prol = lo_fes->GetProlongation();
+
+    mgp = new MultigridPreconditioner (*ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp->SetOwnProlongation (0);
+    mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
+    mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
+    mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
+    mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
+    mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
+
+    MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
+    const string & coarse = flags.GetStringFlag ("coarsetype", "direct");
+    if (coarse == "smoothing")
+      ct = MultigridPreconditioner::SMOOTHING_COARSE;
+    else if (coarse == "cg")
+      ct = MultigridPreconditioner::CG_COARSE;
+    mgp->SetCoarseType (ct);
+    
+
+    // coarse_pre = pde.GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
+    // if (coarse_pre) mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
+
+    finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
+
+    tlp = 0;
+    inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
+  }
+
+
+
+
 
  
   MGPreconditioner :: ~MGPreconditioner()
@@ -428,9 +545,16 @@ namespace ngcomp
       : Preconditioner(&pde,aflags,aname)
     {
       bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-      // inverse = NULL;
-      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype)); // "sparsecholesky");
+      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
+
+    DirectPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+			  const string aname = "directprecond")
+      : Preconditioner(abfa,aflags,aname), bfa(abfa)
+    {
+      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
+    }
+
     
     ///
     virtual ~DirectPreconditioner()
@@ -1034,8 +1158,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
-		      shared_ptr<Preconditioner> (*acreator)(const PDE & pde, const Flags & flags, const string & name))
-    : name(aname), creator(acreator) 
+		      shared_ptr<Preconditioner> (*acreator)(const PDE & pde, const Flags & flags, const string & name),
+		      shared_ptr<Preconditioner> (*acreatorbf)(shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name))
+    : name(aname), creator(acreator), creatorbf(acreatorbf)
   {
     ;
   }
@@ -1054,9 +1179,11 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
 		     shared_ptr<Preconditioner> (*acreator)
-                     (const PDE & pde, const Flags & flags, const string & name))
+                     (const PDE & pde, const Flags & flags, const string & name),
+                     shared_ptr<Preconditioner> (*acreatorbf)
+                     (shared_ptr<BilinearForm> bfa, const Flags & aflags, const string & name))
   {
-    prea.Append (new PreconditionerInfo(aname, acreator));
+    prea.Append (new PreconditionerInfo(aname, acreator, acreatorbf));
   }
 
   const PreconditionerClasses::PreconditionerInfo * 
