@@ -501,6 +501,20 @@ namespace ngcomp
       pre = NULL;
     }
     
+    BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                        const string aname = "mgprecond")
+      : Preconditioner (abfa, aflags, aname)
+    {
+      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(abfa.get());
+      const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
+      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+      if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
+      block = flags.GetDefineFlag("block");
+      hypre = flags.GetDefineFlag("usehypre");
+      pre = NULL;
+    }
+
+
     virtual ~BDDCPreconditioner()
     {
       delete pre;
