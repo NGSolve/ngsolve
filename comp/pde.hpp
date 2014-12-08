@@ -310,8 +310,10 @@ namespace ngcomp
     void AddBilinearForm (const string & name, shared_ptr<BilinearForm> bf);
     ///
     shared_ptr<LinearForm> AddLinearForm (const string & name, const Flags & flags);
+    void AddLinearForm (const string & name, shared_ptr<LinearForm> lf);
     ///
     shared_ptr<Preconditioner> AddPreconditioner (const string & name, const Flags & flags);
+    void AddPreconditioner (const string & name, shared_ptr<Preconditioner> pre);
     ///
     void AddNumProc (const string & name, shared_ptr<NumProc> np);
 
