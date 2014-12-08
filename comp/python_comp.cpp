@@ -557,6 +557,16 @@ void ExportNgcomp()
                                   self.AddBilinearForm (bf->GetName(), bf);
                                 }))
 
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<LinearForm> lf)
+                                {
+                                  self.AddLinearForm (lf->GetName(), lf);
+                                }))
+
+    .def("Add", FunctionPointer([](PDE & self, shared_ptr<Preconditioner> pre)
+                                {
+                                  self.AddPreconditioner (pre->GetName(), pre);
+                                }))
+
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProcWrap> np)
                                 {
                                   cout << "add pynumproc - ref" << endl;
@@ -591,6 +601,27 @@ void ExportNgcomp()
                                       if(gf.check())
                                         {
                                           self.AddGridFunction (gf()->GetName(), gf());
+                                          continue;
+                                        }
+                                      
+                                      bp::extract<shared_ptr<BilinearForm>> bf(l[i]);
+                                      if(gf.check())
+                                        {
+                                          self.AddBilinearForm (bf()->GetName(), bf());
+                                          continue;
+                                        }
+                                      
+                                      bp::extract<shared_ptr<LinearForm>> lf(l[i]);
+                                      if(gf.check())
+                                        {
+                                          self.AddLinearForm (lf()->GetName(), lf());
+                                          continue;
+                                        }
+                                      
+                                      bp::extract<shared_ptr<Preconditioner>> pre(l[i]);
+                                      if(gf.check())
+                                        {
+                                          self.AddPreconditioner (pre()->GetName(), pre());
                                           continue;
                                         }
                                       

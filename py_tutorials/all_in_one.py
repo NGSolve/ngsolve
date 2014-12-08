@@ -16,10 +16,16 @@ f = LinearForm (v)
 f.Add (LFI ("source", 2, ConstantCF(1), definedon=[0,1,2] ))
 f.Assemble()
 
-a = BilinearForm (v, flags = { "symmetric" : True })
+a = BilinearForm (v, flags = { "symmetric" : True, "eliminate_internal" : False })
 a.Add (BFI ("mass", 2, ConstantCF(1)))
 a.Add (BFI ("laplace", 2, ConstantCF(1)))
+
+
+c = Preconditioner (a, "multigrid", { "test" : True, "smootherxx" : "block" })
+# c = Preconditioner (a, "bddc", { "test" : True, "smoother" : "block" })
+
 a.Assemble()
+c.Update()
 
 inv = a.mat.Inverse(v.FreeDofs())
 u.vec.data = inv * f.vec

@@ -1056,6 +1056,20 @@ namespace ngcomp
     todo.Append(bf.get());
   }
 
+  void PDE :: AddLinearForm (const string & name, shared_ptr<LinearForm> lf)
+  {
+    lf->SetName (name);
+    linearforms.Set (name, lf);
+    todo.Append(lf.get());
+  }
+
+  void PDE :: AddPreconditioner (const string & name, shared_ptr<Preconditioner> pre)
+  {
+    pre->SetName (name);
+    preconditioners.Set (name, pre);
+    todo.Append(pre.get());
+  }
+
 
 
 
