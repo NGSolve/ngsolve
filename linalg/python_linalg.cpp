@@ -163,6 +163,30 @@ void ExportNgla() {
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
+
+
+  bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
+    // .def(bp::init<const BaseMatrix &, const BaseMatrix &>())
+    ;
+  bp::class_<CGSolver<Complex>, shared_ptr<CGSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverC", bp::no_init)
+    // .def(bp::init<const BaseMatrix &, const BaseMatrix &>())
+    ;
+
+  bp::def("CGSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+                                          bool iscomplex, bool printrates) -> BaseMatrix *
+                                       {
+                                         KrylovSpaceSolver * solver;
+                                         if (iscomplex)
+                                           solver = new CGSolver<Complex> (mat, pre);
+                                         else
+                                           solver = new CGSolver<double> (mat, pre);                               
+                                         solver->SetPrintRates (printrates);
+                                         return solver;
+                                       }),
+          (bp::arg("mat"), bp::arg("pre"), bp::arg("complex") = false, bp::arg("printrates")=true),
+          bp::return_value_policy<bp::manage_new_object>()
+          )
+    ;
 }
 
 
