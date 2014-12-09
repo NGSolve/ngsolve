@@ -1287,7 +1287,7 @@ namespace netgen
                       // cout << "solid = " << *this << endl;
                       if (!inv_cyl && !inv_plane && scala < 0) 
                         {
-                          cout << "fix for degenerated cyl-plane edge: just the cylinder" << endl;
+                          // cout << "fix for degenerated cyl-plane edge: just the cylinder" << endl;
                           Solid * sol = new Solid (cyl);
                           sol -> op = TERM_REF;
                           return sol;
@@ -1299,7 +1299,7 @@ namespace netgen
                       // cout << "solid = " << *this << ", inv_plane = " << inv_plane << " inv_cyl = " << inv_cyl << " scalb " << scalb << endl;
                       if (!inv_plane && !inv_cyl && (scala < 0))
                         {
-                          cout << "fix for degenerated cyl-plane edge: just the plane" << endl;
+                          // cout << "fix for degenerated cyl-plane edge: just the plane" << endl;
                           // return new Solid (plane);
                           Solid * sol = new Solid (plane);
                           sol -> op = TERM_REF;

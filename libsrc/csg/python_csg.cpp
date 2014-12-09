@@ -88,7 +88,7 @@ public:
             Primitive * prim = solid -> GetPrimitive();
             for (int i = 0; i < prim->GetNSurfaces(); i++)
               prim->GetSurface(i).SetBCProperty (abc);
-            cout << "set " << prim->GetNSurfaces() << " surfaces to bc " << bc << endl;
+            // cout << "set " << prim->GetNSurfaces() << " surfaces to bc " << bc << endl;
           }
       }
   }
