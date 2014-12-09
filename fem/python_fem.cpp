@@ -178,13 +178,14 @@ void ExportNgfem() {
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef,
-                              bp::object definedon)
+                              bp::object definedon, const Flags & flags)
                            {
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
                              if (bp::extract<bp::list> (definedon).check())
                                lfi -> SetDefinedOn (makeCArray<int> (definedon));
  
+                             cout << "LFI: Flags = " << flags << endl;
                              if (!lfi) cerr << "undefined integrator '" << name 
                                             << "' in " << dim << " dimension having 1 coefficient"
                                             << endl;
@@ -192,7 +193,7 @@ void ExportNgfem() {
                            }),
           bp::default_call_policies(),     // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,
-           bp::arg("coef"),bp::arg("definedon")=bp::object() ))
+           bp::arg("coef"),bp::arg("definedon")=bp::object(), bp::arg("flags")=bp::dict()))
          )
 
     .def("CalcElementVector", 

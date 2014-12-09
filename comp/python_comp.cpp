@@ -464,8 +464,12 @@ void ExportNgcomp()
 
     .def("Add", FunctionPointer
          ([](LF & self, shared_ptr<LinearFormIntegrator> lfi) -> LF&
-          { self.AddIntegrator (lfi); return self; }),
-         bp::return_value_policy<bp::reference_existing_object>())
+          { 
+            self.AddIntegrator (lfi); 
+            return self; 
+          }),
+         bp::return_value_policy<bp::reference_existing_object>(),
+         (bp::arg("self"), bp::arg("integrator")))
 
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)
