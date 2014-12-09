@@ -11,5 +11,5 @@ from . import bla
 
 from ngslib.la import *
 
-__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct']
+__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct', 'CGSolver']
 
