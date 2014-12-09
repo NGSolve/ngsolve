@@ -149,6 +149,13 @@ void ExportNetgenMeshing()
                                                delete testout;
                                                testout = new ofstream (filename);
                                              }));
+
+  bp::def("SetMessageImportance", FunctionPointer ([] (int importance)
+                                                   {
+                                                     int old = printmessage_importance;
+                                                     printmessage_importance = importance;
+                                                     return old;
+                                                   }));
 }
 
 

@@ -327,8 +327,9 @@ void ExportCSG()
            {
              // testout = new ofstream ("test.out");
              shared_ptr<Mesh> dummy;
-             cout << "Genrate Mesh, params = " << param << endl;
-             cout << "geom, bbox = " << geo.BoundingBox() << endl;
+             cout << "Genrate Mesh" << endl;
+             // cout << "Genrate Mesh, params = " << param << endl;
+             // cout << "geom, bbox = " << geo.BoundingBox() << endl;
              geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
              geo.GenerateMesh (dummy, param, 0, 6);
              return dummy;
