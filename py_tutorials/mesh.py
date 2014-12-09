@@ -15,3 +15,4 @@ exportNeutral.Export (m1, "shaft.mesh")
 
 
 
+Save (m1, "mesh.vol", geo)

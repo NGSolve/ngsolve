@@ -143,44 +143,56 @@ void ExportCSG()
   ModuleScope module("csg");
 
   bp::class_<Point<2>> ("Point2d", bp::init<double,double>()) 
+    .def ("__str__", &ToString<Point<2>>)
+    .def(bp::self-bp::self)
     .def(bp::self+Vec<2>())
+    .def(bp::self-Vec<2>())
     ;
 
   bp::class_<Point<3>> ("Point3d", bp::init<double,double,double>()) 
+    .def ("__str__", &ToString<Point<3>>)
     .def(bp::self-bp::self)
     .def(bp::self+Vec<3>())
     .def(bp::self-Vec<3>())
     ;
 
-  bp::def ("Pnt", FunctionPointer( [] (double x, double y, double z) { return Point<3>(x,y,z); } ) );
-  bp::def ("Pnt", FunctionPointer( [] (double x, double y) { return Point<2>(x,y); } ) );
+  bp::def ("Pnt", FunctionPointer
+           ([](double x, double y, double z) { return Point<3>(x,y,z); }));
+  bp::def ("Pnt", FunctionPointer
+           ([](double x, double y) { return Point<2>(x,y); }));
 
   bp::class_<Vec<2>> ("Vec2d", bp::init<double,double>()) 
+    .def ("__str__", &ToString<Vec<3>>)
     .def(bp::self+bp::self)
-//     .def(bp::self*double())
+    .def(bp::self-bp::self)
+    .def(-bp::self)
     .def(double()*bp::self)
-	.def("Norm", &Vec<2>::Length)
+    .def("Norm", &Vec<2>::Length)
     ;
 
   bp::class_<Vec<3>> ("Vec3d", bp::init<double,double,double>()) 
+    .def ("__str__", &ToString<Vec<3>>)
     .def(bp::self+bp::self)
-//     .def(bp::self*double())
+    .def(bp::self-bp::self)
+    .def(-bp::self)
     .def(double()*bp::self)
-	.def("Norm", &Vec<3>::Length)
+    .def("Norm", &Vec<3>::Length)
     ;
 
-  bp::def ("Vec", FunctionPointer( [] (double x, double y, double z) { return Vec<3>(x,y,z); } ) );
-  bp::def ("Vec", FunctionPointer( [] (double x, double y) { return Vec<2>(x,y); } ) );
+  bp::def ("Vec", FunctionPointer
+           ([] (double x, double y, double z) { return Vec<3>(x,y,z); }));
+  bp::def ("Vec", FunctionPointer
+           ([] (double x, double y) { return Vec<2>(x,y); }));
 
-    
 
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
     .def ("__str__", &ToString<SPSolid>)
-    .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::UNION, self, other); } ) )
-    .def ("__mul__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) { return make_shared<SPSolid> (SPSolid::SECTION, self, other); } ) )
-    .def ("__sub__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other ) 
-                                      { return make_shared<SPSolid> (SPSolid::SECTION, self, make_shared<SPSolid> (SPSolid::SUB, other, nullptr)); } ) )
-//     .def ("__neg__", FunctionPointer( [] ( shared_ptr<SPSolid> self ) { return make_shared<SPSolid> (SPSolid::SUB, self); } ) ) COMPLEMENT?
+    .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other) { return make_shared<SPSolid> (SPSolid::UNION, self, other); }))
+    .def ("__mul__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other) { return make_shared<SPSolid> (SPSolid::SECTION, self, other); }))
+    .def ("__sub__", FunctionPointer
+          ([] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other) 
+           { return make_shared<SPSolid> (SPSolid::SECTION, self, 
+                                          make_shared<SPSolid> (SPSolid::SUB, other, nullptr)); }))
 
     .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
                                 { self->SetBC(nr); return self; }))
@@ -189,14 +201,15 @@ void ExportCSG()
     .def ("mat", FunctionPointer([](shared_ptr<SPSolid> & self, string mat) -> shared_ptr<SPSolid> 
                                  { self->SetMaterial(mat); return self; }))
     .def ("mat", &SPSolid::GetMaterial)
-	.def("col", FunctionPointer([](shared_ptr<SPSolid> & self, bp::list rgb) -> shared_ptr<SPSolid>
-		{ 
-			bp::extract<double> red(rgb[0]);
-			bp::extract<double> green(rgb[1]);
-			bp::extract<double> blue(rgb[2]);
-			self->SetColor(red(),green(),blue());
-			return self; }))
-	.def("transp", FunctionPointer([](shared_ptr<SPSolid> & self)->shared_ptr < SPSolid > { self->SetTransparent(); return self; }))
+    .def("col", FunctionPointer([](shared_ptr<SPSolid> & self, bp::list rgb) -> shared_ptr<SPSolid>
+                                { 
+                                  bp::extract<double> red(rgb[0]);
+                                  bp::extract<double> green(rgb[1]);
+                                  bp::extract<double> blue(rgb[2]);
+                                  self->SetColor(red(),green(),blue());
+                                  return self; 
+                                }))
+    .def("transp", FunctionPointer([](shared_ptr<SPSolid> & self)->shared_ptr < SPSolid > { self->SetTransparent(); return self; }))
     ;
 
   bp::def ("Sphere", FunctionPointer([](Point<3> c, double r)
@@ -281,8 +294,8 @@ void ExportCSG()
             solid->GiveUpOwner();
             int tlonr = self.SetTopLevelObject (solid->GetSolid());
             self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
-			self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
-			self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
+            self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
+            self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
           }))
 
     .def("CloseSurfaces", FunctionPointer
@@ -321,6 +334,25 @@ void ExportCSG()
              return dummy;
            }))
     ;
+
+  bp::def("Save", FunctionPointer 
+          ([](const Mesh & self, const string & filename, const CSGeometry & geom)
+           {
+             ostream * outfile;
+             if (filename.substr (filename.length()-3, 3) == ".gz")
+               outfile = new ogzstream (filename.c_str());
+             else
+               outfile = new ofstream (filename.c_str());
+             
+             self.Save (*outfile);
+             *outfile << endl << endl << "endmesh" << endl << endl;
+             geom.SaveToMeshFile (*outfile);
+             delete outfile;
+           }))
+    ;
+
+
+
   bp::def("ZRefinement", FunctionPointer
           ([](Mesh & mesh, CSGeometry & geom)
           {
