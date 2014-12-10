@@ -455,6 +455,11 @@ namespace ngcomp
     {
       deformation = def;
     }
+
+    shared_ptr<GridFunction> GetDeformation () const
+    {
+      return deformation;
+    }
     
     /**
        returns node topology.

@@ -1712,31 +1712,52 @@ namespace ngcomp
           }
         else
           {
-            ta.Start();
-	    MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
-            
-	    for (int k = 0; k < npts; k++)
-	      {
-		Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
-		FlatVec<2> vx( (double*)x + k*sx);
-		mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
-	      }
-            ta.Stop();
-            bool isdefined = false;
-	    for(int j = 0; j < bfi2d.Size(); j++)
-	      {
-                if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
-                isdefined = true;
+            if (!ma->GetDeformation())
+              {
+                ta.Start();
+                MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
+                
+                for (int k = 0; k < npts; k++)
+                  {
+                    Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
+                    FlatVec<2> vx( (double*)x + k*sx);
+                    mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+                  }
+                ta.Stop();
+                bool isdefined = false;
+                for(int j = 0; j < bfi2d.Size(); j++)
+                  {
+                    if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
+                    isdefined = true;
+                    
+                    FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
+                    tc.Start();
+                    bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+                    tc.Stop();
+                    
+                    for (int k = 0; k < npts; k++)
+                      mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+                  }
+                return isdefined;
+              }
+            else
+              {
+                MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+                
+                bool isdefined = false;
+                for(int j = 0; j < bfi2d.Size(); j++)
+                  {
+                    if (!bfi2d[j]->DefinedOn(eltrans.GetElementIndex())) continue;
+                    isdefined = true;
+                    
+                    FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
+                    bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
 
-		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
-                tc.Start();
-		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
-                tc.Stop();
-
-		for (int k = 0; k < npts; k++)
-		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
-	      }
-            return isdefined;
+                    for (int k = 0; k < npts; k++)
+                      mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+                  }
+                return isdefined;
+              }
           }
       }
     catch (Exception & e)
