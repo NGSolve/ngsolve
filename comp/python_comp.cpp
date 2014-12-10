@@ -501,6 +501,12 @@ void ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
   bp::class_<NumProc, shared_ptr<NumProc>,bp::bases<NGS_Object>,boost::noncopyable> ("NumProc", bp::no_init)
+    .def("Do", FunctionPointer([](NumProc & self, int heapsize)
+                               {
+                                 LocalHeap lh (heapsize, "NumProc::Do-heap");
+                                 self.Do(lh);
+                               }),
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     ;
 
   // die geht
