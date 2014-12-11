@@ -288,7 +288,6 @@ void ExportNgfem() {
          (FunctionPointer ([](bp::object coefs)->shared_ptr<DomainConstantCoefficientFunction>
                            {
                              Array<double> darray (makeCArray<double> (coefs));
-                             cout << "create DomainConstantCF, coefs = " << darray << endl;
                              return make_shared<DomainConstantCoefficientFunction> (darray);
                            })))
     ;
