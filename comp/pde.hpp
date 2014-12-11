@@ -149,7 +149,7 @@ namespace ngcomp
     ///
     SymbolTable<GenericVariable> generic_variables;
     ///
-    Array<EvalVariable*> evaluators;
+    Array<shared_ptr<EvalVariable>> evaluators;
     ///
     SymbolTable<shared_ptr<CoefficientFunction>> coefficients;
     ///
@@ -172,7 +172,7 @@ namespace ngcomp
     Array<string*> CurvePointIntegratorFilenames;
 
     ///
-    Array<NGS_Object*> todo;
+    Array<shared_ptr<NGS_Object>> todo;
 
     ///
     int levelsolved;
@@ -291,9 +291,9 @@ namespace ngcomp
     ///
     void AddVariable (const string & name, double val, int im = 5);
     ///
-    void AddVariable (const string & name, EvalVariable * eval);
+    void AddVariable (const string & name, shared_ptr<EvalVariable> eval);
     ///
-    void AddVariableEvaluation (EvalVariable * eval);
+    void AddVariableEvaluation (shared_ptr<EvalVariable> eval);
     ///
     void AddCoefficientFunction (const string & name, shared_ptr<CoefficientFunction> fun);
     ///
@@ -372,8 +372,8 @@ namespace ngcomp
 
 
     int GetNStatements () { return todo.Size(); }
-    const NGS_Object * GetStatement (int nr) { return todo[nr]; }
-    void AddControlStatement (NGS_Object * obj)
+    const shared_ptr<NGS_Object> & GetStatement (int nr) { return todo[nr]; }
+    void AddControlStatement (shared_ptr<NGS_Object> obj)
     {
       todo.Append (obj);
     }

@@ -759,7 +759,7 @@ namespace ngcomp
               scan -> ReadNext();
               string label = scan->GetStringValue();
               scan -> ReadNext();
-              pde -> AddControlStatement (new LabelStatement (pde->GetMeshAccess(), "dummy", label));
+              pde -> AddControlStatement (make_shared<LabelStatement> (pde->GetMeshAccess(), "dummy", label));
               break;
             }
 
@@ -768,7 +768,7 @@ namespace ngcomp
               scan -> ReadNext();
               string label = scan->GetStringValue();
               scan -> ReadNext();
-              pde -> AddControlStatement (new GotoStatement (pde->GetMeshAccess(), "dummy", label));
+              pde -> AddControlStatement (make_shared<GotoStatement> (pde->GetMeshAccess(), "dummy", label));
               break;
             }
 
@@ -784,14 +784,14 @@ namespace ngcomp
               string label = scan->GetStringValue();
               scan -> ReadNext();
 
-              pde -> AddControlStatement (new ConditionalGotoStatement (pde->GetMeshAccess(), "dummy", fun, label));              
+              pde -> AddControlStatement (make_shared<ConditionalGotoStatement> (pde->GetMeshAccess(), "dummy", fun, label));              
               break;
             }
 
           case KW_STOP:
             {
               scan -> ReadNext();
-              pde -> AddControlStatement (new StopStatement (pde->GetMeshAccess(), "dummy"));
+              pde -> AddControlStatement (make_shared<StopStatement> (pde->GetMeshAccess(), "dummy"));
               break;
             }
 
@@ -816,7 +816,7 @@ namespace ngcomp
                   ev -> GetEvaluator().Parse (*scan->scanin);
                   */
                   
-                  EvalVariable * ev = new EvalVariable (pde->GetMeshAccess(), scan->GetStringValue(), fun);
+                  auto ev = make_shared<EvalVariable> (pde->GetMeshAccess(), scan->GetStringValue(), fun);
                   ev -> SetVariable (var);
                   pde -> AddVariableEvaluation (ev);
                   scan->ReadNext();
@@ -969,7 +969,7 @@ namespace ngcomp
               if (fun->IsConstant())
                 pde->AddVariable (name, fun->EvalConstant(), 1);
               else
-                pde->AddVariable (name, new EvalVariable (pde->GetMeshAccess(), name, fun));
+                pde->AddVariable (name, make_shared<EvalVariable> (pde->GetMeshAccess(), name, fun));
             }
           else
             {
