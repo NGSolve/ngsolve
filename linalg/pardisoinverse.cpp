@@ -8,7 +8,7 @@
 
 #ifdef USE_PARDISO
 
-#include "/opt/intel/mkl/include/mkl_service.h"
+// #include "/opt/intel/mkl/include/mkl_service.h"
 
 #define F77_FUNC(func)  func ## _
 
@@ -93,7 +93,7 @@ namespace ngla
     if (getenv ("PARDISOMSG"))
       pardiso_msg = 1;
 
-    
+    /*
     cout << "set mkl_rt interface" << endl;
 #ifdef MKL_ILP64
     MKL_Set_Interface_Layer(MKL_INTERFACE_ILP64);
@@ -101,6 +101,7 @@ namespace ngla
     MKL_Set_Interface_Layer(MKL_INTERFACE_LP64);
 #endif
     MKL_Set_Threading_Layer (MKL_THREADING_GNU);
+    */
 
     print = bool (pardiso_msg); // false;
 
