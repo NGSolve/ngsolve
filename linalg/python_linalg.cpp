@@ -82,7 +82,7 @@ void ExportNgla() {
     .def("InnerProduct", FunctionPointer( [](BaseVector & self, BaseVector & other)
                                           {
                                             if (self.IsComplex())
-                                              return bp::object (S_InnerProduct<Complex> (self, other));
+                                              return bp::object (S_InnerProduct<ComplexConjugate> (self, other));
                                             else
                                               return bp::object (InnerProduct (self, other));
                                           }))
