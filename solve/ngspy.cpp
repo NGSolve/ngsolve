@@ -14,7 +14,6 @@ BasePythonEnvironment & GetPythonEnvironment ()
 */
 
 
-
 void ExportNgstd();
 void ExportNgbla();
 void ExportNgfem();
@@ -31,11 +30,12 @@ void ExportNgsolve();
 BOOST_PYTHON_MODULE(ngslib)
 {
 
+  /*
   cout << "do some lapack stuff" << endl;
   Matrix<> a(1000), b(1000), c(1000);
   a = 1; b = 2;
   c = a*b | Lapack;
-
+  */
 
     try
     {
