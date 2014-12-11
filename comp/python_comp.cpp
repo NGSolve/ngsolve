@@ -429,7 +429,6 @@ void ExportNgcomp()
     
     .def("Assemble", FunctionPointer([](BF & self, int heapsize)
                                      {
-				       cout << "hs = " << heapsize*omp_get_max_threads() << endl;
                                        LocalHeap lh (heapsize*omp_get_max_threads(), "BilinearForm::Assemble-heap");
                                        self.ReAssemble(lh);
                                      }),
