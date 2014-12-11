@@ -94,7 +94,8 @@ void ExportNetgenMeshing()
   ;
   
   
-  bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh")
+  bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
+    .def(bp::init<>("create empty mesh"))
     .def("__str__", &ToString<Mesh>)
     .def("Load", static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
@@ -121,14 +122,17 @@ void ExportNetgenMeshing()
                                   {
                                     return self.AddPoint (Point3d(p));
                                   }))
+    /*
     .def("__init__", bp::make_constructor
          (FunctionPointer ([]()
                            {
-                             auto tmp = new Mesh();
+                             cout << "create new mesh" << endl;
+                             auto tmp = make_shared<Mesh>();
                              return tmp;
                            })),
          "create empty mesh"
       )
+    */
     ;
   
 
