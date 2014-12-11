@@ -56,9 +56,9 @@ namespace ngcomp
       delete string_constants[i];
     string_constants.DeleteAll();
 
-    for(int i = 0; i < evaluators.Size(); i++)
-      delete evaluators[i];
-    evaluators.DeleteAll();
+    // for(int i = 0; i < evaluators.Size(); i++)
+    // delete evaluators[i];
+    // evaluators.DeleteAll();
 
     for(int i = 0; i < CurvePointIntegratorFilenames.Size(); i++)
       delete CurvePointIntegratorFilenames[i];
@@ -598,13 +598,13 @@ namespace ngcomp
 
     for(  ; pc < todo.Size(); pc++)
       {
-	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[pc]);
-	FESpace * fes = dynamic_cast<FESpace *>(todo[pc]);
-	GridFunction * gf = dynamic_cast<GridFunction *>(todo[pc]);
-	BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[pc]);
-	LinearForm * lf = dynamic_cast<LinearForm *>(todo[pc]);
-	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[pc]);
-	NumProc * np = dynamic_cast<NumProc *>(todo[pc]);
+	EvalVariable * ev = dynamic_cast<EvalVariable *>(todo[pc].get());
+	FESpace * fes = dynamic_cast<FESpace *>(todo[pc].get());
+	GridFunction * gf = dynamic_cast<GridFunction *>(todo[pc].get());
+	BilinearForm * bf = dynamic_cast<BilinearForm *>(todo[pc].get());
+	LinearForm * lf = dynamic_cast<LinearForm *>(todo[pc].get());
+	Preconditioner * pre = dynamic_cast<Preconditioner *>(todo[pc].get());
+	NumProc * np = dynamic_cast<NumProc *>(todo[pc].get());
         
         try
           {
@@ -684,42 +684,42 @@ namespace ngcomp
 		np->Do(lh);
 	      }
 
-            else if (dynamic_cast<const LabelStatement*> (todo[pc]))
+            else if (dynamic_cast<const LabelStatement*> (todo[pc].get()))
               {
                 cout << IM(1)
-                     << dynamic_cast<const LabelStatement*>(todo[pc])->GetLabel() << endl;
+                     << dynamic_cast<const LabelStatement*>(todo[pc].get())->GetLabel() << endl;
               }
 
-            else if (dynamic_cast<const GotoStatement*> (todo[pc]))
+            else if (dynamic_cast<const GotoStatement*> (todo[pc].get()))
               {
                 const GotoStatement * statement =
-                  dynamic_cast<const GotoStatement*>(todo[pc]);
+                  dynamic_cast<const GotoStatement*>(todo[pc].get());
                 string target = statement -> GetTarget();
                 for (int j = 0; j < todo.Size(); j++)
                   {
                     const LabelStatement * lst = 
-                      dynamic_cast<const LabelStatement*> (todo[j]);
+                      dynamic_cast<const LabelStatement*> (todo[j].get());
                     if (lst && lst->GetLabel() == target)
                       pc = j-1;
                   }
               }
 
-            else if (dynamic_cast<const ConditionalGotoStatement*> (todo[pc]))
+            else if (dynamic_cast<const ConditionalGotoStatement*> (todo[pc].get()))
               {
                 const ConditionalGotoStatement * statement =
-                  dynamic_cast<const ConditionalGotoStatement*>(todo[pc]);
+                  dynamic_cast<const ConditionalGotoStatement*>(todo[pc].get());
                 string target = statement -> GetTarget();
                 
                 if (statement->EvaluateCondition())
                   for (int j = 0; j < todo.Size(); j++)
                     {
                       const LabelStatement * lst = 
-                        dynamic_cast<const LabelStatement*> (todo[j]);
+                        dynamic_cast<const LabelStatement*> (todo[j].get());
                       if (lst && lst->GetLabel() == target)
                         pc = j-1;
                     }
               }
-            else if (dynamic_cast<const StopStatement*> (todo[pc]))
+            else if (dynamic_cast<const StopStatement*> (todo[pc].get()))
               {
                 pc = todo.Size()-1;
               }            
@@ -862,7 +862,7 @@ namespace ngcomp
             fes -> DoArchive(archive);
             fes -> FinalizeUpdate (lh);
             spaces.Set (name, fes);
-            todo.Append(fes.get());
+            todo.Append(fes);
 	    cout << "space " << i << " complete" << endl;
           }
       }
@@ -933,7 +933,7 @@ namespace ngcomp
   }
 
   
-  void PDE :: AddVariable (const string & name, EvalVariable * eval)
+  void PDE :: AddVariable (const string & name, shared_ptr<EvalVariable> eval)
   {
     evaluators.Append(eval);
     todo.Append(eval);
@@ -943,7 +943,7 @@ namespace ngcomp
     cout << IM(1) << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
-  void PDE :: AddVariableEvaluation (EvalVariable * eval)
+  void PDE :: AddVariableEvaluation (shared_ptr<EvalVariable> eval)
   {
     evaluators.Append(eval);
     todo.Append(eval);
@@ -1036,7 +1036,7 @@ namespace ngcomp
 
     space->SetName (name);
     spaces.Set (name, shared_ptr<FESpace>(space));
-    todo.Append(space.get());
+    todo.Append(space);
     AddVariable (string("fes.")+space->GetName()+".ndof", 0.0, 6);
 
     return space;
@@ -1046,28 +1046,28 @@ namespace ngcomp
   {
     space->SetName (name);
     spaces.Set (name, space);
-    todo.Append(space.get());
+    todo.Append(space);
   }
 
   void PDE :: AddBilinearForm (const string & name, shared_ptr<BilinearForm> bf)
   {
     bf->SetName (name);
     bilinearforms.Set (name, bf);
-    todo.Append(bf.get());
+    todo.Append(bf);
   }
 
   void PDE :: AddLinearForm (const string & name, shared_ptr<LinearForm> lf)
   {
     lf->SetName (name);
     linearforms.Set (name, lf);
-    todo.Append(lf.get());
+    todo.Append(lf);
   }
 
   void PDE :: AddPreconditioner (const string & name, shared_ptr<Preconditioner> pre)
   {
     pre->SetName (name);
     preconditioners.Set (name, pre);
-    todo.Append(pre.get());
+    todo.Append(pre);
   }
 
 
@@ -1096,7 +1096,7 @@ namespace ngcomp
   {
     gf -> SetName (name);
     gridfunctions.Set (name, gf);
-    todo.Append(gf.get());
+    todo.Append(gf);
 
     if (addcf && (gf->GetFESpace()->GetIntegrator()||gf->GetFESpace()->GetEvaluator()) )
       AddCoefficientFunction (name, make_shared<GridFunctionCoefficientFunction>(gf));
@@ -1147,7 +1147,7 @@ namespace ngcomp
     if (flags.StringFlagDefined ("linearform"))
       bilinearforms[name] -> SetLinearForm (GetLinearForm (flags.GetStringFlag ("linearform", 0)).get());
 
-    todo.Append(bilinearforms[name].get());
+    todo.Append(bilinearforms[name]);
 
     return bilinearforms[name];
   }
@@ -1169,7 +1169,7 @@ namespace ngcomp
     auto space = spaces[spacename];
 
     linearforms.Set (name, CreateLinearForm (space, name, flags));
-    todo.Append(linearforms[name].get());
+    todo.Append(linearforms[name]);
 
     return linearforms[name];
   }
@@ -1278,7 +1278,7 @@ namespace ngcomp
     cout << IM(1) << ", type = " << pre->ClassName() << endl;
     
     if (!flags.GetDefineFlag ("ondemand"))
-      todo.Append(pre.get());
+      todo.Append(pre);
     
     return pre;
   }
@@ -1290,7 +1290,7 @@ namespace ngcomp
     cout << IM(1) << "add numproc " << name << ", type = " << np->GetClassName() << endl;
     np->SetName (name);
     numprocs.Set (name, np);
-    todo.Append(np.get());
+    todo.Append(np);
   }
 
 

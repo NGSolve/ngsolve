@@ -579,14 +579,16 @@ void ExportNgcomp()
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProcWrap> np)
                                 {
-                                  cout << "add pynumproc - ref" << endl;
+                                  cout << "add pynumproc" << endl;
                                   self.AddNumProc ("pynumproc", np);
                                 }))
     
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<NumProc> np)
                                 {
-                                  cout << "add numproc - sp" << endl;
-                                  self.AddNumProc ("pynumproc", np);
+				  static int cnt = 0;
+				  cnt++;
+				  string name = "np_from_py" + ToString(cnt);
+                                  self.AddNumProc (name, np);
                                 }))
 
     .def("Add", FunctionPointer([](PDE & self, const bp::list &l)

@@ -26,6 +26,7 @@ a.Add (BFI ("laplace", 2, ConstantCF(1)))
 c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block" })
 # c = Preconditioner (a, "bddc", { "test" : True })
 
+print ("now assemble the matrix ...")
 a.Assemble()
 c.Update()
 
