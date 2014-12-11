@@ -288,7 +288,7 @@ void ExportCSG()
                                    self.Save (filename);
                                  }))
     .def("Add", FunctionPointer
-         ([] (CSGeometry & self, shared_ptr<SPSolid> solid)
+         ([] (CSGeometry & self, shared_ptr<SPSolid> solid, bp::list bcmod)
           {
             solid->AddSurfaces (self);
             solid->GiveUpOwner();
@@ -296,7 +296,30 @@ void ExportCSG()
             self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
             self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
             self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
-          }))
+
+            // bcmod is list of tuples ( solid, bcnr )
+            for (int i = 0; i < bp::len(bcmod); i++)
+              {
+                bp::tuple tup = bp::extract<bp::tuple> (bcmod[i]) ();
+                auto mod_solid = bp::extract<shared_ptr<SPSolid>> (tup[0]) ();
+                auto mod_nr = bp::extract<int> (tup[1])();
+                Array<int> si;
+                mod_solid -> GetSolid() -> GetSurfaceIndices (si);
+                cout << "change bc on surfaces: " << si << " to " << mod_nr << endl;
+
+                for (int j = 0; j < si.Size(); j++)
+                  {
+                    CSGeometry::BCModification bcm;
+                    bcm.bcname = NULL;
+                    bcm.tlonr = tlonr;
+                    bcm.si = si[j];
+		    self.bcmodifications.Append (bcm);
+                  }
+              }
+
+          }),
+         (bp::arg("self"), bp::arg("solid"), bp::arg("bcmod")=bp::list())
+         )
 
     .def("CloseSurfaces", FunctionPointer
          ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, int reflevels)
