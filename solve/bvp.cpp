@@ -43,6 +43,22 @@ namespace ngsolve
   public:
     ///
     NumProcBVP (PDE & apde, const Flags & flags);
+    
+    NumProcBVP (shared_ptr<PDE> apde, 
+                shared_ptr<BilinearForm> abfa, 
+                shared_ptr<LinearForm> alff,
+                shared_ptr<GridFunction> agfu, 
+                shared_ptr<Preconditioner> apre, 
+                int amaxsteps, 
+                double aprec)
+      : NumProc(*apde), bfa(abfa), lff(alff), gfu(agfu), pre(apre), 
+        maxsteps(amaxsteps), prec(aprec)
+    {
+      print = false;
+      solver = CG;
+      ip_type = SYMMETRIC;
+    }
+
     ///
     virtual ~NumProcBVP();
 
@@ -721,3 +737,32 @@ namespace ngsolve
   static RegisterNumProc<NumProcBVP> npinitbvp("bvp");
   static RegisterNumProc<NumProcConstrainedBVP> npinitbvp2("constrainedbvp");
 }
+
+
+#ifdef NGS_PYTHON
+#include "../ngstd/python_ngstd.hpp"
+
+using namespace ngsolve;
+void ExportBVP()
+{
+  cout << "exporting bvp numproc" << endl;
+
+  bp::def ("BVP", FunctionPointer
+           ([](shared_ptr<PDE> pde,
+               shared_ptr<BilinearForm> bfa,
+               shared_ptr<LinearForm> lff,
+               shared_ptr<GridFunction> gfu,
+               shared_ptr<Preconditioner> pre,
+               int maxsteps,
+               double prec) -> shared_ptr<NumProc>
+            
+            {
+              return make_shared<NumProcBVP> (pde, bfa, lff, gfu, pre, maxsteps, prec);
+            }),
+           (bp::arg("pde"), bp::arg("bf"), bp::arg("lf"), bp::arg("gf"), 
+            bp::arg("pre")=NULL, bp::arg("maxsteps")=100, bp::arg("prec")=1e-8)
+	   );
+
+
+}
+#endif

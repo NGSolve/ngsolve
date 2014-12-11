@@ -5,7 +5,7 @@ using namespace ngsolve;
 
 
 
-
+extern void ExportBVP();
 
 void ExportNgsolve() {
     std::string nested_name = "solve";
@@ -24,6 +24,8 @@ void ExportNgsolve() {
              FunctionPointer([](bool blocking) {Ng_Redraw(blocking);}),
              (bp::arg("blocking")=false)
              );
+
+    ExportBVP();
 }
 
 

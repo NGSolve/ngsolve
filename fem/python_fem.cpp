@@ -148,16 +148,21 @@ void ExportNgfem() {
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
+         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef, bool imag)
                            {
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
+
                              if (!bfi) cerr << "undefined integrator '" << name 
                                             << "' in " << dim << " dimension having 1 coefficient"
                                             << endl;
+
+                             if (imag)
+                               bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
+
                              return bfi;
                            }),
           bp::default_call_policies(),        // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"))))
+          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
     
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
@@ -178,14 +183,17 @@ void ExportNgfem() {
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef,
-                              bp::object definedon, const Flags & flags)
+                              bp::object definedon, bool imag, const Flags & flags)
                            {
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
                              if (bp::extract<bp::list> (definedon).check())
                                lfi -> SetDefinedOn (makeCArray<int> (definedon));
  
-                             cout << "LFI: Flags = " << flags << endl;
+                             if (imag)
+                               lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
+
+                             // cout << "LFI: Flags = " << flags << endl;
                              if (!lfi) cerr << "undefined integrator '" << name 
                                             << "' in " << dim << " dimension having 1 coefficient"
                                             << endl;
@@ -193,7 +201,8 @@ void ExportNgfem() {
                            }),
           bp::default_call_policies(),     // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,
-           bp::arg("coef"),bp::arg("definedon")=bp::object(), bp::arg("flags")=bp::dict()))
+           bp::arg("coef"),bp::arg("definedon")=bp::object(), 
+           bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
          )
 
     .def("CalcElementVector", 
