@@ -429,7 +429,8 @@ void ExportNgcomp()
     
     .def("Assemble", FunctionPointer([](BF & self, int heapsize)
                                      {
-                                       LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
+				       cout << "hs = " << heapsize*omp_get_max_threads() << endl;
+                                       LocalHeap lh (heapsize*omp_get_max_threads(), "BilinearForm::Assemble-heap");
                                        self.ReAssemble(lh);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
@@ -440,7 +441,7 @@ void ExportNgcomp()
     .def("AssembleLinearization", FunctionPointer
 	 ([](BF & self, BaseVector & ulin, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BiinearForm::Assemble-heap");
+	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap");
 	    self.AssembleLinearization (ulin, lh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
