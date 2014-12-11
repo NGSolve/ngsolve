@@ -121,6 +121,14 @@ void ExportNetgenMeshing()
                                   {
                                     return self.AddPoint (Point3d(p));
                                   }))
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([]()
+                           {
+                             auto tmp = new Mesh();
+                             return tmp;
+                           })),
+         "create empty mesh"
+      )
     ;
   
 
