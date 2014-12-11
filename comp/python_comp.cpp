@@ -169,15 +169,15 @@ void ExportNgcomp()
 
     .def("SetDeformation", &MeshAccess::SetDeformation)
     
-    .def("GetMaterials", FunctionPointer([](const MeshAccess & ma)
-                                         {
-                                           Array<string> materials(ma.GetNDomains());
-                                           for (int i : materials.Range())
-                                            materials[i] = ma.GetDomainMaterial(i);
-                                           cout << "materials: " << materials << endl;
-                                           return bp::tuple(materials);
-                                         }))
-
+    .def("GetMaterials", FunctionPointer
+	 ([](const MeshAccess & ma)
+	  {
+	    Array<string> materials(ma.GetNDomains());
+	    for (int i : materials.Range())
+	      materials[i] = ma.GetDomainMaterial(i);
+	    return bp::tuple(materials);
+	  }))
+    
 
     /*
     // first attempts, but keep for a moment ...
