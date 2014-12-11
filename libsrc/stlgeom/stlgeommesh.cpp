@@ -1340,8 +1340,11 @@ int STLMeshingDummy (STLGeometry* stlgeometry, shared_ptr<Mesh> & mesh, MeshingP
 
   if (perfstepsstart <= MESHCONST_MESHEDGES)
     {
+      if (mesh)
+        mesh -> DeleteMesh();
+      else
+        mesh = make_shared<Mesh>();
 
-      mesh = make_shared<Mesh>();
       mesh->geomtype = Mesh::GEOM_STL;
 
       mesh -> SetGlobalH (mparam.maxh);
