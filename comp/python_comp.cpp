@@ -547,9 +547,15 @@ void ExportNgcomp()
 
     .def("Solve", &PDE::Solve)
 
+
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<MeshAccess> mesh)
                                 {
                                   self.AddMeshAccess (mesh);
+                                }))
+
+    .def("Add", FunctionPointer([](PDE & self, const string & name, double val)
+                                {
+                                  self.AddConstant (name, val);
                                 }))
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<FESpace> space)
