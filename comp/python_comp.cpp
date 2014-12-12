@@ -640,7 +640,13 @@ void ExportNgcomp()
                                       cout << "warning: unknown object at position " << i << endl;
                                     }
                                 }))
-    
+
+    .def("SetCurveIntegrator", FunctionPointer
+         ([](PDE & self, const string & filename, shared_ptr<LinearFormIntegrator> lfi)
+          {
+            self.SetLineIntegratorCurvePointInfo(filename, lfi.get());
+          }))
+
     .add_property ("constants", FunctionPointer([](PDE & self) { return bp::object(self.GetConstantTable()); }))
     .add_property ("variables", FunctionPointer([](PDE & self) { return bp::object(self.GetVariableTable()); }))
     .add_property ("coefficients", FunctionPointer([](PDE & self) { return bp::object(self.GetCoefficientTable()); }))
