@@ -133,6 +133,18 @@ void ExportNetgenMeshing()
          "create empty mesh"
       )
     */
+    .def ("BoundaryLayer", FunctionPointer 
+          ([](Mesh & self, int bc, double thickness, string material)
+           {
+             BoundaryLayerParameters blp;
+             blp.surfid.Append (bc);
+             blp.prismlayers = 1;
+             blp.hfirst = thickness;
+             blp.growthfactor = 1.0;
+             GenerateBoundaryLayer (self, blp);
+           }
+           ))
+                                            
     ;
   
 

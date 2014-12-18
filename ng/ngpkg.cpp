@@ -1070,7 +1070,52 @@ namespace netgen
         return TCL_ERROR;
      }
 
-     GenerateBoundaryLayer (*mesh, mparam);
+
+
+
+     
+     cout << "Generate Prismatic Boundary Layers (Experimental)...." << endl;
+     
+     // Use an array to support creation of boundary 
+     // layers for multiple surfaces in the future...
+     Array<int> surfid;
+     int surfinp = 0;
+     int prismlayers = 1;
+     double hfirst = 0.01;
+     double growthfactor = 1.0;
+
+     
+     while(surfinp >= 0)
+       {
+         cout << "Enter Surface ID (-1 to end list): ";
+         cin >> surfinp;
+         if(surfinp >= 0) surfid.Append(surfinp);
+      }
+
+     cout << "Number of surfaces entered = " << surfid.Size() << endl; 
+     cout << "Selected surfaces are:" << endl;
+     
+     for(int i = 1; i <= surfid.Size(); i++)
+       cout << "Surface " << i << ": " << surfid.Elem(i) << endl;
+     
+     cout << endl << "Enter number of prism layers: ";
+     cin >> prismlayers;
+     if(prismlayers < 1) prismlayers = 1;
+     
+     cout << "Enter height of first layer: ";
+     cin >> hfirst;
+     if(hfirst <= 0.0) hfirst = 0.01;
+     
+     cout << "Enter layer growth / shrink factor: ";
+     cin >> growthfactor;
+     if(growthfactor <= 0.0) growthfactor = 0.5;
+     
+     BoundaryLayerParameters blp;
+     blp.surfid = surfid;
+     blp.prismlayers = prismlayers;
+     blp.hfirst = blp.hfirst;
+     blp.growthfactor = growthfactor;
+     GenerateBoundaryLayer (*mesh, blp);
      return TCL_OK;
   }
 
