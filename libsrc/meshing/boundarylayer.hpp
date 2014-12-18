@@ -14,6 +14,7 @@ public:
   // parameters by Philippose ..
   Array<int> surfid;
   int prismlayers = 1;
+  int matnr = 1;
   double hfirst = 0.01;
   double growthfactor = 1;
 };

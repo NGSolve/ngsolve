@@ -137,10 +137,24 @@ void ExportNetgenMeshing()
           ([](Mesh & self, int bc, double thickness, string material)
            {
              BoundaryLayerParameters blp;
-             blp.surfid.Append (bc);
+
+             for (int i = 1; i <= self.GetNFD(); i++)
+               if (self.GetFaceDescriptor(i).BCProperty() == bc)
+                   blp.surfid.Append (i);
+
+             cout << "add layer at surfaces: " << blp.surfid << endl;
+
              blp.prismlayers = 1;
              blp.hfirst = thickness;
              blp.growthfactor = 1.0;
+
+             // find max domain nr
+             int maxind = 0;
+             for (ElementIndex ei = 0; ei < self.GetNE(); ei++)
+               maxind = max (maxind, self[ei].GetIndex());
+             cout << "maxind = " << maxind << endl;
+             self.SetMaterial (maxind+1, material.c_str());
+             blp.matnr = maxind+1;
              GenerateBoundaryLayer (self, blp);
            }
            ))

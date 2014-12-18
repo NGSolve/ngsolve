@@ -509,8 +509,8 @@ namespace netgen
                  Element el(types[classify]);
                  for (int i = 0; i < 6; i++)
                    el[i] = nums[vertices[classify][i]];
-                 el.SetIndex(1);
-                 cout << "el = " << el << endl;
+                 el.SetIndex(blp.matnr);
+                 // cout << "el = " << el << endl;
                  if (classify != 0)
                    mesh.AddVolumeElement(el);
                }
