@@ -11,6 +11,11 @@
 using namespace netgen;
 namespace bp = boost::python;
 
+namespace netgen
+{
+  extern shared_ptr<NetgenGeometry> ng_geometry;
+}
+
 
 template <typename T, int BASE = 0, typename TIND = int>
 void ExportArray ()
@@ -97,7 +102,22 @@ void ExportNetgenMeshing()
   bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
     .def(bp::init<>("create empty mesh"))
     .def("__str__", &ToString<Mesh>)
-    .def("Load", static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
+    .def("Load",  FunctionPointer 
+	 ([](Mesh & self, const string & filename)
+	  {
+	    ifstream input(filename);
+	    self.Load(input);
+	    for (int i = 0; i < geometryregister.Size(); i++)
+	      {
+		NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
+		if (hgeom)
+		  {
+		    ng_geometry.reset (hgeom);
+		    break;
+		  }
+	      }
+	  }))
+    // static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
 
     .def("Elements3D", 

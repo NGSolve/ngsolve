@@ -6,7 +6,12 @@
 
 using namespace netgen;
 
+namespace netgen
+{
+  extern shared_ptr<NetgenGeometry> ng_geometry;
+}
 
+inline void NOOP_Deleter(void *) { ; }
 
 
 // a shadow solid tree using shared pointers.
@@ -305,7 +310,7 @@ void ExportCSG()
                 auto mod_nr = bp::extract<int> (tup[1])();
                 Array<int> si;
                 mod_solid -> GetSolid() -> GetSurfaceIndices (si);
-                cout << "change bc on surfaces: " << si << " to " << mod_nr << endl;
+                // cout << "change bc on surfaces: " << si << " to " << mod_nr << endl;
 
                 for (int j = 0; j < si.Size(); j++)
                   {
@@ -313,6 +318,7 @@ void ExportCSG()
                     bcm.bcname = NULL;
                     bcm.tlonr = tlonr;
                     bcm.si = si[j];
+		    bcm.bcnr = mod_nr;
 		    self.bcmodifications.Append (bcm);
                   }
               }
@@ -355,6 +361,7 @@ void ExportCSG()
              // cout << "geom, bbox = " << geo.BoundingBox() << endl;
              geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
              geo.GenerateMesh (dummy, param, 0, 6);
+	     ng_geometry.reset (&geo, NOOP_Deleter);
              return dummy;
            }))
     ;
