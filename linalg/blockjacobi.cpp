@@ -360,7 +360,7 @@ namespace ngla
 	  {
 #pragma omp critical(buildingblockupdate) 
 	    {
-	      cout << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
+	      cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
 	      prevtime = clock();
 	    }
 	  }
@@ -477,7 +477,7 @@ namespace ngla
               {
 #pragma omp critical(buildingblockupdate) 
                 {
-                  cout << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
+                  cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
                   prevtime = clock();
                 }
               }
@@ -503,7 +503,7 @@ namespace ngla
 	  }
       }
 
-    cout << "\rBuilding block " << blocktable.Size() << "/" << blocktable.Size() << endl;
+    cout << IM(3) << "\rBuilding block " << blocktable.Size() << "/" << blocktable.Size() << endl;
     // cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
   }
 

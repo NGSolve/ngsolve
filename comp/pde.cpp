@@ -619,7 +619,7 @@ namespace ngcomp
             
             else if (fes)
               {
-		cout << IM(1)
+		cout << IM(2)
 		     << "Update " << fes -> GetClassName()
 		     << " " << fes -> GetName () << flush;
 
@@ -630,22 +630,22 @@ namespace ngcomp
 		AddVariable (string("fes.")+fes->GetName()+".ndof", ndof, 6);
 
 		if (fes->GetDimension() == 1)
-		  cout << IM(1) << ", ndof = " << ndof << endl;
+		  cout << IM(2) << ", ndof = " << ndof << endl;
 		else
-		  cout << IM(1) << ", ndof = " 
+		  cout << IM(2) << ", ndof = " 
 		       << fes -> GetDimension() << " x " 
 		       << ndof << endl;
               }
 
             else if (gf)
               {
-		cout << IM(1) << "Update gridfunction " << gf->GetName() << endl;
+		cout << IM(2) << "Update gridfunction " << gf->GetName() << endl;
 		gf->Update();
 	      }
             
             else if (bf)
               {
-		cout << IM(1) 
+		cout << IM(2) 
 		     << "Update bilinear-form " << bf->GetName() << endl;
 		bf->Assemble(lh);
 	      }
@@ -654,7 +654,7 @@ namespace ngcomp
               {
                 if( lf->InitialAssembling() )
                   {
-		    cout << IM(1) << "Update linear-form " << lf->GetName() << endl;
+		    cout << IM(2) << "Update linear-form " << lf->GetName() << endl;
 		    lf->Assemble(lh);
 		  }
 	      }
@@ -663,13 +663,13 @@ namespace ngcomp
               {
 		if ( pre->LaterUpdate() )
 		  {  
-		    cout << IM(1) 
+		    cout << IM(2) 
 			 << endl << "Update of " << pre->ClassName() 
 			 << "  " << pre->GetName() << " postponed!" << endl;
 		  }
 		else
 		  {	    
-		    cout << IM(1) << "Update " << pre->ClassName() 
+		    cout << IM(2) << "Update " << pre->ClassName() 
 			 << "  " << pre->GetName() << endl;
 
 		    pre->Update();
@@ -677,7 +677,7 @@ namespace ngcomp
 	      }
             else if (np)
               {
-		cout << IM(1) 
+		cout << IM(2) 
 		     << "Call numproc " << np->GetClassName() 
 		     << "  " << np->GetName() << endl;
 		
@@ -686,7 +686,7 @@ namespace ngcomp
 
             else if (dynamic_cast<const LabelStatement*> (todo[pc].get()))
               {
-                cout << IM(1)
+                cout << IM(2)
                      << dynamic_cast<const LabelStatement*>(todo[pc].get())->GetLabel() << endl;
               }
 
@@ -792,7 +792,7 @@ namespace ngcomp
     double endtime = WallTime();
     
     cout << IM(1) << "Equation Solved" << endl;
-    cout << IM(1) << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
+    cout << IM(2) << "Total Time = " << endtime-starttime << " sec wall time" << endl << endl;
   }
 
 
@@ -904,13 +904,13 @@ namespace ngcomp
 
   void PDE :: AddConstant (const string & name, double val)
   {
-    cout << IM(1) << "add constant " << name << " = " << val << endl;
+    cout << IM(3) << "add constant " << name << " = " << val << endl;
     constants.Set (name.c_str(), val);
   }
 
   void PDE :: AddStringConstant (const string & name, const string & val)
   {
-    cout << IM(1) << "add string constant " << name << " = " << val << endl;
+    cout << IM(3) << "add string constant " << name << " = " << val << endl;
     if(string_constants.Used(name))
       delete string_constants[name];
 
@@ -940,7 +940,7 @@ namespace ngcomp
     // variables.Set (name, 0);
     AddVariable (name, 0.0);
     eval->SetVariable(*variables[name]);
-    cout << IM(1) << "add variable " << name << " = " << eval->Evaluate() << endl;
+    cout << IM(2) << "add variable " << name << " = " << eval->Evaluate() << endl;
   }
 
   void PDE :: AddVariableEvaluation (shared_ptr<EvalVariable> eval)
@@ -951,7 +951,7 @@ namespace ngcomp
 
   void PDE :: AddCoefficientFunction (const string & name, shared_ptr<CoefficientFunction> fun)
   {
-    cout << IM(1) << "add coefficient-function, name = " << name << endl;
+    cout << IM(2) << "add coefficient-function, name = " << name << endl;
     coefficients.Set (name.c_str(), fun);
   }
 
@@ -960,7 +960,7 @@ namespace ngcomp
 
   shared_ptr<FESpace> PDE :: AddFESpace (const string & name, const Flags & hflags)
   {
-    cout << IM(1) << "add fespace " << name << endl;
+    cout << IM(2) << "add fespace " << name << endl;
 
     Flags flags = hflags;
 
@@ -1287,7 +1287,7 @@ namespace ngcomp
 
   void PDE :: AddNumProc (const string & name, shared_ptr<NumProc> np)
   {
-    cout << IM(1) << "add numproc " << name << ", type = " << np->GetClassName() << endl;
+    cout << IM(2) << "add numproc " << name << ", type = " << np->GetClassName() << endl;
     np->SetName (name);
     numprocs.Set (name, np);
     todo.Append(np);
@@ -1303,11 +1303,11 @@ namespace ngcomp
     if (form && part)
       {
 	form->AddIntegrator (part);
-	cout << IM(1) << "integrator " << part->Name() << endl;
+	cout << IM(2) << "integrator " << part->Name() << endl;
       }
     else
       {
-	cerr << IM(1) << "Bilinearform = " << form << ", part = " << part << endl;
+	cerr << IM(2) << "Bilinearform = " << form << ", part = " << part << endl;
       }
   }
   
@@ -1335,11 +1335,11 @@ namespace ngcomp
     if (form && part)
       {
 	form->AddIntegrator (part);
-	cout << IM(1) << "integrator " << part->Name() << endl;
+	cout << IM(3) << "integrator " << part->Name() << endl;
       }
     else
       {
-	cerr << IM(1) << "Linearform = " << form << ", part = " << part << endl;
+	cerr << IM(3) << "Linearform = " << form << ", part = " << part << endl;
       }
   }
   
