@@ -4,16 +4,6 @@ using namespace ngsolve;
 
 #ifdef NGS_PYTHON
 
-/*
-BasePythonEnvironment py_env;
-
-BasePythonEnvironment & GetPythonEnvironment () 
-{
-  return py_env;
-}
-*/
-
-
 void ExportNgstd();
 void ExportNgbla();
 void ExportNgfem();
@@ -57,6 +47,7 @@ BOOST_PYTHON_MODULE(ngslib)
         PyErr_Print();
     }
 }
+
 
 
 #endif
