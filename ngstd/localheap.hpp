@@ -40,7 +40,13 @@ namespace ngstd
   public:
     bool owner;
     const char * name;
+
+#ifdef __MIC__
+    enum { ALIGN = 64 };
+#else
     enum { ALIGN = 32 };
+#endif  
+
   public:
     /// Allocate one block of size asize.
     NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname = "noname");
