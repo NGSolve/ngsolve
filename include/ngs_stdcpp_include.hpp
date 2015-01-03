@@ -104,7 +104,7 @@
 #ifdef __INTEL_COMPILER
 #define ALWAYS_INLINE __forceinline
 #define INLINE __forceinline inline
-#define LAMBDA_INLINE
+#define LAMBDA_INLINE __attribute__ ((__always_inline__))
 #else
 #ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
