@@ -24,7 +24,7 @@ namespace ngfem
     FUNC f;
     int i;
   public:
-    INLINE SBLambdaElement (const SBLambdaElement & e2) : f(e2.f), i(e2.i) { ; }
+    INLINE SBLambdaElement (const SBLambdaElement & e2) = default; // : f(e2.f), i(e2.i) { ; }
     INLINE SBLambdaElement (FUNC af, int hi) : f(af), i(hi) { ; }
     template <typename VAL>
     INLINE VAL operator= (VAL v) { f(i, v); return v; }
@@ -36,7 +36,7 @@ namespace ngfem
     FUNC func;
     int offset;
   public:
-    INLINE Class_SBLambda (const Class_SBLambda & l2) : func(l2.func), offset(l2.offset) { ; }
+    INLINE Class_SBLambda (const Class_SBLambda & l2) = default; // : func(l2.func), offset(l2.offset) { ; }
     INLINE Class_SBLambda (FUNC f, int ao = 0) : func(f), offset(ao) { ; }
     INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
     INLINE Class_SBLambda<FUNC> operator+ (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
@@ -436,8 +436,8 @@ namespace ngfem
       */
 
 
+      /*
       S p1 = c * REC::P0(x);
-      // S p2 = c * REC::Pm1(x);
       S p2 = REC::ZERO_Pm1 ? S(0.0) : c * REC::Pm1(x);
       // if (n < 0) return;
 
@@ -449,6 +449,23 @@ namespace ngfem
 	}
       if (n & 1)
         values[n] = EvalNextTicTac2 (n, x, p2, p1);
+      */
+
+      S p1 = c * REC::P0(x);
+      S p2 = c * REC::P1(x);
+
+      int i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values[i] = p1;
+          values[i+1] = p2;
+          
+	  EvalNextTicTac2 (i, x, p1, p2);
+	  EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+
 
       /*
       if (n < 0) return;
@@ -3185,8 +3202,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     template <class Sx, class T>
     inline static int Calc (int n, Sx x, T & values)
     {
-      Sx p3 = 0;
-      Sx p2 = -1;
+      Sx p3 = 0.0;
+      Sx p2 = -1.0;
       Sx p1 = x;
 
       for (int j=2; j<=n; j++)

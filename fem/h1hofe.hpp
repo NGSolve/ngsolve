@@ -153,8 +153,8 @@ namespace ngfem
 namespace ngfem
 {
   H1HOFE_EXTERN template class H1HighOrderFE<ET_POINT>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_SEGM>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_TRIG>;
+  extern template class H1HighOrderFE<ET_SEGM>;
+  extern template class H1HighOrderFE<ET_TRIG>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_QUAD>;
 
   H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
@@ -163,8 +163,8 @@ namespace ngfem
   H1HOFE_EXTERN template class H1HighOrderFE<ET_HEX>;
 
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
 
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
