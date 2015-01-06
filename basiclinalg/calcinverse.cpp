@@ -139,8 +139,16 @@ namespace ngbla
 			    const BitArray & used,
 			    LocalHeap & lh)
   {
+    if (s.Height() == 0) return;
+    if (s.Height() == a.Height())
+      {
+        s = a;
+        return;
+      }
+
     HeapReset hr(lh);
 
+    /*
     int n = a.Height(), n_used = 0, n_unused = 0;
     for (int i = 0; i < n; i++)
       if (used[i]) n_used++; else n_unused++;
@@ -170,11 +178,37 @@ namespace ngbla
 	  }
 	if (used[i]) cnt_usedi++;
       }
+    */
+    int n = a.Height();
+    Array<int> used_dofs(n, lh);
+    Array<int> unused_dofs(n, lh);
+    used_dofs.SetSize(0);
+    unused_dofs.SetSize(0);
+    for (int i = 0; i < n; i++)
+      if (used[i])
+        used_dofs.Append(i);
+      else
+        unused_dofs.Append(i);
+
+    s = a.Rows(used_dofs).Cols(used_dofs);
+    FlatMatrix<> b1 = a.Rows(unused_dofs).Cols(used_dofs) | lh;
+    FlatMatrix<> b2 = a.Rows(used_dofs).Cols(unused_dofs) | lh;
+    FlatMatrix<> c = a.Rows(unused_dofs).Cols(unused_dofs) | lh;
+    FlatMatrix<> hb1 (b1.Height(), b1.Width(), lh);
     
 
-    LapackInverse (c);
-    hb1 = c * b1 | Lapack;
-    s -= b2 * hb1 | Lapack;
+    if (n > 10)
+      {
+        LapackInverse (c);
+        hb1 = c * b1 | Lapack;
+        s -= b2 * hb1 | Lapack;
+      }
+    else
+      {
+        CalcInverse (c);
+        hb1 = c * b1;
+        s -= b2 * hb1;
+      }
   }
 
 
