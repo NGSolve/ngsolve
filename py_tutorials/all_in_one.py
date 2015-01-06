@@ -3,6 +3,7 @@ from ngsolve.comp import *
 from ngsolve.la import *
 
 import numpy as np
+from timeit import Timer
 
 mesh = Mesh("square.vol")
 
@@ -17,6 +18,7 @@ f = LinearForm (v)
 f.Add (LFI (name = "source", dim = 2, coef = ConstantCF(1),
             flags = { "something" : 123 }, definedon = [0,1,2]))
 f.Assemble()
+print (Timer (f.Assemble).timeit(number=1000))
 
 a = BilinearForm (v, flags = { "symmetric" : True, "eliminate_internal" : False })
 a.Add (BFI ("mass", 2, ConstantCF(1)))
