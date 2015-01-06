@@ -45,44 +45,39 @@ namespace ngcomp
     virtual ~LinearForm () { ; }
   
     ///
-    // const FESpace & GetFESpace() const { return *fespace; }
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
-    virtual void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
+    void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
+    {
+      parts.Append (lfi);
+    }
 
     ///
-    virtual shared_ptr<LinearFormIntegrator> GetIntegrator (int i) const
+    shared_ptr<LinearFormIntegrator> GetIntegrator (int i) const
     {
       return parts[i]; 
     }
-    
-    virtual shared_ptr<LinearFormIntegrator> GetIntegrator (int i) 
-    {
-      return parts[i];
-    }
 
     ///
-    virtual int NumIntegrators () const
+    int NumIntegrators () const
     {
       return parts.Size(); 
     }
 
-
-    void SetIndependent (int aindependent = true)
+    void SetIndependent (bool aindependent = true)
     { 
       independent = aindependent; 
     }
-
 
     ///
     virtual void Assemble (LocalHeap lh = 1000000) = 0;
 
     virtual void CleanUpLevel() { ; }
 
-    virtual bool IsAssembled (void);
-    bool InitialAssembling (void);
-    void SetNoInitialAssembling (void);
+    virtual bool IsAssembled () { return assembled; }
+    bool InitialAssembling () { return initialassembling; }
+    void SetNoInitialAssembling () { initialassembling = false; }
 
 
     ///
@@ -138,13 +133,6 @@ namespace ngcomp
 
     ///
     using LinearForm::LinearForm;
-    /*
-    S_LinearForm (shared_ptr<FESpace> afespace, 
-		  const string & aname,
-		  const Flags & flags)
-      : LinearForm (afespace, aname, flags) {;}
-    */
-
 
     ///
     virtual void AllocateVector () = 0;
@@ -181,14 +169,12 @@ namespace ngcomp
     enum { HEIGHT = mat_traits<TV>::HEIGHT };
 
     ///
-    //using BASE::BASE;   // not working on MSVC
-    
+    using S_LinearForm<TSCAL>::S_LinearForm;
+    /*
     T_LinearForm(shared_ptr<FESpace> afespace, const string & aname,
         const Flags & flags)
-        : BASE(afespace, aname, flags) {
-        ;
-    }
-
+        : BASE(afespace, aname, flags) { ; }
+    */
     ///
     virtual ~T_LinearForm ();
 
