@@ -4,8 +4,8 @@
 #include <parallelngs.hpp>
 #include <stdlib.h>
 
-
 using namespace ngcomp; 
+
 
 #ifdef PARALLEL
 #include "../parallel/dump.hpp"
@@ -2154,3 +2154,5 @@ namespace ngcomp
   template class  VisualizeGridFunction<Complex>;
 
 }
+
+

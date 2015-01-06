@@ -21,10 +21,6 @@ namespace ngcomp
     cacheblocksize = 1;
   }
 
-  void LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
-  {
-    parts.Append (lfi);
-  }
 
   void LinearForm :: PrintReport (ostream & ost) const
   {
@@ -44,25 +40,6 @@ namespace ngcomp
 	  mu[i]->AddName (string(" lf ")+GetName());
       }
   }
-
-  bool LinearForm :: InitialAssembling (void) {return initialassembling; }
-  void LinearForm :: SetNoInitialAssembling (void) {initialassembling =  false; }
-
-  bool LinearForm :: IsAssembled (void) { return assembled; }
-
-  /*
-  template <class TV>
-  BaseVector & T_LinearForm<TV> :: GetVector () const 
-  { 
-    return *vec; 
-  }
-
-  template <class TV>
-  shared_ptr<BaseVector> T_LinearForm<TV> :: VectorPtr () const 
-  { 
-    return vec; 
-  }
-  */
 
   template <class SCAL>
   void S_LinearForm<SCAL> :: Assemble (LocalHeap clh)
@@ -672,35 +649,8 @@ namespace ngcomp
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /*
   template <typename TV>
-  T_LinearForm<TV> ::
-  T_LinearForm (const FESpace & afespace, const string & aname, const Flags & flags)
-    : S_LinearForm<TSCAL> (afespace, aname, flags), vec(0) 
-  { 
-    ; 
-  }
-  */
-
-  template <typename TV>
-  T_LinearForm<TV> :: ~T_LinearForm ()
-  {
-    ; // delete vec;
-  }
+  T_LinearForm<TV> :: ~T_LinearForm () { ; }
 
 
   template <typename TV>
@@ -722,13 +672,9 @@ namespace ngcomp
 
 
 
-
-
   template <typename TV>
   void T_LinearForm<TV> :: CleanUpLevel ()
   {
-    // delete vec;
-    // vec = 0;
     vec.reset();
     this -> allocated = false;
   }
