@@ -460,8 +460,8 @@ namespace ngfem
           values[i] = p1;
           values[i+1] = p2;
           
-	  EvalNextTicTac2 (i, x, p1, p2);
-	  EvalNextTicTac2 (i+1, x, p2, p1);
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+	  EvalNextTicTac2 (i+3, x, p2, p1);
 	}
       if (i == n)
         values[n] = p1;
@@ -508,27 +508,19 @@ namespace ngfem
     template <class S, class T>
     INLINE static void Eval1Assign (int n, S x, T && values)
     {
-      if (n < 0) return;
       EvalMult1Assign (n, x, 1.0, values);
     }
 
     template <class S, class Sc, class T>
     INLINE static void EvalMult1Assign (int n, S x, Sc c, T && values)
     {
-      int i = 0;
-      S p1 = c*REC::P0(x), p2 = c * REC::Pm1(x);
-      while (true)
+      S p1 = c*REC::P1(x), p2 = c * REC::P0(x);
+      for (int i = 0; i <= n; i++)
         {
-	  values[i] = p1;
-          if (i == n) break;
-          i++;
-          EvalNext2 (i, x, p1, p2);
+	  values[i] = p2;
+          EvalNext2 (i+2, x, p1, p2);
         }
-
     }
-
-
-
 
 
 
@@ -572,13 +564,21 @@ namespace ngfem
     template <class S, class Sy, class T>
     INLINE static void EvalScaled1Assign (int n, S x, Sy y, T && values)
     {
-      if (n  < 0) return;
+      // if (n  < 0) return;
       EvalScaledMult1Assign (n, x, y, 1.0, values);
     }
 
     template <class S, class Sy, class Sc, class T>
     INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
     {
+      S p1 = c*REC::P1(x), p2 = c * REC::P0(x);
+      for (int i = 0; i <= n; i++)
+        {
+	  values[i] = p2;
+          EvalScaledNext2 (i+2, x, y, p1, p2);
+        }
+
+      /*
       int i = 0;
       S p2 = REC::ZERO_Pm1 ? S(0.0) : c * REC::Pm1(x);
       S p1 = c*REC::P0(x);
@@ -589,6 +589,7 @@ namespace ngfem
           i++;
           EvalScaledNext2 (i, x, y, p1, p2);
         }
+      */
     }
 
 
