@@ -66,7 +66,7 @@ namespace ngstd
   class NgProfiler
   {
     /// maximal number of timers
-    enum { SIZE = 1000 };
+    enum { SIZE = 1000000 };
 
     //  static long int tottimes[SIZE];
     // static long int starttimes[SIZE];
