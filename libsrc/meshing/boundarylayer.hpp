@@ -17,6 +17,7 @@ public:
   int matnr = 1;
   double hfirst = 0.01;
   double growthfactor = 1;
+  bool optimize = true;
 };
 
 extern void GenerateBoundaryLayer (Mesh & mesh, BoundaryLayerParameters & blp);

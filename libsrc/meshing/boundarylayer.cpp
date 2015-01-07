@@ -482,13 +482,13 @@ namespace netgen
                  mesh.AddVolumeElement(el);
                  numprisms++;
                  */
-                 cout << "add element: " << endl;
+                 // cout << "add element: " << endl;
                  int classify = 0;
                  for (int j = 0; j < 3; j++)
                    if (mapto[sel[j]])
                      classify += (1 << j);
 
-                 cout << "classify = " << classify << endl;
+                 // cout << "classify = " << classify << endl;
 
                  ELEMENT_TYPE types[] = { PRISM, TET, TET, PYRAMID, 
                                           TET, PYRAMID, PYRAMID, PRISM };
@@ -588,15 +588,14 @@ namespace netgen
                             volel.Delete();
                           }
                       }
-                    
-                    mesh.Compress();
-                  }
+		  }
                 else
                   {
                     mesh.Point(i).SetPoint(pointtomove + layerht * growthvectors.Elem(i));
                   }
               }
            }
+	 mesh.Compress();
       }
       
       // Optimise the tet part of the volume mesh after all the modifications 
