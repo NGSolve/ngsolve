@@ -230,7 +230,8 @@ namespace netgen
 
 	// ifstream infile(filename.c_str());
 	mesh -> Load(*infile);
-        vsmesh.SetMesh (mesh);
+        // vsmesh.SetMesh (mesh);
+        SetGlobalMesh (mesh);
 
 #ifdef PARALLEL
 	MyMPI_SendCmd ("mesh");
@@ -1322,7 +1323,8 @@ namespace netgen
               mesh = shared_ptr<Mesh> (hmesh);
               */
               mesh = make_shared<Mesh> ();
-              vsmesh.SetMesh (mesh);
+              // vsmesh.SetMesh (mesh);
+              SetGlobalMesh (mesh);
               int res = ng_geometry -> GenerateMesh (mesh, mparam, perfstepsstart, perfstepsend);
 
 	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
