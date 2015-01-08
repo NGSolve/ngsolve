@@ -744,7 +744,7 @@ namespace ngla
     */
 
     int h = this->Height();
-#pragma omp parallel for num_threads(240)
+#pragma omp parallel for
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
 

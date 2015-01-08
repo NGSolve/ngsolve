@@ -275,6 +275,47 @@ namespace ngsolve
   public:
     ///
     NumProcDrawFlux (PDE & apde, const Flags & flags);
+
+    ///
+    NumProcDrawFlux (shared_ptr<PDE> apde, 
+                     shared_ptr<BilinearForm> abfa, 
+                     shared_ptr<GridFunction> agfu,
+                     string alabel,
+                     bool aapplyd,
+                     bool auseall)
+      : NumProc(*apde), bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
+    { 
+      Array<shared_ptr<BilinearFormIntegrator>> bfi2d, bfi3d;
+
+      for (int i = 0; i < bfa->NumIntegrators(); i++)
+        {
+          if ((!bfi3d.Size() || useall) && bfa->GetIntegrator(i)->DimElement() == 3)
+            bfi3d.Append(bfa->GetIntegrator(i));
+          if ((!bfi2d.Size() || useall) && bfa->GetIntegrator(i)->DimElement() == 2)
+            bfi2d.Append(bfa->GetIntegrator(i));
+        }
+
+      if (!bfa->GetFESpace()->IsComplex())
+        vis = new VisualizeGridFunction<double> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+      else
+        vis = new VisualizeGridFunction<Complex> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+      
+      Ng_SolutionData soldata;
+      Ng_InitSolutionData (&soldata);
+  
+      // soldata.name = const_cast<char*> (gfu->GetName().c_str());
+      soldata.name = (char*)label.c_str();
+      soldata.data = 0;
+      soldata.components = vis->GetComponents();
+      soldata.iscomplex = vis->IsComplex();
+      soldata.draw_surface = bfi2d.Size() != 0;
+      soldata.draw_volume  = bfi3d.Size() != 0;
+      soldata.dist = 1;
+      soldata.soltype = NG_SOLUTION_VIRTUAL_FUNCTION;
+      soldata.solclass = vis;
+      Ng_SetSolutionData (&soldata);
+    }
+    
     ///
     virtual ~NumProcDrawFlux() { ; }
 
@@ -3240,3 +3281,33 @@ public:
   
 }
   
+
+
+
+
+#ifdef NGS_PYTHON
+#include "../ngstd/python_ngstd.hpp"
+
+using namespace ngsolve;
+void ExportDrawFlux()
+{
+  cout << "exporting DrawFlux numproc" << endl;
+  
+  bp::def ("DrawFlux", FunctionPointer
+           ([](shared_ptr<PDE> pde,
+               shared_ptr<BilinearForm> bfa,
+               shared_ptr<GridFunction> gfu,
+               const string & alabel,
+               bool applyd,
+               bool useall) -> shared_ptr<NumProc>
+            
+            {
+              return make_shared<NumProcDrawFlux> (pde, bfa, gfu, alabel, applyd, useall);
+            }),
+           (bp::arg("pde"), bp::arg("bf"), bp::arg("gf"), 
+            bp::arg("label")="flux", bp::arg("applyd")=false, bp::arg("useall")=false)
+	   );
+
+
+}
+#endif
