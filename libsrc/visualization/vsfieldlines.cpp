@@ -442,7 +442,7 @@ namespace netgen
   
   void VisualSceneSolution :: BuildFieldLinesFromBox(Array<Point3d> & startpoints)
   {
-    shared_ptr<Mesh> mesh (wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     if (!mesh) return;
 
     if(fieldlines_startarea_parameter[0] > fieldlines_startarea_parameter[3] ||
@@ -472,7 +472,7 @@ namespace netgen
 
   void VisualSceneSolution :: BuildFieldLinesFromLine(Array<Point3d> & startpoints)
   {
-    shared_ptr<Mesh> mesh (wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     if (!mesh) return;
 
 
@@ -491,7 +491,7 @@ namespace netgen
 
   void VisualSceneSolution :: BuildFieldLinesFromFile(Array<Point3d> & startpoints)
   {
-    shared_ptr<Mesh> mesh (wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     if (!mesh) return;
 
     ifstream * infile;
@@ -573,7 +573,7 @@ namespace netgen
   
   void VisualSceneSolution :: BuildFieldLinesFromFace(Array<Point3d> & startpoints)
   {
-    shared_ptr<Mesh> mesh (wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     if (!mesh) return;
 
     Array<SurfaceElementIndex> elements_2d;
@@ -660,7 +660,7 @@ namespace netgen
 
   void VisualSceneSolution :: BuildFieldLinesPlot ()
   {
-    shared_ptr<Mesh> mesh (wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     if (!mesh) return;
 
     if (fieldlinestimestamp >= solutiontimestamp) 

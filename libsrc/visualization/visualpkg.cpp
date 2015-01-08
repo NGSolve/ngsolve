@@ -303,7 +303,6 @@ namespace netgen
                     Tcl_Interp * interp,
                     int argc, tcl_const char *argv[])
   {
-    auto mesh = vssolution.GetMesh();
     int i;
     char buf[1000];
     buf[0] = 0;
@@ -366,6 +365,7 @@ namespace netgen
 
         if (strcmp (argv[1], "getdimension") == 0)
           {
+            auto mesh = vssolution.GetMesh();
             sprintf (buf, "%d", mesh->GetDimension());
           }
       }

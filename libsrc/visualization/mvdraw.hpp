@@ -156,7 +156,7 @@ namespace netgen
 
     double minh, maxh; // for meshsize coloring
 
-    weak_ptr<Mesh> wp_mesh;
+    // weak_ptr<Mesh> wp_mesh;
 
   public:
     VisualSceneMesh ();
@@ -166,8 +166,9 @@ namespace netgen
     virtual void DrawScene ();
     virtual void MouseDblClick (int px, int py);
 
-    void SetMesh (shared_ptr<Mesh> mesh) { wp_mesh = mesh; }
-    shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
+    // void SetMesh (shared_ptr<Mesh> mesh) { wp_mesh = mesh; }
+    // shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
+    shared_ptr<Mesh> GetMesh () const { return shared_ptr<Mesh>(global_mesh); }
 
     void SetMouseEventHandler (MouseEventHandler * handler)
     { user_me_handler = handler; }

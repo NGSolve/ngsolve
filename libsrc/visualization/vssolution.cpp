@@ -68,15 +68,16 @@ namespace netgen
     ClearSolutionData();
   }
 
+  /*
   void VisualSceneSolution :: SetMesh (shared_ptr<Mesh> amesh)
   { 
     wp_mesh = amesh; 
   }
-
+  */
 
   void VisualSceneSolution :: AddSolutionData (SolData * sd)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     NgLock meshlock1 (mesh->MajorMutex(), 1);
     int funcnr = -1;
@@ -160,7 +161,7 @@ namespace netgen
 
   void VisualSceneSolution :: SaveSolutionData (const char * filename) 
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     PrintMessage (1, "Write solution data to file ", filename);
 
@@ -351,7 +352,7 @@ namespace netgen
   {
     try
       {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (!mesh) 
       {
@@ -700,7 +701,7 @@ namespace netgen
   {
     try
       {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (!mesh)
       {
@@ -1124,7 +1125,7 @@ namespace netgen
   
   void  VisualSceneSolution :: Draw1DElements ()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (element1dlist)
       glDeleteLists (element1dlist, 1);
@@ -1176,7 +1177,7 @@ namespace netgen
   
   void  VisualSceneSolution :: DrawSurfaceElements ()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     static int timer = NgProfiler::CreateTimer ("Solution::DrawSurfaceElements");
     NgProfiler::RegionTimer reg (timer);
@@ -1619,7 +1620,7 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceElementLines ()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
 #ifdef PARALLELGL
     if (id == 0 && ntasks > 1)
@@ -1728,7 +1729,7 @@ namespace netgen
                                              const SolData * vsol,
                                              int comp)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (!draw_isosurface) return;
     if (!sol) return;
@@ -1979,7 +1980,7 @@ namespace netgen
                                                       const Point<3> & pmin, const Point<3> & pmax,
                                                       const int sei, const SolData * vsol)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     int dir,dir1,dir2;
     double s,t;
@@ -2091,7 +2092,7 @@ namespace netgen
 
   void  VisualSceneSolution :: DrawSurfaceVectors ()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     SurfaceElementIndex sei;
 
@@ -2427,7 +2428,7 @@ namespace netgen
   void VisualSceneSolution :: 
   GetMinMax (int funcnr, int comp, double & minv, double & maxv) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     static int timer1 = NgProfiler::CreateTimer ("getminmax, vol");
     static int timer2 = NgProfiler::CreateTimer ("getminmax, surf");
@@ -2576,7 +2577,7 @@ namespace netgen
             const double xref[], const double x[], const double dxdxref[], 
             int comp, double & val) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     double lam1 = xref[0];
     double lam2 = xref[1];
@@ -2749,7 +2750,7 @@ namespace netgen
             double lam1, double lam2, double lam3,
             int comp, double & val) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     val = 0;
     bool ok = 0;
@@ -2920,7 +2921,7 @@ namespace netgen
                    double lam1, double lam2, double lam3,
                    int comp, complex<double> & val) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     val = 0.0;
     bool ok = 0;
@@ -3165,7 +3166,7 @@ namespace netgen
                 double lam1, double lam2, 
                 int comp, double & val) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     bool ok;
     if (comp == 0)
@@ -3399,7 +3400,7 @@ namespace netgen
                 const double xref[], const double x[], const double dxdxref[], 
                 int comp, double & val) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     double lam1 = xref[0], lam2 = xref[1];
 
@@ -3648,7 +3649,7 @@ namespace netgen
   Vec<3> VisualSceneSolution :: 
   GetSurfDeformation (SurfaceElementIndex elnr, int facetnr, double lam1, double lam2) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     Vec<3> def;
     if (deform && vecfunction != -1)
@@ -3675,7 +3676,7 @@ namespace netgen
   void VisualSceneSolution :: GetPointDeformation (int pnum, Point<3> & p, 
                                                    SurfaceElementIndex elnr) const
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     p = mesh->Point (pnum+1);
     if (deform && vecfunction != -1)
@@ -3715,7 +3716,7 @@ namespace netgen
   void VisualSceneSolution :: GetClippingPlaneTrigs (Array<ClipPlaneTrig> & trigs,
                                                      Array<ClipPlanePoint> & pts)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     static int timer_vals = NgProfiler::CreateTimer ("ClipPlaneTrigs - vertex values");
     static int timer1 = NgProfiler::CreateTimer ("ClipPlaneTrigs1");
@@ -4058,7 +4059,7 @@ namespace netgen
 
   void VisualSceneSolution :: GetClippingPlaneGrid (Array<ClipPlanePoint> & pts)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     Vec3d n(clipplane[0], clipplane[1], clipplane[2]);
 
@@ -4116,7 +4117,7 @@ namespace netgen
 
   void VisualSceneSolution :: DrawClipPlaneTrigs () 
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
 #ifdef PARALLELGL
 

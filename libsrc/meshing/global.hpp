@@ -52,6 +52,14 @@ namespace netgen
 
   extern int h_argc;
   extern char ** h_argv;
+
+
+  extern weak_ptr<Mesh> global_mesh;
+  inline void SetGlobalMesh (shared_ptr<Mesh> m)
+  {
+    cout << "set global mesh" << endl;
+    global_mesh = m;
+  }
 }
 
 #endif

@@ -20,6 +20,8 @@ namespace netgen
   shared_ptr<Mesh> mesh;
   shared_ptr<NetgenGeometry> ng_geometry;
 
+  weak_ptr<Mesh> global_mesh;
+
   //  Flags parameters;
   int silentflag = 0;
   int testmode = 0;

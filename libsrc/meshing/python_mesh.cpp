@@ -154,7 +154,7 @@ void ExportNetgenMeshing()
       )
     */
     .def ("BoundaryLayer", FunctionPointer 
-          ([](Mesh & self, int bc, double thickness, string material)
+          ([](Mesh & self, int bc, double thickness, int volnr, string material)
            {
              BoundaryLayerParameters blp;
 
@@ -174,7 +174,8 @@ void ExportNetgenMeshing()
                maxind = max (maxind, self[ei].GetIndex());
              cout << "maxind = " << maxind << endl;
              self.SetMaterial (maxind+1, material.c_str());
-             blp.matnr = maxind+1;
+             blp.new_matnr = maxind+1;
+             blp.bulk_matnr = volnr;
              GenerateBoundaryLayer (self, blp);
            }
            ))

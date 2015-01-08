@@ -75,7 +75,7 @@ namespace netgen
   {
     try
       {
-        shared_ptr<Mesh> mesh(wp_mesh);
+        shared_ptr<Mesh> mesh = GetMesh();
 
     if (!mesh)
       {
@@ -91,6 +91,7 @@ namespace netgen
 
     BuildScene();
 
+    glEnable(GL_DEPTH_TEST);
     glClearColor(backcolor, backcolor, backcolor, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -321,7 +322,7 @@ namespace netgen
   {
     try
       {
-        shared_ptr<Mesh> mesh(wp_mesh);
+        shared_ptr<Mesh> mesh = GetMesh();
         
         if (!mesh)
       {
@@ -911,7 +912,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildFilledList (bool names)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildFilledList");
     NgProfiler::RegionTimer reg (timer);
@@ -1301,7 +1302,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildLineList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     static int timer = NgProfiler::CreateTimer ("Mesh::BuildLineList");
     NgProfiler::RegionTimer reg (timer);
@@ -1583,7 +1584,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildEdgeList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (!lock)
       {
@@ -1760,7 +1761,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildTetList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     if (tettimestamp > mesh->GetTimeStamp () &&
 	tettimestamp > vispar.clipping.timestamp )
@@ -2110,7 +2111,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildPrismList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     
     if (prismtimestamp > mesh->GetTimeStamp () &&
 	prismtimestamp > vispar.clipping.timestamp )
@@ -2440,7 +2441,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildHexList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     
     if (hextimestamp > mesh->GetTimeStamp () &&
 	hextimestamp > vispar.clipping.timestamp )
@@ -2650,7 +2651,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildPyramidList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     
     if (pyramidtimestamp > mesh->GetTimeStamp () &&
 	pyramidtimestamp > vispar.clipping.timestamp )
@@ -3006,7 +3007,7 @@ namespace netgen
 
   void VisualSceneMesh :: BuildDomainSurfList()
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
     
     if (domainsurflist)
       glDeleteLists (domainsurflist, 1);
@@ -3124,7 +3125,7 @@ namespace netgen
 
   void VisualSceneMesh :: MouseDblClick (int px, int py)
   {
-    shared_ptr<Mesh> mesh(wp_mesh);
+    shared_ptr<Mesh> mesh = GetMesh();
 
     BuildFilledList (true);
 
@@ -3553,7 +3554,8 @@ void ExportMeshVis()
           ([](shared_ptr<Mesh> mesh)
            {
              auto vs = make_shared<VisualSceneMesh>();
-             vs->SetMesh(mesh);
+             // vs->SetMesh(mesh);
+             SetGlobalMesh (mesh);
              return vs;
            }));
 

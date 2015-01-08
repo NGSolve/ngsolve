@@ -158,9 +158,11 @@ void Ng_LoadMeshFromStream ( istream & input )
 {
   mesh.reset (new Mesh());
   mesh -> Load(input);
+  /*
   vssolution.SetMesh(mesh);
   vsmesh.SetMesh(mesh);
-
+  */
+  SetGlobalMesh (mesh);
   for (int i = 0; i < geometryregister.Size(); i++)
     {
       NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
@@ -2344,4 +2346,11 @@ void Ng_GetArgs (int & argc, char ** &argv)
 {
   argc = h_argc;
   argv = h_argv;
+}
+
+
+
+void LinkFunction ()
+{
+  Ng_Redraw();
 }
