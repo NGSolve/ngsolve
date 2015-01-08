@@ -6,6 +6,7 @@ using namespace ngsolve;
 
 
 extern void ExportBVP();
+extern void ExportDrawFlux();
 
 void ExportNgsolve() {
     std::string nested_name = "solve";
@@ -26,6 +27,7 @@ void ExportNgsolve() {
              );
 
     ExportBVP();
+    ExportDrawFlux();
 }
 
 

@@ -424,7 +424,6 @@ namespace ngla
     {
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
-      // #pragma omp simd 
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
