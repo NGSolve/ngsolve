@@ -195,6 +195,7 @@ namespace netgen
          // surface elements being added during the process
          int np = mesh.GetNP();
          int nse = mesh.GetNSE();
+         int ne = mesh.GetNE();
 
          // Safety measure to ensure no issues with mesh 
          // consistency
@@ -509,7 +510,7 @@ namespace netgen
                  Element el(types[classify]);
                  for (int i = 0; i < 6; i++)
                    el[i] = nums[vertices[classify][i]];
-                 el.SetIndex(blp.matnr);
+                 el.SetIndex(blp.new_matnr);
                  // cout << "el = " << el << endl;
                  if (classify != 0)
                    mesh.AddVolumeElement(el);
@@ -537,6 +538,26 @@ namespace netgen
                   }
               }
            }
+         for (int i = 1; i <= ne; i++)
+           {
+             Element & el = mesh.VolumeElement(i);
+             if(el.GetIndex() != blp.bulk_matnr)
+              {
+                for (int j = 1; j <= el.GetNP(); j++)
+                  {
+                    // Check (Doublecheck) if the corresponding point has a 
+                    // copy available for remapping
+                    if (mapto.Get(el.PNum(j)))
+                      {
+                        // Map the surface elements to the new points
+                        el.PNum(j) = mapto.Get(el.PNum(j));
+                      }
+                  }
+              }
+           }
+
+
+
          
          // Lock all the prism points so that the rest of the mesh can be 
          // optimised without invalidating the entire mesh

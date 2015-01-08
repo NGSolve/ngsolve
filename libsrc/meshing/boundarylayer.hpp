@@ -14,7 +14,8 @@ public:
   // parameters by Philippose ..
   Array<int> surfid;
   int prismlayers = 1;
-  int matnr = 1;
+  int bulk_matnr = 1;
+  int new_matnr = 1;
   double hfirst = 0.01;
   double growthfactor = 1;
   bool optimize = true;
