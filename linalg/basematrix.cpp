@@ -205,6 +205,10 @@ namespace ngla
     return SPARSECHOLESKY;
   }
 
+  void BaseMatrix :: DoArchive (Archive & ar)
+  {
+    ;
+  }
 
 
   template<>

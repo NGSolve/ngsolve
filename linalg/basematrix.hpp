@@ -119,6 +119,8 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;
+
+    virtual void DoArchive (Archive & ar);
     
   private:
     BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }

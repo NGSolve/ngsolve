@@ -19,6 +19,8 @@ namespace ngstd
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
+    virtual Archive & operator & (long & i);
+    virtual Archive & operator & (size_t & i);
     virtual Archive & operator & (unsigned char & i);
     virtual Archive & operator & (bool & b);
     virtual Archive & operator & (string & str);
@@ -36,6 +38,8 @@ namespace ngstd
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
+    virtual Archive & operator & (long & i);
+    virtual Archive & operator & (size_t & i);
     virtual Archive & operator & (unsigned char & i);
     virtual Archive & operator & (bool & b);
     virtual Archive & operator & (string & str);

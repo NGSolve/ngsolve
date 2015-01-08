@@ -424,6 +424,7 @@ namespace ngla
     {
       typedef typename mat_traits<TVY>::TSCAL TTSCAL;
       TVY sum = TTSCAL(0);
+      // #pragma omp simd 
       for (size_t j = firsti[row]; j < firsti[row+1]; j++)
 	sum += data[j] * vec(colnr[j]);
       return sum;
@@ -485,6 +486,8 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
+
+    virtual void DoArchive (Archive & ar);
   };
 
 

@@ -12,82 +12,72 @@ PythonEnvironment pyenv;
 using std::ostringstream;
 
 
-void SetFlag(Flags &flags, const char * s, bp::object value) {
+void SetFlag(Flags &flags, const char * s, bp::object value) 
+{
+  bp::extract<bool> vb(value);
+  if (vb.check() && vb())
+    flags.SetFlag(s);
 
-    bp::extract<bool> vb(value);
-    if (vb.check() && vb())
-      {
-        // cout << "is double" << endl;
-        flags.SetFlag(s);
-      }
+  bp::extract<double> vd(value);
+  if (vd.check())
+    flags.SetFlag(s, vd());         
 
-    bp::extract<double> vd(value);
-    if (vd.check())
-      {
-        // cout << "is double" << endl;
-        flags.SetFlag(s, vd());         
-      }
+  bp::extract<char *> vs(value);
+  if (vs.check())
+    flags.SetFlag(s, vs());
 
-    bp::extract<char *> vs(value);
-    if (vs.check())
-      {
-        // cout << "is char*" << endl;
-        flags.SetFlag(s, vs());
-      }
+  bp::extract<bp::list> vdl(value);
+  if (vdl.check())
+    {             
+      bp::extract<double> d0(vdl()[0]);
+      bp::extract<char *> s0(vdl()[0]);
+      if(d0.check())
+        flags.SetFlag(s, makeCArray<double>(value));
+      if (s0.check())
+        flags.SetFlag(s, makeCArray<string>(value));
+    }
 
-    bp::extract<bp::list> vdl(value);
-    if (vdl.check())
-      {             
-        // cout << "is list" << endl;
-        bp::extract<double> d0(vdl()[0]);
-        bp::extract<char *> s0(vdl()[0]);
-        if(d0.check())
-          flags.SetFlag(s, makeCArray<double>(value));
-        if (s0.check())
-          flags.SetFlag(s, makeCArray<string>(value));
-      }
-
-    bp::extract<bp::tuple> vdt(value);
-    if (vdt.check())
-      {
-        // cout << "is tuple" << endl;
-        bp::extract<double> d0(vdt()[0]);
-        bp::extract<char *> s0(vdt()[0]);
-        if (d0.check())
-          flags.SetFlag(s, makeCArray<double>(value));
-        if (s0.check())
-            flags.SetFlag(s, makeCArray<string>(value));
-      }
+  bp::extract<bp::tuple> vdt(value);
+  if (vdt.check())
+    {
+      bp::extract<double> d0(vdt()[0]);
+      bp::extract<char *> s0(vdt()[0]);
+      if (d0.check())
+        flags.SetFlag(s, makeCArray<double>(value));
+      if (s0.check())
+        flags.SetFlag(s, makeCArray<string>(value));
+    }
 }
 
-struct FlagsFromPythonDict{
-    static void* convertible(PyObject* obj_ptr) {
-        if (PyMapping_Check(obj_ptr)) {
-            return obj_ptr;
-        } else {
-            return NULL;
-        }
+struct FlagsFromPythonDict 
+{
+  static void* convertible(PyObject* obj_ptr) {
+    if (PyMapping_Check(obj_ptr)) {
+      return obj_ptr;
+    } else {
+      return NULL;
     }
-
-    static void construct(PyObject* obj_ptr,
-            bp::converter::rvalue_from_python_stage1_data* data) {
-        bp::dict aflags(bp::handle<>(bp::borrowed(obj_ptr)));
-        Flags self;
-        // cout << "py converter" << endl;
-        for (int i=0; i<bp::len(aflags); i++) {
-            char * s = bp::extract<char *>(aflags.keys()[i]);          
-            SetFlag(self, s, aflags.values()[i]);
-        }
-        typedef bp::converter::rvalue_from_python_storage<Flags> storage_t;
-        storage_t* the_storage = reinterpret_cast<storage_t*>(data);
-        void* memory_chunk = the_storage->storage.bytes;
-        /* Flags* output = */ new (memory_chunk) Flags(std::move(self) ); // Use the contents of obj to populate output, e.g. using extract<>
-        data->convertible = memory_chunk;
+  }
+  
+  static void construct(PyObject* obj_ptr,
+                        bp::converter::rvalue_from_python_stage1_data* data) {
+    bp::dict aflags(bp::handle<>(bp::borrowed(obj_ptr)));
+    Flags self;
+    // cout << "py converter" << endl;
+    for (int i=0; i<bp::len(aflags); i++) {
+      char * s = bp::extract<char *>(aflags.keys()[i]);          
+      SetFlag(self, s, aflags.values()[i]);
     }
-
-    FlagsFromPythonDict() {
-        bp::converter::registry::push_back(&convertible, &construct, bp::type_id<Flags>());
-    }
+    typedef bp::converter::rvalue_from_python_storage<Flags> storage_t;
+    storage_t* the_storage = reinterpret_cast<storage_t*>(data);
+    void* memory_chunk = the_storage->storage.bytes;
+    /* Flags* output = */ new (memory_chunk) Flags(std::move(self) ); // Use the contents of obj to populate output, e.g. using extract<>
+    data->convertible = memory_chunk;
+  }
+  
+  FlagsFromPythonDict() {
+    bp::converter::registry::push_back(&convertible, &construct, bp::type_id<Flags>());
+  }
 };
 
 
@@ -207,7 +197,29 @@ void ExportNgstd() {
     .def("__str__", &ToString<IntRange>)
     ;
 
-    FlagsFromPythonDict();
+  FlagsFromPythonDict();
+
+  bp::class_<Archive, shared_ptr<Archive>, boost::noncopyable> ("Archive", bp::no_init)
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](const string & filename, bool write = true,
+                              bool binary = false) -> shared_ptr<Archive>
+                           {
+                             if (write)
+                               return make_shared<TextOutArchive> (filename);
+                             else
+                               return make_shared<TextInArchive> (filename);
+                           })))
+
+    .def("__and__" , FunctionPointer( [](shared_ptr<Archive> & self, Array<int> & a) 
+                                         { cout << "output array" << endl;
+                                           *self & a; return self; }));
+  ;
+  
+  // geht nicht ???
+  bp::def("__and__" , FunctionPointer( [](shared_ptr<Archive> & arch, Array<double> & a) 
+                                       { cout << "output d array" << endl;
+                                         *arch & a; return arch; }));
+                           
 }
 
 
