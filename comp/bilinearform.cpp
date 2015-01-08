@@ -429,7 +429,7 @@ namespace ngcomp
             do
               {
                 timer.Start();
-                *vecf = (*mats.Last()) * *vecu;
+                vecf = (*mats.Last()) * vecu;
                 timer.Stop();
               }
             while (timer.GetTime() < 2.0);
@@ -480,12 +480,11 @@ namespace ngcomp
 
     if (timing)
       {
-        clock_t starttime;
         double time;
-        starttime = clock();
+        double starttime = WallTime();
       
-        BaseVector & vecf = *mats.Last()->CreateVector();
-        BaseVector & vecu = *mats.Last()->CreateVector();
+        auto vecf = mats.Last()->CreateVector();
+        auto vecu = mats.Last()->CreateVector();
       
         vecu = 1;
         int steps = 0;
@@ -493,9 +492,9 @@ namespace ngcomp
           {
             vecf = (*mats.Last()) * vecu;
             steps++;
-            time = double(clock() - starttime) / CLOCKS_PER_SEC;
+            time = WallTime()-starttime;
           }
-        while (time < 1.0);
+        while (time < 2.0);
           
         cout << " 1 application takes "
              << time / steps

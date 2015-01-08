@@ -40,6 +40,18 @@ namespace ngstd
     return *this;
   }
   
+  Archive & TextOutArchive :: operator & (long & i)
+  {
+    fout << i << '\n';
+    return *this;
+  }
+
+  Archive & TextOutArchive :: operator & (size_t & i)
+  {
+    fout << i << '\n';
+    return *this;
+  }
+
   Archive & TextOutArchive :: operator & (unsigned char & i)
   {
     fout << int (i) << '\n';
@@ -98,6 +110,18 @@ namespace ngstd
   }
 
   Archive & TextInArchive :: operator & (short & i)
+  {
+    fin >> i;
+    return *this;
+  }
+
+  Archive & TextInArchive :: operator & (long & i)
+  {
+    fin >> i;
+    return *this;
+  }
+
+  Archive & TextInArchive :: operator & (size_t & i)
   {
     fin >> i;
     return *this;

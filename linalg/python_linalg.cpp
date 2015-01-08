@@ -187,6 +187,12 @@ void ExportNgla() {
           bp::return_value_policy<bp::manage_new_object>()
           )
     ;
+
+
+  bp::def("DoArchive" , FunctionPointer( [](shared_ptr<Archive> & arch, BaseMatrix & mat) 
+                                         { cout << "output basematrix" << endl;
+                                           mat.DoArchive(*arch); return arch; }));
+                                           
 }
 
 

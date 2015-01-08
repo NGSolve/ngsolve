@@ -730,23 +730,23 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    // static Timer timer("SparseMatrix::MultAdd");
-    // RegionTimer reg (timer);
-    // timer.AddFlops (this->nze);
+    static Timer timer("SparseMatrix::MultAdd");
+    RegionTimer reg (timer);
+    timer.AddFlops (this->nze);
 
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
-    
-    int h = this->Height();
-    for (int i = 0; i < h; i++)
-      fy(i) += s * RowTimesVector (i, fx);
 
     /*
     int h = this->Height();
-#pragma omp parallel for
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
     */
+
+    int h = this->Height();
+#pragma omp parallel for num_threads(240)
+    for (int i = 0; i < h; i++)
+      fy(i) += s * RowTimesVector (i, fx);
 
 
     /*
@@ -808,6 +808,21 @@ namespace ngla
     for (int i = 0; i < this->Height(); i++)
       AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
   }
+
+  
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseMatrix<TM,TV_ROW,TV_COL> :: DoArchive (Archive & ar)
+  {
+    ar & this->size;
+    ar & this->width;
+    ar & this->nze;
+    ar & firsti;
+    ar & colnr;
+    ar & data;
+    cout << "sparsemat, doarch, sizeof (firstint) = " << firsti.Size() << endl;
+  }
+
+
 
 
 
