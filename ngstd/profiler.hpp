@@ -65,9 +65,9 @@ namespace ngstd
   */
   class NgProfiler
   {
+  public:
     /// maximal number of timers
     enum { SIZE = 1000000 };
-
     //  static long int tottimes[SIZE];
     // static long int starttimes[SIZE];
 
@@ -80,6 +80,8 @@ namespace ngstd
     NGS_DLL_HEADER static double stores[SIZE];
     NGS_DLL_HEADER static string names[SIZE];
     NGS_DLL_HEADER static int usedcounter[SIZE];
+
+  private:
 
     // int total_timer;
     static string filename;

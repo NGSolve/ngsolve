@@ -462,6 +462,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (DefinedOn (ElementId(vb,i))) 
             cntcol[col[i]]++;
 
+	Table<int> temp(cntcol);
+	cntcol = 0;
+	for (int i = 0; i < ma->GetNE(vb); i++)
+	  if (DefinedOn (ElementId(vb,i))) 
+	    temp[col[i]][cntcol[col[i]]++] = i;
+
+        if (vb == VOL)
+	  element_coloring = std::move(temp);
+	else
+	  selement_coloring = std::move(temp);
+	
+	/*
         if (vb == VOL)
           {
             element_coloring = Table<int> (cntcol);
@@ -478,7 +490,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               if (DefinedOn (ElementId(vb,i))) 
                 selement_coloring[col[i]][cntcol[col[i]]++] = i;
           }
-
+	*/
 
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 

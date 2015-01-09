@@ -196,7 +196,21 @@ void ExportNgstd() {
     .def(PyDefIterable2<IntRange>())
     .def("__str__", &ToString<IntRange>)
     ;
+  
+  FlagsFromPythonDict();
 
+  bp::def("Timers", FunctionPointer
+	  ([]() 
+	   {
+	     bp::dict timers;
+	     for (int i = 0; i < NgProfiler::SIZE; i++)
+	       if (!NgProfiler::names[i].empty())
+		 timers[NgProfiler::names[i]] = NgProfiler::GetTime(i);
+	     return timers;
+	   }
+	   ));
+  
+  
   FlagsFromPythonDict();
 
   bp::class_<Archive, shared_ptr<Archive>, boost::noncopyable> ("Archive", bp::no_init)
@@ -219,9 +233,7 @@ void ExportNgstd() {
   bp::def("__and__" , FunctionPointer( [](shared_ptr<Archive> & arch, Array<double> & a) 
                                        { cout << "output d array" << endl;
                                          *arch & a; return arch; }));
-                           
 }
-
 
 
 BOOST_PYTHON_MODULE(libngstd) {
