@@ -316,6 +316,14 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
     {
       return *this; 
     }
+    virtual Archive & operator & (long int & i) 
+    {
+      return *this; 
+    }
+    virtual Archive & operator & (size_t & i) 
+    {
+      return *this; 
+    }
     virtual Archive & operator & (unsigned char & i) 
     { 
       return *this; 
