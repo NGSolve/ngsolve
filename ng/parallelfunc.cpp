@@ -111,8 +111,9 @@ void ParallelRun()
 	  VT_USER_START ("Mesh::ReceiveParallelMesh");
 	  mesh.reset( new netgen::Mesh);
 	  mesh->SendRecvMesh();
-	  vsmesh.SetMesh (mesh);
-	  vssolution.SetMesh (mesh);
+// 	  vsmesh.SetMesh (mesh);
+// 	  vssolution.SetMesh (mesh);
+      SetGlobalMesh (mesh);
 	  VT_USER_END ("Mesh::ReceiveParallelMesh");
 	}
 
