@@ -9,9 +9,10 @@ namespace ngstd
 {
   class TextOutArchive : public Archive
   {
-    ofstream fout;
+    shared_ptr<ostream> fout;
   public:
     TextOutArchive (string filename);
+    TextOutArchive (shared_ptr<ostream> afout) : fout(afout) { ; }
 
     virtual bool Output ();
     virtual bool Input ();
@@ -30,11 +31,14 @@ namespace ngstd
 
   class TextInArchive : public Archive
   {
-    ifstream fin;
+    shared_ptr<istream> fin;
   public:
     TextInArchive (string filename);
+    TextInArchive (shared_ptr<istream> afin) : fin(afin) { ; }
+
     virtual bool Output ();
     virtual bool Input ();
+
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
     virtual Archive & operator & (short & i);
@@ -45,6 +49,51 @@ namespace ngstd
     virtual Archive & operator & (string & str);
     virtual Archive & operator & (char *& str);
   };
+
+
+  class BinaryOutArchive : public Archive
+  {
+    shared_ptr<ostream> fout;
+  public:
+    BinaryOutArchive (string filename);
+    BinaryOutArchive (shared_ptr<ostream> afout) : fout(afout) { ; }
+
+    virtual bool Output ();
+    virtual bool Input ();
+
+    virtual Archive & operator & (double & d);
+    virtual Archive & operator & (int & i);
+    virtual Archive & operator & (short & i);
+    virtual Archive & operator & (long & i);
+    virtual Archive & operator & (size_t & i);
+    virtual Archive & operator & (unsigned char & i);
+    virtual Archive & operator & (bool & b);
+    virtual Archive & operator & (string & str);
+    virtual Archive & operator & (char *& str);
+  };
+
+
+  class BinaryInArchive : public Archive
+  {
+    shared_ptr<istream> fin;
+  public:
+    BinaryInArchive (string filename);
+    BinaryInArchive (shared_ptr<istream> afin) : fin(afin) { ; }
+
+    virtual bool Output ();
+    virtual bool Input ();
+
+    virtual Archive & operator & (double & d);
+    virtual Archive & operator & (int & i);
+    virtual Archive & operator & (short & i);
+    virtual Archive & operator & (long & i);
+    virtual Archive & operator & (size_t & i);
+    virtual Archive & operator & (unsigned char & i);
+    virtual Archive & operator & (bool & b);
+    virtual Archive & operator & (string & str);
+    virtual Archive & operator & (char *& str);
+  };
+
 
 
 

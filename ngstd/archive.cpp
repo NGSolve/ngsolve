@@ -10,13 +10,155 @@
 namespace ngstd
 {
 
+  /* ******************* BinaryOutArchive ******************* */
+  
+
+  BinaryOutArchive :: BinaryOutArchive (string filename) 
+  { fout = make_shared<ofstream>(filename.c_str()); }
+
+  bool BinaryOutArchive :: Output () { return true; }
+  bool BinaryOutArchive :: Input () { return false; }
+  
+  Archive & BinaryOutArchive :: operator & (double & d) 
+  {
+    fout->write(reinterpret_cast<char*>(&d), sizeof(double));
+    return *this;
+  }
+  
+  Archive & BinaryOutArchive :: operator & (int & i)
+  {
+    fout->write(reinterpret_cast<char*>(&i), sizeof(int));
+    return *this;
+  }
+
+  Archive & BinaryOutArchive :: operator & (short & i)
+  {
+    fout->write(reinterpret_cast<char*>(&i), sizeof(short));
+    return *this;
+  }
+  
+  Archive & BinaryOutArchive :: operator & (long & i)
+  {
+    fout->write(reinterpret_cast<char*>(&i), sizeof(long));
+    return *this;
+  }
+
+  Archive & BinaryOutArchive :: operator & (size_t & i)
+  {
+    fout->write(reinterpret_cast<char*>(&i), sizeof(size_t));
+    return *this;
+  }
+
+  Archive & BinaryOutArchive :: operator & (unsigned char & i)
+  {
+    fout->write(reinterpret_cast<char *>(&i), sizeof(unsigned char));
+    return *this;
+  }
+  
+  Archive & BinaryOutArchive :: operator & (bool & b) 
+  {
+    fout->write(reinterpret_cast<char*>(&b), sizeof(bool));
+    return *this;
+  }
+  
+  Archive & BinaryOutArchive :: operator & (string & str)
+  {
+    int len = str.length();
+    fout->write (reinterpret_cast<char*>(&len), sizeof(int));
+    fout->write (&str[0], len);
+    return *this;
+  }
+
+  Archive & BinaryOutArchive :: operator & (char *& str)
+  {
+    int len = strlen (str);
+    fout->write (reinterpret_cast<char*>(&len), sizeof(int));
+    fout->write (&str[0], len);
+    return *this;
+  }
+
+
+
+
+
+  /* ******************* BinaryInArchive ******************* */
+
+
+  BinaryInArchive :: BinaryInArchive (string filename) 
+  { fin = make_shared<ifstream>(filename.c_str()); }
+
+  bool BinaryInArchive :: Output () { return false; }
+  bool BinaryInArchive :: Input () { return true; }
+
+
+  Archive & BinaryInArchive :: operator & (double & d) 
+  {
+    fin->read(reinterpret_cast<char*>(&d), sizeof(double));
+    return *this;
+  }
+  
+  Archive & BinaryInArchive :: operator & (int & i)
+  {
+    fin->read(reinterpret_cast<char*>(&i), sizeof(int));
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: operator & (short & i)
+  {
+    fin->read(reinterpret_cast<char*>(&i), sizeof(short));
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: operator & (long & i)
+  {
+    fin->read(reinterpret_cast<char*>(&i), sizeof(long));
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: operator & (size_t & i)
+  {
+    fin->read(reinterpret_cast<char*>(&i), sizeof(size_t));
+    return *this;
+  }
+  
+  Archive & BinaryInArchive :: operator & (unsigned char & i)
+  {
+    fin->read(reinterpret_cast<char *>(&i), sizeof(unsigned char));
+    return *this;
+  }
+  
+  Archive & BinaryInArchive :: operator & (bool & b) 
+  {
+    fin->read(reinterpret_cast<char*>(&b), sizeof(bool));
+    return *this;
+  }
+  
+  Archive & BinaryInArchive :: operator & (string & str) 
+  {
+    int len;
+    fin->read(reinterpret_cast<char*>(&len), sizeof(int));
+    str.resize(len);
+    fin->read(&str[0], len);
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: operator & (char *& str) 
+  {
+    int len;
+    fin->read(reinterpret_cast<char*>(&len), sizeof(int));
+    str = new char[len+1];
+    fin->read(&str[0], len);
+    str[len] = '\0';
+    return *this;
+  }
+
+  
 
   /* ******************* TextOutArchive ******************* */
   
 
   TextOutArchive :: TextOutArchive (string filename) 
-    : fout(filename.c_str()) 
-  { ; }
+  { fout = make_shared<ofstream>(filename.c_str()); }
 
   
   bool TextOutArchive :: Output () { return true; }
@@ -24,61 +166,61 @@ namespace ngstd
   
   Archive & TextOutArchive :: operator & (double & d) 
   {
-    fout << d << '\n';
+    *fout << d << '\n';
     return *this;
   }
   
   Archive & TextOutArchive :: operator & (int & i)
   {
-    fout << i << '\n';
+    *fout << i << '\n';
     return *this;
   }
 
   Archive & TextOutArchive :: operator & (short & i)
   {
-    fout << i << '\n';
+    *fout << i << '\n';
     return *this;
   }
   
   Archive & TextOutArchive :: operator & (long & i)
   {
-    fout << i << '\n';
+    *fout << i << '\n';
     return *this;
   }
 
   Archive & TextOutArchive :: operator & (size_t & i)
   {
-    fout << i << '\n';
+    *fout << i << '\n';
     return *this;
   }
 
   Archive & TextOutArchive :: operator & (unsigned char & i)
   {
-    fout << int (i) << '\n';
+    *fout << int (i) << '\n';
     return *this;
   }
   
   Archive & TextOutArchive :: operator & (bool & b) 
   {
-    fout << (b ? 't' : 'f') << '\n';
+    *fout << (b ? 't' : 'f') << '\n';
     return *this;
   }
   
   Archive & TextOutArchive :: operator & (string & str)
   {
     int len = str.length();
-    fout << len << '\n';
-    fout.write (&str[0], len);
-    fout << '\n';
+    *fout << len << '\n';
+    fout->write (&str[0], len);
+    *fout << '\n';
     return *this;
   }
 
   Archive & TextOutArchive :: operator & (char *& str)
   {
     int len = strlen (str);
-    fout << len << '\n';
-    fout.write (&str[0], len);
-    fout << '\n';
+    *fout << len << '\n';
+    fout->write (&str[0], len);
+    *fout << '\n';
     return *this;
   }
 
@@ -90,8 +232,7 @@ namespace ngstd
 
 
   TextInArchive :: TextInArchive (string filename) 
-    : fin(filename.c_str()) 
-  { ; }
+  { fin = make_shared<ifstream>(filename.c_str()); }
 
   bool TextInArchive :: Output () { return false; }
   bool TextInArchive :: Input () { return true; }
@@ -99,38 +240,38 @@ namespace ngstd
 
   Archive & TextInArchive :: operator & (double & d) 
   {
-    fin >> d;
+    *fin >> d;
     return *this;
   }
   
   Archive & TextInArchive :: operator & (int & i)
   {
-    fin >> i;
+    *fin >> i;
     return *this;
   }
 
   Archive & TextInArchive :: operator & (short & i)
   {
-    fin >> i;
+    *fin >> i;
     return *this;
   }
 
   Archive & TextInArchive :: operator & (long & i)
   {
-    fin >> i;
+    *fin >> i;
     return *this;
   }
 
   Archive & TextInArchive :: operator & (size_t & i)
   {
-    fin >> i;
+    *fin >> i;
     return *this;
   }
   
   Archive & TextInArchive :: operator & (unsigned char & i)
   {
     int hi;
-    fin >> hi;
+    *fin >> hi;
     i = hi;
     return *this;
   }
@@ -138,7 +279,7 @@ namespace ngstd
   Archive & TextInArchive :: operator & (bool & b) 
   {
     char c;
-    fin >> c;
+    *fin >> c;
     b = (c == 't');
     return *this;
   }
@@ -146,26 +287,26 @@ namespace ngstd
   Archive & TextInArchive :: operator & (string & str) 
   {
     int len;
-    fin >> len;
+    *fin >> len;
     
     char ch;
-    fin.get(ch); // '\n'
+    fin->get(ch); // '\n'
     
     str.resize(len);
-    fin.get(&str[0], len+1, '\0');
+    fin->get(&str[0], len+1, '\0');
     return *this;
   }
 
   Archive & TextInArchive :: operator & (char *& str) 
   {
     int len;
-    fin >> len;
+    *fin >> len;
     
     char ch;
-    fin.get(ch); // '\n'
+    fin->get(ch); // '\n'
     
     str = new char[len+1];
-    fin.get(&str[0], len, '\0');
+    fin->get(&str[0], len, '\0');
     str[len] = 0;
     return *this;
   }
