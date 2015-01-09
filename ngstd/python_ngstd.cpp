@@ -113,6 +113,9 @@ void ExportNgstd() {
                                (*tmp)[i] = bp::extract<double> (x[i]); 
                              return tmp;
                            })))
+    .def("__rand__" , FunctionPointer( []( Array<double> & a, shared_ptr<Archive> & arch )
+                                         { cout << "output d array" << endl;
+                                           *arch & a; return arch; }));
     ;
 
   bp::class_<FlatArray<int> >("FlatArrayI")
@@ -218,21 +221,26 @@ void ExportNgstd() {
          (FunctionPointer ([](const string & filename, bool write = true,
                               bool binary = false) -> shared_ptr<Archive>
                            {
-                             if (write)
-                               return make_shared<TextOutArchive> (filename);
-                             else
-                               return make_shared<TextInArchive> (filename);
+                             if(binary) {
+                               if (write)
+                                return make_shared<BinaryOutArchive> (filename);
+                              else
+                                return make_shared<BinaryInArchive> (filename);
+                              }
+                              else {
+                                if (write)
+                                  return make_shared<TextOutArchive> (filename);
+                                else
+                                  return make_shared<TextInArchive> (filename);
+                              }
                            })))
 
     .def("__and__" , FunctionPointer( [](shared_ptr<Archive> & self, Array<int> & a) 
                                          { cout << "output array" << endl;
-                                           *self & a; return self; }));
+                                           *self & a; return self; }))
   ;
   
   // geht nicht ???
-  bp::def("__and__" , FunctionPointer( [](shared_ptr<Archive> & arch, Array<double> & a) 
-                                       { cout << "output d array" << endl;
-                                         *arch & a; return arch; }));
 }
 
 
