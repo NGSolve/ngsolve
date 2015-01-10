@@ -48,46 +48,6 @@ namespace ngcomp
 
   class FESpace;
 
-  class Fes_Element : public Ngs_Element
-  {
-    const FESpace & fes;
-    Array<int> & temp_dnums;
-  public:
-    INLINE Fes_Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums);
-    INLINE FlatArray<int> Dofs();
-  };
-
-  class FESElementIterator
-  {
-    const FESpace & fes;
-    ElementId ei;
-    mutable Array<int> temp_dnums;
-  public:
-    INLINE FESElementIterator (const FESpace & afes, ElementId aei) : fes(afes), ei(aei) { ; }
-    INLINE FESElementIterator operator++ ();
-    /*
-    {
-      ++ei;
-      while (ei.Nr() < fes.GetMeshAccess().GetNE(vb) && !fes.DefinedOn(ei)) ++ei;
-      return ElementIterator(ma, ei); 
-    }
-    */
-    INLINE Fes_Element operator*() const;
-    INLINE bool operator!=(FESElementIterator id2) const { return ei != id2.ei; }
-  };
-
-  class FESElementRange : public IntRange
-  {
-    const FESpace & fes;
-    VorB vb;
-  public:
-    INLINE FESElementRange (const FESpace & afes, VorB avb, IntRange ar) 
-      : IntRange(ar), fes(afes), vb(avb) { ; }
-    INLINE FESElementIterator begin () const { return FESElementIterator(fes, ElementId(vb,First())); }
-    INLINE FESElementIterator end () const { return FESElementIterator(fes, ElementId(vb,Next())); }
-  };
-
-
 
 
 
@@ -258,10 +218,59 @@ namespace ngcomp
       return boundary ? GetSFE(elnr, lh) : GetFE(elnr, lh);
     }
     */
+
+
     
-    FESElementRange Elements (VorB vb = VOL) const
+    class Element : public Ngs_Element
     {
-      return FESElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
+      const FESpace & fes;
+      Array<int> & temp_dnums;
+    public:     
+      INLINE Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)  
+        : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
+      { ; }
+
+      INLINE FlatArray<int> Dofs() const
+      {
+        fes.GetDofNrs (*this, temp_dnums);
+        return temp_dnums;
+      }
+    };
+
+    // private:
+    class ElementIterator
+    {
+      const FESpace & fes;
+      ElementId ei;
+      mutable Array<int> temp_dnums;
+    public:
+      INLINE ElementIterator (const FESpace & afes, ElementId aei) 
+        : fes(afes), ei(aei) { ; }
+      INLINE ElementIterator operator++ ()
+      {
+        ++ei;
+        while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && !fes.DefinedOn(ei)) ++ei;
+        return ElementIterator(fes, ei); 
+      }
+      INLINE Element operator*() const { return Element (fes, ei, temp_dnums); }          
+      INLINE bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
+    };
+    
+    class ElementRange : public IntRange
+    {
+      const FESpace & fes;
+      const VorB vb;
+    public:
+      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar) 
+        : IntRange(ar), fes(afes), vb(avb) { ; }
+      INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First())); }
+      INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next())); }
+    };
+
+  public:
+    ElementRange Elements (VorB vb = VOL) const
+    {
+      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
     }
 
     /// returns finite element. 
@@ -364,12 +373,12 @@ namespace ngcomp
       if (id.IsBoundary())
         {
           if (!definedonbound.Size()) return true;
-          return definedonbound[ma->GetElIndex(id)];
+          return definedonbound[ma->GetSElIndex(int(id))];
         }
       else
         {
           if (!definedon.Size()) return true;
-          return definedon[ma->GetElIndex(id)];
+          return definedon[ma->GetElIndex(int(id))];
         }
     }
 
@@ -590,18 +599,19 @@ namespace ngcomp
     }
   };
 
+  /*
   INLINE Fes_Element :: Fes_Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)
     : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
   { ; }
 
-  INLINE FlatArray<int> Fes_Element :: Dofs()
+  INLINE FlatArray<int> Fes_Element :: Dofs() const
   {
     fes.GetDofNrs (*this, temp_dnums);
     return temp_dnums;
   }
+  */
 
-
-  
+  /*
   INLINE FESElementIterator FESElementIterator :: operator++ ()
   {
     ++ei;
@@ -611,8 +621,7 @@ namespace ngcomp
   
   INLINE Fes_Element FESElementIterator :: operator*() const 
   { return Fes_Element (fes, ei, temp_dnums); }
-  // { return (*fes.GetMeshAccess())[ei]; }
-  
+  */
 
 
   template <typename T>
@@ -637,7 +646,7 @@ namespace ngcomp
           for (int i = 0; i < elscol.Size(); i++)
             {
               HeapReset hr(lh);
-              Fes_Element el(fes, ElementId (vb, elscol[i]), temp_dnums);
+              FESpace::Element el(fes, ElementId (vb, elscol[i]), temp_dnums);
               func (el, lh);
               // func (ElementId(vb, elscol[i]), lh);
             }
