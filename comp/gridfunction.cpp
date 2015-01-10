@@ -1336,8 +1336,7 @@ namespace ngcomp
         const FESpace & fes = *gf->GetFESpace();
         int dim = fes.GetDimension();
 	
-        // HeapReset hr(lh);
-        LocalHeapMem<100000> lh("visgf::GetMultiValue");
+        LocalHeapMem<1000000> lh("visgf::GetMultiValue");
 
 	ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
 	const FiniteElement * fel = &fes.GetFE (elnr, lh);

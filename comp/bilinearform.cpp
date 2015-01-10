@@ -731,20 +731,18 @@ namespace ngcomp
 
                 
                 IterateElements 
-                  (*fespace, VOL, clh, 
-                   [&] (ElementId ei, LocalHeap & lh)
+                  (*fespace, VOL, clh,  [&] (Fes_Element el, LocalHeap & lh)
                    {
                      if (elmat_ev) 
-                       *testout << " Assemble Element " << ei.Nr() << endl;  
+                       *testout << " Assemble Element " << el.Nr() << endl;  
                           
                      progress.Update ();
-
+                     
                      timer1.Start();
-
-                     const FiniteElement & fel = fespace->GetFE (ei, lh);
-                     const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-		     Array<int> dnums (fel.GetNDof(), lh);
-		     fespace->GetDofNrs (ei, dnums);
+                     
+                     const FiniteElement & fel = fespace->GetFE (el, lh);
+                     const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+                     FlatArray<int> dnums = el.Dofs();
 
                      if (fel.GetNDof() != dnums.Size())
                        {
@@ -772,7 +770,8 @@ namespace ngcomp
                          BilinearFormIntegrator & bfi = *parts[j];
                       
                          if (!bfi.VolumeForm()) continue;
-                         if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
+                         // if (!bfi.DefinedOn (ma->GetElIndex (ei))) continue;
+                         if (!bfi.DefinedOn (el.GetIndex())) continue;
                       
                          FlatMatrix<SCAL> elmat(elmat_size, lh);
 
@@ -795,7 +794,7 @@ namespace ngcomp
                              if (printelmat)
                                {
                                  testout->precision(8);
-                                 (*testout) << "elnum = " << ei.Nr() << endl;
+                                 (*testout) << "elnum = " << el.Nr() << endl;
                                  (*testout) << "eltype = " << fel.ElementType() << endl;
                                  (*testout) << "integrator = " << bfi.Name() << endl;
                                  (*testout) << "dnums = " << endl << dnums << endl;
@@ -824,7 +823,7 @@ namespace ngcomp
 
                      timer2.Stop();
                      timer3.Start();
-                     fespace->TransformMat (ei.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                     fespace->TransformMat (el.Nr(), false, sum_elmat, TRANSFORM_MAT_LEFT_RIGHT);
 
 
                      if (elmat_ev)
@@ -833,7 +832,7 @@ namespace ngcomp
                          LapackEigenSystem(sum_elmat, lh);
                        }
 
-                     int i = ei.Nr();
+                     int i = el.Nr();
                      if (eliminate_internal)
                        {
                          static Timer statcondtimer("static condensation", 1);
@@ -1001,7 +1000,7 @@ namespace ngcomp
                      if (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
 
-                     AddElementMatrix (dnums, dnums, sum_elmat, ei, lh);
+                     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
                           
                      for (int j = 0; j < preconditioners.Size(); j++)
                        preconditioners[j] -> 

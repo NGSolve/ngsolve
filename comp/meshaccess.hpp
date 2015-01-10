@@ -43,10 +43,11 @@ namespace ngcomp
     ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
     ElementId (int anr) : vb(VOL), nr(anr) { ; }
     int Nr() const { return nr; }
-    // operator int () const { return nr; }
+    explicit operator int () const { return nr; }
+    explicit operator VorB () const { return vb; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
-
+    // VorB VolumeOrBoundary() const { return vb; }
     bool operator< (int nr2) { return nr < nr2; }
     ElementId operator++ (int) { return ElementId(vb,nr++); }
     ElementId operator++ () { return ElementId(vb,++nr); }
@@ -100,7 +101,7 @@ namespace ngcomp
 
 
 
-
+  /*
   class ElementIterator
   {
     const MeshAccess & ma;
@@ -110,12 +111,24 @@ namespace ngcomp
     ElementIterator (const MeshAccess & ama, VorB avb, int anr) 
       : ma(ama), vb(avb), nr(anr) { ; }
     ElementIterator operator++ () { return ElementIterator(ma, vb,++nr); }
-    // ElementId operator*() const { return ElementId(vb,nr); }
-    // Ngs_Element operator*() const { return ma[ElementId(vb,nr)]; }
     INLINE Ngs_Element operator*() const;
     bool operator!=(ElementIterator id2) const { return nr != id2.nr || vb != id2.vb; }
   };
-  
+  */
+  class ElementIterator
+  {
+    const MeshAccess & ma;
+    ElementId ei;
+  public:
+    // ElementIterator (const MeshAccess & ama, VorB avb, int anr) : ma(ama), ei(avb, anr) { ; }
+    ElementIterator (const MeshAccess & ama, ElementId aei) : ma(ama), ei(aei) { ; }
+    ElementIterator operator++ () { return ElementIterator(ma, ++ei); }
+    INLINE Ngs_Element operator*() const;
+    bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
+  };
+
+
+
   class ElementRange : public IntRange
   {
     const MeshAccess & ma;
@@ -124,10 +137,12 @@ namespace ngcomp
   public:
     ElementRange (const MeshAccess & ama, VorB avb, IntRange ar) 
       : IntRange(ar), ma(ama), vb(avb) { ; }
-    ElementId First() const { return ElementId(vb, IntRange::First()); }
-    ElementIterator begin () const { return ElementIterator(ma, vb,IntRange::First()); }
-    ElementIterator end () const { return ElementIterator(ma, vb,IntRange::Next()); }
-    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
+    // ElementId First() const { return ElementId(vb, IntRange::First()); }
+    // ElementIterator begin () const { return ElementIterator(ma, vb,IntRange::First()); }
+    // ElementIterator end () const { return ElementIterator(ma, vb,IntRange::Next()); }
+    ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,First())); }
+    ElementIterator end () const { return ElementIterator(ma, ElementId(vb,Next())); }
+    ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
   };
 
   template <VorB VB>
@@ -769,10 +784,7 @@ namespace ngcomp
 
 
 
-  INLINE Ngs_Element ElementIterator :: operator*() const
-  {
-    return ma[ElementId(vb,nr)]; 
-  }
+  INLINE Ngs_Element ElementIterator :: operator*() const { return ma[ei]; }
   
   template <VorB VB>
   INLINE Ngs_Element TElementIterator<VB>::operator*() const 
