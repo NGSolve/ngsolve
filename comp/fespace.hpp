@@ -45,6 +45,53 @@ namespace ngcomp
 
   NGS_DLL_HEADER ostream & operator<< (ostream & ost, COUPLING_TYPE ct);
 
+
+  class FESpace;
+
+  class Fes_Element : public Ngs_Element
+  {
+    const FESpace & fes;
+    Array<int> & temp_dnums;
+  public:
+    INLINE Fes_Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums);
+    INLINE FlatArray<int> Dofs();
+  };
+
+  class FESElementIterator
+  {
+    const FESpace & fes;
+    ElementId ei;
+    mutable Array<int> temp_dnums;
+  public:
+    INLINE FESElementIterator (const FESpace & afes, ElementId aei) : fes(afes), ei(aei) { ; }
+    INLINE FESElementIterator operator++ ();
+    /*
+    {
+      ++ei;
+      while (ei.Nr() < fes.GetMeshAccess().GetNE(vb) && !fes.DefinedOn(ei)) ++ei;
+      return ElementIterator(ma, ei); 
+    }
+    */
+    INLINE Fes_Element operator*() const;
+    INLINE bool operator!=(FESElementIterator id2) const { return ei != id2.ei; }
+  };
+
+  class FESElementRange : public IntRange
+  {
+    const FESpace & fes;
+    VorB vb;
+  public:
+    INLINE FESElementRange (const FESpace & afes, VorB avb, IntRange ar) 
+      : IntRange(ar), fes(afes), vb(avb) { ; }
+    INLINE FESElementIterator begin () const { return FESElementIterator(fes, ElementId(vb,First())); }
+    INLINE FESElementIterator end () const { return FESElementIterator(fes, ElementId(vb,Next())); }
+  };
+
+
+
+
+
+
   using ngmg::Prolongation;
 
   /**
@@ -74,9 +121,9 @@ namespace ngcomp
     int level_updated;
 
     /// on which subdomains is the space defined ?
-    Array<int> definedon;
+    Array<bool> definedon;
     /// on which boundaries is the space defined ?
-    Array<int> definedonbound;
+    Array<bool> definedonbound;
 
     /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;
@@ -148,8 +195,8 @@ namespace ngcomp
     Array<int> directfaceclusters;
     Array<int> directelementclusters;
 
-    Table<int> element_coloring; // = NULL;
-    Table<int> selement_coloring; // = NULL;
+    Table<int> element_coloring; 
+    Table<int> selement_coloring;
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs; // = NULL;
@@ -211,6 +258,11 @@ namespace ngcomp
       return boundary ? GetSFE(elnr, lh) : GetFE(elnr, lh);
     }
     */
+    
+    FESElementRange Elements (VorB vb = VOL) const
+    {
+      return FESElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
+    }
 
     /// returns finite element. 
     const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const
@@ -312,12 +364,12 @@ namespace ngcomp
       if (id.IsBoundary())
         {
           if (!definedonbound.Size()) return true;
-          return DefinedOnBoundary (ma->GetElIndex(id));
+          return definedonbound[ma->GetElIndex(id)];
         }
       else
         {
           if (!definedon.Size()) return true;
-          return DefinedOn (ma->GetElIndex(id));
+          return definedon[ma->GetElIndex(id)];
         }
     }
 
@@ -538,7 +590,30 @@ namespace ngcomp
     }
   };
 
+  INLINE Fes_Element :: Fes_Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)
+    : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
+  { ; }
+
+  INLINE FlatArray<int> Fes_Element :: Dofs()
+  {
+    fes.GetDofNrs (*this, temp_dnums);
+    return temp_dnums;
+  }
+
+
   
+  INLINE FESElementIterator FESElementIterator :: operator++ ()
+  {
+    ++ei;
+    while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && !fes.DefinedOn(ei)) ++ei;
+    return FESElementIterator(fes, ei); 
+  }
+  
+  INLINE Fes_Element FESElementIterator :: operator*() const 
+  { return Fes_Element (fes, ei, temp_dnums); }
+  // { return (*fes.GetMeshAccess())[ei]; }
+  
+
 
   template <typename T>
   inline void IterateElements (const FESpace & fes, 
@@ -551,6 +626,7 @@ namespace ngcomp
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
+      Array<int> temp_dnums;
 
       // lh.ClearValues();
       for (int col = 0; col < element_coloring.Size(); col++)
@@ -561,7 +637,9 @@ namespace ngcomp
           for (int i = 0; i < elscol.Size(); i++)
             {
               HeapReset hr(lh);
-              func (ElementId(vb, elscol[i]), lh);
+              Fes_Element el(fes, ElementId (vb, elscol[i]), temp_dnums);
+              func (el, lh);
+              // func (ElementId(vb, elscol[i]), lh);
             }
         }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
@@ -601,6 +679,7 @@ namespace ngcomp
     ///
     virtual int GetNDofLevel (int level) const;
     ///
+    using FESpace::GetDofNrs;
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;

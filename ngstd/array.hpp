@@ -137,10 +137,10 @@ namespace ngstd
   template <typename TELEM, typename TSIZE>
   class ArrayIterator
   {
-    FlatArray<TELEM> ar;
+    FlatArray<TELEM,TSIZE> ar;
     TSIZE ind;
   public:
-    INLINE ArrayIterator (FlatArray<TELEM> aar, TSIZE ai) 
+    INLINE ArrayIterator (FlatArray<TELEM,TSIZE> aar, TSIZE ai) 
       : ar(aar), ind(ai) { ; }
     INLINE ArrayIterator operator++ (int) 
     { return ArrayIterator(ar, ind++); }
@@ -1172,9 +1172,12 @@ namespace ngstd
         archive & size;
         a.SetSize (size);
       }
-    
+    /*
     for (int i = 0; i < a.Size(); i++)
       archive & a[i];
+    */
+    for (auto & ai : a)
+      archive & ai;
     return archive;
   }
 }

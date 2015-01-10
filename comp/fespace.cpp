@@ -70,27 +70,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	dirichlet_boundaries.SetSize (ma->GetNBoundaries());
 	dirichlet_boundaries.Clear();
-	Array<double> db (flags.GetNumListFlag("dirichlet"));
-	for(int i = 0; i< db.Size(); i++) 
-	  {
-	    int bnd = int(db[i]-1);
+        for (double dbi : flags.GetNumListFlag("dirichlet"))
+          {
+	    int bnd = int(dbi-1);
 	    if (bnd >= 0 && bnd < dirichlet_boundaries.Size())
-	      dirichlet_boundaries.Set (int(db[i])-1);
-	    /*
-	    else
-	      cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
-	    */
-	  }
+	      dirichlet_boundaries.Set (bnd);
+	    // else
+            //   cerr << "Illegal Dirichlet boundary index " << bnd+1 << endl;
+          }
 	if (print)
 	  *testout << "dirichlet_boundaries:" << endl << dirichlet_boundaries << endl;
       }
     
-    if(flags.NumListFlagDefined("definedon") || 
-       flags.NumFlagDefined("definedon") ||
-       flags.StringListFlagDefined("definedon"))
+    if (flags.NumListFlagDefined("definedon") || 
+        flags.NumFlagDefined("definedon") ||
+        flags.StringListFlagDefined("definedon"))
       {
 	definedon.SetSize (ma->GetNDomains());
-	definedon = 0;
+	definedon = false;
 	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
 	  defon = flags.GetNumListFlag("definedon");
@@ -99,10 +96,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    defon.SetSize(1);
 	    defon[0] = flags.GetNumFlag("definedon",0);
 	  }
-	for(int i=0; i< defon.Size(); i++)
-	  if(defon[i] <= ma->GetNDomains() && defon[i] > 0)
-	    definedon[int(defon[i])-1] = 1;
-
+        /*
+	for(int i = 0; i< defon.Size(); i++)
+	  if (defon[i] <= ma->GetNDomains() && defon[i] > 0)
+	    definedon[int(defon[i])-1] = true;
+        */
+        for (int di : defon)
+          if (di > 0 && di <= ma->GetNDomains())
+            definedon[di-1] = true;
+          
 	if(flags.StringListFlagDefined("definedon"))
 	  {
 	    Array<string> dmaterials(flags.GetStringListFlag ("definedon").Size());
@@ -113,7 +115,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		for(int j = 0; j < dmaterials.Size(); j++)
 		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
 		    {
-		      definedon[i] = 1;
+		      definedon[i] = true;
 		      break;
 		    }
 	      }
@@ -122,8 +124,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
 	definedonbound.SetSize (ma->GetNBoundaries());
-	definedonbound = 0;
-	for ( int sel=0; sel<ma->GetNSE(); sel++ )
+	definedonbound = false;
+	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
 	    int index = ma->GetSElIndex(sel);
 	    int dom1, dom2;
@@ -131,11 +133,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    dom1--; dom2--;
 	    if ( dom1 >= 0 )
 	      if ( definedon[dom1] )
-		definedonbound[index] = 1;
+		definedonbound[index] = true;
 
 	    if ( dom2 >= 0 )
 	      if ( definedon[dom2] )
-		definedonbound[index] = 1;
+		definedonbound[index] = true;
 	  }
       }
 
@@ -145,7 +147,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if ( definedonbound.Size() == 0 )
 	  {
 	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = 0;
+	    definedonbound = false;
 	  }
 	Array<double> defon;
 	if ( flags.NumListFlagDefined("definedonbound") )
@@ -158,7 +160,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	for(int i=0; i< defon.Size(); i++) 
 	  if(defon[i] <= ma->GetNBoundaries() && defon[i] > 0)
-	    definedonbound[int(defon[i])-1] = 1;
+	    definedonbound[int(defon[i])-1] = true;
       }
     
 
@@ -167,7 +169,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if ( definedonbound.Size() == 0 )
 	  {
 	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = 0;
+	    definedonbound = false;
 	  }
 
 	Array<string*> defon;
@@ -180,13 +182,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedonbound[ma->GetSElIndex(selnum)]!=1)
+	    if(definedonbound[ma->GetSElIndex(selnum)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
 		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
 		      {		
-		 	definedonbound[ma->GetSElIndex(selnum)] =1;
+		 	definedonbound[ma->GetSElIndex(selnum)] = true;
 			continue;
 		      }
 		  }
@@ -237,14 +239,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   FESpace :: ~FESpace ()
   {
-    // delete low_order_space;
-    // delete boundary_evaluator;
-    // delete evaluator;
-    // delete flux_evaluator;
-    // delete integrator;
-    // delete boundary_integrator;
-    // delete prol;
-
     delete tet;
     delete pyramid;
     delete prism;
@@ -263,8 +257,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     delete dummy_segm;
     delete dummy_point;
 
-    // delete element_coloring;
-    // delete selement_coloring;
     delete paralleldofs;
   }
   
@@ -294,6 +286,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_face = false;
 
     if (dirichlet_boundaries.Size())
+      for (Ngs_Element ngel : ma->Elements(BND))
+        if (dirichlet_boundaries.Test(ngel.GetIndex()))
+          {
+            dirichlet_vertex[ngel.Vertices()] = true;
+            dirichlet_edge[ngel.Edges()] = true;
+            if (dim == 3)
+              dirichlet_face[ngel.Faces()[0]] = true;
+          }
+    /*
       for (int i = 0; i < ma->GetNSE(); i++)
 	{
 	  int ind = ma->GetSElIndex (i);
@@ -310,7 +311,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		dirichlet_face[ngel.faces[0]] = true;
 	    }
 	}
-
+      */
     if (print)
       {
 	(*testout) << "Dirichlet_vertex,1 = " << endl << dirichlet_vertex << endl;
@@ -341,8 +342,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     dirichlet_dofs.SetSize (GetNDof());
     dirichlet_dofs.Clear();
-    Array<int> dnums;
 
+    /*
     if (dirichlet_boundaries.Size())
       for (ElementId ei : ma->Elements<BND>())
 	if (dirichlet_boundaries[ma->GetElIndex(ei)])
@@ -351,7 +352,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    for (int d : dnums)
 	      if (d != -1) dirichlet_dofs.Set (d);
 	  }
-	
+    */
+
+    if (dirichlet_boundaries.Size())
+      for (Fes_Element el : Elements(BND))
+        if (dirichlet_boundaries[el.GetIndex()])
+          for (int d : el.Dofs())
+            if (d != -1) dirichlet_dofs.Set (d);
+
+
+    Array<int> dnums;
     for (int i = 0; i < dirichlet_vertex.Size(); i++)
       if (dirichlet_vertex[i])
 	{
@@ -417,20 +427,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
           {
             mask = 0;
             found = false;
-            
-            for (int i = 0; i < ma->GetNE(vb); i++)
+
+            for (auto ei : Elements(vb))
               {
-                ElementId ei(vb, i);
-
-                if (!DefinedOn (ei)) continue;
-                if (col[i] >= 0) continue;
-
+                if (col[int(ei)] >= 0) continue;
                 GetDofNrs (ei, dnums);	
 
                 unsigned check = 0;
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    check |= mask[dnums[j]];
+                for (auto d : dnums)
+                  if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
                   {
@@ -442,13 +447,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
                         color++;
                         checkbit *= 2;
                       }
-                    // *testout << "set color = " << color << endl;
-                    col[i] = color;
+
+                    col[int(ei)] = color;
                     if (color > maxcolor) maxcolor = color;
 		
-                    for  (int j = 0; j < dnums.Size(); j++)
-                      if (dnums[j] != -1)
-                        mask[dnums[j]] |= checkbit;
+                    for (auto d : dnums)
+                      if (d != -1) mask[d] |= checkbit;
                   }
               }
             
@@ -456,41 +460,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         while (found);
 
+
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
-        for (int i = 0; i < ma->GetNE(vb); i++)
-          if (DefinedOn (ElementId(vb,i))) 
-            cntcol[col[i]]++;
+        for (ElementId el : Elements(vb))
+          cntcol[col[int(el)]]++;
 
-	Table<int> temp(cntcol);
+        Table<int> & coloring = (vb == VOL) ? element_coloring : selement_coloring;
+        coloring = Table<int> (cntcol);
+
 	cntcol = 0;
-	for (int i = 0; i < ma->GetNE(vb); i++)
-	  if (DefinedOn (ElementId(vb,i))) 
-	    temp[col[i]][cntcol[col[i]]++] = i;
-
-        if (vb == VOL)
-	  element_coloring = std::move(temp);
-	else
-	  selement_coloring = std::move(temp);
-	
-	/*
-        if (vb == VOL)
-          {
-            element_coloring = Table<int> (cntcol);
-            cntcol = 0;
-            for (int i = 0; i < ma->GetNE(vb); i++)
-              if (DefinedOn (ElementId(vb,i))) 
-                element_coloring[col[i]][cntcol[col[i]]++] = i;
-          }
-        else
-          {
-            selement_coloring = Table<int> (cntcol);
-            cntcol = 0;
-            for (int i = 0; i < ma->GetNE(vb); i++)
-              if (DefinedOn (ElementId(vb,i))) 
-                selement_coloring[col[i]][cntcol[col[i]]++] = i;
-          }
-	*/
+        for (ElementId el : Elements(vb))
+          coloring[col[int(el)]][cntcol[col[int(el)]]++] = int(el);
 
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
@@ -593,14 +574,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     TableCreator<int> creator;
     
-    Array<int> dnums;
+    // Array<int> dnums;
     for ( ; !creator.Done(); creator++)
       {
+        /*
 	for (int i = 0; i < ma->GetNE(vorb); i++)
 	  {
 	    GetDofNrs (ElementId(vorb,i), dnums);
 	    creator.Add (i, dnums);
 	  }
+        */
+        for (Fes_Element el : Elements(vorb))
+          creator.Add(int(el), el.Dofs());
       }
 
     return std::move(creator);
@@ -621,15 +606,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ArrayMem<int,100> dnums;
     GetDofNrs(elnr, dnums);
     ctypes.SetSize(dnums.Size());
-    if (ctofdof.Size()==0){
-      for (int i=0;i<dnums.Size();i++)
-	ctypes[i] = INTERFACE_DOF;
-    }
+
+    if (ctofdof.Size()==0)
+      ctypes = INTERFACE_DOF;
     else
-    {
-      for (int i=0; i<dnums.Size(); i++)
-	ctypes[i] = ctofdof[dnums[i]];
-    }
+      {
+        for (int i = 0; i < dnums.Size(); i++)
+          if (dnums[i] != -1)
+            ctypes[i] = ctofdof[dnums[i]];
+          else
+            ctypes[i] = UNUSED_DOF;
+      }
   }
 
   void FESpace :: CheckCouplingTypes() const
@@ -671,7 +658,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (d < 0 || d >= ndof)
             cout << "dof out of range: " << d << endl;
       }
-
   }
 
 
@@ -684,14 +670,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ctofdof.Size() == 0)
       {
 	if ( (INTERFACE_DOF & ctype) != 0)
-	  for (int i = 0; i < alldnums.Size(); i++)
-	    dnums.Append(alldnums[i]);
+          dnums = alldnums;
       }
     else
       {
+        /*
 	for (int i = 0; i < alldnums.Size(); i++)
 	  if ( (ctofdof[alldnums[i]] & ctype) != 0)
 	    dnums.Append(alldnums[i]);
+        */
+        for (auto d : alldnums)
+	  if ( (d != -1) && ((ctofdof[d] & ctype) != 0) )
+            dnums.Append(d);
       }
   }
 
@@ -713,26 +703,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    // throw Exception ("FESpace::GetVertexDofNrs called");
+    dnums.SetSize0 ();
   }
 
   void FESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    // throw Exception ("FESpace::GetEdgeDofNrs called");
+    dnums.SetSize0 ();
   }
 
   void FESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    // throw Exception ("FESpace::GetFaceDofNrs called");
+    dnums.SetSize0 ();
   }
 
   void FESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
-    dnums.SetSize (0);
-    // throw Exception (string("FESpace::GetInnerDofNrs called for class")+ typeid(*this).name());
+    dnums.SetSize0 ();
   }
 
 
@@ -783,8 +769,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     ost << "ndof = " << GetNDof() << endl;
     int ntype[8] = { 0 };
-    for (int i = 0; i < ctofdof.Size(); i++)
-      ntype[ctofdof[i]]++;
+    // for (int i = 0; i < ctofdof.Size(); i++)
+    // ntype[ctofdof[i]]++;
+    for (auto ct : ctofdof) ntype[ct]++;
     if (ntype[UNUSED_DOF]) ost << "unused = " << ntype[UNUSED_DOF] << endl;
     if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
 
@@ -826,12 +813,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 #pragma omp parallel
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
+          Array<int> dnums;
 #pragma omp for
 	  for (int i = 0; i < ma->GetNE(); i++)
-	    {
-              ArrayMem<int,100> dnums;
-	      GetDofNrs (i, dnums);
-	    }
+            GetDofNrs (i, dnums);
 	}
 	steps++;
 	time = WallTime()-starttime;
@@ -1065,7 +1050,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     definedon.SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
-      definedon[i] = defon.Test(i) ? 1 : 0;
+      definedon[i] = defon.Test(i);
 
     if (low_order_space)
       low_order_space -> SetDefinedOn (defon);
@@ -1075,7 +1060,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     definedonbound.SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
-      definedonbound[i] = defon.Test(i) ? 1 : 0;
+      definedonbound[i] = defon.Test(i);
 
     if (low_order_space)
       low_order_space -> SetDefinedOnBoundary (defon);
@@ -1288,19 +1273,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     SetDummyFE<ScalarDummyFE> ();
 
-
-    static ConstantCoefficientFunction one(1);
+    auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator.reset (new MassIntegrator<2> (&one));
-	boundary_integrator.reset (new RobinIntegrator<2> (&one));
+	integrator = make_shared<MassIntegrator<2>> (one);
+        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
       }
     else
       {
-	integrator.reset (new MassIntegrator<3> (&one));
-	boundary_integrator.reset (new RobinIntegrator<3> (&one));
+	integrator = make_shared<MassIntegrator<3>> (one);
+	boundary_integrator = make_shared<RobinIntegrator<3>> (one);
       }
-
+    
     if (dimension > 1)
       {
 	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
@@ -1325,22 +1309,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (ma->GetNLevels() > ndlevel.Size())
       {
-	Array<int> dnums;
-	int ne = ma->GetNE();
-	int nse = ma->GetNSE();
 	int ndof = ma->GetNV();
-	for (int i = 0; i < ne; i++)
-	  {
-	    GetDofNrs (i, dnums);
-	    for (int j = 0; j < dnums.Size(); j++)
-	      ndof = max2(ndof, dnums[j]+1);
-	  }
-	for (int i = 0; i < nse; i++)
-	  {
-	    GetSDofNrs (i, dnums);
-	    for (int j = 0; j < dnums.Size(); j++)
-	      ndof = max2(ndof, dnums[j]+1);
-	  }
+
+        for (Fes_Element el : Elements(VOL))
+          for (int d : el.Dofs()) ndof = max2(ndof, d+1);              
+
+        for (Fes_Element el : Elements(BND))
+          for (int d : el.Dofs()) ndof = max2(ndof, d+1);           
 
 	ndlevel.Append (ndof);
       }
@@ -1357,9 +1332,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (dirichlet_boundaries[ma->GetSElIndex(i)])
 	      {
 		GetSDofNrs (i, dnums);
-		for (int j = 0; j < dnums.Size(); j++)
+                for (int d : dnums)
+                  if (d != -1) dirichlet_dofs.Set (d);
+
+                /*
+                  for (int j = 0; j < dnums.Size(); j++)
 		  if (dnums[j] != -1)
 		    dirichlet_dofs.Set (dnums[j]);
+                */
 	      }
 	  }
       }
@@ -1367,7 +1347,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void NodalFESpace :: DoArchive (Archive & archive)
   {
-    // archive & ndlevel;
     if (archive.Input())
       {
 	ndlevel.SetSize(1);
@@ -1375,13 +1354,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
 
-
   int NodalFESpace :: GetNDofLevel (int level) const
   {
     return ndlevel[level];
   }
-
-
 
 
   void NodalFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
@@ -1916,8 +1892,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if(parseflags) CheckFlags(flags);
     
     auto hprol = make_shared<CompoundProlongation> (this);
+    /*
     for (int i = 0; i < spaces.Size(); i++)
       hprol -> AddProlongation (spaces[i]->GetProlongation());
+    */
+    for (auto space : spaces)
+      hprol -> AddProlongation (space->GetProlongation());      
     prol = hprol;
   }
 

@@ -311,7 +311,7 @@ namespace ngfem
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    cerr << "calcflux<double> for Specific called for class " 
+    cerr << "calcflux<double> called for base class, should be overloaded in " 
 	 << typeid(*this).name()
 	 << endl;
   }
@@ -325,7 +325,7 @@ namespace ngfem
 	    bool applyd,
 	    LocalHeap & lh) const
   {
-    cerr << "calcflux<Complex> for Specific called for base class " 
+    cerr << "calcflux<Complex> called for base class, should be overloaded in " 
 	 << typeid(*this).name()
 	 << endl;
   }

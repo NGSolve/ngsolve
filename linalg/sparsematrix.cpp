@@ -114,6 +114,7 @@ namespace ngla
       }
 
     Table<int> & dof2element = *(creator.GetTable());
+    // Table<int> dof2element = creator;
 
     Array<int> cnt(ndof);
     cnt = 0;
@@ -130,6 +131,7 @@ namespace ngla
 	    {
 	      int cnti = includediag? 1 : 0;
 	      pmark[i] = includediag? i : -1;
+              /*
 	      for (int j = 0; j < dof2element[i].Size(); j++)
 		{
 		  int elnr = dof2element[i][j];
@@ -144,6 +146,14 @@ namespace ngla
 			}
 		    }
 		}
+              */
+              for (auto elnr : dof2element[i])
+                for (auto d2 : colelements[elnr])
+                  if (pmark[d2] != i)
+                    {
+                      pmark[d2] = i;
+                      cnti++;
+                    }
 	      cnt[i] = cnti;
 	    }
 	}
@@ -160,6 +170,7 @@ namespace ngla
 	    {
 	      int cnti = includediag? 1 : 0;
 	      pmark[i] = includediag? i : -1;
+              /*
 	      for (int j = 0; j < dof2element[i].Size(); j++)
 		{
 		  int elnr = dof2element[i][j];
@@ -176,6 +187,14 @@ namespace ngla
 			  }
 		    }
 		}
+              */
+              for (auto elnr : dof2element[i])
+                for (auto d2 : colelements[elnr])
+                  if ( (d2 <= i) && (pmark[d2] != i))
+                    {
+                      pmark[d2] = i;
+                      cnti++;
+                    }
 	      cnt[i] = cnti;
 	    }
 	}
@@ -210,7 +229,8 @@ namespace ngla
 	      size_t cnti = firsti[i];
 	      pmark[i] = includediag? i : -1;
 	      if (includediag) colnr[cnti++] = i;
-	      
+              
+              /*
 	      for (int j = 0; j < dof2element[i].Size(); j++)
 		{
 		  int elnr = dof2element[i][j];
@@ -226,6 +246,14 @@ namespace ngla
 			}
 		    }
 		}
+              */
+              for (auto elnr : dof2element[i])
+                for (auto d2 : colelements[elnr])
+                  if (pmark[d2] != i)
+                    {
+                      pmark[d2] = i;
+                      colnr[cnti++] = d2;
+                    }
 	    }
 	}
       }
@@ -242,6 +270,7 @@ namespace ngla
 	    size_t cnti = firsti[i];
 	    pmark[i] = includediag? i : -1;
 	    if (includediag) colnr[cnti++] = i;
+            /*
 	    for (int j = 0; j < dof2element[i].Size(); j++)
 	      {
 		int elnr = dof2element[i][j];
@@ -258,6 +287,14 @@ namespace ngla
 			}
 		  }
 	      }
+            */
+            for (auto elnr : dof2element[i])
+              for (auto d2 : colelements[elnr])
+                if ( (d2 <= i) && (pmark[d2] != i))
+                  {
+                    pmark[d2] = i;
+                    colnr[cnti++] = d2;
+                  }
 	  }
       } 
 
@@ -975,8 +1012,8 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
-    // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
-    // RegionTimer reg (timer);
+    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 1);
+    RegionTimer reg (timer);
 
     ArrayMem<int, 50> map(dnums.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
