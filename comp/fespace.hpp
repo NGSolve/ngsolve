@@ -225,6 +225,7 @@ namespace ngcomp
     {
       const FESpace & fes;
       Array<int> & temp_dnums;
+      mutable bool dofs_set = false;
     public:     
       INLINE Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)  
         : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
@@ -232,25 +233,26 @@ namespace ngcomp
 
       INLINE FlatArray<int> Dofs() const
       {
-        fes.GetDofNrs (*this, temp_dnums);
+        if (!dofs_set)
+          fes.GetDofNrs (*this, temp_dnums);
+        dofs_set = true;
         return temp_dnums;
       }
     };
 
-    // private:
     class ElementIterator
     {
       const FESpace & fes;
       ElementId ei;
-      mutable Array<int> temp_dnums;
+      Array<int> & temp_dnums;
     public:
-      INLINE ElementIterator (const FESpace & afes, ElementId aei) 
-        : fes(afes), ei(aei) { ; }
-      INLINE ElementIterator operator++ ()
+      INLINE ElementIterator (const FESpace & afes, ElementId aei, Array<int> & atemp_dnums) 
+        : fes(afes), ei(aei), temp_dnums(atemp_dnums) { ; }
+      INLINE ElementIterator & operator++ ()
       {
         ++ei;
         while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && !fes.DefinedOn(ei)) ++ei;
-        return ElementIterator(fes, ei); 
+        return *this;
       }
       INLINE Element operator*() const { return Element (fes, ei, temp_dnums); }          
       INLINE bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
@@ -260,18 +262,63 @@ namespace ngcomp
     {
       const FESpace & fes;
       const VorB vb;
+      mutable Array<int> temp_dnums;
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar) 
         : IntRange(ar), fes(afes), vb(avb) { ; }
-      INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First())); }
-      INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next())); }
+      INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First()), temp_dnums); }
+      INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums); }
     };
 
-  public:
     ElementRange Elements (VorB vb = VOL) const
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
     }
+
+
+    /*
+    template <VorB VB>
+    class T_ElementIterator
+    {
+      const FESpace & fes;
+      int nr;
+      mutable Array<int> temp_dnums;
+    public:
+      INLINE T_ElementIterator (const FESpace & afes, int anr) 
+        : fes(afes), nr(anr) { ; }
+      INLINE T_ElementIterator & operator++ ()
+      {
+        ++nr;
+        while (nr < fes.GetMeshAccess()->GetNE(VB) && !fes.DefinedOn(ElementId(VB,nr))) ++nr;
+        return *this;
+      }
+      INLINE Element operator*() const { return Element (fes, ElementId(VB,nr), temp_dnums); }
+      INLINE bool operator!=(T_ElementIterator id2) const { return nr != id2.nr; }
+    };
+
+    template <VorB VB>
+    class T_ElementRange : public IntRange
+    {
+      const FESpace & fes;
+    public:
+      INLINE T_ElementRange (const FESpace & afes, IntRange ar) 
+        : IntRange(ar), fes(afes) { ; }
+      INLINE T_ElementIterator<VB> begin () const { return T_ElementIterator<VB>(fes, First()); }
+      INLINE T_ElementIterator<VB> end () const { return T_ElementIterator<VB>(fes, Next()); }
+    };
+
+    template <VorB VB>
+    T_ElementRange<VB> Elements () const
+    {
+      return T_ElementRange<VB> (*this, IntRange (0, ma->GetNE(VB)));
+    }
+    */
+
+
+
+
+
+
 
     /// returns finite element. 
     const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const
