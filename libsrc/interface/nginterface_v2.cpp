@@ -226,13 +226,14 @@ namespace netgen
   }
   */
 
+  
+  /*
   template <>
   DLL_HEADER int Ngx_Mesh :: GetElementIndex<0> (int nr) const
   {
     return 0;
   }
 
-  /*
   template <>
   DLL_HEADER int Ngx_Mesh :: GetElementIndex<1> (int nr) const
   {
