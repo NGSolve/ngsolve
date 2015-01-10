@@ -731,7 +731,7 @@ namespace ngcomp
 
                 
                 IterateElements 
-                  (*fespace, VOL, clh,  [&] (Fes_Element el, LocalHeap & lh)
+                  (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                    {
                      if (elmat_ev) 
                        *testout << " Assemble Element " << el.Nr() << endl;  

@@ -37,7 +37,7 @@ namespace ngcomp
 
   class ElementId
   {
-    VorB vb;
+    const VorB vb;
     int nr;
   public:
     ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }

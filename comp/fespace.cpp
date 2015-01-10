@@ -355,7 +355,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
 
     if (dirichlet_boundaries.Size())
-      for (Fes_Element el : Elements(BND))
+      for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
           for (int d : el.Dofs())
             if (d != -1) dirichlet_dofs.Set (d);
@@ -584,7 +584,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    creator.Add (i, dnums);
 	  }
         */
-        for (Fes_Element el : Elements(vorb))
+        for (FESpace::Element el : Elements(vorb))
           creator.Add(int(el), el.Dofs());
       }
 
@@ -1311,10 +1311,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	int ndof = ma->GetNV();
 
-        for (Fes_Element el : Elements(VOL))
+        for (auto el : Elements(VOL))
           for (int d : el.Dofs()) ndof = max2(ndof, d+1);              
 
-        for (Fes_Element el : Elements(BND))
+        for (auto el : Elements(BND))
           for (int d : el.Dofs()) ndof = max2(ndof, d+1);           
 
 	ndlevel.Append (ndof);
