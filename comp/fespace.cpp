@@ -428,13 +428,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
             mask = 0;
             found = false;
 
-            for (auto ei : Elements(vb))
+            for (auto el : Elements(vb))
               {
-                if (col[int(ei)] >= 0) continue;
-                GetDofNrs (ei, dnums);	
+                if (col[el.Nr()] >= 0) continue;
 
                 unsigned check = 0;
-                for (auto d : dnums)
+                for (auto d : el.Dofs())
                   if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
@@ -448,10 +447,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
                         checkbit *= 2;
                       }
 
-                    col[int(ei)] = color;
+                    col[el.Nr()] = color;
                     if (color > maxcolor) maxcolor = color;
 		
-                    for (auto d : dnums)
+                    for (auto d : el.Dofs())
                       if (d != -1) mask[d] |= checkbit;
                   }
               }
@@ -464,14 +463,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
         for (ElementId el : Elements(vb))
-          cntcol[col[int(el)]]++;
+          cntcol[col[el.Nr()]]++;
 
         Table<int> & coloring = (vb == VOL) ? element_coloring : selement_coloring;
         coloring = Table<int> (cntcol);
 
 	cntcol = 0;
         for (ElementId el : Elements(vb))
-          coloring[col[int(el)]][cntcol[col[int(el)]]++] = int(el);
+          coloring[col[el.Nr()]][cntcol[col[el.Nr()]]++] = el.Nr();
 
         if (print)
           *testout << "needed " << maxcolor+1 << " colors" 
@@ -574,21 +573,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     TableCreator<int> creator;
     
-    // Array<int> dnums;
     for ( ; !creator.Done(); creator++)
-      {
-        /*
-	for (int i = 0; i < ma->GetNE(vorb); i++)
-	  {
-	    GetDofNrs (ElementId(vorb,i), dnums);
-	    creator.Add (i, dnums);
-	  }
-        */
-        for (FESpace::Element el : Elements(vorb))
-          creator.Add(int(el), el.Dofs());
-      }
+      for (FESpace::Element el : Elements(vorb))
+        creator.Add(el.Nr(), el.Dofs());
 
-    return std::move(creator);
+    return move(creator);
   }
 
   /// get coupling type of dof
@@ -1326,22 +1315,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
 	dirichlet_dofs.SetSize (GetNDof());
 	dirichlet_dofs.Clear();
-	Array<int> dnums;
-	for (int i = 0; i < ma->GetNSE(); i++)
-	  {
-	    if (dirichlet_boundaries[ma->GetSElIndex(i)])
-	      {
-		GetSDofNrs (i, dnums);
-                for (int d : dnums)
-                  if (d != -1) dirichlet_dofs.Set (d);
-
-                /*
-                  for (int j = 0; j < dnums.Size(); j++)
-		  if (dnums[j] != -1)
-		    dirichlet_dofs.Set (dnums[j]);
-                */
-	      }
-	  }
+	for (auto el : Elements(BND))
+          if (dirichlet_boundaries[el.GetIndex()])
+            for (int d : el.Dofs())
+              if (d != -1) dirichlet_dofs.Set (d);
       }
   }
 

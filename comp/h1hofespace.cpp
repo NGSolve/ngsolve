@@ -215,26 +215,23 @@ namespace ngcomp
     used_face = false; 
     used_vertex = false; 
 
-    for (Ngs_Element el : ma->Elements<VOL>())
-      if (DefinedOn (el))
-	{
-	  used_vertex[el.Vertices()] = true;
-	  if (dim >= 2) used_edge[el.Edges()] = true;
-	  if (dim == 3) used_face[el.Faces()] = true;
-	}
-
-    for (Ngs_Element el : ma->Elements<BND>())
-      if (DefinedOn (el))
-	{
-	  used_vertex[el.Vertices()] = true;
-	  if (dim >= 2) used_edge[el.Edges()] = true;
-	  if (dim == 3) used_face[el.Faces()] = true;
-	}
+    for (FESpace::Element el : Elements (VOL))
+      {
+        used_vertex[el.Vertices()] = true;
+        if (dim >= 2) used_edge[el.Edges()] = true;
+        if (dim == 3) used_face[el.Faces()] = true;
+      }
+    
+    for (FESpace::Element el : Elements (BND))
+      {
+        used_vertex[el.Vertices()] = true;
+        if (dim >= 2) used_edge[el.Edges()] = true;
+        if (dim == 3) used_face[el.Faces()] = true;
+      }
     
     ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
     ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
     ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
-
 
     
     order_edge.SetSize (ned);
@@ -249,18 +246,18 @@ namespace ngcomp
 	
     Array<int> eledges, elfaces, vnums;
     if(var_order) 
-      for (ElementId ei : ma->Elements(VOL))
+      for (Ngs_Element el : ma->Elements<VOL>())
         {	
-          if (!DefinedOn (ei)) continue;
-          int i = ei.Nr();
+          if (!DefinedOn (el)) continue;
+          int i = el.Nr();
           
-          ELEMENT_TYPE eltype = ma->GetElType(ei); 
+          ELEMENT_TYPE eltype = el.GetType(); // ma->GetElType(el); 
           const FACE * faces = ElementTopology::GetFaces (eltype);
           const EDGE * edges = ElementTopology::GetEdges (eltype);
           const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
-          ma->GetElVertices (ei, vnums);
-          ma->GetElEdges (i, eledges);		
+          vnums = el.Vertices();
+          eledges = el.Edges();
 	
           INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order); 
           // for(int l=0;l<3;l++) el_orders[l] += rel_order; 
@@ -1260,8 +1257,9 @@ namespace ngcomp
 	int ned = ma->GetNEdges();
 	int nv = ma->GetNV();
 
-	for (int i = 0; i < nv; i++)
-	  clusters[i] = 1;
+	// for (int i = 0; i < nv; i++)
+        //   clusters[i] = 1;
+        clusters.Range(0,nv) = 1;
 
 	for (int i = 0; i < ned; i++)
 	  {
