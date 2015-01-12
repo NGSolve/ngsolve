@@ -41,15 +41,6 @@ namespace ngstd
     INLINE INT (T ai1, T ai2, T ai3, T ai4)
     { i[0] = ai1; i[1] = ai2; i[2] = ai3; i[3] = ai4; }
 
-    /*
-    /// copy constructor
-    INT (const INT<N,T2> & in2)
-    { 
-      for (int j = 0; j < N; j++) 
-	i[j] = in2.i[j]; 
-    }
-    */
-
     template <int N2, typename T2>
     INLINE INT (const INT<N2,T2> & in2)
     {
@@ -92,11 +83,13 @@ namespace ngstd
     INLINE const T & operator[] (int j) const
     { return i[j]; }
 
+    /*
     INLINE void SetAll (T value)
     {
       for (int j = 0; j < N; j++)
 	i[j] = value;
     }
+    */
 
     INLINE INT<N,T> & operator= (T value)
     {
@@ -268,8 +261,7 @@ namespace ngstd
     /// is identifier used ?
     bool Used (const T_HASH & ahash) const
     {
-      return (CheckPosition (HashValue (ahash, hash.Size()), ahash) != -1) 
-	? 1 : 0;
+      return (CheckPosition (HashValue (ahash, hash.Size()), ahash) != -1);
     }
 
     /// is identifier used ?
@@ -294,7 +286,7 @@ namespace ngstd
     }
 
     /// get identifier and value of entry bnr, position colnr
-    void GetData (int bnr, int colnr, T_HASH & ahash, T & acont)
+    void GetData (int bnr, int colnr, T_HASH & ahash, T & acont) const
     {
       ahash = hash[bnr][colnr];
       acont = cont[bnr][colnr];
@@ -324,6 +316,60 @@ namespace ngstd
 	  return i;
       throw Exception ("Ask for unsused hash-value");
     }
+
+    T & operator[] (T_HASH ahash)
+    {
+      int bnr, pos;
+      if (Used (ahash, bnr, pos))
+        return cont[bnr][pos];
+      else
+        {
+	  hash.Add (bnr, ahash);
+	  cont.Add (bnr, T(0));
+          return cont[bnr][cont[bnr].Size()-1];
+        }
+    }
+
+    class Iterator
+    {
+      const HashTable & ht;
+      int bnr;
+      int pos;
+    public:
+      Iterator (const HashTable & aht, int abnr, int apos)
+        : ht(aht), bnr(abnr), pos(apos) { ; }
+      pair<T_HASH,T> operator* () const
+      {
+        T_HASH hash; 
+        T data;
+        ht.GetData (bnr, pos, hash, data);
+        return pair<T_HASH,T> (hash, data);
+      }
+
+      Iterator & operator++() 
+      {
+        pos++;
+        if (pos == ht.EntrySize(bnr))
+          {
+            pos = 0;
+            bnr++;
+            for ( ; bnr < ht.Size(); bnr++)
+              if (ht.EntrySize(bnr) != 0) break;
+          }
+        return *this;
+      }
+      
+      bool operator!= (const Iterator & it2) { return bnr != it2.bnr || pos != it2.pos; }
+    };
+
+    Iterator begin () const 
+    {
+      int i = 0;
+      for ( ; i < Size(); i++)
+        if (EntrySize(i) != 0) break;
+      return Iterator(*this, i,0); 
+    }
+    Iterator end () const { return Iterator(*this, Size(),0); }
   };
 
 
@@ -355,7 +401,7 @@ namespace ngstd
     {
       // hash.SetName ("i2-hashtable, hash");
       // cont.SetName ("i2-hashtable, contents");
-      invalid.SetAll (-1);
+      invalid = -1; // .SetAll (-1);
       for (int i = 0; i < size; i++)
 	hash[i] = invalid;
     }

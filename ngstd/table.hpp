@@ -485,9 +485,13 @@ public:
   FlatArray<T> operator[] (int i) 
   { return FlatArray<T> (data[i].size, static_cast<T*> (data[i].col)); }
 
+  /*
   typedef const FlatArray<T> ConstFlatArray;
   /// Access entry i
   ConstFlatArray operator[] (int i) const
+  { return FlatArray<T> (data[i].size, static_cast<T*> (data[i].col)); }
+  */
+  FlatArray<T> operator[] (int i) const
   { return FlatArray<T> (data[i].size, static_cast<T*> (data[i].col)); }
 };
 
