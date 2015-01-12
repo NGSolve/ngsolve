@@ -100,6 +100,22 @@ public:
   {
     return FlatArray<int> (size+1, index);
   }
+
+  
+  class Iterator
+  {
+    const FlatTable & tab;
+    int row;
+  public:
+    Iterator (const FlatTable & _tab, int _row) : tab(_tab), row(_row) { ; }
+    Iterator & operator++ () { ++row; return *this; }
+    FlatArray<T> operator* () const { return (*this)[row]; }
+    bool operator!= (const Iterator & it2) { return row != it2.row; }
+  };
+  
+  Iterator begin() const { return Iterator(*this, 0); }
+  Iterator end() const { return Iterator(*this, size); }
+  IntRange Range () const { return IntRange(0, size); }
 };
 
 

@@ -102,19 +102,15 @@ namespace ngla
 
     // generate row-dof to element table
     TableCreator<int> creator(ndof);
+
     for ( ; !creator.Done(); creator++)
       {    
-      for (int i = 0; i < rowelements.Size(); i++)
-	{
-	  FlatArray<int> el = rowelements[i];
-	  for (int j = 0; j < el.Size(); j++){
-	    creator.Add(el[j],i);
-	  } 
-	}
+        for (auto i : rowelements.Range())
+          for (auto e : rowelements[i])
+            creator.Add(e, i);
       }
 
-    Table<int> & dof2element = *(creator.GetTable());
-    // Table<int> dof2element = creator;
+    Table<int> dof2element = creator;
 
     Array<int> cnt(ndof);
     cnt = 0;
@@ -1235,7 +1231,6 @@ namespace ngla
       }
 
     *cmat = 0.;
-
 	  
     for (int i = 0; i < n; i++)
       for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
@@ -1266,7 +1261,6 @@ namespace ngla
 
 	      }
 	}
-
     return cmat;
   }
   
