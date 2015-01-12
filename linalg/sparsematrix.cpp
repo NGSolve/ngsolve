@@ -11,7 +11,7 @@
 #define FILE_SPARSEMATRIX_CPP
 
 #include <la.hpp>
-
+#include <set>
 // #include <bitonic.hpp>
 
 
@@ -95,14 +95,23 @@ namespace ngla
   {
     static Timer timer("MatrixGraph");
     static Timer timer1("MatrixGraph - transpose table");
-    static Timer timer2("MatrixGraph - getdofs");
+    static Timer timer2a("MatrixGraph - getdofsa");
+    static Timer timer2b("MatrixGraph - getdofsb");
     static Timer timer3("MatrixGraph - sort");
     RegionTimer reg (timer);
 
     timer1.Start();
     bool includediag = (&rowelements == &colelements);
-    
+     
     int ndof = asize;
+
+#pragma omp parallel for
+    for (int i = 0; i < rowelements.Size(); i++)
+      QuickSort (rowelements[i]);
+#pragma omp parallel for
+    for (int i = 0; i < colelements.Size(); i++)
+      QuickSort (colelements[i]);
+
 
     // generate row-dof to element table
     TableCreator<int> creator(ndof);
@@ -120,88 +129,265 @@ namespace ngla
     cnt = 0;
 
     timer1.Stop();
-    timer2.Start();
+    timer2a.Start();
 
-    if (!symmetric)
+
+    for (int loop = 1; loop <= 2; loop++)
       {
-	
-#pragma omp parallel 
-	{
-	  Array<int> pmark(ndof);
-	  pmark = -1;
+        if (!symmetric)
+          {
+            
+            /*
+              #pragma omp parallel 
+              {
+              Array<int> pmark(ndof);
+              pmark = -1;
+              #pragma omp for
+              for (int i = 0; i < ndof; i++)
+              {
+	      int cnti = includediag? 1 : 0;
+	      pmark[i] = includediag? i : -1;
+              
+              for (auto elnr : dof2element[i])
+              for (auto d2 : colelements[elnr])
+              if (pmark[d2] != i)
+              {
+              pmark[d2] = i;
+              cnti++;
+              }
+	      cnt[i] = cnti;
+              }
+              }
+            */
+
+        /*
+#pragma omp parallel
+        {
+          std::set<int> rowdofs;
+
 #pragma omp for
 	  for (int i = 0; i < ndof; i++)
 	    {
-	      int cnti = includediag? 1 : 0;
-	      pmark[i] = includediag? i : -1;
-              /*
-	      for (int j = 0; j < dof2element[i].Size(); j++)
-		{
-		  int elnr = dof2element[i][j];
-		  FlatArray<int> el = colelements[elnr];
-		  for (int k = 0; k < el.Size(); k++)
-		    {
-		      int d2 = el[k];
-		      if (pmark[d2] != i)
-			{
-			  pmark[d2] = i;
-			  cnti++;
-			}
-		    }
-		}
-              */
+              if (includediag) rowdofs.insert(i);
+
               for (auto elnr : dof2element[i])
                 for (auto d2 : colelements[elnr])
-                  if (pmark[d2] != i)
-                    {
-                      pmark[d2] = i;
-                      cnti++;
-                    }
-	      cnt[i] = cnti;
-	    }
-	}
-      }
-    else
-      {
+                  rowdofs.insert (d2);
 
-#pragma omp parallel 
-	{
-	  Array<int> pmark(ndof);
-	  pmark = -1;
+	      cnt[i] = rowdofs.size();
+              rowdofs.clear();
+	    }
+          
+        }
+        */
+
+        /*
+#pragma omp parallel
+        {
+          Array<int> rowdofs;
+
 #pragma omp for
 	  for (int i = 0; i < ndof; i++)
 	    {
-	      int cnti = includediag? 1 : 0;
-	      pmark[i] = includediag? i : -1;
-              /*
-	      for (int j = 0; j < dof2element[i].Size(); j++)
-		{
-		  int elnr = dof2element[i][j];
-		  FlatArray<int> el = colelements[elnr];
-		  
-		  for (int k = 0; k < el.Size(); k++)
-		    {
-		      int d2 = el[k];
-		      if (d2 <= i)
-			if (pmark[d2] != i)
-			  {
-			    pmark[d2] = i;
-			    cnti++;
-			  }
-		    }
-		}
-              */
+              if (includediag) rowdofs += i;
+
               for (auto elnr : dof2element[i])
                 for (auto d2 : colelements[elnr])
-                  if ( (d2 <= i) && (pmark[d2] != i))
-                    {
-                      pmark[d2] = i;
-                      cnti++;
-                    }
+                  rowdofs += d2;
+
+              
+              QuickSort (rowdofs);
+              int prev = -1;
+              int cnti = 0;
+              for (int r : rowdofs)
+                {
+                  if (r != prev) cnti++;
+                  prev = r;
+                }
+              
 	      cnt[i] = cnti;
+
+              rowdofs.SetSize0();
 	    }
-	}
+          
+        }
+        */
+
+            
+#pragma omp parallel
+            {
+              Array<int> rowdofs;
+              Array<int> rowdofs1;
+              
+#pragma omp for
+              for (int i = 0; i < ndof; i++)
+                {
+                  rowdofs.SetSize0();
+                  if (includediag) rowdofs += i;
+                  
+                  for (int elnr : dof2element[i])
+                    {
+                      rowdofs.Swap (rowdofs1);
+                      FlatArray<int> row = colelements[elnr];
+                      
+                      rowdofs.SetAllocSize(rowdofs1.Size()+row.Size());
+                      rowdofs.SetSize0();
+                      
+                      int i1 = 0, i2 = 0, i3 = 0;
+                      while (i1 < rowdofs1.Size() && i2 < row.Size())
+                        {
+                          int newel;
+                          if (rowdofs1[i1] == row[i2])
+                            {
+                              newel = rowdofs1[i1++]; i2++;
+                            }
+                          else if (rowdofs1[i1] < row[i2])
+                            newel = rowdofs1[i1++];
+                          else
+                            newel = row[i2++];
+                          rowdofs[i3++] = newel; 
+                        }
+                      
+                      while (i1 < rowdofs1.Size())
+                        rowdofs[i3++] = rowdofs1[i1++];
+                      while (i2 < row.Size())
+                        rowdofs[i3++] = row[i2++];
+                      
+                      rowdofs.SetSize(i3);
+                    }
+                  
+                  
+                  if (loop == 1)
+                    cnt[i] = rowdofs.Size();
+                  else
+                    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                }
+            }
+          }
+        else
+          {
+            
+            /*
+#pragma omp parallel 
+            {
+              Array<int> pmark(ndof);
+              pmark = -1;
+#pragma omp for
+              for (int i = 0; i < ndof; i++)
+                {
+                  int cnti = includediag? 1 : 0;
+                  pmark[i] = includediag? i : -1;
+
+                  for (auto elnr : dof2element[i])
+                    for (auto d2 : colelements[elnr])
+                      if ( (d2 <= i) && (pmark[d2] != i))
+                        {
+                          pmark[d2] = i;
+                          cnti++;
+                        }
+                  cnt[i] = cnti;
+                }
+            }
+            */
+            
+
+#pragma omp parallel
+            {
+              Array<int> rowdofs;
+              Array<int> rowdofs1;
+              
+#pragma omp for
+              for (int i = 0; i < ndof; i++)
+                {
+                  rowdofs.SetSize0();
+                  if (includediag) rowdofs += i;
+                  
+                  for (auto elnr : dof2element[i])
+                    {
+                      rowdofs.Swap (rowdofs1);
+                      auto row = colelements[elnr];
+                      
+                      rowdofs.SetAllocSize(rowdofs1.Size()+row.Size());
+                      rowdofs.SetSize0();
+                      
+                      int i1 = 0, i2 = 0, i3 = 0;
+                      while (i1 < rowdofs1.Size() && i2 < row.Size() && row[i2] <= i)
+                        {
+                          int newel;
+                          if (rowdofs1[i1] == row[i2])
+                            {
+                              newel = rowdofs1[i1++]; i2++;
+                            }
+                          else if (rowdofs1[i1] < row[i2])
+                            newel = rowdofs1[i1++];
+                          else
+                            newel = row[i2++];
+                          rowdofs[i3++] = newel; 
+                        }
+                      
+                      while (i1 < rowdofs1.Size())
+                        rowdofs[i3++] = rowdofs1[i1++];
+                      while (i2 < row.Size() && row[i2] <= i)
+                        rowdofs[i3++] = row[i2++];
+                      
+                      rowdofs.SetSize(i3);
+                    }
+                  
+                  
+                  if (loop == 1)
+                    cnt[i] = rowdofs.Size();
+                  else
+                    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                }
+            }
+
+
+
+          }
+
+        
+        if (loop == 1)
+          {
+            size = ndof;
+            width = ndof;
+            owner = true;
+            
+            firsti.SetSize (size+1);
+            
+            nze = 0;
+            for (int i = 0; i < size; i++)
+              {
+                firsti[i] = nze;
+                nze += cnt[i];
+              }
+            firsti[size] = nze;
+            cout << "nze = " << nze << endl;
+            colnr.SetSize (nze+1);
+          }
+        else
+          {
+            ;
+          }
       }
+
+
+
+    timer2a.Stop();
+
+
+
+
+
+
+
+
+
+#ifdef OLD
+
+
+
+    timer2b.Start();
+
 
     size = ndof;
     width = ndof;
@@ -233,23 +419,6 @@ namespace ngla
 	      pmark[i] = includediag? i : -1;
 	      if (includediag) colnr[cnti++] = i;
               
-              /*
-	      for (int j = 0; j < dof2element[i].Size(); j++)
-		{
-		  int elnr = dof2element[i][j];
-		  FlatArray<int> el = colelements[elnr];
-		  
-		  for (int k = 0; k < el.Size(); k++)
-		    {
-		      int d2 = el[k];
-		      if (pmark[d2] != i)
-			{
-			  pmark[d2] = i;
-			  colnr[cnti++] = d2;
-			}
-		    }
-		}
-              */
               for (auto elnr : dof2element[i])
                 for (auto d2 : colelements[elnr])
                   if (pmark[d2] != i)
@@ -273,24 +442,7 @@ namespace ngla
 	    size_t cnti = firsti[i];
 	    pmark[i] = includediag? i : -1;
 	    if (includediag) colnr[cnti++] = i;
-            /*
-	    for (int j = 0; j < dof2element[i].Size(); j++)
-	      {
-		int elnr = dof2element[i][j];
-		FlatArray<int> el = colelements[elnr];
-		
-		for (int k = 0; k < el.Size(); k++)
-		  {
-		    int d2 = el[k];
-		    if (d2 <= i)
-		      if (pmark[d2] != i)
-			{
-			  pmark[d2] = i;
-			  colnr[cnti++] = d2;
-			}
-		  }
-	      }
-            */
+
             for (auto elnr : dof2element[i])
               for (auto d2 : colelements[elnr])
                 if ( (d2 <= i) && (pmark[d2] != i))
@@ -301,7 +453,11 @@ namespace ngla
 	  }
       } 
 
-    timer2.Stop();
+    timer2b.Stop();
+
+#endif
+
+
     timer3.Start();
 
 #pragma omp parallel for
