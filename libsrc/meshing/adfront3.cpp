@@ -661,18 +661,19 @@ void AdFront3 :: GetGroup (int fi,
 			   Array<INDEX> & findex) 
 {
   // static Array<char> pingroup;
-  int i, j, changed;
+  int changed;
 
   pingroup.SetSize(points.Size());
 
   pingroup = 0;
-  for (j = 1; j <= 3; j++)
+  for (int j = 1; j <= 3; j++)
     pingroup.Elem (faces.Get(fi).Face().PNum(j)) = 1;
 
   do
     {
       changed = 0;
 
+      /*
       for (i = 1; i <= faces.Size(); i++)
 	if (faces.Get(i).Valid())
 	  {
@@ -691,28 +692,45 @@ void AdFront3 :: GetGroup (int fi,
 		    changed = 1;
 		  }
 	  }
+      */
+      for (auto & f : faces)
+	if (f.Valid())
+	  {
+	    const MiniElement2d & face = f.Face();
+
+	    int fused = 0;
+	    for (int j = 1; j <= 3; j++)
+	      if (pingroup.Elem(face.PNum(j))) 
+		fused++;
+            
+	    if (fused >= 2)
+	      for (int j = 1; j <= 3; j++)
+		if (!pingroup.Elem(face.PNum(j)))
+		  {
+		    pingroup.Elem(face.PNum(j)) = 1;
+		    changed = 1;
+		  }
+	  }
 
     }
   while (changed);
 
-
-  //  static Array<int> invpindex;
   invpindex.SetSize (points.Size());
-  
 
-  for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
-    if (points.Get(i).Valid())
+  // for (PointIndex pi = points.Begin(); pi < points.End(); pi++)
+  for (PointIndex pi : points.Range())
+    if (points[pi].Valid())
       {
 	grouppoints.Append (points[pi].P());
 	pindex.Append (pi);
 	invpindex[pi] = pindex.Size();
       }
 
-  for (i = 1; i <= faces.Size(); i++)
+  for (int i = 1; i <= faces.Size(); i++)
     if (faces.Get(i).Valid())
       {
 	int fused = 0;
-	for (j = 1; j <= 3; j++)
+	for (int j = 1; j <= 3; j++)
 	  if (pingroup.Get(faces.Get(i).Face().PNum(j)))
 	    fused++;
 
@@ -722,37 +740,28 @@ void AdFront3 :: GetGroup (int fi,
 	    findex.Append (i);
 	  }
       }
-      
-  for (i = 1; i <= groupelements.Size(); i++)
-    for (j = 1; j <= 3; j++)
+
+  /*
+  for (int i = 1; i <= groupelements.Size(); i++)
+    for (int j = 1; j <= 3; j++)
       {
 	groupelements.Elem(i).PNum(j) =
 	  invpindex.Get(groupelements.Elem(i).PNum(j));
       }
-
-  /*
-  for (i = 1; i <= groupelements.Size(); i++)
-    for (j = 1; j <= 3; j++)
-      for (k = 1; k <= grouppoints.Size(); k++)
-        if (pindex.Get(k) == groupelements.Get(i).PNum(j))
-          {
-	    groupelements.Elem(i).PNum(j) = k;
-	    break;
-          }
-  */          
+  */
+  for (auto & e : groupelements)
+    for (int j = 1; j <= 3; j++)
+      e.PNum(j) = invpindex.Get(e.PNum(j));
 }
 
 
 void AdFront3 :: SetStartFront (int /* baseelnp */)
 {
-  INDEX i;
-  int j;
-
-  for (i = 1; i <= faces.Size(); i++)
+  for (INDEX i = 1; i <= faces.Size(); i++)
     if (faces.Get(i).Valid())
       {
 	const MiniElement2d & face = faces.Get(i).Face();
-	for (j = 1; j <= 3; j++)
+	for (int j = 1; j <= 3; j++)
 	  points[face.PNum(j)].DecFrontNr(0);
       }
 
