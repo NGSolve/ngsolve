@@ -652,7 +652,7 @@ namespace ngcomp
             ma->PushStatus ("Assemble Matrix");
  
             int ndof = fespace->GetNDof();
-            BitArray useddof(ndof);
+            Array<bool> useddof(ndof);
             useddof = false;
 
             int ne = ma->GetNE();
@@ -1008,7 +1008,7 @@ namespace ngcomp
 
                      for (int j = 0; j < dnums.Size(); j++)
                        if (dnums[j] != -1)
-                         useddof.Set (dnums[j]);
+                         useddof[dnums[j]] = true;
 
                      timer3.Stop();
                    });
@@ -1099,7 +1099,7 @@ namespace ngcomp
 
                     for (int j = 0; j < dnums.Size(); j++)
                       if (dnums[j] != -1)
-                        useddof.Set (dnums[j]);
+                        useddof[dnums[j]] = true;
                   }
                 clh.CleanUp(heapp);
                 cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
@@ -1148,7 +1148,7 @@ namespace ngcomp
                       
                       for (int k = 0; k < dnums.Size(); k++)
                         if (dnums[k] != -1)
-                          useddof.Set (dnums[k]);
+                          useddof[dnums[k]] = true;
 
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
@@ -1275,7 +1275,7 @@ namespace ngcomp
 
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
-                              useddof.Set (dnums[k]);
+                              useddof[dnums[k]] = true;
 
                           int elmat_size = dnums.Size()*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1420,7 +1420,7 @@ namespace ngcomp
 
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
-                              useddof.Set (dnums[k]);
+                              useddof[dnums[k]] = true;
 
                           int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -1525,7 +1525,7 @@ namespace ngcomp
                   {
                     for (int j = 0; j < dnums.Size(); j++)
                       if (dnums[j] != -1)
-                        useddof.Set (dnums[j]);
+                        useddof[dnums[j]] = true;
                     
                     AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                   }
@@ -1559,7 +1559,7 @@ namespace ngcomp
                 for (int i = 0; i < elmat.Height(); i++)
                   elmat(i, i) = unuseddiag;
                 for (int i = 0; i < ndof; i++)
-                  if (!useddof.Test (i))
+                  if (!useddof[i])
                     {
                       dnums[0] = i;
                       AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
@@ -1574,7 +1574,7 @@ namespace ngcomp
 
             int cntused = 0;
             for (int i = 0; i < useddof.Size(); i++)
-              if (useddof.Test(i))
+              if (useddof[i])
                 cntused++;
             
             // if ( (ntasks == 1) && (cntused < useddof.Size()))
@@ -1588,11 +1588,11 @@ namespace ngcomp
 
             if (MyMPI_GetNTasks() == 1)
               for (int i = 0; i < useddof.Size(); i++)
-                if (useddof.Test(i) != 
+                if (useddof[i] != 
                     ((fespace->GetDofCouplingType(i) & MASK) != 0) )
                   {
                     *testout << "used dof inconsistency: " 
-                             << " dof " << i << " used = " << int(useddof.Test(i))
+                             << " dof " << i << " used = " << int(useddof[i])
                              << " ct = " << fespace->GetDofCouplingType(i) << endl;
                   
                     if (first_time)
