@@ -278,7 +278,7 @@ namespace ngcomp
                   fespace2->GetDofNrs (i, dnums, EXTERNAL_DOF);
                 else
                   fespace2->GetDofNrs (i, dnums);
-
+                
                 for (int j = 0; j < dnums.Size(); j++)
                   if (dnums[j] != -1)
                     creator2.Add (i, dnums[j]);
