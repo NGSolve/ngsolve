@@ -211,27 +211,35 @@ namespace ngcomp
     TableCreator<int> creator(maxind);
     for ( ; !creator.Done(); creator++)
       {
-        for (int i = 0; i < ne; i++)
-          {
-            if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
 
-            if (eliminate_internal)
-              fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
-            else
-              fespace->GetDofNrs (i, dnums);
+#pragma omp parallel
+        {
+          Array<int> dnums;
 
-            for (int d : dnums)
-              if (d != -1) creator.Add (i, d);
-          }
-        
-        for (int i = 0; i < nse; i++)
-          {
-            if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
-            
-            fespace->GetSDofNrs (i, dnums);
-            for (int d : dnums)
-              if (d != -1) creator.Add (ne+i, d);
-          }
+#pragma omp for
+          for (int i = 0; i < ne; i++)
+            {
+              if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
+
+              if (eliminate_internal)
+                fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+              else
+                fespace->GetDofNrs (i, dnums);
+              
+              for (int d : dnums)
+                if (d != -1) creator.Add (i, d);
+            }
+
+#pragma omp for
+          for (int i = 0; i < nse; i++)
+            {
+              if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
+              
+              fespace->GetSDofNrs (i, dnums);
+              for (int d : dnums)
+                if (d != -1) creator.Add (ne+i, d);
+            }
+        }
 
         for (int i = 0; i < specialelements.Size(); i++)
           {
