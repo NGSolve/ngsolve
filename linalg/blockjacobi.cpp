@@ -305,6 +305,8 @@ namespace ngla
 	e.Append ("in Reorder\n");
 	throw;
       }
+
+
   }
 
 
@@ -354,6 +356,7 @@ namespace ngla
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < blocktable.Size(); i++)
       {
+#ifndef __MIC__
 #pragma omp atomic
 	cnt++;
 	if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
@@ -364,6 +367,7 @@ namespace ngla
 	      prevtime = clock();
 	    }
 	  }
+#endif // __MIC__
 	
 	int bs = blocktable[i].Size();
 	if (!bs) 
@@ -382,7 +386,47 @@ namespace ngla
 	CalcInverse (blockmat, *invdiag[i]);
       }
 
+    *testout << "block coloring";
+
+    int nblocks = blocktable.Size();
+    Array<int> coloring(nblocks);
+    Array<unsigned int> mask(mat.Width());
+    int current_color = 0;
+    coloring = -1;
+    int colored_blocks = 0;
+
+    while(colored_blocks<nblocks) {
+      mask = 0;
+      for (int i=0; i<nblocks; i++) {
+        if(coloring[i]>-1) continue;
+        bool is_free = true;
+        for (int d : blocktable[i] )
+          if(mask[d]) {
+            is_free = false;
+            break;
+          }
+
+        if(is_free) {
+          coloring[i] = current_color;
+          colored_blocks++;
+          for (int d : blocktable[i]) 
+            for(auto coupling : mat.GetRowIndices(d)) 
+              mask[coupling] = 1;
+        }
+      }
+      current_color++;
+    }
+
+    TableCreator<int> creator(current_color);
+    for ( ; !creator.Done(); creator++)
+      for (int i=0; i<nblocks; i++)
+          creator.Add(coloring[i],i);
+    block_coloring = creator;
+
+    *testout << " using " << current_color << " colors" << endl;
+
     cout << "\rBlockJacobi Preconditioner built" << endl;
+
   }
 
   ///
@@ -471,6 +515,7 @@ namespace ngla
 #pragma omp parallel for	
 	for (int i = 0; i < blocktable.Size(); i++)
 	  {
+#ifndef __MIC__
 #pragma omp atomic
             cnt++;
             if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
@@ -481,6 +526,7 @@ namespace ngla
                   prevtime = clock();
                 }
               }
+#endif // __MIC__
 
 	    int bs = blocktable[i].Size();
 	    

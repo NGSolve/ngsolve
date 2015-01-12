@@ -23,6 +23,9 @@ namespace ngla
     /// maximal block size
     int maxbs;
 
+    /// block coloring
+    Table<int> block_coloring;
+
     // COARSE_TYPE ct;
   public:
     /// the blocktable define the blocks. ATTENTION: entries will be reordered !
@@ -193,9 +196,54 @@ namespace ngla
 
 
     ///
+#define PARALLEL_GSSMOOTH
+#ifdef PARALLEL_GSSMOOTH
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
 			   int steps = 1) const 
     {
+      static Timer timer ("BlockJacobiPrecond::GSSmooth");
+      RegionTimer reg(timer);
+      FlatVector<TVX> fb = b.FV<TVX> (); 
+      FlatVector<TVX> fx = x.FV<TVX> ();
+
+#pragma omp parallel
+      {
+        Vector<TVX> hxmax(maxbs);
+        Vector<TVX> hymax(maxbs);
+        for (int k = 0; k < steps; k++)
+          for (int c = 0; c < block_coloring.Size(); c++) {
+            auto blocks = block_coloring[c];
+
+#pragma omp for
+            for (int ii=0; ii<blocks.Size(); ii++)
+            {
+              int i = blocks[ii];
+              int bs = blocktable[i].Size();
+              if (!bs) continue;
+
+              FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+              FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+
+              for (int j = 0; j < bs; j++)
+              {
+                int jj = blocktable[i][j];
+                hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+              }
+
+              hy = (*invdiag[i]) * hx;
+
+              for (int j = 0; j < bs; j++)
+                fx(blocktable[i][j]) += hy(j);
+            }
+          }
+      }
+    }
+#else
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b,
+			   int steps = 1) const 
+    {
+      static Timer timer ("BlockJacobiPrecond::GSSmooth");
+      RegionTimer reg(timer);
       FlatVector<TVX> fb = b.FV<TVX> (); 
       FlatVector<TVX> fx = x.FV<TVX> ();
 
@@ -222,6 +270,7 @@ namespace ngla
 	      fx(blocktable[i][j]) += hy(j);
 	  }
     }
+#endif // PARALLEL_GSSMOOTH
 
   
     virtual void GSSmoothResiduum (BaseVector & x, const BaseVector & b,
@@ -235,9 +284,55 @@ namespace ngla
 
   
     ///
+#ifdef PARALLEL_GSSMOOTH
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
 			       int steps = 1) const 
     {
+      static Timer timer ("BlockJacobiPrecond::GSSmoothBack");
+      RegionTimer reg(timer);
+      const FlatVector<TVX> fb = b.FV<TVX> (); 
+      FlatVector<TVX> fx = x.FV<TVX> ();
+
+#pragma omp parallel
+      {
+      Vector<TVX> hxmax(maxbs);
+      Vector<TVX> hymax(maxbs);
+
+      for (int k = 0; k < steps; k++)
+          for (int c = block_coloring.Size()-1; c >=0; c--) {
+            auto blocks = block_coloring[c];
+
+#pragma omp for
+            for (int ii=0; ii<blocks.Size(); ii++)
+            {
+              int i = blocks[ii];
+              int bs = blocktable[i].Size();
+              if (!bs) continue;
+
+              FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
+              FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
+
+              for (int j = 0; j < bs; j++)
+              {
+                int jj = blocktable[i][j];
+                hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+              }
+
+              hy = (*invdiag[i]) * hx;
+
+              for (int j = 0; j < bs; j++)
+                fx(blocktable[i][j]) += hy(j);
+            }  
+          }
+      }
+    }
+
+#else // PARALLEL_GSSMOOTH
+    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b,
+			       int steps = 1) const 
+    {
+      static Timer timer ("BlockJacobiPrecond::GSSmoothBack");
+      RegionTimer reg(timer);
       const FlatVector<TVX> fb = b.FV<TVX> (); 
       FlatVector<TVX> fx = x.FV<TVX> ();
 
@@ -265,6 +360,7 @@ namespace ngla
 	      fx(blocktable[i][j]) += hy(j);
 	  }  
     }
+#endif // PARALLEL_GSSMOOTH
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
