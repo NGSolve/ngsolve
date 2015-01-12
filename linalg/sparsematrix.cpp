@@ -94,8 +94,12 @@ namespace ngla
                               bool symmetric)
   {
     static Timer timer("MatrixGraph");
+    static Timer timer1("MatrixGraph - transpose table");
+    static Timer timer2("MatrixGraph - getdofs");
+    static Timer timer3("MatrixGraph - sort");
     RegionTimer reg (timer);
 
+    timer1.Start();
     bool includediag = (&rowelements == &colelements);
     
     int ndof = asize;
@@ -114,6 +118,9 @@ namespace ngla
 
     Array<int> cnt(ndof);
     cnt = 0;
+
+    timer1.Stop();
+    timer2.Start();
 
     if (!symmetric)
       {
@@ -294,6 +301,8 @@ namespace ngla
 	  }
       } 
 
+    timer2.Stop();
+    timer3.Start();
 
 #pragma omp parallel for
     for (int i = 0; i < ndof; i++)
@@ -301,6 +310,8 @@ namespace ngla
       QuickSort (GetRowIndices(i));
 
     colnr[nze] = 0;
+
+    timer3.Stop();
 
     delete creator.GetTable();
   }
