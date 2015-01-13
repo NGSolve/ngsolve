@@ -361,7 +361,6 @@ namespace ngla
                 nze += cnt[i];
               }
             firsti[size] = nze;
-            cout << "nze = " << nze << endl;
             colnr.SetSize (nze+1);
           }
         else
@@ -573,18 +572,18 @@ namespace ngla
   
 
   /// returns position of Element (i, j), exception for unused
-  int MatrixGraph :: GetPosition (int i, int j) const
+  size_t MatrixGraph :: GetPosition (int i, int j) const
   {
     /*
       for (int k = firsti[i]; k < firsti[i+1]; k++)
       if (colnr[k] == j) return k;
     */
     
-    int first = firsti[i];
-    int last = firsti[i+1];
+    size_t first = firsti[i];
+    size_t last = firsti[i+1];
     while (last > first + 5)
       {
-	unsigned int mid = (first+last) / 2;
+	size_t mid = (first+last) / 2;
 	if (colnr[mid] > j)
 	  last = mid;
 	else
@@ -593,7 +592,7 @@ namespace ngla
 	    first = mid+1;
 	  }
       }
-    for (int k = first; k < last; k++)
+    for (size_t k = first; k < last; k++)
       if (colnr[k] == j) return k;
     
     stringstream err;
@@ -603,18 +602,18 @@ namespace ngla
   
   
   /// returns position of Element (i, j), -1 for unused
-  int MatrixGraph :: GetPositionTest (int i, int j) const
+  size_t MatrixGraph :: GetPositionTest (int i, int j) const
   {
     /*
       for (int k = firsti[i]; k < firsti[i+1]; k++)
       if (colnr[k] == j) return k;
     */
     
-    int first = firsti[i];
-    int last = firsti[i+1];
+    size_t first = firsti[i];
+    size_t last = firsti[i+1];
     while (last > first + 5)
       {
-	unsigned int mid = (first+last) / 2;
+	size_t mid = (first+last) / 2;
 	if (colnr[mid] > j)
 	  last = mid;
 	else
@@ -623,17 +622,17 @@ namespace ngla
 	    first = mid+1;
 	  }
       }
-    for (int k = first; k < last; k++)
+    for (size_t k = first; k < last; k++)
       if (colnr[k] == j) return k;
 
 
     return -1;
   }
   
-  int MatrixGraph :: CreatePosition (int i, int j)
+  size_t MatrixGraph :: CreatePosition (int i, int j)
   {
-    int first = firsti[i];
-    int last = firsti[i+1];
+    size_t first = firsti[i];
+    size_t last = firsti[i+1];
     /*
       (*testout) << "row = " << i << ", col = " << j << endl;
       (*testout) << "first = " << first << ", last = " << last << endl;
@@ -644,7 +643,7 @@ namespace ngla
     // while (last > first + 5)
     while (last > first + 2)
       {
-	unsigned int mid = (first+last) / 2;
+	size_t mid = (first+last) / 2;
 	// (*testout) << "first = " << first << ", last = " << last << ", mid = " << mid << ", colnr[mid] = " << colnr[mid] << endl;
 
         if (colnr[mid] == j) return mid;
@@ -656,7 +655,7 @@ namespace ngla
       }
 
 
-    for (int k = first; k < last; k++)
+    for (size_t k = first; k < last; k++)
       {
 	if (colnr[k] == -1)
 	  {
@@ -720,8 +719,8 @@ namespace ngla
     
     int i = 0;
     int posi = pos[i];
-    int endk = firsti[row+1];
-    for (int k = firsti[row]; k < endk; k++)
+    size_t endk = firsti[row+1];
+    for (size_t k = firsti[row]; k < endk; k++)
       {
 	if (colnr[k] == posi)
 	  {
