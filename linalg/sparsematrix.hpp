@@ -110,16 +110,16 @@ namespace ngla
     void Compress();
   
     /// returns position of Element (i, j), exception for unused
-    int GetPosition (int i, int j) const;
-
+    size_t GetPosition (int i, int j) const;
+    
     /// returns position of Element (i, j), -1 for unused
-    int GetPositionTest (int i, int j) const;
+    size_t GetPositionTest (int i, int j) const;
 
     /// find positions of n sorted elements, overwrite pos, exception for unused
     void GetPositionsSorted (int row, int n, int * pos) const;
 
     /// returns position of new element
-    int CreatePosition (int i, int j);
+    size_t CreatePosition (int i, int j);
 
     int Size() const { return size; }
 
@@ -313,7 +313,7 @@ namespace ngla
 
     const TM & operator() (int row, int col) const
     {
-      int pos = GetPositionTest (row,col);
+      size_t pos = GetPositionTest (row,col);
       if (pos != -1)
 	return data[pos];
       else
