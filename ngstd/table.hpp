@@ -68,46 +68,46 @@ class FlatTable
 {
 protected:
   /// number of rows
-  int size;
+  size_t size;
   /// pointer to first in row
-  int * index;
+  size_t * index;
   /// array of data 
   T * data;
 
 public:
   INLINE FlatTable() { ; }
 
-  INLINE FlatTable(int as, int * aindex, T * adata)
+  INLINE FlatTable(size_t as, size_t * aindex, T * adata)
     : size(as), index(aindex), data(adata) { ; }
 
   /// Size of table
-  INLINE int Size() const { return size; }
+  INLINE size_t Size() const { return size; }
 
   /// Access entry
-  INLINE const FlatArray<T> operator[] (int i) const 
+  INLINE const FlatArray<T> operator[] (size_t i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
 
   INLINE T * Data() const { return data; }
 
-  INLINE FlatArray<T> AsArray() const
+  INLINE FlatArray<T,size_t> AsArray() const
   {
-    return FlatArray<T> (index[size], data);
+    return FlatArray<T,size_t> (index[size], data);
   }
 
-  INLINE FlatArray<int> IndexArray() const
+  INLINE FlatArray<size_t> IndexArray() const
   {
-    return FlatArray<int> (size+1, index);
+    return FlatArray<size_t> (size+1, index);
   }
 
   
   class Iterator
   {
     const FlatTable & tab;
-    int row;
+    size_t row;
   public:
-    Iterator (const FlatTable & _tab, int _row) : tab(_tab), row(_row) { ; }
+    Iterator (const FlatTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
     Iterator & operator++ () { ++row; return *this; }
     FlatArray<T> operator* () const { return (*this)[row]; }
     bool operator!= (const Iterator & it2) { return row != it2.row; }
@@ -144,30 +144,27 @@ public:
   INLINE Table () : FlatTable<T> (0,NULL,NULL) { ; }
   /// Construct table of uniform entrysize
   INLINE Table (int asize, int entrysize)
-  // : BaseTable (asize, entrysize) 
   { 
     size = asize;
-    index = new int[size+1];
-    for (int i = 0; i <= size; i++)
+    index = new size_t[size+1];
+    for (size_t i = 0; i <= size; i++)
       index[i] = i*entrysize;
     data = new T [size*entrysize]; 
   }
 
   /// Construct table of variable entrysize
   INLINE Table (const FlatArray<int> & entrysize)
-  // : BaseTable (entrysize)
   {
-    int i, cnt = 0;
+    size_t cnt = 0;
     size  = entrysize.Size();
     
-    index = new int[size+1];
-    for (i = 0; i < size; i++)
+    index = new size_t[size+1];
+    for (size_t i = 0; i < size; i++)
       {
 	index[i] = cnt;
 	cnt += entrysize[i];
       }
-    index[i] = cnt;
-
+    index[size] = cnt;
     data = new T[cnt];
   }
 
@@ -205,22 +202,7 @@ public:
   using FlatTable<T>::Size;
   
   /// number of elements in all rows
-  INLINE int NElements() const { return index[size]; }
-
-  /*
-  /// Access entry.
-  FlatArray<T> operator[] (int i) 
-  { 
-    return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
-  }
-  */
-  /*
-  /// Access entry
-  INLINE const FlatArray<T> operator[] (int i) const 
-  { 
-    return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
-  }
-  */
+  INLINE size_t NElements() const { return index[size]; }
 
   using FlatTable<T>::operator[];
 };
@@ -230,7 +212,7 @@ public:
 template <class T>
 inline ostream & operator<< (ostream & s, const Table<T> & table)
 {
-  for (int i = 0; i < table.Size(); i++)
+  for (size_t i = 0; i < table.Size(); i++)
     {
       s << i << ":";
       for (int j = 0; j < table[i].Size(); j++)
@@ -249,13 +231,13 @@ template <class T>
   {
   protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
-    int nd;
+    size_t nd;
     Array<int> cnt;
     Table<T> * table;
   public:
     TableCreator()
     { nd = 0; mode = 1; table = NULL; }
-    TableCreator(int acnt)
+    TableCreator(size_t acnt)
     { nd = acnt; table = NULL; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
@@ -283,17 +265,17 @@ template <class T>
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-	  int sum = 0;
-	  for (int i = 0; i < cnt.Size(); i++)
+	  size_t sum = 0;
+	  for (size_t i = 0; i < cnt.Size(); i++)
 	    {
-	      int nsum = sum + cnt[i];
+	      size_t nsum = sum + cnt[i];
 	      cnt[i] = sum;
 	      sum = nsum;
 	    }
 	}
     }
 
-    void Add (int blocknr, const T & data)
+    void Add (size_t blocknr, const T & data)
     {
       switch (mode)
 	{
@@ -311,7 +293,7 @@ template <class T>
     }
 
 
-    void Add (int blocknr, IntRange range)
+    void Add (size_t blocknr, IntRange range)
     {
       switch (mode)
 	{
