@@ -11,9 +11,7 @@
 #define FILE_SPARSEMATRIX_CPP
 
 #include <la.hpp>
-#include <set>
 // #include <bitonic.hpp>
-
 
 namespace ngla
 {
@@ -87,6 +85,36 @@ namespace ngla
     // inversetype = agraph.GetInverseType();
   }
 
+  
+
+  inline void MergeSortedArrays (FlatArray<int> in1, FlatArray<int> in2,
+                                 Array<int> & out)
+  {
+    out.SetAllocSize(in1.Size()+in2.Size());
+    out.SetSize0();
+
+    int i1 = 0, i2 = 0, io = 0;
+    while (i1 < in1.Size() && i2 < in2.Size())
+      {
+        int newel;
+        if (in1[i1] == in2[i2])
+          {
+            newel = in1[i1++]; i2++;
+          }
+        else if (in1[i1] < in2[i2])
+          newel = in1[i1++];
+        else
+          newel = in2[i2++];
+        out[io++] = newel; 
+      }
+    
+    while (i1 < in1.Size())
+      out[io++] = in1[i1++];
+    while (i2 < in2.Size())
+      out[io++] = in2[i2++];
+                      
+    out.SetSize(io);
+  }
 
 
   MatrixGraph :: MatrixGraph (int asize, const Table<int> & rowelements, 
@@ -105,15 +133,18 @@ namespace ngla
      
     int ndof = asize;
 
+    /*
+    // don't need to sort rowelements ???
 #pragma omp parallel for
     for (int i = 0; i < rowelements.Size(); i++)
       QuickSort (rowelements[i]);
+    */
+
 #pragma omp parallel for
     for (int i = 0; i < colelements.Size(); i++)
       QuickSort (colelements[i]);
 
-
-    // generate row-dof to element table
+    // generate rowdof to element table
     TableCreator<int> creator(ndof);
 
     for ( ; !creator.Done(); creator++)
@@ -124,6 +155,22 @@ namespace ngla
       }
 
     Table<int> dof2element = creator;
+
+    /*
+      // no speedup ???
+    Array<bool> same_els_as_prev(dof2element.Size());
+    same_els_as_prev[0] = false;
+#pragma omp parallel for
+    for (int i = 1; i < same_els_as_prev.Size(); i++)
+      {
+        if (dof2element[i].Size() == 0)
+          same_els_as_prev[i] = false;    // unused dof: may add diag-entry
+        else
+          same_els_as_prev[i] = (dof2element[i] == dof2element[i-1]);
+      }
+    // cout << "same as prev = " << endl << same_els_as_prev << endl;
+    // same_els_as_prev = false;
+    */
 
     Array<int> cnt(ndof);
     cnt = 0;
@@ -160,136 +207,104 @@ namespace ngla
               }
             */
 
-        /*
-#pragma omp parallel
-        {
-          std::set<int> rowdofs;
-
-#pragma omp for
-	  for (int i = 0; i < ndof; i++)
+            /*
+              #pragma omp parallel
+              {
+              std::set<int> rowdofs;
+              
+              #pragma omp for
+              for (int i = 0; i < ndof; i++)
 	    {
-              if (includediag) rowdofs.insert(i);
-
-              for (auto elnr : dof2element[i])
-                for (auto d2 : colelements[elnr])
-                  rowdofs.insert (d2);
-
-	      cnt[i] = rowdofs.size();
-              rowdofs.clear();
+            if (includediag) rowdofs.insert(i);
+            
+            for (auto elnr : dof2element[i])
+            for (auto d2 : colelements[elnr])
+            rowdofs.insert (d2);
+            
+            cnt[i] = rowdofs.size();
+            rowdofs.clear();
 	    }
-          
-        }
-        */
+            
+            }
+            */
 
-        /*
-#pragma omp parallel
-        {
-          Array<int> rowdofs;
-
-#pragma omp for
-	  for (int i = 0; i < ndof; i++)
-	    {
+            /*
+              #pragma omp parallel
+              {
+              Array<int> rowdofs;
+              
+              #pragma omp for
+              for (int i = 0; i < ndof; i++)
+              {
               if (includediag) rowdofs += i;
-
+              
               for (auto elnr : dof2element[i])
-                for (auto d2 : colelements[elnr])
-                  rowdofs += d2;
-
+              for (auto d2 : colelements[elnr])
+              rowdofs += d2;
+              
               
               QuickSort (rowdofs);
               int prev = -1;
               int cnti = 0;
               for (int r : rowdofs)
-                {
-                  if (r != prev) cnti++;
-                  prev = r;
-                }
+              {
+              if (r != prev) cnti++;
+              prev = r;
+              }
               
 	      cnt[i] = cnti;
 
               rowdofs.SetSize0();
-	    }
-          
-        }
-        */
-
+              }
+              
+              }
+            */
+            
             
 #pragma omp parallel
             {
               Array<int> rowdofs;
               Array<int> rowdofs1;
               
-#pragma omp for
+#pragma omp for schedule(dynamic,10)
               for (int i = 0; i < ndof; i++)
-                {
-                  rowdofs.SetSize0();
-                  if (includediag) rowdofs += i;
+                // if (!same_els_as_prev[i])
+                  {
+                    rowdofs.SetSize0();
+                    if (includediag) rowdofs += i;
+                    
+                    for (int elnr : dof2element[i])
+                      {
+                        rowdofs.Swap (rowdofs1);
+                        FlatArray<int> row = colelements[elnr];
+                        MergeSortedArrays (rowdofs1, row, rowdofs);
+                      }
                   
-                  for (int elnr : dof2element[i])
-                    {
-                      rowdofs.Swap (rowdofs1);
-                      FlatArray<int> row = colelements[elnr];
-                      
-                      rowdofs.SetAllocSize(rowdofs1.Size()+row.Size());
-                      rowdofs.SetSize0();
-                      
-                      int i1 = 0, i2 = 0, i3 = 0;
-                      while (i1 < rowdofs1.Size() && i2 < row.Size())
-                        {
-                          int newel;
-                          if (rowdofs1[i1] == row[i2])
-                            {
-                              newel = rowdofs1[i1++]; i2++;
-                            }
-                          else if (rowdofs1[i1] < row[i2])
-                            newel = rowdofs1[i1++];
-                          else
-                            newel = row[i2++];
-                          rowdofs[i3++] = newel; 
-                        }
-                      
-                      while (i1 < rowdofs1.Size())
-                        rowdofs[i3++] = rowdofs1[i1++];
-                      while (i2 < row.Size())
-                        rowdofs[i3++] = row[i2++];
-                      
-                      rowdofs.SetSize(i3);
-                    }
-                  
-                  
-                  if (loop == 1)
-                    cnt[i] = rowdofs.Size();
-                  else
-                    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
-                }
+                    if (loop == 1)
+                      cnt[i] = rowdofs.Size();
+                    else
+                      colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                  }
+
+              /*
+#pragma omp for schedule(dynamic,10)
+              for (int i = 0; i < ndof; i++)
+                if (same_els_as_prev[i])
+                  {
+                    int prev = i-1;
+                    while (same_els_as_prev[prev]) prev--;
+
+                    if (loop == 1)
+                      cnt[i] = cnt[prev];
+                    else
+                      colnr.Range(firsti[i], firsti[i+1]) = 
+                        colnr.Range(firsti[prev], firsti[prev+1]);
+                  }
+              */
             }
           }
         else
           {
-            
-            /*
-#pragma omp parallel 
-            {
-              Array<int> pmark(ndof);
-              pmark = -1;
-#pragma omp for
-              for (int i = 0; i < ndof; i++)
-                {
-                  int cnti = includediag? 1 : 0;
-                  pmark[i] = includediag? i : -1;
-
-                  for (auto elnr : dof2element[i])
-                    for (auto d2 : colelements[elnr])
-                      if ( (d2 <= i) && (pmark[d2] != i))
-                        {
-                          pmark[d2] = i;
-                          cnti++;
-                        }
-                  cnt[i] = cnti;
-                }
-            }
-            */
-            
 
 #pragma omp parallel
             {
@@ -457,6 +472,7 @@ namespace ngla
 #endif
 
 
+    /*
     timer3.Start();
 
 #pragma omp parallel for
@@ -467,8 +483,9 @@ namespace ngla
     colnr[nze] = 0;
 
     timer3.Stop();
+    */
 
-    delete creator.GetTable();
+    // delete creator.GetTable();
   }
 
   
@@ -626,12 +643,12 @@ namespace ngla
       if (colnr[k] == j) return k;
 
 
-    return -1;
+    return numeric_limits<size_t>::max();
   }
   
   size_t MatrixGraph :: CreatePosition (int i, int j)
   {
-    size_t first = firsti[i];
+    size_t first = firsti[i]; 
     size_t last = firsti[i+1];
     /*
       (*testout) << "row = " << i << ", col = " << j << endl;

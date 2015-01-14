@@ -352,6 +352,23 @@ namespace ngla
       }
     */
 
+
+    size_t totmem = 0;
+
+    for (int i = 0; i < blocktable.Size(); i++)
+      totmem += sqr (blocktable[i].Size());
+
+    bigmem.SetSize(totmem);
+    
+    totmem = 0;
+    for (int i = 0; i < blocktable.Size(); i++)
+      {
+        int bs = blocktable[i].Size();
+        new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
+        totmem += sqr (bs);
+      }
+
+
     int cnt = 0;
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < blocktable.Size(); i++)
@@ -376,14 +393,16 @@ namespace ngla
 	    continue;
 	  }
 	
-	Matrix<TM> blockmat(bs);
-	invdiag[i] = new Matrix<TM> (bs);
+	// Matrix<TM> blockmat(bs);
+	// invdiag[i] = new Matrix<TM> (bs);
+
+        FlatMatrix<TM> & blockmat = invdiag[i];
         
 	for (int j = 0; j < bs; j++)
 	  for (int k = 0; k < bs; k++)
 	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
 
-	CalcInverse (blockmat, *invdiag[i]);
+	CalcInverse (blockmat);
       }
 
     *testout << "block coloring";
@@ -434,8 +453,8 @@ namespace ngla
   BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   ~BlockJacobiPrecond () 
   {
-    for (int i = 0; i < invdiag.Size(); i++)
-      delete invdiag[i];
+    ;
+    // for (int i = 0; i < invdiag.Size(); i++) delete invdiag[i];
   }
 
 
