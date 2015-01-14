@@ -206,14 +206,14 @@ namespace ngcomp
 	  usegrad_cell[i] = 1; 
 	} 
     */
-    for (ElementId ei : ma->Elements<VOL>())
-      if (gradientdomains[ma->GetElIndex(ei)]) 
+
+    for (Ngs_Element el : ma->Elements(VOL))
+      if (gradientdomains[el.GetIndex()]) 
         {
-          Ngs_Element el = (*ma)[ei];
           usegrad_edge[el.Edges()] = true;
           if (ma->GetDimension() == 3)
             usegrad_face[el.Faces()] = true;
-          usegrad_cell[ei.Nr()] = true;
+          usegrad_cell[el.Nr()] = true;
         }
 
 

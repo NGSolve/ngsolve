@@ -140,6 +140,7 @@ void ExportNgcomp()
     .add_property("edges", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Edges()));} ))
     .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ))
     .add_property("type", &Ngs_Element::GetType)
+    .add_property("index", &Ngs_Element::GetIndex)
     ;
 
 
