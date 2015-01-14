@@ -109,7 +109,7 @@ public:
   public:
     Iterator (const FlatTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
     Iterator & operator++ () { ++row; return *this; }
-    FlatArray<T> operator* () const { return (*this)[row]; }
+    FlatArray<T> operator* () const { return tab[row]; }
     bool operator!= (const Iterator & it2) { return row != it2.row; }
   };
   
@@ -266,16 +266,25 @@ template <class T>
 	{
 	  table = new Table<T> (cnt);
 	  size_t sum = 0;
-	  for (size_t i = 0; i < cnt.Size(); i++)
+	  // for (size_t i = 0; i < cnt.Size(); i++)
+          /*
+          for (auto i : cnt.Range())
 	    {
 	      size_t nsum = sum + cnt[i];
 	      cnt[i] = sum;
 	      sum = nsum;
 	    }
+          */
+          for (auto & ci : cnt)
+	    {
+	      size_t nsum = sum + ci;
+	      ci = sum;
+	      sum = nsum;
+	    }
 	}
     }
 
-    void SetSize (int _nd)
+    void SetSize (size_t _nd)
     {
       if (mode == 1)
         nd = _nd;
@@ -328,7 +337,7 @@ template <class T>
 	}
     }
 
-    void Add (int blocknr, const FlatArray<int> & dofs)
+    void Add (size_t blocknr, const FlatArray<int> & dofs)
     {
       switch (mode)
 	{

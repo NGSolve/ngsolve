@@ -685,7 +685,7 @@ namespace ngcomp
       Array<int> temp_dnums;
 
       // lh.ClearValues();
-      for (int col = 0; col < element_coloring.Size(); col++)
+      for (size_t col = 0; col < element_coloring.Size(); col++)
         {
           FlatArray<int> elscol = element_coloring[col];
 
