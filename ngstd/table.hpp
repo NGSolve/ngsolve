@@ -275,6 +275,17 @@ template <class T>
 	}
     }
 
+    void SetSize (int _nd)
+    {
+      if (mode == 1)
+        nd = _nd;
+      else
+        {
+          if (nd != _nd)
+            throw Exception ("cannot change size of table-creator");
+        }
+    }
+
     void Add (size_t blocknr, const T & data)
     {
       switch (mode)
