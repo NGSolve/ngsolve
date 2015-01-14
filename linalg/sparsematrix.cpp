@@ -141,7 +141,7 @@ namespace ngla
     */
 
 #pragma omp parallel for
-    for (int i = 0; i < colelements.Size(); i++)
+    for (size_t i = 0; i < colelements.Size(); i++)
       QuickSort (colelements[i]);
 
     // generate rowdof to element table
@@ -687,7 +687,7 @@ namespace ngla
 	    if (colnr[firsti[i+1]-1] != -1)
 	      throw Exception ("sparse matrix row full 1 !");
 	    
-	    for (int l = firsti[i+1]-1; l > k; l--)
+	    for (size_t l = firsti[i+1]-1; l > k; l--)
 	      colnr[l] = colnr[l-1];
 
 	    colnr[k] = j;

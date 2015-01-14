@@ -84,7 +84,7 @@ namespace ngla
 	}
 
     for (int i = 0; i < n; i++)
-      if (a.GetPositionTest (i,i) == -1)
+      if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	{
 	  mdo->AddEdge (i, i);
 	  *testout << "add unsused position " << i << endl;
@@ -138,10 +138,10 @@ namespace ngla
     
 
     for (int i = 0; i < n; i++)
-      if (a.GetPositionTest (i,i) == -1)
+      if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	SetOrig (i, i, id);
 
-
+    
     if (!inner && !cluster)
       for (int i = 0; i < n; i++)
 	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
@@ -187,7 +187,7 @@ namespace ngla
 
 
     for (int i = 0; i < n; i++)
-      if (a.GetPositionTest (i,i) == -1)
+      if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	diag[order[i]] = TM(0.0);
 
     if (inner)

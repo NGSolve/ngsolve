@@ -153,7 +153,7 @@ namespace ngla
 
       Vector<TVX> hxmax(maxbs);
 
-      for (int i = 0; i < blocktable.Size(); i++)
+      for (auto i : blocktable.Range())
 	{
 	  FlatArray<int> ind = blocktable[i];
 	  if (!ind.Size()) continue;
@@ -172,14 +172,13 @@ namespace ngla
       static int timer = NgProfiler::CreateTimer ("BlockJacobi::MultTransAdd");
       NgProfiler::RegionTimer reg (timer);
 
-      int i, j;
       FlatVector<TVX> fx = x.FV<TVX> ();
       FlatVector<TVX> fy = y.FV<TVX> ();
 
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
 
-      for (i = 0; i < blocktable.Size(); i++)
+      for (auto i : blocktable.Range())
 	{
 	  int bs = blocktable[i].Size();
 	  if (!bs) continue;
@@ -187,12 +186,12 @@ namespace ngla
 	  FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
 	  FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
 
-	  for (j = 0; j < bs; j++)
+	  for (int j = 0; j < bs; j++)
 	    hx(j) = fx(blocktable[i][j]);
 	
 	  hy = Trans(invdiag[i]) * hx;
 
-	  for (j = 0; j < bs; j++)
+	  for (int j = 0; j < bs; j++)
 	    fy(blocktable[i][j]) += s * hy(j);
 	}
     }
@@ -214,7 +213,7 @@ namespace ngla
         Vector<TVX> hxmax(maxbs);
         Vector<TVX> hymax(maxbs);
         for (int k = 0; k < steps; k++)
-          for (int c = 0; c < block_coloring.Size(); c++) {
+          for (size_t c = 0; c < block_coloring.Size(); c++) {
             auto blocks = block_coloring[c];
 
 #pragma omp for
@@ -376,7 +375,7 @@ namespace ngla
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
     {
       int nels = 0;
-      for (int i = 0; i < blocktable.Size(); i++)
+      for (size_t i = 0; i < blocktable.Size(); i++)
 	{
 	  int bs = blocktable[i].Size();
 	  nels += bs*bs;

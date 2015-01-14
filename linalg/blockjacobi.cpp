@@ -16,9 +16,9 @@ namespace ngla
     : blocktable(ablocktable)
   {
     maxbs = 0;
-    for (int i = 0; i < blocktable.Size(); i++)
-      if (blocktable[i].Size() > maxbs)
-	maxbs = blocktable[i].Size();
+    for (auto entry : blocktable)
+      if (entry.Size() > maxbs)
+        maxbs = entry.Size();
   }
 
 
@@ -355,13 +355,13 @@ namespace ngla
 
     size_t totmem = 0;
 
-    for (int i = 0; i < blocktable.Size(); i++)
+    for (auto i : blocktable.Range())
       totmem += sqr (blocktable[i].Size());
 
     bigmem.SetSize(totmem);
     
     totmem = 0;
-    for (int i = 0; i < blocktable.Size(); i++)
+    for (auto i : blocktable.Range())
       {
         int bs = blocktable[i].Size();
         new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
@@ -371,7 +371,7 @@ namespace ngla
 
     int cnt = 0;
 #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < blocktable.Size(); i++)
+    for (size_t i = 0; i < blocktable.Size(); i++)
       {
 #ifndef __MIC__
 #pragma omp atomic
@@ -508,7 +508,7 @@ namespace ngla
       Array<int> block_inv(amat.Height());
       block_inv = -1;
 
-      for (int i = 0; i < blocktable.Size(); i++)
+      for (size_t i = 0; i < blocktable.Size(); i++)
 	{
 	  int bs = blocktable[i].Size();
 	  
@@ -532,7 +532,7 @@ namespace ngla
         clock_t prevtime = clock();
         int cnt = 0;
 #pragma omp parallel for	
-	for (int i = 0; i < blocktable.Size(); i++)
+	for (size_t i = 0; i < blocktable.Size(); i++)
 	  {
 #ifndef __MIC__
 #pragma omp atomic
@@ -627,7 +627,7 @@ namespace ngla
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
 
-    for (int i = 0; i < blocktable.Size(); i++)
+    for (size_t i = 0; i < blocktable.Size(); i++)
       {
 	int bs = blocktable[i].Size();
 	if (!bs) continue;
@@ -673,7 +673,7 @@ namespace ngla
       mat.AddRowTransToVector (j, -fx(j), fy);
 
     for (int k = 1; k <= steps; k++)
-      for (int i = 0; i < blocktable.Size(); i++)
+      for (size_t i = 0; i < blocktable.Size(); i++)
 	SmoothBlock (i, fx, /* fb, */ fy);
   }
   
@@ -688,7 +688,7 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    for (int i = 0; i < blocktable.Size(); i++)
+    for (size_t i = 0; i < blocktable.Size(); i++)
       SmoothBlock (i, fx, fy);
   }
   
