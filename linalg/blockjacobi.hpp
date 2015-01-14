@@ -23,6 +23,8 @@ namespace ngla
     /// maximal block size
     int maxbs;
 
+    
+
     /// block coloring
     Table<int> block_coloring;
 
@@ -113,8 +115,9 @@ namespace ngla
     /// a reference to the matrix
     const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
     /// inverses of the small blocks
-    Array<Matrix<TM>*> invdiag;
-
+    Array<FlatMatrix<TM>> invdiag;
+    /// the data for the inverses
+    Array<TM> bigmem;
 
   public:
     // typedef typename mat_traits<TM>::TV_ROW TVX;
@@ -158,7 +161,7 @@ namespace ngla
 	  FlatVector<TVX> hx = hxmax.Range(0, ind.Size()); // (ind.Size(), hxmax.Addr(0));
 
 	  hx = s * fx(ind);
-	  fy(ind) += *invdiag[i] * hx;
+	  fy(ind) += invdiag[i] * hx;
 	}
     }
 
@@ -187,7 +190,7 @@ namespace ngla
 	  for (j = 0; j < bs; j++)
 	    hx(j) = fx(blocktable[i][j]);
 	
-	  hy = Trans(*invdiag[i]) * hx;
+	  hy = Trans(invdiag[i]) * hx;
 
 	  for (j = 0; j < bs; j++)
 	    fy(blocktable[i][j]) += s * hy(j);
@@ -230,7 +233,7 @@ namespace ngla
                 hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
               }
 
-              hy = (*invdiag[i]) * hx;
+              hy = (invdiag[i]) * hx;
 
               for (int j = 0; j < bs; j++)
                 fx(blocktable[i][j]) += hy(j);
@@ -264,7 +267,7 @@ namespace ngla
 		hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
 	      }
 	  
-	    hy = (*invdiag[i]) * hx;
+	    hy = (invdiag[i]) * hx;
 	  
 	    for (int j = 0; j < bs; j++)
 	      fx(blocktable[i][j]) += hy(j);
@@ -318,7 +321,7 @@ namespace ngla
                 hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
               }
 
-              hy = (*invdiag[i]) * hx;
+              hy = (invdiag[i]) * hx;
 
               for (int j = 0; j < bs; j++)
                 fx(blocktable[i][j]) += hy(j);
@@ -354,7 +357,7 @@ namespace ngla
 		hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
 	      }
 
-	    hy = (*invdiag[i]) * hx;
+	    hy = (invdiag[i]) * hx;
 	  
 	    for (int j = 0; j < bs; j++)
 	      fx(blocktable[i][j]) += hy(j);

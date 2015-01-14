@@ -7,6 +7,8 @@
 /* Date:   01. Oct. 94, 15 Jan. 02                                        */
 /**************************************************************************/
 
+#include <limits>
+
 namespace ngla
 {
 
@@ -314,7 +316,7 @@ namespace ngla
     const TM & operator() (int row, int col) const
     {
       size_t pos = GetPositionTest (row,col);
-      if (pos != -1)
+      if (pos != numeric_limits<size_t>::max())
 	return data[pos];
       else
 	return nul;
