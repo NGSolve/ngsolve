@@ -37,9 +37,6 @@ namespace ngla
     int n = a.Height();
     height = n;
 
-    // inner = ainner;
-    // cluster = acluster;
-    
     int printstat = 0;
     
     if (printstat)
@@ -82,7 +79,7 @@ namespace ngla
 		  mdo->AddEdge (i, col);
 	    }
 	}
-
+    
     for (int i = 0; i < n; i++)
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	{
@@ -112,18 +109,8 @@ namespace ngla
     mdo = 0;
 
     diag.SetSize(n);
-    /*
-    diag.Alloc (n);
-    diag.SetName ("sparse inverse, diag");
-    */
     lfact.SetSize (nze);
-    /*
-    lfact.Alloc (nze);
-    lfact.SetName ("sparse inverse, lfact");
-    */
-    for (int i = 0; i < nze; i++)
-      lfact[i] = 0.0;
-
+    lfact = TM(0.0);
     
     endtime = clock();
     if (printstat)
@@ -136,7 +123,6 @@ namespace ngla
     id = 0.0;
     SetIdentity(id);
     
-
     for (int i = 0; i < n; i++)
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	SetOrig (i, i, id);
@@ -226,16 +212,7 @@ namespace ngla
     int n = aorder.Size();
 
     order.SetSize (n);
-    /*
-    order.Alloc (n);
-    order.SetName ("sparse inverse, reorder table");
-    */
     blocknrs.SetSize (n);
-    /*
-    blocknrs.Alloc (n);
-    blocknrs.SetName ("sparse inverse, block nrs");
-    */
-    // DynamicMem<int> helpi(n);
     
     // order: now inverse map 
     for (int i = 0; i < n; i++)
@@ -265,16 +242,6 @@ namespace ngla
      *testout << " Sparse Cholesky mem needed " << double(cnt*sizeof(TM)+cnt_master*sizeof(int))*1e-6 << " MBytes " << endl; 
      */  
 
-    /*
-    firstinrow.Alloc(n+1);
-    firstinrow.SetName ("sparse inverse, table 1a");
-
-    firstinrow_ri.Alloc(n+1);
-    firstinrow_ri.SetName ("sparse inverse, table 1a");
-
-    rowindex2.Alloc (cnt_master);
-    rowindex2.SetName ("sparse inverse, tabl 2a");
-    */
     firstinrow.SetSize(n+1);
     firstinrow_ri.SetSize(n+1);
     rowindex2.SetSize (cnt_master);
@@ -296,7 +263,6 @@ namespace ngla
 	    for (int j = 0; j < ncon; j++)
 	      rowindex2[firstinrow_ri[i]+j] = order[vertices[ii].connected[j]];
 
-	    // MergeSort (ncon, &rowindex2[firstinrow_ri[i]], &helpi[0]);
 	    QuickSort (FlatArray<int> (ncon, &rowindex2[firstinrow_ri[i]]));
 
 	    cnt_master += ncon;
