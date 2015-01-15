@@ -439,8 +439,8 @@ public:
     virtual void 
     ApplyElementMatrix (const FiniteElement & bfel, 
                         const ElementTransformation & eltrans, 
-                        const FlatVector<double> & elx, 
-                        FlatVector<double> & ely,
+                        const FlatVector<double> elx, 
+                        FlatVector<double> ely,
                         void * precomputed,
                         LocalHeap & lh) const
     {
@@ -453,7 +453,7 @@ public:
                         FlatVector<Complex> elx, 
                         FlatVector<Complex> ely,
                         void * precomputed,
-		      LocalHeap & lh) const
+                        LocalHeap & lh) const
     {
       T_ApplyElementMatrix<Complex> (bfel, eltrans, elx, ely, precomputed, lh);
     }
@@ -1006,7 +1006,6 @@ public:
 
 
 
-
 };
 
 
@@ -1297,7 +1296,6 @@ public:
 			 LocalHeap & lh) const
   {
     const FEL & fel = dynamic_cast<const FEL&> (bfel);
-    // int ndof = fel.GetNDof ();
     
     Vec<DIM_DMAT,double> hvx;
     const IntegrationRule & ir = GetIntegrationRule (fel);
