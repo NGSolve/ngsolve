@@ -551,6 +551,8 @@ namespace ngfem
 	}
       */
 
+      /*
+        Wrong for Cheby !!!
       S p1, p2;
       
       p2 = c * REC::Pm1(x,y);
@@ -558,6 +560,9 @@ namespace ngfem
 
       for (int i = 1; i <= n; i++)
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
+      */
+
+      EvalScaledMult1Assign (n, x, y, c, values);
     }
 
 
