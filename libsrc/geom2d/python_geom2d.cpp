@@ -10,7 +10,7 @@ using namespace netgen;
 namespace bp = boost::python;
 
 
-void ExportGeom2d() 
+DLL_HEADER void ExportGeom2d() 
 {
   ModuleScope module("geom2d");
 

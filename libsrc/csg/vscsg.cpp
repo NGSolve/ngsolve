@@ -492,7 +492,7 @@ namespace netgen
 #include <../general/ngpython.hpp>
 namespace bp = boost::python;
 
-void ExportCSGVis()
+DLL_HEADER void ExportCSGVis()
 {
 	using namespace netgen;
 

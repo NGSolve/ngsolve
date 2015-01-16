@@ -41,7 +41,7 @@ void ExportArray ()
 
 
 
-void ExportNetgenMeshing() 
+DLL_HEADER void ExportNetgenMeshing() 
 {
   
   ModuleScope module("meshing");

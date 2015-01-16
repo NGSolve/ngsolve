@@ -3532,7 +3532,7 @@ namespace netgen
 #include <../general/ngpython.hpp>
 namespace bp = boost::python;
 
-void ExportMeshVis()
+DLL_HEADER void ExportMeshVis()
 {
   using namespace netgen;
   ModuleScope myscope("meshvis");

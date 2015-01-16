@@ -13,7 +13,9 @@
 #ifndef TOGL_H
 #  define TOGL_H
 
+#if !defined TOGL_X11 && !defined TOGL_WGL && !defined TOGL_AGL_CLASSIC && !defined TOGL_AGL
 #  include "togl_ws.h"
+#endif
 
 #  ifdef TOGL_WGL
 #    define WIN32_LEAN_AND_MEAN

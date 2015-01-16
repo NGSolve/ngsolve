@@ -143,7 +143,7 @@ namespace netgen
   extern CSGeometry * ParseCSG (istream & istr);
 }
 
-void ExportCSG() 
+DLL_HEADER void ExportCSG() 
 {
   ModuleScope module("csg");
 
