@@ -66,6 +66,10 @@ namespace ngfem
       }
   }
 
+
+  
+
+
   template <int D>
   void HDivFiniteElement<D> ::
   CalcNormalShape (const IntegrationPoint & ip, 
@@ -123,6 +127,49 @@ namespace ngfem
     CalcDivShape (mip.IP(), divshape);
     divshape /= mip.GetJacobiDet();
   }
+
+
+
+  template <int D>
+  void HDivFiniteElement<D> ::
+  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
+            FlatMatrixFixWidth<D> vals) const
+  {
+    MatrixFixWidth<D> shape(ndof);
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        CalcShape (ir[i], shape);
+        vals.Row(i) = Trans(shape) * coefs;
+      }
+  }
+  
+  template <int D>
+  void HDivFiniteElement<D> ::
+  EvaluateTrans (const IntegrationRule & ir, 
+                 FlatMatrixFixWidth<D> vals,
+                 FlatVector<double> coefs) const
+  {
+    MatrixFixWidth<D> shape(ndof);
+    coefs = 0;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        CalcShape (ir[i], shape);
+        coefs += shape * vals.Row(i);
+      }
+  }
+  
+
+  template <int D>
+  void HDivFiniteElement<D> ::
+  GetFacetDofs(int i, Array<int> & dnums) const
+  { 
+    cout  << " GetFacetDofs for nothing " << endl; 
+    dnums.SetSize(0);
+  }; 
+
+
+
+
 
   
   template <int D>

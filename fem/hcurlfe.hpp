@@ -101,6 +101,7 @@ namespace ngfem
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       const TVX & x, LocalHeap & lh) const
     {
+      HeapReset hr(lh);
       return Trans (GetCurlShape(ip, lh)) * x;
     } 
 
@@ -108,6 +109,7 @@ namespace ngfem
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       FlatVector<double> x, LocalHeap & lh) const
     {
+      HeapReset hr(lh);
       return Trans (GetCurlShape(ip, lh)) * x;
     }  
 
