@@ -324,6 +324,10 @@ namespace ngla
   void SparseCholesky<TM, TV_ROW, TV_COL> :: Factor () 
   {
     static Timer factor_timer("SparseCholesky::Factor");
+
+    static Timer timerb("SparseCholesky::Factor - B");
+    static Timer timerc("SparseCholesky::Factor - C");
+
     RegionTimer reg (factor_timer);
 
     clock_t starttime; // , starttime1;
@@ -354,106 +358,99 @@ namespace ngla
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
 	  last_same++;
 
-
+        
 	starttime = clock();
 	
+        timerb.Start();
+
 	// same rows
 	int mi = last_same - i1;
         int miBS = (mi / BS) * BS;
 
-        // miBS = 0;
-
-        // #pragma omp parallel  (was commented out)
-        {
-          // Array<TM> sum(BS*maxrow);
-          
-          for (int jj = 0; jj < miBS; jj+=4)
-            {
-              for (int j2 = jj; j2 < jj+4; j2++)
-                if (n > 2000 && (i1+j2) % 1000 == 999)
-                  {
-                    if ((i1+j2) % 10000 == 9999)
-                      cout << IM(4) << "+" << flush;
-                    else
-                      cout << IM(4) << "." << flush;
-                  }
-
-              int nk = hfirstinrow[i1+jj+1]-hfirstinrow[i1+jj];
-
-              for (int k = 0; k < nk*BS; k++) 
-                sum[k] = 0;
-
-              for (int i2 = 0; i2 < jj; i2++)
+        for (int jj = 0; jj < miBS; jj+=4)
+          {
+            for (int j2 = jj; j2 < jj+4; j2++)
+              if (n > 2000 && (i1+j2) % 1000 == 999)
                 {
-                  int firsti = hfirstinrow[i1+i2] + jj-i2;
-                  TM * hli = hlfact+firsti;
-
-                  TM q1 = - diag[i1+i2] * hli[-1];
-                  TM qtrans1 = Trans (q1);  
-                  TM q2 = - diag[i1+i2] * hli[0];
-                  TM qtrans2 = Trans (q2);  
-                  TM q3 = - diag[i1+i2] * hli[1];
-                  TM qtrans3 = Trans (q3);  
-                  TM q4 = - diag[i1+i2] * hli[2];
-                  TM qtrans4 = Trans (q4);  
-
-                  sum[   0  ] += qtrans1 * hli[0];
-                  sum[  BS  ] += qtrans1 * hli[1];
-                  sum[  BS+1] += qtrans2 * hli[1];
-                  sum[2*BS  ] += qtrans1 * hli[2];
-                  sum[2*BS+1] += qtrans2 * hli[2];
-                  sum[2*BS+2] += qtrans3 * hli[2];
-
-		  // #pragma omp parallel for
-                  for (int k = 3; k < nk; k++)
-                    {
-                      TM hv = hli[k];
-                      sum[k*BS]    += qtrans1 * hv;
-                      sum[k*BS+1]  += qtrans2 * hv;
-                      sum[k*BS+2]  += qtrans3 * hv;
-                      sum[k*BS+3]  += qtrans4 * hv;
-                    }
-
-                  diag[i1+jj]   += Trans (hli[-1]) * q1;
-                  diag[i1+jj+1] += Trans (hli[0]) * q2;
-                  diag[i1+jj+2] += Trans (hli[1]) * q3;
-                  diag[i1+jj+3] += Trans (hli[2]) * q4;
+                  if ((i1+j2) % 10000 == 9999)
+                    cout << IM(4) << "+" << flush;
+                  else
+                    cout << IM(4) << "." << flush;
                 }
+            
+            int nk = hfirstinrow[i1+jj+1]-hfirstinrow[i1+jj];
+            
+            for (int k = 0; k < nk*BS; k++) 
+              sum[k] = 0;
 
-              for (int l = 0; l < BS; l++)
-                {
-                  int firstj = hfirstinrow[i1+jj+l]-l;
-                  for (int k = l; k < nk; k++)
-                    hlfact[firstj+k] += sum[k*BS+l];
-                }
-
-
-              for (int j2 = jj; j2 < jj+4; j2++)
-                {
-                  int firstj = hfirstinrow[i1+j2];
-                  for (int i2 = jj; i2 < j2; i2++)
-                    {
-                      int firsti = hfirstinrow[i1+i2] + j2-i2;
-		    
-                      TM q = - diag[i1+i2] * hlfact[firsti-1];
-                      TM qtrans = Trans (q);  
-		  
-                      for (int k = 0; k < nk-(j2-jj); k++)
-                        hlfact[firstj+k] += qtrans * hlfact[firsti+k];
-		    
-                      diag[i1+j2] += Trans (hlfact[firsti-1]) * q;
-                    }
+            for (int i2 = 0; i2 < jj; i2++)
+              {
+                int firsti = hfirstinrow[i1+i2] + jj-i2;
+                TM * hli = hlfact+firsti;
                 
-                  flops1 += (nk+1)*j2;
-                  TM aiinv;
-                  CalcInverse (diag[i1+j2], aiinv);
-                  diag[i1+j2] = aiinv;
-                }
-            }
-        }
+                TM q1 = - diag[i1+i2] * hli[-1];
+                TM qtrans1 = Trans (q1);  
+                TM q2 = - diag[i1+i2] * hli[0];
+                TM qtrans2 = Trans (q2);  
+                TM q3 = - diag[i1+i2] * hli[1];
+                TM qtrans3 = Trans (q3);  
+                TM q4 = - diag[i1+i2] * hli[2];
+                TM qtrans4 = Trans (q4);  
+                
+                sum[   0  ] += qtrans1 * hli[0];
+                sum[  BS  ] += qtrans1 * hli[1];
+                sum[  BS+1] += qtrans2 * hli[1];
+                sum[2*BS  ] += qtrans1 * hli[2];
+                sum[2*BS+1] += qtrans2 * hli[2];
+                sum[2*BS+2] += qtrans3 * hli[2];
+                
+                for (int k = 3; k < nk; k++)
+                  {
+                    TM hv = hli[k];
+                    sum[k*BS]    += qtrans1 * hv;
+                    sum[k*BS+1]  += qtrans2 * hv;
+                    sum[k*BS+2]  += qtrans3 * hv;
+                    sum[k*BS+3]  += qtrans4 * hv;
+                  }
+                
+                diag[i1+jj]   += Trans (hli[-1]) * q1;
+                diag[i1+jj+1] += Trans (hli[0]) * q2;
+                diag[i1+jj+2] += Trans (hli[1]) * q3;
+                diag[i1+jj+3] += Trans (hli[2]) * q4;
+              }
+            
+            for (int l = 0; l < BS; l++)
+              {
+                int firstj = hfirstinrow[i1+jj+l]-l;
+                for (int k = l; k < nk; k++)
+                  hlfact[firstj+k] += sum[k*BS+l];
+              }
+            
+            
+            for (int j2 = jj; j2 < jj+4; j2++)
+              {
+                int firstj = hfirstinrow[i1+j2];
+                for (int i2 = jj; i2 < j2; i2++)
+                  {
+                    int firsti = hfirstinrow[i1+i2] + j2-i2;
+		    
+                    TM q = - diag[i1+i2] * hlfact[firsti-1];
+                    TM qtrans = Trans (q);  
+                    
+                    for (int k = 0; k < nk-(j2-jj); k++)
+                      hlfact[firstj+k] += qtrans * hlfact[firsti+k];
+		    
+                    diag[i1+j2] += Trans (hlfact[firsti-1]) * q;
+                  }
+                
+                flops1 += (nk+1)*j2;
+                TM aiinv;
+                CalcInverse (diag[i1+j2], aiinv);
+                diag[i1+j2] = aiinv;
+              }
+          }
 
-
-
+        cout << mi << " " << flush;
 	for (int jj = miBS ; jj < mi; jj++)
 	  {
 	    if (n > 2000 && (i1+jj) % 1000 == 999)
@@ -463,7 +460,6 @@ namespace ngla
 		else
 		  cout << IM(4) << "." << flush;
 	      }
-
 
 	    int firstj = hfirstinrow[i1+jj];
 	    int nk = hfirstinrow[i1+jj+1]-firstj;
@@ -489,7 +485,8 @@ namespace ngla
 	  }
 
 
-
+        timerb.Stop();
+        timerc.Start();
 
 	time1 += double(clock() - starttime) / CLOCKS_PER_SEC;
 
@@ -622,6 +619,8 @@ namespace ngla
 
 	time2 += double(clock() - starttime) / CLOCKS_PER_SEC;
 	i1 = last_same;
+
+        timerc.Stop();
       }
 
     for (int i = 0, j = 0; i < n; i++)
@@ -657,342 +656,264 @@ namespace ngla
 
 
 
-  /*
-    template <>
-    void SparseCholesky<double> :: Factor () 
-    {
-    static int factor_timer = NgProfiler::CreateTimer ("SparseCholesky::Factor");
-    NgProfiler::RegionTimer reg (factor_timer);
-
-    clock_t starttime, starttime1;
-    double time, time1 = 0, time2 = 0, time3 = 0;
 
 
-    double ai, aiinv, q, q1, q2, q3, q4, q5, q6, hm;
+
+
+
+
+
+
+
+
+
+
+  template <>
+  void SparseCholesky<double,double,double> :: Factor () 
+  {
+    static Timer factor_timer("SparseCholesky::Factor");
+
+    static Timer timerb("SparseCholesky::Factor - B");
+    static Timer timerc("SparseCholesky::Factor - C");
+
+    RegionTimer reg (factor_timer);
     
     int n = Height();
     if (n > 2000)
-    cout << IM(4) << " factor " << flush;
+      cout << IM(4) << " factor " << flush;
 
     // to avoid aliasing:
-    int * hfirstinrow = firstinrow;
-    int * hfirstinrow_ri = firstinrow_ri;
-    int * hrowindex2 = rowindex2;
-    double * hlfact = &lfact[0];
+    int * hfirstinrow = firstinrow.Addr(0);
+    int * hfirstinrow_ri = firstinrow_ri.Addr(0);
+    int * hrowindex2 = rowindex2.Addr(0);
+    double * hlfact = lfact.Addr(0);
     
-    enum { BS1 = 6 };
-    enum { BS = 6 };
-    // Array<double> sum(BS1*maxrow)
-    ;
-    __m128d * dsum = (__m128d*)_mm_malloc (BS1*maxrow*sizeof(double), 16);
-    FlatArray<double> sum(BS1*maxrow, (double*)dsum);
+    enum { BS = 4 };
 
-    double flops1 = 0;
-    double flops2 = 0;
-    starttime1 = clock();
+    Array<double> sum(BS*maxrow);
+
 
     for (int i1 = 0; i1 < n;  )
-    {
-    int last_same = i1;
-    while (last_same < n && blocknrs[last_same] == blocknrs[i1])
-    last_same++;
+      {
+	int last_same = i1;
+	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
+	  last_same++;
 
-    starttime = clock();
-	
-    // same rows
-    int mi = last_same - i1;
+        
+        timerb.Start();
 
-    int jj = 0;
-    for (jj = 0; jj < mi-BS1+1; jj+=BS1)
-    {
-    for (int j2 = jj; j2 < jj+BS1; j2++)
-    if (n > 2000 && (i1+j2) % 1000 == 999)
-    {
-    if ((i1+j2) % 10000 == 9999)
-    cout << IM(4) << "+" << flush;
-    else
-    cout << IM(4) << "." << flush;
-    }
+	// same rows
+	int mi = last_same - i1;
 
 
-    int nk = hfirstinrow[i1+jj+1]-hfirstinrow[i1+jj];
-
-    __m128d zero = _mm_set1_pd(0.0);
-    for (int k = 0; k < nk*3; k++)
-    dsum[k] = zero;
-
-    for (int i2 = 0; i2 < jj; i2++)
-    {
-    int firsti = hfirstinrow[i1+i2] + jj-i2;
-    double * hli = hlfact+firsti;
-		
-    __m128d dval = _mm_set1_pd (-diag[i1+i2]);
-    __m128d hli12 = _mm_loadu_pd (&hli[-1]);
-    __m128d hli34 = _mm_loadu_pd (&hli[1]);
-    __m128d hli56 = _mm_loadu_pd (&hli[3]);
-
-    __m128d q12 = _mm_mul_pd (hli12, dval);
-    __m128d q34 = _mm_mul_pd (hli34, dval);
-    __m128d q56 = _mm_mul_pd (hli56, dval);
-
-    _mm_storeu_pd (&diag[i1+jj]  ,
-    _mm_add_pd (_mm_mul_pd (hli12, q12), _mm_loadu_pd (&diag[i1+jj])));
-    _mm_storeu_pd (&diag[i1+jj+2],
-    _mm_add_pd (_mm_mul_pd (hli34, q34), _mm_loadu_pd (&diag[i1+jj+2])));
-    _mm_storeu_pd (&diag[i1+jj+4],
-    _mm_add_pd (_mm_mul_pd (hli56, q56), _mm_loadu_pd (&diag[i1+jj+4])));
-		
-
-    __m128d hd;
-    dsum[0] = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hli[0]), q12),  dsum[0]);
-    dsum[3] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[1]), q12), dsum[3]);
-    dsum[6] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[2]), q12), dsum[6]);
-    dsum[7] = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hli[2]), q34),  dsum[7]);
-
-    dsum[9] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[3]), q12), dsum[9]);
-    dsum[10] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[3]), q34), dsum[10]);
-
-    dsum[12] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[4]), q12), dsum[12]);
-    dsum[13] = _mm_add_pd (_mm_mul_pd (_mm_set1_pd (hli[4]), q34), dsum[13]);
-    dsum[14] = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hli[4]), q56),  dsum[14]);
-
-    for (int k = 5; k < nk; k++)
-    {
-    __m128d hv = _mm_set1_pd (hli[k]);
-    dsum[3*k]   = _mm_add_pd (dsum[3*k],   _mm_mul_pd (q12, hv));
-    dsum[3*k+1] = _mm_add_pd (dsum[3*k+1], _mm_mul_pd (q34, hv));
-    dsum[3*k+2] = _mm_add_pd (dsum[3*k+2], _mm_mul_pd (q56, hv));
-    }
-    }
-
-    for (int l = 0; l < BS1; l++)
-    {
-    int firstj = hfirstinrow[i1+jj+l]-l;
-    for (int k = l; k < nk; k++)
-    hlfact[firstj+k] += sum[k*BS1+l];
-    }
+        int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+        Matrix<> a(mi, nk);
+        a = 0.0;
+	for (int j = 0; j < mi; j++)
+	  {
+            a(j,j) = diag[i1+j];
+            a.Row(j).Range(j+1,nk) = FlatVector<>(nk-j-1, &lfact[hfirstinrow[i1+j]]);
+          }
 
 
-    for (int j2 = jj; j2 < jj+BS1; j2++)
-    {
-    int firstj = hfirstinrow[i1+j2];
-    for (int i2 = jj; i2 < j2; i2++)
-    {
-    int firsti = hfirstinrow[i1+i2] + j2-i2;
-		    
-    q = - diag[i1+i2] * hlfact[firsti-1];
-    diag[i1+j2] += hlfact[firsti-1] * q;
+        /*
+          // the original version
+        for (int j = 0; j < mi; j++)
+          {
+            for (int k = 0; k < j; k++)
+              {
+                double q = -a(k,k)*a(k,j);
+                for (int l = j; l < nk; l++)
+                  a(j,l) += q * a(k,l);
+              }
+            a(j,j) = 1.0 / a(j,j);
+          }
+        */
+
+
+        /*
+          // first factor A, then calc B
+        for (int j = 0; j < mi; j++)
+          {
+            for (int k = 0; k < j; k++)
+              {
+                double q = -a(k,k)*a(k,j);
+                for (int l = j; l < mi; l++)
+                  a(j,l) += q * a(k,l);
+              }
+            a(j,j) = 1.0 / a(j,j);
+          }
+
+        *testout << "ldl = " << endl << a.Cols(0,mi);
+
+
+        for (int l = mi; l < nk; l++)
+          for (int k = 0; k < mi; k++)
+            {
+              double q = -a(k,k)*a(k,l);
+
+              for (int j = k+1; j < mi; j++)
+                a(j,l) += q*a(k,j);
+            }
+
+        *testout << "b-block = " << a.Cols(mi, nk);
+        */
+
+
+        Matrix<> a1 = a.Cols(0, mi);
+        Vector<> da1(mi);
+
+        integer na1 = a1.Width();
+        integer lda = a1.Width();
+        integer info;
+        char uplo = 'L';
+        char ch_diag = 'N';
+        
+        dpotrf_ (&uplo, &na1, &a1(0,0), &lda, &info);    // A = L^t L
+
+        for (int i = 0; i < mi; i++) 
+          da1(i) = a1(i,i);
+
+        a.Cols(0,mi) = a1;
+
+        dtrtri_ (&uplo, &ch_diag, &na1, &a1(0,0), &lda, &info);
+        Matrix<> b1 = Trans(a1) * a.Cols(mi,nk) | Lapack;
+        a.Cols(mi,nk) = b1;
+
+        for (int i = 0; i < na1; i++)
+          a.Row(i) *= da1(i);
+        
+        for (int i = 0; i < mi; i++)
+          a(i,i) = 1.0/sqr(da1(i)); 
+
+	for (int j = 0; j < mi; j++)
+	  {
+            diag[i1+j] = a(j,j);
+            FlatVector<>(nk-j-1, &lfact[hfirstinrow[i1+j]]) = a.Row(j).Range(j+1,nk);
+          }
+
+
+
+        /*
+	for (int jj = 0; jj < mi; jj++)
+	  {
+	    int firstj = hfirstinrow[i1+jj];
+	    int nk = hfirstinrow[i1+jj+1]-firstj;
+
+	    for (int i2 = 0; i2 < jj; i2++)
+	      {
+		int firsti = hfirstinrow[i1+i2] + jj-i2;
 		  
-    for (int k = 0; k < nk-(j2-jj); k++)
-    hlfact[firstj+k] += q * hlfact[firsti+k];
-    }
-
-    flops1 += (nk+1)*j2;
-    CalcInverse (diag[i1+j2], aiinv);
-    diag[i1+j2] = aiinv;
-    }
-    }
-
-
-    for ( ; jj < mi; jj++)
-    {
-    if (n > 2000 && (i1+jj) % 1000 == 999)
-    {
-    if ((i1+jj) % 10000 == 9999)
-    cout << IM(4) << "+" << flush;
-    else
-    cout << IM(4) << "." << flush;
-    }
-
-
-    int firstj = hfirstinrow[i1+jj];
-    int nk = hfirstinrow[i1+jj+1]-firstj;
-
-    for (int i2 = 0; i2 < jj; i2++)
-    {
-    int firsti = hfirstinrow[i1+i2] + jj-i2;
+		double q = - diag[i1+i2] * hlfact[firsti-1];
+		double qtrans = Trans (q);  
 		  
-    q = - diag[i1+i2] * hlfact[firsti-1];
-    q = Trans (q);  
-		  
-    for (int k = 0; k < nk; k++)
-    hlfact[firstj+k] += q * hlfact[firsti+k];
+	        for (int k = 0; k < nk; k++)
+		  hlfact[firstj+k] += qtrans * hlfact[firsti+k];
 
-    diag[i1+jj] += Trans (hlfact[firsti-1]) * q;
-    }
+		diag[i1+jj] += Trans (hlfact[firsti-1]) * q;
+	      }
 
-    flops1 += (nk+1)*jj;
+	    diag[i1+jj] = 1.0 / diag[i1+jj];
+	  }
+        */
 
-    CalcInverse (diag[i1+jj], aiinv);
-    diag[i1+jj] = aiinv;
-    }
+        timerb.Stop();
+        timerc.Start();
 
 
+	// merge rows
+	int firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+	int firsti = hfirstinrow[i1] + last_same-i1-1;
+	int lasti = hfirstinrow[i1+1]-1;
+	mi = lasti-firsti+1;
 
-    time1 += double(clock() - starttime) / CLOCKS_PER_SEC;
-    starttime = clock();
-    // merge rows
+        Matrix<> btb = Trans(b1)*b1 | Lapack;
+        // *testout << "b^t b = " << endl << btb << endl;
 
-    int firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
-    int firsti = hfirstinrow[i1] + last_same-i1-1;
-    int lasti = hfirstinrow[i1+1]-1;
-    mi = lasti-firsti+1;
+        // Array<double> sum(BS*maxrow);
+	for (int j = 0; j < mi; j++)
+	  {
+            /*
+	    for (int k = j+1; k < mi; k++)
+	      sum[k] = TSCAL_MAT(0.0);
+	    for (int i2 = i1; i2 < last_same; i2++)
+	      {
+		int first = hfirstinrow[i2] + last_same-i2-1;
 
-    int j;
-    // loop unrolling for cache
-    for (j = 0; j < mi-BS+1; j+=BS)
-    {
-    for (int k = BS*(j+1); k < BS*mi; k++)
-    sum[k] = TSCAL_MAT(0.0);
+		double qtrans = Trans (diag[i2] * hlfact[first+j]);
+		for (int k = j+1; k < mi; k++)
+		  sum[k] += qtrans * hlfact[first+k];
+	      }
+            */
 
-    for (int i2 = i1; i2 < last_same; i2++)
-    {
-    int first = hfirstinrow[i2] + last_same-i2-1;
+            /*
+            *testout << "sum = " << endl;
+            for (int k = j+1; k < mi; k++)
+              *testout << sum[k] << " ";
+            *testout << endl;
+            */
 
-    __m128d hv = _mm_set1_pd (diag[i2]);
-    __m128d q12 = _mm_mul_pd (hv, _mm_loadu_pd (&hlfact[first+j]));
-    __m128d q34 = _mm_mul_pd (hv, _mm_loadu_pd (&hlfact[first+j+2]));
-    __m128d q56 = _mm_mul_pd (hv, _mm_loadu_pd (&hlfact[first+j+4]));
+            // FlatVector<> (mi, &sum[0]) = btb.Row(j);
+            auto sum = btb.Row(j);
 
-    dsum[3*(j+1)]   = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hlfact[first+j+1]), q12),  
-    dsum[3*(j+1)]);
-    dsum[3*(j+3)+1] = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hlfact[first+j+3]), q34),  
-    dsum[3*(j+3)+1]);
-    dsum[3*(j+5)+2] = _mm_add_sd (_mm_mul_sd (_mm_set_sd (hlfact[first+j+5]), q56),  
-    dsum[3*(j+5)+2]);
+            
+	    // merge together
+	    int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+	    int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
 
-    for (int k = j+2; k < j+BS; k++)
-    dsum[3*k]   = _mm_add_pd (dsum[3*k],   
-    _mm_mul_pd (q12,_mm_set1_pd (hlfact[first+k])));
-    for (int k = j+4; k < j+BS; k++)
-    dsum[3*k+1] = _mm_add_pd (dsum[3*k+1], 
-    _mm_mul_pd (q34,_mm_set1_pd (hlfact[first+k])));
-    // for (int k = j+6; k < j+BS; k++)
-    //   dsum[3*k+1] = _mm_add_pd (dsum[3*k+1], _mm_mul_pd (q34,_mm_set1_pd (hlfact[first+k])));
-
-    for (int k = j+BS; k < mi; k++)
-    {
-    __m128d hv = _mm_set1_pd (hlfact[first+k]);
-    dsum[3*k]   = _mm_add_pd (dsum[3*k],   _mm_mul_pd (q12, hv));
-    dsum[3*k+1] = _mm_add_pd (dsum[3*k+1], _mm_mul_pd (q34, hv));
-    dsum[3*k+2] = _mm_add_pd (dsum[3*k+2], _mm_mul_pd (q56, hv));
-    }
-    }
-
-    flops2 += (BS*(mi-j)-6)*(last_same-i1);
-
-    // merge together
-    for (int l = 0; l < BS; l++)
-    {
-    int firstj = hfirstinrow[hrowindex2[firsti_ri+j+l]];
-    int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j+l]];
-
-    for (int k = j+1+l; k < mi; k++)
-    {
-    int kk = hrowindex2[firsti_ri+k];
-
-    while (hrowindex2[firstj_ri] != kk)
-    {
-    firstj++;
-    firstj_ri++;
-    }
+	    for (int k = j+1; k < mi; k++)
+	      {
+		int kk = hrowindex2[firsti_ri+k];
+		while (hrowindex2[firstj_ri] != kk)
+		  {
+		    firstj++;
+		    firstj_ri++;
+		  }
 		    
-    lfact[firstj] -= sum[BS*k+l];
-    firstj++;
-    firstj_ri++;
-    }
-    }
-    }
+		lfact[firstj] -= sum[k];
+		firstj++;
+		firstj_ri++;
+	      }
+	  }
 
-    time2 += double(clock() - starttime) / CLOCKS_PER_SEC;
-    starttime = clock();
+	for (int i2 = i1; i2 < last_same; i2++)
+	  {
+	    int first = hfirstinrow[i2] + last_same-i2-1;
+	    int last = hfirstinrow[i2+1];
+	    int j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
 
-	
-    for ( ; j < mi; j++)
-    {
-    for (int k = j+1; k < mi; k++)
-    sum[k] = TSCAL_MAT(0.0);
+	    for (int j = first; j < last; j++, j_ri++)
+	      {
+		double q = diag[i2] * lfact[j];
+		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
+	      }
+	  }
 
-    for (int i2 = i1; i2 < last_same; i2++)
-    {
-    int first = hfirstinrow[i2] + last_same-i2-1;
-
-    q = Trans (diag[i2] * hlfact[first+j]);
-    for (int k = j+1; k < mi; k++)
-    sum[k] += q * hlfact[first+k];
-    }
-
-    flops2 += (mi - j)*(last_same-i1);
-
-    // merge together
-    int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-    int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
-
-    for (int k = j+1; k < mi; k++)
-    {
-    int kk = hrowindex2[firsti_ri+k];
-    while (hrowindex2[firstj_ri] != kk)
-    {
-    firstj++;
-    firstj_ri++;
-    }
-		    
-    lfact[firstj] -= sum[k];
-    firstj++;
-    firstj_ri++;
-    }
-    }
-
-
-
-    for (int i2 = i1; i2 < last_same; i2++)
-    {
-    int first = hfirstinrow[i2] + last_same-i2-1;
-    int last = hfirstinrow[i2+1];
-    int j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
-
-    for (int j = first; j < last; j++, j_ri++)
-    {
-    q = diag[i2] * lfact[j];
-    diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
-    }
-    }
-
-    time3 += double(clock() - starttime) / CLOCKS_PER_SEC;
-    i1 = last_same;
-    }
+	i1 = last_same;
+        timerc.Stop();
+      }
 
     for (int i = 0, j = 0; i < n; i++)
-    {
-    ai = diag[i];
+      {
+	double ai = diag[i];
 
-    int last = hfirstinrow[i+1];
-    for ( ; j < last; j++)
-    {
-    hm = ai * lfact[j];
-    lfact[j] = hm;
-    }	
-    }
+	int last = hfirstinrow[i+1];
+	for ( ; j < last; j++)
+	  {
+	    double hm = ai * lfact[j];
+	    lfact[j] = hm;
+	  }	
+      }
 
-
-    _mm_free (dsum);
 
     if (n > 2000)
-    cout << IM(4) << endl;
+      cout << IM(4) << endl;
+  }
 
-    time = double(clock() - starttime1) / CLOCKS_PER_SEC;
-    cout << IM(4) << "factorization, time = " << time << endl;
 
-    cout << IM(4) << "flops1 = " << flops1 << endl;
-    cout << IM(4) << "flops2 = " << flops2 << endl;
-    cout << IM(4) << "time1 = " << time1 << endl;
-    cout << IM(4) << "time2 = " << time2 << endl;
-    cout << IM(4) << "time3 = " << time3 << endl;
-    cout << IM(4) << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
-    cout << IM(4) << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
-    cout << IM(4) << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
-    }
-  */
+
+
+
 
 
 

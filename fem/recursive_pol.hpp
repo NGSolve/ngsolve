@@ -319,6 +319,16 @@ namespace ngfem
 	}
     }
 
+    template <class S, class Sy>
+    INLINE static S EvalScaledNextTicTac2 (int i, S x, Sy y, S & p1, S & p2)
+    {
+      p1 = (y*y) * REC::C(i) * p1;
+      if (REC::ZERO_B)
+        p1 += REC::A(i) * x * p2;
+      else
+        p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+      return p1;
+    }
 
     template <class S, class Sc>
     INLINE static S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2)
@@ -562,7 +572,24 @@ namespace ngfem
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
       */
 
-      EvalScaledMult1Assign (n, x, y, c, values);
+
+      S p1 = c * REC::P0(x);
+      S p2 = c * REC::P1(x);
+
+      int i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values[i] = p1;
+          values[i+1] = p2;
+          
+	  EvalScaledNextTicTac2 (i+2, x, y, p1, p2);
+	  EvalScaledNextTicTac2 (i+3, x, y, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+
+
+      // EvalScaledMult1Assign (n, x, y, c, values);
     }
 
 
