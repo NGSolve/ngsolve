@@ -133,16 +133,21 @@ namespace ngcomp
   {
     const MeshAccess & ma;
     VorB vb;
-    // IntRange r;
   public:
     ElementRange (const MeshAccess & ama, VorB avb, IntRange ar) 
       : IntRange(ar), ma(ama), vb(avb) { ; }
-    // ElementId First() const { return ElementId(vb, IntRange::First()); }
-    // ElementIterator begin () const { return ElementIterator(ma, vb,IntRange::First()); }
-    // ElementIterator end () const { return ElementIterator(ma, vb,IntRange::Next()); }
     ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,First())); }
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,Next())); }
     ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
+
+    ElementRange OmpSplit() const 
+    {
+      int id = omp_get_thread_num();
+      int tot = omp_get_num_threads();
+      int f = First() + (long(Size()) * id) / tot;
+      int n = First() + (long(Size()) * (id+1)) / tot;
+      return ElementRange (ma, vb, IntRange(f,n));
+    }
   };
 
   template <VorB VB>
@@ -308,6 +313,8 @@ namespace ngcomp
     /// the sub-domain index of the element
     int GetElIndex (int elnr) const
     { 
+      return GetElement(elnr).GetIndex();
+      /*
       switch (dim)
         {
         case 1: return mesh.GetElementIndex<1>(elnr) - 1;
@@ -315,11 +322,14 @@ namespace ngcomp
         case 3: default:
           return mesh.GetElementIndex<3>(elnr) - 1;
         }
+      */
     }
 
     /// the boundary-condition index of the boundary element
     int GetSElIndex (int elnr) const
     { 
+      return GetSElement(elnr).GetIndex();
+      /*
       switch (dim)
         {
         case 1: return mesh.GetElementIndex<0>(elnr) - 1;
@@ -327,12 +337,14 @@ namespace ngcomp
         case 3: default:
           return mesh.GetElementIndex<2>(elnr) - 1;
         }
+      */
     }
 
     int GetElIndex (ElementId ei) const
     {
-      if (ei.IsVolume()) return GetElIndex (ei.Nr());
-      else return GetSElIndex (ei.Nr());
+      return GetElement(ei).GetIndex();
+      // if (ei.IsVolume()) return GetElIndex (ei.Nr());
+      // else return GetSElIndex (ei.Nr());
     }
 
 

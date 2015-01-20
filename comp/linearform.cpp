@@ -47,9 +47,6 @@ namespace ngcomp
     static Timer timer("Vector assembling");
     static Timer timer1("Vector assembling 1", 2);
     static Timer timer2("Vector assembling 2", 2);
-    static Timer timer2a("Vector assembling 2a", 2);
-    static Timer timer2b("Vector assembling 2b", 2);
-    static Timer timer2c("Vector assembling 2c", 2);
     static Timer timer3("Vector assembling 3", 2);
     RegionTimer reg (timer);
 
@@ -67,6 +64,7 @@ namespace ngcomp
 	timer1.Start();
 
         // check if integrators fit to space
+        /*
         for (int i = 0; i < NumIntegrators(); i++)
           if (parts[i] -> BoundaryForm())
             {
@@ -97,6 +95,42 @@ namespace ngcomp
                     }
                 }
             }
+        */
+
+
+        for (auto lfi : parts)
+          if (lfi -> BoundaryForm())
+            {
+              for (Ngs_Element ej : ma->Elements(BND))
+                {
+                  HeapReset hr(clh);
+		  if (!lfi -> SkeletonForm()){
+		    if (lfi -> DefinedOn (ej.GetIndex()))
+		      lfi -> CheckElement (fespace->GetFE(ej, clh));
+		  }else{
+		    //TODO: get aligned volelement and check that
+		  }
+                }
+            }
+          else
+            {
+              if (lfi -> SkeletonForm()) 
+                { 
+                  throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+                }
+              else
+                {
+                  for (Ngs_Element ej : ma->Elements(VOL))
+                    {
+                      HeapReset hr(clh);
+                      if (lfi -> DefinedOn (ej.GetIndex()))
+                        lfi -> CheckElement (fespace->GetFE(ej, clh));
+                    }
+                }
+            }
+
+
+
 	if(!allocated || ( this->GetVector().Size() != this->fespace->GetNDof()))
 	  {
 	    AllocateVector();
@@ -162,43 +196,36 @@ namespace ngcomp
             
 	    IterateElements 
               (*fespace, VOL, clh, 
-               [&] (ElementId ei, LocalHeap & lh)
+               [&] (FESpace::Element el, LocalHeap & lh)
                {
                  RegionTimer reg2 (timer2);
-                 timer2a.Start();
                  progress.Update ();
 
-                 const FiniteElement & fel = fespace->GetFE(ei, lh);
-                 const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-                 // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
-                 Array<int> dnums (fel.GetNDof(), lh);
-                 fespace->GetDofNrs (ei, dnums);
-                 timer2a.Stop();
+                 const FiniteElement & fel = fespace->GetFE(el, lh);
+                 const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
 
                  for (int j = 0; j < parts.Size(); j++)
                    {
                      if (!parts[j] -> VolumeForm()) continue;
-                     if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
+                     if (!parts[j] -> DefinedOn (el.GetIndex())) continue;
+
                      int elvec_size = fel.GetNDof()*fespace->GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
 
-		     timer2b.Start();
                      parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
-                     timer2b.Stop();
                      
                      if (printelvec)
                        {
                          testout->precision(8);
-                         *testout << "elnum = " << ei.Nr() << endl
+                         *testout << "elnum = " << el.Nr() << endl
                                   << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << dnums << endl
+                                  << "dnums = " << endl << el.Dofs() << endl
                                   << "element-index = " << eltrans.GetElementIndex() << endl
                                   << "elvec = " << endl << elvec << endl;
                        }
-                     timer2c.Start();
-                     fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
-                     AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
-                     timer2c.Stop();
+
+                     fespace->TransformVec (el, elvec, TRANSFORM_RHS);
+                     AddElementVector (el.Dofs(), elvec, parts[j]->CacheComp()-1);
                    }
                });
           }
@@ -214,22 +241,18 @@ namespace ngcomp
 
 	    IterateElements 
               (*fespace, BND, clh, 
-               [&] (ElementId ei, LocalHeap & lh)
+               [&] (FESpace::Element el, LocalHeap & lh)
                {
                  RegionTimer reg2 (timer2);
-                 
                  progress.Update ();
 
-                 const FiniteElement & fel = fespace->GetFE(ei, lh);
-                 ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-                 // FlatArray<int> dnums = fespace->GetDofNrs (ei, lh);
-                 Array<int> dnums(fel.GetNDof(), lh);
-                 fespace->GetDofNrs (ei, dnums);
+                 const FiniteElement & fel = fespace->GetFE(el, lh);
+                 ElementTransformation & eltrans = ma->GetTrafo (el, lh);
 
                  for (int j = 0; j < parts.Size(); j++)
                    {
                      if (!parts[j] -> BoundaryForm()) continue;
-                     if (!parts[j] -> DefinedOn (eltrans.GetElementIndex())) continue;
+                     if (!parts[j] -> DefinedOn (el.GetIndex())) continue;
 		     
                      int elvec_size = fel.GetNDof()*fespace->GetDimension();
                      FlatVector<TSCAL> elvec(elvec_size, lh);
@@ -239,15 +262,15 @@ namespace ngcomp
                      if (printelvec)
                        {
                          testout->precision(8);
-                         *testout << "surface-elnum = " << ei.Nr() << endl
+                         *testout << "surface-elnum = " << el.Nr() << endl
                                   << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << dnums << endl
+                                  << "dnums = " << endl << el.Dofs() << endl
                                   << "element-index = " << eltrans.GetElementIndex() << endl
                                   << "elvec = " << endl << elvec << endl;
                        }
                      
-                     fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
-                     AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+                     fespace->TransformVec (el, elvec, TRANSFORM_RHS);
+                     AddElementVector (el.Dofs(), elvec, parts[j]->CacheComp()-1);
                    }
                });
 

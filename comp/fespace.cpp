@@ -269,7 +269,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	*testout << "name = " << name << endl;
       }
 
-    for (int i=0; i< specialelements.Size(); i++)
+    for (int i = 0; i < specialelements.Size(); i++)
       delete specialelements[i]; 
     specialelements.SetSize(0);
 
@@ -285,33 +285,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_edge = false;
     dirichlet_face = false;
 
-    if (dirichlet_boundaries.Size())
-      for (Ngs_Element ngel : ma->Elements(BND))
-        if (dirichlet_boundaries.Test(ngel.GetIndex()))
-          {
-            dirichlet_vertex[ngel.Vertices()] = true;
-            dirichlet_edge[ngel.Edges()] = true;
-            if (dim == 3)
-              dirichlet_face[ngel.Faces()[0]] = true;
-          }
-    /*
-      for (int i = 0; i < ma->GetNSE(); i++)
-	{
-	  int ind = ma->GetSElIndex (i);
-	  if (dirichlet_boundaries.Test(ind))
-	    {
-	      Ngs_Element ngel = ma->GetSElement(i);
-	      for (int j = 0; j < ngel.vertices.Size(); j++)
-		dirichlet_vertex[ngel.vertices[j]] = true;
-	      
-	      for (int j = 0; j < ngel.edges.Size(); j++)
-		dirichlet_edge[ngel.edges[j]] = true;
-	      
-	      if (dim == 3)
-		dirichlet_face[ngel.faces[0]] = true;
-	    }
-	}
-      */
+#pragma omp parallel
+    {
+      if (dirichlet_boundaries.Size())
+        for (Ngs_Element ngel : ma->Elements(BND).OmpSplit())
+          if (dirichlet_boundaries[ngel.GetIndex()])
+            {
+              dirichlet_vertex[ngel.Vertices()] = true;
+              dirichlet_edge[ngel.Edges()] = true;
+              if (dim == 3)
+                dirichlet_face[ngel.Faces()[0]] = true;
+            }
+    }
+
     if (print)
       {
 	(*testout) << "Dirichlet_vertex,1 = " << endl << dirichlet_vertex << endl;
@@ -360,9 +346,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
           for (int d : el.Dofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
-
     Array<int> dnums;
-    for (int i = 0; i < dirichlet_vertex.Size(); i++)
+    for (int i : Range(dirichlet_vertex))
       if (dirichlet_vertex[i])
 	{
 	  GetVertexDofNrs (i, dnums);
@@ -370,37 +355,34 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-    for (int i = 0; i < dirichlet_edge.Size(); i++)
+    for (int i : Range(dirichlet_edge))
       if (dirichlet_edge[i])
 	{
 	  GetEdgeDofNrs (i, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1)
-	      dirichlet_dofs.Set (dnums[j]);
+	  for (int d : dnums)
+	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-    for (int i = 0; i < dirichlet_face.Size(); i++)
+    for (int i : Range(dirichlet_face))
       if (dirichlet_face[i])
 	{
 	  GetFaceDofNrs (i, dnums);
-	  for (int j = 0; j < dnums.Size(); j++)
-	    if (dnums[j] != -1)
-	      dirichlet_dofs.Set (dnums[j]);
+	  for (int d : dnums)
+	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-	
 
     free_dofs.SetSize (GetNDof());
     free_dofs = dirichlet_dofs;
     free_dofs.Invert();
     
-    for (int i = 0; i < ctofdof.Size(); i++)
+    for (auto i : Range(ctofdof))
       if (ctofdof[i] == UNUSED_DOF)
 	free_dofs.Clear(i);
 
     external_free_dofs.SetSize (GetNDof());
     external_free_dofs = free_dofs;
-    for (int i = 0; i < ctofdof.Size(); i++)
+    for (auto i : Range(ctofdof))
       if (ctofdof[i] & LOCAL_DOF)
 	external_free_dofs.Clear(i);
 
@@ -417,16 +399,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         Array<int> col(ma->GetNE(vb));
         col = -1;
-        bool found;
+        // bool found;
         int maxcolor = 0;
         
         int basecol = 0;
         Array<unsigned int> mask(GetNDof());
-    
+
+        int cnt = 0, found = 0;
+        for (ElementId el : Elements(vb)) { cnt++; (void)el; } // no warning 
+
         do
           {
             mask = 0;
-            found = false;
 
             for (auto el : Elements(vb))
               {
@@ -438,7 +422,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
                   {
-                    found = true;
+                    found++;
                     unsigned checkbit = 1;
                     int color = basecol;
                     while (check & checkbit)
@@ -457,8 +441,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             
             basecol += 8*sizeof(unsigned int); // 32;
           }
-        while (found);
-
+        while (found < cnt);
 
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
