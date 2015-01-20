@@ -251,7 +251,7 @@ namespace ngcomp
           if (!DefinedOn (el)) continue;
           int i = el.Nr();
           
-          ELEMENT_TYPE eltype = el.GetType(); // ma->GetElType(el); 
+          ELEMENT_TYPE eltype = el.GetType(); 
           const FACE * faces = ElementTopology::GetFaces (eltype);
           const EDGE * edges = ElementTopology::GetEdges (eltype);
           const POINT3D * points = ElementTopology :: GetVertices (eltype);
@@ -260,7 +260,6 @@ namespace ngcomp
           eledges = el.Edges();
 	
           INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order); 
-          // for(int l=0;l<3;l++) el_orders[l] += rel_order; 
 
           maxorder = max (maxorder, Max(el_orders));
           minorder = min (minorder, Min(el_orders));
@@ -333,7 +332,7 @@ namespace ngcomp
     if(uniform_order_edge > -1)   
       order_edge = uniform_order_edge; 
 
-    for (auto i : used_edge.Range())
+    for (auto i : Range(used_edge))
       if (!used_edge[i]) order_edge[i] = 1; 
 
     for (auto i : used_face.Range())
@@ -379,78 +378,79 @@ namespace ngcomp
     int nfa = (dim <= 2) ? 0 : ma->GetNFaces();
     int ne = ma->GetNE();
 
-    ndof = nv;
+    int hndof = nv;
 
     first_edge_dof.SetSize (ned+1);
-    for (int i = 0; i < ned; i++)
+    for (auto i : Range (ned))
       {
-	first_edge_dof[i] = ndof;
-	if (order_edge[i]>1)
-	  ndof += order_edge[i] - 1;
+	first_edge_dof[i] = hndof;
+	if (order_edge[i] > 1)
+	  hndof += order_edge[i] - 1;
       }
-    first_edge_dof[ned] = ndof;
-         
+    first_edge_dof[ned] = hndof;
+
     first_face_dof.SetSize (nfa+1);
-    for (int i = 0; i < nfa; i++)
+    for (auto i : Range (nfa))
       {
-	first_face_dof[i] = ndof;
+	first_face_dof[i] = hndof;
 	INT<2> p = order_face[i];
 	switch(ma->GetFacetType(i))
 	  {
 	  case ET_TRIG:
-	     if (p[0] > 2)
-	      ndof += (p[0]-1)*(p[0]-2)/2;
+            if (p[0] > 2)
+              hndof += (p[0]-1)*(p[0]-2)/2;
 	    break;
 	  case ET_QUAD:
 	    if (p[0] > 1 && p[1] > 1)
-	      ndof += (p[0]-1)*(p[1]-1);
+	      hndof += (p[0]-1)*(p[1]-1);
 	    break; 
 	  default:
             ;
 	  }
       }
-    first_face_dof[nfa] = ndof;
+    first_face_dof[nfa] = hndof;
  
     first_element_dof.SetSize(ne+1);
-    for (int i = 0; i < ne; i++)
+    for (auto i : Range(ne))
       {
-	first_element_dof[i] = ndof;
+	first_element_dof[i] = hndof;
 	INT<3> p = order_inner[i];	
 	switch (ma->GetElType(i))
 	  {
 	  case ET_TRIG:
 	    if(p[0] > 2)
-	      ndof += (p[0]-1)*(p[0]-2)/2;
+	      hndof += (p[0]-1)*(p[0]-2)/2;
 	    break;
 	  case ET_QUAD:
 	    if(p[0] > 1 && p[1] > 1)
-	      ndof += (p[0]-1)*(p[1]-1);
+	      hndof += (p[0]-1)*(p[1]-1);
 	    break;
 	  case ET_TET:
 	    if(p[0] > 3)
-	      ndof += (p[0]-1)*(p[0]-2)*(p[0]-3)/6;
+	      hndof += (p[0]-1)*(p[0]-2)*(p[0]-3)/6;
 	    break;
 	  case ET_PRISM:
 	    if(p[0] > 2 && p[2] > 1)
-	      ndof += (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
+	      hndof += (p[0]-1)*(p[0]-2)*(p[2]-1)/2;
 	    break;
 	  case ET_PYRAMID:
 	    if(p[0] > 2)
-	      ndof += (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
+	      hndof += (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6;
 	    break;
 	  case ET_HEX:
 	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
-	      ndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
+	      hndof += (p[0]-1)*(p[1]-1)*(p[2]-1);
 	    break;
           case ET_SEGM:
             if (p[0] > 1)
-	      ndof += p[0]-1;
+	      hndof += p[0]-1;
             break;
           case ET_POINT:
 	    break;
 	  }
       } 
-    first_element_dof[ne] = ndof;
+    first_element_dof[ne] = hndof;
+    ndof = hndof;
    
 
     if (print)
@@ -459,7 +459,6 @@ namespace ngcomp
         (*testout) << "h1 first face = " << first_face_dof << endl;
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
-
 
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
@@ -473,10 +472,10 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
 
-    for (int i = 0; i < ma->GetNV(); i++)
+    for (auto i : Range (ma->GetNV()))
       ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
 
-    for (int edge = 0; edge < ma->GetNEdges(); edge++)
+    for (auto edge : Range (ma->GetNEdges()))
       {
 	IntRange range = GetEdgeDofs (edge);
 	ctofdof[range] = INTERFACE_DOF;
@@ -485,7 +484,7 @@ namespace ngcomp
       }
 
     if (ma->GetDimension() == 3)
-      for (int face = 0; face < ma->GetNFaces(); face++)
+      for (auto face : Range (ma->GetNFaces()))
 	ctofdof[GetFaceDofs(face)] = INTERFACE_DOF;
 
     for (int el = 0; el < ma->GetNE(); el++)
@@ -715,14 +714,14 @@ namespace ngcomp
 
   void H1HighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
-    if (!DefinedOn (ma->GetElIndex (elnr)))
+    Ngs_Element ngel = ma->GetElement(elnr);
+
+    if (!DefinedOn (ngel.GetIndex()))
       {
 	dnums.SetSize0();
 	return;
       }
     
-    Ngs_Element ngel = ma->GetElement(elnr);
-
     dnums = ngel.Vertices();
 
     if (ma->GetDimension() >= 2)

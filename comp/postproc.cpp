@@ -355,21 +355,21 @@ namespace ngcomp
 
     IterateElements 
       (fes, vorb, clh, 
-       [&] (ElementId ei, LocalHeap & lh)
+       [&] (FESpace::Element ei, LocalHeap & lh)
        {
           progress.Update ();
-
-	  if (bound && !fes.IsDirichletBoundary(ma->GetSElIndex(ei.Nr())))
+          
+	  if (bound && !fes.IsDirichletBoundary(ei.GetIndex()))
 	    return;
 
 	  const FiniteElement & fel = fes.GetFE (ei, lh);
 	  const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
 
-          Array<int> dnums(fel.GetNDof(), lh);
-          fes.GetDofNrs (ei, dnums);
+          // Array<int> dnums(fel.GetNDof(), lh);
+          // fes.GetDofNrs (ei, dnums);
 
-	  FlatVector<SCAL> elflux(dnums.Size() * dim, lh);
-	  FlatVector<SCAL> elfluxi(dnums.Size() * dim, lh);
+	  FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
+	  FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
 	  FlatVector<SCAL> fluxi(dimflux, lh);
 
 	  IntegrationRule ir(fel.ElementType(), 2*fel.Order());
@@ -379,7 +379,7 @@ namespace ngcomp
 
 	  coef->Evaluate (mir, mfluxi);
           
-	  for (int j = 0; j < ir.GetNIP(); j++)
+	  for (int j : Range(ir))
 	    mfluxi.Row(j) *= mir[j].GetWeight();
 
 	  if (diffop)
@@ -389,7 +389,7 @@ namespace ngcomp
 
 	  if (dim > 1)
 	    {
-	      FlatMatrix<SCAL> elmat(dnums.Size(), lh);
+	      FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
 	      const BlockBilinearFormIntegrator & bbli = 
 		dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
 	      bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -400,12 +400,12 @@ namespace ngcomp
 	    }
 	  else
 	    {
-	      FlatMatrix<double> elmat(dnums.Size(), lh);
+	      FlatMatrix<double> elmat(fel.GetNDof(), lh);
 	      bli->CalcElementMatrix (fel, eltrans, elmat, lh);
 
 	      fes.TransformMat (ei.Nr(), bound, elmat, TRANSFORM_MAT_LEFT_RIGHT);
 	      fes.TransformVec (ei.Nr(), bound, elflux, TRANSFORM_RHS);
-              if (dnums.Size() < 50)
+              if (fel.GetNDof() < 50)
                 {
                   FlatCholeskyFactors<double> invelmat(elmat, lh);
                   invelmat.Mult (elflux, elfluxi);
@@ -419,12 +419,13 @@ namespace ngcomp
 
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 
-          u.GetElementVector (dnums, elflux);
+          u.GetElementVector (ei.Dofs(), elflux);
           elfluxi += elflux;
-          u.SetElementVector (dnums, elfluxi);
+          u.SetElementVector (ei.Dofs(), elfluxi);
 	  
-          for (int j = 0; j < dnums.Size(); j++)
-            cnti[dnums[j]]++;
+          for (auto d : ei.Dofs())
+            if (d != -1) cnti[d]++;
+
        });
 
     progress.Done();

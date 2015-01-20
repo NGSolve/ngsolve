@@ -268,6 +268,7 @@ namespace ngcomp
         : IntRange(ar), fes(afes), vb(avb) { ; }
       INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First()), temp_dnums); }
       INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums); }
+      INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
     };
 
     ElementRange Elements (VorB vb = VOL) const
