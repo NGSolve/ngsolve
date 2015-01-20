@@ -355,13 +355,13 @@ namespace ngla
 
     size_t totmem = 0;
 
-    for (auto i : blocktable.Range())
+    for (auto i : Range (blocktable))
       totmem += sqr (blocktable[i].Size());
 
     bigmem.SetSize(totmem);
     
     totmem = 0;
-    for (auto i : blocktable.Range())
+    for (auto i : Range (blocktable))
       {
         int bs = blocktable[i].Size();
         new ( & invdiag[i] ) FlatMatrix<TM> (bs, bs, &bigmem[totmem]);
