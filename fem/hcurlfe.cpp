@@ -183,7 +183,7 @@ namespace ngfem
   void HCurlFiniteElement<D> ::
   EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
   {
-    LocalHeapMem<1000> lhdummy("dummy");
+    LocalHeapMem<1000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }

@@ -122,7 +122,7 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(DIM)> curl) const
   {
-    LocalHeapMem<1000> lhdummy("dummy");
+    LocalHeapMem<10000> lhdummy("evalcurl-heap");
     for (int i = 0; i < ir.Size(); i++)
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }
