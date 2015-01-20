@@ -35,30 +35,39 @@ namespace netgen
 
   void * BlockAllocator :: Alloc ()
   {
-    //  return new char[size];
-    if (!freelist)
-      {
-	// cout << "freelist = " << freelist << endl;
-	// cout << "BlockAlloc: " << size*blocks << endl;
-	char * hcp = new char [size * blocks];
-	bablocks.Append (hcp);
-	bablocks.Last() = hcp;
-	for (unsigned i = 0; i < blocks-1; i++)
-	  *(void**)&(hcp[i * size]) = &(hcp[ (i+1) * size]);
-	*(void**)&(hcp[(blocks-1)*size]) = NULL;
-	freelist = hcp;
-      }
-
-    void * p = freelist;
-    freelist = *(void**)freelist;
+    void * p;
+#pragma omp critical (BlockAllocator)
+    {
+      //  return new char[size];
+      if (!freelist)
+        {
+          // cout << "freelist = " << freelist << endl;
+          // cout << "BlockAlloc: " << size*blocks << endl;
+          char * hcp = new char [size * blocks];
+          bablocks.Append (hcp);
+          bablocks.Last() = hcp;
+          for (unsigned i = 0; i < blocks-1; i++)
+            *(void**)&(hcp[i * size]) = &(hcp[ (i+1) * size]);
+          *(void**)&(hcp[(blocks-1)*size]) = NULL;
+          freelist = hcp;
+        }
+      
+      p = freelist;
+      freelist = *(void**)freelist;
+    }
     return p;
   }
 
-  /*
   void BlockAllocator :: Free (void * p)
   {
-    *(void**)p = freelist;
-    freelist = p;
+#pragma omp critical (BlockAllocator)
+    {
+      if (bablocks.Size())
+        {
+          *(void**)p = freelist;
+          freelist = p;
+        }
+    }
   }
-  */
+
 }
