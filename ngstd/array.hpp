@@ -28,15 +28,12 @@ namespace ngstd
 
 
 
-
-
   /*
     Some class which can be treated as array
    */
   template <typename T> // , typename TA = T>
   class BaseArrayObject
   {
-
   public:
     INLINE BaseArrayObject() { ; }
 
@@ -206,6 +203,41 @@ namespace ngstd
     INLINE ArrayRangeIterator<T> end() const { return next; }
   };
 
+  /*
+  template <typename T>
+  INLINE T_Range<T> Range (T n)
+  {
+    return T_Range<T>(0, n);
+  }
+  */
+
+  template <typename T>
+  INLINE T_Range<T> Range (T a, T b)
+  {
+    return T_Range<T>(a,b);
+  }
+
+
+  template <typename T>
+  INLINE T_Range<T> Range_impl (T n, std::true_type)
+  {
+    return T_Range<T> (0, n);
+  }
+
+  template <typename T>
+  INLINE auto Range_impl (const T & ao, std::false_type)
+    -> T_Range<decltype(ao.Size())>
+  {
+    return T_Range<decltype(ao.Size())> (0, ao.Size());
+  }
+
+  template <typename T>
+  auto Range(const T & x) -> decltype(Range_impl(x, std::is_integral<T>())) {
+    return Range_impl(x, std::is_integral<T>());
+  }
+
+
+
 
 
   INLINE IntRange operator+ (const IntRange & range, int shift)
@@ -262,7 +294,8 @@ namespace ngstd
 
     INLINE IndirectArray operator= (const T & val) 
     {
-      for (int i = 0; i < Size(); i++)
+      // for (int i = 0; i < Size(); i++)
+      for (int i : Range(Size()))
         (*this)[i] = val;
       return IndirectArray (ba, ia);
     }
@@ -270,7 +303,8 @@ namespace ngstd
     template <typename T2>
     INLINE IndirectArray operator= (const BaseArrayObject<T2> & a2) 
     {
-      for (int i = 0; i < Size(); i++) 
+      // for (int i = 0; i < Size(); i++) 
+      for (int i : Range(Size()))
 	(*this)[i] = a2.Spec()[i];
       return IndirectArray (ba, ia);
     }
@@ -986,8 +1020,6 @@ namespace ngstd
 
     return array;
   }
-
-
 
 
 

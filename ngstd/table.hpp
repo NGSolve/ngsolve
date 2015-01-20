@@ -115,7 +115,7 @@ public:
   
   Iterator begin() const { return Iterator(*this, 0); }
   Iterator end() const { return Iterator(*this, size); }
-  IntRange Range () const { return IntRange(0, size); }
+  // IntRange Range () const { return IntRange(0, size); }
 };
 
 
