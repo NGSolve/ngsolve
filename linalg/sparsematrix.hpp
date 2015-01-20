@@ -87,7 +87,7 @@ namespace ngla
     Array<int, size_t> colnr;
 
     /// pointer to first in row
-    Array<size_t, size_t> firsti;
+    Array<size_t> firsti;
   
     /// row has same non-zero elements as previous row
     Array<int> same_nze;

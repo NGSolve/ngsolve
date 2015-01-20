@@ -153,7 +153,7 @@ namespace ngla
 
       Vector<TVX> hxmax(maxbs);
 
-      for (auto i : blocktable.Range())
+      for (auto i : Range (blocktable))
 	{
 	  FlatArray<int> ind = blocktable[i];
 	  if (!ind.Size()) continue;
@@ -178,7 +178,7 @@ namespace ngla
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
 
-      for (auto i : blocktable.Range())
+      for (auto i : Range (blocktable))
 	{
 	  int bs = blocktable[i].Size();
 	  if (!bs) continue;
