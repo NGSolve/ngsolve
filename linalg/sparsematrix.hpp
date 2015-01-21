@@ -496,6 +496,7 @@ namespace ngla
   template<class TM>
   class NGS_DLL_HEADER SparseMatrixSymmetricTM : virtual public SparseMatrixTM<TM>
   {
+    bool spd = false;
   protected:
     SparseMatrixSymmetricTM (int as, int max_elsperrow)
       : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
@@ -514,6 +515,8 @@ namespace ngla
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
+    void SetSPD (bool aspd = true) { spd = aspd; }
+    bool IsSPD () const { return spd; }
     virtual void AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat);
 
     virtual void AddElementMatrix(const FlatArray<int> & dnums1, 
