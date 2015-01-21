@@ -77,7 +77,8 @@ namespace ngla
 		   const Array<MDOVertex> & vertices,
 		   const int * blocknr);
     ///
-    void Factor (); // const int * blocknr);
+    void Factor (); 
+    void FactorSPD (); 
     ///
     void FactorNew (const SparseMatrix<TM,TV_ROW,TV_COL> & a);
     ///

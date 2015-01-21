@@ -30,6 +30,10 @@ namespace ngla
 		  bool allow_refactor)
     : SparseFactorization (a, ainner, acluster), mat(a)
   { 
+    static Timer t("SparseCholesky - total");
+    static Timer ta("SparseCholesky - allocate");
+    static Timer tf("SparseCholesky - fill factor");
+    RegionTimer reg(t);
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
     // for ( int i=0; i<a.Height(); i++ ) (*testout) << i << ", " << a(i,i) << endl;
@@ -103,8 +107,11 @@ namespace ngla
     
     if (printstat)
       cout << IM(4) << "," << flush;
+    ta.Start();
     Allocate (mdo->order,  mdo->vertices, &mdo->blocknr[0]);
+    ta.Stop();
 
+    tf.Start();
     delete mdo;
     mdo = 0;
 
@@ -164,11 +171,18 @@ namespace ngla
                   SetOrig (i, col, a.GetRowValues(i)[j]);
 	    }
 	}
+
+    tf.Stop();
     
     if (printstat)
       cout << IM(4) << "do factor " << flush;
     
-    Factor(); 
+    
+    auto aspd = dynamic_cast<const SparseMatrixSymmetricTM<double>*> (&a);
+    if (aspd && aspd -> IsSPD())
+      FactorSPD();
+    else
+      Factor(); 
 
 
 
@@ -450,7 +464,6 @@ namespace ngla
               }
           }
 
-        cout << mi << " " << flush;
 	for (int jj = miBS ; jj < mi; jj++)
 	  {
 	    if (n > 2000 && (i1+jj) % 1000 == 999)
@@ -665,11 +678,15 @@ namespace ngla
 
 
 
-
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: FactorSPD () 
+  {
+    throw Exception ("FactorSPD called for non-<double,double> matrix");
+  }
 
 
   template <>
-  void SparseCholesky<double,double,double> :: Factor () 
+  void SparseCholesky<double,double,double> :: FactorSPD () 
   {
     static Timer factor_timer("SparseCholesky::Factor");
 

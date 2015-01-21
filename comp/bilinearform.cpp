@@ -3025,7 +3025,10 @@ namespace ngcomp
 
 
 
-    shared_ptr<BaseMatrix> mat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
+    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
+    if (this->spd) spmat->SetSPD();
+    shared_ptr<BaseMatrix> mat = spmat;
+
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
       mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
