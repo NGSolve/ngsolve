@@ -653,7 +653,7 @@ namespace ngbla
 
 
     template <class SCAL2>
-    INLINE T & operator*= (const SCAL2 & s)
+    INLINE T & operator*= (SCAL2 s)
     {
       if (T::IS_LINEAR)
 	{
@@ -670,7 +670,7 @@ namespace ngbla
     }
 
     template <class SCAL2>
-    INLINE T & operator/= (const SCAL2 & s)
+    INLINE T & operator/= (SCAL2 s)
     {
       return (*this) *= (1./s);
     }
@@ -737,14 +737,14 @@ namespace ngbla
     }
 
     template <class SCAL2>
-    INLINE const T & operator*= (const SCAL2 & s) const
+    INLINE const T & operator*= (SCAL2 s) const
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator*= (s);
       return Spec();
     }
 
     template <class SCAL2>
-    INLINE const T & operator/= (const SCAL2 & s) const 
+    INLINE const T & operator/= (SCAL2 s) const 
     {
       return (*this) *= (1.0/s);
     }
