@@ -135,17 +135,18 @@ namespace ngcomp
     VorB vb;
   public:
     ElementRange (const MeshAccess & ama, VorB avb, IntRange ar) 
-      : IntRange(ar), ma(ama), vb(avb) { ; }
-    ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,First())); }
-    ElementIterator end () const { return ElementIterator(ma, ElementId(vb,Next())); }
-    ElementId operator[] (int nr) { return ElementId(vb, First()+nr); }
+      : IntRange(ar), ma(ama), vb(avb) { ; } 
+    ElementId First() const { return ElementId(vb, IntRange::First()); }
+    ElementIterator begin () const { return ElementIterator(ma, ElementId(vb,IntRange::First())); }
+    ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
+    ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
 
     ElementRange OmpSplit() const 
     {
       int id = omp_get_thread_num();
       int tot = omp_get_num_threads();
-      int f = First() + (long(Size()) * id) / tot;
-      int n = First() + (long(Size()) * (id+1)) / tot;
+      int f = IntRange::First() + (long(Size()) * id) / tot;
+      int n = IntRange::First() + (long(Size()) * (id+1)) / tot;
       return ElementRange (ma, vb, IntRange(f,n));
     }
   };

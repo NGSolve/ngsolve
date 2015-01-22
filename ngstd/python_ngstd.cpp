@@ -150,11 +150,22 @@ void ExportNgstd() {
     // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    
     ;
 
-  bp::class_<ngstd::BitArray>
-    ("BitArray")
+  bp::class_<ngstd::BitArray> ("BitArray")
+    .def(bp::init<int>())
+    .def(bp::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)
     .def("__getitem__", &BitArray::Test)
-  ;
+    .def("Set", FunctionPointer ([] (BitArray & self, int i)
+                                 {
+                                   if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
+                                   self.Set(i); 
+                                 }))
+    .def("Clear", FunctionPointer ([] (BitArray & self, int i)
+                                   {
+                                   if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
+                                   self.Clear(i); 
+                                   }))
+    ;
 
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
     .def("__init__", bp::make_constructor (FunctionPointer ([](const bp::dict & aflags) 
