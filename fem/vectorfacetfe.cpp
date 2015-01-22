@@ -143,7 +143,7 @@ namespace ngfem
     
     int ii = 0;
     
-    int n = max(order_inner[0],order_inner[1]);
+    int n = max2(order_inner[0],order_inner[1]);
     ArrayMem<double, 20> polx(n+1), poly(n+1);
 
     LegendrePolynomial (n, xi.Value(), polx);

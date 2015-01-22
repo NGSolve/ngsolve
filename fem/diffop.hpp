@@ -271,62 +271,62 @@ namespace ngfem
     virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
     
     virtual void
-    CalcMatrix (const FiniteElement & bfel,
+    NGS_DLL_HEADER CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
 
 #ifndef FASTCOMPILE
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<double> x, 
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<double> x, 
 	   FlatMatrix<double> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
 	   FlatVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,
 	   FlatVector<Complex> x, 
 	   FlatMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatVector<Complex> flux,
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<double> flux,
 		FlatVector<double> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		FlatMatrix<Complex> flux,

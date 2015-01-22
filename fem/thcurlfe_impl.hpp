@@ -46,7 +46,7 @@ namespace ngfem
   {  
     Vec<DIM, AutoDiff<DIM> > adp = ip; 
     T_CalcShape (&adp(0), SBLambda ([&](int i, HCurl_CurlShape<DIM> s) 
-                                    { FlatVec<DIM_CURL> (&shape(i,0)) = s; }));
+                                    { FlatVec<DIM_CURL_(DIM)> (&shape(i,0)) = s; }));
   } 
 #ifndef FASTCOMPILE
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>

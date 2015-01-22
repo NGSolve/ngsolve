@@ -235,8 +235,8 @@ namespace ngcomp
         int i = el.Nr();
 	for(int k=0;k<dim;k++)
 	  {
-	    order_inner_curl[i][k]= max(el_orders[k] + rel_curl_order,0);
-	    order_inner[i][k] = max(el_orders[k]+rel_order,0);
+	    order_inner_curl[i][k]= max2(el_orders[k] + rel_curl_order,0);
+	    order_inner[i][k] = max2(el_orders[k]+rel_order,0);
 	  }
 
 	if(dim==2)
@@ -246,7 +246,7 @@ namespace ngcomp
 	      for(int k=0;k<2;k++)
 		if(points[edges[j][0]][k] != points[edges[j][1]][k])
 		  { 
-		    order_facet[elfacets[j]][0] = max(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
+		    order_facet[elfacets[j]][0] = max2(el_orders[k]+rel_curl_order, order_facet[elfacets[j]][0]);
 		    break; 
 		  }
 	  }
@@ -259,7 +259,7 @@ namespace ngcomp
 	      {
 		if(faces[j][3]==-1) // trig  
 		  {
-		    order_facet[elfacets[j]][0] = max(order_facet[elfacets[j]][0],el_orders[0]+rel_curl_order);
+		    order_facet[elfacets[j]][0] = max2(order_facet[elfacets[j]][0],el_orders[0]+rel_curl_order);
 		    order_facet[elfacets[j]][1] = order_facet[elfacets[j]][0]; 
 		  }
 		else //quad_face
@@ -278,7 +278,7 @@ namespace ngcomp
 		      for(int k=0;k<3;k++)
                         if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
                           {
-                            order_facet[elfacets[j]][l] = max(order_facet[elfacets[j]][l], rel_curl_order + 
+                            order_facet[elfacets[j]][l] = max2(order_facet[elfacets[j]][l], rel_curl_order + 
                                                               el_orders[k]);
                             break; 
                           } 

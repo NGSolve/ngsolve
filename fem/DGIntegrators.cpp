@@ -83,7 +83,7 @@ namespace ngfem
       fel2_l2 = dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
       eltype2 = volumefel2.ElementType();
       int nd2 = fel2_l2->GetNDof();
-      int maxorder = max(fel1_l2->Order(),fel2_l2->Order());
+      int maxorder = max2(fel1_l2->Order(),fel2_l2->Order());
       
       elmat = 0.0;
 
@@ -324,7 +324,7 @@ namespace ngfem
       ELEMENT_TYPE eltype2 = volumefel2.ElementType();
       eltype2 = volumefel2.ElementType();
       int nd2 = fel2_l2->GetNDof();
-      int maxorder = max(fel1_l2->Order(),fel2_l2->Order());
+      int maxorder = max2(fel1_l2->Order(),fel2_l2->Order());
       
       elmat = 0.0;
 

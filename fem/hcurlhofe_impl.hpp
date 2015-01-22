@@ -72,16 +72,16 @@ namespace ngfem
     
     TORDER horder = 0; 
     for (int i = 0; i < N_EDGE; i++)
-      horder = max (horder, order_edge[i]);
+      horder = max2 (horder, order_edge[i]);
 
     for(int i=0; i < N_FACE; i++) 
       if (ET_trait<ET>::FaceType(i) == ET_TRIG)
-        horder = max (horder, order_face[i][0]);
+        horder = max2 (horder, order_face[i][0]);
       else
-        horder = max (horder, Max (order_face[i]));
+        horder = max2 (horder, Max (order_face[i]));
 
     if (DIM == 3)
-      horder = max (horder, Max(order_cell));
+      horder = max2 (horder, Max(order_cell));
 
     // for integration order .. 
     if (ET == ET_PRISM || ET == ET_HEX || ET == ET_PYRAMID || ET == ET_QUAD)

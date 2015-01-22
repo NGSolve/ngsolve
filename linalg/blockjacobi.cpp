@@ -371,7 +371,7 @@ namespace ngla
 
     int cnt = 0;
 #pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < blocktable.Size(); i++)
+    for (int i = 0; i < blocktable.Size(); i++)
       {
 #ifndef __MIC__
 #pragma omp atomic
@@ -440,7 +440,7 @@ namespace ngla
     for ( ; !creator.Done(); creator++)
       for (int i=0; i<nblocks; i++)
           creator.Add(coloring[i],i);
-    block_coloring = creator;
+    block_coloring = std::move(creator);
 
     *testout << " using " << current_color << " colors" << endl;
 
@@ -532,7 +532,7 @@ namespace ngla
         clock_t prevtime = clock();
         int cnt = 0;
 #pragma omp parallel for	
-	for (size_t i = 0; i < blocktable.Size(); i++)
+	for (int i = 0; i < blocktable.Size(); i++)
 	  {
 #ifndef __MIC__
 #pragma omp atomic

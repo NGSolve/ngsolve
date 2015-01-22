@@ -520,7 +520,7 @@ namespace ngfem
     for (int iz = 0; iz <= order; iz++)
       for (int ix = 0; ix <= order-iz; ix++)
 	for (int iy = 0; iy <= order-iz; iy++, ii++)
-	  shape[ii] = polsx(ix) * polsy(iy) * polsz(max(ix,iy), iz);
+	  shape[ii] = polsx(ix) * polsy(iy) * polsz(max2(ix,iy), iz);
   }
 
 
