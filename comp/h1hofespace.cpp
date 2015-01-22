@@ -261,8 +261,8 @@ namespace ngcomp
 	
           INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order); 
 
-          maxorder = max (maxorder, Max(el_orders));
-          minorder = min (minorder, Min(el_orders));
+          maxorder = max2 (maxorder, Max(el_orders));
+          minorder = min2 (minorder, Min(el_orders));
           // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
           // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
           

@@ -218,8 +218,8 @@ void ExportNgstd() {
 
   bp::class_<Archive, shared_ptr<Archive>, boost::noncopyable> ("Archive", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](const string & filename, bool write = true,
-                              bool binary = false) -> shared_ptr<Archive>
+         (FunctionPointer ([](const string & filename, bool write,
+                              bool binary) -> shared_ptr<Archive>
                            {
                              if(binary) {
                                if (write)

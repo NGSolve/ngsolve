@@ -74,7 +74,7 @@ namespace ngcomp
          fes.TransformVec (ei, elu, TRANSFORM_SOL);
          
          IntegrationRule ir(fel.ElementType(), 
-                            max(fel.Order(),felflux.Order())+felflux.Order());
+                            max2(fel.Order(),felflux.Order())+felflux.Order());
          
          BaseMappedIntegrationRule & mir = eltrans(ir, lh);
          FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimfluxvec, lh);
@@ -700,7 +700,7 @@ namespace ngcomp
 
 	double elerr = 0;
 
-	int io = max(fel1.Order(),fel2.Order()); 
+	int io = max2(fel1.Order(),fel2.Order()); 
 
 	IntegrationRule ir(fel1.ElementType(), 2*io+2);
 	BaseMappedIntegrationRule & mir = eltrans(ir, lh);

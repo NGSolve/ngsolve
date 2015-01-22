@@ -84,7 +84,7 @@ namespace ngfem
       
       order = facet_order[0];        // integration order
       for (int i = 1; i < ao.Size(); i++)
-	order = max(order, ao[i]);
+	order = max2(order, ao[i]);
     }
 
     FacetFEFacet<D> Facet (int fnr) const 

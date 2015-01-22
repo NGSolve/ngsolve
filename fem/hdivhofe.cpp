@@ -186,7 +186,7 @@ namespace ngfem
   void HDivHighOrderNormalQuad<T_ORTHOPOL> :: ComputeNDof()
   {
     ndof = (order_inner[0] < 0) ? 0 : (1 + order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1]);
-    order = max(order_inner[0],order_inner[1]);
+    order = max2(order_inner[0],order_inner[1]);
     order++; // order used for numerical integration
   }
 
@@ -442,7 +442,7 @@ namespace ngfem
 	    else
               {
                 ndof = order_inner[0]*order_inner[1] + order_inner[0] + order_inner[1];
-                order = max(order_inner[0], order_inner[1])+1;
+                order = max2(order_inner[0], order_inner[1])+1;
               }
 	    return;
 	  }
@@ -560,7 +560,7 @@ namespace ngfem
         order = 0; 
         for (int i = 0; i < ET_trait<ET>::N_FACE; i++)
           {
-            int p = max(order_facet[i][0], order_facet[i][1]);
+            int p = max2(order_facet[i][0], order_facet[i][1]);
             if (p > order) order = p;
           }
 

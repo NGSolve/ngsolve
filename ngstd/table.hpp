@@ -242,7 +242,7 @@ template <class T>
     
     Table<T> * GetTable() { return table; }
 
-    operator Table<T> () 
+    operator Table<T> &&() 
     {
       Table<int> tmp (std::move(*table));
       delete table;

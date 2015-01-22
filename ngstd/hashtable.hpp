@@ -188,7 +188,7 @@ namespace ngstd
   {
     INT<D,T> tmp;
     for (int i = 0; i < D; i++)
-      tmp[i] = max(i1[i], i2[i]);
+      tmp[i] = max2(i1[i], i2[i]);
     return tmp;
   }
 

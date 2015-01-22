@@ -336,7 +336,7 @@ namespace ngfem
     // cell-based shapes 
     int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl  
-    int pp = max(p,pc); 
+    int pp = max2(p,pc); 
     if ( pp >= 2 )
       {
 #ifdef VLA

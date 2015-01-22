@@ -548,7 +548,7 @@ namespace ngcomp
     ndomains = -1;
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
-      ndomains = max(ndomains, GetElIndex(i));
+      ndomains = max2(ndomains, GetElIndex(i));
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
@@ -556,7 +556,7 @@ namespace ngcomp
     nboundaries = -1;
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
-      nboundaries = max(nboundaries, GetSElIndex(i));
+      nboundaries = max2(nboundaries, GetSElIndex(i));
 
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);

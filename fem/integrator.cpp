@@ -56,7 +56,7 @@ namespace ngfem
   {
     int maxval = 0;
     for (int i = 0; i < regions.Size(); i++)
-      maxval = max(maxval, regions[i]);
+      maxval = max2(maxval, regions[i]);
 
     definedon.SetSize (maxval+1);
     definedon.Clear();

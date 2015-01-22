@@ -93,7 +93,7 @@ namespace ngfem
       ndof = PolDimension (order_inner);
       order = 0;
       for (int i = 0; i < DIM; i++)
-        order = max(order, order_inner[i]);
+        order = max2(order, order_inner[i]);
     }
 
     NGS_DLL_HEADER virtual void PrecomputeTrace ();

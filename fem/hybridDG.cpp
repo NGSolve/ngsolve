@@ -356,7 +356,7 @@ namespace ngfem
 
 
       const IntegrationRule & ir = 
-	SelectIntegrationRule(fel.ElementType(), max(fel.Order(),felflux.Order())+felflux.Order());
+	SelectIntegrationRule(fel.ElementType(), max2(fel.Order(),felflux.Order())+felflux.Order());
 
       MappedIntegrationRule<D,D> mir (ir, eltrans, lh);
 
