@@ -100,7 +100,7 @@ if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tcl8.5" "%INSTALL_FOLDER%\lib\tcl8.5" /i /d /y /e /q
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tix8.4.3" "%INSTALL_FOLDER%\lib\tix8.4.3" /i /d /y /e /q
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x64\tk8.5" "%INSTALL_FOLDER%\lib\tk8.5" /i /d /y /e /q
-   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
+   copy "%PROJ_DIR%..\..\ext_libs\boost_1_56_0\lib\x64\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
    REM if errorlevel 1 goto externalInstallFailed
 )   
 
@@ -111,7 +111,7 @@ if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tcl8.5" "%INSTALL_FOLDER%\lib\tcl8.5" /i /d /y /e /q
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tix8.4.3" "%INSTALL_FOLDER%\lib\tix8.4.3" /i /d /y /e /q
    xcopy "%PROJ_DIR%..\..\ext_libs\tcl\lib\x86\tk8.5" "%INSTALL_FOLDER%\lib\tk8.5" /i /d /y /e /q
-   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"   
+   copy "%PROJ_DIR%..\..\ext_libs\boost_1_56_0\lib\Win32\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
    REM if errorlevel 1 goto externalInstallFailed
 )
 

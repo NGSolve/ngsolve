@@ -201,7 +201,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -216,8 +216,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>pthreadVC2.lib;zdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;C:\Python34\libs;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVC2.lib;zdll.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -242,7 +242,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -258,7 +258,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -296,8 +296,8 @@
       <DisableSpecificWarnings>4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>pthreadVC2.lib;zdll.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKDCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVC2.lib;zdll.lib;opengl32.lib;glu32.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKDCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -322,7 +322,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -337,8 +337,8 @@
       <DisableSpecificWarnings>4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(BOOSTROOT)\lib;$(PYTHONROOT)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;opengl32.lib;glu32.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -354,6 +354,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libsrc\csg\python_csg.cpp" />
+    <ClCompile Include="..\libsrc\csg\vscsg.cpp" />
     <ClCompile Include="..\libsrc\csg\zrefine.cpp" />
     <ClCompile Include="..\libsrc\general\gzstream.cpp" />
     <ClCompile Include="..\libsrc\geom2d\python_geom2d.cpp" />

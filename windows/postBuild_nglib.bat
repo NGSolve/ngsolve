@@ -62,12 +62,12 @@ REM *** Copy the DLL and LIB Files into the install folder ***
 echo Installing required files into %INSTALL_FOLDER% ....
 if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y   
-   copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
+   REM copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
    if errorlevel 1 goto DLLInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
-   copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
+   REM copy "%PROJ_DIR%%PROJ_NAME%\%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"   
    if errorlevel 1 goto DLLInstallFailed
 )
 echo Installing %PROJ_EXEC%: Completed OK!!
@@ -84,13 +84,13 @@ if /i "%BUILD_ARCH%" == "x64" (
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x64\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y   
    xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x64\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
-   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
+   copy "%PROJ_DIR%..\..\ext_libs\boost_1_56_0\lib\x64\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"
    if errorlevel 1 goto ExternalInstallFailed
 )
 if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%..\..\ext_libs\pthreads-Win32\dll\x86\pthreadVC2.dll" "%INSTALL_FOLDER%\bin" /i /d /y
    xcopy "%PROJ_DIR%..\..\ext_libs\zlib\x86\lib\zlib1.dll" "%INSTALL_FOLDER%\bin" /i /d /y
-   copy "%BOOSTROOT%\lib\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"   
+   copy "%PROJ_DIR%..\..\ext_libs\boost_1_56_0\lib\Win32\boost_python-vc120-mt-1_56.dll" "%INSTALL_FOLDER%\bin\boost_python-vc120-mt-1_56.dll"   
    if errorlevel 1 goto ExternalInstallFailed
 )
 
