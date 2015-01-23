@@ -1,15 +1,15 @@
 #include <solve.hpp>
-using namespace ngsolve;
-#include "../ngstd/python_ngstd.hpp"
+//using namespace ngsolve;
+//#include "../ngstd/python_ngstd.hpp"
+#include<boost\python.hpp>
+#include<iostream>
 
-#ifdef NGS_PYTHON
-
-void ExportNgstd();
-void ExportNgbla();
-void ExportNgfem();
-void ExportNgla();
-void ExportNgcomp();
-void ExportNgsolve();
+void __declspec(dllimport) ExportNgstd();
+void __declspec(dllimport) ExportNgbla();
+void __declspec(dllimport) ExportNgfem();
+void __declspec(dllimport) ExportNgla();
+void __declspec(dllimport) ExportNgcomp();
+void __declspec(dllimport) ExportNgsolve();
 
 
 // char * libargv = (char*) { "libngs" };
@@ -33,21 +33,19 @@ BOOST_PYTHON_MODULE(ngslib)
         ExportNgbla();
         ExportNgfem();
         ExportNgla();
-        ExportNgcomp();
-      
+        ExportNgcomp();      
         ExportNgsolve();
     }
     catch (ngstd::Exception & e)
     {
-        cerr << "\n\nCaught Exception:\n" << e.What() << endl;
+        std::cerr << "\n\nCaught Exception:\n" << e.What() << std::endl;
     }
     catch (...)
     {
-        cerr << "\n\nCaught Python Exception:\n" << endl;
+        std::cerr << "\n\nCaught Python Exception:\n" << std::endl;
         PyErr_Print();
     }
 }
 
 
 
-#endif
