@@ -72,7 +72,7 @@
     <PlatformToolset>CTP_Nov2013</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Lapack|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -234,8 +234,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -253,7 +253,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -274,8 +274,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -294,7 +294,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -312,8 +312,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -331,7 +331,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x86;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -352,8 +352,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;$(SolutionDir)..\..\ext_libs\Python34\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -372,7 +372,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;libopenblas.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(SolutionDir)..\..\ext_libs\OpenBlas\lib\x64;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -390,8 +390,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NOMINMAX;NGS_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -409,7 +409,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_c_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(MKL_ROOT)\compiler\lib\ia32;$(MKL_ROOT)\mkl\lib\ia32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x86;$(MKL_ROOT)\compiler\lib\ia32;$(MKL_ROOT)\mkl\lib\ia32;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -431,8 +431,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;C:\Boost_Source\boost_1_56_0;C:\Python34\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NGS_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\tcl\include;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;$(SolutionDir)..\..\ext_libs\Python34\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;TCL;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NGS_PYTHON;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -451,7 +451,7 @@
     <Link>
       <AdditionalDependencies>nginterface.lib;tcl85.lib;mkl_intel_lp64_dll.lib;mkl_intel_thread_dll.lib;mkl_core_dll.lib;libiomp5md.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libngsolve.dll</OutputFile>
-      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(MKL_ROOT)\mkl\lib\intel64;$(MKL_ROOT)\compiler\lib\intel64;C:\Python34\libs;C:\Boost_Source\boost_1_56_0\stage\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(NETGENDIR)\..\lib;$(SolutionDir)..\..\ext_libs\tcl\lib\x64;$(MKL_ROOT)\mkl\lib\intel64;$(MKL_ROOT)\compiler\lib\intel64;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>nafxcw.lib;libcpmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -465,6 +465,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\basiclinalg\python_bla.cpp" />
+    <ClCompile Include="..\comp\basenumproc.cpp" />
     <ClCompile Include="..\comp\bddc.cpp" />
     <ClCompile Include="..\comp\bilinearform.cpp" />
     <ClCompile Include="..\comp\facetfespace.cpp" />
@@ -480,6 +481,8 @@
     <ClCompile Include="..\comp\linearform.cpp" />
     <ClCompile Include="..\comp\meshaccess.cpp" />
     <ClCompile Include="..\comp\ngsobject.cpp" />
+    <ClCompile Include="..\comp\pde.cpp" />
+    <ClCompile Include="..\comp\pdeparser.cpp" />
     <ClCompile Include="..\comp\postproc.cpp" />
     <ClCompile Include="..\comp\preconditioner.cpp" />
     <ClCompile Include="..\comp\python_comp.cpp" />
@@ -495,12 +498,15 @@
     <ClCompile Include="..\fem\DGIntegrators.cpp" />
     <ClCompile Include="..\fem\diffop.cpp" />
     <ClCompile Include="..\fem\elementtopology.cpp" />
+    <ClCompile Include="..\fem\elementtransformation.cpp" />
     <ClCompile Include="..\fem\facethofe.cpp" />
     <ClCompile Include="..\fem\fastmat.cpp" />
     <ClCompile Include="..\fem\finiteelement.cpp" />
     <ClCompile Include="..\fem\generic_recpol.cpp" />
     <ClCompile Include="..\fem\h1hofe.cpp" />
     <ClCompile Include="..\fem\h1hofefo.cpp" />
+    <ClCompile Include="..\fem\h1hofe_segm.cpp" />
+    <ClCompile Include="..\fem\h1hofe_trig.cpp" />
     <ClCompile Include="..\fem\h1lofe.cpp" />
     <ClCompile Include="..\fem\hcurlfe.cpp" />
     <ClCompile Include="..\fem\hcurlhofe.cpp" />
@@ -562,8 +568,6 @@
     <ClCompile Include="..\solve\ngsolve.cpp" />
     <ClCompile Include="..\solve\numproc.cpp" />
     <ClCompile Include="..\solve\numprocee.cpp" />
-    <ClCompile Include="..\solve\pde.cpp" />
-    <ClCompile Include="..\solve\pdeparser.cpp" />
     <ClCompile Include="..\solve\python_solve.cpp" />
     <ClCompile Include="..\solve\shapetester.cpp" />
   </ItemGroup>
