@@ -44,26 +44,35 @@ namespace ngcomp
     flux.GetVector() = 0.0;
 
     ProgressOutput progress (ma, "postprocessing element", ne);
-    
-    IterateElements 
-      (fesflux, VorB(bound), clh, 
-       [&] (ElementId ei, LocalHeap & lh)
-       {
-         HeapReset hr(lh);
-         progress.Update ();
 
-         int eldom = ma->GetElIndex (ei);
-         if (!domains[eldom]) return;;
-	 
+#pragma omp parallel
+    {
+      LocalHeap slh = clh.Split();
+      
+      auto flux_elements = fesflux.Elements(VorB(bound));
+
+      IterateElementsInsideParallel
+        (fesflux, VorB(bound), slh, 
+         [&] (Ngs_Element ei, LocalHeap & lh)
+         {
+           HeapReset hr(lh);
+           progress.Update ();
+
+         if (!domains[ei.GetIndex()]) return;;
+
          const FiniteElement & fel = fes.GetFE (ei, lh);
          const FiniteElement & felflux = fesflux.GetFE (ei, lh);
 	 
          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+         
 
          Array<int> dnums(fel.GetNDof(), lh);
-         Array<int> dnumsflux(felflux.GetNDof(), lh);
          fes.GetDofNrs (ei, dnums);
-         fesflux.GetDofNrs (ei, dnumsflux);
+         /*
+         Array<int> dnumsflux(felflux.GetNDof(), lh);
+         fesflux.GetDofNrs(ei, dnumsflux);
+         */
+         FlatArray<int> dnumsflux = flux_elements[ei].Dofs();
 
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -81,7 +90,7 @@ namespace ngcomp
 	 
          bli->CalcFlux (fel, mir, elu, mfluxi, applyd, lh);
 	 
-         for (int j = 0; j < ir.GetNIP(); j++)
+         for (int j : Range(ir))
            mfluxi.Row(j) *= mir[j].GetWeight();
          
          elflux = 0;
@@ -114,11 +123,12 @@ namespace ngcomp
          elfluxi += elflux;
          flux.SetElementVector (dnumsflux, elfluxi);
 
-         // for (int j = 0; j < dnumsflux.Size(); j++)
-         //   cnti[dnumsflux[j]]++;
-         for (auto d : dnumsflux) cnti[d]++;
+         for (auto d : dnumsflux) if (d != -1) cnti[d]++;
        });
-    
+
+    }
+
+
     progress.Done();
     
 #ifdef PARALLEL
@@ -646,8 +656,6 @@ namespace ngcomp
 	return; 	
       } 
 
-    // ElementTransformation eltrans;
-
     bool applyd1 = 0;
     bool applyd2 = 0;
 
@@ -674,18 +682,6 @@ namespace ngcomp
 	fes1.GetDofNrs (ei, dnums1);
 	fes2.GetDofNrs (ei, dnums2);
 
-	/*
-	if (bound1)
-	  {
-	    fes1.GetSDofNrs (i, dnums1);
-	    fes2.GetSDofNrs (i, dnums2);
-	  }
-	else
-	  {
-	    fes1.GetDofNrs (i, dnums1);
-	    fes2.GetDofNrs (i, dnums2);
-	  }
-	*/
 
 	FlatVector<SCAL> elu1(dnums1.Size() * dim1, lh);
 	FlatVector<SCAL> elu2(dnums2.Size() * dim2, lh);
