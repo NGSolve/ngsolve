@@ -103,7 +103,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(ProjectName)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectName)\$(Configuration)\$(ProjectName)</IntDir>
     <ExtensionsToDeleteOnClean>*.obj%3b*.ilk%3b*.tlb%3b*.tli%3b*.tlh%3b*.tmp%3b*.rsp%3b*.pgc%3b*.pgd%3b*.meta%3b$(TargetPath)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -113,7 +113,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release(OCC)|Win32'">
     <OutDir>$(SolutionDir)$(ProjectName)\$(Configuration)\</OutDir>
-    <IntDir>$(ProjectName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectName)\$(Configuration)\$(ProjectName)</IntDir>
     <ExtensionsToDeleteOnClean>*.obj%3b*.ilk%3b*.tlb%3b*.tli%3b*.tlh%3b*.tmp%3b*.rsp%3b*.pgc%3b*.pgd%3b*.meta%3b$(TargetPath)</ExtensionsToDeleteOnClean>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release(OCC)|x64'">
@@ -201,8 +201,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -217,7 +217,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zdll.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -242,8 +242,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\Python34\include\;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NOTCL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -258,7 +258,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
@@ -281,8 +281,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(BOOSTROOT);$(PYTHONROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -297,7 +297,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zdll.lib;opengl32.lib;glu32.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKDCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\Win32;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CASROOT)\win32\vc8\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x86;$(SolutionDir)..\..\ext_libs\zlib\x86\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
     </Link>
     <Manifest>
@@ -322,8 +322,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;$(SolutionDir)..\..\ext_libs\boost_1_56_0\;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502;NG_PYTHON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CASROOT)\inc;$(SolutionDir)..\..\ext_libs\pthreads-Win32\include;$(SolutionDir)..\libsrc\include;$(SolutionDir)..\nglib;$(SolutionDir)..\;$(SolutionDir)..\..\ext_libs\zlib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WNT;WIN32;NDEBUG;_WINDOWS;_USRDLL;NGLIB_EXPORTS;MSVC_EXPRESS;Standard_EXPORT=;OCCGEOMETRY;_OCC64;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
@@ -338,7 +338,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>pthreadVC2.lib;zlib1.lib;opengl32.lib;glu32.lib;TKernel.lib;TKGeomBase.lib;TKMath.lib;TKG2d.lib;TKG3d.lib;TKXSBase.lib;TKOffset.lib;TKFillet.lib;TKShHealing.lib;TKMesh.lib;TKMeshVS.lib;TKTopAlgo.lib;TKGeomAlgo.lib;TKBool.lib;TKPrim.lib;TKBO.lib;TKIGES.lib;TKBRep.lib;TKSTEPBase.lib;TKSTEP.lib;TKSTL.lib;TKSTEPAttr.lib;TKSTEP209.lib;TKXDESTEP.lib;TKXDEIGES.lib;TKXCAF.lib;TKLCAF.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;$(SolutionDir)..\..\ext_libs\Python34\lib\x64;$(SolutionDir)..\..\ext_libs\boost_1_56_0\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(CASROOT)\win64\vc9\lib;$(SolutionDir)..\..\ext_libs\pthreads-Win32\lib\x64;$(SolutionDir)..\..\ext_libs\zlib\x64\\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ManifestFile>$(OutDir)$(TargetFileName).intermediate.manifest</ManifestFile>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
