@@ -141,7 +141,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -166,7 +170,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -196,7 +204,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release(OCC)|Win32'">
@@ -226,7 +238,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -256,7 +272,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release(OCC)|x64'">
@@ -286,7 +306,11 @@ copy "$(SolutionDir)..\python\csg.py" "$(NETGENDIR)\netgen\csg.py"
 copy "$(SolutionDir)..\python\meshing.py" "$(NETGENDIR)\netgen\meshing.py"
 mkdir "$(NETGENDIR)\..\py_tutorials\"
 mkdir "$(NETGENDIR)\..\py_tutorials\netgen"
-copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"</Command>
+copy "$(SolutionDir)..\py_tutorials\*.py" "$(NETGENDIR)\..\py_tutorials\netgen\*.py"
+copy "$(SolutionDir)..\py_tutorials\*.vol.gz" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol.gz"
+copy "$(SolutionDir)..\py_tutorials\*.vol" "$(NETGENDIR)\..\py_tutorials\netgen\*.vol"
+copy "$(SolutionDir)..\py_tutorials\*.pde" "$(NETGENDIR)\..\py_tutorials\netgen\*.pde"
+copy "$(SolutionDir)..\py_tutorials\*.in2d" "$(NETGENDIR)\..\py_tutorials\netgen\*.in2d"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
