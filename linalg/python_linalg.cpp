@@ -8,7 +8,7 @@ using namespace ngla;
 
 
 
-void ExportNgla() {
+void NGS_DLL_HEADER ExportNgla() {
     std::string nested_name = "la";
     if( bp::scope() )
          nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".la");
