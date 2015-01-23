@@ -1,6 +1,6 @@
 from ngsolve import *
 
-pde = solve.PDE("../pde_tutorial/d1_square.pde")
+pde = comp.PDE("d1_square.pde")
 pde.Solve()
 mesh = pde.Mesh()
 
