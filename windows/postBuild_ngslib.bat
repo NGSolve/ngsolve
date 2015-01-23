@@ -55,12 +55,12 @@ REM *** Copy the primary NGSolve DLL into the Install Folder ***
 echo Installing %PROJ_EXEC% into %INSTALL_FOLDER%\bin ....
 if /i "%BUILD_ARCH%" == "win32" (
    xcopy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
-   copy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
+   REM copy "%PROJ_DIR%%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
    if errorlevel 1 goto ExecInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
    xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\" /i /d /y
-   copy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
+   REM copy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%PROJ_EXEC%" "%INSTALL_FOLDER%\bin\%PROJ_NAME%.pyd"
    if errorlevel 1 goto ExecInstallFailed
 )   
 echo Installing %PROJ_EXEC%: Completed OK!!
@@ -72,7 +72,7 @@ if /i "%BUILD_ARCH%" == "win32" (
    if errorlevel 1 goto LibInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
-   xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
+   REM xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
    if errorlevel 1 goto LibInstallFailed
 )   
 echo Installing %LIB_NAME%.lib: Completed OK!!
