@@ -74,7 +74,7 @@ public:
 
 
 
-void ExportNgcomp() 
+void NGS_DLL_HEADER ExportNgcomp()
 {
   bp::docstring_options local_docstring_options(true, true, false);
   
