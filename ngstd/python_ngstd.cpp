@@ -81,7 +81,7 @@ struct FlagsFromPythonDict
 };
 
 
-void ExportNgstd() {
+void NGS_DLL_HEADER  ExportNgstd() {
   std::string nested_name = "ngstd";
   if( bp::scope() )
     nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".ngstd");
