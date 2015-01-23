@@ -273,7 +273,7 @@ namespace ngla
 	const SCAL * pr;
 	int i;
 
-	BaseVector & d = *f.CreateVector();
+	auto d = f.CreateVector();
 
 	BaseMatrix * smalla;
 
@@ -488,7 +488,6 @@ namespace ngla
 	  }
 	const_cast<int&> (steps) = n;
 	
-	delete &d;
 	/*
 	if(!smalla)
 	  {
@@ -663,14 +662,14 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
  
-	BaseVector & r = *f.CreateVector();
-	BaseVector & r_tilde = *f.CreateVector();
-	BaseVector & p = *f.CreateVector();
-	BaseVector & p_tilde = *f.CreateVector();
-	BaseVector & s = *f.CreateVector();
-	BaseVector & s_tilde = *f.CreateVector();
-	BaseVector & t = *f.CreateVector();
-	BaseVector & v = *f.CreateVector();
+	auto r = f.CreateVector();
+	auto r_tilde = f.CreateVector();
+	auto p = f.CreateVector();
+	auto p_tilde = f.CreateVector();
+	auto s = f.CreateVector();
+	auto s_tilde = f.CreateVector();
+	auto t = f.CreateVector();
+	auto v = f.CreateVector();
 
 	int n = 0;
 	SCAL rho_old, rho_new, beta, alpha, omega;
@@ -767,15 +766,6 @@ namespace ngla
 	  } 
 	
 	const_cast<int&> (steps) = n;
-	
-	delete &r;
-	delete &r_tilde;
-	delete &p;
-	delete &p_tilde;
-	delete &s;
-	delete &s_tilde;
-	delete &t;
-	delete &v;
       }
 
     catch (exception & e)
@@ -803,8 +793,8 @@ namespace ngla
 	if(sh)
 	  sh->SetThreadPercentage(0);
  
-	BaseVector & d = *f.CreateVector();
-	BaseVector & w = *f.CreateVector();
+	auto d = f.CreateVector();
+	auto w = f.CreateVector();
 
 	int n = 0;
 	double err, err0;
@@ -840,9 +830,6 @@ namespace ngla
           }
 
 	const_cast<int&> (steps) = n;
-	
-	delete &d;
-	delete &w;
       }
 
     catch (exception & e)
@@ -886,11 +873,11 @@ namespace ngla
       {
 	// Solve A u = f
 
-	BaseVector & v = *f.CreateVector();
-	BaseVector & av = *f.CreateVector();
-	BaseVector & r = *f.CreateVector();
-	BaseVector & w = *f.CreateVector();
-	BaseVector & hv = *f.CreateVector();
+	auto v = f.CreateVector();
+	auto av = f.CreateVector();
+	auto r = f.CreateVector();
+	auto w = f.CreateVector();
+	auto hv = f.CreateVector();
 
         Array<AutoVector> vi(maxsteps);
         Matrix<SCAL> h(maxsteps+1, maxsteps);
@@ -934,8 +921,8 @@ namespace ngla
 	int j = -1;
 	while (j++ < maxsteps-2 && norm > err)
 	  {
-            vi[j] =  f.CreateVector();
-            *vi[j] = v;
+            shared_ptr<BaseVector>(vi[j]) = shared_ptr<BaseVector>(f.CreateVector());
+            vi[j] = v;
 
             av = (*a) * v;
             if (c)
@@ -1025,14 +1012,6 @@ namespace ngla
         for (int i = 0; i <= j; i++)
           x += us(i) * *vi[i];
         */
-
-
-
-	delete &v;
-        delete &av;
-        delete &w;
-	delete &r;
-	delete &hv;
       }
 
     catch (exception & e)
@@ -1097,20 +1076,20 @@ void QMRSolver<SCAL> :: Mult (const BaseVector & b, BaseVector & x) const
       SCAL rho, rho_1, xi, gamma, gamma_1, theta, theta_1, eta, delta, ep=1.0, beta;
       
 
-      BaseVector & r = *b.CreateVector();
-      BaseVector & v_tld = *b.CreateVector();
-      BaseVector & y = *b.CreateVector();
-      BaseVector & w_tld = *b.CreateVector();
-      BaseVector & z = *b.CreateVector();
-      BaseVector & v = *b.CreateVector();
-      BaseVector & w = *b.CreateVector();
-      BaseVector & y_tld = *b.CreateVector();
-      BaseVector & z_tld = *b.CreateVector();
-      BaseVector & p = *b.CreateVector();
-      BaseVector & q = *b.CreateVector();
-      BaseVector & p_tld = *b.CreateVector();
-      BaseVector & d = *b.CreateVector();
-      BaseVector & s = *b.CreateVector();
+      auto r = b.CreateVector();
+      auto v_tld = b.CreateVector();
+      auto y = b.CreateVector();
+      auto w_tld = b.CreateVector();
+      auto z = b.CreateVector();
+      auto v = b.CreateVector();
+      auto w = b.CreateVector();
+      auto y_tld = b.CreateVector();
+      auto z_tld = b.CreateVector();
+      auto p = b.CreateVector();
+      auto q = b.CreateVector();
+      auto p_tld = b.CreateVector();
+      auto d = b.CreateVector();
+      auto s = b.CreateVector();
 
       double normb = b.L2Norm();
 
