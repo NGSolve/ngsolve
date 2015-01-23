@@ -268,55 +268,14 @@ namespace ngcomp
         : IntRange(ar), fes(afes), vb(avb) { ; }
       INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First()), temp_dnums); }
       INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums); }
-      INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
+      // INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
+      INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums); }
     };
 
     ElementRange Elements (VorB vb = VOL) const
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
     }
-
-
-    /*
-    template <VorB VB>
-    class T_ElementIterator
-    {
-      const FESpace & fes;
-      int nr;
-      mutable Array<int> temp_dnums;
-    public:
-      INLINE T_ElementIterator (const FESpace & afes, int anr) 
-        : fes(afes), nr(anr) { ; }
-      INLINE T_ElementIterator & operator++ ()
-      {
-        ++nr;
-        while (nr < fes.GetMeshAccess()->GetNE(VB) && !fes.DefinedOn(ElementId(VB,nr))) ++nr;
-        return *this;
-      }
-      INLINE Element operator*() const { return Element (fes, ElementId(VB,nr), temp_dnums); }
-      INLINE bool operator!=(T_ElementIterator id2) const { return nr != id2.nr; }
-    };
-
-    template <VorB VB>
-    class T_ElementRange : public IntRange
-    {
-      const FESpace & fes;
-    public:
-      INLINE T_ElementRange (const FESpace & afes, IntRange ar) 
-        : IntRange(ar), fes(afes) { ; }
-      INLINE T_ElementIterator<VB> begin () const { return T_ElementIterator<VB>(fes, First()); }
-      INLINE T_ElementIterator<VB> end () const { return T_ElementIterator<VB>(fes, Next()); }
-    };
-
-    template <VorB VB>
-    T_ElementRange<VB> Elements () const
-    {
-      return T_ElementRange<VB> (*this, IntRange (0, ma->GetNE(VB)));
-    }
-    */
-
-
-
 
 
 
@@ -332,17 +291,6 @@ namespace ngcomp
 
     /// get dof-nrs of the element
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const = 0;
-
-    /*
-    /// get dof-nrs of domain or boundary element elnr
-    void GetDofNrs (int elnr, bool boundary, Array<int> & dnums) const
-    {
-      if (boundary)
-	GetSDofNrs (elnr, dnums);
-      else
-	GetDofNrs (elnr, dnums);
-    }
-    */
 
     /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (ElementId ei, Array<int> & dnums) const
@@ -411,13 +359,6 @@ namespace ngcomp
 
     bool DefinedOn (ElementId id) const
     {
-      /*
-      int idx = ma.GetElIndex (id);
-      if (id.IsBoundary())
-        return DefinedOnBoundary (idx);
-      else
-        return DefinedOn (idx);
-      */
       if (id.IsBoundary())
         {
           if (!definedonbound.Size()) return true;
@@ -647,36 +588,14 @@ namespace ngcomp
     }
   };
 
-  /*
-  INLINE Fes_Element :: Fes_Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)
-    : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
-  { ; }
-
-  INLINE FlatArray<int> Fes_Element :: Dofs() const
-  {
-    fes.GetDofNrs (*this, temp_dnums);
-    return temp_dnums;
-  }
-  */
-
-  /*
-  INLINE FESElementIterator FESElementIterator :: operator++ ()
-  {
-    ++ei;
-    while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && !fes.DefinedOn(ei)) ++ei;
-    return FESElementIterator(fes, ei); 
-  }
-  
-  INLINE Fes_Element FESElementIterator :: operator*() const 
-  { return Fes_Element (fes, ei, temp_dnums); }
-  */
 
 
-  template <typename T>
+
+  template <typename TFUNC>
   inline void IterateElements (const FESpace & fes, 
                                VorB vb, 
                                LocalHeap & clh, 
-                               const T & func)
+                               const TFUNC & func)
   {
     const Table<int> & element_coloring = fes.ElementColoring(vb);
     
@@ -686,22 +605,48 @@ namespace ngcomp
       Array<int> temp_dnums;
 
       // lh.ClearValues();
-      for (size_t col = 0; col < element_coloring.Size(); col++)
-        {
-          FlatArray<int> elscol = element_coloring[col];
+
+      for (FlatArray<int> els_of_col : element_coloring)
 
 #pragma omp for schedule(dynamic)
-          for (int i = 0; i < elscol.Size(); i++)
-            {
-              HeapReset hr(lh);
-              FESpace::Element el(fes, ElementId (vb, elscol[i]), temp_dnums);
+        for (int i = 0; i < els_of_col.Size(); i++)
+          {
+            HeapReset hr(lh);
+            FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
               func (el, lh);
-              // func (ElementId(vb, elscol[i]), lh);
-            }
-        }
+          }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
     }
   }
+
+
+
+  template <typename TFUNC>
+  inline void IterateElementsInsideParallel (const FESpace & fes, 
+                                             VorB vb, 
+                                             LocalHeap & lh, 
+                                             const TFUNC & func)
+  {
+    const Table<int> & element_coloring = fes.ElementColoring(vb);
+    
+    Array<int> temp_dnums;
+
+    // lh.ClearValues();
+    
+    for (FlatArray<int> els_of_col : element_coloring)
+      
+#pragma omp for schedule(dynamic)
+      for (int i = 0; i < els_of_col.Size(); i++)
+        {
+          HeapReset hr(lh);
+          FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
+          func (el, lh);
+        }
+    // cout << "lh, used size = " << lh.UsedSize() << endl;
+  }
+
+
+
 
 
 

@@ -102,7 +102,7 @@ public:
   }
 
   /// Construct table of variable entrysize
-  INLINE Table (const FlatArray<int> & entrysize)
+  INLINE Table (FlatArray<int> entrysize)
   {
     size_t cnt = 0;
     size  = entrysize.Size();
@@ -161,11 +161,11 @@ public:
 template <class T>
 inline ostream & operator<< (ostream & s, const Table<T> & table)
 {
-  for (size_t i = 0; i < table.Size(); i++)
+  for (auto i : Range(table))
     {
       s << i << ":";
-      for (int j = 0; j < table[i].Size(); j++)
-	s << " " << table[i][j];
+      for (auto el : table[i])
+	s << " " << el;
       s << "\n";
     }
   s << flush;
@@ -180,13 +180,13 @@ template <class T>
   {
   protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
-    size_t nd;
+    int nd;
     Array<int> cnt;
     Table<T> * table;
   public:
     TableCreator()
     { nd = 0; mode = 1; table = NULL; }
-    TableCreator(size_t acnt)
+    TableCreator(int acnt)
     { nd = acnt; table = NULL; SetMode(2); }
     
     Table<T> * GetTable() { return table; }
@@ -224,26 +224,20 @@ template <class T>
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-	  size_t sum = 0;
-	  // for (size_t i = 0; i < cnt.Size(); i++)
+          cnt = 0;
           /*
-          for (auto i : cnt.Range())
-	    {
-	      size_t nsum = sum + cnt[i];
-	      cnt[i] = sum;
-	      sum = nsum;
-	    }
-          */
+	  size_t sum = 0;
           for (auto & ci : cnt)
 	    {
 	      size_t nsum = sum + ci;
 	      ci = sum;
 	      sum = nsum;
 	    }
+          */
 	}
     }
 
-    void SetSize (size_t _nd)
+    void SetSize (int _nd)
     {
       if (mode == 1)
         nd = _nd;
@@ -254,7 +248,7 @@ template <class T>
         }
     }
 
-    void Add (size_t blocknr, const T & data)
+    void Add (int blocknr, const T & data)
     {
       switch (mode)
 	{
@@ -265,14 +259,14 @@ template <class T>
 	  cnt[blocknr]++;
 	  break;
 	case 3:
-	  // (*table)[blocknr][cnt[blocknr]++] = data;
-	  table -> Data() [cnt[blocknr]++] = data;
+          (*table)[blocknr][cnt[blocknr]++] = data;
+	  // table -> Data() [cnt[blocknr]++] = data;
 	  break;
 	}
     }
 
 
-    void Add (size_t blocknr, IntRange range)
+    void Add (int blocknr, IntRange range)
     {
       switch (mode)
 	{
@@ -283,20 +277,19 @@ template <class T>
 	  cnt[blocknr]+=range.Size();
 	  break;
 	case 3:
-	  /*
 	  for (int j = 0; j < range.Size(); j++)
 	    (*table)[blocknr][cnt[blocknr]+j] = range.First()+j;
 	  cnt[blocknr]+=range.Size();
-	  */
+          /*
 	  for (int j = 0; j < range.Size(); j++)
 	    table->Data()[cnt[blocknr]+j] = range.First()+j;
 	  cnt[blocknr]+=range.Size();
-
+          */
 	  break;
 	}
     }
 
-    void Add (size_t blocknr, const FlatArray<int> & dofs)
+    void Add (int blocknr, const FlatArray<int> & dofs)
     {
       switch (mode)
 	{
@@ -307,15 +300,14 @@ template <class T>
 	  cnt[blocknr]+=dofs.Size();
 	  break;
 	case 3:
-	  /*
 	  for (int j = 0; j < dofs.Size(); j++)
 	    (*table)[blocknr][cnt[blocknr]+j] = dofs[j];
 	  cnt[blocknr]+=dofs.Size();
-	  */
+          /*
 	  for (int j = 0; j < dofs.Size(); j++)
 	    table->Data()[cnt[blocknr]+j] = dofs[j];
 	  cnt[blocknr]+=dofs.Size();
-
+          */
 	  break;
 	}
     }
