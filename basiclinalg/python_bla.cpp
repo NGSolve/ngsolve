@@ -236,7 +236,7 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
 };
 
 
-void ExportNgbla() {
+void NGS_DLL_HEADER ExportNgbla() {
     std::string nested_name = "bla";
     if( bp::scope() )
          nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".bla");
