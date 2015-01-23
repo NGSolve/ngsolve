@@ -74,7 +74,7 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
 std::mutex PythonCFWrap::m;
 
 
-void ExportNgfem() {
+void NGS_DLL_HEADER ExportNgfem() {
     std::string nested_name = "fem";
     if( bp::scope() )
       nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".fem");
