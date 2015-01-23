@@ -1498,7 +1498,6 @@ namespace netgen
 	}
       }
   }
-
   void Solid :: ForEachSurface (const std::function<void(Surface*,bool)> & lambda, bool inv) const
   {
     switch (op)
