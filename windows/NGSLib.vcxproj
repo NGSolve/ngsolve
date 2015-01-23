@@ -38,6 +38,7 @@
     <ProjectGuid>{03E079F8-BE7A-4D60-BBB3-C8B8C6E22EF3}</ProjectGuid>
     <RootNamespace>NGSolve</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>ngslib</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_MKL|Win32'" Label="Configuration">
@@ -234,7 +235,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -273,7 +274,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -309,7 +310,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -348,7 +349,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -384,7 +385,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -424,7 +425,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include;$(SolutionDir)..\;$(SolutionDir)..\fem;$(NETGENDIR)\..\include;$(MKL_ROOT)\compiler\include;$(MKL_ROOT)\mkl\lib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;MSVC_EXPRESS;_WIN32_WINNT=0x0502;NGS_EXPORTS;LAPACK;MKLpardiso;USE_PARDISO;USE_MKL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -483,12 +484,16 @@
     <ClCompile Include="..\fem\DGIntegrators.cpp" />
     <ClCompile Include="..\fem\diffop.cpp" />
     <ClCompile Include="..\fem\elementtopology.cpp" />
+    <ClCompile Include="..\fem\elementtransformation.cpp" />
     <ClCompile Include="..\fem\facethofe.cpp" />
     <ClCompile Include="..\fem\fastmat.cpp" />
     <ClCompile Include="..\fem\finiteelement.cpp" />
     <ClCompile Include="..\fem\generic_recpol.cpp" />
     <ClCompile Include="..\fem\h1hofe.cpp" />
     <ClCompile Include="..\fem\h1hofefo.cpp" />
+    <ClCompile Include="..\fem\h1hofe_segm.cpp" />
+    <ClCompile Include="..\fem\h1hofe_tet.cpp" />
+    <ClCompile Include="..\fem\h1hofe_trig.cpp" />
     <ClCompile Include="..\fem\h1lofe.cpp" />
     <ClCompile Include="..\fem\hcurlfe.cpp" />
     <ClCompile Include="..\fem\hcurlhofe.cpp" />
