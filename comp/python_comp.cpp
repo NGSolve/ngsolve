@@ -135,7 +135,7 @@ void ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  bp::class_<Ngs_Element>("Ngs_Element", bp::no_init)
+  bp::class_<Ngs_Element,bp::bases<ElementId>>("Ngs_Element", bp::no_init)
     .add_property("vertices", FunctionPointer([](Ngs_Element &el) {return bp::tuple(Array<int>(el.Vertices()));} ))
     .add_property("edges", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Edges()));} ))
     .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ))

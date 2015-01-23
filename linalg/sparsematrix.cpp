@@ -141,7 +141,7 @@ namespace ngla
     */
 
 #pragma omp parallel for
-    for (size_t i = 0; i < colelements.Size(); i++)
+    for (int i = 0; i < colelements.Size(); i++)
       QuickSort (colelements[i]);
 
     // generate rowdof to element table
@@ -154,7 +154,7 @@ namespace ngla
             creator.Add(e, i);
       }
 
-    Table<int> dof2element = creator;
+    Table<int> dof2element = creator.MoveTable();
 
     /*
       // no speedup ???

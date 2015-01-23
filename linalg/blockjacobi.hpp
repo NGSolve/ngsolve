@@ -23,8 +23,6 @@ namespace ngla
     /// maximal block size
     int maxbs;
 
-    
-
     /// block coloring
     Table<int> block_coloring;
 
@@ -213,31 +211,32 @@ namespace ngla
         Vector<TVX> hxmax(maxbs);
         Vector<TVX> hymax(maxbs);
         for (int k = 0; k < steps; k++)
-          for (size_t c = 0; c < block_coloring.Size(); c++) {
-            auto blocks = block_coloring[c];
-
-#pragma omp for
-            for (int ii=0; ii<blocks.Size(); ii++)
+          for (int c = 0; c < block_coloring.Size(); c++)
             {
-              int i = blocks[ii];
-              int bs = blocktable[i].Size();
-              if (!bs) continue;
-
-              FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-              FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-
-              for (int j = 0; j < bs; j++)
-              {
-                int jj = blocktable[i][j];
-                hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-              }
-
-              hy = (invdiag[i]) * hx;
-
-              for (int j = 0; j < bs; j++)
-                fx(blocktable[i][j]) += hy(j);
+              FlatArray<int> blocks = block_coloring[c];
+              
+#pragma omp for
+              for (int ii=0; ii<blocks.Size(); ii++)
+                {
+                  int i = blocks[ii];
+                  int bs = blocktable[i].Size();
+                  if (!bs) continue;
+                  
+                  FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+                  FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+                  
+                  for (int j = 0; j < bs; j++)
+                    {
+                      int jj = blocktable[i][j];
+                      hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                    }
+                  
+                  hy = (invdiag[i]) * hx;
+                  
+                  for (int j = 0; j < bs; j++)
+                    fx(blocktable[i][j]) += hy(j);
+                }
             }
-          }
       }
     }
 #else
@@ -301,29 +300,30 @@ namespace ngla
       Vector<TVX> hymax(maxbs);
 
       for (int k = 0; k < steps; k++)
-          for (int c = block_coloring.Size()-1; c >=0; c--) {
-            auto blocks = block_coloring[c];
-
+        for (int c = block_coloring.Size()-1; c >=0; c--) 
+          {
+            FlatArray<int> blocks = block_coloring[c];
+            
 #pragma omp for
             for (int ii=0; ii<blocks.Size(); ii++)
-            {
-              int i = blocks[ii];
-              int bs = blocktable[i].Size();
-              if (!bs) continue;
-
-              FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
-              FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
-
-              for (int j = 0; j < bs; j++)
               {
-                int jj = blocktable[i][j];
-                hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-              }
-
-              hy = (invdiag[i]) * hx;
-
-              for (int j = 0; j < bs; j++)
-                fx(blocktable[i][j]) += hy(j);
+                int i = blocks[ii];
+                int bs = blocktable[i].Size();
+                if (!bs) continue;
+                
+                FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
+                FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
+                
+                for (int j = 0; j < bs; j++)
+                  {
+                    int jj = blocktable[i][j];
+                    hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                  }
+                
+                hy = (invdiag[i]) * hx;
+                
+                for (int j = 0; j < bs; j++)
+                  fx(blocktable[i][j]) += hy(j);
             }  
           }
       }
@@ -375,7 +375,7 @@ namespace ngla
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
     {
       int nels = 0;
-      for (size_t i = 0; i < blocktable.Size(); i++)
+      for (int i = 0; i < blocktable.Size(); i++)
 	{
 	  int bs = blocktable[i].Size();
 	  nels += bs*bs;

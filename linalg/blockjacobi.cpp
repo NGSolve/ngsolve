@@ -406,7 +406,7 @@ namespace ngla
       }
 
     *testout << "block coloring";
-
+    
     int nblocks = blocktable.Size();
     Array<int> coloring(nblocks);
     Array<unsigned int> mask(mat.Width());
@@ -435,12 +435,12 @@ namespace ngla
       }
       current_color++;
     }
-
+    
     TableCreator<int> creator(current_color);
     for ( ; !creator.Done(); creator++)
       for (int i=0; i<nblocks; i++)
           creator.Add(coloring[i],i);
-    block_coloring = std::move(creator);
+    block_coloring = creator.MoveTable();
 
     *testout << " using " << current_color << " colors" << endl;
 
@@ -508,7 +508,7 @@ namespace ngla
       Array<int> block_inv(amat.Height());
       block_inv = -1;
 
-      for (size_t i = 0; i < blocktable.Size(); i++)
+      for (int i = 0; i < blocktable.Size(); i++)
 	{
 	  int bs = blocktable[i].Size();
 	  
@@ -627,7 +627,7 @@ namespace ngla
     Vector<TVX> hxmax(maxbs);
     Vector<TVX> hymax(maxbs);
 
-    for (size_t i = 0; i < blocktable.Size(); i++)
+    for (int i = 0; i < blocktable.Size(); i++)
       {
 	int bs = blocktable[i].Size();
 	if (!bs) continue;
@@ -673,7 +673,7 @@ namespace ngla
       mat.AddRowTransToVector (j, -fx(j), fy);
 
     for (int k = 1; k <= steps; k++)
-      for (size_t i = 0; i < blocktable.Size(); i++)
+      for (int i = 0; i < blocktable.Size(); i++)
 	SmoothBlock (i, fx, /* fb, */ fy);
   }
   
@@ -688,7 +688,7 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    for (size_t i = 0; i < blocktable.Size(); i++)
+    for (int i = 0; i < blocktable.Size(); i++)
       SmoothBlock (i, fx, fy);
   }
   
