@@ -8,7 +8,7 @@ using namespace ngsolve;
 extern void ExportBVP();
 extern void ExportDrawFlux();
 
-void ExportNgsolve() {
+void NGS_DLL_HEADER ExportNgsolve() {
     std::string nested_name = "solve";
     if( bp::scope() )
       nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".solve");
