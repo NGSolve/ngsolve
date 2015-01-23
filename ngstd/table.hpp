@@ -12,63 +12,12 @@ namespace ngstd
 {
 
 
-
-#ifdef OLD
-
-/**
-   Base class of \Ref{Table} container.
-   Provides index array pointing to first element in entry. 
- */
-class BaseTable
-{
-protected:
-  /// number of rows
-  int size;
-  /// pointer to first in row
-  int * index;
-
-  INLINE BaseTable ()
-    : size(0), index(0) { ; }
-
-public:  
-  INLINE BaseTable (int asize, int entrysize)
-  {
-    size = asize;
-    index = new int[size+1];
-    for (int i = 0; i <= size; i++)
-      index[i] = i*entrysize;
-  }
-
-  INLINE BaseTable (const FlatArray<int> & entrysize)
-  {
-    int i, cnt = 0;
-    size  = entrysize.Size();
-    
-    index = new int[size+1];
-    for (i = 0; i < size; i++)
-      {
-	index[i] = cnt;
-	cnt += entrysize[i];
-      }
-    index[i] = cnt;
-  }
-
-  INLINE ~BaseTable ()
-  {
-    delete [] index;
-  }
-  INLINE int * Index() const { return index; }
-};
-#endif
-
-
-
 template <class T>
 class FlatTable 
 {
 protected:
   /// number of rows
-  size_t size;
+  int size;
   /// pointer to first in row
   size_t * index;
   /// array of data 
@@ -77,14 +26,14 @@ protected:
 public:
   INLINE FlatTable() { ; }
 
-  INLINE FlatTable(size_t as, size_t * aindex, T * adata)
+  INLINE FlatTable(int as, size_t * aindex, T * adata)
     : size(as), index(aindex), data(adata) { ; }
 
   /// Size of table
-  INLINE size_t Size() const { return size; }
+  INLINE int Size() const { return size; }
 
   /// Access entry
-  INLINE const FlatArray<T> operator[] (size_t i) const 
+  INLINE const FlatArray<T> operator[] (int i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
@@ -105,9 +54,9 @@ public:
   class Iterator
   {
     const FlatTable & tab;
-    size_t row;
+    int row;
   public:
-    Iterator (const FlatTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
+    Iterator (const FlatTable & _tab, int _row) : tab(_tab), row(_row) { ; }
     Iterator & operator++ () { ++row; return *this; }
     FlatArray<T> operator* () const { return tab[row]; }
     bool operator!= (const Iterator & it2) { return row != it2.row; }
@@ -159,7 +108,7 @@ public:
     size  = entrysize.Size();
     
     index = new size_t[size+1];
-    for (size_t i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
       {
 	index[i] = cnt;
 	cnt += entrysize[i];
@@ -242,6 +191,7 @@ template <class T>
     
     Table<T> * GetTable() { return table; }
 
+    /*
     operator Table<T> () 
     {
       Table<int> tmp (std::move(*table));
@@ -249,6 +199,15 @@ template <class T>
       table = NULL;
       return std::move(tmp);
     }
+    */
+    Table<T> MoveTable() 
+    {
+      Table<int> tmp (std::move(*table));
+      delete table;
+      table = NULL;
+      return std::move(tmp);
+    }
+
 
     bool Done () { return mode > 3; }
     void operator++(int) { SetMode (mode+1); }

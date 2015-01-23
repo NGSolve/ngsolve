@@ -23,6 +23,7 @@ using FE_Quad1 = ScalarFE<ET_QUAD,1>;
 
 namespace ngcomp
 {
+
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, "FESpace")
   {
@@ -560,7 +561,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       for (FESpace::Element el : Elements(vorb))
         creator.Add(el.Nr(), el.Dofs());
 
-    return move(creator);
+    return creator.MoveTable();
   }
 
   /// get coupling type of dof

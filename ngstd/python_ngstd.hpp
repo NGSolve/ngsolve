@@ -329,16 +329,19 @@ struct PyDefIterable : public boost::python::def_visitor<PyDefIterable<T,TELEM> 
 template <typename T>
 class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T>>
 {
-  typedef decltype(&T::First) TFUNCTION;
-  typedef typename function_traits<TFUNCTION>::return_type TELEM;
+  // typedef decltype(&T::First) TFUNCTION;
+  // typedef typename function_traits<TFUNCTION>::return_type TELEM;
 
+  /*
+  typedef decltype(GetReturnValue(&T::First)) TELEM;
   class Iterator
   {
     TELEM first;
     int size, cnt;
   public:
     Iterator (const T & container)
-      : first (container.First()), size(container.Size()), cnt(0) { }
+    // : first (container.First()), size(container.Size()), cnt(0) { }
+      : first (*container.begin()), size(container.Size()), cnt(0) { }
     TELEM Next()
     {
       if (++cnt > size)
@@ -346,6 +349,53 @@ class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T>>
       return first++;
     }
   };
+  */
+
+  /*
+  typedef decltype(GetReturnValue(&T::begin)) TITER;
+  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
+
+  class Iterator
+  {
+    TITER first;
+    int size, cnt;
+  public:
+    Iterator (const T & container)
+    // : first (container.First()), size(container.Size()), cnt(0) { }
+      : first (container.begin()), size(container.Size()), cnt(0) { }
+    TELEM Next()
+    {
+      if (++cnt > size)
+        bp::exec("raise StopIteration()\n");
+      auto tmp = first;
+      ++first;
+      return *tmp;
+    }
+  };
+  */
+
+  typedef decltype(GetReturnValue(&T::begin)) TITER;
+  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
+
+  class Iterator
+  {
+    TITER begin, end;
+  public:
+    Iterator (const T & container)
+      : begin(container.begin()), end(container.end()) { ; }
+    TELEM Next()
+    {
+      if (! (begin != end))
+        bp::exec("raise StopIteration()\n");
+        
+      auto tmp = begin;
+      ++begin;
+      return *tmp;
+    }
+  };
+
+
+
 
 public:
   template <class Tclass>

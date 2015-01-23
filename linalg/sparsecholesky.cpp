@@ -703,7 +703,7 @@ namespace ngla
     int * hfirstinrow = firstinrow.Addr(0);
     int * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
-    double * hlfact = lfact.Addr(0);
+    // double * hlfact = lfact.Addr(0);
     
     enum { BS = 4 };
 
