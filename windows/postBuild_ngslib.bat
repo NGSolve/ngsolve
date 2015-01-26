@@ -101,20 +101,20 @@ if /i "%BUILD_ARCH%"=="win32" (
 )	
 )
 
-if defined PYTHONROOT (
+REM if defined PYTHONROOT (
     REM *** Copy the python package into python\lib folder ***
-    echo Installing Python package
-    copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\__expr.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\bla.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\comp.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\fem.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\la.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\ngstd.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\solve.py" "%PY_PACKAGE_FOLDER%\"
-    if errorlevel 1 goto PythonPackageInstallFailed
-    echo Installing Python package: Completed OK!!
-)
+    REM echo Installing Python package
+    REM copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\__expr.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\bla.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\comp.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\fem.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\la.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\ngstd.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\solve.py" "%PY_PACKAGE_FOLDER%\"
+    REM if errorlevel 1 goto PythonPackageInstallFailed
+    REM echo Installing Python package: Completed OK!!
+REM )
 
 REM *** Done with the installation routine ***
 
