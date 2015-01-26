@@ -455,6 +455,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\comp\basenumproc.cpp" />
     <ClCompile Include="..\comp\bddc.cpp" />
     <ClCompile Include="..\comp\bilinearform.cpp" />
     <ClCompile Include="..\comp\facetfespace.cpp" />
@@ -470,6 +471,8 @@
     <ClCompile Include="..\comp\linearform.cpp" />
     <ClCompile Include="..\comp\meshaccess.cpp" />
     <ClCompile Include="..\comp\ngsobject.cpp" />
+    <ClCompile Include="..\comp\pde.cpp" />
+    <ClCompile Include="..\comp\pdeparser.cpp" />
     <ClCompile Include="..\comp\postproc.cpp" />
     <ClCompile Include="..\comp\preconditioner.cpp" />
     <ClCompile Include="..\comp\vectorfacetfespace.cpp" />
@@ -550,8 +553,6 @@
     <ClCompile Include="..\solve\hyperbolic.cpp" />
     <ClCompile Include="..\solve\numproc.cpp" />
     <ClCompile Include="..\solve\numprocee.cpp" />
-    <ClCompile Include="..\solve\pde.cpp" />
-    <ClCompile Include="..\solve\pdeparser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\comp\bddc.hpp" />
