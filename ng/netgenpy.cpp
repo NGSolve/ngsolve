@@ -1,3 +1,5 @@
+#ifdef WIN32
+
 #include <iostream>
 #include <boost/python.hpp>
 
@@ -15,3 +17,6 @@ BOOST_PYTHON_MODULE(nglib)
     ExportMeshVis();
     ExportGeom2d();
 }
+
+
+#endif
