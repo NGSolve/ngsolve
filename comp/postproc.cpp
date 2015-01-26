@@ -45,34 +45,35 @@ namespace ngcomp
 
     ProgressOutput progress (ma, "postprocessing element", ne);
 
+    /*
 #pragma omp parallel
     {
       LocalHeap slh = clh.Split();
       
       auto flux_elements = fesflux.Elements(VorB(bound));
-
-      IterateElementsInsideParallel
-        (fesflux, VorB(bound), slh, 
-         [&] (Ngs_Element ei, LocalHeap & lh)
-         {
-           HeapReset hr(lh);
-           progress.Update ();
-
+    */
+    
+    IterateElements  
+      (fesflux, VorB(bound), clh, 
+       [&] (Ngs_Element ei, LocalHeap & lh)
+       {
+         HeapReset hr(lh);
+         progress.Update ();
+         
          if (!domains[ei.GetIndex()]) return;;
 
          const FiniteElement & fel = fes.GetFE (ei, lh);
          const FiniteElement & felflux = fesflux.GetFE (ei, lh);
 	 
          ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-         
 
          Array<int> dnums(fel.GetNDof(), lh);
          fes.GetDofNrs (ei, dnums);
-         /*
+
          Array<int> dnumsflux(felflux.GetNDof(), lh);
          fesflux.GetDofNrs(ei, dnumsflux);
-         */
-         FlatArray<int> dnumsflux = flux_elements[ei].Dofs();
+
+         // FlatArray<int> dnumsflux = flux_elements[ei].Dofs();
 
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -126,8 +127,8 @@ namespace ngcomp
          for (auto d : dnumsflux) if (d != -1) cnti[d]++;
        });
 
-    }
-
+    // }
+  
 
     progress.Done();
     
