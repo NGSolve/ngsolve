@@ -960,7 +960,9 @@ namespace ngla
     */
 
     int h = this->Height();
+#ifndef MSVC_EXPRESS
 #pragma omp parallel for
+#endif
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
 
