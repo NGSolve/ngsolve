@@ -11,6 +11,27 @@
 namespace ngla
 {
   
+
+  template <typename Tarray>
+  int BinSearch(const Tarray & v, int i) {
+    int n = v.Size();
+    
+    int first = 0;
+    int last = n-1;
+    if(v[0]>i) return 0;
+    if(v[n-1] <= i) return n;
+    while(last-first>1) {
+        int m = (first+last)/2;
+        if(v[m]<i)
+            first = m;
+        else
+            last = m;
+    }
+    return first;
+}
+
+
+
   BaseBlockJacobiPrecond :: 
   BaseBlockJacobiPrecond (Table<int> & ablocktable)
     : blocktable(ablocktable)
@@ -353,6 +374,13 @@ namespace ngla
     */
 
 
+    // find nze element in all blocks together 
+
+    nze = 0;
+    for (auto block : blocktable)
+      for (int row : block)
+	nze += amat.GetRowIndices(row).Size();
+
     size_t totmem = 0;
 
     for (auto i : Range (blocktable))
@@ -442,7 +470,52 @@ namespace ngla
           creator.Add(coloring[i],i);
     block_coloring = creator.MoveTable();
 
-    *testout << " using " << current_color << " colors" << endl;
+    cout << " using " << current_color << " colors" << endl;
+
+
+    // calc balancing:
+
+    int max_threads = omp_get_max_threads();
+    block_balancing = Table<int> (block_coloring.Size(), max_threads+1);
+
+    Array<int> entrysizes(block_coloring.Size());
+    for (int i=0; i< block_coloring.Size(); i++)
+      entrysizes[i] = block_coloring[i].Size();
+
+    Table<int> prefix(entrysizes);
+#pragma omp parallel for
+    for(int c = 0; c < block_coloring.Size(); c++) 
+      {
+	auto c_blocks = block_coloring[c];
+	auto c_pre = prefix[c];
+
+	size_t sum = 0;
+	for (auto i : Range(c_blocks))
+	  {
+	    int blocknr = c_blocks[i];
+	    int costs = 0;
+	    for (auto rownr : blocktable[blocknr])
+	      costs += mat.GetRowIndices(rownr).Size();
+	    
+	    sum += costs;
+	    c_pre[i] = sum;
+	  }
+      }    
+
+    for (int c = 0; c < block_coloring.Size(); c++)
+      block_balancing[c][0] = 0;
+    
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      for (int c = 0; c < block_coloring.Size(); c++)
+	{
+	  auto c_pre = prefix[c];	  
+	  block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
+	}
+    }
+    
+    cout << "block-balancing: " << endl << block_balancing << endl;
 
     cout << "\rBlockJacobi Preconditioner built" << endl;
 

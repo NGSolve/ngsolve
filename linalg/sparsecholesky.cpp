@@ -793,9 +793,21 @@ namespace ngla
 
         a.Cols(0,mi) = a1;
 
+	char trans = 'N';  // 'T' 'N'
+	Matrix<> b1t = Trans(a.Cols(mi,nk));
+	int nrhs = nk-mi;
+	int ldb = mi;
+        dtrtrs_ (&uplo, &trans, &ch_diag, &na1, &nrhs, &a1(0,0), &lda, &b1t(0,0), &ldb, &info);
+	Matrix<> b1 = Trans(b1t);
+	a.Cols(mi,nk) = b1; 
+	// *testout << "b1 with lapack: " << Trans(b1t) << endl;
+	
+	/*
         dtrtri_ (&uplo, &ch_diag, &na1, &a1(0,0), &lda, &info);
         Matrix<> b1 = Trans(a1) * a.Cols(mi,nk) | Lapack;
         a.Cols(mi,nk) = b1;
+	*/
+	// *testout << "b1 with invert: " << b1 << endl;
 
         for (int i = 0; i < na1; i++)
           a.Row(i) *= da1(i);

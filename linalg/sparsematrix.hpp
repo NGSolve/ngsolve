@@ -91,6 +91,9 @@ namespace ngla
   
     /// row has same non-zero elements as previous row
     Array<int> same_nze;
+    
+    /// balancing for multi-threading
+    Array<int> balancing;
 
     /// owner of arrays ?
     bool owner;
@@ -133,6 +136,7 @@ namespace ngla
     size_t First (int i) const { return firsti[i]; }
 
     void FindSameNZE();
+    void CalcBalancing ();
 
     ostream & Print (ostream & ost) const;
 
@@ -355,6 +359,7 @@ namespace ngla
     using SparseMatrixTM<TM>::firsti;
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
+    using SparseMatrixTM<TM>::balancing;
 
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
