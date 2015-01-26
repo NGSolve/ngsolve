@@ -72,7 +72,7 @@ if /i "%BUILD_ARCH%" == "win32" (
    if errorlevel 1 goto LibInstallFailed
 )
 if /i "%BUILD_ARCH%" == "x64" (
-   REM xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
+   xcopy "%PROJ_DIR%%BUILD_ARCH%\%BUILD_TYPE%\%LIB_NAME%.lib" "%INSTALL_FOLDER%\lib\" /i /d /y
    if errorlevel 1 goto LibInstallFailed
 )   
 echo Installing %LIB_NAME%.lib: Completed OK!!
