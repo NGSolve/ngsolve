@@ -6,7 +6,7 @@
 
 #include "nginterface.h"
 #include "nginterface_v2.hpp"
-#include <visual.hpp>
+// #include <visual.hpp>
 
 namespace netgen
 {

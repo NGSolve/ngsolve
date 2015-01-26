@@ -10,7 +10,7 @@
 
 #include "nginterface.h"
 // #include "../visualization/soldata.hpp"
-#include <visual.hpp>
+// #include <visual.hpp>
 
 
 #ifdef _MSC_VER
