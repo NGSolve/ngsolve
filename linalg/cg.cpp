@@ -921,7 +921,7 @@ namespace ngla
 	int j = -1;
 	while (j++ < maxsteps-2 && norm > err)
 	  {
-            shared_ptr<BaseVector>(vi[j]) = shared_ptr<BaseVector>(f.CreateVector());
+            vi[j].AssignPointer (f.CreateVector());
             vi[j] = v;
 
             av = (*a) * v;
