@@ -36,6 +36,8 @@ namespace ngla
     for (size_t i = 0; i < nze; i++)
       colnr[i] = -1;
     colnr[nze] = 0;
+
+    CalcBalancing ();
   }
                                                                                                                                                                                                                   
   MatrixGraph :: MatrixGraph (int as, int max_elsperrow) 
@@ -55,6 +57,8 @@ namespace ngla
     
     for (int i = 0; i < as+1; i++)
       firsti[i] = i*max_elsperrow;
+
+    CalcBalancing ();
   }
   
 
@@ -83,6 +87,7 @@ namespace ngla
 	  colnr[i] = graph.colnr[i];
       }
     // inversetype = agraph.GetInverseType();
+    CalcBalancing ();
   }
 
   
@@ -486,6 +491,9 @@ namespace ngla
     */
 
     // delete creator.GetTable();
+
+
+    CalcBalancing ();
   }
 
   
@@ -751,7 +759,49 @@ namespace ngla
     throw Exception ("GetPositionSorted: not matching");
   }
 
+  
+  
+  template <typename Tarray>
+  int BinSearch(const Tarray & v, int i) {
+    int n = v.Size();
+    
+    int first = 0;
+    int last = n-1;
+    if(v[0]>i) return 0;
+    if(v[n-1] <= i) return n;
+    while(last-first>1) {
+      int m = (first+last)/2;
+      if(v[m]<i)
+            first = m;
+      else
+	last = m;
+    }
+    return first;
+  }
+  
 
+  void MatrixGraph :: CalcBalancing ()
+  {
+    int max_threads = omp_get_max_threads();
+    balancing.SetSize (max_threads+1);
+
+    Array<int> prefix (size);
+
+    size_t sum = 0;
+    for (auto i : Range(size))
+      {
+	int costs = GetRowIndices(i).Size();
+	sum += costs;
+	prefix[i] = sum;
+      }
+
+    balancing[0] = 0;
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      balancing[tid+1] = BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);
+    }
+  }
 
   void MatrixGraph :: FindSameNZE()
   {
@@ -959,12 +1009,25 @@ namespace ngla
       fy(i) += s * RowTimesVector (i, fx);
     */
 
+
+    /*
     int h = this->Height();
 #ifndef MSVC_EXPRESS
 #pragma omp parallel for
 #endif
     for (int i = 0; i < h; i++)
       fy(i) += s * RowTimesVector (i, fx);
+    */
+
+#pragma omp parallel 
+    {
+      int tid = omp_get_thread_num();
+      for (int i : IntRange (balancing[tid], balancing[tid+1]))
+	{
+	  fy(i) += s * RowTimesVector (i, fx);
+	}
+    }
+
 
 
     /*

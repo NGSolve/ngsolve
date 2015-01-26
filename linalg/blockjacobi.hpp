@@ -23,10 +23,13 @@ namespace ngla
     /// maximal block size
     int maxbs;
 
-    /// block coloring
+    /// block coloring 
     Table<int> block_coloring;
 
-    // COARSE_TYPE ct;
+    /// rows ... colors,  [col[i],col[i+1]) ... range for thread
+    Table<int> block_balancing;
+
+    size_t nze;
   public:
     /// the blocktable define the blocks. ATTENTION: entries will be reordered !
     BaseBlockJacobiPrecond (Table<int> & ablocktable);
@@ -203,11 +206,14 @@ namespace ngla
     {
       static Timer timer ("BlockJacobiPrecond::GSSmooth");
       RegionTimer reg(timer);
+      timer.AddFlops (nze);
+
       FlatVector<TVX> fb = b.FV<TVX> (); 
       FlatVector<TVX> fx = x.FV<TVX> ();
 
 #pragma omp parallel
       {
+	int tid = omp_get_thread_num();
         Vector<TVX> hxmax(maxbs);
         Vector<TVX> hymax(maxbs);
         for (int k = 0; k < steps; k++)
@@ -215,8 +221,11 @@ namespace ngla
             {
               FlatArray<int> blocks = block_coloring[c];
               
-#pragma omp for
-              for (int ii=0; ii<blocks.Size(); ii++)
+	      // #pragma omp for
+              // for (int ii=0; ii<blocks.Size(); ii++)
+
+	      IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+	      for (int ii : r) 
                 {
                   int i = blocks[ii];
                   int bs = blocktable[i].Size();
@@ -236,6 +245,7 @@ namespace ngla
                   for (int j = 0; j < bs; j++)
                     fx(blocktable[i][j]) += hy(j);
                 }
+#pragma omp barrier
             }
       }
     }
@@ -291,11 +301,15 @@ namespace ngla
     {
       static Timer timer ("BlockJacobiPrecond::GSSmoothBack");
       RegionTimer reg(timer);
+      timer.AddFlops (nze);
+
       const FlatVector<TVX> fb = b.FV<TVX> (); 
       FlatVector<TVX> fx = x.FV<TVX> ();
 
 #pragma omp parallel
       {
+	int tid = omp_get_thread_num();
+
       Vector<TVX> hxmax(maxbs);
       Vector<TVX> hymax(maxbs);
 
@@ -303,9 +317,14 @@ namespace ngla
         for (int c = block_coloring.Size()-1; c >=0; c--) 
           {
             FlatArray<int> blocks = block_coloring[c];
-            
-#pragma omp for
+
+	    /*
+	      #pragma omp for
             for (int ii=0; ii<blocks.Size(); ii++)
+	    */
+
+	    IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+	    for (int ii : r) 
               {
                 int i = blocks[ii];
                 int bs = blocktable[i].Size();
@@ -324,7 +343,8 @@ namespace ngla
                 
                 for (int j = 0; j < bs; j++)
                   fx(blocktable[i][j]) += hy(j);
-            }  
+	      }  
+#pragma omp barrier
           }
       }
     }
