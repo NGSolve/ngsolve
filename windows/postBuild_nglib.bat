@@ -107,16 +107,16 @@ if errorlevel 1 goto LibInstallFailed
 echo Installing %PROJ_NAME%.h: Completed OK!!
 
 
-if defined PYTHONROOT (
+REM if defined PYTHONROOT (
     REM *** Copy the python package into python\lib folder ***
-    echo Installing Python package
+    REM echo Installing Python package
     REM xcopy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\" /i /d /y
-    copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\csg.py" "%PY_PACKAGE_FOLDER%\"
-    copy "%NGLIB_PYTHON_SOURCE%\meshing.py" "%PY_PACKAGE_FOLDER%\"
-    if errorlevel 1 goto PythonPackageInstallFailed
-    echo Installing Python package: Completed OK!!
-)
+    REM copy "%NGLIB_PYTHON_SOURCE%\__init__.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\csg.py" "%PY_PACKAGE_FOLDER%\"
+    REM copy "%NGLIB_PYTHON_SOURCE%\meshing.py" "%PY_PACKAGE_FOLDER%\"
+    REM if errorlevel 1 goto PythonPackageInstallFailed
+    REM echo Installing Python package: Completed OK!!
+REM )
 
 REM *** Clean up the build directory by deleting the OBJ files ***
 REM echo Deleting the %PROJ_NAME% build folder %PROJ_DIR%%PROJ_NAME% ....
