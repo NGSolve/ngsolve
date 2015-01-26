@@ -598,7 +598,7 @@ namespace ngstd
     {
       allocsize = size;
       mem_to_delete = data;
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         (*this)[i] = a2[i];
     }
 
@@ -610,7 +610,7 @@ namespace ngstd
     {
       allocsize = size;
       mem_to_delete = data;
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         (*this)[i] = a2.Spec()[i];
     }
 
@@ -620,7 +620,7 @@ namespace ngstd
     {
       allocsize = size;
       mem_to_delete = data;
-      int cnt = 0;
+      TSIZE cnt = 0;
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
     }
@@ -632,9 +632,9 @@ namespace ngstd
     {
       allocsize = size;
       mem_to_delete = data;
-      for(int i = 0; i <  a2.Size(); i++)
+      for(TSIZE i = 0; i <  a2.Size(); i++)
         (*this)[i] = a2[i];
-      for (int i = a2.Size(), j=0; i < size; i++,j++)
+      for (TSIZE i = a2.Size(), j=0; i < size; i++,j++)
         (*this)[i] = a3[j];
     }
 
@@ -664,7 +664,7 @@ namespace ngstd
     }
 
     /// Change physical size. Keeps logical size. Keeps contents.
-    INLINE void SetAllocSize (int nallocsize)
+    INLINE void SetAllocSize (TSIZE nallocsize)
     {
       if (nallocsize > allocsize)
         ReSize (nallocsize);
@@ -688,7 +688,7 @@ namespace ngstd
     }
 
     /// Add element at end of array. reallocation if necessary.
-    INLINE int Append (const T & el)
+    INLINE TSIZE Append (const T & el)
     {
       if (size == allocsize) 
         ReSize (size+1);
@@ -706,12 +706,12 @@ namespace ngstd
 
     /// Append array at end of array. reallocation if necessary.
     // int Append (const Array<T> & source)
-    INLINE int Append (FlatArray<T> source)
+    INLINE TSIZE Append (FlatArray<T> source)
     {
       if(size + source.Size() >= allocsize)
         ReSize (size + source.Size() + 1);
 
-      int i,j;
+      TSIZE i,j;
       for(i = size, j=0; j<source.Size(); i++, j++)
         data[i] = source[j];
 
@@ -734,9 +734,9 @@ namespace ngstd
 
 
     /// Delete element i. Move all remaining elements forward
-    INLINE void RemoveElement (int i)
+    INLINE void RemoveElement (TSIZE i)
     {
-      for(int j = i; j < this->size-1; j++)
+      for(TSIZE j = i; j < this->size-1; j++)
 	this->data[i] = this->data[i+1];
       this->size--;
     }
@@ -781,7 +781,7 @@ namespace ngstd
     INLINE Array & operator= (const FlatArray<T,TSIZE> & a2)
     {
       SetSize (a2.Size());
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         (*this)[i] = a2[i];
       return *this;
     }
@@ -800,7 +800,7 @@ namespace ngstd
     Array & operator= (const BaseArrayObject<T2> & a2)
     {
       SetSize (a2.Spec().Size());
-      for (int i = 0; i < size; i++)
+      for (TSIZE i = 0; i < size; i++)
         (*this)[i] = a2.Spec()[i];
       return *this;
     }
