@@ -378,15 +378,15 @@ namespace ngsolve
     auto hv = vecu.CreateVector();
     if (solver != DIRECT)
       {
-	*hv = vecf;
-        bfa->ModifyRHS (*hv);
-        invmat->Mult (*hv, vecu);
+	hv = vecf;
+        bfa->ModifyRHS (hv);
+        invmat->Mult (hv, vecu);
       }
     else 
       {
-	*hv = vecf - mat * vecu;
-        bfa->ModifyRHS (*hv);
-	vecu += (*invmat2) * *hv;
+	hv = vecf - mat * vecu;
+        bfa->ModifyRHS (hv);
+	vecu += (*invmat2) * hv;
       }
     // delete &hv;
 

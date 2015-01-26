@@ -346,6 +346,9 @@ namespace ngla
   public:
     AutoVector () { ; }
 
+    AutoVector (const AutoVector & av2) : vec(av2.vec) 
+    { size = av2.Size(), entrysize = av2.EntrySize(); }
+
     AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) 
     { size = vec->Size(), entrysize = vec->EntrySize(); }
 
@@ -370,6 +373,14 @@ namespace ngla
     BaseVector & operator= (const AutoVector & v)
     {
       vec->Set (1.0, *v);
+      return *this;
+    }
+    ///
+    BaseVector & AssignPointer (const AutoVector & v)
+    {
+      vec = v.vec;
+      size = v.size;
+      entrysize = v.entrysize;
       return *this;
     }
     ///
