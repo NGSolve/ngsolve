@@ -45,14 +45,6 @@ namespace ngcomp
 
     ProgressOutput progress (ma, "postprocessing element", ne);
 
-    /*
-#pragma omp parallel
-    {
-      LocalHeap slh = clh.Split();
-      
-      auto flux_elements = fesflux.Elements(VorB(bound));
-    */
-    
     IterateElements  
       (fesflux, VorB(bound), clh, 
        [&] (Ngs_Element ei, LocalHeap & lh)
@@ -127,8 +119,6 @@ namespace ngcomp
          for (auto d : dnumsflux) if (d != -1) cnti[d]++;
        });
 
-    // }
-  
 
     progress.Done();
     
