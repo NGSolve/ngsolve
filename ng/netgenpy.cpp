@@ -1,5 +1,8 @@
 #ifdef WIN32
 
+// a wrapper to load netgen-dll into python
+
+
 #include <iostream>
 #include <boost/python.hpp>
 

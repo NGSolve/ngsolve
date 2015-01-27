@@ -9,7 +9,7 @@ if NGGUI
 bin_PROGRAMS = netgen
 endif
 
-netgen_SOURCES = demoview.cpp ngappinit.cpp netgenpy.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
+netgen_SOURCES = demoview.cpp ngappinit.cpp netgenpy.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h main.cpp netgenpy.cpp
 #  nginterface.cpp nginterface_v2.cpp
 
 

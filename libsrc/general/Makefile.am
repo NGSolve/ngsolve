@@ -9,4 +9,3 @@ libgen_la_SOURCES = array.cpp bitarray.cpp dynamicmem.cpp flags.cpp \
 	hashtabl.cpp mystring.cpp ngexception.cpp optmem.cpp parthreads.cpp \
 	profiler.cpp seti.cpp sort.cpp spbita2d.cpp symbolta.cpp table.cpp \
 	mpi_interface.cpp gzstream.cpp
-
