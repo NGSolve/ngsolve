@@ -1,4 +1,4 @@
-noinst_HEADERS = array.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp flags.hpp mystring.hpp spbita2d.hpp template.hpp autoptr.hpp hashtabl.hpp netgenout.hpp profiler.hpp stack.hpp bitarray.hpp seti.hpp symbolta.hpp dynamicmem.hpp  parthreads.hpp mpi_interface.hpp gzstream.h archive_base.hpp
+noinst_HEADERS = array.hpp myadt.hpp optmem.hpp sort.hpp table.hpp autodiff.hpp flags.hpp mystring.hpp spbita2d.hpp template.hpp autoptr.hpp hashtabl.hpp netgenout.hpp profiler.hpp stack.hpp bitarray.hpp seti.hpp symbolta.hpp dynamicmem.hpp  parthreads.hpp mpi_interface.hpp gzstream.h archive_base.hpp ngpython.hpp
 
 include_HEADERS = ngexception.hpp 
 
