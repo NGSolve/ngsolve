@@ -495,7 +495,6 @@
     <ClCompile Include="..\fem\h1hofe.cpp" />
     <ClCompile Include="..\fem\h1hofefo.cpp" />
     <ClCompile Include="..\fem\h1hofe_segm.cpp" />
-    <ClCompile Include="..\fem\h1hofe_tet.cpp" />
     <ClCompile Include="..\fem\h1hofe_trig.cpp" />
     <ClCompile Include="..\fem\h1lofe.cpp" />
     <ClCompile Include="..\fem\hcurlfe.cpp" />
