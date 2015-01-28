@@ -1987,7 +1987,7 @@ namespace ngcomp
 
             IterateElements 
               (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
-                   {
+               {
                      int i = el.Nr();
                      Array<int> dnums, idofs, idofs1, odofs;
                      
@@ -2212,9 +2212,8 @@ namespace ngcomp
                       for (int j = 0; j < preconditioners.Size(); j++)
                         preconditioners[j] -> 
                           AddElementMatrix (dnums, sum_elmat, true, i, lh);
-                    }
-                }
-              }
+               });
+
             progress.Done();
           }
       
@@ -2308,8 +2307,7 @@ namespace ngcomp
                       preconditioners[j] -> 
                         AddElementMatrix (dnums, sum_elmat, false, i, lh);
                   }
-                }
-            }
+               });
             progress.Done();
           }
         
@@ -2319,7 +2317,7 @@ namespace ngcomp
 
         for (int i = 0; i < fespace->specialelements.Size(); i++)
           {
-            HeapReset hr(lh);
+            HeapReset hr(clh);
             const SpecialElement & el = *fespace->specialelements[i];
             el.GetDofNrs (dnums);
           
@@ -2328,14 +2326,14 @@ namespace ngcomp
                 useddof.Set (dnums[j]);
           
             FlatMatrix<SCAL> elmat;
-            el.Assemble (elmat, lh);
+            el.Assemble (elmat, clh);
           
-            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
           }
       
       
         // add eps to avoid empty lines
-        FlatMatrix<SCAL> elmat (fespace->GetDimension(), lh);
+        FlatMatrix<SCAL> elmat (fespace->GetDimension(), clh);
         elmat = 0;
         dnums.SetSize(1);
       
@@ -2346,7 +2344,7 @@ namespace ngcomp
             for (int i = 0; i < ndof; i++)
               {
                 dnums[0] = i; 
-                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
               }
           }
         if (unuseddiag != 0)
@@ -2357,7 +2355,7 @@ namespace ngcomp
               if (!useddof.Test (i))
                 {
                   dnums[0] = i;
-                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
                 }
           }
       
