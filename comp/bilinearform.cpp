@@ -1909,7 +1909,7 @@ namespace ngcomp
 
   template <class SCAL>
   void S_BilinearForm<SCAL> :: AssembleLinearization (const BaseVector & lin,
-                                                      LocalHeap & lh, 
+                                                      LocalHeap & clh, 
                                                       bool reallocate)
   {
     static Timer timer ("Assemble Linearization");
@@ -1953,13 +1953,14 @@ namespace ngcomp
         if (hasinner)
           {
             RegionTimer reg(timervol);
-            int cnt = 0;
-            
-            const Table<int> * element_coloring = &fespace->ElementColoring();
-            int ncolors = (element_coloring) ? element_coloring->Size() : 1;
-
             ProgressOutput progress (ma, "assemble element", ma->GetNE());
 
+
+            /*
+            int cnt = 0;
+
+            const Table<int> * element_coloring = &fespace->ElementColoring();
+            int ncolors = (element_coloring) ? element_coloring->Size() : 1;
             for (int icol = 0; icol < ncolors; icol++)
               {
 #pragma omp parallel 
@@ -1979,13 +1980,19 @@ namespace ngcomp
 #pragma omp atomic
                       cnt++;
                       progress.Update (cnt);
-                          
                       HeapReset hr(lh);
-              
                       if (!fespace->DefinedOn (ma->GetElIndex (i))) continue;
-                      
-                      const FiniteElement & fel = fespace->GetFE (i, lh);
-                      ElementTransformation & eltrans = ma->GetTrafo (i, false, lh);
+            */
+
+
+            IterateElements 
+              (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+                   {
+                     int i = el.Nr();
+                     Array<int> dnums, idofs, idofs1, odofs;
+                     
+                     const FiniteElement & fel = fespace->GetFE (i, lh);
+                     ElementTransformation & eltrans = ma->GetTrafo (i, false, lh);
 
                       fespace->GetDofNrs (i, dnums);
                       
@@ -2219,6 +2226,8 @@ namespace ngcomp
             RegionTimer reg(timerbound);
             ProgressOutput progress (ma, "assemble surface element", nse);
 
+
+            /*
             int cnt = 0;
 #pragma omp parallel 
             {
@@ -2234,13 +2243,22 @@ namespace ngcomp
 #pragma omp atomic
                   cnt++;
                   progress.Update (cnt);
-                  
                   if (!fespace->DefinedOnBoundary (ma->GetSElIndex (i))) continue;
+
+            */
+
+            
+            IterateElements 
+              (*fespace, BND, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+               {
+                 int i = el.Nr();
+                 
+                 progress.Update();
                   
                   const FiniteElement & fel = fespace->GetSFE (i, lh);
                   
                   ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
-
+                  Array<int> dnums;
                   fespace->GetSDofNrs (i, dnums);
                     
                   for (int j = 0; j < dnums.Size(); j++)
@@ -2269,7 +2287,7 @@ namespace ngcomp
                       
                         
                       if (printelmat) 
-#pragma omp critical (addelmatboundary1)
+                        // #pragma omp critical (addelmatboundary1)
                         {
                           testout->precision(8);
                           (*testout) << "surface-elnum= " << i << endl;
@@ -2282,7 +2300,7 @@ namespace ngcomp
                         }
                     }
                   
-#pragma omp critical (addelmatboundary)
+                  // #pragma omp critical (addelmatboundary)
                   {
                     AddElementMatrix (dnums, dnums, sum_elmat, ElementId(BND,i), lh);
                     
