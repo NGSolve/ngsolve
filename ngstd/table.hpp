@@ -96,7 +96,7 @@ public:
   { 
     size = asize;
     index = new size_t[size+1];
-    for (size_t i = 0; i <= size; i++)
+    for (int i = 0; i <= size; i++)
       index[i] = i*entrysize;
     data = new T [size*entrysize]; 
   }
