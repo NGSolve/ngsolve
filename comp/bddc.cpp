@@ -535,7 +535,7 @@ namespace ngcomp
 
     virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<SCAL> & elmat,
-				   bool inner_element, int elnr,
+				   ElementId id, 
 				   LocalHeap & lh);
 
     virtual void Update ()
@@ -583,7 +583,7 @@ namespace ngcomp
   void BDDCPreconditioner<SCAL, TV> ::
   AddElementMatrix (FlatArray<int> dnums,
 		    const FlatMatrix<SCAL> & elmat,
-		    bool inner_element, int elnr,
+		    ElementId id, 
 		    LocalHeap & lh)
   {
     auto fes = bfa->GetFESpace();
