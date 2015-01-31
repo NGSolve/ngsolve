@@ -18,7 +18,7 @@ class FlatTable
 protected:
   /// number of rows
   int size;
-  /// pointer to first in row
+  /// pointer ton first in row
   size_t * index;
   /// array of data 
   T * data;
@@ -96,7 +96,7 @@ public:
   { 
     size = asize;
     index = new size_t[size+1];
-    for (size_t i = 0; i <= size; i++)
+    for (int i = 0; i <= size; i++)
       index[i] = i*entrysize;
     data = new T [size*entrysize]; 
   }

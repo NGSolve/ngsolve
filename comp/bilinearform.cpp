@@ -750,7 +750,7 @@ namespace ngcomp
                      
                      const FiniteElement & fel = fespace->GetFE (el, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                     FlatArray<int> dnums = el.Dofs();
+                     FlatArray<int> dnums = el.GetDofs();
 
                      if (fel.GetNDof() != dnums.Size())
                        {
@@ -1012,7 +1012,7 @@ namespace ngcomp
                           
                      for (int j = 0; j < preconditioners.Size(); j++)
                        preconditioners[j] -> 
-                         AddElementMatrix (dnums, sum_elmat, true, i, lh);
+                         AddElementMatrix (dnums, sum_elmat, el, lh);
 
                      for (int j = 0; j < dnums.Size(); j++)
                        if (dnums[j] != -1)
@@ -1209,7 +1209,7 @@ namespace ngcomp
                       }
                       
                       for (int j = 0; j < preconditioners.Size(); j++)
-                        preconditioners[j] -> AddElementMatrix (dnums, sumelmat, false, i, lh);
+                        preconditioners[j] -> AddElementMatrix (dnums, sumelmat, ElementId (BND, i), lh);
                       
                       timerb3.Stop();
                    }); // }//endof parallel 
@@ -2204,7 +2204,7 @@ namespace ngcomp
 
                       for (int j = 0; j < preconditioners.Size(); j++)
                         preconditioners[j] -> 
-                          AddElementMatrix (dnums, sum_elmat, true, i, lh);
+                          AddElementMatrix (dnums, sum_elmat, ElementId(VOL,i), lh);
                     }
                 }
               }
@@ -2288,7 +2288,7 @@ namespace ngcomp
                     
                     for (int j = 0; j < preconditioners.Size(); j++)
                       preconditioners[j] -> 
-                        AddElementMatrix (dnums, sum_elmat, false, i, lh);
+                        AddElementMatrix (dnums, sum_elmat, ElementId(BND,i), lh);
                   }
                 }
             }

@@ -219,13 +219,13 @@ namespace ngcomp
                          testout->precision(8);
                          *testout << "elnum = " << el.Nr() << endl
                                   << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << el.Dofs() << endl
+                                  << "dnums = " << endl << el.GetDofs() << endl
                                   << "element-index = " << eltrans.GetElementIndex() << endl
                                   << "elvec = " << endl << elvec << endl;
                        }
 
                      fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-                     AddElementVector (el.Dofs(), elvec, parts[j]->CacheComp()-1);
+                     AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
                    }
                });
           }
@@ -264,13 +264,13 @@ namespace ngcomp
                          testout->precision(8);
                          *testout << "surface-elnum = " << el.Nr() << endl
                                   << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << el.Dofs() << endl
+                                  << "dnums = " << endl << el.GetDofs() << endl
                                   << "element-index = " << eltrans.GetElementIndex() << endl
                                   << "elvec = " << endl << elvec << endl;
                        }
                      
                      fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-                     AddElementVector (el.Dofs(), elvec, parts[j]->CacheComp()-1);
+                     AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
                    }
                });
 
