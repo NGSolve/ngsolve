@@ -1196,6 +1196,171 @@ namespace ngla
 
 
 
+
+
+  template <>
+  void SparseCholesky<double, double, double> :: 
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("SparseCholesky::MultAdd - double");
+    static Timer timerL("SparseCholesky::MultAdd - L");
+    static Timer timerLt("SparseCholesky::MultAdd - Lt");
+    RegionTimer reg (timer);
+    timer.AddFlops (2.0*lfact.Size());
+
+    int n = Height();
+    
+    const FlatVector<> fx = x.FV<double> ();
+    FlatVector<> fy = y.FV<double> ();
+    
+    Vector<> hy(n);
+    for (int i = 0; i < n; i++)
+      hy(order[i]) = fx(i);
+
+    FlatVector<> hhy = hy;
+
+    const double * hlfact = &lfact[0];
+    const double * hdiag = &diag[0];
+    // const int * hrowindex = &rowindex[0];
+    const int * hrowindex2 = &rowindex2[0];
+    const int * hfirstinrow = &firstinrow[0];
+    const int * hfirstinrow_ri = &firstinrow_ri[0];
+
+    timerL.Start();
+
+    enum { BS = 32 };
+
+    Vector<> tmp1(n);
+
+    for (int i = 0; i < n; i++)
+      {
+        if ( (i+BS <= n) && (blocknrs[i] == blocknrs[i+BS-1]) )
+          // if (false)
+          {
+            // solve with trig factor
+            for (int i2 = 0; i2 < BS; i2++)
+              {
+                double val = hy(i+i2);
+                int first = hfirstinrow[i+i2];
+                int j_ri = hfirstinrow_ri[i+i2];
+
+                for (int j = first; j < first+BS-i2-1; j++, j_ri++)
+                  hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
+              }
+
+            
+            int nk =  hfirstinrow[i+1] - (hfirstinrow[i]+BS-1);
+            FlatVector<> tmp = tmp1.Range(0,nk);
+            tmp = 0.0;
+
+            // if (nk < 100)
+            if (true)
+              {
+                for (int i2 = 0; i2 < BS; i2+=4)
+                  {
+                    double val0 = hy(i+i2);
+                    double val1 = hy(i+i2+1);
+                    double val2 = hy(i+i2+2);
+                    double val3 = hy(i+i2+3);
+                    
+                    FlatVector<> v0(nk, (double*)&hlfact[hfirstinrow[i+i2]]+BS-i2-1);
+                    FlatVector<> v1(nk, (double*)&hlfact[hfirstinrow[i+i2+1]]+BS-i2-2);
+                    FlatVector<> v2(nk, (double*)&hlfact[hfirstinrow[i+i2+2]]+BS-i2-3);
+                    FlatVector<> v3(nk, (double*)&hlfact[hfirstinrow[i+i2+3]]+BS-i2-4);
+                    
+                    tmp += val0 * v0 + val1*v1 + val2*v2 + val3*v3;
+                  }
+              }
+            else
+              {
+#pragma omp parallel
+                {
+                  for (int i2 = 0; i2 < BS; i2+=4)
+                    {
+                      double val0 = hy(i+i2);
+                      double val1 = hy(i+i2+1);
+                      double val2 = hy(i+i2+2);
+                      double val3 = hy(i+i2+3);
+                      
+                      FlatVector<> v0(nk, (double*)&hlfact[hfirstinrow[i+i2]]+BS-i2-1);
+                      FlatVector<> v1(nk, (double*)&hlfact[hfirstinrow[i+i2+1]]+BS-i2-2);
+                      FlatVector<> v2(nk, (double*)&hlfact[hfirstinrow[i+i2+2]]+BS-i2-3);
+                      FlatVector<> v3(nk, (double*)&hlfact[hfirstinrow[i+i2+3]]+BS-i2-4);
+                 
+#pragma omp for
+                      for (int j = 0; j < nk; j++)
+                        tmp(j) += val0 * v0(j) + val1*v1(j) + val2*v2(j) + val3*v3(j);
+                    }
+                }
+              }
+
+            int j_ri = hfirstinrow_ri[i]+BS-1;
+            for (int j = 0; j < nk; j++, j_ri++)
+              hhy[hrowindex2[j_ri]] -= tmp(j);
+            
+
+
+            i += BS-1;
+          }
+        else
+          {
+            double val = hy(i);
+            int first = hfirstinrow[i];
+            int last = hfirstinrow[i+1];
+            int j_ri = hfirstinrow_ri[i];
+            for (int j = first; j < last; j++, j_ri++)
+              hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
+          }
+      }
+    timerL.Stop();  
+
+    for (int i = 0; i < n; i++)
+      hhy[i] *= hdiag[i];
+
+    timerLt.Start();
+    for (int i = n-1; i >= 0; i--)
+      {
+	int minj = hfirstinrow[i];
+	int maxj = hfirstinrow[i+1];
+	int j_ri = hfirstinrow_ri[i];
+
+	TVX sum;
+	sum = 0.0;
+	
+	for (int j = minj; j < maxj; j++, j_ri++)
+	  sum += lfact[j] * hy(rowindex2[j_ri]);
+	
+	hy(i) -= sum;
+      }
+
+    timerLt.Stop();
+
+    if (inner)
+      {
+	for (int i = 0; i < n; i++)
+	  if (inner->Test(i))
+	    fy(i) += s * hy(order[i]);
+      }
+    else if (cluster)
+      {
+	for (int i = 0; i < n; i++)
+	  if ((*cluster)[i])
+	    fy(i) += s * hy(order[i]);
+      }
+    else
+      {
+	for (int i = 0; i < n; i++)
+	  fy(i) += s * hy(order[i]);
+      }
+
+  }
+  
+
+
+
+
+
+
   SparseFactorization ::     
   SparseFactorization (const BaseSparseMatrix & amatrix,
 		       const BitArray * ainner,
@@ -1229,16 +1394,13 @@ namespace ngla
     auto hvec1 = u.CreateVector();
     auto hvec2 = u.CreateVector();
 
-    *hvec1 = 1.0 * y;
-    matrix.MultAdd1 (-1, u, *hvec1, inner, cluster);
+    hvec1 = y;
+    matrix.MultAdd1 (-1, u, hvec1, inner, cluster);
 
-    *hvec2 = (*this) * *hvec1;
-    u += *hvec2;
+    hvec2 = (*this) * hvec1;
+    u += hvec2;
     
-    matrix.MultAdd2 (-1, *hvec2, y, inner, cluster);
-
-    // delete & hvec2;
-    // delete & hvec1;
+    matrix.MultAdd2 (-1, hvec2, y, inner, cluster);
   }
   
 
