@@ -231,7 +231,7 @@ namespace ngcomp
         : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
       { ; }
 
-      INLINE FlatArray<int> Dofs() const
+      INLINE FlatArray<int> GetDofs() const
       {
         if (!dofs_set)
           fes.GetDofNrs (*this, temp_dnums);

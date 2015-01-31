@@ -344,7 +344,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (dirichlet_boundaries.Size())
       for (FESpace::Element el : Elements(BND))
         if (dirichlet_boundaries[el.GetIndex()])
-          for (int d : el.Dofs())
+          for (int d : el.GetDofs())
             if (d != -1) dirichlet_dofs.Set (d);
 
     Array<int> dnums;
@@ -418,7 +418,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 if (col[el.Nr()] >= 0) continue;
 
                 unsigned check = 0;
-                for (auto d : el.Dofs())
+                for (auto d : el.GetDofs())
                   if (d != -1) check |= mask[d];
 
                 if (check != UINT_MAX) // 0xFFFFFFFF)
@@ -435,7 +435,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     col[el.Nr()] = color;
                     if (color > maxcolor) maxcolor = color;
 		
-                    for (auto d : el.Dofs())
+                    for (auto d : el.GetDofs())
                       if (d != -1) mask[d] |= checkbit;
                   }
               }
@@ -559,7 +559,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
     for ( ; !creator.Done(); creator++)
       for (FESpace::Element el : Elements(vorb))
-        creator.Add(el.Nr(), el.Dofs());
+        creator.Add(el.Nr(), el.GetDofs());
 
     return creator.MoveTable();
   }
@@ -1285,10 +1285,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	int ndof = ma->GetNV();
 
         for (auto el : Elements(VOL))
-          for (int d : el.Dofs()) ndof = max2(ndof, d+1);              
+          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);              
 
         for (auto el : Elements(BND))
-          for (int d : el.Dofs()) ndof = max2(ndof, d+1);           
+          for (int d : el.GetDofs()) ndof = max2(ndof, d+1);           
 
 	ndlevel.Append (ndof);
       }
@@ -1301,7 +1301,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	dirichlet_dofs.Clear();
 	for (auto el : Elements(BND))
           if (dirichlet_boundaries[el.GetIndex()])
-            for (int d : el.Dofs())
+            for (int d : el.GetDofs())
               if (d != -1) dirichlet_dofs.Set (d);
       }
   }

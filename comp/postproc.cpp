@@ -73,7 +73,7 @@ namespace ngcomp
          Array<int> dnumsflux(felflux.GetNDof(), lh);
          fesflux.GetDofNrs(ei, dnumsflux);
 
-         // FlatArray<int> dnumsflux = flux_elements[ei].Dofs();
+         // FlatArray<int> dnumsflux = flux_elements[ei].GetDofs();
 
          FlatVector<SCAL> elu(dnums.Size() * dim, lh);
          FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -430,11 +430,11 @@ namespace ngcomp
 
 	  // fes.TransformVec (i, bound, elfluxi, TRANSFORM_SOL);
 
-          u.GetElementVector (ei.Dofs(), elflux);
+          u.GetElementVector (ei.GetDofs(), elflux);
           elfluxi += elflux;
-          u.SetElementVector (ei.Dofs(), elfluxi);
+          u.SetElementVector (ei.GetDofs(), elfluxi);
 	  
-          for (auto d : ei.Dofs())
+          for (auto d : ei.GetDofs())
             if (d != -1) cnti[d]++;
 
        });
