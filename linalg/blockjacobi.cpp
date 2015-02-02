@@ -442,27 +442,32 @@ namespace ngla
     coloring = -1;
     int colored_blocks = 0;
 
-    while(colored_blocks<nblocks) {
-      mask = 0;
-      for (int i=0; i<nblocks; i++) {
-        if(coloring[i]>-1) continue;
-        bool is_free = true;
-        for (int d : blocktable[i] )
-          if(mask[d]) {
-            is_free = false;
-            break;
-          }
-
-        if(is_free) {
-          coloring[i] = current_color;
-          colored_blocks++;
-          for (int d : blocktable[i]) 
-            for(auto coupling : mat.GetRowIndices(d)) 
-              mask[coupling] = 1;
-        }
+    while(colored_blocks<nblocks) 
+      {
+	mask = 0;
+	for (int i=0; i<nblocks; i++) 
+	  {
+	    if (coloring[i]>-1) continue;
+	    bool is_free = true;
+	    for (int d : blocktable[i] )
+	      if(mask[d]) 
+		{
+		  is_free = false;
+		  break;
+		}
+	    
+	    if(is_free) 
+	      {
+		coloring[i] = current_color;
+		colored_blocks++;
+		for (int d : blocktable[i]) 
+		    for(auto coupling : mat.GetRowIndices(d)) 
+		      mask[coupling] = 1;
+	      }
+	  }
+	current_color++;
       }
-      current_color++;
-    }
+    
     
     TableCreator<int> creator(current_color);
     for ( ; !creator.Done(); creator++)
@@ -589,6 +594,7 @@ namespace ngla
 
   ///
 #define PARALLEL_GSSMOOTH
+
 #ifdef PARALLEL_GSSMOOTH
   template <class TM, class TV_ROW, class TV_COL>
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
@@ -894,6 +900,114 @@ namespace ngla
 
     cout << IM(3) << "\rBuilding block " << blocktable.Size() << "/" << blocktable.Size() << endl;
     // cout << "\rBuilt symmetric BlockJacobi Preconditioner" << endl;
+
+
+
+
+
+
+    *testout << "block coloring";
+    
+    int nblocks = blocktable.Size();
+    Array<int> coloring(nblocks);
+    Array<unsigned int> mask(mat.Width());
+    int current_color = 0;
+    coloring = -1;
+    int colored_blocks = 0;
+
+    
+    // symmetric,   rows(block[i]) cap row(block[j]) = 0
+    while(colored_blocks<nblocks) 
+      {
+	mask = 0;
+	for (int i = 0; i < nblocks; i++) 
+	  {
+	    if (coloring[i]>-1) continue;
+	    bool is_free = true;
+	    for (int d : blocktable[i] )
+	      for(auto coupling : mat.GetRowIndices(d)) 
+		if(mask[coupling]) 
+		  {
+		    is_free = false;
+		    break;
+		  }
+	      
+	    if(is_free) 
+	      {
+		coloring[i] = current_color;
+		colored_blocks++;
+		for (int d : blocktable[i]) 
+		  for(auto coupling : mat.GetRowIndices(d)) 
+		      mask[coupling] = 1;
+	      }
+	  }
+	current_color++;
+      }
+
+
+    
+    TableCreator<int> creator(current_color);
+    for ( ; !creator.Done(); creator++)
+      for (int i=0; i<nblocks; i++)
+          creator.Add(coloring[i],i);
+    block_coloring = creator.MoveTable();
+
+    cout << " using " << current_color << " colors" << endl;
+    
+    /*
+    *testout << "matrix.h = " << mat.Height() << endl;
+    *testout << "smoothing blocks = " << blocktable.Size() << endl;
+    
+    *testout << "coloring: " << endl << block_coloring << endl;
+    *testout << "blocktable: " << endl << blocktable << endl;
+    *testout << "matrix: " << endl << mat << endl;
+    */
+
+    // calc balancing:
+
+    int max_threads = omp_get_max_threads();
+    block_balancing = Table<int> (block_coloring.Size(), max_threads+1);
+
+    Array<int> entrysizes(block_coloring.Size());
+    for (int i=0; i< block_coloring.Size(); i++)
+      entrysizes[i] = block_coloring[i].Size();
+
+    Table<int> prefix(entrysizes);
+#pragma omp parallel for
+    for(int c = 0; c < block_coloring.Size(); c++) 
+      {
+	auto c_blocks = block_coloring[c];
+	auto c_pre = prefix[c];
+
+	size_t sum = 0;
+	for (auto i : Range(c_blocks))
+	  {
+	    int blocknr = c_blocks[i];
+	    int costs = 0;
+	    for (auto rownr : blocktable[blocknr])
+	      costs += mat.GetRowIndices(rownr).Size();
+	    
+	    sum += costs;
+	    c_pre[i] = sum;
+	  }
+      }    
+
+    for (int c = 0; c < block_coloring.Size(); c++)
+      block_balancing[c][0] = 0;
+    
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      for (int c = 0; c < block_coloring.Size(); c++)
+	{
+	  auto c_pre = prefix[c];	  
+	  block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
+	}
+    }
+    
+    cout << "block-balancing: " << endl << block_balancing << endl;
+
+    cout << "\rBlockJacobi Preconditioner built" << endl;
   }
 
 
@@ -983,7 +1097,7 @@ namespace ngla
   void BlockJacobiPrecondSymmetric<TM,TV> :: 
   GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
-    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth");
+    static Timer timer ("BlockJacobiPrecondSymmetric::GSSmooth (parallel)");
     RegionTimer reg(timer);
 
     FlatVector<TVX> fb = b.FV<TVX> ();
@@ -996,10 +1110,34 @@ namespace ngla
     for (int j = 0; j < mat.Height(); j++)
       mat.AddRowTransToVector (j, -fx(j), fy);
 
+#ifdef PARALLEL_GSSMOOTH
+    
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      
+      for (int k = 1; k <= steps; k++)
+	for (int c = 0; c < block_coloring.Size(); c++)
+	  {
+	    FlatArray<int> blocks = block_coloring[c];
+	    
+	    IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+	    for (int ii : r) 
+	      SmoothBlock (blocks[ii], fx, /* fb, */ fy);
+#pragma omp barrier
+	  }
+    }
+
+#else // PARALLEL_GSSMOOTH
+
     for (int k = 1; k <= steps; k++)
       for (int i = 0; i < blocktable.Size(); i++)
 	SmoothBlock (i, fx, /* fb, */ fy);
+
+#endif // PARALLEL_GSSMOOTH
+
   }
+
   
   template <class TM, class TV>
   void BlockJacobiPrecondSymmetric<TM,TV> :: 
@@ -1012,8 +1150,32 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
+
+#ifdef PARALLEL_GSSMOOTH
+    
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      
+      for (int c = 0; c < block_coloring.Size(); c++)
+	{
+	  FlatArray<int> blocks = block_coloring[c];
+	  
+	  IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+	  for (int ii : r) 
+	    SmoothBlock (blocks[ii], fx, fy);
+
+#pragma omp barrier
+	}
+    }
+    
+#else // PARALLEL_GSSMOOTH
+
     for (int i = 0; i < blocktable.Size(); i++)
       SmoothBlock (i, fx, fy);
+
+#endif
+
   }
   
 
@@ -1072,8 +1234,32 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
+
+#ifdef PARALLEL_GSSMOOTH
+    
+#pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      
+      for (int c = block_coloring.Size()-1; c >= 0; c--)
+	{
+	  FlatArray<int> blocks = block_coloring[c];
+	  
+	  IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+	  for (int ii : r) 
+	    SmoothBlock (blocks[ii], fx, fy);
+
+#pragma omp barrier
+	}
+    }
+    
+#else // PARALLEL_GSSMOOTH
+
     for (int i = blocktable.Size()-1; i >= 0; i--)
       SmoothBlock (i, fx, fy);
+
+#endif
+
   }
 
 
