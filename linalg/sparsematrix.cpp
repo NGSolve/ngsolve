@@ -996,14 +996,11 @@ namespace ngla
 
 #pragma omp parallel 
     {
-      int tid = omp_get_thread_num();
-      for (int i : IntRange (balancing[tid], balancing[tid+1]))
-	{
-	  for (auto ind : GetRowIndices(i))
-	    data[ind] = 0.0;
-	}
+      IntRange thread_rows = OmpRange();
+      for (auto ind : Range(firsti[thread_rows.begin()],
+                            firsti[thread_rows.end()]))
+        data[ind] = 0.0;
     }
-
   }
 
 
@@ -1018,9 +1015,20 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer("SparseMatrix::MultAdd");
-    RegionTimer reg (timer);
-    timer.AddFlops (this->nze);
+    if (!omp_in_parallel())
+      {
+        static Timer timer("SparseMatrix::MultAdd");
+        RegionTimer reg (timer);
+        timer.AddFlops (this->nze);
+
+#pragma omp parallel
+        {
+          MultAdd (s, x, y);
+        }
+        
+        return;
+      }
+
 
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
@@ -1031,39 +1039,11 @@ namespace ngla
       fy(i) += s * RowTimesVector (i, fx);
     */
 
+    for (int i : this->OmpRange())
+      {
+        fy(i) += s * RowTimesVector (i, fx);
+      }
 
-    /*
-    int h = this->Height();
-#ifndef MSVC_EXPRESS
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < h; i++)
-      fy(i) += s * RowTimesVector (i, fx);
-    */
-
-#pragma omp parallel 
-    {
-      int tid = omp_get_thread_num();
-      for (int i : IntRange (balancing[tid], balancing[tid+1]))
-	{
-	  fy(i) += s * RowTimesVector (i, fx);
-	}
-    }
-
-
-
-    /*
-    // #pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
-      int num = omp_get_num_threads();
-      int n = this -> Height();
-      IntRange range (long(n)*tid/num, min (long(n), long(n)*(tid+1)/num));
-
-      for (int i = range.First(); i < range.Next(); i++)
-	fy(i) += s * RowTimesVector (i, fx);
-    }
-    */
   }
   
 

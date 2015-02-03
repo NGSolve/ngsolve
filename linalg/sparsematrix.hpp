@@ -138,6 +138,12 @@ namespace ngla
     void FindSameNZE();
     void CalcBalancing ();
 
+    IntRange OmpRange () const
+    {
+      int tid = omp_get_thread_num();
+      return IntRange (balancing[tid], balancing[tid+1]);
+    }
+
     ostream & Print (ostream & ost) const;
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
