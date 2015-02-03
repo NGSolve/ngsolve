@@ -340,6 +340,9 @@ namespace ngla
       return asvec; 
     }
 
+    virtual void SetZero();
+
+
     ///
     virtual ostream & Print (ostream & ost) const;
 

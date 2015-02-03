@@ -57,6 +57,10 @@ namespace ngla
     throw e;
   }
   
+  void BaseMatrix :: SetZero()
+  {
+    AsVector() = 0;
+  }
 
   ostream & BaseMatrix :: Print (ostream & ost) const
   {

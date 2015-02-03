@@ -986,6 +986,28 @@ namespace ngla
   }
   
 
+  template <class TM>
+  void SparseMatrixTM<TM> :: SetZero ()
+  {
+    /*
+    for (auto & ai : data)
+      ai = 0.0;
+    */
+
+#pragma omp parallel 
+    {
+      int tid = omp_get_thread_num();
+      for (int i : IntRange (balancing[tid], balancing[tid+1]))
+	{
+	  for (auto ind : GetRowIndices(i))
+	    data[ind] = 0.0;
+	}
+    }
+
+  }
+
+
+
   template <class TM, class TV_ROW, class TV_COL>
   SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (const MatrixGraph & agraph, bool stealgraph)
   : SparseMatrixTM<TM> (agraph, stealgraph) 
@@ -1325,27 +1347,44 @@ namespace ngla
 	    const BitArray * inner,
 	    const Array<int> * cluster) const
   {
-    static Timer timer("SparseMatrixSymmetric::MultAdd1");
-    RegionTimer reg (timer);
-
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     FlatVector<TV_COL> fy = y.FV<TV_COL> ();
     
     if (inner)
       {
+	static Timer timer("SparseMatrixSymmetric::MultAdd1 - inner");
+	RegionTimer reg (timer);
+
 	for (int i = 0; i < this->Height(); i++)
 	  if (inner->Test(i))
 	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
       }
     else if (cluster)
       {
+	static Timer timer("SparseMatrixSymmetric::MultAdd1 - cluster");
+	RegionTimer reg (timer);
+
 	for (int i = 0; i < this->Height(); i++)
 	  if ( (*cluster)[i])
 	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
       }
     else
-      for (int i = 0; i < this->Height(); i++)
-	fy(i) += s * RowTimesVectorNoDiag (i, fx);
+      {
+	static Timer timer("SparseMatrixSymmetric::MultAdd1");
+	RegionTimer reg (timer);
+	
+	/*
+	for (int i = 0; i < this->Height(); i++)
+	  fy(i) += s * RowTimesVectorNoDiag (i, fx);
+	*/
+
+#pragma omp parallel 
+	{
+	  int tid = omp_get_thread_num();
+	  for (int i : IntRange (this->balancing[tid], this->balancing[tid+1]))
+	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
+	}
+      }
   }
   
 
