@@ -16,13 +16,19 @@ namespace ngstd
   Exception :: Exception (const string & s) 
     : what(s)
   { 
-    cout << "create ngstd::Exception, what = " << s << endl;
+#pragma omp critical(printexception)
+    {
+      cout << "create ngstd::Exception, what = " << s << endl;
+    }
   }
 
   Exception :: Exception (const char * s) 
     : what(s)
   { 
-    cout << "create ngstd::Exception, what = " << s << endl;
+#pragma omp critical(printexception)
+    {
+      cout << "create ngstd::Exception, what = " << s << endl;
+    }
   }
 
   Exception :: ~Exception () 
