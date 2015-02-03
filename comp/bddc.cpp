@@ -410,6 +410,9 @@ namespace ngcomp
       return bfa.GetMatrix().CreateVector();
     }
 
+    virtual int VHeight() const { return bfa.GetMatrix().VHeight(); }
+    virtual int VWidth() const { return bfa.GetMatrix().VHeight(); }
+
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {

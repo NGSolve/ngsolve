@@ -642,13 +642,36 @@ namespace ngcomp
 #else
           int checkels = ma->GetNE();
 #endif
-          for (int j = 0; j < checkels; j++)
-            {
-              HeapReset hr(clh);
-              if (parts[i] -> DefinedOn (ma->GetElIndex(j)))
-                parts[i] -> CheckElement (fespace->GetFE(j, clh));
-            }
-        }
+
+
+
+	  Exception * e;
+#pragma omp parallel
+	  {
+	    LocalHeap lh = clh.Split();
+	    
+#pragma omp for
+	    for (int j = 0; j < checkels; j++)
+	      {
+		HeapReset hr(lh);
+		
+		try
+		  {
+		    if (parts[i] -> DefinedOn (ma->GetElIndex(j)) && !e)
+		      parts[i] -> CheckElement (fespace->GetFE(j, lh));
+		  }
+		catch (Exception e1)
+		  {
+#pragma omp critical(justone)
+		    {
+		      delete e;
+		      e = new Exception(e1);
+		    }
+		  }
+	      }
+	  }
+	  if (e) throw Exception (*e);
+	}
     mattimer1.Stop();    
     
     try
