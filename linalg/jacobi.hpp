@@ -46,6 +46,9 @@ namespace ngla
 
     ///
     virtual ~JacobiPrecond ();
+
+    virtual int VHeight() const { return height; }
+    virtual int VWidth() const  { return height; }
   
     ///
     virtual void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const;

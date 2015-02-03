@@ -604,14 +604,11 @@ namespace ngla
 	while (n++ < maxsteps && Abs(wdn) > err && !(sh && sh->ShouldTerminate()))
 	  {
 	    w = (*a) * s;
-
 	    wd = wdn;
-
 	    kss = S_InnerProduct<IPTYPE> (s, w);
 	    if (kss == 0.0) break;
 	    
 	    al = wd / kss;
-	    
 	    u += al * s;
 	    d -= al * w;
 
@@ -619,7 +616,6 @@ namespace ngla
 	      w = (*c) * d;
 	    else
 	      w = d;
-	    
 	    wdn = S_InnerProduct<IPTYPE> (d, w);
 
 	    be = wdn / wd;

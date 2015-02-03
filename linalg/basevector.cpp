@@ -55,7 +55,13 @@ namespace ngla
 
   BaseVector & BaseVector :: Scale (double scal)
   {
+    if (scal == 1) return *this;
+
+    static Timer t("BaseVector::Scale");
+    RegionTimer reg(t);
+
     FVDouble() *= scal;
+
     return *this;
   }
   BaseVector & BaseVector :: Scale (Complex scal)
@@ -66,6 +72,9 @@ namespace ngla
 
   BaseVector & BaseVector :: SetScalar (double scal)
   {
+    static Timer t("BaseVector::SetScalar");
+    RegionTimer reg(t);
+
     FVDouble() = scal;
     return *this;
   }
@@ -78,6 +87,9 @@ namespace ngla
 
   BaseVector & BaseVector :: Set (double scal, const BaseVector & v)
   {
+    static Timer t("BaseVector::Set");
+    RegionTimer reg(t);
+
     if(Size() != v.Size())
       throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
     FVDouble() = scal * v.FVDouble();
@@ -94,6 +106,9 @@ namespace ngla
     
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
+    static Timer t("BaseVector::Add");
+    RegionTimer reg(t);
+
     if(Size() != v.Size())
         throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
     FVDouble() += scal * v.FVDouble();
@@ -482,6 +497,9 @@ namespace ngla
   template <class SCAL>
   SCAL S_BaseVector<SCAL> :: InnerProduct (const BaseVector & v2) const
   {
+    static Timer t("S_BaseVector::InnerProduct");
+    RegionTimer reg(t);
+
     return ngbla::InnerProduct (FVScal(), v2.FV<SCAL>());
     // dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }

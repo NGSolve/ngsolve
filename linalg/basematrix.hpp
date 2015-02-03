@@ -186,13 +186,12 @@ namespace ngla
     template <class TS>
     void AssignTo (TS s, BaseVector & v) const
     { 
-#ifdef DEBUG
       if (m.Height() != v.Size() || m.Width() != x.Size())
 	throw Exception (ToString ("matrix-vector: size does not fit\n") +
 			 "Matrix:     " + ToString(m.Height()) + " x " + ToString(m.Width()) + "\n"
 			 "Vector in : " + ToString(x.Size()) + "\n"
 			 "Vector res: " + ToString(v.Size()));
-#endif
+
       m.Mult (x, v);
       v *= s;
     }
@@ -200,10 +199,9 @@ namespace ngla
     template <class TS>
     void AddTo (TS s, BaseVector & v) const
     { 
-#ifdef DEBUG
       if (m.Height() != v.Size() || m.Width() != x.Size())
 	throw Exception ("matrix-vector MultAdd: size does not fit");
-#endif
+
       m.MultAdd (s, x, v);
     }
   };
