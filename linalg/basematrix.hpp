@@ -64,7 +64,9 @@ namespace ngla
     virtual BaseVector & AsVector();
     /// linear access of matrix memory
     virtual const BaseVector & AsVector() const;
-  
+    ///
+    virtual void SetZero();
+
     virtual ostream & Print (ostream & ost) const;
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
