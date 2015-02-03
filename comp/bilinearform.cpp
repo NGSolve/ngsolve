@@ -669,7 +669,8 @@ namespace ngcomp
 
 	    mattimerclear.Start();
             BaseMatrix & mat = GetMatrix();
-            mat = 0.0;
+            //mat = 0.0;
+	    mat.SetZero();
 	    mattimerclear.Stop();
 
             bool hasbound = false;
