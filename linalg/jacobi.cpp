@@ -46,6 +46,9 @@ namespace ngla
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
   MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
   {
+    static Timer t("JacobiPreonc::MultAdd");
+    RegionTimer reg(t);
+
     x.Cumulate();
     y.Cumulate();
 
