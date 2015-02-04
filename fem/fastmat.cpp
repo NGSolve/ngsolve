@@ -636,6 +636,7 @@ namespace ngfem {
 
 
   template NGS_DLL_HEADER void FastMat<12> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
+  template NGS_DLL_HEADER void FastMat<16> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<18> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<24> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
   template NGS_DLL_HEADER void FastMat<32> (int n, int M2, double * __restrict__ pa, double * __restrict__ pb, double * __restrict__ pc);
@@ -663,6 +664,7 @@ namespace ngfem {
 
 
   template NGS_DLL_HEADER void FastMat<12> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<16> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<18> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<24> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<32> (int n, int M2, Complex * pa, Complex * pb, Complex * pc);
