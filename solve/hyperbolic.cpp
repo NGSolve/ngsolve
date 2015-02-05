@@ -48,16 +48,16 @@ public:
     In the constructor, the solver class gets the flags from the pde - input file.
     the PDE class apde constains all bilinear-forms, etc...
   */
-  NumProcHyperbolic (PDE & apde, const Flags & flags)
+  NumProcHyperbolic (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
     // in the input-file, you specify the bilinear-forms for the stiffness and for the mass-term
     // like  "-bilinearforma=k". Default arguments are 'a' and 'm'
 
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearforma", "a"));
-    bfm = pde.GetBilinearForm (flags.GetStringFlag ("bilinearformm", "m"));
-    lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", "f"));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", "u"));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearforma", "a"));
+    bfm = apde->GetBilinearForm (flags.GetStringFlag ("bilinearformm", "m"));
+    lff = apde->GetLinearForm (flags.GetStringFlag ("linearform", "f"));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", "u"));
 
     dt = flags.GetNumFlag ("dt", 0.001);
     tend = flags.GetNumFlag ("tend", 1);

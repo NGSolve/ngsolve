@@ -22,12 +22,12 @@ int main(int argc, char ** argv)
 
   ngsolve::MyMPI mympi(argc, argv);
 
-  ngsolve::PDE pde; 
-
   try
     {
-      pde.LoadPDE (argv[argc-1]); 
-      pde.Solve();
+      string filename = argv[argc-1];
+      cout << "filename = " << filename << endl;
+      auto pde = ngcomp::LoadPDE (filename);
+      pde->Solve();
     }
 
   catch(ngstd::Exception & e)

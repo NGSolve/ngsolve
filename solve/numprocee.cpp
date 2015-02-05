@@ -19,7 +19,7 @@ namespace ngsolve
     ofstream outfile;
 
   public:
-    NumProcZZErrorEstimator (PDE & apde, const Flags & flags);
+    NumProcZZErrorEstimator (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcZZErrorEstimator() { ; }
 
     static void PrintDoc (ostream & ost);
@@ -33,15 +33,15 @@ namespace ngsolve
   };
 
 
-  NumProcZZErrorEstimator :: NumProcZZErrorEstimator (PDE & apde, const Flags & flags)
+  NumProcZZErrorEstimator :: NumProcZZErrorEstimator (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde, flags)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
-    gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", ""));
+    gferr = apde->GetGridFunction (flags.GetStringFlag ("error", ""));
     filename = flags.GetStringFlag ("filename","error.out");
     outfile.open (filename.c_str());
-    pde.AddVariable (string("ZZerrest.")+GetName()+".err", 1e99);
+    apde->AddVariable (string("ZZerrest.")+GetName()+".err", 1e99);
   }
 
 
@@ -109,7 +109,7 @@ namespace ngsolve
     int ndom = ma->GetNDomains();
     for (int k = 0; k < ndom; k++)
       {
-	CalcFluxProject (ma, *gfu, *flux, bfi, 1, k, lh);
+	CalcFluxProject (*gfu, *flux, bfi, 1, k, lh);
 	CalcError (ma, *gfu, *flux, bfi, err, k, lh);
       }
 
@@ -121,7 +121,7 @@ namespace ngsolve
       sum += err(i);
 
     cout << " estimated error = " << sqrt (sum) << endl;
-    pde.AddVariable (string("ZZerrest.")+GetName()+".err", sqrt(sum));
+    shared_ptr<PDE>(pde)->AddVariable (string("ZZerrest.")+GetName()+".err", sqrt(sum));
     
 
     outfile << ma->GetNLevels() 
@@ -171,7 +171,7 @@ namespace ngsolve
     ofstream * file;
 
   public:
-    NumProcDifference (PDE & apde, const Flags & flags);
+    NumProcDifference (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcDifference();
 
 
@@ -187,29 +187,29 @@ namespace ngsolve
 
 
 
-  NumProcDifference :: NumProcDifference (PDE & apde, const Flags & flags)
+  NumProcDifference :: NumProcDifference (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde), bfa2(0), gfu2(0), coef_real(0), coef_imag(0)
   {
   
-    bfa1 = pde.GetBilinearForm 
+    bfa1 = apde->GetBilinearForm 
       (flags.GetStringFlag ("bilinearform1", flags.GetStringFlag ("bilinearform", "")));
-    gfu1 = pde.GetGridFunction 
+    gfu1 = apde->GetGridFunction 
       (flags.GetStringFlag ("solution1", flags.GetStringFlag("solution","")));
 
     if ( flags.StringFlagDefined("bilinearform2") )
       {
-	bfa2 = pde.GetBilinearForm 
+	bfa2 = apde->GetBilinearForm 
 	  (flags.GetStringFlag ("bilinearform2", flags.GetStringFlag ("bilinearform", "")));
-	gfu2 = pde.GetGridFunction (flags.GetStringFlag ("solution2", ""));
+	gfu2 = apde->GetGridFunction (flags.GetStringFlag ("solution2", ""));
       }
     else
       {
-	coef_real = pde.GetCoefficientFunction(flags.GetStringFlag("function",""));
+	coef_real = apde->GetCoefficientFunction(flags.GetStringFlag("function",""));
 	if ( flags.StringFlagDefined("function_imag"))
-	  coef_imag = pde.GetCoefficientFunction(flags.GetStringFlag("function_imag",""));
+	  coef_imag = apde->GetCoefficientFunction(flags.GetStringFlag("function_imag",""));
       }
 
-    gfdiff = pde.GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
+    gfdiff = apde->GetGridFunction (flags.GetStringFlag ("diff", ""), 1);
 
     filename = flags.GetStringFlag ("filename","");
     if (filename.length() && MyMPI_GetId() == 0)
@@ -306,7 +306,7 @@ namespace ngsolve
     sum = MyMPI_AllReduce (sum);
 
     cout << IM(1) << " total difference = " << sqrt (sum) << endl;
-    pde.AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
+    shared_ptr<PDE>(pde)->AddVariable (string("calcdiff.")+GetName()+".diff", sqrt(sum), 6);
     
     int ndof = bfa1 -> GetFESpace()->GetNDofGlobal();
 
@@ -352,7 +352,7 @@ namespace ngsolve
     ///
     shared_ptr<GridFunction> gferr;
   public:
-    NumProcRTZZErrorEstimator (PDE & apde, const Flags & flags);
+    NumProcRTZZErrorEstimator (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcRTZZErrorEstimator();
   
     virtual void Do(LocalHeap & lh);
@@ -366,12 +366,12 @@ namespace ngsolve
 
 
 
-  NumProcRTZZErrorEstimator :: NumProcRTZZErrorEstimator (PDE & apde, const Flags & flags)
+  NumProcRTZZErrorEstimator :: NumProcRTZZErrorEstimator (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
-    gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", ""));
+    gferr = apde->GetGridFunction (flags.GetStringFlag ("error", ""));
   }
 
   NumProcRTZZErrorEstimator :: ~NumProcRTZZErrorEstimator()
@@ -406,7 +406,7 @@ namespace ngsolve
 
     err = 0;
 
-    CalcFluxProject (ma, *gfu, *flux, bfi, 1, -1, lh);
+    CalcFluxProject (*gfu, *flux, bfi, 1, -1, lh);
     CalcError (ma, *gfu, *flux, bfi, err, -1, lh);
 
     double sum = 0;
@@ -414,7 +414,7 @@ namespace ngsolve
       sum += err(i);
     cout << "estimated error = " << sqrt (sum) << endl;
 
-    pde.AddVariable (string("RTZZerrest.")+GetName()+".err", sqrt(sum));
+    shared_ptr<PDE>(pde)->AddVariable (string("RTZZerrest.")+GetName()+".err", sqrt(sum));
 
     static ofstream errout ("error.out");
     errout << ma->GetNLevels() 
@@ -451,16 +451,16 @@ namespace ngsolve
     ///
     shared_ptr<FESpace> vtest;
   public:
-    NumProcHierarchicalErrorEstimator (PDE & apde, const Flags & flags)
+    NumProcHierarchicalErrorEstimator (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
-      bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-      bfa2 = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform2", ""), 1);
+      bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+      bfa2 = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform2", ""), 1);
       if (!bfa2) bfa2 = bfa;
-      lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", ""));
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
-      vtest = pde.GetFESpace (flags.GetStringFlag ("testfespace", ""));
-      gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
+      lff = apde->GetLinearForm (flags.GetStringFlag ("linearform", ""));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", ""));
+      vtest = apde->GetFESpace (flags.GetStringFlag ("testfespace", ""));
+      gferr = apde->GetGridFunction (flags.GetStringFlag ("error", ""));
     }
 
     virtual ~NumProcHierarchicalErrorEstimator()
@@ -540,7 +540,7 @@ namespace ngsolve
 
   public:
     ///
-    NumProcMarkElements (PDE & apde, const Flags & flags);
+    NumProcMarkElements (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcMarkElements() { ; }
     ///
@@ -559,11 +559,11 @@ namespace ngsolve
 
 
 
-  NumProcMarkElements :: NumProcMarkElements (PDE & apde, const Flags & flags)
+  NumProcMarkElements :: NumProcMarkElements (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
-    gferr2 = pde.GetGridFunction (flags.GetStringFlag ("error2", ""), 1);
+    gferr = apde->GetGridFunction (flags.GetStringFlag ("error", ""));
+    gferr2 = apde->GetGridFunction (flags.GetStringFlag ("error2", ""), 1);
     minlevel = int(flags.GetNumFlag ("minlevel", 0));
     fac = flags.GetNumFlag ("fac", -1);
     if (fac != -1)
@@ -689,7 +689,7 @@ namespace ngsolve
     Flags visflags;
   public:
     ///
-    NumProcSetVisual (PDE & apde, const Flags & flags);
+    NumProcSetVisual (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcSetVisual ();
     
@@ -702,7 +702,7 @@ namespace ngsolve
 
 
   NumProcSetVisual ::   
-  NumProcSetVisual (PDE & apde, const Flags & flags)
+  NumProcSetVisual (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde), visflags (flags)
   {
     cout << "SetVisual has flags" << endl;
@@ -760,7 +760,7 @@ namespace ngsolve
     ///
     shared_ptr<GridFunction> gferr;
   public:
-    NumProcPrimalDualErrorEstimator (PDE & apde, const Flags & flags);
+    NumProcPrimalDualErrorEstimator (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcPrimalDualErrorEstimator() { ; }
 
     virtual void Do(LocalHeap & lh);
@@ -775,13 +775,13 @@ namespace ngsolve
 
 
 
-  NumProcPrimalDualErrorEstimator :: NumProcPrimalDualErrorEstimator (PDE & apde, const Flags & flags)
+  NumProcPrimalDualErrorEstimator :: NumProcPrimalDualErrorEstimator (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
-    gfflux = pde.GetGridFunction (flags.GetStringFlag ("flux", ""));
-    gferr = pde.GetGridFunction (flags.GetStringFlag ("error", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", ""));
+    gfflux = apde->GetGridFunction (flags.GetStringFlag ("flux", ""));
+    gferr = apde->GetGridFunction (flags.GetStringFlag ("error", ""));
   }
 
 
@@ -796,7 +796,7 @@ namespace ngsolve
 
     FlatVector<double> err = gferr->GetVector().FV<double>();
       // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
-
+    
     err = 0;
     CalcError (ma, *gfu, *gfflux, bfi, err, -1, lh);
   
