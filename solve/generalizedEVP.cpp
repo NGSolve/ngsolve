@@ -31,7 +31,7 @@ namespace ngsolve
     string variable;
 
   public:
-    NumProcEVP_AM (PDE & apde, const Flags & flags);
+    NumProcEVP_AM (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcEVP_AM();
 
     virtual void Do(LocalHeap & lh);
@@ -72,13 +72,13 @@ namespace ngsolve
 
 
   
-  NumProcEVP_AM :: NumProcEVP_AM (PDE & apde, const Flags & flags)
+  NumProcEVP_AM :: NumProcEVP_AM (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
-    bfm = pde.GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-    pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
+    bfm = apde->GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    pre = apde->GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
     maxsteps = int(flags.GetNumFlag ("maxsteps", 200));
     variable = flags.GetStringFlag ("variable", "eigenvalue");
 
@@ -197,7 +197,7 @@ namespace ngsolve
       {
         stringstream vn;
         vn << variable << i;
-        pde.AddVariable (vn.str(), lami(i));
+        shared_ptr<PDE> (pde)->AddVariable (vn.str(), lami(i));
       }
 
 

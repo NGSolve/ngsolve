@@ -66,11 +66,6 @@ namespace ngcomp
     order =  int (flags.GetNumFlag ("order",0)); 
     curl_order =  int (flags.GetNumFlag ("curlorder",order)); 
 
-
-    // Variable order space: 
-    //      in case of (var_order && order) or (relorder) 
-    var_order = flags.GetDefineFlag("variableorder");  
-    order =  int (flags.GetNumFlag ("order",0)); 
     
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
@@ -126,30 +121,23 @@ namespace ngcomp
       throw Exception("Flag 'orderface' and 'orderedge' for hdivho are obsolete. Use flag 'orderfacet' instead!"); 
 	
     uniform_order_facet = int (flags.GetNumFlag ("orderfacet", -1));
+
+
+    auto one = make_shared<ConstantCoefficientFunction> (1);
+    integrator = GetIntegrators().CreateBFI("masshdiv", ma->GetDimension(), one);
+    boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", ma->GetDimension(), one);
     
-    // Evaluator for shape tester 
     if (ma->GetDimension() == 2)
       {
-        auto one = make_shared<ConstantCoefficientFunction> (1);
-        // Array<shared_ptr<CoefficientFunction>> coeffs(1);
-        // coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
-        integrator = GetIntegrators().CreateBFI("masshdiv", 2, one);
-        boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 2, one);
-
         evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
         flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<2>>>();
       }
     else
       {
-        auto one = make_shared<ConstantCoefficientFunction> (1);
-        // Array<shared_ptr<CoefficientFunction>> coeffs(1);
-        // coeffs[0] = shared_ptr<CoefficientFunction> (new ConstantCoefficientFunction(1));
-        integrator = GetIntegrators().CreateBFI("masshdiv", 3, one);
-        boundary_integrator = GetIntegrators().CreateBFI("robinhdiv", 3, one);
-
         evaluator = make_shared<T_DifferentialOperator<DiffOpIdHDiv<3>>>();
         flux_evaluator = make_shared<T_DifferentialOperator<DiffOpDivHDiv<3>>>();
       }
+
     if (dimension > 1)
       {
         integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);

@@ -7,13 +7,21 @@ namespace ngcomp
 {
 
 
-  NumProc :: NumProc (PDE & apde, const Flags & flags) 
-    : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
+  NumProc :: NumProc (weak_ptr<PDE> apde, const Flags & flags) 
+    : NGS_Object (shared_ptr<PDE> (apde)->GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
       pde(apde)
   {
     if (flags.StringFlagDefined ("name"))
       SetName (flags.GetStringFlag ("name",""));
   }
+
+  NumProc :: NumProc (const Flags & flags) 
+    : NGS_Object (nullptr, "numproc")
+  {
+    if (flags.StringFlagDefined ("name"))
+      SetName (flags.GetStringFlag ("name",""));
+  }
+
   
   NumProc :: ~NumProc()
   {
@@ -35,7 +43,7 @@ namespace ngcomp
 
   NumProcs::NumProcInfo::
   NumProcInfo (const string & aname, int adim, 
-	       shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	       shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	       void (*aprintdoc) (ostream & ost) )
     : name(aname), dim(adim), creator(acreator), printdoc(aprintdoc)
   {
@@ -49,7 +57,7 @@ namespace ngcomp
 
   void NumProcs :: 
   AddNumProc (const string & aname,
-	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (make_shared<NumProcInfo> (aname, -1, acreator, printdoc));
@@ -57,7 +65,7 @@ namespace ngcomp
 
   void NumProcs :: 
   AddNumProc (const string & aname, int adim, 
-	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (make_shared<NumProcInfo> (aname, adim, acreator, printdoc));
@@ -67,18 +75,9 @@ namespace ngcomp
   shared_ptr<NumProcs::NumProcInfo>
   NumProcs::GetNumProc(const string & name, int dim)
   {
-    /*
-    for (int i = 0; i < npa.Size(); i++)
-      {
-	if (name == npa[i]->name &&
-	    ( (dim == npa[i]->dim) || (npa[i]->dim==-1) ))
-	  return npa[i];
-      }
-    */
-
-    for (auto & np : npa)
-      if (name == np->name && ( (dim == np->dim) || (np->dim==-1) ))
-        return np;
+    for (auto & info : npa)
+      if ( (name == info->name) && ( (dim == info->dim) || (info->dim==-1) ))
+        return info;
 
     return nullptr;
   }
@@ -88,10 +87,10 @@ namespace ngcomp
     ost << endl << "NumProcs:" << endl;
     ost <<         "---------" << endl;
     ost << setw(20) << "Name" << endl;
-    for (auto & np : npa)
-      ost << setw(20) << np->name << endl;
-  }
 
+    for (auto & info : npa)
+      ost << setw(20) << info->name << endl;
+  }
 
  
   NumProcs & GetNumProcs ()

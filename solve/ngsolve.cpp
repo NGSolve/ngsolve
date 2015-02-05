@@ -440,7 +440,7 @@ int NGS_LoadPDE (ClientData clientData,
 	  Matrix<> a(100), b(100), c(100);
 	  a = 1; b = 2; c = a*b | Lapack;
 
-          pde->LoadPDE (argv[1]);
+          LoadPDE (pde, argv[1]);
 	  pde->PrintReport (*testout);
 
 #ifdef NGS_PYTHON
@@ -586,7 +586,7 @@ int NGS_EnterCommand (ClientData clientData,
   if (pde)
     {
       stringstream sstream(st);
-      pde->LoadPDE (sstream);
+      LoadPDE (pde, sstream);
       pde->Solve ();
       pde->PrintReport (*testout);
     }

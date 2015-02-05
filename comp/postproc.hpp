@@ -15,24 +15,21 @@ namespace ngcomp
   */
 
   template <class SCAL>
-  extern NGS_DLL_HEADER void CalcFlux (shared_ptr<MeshAccess> ma, 
-                                       const S_GridFunction<SCAL> & u,
+  extern NGS_DLL_HEADER void CalcFlux (const S_GridFunction<SCAL> & u,
                                        S_GridFunction<SCAL> & flux,
                                        shared_ptr<BilinearFormIntegrator> bli,
                                        bool applyd, bool add,
                                        int domain);
   
   extern NGS_DLL_HEADER 
-  void CalcFluxProject (shared_ptr<MeshAccess> ma, 
-			const GridFunction & u,
+  void CalcFluxProject (const GridFunction & u,
 			GridFunction & flux,
 			shared_ptr<BilinearFormIntegrator> bli,
 			bool applyd, int domain,
 			LocalHeap & lh);
 
   template <class SCAL>
-  extern NGS_DLL_HEADER void CalcFluxProject (shared_ptr<MeshAccess> ma, 
-                                              const S_GridFunction<SCAL> & u,
+  extern NGS_DLL_HEADER void CalcFluxProject (const S_GridFunction<SCAL> & u,
                                               S_GridFunction<SCAL> & flux,
                                               shared_ptr<BilinearFormIntegrator> bli,
                                               bool applyd, const BitArray & domains, LocalHeap & lh);
@@ -49,8 +46,7 @@ namespace ngcomp
 
   template <class SCAL>
   extern NGS_DLL_HEADER
-  int CalcPointFlux (shared_ptr<MeshAccess> ma, 
-		     const GridFunction & u,
+  int CalcPointFlux (const GridFunction & u,
 		     const FlatVector<double> & point,
 		     FlatVector<SCAL> & flux,
 		     shared_ptr<BilinearFormIntegrator> bli,
@@ -61,8 +57,7 @@ namespace ngcomp
 
   template <class SCAL>
   extern NGS_DLL_HEADER 
-  int CalcPointFlux (shared_ptr<MeshAccess> ma, 
-		     const GridFunction & u,
+  int CalcPointFlux (const GridFunction & u,
 		     const FlatVector<double> & point,
 		     const Array<int> & domains,
 		     FlatVector<SCAL> & flux,
