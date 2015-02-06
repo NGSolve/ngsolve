@@ -68,8 +68,7 @@ namespace ngcomp
 
 
   extern NGS_DLL_HEADER 
-  void CalcError (shared_ptr<MeshAccess> ma, 
-		  const GridFunction & bu,
+  void CalcError (const GridFunction & bu,
 		  const GridFunction & bflux,
 		  shared_ptr<BilinearFormIntegrator> bli,
 		  FlatVector<double> & err,
@@ -77,8 +76,7 @@ namespace ngcomp
 		  LocalHeap & lh);
 
   template <class SCAL>
-  extern NGS_DLL_HEADER void CalcError (shared_ptr<MeshAccess> ma, 
-                                        const S_GridFunction<SCAL> & u,
+  extern NGS_DLL_HEADER void CalcError (const S_GridFunction<SCAL> & u,
                                         const S_GridFunction<SCAL> & flux,
                                         shared_ptr<BilinearFormIntegrator> bli,
                                         FlatVector<double> & err,
@@ -86,16 +84,14 @@ namespace ngcomp
 
 
   template <class SCAL>
-  NGS_DLL_HEADER void CalcDifference (shared_ptr<MeshAccess> ma, 
-                                      const S_GridFunction<SCAL> & u1,
+  NGS_DLL_HEADER void CalcDifference (const S_GridFunction<SCAL> & u1,
                                       const S_GridFunction<SCAL> & u2,
                                       shared_ptr<BilinearFormIntegrator> bli1,
                                       shared_ptr<BilinearFormIntegrator> bli2,
                                       FlatVector<double> & diff,
                                       int domain, LocalHeap & lh);
   
-  NGS_DLL_HEADER void CalcDifference (shared_ptr<MeshAccess> ma, 
-                                      const GridFunction & u1,
+  NGS_DLL_HEADER void CalcDifference (const GridFunction & u1,
                                       shared_ptr<BilinearFormIntegrator> bli1,
                                       shared_ptr<CoefficientFunction> coef, 
                                       FlatVector<double> & diff,
@@ -119,16 +115,14 @@ namespace ngcomp
 
 
   template <class SCAL>
-  extern NGS_DLL_HEADER void CalcErrorHierarchical (shared_ptr<MeshAccess> ma, 
-				     const S_BilinearForm<SCAL> & bfa,
-				     const S_BilinearForm<SCAL> & bfa2,
-				     const S_LinearForm<SCAL> & lff,
-				     S_GridFunction<SCAL> & gfu,
-				     const FESpace & festest,
-				     FlatVector<double> & err,
-				     LocalHeap & lh);
-
-
+  extern NGS_DLL_HEADER 
+  void CalcErrorHierarchical (const S_BilinearForm<SCAL> & bfa,
+                              const S_BilinearForm<SCAL> & bfa2,
+                              const S_LinearForm<SCAL> & lff,
+                              S_GridFunction<SCAL> & gfu,
+                              const FESpace & festest,
+                              FlatVector<double> & err,
+                              LocalHeap & lh);
 
 }
 
