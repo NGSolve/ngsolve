@@ -25,7 +25,6 @@ int main(int argc, char ** argv)
   try
     {
       string filename = argv[argc-1];
-      cout << "filename = " << filename << endl;
       auto pde = ngcomp::LoadPDE (filename);
       pde->Solve();
     }
