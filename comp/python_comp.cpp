@@ -49,14 +49,14 @@ class PyNumProc : public NumProc
 {
 
 public:
-  PyNumProc (PDE & pde, const Flags & flags) : NumProc (pde, flags) { ; }
-  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (&pde,&NOOP_Deleter); }
+  PyNumProc (shared_ptr<PDE> pde, const Flags & flags) : NumProc (pde, flags) { ; }
+  // shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (&pde,&NOOP_Deleter); }
   // virtual void Do (LocalHeap & lh) { cout << "should not be called" << endl; }
 };
 
 class NumProcWrap : public PyNumProc, public bp::wrapper<PyNumProc> {
 public:
-  NumProcWrap (PDE & pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
+  NumProcWrap (shared_ptr<PDE> pde, const Flags & flags) : PyNumProc(pde, flags) { ; }
   virtual void Do(LocalHeap & lh)  {
     // cout << "numproc wrap - do" << endl;
     AcquireGIL gil_lock;
@@ -511,7 +511,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   // die geht
-  bp::class_<NumProcWrap,shared_ptr<NumProcWrap>, bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<PDE&, const Flags&>())
+  bp::class_<NumProcWrap,shared_ptr<NumProcWrap>, bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<shared_ptr<PDE>, const Flags&>())
     .def("Do", bp::pure_virtual(&PyNumProc::Do)) 
     .add_property("pde", &PyNumProc::GetPDE)
     ;
@@ -533,13 +533,21 @@ void NGS_DLL_HEADER ExportNgcomp()
   
   bp::class_<PDE,shared_ptr<PDE>> ("PDE", bp::init<>())
 
-    .def(bp::init<const string&>())
+    // .def(bp::init<const string&>())
 
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](const string & filename)
+                           { 
+                             return LoadPDE (filename);
+                           })))
+
+    /*
     .def("Load", static_cast<void(PDE::*)(const string &, const bool, const bool)> 
          (&PDE::LoadPDE),
          (boost::python::arg("filename"), 
           boost::python::arg("meshload")=0, 
           boost::python::arg("nogeometryload")=0))
+    */
 
     .def("__str__", &ToString<PDE>)
 

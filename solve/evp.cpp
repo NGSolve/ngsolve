@@ -29,7 +29,7 @@ namespace ngsolve
     SOLVER solver;
 
   public:
-    NumProcEVP (PDE & apde, const Flags & flags);
+    NumProcEVP (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcEVP() { ; }
 
     virtual void Do(LocalHeap & lh);
@@ -49,13 +49,13 @@ namespace ngsolve
   };
 
 
-  NumProcEVP :: NumProcEVP (PDE & apde, const Flags & flags)
+  NumProcEVP :: NumProcEVP (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
-    bfm = pde.GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-    pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""),1);
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearforma", ""));
+    bfm = apde->GetBilinearForm (flags.GetStringFlag ("bilinearformm", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    pre = apde->GetPreconditioner (flags.GetStringFlag ("preconditioner", ""),1);
     num = int(flags.GetNumFlag ("num", 500));
     shift = flags.GetNumFlag ("shift",1); 
     shifti = flags.GetNumFlag ("shifti",0); 

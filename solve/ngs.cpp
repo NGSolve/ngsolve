@@ -26,8 +26,9 @@ int main(int argc, char ** argv)
 
   try
     {
-      pde.LoadPDE (argv[argc-1]); 
-      pde.Solve();
+      string filename = argv[argc-1];
+      auto pde = ngcomp::LoadPDE (filename);
+      pde->Solve();
     }
 
   catch(ngstd::Exception & e)

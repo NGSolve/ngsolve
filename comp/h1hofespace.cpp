@@ -162,6 +162,7 @@ namespace ngcomp
           break;
         }
       }
+
     if (dimension > 1)
       {
 	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
@@ -172,7 +173,6 @@ namespace ngcomp
     auto one = make_shared<ConstantCoefficientFunction> (1);
     integrator = CreateBFI("mass", ma->GetDimension(), one);
     boundary_integrator = CreateBFI("robin", ma->GetDimension(), one);
-
     if (dimension > 1)
       {
 	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);

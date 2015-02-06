@@ -67,7 +67,7 @@ namespace ngsolve
     int domain;
   public:
     ///
-    NumProcCalcFlux (PDE & apde, const Flags & flags);
+    NumProcCalcFlux (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcCalcFlux() { ; }
 
@@ -95,15 +95,15 @@ namespace ngsolve
   };
 
 
-  NumProcCalcFlux :: NumProcCalcFlux (PDE & apde, const Flags & flags)
+  NumProcCalcFlux :: NumProcCalcFlux (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
     if (bfa->NumIntegrators()==0)
       throw Exception ("bilinearform used for CalcFlux needs at least one integrator");
 
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", NULL));
-    gfflux = pde.GetGridFunction (flags.GetStringFlag ("flux", NULL));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", NULL));
+    gfflux = apde->GetGridFunction (flags.GetStringFlag ("flux", NULL));
     applyd = flags.GetDefineFlag ("applyd");
     // useall = flags.GetDefineFlag ("useall");
     domain = static_cast<int>(flags.GetNumFlag("domain",0))-1;
@@ -136,7 +136,7 @@ namespace ngsolve
 
   void NumProcCalcFlux :: Do(LocalHeap & lh)
   {
-    CalcFluxProject (pde.GetMeshAccess(), *gfu, *gfflux,
+    CalcFluxProject (GetPDE()->GetMeshAccess(), *gfu, *gfflux,
 		     bfa->GetIntegrator(0),
 		     applyd, domain, lh);
     
@@ -181,11 +181,11 @@ namespace ngsolve
     bool print;
   public:
     ///
-    NumProcSetValues (PDE & apde, const Flags & flags)
-    : NumProc (apde)
+    NumProcSetValues (shared_ptr<PDE> apde, const Flags & flags)
+      : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      coef = apde->GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
       boundary = flags.GetDefineFlag ("boundary");
       coarsegridonly = flags.GetDefineFlag ("coarsegridonly");
       component = int (flags.GetNumFlag ("component", 0))-1;
@@ -274,7 +274,7 @@ namespace ngsolve
 
   public:
     ///
-    NumProcDrawFlux (PDE & apde, const Flags & flags);
+    NumProcDrawFlux (shared_ptr<PDE> apde, const Flags & flags);
 
     ///
     NumProcDrawFlux (shared_ptr<PDE> apde, 
@@ -283,7 +283,7 @@ namespace ngsolve
                      string alabel,
                      bool aapplyd,
                      bool auseall)
-      : NumProc(*apde), bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
+      : NumProc(apde), bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
     { 
       Array<shared_ptr<BilinearFormIntegrator>> bfi2d, bfi3d;
 
@@ -341,7 +341,7 @@ namespace ngsolve
   };
 
 
-  NumProcDrawFlux :: NumProcDrawFlux (PDE & apde, const Flags & flags)
+  NumProcDrawFlux :: NumProcDrawFlux (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
     bfa = NULL;
@@ -366,11 +366,11 @@ namespace ngsolve
 	return;
       }
 
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
 
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("solution", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("solution", ""));
     if(!gfu)
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
 
     applyd = flags.GetDefineFlag ("applyd");
     label = flags.GetStringFlag ("label", "");
@@ -464,7 +464,7 @@ namespace ngsolve
 
   public:
     ///
-    NumProcDrawCoefficient (PDE & apde, const Flags & flags);
+    NumProcDrawCoefficient (shared_ptr<PDE> apde, const Flags & flags);
     virtual ~NumProcDrawCoefficient() { ; }
 
     virtual void Do (LocalHeap & lh) { ; }
@@ -475,10 +475,10 @@ namespace ngsolve
   };
 
 
-  NumProcDrawCoefficient :: NumProcDrawCoefficient (PDE & apde, const Flags & flags)
+  NumProcDrawCoefficient :: NumProcDrawCoefficient (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    cf = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
+    cf = apde->GetCoefficientFunction (flags.GetStringFlag ("coefficient", ""));
     label = flags.GetStringFlag ("label", "");
 
     vis = new VisualizeCoefficientFunction (ma, cf);
@@ -572,14 +572,15 @@ namespace ngsolve
     int outputprecision;
   public:
     ///
-    NumProcEvaluate (PDE & apde, const Flags & flags);
+    NumProcEvaluate (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcEvaluate() { ; }
-
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcEvaluate (pde, flags);
     }
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -598,13 +599,13 @@ namespace ngsolve
 
 
 
-  NumProcEvaluate :: NumProcEvaluate (PDE & apde, const Flags & flags)
+  NumProcEvaluate :: NumProcEvaluate (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde), point(1), point2(1), point3(1), point4(1)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""), 1); 
-    lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", ""), 1);
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
-    gfv = pde.GetGridFunction (flags.GetStringFlag ("gridfunction2", ""), 1); 
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""), 1); 
+    lff = apde->GetLinearForm (flags.GetStringFlag ("linearform", ""), 1);
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
+    gfv = apde->GetGridFunction (flags.GetStringFlag ("gridfunction2", ""), 1); 
 
     variablename = flags.GetStringFlag ("resultvariable", "");
 
@@ -659,7 +660,7 @@ namespace ngsolve
     text = flags.GetStringFlag ("text","value");
 
     if(flags.StringFlagDefined("filename"))
-      filename = pde.GetDirectory() + dirslash + flags.GetStringFlag("filename","");
+      filename = apde->GetDirectory() + dirslash + flags.GetStringFlag("filename","");
     else
       filename = "err.out";
 
@@ -668,7 +669,7 @@ namespace ngsolve
     applyd = flags.GetDefineFlag ("applyd");
     hermitsch = flags.GetDefineFlag ("hermitsch");
 
-    outputprecision = (pde.ConstantUsed("outputprecision")) ? int(pde.GetConstant("outputprecision")) : -1;
+    outputprecision = (apde->ConstantUsed("outputprecision")) ? int(apde->GetConstant("outputprecision")) : -1;
     if(flags.NumFlagDefined("outputprecision"))
       outputprecision = int(flags.GetNumFlag("outputprecision",-1));
 
@@ -766,10 +767,10 @@ namespace ngsolve
 
 	if (point2.Size() >= 2)
 	  {
-	    pde.GetEvaluateFiles() += " ";
-	    pde.GetEvaluateFiles() += filename;
-	    pde.GetEvaluateFiles() += " ";
-	    pde.GetEvaluateFiles() += text;
+	    GetPDE()->GetEvaluateFiles() += " ";
+	    GetPDE()->GetEvaluateFiles() += filename;
+	    GetPDE()->GetEvaluateFiles() += " ";
+	    GetPDE()->GetEvaluateFiles() += text;
 	    
 	    if(!integrateonplanes)
 	      {
@@ -1049,7 +1050,7 @@ namespace ngsolve
 	  }
       }
     
-    pde.GetVariable(variablename,true) = result;
+    GetPDE()->GetVariable(variablename,true) = result;
     
     cout.precision(old_cout_precision);
     ofile.precision(old_ofile_precision);
@@ -1088,14 +1089,16 @@ namespace ngsolve
     Array<int> voldomains;
   public:
     ///
-    NumProcAnalyze (PDE & apde, const Flags & flags);
+    NumProcAnalyze (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcAnalyze();
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcAnalyze (pde, flags);
     }
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -1114,10 +1117,10 @@ namespace ngsolve
 
 
 
-  NumProcAnalyze :: NumProcAnalyze (PDE & apde, const Flags & flags)
+  NumProcAnalyze :: NumProcAnalyze (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
 
     variablename = flags.GetStringFlag ("resultvariable", "");
 
@@ -1215,7 +1218,7 @@ namespace ngsolve
 
 	    Integrator_ptr = fes.GetIntegrator();
 	    BoundaryIntegrator_ptr = NULL;
-	    ndomains = pde.GetMeshAccess()->GetNDomains();
+	    ndomains = GetPDE()->GetMeshAccess()->GetNDomains();
 
 	  }
 	if(count == 1)
@@ -1226,7 +1229,7 @@ namespace ngsolve
 
 	    Integrator_ptr = NULL;
 	    BoundaryIntegrator_ptr = fes.GetBoundaryIntegrator();
-	    ndomains = pde.GetMeshAccess()->GetNBoundaries();
+	    ndomains = GetPDE()->GetMeshAccess()->GetNBoundaries();
 	  }
 
 	Array<int> & domains = ((count == 0) ? voldomains : surfdomains);
@@ -1243,7 +1246,7 @@ namespace ngsolve
 
 	// const FESpace & fes = gfu->GetFESpace();
 
-	VisualizeGridFunction<double> vgfu(pde.GetMeshAccess(),gfu.get(),
+	VisualizeGridFunction<double> vgfu(GetPDE()->GetMeshAccess(),gfu.get(),
 					   BoundaryIntegrator_ptr,
 					   Integrator_ptr,false);
 
@@ -1319,18 +1322,18 @@ namespace ngsolve
 
 		avnmin << variablename << ".min";
 		actvarname = avnmin.str();
-		if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,gmin);
-		else pde.GetVariable(actvarname) = gmin;
+		if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,gmin);
+		else GetPDE()->GetVariable(actvarname) = gmin;
 
 		avnmax << variablename << ".max";
 		actvarname = avnmax.str();
-		if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,gmax);
-		else pde.GetVariable(actvarname) = gmax;
+		if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,gmax);
+		else GetPDE()->GetVariable(actvarname) = gmax;
 
 		avnav << variablename << ".av";
 		actvarname = avnav.str();
-		if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,gav);
-		else pde.GetVariable(actvarname) = gav;
+		if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,gav);
+		else GetPDE()->GetVariable(actvarname) = gav;
 	      }
 	  }
 	else
@@ -1357,8 +1360,8 @@ namespace ngsolve
 			    ostringstream avn;
 			    avn << variablename << typestring << dom+1 << ".comp" << j+1 << ".min";
 			    actvarname = avn.str();
-			    if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,mini[dom*components+j]);
-			    else pde.GetVariable(actvarname) = mini[dom*components+j];
+			    if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,mini[dom*components+j]);
+			    else GetPDE()->GetVariable(actvarname) = mini[dom*components+j];
 			  }
 		      }
 		    cout << endl << "max:" << endl;
@@ -1370,8 +1373,8 @@ namespace ngsolve
 			    ostringstream avn;
 			    avn << variablename << typestring << dom+1 << ".comp" << j+1 << ".max";
 			    actvarname = avn.str();
-			    if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,maxi[dom*components+j]);
-			    else pde.GetVariable(actvarname) = maxi[dom*components+j];
+			    if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,maxi[dom*components+j]);
+			    else GetPDE()->GetVariable(actvarname) = maxi[dom*components+j];
 			  }
 		      }
 		    cout << endl << "av:" << endl;
@@ -1383,8 +1386,8 @@ namespace ngsolve
 			    ostringstream avn;
 			    avn << variablename << typestring << dom+1 << ".comp" << j+1 << ".av";
 			    actvarname = avn.str();
-			    if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,average[dom*components+j]);
-			    else pde.GetVariable(actvarname) = average[dom*components+j];
+			    if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,average[dom*components+j]);
+			    else GetPDE()->GetVariable(actvarname) = average[dom*components+j];
 			  }
 		      }
 		    cout << endl;
@@ -1397,14 +1400,14 @@ namespace ngsolve
 			ostringstream avn;
 			avn << variablename << typestring << dom+1 << ".comp" << component+1;
 			actvarname = avn.str()+".min";
-			if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,mini[dom]);
-			else pde.GetVariable(actvarname) = mini[dom];
+			if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,mini[dom]);
+			else GetPDE()->GetVariable(actvarname) = mini[dom];
 			actvarname = avn.str()+".max";
-			if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,maxi[dom]);
-			else pde.GetVariable(actvarname) = maxi[dom];
+			if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,maxi[dom]);
+			else GetPDE()->GetVariable(actvarname) = maxi[dom];
 			actvarname = avn.str()+".av";
-			if(!pde.VariableUsed(actvarname)) pde.AddVariable(actvarname,average[dom]);
-			else pde.GetVariable(actvarname) = average[dom];
+			if(!GetPDE()->VariableUsed(actvarname)) GetPDE()->AddVariable(actvarname,average[dom]);
+			else GetPDE()->GetVariable(actvarname) = average[dom];
 		      }
 		  }
 	      }
@@ -1424,18 +1427,18 @@ namespace ngsolve
     shared_ptr<CoefficientFunction> coef;
     int order;
   public:
-    NumProcIntegrate (PDE & apde, const Flags & flags)
+    NumProcIntegrate (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde, flags)
     {
       order = int (flags.GetNumFlag ("order", 2));
-      coef = pde.GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
+      coef = apde->GetCoefficientFunction (flags.GetStringFlag ("coefficient", "") );
 
       if (!coef->IsComplex())
-	pde.AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
+	apde->AddVariable (string("integrate.")+GetName()+".value", 0.0, 6);
       else
 	{
-	  pde.AddVariable (string("integrate.")+GetName()+".value.real", 0.0, 6);
-	  pde.AddVariable (string("integrate.")+GetName()+".value.imag", 0.0, 6);
+	  apde->AddVariable (string("integrate.")+GetName()+".value.real", 0.0, 6);
+	  apde->AddVariable (string("integrate.")+GetName()+".value.imag", 0.0, 6);
 	}
     }
 
@@ -1500,14 +1503,14 @@ namespace ngsolve
 	{
 	  double sum = DoScal<double> (lh);
 	  cout << IM(1) << "Integral = " << sum << endl;
-	  pde.AddVariable (string("integrate.")+GetName()+".value", sum, 6);
+	  GetPDE()->AddVariable (string("integrate.")+GetName()+".value", sum, 6);
 	}
       else
 	{
 	  Complex sum = DoScal<Complex> (lh);
 	  cout << IM(1) << "Integral = " << sum << endl;
-	  pde.AddVariable (string("integrate.")+GetName()+".value.real", sum.real(), 6);
-	  pde.AddVariable (string("integrate.")+GetName()+".value.imag", sum.imag(), 6);
+	  GetPDE()->AddVariable (string("integrate.")+GetName()+".value.real", sum.real(), 6);
+	  GetPDE()->AddVariable (string("integrate.")+GetName()+".value.imag", sum.imag(), 6);
 	}
     }
   };
@@ -1520,20 +1523,20 @@ namespace ngsolve
     int outputprecision;
     Array<string> output_vars;
   public:
-    NumProcWriteFile (PDE & apde, const Flags & flags)
+    NumProcWriteFile (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
       outfile = NULL;
 
       string filename = flags.GetStringFlag ("filename","");
 
-      outputprecision = (pde.ConstantUsed("outputprecision")) ? int(pde.GetConstant("outputprecision")) : -1;
+      outputprecision = (apde->ConstantUsed("outputprecision")) ? int(apde->GetConstant("outputprecision")) : -1;
       if(flags.NumFlagDefined("outputprecision"))
         outputprecision = int(flags.GetNumFlag("outputprecision",-1));
       
       if (filename.length() && (MyMPI_GetId() == 0) )
 	{
-	  filename = pde.GetDirectory() + dirslash + filename;
+	  filename = apde->GetDirectory() + dirslash + filename;
 	  cout << "NP WriteFile: outputfile is " << filename << endl;
           if (!flags.GetDefineFlag ("append"))
             outfile = new ofstream (filename.c_str());
@@ -1587,17 +1590,17 @@ namespace ngsolve
     {
       for (int i = 0; i < output_vars.Size(); i++)
 	{
-	  if (pde.StringConstantUsed (output_vars[i]))
+	  if (GetPDE()->StringConstantUsed (output_vars[i]))
             {
-              string sval = pde.GetStringConstant(output_vars[i]);
+              string sval = GetPDE()->GetStringConstant(output_vars[i]);
               cout << IM(3) << output_vars[i] << " = " << sval << endl;
               if (outfile) *outfile << sval << " ";
             }
           else
             {
               double val = -1e99;
-              if (pde.ConstantUsed (output_vars[i])) val = pde.GetConstant(output_vars[i]);
-              if (pde.VariableUsed (output_vars[i])) val = pde.GetVariable(output_vars[i]);
+              if (GetPDE()->ConstantUsed (output_vars[i])) val = GetPDE()->GetConstant(output_vars[i]);
+              if (GetPDE()->VariableUsed (output_vars[i])) val = GetPDE()->GetVariable(output_vars[i]);
               cout << IM(3) << output_vars[i] << " = " << val << endl;
               if (outfile) *outfile << val << " ";
             }
@@ -1628,15 +1631,16 @@ namespace ngsolve
     
   public:
     ///
-    NumProcWarn (PDE & apde, const Flags & flags);
+    NumProcWarn (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcWarn();
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcWarn (pde, flags);
     }
-
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -1652,7 +1656,7 @@ namespace ngsolve
 
 
   
-  NumProcWarn :: NumProcWarn (PDE & apde, const Flags & flags)
+  NumProcWarn :: NumProcWarn (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
     text = flags.GetStringFlag("text","");
@@ -1698,7 +1702,7 @@ namespace ngsolve
 
     if(strcmp(variablename1.c_str(),"") != 0)
       { 
-	value1 = pde.GetVariable(variablename1);
+	value1 = GetPDE()->GetVariable(variablename1);
 	warnleft << variablename1 << " ("<< value1 <<")";
       }
     else 
@@ -1708,7 +1712,7 @@ namespace ngsolve
       }
     if(strcmp(variablename2.c_str(),"") != 0)
       { 
-	value2 = pde.GetVariable(variablename2);
+	value2 = GetPDE()->GetVariable(variablename2);
 	warnright << variablename2 << " ("<< value2 <<")";
       }
     else 
@@ -1755,7 +1759,7 @@ namespace ngsolve
 	char *dummy; dummy = new char[tclstring.str().size()+1];
 	strcpy(dummy,tclstring.str().c_str());
 
-	pde.Tcl_Eval(tclstring.str());
+	GetPDE()->Tcl_Eval(tclstring.str());
 
 	delete [] dummy;
 		 
@@ -1787,15 +1791,16 @@ namespace ngsolve
         
   public:
     ///
-    NumProcTclTable (PDE & apde, const Flags & flags);
+    NumProcTclTable (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcTclTable();
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcTclTable (pde, flags);
     }
-
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -1811,7 +1816,7 @@ namespace ngsolve
 
 
   
-  NumProcTclTable :: NumProcTclTable (PDE & apde, const Flags & flags)
+  NumProcTclTable :: NumProcTclTable (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
     noprint = flags.GetDefineFlag("noprint");
@@ -1872,10 +1877,10 @@ namespace ngsolve
 #else  	
 	  tclstring << "\"\" ";
 #endif
-	else if (pde.VariableUsed(tableentries[i]))
-	  tclstring << pde.GetVariable(tableentries[i]) << " ";
-	else if (pde.ConstantUsed(tableentries[i]))
-	  tclstring << pde.GetConstant(tableentries[i]) << " ";
+	else if (GetPDE()->VariableUsed(tableentries[i]))
+	  tclstring << GetPDE()->GetVariable(tableentries[i]) << " ";
+	else if (GetPDE()->ConstantUsed(tableentries[i]))
+	  tclstring << GetPDE()->GetConstant(tableentries[i]) << " ";
 	else
 	  tclstring << "\"" << tableentries[i] << "\" ";
       }
@@ -1890,7 +1895,7 @@ namespace ngsolve
     
     //cout << "tclstring: " << endl << dummy << endl;
 
-    pde.Tcl_Eval(tclstring.str()); // pde.GetTclInterpreter(), dummy);
+    GetPDE()->Tcl_Eval(tclstring.str()); // GetPDE()->GetTclInterpreter(), dummy);
 
     delete [] dummy;
 		 
@@ -1914,13 +1919,14 @@ namespace ngsolve
     bool ascii;
 
   public:
-    NumProcSaveSolution (PDE & apde, const Flags & flags);
+    NumProcSaveSolution (shared_ptr<PDE> apde, const Flags & flags);
 
-    
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcSaveSolution (pde, flags);
     }
+    */
 
     static void PrintDoc (ostream & ost);
 
@@ -1936,10 +1942,10 @@ namespace ngsolve
 
   };
   
-  NumProcSaveSolution :: NumProcSaveSolution (PDE & apde, const Flags & flags)
+  NumProcSaveSolution :: NumProcSaveSolution (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
-    filename = pde.GetDirectory()+dirslash+flags.GetStringFlag("filename","");
+    filename = apde->GetDirectory()+dirslash+flags.GetStringFlag("filename","");
     ascii = flags.GetDefineFlag("ascii");
   }
 
@@ -1947,7 +1953,7 @@ namespace ngsolve
   void NumProcSaveSolution :: Do(LocalHeap & lh)
   {
     if(filename != "")
-      pde.SaveSolution(filename,ascii);
+      GetPDE()->SaveSolution(filename,ascii);
   }
 
   
@@ -2019,10 +2025,10 @@ namespace ngsolve
       suffix = dirname.substr (dirname.length() - 7, 7);
     string filename;
     if ( suffix == ".tar.gz" )
-      filename = pde.GetDirectory()+dirslash+dirname;
+      filename = GetPDE()->GetDirectory()+dirslash+dirname;
     else
-      filename = pde.GetDirectory()+dirslash+dirname + ".tar.gz";
-    pde.SaveZipSolution(filename,ascii);
+      filename = GetPDE()->GetDirectory()+dirslash+dirname + ".tar.gz";
+    GetPDE()->SaveZipSolution(filename,ascii);
 
   }
 
@@ -2060,13 +2066,14 @@ namespace ngsolve
     bool ascii;
 
   public:
-    NumProcLoadSolution (PDE & apde, const Flags & flags);
+    NumProcLoadSolution (shared_ptr<PDE> apde, const Flags & flags);
 
-    
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcLoadSolution (pde, flags);
     }
+    */
 
     static void PrintDoc (ostream & ost);
 
@@ -2082,17 +2089,17 @@ namespace ngsolve
   };
 
 
-  NumProcLoadSolution :: NumProcLoadSolution (PDE & apde, const Flags & flags)
+  NumProcLoadSolution :: NumProcLoadSolution (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
-    filename = pde.GetDirectory()+dirslash+flags.GetStringFlag("filename","");
+    filename = apde->GetDirectory()+dirslash+flags.GetStringFlag("filename","");
     ascii = flags.GetDefineFlag("ascii");
   }
 
   void NumProcLoadSolution :: Do(LocalHeap & lh)
   {
     if(filename != "")
-      pde.LoadSolution(filename,ascii);
+      GetPDE()->LoadSolution(filename,ascii);
   }
 
   
@@ -2160,10 +2167,10 @@ namespace ngsolve
       suffix = dirname.substr (dirname.length() - 7, 7);
     string filename;
     if ( suffix == ".tar.gz" )
-      filename = pde.GetDirectory()+dirslash+dirname;
+      filename = GetPDE()->GetDirectory()+dirslash+dirname;
     else
-      filename = pde.GetDirectory()+dirslash+dirname + ".tar.gz";
-    pde.LoadZipSolution(filename,ascii);
+      filename = GetPDE()->GetDirectory()+dirslash+dirname + ".tar.gz";
+    GetPDE()->LoadZipSolution(filename,ascii);
 
   }
 
@@ -2207,10 +2214,10 @@ namespace ngsolve
     string filename;
 
   public:
-    NumProcLoadSolution2 (PDE & apde, const Flags & flags)
+    NumProcLoadSolution2 (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));	
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));	
       filename = flags.GetStringFlag("filename", "solution.out");	
     }
     
@@ -2236,10 +2243,10 @@ namespace ngsolve
     string filename;
 
   public:
-    NumProcSaveSolution2 (PDE & apde, const Flags & flags)
+    NumProcSaveSolution2 (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       filename = flags.GetStringFlag("filename", "solution.out");
     }
     
@@ -2265,11 +2272,11 @@ namespace ngsolve
     shared_ptr<GridFunction> gfu;
 
   public:
-    NumProcAssembleLinearization (PDE & apde, const Flags & flags)
+    NumProcAssembleLinearization (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
-      bf = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      bf = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
     }
     
     virtual ~NumProcAssembleLinearization() {};		
@@ -2314,15 +2321,16 @@ namespace ngsolve
 
   public:
     ///
-    NumProcTclMenu (PDE & apde, const Flags & flags);
+    NumProcTclMenu (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcTclMenu();
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcTclMenu (pde, flags);
     }
-
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -2338,10 +2346,10 @@ namespace ngsolve
 
 
   
-  NumProcTclMenu :: NumProcTclMenu (PDE & apde, const Flags & flags)
+  NumProcTclMenu :: NumProcTclMenu (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
-
+    
     bool newmenu = flags.GetDefineFlag("newmenu");
 
     string menuname (flags.GetStringFlag("menuname",""));
@@ -2566,7 +2574,7 @@ namespace ngsolve
     char *dummy; dummy = new char[tclstring.str().size()+1];
     strcpy(dummy,tclstring.str().c_str());
 
-    pde.Tcl_Eval(tclstring.str());
+    GetPDE()->Tcl_Eval(tclstring.str());
     
     delete [] dummy;
   }
@@ -2646,12 +2654,14 @@ namespace ngsolve
     
 
   public:
-     NumProcGenerateOne (PDE & apde, const Flags & flags);
+    NumProcGenerateOne (shared_ptr<PDE> apde, const Flags & flags);
 
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcGenerateOne (pde, flags);
     }
+    */
     static void PrintDoc (ostream & ost);
 
     ///
@@ -2666,10 +2676,10 @@ namespace ngsolve
   };
 
   
-  NumProcGenerateOne ::  NumProcGenerateOne (PDE & apde, const Flags & flags)
+  NumProcGenerateOne ::  NumProcGenerateOne (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    gfone = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
+    gfone = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""), 0); 
   }
 
   void NumProcGenerateOne ::  PrintDoc (ostream & ost)
@@ -2747,7 +2757,7 @@ namespace ngsolve
 
   public:
     ///
-    NumProcVisualization (PDE & apde, const Flags & flags);
+    NumProcVisualization (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcVisualization() { ; }
 
@@ -2766,7 +2776,7 @@ namespace ngsolve
 
 
   
-  NumProcVisualization :: NumProcVisualization (PDE & apde, const Flags & flags)
+  NumProcVisualization :: NumProcVisualization (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc(apde)
   {
 
@@ -2999,7 +3009,7 @@ namespace ngsolve
     char *dummy; dummy = new char[tclstring.str().size()+1];
     strcpy(dummy,tclstring.str().c_str());
 
-    pde.Tcl_Eval(tclstring.str());
+    GetPDE()->Tcl_Eval(tclstring.str());
     
     delete [] dummy;
   }
@@ -3073,21 +3083,22 @@ namespace ngsolve
     Array<shared_ptr<GridFunction>> gf;
 
   public:
-    NumProcClearGridFunctions (PDE & apde, const Flags & flags) : NumProc(apde)
+    NumProcClearGridFunctions (shared_ptr<PDE> apde, const Flags & flags) : NumProc(apde)
     {
       if(flags.StringFlagDefined("gridfunction"))
-	gf.Append(pde.GetGridFunction(flags.GetStringFlag("gridfunction","")));
+	gf.Append(apde->GetGridFunction(flags.GetStringFlag("gridfunction","")));
 
       if(flags.StringListFlagDefined("gridfunctions"))
 	for(int i=0; i<flags.GetStringListFlag("gridfunctions").Size(); i++)
-	  gf.Append(pde.GetGridFunction(flags.GetStringListFlag("gridfunctions")[i]));
+	  gf.Append(apde->GetGridFunction(flags.GetStringListFlag("gridfunctions")[i]));
     }
     
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcClearGridFunctions (pde, flags);
     }
-    
+    */
     
     virtual string GetClassName () const
     {
@@ -3121,17 +3132,18 @@ namespace ngsolve
   class NumProcQuit : public NumProc
   {
   public:
-    NumProcQuit (PDE & apde, const Flags & flags) : NumProc(apde)
+    NumProcQuit (shared_ptr<PDE> apde, const Flags & flags) : NumProc(apde)
     {
       if(flags.GetDefineFlag("immedeately"))
-	 exit(0);
+        exit(0);
     }
     
+    /*
     static NumProc * Create (PDE & pde, const Flags & flags)
     {
       return new NumProcQuit (pde, flags);
     }
-
+    */
     virtual string GetClassName () const
     {
       return " Quit";
@@ -3148,7 +3160,7 @@ namespace ngsolve
     virtual void Do(LocalHeap & lh)
     {
       char exstr[] = "Ng_Exit\n";
-      pde.Tcl_Eval(exstr);
+      GetPDE()->Tcl_Eval(exstr);
       exit(0);
     }
   };
@@ -3159,7 +3171,7 @@ class NumProcPause : public NumProc
 {
   double seconds;
 public:
-  NumProcPause (PDE & apde, const Flags & flags)
+  NumProcPause (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
     seconds = flags.GetNumFlag ("seconds", 10);

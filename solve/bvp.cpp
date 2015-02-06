@@ -42,7 +42,7 @@ namespace ngsolve
     bool useseedvariant;
   public:
     ///
-    NumProcBVP (PDE & apde, const Flags & flags);
+    NumProcBVP (shared_ptr<PDE> apde, const Flags & flags);
     
     NumProcBVP (shared_ptr<PDE> apde, 
                 shared_ptr<BilinearForm> abfa, 
@@ -51,7 +51,7 @@ namespace ngsolve
                 shared_ptr<Preconditioner> apre, 
                 int amaxsteps, 
                 double aprec)
-      : NumProc(*apde), bfa(abfa), lff(alff), gfu(agfu), pre(apre), 
+      : NumProc(apde), bfa(abfa), lff(alff), gfu(agfu), pre(apre), 
         maxsteps(amaxsteps), prec(aprec)
     {
       print = false;
@@ -108,14 +108,14 @@ namespace ngsolve
 
 
 
-  NumProcBVP :: NumProcBVP (PDE & apde, const Flags & flags)
+  NumProcBVP :: NumProcBVP (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    lff = apde->GetLinearForm (flags.GetStringFlag ("linearform", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
     if (flags.StringFlagDefined("preconditioner"))
-      pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
+      pre = apde->GetPreconditioner (flags.GetStringFlag ("preconditioner", ""));
     else
       pre = NULL;
     maxsteps = int(flags.GetNumFlag ("maxsteps", 200));
@@ -156,7 +156,7 @@ namespace ngsolve
     useseedvariant = flags.GetDefineFlag ("seed");
 
     if (solver != DIRECT)
-      pde.AddVariable (string("bvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0, 6);
+      apde->AddVariable (string("bvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0, 6);
   }
 
   NumProcBVP :: ~NumProcBVP()
@@ -402,7 +402,7 @@ namespace ngsolve
     if (solver != DIRECT)
       {
 	cout << IM(1) << "Iterations: " << invmat->GetSteps() << endl;
-	pde.AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps(), 6);
+	GetPDE()->AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps(), 6);
       }
 
     if (solver != DIRECT)
@@ -463,7 +463,7 @@ namespace ngsolve
     
   public:
     ///
-    NumProcConstrainedBVP (PDE & apde, const Flags & flags);
+    NumProcConstrainedBVP (shared_ptr<PDE> apde, const Flags & flags);
     ///
     virtual ~NumProcConstrainedBVP();
 
@@ -595,13 +595,13 @@ namespace ngsolve
 
 
 
-  NumProcConstrainedBVP :: NumProcConstrainedBVP (PDE & apde, const Flags & flags)
+  NumProcConstrainedBVP :: NumProcConstrainedBVP (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    lff = pde.GetLinearForm (flags.GetStringFlag ("linearform", ""));
-    gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
-    pre = pde.GetPreconditioner (flags.GetStringFlag ("preconditioner", ""), 1);
+    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
+    lff = apde->GetLinearForm (flags.GetStringFlag ("linearform", ""));
+    gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+    pre = apde->GetPreconditioner (flags.GetStringFlag ("preconditioner", ""), 1);
     maxsteps = int(flags.GetNumFlag ("maxsteps", 200));
     prec = flags.GetNumFlag ("prec", 1e-12);
     solver = CG;
@@ -611,7 +611,7 @@ namespace ngsolve
 
     const Array<string> & cnts = flags.GetStringListFlag ("constraints");
     for (int i = 0; i < cnts.Size(); i++)
-      constraints.Append (apde.GetLinearForm (cnts[i]));
+      constraints.Append (apde->GetLinearForm (cnts[i]));
   }
 
   NumProcConstrainedBVP :: ~NumProcConstrainedBVP()

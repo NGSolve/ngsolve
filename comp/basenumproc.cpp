@@ -7,8 +7,8 @@ namespace ngcomp
 {
 
 
-  NumProc :: NumProc (PDE & apde, const Flags & flags) 
-    : NGS_Object (apde.GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
+  NumProc :: NumProc (shared_ptr<PDE> apde, const Flags & flags) 
+    : NGS_Object (apde->GetMeshAccess(int(flags.GetNumFlag("mesh",1))-1), "numproc"), 
       pde(apde)
   {
     if (flags.StringFlagDefined ("name"))
@@ -35,7 +35,7 @@ namespace ngcomp
 
   NumProcs::NumProcInfo::
   NumProcInfo (const string & aname, int adim, 
-	       shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	       shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	       void (*aprintdoc) (ostream & ost) )
     : name(aname), dim(adim), creator(acreator), printdoc(aprintdoc)
   {
@@ -49,7 +49,7 @@ namespace ngcomp
 
   void NumProcs :: 
   AddNumProc (const string & aname,
-	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (make_shared<NumProcInfo> (aname, -1, acreator, printdoc));
@@ -57,7 +57,7 @@ namespace ngcomp
 
   void NumProcs :: 
   AddNumProc (const string & aname, int adim, 
-	      shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+	      shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 	      void (*printdoc) (ostream & ost) )
   {
     npa.Append (make_shared<NumProcInfo> (aname, adim, acreator, printdoc));

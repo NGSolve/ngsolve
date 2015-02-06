@@ -961,7 +961,9 @@ namespace ngcomp
   shared_ptr<FESpace> PDE :: AddFESpace (const string & name, const Flags & hflags)
   {
     cout << IM(2) << "add fespace " << name << endl;
-
+    cout << "TTTTTTTTTTTTTT, flags = " << hflags << endl;
+    cout << "ma.dim = " << GetMeshAccess()->GetDimension() << endl;
+    cout << "ma.ne = " << GetMeshAccess()->GetNE() << endl;
     Flags flags = hflags;
 
     // shared_ptr<FESpace> space;

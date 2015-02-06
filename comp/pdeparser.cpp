@@ -515,8 +515,8 @@ namespace ngcomp
 
   
   static PDEScanner * scan;
-  static PDE * pde;
-  
+  static shared_ptr<PDE> pde;
+
   
   void CommandList (bool nomeshload, const bool nogeometryload)
   {
@@ -705,7 +705,7 @@ namespace ngcomp
 	      int dim = pde->GetMeshAccess()->GetDimension();
 	      if (GetNumProcs().GetNumProc(npid, dim))
 		{
-		  pde -> AddNumProc (name, GetNumProcs().GetNumProc(npid, dim)->creator(*pde, flags));
+		  pde -> AddNumProc (name, GetNumProcs().GetNumProc(npid, dim)->creator(pde, flags));
 // #ifdef SOCKETS
 // 		  if(pde -> ConstantUsed ("clientserver") && pde -> GetConstant("clientserver") > 0.5)
 // 		    pde -> GetClientSocketAccess().CheckNumProc(name,flags,pde->GetNumProc(name)->GetCallPosition());
@@ -737,7 +737,7 @@ namespace ngcomp
                 static int pynp_cnt = 0;
                 string pyname = "_pynumproc"+ToString(pynp_cnt++);
 
-                pyenv["temppde"] = bp::ptr(pde);
+                pyenv["temppde"] = pde; // bp::ptr(pde);
                 string command = pyname + " = " + npid + " (temppde, { } ) \n";
                 pyenv.exec (command);
                 bp::object pynp = pyenv[pyname.c_str()];
@@ -847,7 +847,7 @@ namespace ngcomp
 
                   string npname = "assignnp" + ToString(cnt);
                   pde -> AddNumProc (npname, GetNumProcs().GetNumProc("setvalues", pde->GetMeshAccess()->GetDimension())
-                                     -> creator (*pde, flags));
+                                     -> creator (pde, flags));
                 }
 
               
@@ -2277,6 +2277,8 @@ namespace ngcomp
       }
   }
 
+  
+  /* 
 
   void PDE :: LoadPDE (istream & input, const bool nomeshload, const bool nogeometryload)
   {
@@ -2362,6 +2364,111 @@ namespace ngcomp
     LoadPDE(strdata, nomeshload, nogeometryload);
   }
 
+  */
+
+
+
+
+  void LoadPDE (shared_ptr<PDE> apde, istream & input, const bool nomeshload, const bool nogeometryload)
+  {
+    pde = apde;
+    
+    // Reset geometries 
+    Ng_LoadGeometry("");
+    
+    scan = new PDEScanner(&input);
+    scan->ReadNext();
+    CommandList(nomeshload,nogeometryload);
+    delete scan;
+    pde = nullptr;
+  }
+  
+
+  shared_ptr<PDE> LoadPDE (istream & input, const bool nomeshload, const bool nogeometryload)
+  {
+    shared_ptr<PDE> apde = make_shared<PDE>();
+    LoadPDE (apde, input, nomeshload, nogeometryload);
+    return apde;
+  }
+
+
+  void LoadPDE (shared_ptr<PDE> apde, const string & filename, 
+                const bool nomeshload, const bool nogeometryload)
+  {
+    static Timer timer("LoadPDE");
+    RegionTimer reg (timer);
+
+    cout << IM(1) << "Load PDE from file " << filename << endl;
+
+    string data;
+
+    if (MyMPI_GetId() == 0)
+      {
+	string::size_type pos1 = filename.rfind('\\');
+	string::size_type pos2 = filename.rfind('/');
+	
+	if (pos1 == filename.npos) pos1 = 0;
+	if (pos2 == filename.npos) pos2 = 0;
+	
+	string pde_directory = filename.substr (0, max2(pos1, pos2));
+	(*testout) << "pdefile " ;//<< pde->GetFilename() << endl;
+	
+	if(pde_directory == "")
+	  pde_directory = ".";
+	
+	cout << IM(1) << "dir = " << pde_directory << endl;
+	pde = apde;
+#ifdef WIN32
+	for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
+	  if(pde_directory[i] == '/')
+	    pde_directory[i] = '\\';
+#endif
+	pde->SetDirectory(pde_directory);
+	pde->SetFilename(filename);
+
+	ifstream infile (filename.c_str());
+	if (!infile.good())
+	  throw Exception (string ("PDE file " + filename + " not found"));
+	
+	while (!infile.eof())
+	  {
+	    char ch;
+	    infile.get(ch);
+	    data += ch;
+	  }
+
+	string hfilename = filename;
+	MyMPI_Bcast (hfilename);
+	MyMPI_Bcast (pde_directory);
+      }
+
+    else
+
+      {
+	string filename, pde_directory;
+
+	MyMPI_Bcast (filename);
+	MyMPI_Bcast (pde_directory);	
+	pde->SetDirectory(pde_directory);
+	pde->SetFilename(filename);
+      }
+
+    MyMPI_Bcast (data);
+
+    stringstream strdata(data);
+    LoadPDE(pde, strdata, nomeshload, nogeometryload);
+
+    pde = nullptr;
+  }
+
+
+  shared_ptr<PDE> LoadPDE (const string & filename, 
+                           const bool nomeshload, const bool nogeometryload)
+  {
+    shared_ptr<PDE> apde = make_shared<PDE>();
+    LoadPDE (apde, filename, nomeshload, nogeometryload);
+    return apde;
+  }
 
 
 } // namespace

@@ -194,18 +194,21 @@ namespace ngcomp
     ///
     PDE();
     ///
+    /*
     PDE (const string & filename)
       : PDE() 
     {
       LoadPDE (filename);
     }
+    */
     ///
     ~PDE();
-
+    /*
     ///
     void LoadPDE (const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
     ///
     void LoadPDE (istream & input, const bool nomeshload = false, const bool nogeometryload = false);
+    */
     ///
     void SaveSolution (const string & filename, const bool ascii = false);
     ///
@@ -439,6 +442,20 @@ namespace ngcomp
 #endif
     ///
   };
+
+
+
+  ///
+  extern shared_ptr<PDE> LoadPDE (const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
+  ///
+  extern shared_ptr<PDE> LoadPDE (istream & input, const bool nomeshload = false, const bool nogeometryload = false);
+  
+  
+  extern void LoadPDE (shared_ptr<PDE> pde, const string & filename, const bool nomeshload = false, const bool nogeometryload = false);
+  ///
+  extern void LoadPDE (shared_ptr<PDE> pde, istream & input, const bool nomeshload = false, const bool nogeometryload = false);
+  
+
 
 
   inline ostream & operator<< (ostream & ost, const PDE & pde)

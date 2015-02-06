@@ -33,28 +33,29 @@ namespace ngsolve
     int dof;
   public:
     ///
-    NumProcShapeTester (PDE & apde, const Flags & flags)
+    NumProcShapeTester (shared_ptr<PDE> apde, const Flags & flags)
       : NumProc (apde)
     {
-      gfu = pde.GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
+      gfu = apde->GetGridFunction (flags.GetStringFlag ("gridfunction", ""));
       dof = int(flags.GetNumFlag ("dof", 0));
 
-      pde.Tcl_Eval (
-		"set w .shapetester;"
-		"toplevel $w;" 
-		"wm withdraw $w\n"
-		"wm geom $w +100+100;"
-		"wm deiconify $w;"
-		"wm title $w \"Shape Tester\"\n"
-		"set dofnr 0;"
-		"tixControl $w.dof -label \"Dof number: \" -integer true -variable dofnr -min 0 "
-		"-options { entry.width 5 label.width 12 label.anchor e } "
-		"-command { NGS_DrawShape };"
-		"pack $w.dof\n"
-		"focus .options_dlg\n"
-		);
+      apde->Tcl_Eval
+        (
+         "set w .shapetester;"
+         "toplevel $w;" 
+         "wm withdraw $w\n"
+         "wm geom $w +100+100;"
+         "wm deiconify $w;"
+         "wm title $w \"Shape Tester\"\n"
+         "set dofnr 0;"
+         "tixControl $w.dof -label \"Dof number: \" -integer true -variable dofnr -min 0 "
+         "-options { entry.width 5 label.width 12 label.anchor e } "
+         "-command { NGS_DrawShape };"
+         "pack $w.dof\n"
+         "focus .options_dlg\n"
+         );
 
-      Tcl_CreateCommand (pde.GetTclInterpreter(), 
+      Tcl_CreateCommand (GetPDE()->GetTclInterpreter(), 
 			 "NGS_DrawShape", NGS_DrawShape,
 			 (ClientData)NULL,
 			 (Tcl_CmdDeleteProc*) NULL);

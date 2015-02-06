@@ -27,9 +27,9 @@ class PDE;
 
 class NGS_DLL_HEADER NumProc : public NGS_Object
 {
-protected:
+private:
   /// reference to the PDE the numproc belongs to
-  PDE & pde;
+  weak_ptr<PDE> pde;
   
   // int callposition;
 public:
@@ -37,9 +37,11 @@ public:
      Generate a numproc. 
      Use objects of pde container, parameterized by flags
   */
-  NumProc (PDE & apde, const Flags & flags = Flags()); 
+  NumProc (shared_ptr<PDE> apde, const Flags & flags = Flags()); 
   ///
   virtual ~NumProc();
+  ///
+  shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE> (pde); }
   ///
   virtual void Do(LocalHeap & lh) = 0;
   ///
@@ -61,11 +63,11 @@ public:
     string name;
     int dim;
 
-    shared_ptr<NumProc> (*creator)(PDE & pde, const Flags & flags);
+    shared_ptr<NumProc> (*creator)(shared_ptr<PDE> pde, const Flags & flags);
     void (*printdoc) (ostream & ost);
     
     NumProcInfo (const string & aname, int adim, 
-		 shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+		 shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 		 void (*aprintdoc) (ostream & ost));
   };
 
@@ -74,12 +76,12 @@ public:
   NumProcs();
 
   void AddNumProc (const string & aname, 
-		   shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+		   shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
 
 
   void AddNumProc (const string & aname, int dim, 
-		   shared_ptr<NumProc> (*acreator)(PDE & pde, const Flags & flags),
+		   shared_ptr<NumProc> (*acreator)(shared_ptr<PDE> pde, const Flags & flags),
 		   void (*printdoc) (ostream & ost) = NumProc::PrintDoc);
 
   const Array<shared_ptr<NumProcInfo>> & GetNumProcs() { return npa; }
@@ -109,7 +111,7 @@ public:
     GetNumProcs().AddNumProc (label, dim, Create, NP::PrintDoc);
   }
   
-  static shared_ptr<NumProc> Create (PDE & pde, const Flags & flags)
+  static shared_ptr<NumProc> Create (shared_ptr<PDE> pde, const Flags & flags)
   {
     return make_shared<NP> (pde, flags);
   }
