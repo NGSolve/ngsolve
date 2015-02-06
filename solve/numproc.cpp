@@ -136,8 +136,7 @@ namespace ngsolve
 
   void NumProcCalcFlux :: Do(LocalHeap & lh)
   {
-    CalcFluxProject (GetPDE()->GetMeshAccess(), *gfu, *gfflux,
-		     bfa->GetIntegrator(0),
+    CalcFluxProject (*gfu, *gfflux, bfa->GetIntegrator(0),
 		     applyd, domain, lh);
     
     /*
@@ -793,7 +792,7 @@ namespace ngsolve
 		      {
 			FlatVector<double> pflux(bfi->DimFlux(), lh);
 			bool ok =
-			  CalcPointFlux<double> (ma, *gfu, p,
+			  CalcPointFlux<double> (*gfu, p,
 						 pflux, bfi, applyd, lh, component);
 			
 			if (i==0)
@@ -814,7 +813,7 @@ namespace ngsolve
 		      {
 			FlatVector<Complex> pflux(bfi->DimFlux(), lh);
 			bool ok =
-			  CalcPointFlux (ma, *gfu, p,
+			  CalcPointFlux (*gfu, p,
 					 pflux, bfi, applyd, lh, component);
 			
 			if (i==0)
@@ -915,7 +914,7 @@ namespace ngsolve
 			if (!gfu->GetFESpace()->IsComplex())
 			  {
 			    FlatVector<double> pflux(bfi->DimFlux(), lh);
-                            CalcPointFlux (ma, *gfu, p,
+                            CalcPointFlux (*gfu, p,
                                            pflux, bfi, applyd, lh, component);
 			    
 			    if(values[k] == NULL)
@@ -930,8 +929,7 @@ namespace ngsolve
 			  {
 			    FlatVector<Complex> pflux(bfi->DimFlux(), lh);
 			    complexflux = true;
-                            CalcPointFlux (ma, *gfu, p,
-                                           pflux, bfi, applyd, lh, component);
+                            CalcPointFlux (*gfu, p, pflux, bfi, applyd, lh, component);
 			    
 			    if(values[k] == NULL)
 			      {
@@ -992,7 +990,7 @@ namespace ngsolve
 	    if (!gfu->GetFESpace()->IsComplex())
 	      {
 		FlatVector<double> pflux(bfi->DimFlux(), lh);
-		CalcPointFlux (ma, *gfu, point, domains,
+		CalcPointFlux (*gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
 		  cout << pflux(i) << "   ";
@@ -1001,7 +999,7 @@ namespace ngsolve
 	    else
 	      {
 		FlatVector<Complex> pflux(bfi->DimFlux(), lh);
-		CalcPointFlux (ma, *gfu, point, domains,
+		CalcPointFlux (*gfu, point, domains,
 			       pflux, bfi, applyd, lh, component);
 		for (int i = 0; i < pflux.Size(); i++)
 		  cout << pflux(i) << "   ";

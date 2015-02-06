@@ -14,7 +14,7 @@ namespace ngcomp
 { 
 
   template <class SCAL>
-  void CalcFluxProject (shared_ptr<MeshAccess> ma, 
+  void CalcFluxProject (
 			const S_GridFunction<SCAL> & u,
 			S_GridFunction<SCAL> & flux,
 			shared_ptr<BilinearFormIntegrator> bli,
@@ -23,6 +23,8 @@ namespace ngcomp
     static int timer = NgProfiler::CreateTimer ("CalcFluxProject");
     NgProfiler::RegionTimer reg (timer);
     
+    shared_ptr<MeshAccess> ma = flux.GetMeshAccess();
+
     ma->PushStatus ("Post-processing");
 
     const FESpace & fes = *u.GetFESpace();
@@ -145,13 +147,12 @@ namespace ngcomp
 
   
   template <class SCAL>
-  void CalcFluxProject (shared_ptr<MeshAccess> ma, 
-			const S_GridFunction<SCAL> & u,
+  void CalcFluxProject (const S_GridFunction<SCAL> & u,
 			S_GridFunction<SCAL> & flux,
 			shared_ptr<BilinearFormIntegrator> bli,
 			bool applyd, int domain, LocalHeap & lh)
   {
-    BitArray domains(ma->GetNDomains());
+    BitArray domains(flux.GetMeshAccess()->GetNDomains());
     
     if(domain == -1)
       domains.Set();
@@ -161,27 +162,24 @@ namespace ngcomp
 	domains.Set(domain);
       }
     
-    CalcFluxProject(ma,u,flux,bli,applyd,domains,lh);
+    CalcFluxProject(u,flux,bli,applyd,domains,lh);
   }
 
 
-  void CalcFluxProject (shared_ptr<MeshAccess> ma, 
-			const GridFunction & bu,
+  void CalcFluxProject (const GridFunction & bu,
 			GridFunction & bflux,
 			shared_ptr<BilinearFormIntegrator> bli,
 			bool applyd, int domain, LocalHeap & lh)
   {
     if (bu.GetFESpace()->IsComplex())
       {
-	CalcFluxProject (ma, 
-			 dynamic_cast<const S_GridFunction<Complex>&> (bu),
+	CalcFluxProject (dynamic_cast<const S_GridFunction<Complex>&> (bu),
 			 dynamic_cast<S_GridFunction<Complex>&> (bflux),
 			 bli, applyd, domain, lh);
       }
     else
       {
-	CalcFluxProject (ma, 
-			 dynamic_cast<const S_GridFunction<double>&> (bu),
+	CalcFluxProject (dynamic_cast<const S_GridFunction<double>&> (bu),
 			 dynamic_cast<S_GridFunction<double>&> (bflux),
 			 bli, applyd, domain, lh);
       }
@@ -191,8 +189,7 @@ namespace ngcomp
 
 
   template <class SCAL> 
-  int CalcPointFlux (shared_ptr<MeshAccess> ma, 
-		     const GridFunction & bu,
+  int CalcPointFlux (const GridFunction & bu,
 		     const FlatVector<double> & point,
 		     const Array<int> & domains,
 		     FlatVector<SCAL> & flux,
@@ -207,6 +204,7 @@ namespace ngcomp
     HeapReset hr(lh);
 
     int elnr;
+    const shared_ptr<MeshAccess> & ma = bu.GetMeshAccess();
 
     IntegrationPoint ip(0,0,0,1);
 
@@ -258,7 +256,7 @@ namespace ngcomp
   }
   
 
-  template NGS_DLL_HEADER int CalcPointFlux<double> (shared_ptr<MeshAccess> ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<double> (
 				      const GridFunction & u,
 				      const FlatVector<double> & point,
 				      const Array<int> & domains,
@@ -268,7 +266,7 @@ namespace ngcomp
 				      LocalHeap & lh,
 				      int component);
   
-  template NGS_DLL_HEADER int CalcPointFlux<Complex> (shared_ptr<MeshAccess> ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<Complex> (
 				       const GridFunction & u,
 				       const FlatVector<double> & point,
 				       const Array<int> & domains,
@@ -281,8 +279,7 @@ namespace ngcomp
 
   
   template <class SCAL>
-  int CalcPointFlux (shared_ptr<MeshAccess> ma, 
-		     const GridFunction & bu,
+  int CalcPointFlux (const GridFunction & bu,
 		     const FlatVector<double> & point,
 		     FlatVector<SCAL> & flux,
 		     shared_ptr<BilinearFormIntegrator> bli,
@@ -291,12 +288,12 @@ namespace ngcomp
 		     int component)
   {
     Array<int> dummy;
-    return CalcPointFlux(ma,bu,point,dummy,flux,bli,applyd,lh,component);
+    return CalcPointFlux(bu,point,dummy,flux,bli,applyd,lh,component);
   }
 
 
 
-  template NGS_DLL_HEADER int CalcPointFlux<double> (shared_ptr<MeshAccess> ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<double> (
 				      const GridFunction & u,
 				      const FlatVector<double> & point,
 				      FlatVector<double> & flux,
@@ -305,7 +302,7 @@ namespace ngcomp
 				      LocalHeap & lh,
 				      int component);
   
-  template NGS_DLL_HEADER int CalcPointFlux<Complex> (shared_ptr<MeshAccess> ma, 
+  template NGS_DLL_HEADER int CalcPointFlux<Complex> (
 				       const GridFunction & u,
 				       const FlatVector<double> & point,
 				       FlatVector<Complex> & flux,
@@ -314,10 +311,6 @@ namespace ngcomp
 				       LocalHeap & lh,
 				       int component);
     
-
-
-
-
 
 
 
@@ -469,8 +462,7 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void CalcError (shared_ptr<MeshAccess> ma, 
-		  const S_GridFunction<SCAL> & u,
+  void CalcError (const S_GridFunction<SCAL> & u,
 		  const S_GridFunction<SCAL> & flux,
 		  shared_ptr<BilinearFormIntegrator> bli,
 		  FlatVector<double> & err,
@@ -478,6 +470,8 @@ namespace ngcomp
   {
     static int timer = NgProfiler::CreateTimer ("CalcError");
     NgProfiler::RegionTimer reg (timer);
+
+    shared_ptr<MeshAccess> ma = u.GetMeshAccess();
 
     ma->PushStatus ("Error estimator");
 
@@ -581,12 +575,11 @@ namespace ngcomp
 	domains.Set(domain);
       }
 
-    CalcError(ma,u,flux,bli,err,domains,lh);    
+    CalcError(u,flux,bli,err,domains,lh);    
   }
 
 
-  void CalcError (shared_ptr<MeshAccess> ma, 
-		  const GridFunction & bu,
+  void CalcError (const GridFunction & bu,
 		  const GridFunction & bflux,
 		  shared_ptr<BilinearFormIntegrator> bli,
 		  FlatVector<double> & err,
@@ -594,30 +587,28 @@ namespace ngcomp
   {
     if (bu.GetFESpace()->IsComplex())
       {
-	CalcError (ma, 
-		   dynamic_cast<const S_GridFunction<Complex>&> (bu),
-		   dynamic_cast<const S_GridFunction<Complex>&> (bflux),
-		   bli, err, domain, lh);
+	CalcError<Complex> (dynamic_cast<const S_GridFunction<Complex>&> (bu),
+                            dynamic_cast<const S_GridFunction<Complex>&> (bflux),
+                            bli, err, domain, lh);
       }
     else
       {
-	CalcError (ma, 
-		   dynamic_cast<const S_GridFunction<double>&> (bu),
-		   dynamic_cast<const S_GridFunction<double>&> (bflux),
-		   bli, err, domain, lh);
+	CalcError<double> (dynamic_cast<const S_GridFunction<double>&> (bu),
+                           dynamic_cast<const S_GridFunction<double>&> (bflux),
+                           bli, err, domain, lh);
       }
   }
   
 
   template <class SCAL>
-  void CalcDifference (shared_ptr<MeshAccess> ma, 
-		       const S_GridFunction<SCAL> & u1,
+  void CalcDifference (const S_GridFunction<SCAL> & u1,
 		       const S_GridFunction<SCAL> & u2,
 		       shared_ptr<BilinearFormIntegrator> bli1,
 		       shared_ptr<BilinearFormIntegrator> bli2,
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh)
   {
+    shared_ptr<MeshAccess> ma = u1.GetMeshAccess();
     ma->PushStatus ("Calc Difference");
 
     const FESpace & fes1 = *u1.GetFESpace();
@@ -713,16 +704,14 @@ namespace ngcomp
     ma->PopStatus ();
   }
   
-  template void CalcDifference<double> (shared_ptr<MeshAccess> ma, 
-					const S_GridFunction<double> & bu1,
+  template void CalcDifference<double> (const S_GridFunction<double> & bu1,
 					const S_GridFunction<double> & bu2,
 					shared_ptr<BilinearFormIntegrator> bli1,
 					shared_ptr<BilinearFormIntegrator> bli2,
 					FlatVector<double> & err,
 					int domain, LocalHeap & lh);
   
-  template void CalcDifference<Complex> (shared_ptr<MeshAccess> ma, 
-					 const S_GridFunction<Complex> & bu1,
+  template void CalcDifference<Complex> (const S_GridFunction<Complex> & bu1,
 					 const S_GridFunction<Complex> & bu2,
 					 shared_ptr<BilinearFormIntegrator> bli1,
 					 shared_ptr<BilinearFormIntegrator> bli2,
@@ -731,16 +720,14 @@ namespace ngcomp
   
 
 
-
-
   template <class SCAL>
-  void CalcDifference (shared_ptr<MeshAccess> ma, 
-		       const S_GridFunction<SCAL> & u1,
+  void CalcDifference (const S_GridFunction<SCAL> & u1,
 		       shared_ptr<BilinearFormIntegrator> bli1,
 		       shared_ptr<CoefficientFunction> coef, 
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh)
   {
+    shared_ptr<MeshAccess> ma = u1.GetMeshAccess();
     ma->PushStatus ("Calc Difference");
 
     const FESpace & fes1 = *u1.GetFESpace();
@@ -877,20 +864,17 @@ namespace ngcomp
     ma->PopStatus ();
   }
 
-  NGS_DLL_HEADER void CalcDifference (shared_ptr<MeshAccess> ma, 
-				      const GridFunction & u1,
+  NGS_DLL_HEADER void CalcDifference (const GridFunction & u1,
 				      shared_ptr<BilinearFormIntegrator> bfi1,
 				      shared_ptr<CoefficientFunction> coef, 
 				      FlatVector<double> & diff,
 				      int domain, LocalHeap & lh)
   {
     if (u1.GetFESpace()->IsComplex())
-      CalcDifference (ma, 
-		      dynamic_cast<const S_GridFunction<Complex>&> (u1), 
+      CalcDifference (dynamic_cast<const S_GridFunction<Complex>&> (u1), 
 		      bfi1, coef, diff, domain, lh);
     else
-      CalcDifference (ma, 
-		      dynamic_cast<const S_GridFunction<double>&> (u1), 
+      CalcDifference (dynamic_cast<const S_GridFunction<double>&> (u1), 
 		      bfi1, coef, diff, domain, lh);
   }
 

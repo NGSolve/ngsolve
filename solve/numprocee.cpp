@@ -109,8 +109,8 @@ namespace ngsolve
     int ndom = ma->GetNDomains();
     for (int k = 0; k < ndom; k++)
       {
-	CalcFluxProject (ma, *gfu, *flux, bfi, 1, k, lh);
-	CalcError (ma, *gfu, *flux, bfi, err, k, lh);
+	CalcFluxProject (*gfu, *flux, bfi, 1, k, lh);
+	CalcError (*gfu, *flux, bfi, err, k, lh);
       }
 
     // delete flux;
@@ -279,15 +279,13 @@ namespace ngsolve
 	      {
 		if (!bfa1->GetFESpace()->IsComplex())
 		  {
-		    CalcDifference (ma, 
-				dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
-				dynamic_cast<const S_GridFunction<double>&> (*gfu2), 
+		    CalcDifference (dynamic_cast<const S_GridFunction<double>&> (*gfu1), 
+                                    dynamic_cast<const S_GridFunction<double>&> (*gfu2), 
                                     bfi1, bfi2, diff, k, lh);
 		  }
 		else
 		  {
-		    CalcDifference (ma,
-                                    dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
+		    CalcDifference (dynamic_cast<const S_GridFunction<Complex>&> (*gfu1), 
                                     dynamic_cast<const S_GridFunction<Complex>&> (*gfu2), 
                                     bfi1, bfi2, diff, k, lh);
 		  }	    
@@ -296,7 +294,7 @@ namespace ngsolve
 	else
 	  {
 	    for (int k = 0; k < ndom; k++)
-	      CalcDifference (ma, *gfu1, bfi1, coef_real, diff, k, lh);
+	      CalcDifference (*gfu1, bfi1, coef_real, diff, k, lh);
 	  }
 
 	for (int i = 0; i < diff.Size(); i++)
@@ -407,8 +405,8 @@ namespace ngsolve
 
     err = 0;
 
-    CalcFluxProject (ma, *gfu, *flux, bfi, 1, -1, lh);
-    CalcError (ma, *gfu, *flux, bfi, err, -1, lh);
+    CalcFluxProject (*gfu, *flux, bfi, 1, -1, lh);
+    CalcError (*gfu, *flux, bfi, err, -1, lh);
 
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
@@ -483,8 +481,7 @@ namespace ngsolve
       FlatVector<double> err = gferr->GetVector().FVDouble();
       if (!bfa->GetFESpace()->IsComplex())
 	{
-	  CalcErrorHierarchical (ma, 
-				 dynamic_cast<const S_BilinearForm<double>&> (*bfa), 
+	  CalcErrorHierarchical (dynamic_cast<const S_BilinearForm<double>&> (*bfa), 
 				 dynamic_cast<const S_BilinearForm<double>&> (*bfa2), 
 				 dynamic_cast<const S_LinearForm<double>&> (*lff), 
 				 dynamic_cast<S_GridFunction<double>&> (*gfu), 
@@ -800,8 +797,8 @@ namespace ngsolve
       // dynamic_cast<T_BaseVector<double>&> (gferr->GetVector()).FV();
 
     err = 0;
-    CalcError (ma, *gfu, *gfflux, bfi, err, -1, lh);
-  
+    CalcError (*gfu, *gfflux, bfi, err, -1, lh);
+    
     double sum = 0;
     for (int i = 0; i < err.Size(); i++)
       sum += err(i);
