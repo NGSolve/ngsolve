@@ -402,7 +402,7 @@ namespace ngla
   void PardisoInverse<TM,TV_ROW,TV_COL> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer("Pardiso Solve");
+    static Timer timer(string("Pardiso Solve, mat = ") + typeid(TM).name() + ", vec = " + typeid(TV_ROW).name());
     RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
@@ -469,7 +469,7 @@ namespace ngla
   void PardisoInverse<double,Complex,Complex> :: 
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer ("Pardiso Solve");
+    static Timer timer ("Pardiso Solve, mat = d, vec = c");
     RegionTimer reg (timer);
 
 

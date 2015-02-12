@@ -60,7 +60,40 @@ namespace ngla
     static Timer t("BaseVector::Scale");
     RegionTimer reg(t);
 
-    FVDouble() *= scal;
+    // FVDouble() *= scal;
+
+    FlatVector<double> me = FVDouble();
+
+    switch (omp_status)
+      {
+      case OMP_STATUS::NONE:
+        me *= scal;
+        break;
+
+      case OMP_STATUS::USE:
+#pragma omp for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) *= scal;
+        break;
+
+      case OMP_STATUS::CREATE:
+#pragma omp parallel for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) *= scal;
+        break;
+
+      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
+        if (omp_in_parallel())
+#pragma omp for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) *= scal;
+        else
+#pragma omp parallel for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) *= scal;
+        break;
+      }
+
 
     return *this;
   }
@@ -92,7 +125,42 @@ namespace ngla
 
     if(Size() != v.Size())
       throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
-    FVDouble() = scal * v.FVDouble();
+
+
+    FlatVector<double> me = FVDouble();
+    FlatVector<double> you = v.FVDouble();
+    
+
+    switch (omp_status)
+      {
+      case OMP_STATUS::NONE:
+        me = scal * you;
+        break;
+
+      case OMP_STATUS::USE:
+#pragma omp for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) = scal * you(i);
+        break;
+
+      case OMP_STATUS::CREATE:
+#pragma omp parallel for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) = scal * you(i);
+        break;
+
+      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
+        if (omp_in_parallel())
+#pragma omp for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) = scal * you(i);
+        else
+#pragma omp parallel for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) = scal * you(i);
+        break;
+      }
+
     return *this;
   }
 
@@ -111,7 +179,42 @@ namespace ngla
 
     if(Size() != v.Size())
         throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
-    FVDouble() += scal * v.FVDouble();
+    // FVDouble() += scal * v.FVDouble();
+    
+
+    FlatVector<double> me = FVDouble();
+    FlatVector<double> you = v.FVDouble();
+
+    switch (omp_status)
+      {
+      case OMP_STATUS::NONE:
+        me = scal * you;
+        break;
+
+      case OMP_STATUS::USE:
+#pragma omp for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) += scal * you(i);
+        break;
+
+      case OMP_STATUS::CREATE:
+#pragma omp parallel for
+        for (int i = 0; i < me.Size(); i++)
+          me(i) += scal * you(i);
+        break;
+
+      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
+        if (omp_in_parallel())
+#pragma omp for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) += scal * you(i);
+        else
+#pragma omp parallel for
+          for (int i = 0; i < me.Size(); i++)
+            me(i) += scal * you(i);
+        break;
+      }
+
     return *this;
   }
 

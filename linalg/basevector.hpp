@@ -71,6 +71,8 @@ namespace ngla
 
   enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
 
+  enum class OMP_STATUS { NONE, USE, CREATE, CREATE_IF_NOT_PARALLEL };
+
 
 
   /**
@@ -88,6 +90,8 @@ namespace ngla
 
     ///
     BaseVector () : paralleldofs (NULL) { ; }
+
+    OMP_STATUS omp_status = OMP_STATUS::CREATE_IF_NOT_PARALLEL;
 
   public:
     ///
@@ -336,8 +340,10 @@ namespace ngla
     virtual void Distribute() const;
     virtual PARALLEL_STATUS GetParallelStatus () const;
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
-  };
 
+    virtual void SetOmpStatus (OMP_STATUS stat) { omp_status = stat; }
+    virtual OMP_STATUS GetOmpStatus () { return omp_status; }
+  };
 
 
   class AutoVector : public BaseVector
@@ -509,6 +515,12 @@ namespace ngla
 
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const
     { vec -> SetParallelStatus(stat); }
+
+    virtual void SetOmpStatus (OMP_STATUS stat) 
+    {
+      BaseVector::SetOmpStatus(stat);
+      vec->SetOmpStatus(stat);
+    }
   };
 
 
