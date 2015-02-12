@@ -790,7 +790,7 @@ namespace ngla
     size_t sum = 0;
     for (auto i : Range(size))
       {
-	int costs = GetRowIndices(i).Size();
+	int costs = 5 + GetRowIndices(i).Size();
 	sum += costs;
 	prefix[i] = sum;
       }

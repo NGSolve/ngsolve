@@ -520,7 +520,7 @@ namespace ngla
 	}
     }
     
-    cout << "block-balancing: " << endl << block_balancing << endl;
+    // cout << "block-balancing: " << endl << block_balancing << endl;
 
     cout << "\rBlockJacobi Preconditioner built" << endl;
 
@@ -1005,7 +1005,7 @@ namespace ngla
 	}
     }
     
-    cout << "block-balancing: " << endl << block_balancing << endl;
+    // cout << "block-balancing: " << endl << block_balancing << endl;
 
     cout << "\rBlockJacobi Preconditioner built" << endl;
   }
