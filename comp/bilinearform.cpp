@@ -866,8 +866,8 @@ namespace ngcomp
                      int i = el.Nr();
                      if (eliminate_internal)
                        {
-                         static Timer statcondtimer("static condensation", 1);
-                         RegionTimer regstat (statcondtimer);
+                         // static Timer statcondtimer("static condensation", 1);
+                         // RegionTimer regstat (statcondtimer);
 
                          Array<int> idofs1(dnums.Size(), lh);
 
@@ -908,7 +908,6 @@ namespace ngcomp
                                  (*testout) << "odofs = " << endl << odofs << endl;
                                }
 
-
                              FlatMatrix<SCAL> 
                                a = sum_elmat.Rows(odofs).Cols(odofs) | lh,
                                b = sum_elmat.Rows(odofs).Cols(idofs) | lh,
@@ -916,9 +915,11 @@ namespace ngcomp
                                d = sum_elmat.Rows(idofs).Cols(idofs) | lh;
 
 
+			     /*
                              statcondtimer.AddFlops (double(sizei)*sizei*sizei/3);  // LU fact
                              statcondtimer.AddFlops (double(sizei)*sizei*sizeo);  
                              statcondtimer.AddFlops (double(sizei)*sizeo*sizeo);  
+			     */
                                   
                              // A := A - B D^{-1} C^T
                              // new Versions, July 07
@@ -946,7 +947,6 @@ namespace ngcomp
                                  if (store_inner)
                                    innermatrix ->AddElementMatrix(i,idnums,idnums,d);
                                  
-
                                  /*
                                  Matrix<SCAL> hd = d;
                                  Vector<SCAL> diag(d.Height());
@@ -962,6 +962,8 @@ namespace ngcomp
                                  CalcEigenSystem (hd, lam, evecs);
                                  cout << "lam = " << lam << endl;
                                  */
+
+
                                  LapackInverse (d);
                                  FlatMatrix<SCAL> he (sizei, sizeo, lh);
                                  he = 0.0;
@@ -978,8 +980,8 @@ namespace ngcomp
                                    }
                                  
                                  innersolve ->AddElementMatrix(i,idnums,idnums,d);
-
-                                 LapackMultAddAB (b, he, 1.0, a);
+				 // LapackMultAddAB (b, he, 1.0, a);
+				 a += b * he | Lapack;
  
                                  if (spd)
                                    {
@@ -1006,7 +1008,7 @@ namespace ngcomp
                                  (*testout) << "EV of Schur complement:" << endl;
                                  LapackEigenSystem(a, lh);
                                }
-                                  
+
                              sum_elmat.Rows(odofs).Cols(odofs) = a;
                              if (linearform && (!keep_internal))
                                {
