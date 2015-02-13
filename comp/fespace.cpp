@@ -444,6 +444,59 @@ lot of new non-zero entries in the matrix!\n" << endl;
           }
         while (found < cnt);
 
+
+	/*
+	  // didn't help anything ...
+	cout << "have " << maxcolor+1 << " colors, try to reduce ***************** " << endl;
+
+	DynamicTable<int> dof2color(GetNDof());
+	for (auto el : Elements(vb))
+	  for (auto d : el.GetDofs())
+	    dof2color.Add(d, col[el.Nr()]);
+
+	*testout << "dof2color = " << endl << dof2color << endl;
+
+	for (int c = 0; c <= maxcolor; c++)
+	  {
+	    *testout << "try to reschedule color " << c << endl;
+	    
+	    bool remove_col = true;
+	    int cntmove = 0, cnttot = 0;
+	    
+	    for (auto el : Elements(vb))
+	      if (col[el.Nr()] == c)
+		{
+		  bool resched = false;
+
+		  for (int newcol = c+1; newcol <= maxcolor; newcol++)
+		    {
+		      bool possible = true;
+		      for (auto d : el.GetDofs())
+			if (dof2color[d].Contains(newcol))
+			  {
+			    possible = false; 
+			    break;
+			  }
+		      if (possible) resched = true;
+		    }
+
+		  if (resched) cntmove++;
+		  cnttot++;
+		  if (!resched) 
+		    {
+		      *testout << "cannot move el with dofs " << el.GetDofs() << endl;
+		      remove_col = false;
+		    }
+		}
+
+	    *testout << "could move " << cntmove << " out of " << cnttot << endl;
+	    if (remove_col) cout << "could remove color" << endl;
+	  }
+
+	*/
+
+
+
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
         for (ElementId el : Elements(vb))
