@@ -697,6 +697,7 @@ namespace ngfem {
 
 
   template NGS_DLL_HEADER void FastMat<12> (int n, int M2, Complex * pa, double * pb, Complex * pc);
+  template NGS_DLL_HEADER void FastMat<16> (int n, int M2, Complex * pa, double * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<18> (int n, int M2, Complex * pa, double * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<24> (int n, int M2, Complex * pa, double * pb, Complex * pc);
   template NGS_DLL_HEADER void FastMat<32> (int n, int M2, Complex * pa, double * pb, Complex * pc);
