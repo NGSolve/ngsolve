@@ -1168,10 +1168,10 @@ namespace ngcomp
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 	const FiniteElement & fel = fes.GetFE (ei, lh);
 
-	Array<int> dnums (fel.GetNDof(), lh);
+	ArrayMem<int,200> dnums (fel.GetNDof());
 	fes.GetDofNrs (ei, dnums);
 
-	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
+	VectorMem<200,SCAL> elu(dnums.Size() * dim);
 
 	if(gf->GetCacheBlockSize() == 1)
 	  {
@@ -1324,6 +1324,18 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    if (npts > 100)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 100)
+          {
+            int npi = min (100, npts-i);
+            isdefined = GetMultiValue (elnr, facetnr, npi, 
+                                       xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                       values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
     static Timer t("visgf::GetMultiValue");
     static Timer t1("visgf::GetMultiValue - 1");
     RegionTimer reg(t);
@@ -1336,14 +1348,14 @@ namespace ngcomp
         const FESpace & fes = *gf->GetFESpace();
         int dim = fes.GetDimension();
 	
-        LocalHeapMem<1000000> lh("visgf::GetMultiValue");
+        LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
-	ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
-	const FiniteElement * fel = &fes.GetFE (elnr, lh);
+	const ElementTransformation & eltrans = ma->GetTrafo (elnr, false, lh);
+        const FiniteElement & fel = fes.GetFE (elnr, lh);
 
 
-	ArrayMem<int,200> dnums(fel->GetNDof());
-	VectorMem<200,SCAL> elu (fel->GetNDof() * dim);
+	ArrayMem<int,200> dnums(fel.GetNDof());
+	VectorMem<200,SCAL> elu (fel.GetNDof() * dim);
 
 	fes.GetDofNrs (elnr, dnums);
 
@@ -1391,7 +1403,7 @@ namespace ngcomp
             
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
             t1.Start();
-	    bfi3d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+	    bfi3d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 
             t1.Stop();
             t1.AddFlops (elu.Size()*mir.Size());
@@ -1454,7 +1466,7 @@ namespace ngcomp
 	int dim = fes.GetDimension();
 
 	LocalHeapMem<100000> lh("VisGF::GetSurfValue");
-	const FiniteElement * fel = &fes.GetFE (ei, lh);
+	const FiniteElement & fel = fes.GetFE (ei, lh);
 
 	ArrayMem<int, 100> dnums;
 	fes.GetDofNrs (ei, dnums);
@@ -1486,7 +1498,7 @@ namespace ngcomp
 	for(int j = 0; j < bfi2d.Size(); j++)
 	  {
 	    FlatVector<SCAL> flux(bfi2d[j]->DimFlux(), lh);
-	    bfi2d[j]->CalcFlux (*fel, mip, elu, flux, applyd, lh);
+	    bfi2d[j]->CalcFlux (fel, mip, elu, flux, applyd, lh);
 	
 	    for (int i = 0; i < components; i++)
 	      {
@@ -1631,6 +1643,19 @@ namespace ngcomp
                      const double * dxdxref, int sdxdxref,
                      double * values, int svalues)
   {
+    if (npts > 100)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 100)
+          {
+            int npi = min (100, npts-i);
+            isdefined = GetMultiSurfValue (elnr, facetnr, npi, 
+                                           xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                           values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
+
     static Timer t("visgf::GetMultiSurfValue");
     static Timer ta("visgf::GetMultiSurfValue a");
     static Timer tb("visgf::GetMultiSurfValue b");
@@ -1649,13 +1674,13 @@ namespace ngcomp
         int dim = fes.GetDimension();
         
         
-        LocalHeapMem<200000> lh("visgf::getmultisurfvalue");
+        LocalHeapMem<100000> lh("visgf::getmultisurfvalue");
 
 	ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 
         ArrayMem<int, 100> dnums;
 	fes.GetDofNrs (ei, dnums);
-	const FiniteElement * fel = &fes.GetFE (ei, lh);
+	const FiniteElement & fel = fes.GetFE (ei, lh);
 
         FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 
@@ -1703,7 +1728,7 @@ namespace ngcomp
                 isdefined = true;
 
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
-		bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+		bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 		for (int k = 0; k < npts; k++)
 		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
 	      }
@@ -1731,7 +1756,7 @@ namespace ngcomp
                     
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
                     tc.Start();
-                    bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+                    bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
                     tc.Stop();
                     
                     for (int k = 0; k < npts; k++)
@@ -1750,7 +1775,7 @@ namespace ngcomp
                     isdefined = true;
                     
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
-                    bfi2d[j]->CalcFlux (*fel, mir, elu, flux, applyd, lh);
+                    bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 
                     for (int k = 0; k < npts; k++)
                       mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
@@ -2078,7 +2103,9 @@ namespace ngcomp
 		 double * values, int svalues)
   {
     // cout << "visualizecoef, GetMultiValue not implemented" << endl;
-    return false;
+    for (int i = 0; i < npts; i++)
+      GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
+    return true;
   }
   
   bool VisualizeCoefficientFunction ::  
