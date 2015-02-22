@@ -1015,13 +1015,13 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    if (!omp_in_parallel() && omp_get_max_threads()>1)
+    if (omp_get_num_threads() < balancing.Size()-1)
       {
         static Timer timer("SparseMatrix::MultAdd");
         RegionTimer reg (timer);
         timer.AddFlops (this->nze);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(balancing.Size()-1)
         {
           MultAdd (s, x, y);
         }
