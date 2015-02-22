@@ -2307,8 +2307,8 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     cout << IM(1) << "Load PDE from file " << filename << endl;
-
     string data;
+    pde = apde;
 
     if (MyMPI_GetId() == 0)
       {
@@ -2325,7 +2325,6 @@ namespace ngcomp
 	  pde_directory = ".";
 	
 	cout << IM(1) << "dir = " << pde_directory << endl;
-	pde = apde;
 #ifdef WIN32
 	for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
 	  if(pde_directory[i] == '/')
@@ -2360,7 +2359,7 @@ namespace ngcomp
 	pde->SetDirectory(pde_directory);
 	pde->SetFilename(filename);
       }
-
+    
     MyMPI_Bcast (data);
 
     stringstream strdata(data);
