@@ -727,7 +727,10 @@ namespace ngla
 	  }
       }
     else
-      nze = 0;
+      {
+	height = 0;
+	nze = 0;
+      }
 
     /*
     for (int i = 0; i < 40; i++)
