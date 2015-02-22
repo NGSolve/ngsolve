@@ -249,7 +249,10 @@ namespace ngcomp
           }
 
         if (fespace->UsesDGCoupling())
+        {
           //add dofs of neighbour elements as well
+          Array<int> dnums_dg;
+
           for (int i = 0; i < nf; i++)
             {
               nbelems.SetSize(0);
@@ -257,15 +260,19 @@ namespace ngcomp
               for (int k=0; k<elnums.Size(); k++)
                 nbelems.Append(elnums[k]);
 
+              dnums_dg.SetSize(0);
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
                 if (!fespace->DefinedOn (ma->GetElIndex(elnr))) continue;
                 fespace->GetDofNrs (elnr, dnums);
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    creator.Add (ne+nse+nspe+i, dnums[j]);
+                dnums_dg.Append(dnums);
               }
+              QuickSort (dnums_dg);
+              for (int j = 0; j < dnums_dg.Size(); j++)
+                if (dnums_dg[j] != -1 && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
+                  creator.Add (ne+nse+nspe+i, dnums_dg[j]);
             }
+        }
 
       }
     
@@ -1457,6 +1464,41 @@ namespace ngcomp
                               (*testout) << "elmat = " << endl << elmat << endl;
                             }
 
+                          Array<int> dnums;
+                          dnums.SetSize(0);
+                          dnums.Append(dnums1);
+                          dnums.Append(dnums2);
+                          
+                          ArrayMem<int, 50> map(dnums.Size());
+                          for (int i = 0; i < map.Size(); i++) map[i] = i;
+                          QuickSortI (dnums, map);
+
+                          Array<int> compressed_dnums;
+                          compressed_dnums.SetSize(0);
+                          
+                          Array<int> dnums_to_compressed(dnums.Size());
+                          int compressed_dofs = 0;
+                          for (int i = 0; i < dnums.Size(); ++i)
+                          {
+                            if (i==0 || (dnums[map[i]] != dnums[map[i-1]]))
+                            {
+                              compressed_dnums.Append(dnums[map[i]]);
+                              dnums_to_compressed[map[i]] = compressed_dofs++;
+                            }
+                            else
+                            {
+                              dnums_to_compressed[map[i]] = dnums_to_compressed[map[i-1]];
+                            }
+                          }
+                          
+                          FlatMatrix<SCAL> compressed_elmat(compressed_dofs * fespace->GetDimension(), lh);
+                          compressed_elmat = 0.0;
+                          for (int i = 0; i < dnums.Size(); ++i)
+                            for (int j = 0; j < dnums.Size(); ++j)
+                            {
+                              compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
+                            }
+                          
                     
                           if (elmat_ev)
                             {
@@ -1465,12 +1507,12 @@ namespace ngcomp
                               (*testout) << "elind1 = " << eltrans1.GetElementIndex() << endl;
                               (*testout) << "elind2 = " << eltrans2.GetElementIndex() << endl;
 #ifdef LAPACK
-                              LapackEigenSystem(elmat, lh);
+                              LapackEigenSystem(compressed_elmat, lh);
 #else
-                              Vector<SCAL> lami(elmat.Height());
-                              Matrix<SCAL> evecs(elmat.Height());
+                              Vector<SCAL> lami(compressed_elmat.Height());
+                              Matrix<SCAL> evecs(compressed_elmat.Height());
                             
-                              CalcEigenSystem (elmat, lami, evecs);
+                              CalcEigenSystem (compressed_elmat, lami, evecs);
                               (*testout) << "lami = " << endl << lami << endl;
 #endif
                               // << "evecs = " << endl << evecs << endl;
@@ -1482,7 +1524,7 @@ namespace ngcomp
 
 #pragma omp critical(addelemfacin)
                           {
-                            AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                            AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), lh);
                           }
                         }
                     }
