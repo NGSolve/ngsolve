@@ -2399,6 +2399,7 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     cout << IM(1) << "Load PDE from file " << filename << endl;
+    pde = apde;
 
     string data;
 
@@ -2417,7 +2418,6 @@ namespace ngcomp
 	  pde_directory = ".";
 	
 	cout << IM(1) << "dir = " << pde_directory << endl;
-	pde = apde;
 #ifdef WIN32
 	for(int i=0; pde_directory[i]!=0 && i<pde_directory.size(); i++)
 	  if(pde_directory[i] == '/')
