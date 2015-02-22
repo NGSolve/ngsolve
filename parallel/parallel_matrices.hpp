@@ -28,6 +28,9 @@ namespace ngla
 		   const ParallelDofs * apardofs);
     virtual ~MasterInverse ();
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual int VHeight() const { return pardofs->GetNDofLocal(); }
+    virtual int VWidth() const { return pardofs->GetNDofLocal(); }
   };
 
 
