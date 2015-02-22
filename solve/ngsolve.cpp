@@ -1448,7 +1448,7 @@ void NGS_ParallelRun (const string & message)
       */
 
       string dummy;
-      pde -> LoadPDE (dummy, false, 0);
+      LoadPDE (pde, dummy, false, 0);
 #ifdef NGS_PYTHON
 
       Parallel_InitPython ();
