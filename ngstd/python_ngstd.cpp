@@ -137,14 +137,15 @@ void NGS_DLL_HEADER  ExportNgstd() {
                            })))
     ;
   
-  bp::class_<ngstd::LocalHeap>
-    ("LocalHeap",bp::init<size_t,const char*>()
-     //,(bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap")
-     )
+  bp::class_<ngstd::LocalHeap> 
+    ("LocalHeap", 
+     bp::init<size_t,const char*>
+     ((bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap"),
+      "A heap for fast memory allocation"))
     ;
 
   bp::class_<ngstd::HeapReset>
-    ("HeapReset",bp::init<LocalHeap&>())
+    ("HeapReset",bp::init<LocalHeap&>("stores heap-pointer on init, and resets it on exit"))
     // .def(bp::init<const HeapReset&>())
     // .def("__enter__", FunctionPointer([](HeapReset & lh) { cout << "enter" << endl; }))
     // .def("__exit__", FunctionPointer([](HeapReset & lh, bp::object x, bp::object y, bp::object z) { cout << "exit" << endl; }))    

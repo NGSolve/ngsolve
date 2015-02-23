@@ -955,10 +955,6 @@ namespace ngla
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
 
-    // ArrayMem<int, 50> dnums_sort(dnums2.Size());
-    // dnums_sort = dnums2;
-    // BubbleSort (dnums2.Size(), &dnums_sort[0], &map[0]);
-
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
     for (int i = 0; i < dnums1.Size(); i++)

@@ -2745,28 +2745,26 @@ namespace ngcomp
         if (hasinner)
           IterateElements 
             (*fespace, VOL, lh, 
-             [&] (ElementId ei, LocalHeap & lh)
+             [&] (FESpace::Element ei, LocalHeap & lh)
              {
                const FiniteElement & fel = fespace->GetFE (ei, lh);
                ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
-               Array<int> dnums (fel.GetNDof(), lh);
-               fespace->GetDofNrs (ei, dnums);
-               
+
+               FlatArray<int> dnums = ei.GetDofs();
                FlatVector<SCAL> elvecx (dnums.Size()*GetFESpace()->GetDimension(), lh);
                
                x.GetIndirect (dnums, elvecx);
                fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
                
                double energy_T = 0;
-               for (int j = 0; j < NumIntegrators(); j++)
-                 {
-                   auto bfi = parts[j];
-                   
-                   if (bfi->BoundaryForm()) continue;
-		   if (!bfi->DefinedOn (ma->GetElIndex (ei))) continue;
 
+               for (auto bfi : parts)
+                 {
+                   if (bfi->BoundaryForm()) continue;
+		   if (!bfi->DefinedOn (ei.GetIndex())) continue;
                    energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                  }
+
 #pragma omp atomic
                energy += energy_T;
              });

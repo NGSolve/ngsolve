@@ -607,13 +607,14 @@ namespace ngcomp
       // lh.ClearValues();
 
       for (FlatArray<int> els_of_col : element_coloring)
-
+        
 #pragma omp for schedule(dynamic)
         for (int i = 0; i < els_of_col.Size(); i++)
           {
             HeapReset hr(lh);
             FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
-              func (el, lh);
+
+            func (el, lh);
           }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
     }

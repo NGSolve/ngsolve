@@ -56,13 +56,6 @@ namespace ngcomp
 {
   using namespace ngmg;
   
-  /*
-  GridFunction :: GridFunction (const FESpace & afespace, const string & name,
-				const Flags & flags)
-    : GridFunction(shared_ptr<FESpace> (const_cast<FESpace*>(&afespace),NOOP_Deleter), name, flags)
-  { ; }
-  */
-
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
 				const Flags & flags)
     : NGS_Object (afespace->GetMeshAccess(), name), fespace(afespace)
