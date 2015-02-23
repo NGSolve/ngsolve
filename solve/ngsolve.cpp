@@ -72,6 +72,21 @@ void SpawnPython (string initfile)
                     pythread_id = mainthread_id;
                     
                   }, initfile).detach();
+      cout << IM(1)
+          << "ngs-python objects are available in ngstd, bla, ...\n"
+          << "to import the whole bunch of objets enter\n\n"
+          << "from ngsolve.ngstd import *\n"
+          << "from ngsolve.bla import *\n"
+          << "from ngsolve.fem import *\n"
+          << "from ngsolve.la import *\n"
+          << "from ngsolve.comp import *\n"
+          << "from ngsolve.solve import *\n"
+          //              << "from ngsolve.ngmpi import *\n"
+          << "dir()\n"
+          << endl << endl;
+#ifdef PARALLEL
+      cout << IM(1) << "To start the mpi shell call" << endl << "MpiShell()" << endl << endl;
+#endif
     }
 }
 
@@ -1196,24 +1211,9 @@ int NGSolve_Init (Tcl_Interp * interp)
     {
       pyenv.exec("from ngsolve import *");
       PyEval_ReleaseLock();
-      SpawnPython (initfile);
+//       SpawnPython (initfile);
     }
 
-  cout << IM(1)
-       << "ngs-python objects are available in ngstd, bla, ...\n"
-       << "to import the whole bunch of objets enter\n\n"
-       << "from ngsolve.ngstd import *\n"
-       << "from ngsolve.bla import *\n"
-       << "from ngsolve.fem import *\n"
-       << "from ngsolve.la import *\n"
-       << "from ngsolve.comp import *\n"
-       << "from ngsolve.solve import *\n"
-    //              << "from ngsolve.ngmpi import *\n"
-       << "dir()\n"
-       << endl << endl;
-#ifdef PARALLEL
-  cout << IM(1) << "To start the mpi shell call" << endl << "MpiShell()" << endl << endl;
-#endif
   
 
 
