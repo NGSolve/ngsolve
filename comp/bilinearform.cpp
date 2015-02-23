@@ -652,7 +652,7 @@ namespace ngcomp
 
 
 
-	  Exception * e;
+	  Exception * e = NULL;
 #pragma omp parallel
 	  {
 	    LocalHeap lh = clh.Split();
