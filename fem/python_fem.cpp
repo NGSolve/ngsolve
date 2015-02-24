@@ -165,7 +165,7 @@ void NGS_DLL_HEADER ExportNgfem() {
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
     
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, bp::object coefs_list, bool imag)
+         (FunctionPointer ([](string name, int dim, bp::list coefs_list, bool imag)
                            {
                              Array<shared_ptr<CoefficientFunction> > coefs = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coefs);
@@ -224,7 +224,7 @@ void NGS_DLL_HEADER ExportNgfem() {
          )
 
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, bp::object coefs_list,
+         (FunctionPointer ([](string name, int dim, bp::list coefs_list,
                               bp::object definedon, bool imag, const Flags & flags)
                            {
                              Array<shared_ptr<CoefficientFunction> > coefs = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
