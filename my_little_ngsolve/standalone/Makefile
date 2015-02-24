@@ -14,10 +14,10 @@ demo_fem:  demo_fem.cpp
 	$(NGSCXX) demo_fem.cpp -o demo_fem -lngfem -lngstd
 
 demo_comp:  demo_comp.cpp
-	$(NGSCXX) demo_comp.cpp -o demo_comp  -lngcomp -lngla -lngfem -lngstd -lnglib -linterface
+	$(NGSCXX) demo_comp.cpp -o demo_comp  -lngcomp -lngsolve -lngla -lngfem  -lngstd -lnglib -linterface
 
 demo_comp1d:  demo_comp1d.cpp netgen_dummy.cpp
-	$(NGSCXX) demo_comp1d.cpp netgen_dummy.cpp -o demo_comp1d  -lngcomp -lngla -lngfem -lngstd -lnglib -linterface
+	$(NGSCXX) demo_comp1d.cpp netgen_dummy.cpp -o demo_comp1d  -lngcomp -lngsolve -lngla -lngfem  -lngstd -lnglib -linterface
 
 
 

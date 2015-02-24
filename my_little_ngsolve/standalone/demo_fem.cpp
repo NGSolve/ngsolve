@@ -10,6 +10,11 @@
 using namespace ngfem;
 
 
+using FE_Quad1 = ScalarFE<ET_QUAD,1>;
+using FE_Trig1 = ScalarFE<ET_TRIG,1>;
+
+
+
 int main ()
 {
   // ***************** test integration rule
@@ -70,22 +75,19 @@ int main ()
   H1HighOrderFE<ET_TRIG> trig(2);
 
   // integrators for (\nabla u, \nabla v) and (u,v)
-  ConstantCoefficientFunction coef(1);
-  LaplaceIntegrator<2> laplace(&coef);
-  MassIntegrator<2> mass(&coef);
+  LaplaceIntegrator<2> laplace(make_shared<ConstantCoefficientFunction>(1));
+  MassIntegrator<2> mass(make_shared<ConstantCoefficientFunction>(1));
 
 
   // element geometry:
   FE_ElementTransformation<2,2> eltrans;
 
+  // set finite elment for geometry, element-nr and material index
   eltrans.SetElement (&trig_mapping, 0, 0);
 
   // vertex coordinates  
-  double pts[3][2] = { { 1, 0 }, { 0, 1 }, { 0, 0 } };
-  eltrans.PointMatrix() = Trans (FlatMatrix<double> (3, 2, &pts[0][0]));
-
+  eltrans.PointMatrix() = Trans (Matrix<> ({ { 1, 0 }, { 0, 1 }, { 0, 0 } }));
   cout << "PointMatrix = " << endl << eltrans.PointMatrix() << endl;
-
  
   Matrix<double> elmat_lap (trig.GetNDof());
   laplace.CalcElementMatrix (trig, eltrans, elmat_lap, lh);
