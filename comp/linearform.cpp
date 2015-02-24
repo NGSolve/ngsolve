@@ -130,9 +130,9 @@ namespace ngcomp
                         LocalHeap lh = clh.Split();
                         for (Ngs_Element ej : ma->Elements(VOL).OmpSplit())
                           {
-                            HeapReset hr(clh);
+                            HeapReset hr(lh);
                             if (lfi -> DefinedOn (ej.GetIndex()))
-                              lfi -> CheckElement (fespace->GetFE(ej, clh));
+                              lfi -> CheckElement (fespace->GetFE(ej, lh));
                           }
                       }
 
