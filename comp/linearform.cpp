@@ -120,15 +120,34 @@ namespace ngcomp
                 }
               else
                 {
-                  for (Ngs_Element ej : ma->Elements(VOL))
-                    {
-                      HeapReset hr(clh);
-                      if (lfi -> DefinedOn (ej.GetIndex()))
-                        lfi -> CheckElement (fespace->GetFE(ej, clh));
-                    }
+
+                  Exception * e = NULL;
+#pragma omp parallel
+                  {
+                    
+                    try
+                      {
+                        LocalHeap lh = clh.Split();
+                        for (Ngs_Element ej : ma->Elements(VOL).OmpSplit())
+                          {
+                            HeapReset hr(clh);
+                            if (lfi -> DefinedOn (ej.GetIndex()))
+                              lfi -> CheckElement (fespace->GetFE(ej, clh));
+                          }
+                      }
+
+                    catch (Exception e1)
+                      {
+#pragma omp critical(justone)
+                        {
+                          delete e;
+                          e = new Exception(e1);
+                        }
+                      }
+                  }
+                  if (e) throw Exception (*e);
                 }
             }
-
 
 
 	if(!allocated || ( this->GetVector().Size() != this->fespace->GetNDof()))

@@ -203,6 +203,33 @@ namespace ngstd
     INLINE ArrayRangeIterator<T> end() const { return next; }
   };
 
+
+
+  inline IntRange OmpSplit (IntRange r)
+  {
+    int id = omp_get_thread_num();
+    int tot = omp_get_num_threads();
+    
+    int f = r.First()  + (long(r.Size()) * id) / tot;
+    int n = r.First()  + (r.Size() * (id+1)) / tot;
+    
+    return IntRange (f, n);
+  }
+
+  template <typename T>
+  inline T_Range<T> OmpSplit (T_Range<T> r)
+  {
+    int id = omp_get_thread_num();
+    int tot = omp_get_num_threads();
+    
+    int f = r.First()  + (long(r.Size()) * id) / tot;
+    int n = r.First()  + (r.Size() * (id+1)) / tot;
+    
+    return IntRange (f, n);
+  }
+
+
+
   /*
   template <typename T>
   INLINE T_Range<T> Range (T n)
