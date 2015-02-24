@@ -143,11 +143,14 @@ namespace ngcomp
 
     ElementRange OmpSplit() const 
     {
+      /*
       int id = omp_get_thread_num();
       int tot = omp_get_num_threads();
       int f = IntRange::First() + (long(Size()) * id) / tot;
       int n = IntRange::First() + (long(Size()) * (id+1)) / tot;
       return ElementRange (ma, vb, IntRange(f,n));
+      */
+      return ElementRange (ma, vb, ::OmpSplit(IntRange(*this)));
     }
   };
 
