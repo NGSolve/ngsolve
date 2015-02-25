@@ -167,7 +167,6 @@ namespace ngla
     timer1.Stop();
     timer2a.Start();
 
-
     for (int loop = 1; loop <= 2; loop++)
       {
         if (!symmetric)
@@ -194,7 +193,7 @@ namespace ngla
 		  if (loop == 1)
 		    cnt[i] = rowdofs.Size();
 		  else
-                      colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+		    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
 		}
             }
           }
@@ -247,7 +246,7 @@ namespace ngla
                   if (loop == 1)
                     cnt[i] = rowdofs.Size();
                   else
-                    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+		    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                 }
             }
 
@@ -272,6 +271,17 @@ namespace ngla
               }
             firsti[size] = nze;
             colnr.SetSize (nze+1);
+
+	    CalcBalancing ();
+	    
+#pragma omp parallel
+	    {
+	      IntRange thd_rows = OmpRange();
+	      IntRange r(firsti[thd_rows.begin()], firsti[thd_rows.end()]);
+	      colnr.Range (r) = 0;
+
+	      // colnr.OmpSplit() = 0;
+	    }
           }
         else
           {
@@ -282,7 +292,6 @@ namespace ngla
 
     timer2a.Stop();
 
-    CalcBalancing ();
   }
 
   
