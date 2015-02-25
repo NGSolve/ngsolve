@@ -277,13 +277,12 @@ namespace ngsolve
     NumProcDrawFlux (shared_ptr<PDE> apde, const Flags & flags);
 
     ///
-    NumProcDrawFlux (shared_ptr<PDE> apde, 
-                     shared_ptr<BilinearForm> abfa, 
+    NumProcDrawFlux (shared_ptr<BilinearForm> abfa, 
                      shared_ptr<GridFunction> agfu,
                      string alabel,
                      bool aapplyd,
                      bool auseall)
-      : NumProc(apde), bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
+      : bfa(abfa), gfu(agfu), applyd(aapplyd), useall(auseall), label(alabel)
     { 
       Array<shared_ptr<BilinearFormIntegrator>> bfi2d, bfi3d;
 
@@ -3298,17 +3297,16 @@ void ExportDrawFlux()
   cout << "exporting DrawFlux numproc" << endl;
   
   bp::def ("DrawFlux", FunctionPointer
-           ([](shared_ptr<PDE> pde,
-               shared_ptr<BilinearForm> bfa,
+           ([](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
                const string & alabel,
                bool applyd,
                bool useall) -> shared_ptr<NumProc>
             
             {
-              return make_shared<NumProcDrawFlux> (pde, bfa, gfu, alabel, applyd, useall);
+              return make_shared<NumProcDrawFlux> (bfa, gfu, alabel, applyd, useall);
             }),
-           (bp::arg("pde"), bp::arg("bf"), bp::arg("gf"), 
+           (bp::arg("bf"), bp::arg("gf"), 
             bp::arg("label")="flux", bp::arg("applyd")=false, bp::arg("useall")=false)
 	   );
 
