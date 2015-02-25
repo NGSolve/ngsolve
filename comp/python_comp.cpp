@@ -438,12 +438,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("integrators", FunctionPointer
                   ([](BF & self) { return bp::object (self.Integrators());} ))
     
-    .def("Assemble", FunctionPointer([](BF & self, int heapsize)
+    .def("Assemble", FunctionPointer([](BF & self, int heapsize, bool reallocate)
                                      {
                                        LocalHeap lh (heapsize*omp_get_max_threads(), "BilinearForm::Assemble-heap");
-                                       self.ReAssemble(lh);
+                                       self.ReAssemble(lh,reallocate);
                                      }),
-         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
     .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     .def("Energy", &BilinearForm::Energy)
