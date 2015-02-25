@@ -181,6 +181,24 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
+
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](
+                               string type, shared_ptr<BilinearFormIntegrator> bfi,  int dim, int comp
+                               )
+                           {
+
+                               if (type == "compound")
+                                   bfi = make_shared<CompoundBilinearFormIntegrator>(bfi, comp-1);
+                               else if (type == "block")
+                                   bfi = make_shared<BlockBilinearFormIntegrator>(bfi, dim, comp-1);
+                               else
+                                   throw Exception(type + " != block and " + type + " != compound");
+                               return bfi;
+                           }),
+          bp::default_call_policies(),     // need it to use named arguments
+          (bp::arg("type")=NULL, bp::arg("bfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=1))
+         )
     
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
@@ -246,6 +264,24 @@ void NGS_DLL_HEADER ExportNgfem() {
           (bp::arg("name")=NULL,bp::arg("dim")=2,
            bp::arg("coef"),bp::arg("definedon")=bp::object(), 
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
+         )
+
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](
+                               string type, shared_ptr<LinearFormIntegrator> lfi,  int dim, int comp
+                               )
+                           {
+
+                               if (type == "compound")
+                                   lfi = make_shared<CompoundLinearFormIntegrator>(lfi, comp-1);
+                               else if (type == "block")
+                                   lfi = make_shared<BlockLinearFormIntegrator>(lfi, dim, comp-1);
+                               else
+                                   throw Exception(type + " != block and " + type + " != compound");
+                               return lfi;
+                           }),
+          bp::default_call_policies(),     // need it to use named arguments
+          (bp::arg("type")=NULL, bp::arg("lfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=1))
          )
 
     .def("CalcElementVector", 
