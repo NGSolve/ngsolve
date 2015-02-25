@@ -7,6 +7,7 @@
 /* Date:   25. Mar. 2000                                                  */
 /**************************************************************************/
 
+#include <atomic>
 
 namespace ngstd
 {
@@ -256,11 +257,14 @@ template <class T>
 	  if (blocknr+1 > nd) nd = blocknr+1; 
 	  break;
 	case 2:
+#pragma omp atomic 
 	  cnt[blocknr]++;
 	  break;
 	case 3:
-          (*table)[blocknr][cnt[blocknr]++] = data;
-	  // table -> Data() [cnt[blocknr]++] = data;
+          int ci;
+#pragma omp atomic capture
+	  ci = cnt[blocknr]++;
+          (*table)[blocknr][ci] = data;
 	  break;
 	}
     }
