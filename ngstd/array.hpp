@@ -225,7 +225,7 @@ namespace ngstd
     int f = r.First()  + (long(r.Size()) * id) / tot;
     int n = r.First()  + (r.Size() * (id+1)) / tot;
     
-    return IntRange (f, n);
+    return T_Range<T> (f, n);
   }
 
 

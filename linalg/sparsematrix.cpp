@@ -129,7 +129,7 @@ namespace ngla
     static Timer timer("MatrixGraph");
     static Timer timer1("MatrixGraph - transpose table");
     static Timer timer2a("MatrixGraph - getdofsa");
-    static Timer timer2b("MatrixGraph - getdofsb");
+
     static Timer timer3("MatrixGraph - sort");
     RegionTimer reg (timer);
 
@@ -138,12 +138,6 @@ namespace ngla
      
     int ndof = asize;
 
-    /*
-    // don't need to sort rowelements ???
-#pragma omp parallel for
-    for (int i = 0; i < rowelements.Size(); i++)
-      QuickSort (rowelements[i]);
-    */
 
 #pragma omp parallel for
     for (int i = 0; i < colelements.Size(); i++)
@@ -154,28 +148,18 @@ namespace ngla
 
     for ( ; !creator.Done(); creator++)
       {    
-        for (auto i : Range (rowelements))
-          for (auto e : rowelements[i])
-            creator.Add(e, i);
+
+#pragma omp parallel
+	{
+	  for (auto i : OmpSplit (Range (rowelements)))
+	    for (auto e : rowelements[i])
+	      creator.Add(e, i);
+	}
+
       }
 
     Table<int> dof2element = creator.MoveTable();
 
-    /*
-      // no speedup ???
-    Array<bool> same_els_as_prev(dof2element.Size());
-    same_els_as_prev[0] = false;
-#pragma omp parallel for
-    for (int i = 1; i < same_els_as_prev.Size(); i++)
-      {
-        if (dof2element[i].Size() == 0)
-          same_els_as_prev[i] = false;    // unused dof: may add diag-entry
-        else
-          same_els_as_prev[i] = (dof2element[i] == dof2element[i-1]);
-      }
-    // cout << "same as prev = " << endl << same_els_as_prev << endl;
-    // same_els_as_prev = false;
-    */
 
     Array<int> cnt(ndof);
     cnt = 0;
@@ -189,83 +173,6 @@ namespace ngla
         if (!symmetric)
           {
             
-            /*
-              #pragma omp parallel 
-              {
-              Array<int> pmark(ndof);
-              pmark = -1;
-              #pragma omp for
-              for (int i = 0; i < ndof; i++)
-              {
-	      int cnti = includediag? 1 : 0;
-	      pmark[i] = includediag? i : -1;
-              
-              for (auto elnr : dof2element[i])
-              for (auto d2 : colelements[elnr])
-              if (pmark[d2] != i)
-              {
-              pmark[d2] = i;
-              cnti++;
-              }
-	      cnt[i] = cnti;
-              }
-              }
-            */
-
-            /*
-              #pragma omp parallel
-              {
-              std::set<int> rowdofs;
-              
-              #pragma omp for
-              for (int i = 0; i < ndof; i++)
-	    {
-            if (includediag) rowdofs.insert(i);
-            
-            for (auto elnr : dof2element[i])
-            for (auto d2 : colelements[elnr])
-            rowdofs.insert (d2);
-            
-            cnt[i] = rowdofs.size();
-            rowdofs.clear();
-	    }
-            
-            }
-            */
-
-            /*
-              #pragma omp parallel
-              {
-              Array<int> rowdofs;
-              
-              #pragma omp for
-              for (int i = 0; i < ndof; i++)
-              {
-              if (includediag) rowdofs += i;
-              
-              for (auto elnr : dof2element[i])
-              for (auto d2 : colelements[elnr])
-              rowdofs += d2;
-              
-              
-              QuickSort (rowdofs);
-              int prev = -1;
-              int cnti = 0;
-              for (int r : rowdofs)
-              {
-              if (r != prev) cnti++;
-              prev = r;
-              }
-              
-	      cnt[i] = cnti;
-
-              rowdofs.SetSize0();
-              }
-              
-              }
-            */
-            
-            
 #pragma omp parallel
             {
               Array<int> rowdofs;
@@ -273,39 +180,22 @@ namespace ngla
               
 #pragma omp for schedule(dynamic,10)
               for (int i = 0; i < ndof; i++)
-                // if (!same_els_as_prev[i])
-                  {
-                    rowdofs.SetSize0();
-                    if (includediag) rowdofs += i;
-                    
-                    for (int elnr : dof2element[i])
-                      {
-                        rowdofs.Swap (rowdofs1);
-                        FlatArray<int> row = colelements[elnr];
-                        MergeSortedArrays (rowdofs1, row, rowdofs);
-                      }
+		{
+		  rowdofs.SetSize0();
+		  if (includediag) rowdofs += i;
                   
-                    if (loop == 1)
-                      cnt[i] = rowdofs.Size();
-                    else
+		  for (int elnr : dof2element[i])
+		    {
+		      rowdofs.Swap (rowdofs1);
+		      FlatArray<int> row = colelements[elnr];
+		      MergeSortedArrays (rowdofs1, row, rowdofs);
+		    }
+                  
+		  if (loop == 1)
+		    cnt[i] = rowdofs.Size();
+		  else
                       colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
-                  }
-
-              /*
-#pragma omp for schedule(dynamic,10)
-              for (int i = 0; i < ndof; i++)
-                if (same_els_as_prev[i])
-                  {
-                    int prev = i-1;
-                    while (same_els_as_prev[prev]) prev--;
-
-                    if (loop == 1)
-                      cnt[i] = cnt[prev];
-                    else
-                      colnr.Range(firsti[i], firsti[i+1]) = 
-                        colnr.Range(firsti[prev], firsti[prev+1]);
-                  }
-              */
+		}
             }
           }
         else
@@ -390,108 +280,7 @@ namespace ngla
       }
 
 
-
     timer2a.Stop();
-
-
-
-
-
-
-
-
-
-#ifdef OLD
-
-
-
-    timer2b.Start();
-
-
-    size = ndof;
-    width = ndof;
-    owner = true;
-
-    firsti.SetSize (size+1);
-    
-    nze = 0;
-    for (int i = 0; i < size; i++)
-      {
-	firsti[i] = nze;
-	nze += cnt[i];
-      }
-    firsti[size] = nze;
-    
-    colnr.SetSize (nze+1);
-
-    if (!symmetric)
-      {
-#pragma omp parallel  
-	{
-	  Array<int> pmark(ndof);
-	  pmark = -1;
-#pragma omp for
-	  
-	  for (int i = 0; i < ndof; i++)
-	    {
-	      size_t cnti = firsti[i];
-	      pmark[i] = includediag? i : -1;
-	      if (includediag) colnr[cnti++] = i;
-              
-              for (auto elnr : dof2element[i])
-                for (auto d2 : colelements[elnr])
-                  if (pmark[d2] != i)
-                    {
-                      pmark[d2] = i;
-                      colnr[cnti++] = d2;
-                    }
-	    }
-	}
-      }
-    else
-
-#pragma omp parallel  
-      {
-	Array<int> pmark(ndof);
-	pmark = -1;
-#pragma omp for
-	
-	for (int i = 0; i < ndof; i++) 
-	  {
-	    size_t cnti = firsti[i];
-	    pmark[i] = includediag? i : -1;
-	    if (includediag) colnr[cnti++] = i;
-
-            for (auto elnr : dof2element[i])
-              for (auto d2 : colelements[elnr])
-                if ( (d2 <= i) && (pmark[d2] != i))
-                  {
-                    pmark[d2] = i;
-                    colnr[cnti++] = d2;
-                  }
-	  }
-      } 
-
-    timer2b.Stop();
-
-#endif
-
-
-    /*
-    timer3.Start();
-
-#pragma omp parallel for
-    for (int i = 0; i < ndof; i++)
-      // BitonicSort<1> (GetRowIndices(i));
-      QuickSort (GetRowIndices(i));
-
-    colnr[nze] = 0;
-
-    timer3.Stop();
-    */
-
-    // delete creator.GetTable();
-
 
     CalcBalancing ();
   }
@@ -1254,7 +1043,7 @@ namespace ngla
   void SparseMatrixSymmetricTM<TM> ::
   AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
   {
-    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 1);
+    static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     RegionTimer reg (timer);
 
     ArrayMem<int, 50> map(dnums.Size());
