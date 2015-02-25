@@ -1211,7 +1211,20 @@ int NGSolve_Init (Tcl_Interp * interp)
     {
       pyenv.exec("from ngsolve import *");
       PyEval_ReleaseLock();
+
 //       SpawnPython (initfile);
+      // Dummy SpawnPython (to avoid nasty Python GIL error)
+      std::thread([](string init_file_) 
+                  {
+                    AcquireGIL gil_lock;
+                    try{
+                    pyenv.exec("from ngsolve import *");
+                    pyenv.exec("from netgen import *");
+                    }
+                    catch (bp::error_already_set const &) {
+                      PyErr_Print();
+                    }
+                  }, initfile).detach();
     }
 
   
