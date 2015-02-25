@@ -118,7 +118,20 @@ public:
     data = new T[cnt];
   }
 
-  INLINE Table (const Table<T> & tab2) = delete;
+  explicit INLINE Table (const Table<T> & tab2)
+  {
+    size = tab2.Size();
+    
+    index = new size_t[size+1];
+    for (int i = 0; i <= size; i++)
+      index[i] = tab2.index[i];
+
+    size_t cnt = index[size];
+    data = new T[cnt];
+    for (size_t i = 0; i < cnt; i++)
+      data[i] = tab2.data[i];
+  }
+
   INLINE Table (Table<T> && tab2)
   {
     size = 0;
