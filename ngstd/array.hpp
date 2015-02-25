@@ -201,6 +201,8 @@ namespace ngstd
 
     INLINE ArrayRangeIterator<T> begin() const { return first; }
     INLINE ArrayRangeIterator<T> end() const { return next; }
+
+    INLINE operator IntRange () const { return IntRange(first,next); }
   };
 
 
@@ -526,6 +528,11 @@ namespace ngstd
     { return ArrayIterator<T,TSIZE> (*this, 0); }
     ArrayIterator<T, TSIZE> end() const
     { return ArrayIterator<T,TSIZE> (*this, size); }
+
+    FlatArray<T,TSIZE> OmpSplit() const
+    {
+      return Range(ngstd::OmpSplit(Range()));
+    }
   };
 
 
