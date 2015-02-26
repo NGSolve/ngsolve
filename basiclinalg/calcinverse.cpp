@@ -2,7 +2,6 @@
 
 namespace ngbla
 {
-
   inline double abs (double a)
   {
     return std::fabs(a);
