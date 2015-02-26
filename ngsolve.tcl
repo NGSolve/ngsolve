@@ -54,6 +54,10 @@ if { [catch { NGS_GetData } ] == 0 } {
 	}
     }
     
+    set pyfilename [Ng_GetCommandLineParameter py]
+    if { $pyfilename != "undefined" } {
+	NGS_LoadPy  $pyfilename;  
+    }
 
     set progname "NGSolve"
     wm title . $progname
@@ -113,6 +117,17 @@ if { [catch { NGS_GetData } ] == 0 } {
     
     .ngmenu.solve add cascade -label "Recent Files" -menu .ngmenu.solve.recent 
     menu .ngmenu.solve.recent
+
+    .ngmenu.solve add command -label "Load Python..." -accelerator "<l><y>"\
+	-command { 
+	    set types { {"Python script"   {.py}	} }
+	    set file [tk_getOpenFile -filetypes $types -initialdir $dirname]
+	    if {$file != ""} {
+		set dirname [file dirname $file]
+                NGS_LoadPy  $file;  
+	    }
+	}
+
 
     .ngmenu.solve add command -label "Components..." \
 	-command { componentsdialog }
@@ -527,6 +542,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 
     bind . <l><p> { .ngmenu.solve invoke "Load PDE..." }  ; 
+    bind . <l><y> { .ngmenu.solve invoke "Load Python..." }  ; 
     bind . <s><r> { .ngmenu.solve invoke "Solve Recent PDE" }  ; 
     bind . <s><p> { .ngmenu.solve invoke "Solve PDE" }  ; 
     bind . <e><c> { .ngmenu.solve invoke "Enter Command" }  ; 

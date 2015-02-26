@@ -513,6 +513,54 @@ int NGS_LoadPDE (ClientData clientData,
 }
 
 
+int NGS_LoadPy (ClientData clientData,
+		Tcl_Interp * interp,
+		int argc, tcl_const char *argv[])
+{
+
+  if (Ng_IsRunning())
+    {
+      Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
+      return TCL_ERROR;
+    }
+
+  if (argc >= 2)
+    {
+      try
+	{
+	  string filename = argv[1];
+	  cout << "(should) load python file '" << filename << "'" << endl;
+
+#ifdef NGS_PYTHON
+	  {
+	    AcquireGIL gil_lock;
+	    string command = string("import ") + filename;
+	    pyenv.exec (command.c_str());
+	    // pyenv.exec("from module1 import *");
+	  }
+#else
+	  cout << "want to load python file, but python not enabled" << endl;	  
+#endif
+	  
+	  return TCL_OK;
+	}
+      catch (netgen::NgException & e)
+	{
+	  cerr << "\n\nCaught Exception in NGS_LoadPy:\n"
+	       << e.What() << endl;
+	  
+	  ostringstream ost;
+	  ost << "Exception in NGS_LoadPDE: \n " << e.What() << endl;
+	  Tcl_SetResult (interp, (char*)ost.str().c_str(), TCL_VOLATILE);
+	  return TCL_ERROR;
+	}
+
+    }
+  Tcl_SetResult (interp, (char*)"no filename", TCL_STATIC);  
+  return TCL_ERROR;
+}
+
+
 void * SolveBVP(void *)
 {
 #ifdef _OPENMP
@@ -1242,6 +1290,10 @@ int NGSolve_Init (Tcl_Interp * interp)
 		     (Tcl_CmdDeleteProc*) NULL);
 
   Tcl_CreateCommand (interp, "NGS_LoadPDE", NGS_LoadPDE,
+		     (ClientData)NULL,
+		     (Tcl_CmdDeleteProc*) NULL);
+
+  Tcl_CreateCommand (interp, "NGS_LoadPy", NGS_LoadPy,
 		     (ClientData)NULL,
 		     (Tcl_CmdDeleteProc*) NULL);
 
