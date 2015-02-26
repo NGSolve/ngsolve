@@ -215,6 +215,27 @@ void NGS_DLL_HEADER ExportNgfem() {
                            return mat;
                          }))
     ;
+
+
+  bp::def("CompoundBFI", 
+          (FunctionPointer ([]( shared_ptr<BilinearFormIntegrator> bfi, int comp )
+                            {
+                                return make_shared<CompoundBilinearFormIntegrator>(bfi, comp);
+                            })),
+           bp::default_call_policies(),     // need it to use named arguments
+           (bp::arg("bfi")=NULL, bp::arg("comp")=0)
+      );
+
+  bp::def("BlockBFI", 
+          (FunctionPointer ([]( shared_ptr<BilinearFormIntegrator> bfi, int dim, int comp )
+                            {
+                                return make_shared<BlockBilinearFormIntegrator>(bfi, dim, comp);
+                            })),
+           bp::default_call_policies(),     // need it to use named arguments
+           (bp::arg("bfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
+      );
+
+
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -264,30 +285,33 @@ void NGS_DLL_HEADER ExportNgfem() {
           (bp::arg("name")=NULL,bp::arg("dim")=2,
            bp::arg("coef"),bp::arg("definedon")=bp::object(), 
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
-         )
-
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](
-                               string type, shared_ptr<LinearFormIntegrator> lfi,  int dim, int comp
-                               )
-                           {
-
-                               if (type == "compound")
-                                   lfi = make_shared<CompoundLinearFormIntegrator>(lfi, comp-1);
-                               else if (type == "block")
-                                   lfi = make_shared<BlockLinearFormIntegrator>(lfi, dim, comp-1);
-                               else
-                                   throw Exception(type + " != block and " + type + " != compound");
-                               return lfi;
-                           }),
-          bp::default_call_policies(),     // need it to use named arguments
-          (bp::arg("type")=NULL, bp::arg("lfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=1))
-         )
+        )
 
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
     ;
+
+
+
+  bp::def("CompoundLFI", 
+          (FunctionPointer ([]( shared_ptr<LinearFormIntegrator> lfi, int comp )
+                            {
+                                return make_shared<CompoundLinearFormIntegrator>(lfi, comp);
+                            })),
+           bp::default_call_policies(),     // need it to use named arguments
+           (bp::arg("lfi")=NULL, bp::arg("comp")=0)
+      );
+
+  bp::def("BlockLFI", 
+          (FunctionPointer ([]( shared_ptr<LinearFormIntegrator> lfi, int dim, int comp )
+                            {
+                                return make_shared<BlockLinearFormIntegrator>(lfi, dim, comp);
+                            })),
+           bp::default_call_policies(),     // need it to use named arguments
+           (bp::arg("lfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
+      );
+
 
   /*
   bp::def("CreateBFI", FunctionPointer 
