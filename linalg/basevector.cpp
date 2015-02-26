@@ -205,9 +205,18 @@ namespace ngla
 
       case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
         if (omp_in_parallel())
-#pragma omp for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) += scal * you(i);
+	  {
+
+	    /*
+	      #pragma omp for
+	      for (int i = 0; i < me.Size(); i++)
+	      me(i) += scal * you(i);
+	    */
+	    auto r = OmpSplit (ngstd::Range (me.Size()));
+	    me.Range(r) += scal * you.Range(r);
+#pragma omp barrier
+
+	  }
         else
 #pragma omp parallel for
           for (int i = 0; i < me.Size(); i++)
