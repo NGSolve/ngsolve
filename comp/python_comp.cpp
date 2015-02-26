@@ -287,10 +287,20 @@ void NGS_DLL_HEADER ExportNgcomp()
          "update vector size to finite element space dimension after mesh refinement")
     
     .def("Set", FunctionPointer
-         ([](GF & self, shared_ptr<CoefficientFunction> cf)
+         ([](GF & self, shared_ptr<CoefficientFunction> cf, bool boundary)
           {
             LocalHeap lh(1000000, "tmplh");
-            SetValues (cf, self, false, NULL, lh);
+            SetValues (cf, self, boundary, NULL, lh);
+          }),
+          bp::default_call_policies(),        // need it to use arguments
+         (bp::arg("self"),bp::arg("coefficient"),bp::arg("boundary")=false),
+         "Set values (on boundary)"
+      )
+
+    .def("component", FunctionPointer
+         ([](GF & self, int comp)
+          {
+            return self.GetComponent(comp-1);
           }))
 
     .add_property("vec",
@@ -428,12 +438,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("integrators", FunctionPointer
                   ([](BF & self) { return bp::object (self.Integrators());} ))
     
-    .def("Assemble", FunctionPointer([](BF & self, int heapsize)
+    .def("Assemble", FunctionPointer([](BF & self, int heapsize, bool reallocate)
                                      {
                                        LocalHeap lh (heapsize*omp_get_max_threads(), "BilinearForm::Assemble-heap");
-                                       self.ReAssemble(lh);
+                                       self.ReAssemble(lh,reallocate);
                                      }),
-         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
     .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
     .def("Energy", &BilinearForm::Energy)
