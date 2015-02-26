@@ -814,12 +814,12 @@ namespace ngla
         static Timer timer("SparseMatrix::MultAdd");
         RegionTimer reg (timer);
         timer.AddFlops (this->nze);
-
+	
 #pragma omp parallel num_threads(balancing.Size()-1)
         {
           MultAdd (s, x, y);
         }
-        
+
         return;
       }
 
@@ -827,12 +827,11 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
 
-    /*
-    int h = this->Height();
-    for (int i = 0; i < h; i++)
-      fy(i) += s * RowTimesVector (i, fx);
-    */
+    // int h = this->Height();
+    // for (int i = 0; i < h; i++)
+    //   fy(i) += s * RowTimesVector (i, fx);
 
+    
     for (int i : this->OmpRange())
       {
         fy(i) += s * RowTimesVector (i, fx);

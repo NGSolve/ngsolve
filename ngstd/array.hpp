@@ -164,9 +164,9 @@ namespace ngstd
     INLINE bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
   };
 
+  
 
-
-
+  /*
   /// a range of intergers
   class IntRange : public BaseArrayObject <IntRange>
   {
@@ -184,7 +184,7 @@ namespace ngstd
     INLINE ArrayRangeIterator<int> begin() const { return first; }
     INLINE ArrayRangeIterator<int> end() const { return next; }
   };
-
+  */
   /// a range of intergers
   template <typename T>
   class T_Range : public BaseArrayObject <T_Range<T>>
@@ -202,11 +202,12 @@ namespace ngstd
     INLINE ArrayRangeIterator<T> begin() const { return first; }
     INLINE ArrayRangeIterator<T> end() const { return next; }
 
-    INLINE operator IntRange () const { return IntRange(first,next); }
+    // INLINE operator IntRange () const { return IntRange(first,next); }
   };
 
+  using IntRange = T_Range<int>;
 
-
+  /*
   inline IntRange OmpSplit (IntRange r)
   {
     int id = omp_get_thread_num();
@@ -217,6 +218,7 @@ namespace ngstd
     
     return IntRange (f, n);
   }
+  */
 
   template <typename T>
   inline T_Range<T> OmpSplit (T_Range<T> r)
@@ -230,7 +232,11 @@ namespace ngstd
     return T_Range<T> (f, n);
   }
 
-
+  template <typename T>
+  inline auto OmpSplit (const T & data) -> decltype (data.OmpSplit())
+  {
+    return data.OmpSplit();
+  }
 
   /*
   template <typename T>
@@ -491,7 +497,7 @@ namespace ngstd
     }
 
     /// takes range starting from position start of end-start elements
-    INLINE /* const */ FlatArray<T> Range (class IntRange range) const
+    INLINE /* const */ FlatArray<T> Range (IntRange range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
