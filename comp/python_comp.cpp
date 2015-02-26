@@ -297,11 +297,16 @@ void NGS_DLL_HEADER ExportNgcomp()
          "Set values (on boundary)"
       )
 
-    .def("component", FunctionPointer
-         ([](GF & self, int comp)
-          {
-            return self.GetComponent(comp-1);
-          }))
+
+    .add_property("components", FunctionPointer
+                  ([](GF & self)-> bp::list 
+                   { 
+                     bp::list vecs;
+                     for (int i = 0; i < self.GetNComponents(); i++) 
+                       vecs.append(self.GetComponent(i));
+                     return vecs;
+                   }),
+                  "list of gridfunctions for compound gridfunction")
 
     .add_property("vec",
                   FunctionPointer([](GF & self) { return self.GetVectorPtr(); }),
