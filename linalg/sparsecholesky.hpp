@@ -78,7 +78,9 @@ namespace ngla
 		   const int * blocknr);
     ///
     void Factor (); 
+#ifdef LAPACK
     void FactorSPD (); 
+#endif
     ///
     void FactorNew (const SparseMatrix<TM,TV_ROW,TV_COL> & a);
     ///

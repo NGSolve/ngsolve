@@ -178,10 +178,12 @@ namespace ngla
       cout << IM(4) << "do factor " << flush;
     
     
+#ifdef LAPACK
     auto aspd = dynamic_cast<const SparseMatrixSymmetricTM<double>*> (&a);
     if (aspd && aspd -> IsSPD())
       FactorSPD();
     else
+#endif
       Factor(); 
 
 
@@ -676,7 +678,7 @@ namespace ngla
 
 
 
-
+#ifdef LAPACK
 
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: FactorSPD () 
@@ -939,7 +941,7 @@ namespace ngla
       cout << IM(4) << endl;
   }
 
-
+#endif
 
 
 
