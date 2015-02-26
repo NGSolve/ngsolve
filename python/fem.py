@@ -11,6 +11,6 @@ from . import bla
 
 from ngslib.fem import *
 
-__all__ = ['BFI', 'CoefficientFunction', 'ConstantCF', 'DomainConstantCF', 'ET', 'ElementTransformation', 'FiniteElement', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF' ]
+__all__ = ['BFI', 'BlockBFI', 'BlockLFI', 'CoefficientFunction', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'DomainConstantCF', 'ET', 'ElementTransformation', 'FiniteElement', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF' ]
 
 
