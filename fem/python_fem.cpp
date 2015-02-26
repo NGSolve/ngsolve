@@ -182,24 +182,6 @@ void NGS_DLL_HEADER ExportNgfem() {
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
 
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](
-                               string type, shared_ptr<BilinearFormIntegrator> bfi,  int dim, int comp
-                               )
-                           {
-
-                               if (type == "compound")
-                                   bfi = make_shared<CompoundBilinearFormIntegrator>(bfi, comp-1);
-                               else if (type == "block")
-                                   bfi = make_shared<BlockBilinearFormIntegrator>(bfi, dim, comp-1);
-                               else
-                                   throw Exception(type + " != block and " + type + " != compound");
-                               return bfi;
-                           }),
-          bp::default_call_policies(),     // need it to use named arguments
-          (bp::arg("type")=NULL, bp::arg("bfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=1))
-         )
-    
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
                                                       const ElementTransformation&,
@@ -234,6 +216,23 @@ void NGS_DLL_HEADER ExportNgfem() {
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("bfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
       );
+
+
+  bp::class_<CompoundBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
+             shared_ptr<CompoundBilinearFormIntegrator>, boost::noncopyable>
+      ("CompoundBilinearFormIntegrator", bp::no_init);
+
+  bp::class_<BlockBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
+             shared_ptr<BlockBilinearFormIntegrator>, boost::noncopyable>
+      ("BlockBilinearFormIntegrator", bp::no_init);
+
+  bp::implicitly_convertible 
+    <shared_ptr<CompoundBilinearFormIntegrator>, 
+    shared_ptr<BilinearFormIntegrator> >(); 
+
+  bp::implicitly_convertible 
+    <shared_ptr<BlockBilinearFormIntegrator>, 
+    shared_ptr<BilinearFormIntegrator> >(); 
 
 
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
@@ -311,6 +310,23 @@ void NGS_DLL_HEADER ExportNgfem() {
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("lfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
       );
+
+
+  bp::class_<CompoundLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
+             shared_ptr<CompoundLinearFormIntegrator>, boost::noncopyable>
+      ("CompoundLinearFormIntegrator", bp::no_init);
+
+  bp::class_<BlockLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
+             shared_ptr<BlockLinearFormIntegrator>, boost::noncopyable>
+      ("BlockLinearFormIntegrator", bp::no_init);
+
+  bp::implicitly_convertible 
+    <shared_ptr<CompoundLinearFormIntegrator>, 
+    shared_ptr<LinearFormIntegrator> >(); 
+
+  bp::implicitly_convertible 
+    <shared_ptr<BlockLinearFormIntegrator>, 
+    shared_ptr<LinearFormIntegrator> >(); 
 
 
   /*
