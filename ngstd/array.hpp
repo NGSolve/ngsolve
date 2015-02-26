@@ -164,27 +164,6 @@ namespace ngstd
     INLINE bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
   };
 
-  
-
-  /*
-  /// a range of intergers
-  class IntRange : public BaseArrayObject <IntRange>
-  {
-    int first, next;
-  public: 
-    INLINE IntRange () { ; }
-    // INLINE IntRange (int f) : first(f), next(f+1) {;} 
-    INLINE IntRange (int f, int n) : first(f), next(n) {;} 
-    INLINE int First() const { return first; }
-    INLINE int Next() const { return next; }
-    INLINE int Size() const { return next-first; }
-    INLINE int operator[] (int i) const { return first+i; }
-    INLINE bool Contains (int i) const { return ((i >= first) && (i < next)); }
-
-    INLINE ArrayRangeIterator<int> begin() const { return first; }
-    INLINE ArrayRangeIterator<int> end() const { return next; }
-  };
-  */
   /// a range of intergers
   template <typename T>
   class T_Range : public BaseArrayObject <T_Range<T>>
@@ -207,18 +186,6 @@ namespace ngstd
 
   using IntRange = T_Range<int>;
 
-  /*
-  inline IntRange OmpSplit (IntRange r)
-  {
-    int id = omp_get_thread_num();
-    int tot = omp_get_num_threads();
-    
-    int f = r.First()  + (long(r.Size()) * id) / tot;
-    int n = r.First()  + (r.Size() * (id+1)) / tot;
-    
-    return IntRange (f, n);
-  }
-  */
 
   template <typename T>
   inline T_Range<T> OmpSplit (T_Range<T> r)
@@ -226,8 +193,8 @@ namespace ngstd
     int id = omp_get_thread_num();
     int tot = omp_get_num_threads();
     
-    int f = r.First()  + (long(r.Size()) * id) / tot;
-    int n = r.First()  + (r.Size() * (id+1)) / tot;
+    T f = r.First()  + (long(r.Size()) * id) / tot;
+    T n = r.First()  + (r.Size() * (id+1)) / tot;
     
     return T_Range<T> (f, n);
   }
@@ -237,14 +204,6 @@ namespace ngstd
   {
     return data.OmpSplit();
   }
-
-  /*
-  template <typename T>
-  INLINE T_Range<T> Range (T n)
-  {
-    return T_Range<T>(0, n);
-  }
-  */
 
   template <typename T>
   INLINE T_Range<T> Range (T a, T b)
@@ -459,13 +418,6 @@ namespace ngstd
     // { return CArray<T> (data+pos); }
     INLINE T * operator+ (int pos) { return data+pos; }
 
-    /*
-    // icc does not like this version
-    T * const Addr (int i) const
-    {
-    return data+i;
-    }
-    */
 
     /// access last element. check by macro CHECK_RANGE
     T & Last () const
@@ -1118,10 +1070,6 @@ namespace ngstd
   
     do
       {
-	/*
-        while (data[i] < midval) i++;
-        while (midval < data[j]) j--;
-	*/
         while (less (data[i], midval)) i++;
         while (less (midval, data[j])) j--;
 
@@ -1178,10 +1126,6 @@ namespace ngstd
   
     do
       {
-	/*
-        while (data[index[i]] < data[midval]) i++;
-        while (data[midval] < data[index[j]]) j--;
-	*/
         while (less (data[index[i]],data[midval])  ) i++;
         while (less (data[midval],  data[index[j]])) j--;
 
@@ -1250,10 +1194,7 @@ namespace ngstd
         archive & size;
         a.SetSize (size);
       }
-    /*
-    for (int i = 0; i < a.Size(); i++)
-      archive & a[i];
-    */
+
     for (auto & ai : a)
       archive & ai;
     return archive;
