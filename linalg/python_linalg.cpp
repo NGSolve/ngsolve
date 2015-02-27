@@ -160,6 +160,8 @@ void NGS_DLL_HEADER ExportNgla() {
     // (bp::arg("self"), bp::arg("freedofs")))
     .def("Inverse", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
                                      { return m.InverseMatrix(); }))
+    .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
+                                       { return make_shared<Transpose> (m); }))
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
