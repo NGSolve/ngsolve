@@ -533,9 +533,24 @@ int NGS_LoadPy (ClientData clientData,
 
 #ifdef NGS_PYTHON
 	  {
-	    AcquireGIL gil_lock;
-	    string command = string("import ") + filename;
-	    pyenv.exec (command.c_str());
+        std::thread([](string init_file_) 
+          {
+            AcquireGIL gil_lock;
+            try{
+              pythread_id = std::this_thread::get_id();
+              pyenv.exec_file(init_file_.c_str());
+            }
+            catch (bp::error_already_set const &) {
+              PyErr_Print();
+            }
+            cout << "Finished executing " << init_file_ << endl;
+            
+            pythread_id = mainthread_id;
+            
+          }, filename).detach();
+// 	    AcquireGIL gil_lock;
+// 	    string command = string("import ") + filename;
+// 	    pyenv.exec (command.c_str());
 	    // pyenv.exec("from module1 import *");
 	  }
 #else
