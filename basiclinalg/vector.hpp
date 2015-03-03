@@ -977,6 +977,8 @@ namespace ngbla
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
     INLINE int Size() const { return 0; }
+    INLINE int Height() const { return 0; }
+    INLINE int Width() const { return 1; }
     template<typename TB>
     INLINE Vec & operator= (const Expr<TB> & v) { return *this;}
 
