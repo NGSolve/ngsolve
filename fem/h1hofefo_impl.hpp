@@ -173,7 +173,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       {
         INT<4> f = GetFace (i);
-        shape[ii] = lam[f[0]]*lam[f[1]]*lam[f[2]];
+        shape[ii++] = lam[f[0]]*lam[f[1]]*lam[f[2]];
       }
   }
 
