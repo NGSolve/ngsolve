@@ -813,6 +813,12 @@ public:
 #define BLOCK_VERSION
 #endif
 
+#ifdef __MIC__
+#define BLOCK_VERSION
+#endif
+
+
+
 #ifdef BLOCK_VERSION
 
   template <typename TSCAL>
@@ -831,7 +837,12 @@ public:
 	
         HeapReset hr1(lh);
 
+#ifdef __MIC__
+	enum { ROUNDUP = (DIM_DMAT*BLOCK+7) & (-8) };
+#else
 	enum { ROUNDUP = (DIM_DMAT*BLOCK+3) & (-4) };
+#endif
+
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, double, ROUNDUP> bbmat (ndof * DIM, lh);
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, TSCAL, ROUNDUP> bdbmat (ndof * DIM, lh);
 
@@ -879,6 +890,7 @@ public:
 
             if (DMATOP::SYMMETRIC)
               {
+                /*
                 int j = 0;
                 for ( ; j <= rest-4; j += 4)
                   FastMat (FlatMatrixFixHeight<4*DIM_DMAT,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j*DIM_DMAT)), 
@@ -895,6 +907,57 @@ public:
                   FastMat (FlatMatrixFixHeight<DIM_DMAT,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j*DIM_DMAT)), 
                            FlatMatrixFixHeight<DIM_DMAT,double, ROUNDUP> (ndof*DIM, &bbmat(j*DIM_DMAT)), 
                            elmat);
+                */
+
+
+                int j = 0;
+                int rd = rest*DIM_DMAT;
+
+                for ( ; j <= rd-8; j += 8)
+                  FastMat (FlatMatrixFixHeight<8,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                           FlatMatrixFixHeight<8,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                           elmat);
+
+                switch (rd - j)
+                  {
+                  case 1:
+                    FastMat (FlatMatrixFixHeight<1,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<1,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 2:
+                    FastMat (FlatMatrixFixHeight<2,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<2,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 3:
+                    FastMat (FlatMatrixFixHeight<3,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<3,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 4:
+                    FastMat (FlatMatrixFixHeight<4,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<4,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 5:
+                    FastMat (FlatMatrixFixHeight<5,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<5,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 6:
+                    FastMat (FlatMatrixFixHeight<6,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<6,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  case 7:
+                    FastMat (FlatMatrixFixHeight<7,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
+                             FlatMatrixFixHeight<7,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
+                             elmat);
+                    break;
+                  default:
+                    ;
+                  }
               }
             else
               elmat += Trans (bbmat.Rows(0,rest*DIM_DMAT)) * bdbmat.Rows(0,rest*DIM_DMAT);
