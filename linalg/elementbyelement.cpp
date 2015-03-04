@@ -72,13 +72,13 @@ namespace ngla
 
   
   template <class SCAL>
-  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
+  ElementByElementMatrix<SCAL> :: ElementByElementMatrix (int h, int w, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols) 
   {
     clone.SetSize(ane);
     clone.Clear();
     symmetric=isymmetric;
     height = h; 
-    width = h; 
+    width = w; 
     ne = ane; 
     elmats.SetSize(ne);
     rowdnums.SetSize(ne);
