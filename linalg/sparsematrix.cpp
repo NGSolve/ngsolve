@@ -95,8 +95,7 @@ namespace ngla
   inline void MergeSortedArrays (FlatArray<int> in1, FlatArray<int> in2,
                                  Array<int> & out)
   {
-    out.SetAllocSize(in1.Size()+in2.Size());
-    out.SetSize0();
+    out.SetSize(in1.Size()+in2.Size());
 
     int i1 = 0, i2 = 0, io = 0;
     while (i1 < in1.Size() && i2 < in2.Size())
@@ -216,9 +215,8 @@ namespace ngla
                       rowdofs.Swap (rowdofs1);
                       auto row = colelements[elnr];
                       
-                      rowdofs.SetAllocSize(rowdofs1.Size()+row.Size());
-                      rowdofs.SetSize0();
-                      
+                      rowdofs.SetSize(rowdofs1.Size()+row.Size());
+
                       int i1 = 0, i2 = 0, i3 = 0;
                       while (i1 < rowdofs1.Size() && i2 < row.Size() && row[i2] <= i)
                         {
