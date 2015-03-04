@@ -31,7 +31,9 @@ namespace ngla
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int w, int ane, bool isymmetric=false);
-    ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
+    ElementByElementMatrix (int h, int w, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
+    ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols)
+      : ElementByElementMatrix(h, h, ane, isymmetric, adisjointrows, adisjointcols) {};
     ~ElementByElementMatrix(); 
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
