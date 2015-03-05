@@ -427,9 +427,7 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
 
     virtual BaseSparseMatrix * Restrict (const SparseMatrixTM<double> & prol,
-					 BaseSparseMatrix* cmat = NULL ) const
-    { return 0; }
-
+					 BaseSparseMatrix* cmat = NULL ) const;
 
   
     ///
