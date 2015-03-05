@@ -1094,6 +1094,8 @@ namespace ngla
   }
 
 
+
+
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   CreateMatrix () const
@@ -1116,6 +1118,142 @@ namespace ngla
   CreateVector () const
   {
     return make_shared<VVector<TVY>> (this->size);
+  }
+
+
+  template<class TM, class TV_ROW, class TV_COL>
+  BaseSparseMatrix * 
+  SparseMatrix<TM,TV_ROW,TV_COL> :: Restrict (const SparseMatrixTM<double> & prol,
+                                  BaseSparseMatrix* acmat ) const
+  {
+    static Timer t ("sparsematrix - restrict");
+    static Timer tbuild ("sparsematrix - restrict, build matrix");
+    static Timer tcomp ("sparsematrix - restrict, compute matrix");
+    RegionTimer reg(t);
+    
+    int n = this->Height();
+
+    SparseMatrixTM<TM>* cmat = 
+      dynamic_cast< SparseMatrixTM<TM>* > ( acmat );
+ 
+    // if no coarse matrix, build up matrix-graph!
+    if ( !cmat )
+      {
+        RegionTimer reg(tbuild);
+
+	Array<int> marks(n);
+	Array<INT<2> > e2v;
+	for (int i = 0; i < n; i++)
+	  for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
+	    {
+	      int col = this->GetRowIndices(i)[j];
+	      FlatArray<int> prol_rowind = prol.GetRowIndices(i);
+	      FlatArray<int> prol_colind = prol.GetRowIndices(col);
+
+	      for (int k = 0; k < prol_rowind.Size(); k++)
+		for (int l = 0; l < prol_colind.Size(); l++)
+		  {
+		    int kk = prol_rowind[k];
+		    int ll = prol_colind[l];
+		    
+		    // if (kk >= ll) swap (kk,ll);
+		    e2v.Append (INT<2> (kk,ll));
+		  }
+	    }
+
+	int nc = 0;
+	for (int i = 0; i < e2v.Size(); i++)
+	  nc = max2 (nc, e2v[i][1]);
+	nc++;
+
+	// *testout << "e2v = " << endl << e2v << endl;
+        
+        // count all entries in row with multiplicity
+	Array<int> cnt(nc);
+	cnt = 0;
+	for (int i = 0; i < e2v.Size(); i++)
+	  cnt[e2v[i][1]]++;
+
+	Table<int> v2e(cnt);
+	cnt = 0;
+	for (int i = 0; i < e2v.Size(); i++)
+	  {
+	    int v1 = e2v[i][1];
+	    v2e[v1][cnt[v1]++] = i;
+	  }
+	
+	cnt = 0;
+	marks = -1;
+
+        // count all entries in row withOUT multiplicity
+	for (int i = 0; i < nc; i++)
+	  for (int j = 0; j < v2e[i].Size(); j++)
+	    {
+	      int jj = v2e[i][j];
+	      int v0 = e2v[jj][0];
+	      if (marks[v0] != i) 
+		{
+		  cnt[i]++;
+		  marks[v0] = i;
+		}
+	    }
+
+	cmat = new SparseMatrix<TM,TV_ROW,TV_COL> (cnt);
+
+	marks = -1;
+	for (int i = 0; i < nc; i++)
+	  for (int j = 0; j < v2e[i].Size(); j++)
+	    {
+	      int jj = v2e[i][j];
+	      int v0 = e2v[jj][0];
+	      if (marks[v0] != i) 
+		{
+		  marks[v0] = i;
+		  cmat -> CreatePosition (i, v0);
+		}
+	    }
+      }
+
+    cmat->AsVector() = 0.0;
+    RegionTimer reg2(tcomp);
+	  
+    for (int i = 0; i < n; i++)
+      {
+        FlatArray<int> mat_ri = this->GetRowIndices(i);
+        FlatVector<TM> mat_rval = this->GetRowValues(i);
+
+        for (int j = 0; j < mat_ri.Size(); j++)
+          {
+            int col = mat_ri[j];
+            TM mat_val = mat_rval[j]; 
+
+            FlatArray<int> prol_ri_i = prol.GetRowIndices(i);
+            FlatArray<int> prol_ri_col = prol.GetRowIndices(col);
+            FlatVector<double> prol_rval_i = prol.GetRowValues(i);
+            FlatVector<double> prol_rval_col = prol.GetRowValues(col);
+
+            for (int k = 0; k < prol_ri_i.Size(); k++)
+              for (int l = 0; l < prol_ri_col.Size(); l++)
+                {
+                  int kk = prol_ri_i[k];
+                  int ll = prol_ri_col[l];
+                  
+                  if ( /*kk>=ll &&*/ kk < cmat->Height() )
+                    {
+                      (*cmat)(kk,ll) += 
+                        prol_rval_i[k] * prol_rval_col[l] * mat_val; 
+                    }
+                  
+                  // if (ll >= kk && i != col && ll < cmat->Height() )
+                  //   {
+                  //     (*cmat)(ll,kk) += 
+                  //       prol_rval_col[l] * prol_rval_i[k] * Trans(mat_val); 
+                  //   }
+                  
+                }
+          }
+      }
+    return cmat;
   }
 
 

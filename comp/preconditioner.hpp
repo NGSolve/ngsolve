@@ -74,8 +74,8 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
-    virtual void InitLevel () { ; }
-    virtual void FinalizeLevel () { ; }
+    virtual void InitLevel (const BitArray * freedofs = NULL) { ; }
+    virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
 				   const FlatMatrix<double> & elmat,
 				   ElementId ei, 
@@ -105,6 +105,9 @@ namespace ngcomp
     {
       cout << "MemoryUsage not implemented for preconditioner " << ClassName() << endl;
     }
+
+    virtual int VHeight() const { return GetMatrix().VHeight();}
+    virtual int VWidth() const { return GetMatrix().VWidth();}
 
     void Test () const;
     void Timing () const;

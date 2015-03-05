@@ -879,7 +879,7 @@ namespace ngcomp
             int gcnt = 0; //global count (for all cases)
 
             for (auto pre : preconditioners)
-              pre -> InitLevel();
+              pre -> InitLevel(fespace->GetFreeDofs());
 
 	    mattimer1a.Stop();
 
@@ -1776,7 +1776,7 @@ namespace ngcomp
               }
 
             for (auto pre : preconditioners)
-              pre -> FinalizeLevel();
+              pre -> FinalizeLevel(&GetMatrix());
 
             if (print)
               (*testout) << "mat = " << endl << GetMatrix() << endl;
@@ -2147,7 +2147,7 @@ namespace ngcomp
       
 
         for (int j = 0; j < preconditioners.Size(); j++)
-          preconditioners[j] -> InitLevel();
+          preconditioners[j] -> InitLevel(fespace->GetFreeDofs());
 
         
         if (hasinner)
@@ -2578,7 +2578,7 @@ namespace ngcomp
   
 
         for (int j = 0; j < preconditioners.Size(); j++)
-          preconditioners[j] -> FinalizeLevel();
+          preconditioners[j] -> FinalizeLevel(&GetMatrix());
       }
     catch (Exception & e)
       {
