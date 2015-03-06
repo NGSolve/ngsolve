@@ -91,7 +91,8 @@ namespace ngla
     ///
     BaseVector () : paralleldofs (NULL) { ; }
 
-    OMP_STATUS omp_status = OMP_STATUS::CREATE_IF_NOT_PARALLEL;
+    // OMP_STATUS omp_status = OMP_STATUS::CREATE_IF_NOT_PARALLEL;
+    OMP_STATUS omp_status = OMP_STATUS::USE;
 
   public:
     ///
