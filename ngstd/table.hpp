@@ -277,12 +277,13 @@ template <class T>
           int ci;
 #ifdef WIN32
 #pragma omp critical
-#else
-#pragma omp atomic capture
-#endif
       {
 	      ci = cnt[blocknr]++;
       }
+#else
+#pragma omp atomic capture
+	      ci = cnt[blocknr]++;
+#endif
           (*table)[blocknr][ci] = data;
 	  break;
 	}
