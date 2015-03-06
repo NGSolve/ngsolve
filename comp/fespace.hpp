@@ -590,7 +590,6 @@ namespace ngcomp
 
 
 
-
   template <typename TFUNC>
   inline void IterateElements (const FESpace & fes, 
                                VorB vb, 
@@ -619,6 +618,53 @@ namespace ngcomp
       // cout << "lh, used size = " << lh.UsedSize() << endl;
     }
   }
+
+
+
+  /*
+  template <typename TFUNC>
+  inline void IterateElements (const FESpace & fes, 
+                               VorB vb, 
+                               LocalHeap & clh, 
+                               const TFUNC & func)
+  {
+    
+#pragma omp parallel 
+    {
+
+#pragma omp single
+      {
+        const Table<int> & element_coloring = fes.ElementColoring(vb);
+
+        for (FlatArray<int> els_of_col : element_coloring)
+          {
+
+            for (int i = 0; i < els_of_col.Size(); i++)
+              {
+#pragma omp task
+                {
+                  LocalHeap lh = clh.Split();
+                  Array<int> temp_dnums;
+                  FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
+                  func (el, lh);
+                }
+              }
+
+#pragma omp taskwait
+          }
+      }
+
+    }
+
+  }
+  */
+
+
+
+
+
+
+
 
 
 

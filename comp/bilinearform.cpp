@@ -46,6 +46,57 @@ namespace ngcomp
   }
 
 
+
+
+
+
+  template <typename TFUNC>
+  inline void IterateElementsTasks (const FESpace & fes, 
+                                    VorB vb, 
+                                    LocalHeap & clh, 
+                                    const TFUNC & func)
+  {
+    
+#pragma omp parallel 
+    {
+
+#pragma omp single
+      {
+        const Table<int> & element_coloring = fes.ElementColoring(vb);
+
+        for (FlatArray<int> els_of_col : element_coloring)
+          {
+
+            for (int i = 0; i < els_of_col.Size(); i++)
+              {
+#pragma omp task
+                {
+                  LocalHeap lh = clh.Split();
+                  // Array<int> temp_dnums;
+                  // FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
+                  Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
+                  func (el, lh);
+                }
+              }
+
+#pragma omp taskwait
+          }
+      }
+
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
   BilinearForm :: 
   BilinearForm (shared_ptr<FESpace> afespace,
                 const string & aname,
@@ -769,8 +820,8 @@ namespace ngcomp
                   }
 
                 
-                IterateElements 
-                  (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+                IterateElements   // Tasks
+                  (*fespace, VOL, clh,  [&] (Ngs_Element el, LocalHeap & lh)
                    {
                      if (elmat_ev) 
                        *testout << " Assemble Element " << el.Nr() << endl;  
@@ -781,7 +832,9 @@ namespace ngcomp
                      
                      const FiniteElement & fel = fespace->GetFE (el, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                     FlatArray<int> dnums = el.GetDofs();
+                     // FlatArray<int> dnums = el.GetDofs();
+                     Array<int> dnums (fel.GetNDof(), lh);
+                     fespace->GetDofNrs (el, dnums);
 
                      if (fel.GetNDof() != dnums.Size())
                        {
