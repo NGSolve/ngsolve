@@ -1322,7 +1322,7 @@ namespace ngcomp
         bool isdefined = false;
         for (int i = 0; i < npts; i += 100)
           {
-            int npi = min (100, npts-i);
+            int npi = min2 (100, npts-i);
             isdefined = GetMultiValue (elnr, facetnr, npi, 
                                        xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
                                        values+i*svalues, svalues);
@@ -1641,7 +1641,7 @@ namespace ngcomp
         bool isdefined = false;
         for (int i = 0; i < npts; i += 100)
           {
-            int npi = min (100, npts-i);
+            int npi = min2 (100, npts-i);
             isdefined = GetMultiSurfValue (elnr, facetnr, npi, 
                                            xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
                                            values+i*svalues, svalues);
