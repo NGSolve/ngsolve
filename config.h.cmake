@@ -1,0 +1,2 @@
+#cmakedefine HAVE_DLFCN_H 1
+#define PACKAGE_VERSION "${PACKAGE_VERSION}"

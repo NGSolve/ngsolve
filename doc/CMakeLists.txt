@@ -1,0 +1,1 @@
+INSTALL(FILES ng4.pdf DESTINATION doc)
