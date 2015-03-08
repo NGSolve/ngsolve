@@ -592,6 +592,10 @@ namespace ngla
   };
 
 
+  template <>
+  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const;
+
+
 #if not defined(FILE_BASEVECTOR_CPP)
   extern template class S_BaseVector<double>;
   extern template class S_BaseVector<Complex>;
@@ -931,7 +935,6 @@ namespace ngla
     // return dynamic_cast<const S_BaseVector<double>&>(v1).InnerProduct(v2); 
     return v1.InnerProductD(v2); 
   }
-
 
   ///
   template <class IPTYPE>
