@@ -49,44 +49,115 @@ namespace ngcomp
 
 
 
-
   template <typename TFUNC>
   inline void IterateElementsTasks (const FESpace & fes, 
                                     VorB vb, 
                                     LocalHeap & clh, 
                                     const TFUNC & func)
   {
-    
-#pragma omp parallel 
+#pragma omp parallel
     {
-
+	
 #pragma omp single
       {
-        const Table<int> & element_coloring = fes.ElementColoring(vb);
-
-        for (FlatArray<int> els_of_col : element_coloring)
-          {
-
-            for (int i = 0; i < els_of_col.Size(); i++)
-              {
+	const Table<int> & element_coloring = fes.ElementColoring(vb);
+	
+	for (FlatArray<int> els_of_col : element_coloring)
+	  {
+	    
+	    /*
+	      // slow on multi-node machine, too many threads ?
+	    for (int i = 0; i < els_of_col.Size(); i++)
+	      {
 #pragma omp task
-                {
-                  LocalHeap lh = clh.Split();
-                  // Array<int> temp_dnums;
-                  // FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
-                  Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
-                  func (el, lh);
-                }
-              }
+		{
+		  LocalHeap lh = clh.Split();
+		  Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
+		  func (el, lh);
+		}
+	      }
+	    */
+
+
+	    int nt = omp_get_num_threads();
+	    int n = els_of_col.Size();
+	    for (int i = 0; i < nt; i++)
+	      {
+		IntRange r(i*n/nt, (i+1)*n/nt);
+		
+#pragma omp task
+		{
+		  LocalHeap lh = clh.Split();
+		  Array<int> temp_dnums;
+		  for (int i : r)
+		    {
+		      // Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
+		      FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
+		      func (el, lh);
+		    }
+		}
+	      }
+
 
 #pragma omp taskwait
-          }
+	  }
       }
-
     }
-
   }
 
+
+
+  /*
+
+  // hierarchical task distribution on 2 nodes:
+  // (does not work well, either)
+
+  template <typename TFUNC>
+  inline void IterateElementsTasks (const FESpace & fes, 
+                                    VorB vb, 
+                                    LocalHeap & cclh, 
+                                    const TFUNC & func)
+  {
+
+    int nodenr;
+    
+    int max_thds = omp_get_max_threads();
+    cout << "max_thds = " << max_thds << endl;
+#pragma omp parallel num_threads(2) proc_bind(spread)
+    {
+      LocalHeap clh = cclh.Split();
+      int nodenr = omp_get_thread_num();
+
+#pragma omp parallel num_threads(max_thds/2) proc_bind(close)
+      {
+	
+#pragma omp single
+	{
+	  cout << "running on node " << nodenr << endl;
+
+	  const Table<int> & element_coloring = fes.ElementColoring(vb);
+	  
+	  for (FlatArray<int> els_of_col : element_coloring)
+	    {
+
+	      for (int i = 0; i < els_of_col.Size(); i++)
+		if (i % 2 == nodenr)
+		  {
+#pragma omp task
+		    {
+		      LocalHeap lh = clh.Split();
+		      Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
+		      func (el, lh);
+		    }
+		  }
+	      
+#pragma omp taskwait
+	    }
+	}
+      }
+    }
+  }
+  */
 
 
 
@@ -819,9 +890,9 @@ namespace ngcomp
                       innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
                   }
 
-                
-                IterateElements   // Tasks
-                  (*fespace, VOL, clh,  [&] (Ngs_Element el, LocalHeap & lh)
+		IterateElementsTasks
+		  // IterateElements
+                  (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                    {
                      if (elmat_ev) 
                        *testout << " Assemble Element " << el.Nr() << endl;  
@@ -832,9 +903,9 @@ namespace ngcomp
                      
                      const FiniteElement & fel = fespace->GetFE (el, lh);
                      const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-                     // FlatArray<int> dnums = el.GetDofs();
-                     Array<int> dnums (fel.GetNDof(), lh);
-                     fespace->GetDofNrs (el, dnums);
+		     FlatArray<int> dnums = el.GetDofs();
+                     // Array<int> dnums (fel.GetNDof(), lh);
+                     // fespace->GetDofNrs (el, dnums);
 
                      if (fel.GetNDof() != dnums.Size())
                        {
@@ -1093,7 +1164,7 @@ namespace ngcomp
                      if (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
 
-                     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
+		     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
                           
                      for (auto pre : preconditioners)
                        pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
