@@ -91,6 +91,8 @@ namespace ngcomp
 		  Array<int> temp_dnums;
 		  for (int i : r)
 		    {
+                      HeapReset hr(lh);
+
 		      // Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
 		      FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
 		      func (el, lh);
