@@ -675,6 +675,54 @@ namespace ngla
     // dynamic_cast<const S_BaseVector&>(v2).FVScal());
   }
 
+
+  double InnerProductRec (FlatVector<> a, FlatVector<> b)
+  {
+    int n = a.Size();
+    if (n < 4096)
+      {
+	return InnerProduct (a, b);
+      }
+
+    int n1 = n/2;
+    double sum1, sum2;
+#pragma omp task shared(sum1) 
+    {
+      sum1 = InnerProductRec (a.Range(0,n1), b.Range(0,n1));
+    }
+    sum2 = InnerProductRec (a.Range(n1,n), b.Range(n1,n));
+
+#pragma omp taskwait
+    return sum1+sum2;
+  }
+
+
+
+  template <>
+  double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const
+  {
+    if (omp_status == OMP_STATUS::TASKS)
+      {
+        static Timer t("S_BaseVector<double>::InnerProduct (TASKS)");
+        RegionTimer reg(t);
+        
+        FlatVector<> me = FVDouble();
+        FlatVector<> you = FVDouble();
+        return InnerProductRec (me, you);
+      }
+
+    
+    static Timer t("S_BaseVector<double>::InnerProduct");
+    RegionTimer reg(t);
+    return ngbla::InnerProduct (FVScal(), v2.FV<double>());
+  }
+
+
+
+
+
+
+
   //template <> 
   /*
   Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
