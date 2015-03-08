@@ -71,7 +71,7 @@ namespace ngla
 
   enum PARALLEL_STATUS { DISTRIBUTED, CUMULATED, NOT_PARALLEL };
 
-  enum class OMP_STATUS { NONE, USE, CREATE, CREATE_IF_NOT_PARALLEL };
+  enum class OMP_STATUS { NONE, USE, CREATE, CREATE_IF_NOT_PARALLEL, TASKS };
 
 
 
@@ -92,6 +92,7 @@ namespace ngla
     BaseVector () : paralleldofs (NULL) { ; }
 
     // OMP_STATUS omp_status = OMP_STATUS::CREATE_IF_NOT_PARALLEL;
+    // OMP_STATUS omp_status = OMP_STATUS::TASKS;
     OMP_STATUS omp_status = OMP_STATUS::USE;
 
   public:
