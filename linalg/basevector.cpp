@@ -71,6 +71,7 @@ namespace ngla
         break;
 
       case OMP_STATUS::USE:
+      case OMP_STATUS::TASKS:
 #pragma omp for
         for (int i = 0; i < me.Size(); i++)
           me(i) *= scal;
@@ -138,6 +139,7 @@ namespace ngla
         break;
 
       case OMP_STATUS::USE:
+      case OMP_STATUS::TASKS:
 #pragma omp for
         for (int i = 0; i < me.Size(); i++)
           me(i) = scal * you(i);
@@ -172,8 +174,63 @@ namespace ngla
     return *this;
   }
     
+
+
+  inline void VectorAddRec (FlatVector<> a, FlatVector<> b, double scal)
+  {
+    int n = a.Size();
+    if (n <= 32000)
+      {
+	a += scal * b;
+	return;
+      }
+
+    int n1 = n/2;
+#pragma omp task
+    {
+      VectorAddRec (a.Range(0,n1), b.Range(0,n1), scal);
+    }
+#pragma omp task
+    {
+      VectorAddRec (a.Range(n1,n), b.Range(n1,n), scal);
+    }
+#pragma omp taskwait
+  }
+
+
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
+    if (omp_status == OMP_STATUS::TASKS)
+      {
+	// #pragma omp single
+	{
+	  static Timer t("BaseVector::Add (TASKS)");
+	  RegionTimer reg(t);
+	  
+	  FlatVector<double> me = FVDouble();
+	  FlatVector<double> you = v.FVDouble();
+	  
+	  VectorAddRec (me, you, scal);
+	  /*
+	  const int bs = 1000;
+	  for (int i = 0; i < me.Size(); i+=bs)
+	    {
+	      IntRange r(i, min2(i+bs, me.Size()));
+	      FlatVector<> me_r = me.Range(r);
+	      FlatVector<> you_r = you.Range(r);
+#pragma omp task
+	      {
+		me_r += scal * you_r;
+	      }
+	    }
+#pragma omp taskwait
+	  */
+	}
+	return *this;
+      }
+
+
+
     static Timer t("BaseVector::Add");
     RegionTimer reg(t);
 
@@ -192,6 +249,7 @@ namespace ngla
         break;
 
       case OMP_STATUS::USE:
+      case OMP_STATUS::TASKS:
 #pragma omp for
         for (int i = 0; i < me.Size(); i++)
           me(i) += scal * you(i);
