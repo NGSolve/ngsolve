@@ -190,11 +190,11 @@ namespace ngla
     {
       VectorAddRec (a.Range(0,n1), b.Range(0,n1), scal);
     }
-#pragma omp task
+    //#pragma omp task
     {
       VectorAddRec (a.Range(n1,n), b.Range(n1,n), scal);
     }
-#pragma omp taskwait
+    //#pragma omp taskwait
   }
 
 
@@ -211,6 +211,7 @@ namespace ngla
 	  FlatVector<double> you = v.FVDouble();
 	  
 	  VectorAddRec (me, you, scal);
+#pragma omp taskwait
 	  /*
 	  const int bs = 1000;
 	  for (int i = 0; i < me.Size(); i+=bs)
