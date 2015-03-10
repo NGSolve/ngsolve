@@ -13,7 +13,7 @@ cuda_linalg.cpp python_linalg.cpp
 libngla_la_LIBADD = $(top_builddir)/basiclinalg/libngbla.la \
   $(top_builddir)/ngstd/libngstd.la \
   $(top_builddir)/parallel/libparallel.la \
-  $(LAPACK_LIBS)
+  $(LAPACK_LIBS) 
 #  -L$(libdir) -lnglib -linterface
 
 

@@ -8,7 +8,7 @@ flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      \
 profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    \
 parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      \
 polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  \
-mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp
+mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskhandler.hpp
 
 
 libngstd_la_SOURCES = exception.cpp table.cpp bitarray.cpp flags.cpp \

@@ -12,9 +12,19 @@
 
 #include <la.hpp>
 
+#include "../ngstd/taskhandler.hpp"
 
 namespace ngla
 {
+
+  
+  TaskHandler * task_handler = nullptr;
+  void SetTaskHandler (TaskHandler * handler)
+  {
+    task_handler = handler;
+  }
+
+
 
 
   /*
@@ -109,6 +119,23 @@ namespace ngla
     static Timer t("BaseVector::SetScalar");
     RegionTimer reg(t);
 
+    if (task_handler)
+      {
+	FlatVector<> fv = FVDouble();
+
+	task_handler -> CreateTask 
+	  ( [fv,scal] (int thd)
+	    {
+	      int n = fv.Size();
+	      int num_thds = omp_get_num_threads();
+	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+	      fv.Range(r) = scal;
+	    } );
+
+	return *this; 
+      }
+
+
     FVDouble() = scal;
     return *this;
   }
@@ -200,36 +227,28 @@ namespace ngla
 
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
-    if (omp_status == OMP_STATUS::TASKS)
+
+
+    if (task_handler)
       {
-	// #pragma omp single
-	{
-	  static Timer t("BaseVector::Add (TASKS)");
-	  RegionTimer reg(t);
-	  
-	  FlatVector<double> me = FVDouble();
-	  FlatVector<double> you = v.FVDouble();
-	  
-	  VectorAddRec (me, you, scal);
-#pragma omp taskwait
-	  /*
-	  const int bs = 1000;
-	  for (int i = 0; i < me.Size(); i+=bs)
+	static Timer t("BaseVector::Add (taskhandler)");
+	RegionTimer reg(t);
+	
+	FlatVector<double> me = FVDouble();
+	FlatVector<double> you = v.FVDouble();
+	
+	task_handler -> CreateTask 
+	  ( [me,you] (int thd)
 	    {
-	      IntRange r(i, min2(i+bs, me.Size()));
-	      FlatVector<> me_r = me.Range(r);
-	      FlatVector<> you_r = you.Range(r);
-#pragma omp task
-	      {
-		me_r += scal * you_r;
-	      }
-	    }
-#pragma omp taskwait
-	  */
-	}
+	      int n = me.Size();
+	      int num_thds = omp_get_num_threads();
+	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+	      me.Range(r) += you.Range(r);
+	    } );
+
 	return *this;
       }
-
+    
 
 
     static Timer t("BaseVector::Add");
