@@ -187,7 +187,7 @@ namespace ngfem
     Evaluate (ip, result);
     return result(0);
     /*
-      int numarg = max(3, depends_on.Size());
+      int numarg = max2(3, depends_on.Size());
       VectorMem<10> args(numarg);
       args.Range(0,DIM) = static_cast<const DimMappedIntegrationPoint<DIM>&>(ip).GetPoint();
     

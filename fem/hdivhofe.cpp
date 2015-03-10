@@ -205,7 +205,7 @@ namespace ngfem
     int ii = 1;
 
     INT<2> p = order_inner;
-    // int pp = max(p[0],p[1]); 
+    // int pp = max2(p[0],p[1]); 
     
     ArrayMem<AutoDiff<2>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
     AutoDiff<2> polprod;
@@ -893,7 +893,7 @@ namespace ngfem
     // cell-based shapes 
     int p = order_inner[0];
     int pc = order_inner[0]; // should be order_inner_curl  
-    int pp = max(p,pc); 
+    int pp = max2(p,pc); 
     if ( pp >= 2 )
       {
         T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
@@ -1114,7 +1114,7 @@ namespace ngfem
 	AutoDiff<1> zeta = muz[f]-muz[f2];
 
 
-        int pp = max(p[0],p[1]); 
+        int pp = max2(p[0],p[1]); 
 	T_ORTHOPOL::CalcTrigExt(pp+1,xi,eta,adpolxy1);
 	T_ORTHOPOL::Calc(pp+1,zeta,adpolz);
 
@@ -1579,16 +1579,16 @@ namespace ngfem
     //3*p*(p+1)*(p+1);
     ndof += ndof_inner;
 
-    order = 0; // max(order_face_normal,order_inner);
+    order = 0; // max2(order_face_normal,order_inner);
     for (int i = 0; i < 6; i++)
       {
-        int pp = max(order_face[i][0],order_face[i][1]);
+        int pp = max2(order_face[i][0],order_face[i][1]);
 	if (pp > order)
 	  order = pp;
 
       }
-    int pp = max(order_inner[0],max(order_inner[1],order_inner[2]));
-    order=max(pp,order); 
+    int pp = max2(order_inner[0],max2(order_inner[1],order_inner[2]));
+    order=max2(pp,order); 
 
     if (order == 0) order = 1;
     order++; // integration order

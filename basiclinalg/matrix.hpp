@@ -458,7 +458,7 @@ namespace ngbla
       int h = llist.size();
       int w = 0;
       for (auto row : llist)
-        w = max(w, int(row.size()));
+        w = max2(w, int(row.size()));
 
       SetSize (h, w);
       (*this) = 0.0;
