@@ -48,7 +48,7 @@ namespace ngstd
   {
     PolOrder<DIM> result;
     for (int i = 0; i < DIM; i++) 
-      result(i) = max(a(i), b(i));
+      result(i) = max2(a(i), b(i));
     return result;
   }
 
