@@ -125,6 +125,12 @@ AC_ARG_ENABLE([parallel],
         [AC_HELP_STRING([--enable-parallel],[enable mpi parallelization])],
         [CXXFLAGS="$CXXFLAGS -DPARALLEL"]
         )       
+AC_ARG_ENABLE([numa],
+        [AC_HELP_STRING([--enable-numa],[enables numa multi-node support])],
+        [CXXFLAGS="$CXXFLAGS -DUSE_NUMA"]
+	[AC_SEARCH_LIBS([numa_avail], [numa])]
+	)
+
 
 AC_ARG_ENABLE([vt],
         [AC_HELP_STRING([--enable-vt],[enable vampirtrace])],
