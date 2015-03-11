@@ -128,7 +128,7 @@ AC_ARG_ENABLE([parallel],
 AC_ARG_ENABLE([numa],
         [AC_HELP_STRING([--enable-numa],[enables numa multi-node support])],
         [CXXFLAGS="$CXXFLAGS -DUSE_NUMA"]
-	[AC_SEARCH_LIBS([numa_avail], [numa])]
+	[LIBS+="-lnuma"]
 	)
 
 
