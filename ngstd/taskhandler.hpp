@@ -13,6 +13,7 @@
 #include <sched.h>
 #endif
 
+#include <mutex>
 
 namespace ngstd
 {
@@ -21,13 +22,17 @@ namespace ngstd
   {
     
     function<void(int)> func;
-    volatile int jobnr = 0;
 
-    volatile atomic<int> start_cnt[8]; // max nodes
-    volatile atomic<int> complete_cnt;
-    volatile int done = false;
-    volatile atomic<int> inside;
+    atomic<int> jobnr;
+
+    atomic<int> start_cnt[8]; // max nodes
+    atomic<int> complete_cnt;
+    atomic<int> done;
+    atomic<int> inside;
+
     int num_nodes;
+    
+    mutex mtx;
     
   public:
     
@@ -41,55 +46,46 @@ namespace ngstd
 #endif
 
       inside = 0;
-      
+      jobnr = 0;
+      done = 0;
     }
-
 
     void CreateTask (function<void(int)> afunc)
     {
       func = afunc;
       
-      for (int j = 0; j < num_nodes; j++)
-	start_cnt[j] = 0;
-      complete_cnt = 0;
+      // #pragma omp critical(newjob)
+      {
+	unique_lock<mutex> guard(mtx);
+	while (inside) ; 
+	for (int j = 0; j < num_nodes; j++)
+	  start_cnt[j] = 0;
+	complete_cnt = 0;
 
-      jobnr++;
+	jobnr++;
+      }
       
       int thd = omp_get_thread_num();
       int thds = omp_get_num_threads();
-
+      
       int tasks_per_node = thds / num_nodes;
       int mynode = num_nodes * thd/thds;
-
+      
 #ifdef USE_NUMA
       numa_run_on_node (mynode);
 #endif
-
-      int mytask;
-      // #pragma omp atomic capture
-      mytask = start_cnt[mynode]++;
       
+      int mytask = start_cnt[mynode]++;
       if (mytask < tasks_per_node)
 	{
 	  func(mytask + mynode*tasks_per_node);
-	  // #pragma omp atomic
 	  complete_cnt++;
 	}
       
-      // cout << "A" << flush;
       while (complete_cnt < thds)
-	{
-	  // cout << "comp cnt = " << complete_cnt << endl;
-	  // cout << "start cnt = " << start_cnt[0] << " " << start_cnt[1] << endl;
-	}
-      // cout << "after: start cnt = " << start_cnt[0] << " " << start_cnt[1] << endl;
-      // cout << "B" << flush;
-      while (inside) ; 
-      // cout << "C" << flush;
-
+	;
     }
-
-
+    
     void Done()
     {
       done = true;
@@ -99,51 +95,54 @@ namespace ngstd
     {
       int thd = omp_get_thread_num();
       int thds = omp_get_num_threads();
-
+      
       int tasks_per_node = thds / num_nodes;
       int mynode = num_nodes * thd/thds;
-
+      
 #ifdef USE_NUMA
       numa_run_on_node (mynode);
 #endif
-
+      
       int jobdone = 0;
       
       while (!done)
 	{
-	  
-	  int curjob;
-	  curjob = jobnr;
-
-	  if (curjob > jobdone)
+	  if (jobnr == jobdone)
 	    {
-	      inside++;
+	      sched_yield();
+	      continue;
+	    }
+	  
+	  bool dojob = false;
+	  
+	  // #pragma omp critical(newjob)
+	  {
+	    unique_lock<mutex> guard(mtx);
+	    if (jobnr > jobdone)
+	      {
+		inside++;
+		dojob = true;
+	      }
+	  }
 
-	      if (curjob == jobnr) // still the same job
-		
-		while (1)
-		  {
-		    int mytask;
-		  // #pragma omp atomic capture
-		      mytask = start_cnt[mynode]++;
-		      
-		      if (mytask >= tasks_per_node) break;
-		      
-		      func(mytask + mynode*tasks_per_node);
-		      
-		      // #pragma omp atomic
-			complete_cnt++;
-		  }
+	  if (dojob)
+	    {
+	      while (1)
+		{
+		  int mytask = start_cnt[mynode]++;
+		  if (mytask >= tasks_per_node) break;
+		  
+		  func(mytask + mynode*tasks_per_node);
+		  
+		  complete_cnt++;
+		}
 	      
 	      jobdone = jobnr;
-
 	      inside--;
 	    }
-
-	  // sched_yield();
+	  
 	}
     }
-    
   };
   
 }
