@@ -13,8 +13,12 @@
 #include <la.hpp>
 // #include <bitonic.hpp>
 
+#include "../ngstd/taskhandler.hpp"
+
+
 namespace ngla
 {
+  extern TaskHandler * task_handler;
 
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
   {
@@ -807,6 +811,29 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (task_handler)
+      {
+        static Timer t("SparseMatrix::MultAdd (taskhandler)");
+	RegionTimer reg(t);
+	t.AddFlops (this->NZE());
+	FlatVector<TVX> fx = x.FV<TVX>(); 
+	FlatVector<TVY> fy = y.FV<TVY>(); 
+	
+	task_handler -> CreateTask 
+	  ( [fx,fy,s,this] (int thd)
+	    {
+	      // IntRange r = this->OmpRange();
+	      IntRange r(balancing[thd], balancing[thd+1]);
+
+	      for (int i : r)
+		fy(i) += s * RowTimesVector (i, fx);
+	    } );
+
+	return;
+      }
+    
+
+
     if (omp_get_num_threads() < balancing.Size()-1)
       {
         static Timer timer("SparseMatrix::MultAdd");

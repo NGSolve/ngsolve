@@ -69,10 +69,28 @@ namespace ngla
 
     static Timer t("BaseVector::Scale");
     RegionTimer reg(t);
-
     // FVDouble() *= scal;
 
     FlatVector<double> me = FVDouble();
+
+    t.AddFlops (me.Size());
+
+    if (task_handler)
+      {
+	task_handler -> CreateTask 
+	  ( [me,scal] (int thd)
+	    {
+	      int n = me.Size();
+	      int num_thds = omp_get_num_threads();
+	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+	      me.Range(r) *= scal;
+	    } );
+
+	return *this; 
+      }
+
+
+
 
     switch (omp_status)
       {
@@ -157,6 +175,26 @@ namespace ngla
 
     FlatVector<double> me = FVDouble();
     FlatVector<double> you = v.FVDouble();
+
+
+    if (task_handler)
+      {
+	static Timer t("BaseVector::Set (taskhandler)");
+	RegionTimer reg(t);
+	
+	task_handler -> CreateTask 
+	  ( [me,you,scal] (int thd)
+	    {
+	      int n = me.Size();
+	      int num_thds = omp_get_num_threads();
+	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+	      me.Range(r) = scal*you.Range(r);
+	    } );
+
+	return *this;
+      }
+    
+
     
 
     switch (omp_status)
@@ -238,12 +276,12 @@ namespace ngla
 	FlatVector<double> you = v.FVDouble();
 	
 	task_handler -> CreateTask 
-	  ( [me,you] (int thd)
+	  ( [me,you,scal] (int thd)
 	    {
 	      int n = me.Size();
 	      int num_thds = omp_get_num_threads();
 	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
-	      me.Range(r) += you.Range(r);
+	      me.Range(r) += scal*you.Range(r);
 	    } );
 
 	return *this;
@@ -265,7 +303,7 @@ namespace ngla
     switch (omp_status)
       {
       case OMP_STATUS::NONE:
-        me = scal * you;
+        me += scal * you;
         break;
 
       case OMP_STATUS::USE:
@@ -720,6 +758,32 @@ namespace ngla
   template <>
   double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const
   {
+    if (task_handler)
+      {
+	static Timer t("BaseVector::InnerProduct (taskhandler)");
+	RegionTimer reg(t);
+	FlatVector<double> me = FVDouble();
+	FlatVector<double> you = v2.FVDouble();
+	
+	t.AddFlops (me.Size());
+	double scal = 0;
+
+	task_handler -> CreateTask 
+	  ( [me,you,&scal] (int thd)
+	    {
+	      int n = me.Size();
+	      int num_thds = omp_get_num_threads();
+	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+
+	      double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
+#pragma omp atomic
+	      scal += myscal;
+	    } );
+	
+	return scal;
+      }
+
+
     if (omp_status == OMP_STATUS::TASKS)
       {
         static Timer t("S_BaseVector<double>::InnerProduct (TASKS)");
