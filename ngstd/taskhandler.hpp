@@ -28,7 +28,7 @@ namespace ngstd
     atomic<int> start_cnt[8]; // max nodes
     atomic<int> complete_cnt;
     atomic<int> done;
-    atomic<int> inside;
+    atomic<int> participate;
 
     int num_nodes;
     
@@ -45,7 +45,7 @@ namespace ngstd
       num_nodes = 1;
 #endif
 
-      inside = 0;
+      participate = 0;
       jobnr = 0;
       done = 0;
     }
@@ -54,17 +54,23 @@ namespace ngstd
     {
       func = afunc;
       
-      // #pragma omp critical(newjob)
-      {
-	unique_lock<mutex> guard(mtx);
-	while (inside) ; 
-	for (int j = 0; j < num_nodes; j++)
-	  start_cnt[j] = 0;
-	complete_cnt = 0;
 
-	jobnr++;
-      }
+      while (participate > 0);
       
+      int oldval = 0;
+      while (!participate.compare_exchange_weak (oldval, -1))
+	oldval = 0;
+
+      // tasks = _tasks;
+      for (int j = 0; j < num_nodes; j++)
+	start_cnt[j] = 0;
+      complete_cnt = 0;
+      jobnr++;
+      
+      participate = 0;
+
+
+
       int thd = omp_get_thread_num();
       int thds = omp_get_num_threads();
       
@@ -115,32 +121,25 @@ namespace ngstd
 	  
 	  bool dojob = false;
 	  
-	  // #pragma omp critical(newjob)
-	  {
-	    unique_lock<mutex> guard(mtx);
-	    if (jobnr > jobdone)
-	      {
-		inside++;
-		dojob = true;
-	      }
-	  }
-
-	  if (dojob)
-	    {
-	      while (1)
-		{
-		  int mytask = start_cnt[mynode]++;
-		  if (mytask >= tasks_per_node) break;
-		  
-		  func(mytask + mynode*tasks_per_node);
-		  
-		  complete_cnt++;
-		}
-	      
-	      jobdone = jobnr;
-	      inside--;
-	    }
+	  while (participate == -1);
 	  
+	  int oldpart = 0;
+	  while (! participate.compare_exchange_weak (oldpart, oldpart+1))
+	    if (oldpart == -1) oldpart = 0;
+	  
+
+	  while (1)
+	    {
+	      int mytask = start_cnt[mynode]++;
+	      if (mytask >= tasks_per_node) break;
+	      
+	      func(mytask + mynode*tasks_per_node);
+	      
+	      complete_cnt++;
+	    }
+	      
+	  jobdone = jobnr;
+	  participate--;
 	}
     }
   };
