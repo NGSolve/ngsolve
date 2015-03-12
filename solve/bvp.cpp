@@ -1,6 +1,7 @@
 #include "../include/solve.hpp"
 #include <parallelngs.hpp>
 
+#include "../ngstd/taskhandler.hpp"
 
 int dummy_bvp = -1;
 
@@ -379,7 +380,27 @@ namespace ngsolve
       {
 	hv = vecf;
         bfa->ModifyRHS (hv);
-        invmat->Mult (hv, vecu);
+
+
+	TaskHandler tasks;
+	ngla::SetTaskHandler (&tasks);
+
+#pragma omp parallel
+	{
+#pragma omp single nowait
+	  {
+	    cout << "new task-based parallelization" << endl;
+
+	    invmat->Mult (hv, vecu);
+
+	    tasks.Done();
+	  }
+
+	  tasks.Loop();
+	}
+	ngla::SetTaskHandler (nullptr);
+
+	// invmat->Mult (hv, vecu);
       }
     else 
       {

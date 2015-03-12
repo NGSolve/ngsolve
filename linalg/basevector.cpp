@@ -275,6 +275,8 @@ namespace ngla
 	FlatVector<double> me = FVDouble();
 	FlatVector<double> you = v.FVDouble();
 	
+	t.AddFlops (me.Size());
+
 	task_handler -> CreateTask 
 	  ( [me,you,scal] (int thd)
 	    {
