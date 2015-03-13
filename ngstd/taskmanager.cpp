@@ -164,8 +164,6 @@ namespace ngstd
             continue;
           }
           
-        bool dojob = false;
-          
         while (mynode_data.participate == -1);
           
         int oldpart = 0;
