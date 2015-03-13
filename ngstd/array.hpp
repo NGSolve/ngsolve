@@ -181,6 +181,12 @@ namespace ngstd
     INLINE ArrayRangeIterator<T> begin() const { return first; }
     INLINE ArrayRangeIterator<T> end() const { return next; }
 
+    T_Range Split (size_t nr, int tot)
+    {
+      T diff = next-first;
+      return T_Range (first + nr * diff / tot,
+                      first + (nr+1) * diff / tot);
+    }
     // INLINE operator IntRange () const { return IntRange(first,next); }
   };
 
