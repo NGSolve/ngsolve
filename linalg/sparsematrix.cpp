@@ -18,7 +18,6 @@
 
 namespace ngla
 {
-  extern TaskHandler * task_handler;
 
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
   {
@@ -141,7 +140,6 @@ namespace ngla
      
     int ndof = asize;
 
-
 #pragma omp parallel for
     for (int i = 0; i < colelements.Size(); i++)
       QuickSort (colelements[i]);
@@ -174,7 +172,6 @@ namespace ngla
       {
         if (!symmetric)
           {
-            
 #pragma omp parallel
             {
               Array<int> rowdofs;
@@ -275,14 +272,13 @@ namespace ngla
             colnr.SetSize (nze+1);
 
 	    CalcBalancing ();
-	    
+
 #pragma omp parallel
 	    {
 	      IntRange thd_rows = OmpRange();
-	      IntRange r(firsti[thd_rows.begin()], firsti[thd_rows.end()]);
-	      colnr.Range (r) = 0;
+	      T_Range<size_t> r(firsti[thd_rows.begin()], firsti[thd_rows.end()]);
 
-	      // colnr.OmpSplit() = 0;
+	      colnr.Range (r) = 0;
 	    }
           }
         else
@@ -562,7 +558,7 @@ namespace ngla
   
   
   template <typename Tarray>
-  int BinSearch(const Tarray & v, int i) {
+  int BinSearch(const Tarray & v, size_t i) {
     int n = v.Size();
     
     int first = 0;
@@ -585,7 +581,7 @@ namespace ngla
     int max_threads = omp_get_max_threads();
     balancing.SetSize (max_threads+1);
 
-    Array<int> prefix (size);
+    Array<size_t> prefix (size);
 
     size_t sum = 0;
     for (auto i : Range(size))
@@ -811,7 +807,7 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    if (task_handler)
+    if (task_manager)
       {
         static Timer t("SparseMatrix::MultAdd (taskhandler)");
 	RegionTimer reg(t);
@@ -819,16 +815,13 @@ namespace ngla
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
 	
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [fx,fy,s,this] (int thd)
 	    {
-	      // IntRange r = this->OmpRange();
 	      IntRange r(balancing[thd], balancing[thd+1]);
-
 	      for (int i : r)
 		fy(i) += s * RowTimesVector (i, fx);
 	    } );
-
 	return;
       }
     
