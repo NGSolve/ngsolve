@@ -103,7 +103,8 @@ public:
   }
 
   /// Construct table of variable entrysize
-  INLINE Table (FlatArray<int> entrysize)
+  template <typename TI>
+  INLINE Table (FlatArray<TI> entrysize)
   {
     size_t cnt = 0;
     size  = entrysize.Size();
@@ -195,7 +196,7 @@ template <class T>
   protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
     int nd;
-    Array<int> cnt;
+    Array<atomic<int>> cnt;
     Table<T> * table;
   public:
     TableCreator()
@@ -232,13 +233,17 @@ template <class T>
       mode = amode; 
       if (mode == 2) 
 	{
-	  cnt.SetSize(nd);
-	  cnt = 0; 
+	  // cnt.SetSize(nd);
+          cnt = Array<atomic<int>> (nd);
+          for (int i = 0; i < nd; i++)
+            cnt[i] = 0; 
 	}
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-          cnt = 0;
+          for (int i = 0; i < nd; i++)
+            cnt[i] = 0; 
+          // cnt = 0;
           /*
 	  size_t sum = 0;
           for (auto & ci : cnt)
@@ -270,20 +275,23 @@ template <class T>
 	  if (blocknr+1 > nd) nd = blocknr+1; 
 	  break;
 	case 2:
-#pragma omp atomic 
+          // #pragma omp atomic 
 	  cnt[blocknr]++;
 	  break;
 	case 3:
           int ci;
+          /*
 #ifdef WIN32
 #pragma omp critical
       {
-	      ci = cnt[blocknr]++;
+        ci = cnt[blocknr]++;
       }
 #else
 #pragma omp atomic capture
 	      ci = cnt[blocknr]++;
 #endif
+          */
+          ci = cnt[blocknr]++;
           (*table)[blocknr][ci] = data;
 	  break;
 	}
