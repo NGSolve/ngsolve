@@ -5,7 +5,7 @@
 /**************************************************************************/
 
 #include <ngstd.hpp>
-#include "taskhandler.hpp"
+#include "taskmanager.hpp"
 
 
 #ifdef USE_NUMA
