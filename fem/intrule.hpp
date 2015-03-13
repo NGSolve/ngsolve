@@ -906,7 +906,10 @@ namespace ngfem
       : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-      incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+      if (mips.Size() > 1)
+        incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+      else
+        incr = 0;
     }
 
     INLINE MappedIntegrationRule (const IntegrationRule & air, 
@@ -915,7 +918,10 @@ namespace ngfem
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-      incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+      if (mips.Size() > 1)
+        incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+      else
+        incr = 0;
     }
     
     INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const

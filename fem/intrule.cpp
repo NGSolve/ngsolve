@@ -190,7 +190,10 @@ namespace ngfem
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
     baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-    incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+    if (mips.Size() > 1)
+      incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+    else
+      incr = 0;
 
     for (int i = 0; i < ir.GetNIP(); i++)
       new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
