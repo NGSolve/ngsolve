@@ -449,7 +449,7 @@ namespace ngstd
     }
 
     /// takes range starting from position start of end-start elements
-    INLINE /* const */ FlatArray<T> Range (IntRange range) const
+    INLINE /* const */ FlatArray<T,TSIZE> Range (T_Range<TSIZE> range) const
     {
       return FlatArray<T> (range.Size(), data+range.First());
     }
