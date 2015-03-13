@@ -635,11 +635,20 @@ namespace ngla
       }
 
     balancing[0] = 0;
+    /*
 #pragma omp parallel
     {
       int tid = omp_get_thread_num();
       balancing[tid+1] = BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);
     }
+    */
+    for (int tid = 0; tid < max_threads; tid++)
+#pragma omp task
+      {
+        balancing[tid+1] = 
+          BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);      
+      }
+#pragma omp taskwait
   }
 
   void MatrixGraph :: FindSameNZE()
@@ -888,7 +897,6 @@ namespace ngla
       }
     
 
-
     if (omp_get_num_threads() < balancing.Size()-1)
       {
         static Timer timer("SparseMatrix::MultAdd");
@@ -911,7 +919,6 @@ namespace ngla
     // for (int i = 0; i < h; i++)
     //   fy(i) += s * RowTimesVector (i, fx);
 
-    
     for (int i : this->OmpRange())
       {
         fy(i) += s * RowTimesVector (i, fx);

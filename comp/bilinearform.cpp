@@ -613,13 +613,14 @@ namespace ngcomp
         throw;
       }
 
+    /*
     RunWithTaskManager 
       ( [&] () 
         { 
           DoAssemble(lh);
         } );
-
-    // DoAssemble(lh);
+    */
+    DoAssemble(lh);
 
     if (timing)
       {
