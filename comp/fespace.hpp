@@ -9,6 +9,8 @@
 
 #pragma interface
 
+#include "../ngstd/taskmanager.hpp"
+
 namespace ngcomp
 {
 
@@ -598,6 +600,36 @@ namespace ngcomp
   {
     const Table<int> & element_coloring = fes.ElementColoring(vb);
     
+    if (task_manager)
+      {
+        for (FlatArray<int> els_of_col : element_coloring)
+          {
+            atomic<int> cnt(0);
+            
+            task_manager -> CreateTask 
+              ( [&] (int tnr)
+                {
+                  LocalHeap lh = clh.Split();
+                  Array<int> temp_dnums;
+
+                  while (1)
+                    {
+                      int mynr = cnt++;
+                      if (mynr >= els_of_col.Size()) break;
+                      
+                      HeapReset hr(lh);
+                      FESpace::Element el(fes, 
+                                          ElementId (vb, els_of_col[mynr]), 
+                                          temp_dnums);
+                      
+                      func (el, lh);
+                      
+                    }
+                } );
+          }
+        return;
+      }
+
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
