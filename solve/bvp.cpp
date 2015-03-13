@@ -1,7 +1,7 @@
 #include "../include/solve.hpp"
 #include <parallelngs.hpp>
 
-#include "../ngstd/taskhandler.hpp"
+#include "../ngstd/taskmanager.hpp"
 
 int dummy_bvp = -1;
 
