@@ -14,7 +14,7 @@ mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskhandler.hpp
 libngstd_la_SOURCES = exception.cpp table.cpp bitarray.cpp flags.cpp \
 symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp	     \
 localheap.cpp stringops.cpp profiler.cpp archive.cpp sockets.cpp     \
-cuda_ngstd.cpp python_ngstd.cpp
+cuda_ngstd.cpp python_ngstd.cpp taskhandler.cpp
 
 
 libngstd_la_LDFLAGS = -avoid-version
