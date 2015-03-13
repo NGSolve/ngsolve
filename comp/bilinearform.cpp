@@ -613,9 +613,13 @@ namespace ngcomp
         throw;
       }
 
+    RunWithTaskManager 
+      ( [&] () 
+        { 
+          DoAssemble(lh);
+        } );
 
-    DoAssemble(lh);
-
+    // DoAssemble(lh);
 
     if (timing)
       {
@@ -892,7 +896,6 @@ namespace ngcomp
                       innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
                   }
 
-		// IterateElementsTasks
 		IterateElements
                   (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                    {
@@ -956,6 +959,7 @@ namespace ngcomp
                              elementtimer.Stop();
 
                              if (printelmat)
+#pragma omp critical (printelmat)
                                {
                                  testout->precision(8);
                                  (*testout) << "elnum = " << el.Nr() << endl;
@@ -964,7 +968,8 @@ namespace ngcomp
                                  (*testout) << "dnums = " << endl << dnums << endl;
                                  (*testout) << "elmat = " << endl << elmat << endl;
                                }
-
+                             
+                             
                              if (elmat_ev)
                                LapackEigenSystem(elmat, lh);
                            }
@@ -1009,6 +1014,7 @@ namespace ngcomp
                            idofs1[j] = dnums.Pos(idofs1[j]);
 
                          if (printelmat) 
+#pragma omp critical (printelmat)
                            {
                              *testout << "eliminate internal" << endl;
                              *testout << "idofs1 = " << idofs1 << endl;
@@ -1036,6 +1042,7 @@ namespace ngcomp
                                  odofs[k++] = j;
 
                              if (printelmat)
+#pragma omp critical (printelmat)
                                {
                                  (*testout) << "idofs = " << endl << idofs << endl;
                                  (*testout) << "odofs = " << endl << odofs << endl;
@@ -1164,6 +1171,7 @@ namespace ngcomp
                        }
 
                      if (printelmat)
+#pragma omp critical (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
 
 		     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
@@ -1325,6 +1333,7 @@ namespace ngcomp
                           timerb2.Stop();
 
                           if (printelmat)
+#pragma omp critical (printelmat)
                             {
                               testout->precision(8);
                               
