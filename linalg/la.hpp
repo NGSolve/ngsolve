@@ -27,12 +27,6 @@ namespace ngla
   using ngstd::INT;
 }
 
-namespace ngstd {
-  class TaskHandler;
-}
-namespace ngla {
-  void SetTaskHandler (ngstd::TaskHandler * handler);
-}
 
 #include "paralleldofs.hpp"
 #include "basevector.hpp"

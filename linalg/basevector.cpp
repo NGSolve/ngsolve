@@ -18,13 +18,6 @@ namespace ngla
 {
 
   
-  TaskHandler * task_handler = nullptr;
-  void SetTaskHandler (TaskHandler * handler)
-  {
-    task_handler = handler;
-  }
-
-
 
 
   /*
@@ -75,9 +68,9 @@ namespace ngla
 
     t.AddFlops (me.Size());
 
-    if (task_handler)
+    if (task_manager)
       {
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [me,scal] (int thd)
 	    {
 	      int n = me.Size();
@@ -137,11 +130,11 @@ namespace ngla
     static Timer t("BaseVector::SetScalar");
     RegionTimer reg(t);
 
-    if (task_handler)
+    if (task_manager)
       {
 	FlatVector<> fv = FVDouble();
 
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [fv,scal] (int thd)
 	    {
 	      int n = fv.Size();
@@ -177,12 +170,12 @@ namespace ngla
     FlatVector<double> you = v.FVDouble();
 
 
-    if (task_handler)
+    if (task_manager)
       {
 	static Timer t("BaseVector::Set (taskhandler)");
 	RegionTimer reg(t);
 	
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [me,you,scal] (int thd)
 	    {
 	      int n = me.Size();
@@ -267,7 +260,7 @@ namespace ngla
   {
 
 
-    if (task_handler)
+    if (task_manager)
       {
 	static Timer t("BaseVector::Add (taskhandler)");
 	RegionTimer reg(t);
@@ -277,7 +270,7 @@ namespace ngla
 	
 	t.AddFlops (me.Size());
 
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [me,you,scal] (int thd)
 	    {
 	      int n = me.Size();
@@ -760,7 +753,7 @@ namespace ngla
   template <>
   double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const
   {
-    if (task_handler)
+    if (task_manager)
       {
 	static Timer t("BaseVector::InnerProduct (taskhandler)");
 	RegionTimer reg(t);
@@ -770,7 +763,7 @@ namespace ngla
 	t.AddFlops (me.Size());
 	double scal = 0;
 
-	task_handler -> CreateTask 
+	task_manager -> CreateTask 
 	  ( [me,you,&scal] (int thd)
 	    {
 	      int n = me.Size();

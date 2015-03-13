@@ -382,24 +382,12 @@ namespace ngsolve
         bfa->ModifyRHS (hv);
 
 
-	TaskHandler tasks;
-	ngla::SetTaskHandler (&tasks);
-
-#pragma omp parallel
-	{
-#pragma omp single nowait
-	  {
-	    cout << "new task-based parallelization" << endl;
-
-	    invmat->Mult (hv, vecu);
-
-	    tasks.Done();
-	  }
-
-	  tasks.Loop();
-	}
-	ngla::SetTaskHandler (nullptr);
-
+	RunWithTaskManager 
+	  ( [invmat,&hv,&vecu] ()
+	    {
+	      invmat -> Mult(hv, vecu);
+	    } );
+	
 	// invmat->Mult (hv, vecu);
       }
     else 
