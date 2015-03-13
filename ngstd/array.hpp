@@ -775,6 +775,29 @@ namespace ngstd
       return *this;
     }
 
+    /// steal array 
+    INLINE Array & operator= (Array && a2)
+    {
+      allocsize = 0;
+      mem_to_delete = nullptr;
+      size = 0;
+      data = nullptr;
+
+      ngstd::Swap (size, a2.size);
+      ngstd::Swap (data, a2.data);
+      ngstd::Swap (allocsize, a2.allocsize);
+      ngstd::Swap (mem_to_delete, a2.mem_to_delete);
+
+      return *this;
+      /*
+      SetSize (a2.Size());
+      for (TSIZE i = 0; i < size; i++)
+        (*this)[i] = a2[i];
+      return *this;
+      */
+    }
+
+
     /// array copy
     INLINE Array & operator= (const FlatArray<T,TSIZE> & a2)
     {
