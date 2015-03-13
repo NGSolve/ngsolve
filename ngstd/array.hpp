@@ -329,7 +329,7 @@ namespace ngstd
     /// copy constructor allows size-type conversion 
     template <typename TSIZE2>
     INLINE FlatArray (const FlatArray<T,TSIZE2> & a2)  
-      : data(&a2[0]), size(a2.Size()) { ; } 
+      : size(a2.Size()), data(&a2[0]) { ; } 
 
 
     /// provide size and memory
