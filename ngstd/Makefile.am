@@ -8,13 +8,13 @@ flags.hpp hashtable.hpp localheap.hpp memusage.hpp ngstd.hpp	      \
 profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    \
 parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      \
 polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  \
-mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskhandler.hpp
+mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskmanager.hpp
 
 
 libngstd_la_SOURCES = exception.cpp table.cpp bitarray.cpp flags.cpp \
 symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp	     \
 localheap.cpp stringops.cpp profiler.cpp archive.cpp sockets.cpp     \
-cuda_ngstd.cpp python_ngstd.cpp taskhandler.cpp
+cuda_ngstd.cpp python_ngstd.cpp taskmanager.cpp
 
 
 libngstd_la_LDFLAGS = -avoid-version

@@ -13,7 +13,7 @@
 #include <la.hpp>
 // #include <bitonic.hpp>
 
-#include "../ngstd/taskhandler.hpp"
+#include "../ngstd/taskmanager.hpp"
 
 
 namespace ngla

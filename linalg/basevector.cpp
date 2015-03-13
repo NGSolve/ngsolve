@@ -12,7 +12,7 @@
 
 #include <la.hpp>
 
-#include "../ngstd/taskhandler.hpp"
+#include "../ngstd/taskmanager.hpp"
 
 namespace ngla
 {
