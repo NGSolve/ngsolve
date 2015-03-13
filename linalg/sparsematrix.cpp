@@ -139,14 +139,16 @@ namespace ngla
     bool includediag = (&rowelements == &colelements);
      
     int ndof = asize;
+    TableCreator<int> creator(ndof);
 
+
+
+    /*
 #pragma omp parallel for
     for (int i = 0; i < colelements.Size(); i++)
       QuickSort (colelements[i]);
 
     // generate rowdof to element table
-    TableCreator<int> creator(ndof);
-
     for ( ; !creator.Done(); creator++)
       {    
 
@@ -158,6 +160,47 @@ namespace ngla
 	}
 
       }
+    */
+
+
+
+#pragma omp parallel
+#pragma omp single
+      {
+
+        int tasks = 100;
+        for (int i = 0; i < tasks; i++)
+          {
+            auto r = Range(colelements.Size()).Split (i,tasks);
+#pragma omp task
+            {
+              for (auto j : r)
+                QuickSort (colelements[j]);              
+            }
+          }
+#pragma omp taskwait
+
+        
+        for ( ; !creator.Done(); creator++)
+          {    
+            int tasks = 100;
+
+            for (int i = 0; i < tasks; i++)
+              {
+                auto r = Range(rowelements.Size()).Split (i,tasks);
+
+#pragma omp task
+                {
+                  for (auto i : r)
+                    for (auto e : rowelements[i])
+                      creator.Add(e, i);
+                }
+              }
+#pragma omp taskwait
+          }
+      }
+
+
 
     Table<int> dof2element = creator.MoveTable();
 
@@ -747,6 +790,12 @@ namespace ngla
   AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, 
 		   const FlatMatrix<TSCAL> & elmat1)
   {
+#pragma omp critical (printelmat)
+    {
+      *testout << "AddElmat, dnums1 = " << dnums1 << ", dnums2 = " << dnums2 << endl;
+      *testout << "mat = " << elmat1 << endl;
+    }
+
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
@@ -786,9 +835,22 @@ namespace ngla
       ai = 0.0;
     */
 
+    if (task_manager)
+      {
+	task_manager -> CreateTask 
+	  ( [this] (int thd)
+	    {
+	      for (auto & ai : data.Range (firsti[balancing[thd]], 
+                                           firsti[balancing[thd+1]]) )
+		ai = 0.0;
+	    } );
+	return;
+      }
+
 #pragma omp parallel 
     {
       IntRange thread_rows = OmpRange();
+      // cout << "setzero. I am thd " << omp_get_thread_num() << " out of " << omp_get_num_threads() << ", range = " << thread_rows << endl;
       for (auto ind : Range(firsti[thread_rows.begin()],
                             firsti[thread_rows.end()]))
         data[ind] = 0.0;
