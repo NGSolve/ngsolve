@@ -141,6 +141,11 @@ namespace ngla
     IntRange OmpRange () const
     {
       int tid = omp_get_thread_num();
+      int num = omp_get_num_threads();
+
+      if (num == 1) return IntRange(0, size);
+      if (num != balancing.Size()-1)
+        throw Exception ("OmpRange: wrong number of threads");
       return IntRange (balancing[tid], balancing[tid+1]);
     }
 
