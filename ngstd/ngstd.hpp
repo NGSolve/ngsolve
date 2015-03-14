@@ -138,6 +138,7 @@ namespace ngstd
 #include "statushandler.hpp"
 
 #include "mpiwrapper.hpp"
+#include "taskmanager.hpp"
 #ifndef WIN32
 #include "sockets.hpp"
 #endif

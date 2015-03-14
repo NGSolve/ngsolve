@@ -1,8 +1,8 @@
-/**************************************************************************/
-/* File:   taskhandler.cpp                                                */
-/* Author: M. Hochsterger, J. Schoeberl                              */
-/* Date:   10. Mar. 2015                                             */
-/**************************************************************************/
+/********************************************************************/
+/* File:   taskmanager.cpp                                          */
+/* Author: M. Hochsterger, J. Schoeberl                             */
+/* Date:   10. Mar. 2015                                            */
+/********************************************************************/
 
 #include <ngstd.hpp>
 #include "taskmanager.hpp"
@@ -160,6 +160,7 @@ namespace ngstd
       {
         if (jobnr == jobdone)
           {
+// #pragma omp taskyield
             sched_yield();
             continue;
           }

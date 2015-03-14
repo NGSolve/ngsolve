@@ -127,12 +127,13 @@ namespace ngla
 
   BaseVector & BaseVector :: SetScalar (double scal)
   {
-    static Timer t("BaseVector::SetScalar");
-    RegionTimer reg(t);
-
     if (task_manager)
       {
+        static Timer t("BaseVector::SetScalar (taskhandler)");
+        RegionTimer reg(t);
+
 	FlatVector<> fv = FVDouble();
+        t.AddFlops (fv.Size());
 
 	task_manager -> CreateTask 
 	  ( [fv,scal] (int thd)
@@ -145,6 +146,10 @@ namespace ngla
 
 	return *this; 
       }
+
+    static Timer t("BaseVector::SetScalar");
+    RegionTimer reg(t);
+    t.AddFlops (FVDouble().Size());
 
 
     FVDouble() = scal;
