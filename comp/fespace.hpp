@@ -9,8 +9,6 @@
 
 #pragma interface
 
-#include "../ngstd/taskmanager.hpp"
-
 namespace ngcomp
 {
 

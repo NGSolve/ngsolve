@@ -1,8 +1,8 @@
-#ifndef FILE_TASKHANDLER
-#define FILE_TASKHANDLER
+#ifndef FILE_TASKMANAGER
+#define FILE_TASKMANAGER
 
 /*********************************************************************/
-/* File:   taskhandler.hpp                                           */
+/* File:   taskmanager.hpp                                           */
 /* Author: M. Hochsterger, J. Schoeberl                              */
 /* Date:   10. Mar. 2015                                             */
 /*********************************************************************/
