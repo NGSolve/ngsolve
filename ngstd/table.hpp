@@ -233,26 +233,15 @@ template <class T>
       mode = amode; 
       if (mode == 2) 
 	{
-	  // cnt.SetSize(nd);
+	  // cnt.SetSize(nd);  // atomic has no copy
           cnt = Array<atomic<int>> (nd);
-          for (int i = 0; i < nd; i++)
-            cnt[i] = 0; 
+          for (auto & ci : cnt) ci = 0;
 	}
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-          for (int i = 0; i < nd; i++)
-            cnt[i] = 0; 
+          for (auto & ci : cnt) ci = 0;
           // cnt = 0;
-          /*
-	  size_t sum = 0;
-          for (auto & ci : cnt)
-	    {
-	      size_t nsum = sum + ci;
-	      ci = sum;
-	      sum = nsum;
-	    }
-          */
 	}
     }
 
@@ -275,23 +264,10 @@ template <class T>
 	  if (blocknr+1 > nd) nd = blocknr+1; 
 	  break;
 	case 2:
-          // #pragma omp atomic 
 	  cnt[blocknr]++;
 	  break;
 	case 3:
-          int ci;
-          /*
-#ifdef WIN32
-#pragma omp critical
-      {
-        ci = cnt[blocknr]++;
-      }
-#else
-#pragma omp atomic capture
-	      ci = cnt[blocknr]++;
-#endif
-          */
-          ci = cnt[blocknr]++;
+          int ci = cnt[blocknr]++;
           (*table)[blocknr][ci] = data;
 	  break;
 	}
@@ -306,17 +282,12 @@ template <class T>
 	  if (blocknr+1 > nd) nd = blocknr+1; 
 	  break;
 	case 2:
-	  cnt[blocknr]+=range.Size();
+	  cnt[blocknr] += range.Size();
 	  break;
 	case 3:
+          int ci = ( cnt[blocknr] += range.Size() ) - range.Size();
 	  for (int j = 0; j < range.Size(); j++)
-	    (*table)[blocknr][cnt[blocknr]+j] = range.First()+j;
-	  cnt[blocknr]+=range.Size();
-          /*
-	  for (int j = 0; j < range.Size(); j++)
-	    table->Data()[cnt[blocknr]+j] = range.First()+j;
-	  cnt[blocknr]+=range.Size();
-          */
+	    (*table)[blocknr][ci+j] = range.First()+j;
 	  break;
 	}
     }
@@ -329,17 +300,12 @@ template <class T>
 	  if (blocknr+1 > nd) nd = blocknr+1; 
 	  break;
 	case 2:
-	  cnt[blocknr]+=dofs.Size();
+	  cnt[blocknr] += dofs.Size();
 	  break;
 	case 3:
+          int ci = ( cnt[blocknr] += dofs.Size() ) - dofs.Size();
 	  for (int j = 0; j < dofs.Size(); j++)
-	    (*table)[blocknr][cnt[blocknr]+j] = dofs[j];
-	  cnt[blocknr]+=dofs.Size();
-          /*
-	  for (int j = 0; j < dofs.Size(); j++)
-	    table->Data()[cnt[blocknr]+j] = dofs[j];
-	  cnt[blocknr]+=dofs.Size();
-          */
+	    (*table)[blocknr][ci+j] = dofs[j];
 	  break;
 	}
     }
