@@ -22,7 +22,14 @@ namespace ngstd
 
   void RunWithTaskManager (function<void()> alg)
   {
-    
+    if (task_manager)
+      {
+        cout << "task-manager already active, using it" << endl;
+        alg();
+        return;
+      }
+
+
     task_manager = new TaskManager();
 
 #pragma omp parallel
@@ -81,10 +88,11 @@ namespace ngstd
 
 
 
-  void TaskManager :: CreateTask (function<void(int)> afunc)
+  void TaskManager :: CreateJob (function<void(TaskInfo&)> afunc,
+                                 int antasks)
   {
     func = afunc;
-      
+    ntasks = antasks;
 
     for (int j = 0; j < num_nodes; j++)
       {
@@ -123,10 +131,20 @@ namespace ngstd
 
     NodeData & mynode_data = *(nodedata[mynode]);
 
+    TaskInfo ti;
+    ti.nthreads = thds;
+    ti.thread_nr = thd;
+    ti.nnodes = num_nodes;
+    ti.node_nr = mynode;
+    
     int mytask = mynode_data.start_cnt++;
+
+    ti.ntasks = ntasks;
+
     if (mytask < tasks_per_node)
       {
-        func(mytask + mynode*tasks_per_node);
+        ti.task_nr = mytask + mynode*tasks_per_node;
+        func(ti); // mytask + mynode*tasks_per_node);
         if (++mynode_data.complete_cnt == tasks_per_node)
           complete[mynode] = true;
         // complete_cnt++;
@@ -148,6 +166,14 @@ namespace ngstd
     int mynode = num_nodes * thd/thds;
 
     NodeData & mynode_data = *(nodedata[mynode]);
+
+
+
+    TaskInfo ti;
+    ti.nthreads = thds;
+    ti.thread_nr = thd;
+    ti.nnodes = num_nodes;
+    ti.node_nr = mynode;
 
       
 #ifdef USE_NUMA
@@ -176,7 +202,11 @@ namespace ngstd
             int mytask = mynode_data.start_cnt++;
             if (mytask >= tasks_per_node) break;
               
-            func(mytask + mynode*tasks_per_node);
+            ti.task_nr = mytask + mynode*tasks_per_node;
+            ti.ntasks = ntasks;
+
+            func(ti); // mytask + mynode*tasks_per_node);
+
             if (++mynode_data.complete_cnt == tasks_per_node)
               complete[mynode] = true;
               // complete_cnt++;

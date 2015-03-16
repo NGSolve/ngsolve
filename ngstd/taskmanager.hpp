@@ -12,6 +12,20 @@
 
 namespace ngstd
 {
+
+  class TaskInfo
+  {
+  public:
+    int task_nr;
+    int ntasks;
+
+    int thread_nr;
+    int nthreads;
+
+    int node_nr;
+    int nnodes;
+  };
+
   
   class TaskManager
   {
@@ -26,11 +40,11 @@ namespace ngstd
       NodeData() : start_cnt(0), participate(0) { ; }
     };
     
-    function<void(int)> func;
+    function<void(TaskInfo&)> func;
+    volatile int ntasks;
 
     atomic<int> jobnr;
 
-    // atomic<int> complete_cnt;
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
 
@@ -42,7 +56,8 @@ namespace ngstd
     
     TaskManager();
 
-    void CreateTask (function<void(int)> afunc);
+    void CreateJob (function<void(TaskInfo&)> afunc, 
+                    int antasks = omp_get_max_threads());
 
     void Done()
     {

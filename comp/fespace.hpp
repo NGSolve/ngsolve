@@ -604,9 +604,10 @@ namespace ngcomp
           {
             atomic<int> cnt(0);
             
-            task_manager -> CreateTask 
-              ( [&] (int tnr)
+            task_manager -> CreateJob
+              ( [&] (const TaskInfo & ti) 
                 {
+                  int tnr = ti.task_nr;
                   LocalHeap lh = clh.Split();
                   Array<int> temp_dnums;
 

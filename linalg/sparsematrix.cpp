@@ -65,7 +65,7 @@ namespace ngla
   }
   
 
-    
+  
   MatrixGraph :: MatrixGraph (const MatrixGraph & agraph, bool stealgraph)
   {
     MatrixGraph & graph = const_cast<MatrixGraph&> (agraph);
@@ -128,7 +128,11 @@ namespace ngla
                               const Table<int> & colelements, 
                               bool symmetric)
   {
-    static Timer timer("MatrixGraph");
+    RunWithTaskManager 
+      ([&]() 
+       {
+
+        static Timer timer("MatrixGraph");
     static Timer timer1("MatrixGraph - transpose table");
     static Timer timer2a("MatrixGraph - getdofsa");
 
@@ -163,7 +167,7 @@ namespace ngla
     */
 
 
-
+    /*
 #pragma omp parallel
 #pragma omp single
       {
@@ -199,11 +203,35 @@ namespace ngla
 #pragma omp taskwait
           }
       }
+    */
 
 
+    task_manager -> CreateJob 
+      ( [&] (const TaskInfo & ti)
+        {
+          auto r = Range(colelements.Size()).Split (ti.task_nr, ti.ntasks);
+          for (auto j : r)
+            QuickSort (colelements[j]);              
+        });
 
+
+    for ( ; !creator.Done(); creator++)
+      {    
+
+        task_manager -> CreateJob 
+          ( [&] (const TaskInfo & ti)
+            {
+              auto r = Range(rowelements.Size()).Split (ti.task_nr, ti.ntasks);
+
+              for (auto i : r)
+                for (auto e : rowelements[i])
+                  creator.Add(e, i);
+            });
+    
+      }
+
+    
     Table<int> dof2element = creator.MoveTable();
-
 
     Array<int> cnt(ndof);
     cnt = 0;
@@ -215,12 +243,12 @@ namespace ngla
       {
         if (!symmetric)
           {
-#pragma omp parallel
+            // #pragma omp parallel
             {
               Array<int> rowdofs;
               Array<int> rowdofs1;
               
-#pragma omp for schedule(dynamic,10)
+              // #pragma omp for schedule(dynamic,10)
               for (int i = 0; i < ndof; i++)
 		{
 		  rowdofs.SetSize0();
@@ -243,12 +271,12 @@ namespace ngla
         else
           {
 
-#pragma omp parallel
+            // #pragma omp parallel
             {
               Array<int> rowdofs;
               Array<int> rowdofs1;
               
-#pragma omp for
+              // #pragma omp for
               for (int i = 0; i < ndof; i++)
                 {
                   rowdofs.SetSize0();
@@ -315,7 +343,8 @@ namespace ngla
             colnr.SetSize (nze+1);
 
 	    CalcBalancing ();
-
+            *testout << "balancing: " << endl << balancing << endl;
+            /*
 #pragma omp parallel
 	    {
 	      IntRange thd_rows = OmpRange();
@@ -323,6 +352,17 @@ namespace ngla
 
 	      colnr.Range (r) = 0;
 	    }
+            */
+
+
+            task_manager -> CreateJob 
+              ( [&] (const TaskInfo & ti)
+                {
+                  int thd = ti.task_nr;
+                  IntRange r(balancing[thd], balancing[thd+1]);
+                  T_Range<size_t> r2(firsti[r.begin()], firsti[r.end()]);
+                  colnr.Range(firsti[r.begin()], firsti[r.end()]) = 0;
+                } );
           }
         else
           {
@@ -332,7 +372,7 @@ namespace ngla
 
 
     timer2a.Stop();
-
+       });
   }
 
   
@@ -642,6 +682,7 @@ namespace ngla
       balancing[tid+1] = BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);
     }
     */
+
     for (int tid = 0; tid < max_threads; tid++)
 #pragma omp task
       {
@@ -846,13 +887,15 @@ namespace ngla
 
     if (task_manager)
       {
-	task_manager -> CreateTask 
-	  ( [this] (int thd)
+	task_manager -> CreateJob
+	  ( [this] (const TaskInfo & ti)
 	    {
+              int thd = ti.task_nr;
 	      for (auto & ai : data.Range (firsti[balancing[thd]], 
                                            firsti[balancing[thd+1]]) )
 		ai = 0.0;
-	    } );
+	    },
+            balancing.Size()-1);
 	return;
       }
 
@@ -886,13 +929,15 @@ namespace ngla
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
 	
-	task_manager -> CreateTask 
-	  ( [fx,fy,s,this] (int thd)
+	task_manager -> CreateJob 
+	  ( [fx,fy,s,this] (const TaskInfo & ti)
 	    {
+              int thd = ti.task_nr;
 	      IntRange r(balancing[thd], balancing[thd+1]);
 	      for (int i : r)
 		fy(i) += s * RowTimesVector (i, fx);
-	    } );
+	    },
+            balancing.Size()-1);
 	return;
       }
     
