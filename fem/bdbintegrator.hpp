@@ -7,8 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-
-
+#include "fastmat.hpp"
 
 namespace ngfem
 {
@@ -132,9 +131,9 @@ public:
 
 
 
-#ifdef WIN32
-#define __restrict__ __restrict
-#endif
+// #ifdef WIN32
+// #define __restrict__ __restrict
+// #endif
 
   /*
   template <int M> NGS_DLL_HEADER

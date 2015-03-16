@@ -19,7 +19,7 @@ h1hofe_segm.cpp h1hofe_trig.cpp
 
 include_HEADERS = bdbequations.hpp hcurl_equations.hpp		       \
 elasticity_equations.hpp diffop.hpp bdbintegrator.hpp coefficient.hpp  \
-elementtopology.hpp elementtransformation.hpp facetfe.hpp	       \
+elementtopology.hpp elementtransformation.hpp facetfe.hpp fastmat.hpp  \
 facethofe.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	       \
 h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp       \
 hcurlhofe.hpp hcurllofe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp \
