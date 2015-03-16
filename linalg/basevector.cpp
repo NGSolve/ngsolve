@@ -70,12 +70,10 @@ namespace ngla
 
     if (task_manager)
       {
-	task_manager -> CreateTask 
-	  ( [me,scal] (int thd)
+	task_manager -> CreateJob 
+	  ( [me,scal] (const TaskInfo & ti)
 	    {
-	      int n = me.Size();
-	      int num_thds = omp_get_num_threads();
-	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      me.Range(r) *= scal;
 	    } );
 
@@ -132,16 +130,14 @@ namespace ngla
         static Timer t("BaseVector::SetScalar (taskhandler)");
         RegionTimer reg(t);
 
-	FlatVector<> fv = FVDouble();
+        FlatVector<> fv = FVDouble();
         t.AddFlops (fv.Size());
 
-	task_manager -> CreateTask 
-	  ( [fv,scal] (int thd)
+	task_manager -> CreateJob 
+	  ( [fv,scal] (const TaskInfo & ti)
 	    {
-	      int n = fv.Size();
-	      int num_thds = omp_get_num_threads();
-	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
-	      fv.Range(r) = scal;
+              IntRange r = fv.Range().Split (ti.task_nr, ti.ntasks);
+              fv.Range(r) = scal;
 	    } );
 
 	return *this; 
@@ -180,12 +176,10 @@ namespace ngla
 	static Timer t("BaseVector::Set (taskhandler)");
 	RegionTimer reg(t);
 	
-	task_manager -> CreateTask 
-	  ( [me,you,scal] (int thd)
+	task_manager -> CreateJob
+	  ( [me,you,scal] (const TaskInfo & ti)
 	    {
-	      int n = me.Size();
-	      int num_thds = omp_get_num_threads();
-	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      me.Range(r) = scal*you.Range(r);
 	    } );
 
@@ -275,12 +269,10 @@ namespace ngla
 	
 	t.AddFlops (me.Size());
 
-	task_manager -> CreateTask 
-	  ( [me,you,scal] (int thd)
+	task_manager -> CreateJob
+	  ( [me,you,scal] (const TaskInfo & ti)
 	    {
-	      int n = me.Size();
-	      int num_thds = omp_get_num_threads();
-	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
+              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      me.Range(r) += scal*you.Range(r);
 	    } );
 
@@ -768,13 +760,10 @@ namespace ngla
 	t.AddFlops (me.Size());
 	double scal = 0;
 
-	task_manager -> CreateTask 
-	  ( [me,you,&scal] (int thd)
+	task_manager -> CreateJob
+	  ( [me,you,&scal] (const TaskInfo & ti)
 	    {
-	      int n = me.Size();
-	      int num_thds = omp_get_num_threads();
-	      IntRange r (thd*n/num_thds, (thd+1)*n/num_thds);		  
-
+              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
 #pragma omp atomic
 	      scal += myscal;

@@ -379,7 +379,7 @@ namespace ngsolve
       {
 	hv = vecf;
         bfa->ModifyRHS (hv);
-
+        
         /*
 	RunWithTaskManager 
 	  ( [invmat,&hv,&vecu] ()
@@ -395,8 +395,6 @@ namespace ngsolve
         bfa->ModifyRHS (hv);
 	vecu += (*invmat2) * hv;
       }
-    // delete &hv;
-
 
     ma->PopStatus ();
     

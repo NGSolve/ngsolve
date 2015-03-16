@@ -995,14 +995,16 @@ namespace ngla
     for (int c = 0; c < block_coloring.Size(); c++)
       block_balancing[c][0] = 0;
     
-#pragma omp parallel
+    // #pragma omp parallel
     {
-      int tid = omp_get_thread_num();
-      for (int c = 0; c < block_coloring.Size(); c++)
-	{
-	  auto c_pre = prefix[c];	  
-	  block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
-	}
+      // int tid = omp_get_thread_num();
+#pragma omp parallel for
+      for (int tid = 0; tid < max_threads; tid++)
+        for (int c = 0; c < block_coloring.Size(); c++)
+          {
+            auto c_pre = prefix[c];	  
+            block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
+          }
     }
     
     // cout << "block-balancing: " << endl << block_balancing << endl;

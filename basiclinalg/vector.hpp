@@ -257,7 +257,7 @@ namespace ngbla
 
 
     /// sub-vector given by range
-    INLINE /* const */ FlatVector<T> Range (IntRange range) const
+    INLINE FlatVector<T> Range (IntRange range) const
     { return Range (range.First(), range.Next()); }
 
 
@@ -270,6 +270,9 @@ namespace ngbla
     /// vector is matrix of with 1
     INLINE int Width () const { return 1; }
     
+    INLINE IntRange Range () const
+    { return IntRange (0, size); }
+
 
 #ifdef FLATVECTOR_WITH_DIST
     /// take a slice of the vector. Take elements first+i * dist. 
