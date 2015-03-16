@@ -812,6 +812,9 @@ namespace ngcomp
   Table<int> * H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
+    static Timer t("H1HighOrderFESpace :: CreateSmoothingBlocks");
+    RegionTimer reg(t);
+
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     bool subassembled = precflags.GetDefineFlag("subassembled");
     // smoothing_types: 
@@ -1034,33 +1037,53 @@ namespace ngcomp
                 }
               else
                 {
-                  for (int i = 0; i < nv; i++)
-                    creator.Add (i, i);
-		  
-                  for (int i = 0; i < ned; i++)
-                    creator.Add (nv+i, GetEdgeDofs(i));
-		  
-                 
-                  Array<int> f2ed;
-                  for (int i = 0; i < nfa; i++)
-                    {
-                      /*
-                        Ng_Node<2> face = ma->GetNode<2> (i);
-                        for (int k = 0; k < face.edges.Size(); k++)
-                        creator.Add (face.edges[k], GetFaceDofs(i));
-                      */
-                      
-                      ma->GetFaceEdges (i, f2ed);
-                      for (int k = 0; k < f2ed.Size(); k++)
-                        creator.Add (nv+f2ed[k], GetFaceDofs(i));
-                    }
+                    /*
+                    if (task_manager)
+                      task_manager -> CreateTask
+                        ([&creator, nv] (TaskData & td)
+                          {
+                            for (int i : Range(nv).Split (td.taskid, td.ntasks))
+                              creator.Add (i, i);
+
+                            for (int i : Range(ned).Split (td.taskid, td.ntasks))
+                              creator.Add (nv+i, GetEdgeDofs(i));
+                            
+                          }, 100);
+                    */
+
+                  // #pragma omp parallel
+                  {
+                    // #pragma omp for nowait
+                    for (int i = 0; i < nv; i++)
+                      creator.Add (i, i);
+                    
+                    // #pragma omp for nowait
+                    for (int i = 0; i < ned; i++)
+                      creator.Add (nv+i, GetEdgeDofs(i));
+                    
+                    // #pragma omp for nowait
+                    for (int i = 0; i < nfa; i++)
+                      {
+                        /*
+                          Ng_Node<2> face = ma->GetNode<2> (i);
+                          for (int k = 0; k < face.edges.Size(); k++)
+                          creator.Add (face.edges[k], GetFaceDofs(i));
+                        */
+                        
+                        ArrayMem<int,4> f2ed;
+                        ma->GetFaceEdges (i, f2ed);
+                        for (int k = 0; k < f2ed.Size(); k++)
+                          creator.Add (nv+f2ed[k], GetFaceDofs(i));
+                      }
+                  }
                   
+                  // #pragma omp for
                   for (int i = 0; i < ni; i++)
                     creator.Add (nv+ned+i, GetElementDofs(i));
                 }
-	      break; 
-	    }
-
+            break; 
+          }
+        
 
 	  case 10: 
 	    if (creator.GetMode() == 1)
