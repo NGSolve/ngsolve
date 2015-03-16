@@ -1,4 +1,5 @@
 #include <solve.hpp>
+#include <cstdlib>
 
 namespace netgen
 {
@@ -10,10 +11,11 @@ extern int dummy_bvp;
 
 int main(int argc, char ** argv)
 {
+  int retcode = EXIT_SUCCESS;
   if (argc < 2)
     {
       std::cout << "Usage:  ngs filename" << std::endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 
   netgen::h_argc = argc;
@@ -33,6 +35,7 @@ int main(int argc, char ** argv)
     {
       std::cout << "Caught exception: " << std::endl
                 << e.What() << std::endl;
+      retcode = EXIT_FAILURE;
     };
 
 
@@ -47,6 +50,6 @@ int main(int argc, char ** argv)
 #endif
 
 
-  return 0;
+  return retcode;
 }
 
