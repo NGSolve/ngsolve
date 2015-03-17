@@ -137,13 +137,13 @@ namespace ngstd
     ti.nnodes = num_nodes;
     ti.node_nr = mynode;
     
-    int mytask = mynode_data.start_cnt++;
-
-    ti.ntasks = ntasks;
-
-    if (mytask < tasks_per_node)
+    while (1)
       {
+        int mytask = mynode_data.start_cnt++;
+        if (mytask >= tasks_per_node) break;
+
         ti.task_nr = mytask + mynode*tasks_per_node;
+        ti.ntasks = ntasks;
         func(ti); // mytask + mynode*tasks_per_node);
         if (++mynode_data.complete_cnt == tasks_per_node)
           complete[mynode] = true;
