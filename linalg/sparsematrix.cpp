@@ -694,8 +694,9 @@ namespace ngla
     for (int tid = 0; tid < max_threads; tid++)
 #pragma omp task
       {
-        balancing[tid+1] = 
-          BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);      
+        if(prefix.Size()>tid)
+            balancing[tid+1] = 
+              BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);      
       }
 #pragma omp taskwait
   }
