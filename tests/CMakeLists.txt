@@ -1,8 +1,21 @@
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/../ngs_solved "echo CTEST_FULL_OUTPUT\n\$1 \$2 | tee test_out \nret_code=\$? \ncat test_out\necho \"ret_code=\${ret_code}\"\nFOUND=`grep \"Solved\" test_out`  \nif [ \"\${FOUND}\" != \"\" ] \nthen \n cat ng.prof \n exit \${ret_code} \nelse \n exit 1 \nfi\n")
-file(COPY ${CMAKE_CURRENT_BINARY_DIR}/../ngs_solved
-  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
-  GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/../ngs_solved)
+if(NOT WIN32 AND NOT APPLE)
+    add_executable( pde_tester pde_tester.cpp)
+    target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} )
+    install( TARGETS pde_tester DESTINATION bin)
+endif(NOT WIN32 AND NOT APPLE)
 
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_solved DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+include(CTest)
+set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
+set(pde_dir "${PROJECT_SOURCE_DIR}/pde_tutorial")
+
+add_test("pde_tutorial_d1" ${test_driver} "${pde_dir}/d1_square.pde")
+add_test("pde_tutorial_d2" ${test_driver} "${pde_dir}/d2_chip.pde")
+add_test("pde_tutorial_d3" ${test_driver} "${pde_dir}/d3_helmholtz.pde")
+add_test("pde_tutorial_d4" ${test_driver} "${pde_dir}/d4_cube.pde")
+add_test("pde_tutorial_d5" ${test_driver} "${pde_dir}/d5_beam.pde")
+add_test("pde_tutorial_d6" ${test_driver} "${pde_dir}/d6_shaft.pde")
+add_test("pde_tutorial_d7" ${test_driver} "${pde_dir}/d7_coil.pde")
+add_test("pde_tutorial_d8" ${test_driver} "${pde_dir}/d8_coilshield.pde")
+add_test("pde_tutorial_d9" ${test_driver} "${pde_dir}/d9_hybridDG.pde")
+add_test("pde_tutorial_d10" ${test_driver} "${pde_dir}/d10_DGdoubleglazing.pde")
+add_test("pde_tutorial_d11" ${test_driver} "${pde_dir}/d11_chip_nitsche.pde")

@@ -3,27 +3,3 @@ install( FILES
         DESTINATION share/ngsolve
        )
 
-include(CTest)
-
-add_test("pde_tutorial_d1" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d1_square.pde")
-add_test( "pde_tutorial_d2" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d2_chip.pde")
-add_test( "pde_tutorial_d3" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d3_helmholtz.pde")
-add_test( "pde_tutorial_d4" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d4_cube.pde")
-add_test( "pde_tutorial_d5" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d5_beam.pde")
-add_test( "pde_tutorial_d6" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d6_shaft.pde")
-add_test( "pde_tutorial_d7" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d7_coil.pde")
-add_test( "pde_tutorial_d8" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d8_coilshield.pde")
-add_test( "pde_tutorial_d9" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d9_hybridDG.pde")
-add_test("pde_tutorial_d10" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d10_DGdoubleglazing.pde")
-add_test("pde_tutorial_d11" "${CMAKE_CURRENT_BINARY_DIR}/../tests/ngs_solved" 
-  "../solve/ngs" "${PROJECT_SOURCE_DIR}/pde_tutorial/d11_chip_nitsche.pde")
