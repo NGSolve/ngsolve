@@ -77,6 +77,70 @@ namespace ngstd
   extern TaskManager * task_manager;
   
   void RunWithTaskManager (function<void()> alg);
+
+
+
+
+
+
+  
+  
+  
+  /*
+    Usage example:
+
+    ShareLoop myloop(100);
+    task_manager->CreateJob ([]()
+    {
+      for (int i : myloop)
+        cout << "i = " << i << endl;
+    });
+
+  */
+  
+  class SharedLoop
+  {
+    atomic<int> cnt;
+    IntRange r;
+
+    
+    class SharedIterator
+    {
+      atomic<int> & cnt;
+      int myval;
+      int endval;
+    public:
+      SharedIterator (atomic<int> & acnt, int aendval, bool begin_iterator) 
+        : cnt (acnt)
+      {
+        endval = aendval;
+        myval = begin_iterator ? cnt++ : endval;
+        if (myval > endval) myval = endval;
+      }
+      
+      SharedIterator & operator++ () 
+      {
+        myval = cnt++; 
+        if (myval > endval) myval = endval;
+        return *this; 
+      }
+      
+      int operator* () const { return myval; }
+      bool operator!= (const SharedIterator & it2) const { return myval != it2.myval; }
+    };
+    
+    
+  public:
+    SharedLoop (IntRange ar) : r(ar) { cnt = r.begin(); }
+    SharedIterator begin() { return SharedIterator (cnt, r.end(), true); }
+    SharedIterator end()   { return SharedIterator (cnt, r.end(), false); }
+  };
+
+
+
+
+
+
 }
 
 
