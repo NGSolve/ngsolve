@@ -19,6 +19,10 @@
 namespace ngla
 {
 
+
+
+
+
   MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
   {
     size = elsperrow.Size();
@@ -243,84 +247,89 @@ namespace ngla
       {
         if (!symmetric)
           {
-            // #pragma omp parallel
-            {
-              Array<int> rowdofs;
-              Array<int> rowdofs1;
-              
-              // #pragma omp for schedule(dynamic,10)
-              for (int i = 0; i < ndof; i++)
-		{
-		  rowdofs.SetSize0();
-		  if (includediag) rowdofs += i;
-                  
-		  for (int elnr : dof2element[i])
-		    {
-		      rowdofs.Swap (rowdofs1);
-		      FlatArray<int> row = colelements[elnr];
-		      MergeSortedArrays (rowdofs1, row, rowdofs);
-		    }
-                  
-		  if (loop == 1)
-		    cnt[i] = rowdofs.Size();
-		  else
-		    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
-		}
-            }
+            SharedLoop sl(Range(ndof));
+
+            task_manager->CreateJob 
+              ([&](const TaskInfo & ti)
+               {
+                 Array<int> rowdofs;
+                 Array<int> rowdofs1;
+                 
+                 // #pragma omp for schedule(dynamic,10)
+                 // for (int i = 0; i < ndof; i++)
+                 for (int i : sl)
+                   {
+                     rowdofs.SetSize0();
+                     if (includediag) rowdofs += i;
+                     
+                     for (int elnr : dof2element[i])
+                       {
+                         rowdofs.Swap (rowdofs1);
+                         FlatArray<int> row = colelements[elnr];
+                         MergeSortedArrays (rowdofs1, row, rowdofs);
+                       }
+                     
+                     if (loop == 1)
+                       cnt[i] = rowdofs.Size();
+                     else
+                       colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                   }
+               } );
           }
         else
           {
+            SharedLoop sl(Range(ndof));
 
-            // #pragma omp parallel
-            {
-              Array<int> rowdofs;
-              Array<int> rowdofs1;
-              
-              // #pragma omp for
-              for (int i = 0; i < ndof; i++)
-                {
-                  rowdofs.SetSize0();
-                  if (includediag) rowdofs += i;
+            task_manager->CreateJob 
+              ([&](const TaskInfo & ti)
+               {
+                 Array<int> rowdofs;
+                 Array<int> rowdofs1;
+                 
+                 // #pragma omp for
+                 // for (int i = 0; i < ndof; i++)
+                 for (int i : sl)
+                   {
+                     rowdofs.SetSize0();
+                     if (includediag) rowdofs += i;
+                     
+                     for (auto elnr : dof2element[i])
+                       {
+                         rowdofs.Swap (rowdofs1);
+                         auto row = colelements[elnr];
+                         
+                         rowdofs.SetSize(rowdofs1.Size()+row.Size());
+                         
+                         int i1 = 0, i2 = 0, i3 = 0;
+                         while (i1 < rowdofs1.Size() && i2 < row.Size() && row[i2] <= i)
+                           {
+                             int newel;
+                             if (rowdofs1[i1] == row[i2])
+                               {
+                                 newel = rowdofs1[i1++]; i2++;
+                               }
+                             else if (rowdofs1[i1] < row[i2])
+                               newel = rowdofs1[i1++];
+                             else
+                               newel = row[i2++];
+                             rowdofs[i3++] = newel; 
+                           }
+                         
+                         while (i1 < rowdofs1.Size())
+                           rowdofs[i3++] = rowdofs1[i1++];
+                         while (i2 < row.Size() && row[i2] <= i)
+                           rowdofs[i3++] = row[i2++];
+                         
+                         rowdofs.SetSize(i3);
+                       }
                   
-                  for (auto elnr : dof2element[i])
-                    {
-                      rowdofs.Swap (rowdofs1);
-                      auto row = colelements[elnr];
-                      
-                      rowdofs.SetSize(rowdofs1.Size()+row.Size());
-
-                      int i1 = 0, i2 = 0, i3 = 0;
-                      while (i1 < rowdofs1.Size() && i2 < row.Size() && row[i2] <= i)
-                        {
-                          int newel;
-                          if (rowdofs1[i1] == row[i2])
-                            {
-                              newel = rowdofs1[i1++]; i2++;
-                            }
-                          else if (rowdofs1[i1] < row[i2])
-                            newel = rowdofs1[i1++];
-                          else
-                            newel = row[i2++];
-                          rowdofs[i3++] = newel; 
-                        }
-                      
-                      while (i1 < rowdofs1.Size())
-                        rowdofs[i3++] = rowdofs1[i1++];
-                      while (i2 < row.Size() && row[i2] <= i)
-                        rowdofs[i3++] = row[i2++];
-                      
-                      rowdofs.SetSize(i3);
-                    }
                   
-                  
-                  if (loop == 1)
-                    cnt[i] = rowdofs.Size();
-                  else
-		    colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
-                }
-            }
-
-
+                     if (loop == 1)
+                       cnt[i] = rowdofs.Size();
+                     else
+                       colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                   }
+               });
 
           }
 
@@ -343,7 +352,7 @@ namespace ngla
             colnr.SetSize (nze+1);
 
 	    CalcBalancing ();
-            *testout << "balancing: " << endl << balancing << endl;
+
             /*
 #pragma omp parallel
 	    {
@@ -359,9 +368,8 @@ namespace ngla
               ( [&] (const TaskInfo & ti)
                 {
                   int thd = ti.task_nr;
-                  IntRange r(balancing[thd], balancing[thd+1]);
-                  T_Range<size_t> r2(firsti[r.begin()], firsti[r.end()]);
-                  colnr.Range(firsti[r.begin()], firsti[r.end()]) = 0;
+                  colnr.Range(firsti[balancing[thd]], 
+                              firsti[balancing[thd+1]]) = 0;
                 } );
           }
         else
@@ -840,12 +848,6 @@ namespace ngla
   AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, 
 		   const FlatMatrix<TSCAL> & elmat1)
   {
-#pragma omp critical (printelmat)
-    {
-      *testout << "AddElmat, dnums1 = " << dnums1 << ", dnums2 = " << dnums2 << endl;
-      *testout << "mat = " << elmat1 << endl;
-    }
-
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
     QuickSortI (dnums2, map);
@@ -1278,17 +1280,18 @@ namespace ngla
 	static Timer timer("SparseMatrixSymmetric::MultAdd1");
 	RegionTimer reg (timer);
 	
-	/*
+
 	for (int i = 0; i < this->Height(); i++)
 	  fy(i) += s * RowTimesVectorNoDiag (i, fx);
-	*/
 
+        /*
 #pragma omp parallel 
 	{
 	  int tid = omp_get_thread_num();
 	  for (int i : IntRange (this->balancing[tid], this->balancing[tid+1]))
 	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
 	}
+        */
       }
   }
   

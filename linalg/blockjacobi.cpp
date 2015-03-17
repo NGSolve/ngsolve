@@ -509,18 +509,21 @@ namespace ngla
 
     for (int c = 0; c < block_coloring.Size(); c++)
       block_balancing[c][0] = 0;
+
     
-#pragma omp parallel
+    // #pragma omp parallel
     {
-      int tid = omp_get_thread_num();
-      for (int c = 0; c < block_coloring.Size(); c++)
-	{
-	  auto c_pre = prefix[c];	  
-	  block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
-	}
+      // int tid = omp_get_thread_num();
+#pragma omp parallel for
+      for (int tid = 0; tid < max_threads; tid++)
+        for (int c = 0; c < block_coloring.Size(); c++)
+          {
+            auto c_pre = prefix[c];	  
+            block_balancing[c][tid+1] = BinSearch (c_pre, size_t(c_pre[c_pre.Size()-1])*(tid+1)/max_threads);
+          }
     }
     
-    // cout << "block-balancing: " << endl << block_balancing << endl;
+    *testout << "block-balancing: " << endl << block_balancing << endl;
 
     cout << "\rBlockJacobi Preconditioner built" << endl;
 
@@ -592,10 +595,8 @@ namespace ngla
       }
   }
 
-  ///
-#define PARALLEL_GSSMOOTH
 
-#ifdef PARALLEL_GSSMOOTH
+
   template <class TM, class TV_ROW, class TV_COL>
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   GSSmooth (BaseVector & x, const BaseVector & b,
@@ -604,90 +605,82 @@ namespace ngla
     static Timer timer ("BlockJacobiPrecond::GSSmooth");
     RegionTimer reg(timer);
     timer.AddFlops (nze);
-
+    
     FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
-// 
-#pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
-      Vector<TVX> hxmax(maxbs);
-      Vector<TVX> hymax(maxbs);
+
+    if (task_manager)
+      
       for (int k = 0; k < steps; k++)
 	for (int c = 0; c < block_coloring.Size(); c++)
 	  {
 	    FlatArray<int> blocks = block_coloring[c];
               
-	    // #pragma omp for
-	    // for (int ii=0; ii<blocks.Size(); ii++)
-
-	    IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
-	    for (int ii : r) 
-	      {
-		int i = blocks[ii];
-		int bs = blocktable[i].Size();
-		if (!bs) continue;
+            task_manager -> CreateJob 
+              ([&](const TaskInfo & ti)
+               {
+                 int tid = ti.task_nr;
+                 Vector<TVX> hxmax(maxbs);
+                 Vector<TVX> hymax(maxbs);
+                 
+                 IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+                 for (int ii : r) 
+                   {
+                     int i = blocks[ii];
+                     int bs = blocktable[i].Size();
+                     if (!bs) continue;
+                     
+                     FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+                     FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+                     
+                     for (int j = 0; j < bs; j++)
+                       {
+                         int jj = blocktable[i][j];
+                         hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                       }
                   
-		FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-		FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-                  
-		for (int j = 0; j < bs; j++)
-		  {
-		    int jj = blocktable[i][j];
-		    hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-		  }
-                  
-		hy = (invdiag[i]) * hx;
-                  
-		for (int j = 0; j < bs; j++)
-		  fx(blocktable[i][j]) += hy(j);
-	      }
-#pragma omp barrier
-	  }
-    }
+                     hy = (invdiag[i]) * hx;
+                     
+                     for (int j = 0; j < bs; j++)
+                       fx(blocktable[i][j]) += hy(j);
+                   }
+               });
+            
+          }
+    
+    else
+      
+      {
+        Vector<TVX> hxmax(maxbs);
+        Vector<TVX> hymax(maxbs);
+        
+        for (int k = 0; k < steps; k++)
+          for (int i = 0; i < blocktable.Size(); i++)
+            {
+              int bs = blocktable[i].Size();
+              if (!bs) continue;
+              
+              FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+              FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+              
+              for (int j = 0; j < bs; j++)
+                {
+                  int jj = blocktable[i][j];
+                  hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                }
+              
+              hy = (invdiag[i]) * hx;
+              
+              for (int j = 0; j < bs; j++)
+                fx(blocktable[i][j]) += hy(j);
+            }
+      }
   }
-#else
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  GSSmooth (BaseVector & x, const BaseVector & b,
-	    int steps) const 
-  {
-    static Timer timer ("BlockJacobiPrecond::GSSmooth");
-    RegionTimer reg(timer);
-    FlatVector<TVX> fb = b.FV<TVX> (); 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-
-    Vector<TVX> hxmax(maxbs);
-    Vector<TVX> hymax(maxbs);
-    for (int k = 0; k < steps; k++)
-      for (int i = 0; i < blocktable.Size(); i++)
-	{
-	  int bs = blocktable[i].Size();
-	  if (!bs) continue;
-	  
-	  FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-	  FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-	  
-	  for (int j = 0; j < bs; j++)
-	    {
-	      int jj = blocktable[i][j];
-	      hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-	    }
-	  
-	  hy = (invdiag[i]) * hx;
-	  
-	  for (int j = 0; j < bs; j++)
-	    fx(blocktable[i][j]) += hy(j);
-	}
-  }
-#endif // PARALLEL_GSSMOOTH
-
   
 
   
-  ///
-#ifdef PARALLEL_GSSMOOTH
+
   template <class TM, class TV_ROW, class TV_COL>
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b,
@@ -700,88 +693,77 @@ namespace ngla
     const FlatVector<TVX> fb = b.FV<TVX> (); 
     FlatVector<TVX> fx = x.FV<TVX> ();
 
-#pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
 
-      Vector<TVX> hxmax(maxbs);
-      Vector<TVX> hymax(maxbs);
-
+    if (task_manager)
+      
       for (int k = 0; k < steps; k++)
         for (int c = block_coloring.Size()-1; c >=0; c--) 
           {
             FlatArray<int> blocks = block_coloring[c];
 
-	    /*
-	      #pragma omp for
-	      for (int ii=0; ii<blocks.Size(); ii++)
-	    */
 
-	    IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
-	    for (int ii : r) 
-              {
-                int i = blocks[ii];
-                int bs = blocktable[i].Size();
-                if (!bs) continue;
-                
-                FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
-                FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
-                
-                for (int j = 0; j < bs; j++)
-                  {
-                    int jj = blocktable[i][j];
-                    hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-                  }
-                
-                hy = (invdiag[i]) * hx;
-                
-                for (int j = 0; j < bs; j++)
-                  fx(blocktable[i][j]) += hy(j);
-	      }  
-#pragma omp barrier
+            task_manager -> CreateJob 
+              ([&](const TaskInfo & ti)
+               {
+                 int tid = ti.task_nr;
+                 IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+                 Vector<TVX> hxmax(maxbs);
+                 Vector<TVX> hymax(maxbs);
+
+
+                 for (int ii : r) 
+                   {
+                     int i = blocks[ii];
+                     int bs = blocktable[i].Size();
+                     if (!bs) continue;
+                     
+                     FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
+                     FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
+                     
+                     for (int j = 0; j < bs; j++)
+                       {
+                         int jj = blocktable[i][j];
+                         hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                       }
+                     
+                     hy = (invdiag[i]) * hx;
+                     
+                     for (int j = 0; j < bs; j++)
+                       fx(blocktable[i][j]) += hy(j);
+                   }
+               });
           }
-    }
+
+    else
+      
+
+      {
+        Vector<TVX> hxmax(maxbs);
+        Vector<TVX> hymax(maxbs);
+        
+        for (int k = 0; k < steps; k++)
+          for (int i = blocktable.Size()-1; i >= 0; i--)
+            {
+              int bs = blocktable[i].Size();
+              if (!bs) continue;
+              
+              FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
+              FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
+              
+              for (int j = 0; j < bs; j++)
+                {
+                  int jj = blocktable[i][j];
+                  hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                }
+              
+              hy = (invdiag[i]) * hx;
+              
+              for (int j = 0; j < bs; j++)
+                fx(blocktable[i][j]) += hy(j);
+            }  
+      }
+
   }
-
-#else // PARALLEL_GSSMOOTH
-  template <class TM, class TV_ROW, class TV_COL>
-  void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  GSSmoothBack (BaseVector & x, const BaseVector & b,
-		int steps) const 
-  {
-    static Timer timer ("BlockJacobiPrecond::GSSmoothBack");
-    RegionTimer reg(timer);
-    const FlatVector<TVX> fb = b.FV<TVX> (); 
-    FlatVector<TVX> fx = x.FV<TVX> ();
-
-    Vector<TVX> hxmax(maxbs);
-    Vector<TVX> hymax(maxbs);
-
-    for (int k = 0; k < steps; k++)
-      for (int i = blocktable.Size()-1; i >= 0; i--)
-	{
-	  int bs = blocktable[i].Size();
-	  if (!bs) continue;
-	  
-	  FlatVector<TVX> hx = hxmax.Range (0, bs); // (bs, hxmax.Addr(0));
-	  FlatVector<TVX> hy = hymax.Range (0, bs); // (bs, hymax.Addr(0));
-	  
-	  for (int j = 0; j < bs; j++)
-	    {
-	      int jj = blocktable[i][j];
-	      hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
-	    }
-
-	  hy = (invdiag[i]) * hx;
-	  
-	  for (int j = 0; j < bs; j++)
-	    fx(blocktable[i][j]) += hy(j);
-	}  
-  }
-#endif // PARALLEL_GSSMOOTH
-
-
-
 
 
 
