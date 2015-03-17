@@ -380,14 +380,13 @@ namespace ngsolve
 	hv = vecf;
         bfa->ModifyRHS (hv);
         
-        /*
 	RunWithTaskManager 
 	  ( [invmat,&hv,&vecu] ()
 	    {
 	      invmat -> Mult(hv, vecu);
 	    } );
-        */
-        invmat->Mult (hv, vecu);
+
+        // invmat->Mult (hv, vecu);
       }
     else 
       {
