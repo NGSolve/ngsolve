@@ -195,7 +195,7 @@ template <class T>
   {
   protected:  
     int mode;    // 1 .. cnt, 2 .. cnt entries, 3 .. fill table
-    int nd;
+    atomic<int> nd;
     Array<atomic<int>> cnt;
     Table<T> * table;
   public:
@@ -258,10 +258,15 @@ template <class T>
 
     void Add (int blocknr, const T & data)
     {
+      int oldval;
       switch (mode)
 	{
 	case 1:
-	  if (blocknr+1 > nd) nd = blocknr+1; 
+      oldval = nd;
+      while (blocknr+1>nd) {
+          nd.compare_exchange_weak (oldval, blocknr+1);
+          oldval = nd;
+      }
 	  break;
 	case 2:
 	  cnt[blocknr]++;
@@ -276,10 +281,15 @@ template <class T>
 
     void Add (int blocknr, IntRange range)
     {
+      int oldval;
       switch (mode)
 	{
 	case 1:
-	  if (blocknr+1 > nd) nd = blocknr+1; 
+      oldval = nd;
+      while (blocknr+1>nd) {
+          nd.compare_exchange_weak (oldval, blocknr+1);
+          oldval = nd;
+      }
 	  break;
 	case 2:
 	  cnt[blocknr] += range.Size();
@@ -294,10 +304,15 @@ template <class T>
 
     void Add (int blocknr, const FlatArray<int> & dofs)
     {
+      int oldval;
       switch (mode)
 	{
 	case 1:
-	  if (blocknr+1 > nd) nd = blocknr+1; 
+      oldval = nd;
+      while (blocknr+1>nd) {
+          nd.compare_exchange_weak (oldval, blocknr+1);
+          oldval = nd;
+      }
 	  break;
 	case 2:
 	  cnt[blocknr] += dofs.Size();
