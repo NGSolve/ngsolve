@@ -548,18 +548,61 @@ namespace ngla
     
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
-    
-    Vector<TVX> hxmax(maxbs);
-    
-    for (auto i : Range (blocktable))
-      {
-	FlatArray<int> ind = blocktable[i];
-	if (!ind.Size()) continue;
 
-	FlatVector<TVX> hx = hxmax.Range(0, ind.Size()); // (ind.Size(), hxmax.Addr(0));
-	  
-	hx = s * fx(ind);
-	fy(ind) += invdiag[i] * hx;
+
+
+    if (task_manager)
+      
+      for (int c = 0; c < block_coloring.Size(); c++)
+        {
+          FlatArray<int> blocks = block_coloring[c];
+          
+          task_manager -> CreateJob 
+            ([&](const TaskInfo & ti)
+             {
+               int tid = ti.task_nr;
+               Vector<TVX> hxmax(maxbs);
+               Vector<TVX> hymax(maxbs);
+               
+               IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+               for (int ii : r) 
+                 {
+                   int i = blocks[ii];
+                   int bs = blocktable[i].Size();
+                   if (!bs) continue;
+                   
+                   FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+                   FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+                   
+                   for (int j = 0; j < bs; j++)
+                     hx(j) = fx(blocktable[i][j]);
+                   
+                   hy = invdiag[i] * hx;
+                   
+                   for (int j = 0; j < bs; j++)
+                     fy(blocktable[i][j]) += s * hy(j);
+                 }
+               
+             });
+        }
+
+
+    else
+
+      {
+
+        Vector<TVX> hxmax(maxbs);
+        
+        for (auto i : Range (blocktable))
+          {
+            FlatArray<int> ind = blocktable[i];
+            if (!ind.Size()) continue;
+            
+            FlatVector<TVX> hx = hxmax.Range(0, ind.Size()); // (ind.Size(), hxmax.Addr(0));
+            
+            hx = s * fx(ind);
+            fy(ind) += invdiag[i] * hx;
+          }
       }
   }
 
@@ -574,24 +617,68 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    Vector<TVX> hxmax(maxbs);
-    Vector<TVX> hymax(maxbs);
 
-    for (auto i : Range (blocktable))
+
+
+    if (task_manager)
+      
+      for (int c = 0; c < block_coloring.Size(); c++)
+        {
+          FlatArray<int> blocks = block_coloring[c];
+          
+          task_manager -> CreateJob 
+            ([&](const TaskInfo & ti)
+             {
+               int tid = ti.task_nr;
+               Vector<TVX> hxmax(maxbs);
+               Vector<TVX> hymax(maxbs);
+               
+               IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+               for (int ii : r) 
+                 {
+                   int i = blocks[ii];
+                   int bs = blocktable[i].Size();
+                   if (!bs) continue;
+                   
+                   FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+                   FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+                   
+                   for (int j = 0; j < bs; j++)
+                     hx(j) = fx(blocktable[i][j]);
+                   
+                   hy = Trans(invdiag[i]) * hx;
+                   
+                   for (int j = 0; j < bs; j++)
+                     fy(blocktable[i][j]) += s * hy(j);
+                 }
+               
+             });
+        }
+
+
+    else
+
       {
-	int bs = blocktable[i].Size();
-	if (!bs) continue;
 
-	FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
-	FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
-
-	for (int j = 0; j < bs; j++)
-	  hx(j) = fx(blocktable[i][j]);
-	
-	hy = Trans(invdiag[i]) * hx;
-
-	for (int j = 0; j < bs; j++)
-	  fy(blocktable[i][j]) += s * hy(j);
+        Vector<TVX> hxmax(maxbs);
+        Vector<TVX> hymax(maxbs);
+        
+        for (auto i : Range (blocktable))
+          {
+            int bs = blocktable[i].Size();
+            if (!bs) continue;
+            
+            FlatVector<TVX> hx = hxmax.Range(0,bs); // (bs, hxmax.Addr(0));
+            FlatVector<TVX> hy = hymax.Range(0,bs); // (bs, hymax.Addr(0));
+            
+            for (int j = 0; j < bs; j++)
+              hx(j) = fx(blocktable[i][j]);
+            
+            hy = Trans(invdiag[i]) * hx;
+            
+            for (int j = 0; j < bs; j++)
+              fy(blocktable[i][j]) += s * hy(j);
+          }
       }
   }
 
