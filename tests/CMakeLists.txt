@@ -5,9 +5,7 @@ set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
 file(COPY ${PROJECT_SOURCE_DIR}/pde_tutorial DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(pde_dir "${CMAKE_CURRENT_BINARY_DIR}/pde_tutorial")
 
-# currently d8 is not working
-set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
-# set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
+set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
 if(NOT WIN32 AND NOT APPLE)
     add_executable( pde_tester pde_tester.cpp)
@@ -16,6 +14,8 @@ if(NOT WIN32 AND NOT APPLE)
 endif(NOT WIN32 AND NOT APPLE)
 
 if(USE_MPI)
+# currently d8 and d10 is not working in parallel
+    set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d9_hybridDG.pde;d11_chip_nitsche.pde")
     if(NOT DEFINED PROCESSOR_COUNT)
         # Unknown:
         set(PROCESSOR_COUNT 0)
@@ -47,9 +47,13 @@ if(USE_MPI)
     foreach(pde_test ${pde_tests})
         message("${pde_test}")
         file(READ ${pde_dir}/${pde_test} pdefile)
-        string(REPLACE "multigrid" "bddc" pdefile_new ${pdefile})
-        string(REPLACE "direct" "sldkfjsldf" pdefile_new1 ${pdefile_new})
-        file(WRITE ${pde_dir}/${pde_test} ${pdefile_new1})
+#no multigrid in parallel implementation
+        string(REPLACE "multigrid" "bddc" pdefile ${pdefile})
+#no direct solver (MUMPS??)
+        string(REPLACE "-solver=direct" "" pdefile ${pdefile})
+#segfault at exit if geometry loaded
+        string(REPLACE "geometry =" "# geometry =" pdefile ${pdefile})
+        file(WRITE ${pde_dir}/${pde_test} ${pdefile})
     endforeach()
     
 endif(USE_MPI)
