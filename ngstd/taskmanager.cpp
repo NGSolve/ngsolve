@@ -121,9 +121,11 @@ namespace ngstd
 
     int thd = omp_get_thread_num();
     int thds = omp_get_num_threads();
-      
-    int tasks_per_node = thds / num_nodes;
+
+    // int tasks_per_node = thds / num_nodes;
     int mynode = num_nodes * thd/thds;
+
+    IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
       
 #ifdef USE_NUMA
     numa_run_on_node (mynode);
@@ -140,29 +142,26 @@ namespace ngstd
     while (1)
       {
         int mytask = mynode_data.start_cnt++;
-        if (mytask >= tasks_per_node) break;
+        if (mytask >= mytasks.Size()) break;
 
-        ti.task_nr = mytask + mynode*tasks_per_node;
+        ti.task_nr = mytasks.First()+mytask;
         ti.ntasks = ntasks;
-        func(ti); // mytask + mynode*tasks_per_node);
-        if (++mynode_data.complete_cnt == tasks_per_node)
+        func(ti); 
+        if (++mynode_data.complete_cnt == mytasks.Size())
           complete[mynode] = true;
-        // complete_cnt++;
       }
 
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
         ;
     
-    // while (complete_cnt < num_nodes) ;
   }
     
   void TaskManager :: Loop()
   {
     int thd = omp_get_thread_num();
     int thds = omp_get_num_threads();
-      
-    int tasks_per_node = thds / num_nodes;
+
     int mynode = num_nodes * thd/thds;
 
     NodeData & mynode_data = *(nodedata[mynode]);
@@ -196,20 +195,21 @@ namespace ngstd
         int oldpart = 0;
         while (! mynode_data.participate.compare_exchange_weak (oldpart, oldpart+1))
           if (oldpart == -1) oldpart = 0;
+
+        IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
           
         while (1)
           {
             int mytask = mynode_data.start_cnt++;
-            if (mytask >= tasks_per_node) break;
+            if (mytask >= mytasks.Size()) break;
               
-            ti.task_nr = mytask + mynode*tasks_per_node;
+            ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
 
-            func(ti); // mytask + mynode*tasks_per_node);
+            func(ti); 
 
-            if (++mynode_data.complete_cnt == tasks_per_node)
+            if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;
-              // complete_cnt++;
           }
               
         jobdone = jobnr;

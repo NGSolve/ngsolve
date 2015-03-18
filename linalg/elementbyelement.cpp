@@ -105,8 +105,10 @@ namespace ngla
       if (!clone.Test(i))
 	{
 	  delete [] &(elmats[i](0,0));
-	  delete [] &(rowdnums[i])[0];
-	  delete [] &(coldnums[i])[0];
+	  if (rowdnums[i].Size() > 0)
+	    delete [] &(rowdnums[i])[0];
+	  if (coldnums[i].Size() > 0)
+	    delete [] &(coldnums[i])[0];
 	}
   }
   

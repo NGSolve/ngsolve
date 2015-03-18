@@ -651,6 +651,7 @@ namespace ngla
   template <typename Tarray>
   int BinSearch(const Tarray & v, size_t i) {
     int n = v.Size();
+    if (n == 0) return 0;
     
     int first = 0;
     int last = n-1;
@@ -694,9 +695,8 @@ namespace ngla
     for (int tid = 0; tid < max_threads; tid++)
 #pragma omp task
       {
-        if(prefix.Size()>tid)
-            balancing[tid+1] = 
-              BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);      
+        balancing[tid+1] = 
+          BinSearch (prefix, sum*(tid+1)/max_threads);      
       }
 #pragma omp taskwait
   }
@@ -899,6 +899,7 @@ namespace ngla
 		ai = 0.0;
 	    },
             balancing.Size()-1);
+
 	return;
       }
 
