@@ -617,6 +617,10 @@ namespace ngla
 	  {
 	    FlatArray<int> blocks = block_coloring[c];
               
+            auto bal = block_balancing[c];
+            SharedLoop sl (IntRange (bal[0], bal[bal.Size()-1]));
+                           
+
             task_manager -> CreateJob 
               ([&](const TaskInfo & ti)
                {
@@ -624,8 +628,9 @@ namespace ngla
                  Vector<TVX> hxmax(maxbs);
                  Vector<TVX> hymax(maxbs);
                  
-                 IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
-                 for (int ii : r) 
+                 // IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+                 //                 for (int ii : r) 
+                 for (int ii : sl)
                    {
                      int i = blocks[ii];
                      int bs = blocktable[i].Size();
