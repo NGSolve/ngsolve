@@ -900,7 +900,6 @@ namespace ngla
 	    },
             balancing.Size()-1);
 
-        cout << "survived" << endl;
 	return;
       }
 
