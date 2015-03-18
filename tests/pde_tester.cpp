@@ -23,6 +23,7 @@ int main(int argc, char ** argv)
   dummy_bvp = 17;
 
   ngsolve::MyMPI mympi(argc, argv);
+  cout << IM(1) << "CTEST_FULL_OUTPUT" << endl;
 
   try
     {
