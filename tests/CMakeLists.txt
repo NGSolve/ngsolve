@@ -60,5 +60,7 @@ endif(USE_MPI)
 
 foreach(pde_test ${pde_tests})
     add_test(NAME ${pde_test}  COMMAND ${test_driver} "${pde_dir}/${pde_test}" WORKING_DIRECTORY ${pde_dir})
+    set_tests_properties ( ${pde_test} PROPERTIES TIMEOUT 30 )
+    set_tests_properties ( ${pde_test} PROPERTIES ATTACHED_FILES "${pde_dir}/ng.prof" )
 endforeach()
 
