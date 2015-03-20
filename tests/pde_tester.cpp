@@ -9,11 +9,28 @@ namespace netgen
 
 extern int dummy_bvp;
 
-void printMeasurement( string name, bool flops=false ) {
-    double time =  NgProfiler::GetTime(name);
+void printMeasurement( string name ) {
+    int nr = NgProfiler::GetNr(name);
+    cout << name << ": " << nr << endl;
+    if(nr < 0) return;
+    double time =  NgProfiler::GetTime(nr);
+    string timer_name = name;
+
+    for (int i=0; i< timer_name.length(); i++) {
+        char & c = timer_name[i];
+        if(c==' ' || c==':' || c=='-') {
+            timer_name.erase(i,1);
+            i--;
+        }
+    }
     if(time == 0) return;
-    cout << "<DartMeasurement name=" << '"' << name << '"' << endl;
+    cout << "<DartMeasurement name=" << '"' << timer_name << '"' << endl;
     cout << "type=\"numeric/double\">" << time << "</DartMeasurement>" << endl;
+
+    double mflops = NgProfiler::GetFlops(nr) / NgProfiler::GetTime(nr) * 1e-6; 
+    if(mflops == 0) return;
+    cout << "<DartMeasurement name=" << '"' << timer_name << "MFlops" << '"' << endl;
+    cout << "type=\"numeric/double\">" << mflops << "</DartMeasurement>" << endl;
 }
 
 int main(int argc, char ** argv)
@@ -37,13 +54,13 @@ int main(int argc, char ** argv)
       string filename = argv[argc-1];
       auto pde = ngcomp::LoadPDE (filename);
       pde->Solve();
-      NgProfiler::Print (stdout);
       printMeasurement( "Matrix assembling" );
       printMeasurement( "Solver - Total" );
       printMeasurement( "CG solver" );
       printMeasurement( "SparseMatrixSymmetric::MultAdd" );
       printMeasurement( "SparseMatrixSymmetric::MultAdd1" );
       printMeasurement( "SparseMatrixSymmetric::MultAdd2" );
+      NgProfiler::Print (stdout);
     }
 
   catch(ngstd::Exception & e)
