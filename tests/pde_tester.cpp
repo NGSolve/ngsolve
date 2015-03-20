@@ -9,6 +9,13 @@ namespace netgen
 
 extern int dummy_bvp;
 
+void printMeasurement( string name, bool flops=false ) {
+    double time =  NgProfiler::GetTime(name);
+    if(time == 0) return;
+    cout << "<DartMeasurement name=" << '"' << name << '"' << endl;
+    cout << "type=\"numeric/double\">" << time << "</DartMeasurement>" << endl;
+}
+
 int main(int argc, char ** argv)
 {
   int retcode = EXIT_SUCCESS;
@@ -31,6 +38,12 @@ int main(int argc, char ** argv)
       auto pde = ngcomp::LoadPDE (filename);
       pde->Solve();
       NgProfiler::Print (stdout);
+      printMeasurement( "Matrix assembling" );
+      printMeasurement( "Solver - Total" );
+      printMeasurement( "CG solver" );
+      printMeasurement( "SparseMatrixSymmetric::MultAdd" );
+      printMeasurement( "SparseMatrixSymmetric::MultAdd1" );
+      printMeasurement( "SparseMatrixSymmetric::MultAdd2" );
     }
 
   catch(ngstd::Exception & e)
