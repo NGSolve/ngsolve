@@ -607,7 +607,7 @@ namespace ngcomp
             task_manager -> CreateJob
               ( [&] (const TaskInfo & ti) 
                 {
-                  int tnr = ti.task_nr;
+                  // int tnr = ti.task_nr;
                   LocalHeap lh = clh.Split();
                   Array<int> temp_dnums;
 
