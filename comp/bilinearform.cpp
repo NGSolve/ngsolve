@@ -779,7 +779,7 @@ namespace ngcomp
 #endif
 
 
-
+          /*
 	  Exception * e = NULL;
 #pragma omp parallel
 	  {
@@ -806,7 +806,17 @@ namespace ngcomp
 	      }
 	  }
 	  if (e) throw Exception (*e);
-	}
+          */
+
+          IterateElements
+            (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+             {
+               if (parts[i] -> DefinedOn (ma->GetElIndex(el)))
+                 parts[i] -> CheckElement (fespace->GetFE(el, lh));
+               ;
+             });
+
+        }
     mattimer1.Stop();    
     
     try
