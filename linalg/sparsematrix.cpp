@@ -13,8 +13,6 @@
 #include <la.hpp>
 // #include <bitonic.hpp>
 
-#include "../ngstd/taskmanager.hpp"
-
 
 namespace ngla
 {
@@ -900,7 +898,6 @@ namespace ngla
 	    },
             balancing.Size()-1);
 
-        cout << "survived" << endl;
 	return;
       }
 
