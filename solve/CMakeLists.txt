@@ -67,7 +67,7 @@ endif (USE_GUI)
 
 if(NOT WIN32 AND NOT APPLE)
     add_executable( ngs ngs.cpp)
-    target_link_libraries(ngs solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} )
+    target_link_libraries(ngs solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} -lgeom2d)
     install( TARGETS ngs DESTINATION bin)
 endif(NOT WIN32 AND NOT APPLE)
 
