@@ -12,7 +12,6 @@
 
 #include <la.hpp>
 
-#include "../ngstd/taskmanager.hpp"
 
 namespace ngla
 {
@@ -76,7 +75,6 @@ namespace ngla
               IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      me.Range(r) *= scal;
 	    } );
-
 	return *this; 
       }
 

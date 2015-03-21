@@ -711,10 +711,10 @@ namespace ngla
             task_manager -> CreateJob 
               ([&](const TaskInfo & ti)
                {
-                 int tid = ti.task_nr;
                  Vector<TVX> hxmax(maxbs);
                  Vector<TVX> hymax(maxbs);
                  
+                 // int tid = ti.task_nr;
                  // IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
                  //                 for (int ii : r) 
                  for (int ii : sl)

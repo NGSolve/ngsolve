@@ -59,10 +59,23 @@ namespace ngstd
     void CreateJob (function<void(TaskInfo&)> afunc, 
                     int antasks = omp_get_max_threads());
 
-    void Done()
+
+
+    template <typename TFUNC>
+    INLINE void ParallelFor (IntRange r, TFUNC f)
     {
-      done = true;
+      CreateJob 
+        ([r, f] (TaskInfo & ti) LAMBDA_INLINE
+         {
+           auto myrange = r.Split (ti.task_nr, ti.ntasks);
+           for (auto i : myrange) f(i);
+         });
     }
+    
+
+
+    void Done() { done = true; }
+
 
     void Loop();
   };
@@ -80,6 +93,14 @@ namespace ngstd
 
 
 
+  template <typename TFUNC>
+  INLINE void ParallelFor (IntRange r, TFUNC f)
+  {
+    if (task_manager)
+      task_manager -> ParallelFor (r, f);
+    else
+      for (auto i : r) f(i);
+  }
 
 
 
