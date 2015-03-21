@@ -42,6 +42,7 @@ namespace ngstd
     
     function<void(TaskInfo&)> func;
     volatile int ntasks;
+    Exception * ex;
 
     atomic<int> jobnr;
 

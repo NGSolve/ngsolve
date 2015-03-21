@@ -93,6 +93,7 @@ namespace ngstd
   {
     func = afunc;
     ntasks = antasks;
+    ex = nullptr;
 
     for (int j = 0; j < num_nodes; j++)
       {
@@ -138,23 +139,40 @@ namespace ngstd
     ti.thread_nr = thd;
     ti.nnodes = num_nodes;
     ti.node_nr = mynode;
-    
-    while (1)
+
+    try
       {
-        int mytask = mynode_data.start_cnt++;
-        if (mytask >= mytasks.Size()) break;
+        
+        
+        while (1)
+          {
+            int mytask = mynode_data.start_cnt++;
+            if (mytask >= mytasks.Size()) break;
+            
+            ti.task_nr = mytasks.First()+mytask;
+            ti.ntasks = ntasks;
+            func(ti); 
+            if (++mynode_data.complete_cnt == mytasks.Size())
+              complete[mynode] = true;
+          }
 
-        ti.task_nr = mytasks.First()+mytask;
-        ti.ntasks = ntasks;
-        func(ti); 
-        if (++mynode_data.complete_cnt == mytasks.Size())
-          complete[mynode] = true;
       }
-
+    catch (Exception e)
+      {
+#pragma omp critical(copyex)
+        delete ex;
+        ex = new Exception (e);
+        mynode_data.start_cnt = mytasks.Size();
+        complete[mynode] = true;
+      }
+    
+    
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
         ;
     
+    if (ex)
+      throw Exception (*ex);
   }
     
   void TaskManager :: Loop()
@@ -198,20 +216,33 @@ namespace ngstd
 
         IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
           
-        while (1)
+        try
           {
-            int mytask = mynode_data.start_cnt++;
-            if (mytask >= mytasks.Size()) break;
-              
-            ti.task_nr = mytasks.First()+mytask;
-            ti.ntasks = ntasks;
+            
+            while (1)
+              {
+                int mytask = mynode_data.start_cnt++;
+                if (mytask >= mytasks.Size()) break;
+                
+                ti.task_nr = mytasks.First()+mytask;
+                ti.ntasks = ntasks;
+                
+                func(ti); 
+                
+                if (++mynode_data.complete_cnt == mytasks.Size())
+                  complete[mynode] = true;
+              }
 
-            func(ti); 
-
-            if (++mynode_data.complete_cnt == mytasks.Size())
-              complete[mynode] = true;
           }
-              
+        catch (Exception e)
+          {
+#pragma omp critical(copyex)
+            delete ex;
+            ex = new Exception (e);
+            mynode_data.start_cnt = mytasks.Size();
+            complete[mynode] = true;
+          }
+        
         jobdone = jobnr;
         mynode_data.participate--;
       }
