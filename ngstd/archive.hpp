@@ -92,6 +92,11 @@ namespace ngstd
     virtual Archive & operator & (bool & b);
     virtual Archive & operator & (string & str);
     virtual Archive & operator & (char *& str);
+
+    virtual Archive & Do (double * d, size_t n); 
+    virtual Archive & Do (int * i, size_t n); 
+    virtual Archive & Do (size_t * i, size_t n); 
+
   };
 
 
