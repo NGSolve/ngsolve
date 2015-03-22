@@ -1221,8 +1221,11 @@ namespace ngstd
         a.SetSize (size);
       }
 
+    /*
     for (auto & ai : a)
       archive & ai;
+    */
+    archive.Do (&a[0], a.Size());
     return archive;
   }
 }

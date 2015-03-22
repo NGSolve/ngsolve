@@ -152,6 +152,35 @@ namespace ngstd
     return *this;
   }
 
+
+  Archive & BinaryInArchive :: Do (double * d, size_t n) 
+  {
+    cout << "load double array, size = " << n << endl;
+    fin->read(reinterpret_cast<char*>(d), n*sizeof(double));
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: Do (int * i, size_t n) 
+  {
+    cout << "load int array, size = " << n << endl;
+    fin->read(reinterpret_cast<char*>(i), n*sizeof(int));
+    return *this;
+  }
+
+  Archive & BinaryInArchive :: Do (size_t * i, size_t n) 
+  {
+    cout << "load size_t array, size = " << n << endl;
+    fin->read(reinterpret_cast<char*>(i), n*sizeof(size_t));
+    return *this;
+  }
+
+
+
+
+
+
+
+
   
 
   /* ******************* TextOutArchive ******************* */
