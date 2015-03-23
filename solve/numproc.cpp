@@ -3206,7 +3206,6 @@ public:
 class NumProcTestVariable : public NumProc
 {
   string varname;
-  double* variable;
   double refvalue;
   double tolerance;
   bool abstol;
@@ -3215,8 +3214,6 @@ public:
     : NumProc (apde)
   {
     varname = flags.GetStringFlag("variable");
-    variable = &(apde->GetVariable(varname, true));
-
     refvalue = flags.GetNumFlag("refvalue",0.0);
     tolerance = flags.GetNumFlag("tolerance",0.0);
     abstol = flags.GetDefineFlag("abstol");
@@ -3224,15 +3221,17 @@ public:
 
   virtual void Do(LocalHeap & lh)
   {
+    double variable = pde.lock()->GetVariable(varname, false);
+
     if(abstol)
     {
-      if (abs(*variable - refvalue) > tolerance)
+      if (abs(variable - refvalue) > tolerance)
       {
         ostringstream exctext;
         exctext << "NumProcTestVariable(" << GetName();
         exctext << "NumProcTestVariable(" << GetName();
         exctext << ": Violated absolute tolerance: ";
-        exctext << "value = " << *variable;
+        exctext << "value = " << variable;
         exctext << ", refvalue = " << refvalue;
         exctext << ", tolerance = " << tolerance;
         throw Exception (exctext.str()); 
@@ -3240,18 +3239,22 @@ public:
     }
     else 
     {
-      if (abs(*variable - refvalue)/abs(refvalue) > tolerance)
+      if (abs(variable - refvalue)/abs(refvalue) > tolerance)
       {
         ostringstream exctext;
         exctext << "NumProcTestVariable(" << GetName();
         exctext << "NumProcTestVariable(" << GetName();
         exctext << ": Violated relative tolerance: ";
-        exctext << "value = " << *variable;
+        exctext << "value = " << variable;
         exctext << ", refvalue = " << refvalue;
         exctext << ", tolerance = " << tolerance;
         throw Exception (exctext.str()); 
       }
     }
+    std::cout << " variable " << varname << " withtin tolerance: " << std::endl;
+    std::cout << " value = " << variable << ", refvalue = " << refvalue << std::endl;
+    std::cout << " abs. error. = " << abs(variable - refvalue)  << std::endl;
+    std::cout << " rel. error. = " << abs(variable - refvalue) / refvalue  << std::endl;
   }
 
 
