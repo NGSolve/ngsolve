@@ -3193,8 +3193,100 @@ public:
   static void PrintDoc (ostream & ost)
   {
     ost << 
-      "\n\nNumproc Parabolic:\n"                
+      "\n\nNumproc Pause:\n"                
 	<< endl;
+  }
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+class NumProcTestVariable : public NumProc
+{
+  string varname;
+  double* variable;
+  double refvalue;
+  double tolerance;
+  bool abstol;
+public:
+  NumProcTestVariable (shared_ptr<PDE> apde, const Flags & flags)
+    : NumProc (apde)
+  {
+    varname = flags.GetStringFlag("variable");
+    variable = &(apde->GetVariable(varname, true));
+
+    refvalue = flags.GetNumFlag("refvalue",0.0);
+    tolerance = flags.GetNumFlag("tolerance",0.0);
+    abstol = flags.GetDefineFlag("abstol");
+  }
+
+  virtual void Do(LocalHeap & lh)
+  {
+    if(abstol)
+    {
+      if (abs(*variable - refvalue) > tolerance)
+      {
+        ostringstream exctext;
+        exctext << "NumProcTestVariable(" << GetName();
+        exctext << "NumProcTestVariable(" << GetName();
+        exctext << ": Violated absolute tolerance: ";
+        exctext << "value = " << *variable;
+        exctext << ", refvalue = " << refvalue;
+        exctext << ", tolerance = " << tolerance;
+        throw Exception (exctext.str()); 
+      }
+    }
+    else 
+    {
+      if (abs(*variable - refvalue)/abs(refvalue) > tolerance)
+      {
+        ostringstream exctext;
+        exctext << "NumProcTestVariable(" << GetName();
+        exctext << "NumProcTestVariable(" << GetName();
+        exctext << ": Violated relative tolerance: ";
+        exctext << "value = " << *variable;
+        exctext << ", refvalue = " << refvalue;
+        exctext << ", tolerance = " << tolerance;
+        throw Exception (exctext.str()); 
+      }
+    }
+  }
+
+
+  virtual string GetClassName () const
+  {
+    return "NumProcTestVariable";
+  }
+
+  virtual void PrintReport (ostream & ost)
+  {
+    ost << GetClassName() << endl
+        << "Compare variable" << varname << " with reference value " 
+        << refvalue << "and (";
+    if (abstol) ost << "absolute)"; else ost << "relative)";
+    ost << " tolerance of " << tolerance << endl;
+  }
+
+  ///
+  static void PrintDoc (ostream & ost)
+  {
+    ost <<
+      "\n\nNumproc NumProcTestVariable:\n" \
+      "-------------------------------\n" \
+      "Compare variables with reference\n" \
+      "value and throw exc. on failure\n\n"\
+      "flags:\n"\
+      "-variable=<name>\n"\
+      "   variable to compare\n"\
+      "-refvalue=<val>\n"\
+      "   reference value\n"\
+      "-tolerance=<val>\n"\
+      "   tolerance\n"\
+      "-abstol\n"\
+      "   use absolute tolerance \n"\
+      "   (default is relative tol.)\n";
   }
 };
 
@@ -3258,6 +3350,7 @@ public:
   static RegisterNumProc<NumProcDrawFlux> npinitdf ("drawflux");
   static RegisterNumProc<NumProcDrawCoefficient> npinitdc ("draw");
   static RegisterNumProc<NumProcPause> npinitpause ("pause");
+  static RegisterNumProc<NumProcTestVariable> nptestvar ("testvariable");
 
   static RegisterNumProc<NumProcLoadSolution2> npload ("loadgridfunction2");
   static RegisterNumProc<NumProcSaveSolution2> npsave ("savegridfunction2");

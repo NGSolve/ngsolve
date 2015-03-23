@@ -9,7 +9,7 @@ set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pd
 
 if(NOT WIN32 AND NOT APPLE)
     add_executable( pde_tester pde_tester.cpp)
-    target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} )
+    target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} -lgeom2d)
     install( TARGETS pde_tester DESTINATION bin)
 endif(NOT WIN32 AND NOT APPLE)
 
