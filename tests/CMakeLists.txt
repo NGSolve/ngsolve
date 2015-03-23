@@ -64,3 +64,8 @@ foreach(pde_test ${pde_tests})
     set_tests_properties ( ${pde_test} PROPERTIES ATTACHED_FILES "${pde_dir}/ng.prof" )
 endforeach()
 
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
+if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
+    set_tests_properties ( "d6_shaft.pde" PROPERTIES TIMEOUT 60 )
+    set_tests_properties ( "d8_coilshield.pde" PROPERTIES TIMEOUT 60 )
+endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
