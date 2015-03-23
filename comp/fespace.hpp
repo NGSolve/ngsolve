@@ -602,27 +602,22 @@ namespace ngcomp
       {
         for (FlatArray<int> els_of_col : element_coloring)
           {
-            atomic<int> cnt(0);
-            
+            SharedLoop sl(els_of_col.Range());
+
             task_manager -> CreateJob
               ( [&] (const TaskInfo & ti) 
                 {
-                  // int tnr = ti.task_nr;
                   LocalHeap lh = clh.Split();
                   Array<int> temp_dnums;
 
-                  while (1)
+                  for (int mynr : sl)
                     {
-                      int mynr = cnt++;
-                      if (mynr >= els_of_col.Size()) break;
-                      
                       HeapReset hr(lh);
                       FESpace::Element el(fes, 
                                           ElementId (vb, els_of_col[mynr]), 
                                           temp_dnums);
                       
                       func (el, lh);
-                      
                     }
                 } );
           }

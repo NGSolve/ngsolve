@@ -807,7 +807,7 @@ namespace ngcomp
 	  }
 	  if (e) throw Exception (*e);
           */
-
+          
           IterateElements
             (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
              {
