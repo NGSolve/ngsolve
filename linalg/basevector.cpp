@@ -59,16 +59,15 @@ namespace ngla
   {
     if (scal == 1) return *this;
 
-    static Timer t("BaseVector::Scale");
-    RegionTimer reg(t);
-    // FVDouble() *= scal;
 
     FlatVector<double> me = FVDouble();
 
-    t.AddFlops (me.Size());
-
     if (task_manager)
       {
+        static Timer t("BaseVector::Scale (taskhandler)");
+        RegionTimer reg(t);
+        t.AddFlops (me.Size());
+
         /*
 	task_manager -> CreateJob 
 	  ( [me,scal] (const TaskInfo & ti)
@@ -77,13 +76,17 @@ namespace ngla
 	      me.Range(r) *= scal;
 	    } );
         */
+
         ParallelFor ( me.Range(),
                       [me,scal] (int i) { me(i) *= scal; });
+
 	return *this; 
       }
 
 
-
+    static Timer t("BaseVector::Scale");
+    RegionTimer reg(t);
+    t.AddFlops (me.Size());
 
     switch (omp_status)
       {
@@ -177,7 +180,8 @@ namespace ngla
       {
 	static Timer t("BaseVector::Set (taskhandler)");
 	RegionTimer reg(t);
-	
+	t.AddFlops (me.Size());
+
 	task_manager -> CreateJob
 	  ( [me,you,scal] (const TaskInfo & ti)
 	    {
