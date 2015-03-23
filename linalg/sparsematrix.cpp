@@ -135,8 +135,8 @@ namespace ngla
        {
 
         static Timer timer("MatrixGraph");
-    static Timer timer1("MatrixGraph - transpose table");
-    static Timer timer2a("MatrixGraph - getdofsa");
+        static Timer timer1("MatrixGraph - transpose table");
+        static Timer timer2a("MatrixGraph - getdofsa");
 
     static Timer timer3("MatrixGraph - sort");
     RegionTimer reg (timer);
@@ -148,97 +148,32 @@ namespace ngla
     TableCreator<int> creator(ndof);
 
 
-
-    /*
-#pragma omp parallel for
-    for (int i = 0; i < colelements.Size(); i++)
-      QuickSort (colelements[i]);
-
-    // generate rowdof to element table
-    for ( ; !creator.Done(); creator++)
-      {    
-
-#pragma omp parallel
-	{
-	  for (auto i : OmpSplit (Range (rowelements)))
-	    for (auto e : rowelements[i])
-	      creator.Add(e, i);
-	}
-
-      }
-    */
-
-
-    /*
-#pragma omp parallel
-#pragma omp single
-      {
-
-        int tasks = 100;
-        for (int i = 0; i < tasks; i++)
-          {
-            auto r = Range(colelements.Size()).Split (i,tasks);
-#pragma omp task
-            {
-              for (auto j : r)
-                QuickSort (colelements[j]);              
-            }
-          }
-#pragma omp taskwait
-
-        
-        for ( ; !creator.Done(); creator++)
-          {    
-            int tasks = 100;
-
-            for (int i = 0; i < tasks; i++)
-              {
-                auto r = Range(rowelements.Size()).Split (i,tasks);
-
-#pragma omp task
-                {
-                  for (auto i : r)
-                    for (auto e : rowelements[i])
-                      creator.Add(e, i);
-                }
-              }
-#pragma omp taskwait
-          }
-      }
-    */
-
-
-    task_manager -> CreateJob 
-      ( [&] (const TaskInfo & ti)
-        {
-          auto r = Range(colelements.Size()).Split (ti.task_nr, ti.ntasks);
-          for (auto j : r)
-            QuickSort (colelements[j]);              
-        });
+    
+    ParallelFor (Range (colelements.Size()), 
+                 [&] (int i) { QuickSort (colelements[i]); });
+    
 
 
     for ( ; !creator.Done(); creator++)
       {    
-
-        task_manager -> CreateJob 
-          ( [&] (const TaskInfo & ti)
-            {
-              auto r = Range(rowelements.Size()).Split (ti.task_nr, ti.ntasks);
-
-              for (auto i : r)
-                for (auto e : rowelements[i])
-                  creator.Add(e, i);
-            });
-    
+        ParallelFor (Range(rowelements.Size()), 
+                     [&] (int i)
+                     {
+                       for (auto e : rowelements[i])
+                         creator.Add(e, i);
+                     });
       }
 
-    
+
     Table<int> dof2element = creator.MoveTable();
 
     Array<int> cnt(ndof);
     cnt = 0;
 
+
     timer1.Stop();
+
+
     timer2a.Start();
 
     for (int loop = 1; loop <= 2; loop++)
@@ -253,8 +188,6 @@ namespace ngla
                  Array<int> rowdofs;
                  Array<int> rowdofs1;
                  
-                 // #pragma omp for schedule(dynamic,10)
-                 // for (int i = 0; i < ndof; i++)
                  for (int i : sl)
                    {
                      rowdofs.SetSize0();
@@ -284,8 +217,6 @@ namespace ngla
                  Array<int> rowdofs;
                  Array<int> rowdofs1;
                  
-                 // #pragma omp for
-                 // for (int i = 0; i < ndof; i++)
                  for (int i : sl)
                    {
                      rowdofs.SetSize0();
@@ -351,23 +282,12 @@ namespace ngla
 
 	    CalcBalancing ();
 
-            /*
-#pragma omp parallel
-	    {
-	      IntRange thd_rows = OmpRange();
-	      T_Range<size_t> r(firsti[thd_rows.begin()], firsti[thd_rows.end()]);
-
-	      colnr.Range (r) = 0;
-	    }
-            */
-
 
             task_manager -> CreateJob 
               ( [&] (const TaskInfo & ti)
                 {
-                  int thd = ti.task_nr;
-                  colnr.Range(firsti[balancing[thd]], 
-                              firsti[balancing[thd+1]]) = 0;
+                  colnr.Range(firsti[balancing[ti.task_nr]], 
+                              firsti[balancing[ti.task_nr+1]]) = 0;
                 } );
           }
         else
@@ -375,7 +295,7 @@ namespace ngla
             ;
           }
       }
-
+    
 
     timer2a.Stop();
        });
@@ -668,6 +588,10 @@ namespace ngla
 
   void MatrixGraph :: CalcBalancing ()
   {
+    static Timer timer ("MatrixGraph - CalcBalancing");
+    static Timer timer2 ("MatrixGraph - CalcBalancing 2");
+    RegionTimer reg (timer);
+
     int max_threads = omp_get_max_threads();
     balancing.SetSize (max_threads+1);
 
@@ -681,6 +605,7 @@ namespace ngla
 	prefix[i] = sum;
       }
 
+    RegionTimer reg2 (timer2);
     balancing[0] = 0;
     /*
 #pragma omp parallel
@@ -690,6 +615,7 @@ namespace ngla
     }
     */
 
+    /*
     for (int tid = 0; tid < max_threads; tid++)
 #pragma omp task
       {
@@ -697,6 +623,21 @@ namespace ngla
           BinSearch (prefix, sum*(tid+1)/max_threads);      
       }
 #pragma omp taskwait
+    */
+
+    cout << " **************** CalcBalancing: task_manager = " << task_manager << endl;
+    RunWithTaskManager
+      ([&] ()
+       {
+         task_manager -> CreateJob 
+           ( [&] (const TaskInfo & ti)
+             {
+               int tid = ti.task_nr;
+               balancing[tid+1] = 
+                 BinSearch (prefix, sum*(tid+1)/max_threads);      
+             },
+             balancing.Size()-1);
+       });
   }
 
   void MatrixGraph :: FindSameNZE()

@@ -1038,25 +1038,27 @@ namespace ngcomp
               else
                 {
 
-
                   ParallelFor (Range(nv), 
-                               [&creator] (int i) { creator.Add(i,i); });
+                               [&] (int i) { creator.Add(i,i); });
 
                   ParallelFor (Range(ned),
-                               [&creator,this,nv] (int i) 
+                               [&] (int i) 
                                { creator.Add(nv+i,GetEdgeDofs(i)); });
                   
-                  ParallelFor (Range(nfa), [&] (int i) 
+                  ParallelFor (Range(nfa), 
+                               [&] (int i) 
                                { 
                                  ArrayMem<int,4> f2ed;
                                  ma->GetFaceEdges (i, f2ed);
-                                 for (int k = 0; k < f2ed.Size(); k++)
-                                   creator.Add (nv+f2ed[k], GetFaceDofs(i));
+                                 for (int edge : f2ed)
+                                   creator.Add (nv+edge, GetFaceDofs(i));
+                                 f2ed.NothingToDelete();
                                });
                   
-                  ParallelFor (Range(ni), [&] (int i) 
+                  ParallelFor (Range(ni), 
+                               [&] (int i) 
                                { creator.Add(nv+ned+i,GetElementDofs(i)); });
-
+                  
                   
                   /*
                   for (int i = 0; i < nv; i++)

@@ -69,12 +69,16 @@ namespace ngla
 
     if (task_manager)
       {
+        /*
 	task_manager -> CreateJob 
 	  ( [me,scal] (const TaskInfo & ti)
 	    {
               IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
 	      me.Range(r) *= scal;
 	    } );
+        */
+        ParallelFor ( me.Range(),
+                      [me,scal] (int i) { me(i) *= scal; });
 	return *this; 
       }
 
