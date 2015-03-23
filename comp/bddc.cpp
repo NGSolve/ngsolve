@@ -71,6 +71,7 @@ namespace ngcomp
       ifcnt = 0;
       const BitArray & freedofs = *fes->GetFreeDofs();
       
+      /*
       Array<int> dnums;
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
@@ -90,10 +91,35 @@ namespace ngcomp
 		  ifcnt[ii]++;
 	      }
 	  }
+      */
+
+      LocalHeap lh(10000, "BDDC-constr, dummy heap");
       
+      for (auto vb = VOL; vb <= BND; vb++)
+        IterateElements 
+          (*fes, vb, lh, 
+           [&] (FESpace::Element el, LocalHeap lh)
+           {
+             int base = (vb == VOL) ? 0 : ma->GetNE();
+             for (auto d : el.GetDofs())
+               {
+                 if (d == -1) continue;
+                 if (!freedofs.Test(d)) continue;
+                 COUPLING_TYPE ct = fes->GetDofCouplingType(d);
+                 if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
+		
+                 int ii = base + el.Nr();
+                 if (ct == WIREBASKET_DOF)
+                   wbdcnt[ii]++;
+                 else
+                   ifcnt[ii]++;
+               }
+           });
+
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
       Table<int> el2ifdofs(ifcnt);    // interface dofs on each element
       
+      /*
       for (int bound = 0, ii = 0; bound <= 1; bound++)
 	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
 	  {
@@ -116,7 +142,33 @@ namespace ngcomp
 		  el2ifdofs[ii][lifcnt++] = dnums[j];
 	      } 
 	  }
+      */
+
+      for (auto vb = VOL; vb <= BND; vb++)
+        IterateElements 
+          (*fes, vb, lh, 
+           [&] (FESpace::Element el, LocalHeap lh)
+           {
+             int base = (vb == VOL) ? 0 : ma->GetNE();
+             int lifcnt = 0;
+             int lwbcnt = 0;
+
+             for (auto d : el.GetDofs())
+               {
+                 if (d == -1) continue;
+                 if (!freedofs.Test(d)) continue;
+                 COUPLING_TYPE ct = fes->GetDofCouplingType(d);
+                 if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
+		
+                 int ii = base + el.Nr();
+                 if (ct == WIREBASKET_DOF)
+                   el2wbdofs[ii][lwbcnt++] = d;
+                 else
+                   el2ifdofs[ii][lifcnt++] = d;
+               }
+           });
       
+
       int ndof = fes->GetNDof();      
 
       wb_free_dofs = new BitArray (ndof);
@@ -162,7 +214,6 @@ namespace ngcomp
         inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (nullptr, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
-
     }
 
     
