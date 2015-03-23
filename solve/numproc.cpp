@@ -3209,6 +3209,7 @@ class NumProcTestVariable : public NumProc
   double refvalue;
   double tolerance;
   bool abstol;
+  bool cdash;
 public:
   NumProcTestVariable (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
@@ -3217,11 +3218,27 @@ public:
     refvalue = flags.GetNumFlag("refvalue",0.0);
     tolerance = flags.GetNumFlag("tolerance",0.0);
     abstol = flags.GetDefineFlag("abstol");
+    cdash = flags.GetDefineFlag("cdash");
   }
 
   virtual void Do(LocalHeap & lh)
   {
     double variable = pde.lock()->GetVariable(varname, false);
+
+    if (cdash)
+    {
+      string dart_varname = varname;
+      for (int i=0; i< dart_varname.length(); i++) {
+        char & c = dart_varname[i];
+        if(c==' ' || c==':' || c=='-') {
+          dart_varname.erase(i,1);
+          i--;
+        }
+      }
+      cout << "<DartMeasurement name=" << '"' << dart_varname << '"' << endl;
+      cout << "type=\"numeric/double\">" << variable << "</DartMeasurement>" << endl;
+    }
+
 
     if(abstol)
     {
