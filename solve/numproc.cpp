@@ -3228,7 +3228,7 @@ public:
     if (cdash)
     {
       string dart_varname = varname;
-      for (int i=0; i< dart_varname.length(); i++) {
+      for (unsigned int i=0; i< dart_varname.length(); i++) {
         char & c = dart_varname[i];
         if(c==' ' || c==':' || c=='-' || c=='.') {
           dart_varname.erase(i,1);
