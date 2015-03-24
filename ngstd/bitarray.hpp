@@ -48,7 +48,7 @@ public:
   NGS_DLL_HEADER void Clear () throw();
 
   /// set bit i
-  void Set (unsigned int i)
+  void Set (int i)
   {
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -63,7 +63,7 @@ public:
   }
 
   /// clear bit i
-  void Clear (unsigned int i)
+  void Clear (int i)
   { 
 #ifdef DEBUG
     if (i < 0 || i >= size)
@@ -73,9 +73,10 @@ public:
   }
 
   /// check bit i
-  bool Test (unsigned int i) const
+  bool Test (int i) const
   {
-    return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
+    // return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
+    return (data[Addr(i)] & Mask(i)) ? true : false;
   }
 
   /// set all bits to b
@@ -87,9 +88,9 @@ public:
   }
   
   /// check bit i
-  bool operator[] (unsigned int i) const
+  bool operator[] (int i) const
   {
-    return (data[i / CHAR_BIT] & (char(1) << (i % CHAR_BIT) ) ) ? 1 : 0;
+    return Test(i);
   }
 
   
