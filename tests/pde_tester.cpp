@@ -68,6 +68,14 @@ int main(int argc, char ** argv)
       printMeasurement( "SparseMatrixSymmetric::MultAdd" );
       printMeasurement( "SparseMatrixSymmetric::MultAdd1" );
       printMeasurement( "SparseMatrixSymmetric::MultAdd2" );
+      printMeasurement( "BaseVector::Scale (taskhandler)" );
+      printMeasurement( "BaseVector::InnerProduct (taskhandler)" );
+      printMeasurement( "BlockJacobiPrecond::GSSmoothBack" );
+      printMeasurement( "BaseVector::Add (taskhandler)" );
+      printMeasurement( "BlockJacobiPrecond::GSSmooth" );
+      printMeasurement( "BaseVector::SetScalar (taskhandler)" );
+      printMeasurement( "SparseMatrix::MultAdd (taskhandler)" );
+      printMeasurement( "BaseVector::Set (taskhandler)" );
       NgProfiler::Print (stdout);
     }
 
