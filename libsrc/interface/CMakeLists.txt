@@ -16,7 +16,7 @@ add_library(interface ${NG_LIB_TYPE}
 # TARGET_LINK_LIBRARIES(interface ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS})
 # TARGET_LINK_LIBRARIES( interface ${LIBPTHREAD} ${OCCLIBS} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} )
 if(NOT WIN32)
-    target_link_libraries(interface mesh csg)
+    target_link_libraries(interface mesh csg geom2d)
     if(USE_GUI)
         target_link_libraries(interface visual)
     endif(USE_GUI)
