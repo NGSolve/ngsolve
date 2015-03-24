@@ -960,6 +960,12 @@ namespace ngcomp
 
     auto fes = gf->GetFESpace();
     shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
+
+    if (gf->GetLevelUpdated() != ma->GetNLevels())
+    {
+      result = 0.0;
+      return;
+    }
     
     if (!trafo.BelongsToMesh (ma.get()))
       {
