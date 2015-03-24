@@ -96,6 +96,8 @@ namespace ngstd
     /// create new timer, use integer index
     NGS_DLL_HEADER static int CreateTimer (const string & name);
 
+    NGS_DLL_HEADER static void Reset ();
+
 
 #ifndef NOPROFILE
 

@@ -38,9 +38,13 @@ int main(int argc, char ** argv)
   int retcode = EXIT_SUCCESS;
   if (argc < 2)
     {
-      std::cout << "Usage:  ngs filename" << std::endl;
+      std::cout << "Usage:  << " << argv[0] << "filename [niterations]" << std::endl;
       exit(EXIT_FAILURE);
     }
+  int niterations = 1;
+  if(argc > 2)
+      niterations = atoi(argv[2]);
+
 
   netgen::h_argc = argc;
   netgen::h_argv = argv;
@@ -51,9 +55,13 @@ int main(int argc, char ** argv)
 
   try
     {
-      string filename = argv[argc-1];
+      string filename = argv[1];
       auto pde = ngcomp::LoadPDE (filename);
-      pde->Solve();
+      for(int it=0; it<niterations; it++) {
+//           NgProfiler::Reset();
+          pde->Solve();
+      }
+
       printMeasurement( "Matrix assembling" );
       printMeasurement( "Solver - Total" );
       printMeasurement( "CG solver" );
