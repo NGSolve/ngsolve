@@ -303,6 +303,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${CMAKE_CXX_COMPILER} -I. ${flags
 # CTest
 enable_testing()
 include(CTest)
+add_custom_target(performance_tests ctest -L performance -D Experimental)
 
 #######################################################################
 # Debian packager
