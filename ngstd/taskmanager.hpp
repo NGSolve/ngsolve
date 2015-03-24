@@ -66,7 +66,7 @@ namespace ngstd
     INLINE void ParallelFor (IntRange r, TFUNC f)
     {
       CreateJob 
-        ([r, f] (TaskInfo & ti) LAMBDA_INLINE
+        ([r, f] (TaskInfo & ti) 
          {
            auto myrange = r.Split (ti.task_nr, ti.ntasks);
            for (auto i : myrange) f(i);

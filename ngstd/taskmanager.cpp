@@ -37,6 +37,18 @@ namespace ngstd
 #pragma omp single nowait
       {
         cout << "new task-based parallelization" << endl;
+
+
+
+#ifdef USE_NUMA
+        int num_nodes = numa_max_node() + 1;
+        int thd = omp_get_thread_num();
+        int thds = omp_get_num_threads();
+        int mynode = num_nodes * thd/thds;
+        numa_run_on_node (mynode);
+#endif
+
+
         
         // master has maximal priority !
         int policy;
@@ -128,9 +140,9 @@ namespace ngstd
 
     IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
       
-#ifdef USE_NUMA
-    numa_run_on_node (mynode);
-#endif
+    // #ifdef USE_NUMA
+    // numa_run_on_node (mynode);
+    // #endif
 
     NodeData & mynode_data = *(nodedata[mynode]);
 
@@ -160,10 +172,12 @@ namespace ngstd
     catch (Exception e)
       {
 #pragma omp critical(copyex)
-        delete ex;
-        ex = new Exception (e);
-        mynode_data.start_cnt = mytasks.Size();
-        complete[mynode] = true;
+        {
+          delete ex;
+          ex = new Exception (e);
+          mynode_data.start_cnt = mytasks.Size();
+          complete[mynode] = true;
+        }
       }
     
     
@@ -237,17 +251,17 @@ namespace ngstd
         catch (Exception e)
           {
 #pragma omp critical(copyex)
-            delete ex;
-            ex = new Exception (e);
-            mynode_data.start_cnt = mytasks.Size();
-            complete[mynode] = true;
+            {
+              delete ex;
+              ex = new Exception (e);
+              mynode_data.start_cnt = mytasks.Size();
+              complete[mynode] = true;
+            }
           }
         
         jobdone = jobnr;
         mynode_data.participate--;
       }
   }
-
-
 
 }
