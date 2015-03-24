@@ -960,7 +960,7 @@ namespace ngcomp
 
     auto fes = gf->GetFESpace();
     shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
-    if (fes->GetLevelUpdated() != ma->GetNLevels()-1)
+    if (gf->GetLevelUpdated() != ma->GetNLevels()-1)
     {
       result = 0.0;
       return;
