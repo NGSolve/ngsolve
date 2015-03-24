@@ -16,7 +16,7 @@ void printMeasurement( string name ) {
     double time =  NgProfiler::GetTime(nr);
     string timer_name = name;
 
-    for (int i=0; i< timer_name.length(); i++) {
+    for (unsigned int i=0; i< timer_name.length(); i++) {
         char & c = timer_name[i];
         if(c==' ' || c==':' || c=='-') {
             timer_name.erase(i,1);

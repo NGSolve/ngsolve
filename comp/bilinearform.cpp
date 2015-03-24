@@ -772,6 +772,7 @@ namespace ngcomp
         }
       else
         {
+          /*
 #ifdef FULLSPEED
           int checkels = min (1, ma->GetNE());
 #else
@@ -779,7 +780,6 @@ namespace ngcomp
 #endif
 
 
-          /*
 	  Exception * e = NULL;
 #pragma omp parallel
 	  {
