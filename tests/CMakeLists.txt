@@ -62,7 +62,11 @@ foreach(pde_test ${pde_tests})
     add_test(NAME ${pde_test}  COMMAND ${test_driver} "${pde_dir}/${pde_test}" WORKING_DIRECTORY ${pde_dir})
     set_tests_properties ( ${pde_test} PROPERTIES TIMEOUT 30 )
     set_tests_properties ( ${pde_test} PROPERTIES ATTACHED_FILES "${pde_dir}/ng.prof" )
+    set_tests_properties ( ${pde_test} PROPERTIES LABELS "standard")
 endforeach()
+
+    add_test(NAME d4_cube_performance.pde COMMAND ${test_driver} "${pde_dir}/d4_cube.pde" "2" WORKING_DIRECTORY ${pde_dir})
+    set_tests_properties ( d4_cube_performance.pde PROPERTIES LABELS "performance")
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
 if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
