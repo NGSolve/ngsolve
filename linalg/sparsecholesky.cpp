@@ -346,9 +346,6 @@ namespace ngla
 
     RegionTimer reg (factor_timer);
 
-    clock_t starttime; // , starttime1;
-    double time1 = 0, time2 = 0;
-
     
     int n = Height();
     if (n > 2000)
@@ -374,9 +371,6 @@ namespace ngla
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
 	  last_same++;
 
-        
-	starttime = clock();
-	
         timerb.Start();
 
 	// same rows
@@ -503,10 +497,7 @@ namespace ngla
         timerb.Stop();
         timerc.Start();
 
-	time1 += double(clock() - starttime) / CLOCKS_PER_SEC;
 
-
-	starttime = clock();
 	// merge rows
 
 	int firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
@@ -521,7 +512,6 @@ namespace ngla
 
 	// #pragma omp parallel
         {
-          Array<TM> sum(BS*maxrow);
           
 	  // #pragma omp for
           for (int j = 0; j < miBS; j+=BS)
@@ -632,7 +622,6 @@ namespace ngla
 	      }
 	  }
 
-	time2 += double(clock() - starttime) / CLOCKS_PER_SEC;
 	i1 = last_same;
 
         timerc.Stop();
@@ -650,22 +639,8 @@ namespace ngla
 	  }	
       }
 
-
     if (n > 2000)
       cout << IM(4) << endl;
-
-    /*
-    time = double(clock() - starttime1) / CLOCKS_PER_SEC;
-    cout << IM(4) << "factorization, time = " << time << endl;
-
-    cout << IM(4) << "flops1 = " << flops1 << endl;
-    cout << IM(4) << "flops2 = " << flops2 << endl;
-    cout << IM(4) << "time1 = " << time1 << endl;
-    cout << IM(4) << "time2 = " << time2 << endl;
-    cout << IM(4) << "MFLOP1 = " << flops1 / time1 * 1e-6 << endl;
-    cout << IM(4) << "MFLOP2 = " << flops2 / time2 * 1e-6 << endl;
-    cout << IM(4) << "MFLOP = " << (flops1+flops2) / time * 1e-6 << endl;
-    */
   }
 
 
@@ -699,7 +674,7 @@ namespace ngla
     
     int n = Height();
     if (n > 2000)
-      cout << IM(4) << " factor " << flush;
+      cout << IM(4) << " factor SPD " << flush;
 
     // to avoid aliasing:
     int * hfirstinrow = firstinrow.Addr(0);

@@ -1,3 +1,5 @@
+
+
 /*********************************************************************/
 /* File:   sparsematrix.cpp                                          */
 /* Author: Joachim Schoeberl                                         */
@@ -180,6 +182,8 @@ namespace ngla
       {
         if (!symmetric)
           {
+
+            /*
             SharedLoop sl(Range(ndof));
 
             task_manager->CreateJob 
@@ -206,6 +210,36 @@ namespace ngla
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
                } );
+            */
+
+            int njobs = 10 * omp_get_max_threads();
+
+            task_manager->CreateJob 
+              ([&](const TaskInfo & ti)
+               {
+                 Array<int> rowdofs;
+                 Array<int> rowdofs1;
+                 
+                 auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
+                 for (int i : myr)
+                   {
+                     rowdofs.SetSize0();
+                     if (includediag) rowdofs += i;
+                     
+                     for (int elnr : dof2element[i])
+                       {
+                         rowdofs.Swap (rowdofs1);
+                         FlatArray<int> row = colelements[elnr];
+                         MergeSortedArrays (rowdofs1, row, rowdofs);
+                       }
+                     
+                     if (loop == 1)
+                       cnt[i] = rowdofs.Size();
+                     else
+                       colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
+                   }
+               }, njobs);
+
           }
         else
           {
