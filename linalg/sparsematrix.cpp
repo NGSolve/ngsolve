@@ -138,32 +138,34 @@ namespace ngla
 
         static Timer timer("MatrixGraph");
         static Timer timer1("MatrixGraph - transpose table");
+        static Timer timer1a("MatrixGraph - sort");
         static Timer timer2a("MatrixGraph - getdofsa");
 
-    static Timer timer3("MatrixGraph - sort");
     RegionTimer reg (timer);
 
-    timer1.Start();
     bool includediag = (&rowelements == &colelements);
      
     int ndof = asize;
     TableCreator<int> creator(ndof);
 
-
+    timer1a.Start();
     
     ParallelFor (Range (colelements.Size()), 
                  [&] (int i) { QuickSort (colelements[i]); });
     
+    timer1a.Stop();
 
+    timer1.Start();
 
     for ( ; !creator.Done(); creator++)
       {    
-        ParallelFor (Range(rowelements.Size()), 
+        ParallelFor (Range(rowelements),
                      [&] (int i)
                      {
                        for (auto e : rowelements[i])
                          creator.Add(e, i);
-                     });
+                     },
+                     10 * omp_get_max_threads());
       }
 
 
@@ -212,8 +214,6 @@ namespace ngla
                } );
             */
 
-            int njobs = 10 * omp_get_max_threads();
-
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
                {
@@ -238,7 +238,8 @@ namespace ngla
                      else
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
-               }, njobs);
+               }, 
+               10 * omp_get_max_threads());
 
           }
         else
@@ -316,13 +317,13 @@ namespace ngla
 
 	    CalcBalancing ();
 
-
+            // first touch memory (numa!)
             task_manager -> CreateJob 
               ( [&] (const TaskInfo & ti)
                 {
                   colnr.Range(firsti[balancing[ti.task_nr]], 
                               firsti[balancing[ti.task_nr+1]]) = 0;
-                } );
+                }, balancing.Size()-1);
           }
         else
           {
@@ -623,7 +624,6 @@ namespace ngla
   void MatrixGraph :: CalcBalancing ()
   {
     static Timer timer ("MatrixGraph - CalcBalancing");
-    static Timer timer2 ("MatrixGraph - CalcBalancing 2");
     RegionTimer reg (timer);
 
     int max_threads = omp_get_max_threads();
@@ -639,27 +639,8 @@ namespace ngla
 	prefix[i] = sum;
       }
 
-    RegionTimer reg2 (timer2);
     balancing[0] = 0;
-    /*
-#pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
-      balancing[tid+1] = BinSearch (prefix, size_t(prefix[prefix.Size()-1])*(tid+1)/max_threads);
-    }
-    */
 
-    /*
-    for (int tid = 0; tid < max_threads; tid++)
-#pragma omp task
-      {
-        balancing[tid+1] = 
-          BinSearch (prefix, sum*(tid+1)/max_threads);      
-      }
-#pragma omp taskwait
-    */
-
-    cout << " **************** CalcBalancing: task_manager = " << task_manager << endl;
     RunWithTaskManager
       ([&] ()
        {
