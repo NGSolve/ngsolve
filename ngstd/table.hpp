@@ -262,11 +262,11 @@ template <class T>
       switch (mode)
 	{
 	case 1:
-      oldval = nd;
-      while (blocknr+1>nd) {
-          nd.compare_exchange_weak (oldval, blocknr+1);
           oldval = nd;
-      }
+          while (blocknr+1>nd) {
+            nd.compare_exchange_weak (oldval, blocknr+1);
+            oldval = nd;
+          }
 	  break;
 	case 2:
 	  cnt[blocknr]++;

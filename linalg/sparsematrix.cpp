@@ -157,9 +157,89 @@ namespace ngla
 
     timer1.Start();
 
+    /*
+    {
+      cout << "sequtntial creator" << endl;
+      TableCreator<int> creator(ndof);
+      for ( ; !creator.Done(); creator++)
+        for (auto i : Range (rowelements))
+          for (auto e : rowelements[i])
+            creator.Add(e, i);
+      Table<int> dof2element = creator.MoveTable();
+      cout << "sequential: dof2element = " << endl << dof2element << endl;
+    }
+    */
+
+    /*
+    // usleep (10000);
+    // why is this delay necessary, memory sync  ?????????
+
     for ( ; !creator.Done(); creator++)
       {    
-        ParallelFor (Range(rowelements),
+        Array<int> done(rowelements.Size());
+        done = -1;
+
+        int ntasks = 10 * omp_get_max_threads();
+        Array<bool> tdone(ntasks);
+        tdone = false;
+
+        task_manager->CreateJob([&] (const TaskInfo & ti)
+                                {
+                                  
+                                  if (ti.ntasks != ntasks)
+                                    {
+#pragma omp critical(output)
+                                      {
+                                        cerr << "I got ntasks wrong !!!" << endl;
+                                      }
+                                    }
+
+                                  if (ti.task_nr > ntasks)
+                                    {
+#pragma omp critical(output)
+                                      {
+                                        cerr << "task " << ti.task_nr << "/" << ti.ntasks << " task nr too large" 
+                                             << " but ntasks = " << ntasks << endl;
+                                      }
+                                    }
+                                  else
+                                  if (tdone[ti.task_nr])
+                                    {
+#pragma omp critical(output)
+                                      {
+                                        cerr << "task " << ti.task_nr << "/" << ti.ntasks << " is done twice" << endl;
+                                      }
+                                    }
+                                  tdone[ti.task_nr] = true;
+
+
+                                  auto myr = Range(rowelements.Size()).Split (ti.task_nr, ti.ntasks);
+                                  for (auto i : myr)
+                                    {
+
+                                      if (done[i] != -1 && creator.GetMode() == 2)
+#pragma omp critical(output)
+                                        {
+                                          cerr << "iteration " << i << "is done twice" << endl;
+                                          cerr << "prev task: " << done[i] << ", current task: " << ti.task_nr
+                                               << "my-range = " << myr << endl;
+                                        }
+                                      done[i] = ti.task_nr;
+
+                                      for (auto e : rowelements[i])
+                                        creator.Add(e, i);
+                                    }
+                                },
+                                ntasks);      
+      }
+
+    // usleep (1000);
+    */
+
+
+    for ( ; !creator.Done(); creator++)
+      {    
+        ParallelFor (Range(rowelements.Size()),
                      [&] (int i)
                      {
                        for (auto e : rowelements[i])
@@ -174,9 +254,7 @@ namespace ngla
     Array<int> cnt(ndof);
     cnt = 0;
 
-
     timer1.Stop();
-
 
     timer2a.Start();
 

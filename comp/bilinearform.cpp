@@ -313,6 +313,16 @@ namespace ngcomp
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
   {
+    if (!task_manager)
+      {
+        MatrixGraph * gr;
+        RunWithTaskManager ( [&]()
+                             {
+                               gr = this->GetGraph(level, symmetric);
+                             } );
+        return gr;
+      }
+
     static Timer timer ("BilinearForm::GetGraph");
     RegionTimer reg (timer);
 
@@ -336,6 +346,7 @@ namespace ngcomp
     for ( ; !creator.Done(); creator++)
       {
 
+        /*
 #pragma omp parallel
         {
           Array<int> dnums;
@@ -364,6 +375,43 @@ namespace ngcomp
                 if (d != -1) creator.Add (ne+i, d);
             }
         }
+        */
+
+
+        task_manager->CreateJob
+          ([&] (const TaskInfo & ti)
+
+           {
+             
+             Array<int> dnums;
+
+             auto myr = Range(ne).Split(ti.task_nr, ti.ntasks);
+             for (auto i : myr)
+               {
+                 if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
+                 
+                 if (eliminate_internal)
+                   fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                 else
+                   fespace->GetDofNrs (i, dnums);
+                 
+                 for (int d : dnums)
+                   if (d != -1) creator.Add (i, d);
+               }
+
+             
+             auto mysr = Range(nse).Split(ti.task_nr, ti.ntasks);
+             for (auto i : mysr)
+               {
+                 if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
+                 
+                 fespace->GetSDofNrs (i, dnums);
+                 for (int d : dnums)
+                   if (d != -1) creator.Add (ne+i, d);
+               }
+           });
+
+
 
         for (int i = 0; i < specialelements.Size(); i++)
           {

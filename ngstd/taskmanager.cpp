@@ -103,9 +103,6 @@ namespace ngstd
   void TaskManager :: CreateJob (function<void(TaskInfo&)> afunc,
                                  int antasks)
   {
-    func = afunc;
-    ntasks = antasks;
-    ex = nullptr;
 
     for (int j = 0; j < num_nodes; j++)
       {
@@ -115,7 +112,12 @@ namespace ngstd
           oldval = 0;
       }
 
-    // tasks = _tasks;
+    func = afunc;
+    ntasks = antasks;
+    ex = nullptr;
+
+    // atomic_thread_fence (memory_order_release);
+
     for (int j = 0; j < num_nodes; j++)
       {
         nodedata[j]->start_cnt = 0;
@@ -131,20 +133,20 @@ namespace ngstd
       nodedata[j]->participate = 0;
 
 
-
     int thd = omp_get_thread_num();
     int thds = omp_get_num_threads();
 
     // int tasks_per_node = thds / num_nodes;
     int mynode = num_nodes * thd/thds;
 
-    IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
+    IntRange mytasks = Range(int(ntasks)).Split (mynode, num_nodes);
       
     // #ifdef USE_NUMA
     // numa_run_on_node (mynode);
     // #endif
 
     NodeData & mynode_data = *(nodedata[mynode]);
+
 
     TaskInfo ti;
     ti.nthreads = thds;
@@ -179,14 +181,16 @@ namespace ngstd
           complete[mynode] = true;
         }
       }
-    
+
     
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
         ;
-    
+
     if (ex)
       throw Exception (*ex);
+
+    // atomic_thread_fence (memory_order_acquire);
   }
     
   void TaskManager :: Loop()
@@ -228,7 +232,9 @@ namespace ngstd
         while (! mynode_data.participate.compare_exchange_weak (oldpart, oldpart+1))
           if (oldpart == -1) oldpart = 0;
 
-        IntRange mytasks = Range(ntasks).Split (mynode, num_nodes);
+        // atomic_thread_fence (memory_order_acquire);
+
+        IntRange mytasks = Range(int(ntasks)).Split (mynode, num_nodes);
           
         try
           {
@@ -258,7 +264,9 @@ namespace ngstd
               complete[mynode] = true;
             }
           }
-        
+
+        atomic_thread_fence (memory_order_release);     
+
         jobdone = jobnr;
         mynode_data.participate--;
       }
