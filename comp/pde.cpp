@@ -595,6 +595,9 @@ namespace ngcomp
 				     *mas[0],
 				     *CurvePointIntegrators[i]);
 		    
+    RunWithTaskManager 
+      ( [&] () 
+        { 
 
     for(  ; pc < todo.Size(); pc++)
       {
@@ -763,7 +766,7 @@ namespace ngcomp
         if (lf) AddVariable (string("timing.lf.")+lf->GetName(), lf->GetTimer().GetTime(), 6);
         if (np) AddVariable (string("timing.np.")+np->GetName(), np->GetTimer().GetTime(), 6);
       }
-
+        });
     // #ifndef NGS_PYTHON
     /*
     // now we have enough memory to keep the data ...
