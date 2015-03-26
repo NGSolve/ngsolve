@@ -629,6 +629,13 @@ namespace ngcomp
         return;
       }
     
+
+    RunWithTaskManager 
+      ( [&] () 
+        { 
+
+
+
     try
       {
 
@@ -661,13 +668,16 @@ namespace ngcomp
         throw;
       }
 
+    /*
     RunWithTaskManager 
       ( [&] () 
         { 
           DoAssemble(lh);
         } );
+    */
+    DoAssemble(lh);
 
-    // DoAssemble(lh);
+        } );
 
     if (timing)
       {

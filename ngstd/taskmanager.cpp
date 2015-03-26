@@ -18,13 +18,13 @@ namespace ngstd
 {
   TaskManager * task_manager = nullptr;
 
-
+ 
 
   void RunWithTaskManager (function<void()> alg)
   {
     if (task_manager)
       {
-        cout << "task-manager already active, using it" << endl;
+        // cout << "task-manager already active, using it" << endl;
         alg();
         return;
       }
