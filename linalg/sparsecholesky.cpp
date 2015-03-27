@@ -237,6 +237,12 @@ namespace ngla
     for (int i = 0; i < n; i++)
       blocknrs[i] = blocknr[i];
 
+    for (int i = 0; i < n; i++)
+      if(blocknrs[i] == i) blocks.Append(i);
+    blocks.Append(n);
+
+
+
     int cnt = 0;
     int cnt_master = 0;
 
@@ -293,6 +299,34 @@ namespace ngla
       }
     firstinrow[n] = cnt;
     firstinrow_ri[n] = cnt_master;
+
+
+
+
+
+
+    cout << "finding block-dependeny ... " << endl;
+    // find block dependency
+    Array<int> block_of_dof(n);
+    for (int i = 0; i < blocks.Size()-1; i++)
+      block_of_dof[Range(blocks[i], blocks[i+1])] = i;
+
+    DynamicTable<int> dep(blocks.Size()-1);
+    for (int i = 0; i < n; i++)
+      {
+        auto cols = rowindex2.Range(firstinrow_ri[i], firstinrow_ri[i+1]);
+        for (int j : cols)
+          if (block_of_dof[i] != block_of_dof[j])
+            dep.AddUnique (block_of_dof[i], block_of_dof[j]);
+      }
+
+    // generate compressed table
+    TableCreator<int> creator(dep.Size());
+    for ( ; !creator.Done(); creator++)
+      for (int i = 0; i < dep.Size(); i++)
+        for (int j : dep[i])
+          creator.Add(i, j);
+    block_dependency = creator.MoveTable();
   }
   
 
@@ -665,7 +699,7 @@ namespace ngla
   template <>
   void SparseCholesky<double,double,double> :: FactorSPD () 
   {
-    static Timer factor_timer("SparseCholesky::Factor");
+    static Timer factor_timer("SparseCholesky::Factor SPD");
 
     static Timer timerb("SparseCholesky::Factor - B");
     static Timer timerc("SparseCholesky::Factor - C");
@@ -944,82 +978,6 @@ namespace ngla
     y = 0.0;
     MultAdd (TSCAL_VEC(1.0), x, y);
     return;
-
-    static Timer timer ("SparseCholesky::Mult");
-    RegionTimer reg (timer);
-
-    int n = Height();
-    
-    const FlatVector<TVX> fx = x.FV<TVX> ();
-    FlatVector<TVX> fy = y.FV<TVX> ();
-    
-    Vector<TVX> hy(n);
-    for (int i = 0; i < n; i++)
-      hy(order[i]) = fx(i);
-
-    TVX hv;
-    // TVX * hhy = hy.Addr(0);
-    FlatVector<TVX> hhy = hy;
-
-    const TM * hlfact = &lfact[0];
-    const TM * hdiag = &diag[0];
-
-    const int * hrowindex2 = &rowindex2[0];
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
-
-
-    for (int i = 0; i < n; i++)
-      {
-	TVX val = hy(i);
-	int first = hfirstinrow[i];
-	int j_ri = hfirstinrow_ri[i];
-	int last = hfirstinrow[i+1];
-
-	for (int j = first; j < last; j++, j_ri++)
-	  hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-      }
-
-    for (int i = 0; i < n; i++)
-      {
-	hv = hdiag[i] * hhy[i];
-	hhy[i] = hv;
-      }
-
-    for (int i = n-1; i >= 0; i--)
-      {
-	int minj = hfirstinrow[i];
-	int maxj = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-
-	TVX sum;
-	sum = 0.0;
-	
-	for (int j = minj; j < maxj; j++, j_ri++)
-	  sum += lfact[j] * hy(hrowindex2[j_ri]);
-	
-	hy(i) -= sum;
-      }
-
-    fy = TVX(0.0);
-    for (int i = 0; i < n; i++)
-      fy(i) = hy(order[i]);
-
-    /*
-    if (inner)
-      {
-	for (int i = 0; i < n; i++)
-	  if (!inner->Test(i))
-	    fy(i) = 0;
-      }
-
-    if (cluster)
-      {
-	for (int i = 0; i < n; i++)
-	  if (!(*cluster)[i])
-	    fy(i) = 0;
-      }
-    */
   }
   
   
@@ -1035,18 +993,6 @@ namespace ngla
     
     const FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
-
-    /*
-    *testout << "multadd sparsrcholesky" << endl;
-    *testout << "x = " << x << endl;
-    if (cluster)
-      {
-	*testout << "x in cluster: " << endl;
-	for (int i = 0; i < cluster->Size(); i++)
-	  if ( (*cluster)[i] )
-	    *testout << i << fx(i) << endl;
-      }
-    */
 
     
     Vector<TVX> hy(n);
@@ -1175,6 +1121,235 @@ namespace ngla
 
 
 
+  template <>
+  void SparseCholesky<double, double, double> :: 
+  SolveBlock (int bnr, FlatVector<> hy) const
+  {
+    auto range = Range(blocks[bnr], blocks[bnr+1]);
+
+    /*
+    const double * hlfact = &lfact[0];
+
+    const int * hrowindex2 = &rowindex2[0];
+    const int * hfirstinrow = &firstinrow[0];
+    const int * hfirstinrow_ri = &firstinrow_ri[0];
+
+    for (auto i : range)
+      {
+	double val = hy(i);
+	int j_ri = hfirstinrow_ri[i];
+        
+        for (int j = hfirstinrow[i]; j < hfirstinrow[i+1]; j++, j_ri++)
+          hy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
+      }
+    */
+
+    // triangular solve
+    for (auto i : range)
+      {
+        int size = range.end()-i-1;
+        FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
+        hy.Range(i+1, range.end()) -= hy(i) * vlfact;
+      }
+
+    int base = firstinrow_ri[range.begin()] + range.Size()-1;
+    int ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
+
+    VectorMem<100> temp(ext_size);
+    temp = 0;
+
+    for (auto i : range)
+      {
+        int first = firstinrow[i] + range.end()-i-1;
+
+        FlatVector<> ext_lfact (ext_size, &lfact[first]);
+        temp += hy(i) * ext_lfact;
+      }
+
+    auto extdofs = rowindex2.Range(base, base+ext_size);
+    for (int j = 0; j < ext_size; j++)
+#pragma omp atomic
+      hy(extdofs[j]) -= temp(j);
+  }
+
+  template <>
+  void SparseCholesky<double, double, double> :: 
+  SolveBlockT (int bnr, FlatVector<> hy) const
+  {
+    // const double * hlfact = &lfact[0];
+
+    // const int * hrowindex2 = &rowindex2[0];
+    const int * hfirstinrow = &firstinrow[0];
+    const int * hfirstinrow_ri = &firstinrow_ri[0];
+
+
+    for (int i = blocks[bnr+1]-1; i >= blocks[bnr]; i--)
+      {
+	int minj = hfirstinrow[i];
+	int maxj = hfirstinrow[i+1];
+	int j_ri = hfirstinrow_ri[i];
+
+	double sum = 0;
+
+	for (int j = minj; j < maxj; j++, j_ri++)
+	  sum += lfact[j] * hy(rowindex2[j_ri]);
+	
+	hy(i) -= sum;
+      }
+
+  }
+  
+  template <typename TFUNC>
+  void RunParallelDependency (const Table<int> & dag, TFUNC func)
+  {
+    Array<int> ready;
+    Array<atomic<int>> cnt_dep(dag.Size());
+    for (auto & d : cnt_dep) d = 0;
+
+    for (auto bucket : dag)
+      for (int j : bucket)
+        cnt_dep[j]++;
+
+    for (int j : Range(cnt_dep))
+      if (cnt_dep[j] == 0) ready.Append(j);
+
+    
+    /*
+    while (ready.Size())
+      {
+        int size = ready.Size();
+        int nr = ready[size-1];
+        ready.SetSize(size-1);
+
+        func(nr);
+
+        auto bucket = dag[nr];
+        for (int j : bucket)
+          {
+            cnt_dep[j]--;
+            if (cnt_dep[j] == 0)
+              ready.Append(j);
+          }
+      }
+    */
+
+    atomic<int> cnt(0);
+    task_manager -> CreateJob 
+      ([&] (const TaskInfo & ti)
+       {
+
+         while (1)
+           {
+             if (cnt >= dag.Size()) break;
+
+             int nr = -1;
+#pragma omp critical(queue)
+             {
+               if (ready.Size())
+                 {
+                   int size = ready.Size();
+                   nr = ready[size-1];
+                   ready.SetSize(size-1);
+                 }
+             }
+             
+             if (nr == -1) continue;
+
+             func(nr);
+             cnt++;
+
+             auto bucket = dag[nr];
+             for (int j : bucket)
+               {
+                 if (--cnt_dep[j] == 0)
+#pragma omp critical(queue)
+                   {
+                     ready.Append(j);
+                   }
+               }
+           }
+         
+       });
+  }
+
+
+  template <>
+  void SparseCholesky<double, double, double> :: 
+  MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("SparseCholesky<d,d,d>::MultAdd");
+    static Timer timer1("SparseCholesky<d,d,d>::MultAdd fac1");
+    static Timer timer2("SparseCholesky<d,d,d>::MultAdd fac2");
+    RegionTimer reg (timer);
+    timer.AddFlops (2.0*lfact.Size());
+
+    int n = Height();
+    
+    const FlatVector<> fx = x.FV<double> ();
+    FlatVector<> fy = y.FV<double> ();
+
+    Vector<> hy(n);
+    for (int i = 0; i < n; i++)
+      hy(order[i]) = fx(i);
+
+    // const double * hlfact = &lfact[0];
+    const double * hdiag = &diag[0];
+
+    // const int * hrowindex2 = &rowindex2[0];
+    // const int * hfirstinrow = &firstinrow[0];
+    // const int * hfirstinrow_ri = &firstinrow_ri[0];
+    
+    timer1.Start();
+
+    RunParallelDependency (block_dependency, 
+                           [&] (int nr) { SolveBlock(nr, hy); });
+    /*
+    for (int i = 0; i < blocks.Size()-1; i++)
+      SolveBlock (i, hy);
+    */
+
+    timer1.Stop();
+
+    for (int i = 0; i < n; i++)
+      hy[i] *= hdiag[i];
+
+    timer2.Start();
+
+    for (int i = blocks.Size()-1; i >= 0; i--)
+      SolveBlockT (i, hy);
+
+    timer2.Stop();
+
+
+
+
+    if (inner)
+      {
+	for (int i = 0; i < n; i++)
+	  if (inner->Test(i))
+	    fy(i) += s * hy(order[i]);
+      }
+    else if (cluster)
+      {
+	for (int i = 0; i < n; i++)
+	  if ((*cluster)[i])
+	    fy(i) += s * hy(order[i]);
+      }
+    else
+      {
+	for (int i = 0; i < n; i++)
+	  fy(i) += s * hy(order[i]);
+      }
+
+  }
+  
+
+
+
+
+
+
+  /*
   template <>
   void SparseCholesky<double, double, double> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -1331,7 +1506,7 @@ namespace ngla
       }
 
   }
-  
+  */  
 
 
 
