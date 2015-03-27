@@ -153,8 +153,8 @@ namespace ngla
       {    
 	ArrayMem<SCAL, 100> mem1(maxs), mem2(maxs);
 	
-	FlatVector<SCAL> vx = x.FV<SCAL>(); // dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-	FlatVector<SCAL> vy = y.FV<SCAL>(); // dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
+	FlatVector<SCAL> vx = x.FV<SCAL>(); 
+	FlatVector<SCAL> vy = y.FV<SCAL>(); 
 	
 	for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
 	  {
@@ -172,6 +172,85 @@ namespace ngla
 	  }
       }
   }
+
+
+
+
+  template <>
+  void ElementByElementMatrix<double> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("EBE-matrix::MultAdd");
+    RegionTimer reg (timer);
+
+    int maxs = 0;
+    for (int i = 0; i < coldnums.Size(); i++)
+      maxs = max2 (maxs, coldnums[i].Size());
+
+
+    if (task_manager)
+      {
+        FlatVector<> vx = x.FV<double> (); 
+        FlatVector<> vy = y.FV<double> (); 
+        
+        task_manager -> CreateJob 
+          ( [&] (const TaskInfo & ti)
+            {
+              ArrayMem<double, 100> mem1(max_row_size);
+              ArrayMem<double, 100> mem2(max_col_size);
+              
+              auto myr = Range(coldnums).Split (ti.task_nr, ti.ntasks);
+              
+              for (int i : myr)
+                {
+                  FlatArray<int> rdi (rowdnums[i]);
+                  FlatArray<int> cdi (coldnums[i]);
+                  
+                  if (!rdi.Size() || !cdi.Size()) continue;
+                  
+                  FlatVector<> hv1(rdi.Size(), &mem1[0]);
+                  FlatVector<> hv2(cdi.Size(), &mem2[0]);
+                  
+                  hv2 = vx(cdi);
+                  hv1 = elmats[i] * hv2;
+
+                  for (int j = 0; j < rdi.Size(); j++)
+#pragma omp atomic
+                    vy(rdi[j]) += s * hv1(j);
+                  
+                  timer.AddFlops (cdi.Size()*rdi.Size());
+                }
+            });
+      }
+    
+    else
+      {    
+	ArrayMem<double, 100> mem1(maxs), mem2(maxs);
+	
+	FlatVector<double> vx = x.FV<double>(); 
+	FlatVector<double> vy = y.FV<double>(); 
+	
+	for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	  {
+	    FlatArray<int> rdi = rowdnums[i];
+	    FlatArray<int> cdi = coldnums[i];
+	    
+	    if (!rdi.Size() || !cdi.Size()) continue;
+	    
+	    FlatVector<double> hv(cdi.Size(), &mem1[0]);
+	    
+	    hv = vx(cdi);
+	    vy(rdi) += s * elmats[i] * hv;
+	    
+	    timer.AddFlops (cdi.Size()*rdi.Size());
+	  }
+      }
+  }
+
+
+
+
+
+
 
   
   template <class SCAL>
@@ -193,7 +272,7 @@ namespace ngla
 	  FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
 	  FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-    #pragma omp  for    
+#pragma omp  for    
 	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
 	    {
 	      FlatArray<int> rdi (rowdnums[i]);
@@ -211,27 +290,135 @@ namespace ngla
       }
     else
       {
-	ArrayMem<SCAL, 100> mem1(maxs);
-	
-	FlatVector<SCAL> vx = x.FV<SCAL> (); // dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
-	FlatVector<SCAL> vy = y.FV<SCAL> (); // dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
-	
-	for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
-	  {
-	    FlatArray<int> rdi (rowdnums[i]);
-	    FlatArray<int> cdi (coldnums[i]);
-	    
-	    if (!rdi.Size() || !cdi.Size()) continue;
-	    
-	    FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
-	    
-	    hv1 = vx(rdi);
-	    vy(cdi) += s * Trans(elmats[i]) * hv1;
-
-	    timer.AddFlops (cdi.Size()*rdi.Size());
-	  }
+        ArrayMem<SCAL, 100> mem1(maxs);
+        
+        FlatVector<SCAL> vx = x.FV<SCAL> (); 
+        FlatVector<SCAL> vy = y.FV<SCAL> (); 
+        
+        for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+          {
+            FlatArray<int> rdi (rowdnums[i]);
+            FlatArray<int> cdi (coldnums[i]);
+            
+            if (!rdi.Size() || !cdi.Size()) continue;
+            
+            FlatVector<SCAL> hv1(rdi.Size(), &mem1[0]);
+            
+            hv1 = vx(rdi);
+            vy(cdi) += s * Trans(elmats[i]) * hv1;
+            
+            timer.AddFlops (cdi.Size()*rdi.Size());
+          }
       }
   }
+
+
+
+
+
+  template <>
+  void ElementByElementMatrix<double> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer timer("EBE-matrix<double>::MultTransAdd");
+    RegionTimer reg (timer);
+    int maxs = 0;
+    for (int i = 0; i < rowdnums.Size(); i++)
+      maxs = max2 (maxs, rowdnums[i].Size());
+    
+    if (false) // disjointcols)
+      {
+#pragma omp parallel
+	{
+	  ArrayMem<double, 100> mem1(maxs);
+	  
+	  FlatVector<> vx = dynamic_cast<const S_BaseVector<double> & >(x).FVScal();
+	  FlatVector<> vy = dynamic_cast<S_BaseVector<double> & >(y).FVScal();
+
+#pragma omp  for    
+	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	    {
+	      FlatArray<int> rdi (rowdnums[i]);
+	      FlatArray<int> cdi (coldnums[i]);
+	      if (!rdi.Size() || !cdi.Size()) continue;
+	      
+	      FlatVector<> hv1(rdi.Size(), &mem1[0]);
+
+	      hv1 = vx(rdi);
+	      vy(cdi) += s * Trans(elmats[i]) * hv1;
+
+	      timer.AddFlops (cdi.Size()*rdi.Size());
+	    }
+	}//end of parallel
+      }
+    else
+      {
+        if (task_manager)
+          {
+            FlatVector<> vx = x.FV<double> (); 
+            FlatVector<> vy = y.FV<double> (); 
+
+            task_manager -> CreateJob 
+              ( [&] (const TaskInfo & ti)
+                {
+                  ArrayMem<double, 100> mem1(max_row_size);
+                  ArrayMem<double, 100> mem2(max_col_size);
+                  
+                  auto myr = Range(coldnums).Split (ti.task_nr, ti.ntasks);
+                  
+                  for (int i : myr)
+                    {
+                      FlatArray<int> rdi (rowdnums[i]);
+                      FlatArray<int> cdi (coldnums[i]);
+                
+                      if (!rdi.Size() || !cdi.Size()) continue;
+                      
+                      FlatVector<> hv1(rdi.Size(), &mem1[0]);
+                      FlatVector<> hv2(cdi.Size(), &mem2[0]);
+                      
+                      hv1 = vx(rdi);
+                      hv2 = Trans(elmats[i]) * hv1;
+
+                      for (int j = 0; j < cdi.Size(); j++)
+#pragma omp atomic
+                        vy(cdi[j]) += s * hv2(j);
+                      
+                      timer.AddFlops (cdi.Size()*rdi.Size());
+                    }
+                });
+          }
+        
+        else
+          {
+            ArrayMem<double, 100> mem1(maxs);
+            
+            FlatVector<> vx = x.FV<double> (); 
+            FlatVector<> vy = y.FV<double> (); 
+            
+            for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+              {
+                FlatArray<int> rdi (rowdnums[i]);
+                FlatArray<int> cdi (coldnums[i]);
+                
+                if (!rdi.Size() || !cdi.Size()) continue;
+                
+                FlatVector<> hv1(rdi.Size(), &mem1[0]);
+                
+                hv1 = vx(rdi);
+                vy(cdi) += s * Trans(elmats[i]) * hv1;
+                
+                timer.AddFlops (cdi.Size()*rdi.Size());
+              }
+          }
+      }
+  }
+
+
+
+
+
+
+
+
 
 
   template <class SCAL>
@@ -307,6 +494,9 @@ namespace ngla
 
         elmats[elnr].AssignMemory (sr, sc, &mat(0,0));
       }
+
+    max_row_size = max2(max_row_size, sr);
+    max_col_size = max2(max_col_size, sc);
   }
 
   template <class SCAL>
