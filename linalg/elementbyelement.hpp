@@ -28,6 +28,8 @@ namespace ngla
     bool disjointrows;
     bool disjointcols;
     BitArray clone;
+    int max_row_size = 0;
+    int max_col_size = 0;
   public:
     ElementByElementMatrix (int h, int ane, bool isymmetric=false);
     ElementByElementMatrix (int h, int w, int ane, bool isymmetric=false);
