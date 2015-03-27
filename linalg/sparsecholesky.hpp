@@ -50,6 +50,10 @@ namespace ngla
     int height, nze;
 
     Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
+
+    Array<int> blocks; // block nr. i has dofs  [blocks[i], blocks[i+1])
+    Table<int> block_dependency; 
+
     Array<TM, size_t> lfact;
     Array<TM, size_t> diag;
 
@@ -119,6 +123,9 @@ namespace ngla
     {
       return make_shared<VVector<TV>> (height);
     }
+
+    void SolveBlock (int i, FlatVector<> hy) const;
+    void SolveBlockT (int i, FlatVector<> hy) const;
   };
 
 }
