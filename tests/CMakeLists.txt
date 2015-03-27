@@ -68,6 +68,7 @@ endforeach()
     add_test(NAME d4_cube_performance.pde COMMAND ${test_driver} "${pde_dir}/d4_cube.pde" "2" WORKING_DIRECTORY ${pde_dir})
     set_tests_properties ( d4_cube_performance.pde PROPERTIES LABELS "performance")
 
+    add_test(NAME cpu_usage COMMAND top "-n1" "-b" )
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
 if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
     set_tests_properties ( "d6_shaft.pde" PROPERTIES TIMEOUT 60 )
