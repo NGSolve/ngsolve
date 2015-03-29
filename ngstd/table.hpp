@@ -235,12 +235,13 @@ template <class T>
 	{
 	  // cnt.SetSize(nd);  // atomic has no copy
           cnt = Array<atomic<int>> (nd);
-          for (auto & ci : cnt) ci = 0;
+          for (auto & ci : cnt) ci.store (0, memory_order_relaxed);
 	}
       if (mode == 3)
 	{
 	  table = new Table<T> (cnt);
-          for (auto & ci : cnt) ci = 0;
+          // for (auto & ci : cnt) ci = 0;
+          for (auto & ci : cnt) ci.store (0, memory_order_relaxed);
           // cnt = 0;
 	}
     }
