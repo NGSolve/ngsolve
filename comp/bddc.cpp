@@ -382,12 +382,6 @@ namespace ngcomp
                 if (weight[rowind[j]])
                   values[j] /= weight[rowind[j]];
             }
-          /*
-          // bug ! should be transposed !!!
-          for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
-            if (weight[i])
-              sparse_harmonicexttrans->GetRowValues(i) /= weight[i];
-          */
         }
 
       // now generate wire-basked solver
