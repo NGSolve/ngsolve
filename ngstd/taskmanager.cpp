@@ -34,7 +34,7 @@ namespace ngstd
 
 #pragma omp parallel
     {
-#pragma omp single nowait
+#pragma omp single // nowait
       {
         cout << "new task-based parallelization" << endl;
 
@@ -58,13 +58,15 @@ namespace ngstd
         pthread_setschedparam(pthread_self(), policy, &param);
 
         
+        task_manager->StartWorkers();
+
         alg();
         
-        task_manager->Done();
+        task_manager->StopWorkers();
       }
       
 
-      task_manager->Loop();
+      // task_manager->Loop();
     }
 
     
@@ -96,7 +98,31 @@ namespace ngstd
 
       jobnr = 0;
       done = 0;
+      active_workers = 0;
     }
+
+
+  void TaskManager :: StartWorkers()
+  {
+    done = false;
+    int nthds = omp_get_num_threads();
+    for (int i = 0; i < nthds-1; i++)
+#pragma omp task
+      {
+        Loop();
+      }
+    while (active_workers < nthds-1)
+      ;
+    cout << "workers are all active !!!!!!!!!!!" << endl;
+  }
+ 
+  void TaskManager :: StopWorkers()
+  {
+    done = true;
+    while (active_workers)
+      ;
+    cout << "workers all stoped !!!!!!!!!!!!!!!!!!!" << endl;
+  }
 
 
 
@@ -195,6 +221,8 @@ namespace ngstd
     
   void TaskManager :: Loop()
   {
+    active_workers++;
+
     int thd = omp_get_thread_num();
     int thds = omp_get_num_threads();
 
@@ -270,6 +298,8 @@ namespace ngstd
         jobdone = jobnr;
         mynode_data.participate--;
       }
+
+    active_workers--;
   }
 
 }

@@ -48,6 +48,7 @@ namespace ngstd
 
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
+    atomic<int> active_workers;
 
     NodeData *nodedata[8];
 
@@ -56,6 +57,10 @@ namespace ngstd
   public:
     
     TaskManager();
+
+
+    void StartWorkers();
+    void StopWorkers();
 
     void CreateJob (function<void(TaskInfo&)> afunc, 
                     int antasks = omp_get_max_threads());
