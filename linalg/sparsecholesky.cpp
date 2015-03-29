@@ -6,6 +6,17 @@
 
 #include <la.hpp>
 
+#include "concurrentqueue.h" 
+
+
+typedef moodycamel::ConcurrentQueue<int> TQueue; 
+typedef moodycamel::ProducerToken TPToken; 
+typedef moodycamel::ConsumerToken TCToken; 
+ 
+
+
+
+
 namespace ngla
 {
 
@@ -223,7 +234,7 @@ namespace ngla
   Allocate (const Array<int> & aorder, 
 	    // const Array<CliqueEl*> & cliques,
 	    const Array<MDOVertex> & vertices,
-	    const int * blocknr)
+	    const int * in_blocknr)
   {
     int n = aorder.Size();
 
@@ -235,20 +246,14 @@ namespace ngla
       order[aorder[i]] = i;
 
     for (int i = 0; i < n; i++)
-      blocknrs[i] = blocknr[i];
-
-    for (int i = 0; i < n; i++)
-      if(blocknrs[i] == i) blocks.Append(i);
-    blocks.Append(n);
-
-
+      blocknrs[i] = in_blocknr[i];
 
     int cnt = 0;
     int cnt_master = 0;
 
     for (int i = 0; i < n; i++)
       {
-	cnt += vertices[aorder[blocknr[i]]].nconnected - (i-blocknr[i]);
+	cnt += vertices[aorder[blocknrs[i]]].nconnected - (i-blocknrs[i]);
 	if (blocknrs[i] == i)
 	  cnt_master += vertices[aorder[i]].nconnected;
       }
@@ -301,11 +306,19 @@ namespace ngla
     firstinrow_ri[n] = cnt_master;
 
 
+    for (int i = 1; i < blocknrs.Size(); i++)
+      {
+        if (blocknrs[i] < blocknrs[i-1]) blocknrs[i] = blocknrs[i-1];
+        if (blocknrs[i] <= i-256) blocknrs[i] = i;
+      }
 
 
+    // cout << "finding block-dependeny ... " << endl;
 
+    for (int i = 0; i < n; i++)
+      if(blocknrs[i] == i) blocks.Append(i);
+    blocks.Append(n);
 
-    cout << "finding block-dependeny ... " << endl;
     // find block dependency
     Array<int> block_of_dof(n);
     for (int i = 0; i < blocks.Size()-1; i++)
@@ -699,6 +712,8 @@ namespace ngla
   template <>
   void SparseCholesky<double,double,double> :: FactorSPD () 
   {
+    task_manager -> StopWorkers();
+
     static Timer factor_timer("SparseCholesky::Factor SPD");
 
     static Timer timerb("SparseCholesky::Factor - B");
@@ -948,6 +963,8 @@ namespace ngla
 
     if (n > 2000)
       cout << IM(4) << endl;
+
+    task_manager -> StartWorkers();
   }
 
 #endif
@@ -1125,6 +1142,9 @@ namespace ngla
   void SparseCholesky<double, double, double> :: 
   SolveBlock (int bnr, FlatVector<> hy) const
   {
+    static Timer tl ("SparseCholesky::SolveBlock - solve L");
+    static Timer tb ("SparseCholesky::SolveBlock - mult B");
+
     auto range = Range(blocks[bnr], blocks[bnr+1]);
 
     /*
@@ -1144,6 +1164,12 @@ namespace ngla
       }
     */
 
+    if (range.Size() >= 100)
+      {
+        tl.Start();
+        tl.AddFlops (sqr(range.Size())/2);
+      }
+
     // triangular solve
     for (auto i : range)
       {
@@ -1151,6 +1177,13 @@ namespace ngla
         FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
         hy.Range(i+1, range.end()) -= hy(i) * vlfact;
       }
+
+    if (range.Size() >= 100)
+      {
+        tl.Stop();
+        tb.Start();
+      }
+
 
     int base = firstinrow_ri[range.begin()] + range.Size()-1;
     int ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
@@ -1165,6 +1198,13 @@ namespace ngla
         FlatVector<> ext_lfact (ext_size, &lfact[first]);
         temp += hy(i) * ext_lfact;
       }
+
+    if (range.Size() >= 100)
+      {
+        tb.Stop();
+        tb.AddFlops (range.Size()*ext_size);
+      }
+
 
     auto extdofs = rowindex2.Range(base, base+ext_size);
     for (int j = 0; j < ext_size; j++)
@@ -1198,22 +1238,34 @@ namespace ngla
       }
 
   }
+
+
+
   
   template <typename TFUNC>
   void RunParallelDependency (const Table<int> & dag, TFUNC func)
   {
-    Array<int> ready;
+
     Array<atomic<int>> cnt_dep(dag.Size());
-    for (auto & d : cnt_dep) d = 0;
 
-    for (auto bucket : dag)
-      for (int j : bucket)
-        cnt_dep[j]++;
+    for (auto & d : cnt_dep) 
+      d.store (0, memory_order_relaxed);
 
+
+    ParallelFor (Range(dag),
+                 [&] (int i)
+                 {
+                   for (int j : dag[i])
+                     cnt_dep[j]++;
+                 });
+    
+
+    Array<int> ready(dag.Size());
+    ready.SetSize0();
     for (int j : Range(cnt_dep))
       if (cnt_dep[j] == 0) ready.Append(j);
 
-    
+
     /*
     while (ready.Size())
       {
@@ -1223,8 +1275,7 @@ namespace ngla
 
         func(nr);
 
-        auto bucket = dag[nr];
-        for (int j : bucket)
+        for (int j : dag[nr];
           {
             cnt_dep[j]--;
             if (cnt_dep[j] == 0)
@@ -1233,44 +1284,130 @@ namespace ngla
       }
     */
 
+
+
+    TQueue queue;
+
     atomic<int> cnt(0);
     task_manager -> CreateJob 
       ([&] (const TaskInfo & ti)
        {
+        TPToken ptoken(queue); 
+        TCToken ctoken(queue); 
 
-         while (1)
+        auto myr = Range(ready).Split (ti.task_nr, ti.ntasks);
+        if (myr.Size())
+          queue.enqueue_bulk (ptoken, &ready[myr.begin()], myr.Size());
+
+        while (1)
            {
              if (cnt >= dag.Size()) break;
 
-             int nr = -1;
-#pragma omp critical(queue)
-             {
-               if (ready.Size())
-                 {
-                   int size = ready.Size();
-                   nr = ready[size-1];
-                   ready.SetSize(size-1);
-                 }
-             }
+             int nr;
+             if(!queue.try_dequeue_from_producer(ptoken, nr)) 
+               if(!queue.try_dequeue(ctoken, nr))  
+                 break; 
              
-             if (nr == -1) continue;
-
-             func(nr);
              cnt++;
+             func(nr);
 
-             auto bucket = dag[nr];
-             for (int j : bucket)
+             for (int j : dag[nr])
                {
                  if (--cnt_dep[j] == 0)
-#pragma omp critical(queue)
-                   {
-                     ready.Append(j);
-                   }
+                   queue.enqueue (ptoken, j);
                }
            }
-         
+        
        });
+
   }
+
+
+
+
+
+  // template <typename TFUNC>
+  void RecFunc (int nr, const Table<int> & dag, Array<int> & cnt_dep, function<void(int)> func)
+  {
+    func(nr);
+    
+    for (int j : dag[nr])
+      {
+        int newval;
+#pragma omp atomic capture
+        newval = --cnt_dep[j];
+        if (newval == 0)
+#pragma omp task shared(dag,cnt_dep)
+          RecFunc (j, dag, cnt_dep, func);
+      }
+  }
+
+
+
+  /*
+    using openmp tasks ...
+    working, but slow
+  */
+  void RunParallelDependency2 (const Table<int> & dag, function<void(int)> func)
+  {
+
+    /*
+    for (int i = 0; i < dag.Size(); i++)
+      func(i);
+      return;
+
+    */
+
+    Array<int> cnt_dep(dag.Size());
+
+    for (auto & d : cnt_dep) 
+      d = 0;
+    
+    ParallelFor (Range(dag),
+                 [&] (int i)
+                 {
+                   for (int j : dag[i])
+#pragma omp atomic
+                     cnt_dep[j]++;
+                 });
+
+
+    Array<int> ready(dag.Size());
+    ready.SetSize0();
+    for (int j : Range(cnt_dep))
+      if (cnt_dep[j] == 0) ready.Append(j);
+
+
+    task_manager -> StopWorkers();    
+
+#pragma omp taskgroup
+    {
+
+    for (int j : Range(ready))
+#pragma omp task shared (dag, cnt_dep)
+      {
+        RecFunc (ready[j], dag, cnt_dep, func);
+      }
+    }
+
+    task_manager -> StartWorkers();
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   template <>
@@ -1292,23 +1429,66 @@ namespace ngla
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
 
-    // const double * hlfact = &lfact[0];
+
     const double * hdiag = &diag[0];
 
-    // const int * hrowindex2 = &rowindex2[0];
-    // const int * hfirstinrow = &firstinrow[0];
-    // const int * hfirstinrow_ri = &firstinrow_ri[0];
+
+    /*
+
+    class ProfileData
+    {
+    public:
+      double tstart, tend;
+      int size, extsize;
+    };
+
+    Array<ProfileData> prof(blocks.Size()-1);
     
+    double tstart = omp_get_wtime();
+
     timer1.Start();
 
     RunParallelDependency (block_dependency, 
-                           [&] (int nr) { SolveBlock(nr, hy); });
+                           [&] (int nr) 
+                           {
+                             int s = blocks[nr+1]-blocks[nr];
+                             if (s >= 100)
+                               prof[nr].tstart = omp_get_wtime();
+
+                             SolveBlock(nr, hy); 
+
+                             if (s >= 100)
+                               prof[nr].tend = omp_get_wtime();
+                             prof[nr].size = blocks[nr+1]-blocks[nr];
+                             int row = blocks[nr];
+                             prof[nr].extsize = firstinrow[row+1]-firstinrow[row] - prof[nr].size+1;
+                           });
+
+    timer1.Stop();
+
+    ofstream out ("cholesky.prof");
+    for (int i = 0; i < prof.Size(); i++)
+      if (prof[i].size >= 100)
+        out << i << "  " << prof[i].size << ", extsize = " << prof[i].extsize << ",  ts = " 
+            << 1e6*(prof[i].tstart-tstart) 
+            << ", te = " << 1e6*(prof[i].tend-tstart) 
+            << ", delta = " << 1e6*(prof[i].tend-prof[i].tstart) << endl;
+    
+    */
+
+
+    timer1.Start();
+    RunParallelDependency (block_dependency, 
+                           [&] (int nr) 
+                           {
+                             ; // SolveBlock(nr, hy); 
+                           });
+    timer1.Stop();
+
     /*
     for (int i = 0; i < blocks.Size()-1; i++)
       SolveBlock (i, hy);
     */
-
-    timer1.Stop();
 
     for (int i = 0; i < n; i++)
       hy[i] *= hdiag[i];
