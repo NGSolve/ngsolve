@@ -1481,7 +1481,7 @@ namespace ngla
     RunParallelDependency (block_dependency, 
                            [&] (int nr) 
                            {
-                             ; // SolveBlock(nr, hy); 
+                             SolveBlock(nr, hy); 
                            });
     timer1.Stop();
 
