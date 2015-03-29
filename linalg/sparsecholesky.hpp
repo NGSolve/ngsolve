@@ -49,8 +49,9 @@ namespace ngla
   {
     int height, nze;
 
-    Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2, blocknrs;
+    Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2;
 
+    Array<int> blocknrs;
     Array<int> blocks; // block nr. i has dofs  [blocks[i], blocks[i+1])
     Table<int> block_dependency; 
 
