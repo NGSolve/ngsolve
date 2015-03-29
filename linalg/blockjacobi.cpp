@@ -398,9 +398,16 @@ namespace ngla
 
 
     int cnt = 0;
+    /*
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < blocktable.Size(); i++)
       {
+    */
+    
+    ParallelFor 
+      (Range(blocktable), [&] (int i)
+       {
+         
 #ifndef __MIC__
 #pragma omp atomic
 	cnt++;
@@ -418,7 +425,7 @@ namespace ngla
 	if (!bs) 
 	  {
 	    invdiag[i] = 0;
-	    continue;
+	    return; // continue;
 	  }
 	
 	// Matrix<TM> blockmat(bs);
@@ -431,7 +438,7 @@ namespace ngla
 	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
 
 	CalcInverse (blockmat);
-      }
+       });
 
     *testout << "block coloring";
     
@@ -714,10 +721,10 @@ namespace ngla
                  Vector<TVX> hxmax(maxbs);
                  Vector<TVX> hymax(maxbs);
                  
-                 // int tid = ti.task_nr;
-                 // IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
-                 //                 for (int ii : r) 
-                 for (int ii : sl)
+                 int tid = ti.task_nr;
+                 IntRange r(block_balancing[c][tid], block_balancing[c][tid+1]);
+                 for (int ii : r) 
+                   // for (int ii : sl)
                    {
                      int i = blocks[ii];
                      int bs = blocktable[i].Size();
