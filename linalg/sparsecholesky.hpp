@@ -55,6 +55,20 @@ namespace ngla
     Array<int> blocks; // block nr. i has dofs  [blocks[i], blocks[i+1])
     Table<int> block_dependency; 
 
+    class MicroTask
+    {
+    public:
+      int blocknr;
+      bool solveL;
+      int bblock;
+      int nbblocks;
+    };
+    
+    Array<MicroTask> microtasks;
+    Table<int> micro_dependency;     
+    Table<int> micro_dependency_trans;     
+
+
     Array<TM, size_t> lfact;
     Array<TM, size_t> diag;
 
@@ -127,6 +141,16 @@ namespace ngla
 
     void SolveBlock (int i, FlatVector<> hy) const;
     void SolveBlockT (int i, FlatVector<> hy) const;
+
+    IntRange BlockDofs (int bnr) const { return Range(blocks[bnr], blocks[bnr+1]); }
+
+    FlatArray<int> BlockExtDofs (int bnr) const
+    {
+      auto range = BlockDofs (bnr);
+      int base = firstinrow_ri[range.begin()] + range.Size()-1;
+      int ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
+      return rowindex2.Range(base, base+ext_size);
+    }
   };
 
 }

@@ -340,6 +340,67 @@ namespace ngla
         for (int j : dep[i])
           creator.Add(i, j);
     block_dependency = creator.MoveTable();
+
+
+
+    cout << "generate micro-tasks" << endl;
+    // genare micro-tasks:
+    Array<int> first_microtask;
+    for (int i = 0; i < blocks.Size()-1; i++)
+      {
+        first_microtask.Append (microtasks.Size());
+        auto extdofs = BlockExtDofs (i);
+        int nb = extdofs.Size() / 256 + 1;
+        
+        MicroTask mt;
+        mt.blocknr = i;
+        mt.solveL = true;
+        mt.bblock = 0;
+        mt.nbblocks = 0;
+        microtasks.Append (mt);
+        
+        for (int j = 0; j < nb; j++)
+          {
+            MicroTask mt;
+            mt.blocknr = i;
+            mt.solveL = false;
+            mt.bblock = j;
+            mt.nbblocks = nb;
+            microtasks.Append (mt);
+          }
+      }
+    first_microtask.Append (microtasks.Size());
+
+    {
+
+      TableCreator<int> creator(microtasks.Size());
+      TableCreator<int> creator_trans(microtasks.Size());
+
+      for ( ; !creator.Done(); creator++, creator_trans++)
+        {
+          for (int i = 0; i < blocks.Size()-1; i++)
+            {
+              for (int b = first_microtask[i]+1; b < first_microtask[i+1]; b++)
+                {
+                  // L to B dependency
+                  creator.Add (first_microtask[i], b);
+                  creator_trans.Add (b, first_microtask[i]);
+
+                  // B to L dependency
+                  for (int o : block_dependency[i])
+                    {
+                      creator.Add (b, first_microtask[o]);
+                      creator_trans.Add (first_microtask[o], b);
+                    }
+                }
+            }
+        }
+
+      micro_dependency = creator.MoveTable();
+      micro_dependency_trans = creator_trans.MoveTable();
+
+      cout << "have tables" << endl;
+    }
   }
   
 
@@ -718,6 +779,7 @@ namespace ngla
 
     static Timer timerb("SparseCholesky::Factor - B");
     static Timer timerc("SparseCholesky::Factor - C");
+    static Timer timercla("SparseCholesky::Factor - C(lapack)");
 
     RegionTimer reg (factor_timer);
     
@@ -882,7 +944,9 @@ namespace ngla
 	int lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
+        timercla.Start();
         Matrix<> btb = Trans(b1)*b1 | Lapack;
+        timercla.Stop();
         // *testout << "b^t b = " << endl << btb << endl;
 
         // Array<double> sum(BS*maxrow);
@@ -1142,33 +1206,8 @@ namespace ngla
   void SparseCholesky<double, double, double> :: 
   SolveBlock (int bnr, FlatVector<> hy) const
   {
-    static Timer tl ("SparseCholesky::SolveBlock - solve L");
-    static Timer tb ("SparseCholesky::SolveBlock - mult B");
+    auto range = BlockDofs (bnr);
 
-    auto range = Range(blocks[bnr], blocks[bnr+1]);
-
-    /*
-    const double * hlfact = &lfact[0];
-
-    const int * hrowindex2 = &rowindex2[0];
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
-
-    for (auto i : range)
-      {
-	double val = hy(i);
-	int j_ri = hfirstinrow_ri[i];
-        
-        for (int j = hfirstinrow[i]; j < hfirstinrow[i+1]; j++, j_ri++)
-          hy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-      }
-    */
-
-    if (range.Size() >= 100)
-      {
-        tl.Start();
-        tl.AddFlops (sqr(range.Size())/2);
-      }
 
     // triangular solve
     for (auto i : range)
@@ -1178,36 +1217,20 @@ namespace ngla
         hy.Range(i+1, range.end()) -= hy(i) * vlfact;
       }
 
-    if (range.Size() >= 100)
-      {
-        tl.Stop();
-        tb.Start();
-      }
+    auto extdofs = BlockExtDofs (bnr);
 
-
-    int base = firstinrow_ri[range.begin()] + range.Size()-1;
-    int ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
-
-    VectorMem<100> temp(ext_size);
+    VectorMem<100> temp(extdofs.Size());
     temp = 0;
 
     for (auto i : range)
       {
         int first = firstinrow[i] + range.end()-i-1;
 
-        FlatVector<> ext_lfact (ext_size, &lfact[first]);
+        FlatVector<> ext_lfact (extdofs.Size(), &lfact[first]);
         temp += hy(i) * ext_lfact;
       }
 
-    if (range.Size() >= 100)
-      {
-        tb.Stop();
-        tb.AddFlops (range.Size()*ext_size);
-      }
-
-
-    auto extdofs = rowindex2.Range(base, base+ext_size);
-    for (int j = 0; j < ext_size; j++)
+    for (int j : Range(extdofs))
 #pragma omp atomic
       hy(extdofs[j]) -= temp(j);
   }
@@ -1306,7 +1329,7 @@ namespace ngla
              int nr;
              if(!queue.try_dequeue_from_producer(ptoken, nr)) 
                if(!queue.try_dequeue(ctoken, nr))  
-                 break; 
+                 continue; 
              
              cnt++;
              func(nr);
@@ -1478,12 +1501,101 @@ namespace ngla
 
 
     timer1.Start();
+
+    /*
     RunParallelDependency (block_dependency, 
                            [&] (int nr) 
                            {
                              SolveBlock(nr, hy); 
                            });
+    */
+
+
+
+    class ProfileData
+    {
+    public:
+      double tstart, tend;
+      int size, extsize;
+    };
+
+    Array<ProfileData> prof(microtasks.Size());
+    
+    double tstart = omp_get_wtime();
+
+    RunParallelDependency (micro_dependency, 
+                           [&] (int nr) 
+                           {
+                             MicroTask task = microtasks[nr];
+                             int blocknr = task.blocknr;
+                             auto range = BlockDofs (blocknr);
+                            
+                             if (range.Size() > 100)
+                               prof[nr].tstart = omp_get_wtime();
+                             prof[nr].size = range.Size();
+
+ 
+                             if (task.solveL)
+                               {
+                                 // SolveBlock(blocknr, hy); 
+                                 
+                                 for (auto i : range)
+                                   {
+                                     int size = range.end()-i-1;
+                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
+                                     hy.Range(i+1, range.end()) -= hy(i) * vlfact;
+                                   }
+
+                               }
+                             
+                             else 
+
+                               {
+                                 auto all_extdofs = BlockExtDofs (blocknr);
+                                 auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
+                                 auto extdofs = all_extdofs.Range(myr);
+
+                                 VectorMem<520> temp(extdofs.Size());
+                                 temp = 0;
+                                 
+                                 for (auto i : range)
+                                   {
+                                     int first = firstinrow[i] + range.end()-i-1;
+                                     
+                                     FlatVector<> ext_lfact (all_extdofs.Size(), &lfact[first]);
+                                     temp += hy(i) * ext_lfact.Range(myr);
+                                   }
+                                 
+                                 for (int j : Range(extdofs))
+#pragma omp atomic
+                                   hy(extdofs[j]) -= temp(j);
+                               }
+
+
+                             if (range.Size() > 100)
+                               prof[nr].tend = omp_get_wtime();
+
+                           });
+
+
     timer1.Stop();
+
+
+    ofstream out ("cholesky.prof");
+    for (int i = 0; i < prof.Size(); i++)
+      if (prof[i].size > 100)
+        out << i << "  " << prof[i].size << ", SolveL = " << microtasks[i].solveL 
+            << ",  ts = " << 1e6*(prof[i].tstart-tstart) 
+            << ", te = " << 1e6*(prof[i].tend-tstart) 
+            << ", delta = " << 1e6*(prof[i].tend-prof[i].tstart) << endl;
+
+
+
+
+
+
+
+
 
     /*
     for (int i = 0; i < blocks.Size()-1; i++)
@@ -1495,8 +1607,65 @@ namespace ngla
 
     timer2.Start();
 
+
+    /*
     for (int i = blocks.Size()-1; i >= 0; i--)
       SolveBlockT (i, hy);
+    */
+
+    RunParallelDependency (micro_dependency_trans, 
+                           [&] (int nr) 
+                           {
+                             MicroTask task = microtasks[nr];
+                             int blocknr = task.blocknr;
+                             auto range = BlockDofs (blocknr);
+                            
+ 
+                             if (task.solveL)
+                               {
+                                 /*
+                                 for (auto i : range)
+                                   {
+                                     int size = range.end()-i-1;
+                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
+                                     hy.Range(i+1, range.end()) -= hy(i) * vlfact;
+                                   }
+                                 */
+                                 for (int i = range.end()-1; i >= range.begin(); i--)
+                                   {
+                                     int size = range.end()-i-1;
+                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
+                                     hy(i) -= InnerProduct (vlfact, hy.Range(i+1, range.end()));
+                                   }
+
+                               }
+                             
+                             else 
+
+                               {
+                                 auto all_extdofs = BlockExtDofs (blocknr);
+                                 auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
+                                 auto extdofs = all_extdofs.Range(myr);
+                                 
+                                 VectorMem<520> temp(extdofs.Size());
+                                 for (int j : Range(extdofs))
+                                   temp(j) = hy(extdofs[j]);
+
+                                 for (auto i : range)
+                                   {
+                                     int first = firstinrow[i] + range.end()-i-1;
+                                     FlatVector<> ext_lfact (all_extdofs.Size(), &lfact[first]);
+                                     
+                                     double val = InnerProduct (ext_lfact.Range(myr), temp);
+#pragma omp atomic
+                                     hy(i) -= val;
+                                   }
+                                 
+                                 
+                               }
+
+                           });
+
 
     timer2.Stop();
 
