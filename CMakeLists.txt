@@ -24,6 +24,7 @@ option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
+option( USE_NUMA         "compile with NUMA-aware code")
 
 #######################################################################
 if(USE_NATIVE_ARCH)
@@ -239,6 +240,13 @@ else(INTEL_MIC)
     set(MKL_ARCH "intel64")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif(INTEL_MIC)
+
+#######################################################################
+if(USE_NUMA)
+    add_definitions(-DUSE_NUMA)
+    find_library(NUMA_LIB libnuma.so)
+endif(USE_NUMA)
+
 
 #######################################################################
 if(USE_VTUNE)
