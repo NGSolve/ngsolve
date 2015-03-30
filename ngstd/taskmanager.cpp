@@ -293,7 +293,9 @@ namespace ngstd
             }
           }
 
+#ifndef __MIC__
         atomic_thread_fence (memory_order_release);     
+#endif // __MIC__
 
         jobdone = jobnr;
         mynode_data.participate--;
