@@ -2,6 +2,9 @@
 #include <ctime>
 #include <parallelngs.hpp>
 
+#ifdef VTUNE
+#include <libittnotify.h>
+#endif
 
 namespace ngsolve
 {
@@ -3199,6 +3202,53 @@ public:
 };
 
 
+class NumProcVtuneProfiling : public NumProc
+{
+  bool pause;
+  bool resume;
+public:
+  NumProcVtuneProfiling  (shared_ptr<PDE> apde, const Flags & flags)
+    : NumProc (apde)
+  {
+    pause = flags.GetDefineFlag ("pause");
+    resume = flags.GetDefineFlag ("resume");
+    if(pause==resume) cout << "NumProcVtuneProfiling: only exactly one flag (pause, resume) allowed!!!" << endl;
+  }
+
+  virtual void Do(LocalHeap & lh)
+  {
+#ifdef VTUNE
+      if(pause)
+          __itt_pause();
+      if(resume)
+          __itt_resume();
+#else
+      if(pause==resume) cout << "NumProcVtuneProfiling: VTUNE not supported, compile with -DUSE_VTUNE=ON" << endl;
+#endif // VTUNE
+  }
+
+
+  virtual string GetClassName () const
+  {
+    return "NumProcVtuneProfiling";
+  }
+
+  virtual void PrintReport (ostream & ost)
+  {
+    ost << GetClassName() << endl
+        << "pause/resume vtune profiling" << endl;
+  }
+
+  ///
+  static void PrintDoc (ostream & ost)
+  {
+    ost << 
+      "\n\nNumproc VtuneProfiling:\n"                
+	<< endl;
+  }
+};
+
+
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3395,6 +3445,9 @@ public:
       GetNumProcs().AddNumProc ("savezipsolution", NumProcSaveZipSolution::Create, NumProcSaveZipSolution::PrintDoc);
 #endif
   
+#ifdef VTUNE
+  static RegisterNumProc<NumProcVtuneProfiling> npvtune ("vtune");
+#endif
 }
   
 
