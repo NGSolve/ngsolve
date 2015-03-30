@@ -1844,10 +1844,10 @@ namespace ngcomp
               if (useddof[i])
                 cntused++;
             
-            // if ( (ntasks == 1) && (cntused < useddof.Size()))
-            cout << IM(4) << "used " << cntused
-                 << ", unused = " << useddof.Size()-cntused
-                 << ", total = " << useddof.Size() << endl;
+            if (cntused < useddof.Size())
+              cout << IM(4) << "used " << cntused
+                   << ", unused = " << useddof.Size()-cntused
+                   << ", total = " << useddof.Size() << endl;
             
 
             int MASK = eliminate_internal ? EXTERNAL_DOF : ANY_DOF;
