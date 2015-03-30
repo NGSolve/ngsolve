@@ -193,12 +193,16 @@ namespace ngla
     // time1 = clock();
     cout << IM(3) << "call pardiso ..." << flush;
 
+    if (task_manager) task_manager -> StopWorkers();
+
     // retvalue = 
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, 
 			reinterpret_cast<double *>(&matrix[0]),
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
     
+    if (task_manager) task_manager -> StartWorkers();
+
     cout << IM(3) << " done" << endl;
 
     if ( error != 0 )
