@@ -128,7 +128,7 @@ namespace ngla
 
     diag.SetSize(n);
     lfact.SetSize (nze);
-    lfact = TM(0.0);
+    lfact = TM(0.0);     // first touch
     
     endtime = clock();
     if (printstat)
@@ -156,19 +156,23 @@ namespace ngla
 	  }
     
     else if (inner)
-      for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	  {
-	    int col = a.GetRowIndices(i)[j];
-	    if (col <= i)
-	      {
-		if ( (inner->Test(i) && inner->Test(col)) )
-		  SetOrig (i, col, a.GetRowValues(i)[j]);
-		else
-		  if (i==col)
-		    SetOrig (i, col, id);
-	      }
-	  }
+      // for (int i = 0; i < n; i++)
+      ParallelFor 
+        (Range(n), [&](int i)
+         {
+           for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+             {
+               int col = a.GetRowIndices(i)[j];
+               if (col <= i)
+                 {
+                   if ( (inner->Test(i) && inner->Test(col)) )
+                     SetOrig (i, col, a.GetRowValues(i)[j]);
+                   else
+                     if (i==col)
+                       SetOrig (i, col, id);
+                 }
+             }
+         });
     else
       for (int i = 0; i < n; i++)
 	{
@@ -763,6 +767,48 @@ namespace ngla
 
 #ifdef LAPACK
 
+
+  void CalcAtA (FlatMatrix<> b1, FlatMatrix<> btb)
+  {
+    
+    // btb = Trans(b1) * b1 | Lapack;
+
+
+    if (b1.Width() < 200)
+      {
+        if (b1.Width() < 10 || b1.Height() < 10)
+          btb = Trans(b1) * b1;
+        else
+          btb = Trans(b1) * b1 | Lapack;
+      }
+
+    else
+      {
+        auto r = Range(b1.Width());
+        int parts = r.Size() / 256;
+        if (parts == 0) parts = 1;
+
+        // lower half
+        for (int i = 0; i < parts; i++)
+          for (int j = 0; j <= i; j++)
+            {
+              auto rowr = r.Split (i,parts);
+              auto colr = r.Split (j,parts);
+#pragma omp task
+              {
+                btb.Rows(rowr).Cols(colr) = Trans(b1.Cols(rowr)) * b1.Cols(colr) | Lapack;
+                if (i != j)
+                  btb.Rows(colr).Cols(rowr) = Trans(btb.Rows(rowr).Cols(colr));                  
+              }
+            }
+#pragma omp taskwait
+
+      }
+  }
+
+
+
+
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: FactorSPD () 
   {
@@ -780,6 +826,8 @@ namespace ngla
     static Timer timerb("SparseCholesky::Factor - B");
     static Timer timerc("SparseCholesky::Factor - C");
     static Timer timercla("SparseCholesky::Factor - C(lapack)");
+    static Timer timerc1("SparseCholesky::Factor - C1");
+    static Timer timerc2("SparseCholesky::Factor - C2");
 
     RegionTimer reg (factor_timer);
     
@@ -793,9 +841,8 @@ namespace ngla
     int * hrowindex2 = rowindex2.Addr(0);
     // double * hlfact = lfact.Addr(0);
     
-    enum { BS = 4 };
-
-    Array<double> sum(BS*maxrow);
+    // enum { BS = 4 };
+    // Array<double> sum(BS*maxrow);
 
 
     for (int i1 = 0; i1 < n;  )
@@ -910,30 +957,6 @@ namespace ngla
           }
 
 
-
-        /*
-	for (int jj = 0; jj < mi; jj++)
-	  {
-	    int firstj = hfirstinrow[i1+jj];
-	    int nk = hfirstinrow[i1+jj+1]-firstj;
-
-	    for (int i2 = 0; i2 < jj; i2++)
-	      {
-		int firsti = hfirstinrow[i1+i2] + jj-i2;
-		  
-		double q = - diag[i1+i2] * hlfact[firsti-1];
-		double qtrans = Trans (q);  
-		  
-	        for (int k = 0; k < nk; k++)
-		  hlfact[firstj+k] += qtrans * hlfact[firsti+k];
-
-		diag[i1+jj] += Trans (hlfact[firsti-1]) * q;
-	      }
-
-	    diag[i1+jj] = 1.0 / diag[i1+jj];
-	  }
-        */
-
         timerb.Stop();
         timerc.Start();
 
@@ -945,56 +968,78 @@ namespace ngla
 	mi = lasti-firsti+1;
 
         timercla.Start();
-        Matrix<> btb = Trans(b1)*b1 | Lapack;
+
+        // Matrix<> btb = Trans(b1)*b1 | Lapack;
+        Matrix<> btb(b1.Width());
+        CalcAtA (b1, btb);
+        
         timercla.Stop();
         // *testout << "b^t b = " << endl << btb << endl;
 
-        // Array<double> sum(BS*maxrow);
-	for (int j = 0; j < mi; j++)
-	  {
-            /*
-	    for (int k = j+1; k < mi; k++)
-	      sum[k] = TSCAL_MAT(0.0);
-	    for (int i2 = i1; i2 < last_same; i2++)
-	      {
-		int first = hfirstinrow[i2] + last_same-i2-1;
 
-		double qtrans = Trans (diag[i2] * hlfact[first+j]);
-		for (int k = j+1; k < mi; k++)
-		  sum[k] += qtrans * hlfact[first+k];
-	      }
-            */
+        timerc1.Start();
 
-            /*
-            *testout << "sum = " << endl;
-            for (int k = j+1; k < mi; k++)
-              *testout << sum[k] << " ";
-            *testout << endl;
-            */
 
-            // FlatVector<> (mi, &sum[0]) = btb.Row(j);
-            auto sum = btb.Row(j);
-
+        if (mi < 100)
+          {
+            for (int j = 0; j < mi; j++)
+              {
+                FlatVector<> sum = btb.Row(j);
             
-	    // merge together
-	    int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-	    int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+                // merge together
+                int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+                int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+                
+                for (int k = j+1; k < mi; k++)
+                  {
+                    int kk = hrowindex2[firsti_ri+k];
+                    while (hrowindex2[firstj_ri] != kk)
+                      {
+                        firstj++;
+                        firstj_ri++;
+                      }
+                    
+                    lfact[firstj] -= sum[k];
+                    firstj++;
+                    firstj_ri++;
+                  }
+              }
+          }
 
-	    for (int k = j+1; k < mi; k++)
-	      {
-		int kk = hrowindex2[firsti_ri+k];
-		while (hrowindex2[firstj_ri] != kk)
-		  {
-		    firstj++;
-		    firstj_ri++;
-		  }
-		    
-		lfact[firstj] -= sum[k];
-		firstj++;
-		firstj_ri++;
-	      }
-	  }
+        else
 
+          for (int j = 0; j < mi; j++)
+            {
+              FlatVector<> sum = btb.Row(j);
+              
+#pragma omp task
+              {
+                
+                // merge together
+                int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+                int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+                
+                for (int k = j+1; k < mi; k++)
+                  {
+                    int kk = hrowindex2[firsti_ri+k];
+                    while (hrowindex2[firstj_ri] != kk)
+                      {
+                        firstj++;
+                        firstj_ri++;
+                      }
+                    
+                    lfact[firstj] -= sum[k];
+                    firstj++;
+                    firstj_ri++;
+                  }
+              }
+          }
+        
+#pragma omp taskwait
+        timerc1.Stop();
+
+
+        timerc2.Start();
 	for (int i2 = i1; i2 < last_same; i2++)
 	  {
 	    int first = hfirstinrow[i2] + last_same-i2-1;
@@ -1007,7 +1052,7 @@ namespace ngla
 		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
 	      }
 	  }
-
+        timerc2.Stop();
 	i1 = last_same;
         timerc.Stop();
       }
@@ -1015,13 +1060,10 @@ namespace ngla
     for (int i = 0, j = 0; i < n; i++)
       {
 	double ai = diag[i];
-
 	int last = hfirstinrow[i+1];
+
 	for ( ; j < last; j++)
-	  {
-	    double hm = ai * lfact[j];
-	    lfact[j] = hm;
-	  }	
+          lfact[j] *= ai;
       }
 
 
