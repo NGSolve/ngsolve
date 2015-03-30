@@ -121,7 +121,7 @@ namespace ngstd
     done = true;
     while (active_workers)
       ;
-    cout << "workers all stoped !!!!!!!!!!!!!!!!!!!" << endl;
+    cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
 
