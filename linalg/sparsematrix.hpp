@@ -168,7 +168,8 @@ namespace ngla
   protected:
     /// sparse direct solver
     mutable INVERSETYPE inversetype = default_inversetype;    // C++11 :-) Windows VS2013
-
+    bool spd = false;
+    
   public:
     BaseSparseMatrix (int as, int max_elsperrow)
       : MatrixGraph (as, max_elsperrow)  
@@ -251,8 +252,8 @@ namespace ngla
     virtual INVERSETYPE  GetInverseType () const
     { return inversetype; }
 
-
-
+    void SetSPD (bool aspd = true) { spd = aspd; }
+    bool IsSPD () const { return spd; }
   };
 
   /// A general, sparse matrix
@@ -506,7 +507,6 @@ namespace ngla
   template<class TM>
   class NGS_DLL_HEADER SparseMatrixSymmetricTM : virtual public SparseMatrixTM<TM>
   {
-    bool spd = false;
   protected:
     SparseMatrixSymmetricTM (int as, int max_elsperrow)
       : SparseMatrixTM<TM> (as, max_elsperrow) { ; }
@@ -525,8 +525,6 @@ namespace ngla
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    void SetSPD (bool aspd = true) { spd = aspd; }
-    bool IsSPD () const { return spd; }
     virtual void AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat);
 
     virtual void AddElementMatrix(const FlatArray<int> & dnums1, 

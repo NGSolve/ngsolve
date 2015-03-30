@@ -194,8 +194,11 @@ namespace ngla
     
     
 #ifdef LAPACK
+    /*
     auto aspd = dynamic_cast<const SparseMatrixSymmetricTM<double>*> (&a);
     if (aspd && aspd -> IsSPD())
+    */
+    if (a.IsSPD())
       FactorSPD();
     else
 #endif
