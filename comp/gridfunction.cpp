@@ -1346,6 +1346,10 @@ namespace ngcomp
 
         const FESpace & fes = *gf->GetFESpace();
         int dim = fes.GetDimension();
+        
+        ElementId ei(VOL,elnr);
+        if (!fes.DefinedOn(ei)) return 0;
+
 	
         LocalHeapMem<100000> lh("visgf::GetMultiValue");
 
@@ -1461,6 +1465,9 @@ namespace ngcomp
 	bool bound = (ma->GetDimension() == 3);
         ElementId ei(bound ? BND : VOL, elnr);
 	const FESpace & fes = *gf->GetFESpace();
+
+	if (!fes.DefinedOn (ei))
+	  return 0;
 
 	int dim = fes.GetDimension();
 
@@ -1671,6 +1678,8 @@ namespace ngcomp
         
         const FESpace & fes = *gf->GetFESpace();
         int dim = fes.GetDimension();
+        if (!fes.DefinedOn (ei))
+          return 0;
         
         
         LocalHeapMem<100000> lh("visgf::getmultisurfvalue");
