@@ -90,7 +90,6 @@ namespace ngfem
       {
         Vec<DIM> pt = ir[i].Point();
 
-        // double sum = 0;
         values.Row(i) = 0.0;
         T_CalcShape (&pt(0), SBLambda ( [&](int j, double shape) 
                                         { 
@@ -98,7 +97,6 @@ namespace ngfem
                                           values.Row(i) += shape * coefs.Row(j); 
                                         } 
                                         ));
-        // vals(i) = sum;
       }
   }
 
@@ -120,7 +118,7 @@ namespace ngfem
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, FlatVector<double> coefs) const -> Vec<DIM>
   {
-    Vec<DIM, AutoDiff<DIM> > adp = ip;
+    Vec<DIM, AutoDiff<DIM>> adp = ip;
     AutoDiff<DIM> sum = 0.0;
     T_CalcShape (&adp(0), SBLambda ( [&](int i, AutoDiff<DIM> val) 
                                      { 
@@ -135,7 +133,7 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM> > adp = ir[i]; // Ip2Ad<DIM> (ir[i]);
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
 
         Vec<DIM> sum = 0.0;
         T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
@@ -152,7 +150,7 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM> > adp = ir[i];  // Ip2Ad<DIM> (ir[i]);
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i];
         T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                         { coefs(j) += InnerProduct (vals.Row(i), shape); }));
       }
@@ -162,7 +160,18 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const
   {
-    cout << "evalgrad trans, ir system not implemented" << endl;
+    int nels = coefs.Width();
+    coefs = 0.0;
+    for (int i = 0; i < ir.GetNIP(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM>> adp = ir[i];  
+        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
+                                        { 
+                                          Vec<DIM> grad = shape;
+                                          FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
+                                          coefs.Row(j) += mvals * grad;
+                                        }));
+      }
   }
 
 
@@ -216,7 +225,7 @@ namespace ngfem
   CalcMappedDShape (const MappedIntegrationPoint<DIM,DIM> & mip, 
 		    SliceMatrix<> dshape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp = mip;
+    Vec<DIM, AutoDiff<DIM>> adp = mip;
 
     T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
