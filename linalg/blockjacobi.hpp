@@ -26,8 +26,8 @@ namespace ngla
     /// block coloring 
     Table<int> block_coloring;
 
-    /// rows ... colors,  [col[i],col[i+1]) ... range for thread
-    Table<int> block_balancing;
+    /// balancing for each color
+    Array<Partitioning> color_balance;
 
     size_t nze;
   public:

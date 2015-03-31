@@ -186,11 +186,63 @@ namespace ngstd
     template <typename T>
     Partitioning & operator= (const Array<T> & apart) { part = apart; return *this; }
 
+
+
+    template <typename TFUNC>
+    void Calc (int n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 8)
+    {
+      Array<size_t> prefix (n);
+
+      size_t sum = 0;
+      for (auto i : ngstd::Range(n))
+        {
+          sum += costs(i);
+          prefix[i] = sum;
+        }
+      
+      part.SetSize (size+1);
+      part[0] = 0;
+
+      for (int i = 1; i <= size; i++)
+        part[i] = BinSearch (prefix, sum*i/size);      
+    }
+    
     int Size() const { return part.Size()-1; }
     T_Range<int> operator[] (int i) const { return ngstd::Range(part[i], part[i+1]); }
     T_Range<int> Range() const { return ngstd::Range(part[0], part[Size()]); }
+
+
+
+
+  private:
+    template <typename Tarray>
+    int BinSearch(const Tarray & v, size_t i) {
+      int n = v.Size();
+      if (n == 0) return 0;
+      
+      int first = 0;
+      int last = n-1;
+      if(v[0]>i) return 0;
+      if(v[n-1] <= i) return n;
+      while(last-first>1) {
+        int m = (first+last)/2;
+        if(v[m]<i)
+          first = m;
+        else
+          last = m;
+      }
+      return first;
+    }
   };
 
+
+  inline ostream & operator<< (ostream & ost, const Partitioning & part)
+  {
+    for (int i : Range(part.Size()))
+      ost << part[i] << " ";
+    return ost;
+  }
+  
 
   // tasks must be a multiple of part.size
   template <typename TFUNC>
@@ -219,6 +271,40 @@ namespace ngstd
           f(i);
       }
   }
+
+
+
+
+
+  template <typename TFUNC>
+  INLINE void ParallelForRange (const Partitioning & part, TFUNC f, int tasks_per_thread = 1)
+  {
+    if (task_manager)
+      {
+        int ntasks = tasks_per_thread * task_manager->GetNumThreads();
+        if (ntasks % part.Size() != 0)
+          throw Exception ("tasks must be a multiple of part.size");
+
+        task_manager -> CreateJob 
+          ([&] (TaskInfo & ti) 
+           {
+             int tasks_per_part = ti.ntasks / part.Size();
+             int mypart = ti.task_nr / tasks_per_part;
+             int num_in_part = ti.task_nr % tasks_per_part;
+             
+             auto myrange = part[mypart].Split (num_in_part, tasks_per_part);
+             f(myrange);
+           }, ntasks);
+      }
+    else
+      {
+        f(part.Range());
+      }
+  }
+
+
+
+
 
 }
 

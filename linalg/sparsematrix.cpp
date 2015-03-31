@@ -394,6 +394,7 @@ namespace ngla
             colnr.SetSize (nze+1);
 
 	    CalcBalancing ();
+            
 
             // first touch memory (numa!)
             ParallelFor (balance, [&](int row) 
@@ -702,37 +703,9 @@ namespace ngla
     static Timer timer ("MatrixGraph - CalcBalancing");
     RegionTimer reg (timer);
 
-    int max_threads = omp_get_max_threads();
-    Array<int> balancing (max_threads+1);
-
-    Array<size_t> prefix (size);
-
-    size_t sum = 0;
-    for (auto i : Range(size))
-      {
-	int costs = 5 + GetRowIndices(i).Size();
-	sum += costs;
-	prefix[i] = sum;
-      }
-
-    balancing[0] = 0;
-
-    RunWithTaskManager
-      ([&] ()
-       {
-         task_manager -> CreateJob 
-           ( [&] (const TaskInfo & ti)
-             {
-               int tid = ti.task_nr;
-               balancing[tid+1] = 
-                 BinSearch (prefix, sum*(tid+1)/max_threads);      
-             },
-             balancing.Size()-1);
-       });
-
-    balance = balancing;
+    balance.Calc (size, [&] (int row) { return 5 + GetRowIndices(row).Size(); });
   }
-
+  
   void MatrixGraph :: FindSameNZE()
   {
     return;
@@ -915,27 +888,12 @@ namespace ngla
   template <class TM>
   void SparseMatrixTM<TM> :: SetZero ()
   {
-    /*
-    for (auto & ai : data)
-      ai = 0.0;
-    */
 
-    if (task_manager)
-      {
-        ParallelFor (balance, [&](int row) 
-                     {
-                       data.Range(firsti[row], firsti[row+1]) = TM(0.0);
-                     });
-      }
-
-#pragma omp parallel 
-    {
-      IntRange thread_rows = OmpRange();
-      // cout << "setzero. I am thd " << omp_get_thread_num() << " out of " << omp_get_num_threads() << ", range = " << thread_rows << endl;
-      for (auto ind : Range(firsti[thread_rows.begin()],
-                            firsti[thread_rows.end()]))
-        data[ind] = 0.0;
-    }
+    ParallelFor (balance, [&](int row) 
+                 {
+                   data.Range(firsti[row], firsti[row+1]) = TM(0.0);
+                 });
+    
   }
 
 
@@ -955,22 +913,11 @@ namespace ngla
         static Timer t("SparseMatrix::MultAdd (taskhandler)");
 	RegionTimer reg(t);
 	t.AddFlops (this->NZE());
+
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
-	
-        /*
-	task_manager -> CreateJob 
-	  ( [fx,fy,s,this] (const TaskInfo & ti)
-	    {
-              int thd = ti.task_nr;
-	      IntRange r(balancing[thd], balancing[thd+1]);
-	      for (int i : r)
-		fy(i) += s * RowTimesVector (i, fx);
-	    },
-            balancing.Size()-1);
-        */
 
-        ParallelFor (balance, [&](int row) 
+        ParallelFor (balance, [fx,fy,s,this](int row) 
                      {
                        fy(row) += s * RowTimesVector (row, fx);
                      });
@@ -979,31 +926,12 @@ namespace ngla
       }
     
 
-    if (omp_get_num_threads() < balance.Size())
-      {
-        static Timer timer("SparseMatrix::MultAdd");
-        RegionTimer reg (timer);
-        timer.AddFlops (this->nze);
-	
-#pragma omp parallel num_threads(balance.Size())
-        {
-          MultAdd (s, x, y);
-        }
-
-        return;
-      }
-
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 
 
-    // int h = this->Height();
-    // for (int i = 0; i < h; i++)
-    //   fy(i) += s * RowTimesVector (i, fx);
-
-    for (int i : this->OmpRange())
-      {
-        fy(i) += s * RowTimesVector (i, fx);
-      }
+    int h = this->Height();
+    for (int i = 0; i < h; i++)
+      fy(i) += s * RowTimesVector (i, fx);
 
   }
   
@@ -1455,15 +1383,6 @@ namespace ngla
 
 	for (int i = 0; i < this->Height(); i++)
 	  fy(i) += s * RowTimesVectorNoDiag (i, fx);
-
-        /*
-#pragma omp parallel 
-	{
-	  int tid = omp_get_thread_num();
-	  for (int i : IntRange (this->balancing[tid], this->balancing[tid+1]))
-	    fy(i) += s * RowTimesVectorNoDiag (i, fx);
-	}
-        */
       }
   }
   
