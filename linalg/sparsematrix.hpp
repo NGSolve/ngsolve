@@ -93,7 +93,7 @@ namespace ngla
     Array<int> same_nze;
     
     /// balancing for multi-threading
-    Array<int> balancing;
+    Partitioning balance;
 
     /// owner of arrays ?
     bool owner;
@@ -144,9 +144,9 @@ namespace ngla
       int num = omp_get_num_threads();
 
       if (num == 1) return IntRange(0, size);
-      if (num != balancing.Size()-1)
+      if (num != balance.Size())
         throw Exception ("OmpRange: wrong number of threads");
-      return IntRange (balancing[tid], balancing[tid+1]);
+      return balance[tid]; 
     }
 
     ostream & Print (ostream & ost) const;
@@ -374,7 +374,7 @@ namespace ngla
     using SparseMatrixTM<TM>::firsti;
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
-    using SparseMatrixTM<TM>::balancing;
+    using SparseMatrixTM<TM>::balance;
 
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;

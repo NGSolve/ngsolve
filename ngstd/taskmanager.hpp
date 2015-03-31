@@ -26,6 +26,7 @@ namespace ngstd
     int nnodes;
   };
 
+  extern class TaskManager * task_manager;
   
   class TaskManager
   {
@@ -53,6 +54,7 @@ namespace ngstd
     NodeData *nodedata[8];
 
     int num_nodes;
+    int num_threads;
     
   public:
     
@@ -62,13 +64,17 @@ namespace ngstd
     void StartWorkers();
     void StopWorkers();
 
+    int GetNumThreads() const { return num_threads; }
+    int GetNumNodes() const { return num_nodes; }
+
+
     void CreateJob (function<void(TaskInfo&)> afunc, 
-                    int antasks = omp_get_max_threads());
+                    int antasks = task_manager->GetNumThreads());
 
 
 
     template <typename TFUNC>
-    INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = omp_get_max_threads())
+    INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
     {
       CreateJob 
         ([r, f] (TaskInfo & ti) 
@@ -93,14 +99,14 @@ namespace ngstd
 
 
 
-  extern TaskManager * task_manager;
   
   void RunWithTaskManager (function<void()> alg);
 
 
 
   template <typename TFUNC>
-  INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = omp_get_max_threads())
+  INLINE void ParallelFor (IntRange r, TFUNC f, 
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     if (task_manager)
       task_manager -> ParallelFor (r, f, antasks);
@@ -167,6 +173,52 @@ namespace ngstd
 
 
 
+
+  class Partitioning
+  {
+    Array<int> part;
+  public:
+    Partitioning () { ; }
+
+    template <typename T>
+    Partitioning (const Array<T> & apart) { part = apart; }
+
+    template <typename T>
+    Partitioning & operator= (const Array<T> & apart) { part = apart; return *this; }
+
+    int Size() const { return part.Size()-1; }
+    T_Range<int> operator[] (int i) const { return ngstd::Range(part[i], part[i+1]); }
+    T_Range<int> Range() const { return ngstd::Range(part[0], part[Size()]); }
+  };
+
+
+  // tasks must be a multiple of part.size
+  template <typename TFUNC>
+  INLINE void ParallelFor (const Partitioning & part, TFUNC f, int tasks_per_thread = 1)
+  {
+    if (task_manager)
+      {
+        int ntasks = tasks_per_thread * task_manager->GetNumThreads();
+        if (ntasks % part.Size() != 0)
+          throw Exception ("tasks must be a multiple of part.size");
+
+        task_manager -> CreateJob 
+          ([&] (TaskInfo & ti) 
+           {
+             int tasks_per_part = ti.ntasks / part.Size();
+             int mypart = ti.task_nr / tasks_per_part;
+             int num_in_part = ti.task_nr % tasks_per_part;
+             
+             auto myrange = part[mypart].Split (num_in_part, tasks_per_part);
+             for (auto i : myrange) f(i);
+           }, ntasks);
+      }
+    else
+      {
+        for (auto i : part.Range())
+          f(i);
+      }
+  }
 
 }
 
