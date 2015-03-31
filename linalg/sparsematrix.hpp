@@ -138,16 +138,6 @@ namespace ngla
     void FindSameNZE();
     void CalcBalancing ();
 
-    IntRange OmpRange () const
-    {
-      int tid = omp_get_thread_num();
-      int num = omp_get_num_threads();
-
-      if (num == 1) return IntRange(0, size);
-      if (num != balance.Size())
-        throw Exception ("OmpRange: wrong number of threads");
-      return balance[tid]; 
-    }
 
     ostream & Print (ostream & ost) const;
 
