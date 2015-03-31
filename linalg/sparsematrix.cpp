@@ -396,12 +396,10 @@ namespace ngla
 	    CalcBalancing ();
 
             // first touch memory (numa!)
-            task_manager -> CreateJob 
-              ( [&] (const TaskInfo & ti)
-                {
-                  colnr.Range(firsti[balancing[ti.task_nr]], 
-                              firsti[balancing[ti.task_nr+1]]) = 0;
-                }, balancing.Size()-1);
+            ParallelFor (balance, [&](int row) 
+                         {
+                           colnr.Range(firsti[row], firsti[row+1]) = 0;
+                         });
           }
         else
           {
@@ -705,7 +703,7 @@ namespace ngla
     RegionTimer reg (timer);
 
     int max_threads = omp_get_max_threads();
-    balancing.SetSize (max_threads+1);
+    Array<int> balancing (max_threads+1);
 
     Array<size_t> prefix (size);
 
@@ -731,6 +729,8 @@ namespace ngla
              },
              balancing.Size()-1);
        });
+
+    balance = balancing;
   }
 
   void MatrixGraph :: FindSameNZE()
@@ -922,17 +922,10 @@ namespace ngla
 
     if (task_manager)
       {
-	task_manager -> CreateJob
-	  ( [this] (const TaskInfo & ti)
-	    {
-              int thd = ti.task_nr;
-	      for (auto & ai : data.Range (firsti[balancing[thd]], 
-                                           firsti[balancing[thd+1]]) )
-		ai = 0.0;
-	    },
-            balancing.Size()-1);
-
-	return;
+        ParallelFor (balance, [&](int row) 
+                     {
+                       data.Range(firsti[row], firsti[row+1]) = TM(0.0);
+                     });
       }
 
 #pragma omp parallel 
@@ -965,6 +958,7 @@ namespace ngla
 	FlatVector<TVX> fx = x.FV<TVX>(); 
 	FlatVector<TVY> fy = y.FV<TVY>(); 
 	
+        /*
 	task_manager -> CreateJob 
 	  ( [fx,fy,s,this] (const TaskInfo & ti)
 	    {
@@ -974,24 +968,30 @@ namespace ngla
 		fy(i) += s * RowTimesVector (i, fx);
 	    },
             balancing.Size()-1);
+        */
+
+        ParallelFor (balance, [&](int row) 
+                     {
+                       fy(row) += s * RowTimesVector (row, fx);
+                     });
+
 	return;
       }
     
 
-    if (omp_get_num_threads() < balancing.Size()-1)
+    if (omp_get_num_threads() < balance.Size())
       {
         static Timer timer("SparseMatrix::MultAdd");
         RegionTimer reg (timer);
         timer.AddFlops (this->nze);
 	
-#pragma omp parallel num_threads(balancing.Size()-1)
+#pragma omp parallel num_threads(balance.Size())
         {
           MultAdd (s, x, y);
         }
 
         return;
       }
-
 
     FlatVector<TVX> fx = x.FV<TVX>(); 
     FlatVector<TVY> fy = y.FV<TVY>(); 

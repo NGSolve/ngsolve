@@ -1194,7 +1194,6 @@ namespace ngla
       mat.AddRowTransToVector (j, -fx(j), fy);
 
 #ifdef PARALLEL_GSSMOOTH
-    
 #pragma omp parallel
     {
       int tid = omp_get_thread_num();

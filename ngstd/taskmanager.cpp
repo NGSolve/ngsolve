@@ -105,15 +105,15 @@ namespace ngstd
   void TaskManager :: StartWorkers()
   {
     done = false;
-    int nthds = omp_get_num_threads();
-    for (int i = 0; i < nthds-1; i++)
+    num_threads = omp_get_num_threads();
+    for (int i = 0; i < num_threads-1; i++)
 #pragma omp task
       {
         Loop();
       }
-    while (active_workers < nthds-1)
+    while (active_workers < num_threads-1)
       ;
-    cout << "workers are all active !!!!!!!!!!!" << endl;
+    // cout << "workers are all active !!!!!!!!!!!" << endl;
   }
  
   void TaskManager :: StopWorkers()
@@ -121,7 +121,7 @@ namespace ngstd
     done = true;
     while (active_workers)
       ;
-    cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
+    // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
 
