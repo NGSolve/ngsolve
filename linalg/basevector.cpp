@@ -59,69 +59,20 @@ namespace ngla
   {
     if (scal == 1) return *this;
 
-
     FlatVector<double> me = FVDouble();
-
-    if (task_manager)
-      {
-        static Timer t("BaseVector::Scale (taskhandler)");
-        RegionTimer reg(t);
-        t.AddFlops (me.Size());
-
-        /*
-	task_manager -> CreateJob 
-	  ( [me,scal] (const TaskInfo & ti)
-	    {
-              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
-	      me.Range(r) *= scal;
-	    } );
-        */
-
-        ParallelFor ( me.Range(),
-                      [me,scal] (int i) { me(i) *= scal; });
-
-	return *this; 
-      }
 
 
     static Timer t("BaseVector::Scale");
     RegionTimer reg(t);
     t.AddFlops (me.Size());
 
-    switch (omp_status)
-      {
-      case OMP_STATUS::NONE:
-        me *= scal;
-        break;
-
-      case OMP_STATUS::USE:
-      case OMP_STATUS::TASKS:
-#pragma omp for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) *= scal;
-        break;
-
-      case OMP_STATUS::CREATE:
-#pragma omp parallel for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) *= scal;
-        break;
-
-      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
-        if (omp_in_parallel())
-#pragma omp for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) *= scal;
-        else
-#pragma omp parallel for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) *= scal;
-        break;
-      }
-
+    ParallelFor ( me.Range(),
+                  [me,scal] (int i) { me(i) *= scal; });
 
     return *this;
   }
+
+
   BaseVector & BaseVector :: Scale (Complex scal)
   {
     FVComplex() *= scal;
@@ -130,31 +81,16 @@ namespace ngla
 
   BaseVector & BaseVector :: SetScalar (double scal)
   {
-    if (task_manager)
-      {
-        static Timer t("BaseVector::SetScalar (taskhandler)");
-        RegionTimer reg(t);
-
-        FlatVector<> fv = FVDouble();
-        t.AddFlops (fv.Size());
-
-	task_manager -> CreateJob 
-	  ( [fv,scal] (const TaskInfo & ti)
-	    {
-              IntRange r = fv.Range().Split (ti.task_nr, ti.ntasks);
-              fv.Range(r) = scal;
-	    } );
-
-	return *this; 
-      }
-
     static Timer t("BaseVector::SetScalar");
     RegionTimer reg(t);
-    t.AddFlops (FVDouble().Size());
-
-
-    FVDouble() = scal;
-    return *this;
+    
+    FlatVector<> fv = FVDouble();
+    t.AddFlops (fv.Size());
+    
+    ParallelFor ( fv.Range(),
+                  [fv,scal] (int i) { fv(i) = scal; });
+    
+    return *this; 
   }
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
@@ -175,57 +111,11 @@ namespace ngla
     FlatVector<double> me = FVDouble();
     FlatVector<double> you = v.FVDouble();
 
+    t.AddFlops (me.Size());
 
-    if (task_manager)
-      {
-	static Timer t("BaseVector::Set (taskhandler)");
-	RegionTimer reg(t);
-	t.AddFlops (me.Size());
-
-	task_manager -> CreateJob
-	  ( [me,you,scal] (const TaskInfo & ti)
-	    {
-              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
-	      me.Range(r) = scal*you.Range(r);
-	    } );
-
-	return *this;
-      }
+    ParallelFor ( me.Range(),
+                  [me,you,scal] (int i) { me(i) = scal * you(i); });
     
-
-    
-
-    switch (omp_status)
-      {
-      case OMP_STATUS::NONE:
-        me = scal * you;
-        break;
-
-      case OMP_STATUS::USE:
-      case OMP_STATUS::TASKS:
-#pragma omp for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) = scal * you(i);
-        break;
-
-      case OMP_STATUS::CREATE:
-#pragma omp parallel for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) = scal * you(i);
-        break;
-
-      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
-        if (omp_in_parallel())
-#pragma omp for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) = scal * you(i);
-        else
-#pragma omp parallel for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) = scal * you(i);
-        break;
-      }
-
     return *this;
   }
 
@@ -239,105 +129,19 @@ namespace ngla
     
 
 
-  inline void VectorAddRec (FlatVector<> a, FlatVector<> b, double scal)
-  {
-    int n = a.Size();
-    if (n <= 32000)
-      {
-	a += scal * b;
-	return;
-      }
-
-    int n1 = n/2;
-#pragma omp task
-    {
-      VectorAddRec (a.Range(0,n1), b.Range(0,n1), scal);
-    }
-    //#pragma omp task
-    {
-      VectorAddRec (a.Range(n1,n), b.Range(n1,n), scal);
-    }
-    //#pragma omp taskwait
-  }
-
-
   BaseVector & BaseVector :: Add (double scal, const BaseVector & v)
   {
-
-
-    if (task_manager)
-      {
-	static Timer t("BaseVector::Add (taskhandler)");
-	RegionTimer reg(t);
-	
-	FlatVector<double> me = FVDouble();
-	FlatVector<double> you = v.FVDouble();
-	
-	t.AddFlops (me.Size());
-
-	task_manager -> CreateJob
-	  ( [me,you,scal] (const TaskInfo & ti)
-	    {
-              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
-	      me.Range(r) += scal*you.Range(r);
-	    } );
-
-	return *this;
-      }
-    
-
-
     static Timer t("BaseVector::Add");
     RegionTimer reg(t);
-
-    if(Size() != v.Size())
-        throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
-    // FVDouble() += scal * v.FVDouble();
     
-
     FlatVector<double> me = FVDouble();
     FlatVector<double> you = v.FVDouble();
+    
+    t.AddFlops (me.Size());
 
-    switch (omp_status)
-      {
-      case OMP_STATUS::NONE:
-        me += scal * you;
-        break;
-
-      case OMP_STATUS::USE:
-      case OMP_STATUS::TASKS:
-#pragma omp for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) += scal * you(i);
-        break;
-
-      case OMP_STATUS::CREATE:
-#pragma omp parallel for
-        for (int i = 0; i < me.Size(); i++)
-          me(i) += scal * you(i);
-        break;
-
-      case OMP_STATUS::CREATE_IF_NOT_PARALLEL:
-        if (omp_in_parallel())
-	  {
-
-	    /*
-	      #pragma omp for
-	      for (int i = 0; i < me.Size(); i++)
-	      me(i) += scal * you(i);
-	    */
-	    auto r = OmpSplit (ngstd::Range (me.Size()));
-	    me.Range(r) += scal * you.Range(r);
-#pragma omp barrier
-
-	  }
-        else
-#pragma omp parallel for
-          for (int i = 0; i < me.Size(); i++)
-            me(i) += scal * you(i);
-        break;
-      }
-
+    ParallelFor ( me.Range(),
+                  [me,you,scal] (int i) { me(i) += scal * you(i); });
+    
     return *this;
   }
 
@@ -731,95 +535,37 @@ namespace ngla
   }
 
 
-  double InnerProductRec (FlatVector<> a, FlatVector<> b)
-  {
-    int n = a.Size();
-    if (n < 4096)
-      {
-	return InnerProduct (a, b);
-      }
-
-    int n1 = n/2;
-    double sum1, sum2;
-#pragma omp task shared(sum1) 
-    {
-      sum1 = InnerProductRec (a.Range(0,n1), b.Range(0,n1));
-    }
-    sum2 = InnerProductRec (a.Range(n1,n), b.Range(n1,n));
-
-#pragma omp taskwait
-    return sum1+sum2;
-  }
-
-
 
   template <>
   double S_BaseVector<double> :: InnerProduct (const BaseVector & v2) const
   {
-    if (task_manager)
-      {
-	static Timer t("BaseVector::InnerProduct (taskhandler)");
-	RegionTimer reg(t);
-	FlatVector<double> me = FVDouble();
-	FlatVector<double> you = v2.FVDouble();
-	
-	t.AddFlops (me.Size());
-	double scal = 0;
-
-	task_manager -> CreateJob
-	  ( [me,you,&scal] (const TaskInfo & ti)
-	    {
-              IntRange r = me.Range().Split (ti.task_nr, ti.ntasks);
-	      double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
-#pragma omp atomic
-	      scal += myscal;
-	    } );
-	
-	return scal;
-      }
-
-
-    if (omp_status == OMP_STATUS::TASKS)
-      {
-        static Timer t("S_BaseVector<double>::InnerProduct (TASKS)");
-        RegionTimer reg(t);
-        
-        FlatVector<> me = FVDouble();
-        FlatVector<> you = FVDouble();
-        return InnerProductRec (me, you);
-      }
-
-    
-    static Timer t("S_BaseVector<double>::InnerProduct");
+    static Timer t("BaseVector::InnerProduct (taskhandler)");
     RegionTimer reg(t);
-    return ngbla::InnerProduct (FVScal(), v2.FV<double>());
+
+    FlatVector<double> me = FVDouble();
+    FlatVector<double> you = v2.FVDouble();
+	
+    t.AddFlops (me.Size());
+    double scal = 0;
+
+    ParallelForRange ( ngstd::Range(me.Size()),
+                       [me,you,&scal] (IntRange r)
+                      {
+                        double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
+#pragma omp atomic
+                        scal += myscal;
+                      } );
+	
+    return scal;
   }
 
 
-
-
-
-
-
-  //template <> 
-  /*
-  Complex S_BaseVector<Complex> :: InnerProduct (const BaseVector & v2) const
-  {
-    return ngbla::InnerProduct (FVScal(), 
-                                dynamic_cast<const S_BaseVector&>(v2).FVScal());
-  }
-  */
 
 
   template <class SCAL>
   FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
   {
     return FlatVector<double> (size * entrysize, Memory());
-    /*
-      FlatVector<SCAL> fv = FVScal();
-      return FlatVector<SCAL> (fv.Size() * sizeof(SCAL)/sizeof(double),
-      reinterpret_cast<double*> (&fv(0)));
-    */
   }
 
   template <class SCAL>
