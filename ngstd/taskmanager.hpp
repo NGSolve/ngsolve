@@ -72,7 +72,7 @@ namespace ngstd
                     int antasks = task_manager->GetNumThreads());
 
 
-
+    /*
     template <typename TFUNC>
     INLINE void ParallelFor (IntRange r, TFUNC f, int antasks = task_manager->GetNumThreads())
     {
@@ -83,7 +83,7 @@ namespace ngstd
            for (auto i : myrange) f(i);
          }, antasks);
     }
-    
+    */
 
 
     void Done() { done = true; }
@@ -109,9 +109,38 @@ namespace ngstd
                            int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     if (task_manager)
-      task_manager -> ParallelFor (r, f, antasks);
+
+      task_manager -> CreateJob 
+        ([r, f] (TaskInfo & ti) 
+         {
+           auto myrange = r.Split (ti.task_nr, ti.ntasks);
+           for (auto i : myrange) f(i);
+         }, 
+         antasks);
+
     else
+
       for (auto i : r) f(i);
+  }
+
+
+  template <typename TFUNC>
+  INLINE void ParallelForRange (IntRange r, TFUNC f, 
+                                int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+  {
+    if (task_manager)
+
+      task_manager -> CreateJob 
+        ([r, f] (TaskInfo & ti) 
+         {
+           auto myrange = r.Split (ti.task_nr, ti.ntasks);
+           f(myrange);
+         }, 
+         antasks);
+
+    else
+
+      f(r);
   }
 
 
