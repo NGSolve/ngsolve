@@ -255,6 +255,8 @@ namespace ngla
     for (int i = 0; i < n; i++)
       blocknrs[i] = in_blocknr[i];
 
+    *testout << "blocknrs = " << endl << blocknrs << endl;
+
     int cnt = 0;
     int cnt_master = 0;
 
@@ -355,10 +357,13 @@ namespace ngla
     Array<int> first_microtask;
     for (int i = 0; i < blocks.Size()-1; i++)
       {
-        first_microtask.Append (microtasks.Size());
         auto extdofs = BlockExtDofs (i);
+        first_microtask.Append (microtasks.Size());
+
+        if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) continue;
+
         int nb = extdofs.Size() / 256 + 1;
-        
+
         MicroTask mt;
         mt.blocknr = i;
         mt.solveL = true;
@@ -377,7 +382,7 @@ namespace ngla
           }
       }
     first_microtask.Append (microtasks.Size());
-
+    cout << "have micro-tasks, now build tables" << endl;
     {
 
       TableCreator<int> creator(microtasks.Size());
@@ -385,7 +390,7 @@ namespace ngla
 
       for ( ; !creator.Done(); creator++, creator_trans++)
         {
-          for (int i = 0; i < blocks.Size()-1; i++)
+          for (int i = 0; i < first_microtask.Size()-1; i++)
             {
               for (int b = first_microtask[i]+1; b < first_microtask[i+1]; b++)
                 {
@@ -403,10 +408,13 @@ namespace ngla
             }
         }
 
+      cout << "have creator" << endl;
+
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
 
       cout << "have tables" << endl;
+      cout << "dag.size = " << micro_dependency.Size() << endl;
     }
   }
   
@@ -776,7 +784,7 @@ namespace ngla
     
     // btb = Trans(b1) * b1 | Lapack;
 
-
+    /*
     if (b1.Width() < 200)
       {
         if (b1.Width() < 10 || b1.Height() < 10)
@@ -807,6 +815,33 @@ namespace ngla
 #pragma omp taskwait
 
       }
+    */
+
+    int w = b1.Width();
+    int nbl = w / 64 + 1;
+
+    if (nbl <= 1)
+      {
+        btb = Trans(b1) * b1;
+      }
+    else
+    task_manager -> CreateJob ( [&] (const TaskInfo & ti)
+                                {
+                                  int br = ti.task_nr / nbl;
+                                  int bc = ti.task_nr % nbl;
+                                  
+                                  if (br > bc) return;
+
+                                  auto rowr = Range(w).Split (br, nbl);
+                                  auto colr = Range(w).Split (bc, nbl);
+                                  
+                                  btb.Rows(rowr).Cols(colr) = Trans(b1.Cols(rowr)) * b1.Cols(colr) | Lapack;
+                                  
+                                  if (br != bc)
+                                    btb.Rows(colr).Cols(rowr) = Trans (btb.Rows(rowr).Cols(colr));
+
+                                }, nbl*nbl);
+
   }
 
 
@@ -822,7 +857,7 @@ namespace ngla
   template <>
   void SparseCholesky<double,double,double> :: FactorSPD () 
   {
-    task_manager -> StopWorkers();
+    // task_manager -> StopWorkers();
 
     static Timer factor_timer("SparseCholesky::Factor SPD");
 
@@ -1011,34 +1046,31 @@ namespace ngla
 
         else
 
-          for (int j = 0; j < mi; j++)
-            {
+          // for (int j = 0; j < mi; j++)
+          ParallelFor 
+            (Range(mi), [&] (int j)
+             {
               FlatVector<> sum = btb.Row(j);
               
-#pragma omp task
-              {
-                
-                // merge together
-                int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-                int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
-                
-                for (int k = j+1; k < mi; k++)
-                  {
-                    int kk = hrowindex2[firsti_ri+k];
-                    while (hrowindex2[firstj_ri] != kk)
-                      {
-                        firstj++;
-                        firstj_ri++;
-                      }
-                    
-                    lfact[firstj] -= sum[k];
-                    firstj++;
+              // merge together
+              int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+              int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+              
+              for (int k = j+1; k < mi; k++)
+                {
+                  int kk = hrowindex2[firsti_ri+k];
+                  while (hrowindex2[firstj_ri] != kk)
+                    {
+                      firstj++;
+                      firstj_ri++;
+                    }
+                  
+                  lfact[firstj] -= sum[k];
+                  firstj++;
                     firstj_ri++;
-                  }
-              }
-          }
-        
-#pragma omp taskwait
+                }
+             });
+
         timerc1.Stop();
 
 
@@ -1073,7 +1105,7 @@ namespace ngla
     if (n > 2000)
       cout << IM(4) << endl;
 
-    task_manager -> StartWorkers();
+    // task_manager -> StartWorkers();
   }
 
 #endif
@@ -1309,10 +1341,72 @@ namespace ngla
 
 
 
+
+  template <typename T>
+  class MyQueue
+  {
+    Array<T> data;
+    Array<atomic<int>> ok;
+    atomic<int> rcnt, wcnt;
+  public:
+    MyQueue (int size)
+      : data(size), ok(size) , rcnt(0), wcnt(0)
+    {
+      for (auto & d : ok) 
+        d.store (0, memory_order_relaxed);
+    }
+
+    void Push (T in)
+    {
+      int mypos = wcnt++;
+      data[mypos] = in;
+      ok[mypos] = 1;
+      /*
+#pragma omp critical(output)
+      {
+        cout << "push " << in << " to " << mypos << endl;
+      }
+      */
+    }
+
+    bool Pop (T & out)
+    {
+      while (1)
+        {
+          if (rcnt >= data.Size()) return false;
+          
+          int oldval = 1;
+          if (ok[rcnt].compare_exchange_weak (oldval, 0))
+            {
+              int mypos = rcnt;
+              rcnt++;
+              out = data[mypos];
+              /*
+#pragma omp critical(output)
+              {
+                cout << "pop " << out << " from " << mypos << ",   wcnt = " << wcnt << endl;
+              }
+              */
+              return true;
+            }
+        }
+    }
+  };
+
+
+
   
+  static TQueue queue;
+
+
   template <typename TFUNC>
   void RunParallelDependency (const Table<int> & dag, TFUNC func)
   {
+    static Timer t("parallelDependency");
+    static Timer t2("parallelDependency - dag");
+
+    RegionTimer reg(t);
+
 
     Array<atomic<int>> cnt_dep(dag.Size());
 
@@ -1330,8 +1424,13 @@ namespace ngla
 
     Array<int> ready(dag.Size());
     ready.SetSize0();
+    int num_final = 0;
+
     for (int j : Range(cnt_dep))
-      if (cnt_dep[j] == 0) ready.Append(j);
+      {
+        if (cnt_dep[j] == 0) ready.Append(j);
+        if (dag[j].Size() == 0) num_final++;
+      }
 
 
     /*
@@ -1354,29 +1453,38 @@ namespace ngla
 
 
 
-    TQueue queue;
+    atomic<int> cnt_final(0);
+    SharedLoop sl(Range(ready));
 
-    atomic<int> cnt(0);
+    Array< Vec<3> > timings(task_manager -> GetNumThreads());
+    double starttime = omp_get_wtime();
+
+    t2.Start();
     task_manager -> CreateJob 
       ([&] (const TaskInfo & ti)
        {
+         // timings[ti.task_nr](0) = omp_get_wtime()-starttime;
+
         TPToken ptoken(queue); 
         TCToken ctoken(queue); 
+        
+        for (int i : sl)
+          queue.enqueue (ptoken, ready[i]);
 
-        auto myr = Range(ready).Split (ti.task_nr, ti.ntasks);
-        if (myr.Size())
-          queue.enqueue_bulk (ptoken, &ready[myr.begin()], myr.Size());
+        // timings[ti.task_nr](1) = omp_get_wtime()-starttime;
 
         while (1)
            {
-             if (cnt >= dag.Size()) break;
+             if (cnt_final >= num_final) break;
 
              int nr;
              if(!queue.try_dequeue_from_producer(ptoken, nr)) 
                if(!queue.try_dequeue(ctoken, nr))  
                  continue; 
              
-             cnt++;
+             if (dag[nr].Size() == 0)
+               cnt_final++;
+
              func(nr);
 
              for (int j : dag[nr])
@@ -1385,81 +1493,42 @@ namespace ngla
                    queue.enqueue (ptoken, j);
                }
            }
-        
+
+        // timings[ti.task_nr](2) = omp_get_wtime()-starttime;
        });
-
-  }
-
-
-
-
-
-  // template <typename TFUNC>
-  void RecFunc (int nr, const Table<int> & dag, Array<int> & cnt_dep, function<void(int)> func)
-  {
-    func(nr);
-    
-    for (int j : dag[nr])
-      {
-        int newval;
-#pragma omp atomic capture
-        newval = --cnt_dep[j];
-        if (newval == 0)
-#pragma omp task shared(dag,cnt_dep)
-          RecFunc (j, dag, cnt_dep, func);
-      }
-  }
-
-
-
-  /*
-    using openmp tasks ...
-    working, but slow
-  */
-  void RunParallelDependency2 (const Table<int> & dag, function<void(int)> func)
-  {
+    t2.Stop();
 
     /*
-    for (int i = 0; i < dag.Size(); i++)
-      func(i);
-      return;
-
+    ofstream out("depend.out");
+    for (int i = 0; i < timings.Size(); i++)
+      out << 1e6 * timings[i] << endl;
     */
 
-    Array<int> cnt_dep(dag.Size());
+    /*
+    MyQueue<int> queue(dag.Size());
 
-    for (auto & d : cnt_dep) 
-      d = 0;
+    for (int i : ready)
+      queue.Push(i);
     
-    ParallelFor (Range(dag),
-                 [&] (int i)
-                 {
-                   for (int j : dag[i])
-#pragma omp atomic
-                     cnt_dep[j]++;
-                 });
+    task_manager -> CreateJob 
+      ([&] (const TaskInfo & ti)
+       {
+         while (1)
+           {
+             int nr;
+             if (!queue.Pop(nr)) break;
+             
+             func(nr);
 
-
-    Array<int> ready(dag.Size());
-    ready.SetSize0();
-    for (int j : Range(cnt_dep))
-      if (cnt_dep[j] == 0) ready.Append(j);
-
-
-    task_manager -> StopWorkers();    
-
-#pragma omp taskgroup
-    {
-
-    for (int j : Range(ready))
-#pragma omp task shared (dag, cnt_dep)
-      {
-        RecFunc (ready[j], dag, cnt_dep, func);
-      }
-    }
-
-    task_manager -> StartWorkers();
-
+             for (int j : dag[nr])
+               {
+                 if (--cnt_dep[j] == 0)
+                   queue.Push (j);
+               }
+           }
+        ptqend[ti.task_nr] = omp_get_wtime();         
+       }, 22);
+    */
   }
 
 
@@ -1483,6 +1552,7 @@ namespace ngla
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseCholesky<d,d,d>::MultAdd");
+    static Timer timer0("SparseCholesky<d,d,d>::MultAdd queue only");
     static Timer timer1("SparseCholesky<d,d,d>::MultAdd fac1");
     static Timer timer2("SparseCholesky<d,d,d>::MultAdd fac2");
     RegionTimer reg (timer);
@@ -1545,7 +1615,6 @@ namespace ngla
     */
 
 
-    timer1.Start();
 
     /*
     RunParallelDependency (block_dependency, 
@@ -1565,9 +1634,21 @@ namespace ngla
     };
 
     Array<ProfileData> prof(microtasks.Size());
-    
-    double tstart = omp_get_wtime();
 
+
+    timer0.Start();
+
+    RunParallelDependency (micro_dependency, 
+                           [&] (int nr) 
+                           {
+                             ;
+                           });
+    timer0.Stop();
+
+
+    timer1.Start();
+
+    double tstart = omp_get_wtime();
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
                            {
@@ -1575,10 +1656,11 @@ namespace ngla
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
-                             if (range.Size() > 100)
+                             /*
+                             if (range.Size() > 5)
                                prof[nr].tstart = omp_get_wtime();
                              prof[nr].size = range.Size();
-
+                             */
  
                              if (task.solveL)
                                {
@@ -1616,26 +1698,32 @@ namespace ngla
                                    hy(extdofs[j]) -= temp(j);
                                }
 
-
-                             if (range.Size() > 100)
+                             /*
+                             if (range.Size() > 5)
                                prof[nr].tend = omp_get_wtime();
-
+                             */
                            });
 
-
+    double tend = omp_get_wtime();
     timer1.Stop();
 
-
+    /*
     ofstream out ("cholesky.prof");
     for (int i = 0; i < prof.Size(); i++)
-      if (prof[i].size > 100)
+      if (prof[i].size > 5)
         out << i << "  " << prof[i].size << ", SolveL = " << microtasks[i].solveL 
             << ",  ts = " << 1e6*(prof[i].tstart-tstart) 
             << ", te = " << 1e6*(prof[i].tend-tstart) 
             << ", delta = " << 1e6*(prof[i].tend-prof[i].tstart) << endl;
 
+    for (int i = 0; i < 48; i++)
+      {
+        out << "process " << i << " qend at " << 1e6*(ptqend[i]-tstart) << endl;
+      }
 
-
+    out << "queue end: " << 1e6*(tqend-tstart) << endl;
+    out << "total time: " << 1e6*(tend-tstart) << endl;
+    */
 
 
 
