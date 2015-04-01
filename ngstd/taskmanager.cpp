@@ -5,6 +5,8 @@
 /********************************************************************/
 
 #include <ngstd.hpp>
+#include <thread>
+
 #include "taskmanager.hpp"
 
 
@@ -13,6 +15,9 @@
 #include <sched.h>
 #endif
 
+
+
+// #define CPP11_THREADS 
 
 namespace ngstd
 {
@@ -24,24 +29,49 @@ namespace ngstd
   {
     if (task_manager)
       {
-        // cout << "task-manager already active, using it" << endl;
         alg();
         return;
       }
 
-
     task_manager = new TaskManager();
+
+
+#ifdef CPP11_THREADS 
+
+    cout << "new task-based parallelization (C++11 threads)" << endl;
+
+#ifdef USE_NUMA
+    numa_run_on_node (0);
+#endif
+
+    // master has maximal priority !
+    int policy;
+    struct sched_param param;
+    pthread_getschedparam(pthread_self(), &policy, &param);
+    param.sched_priority = sched_get_priority_max(policy);
+    pthread_setschedparam(pthread_self(), policy, &param);
+    
+    
+    task_manager->StartWorkers();
+    
+    alg();
+    
+    task_manager->StopWorkers();
+    
+
+#else
+
+
 
 #pragma omp parallel
     {
-#pragma omp single // nowait
+#pragma omp single 
       {
         cout << "new task-based parallelization" << endl;
 
-
-
 #ifdef USE_NUMA
         int num_nodes = numa_max_node() + 1;
+
         int thd = omp_get_thread_num();
         int thds = omp_get_num_threads();
         int mynode = num_nodes * thd/thds;
@@ -63,11 +93,10 @@ namespace ngstd
         alg();
         
         task_manager->StopWorkers();
-      }
-      
 
-      // task_manager->Loop();
+      }
     }
+#endif
 
     
     delete task_manager;
@@ -105,15 +134,30 @@ namespace ngstd
   void TaskManager :: StartWorkers()
   {
     done = false;
+
+#ifdef CPP11_THREADS
+
+    num_threads = omp_get_max_threads();
+    for (int i = 1; i < num_threads; i++)
+      {
+        std::thread([this,i]() { this->Loop(i); }).detach();
+      }
+
+#else
+
     num_threads = omp_get_num_threads();
     for (int i = 0; i < num_threads-1; i++)
 #pragma omp task
       {
-        Loop();
+        Loop(omp_get_thread_num());
       }
+
+
+#endif
+
     while (active_workers < num_threads-1)
       ;
-    // cout << "workers are all active !!!!!!!!!!!" << endl;
+    cout << "workers are all active !!!!!!!!!!!" << endl;
   }
  
   void TaskManager :: StopWorkers()
@@ -121,7 +165,7 @@ namespace ngstd
     done = true;
     while (active_workers)
       ;
-    // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
+    cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
 
@@ -159,8 +203,13 @@ namespace ngstd
       nodedata[j]->participate = 0;
 
 
+#ifdef CPP11_THREADS
+    int thd = 0;
+#else
     int thd = omp_get_thread_num();
-    int thds = omp_get_num_threads();
+#endif
+
+    int thds = GetNumThreads();
 
     // int tasks_per_node = thds / num_nodes;
     int mynode = num_nodes * thd/thds;
@@ -219,12 +268,11 @@ namespace ngstd
     // atomic_thread_fence (memory_order_acquire);
   }
     
-  void TaskManager :: Loop()
+  void TaskManager :: Loop(int thd)
   {
     active_workers++;
 
-    int thd = omp_get_thread_num();
-    int thds = omp_get_num_threads();
+    int thds = GetNumThreads();
 
     int mynode = num_nodes * thd/thds;
 
@@ -249,7 +297,6 @@ namespace ngstd
       {
         if (jobnr == jobdone)
           {
-// #pragma omp taskyield
             sched_yield();
             continue;
           }

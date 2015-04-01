@@ -89,7 +89,7 @@ namespace ngstd
     void Done() { done = true; }
 
 
-    void Loop();
+    void Loop(int thread_num);
   };
 
 

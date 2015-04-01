@@ -176,6 +176,18 @@ namespace ngstd
       return LocalHeap (p + i * size_of_piece, size_of_piece, name);
     }
 
+    /// Split free memory on heap into pieces
+    INLINE LocalHeap Split (int partnr, int nparts) const
+    {
+      int pieces = nparts;
+      int i = partnr;
+
+      size_t freemem = totsize - (p - data);
+      size_t size_of_piece = freemem / pieces;
+      return LocalHeap (p + i * size_of_piece, size_of_piece, name);
+    }
+
+
     INLINE void ClearValues ()
     {
       for (size_t i = 0; i < totsize; i++) data[i] = 47;
