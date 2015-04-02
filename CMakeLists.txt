@@ -21,6 +21,7 @@ option( USE_VT           "enable vampirtrace")
 option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
+option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
@@ -223,6 +224,19 @@ if (USE_PYTHON)
 endif (USE_PYTHON)
 
 #######################################################################
+
+if(USE_PARDISO)
+  add_definitions(-DUSE_PARDISO)
+  add_definitions(-DUSE_PARDISO400)
+  if(NOT PARDISO_LIB)
+      find_library(PARDISO_LIB NAMES libpardiso500-GNU481-X86-64.so)
+  endif(NOT PARDISO_LIB)
+  if(NOT PARDISO_LIB)
+      message(FATAL_ERROR "Could NOT find Pardiso")
+  endif(NOT PARDISO_LIB)
+endif(USE_PARDISO)
+
+#######################################################################
 if(USE_GOLD)
     add_definitions(-DGOLD -DJS)
     find_path(NGS_GOLD_DIR ngstd_gold.hpp)
@@ -371,6 +385,7 @@ message("
     MPI: ............... ${USE_MPI}
     CUDA: .............. ${USE_CUDA}
     MUMPS: ............. ${USE_MUMPS}
+    PARDISO: ........... ${USE_PARDISO}
     GOLD: .............. ${USE_GOLD}
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
