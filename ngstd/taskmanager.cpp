@@ -23,7 +23,7 @@ namespace ngstd
 {
   TaskManager * task_manager = nullptr;
 
- 
+  
 
   void RunWithTaskManager (function<void()> alg)
   {
@@ -169,8 +169,14 @@ namespace ngstd
   }
 
 
+  double tm_t1;  
+  double tm_t2;
+  double tm_t3;
+  double tm_t4;
+  double tm_t5;
+  double tm_t6;
 
-  void TaskManager :: CreateJob (function<void(TaskInfo&)> afunc,
+  void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
   {
 
@@ -182,25 +188,34 @@ namespace ngstd
           oldval = 0;
       }
 
-    func = afunc;
-    ntasks = antasks;
+    // tm_t1 = omp_get_wtime();
+
+    func = &afunc;
+
+    // tm_t2 = omp_get_wtime();
+
+    ntasks.store (antasks, memory_order_relaxed);
     ex = nullptr;
 
     // atomic_thread_fence (memory_order_release);
 
     for (int j = 0; j < num_nodes; j++)
       {
-        nodedata[j]->start_cnt = 0;
-        nodedata[j]->complete_cnt = 0;
+        nodedata[j]->start_cnt.store (0, memory_order_relaxed);
+        nodedata[j]->complete_cnt.store (0, memory_order_relaxed);
 
-        complete[j] = 0;
+        complete[j].store (0, memory_order_relaxed);
       }
 
     // complete_cnt = 0;
     jobnr++;
       
     for (int j = 0; j < num_nodes; j++)
-      nodedata[j]->participate = 0;
+      nodedata[j]->participate.store (0, memory_order_release);
+    
+    // tm_t3 = omp_get_wtime();        
+
+    // tm_t4 = omp_get_wtime();        
 
 
 #ifdef CPP11_THREADS
@@ -231,8 +246,7 @@ namespace ngstd
 
     try
       {
-        
-        
+        // 0.862
         while (1)
           {
             int mytask = mynode_data.start_cnt++;
@@ -240,7 +254,7 @@ namespace ngstd
             
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
-            func(ti); 
+            (*func)(ti); 
             if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;
           }
@@ -322,7 +336,7 @@ namespace ngstd
                 ti.task_nr = mytasks.First()+mytask;
                 ti.ntasks = ntasks;
                 
-                func(ti); 
+                (*func)(ti); 
                 
                 if (++mynode_data.complete_cnt == mytasks.Size())
                   complete[mynode] = true;

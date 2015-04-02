@@ -41,11 +41,11 @@ namespace ngstd
       NodeData() : start_cnt(0), participate(0) { ; }
     };
     
-    function<void(TaskInfo&)> func;
+    const function<void(TaskInfo&)> * func;
     atomic<int> ntasks;
     Exception * ex;
 
-    atomic<int> jobnr;
+    int jobnr;
 
     atomic<int> complete[8];   // max nodes
     atomic<int> done;
@@ -68,7 +68,7 @@ namespace ngstd
     int GetNumNodes() const { return num_nodes; }
 
 
-    void CreateJob (function<void(TaskInfo&)> afunc, 
+    void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
 
