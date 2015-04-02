@@ -495,9 +495,10 @@ namespace ngla
                                [&] (int bi)
                                {
                                  int blocknr = block_coloring[c][bi];
+                                 FlatArray<int> block = blocktable[blocknr];
                                  int costs = 0;
-                                 for (auto rownr : blocktable[blocknr])
-                                   costs += mat.GetRowIndices(rownr).Size();
+                                 for (int i=0; i<block.Size(); i++)
+                                   costs += mat.GetRowIndices(block[i]).Size();
                                  return costs;
                                });
 
@@ -1005,9 +1006,10 @@ namespace ngla
                                [&] (int bi)
                                {
                                  int blocknr = block_coloring[c][bi];
+                                 FlatArray<int> block = blocktable[blocknr];
                                  int costs = 0;
-                                 for (auto rownr : blocktable[blocknr])
-                                   costs += mat.GetRowIndices(rownr).Size();
+                                 for (int i=0; i<block.Size(); i++)
+                                   costs += mat.GetRowIndices(block[i]).Size();
                                  return costs;
                                });
       }
