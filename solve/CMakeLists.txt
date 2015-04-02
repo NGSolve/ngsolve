@@ -29,7 +29,7 @@ install( TARGETS ngslib ${ngs_install_dir})
 endif(USE_PYTHON)
 
 if(NOT WIN32)
-    target_link_libraries( solve ngcomp ngstd ngfem ngla ngbla interface visual ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${VTUNE_LIB})
+    target_link_libraries( solve ngcomp ngstd ngfem ngla ngbla interface visual ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${VTUNE_LIB} ${PARDISO_LIB})
     install( TARGETS solve ${ngs_install_dir})
 endif(NOT WIN32)
 # target_link_libraries(ngslib ngsolve)
@@ -54,7 +54,7 @@ if (USE_GUI)
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
-    target_link_libraries(ngsolve interface ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${TCL_LIBRARY})
+    target_link_libraries(ngsolve interface ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB})
     if(NOT WIN32)
         target_link_libraries(ngsolve solve ngcomp ngstd ngfem ngla ngbla)
     endif(NOT WIN32)
