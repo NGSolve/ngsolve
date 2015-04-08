@@ -49,120 +49,6 @@ namespace ngcomp
 
 
 
-  template <typename TFUNC>
-  inline void IterateElementsTasks (const FESpace & fes, 
-                                    VorB vb, 
-                                    LocalHeap & clh, 
-                                    const TFUNC & func)
-  {
-#pragma omp parallel
-    {
-	
-#pragma omp single
-      {
-	const Table<int> & element_coloring = fes.ElementColoring(vb);
-	
-	for (FlatArray<int> els_of_col : element_coloring)
-	  {
-	    
-	    /*
-	      // slow on multi-node machine, too many threads ?
-	    for (int i = 0; i < els_of_col.Size(); i++)
-	      {
-#pragma omp task
-		{
-		  LocalHeap lh = clh.Split();
-		  Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
-		  func (el, lh);
-		}
-	      }
-	    */
-
-
-	    int nt = omp_get_num_threads();
-	    int n = els_of_col.Size();
-	    for (int i = 0; i < nt; i++)
-	      {
-		IntRange r(i*n/nt, (i+1)*n/nt);
-		
-#pragma omp task
-		{
-		  LocalHeap lh = clh.Split();
-		  Array<int> temp_dnums;
-		  for (int i : r)
-		    {
-                      HeapReset hr(lh);
-
-		      // Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
-		      FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
-		      func (el, lh);
-		    }
-		}
-	      }
-
-
-#pragma omp taskwait
-	  }
-      }
-    }
-  }
-
-
-
-  /*
-
-  // hierarchical task distribution on 2 nodes:
-  // (does not work well, either)
-
-  template <typename TFUNC>
-  inline void IterateElementsTasks (const FESpace & fes, 
-                                    VorB vb, 
-                                    LocalHeap & cclh, 
-                                    const TFUNC & func)
-  {
-
-    int nodenr;
-    
-    int max_thds = omp_get_max_threads();
-    cout << "max_thds = " << max_thds << endl;
-#pragma omp parallel num_threads(2) proc_bind(spread)
-    {
-      LocalHeap clh = cclh.Split();
-      int nodenr = omp_get_thread_num();
-
-#pragma omp parallel num_threads(max_thds/2) proc_bind(close)
-      {
-	
-#pragma omp single
-	{
-	  cout << "running on node " << nodenr << endl;
-
-	  const Table<int> & element_coloring = fes.ElementColoring(vb);
-	  
-	  for (FlatArray<int> els_of_col : element_coloring)
-	    {
-
-	      for (int i = 0; i < els_of_col.Size(); i++)
-		if (i % 2 == nodenr)
-		  {
-#pragma omp task
-		    {
-		      LocalHeap lh = clh.Split();
-		      Ngs_Element el = fes.GetMeshAccess()->GetElement(ElementId (vb, els_of_col[i]));
-		      func (el, lh);
-		    }
-		  }
-	      
-#pragma omp taskwait
-	    }
-	}
-      }
-    }
-  }
-  */
-
-
-
 
 
 
@@ -3045,7 +2931,14 @@ namespace ngcomp
 
     MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
-    shared_ptr<BaseMatrix> mat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
+    // shared_ptr<BaseMatrix> mat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
+    // if (this->spd) spmat->SetSPD();
+
+    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (*graph, 1);
+    if (this->spd) spmat->SetSPD();
+    shared_ptr<BaseMatrix> mat = spmat;
+
+
 #ifdef PARALLEL
     if ( this->GetFESpace()->IsParallel() )
       mat = make_shared<ParallelMatrix> (mat, &this->GetFESpace()->GetParallelDofs());
@@ -3216,7 +3109,6 @@ namespace ngcomp
             elvecy *= val;
             y.AddIndirect (dnums, elvecy);  // coloring	      
           }
-        *testout << "||y|| = " << L2Norm(y) << endl;
       }
     else if (type == 2)
       {
@@ -3261,8 +3153,6 @@ namespace ngcomp
       return;
 
     MatrixGraph * graph = this->GetGraph (this->ma->GetNLevels()-1, true);
-
-
 
     auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (*graph, 1);
     if (this->spd) spmat->SetSPD();
