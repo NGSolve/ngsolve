@@ -939,7 +939,7 @@ namespace ngbla
   public:
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
-    INLINE MatrixFixWidth () { ; }
+    INLINE MatrixFixWidth () : FlatMatrixFixWidth<W,T> (0, nullptr) { ; }
 
     /// allocate matrix of size ah * ah
     INLINE MatrixFixWidth (int ah) : FlatMatrixFixWidth<W,T> (ah, new T[ah*W]) { ; }
