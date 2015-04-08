@@ -192,9 +192,12 @@ namespace ngfem
   void ScalarFiniteElement<D> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
-#ifndef __CUDA_ARCH__
-    cout << "multi-evaluate called for base class, not implemented" << endl;
-#endif
+    VectorMem<100> shapes(coefs.Height());
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        CalcShape (ir[i], shapes);
+        values.Row(i) = Trans(coefs) * shapes;
+      }
   }
 
 
