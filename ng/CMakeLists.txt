@@ -60,7 +60,7 @@ install(FILES
     ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  
     ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl 
     occgeom.tcl acisgeom.tcl netgen.ocf
-    DESTINATION bin)
+    DESTINATION bin COMPONENT netgen)
 
 if(USE_GUI AND NOT WIN32)
     add_subdirectory(Togl-1.7)

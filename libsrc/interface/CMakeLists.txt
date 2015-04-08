@@ -20,6 +20,6 @@ if(NOT WIN32)
     if(USE_GUI)
         target_link_libraries(interface visual)
     endif(USE_GUI)
-    install( TARGETS interface DESTINATION lib )
+    install( TARGETS interface DESTINATION lib COMPONENT netgen )
 endif(NOT WIN32)
 

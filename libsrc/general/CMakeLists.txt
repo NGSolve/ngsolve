@@ -8,5 +8,5 @@ add_library(gen OBJECT
 
 set_target_properties( gen PROPERTIES POSITION_INDEPENDENT_CODE ON )
 
-install( FILES ngexception.hpp DESTINATION include )
+install( FILES ngexception.hpp DESTINATION include COMPONENT netgen_devel )
 

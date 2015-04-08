@@ -9,6 +9,6 @@ add_library(occvis ${NG_LIB_TYPE} occpkg.cpp vsocc.cpp)
 if(NOT WIN32)
     target_link_libraries( occ ${OCCLIBS} ${PYTHON_LIBS})
     target_link_libraries( occvis occ )
-    install( TARGETS occ occvis DESTINATION lib )
+    install( TARGETS occ occvis DESTINATION lib COMPONENT netgen )
 endif(NOT WIN32)
 

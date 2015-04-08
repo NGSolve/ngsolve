@@ -14,7 +14,7 @@ endif(APPLE)
 if(NOT WIN32)
     target_link_libraries(csg mesh ${PYTHON_LIBS})
     target_link_libraries(csg ${PYTHON_LIBS})
-    install( TARGETS csg DESTINATION lib )
+    install( TARGETS csg DESTINATION lib COMPONENT netgen)
 endif(NOT WIN32)
 
 
@@ -25,7 +25,7 @@ if(USE_GUI)
         if(APPLE)
             set_target_properties( csgvis PROPERTIES SUFFIX ".so")
         endif(APPLE)
-        install( TARGETS csgvis DESTINATION lib )
+        install( TARGETS csgvis DESTINATION lib COMPONENT netgen)
     endif(NOT WIN32)
 endif(USE_GUI)
 
