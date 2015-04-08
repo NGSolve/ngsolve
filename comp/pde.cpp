@@ -508,6 +508,14 @@ namespace ngcomp
 #endif
     LocalHeap lh(heapsize, "PDE - main heap");
 
+    // load+init lapack
+    static Timer timer_initlapack("Init Lapack");
+    {
+      RegionTimer reg (timer_initlapack);
+      Matrix<> a(5), b(5);
+      a = 1; b = 2;
+      Matrix<> c = a*b | Lapack;
+    }
     double starttime = WallTime();
 
     MyMPI_Barrier();

@@ -346,43 +346,10 @@ namespace ngcomp
     for ( ; !creator.Done(); creator++)
       {
 
-        /*
-#pragma omp parallel
-        {
-          Array<int> dnums;
-
-#pragma omp for
-          for (int i = 0; i < ne; i++)
-            {
-              if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
-
-              if (eliminate_internal)
-                fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
-              else
-                fespace->GetDofNrs (i, dnums);
-              
-              for (int d : dnums)
-                if (d != -1) creator.Add (i, d);
-            }
-
-#pragma omp for
-          for (int i = 0; i < nse; i++)
-            {
-              if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
-              
-              fespace->GetSDofNrs (i, dnums);
-              for (int d : dnums)
-                if (d != -1) creator.Add (ne+i, d);
-            }
-        }
-        */
-
-
         task_manager->CreateJob
           ([&] (const TaskInfo & ti)
 
            {
-             
              Array<int> dnums;
 
              auto myr = Range(ne).Split(ti.task_nr, ti.ntasks);
@@ -451,7 +418,10 @@ namespace ngcomp
     MatrixGraph * graph;
 
     if (!fespace2)
-      graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
+      {
+        graph = new MatrixGraph (ndof, *creator.GetTable(), *creator.GetTable(), symmetric);
+        delete creator.GetTable();
+      }
     else
       {
         TableCreator<int> creator2(maxind);
@@ -514,10 +484,10 @@ namespace ngcomp
           }
 
         graph = new MatrixGraph (fespace2->GetNDof(), *creator2.GetTable(), *creator.GetTable(), symmetric);        
+        delete creator.GetTable();
         delete creator2.GetTable();
       }
 
-    delete creator.GetTable();
     graph -> FindSameNZE();
     return graph;
   }
@@ -803,7 +773,7 @@ namespace ngcomp
     static Timer timer1 ("Matrix assembling - 1", 3);
     static Timer timer2 ("Matrix assembling - 2", 3);
     static Timer timer3 ("Matrix assembling - 3", 3);
-    
+
     static Timer timerb1 ("Matrix assembling bound - 1", 3);
     static Timer timerb2 ("Matrix assembling bound - 2", 3);
     static Timer timerb3 ("Matrix assembling bound - 3", 3);
@@ -964,6 +934,7 @@ namespace ngcomp
                       innermatrix = new ElementByElementMatrix<SCAL>(ndof, ne);
                   }
 
+                
 		IterateElements
                   (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                    {
@@ -1237,13 +1208,12 @@ namespace ngcomp
                                dnums[idofs1[k]] = -1;
                            }
                        }
-
                      if (printelmat)
 #pragma omp critical (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
 
 		     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
-                          
+
                      for (auto pre : preconditioners)
                        pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
 
@@ -1252,7 +1222,6 @@ namespace ngcomp
 
                      timer3.Stop();
                    });
-
                 progress.Done();
                 
                 /*
@@ -3797,8 +3766,12 @@ namespace ngcomp
       else 
         return make_shared<ElementByElement_BilinearForm<double>> (space, name, flags);
     }
+
+    bool symmetric_storage = flags.GetDefineFlag ("symmetric") || flags.GetDefineFlag ("spd");
+    if (flags.GetDefineFlag("nonsym") || flags.GetDefineFlag("nonsym_storage")) symmetric_storage = false;
     
-    if (flags.GetDefineFlag ("symmetric"))
+    
+    if (symmetric_storage)
       {
 
         if (space->IsComplex() && flags.GetDefineFlag ("real"))
