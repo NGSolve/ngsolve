@@ -52,6 +52,10 @@ namespace ngla
 
   double BaseVector :: L2Norm () const
   {
+    static Timer t("BaseVector::L2Norm");
+    RegionTimer reg(t);
+    t.AddFlops (FVDouble().Size());
+
     return ngbla::L2Norm (FVDouble());
   }
 

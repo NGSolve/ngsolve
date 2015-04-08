@@ -33,12 +33,12 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  SparseCholesky (const SparseMatrix<TM, TV_ROW, TV_COL> & a, 
-		  const BitArray * ainner,
-		  const Array<int> * acluster,
-		  bool allow_refactor)
+  template <class TM>
+  SparseCholeskyTM<TM> :: 
+  SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
+                    const BitArray * ainner,
+                    const Array<int> * acluster,
+                    bool allow_refactor)
     : SparseFactorization (a, ainner, acluster), mat(a)
   { 
     static Timer t("SparseCholesky - total");
@@ -194,10 +194,6 @@ namespace ngla
     
     
 #ifdef LAPACK
-    /*
-    auto aspd = dynamic_cast<const SparseMatrixSymmetricTM<double>*> (&a);
-    if (aspd && aspd -> IsSPD())
-    */
     if (a.IsSPD())
       FactorSPD();
     else
@@ -236,8 +232,8 @@ namespace ngla
   
 
   
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  template <class TM>
+  void SparseCholeskyTM<TM> :: 
   Allocate (const Array<int> & aorder, 
 	    // const Array<CliqueEl*> & cliques,
 	    const Array<MDOVertex> & vertices,
@@ -352,7 +348,6 @@ namespace ngla
 
 
 
-    cout << "generate micro-tasks" << endl;
     // genare micro-tasks:
     Array<int> first_microtask;
     for (int i = 0; i < blocks.Size()-1; i++)
@@ -382,7 +377,6 @@ namespace ngla
           }
       }
     first_microtask.Append (microtasks.Size());
-    cout << "have micro-tasks, now build tables" << endl;
     {
 
       TableCreator<int> creator(microtasks.Size());
@@ -408,12 +402,10 @@ namespace ngla
             }
         }
 
-      cout << "have creator" << endl;
 
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
 
-      cout << "have tables" << endl;
       cout << "dag.size = " << micro_dependency.Size() << endl;
     }
   }
@@ -422,9 +414,9 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  FactorNew (const SparseMatrix<TM, TV_ROW, TV_COL> & a)
+  template <class TM>
+  void SparseCholeskyTM<TM> :: 
+  FactorNew (const SparseMatrix<TM> & a)
   {
     if ( height != a.Height() )
       {
@@ -459,8 +451,8 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: Factor () 
+  template <class TM>
+  void SparseCholeskyTM<TM> :: Factor () 
   {
     static Timer factor_timer("SparseCholesky::Factor");
 
@@ -847,15 +839,15 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: FactorSPD () 
+  template <class TM>
+  void SparseCholeskyTM<TM> :: FactorSPD () 
   {
-    throw Exception ("FactorSPD called for non-<double,double> matrix");
+    throw Exception ("FactorSPD called for non-double matrix");
   }
 
 
   template <>
-  void SparseCholesky<double,double,double> :: FactorSPD () 
+  void SparseCholeskyTM<double> :: FactorSPD () 
   {
     // task_manager -> StopWorkers();
 
@@ -1138,6 +1130,10 @@ namespace ngla
     return;
   }
   
+
+
+#ifdef OLD_MULTADD
+
   
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
@@ -1274,7 +1270,7 @@ namespace ngla
 
   }
   
-
+#endif
 
 
 
@@ -1538,17 +1534,42 @@ namespace ngla
 
 
 
+  
+  inline void MyAtomicAdd (double & x, double y)
+  {
+#pragma omp atomic
+    x += y;
+  }
+
+  inline void MyAtomicAdd (Complex & x, Complex y)
+  {
+    
+#pragma omp atomic
+    reinterpret_cast<double(&)[2]>(x)[0] += y.real();
+#pragma omp atomic
+    reinterpret_cast<double(&)[2]>(x)[1] += y.imag();
+  }
+
+  template <int DIM, typename SCAL, typename TANY>
+  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
+  {
+    for (int i = 0; i < DIM; i++)
+      MyAtomicAdd (x(i), y(i));
+  }
+  
+  template <int DIM, typename SCAL, typename TANY>
+  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
+  {
+    for (int i = 0; i < DIM; i++)
+      MyAtomicAdd (x(i), y(i));
+  }
+  
 
 
 
 
-
-
-
-
-
-  template <>
-  void SparseCholesky<double, double, double> :: 
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseCholesky<d,d,d>::MultAdd");
@@ -1560,15 +1581,15 @@ namespace ngla
 
     int n = Height();
     
-    const FlatVector<> fx = x.FV<double> ();
-    FlatVector<> fy = y.FV<double> ();
+    const FlatVector<TVX> fx = x.FV<TVX> ();
+    FlatVector<TVX> fy = y.FV<TVX> ();
 
-    Vector<> hy(n);
+    Vector<TVX> hy(n);
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
 
 
-    const double * hdiag = &diag[0];
+    const TM * hdiag = &diag[0];
 
 
     /*
@@ -1652,7 +1673,7 @@ namespace ngla
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
                            {
-                             MicroTask task = microtasks[nr];
+                             auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
@@ -1669,8 +1690,13 @@ namespace ngla
                                  for (auto i : range)
                                    {
                                      int size = range.end()-i-1;
-                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
-                                     hy.Range(i+1, range.end()) -= hy(i) * vlfact;
+                                     FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
+
+                                     // hy.Range(i+1, range.end()) -= hy(i) * vlfact;
+                                     TVX hyi = hy(i);
+                                     auto hyr = hy.Range(i+1, range.end());
+                                     for (int j = 0; j < hyr.Size(); j++)
+                                       hyr(j) -= Trans(vlfact(j)) * hyi;
                                    }
 
                                }
@@ -1682,20 +1708,26 @@ namespace ngla
                                  auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
                                  auto extdofs = all_extdofs.Range(myr);
 
-                                 VectorMem<520> temp(extdofs.Size());
+                                 VectorMem<520,TVX> temp(extdofs.Size());
                                  temp = 0;
                                  
                                  for (auto i : range)
                                    {
                                      int first = firstinrow[i] + range.end()-i-1;
                                      
-                                     FlatVector<> ext_lfact (all_extdofs.Size(), &lfact[first]);
-                                     temp += hy(i) * ext_lfact.Range(myr);
+                                     FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
+                                     // temp += hy(i) * ext_lfact.Range(myr);
+                                     TVX hyi = hy(i);
+                                     for (int j = 0; j < temp.Size(); j++)
+                                       temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
                                    }
                                  
                                  for (int j : Range(extdofs))
+                                   MyAtomicAdd (hy(extdofs[j]), -temp(j));
+                                   /*
 #pragma omp atomic
                                    hy(extdofs[j]) -= temp(j);
+                                   */
                                }
 
                              /*
@@ -1736,7 +1768,10 @@ namespace ngla
     */
 
     for (int i = 0; i < n; i++)
-      hy[i] *= hdiag[i];
+      {
+        TVX tmp = hdiag[i] * hy[i];
+        hy[i] = tmp;
+      }
 
     timer2.Start();
 
@@ -1749,7 +1784,7 @@ namespace ngla
     RunParallelDependency (micro_dependency_trans, 
                            [&] (int nr) 
                            {
-                             MicroTask task = microtasks[nr];
+                             auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
@@ -1767,8 +1802,13 @@ namespace ngla
                                  for (int i = range.end()-1; i >= range.begin(); i--)
                                    {
                                      int size = range.end()-i-1;
-                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
-                                     hy(i) -= InnerProduct (vlfact, hy.Range(i+1, range.end()));
+                                     FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
+                                     auto hyr = hy.Range(i+1, range.end());
+                                     // hy(i) -= InnerProduct (vlfact, hyr);
+                                     TVX hyi = hy(i);
+                                     for (int j = 0; j < vlfact.Size(); j++)
+                                       hyi -= vlfact(j) * hyr(j);
+                                     hy(i) = hyi;
                                    }
 
                                }
@@ -1780,18 +1820,21 @@ namespace ngla
                                  auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
                                  auto extdofs = all_extdofs.Range(myr);
                                  
-                                 VectorMem<520> temp(extdofs.Size());
+                                 VectorMem<520,TVX> temp(extdofs.Size());
                                  for (int j : Range(extdofs))
                                    temp(j) = hy(extdofs[j]);
 
                                  for (auto i : range)
                                    {
                                      int first = firstinrow[i] + range.end()-i-1;
-                                     FlatVector<> ext_lfact (all_extdofs.Size(), &lfact[first]);
+                                     FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
                                      
-                                     double val = InnerProduct (ext_lfact.Range(myr), temp);
+                                     TVX val = InnerProduct (ext_lfact.Range(myr), temp);
+                                     MyAtomicAdd (hy(i), -val);
+                                     /*
 #pragma omp atomic
                                      hy(i) -= val;
+                                     */
                                    }
                                  
                                  
@@ -2055,8 +2098,8 @@ namespace ngla
 
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  void SparseCholesky<TM, TV_ROW, TV_COL> :: Set (int i, int j, const TM & val)
+  template <class TM>
+  void SparseCholeskyTM<TM> :: Set (int i, int j, const TM & val)
   {
     // *testout << "sparse cholesky, set (" << i << ", " << j << ") = " << val << endl;
     if (i == j)
@@ -2096,8 +2139,8 @@ namespace ngla
   }
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  const TM & SparseCholesky<TM, TV_ROW, TV_COL> :: Get (int i, int j) const
+  template <class TM>
+  const TM & SparseCholeskyTM<TM> :: Get (int i, int j) const
   {
     if (i == j)
       {
@@ -2127,8 +2170,8 @@ namespace ngla
     return *new TM;
   }
 
-  template <class TM, class TV_ROW, class TV_COL>
-  ostream & SparseCholesky<TM, TV_ROW, TV_COL> :: Print (ostream & ost) const
+  template <class TM>
+  ostream & SparseCholeskyTM<TM> :: Print (ostream & ost) const
   {
     int n = Height();
 
@@ -2157,8 +2200,8 @@ namespace ngla
   }
 
 
-  template <class TM, class TV_ROW, class TV_COL>
-  SparseCholesky<TM, TV_ROW, TV_COL> :: ~SparseCholesky()
+  template <class TM>
+  SparseCholeskyTM<TM> :: ~SparseCholeskyTM()
   {
     delete mdo;
   }

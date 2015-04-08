@@ -1084,8 +1084,9 @@ namespace ngla
 #endif
       }
     else
-      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
-    // #endif
+      {
+        return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
+      }
   }
 
 
