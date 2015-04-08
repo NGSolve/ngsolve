@@ -83,7 +83,6 @@ namespace ngbla
 
 	// transformation
 	
-
 	T2 hr;
 	CalcInverse (inv(j,j), hr);
 	for (int i = 0; i < n; i++)
@@ -97,18 +96,14 @@ namespace ngbla
 	  if (k != j)
 	    {
 	      T2 help = inv(n*k+j);
-	      for (int i = 0; i < j; i++)
-		{
-		  T2 h = help * inv(n*j+i); 
-		  inv(n*k+i) -= h;
-		}
-	      for (int i = j+1; i < n; i++)
+	      T2 h = help * hr;   
+
+	      for (int i = 0; i < n; i++)
 		{
 		  T2 h = help * inv(n*j+i); 
 		  inv(n*k+i) -= h;
 		}
 
-	      T2 h = inv(k,j) * hr;   
 	      inv(k,j) = -h;
 	    }
       }
@@ -147,37 +142,6 @@ namespace ngbla
 
     HeapReset hr(lh);
 
-    /*
-    int n = a.Height(), n_used = 0, n_unused = 0;
-    for (int i = 0; i < n; i++)
-      if (used[i]) n_used++; else n_unused++;
-
-    FlatMatrix<> b1(n_unused, n_used, lh);
-    FlatMatrix<> hb1(n_unused, n_used, lh);
-    FlatMatrix<> b2(n_used, n_unused, lh);
-    FlatMatrix<> c(n_unused, n_unused, lh);
-
-    //(*testout) << "used = " << endl << used << endl;
-    int cnt_usedi = 0;
-    for (int i = 0; i < n; i++)
-      {
-	int cnt_usedj = 0;
-	for (int j = 0; j < n; j++)
-	  {
-	    if (used[i] && used[j])
-	      s(cnt_usedi, cnt_usedj) = a(i,j);
-	    else if (!used[i] && used[j])
-	      b1(i-cnt_usedi, cnt_usedj) = a(i,j);
-	    else if (used[i] && !used[j])
-	      b2(cnt_usedi, j-cnt_usedj) = a(i,j);
-	    else 
-	      c(i-cnt_usedi, j-cnt_usedj) = a(i,j);
-		
-	    if (used[j]) cnt_usedj++;
-	  }
-	if (used[i]) cnt_usedi++;
-      }
-    */
     int n = a.Height();
     Array<int> used_dofs(n, lh);
     Array<int> unused_dofs(n, lh);
@@ -194,7 +158,6 @@ namespace ngbla
     FlatMatrix<> b2 = a.Rows(used_dofs).Cols(unused_dofs) | lh;
     FlatMatrix<> c = a.Rows(unused_dofs).Cols(unused_dofs) | lh;
     FlatMatrix<> hb1 (b1.Height(), b1.Width(), lh);
-    
 
     if (n > 10)
       {
@@ -214,7 +177,7 @@ namespace ngbla
 
 #ifdef LAPACK
   template <>
-  void CalcInverse (FlatMatrix<Complex> inv)
+  void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il)
   {
     LapackInverse (inv);
   }
@@ -223,14 +186,21 @@ namespace ngbla
 
 
   template <class T2>
-  extern void CalcInverse (FlatMatrix<T2> inv)
+  extern void CalcInverse (FlatMatrix<T2> inv, INVERSE_LIB il)
   {
     T_CalcInverse (inv);
   }
 
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv)
+  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il)
   {
-    T_CalcInverse (inv);
+#ifdef LAPACK
+    if (il == INVERSE_LIB::INV_LAPACK)
+      LapackInverse(inv);
+    else if (il == INVERSE_LIB::INV_CHOOSE && inv.Height() >= 20)
+      LapackInverse(inv);        
+    else
+#endif
+      T_CalcInverse (inv);
   }
 
 
@@ -245,28 +215,28 @@ namespace ngbla
 
 
 
-  template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<1,1,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<2,2,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<3,3,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<4,4,double> > inv, INVERSE_LIB il);
 
-  template void CalcInverse (FlatMatrix<Mat<1,1,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<2,2,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<3,3,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<4,4,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<1,1,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<2,2,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<3,3,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<4,4,Complex> > inv, INVERSE_LIB il);
 
 
 
 #if MAX_SYS_DIM >= 5
-  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv);
-  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv);
+  template void CalcInverse (FlatMatrix<Mat<5,5,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<6,6,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<7,7,double> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<8,8,double> > inv, INVERSE_LIB il);
 
-  template void CalcInverse (FlatMatrix<Mat<5,5,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<6,6,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<7,7,Complex> > inv);
-  template void CalcInverse (FlatMatrix<Mat<8,8,Complex> > inv);
+  template void CalcInverse (FlatMatrix<Mat<5,5,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<6,6,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<7,7,Complex> > inv, INVERSE_LIB il);
+  template void CalcInverse (FlatMatrix<Mat<8,8,Complex> > inv, INVERSE_LIB il);
 #endif
 
 }

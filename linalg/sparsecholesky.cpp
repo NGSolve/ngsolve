@@ -1457,7 +1457,7 @@ namespace ngla
     SharedLoop sl(Range(ready));
 
     Array< Vec<3> > timings(task_manager -> GetNumThreads());
-    double starttime = omp_get_wtime();
+    // double starttime = omp_get_wtime();
 
     t2.Start();
     task_manager -> CreateJob 
@@ -1648,7 +1648,7 @@ namespace ngla
 
     timer1.Start();
 
-    double tstart = omp_get_wtime();
+    // double tstart = omp_get_wtime();
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
                            {
@@ -1704,7 +1704,7 @@ namespace ngla
                              */
                            });
 
-    double tend = omp_get_wtime();
+    // double tend = omp_get_wtime();
     timer1.Stop();
 
     /*
