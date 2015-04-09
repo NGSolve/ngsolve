@@ -21,7 +21,7 @@ endif(USE_CUDA)
 
 if(NOT WIN32)
     target_link_libraries(ngfem ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
-    install( TARGETS ngfem ${ngs_install_dir})
+    install( TARGETS ngfem ${ngs_install_dir} )
 endif(NOT WIN32)
 
 install( FILES
@@ -38,6 +38,7 @@ install( FILES
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp thcurlfe_impl.hpp
         DESTINATION include
+        COMPONENT ngsolve_devel
        )
 
 # install (FILES ngfemcf.py DESTINATION python)

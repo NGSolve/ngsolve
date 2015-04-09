@@ -13,7 +13,7 @@ add_library(ngla ${NGS_LIB_TYPE}
 
 if(NOT WIN32)
     target_link_libraries(ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${MKL_LIBRARIES} ${MUMPS_LIBRARIES} )
-    install( TARGETS ngla ${ngs_install_dir})
+    install( TARGETS ngla ${ngs_install_dir} )
 endif(NOT WIN32)
 
 if(USE_CUDA)
@@ -28,5 +28,6 @@ install( FILES
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp vvector.hpp     
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp
         DESTINATION include
+        COMPONENT ngsolve_devel
        )
 

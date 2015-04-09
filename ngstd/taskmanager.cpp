@@ -44,12 +44,14 @@ namespace ngstd
     numa_run_on_node (0);
 #endif
 
+#ifndef WIN32
     // master has maximal priority !
     int policy;
     struct sched_param param;
     pthread_getschedparam(pthread_self(), &policy, &param);
     param.sched_priority = sched_get_priority_max(policy);
     pthread_setschedparam(pthread_self(), policy, &param);
+#endif // WIN32
     
     
     task_manager->StartWorkers();
@@ -80,12 +82,14 @@ namespace ngstd
 
 
         
+#ifndef WIN32
         // master has maximal priority !
         int policy;
         struct sched_param param;
         pthread_getschedparam(pthread_self(), &policy, &param);
         param.sched_priority = sched_get_priority_max(policy);
         pthread_setschedparam(pthread_self(), policy, &param);
+#endif // WIN32
 
         
         task_manager->StartWorkers();
@@ -311,7 +315,11 @@ namespace ngstd
       {
         if (jobnr == jobdone)
           {
+#ifdef WIN32
+            this_thread::yield();
+#else  // WIN32
             sched_yield();
+#endif // WIN32
             continue;
           }
           
