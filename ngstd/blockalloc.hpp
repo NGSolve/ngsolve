@@ -69,4 +69,12 @@ private:
 
 }
 
+INLINE void * operator new (size_t size, ngstd::BlockAllocator & ball)  
+{
+  return ball.Alloc();
+}
+
+
+
+
 #endif
