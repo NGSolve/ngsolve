@@ -25,7 +25,7 @@ This is the most expensive operation in element matrix calculation.
 
 namespace ngfem {
   
-  typedef std::complex<double> Complex;
+//   typedef std::complex<double> Complex;
 
 
 
@@ -65,6 +65,9 @@ namespace ngfem {
   
   template <int M> NGS_DLL_HEADER
   void FastMat (int n, int M2, Complex * ba, Complex *  pb, Complex * pc);
+
+  template <int M> NGS_DLL_HEADER
+  void FastMat (int n, int M2, Complex * ba, double * pb, Complex * pc);
 
   template <int M> NGS_DLL_HEADER
   void FastMat (int n, int M2, double * __restrict__ ba, double *  __restrict__ pb, double * __restrict__ pc);
