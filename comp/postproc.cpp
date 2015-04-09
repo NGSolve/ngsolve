@@ -558,14 +558,13 @@ namespace ngcomp
 
   
   template <class SCAL>
-  void CalcError (shared_ptr<MeshAccess> ma, 
-		  const S_GridFunction<SCAL> & u,
+  void CalcError ( const S_GridFunction<SCAL> & u,
 		  const S_GridFunction<SCAL> & flux,
 		  shared_ptr<BilinearFormIntegrator> bli,
 		  FlatVector<double> & err,
 		  int domain, LocalHeap & lh)
   {
-    BitArray domains(ma->GetNDomains());
+    BitArray domains(u.GetMeshAccess()->GetNDomains());
     
     if(domain == -1)
       domains.Set();
