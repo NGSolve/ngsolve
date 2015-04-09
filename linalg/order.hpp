@@ -40,10 +40,11 @@ namespace ngla
     int master;         /// master of node
     int nextslave;      /// linked list of slaves
     int numslaves;      /// number of slaves
+    int numcliques;     /// number of cliques
     bool eliminated;    /// node is eliminated
     bool used;          /// temporary field (used in calcorder)
     bool flag;          
-
+    
 
   public:
     ///
@@ -56,12 +57,13 @@ namespace ngla
     ///
     ~MDOVertex()   { ; }
 
-    /// (it is a POD !!!)
+    /// 
     void Init (int ma)
     {
       master = ma;
       nextslave = -1;
       numslaves = 0;
+      numcliques = 0;
       flag = 0;
       eliminated = 0;
       used = 0;
@@ -94,47 +96,26 @@ namespace ngla
   /// 
   class CliqueEl
   {
+    bool flag = false;
   public:
     CliqueEl * next = nullptr;
     CliqueEl * nextcl = nullptr;
+    CliqueEl * clmaster;
     int vnr;
     bool eliminate = false;
-    bool flag = false;
   
-    /*
-    CliqueEl () {
-      next = NULL;
-      nextcl = NULL;
-      eliminate = 0;
-      flag = 0;
-    }
-    */
+    CliqueEl (int avnr) : vnr(avnr) { ; }
 
     CliqueEl * GetNext() { return next; }
     CliqueEl * GetNextClique() { return nextcl; }
     int GetVertexNr() const { return vnr; }
-  
-    /*  
-   ///
-   static ngstd::BlockAllocator ball;
-   ///
-
-   void * operator new(size_t)
-   {
-   cout << "call own new" << endl;
-   return ball.Alloc();
-   }
-
-   ///
-   void operator delete (void * p, size_t)
-   {
-   cout << "call own delete" << endl;
-   ball.Free (p);
-   }
-    */
+    
+    void SetFlag (bool aflag) { clmaster->flag = aflag; }
+    bool Flag () const { return clmaster->flag; }
+    
+    operator int() const { return vnr; }
   };
   
-
 
   ///
   class MinimumDegreeOrdering
@@ -173,7 +154,10 @@ namespace ngla
     ~MinimumDegreeOrdering();
 
     ///
-    int NumCliques (int v) const;
+    int NumCliques (int v) const
+    {
+      return vertices[v].numcliques;
+    }
 
     /// set/clear flag for all nodes in clique
     void SetFlagNodes (int v);
@@ -211,5 +195,12 @@ namespace ngla
 
 
 }
+
+
+
+
+
+
+
 
 #endif
