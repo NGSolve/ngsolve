@@ -13,7 +13,7 @@ add_library( ngstd ${NGS_LIB_TYPE} ${ngstd_sources} )
 
 if(NOT WIN32)
     target_link_libraries(ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${NUMA_LIB})
-    install( TARGETS ngstd ${ngs_install_dir})
+    install( TARGETS ngstd ${ngs_install_dir} )
 endif(NOT WIN32)
 
 install( FILES
@@ -25,7 +25,8 @@ install( FILES
         polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
         mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskmanager.hpp   
         DESTINATION include
+        COMPONENT ngsolve_devel
        )
 
-install (PROGRAMS init.py DESTINATION bin)
+install (PROGRAMS init.py DESTINATION bin COMPONENT ngsolve )
 
