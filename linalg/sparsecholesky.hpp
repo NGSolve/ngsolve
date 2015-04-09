@@ -42,11 +42,12 @@ namespace ngla
      ordering algorithm
   */
 
-  template<class TM, 
-	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
-	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class SparseCholesky : public SparseFactorization
+  template<class TM>
+	   // class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   // class TV_COL = typename mat_traits<TM>::TV_COL>
+  class SparseCholeskyTM : public SparseFactorization
   {
+  protected:
     int height, nze;
 
     Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2;
@@ -75,21 +76,18 @@ namespace ngla
     ///
     MinimumDegreeOrdering * mdo;
     int maxrow;
-    const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
+    const SparseMatrixTM<TM> & mat;
 
   public:
-    typedef TV_COL TV;
-    typedef TV_ROW TVX;
-    typedef typename mat_traits<TV_ROW>::TSCAL TSCAL_VEC;
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
     ///
-    SparseCholesky (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
-		    const BitArray * ainner = NULL,
-		    const Array<int> * acluster = NULL,
-		    bool allow_refactor = 0);
+    SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
+                      const BitArray * ainner = NULL,
+                      const Array<int> * acluster = NULL,
+                      bool allow_refactor = 0);
     ///
-    ~SparseCholesky ();
+    virtual ~SparseCholeskyTM ();
     ///
     int VHeight() const { return height; }
     ///
@@ -104,11 +102,8 @@ namespace ngla
     void FactorSPD (); 
 #endif
     ///
-    void FactorNew (const SparseMatrix<TM,TV_ROW,TV_COL> & a);
-    ///
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    ///
-    virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
+    void FactorNew (const SparseMatrix<TM> & a);
+
     /**
        A = L+D+L^T
        y = f - (L+D)^T u
@@ -134,13 +129,6 @@ namespace ngla
     void SetOrig (int i, int j, const TM & val)
     { Set (order[i], order[j], val); }
 
-    virtual AutoVector CreateVector () const
-    {
-      return make_shared<VVector<TV>> (height);
-    }
-
-    void SolveBlock (int i, FlatVector<> hy) const;
-    void SolveBlockT (int i, FlatVector<> hy) const;
 
     IntRange BlockDofs (int bnr) const { return Range(blocks[bnr], blocks[bnr+1]); }
 
@@ -152,6 +140,66 @@ namespace ngla
       return rowindex2.Range(base, base+ext_size);
     }
   };
+
+
+
+
+
+
+
+
+
+  template<class TM, 
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  class SparseCholesky : public SparseCholeskyTM<TM>
+  {
+    typedef SparseCholeskyTM<TM> BASE;
+    using BASE::height;
+    using BASE::Height;
+    using BASE::inner;
+    using BASE::cluster;
+
+    using BASE::lfact;
+    using BASE::diag;
+    using BASE::order;
+    using BASE::firstinrow;
+
+    using BASE::MicroTask;
+    using BASE::microtasks;
+    using BASE::micro_dependency;
+    using BASE::micro_dependency_trans;
+    using BASE::BlockDofs;
+    using BASE::BlockExtDofs;
+  public:
+    typedef TV_COL TV;
+    typedef TV_ROW TVX;
+    typedef typename mat_traits<TV_ROW>::TSCAL TSCAL_VEC;
+
+    
+    SparseCholesky (const SparseMatrixTM<TM> & a, 
+		    const BitArray * ainner = NULL,
+		    const Array<int> * acluster = NULL,
+		    bool allow_refactor = 0)
+      : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
+
+    ///
+    virtual ~SparseCholesky () { ; }
+    
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+
+    virtual void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const;
+
+    virtual AutoVector CreateVector () const
+    {
+      return make_shared<VVector<TV>> (height);
+    }
+
+
+    void SolveBlock (int i, FlatVector<> hy) const;
+    void SolveBlockT (int i, FlatVector<> hy) const;
+  };
+
 
 }
 
