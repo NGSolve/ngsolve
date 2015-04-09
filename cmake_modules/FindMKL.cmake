@@ -74,20 +74,20 @@ if(MKL_SDL)
     set(MKL_MINIMAL_LIBRARY ${MKL_LIBRARY})
 else()
     ######################### Interface layer #######################
-    if(WIN32)
-        set(MKL_INTERFACE_LIBNAME mkl_intel_c)
-        message("TODO: Fix windows parameters!")
-    else()
-        set(MKL_INTERFACE_LIBNAME "mkl_intel${MKL_INTERFACE_LAYER}")
-    endif()
+    # win32 link advisor:
+    # mkl_intel_lp64.lib mkl_core.lib mkl_intel_thread.lib libiomp5md.lib -ldl
+    set(MKL_INTERFACE_LIBNAME "mkl_intel${MKL_INTERFACE_LAYER}")
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
     ######################## Threading layer ########################
     if(MKL_MULTI_THREADED)
-#         set(MKL_THREADING_LIBNAME mkl_intel_thread)
-        set(MKL_THREADING_LIBNAME mkl_gnu_thread)
+        if(WIN32)
+            set(MKL_THREADING_LIBNAME mkl_intel_thread)
+        else(WIN32)
+            set(MKL_THREADING_LIBNAME mkl_gnu_thread)
+        endif(WIN32)
     else()
         set(MKL_THREADING_LIBNAME mkl_sequential)
     endif()
@@ -104,17 +104,23 @@ else()
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
 #     ############################ RTL layer ##########################
-#     if(WIN32)
-#         set(MKL_RTL_LIBNAME libiomp5md)
-#     else()
+    if(WIN32)
+        set(MKL_RTL_LIBNAME libiomp5md)
+        find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
+            PATHS ${MKL_ROOT}/../compiler/lib/${MKL_ARCH})
+    endif()
 #         set(MKL_RTL_LIBNAME libiomp5)
 #     endif()
 #     find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
 #         PATHS ${INTEL_RTL_ROOT}/lib)
 
-#     set(MKL_MINIMAL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} )
-    set(MKL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY} -Wl,--end-group -ldl -lpthread -lm")
-    set(MKL_MINIMAL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group ${MKL_ROOT}/lib/${MKL_ARCH}/libmkl_blacs_openmpi_lp64.a -ldl -lpthread -lm -fopenmp")
+    if(WIN32)
+        set(MKL_MINIMAL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
+        set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
+    else(WIN32)
+        set(MKL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY} -Wl,--end-group -ldl -lpthread -lm")
+        set(MKL_MINIMAL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group ${MKL_ROOT}/lib/${MKL_ARCH}/libmkl_blacs_openmpi_lp64.a -ldl -lpthread -lm -fopenmp")
+    endif(WIN32)
 endif()
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -126,4 +132,5 @@ if(MKL_FOUND)
     set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
     set(MKL_LIBRARIES ${MKL_LIBRARY})
     set(MKL_MINIMAL_LIBRARIES ${MKL_MINIMAL_LIBRARY})
+    message("***************************************************MKL LIBS:\n${MKL_LIBRARIES}")
 endif()

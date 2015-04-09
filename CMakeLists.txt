@@ -69,7 +69,7 @@ endif("${isSystemDir}" STREQUAL "-1")
 #######################################################################
 # build options
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
-set(ngs_install_dir RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+set(ngs_install_dir RUNTIME DESTINATION bin COMPONENT ngsolve LIBRARY DESTINATION lib COMPONENT ngsolve_devel ARCHIVE DESTINATION lib COMPONENT ngsolve_devel )
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
@@ -90,9 +90,9 @@ include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include)
-install (FILES ngsolve.tcl DESTINATION bin)
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION bin)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
+install (FILES ngsolve.tcl DESTINATION bin COMPONENT ngsolve )
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION bin COMPONENT ngsolve_devel )
 
 #######################################################################
 # platform specific definitions and flags
@@ -172,8 +172,21 @@ endif (USE_CUDA)
 #######################################################################
 if (USE_MKL)
     set(MKL_MULTI_THREADED ON)
-    set(MKL_STATIC OFF)
-    set(MKL_SDL ON)
+
+    if(NOT DEFINED MKL_STATIC)
+        set(MKL_STATIC OFF)
+    else(NOT DEFINED MKL_STATIC)
+        if(MKL_STATIC)
+            set(MKL_SDL OFF)
+        endif(MKL_STATIC)
+    endif(NOT DEFINED MKL_STATIC)
+
+    if(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
+        set(MKL_SDL ON)
+    else(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
+        set(MKL_SDL OFF)
+    endif(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
+
     set(USE_LAPACK ON)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
