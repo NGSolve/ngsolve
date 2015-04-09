@@ -204,6 +204,15 @@ if (USE_MPI)
 endif (USE_MPI)
 
 #######################################################################
+if (USE_OCC)
+    find_package(OpenCasCade REQUIRED)
+    add_definitions(-DOCCGEOMETRY -D_OCC64)
+
+	add_definitions(-DHAVE_IOSTREAM -DHAVE_IOSTREAM_H -DHAVE_LIMITS -DHAVE_LIMITS_H -DHAVE_IOMANIP -DHAVE_IOMANIP_H)
+    include_directories(${OCC_INCLUDE_DIR})
+endif (USE_OCC)
+
+#######################################################################
 if (USE_JPEG)
     find_package(JPEG REQUIRED)
     add_definitions(-DJPEGLIB)
