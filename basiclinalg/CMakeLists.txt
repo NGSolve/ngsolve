@@ -6,7 +6,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
 
 if(NOT WIN32)
     TARGET_LINK_LIBRARIES(ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
-    INSTALL( TARGETS ngbla ${ngs_install_dir})
+    INSTALL( TARGETS ngbla ${ngs_install_dir} )
 endif(NOT WIN32)
 
 install( FILES
@@ -14,5 +14,6 @@ install( FILES
         vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp arch.hpp clapack.h     
         tensor.hpp cuda_bla.hpp
         DESTINATION include
+        COMPONENT ngsolve_devel
        )
 

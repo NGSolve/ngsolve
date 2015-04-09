@@ -10,7 +10,7 @@ set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pd
 if(NOT WIN32 AND NOT APPLE)
     add_executable( pde_tester pde_tester.cpp)
     target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
-    install( TARGETS pde_tester DESTINATION bin)
+    install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
 endif(NOT WIN32 AND NOT APPLE)
 
 if(USE_MPI)
