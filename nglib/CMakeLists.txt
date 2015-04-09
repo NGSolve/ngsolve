@@ -45,4 +45,4 @@ endif(USE_PYTHON)
 #     install(TARGETS nglib ng_vol ng_stl ${ng_install_dir})
 # endif(NOT WIN32)
 
-install(TARGETS nglib COMPONENT netgen ${ng_install_dir})
+install(TARGETS nglib ${ng_install_dir})
