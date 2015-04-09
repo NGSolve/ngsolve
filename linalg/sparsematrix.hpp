@@ -724,6 +724,7 @@ namespace ngla
   };
 
 
+#include <sparsematrix_spec.hpp>
 
   
 #ifdef FILE_SPARSEMATRIX_CPP
