@@ -147,6 +147,16 @@ namespace ngstd
     throw Exception ("no more timer available");
   }
 
+  void NgProfiler :: Reset () 
+  {
+      for(int i=0; i<SIZE; i++) {
+          tottimes[i] = 0;
+          counts[i] = 0;
+          flops[i] = 0;
+          loads[i] = 0;
+          stores[i] = 0;
+      }
+  }
 
   NgProfiler prof;
 
