@@ -96,6 +96,8 @@ namespace ngstd
     /// create new timer, use integer index
     NGS_DLL_HEADER static int CreateTimer (const string & name);
 
+    NGS_DLL_HEADER static void Reset ();
+
 
 #ifndef NOPROFILE
 
@@ -154,6 +156,14 @@ namespace ngstd
     static void AddLoads (int nr, double aflops) { ; };
     static void AddStores (int nr, double aflops) { ; };
 #endif
+
+    static int GetNr (const string & name)
+    {
+      for (int i = SIZE-1; i >= 0; i--)
+        if (names[i] == name)
+          return i;
+      return -1;
+    }
 
     static double GetTime (int nr)
     {
