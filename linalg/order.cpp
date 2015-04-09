@@ -113,44 +113,41 @@ namespace ngla
 
   int MinimumDegreeOrdering :: CalcDegree (int v1)
   {
-    CliqueEl *p1, *p2;
+    static Timer t("MDO::CalcDegree");
+    RegionTimer reg(t);
+
     int deg = 0;
 
     // clear flags to count vertices just once:
-    p1 = cliques[v1];
-    while (p1)
+    for (CliqueEl * p1 = cliques[v1]; p1; p1 = p1->nextcl)
       {
-	p2 = p1;
+	CliqueEl * p2 = p1;
 	do
 	  {
 	    vertices[p2->GetVertexNr()].SetUsed(0);   
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
 
-
+    
     // count members of all cliques of vertex
-    p1 = cliques[v1];
-    while (p1)
+    
+    for (CliqueEl * p1 = cliques[v1]; p1; p1 = p1->nextcl)
       {
-	p2 = p1;
+	CliqueEl * p2 = p1;
 	do
 	  {
 	    int v2 = p2->GetVertexNr();
 	    if (!vertices[v2].Used())
 	      {
-		if (vertices[v2].Master() == v2)
-		  {
-		    deg += 1+NumSlaves(v2);
-		  }
+		if (IsMaster(v2)) 
+                  deg += 1+NumSlaves(v2);
 		vertices[p2->GetVertexNr()].SetUsed(1);
 	      }
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
 
     return deg;
@@ -160,35 +157,23 @@ namespace ngla
 
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
-    // (*testout) << "Eliminate Master Vertex " << v  << endl;
+    static Timer t("MDO::EliminateMaster (incl calcdeg)");
+    static Timer t1("MDO::EliminateMaster 1");
+    static Timer t2("MDO::EliminateMaster 2");
+    static Timer t2a("MDO::EliminateMaster 2a");
+    static Timer t2b("MDO::EliminateMaster 2b");
+    static Timer t2c("MDO::EliminateMaster 2c");
+    static Timer t2ca("MDO::EliminateMaster 2ca");
+    static Timer t2cb("MDO::EliminateMaster 2cb");
+    static Timer t2cc("MDO::EliminateMaster 2cc");
+    static Timer t3("MDO::EliminateMaster 3");
+    RegionTimer reg(t);
 
-    /*
-    if (v == 361611)
-      PrintCliques();
-    if (v == 397582)
-      PrintCliques();
-    */
+    t1.Start();
+    // (*testout) << "Eliminate Master Vertex " << v  << endl;
 
     // int numslaves = NumSlaves (v);
 
-
-    // clear used-field
-    /*
-      CliqueEl * p1 = cliques[v];
-      while (p1)
-      {
-      CliqueEl * p2 = p1;
-      do
-      {
-      vertices[p2->GetVertexNr()].SetUsed (0);
-      p2->eliminate = 1;
-      p2 = p2->next;
-      }
-      while (p2 != p1);
-      p1 = p1->nextcl;
-      }
-    */
-    
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
@@ -200,45 +185,10 @@ namespace ngla
 	  }
 	while (p2 != p1);
       }
-    
-
 
 
     //  new clique is union of cliques of vertex v
     CliqueEl * newp = NULL;
-
-    /*
-    p1 = cliques[v];
-    while (p1)
-      {
-	p2 = p1;
-	do
-	  {
-	    if (!vertices[p2->GetVertexNr()].Used() && p2->GetVertexNr() != v)
-	      {
-		// p3 = new CliqueEl;
-		CliqueEl * p3 = (CliqueEl*)ball.Alloc();
-
-		p3 -> next = newp;
-		p3 -> vnr = p2->GetVertexNr();
-		p3 -> eliminate = 0;
-	      
-		p3 -> nextcl = NULL;
-		p3 -> flag = 0;
-
-		newp = p3;
-
-		vertices[p2->GetVertexNr()].SetUsed(1);
-	      }
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
-	p1 = p1->nextcl;
-      }
-    */
-
-
-
 
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
@@ -247,7 +197,6 @@ namespace ngla
 	  {
 	    if (!vertices[p2->GetVertexNr()].Used() && p2->GetVertexNr() != v)
 	      {
-		// CliqueEl * p3 = new CliqueEl;
 		CliqueEl * p3 = (CliqueEl*)ball.Alloc();
 
 		p3 -> next = newp;
@@ -286,7 +235,6 @@ namespace ngla
       }
 
 
-
 	
     // close new clique
     {
@@ -295,123 +243,136 @@ namespace ngla
       p3->next = newp;
     }
 
+    t1.Stop();
+    t2.Start();
+    t2a.Start();
 
-    CliqueEl *p1, *p2, *p3, *p4;
 
 
-
-    {
     // find dominated cliques
 
     // set flag for new clique
-    p3 = newp;
-    do
-      {
-	vertices[p3->GetVertexNr()].SetFlag (1);
-	p3 = p3->next;
-      }
-    while (p3 != newp);
-    
-
-    // check all cliques of all members of new clique
-    p3 = newp;
-    do
-      {
-	p1 = cliques[p3->GetVertexNr()];
-	while (p1)
-	  {
-	    if (!p1->eliminate)
-	      {
-		bool dominated = 1;
-		    
-		p2 = p1;
-		do
-		  {
-		    if (!vertices[p2->GetVertexNr()].Flag())
-		      {
-			dominated = 0;
-			break;
-		      }
-		    p2 = p2->next;
-		  }
-		while (p1 != p2);
-
-		// if clique is dominated, set eliminate flag
-		if (dominated)
-		  {
-		    p2 = p1;
-		    do
-		      {
-			p2->eliminate = 1;
-			p2 = p2->next;
-		      }
-		    while (p1 != p2);
-		  }
-	      } 
-	    p1 = p1->nextcl;
-	  }
-	p3 = p3->next;
-      }
-    while (p3 != newp);
-     
-    // clear flag
-    p3 = newp;
-    do
-      {
-	vertices[p3->GetVertexNr()].SetFlag (0);
-	p3 = p3->next;
-      }
-    while (p3 != newp);
-  
-  
-  
-    // delete old cliques
-    p3 = newp;
-    do
-      {
-	// p3->next is first remaining clique:
-
-	p3->nextcl = cliques[p3->GetVertexNr()];
-	while (p3->nextcl && p3->nextcl->eliminate)
-	  p3->nextcl = p3->nextcl->nextcl;
-
-
-	CliqueEl hcel;
-	hcel.nextcl = cliques[p3->GetVertexNr()];
-	p1 = &hcel;
-	  
-	while (p1)
-	  {
-	    while (p1->nextcl && p1->nextcl->eliminate)
-	      {
-		CliqueEl * hp = p1->nextcl;
-		p1->nextcl = p1->nextcl->nextcl;
-		ball.Free (hp);
-	      }
-	    p1 = p1->nextcl;
-	  }
-
-	cliques[p3->GetVertexNr()] = p3;
-
-	p3 = p3->next;
-      }
-    while (p3 != newp);
-
-  
-    p1 = cliques[v];
-    while (p1)
-      {
-	p2 = p1->GetNextClique();
-	ball.Free (p1);
-	p1 = p2;
-      }
-
-    cliques[v] = NULL;
+    {
+      CliqueEl * p3 = newp;
+      do
+        {
+          vertices[p3->GetVertexNr()].SetFlag (1);
+          p3 = p3->next;
+        }
+      while (p3 != newp);
     }
 
+    
+
+    {
+      // check all cliques of all members of new clique
+      CliqueEl * p3 = newp;
+      do
+        {
+          for (CliqueEl * p1 = cliques[p3->GetVertexNr()]; p1; p1 = p1->nextcl)
+            {
+              if (!p1->eliminate)
+                {
+                  bool dominated = 1;
+		  
+                  CliqueEl * p2 = p1;
+                  do
+                    {
+                      if (!vertices[p2->GetVertexNr()].Flag())
+                        {
+                          dominated = 0;
+                          break;
+                        }
+                      p2 = p2->next;
+                    }
+                  while (p1 != p2);
+                  
+                  // if clique is dominated, set eliminate flag
+                  if (dominated)
+                    {
+                      CliqueEl * p2 = p1;
+                      do
+                        {
+                          p2->eliminate = 1;
+                          p2 = p2->next;
+                        }
+                      while (p1 != p2);
+                    }
+                } 
+            }
+          p3 = p3->next;
+        }
+      while (p3 != newp);
+    }
+    
+    t2a.Stop();
+    t2b.Start();
+    
+    {
+      // clear flag
+      CliqueEl * p3 = newp;
+      do
+        {
+          vertices[p3->GetVertexNr()].SetFlag (0);
+          p3 = p3->next;
+        }
+      while (p3 != newp);
+    }
+    
+  
+    {
+      // delete old cliques
+      CliqueEl * p3 = newp;
+      do
+        {
+          // p3->next is first remaining clique:
+          
+          p3->nextcl = cliques[p3->GetVertexNr()];
+          while (p3->nextcl && p3->nextcl->eliminate)
+            p3->nextcl = p3->nextcl->nextcl;
+          
+          
+          CliqueEl hcel;
+          hcel.nextcl = cliques[p3->GetVertexNr()];
+          CliqueEl * p1 = &hcel;
+	  
+          while (p1)
+            {
+              while (p1->nextcl && p1->nextcl->eliminate)
+                {
+                  CliqueEl * hp = p1->nextcl;
+                  p1->nextcl = p1->nextcl->nextcl;
+                  ball.Free (hp);
+                }
+              p1 = p1->nextcl;
+            }
+          
+          cliques[p3->GetVertexNr()] = p3;
+          
+          p3 = p3->next;
+        }
+      while (p3 != newp);
+    }
+      
+
+    {
+      
+      CliqueEl * p1 = cliques[v];
+      while (p1)
+        {
+          CliqueEl * p2 = p1->GetNextClique();
+          ball.Free (p1);
+          p1 = p2;
+        }
+      
+      cliques[v] = NULL;
+    }
+    
+    t2b.Stop();
+    t2c.Start();
 
     // find connections
-    p3 = newp;
+    CliqueEl * p3 = newp;
     do
       {
 	// if (vertices[p3->GetVertexNr()].Master() == p3->GetVertexNr())
@@ -427,54 +388,38 @@ namespace ngla
 	    else
 
 	      {
+                t2ca.Start();
 		SetFlagCliques (p3->GetVertexNr());
-		p4 = p3->next;
-		while (p4 != newp)
+                t2ca.Stop();
+                t2cb.Start();
+		for (CliqueEl * p4 = p3->next; p4 != newp; p4 = p4->next)
 		  {
 		    // are p3 and p4 connected ?
 		    
 		    if (IsMaster (p4->GetVertexNr()))
 		      {
 			bool samecl = 1;
-			
-                        /*
-			if (NumCliques (p4->GetVertexNr()) == nclp3)
-			  {
-                            p1 = p4;
-			    while (p1)
-			      {
-				if (!p1->flag) 
-                                  {
-                                    samecl = 0;
-                                    break;
-                                  }
-				p1 = p1->nextcl;
-			      }
-			  }
-			else
-			  samecl = 0;
-                        */
-
-                        p1 = cliques[p4->GetVertexNr()];
                         int nclp4 = 0;
-                        while (p1)
+                        for (CliqueEl * p1 = cliques[p4->GetVertexNr()]; p1; p1 = p1->nextcl)
                           {
                             if (!p1->flag) 
                               {
                                 samecl = 0;
                                 break;
                               }
-                            p1 = p1->nextcl;
                             nclp4++;
                           }
+
                         if (nclp4 != nclp3) samecl = 0;
 
 			if (samecl)
 			  SetMaster (p3->GetVertexNr(), p4->GetVertexNr());
 		      }
-		    p4 = p4->next;
 		  }
+                t2cb.Stop();
+                t2cc.Start();
 		ClearFlagCliques (p3->GetVertexNr());
+                t2cc.Stop();
 	      }
 	  }
 
@@ -482,11 +427,12 @@ namespace ngla
       }
     while (p3 != newp);
 
-
+    t2c.Stop();
+    t2.Stop();
 
     // calc master degrees in new clique
     {
-      p3 = newp;
+      CliqueEl * p3 = newp;
       do
         {
           int v3 = p3->GetVertexNr();
@@ -498,87 +444,92 @@ namespace ngla
     }
     
 
-    int cnt = NumSlaves(v);
-    p3 = newp;
-    do 
-      {
-	int v3 = p3->GetVertexNr();
-	if (IsMaster(v3))
-	  cnt += 1+NumSlaves(v3);
-	p3 = p3->next;
-      }
-    while (p3 != newp);
+    t3.Start();
+
+    {
+      int cnt = NumSlaves(v);
+      CliqueEl * p3 = newp;
+      do 
+        {
+          int v3 = p3->GetVertexNr();
+          if (IsMaster(v3))
+            cnt += 1+NumSlaves(v3);
+          p3 = p3->next;
+        }
+      while (p3 != newp);
       
-    vertices[v].nconnected = cnt;
-    vertices[v].connected = new int[cnt];
-    cnt = 0;
+      vertices[v].nconnected = cnt;
+      vertices[v].connected = new int[cnt];
+      cnt = 0;
       
-    int hv = NextSlave(v);
-    while (hv != -1)
-      {
-	vertices[v].connected[cnt++] = hv;
-	hv = NextSlave (hv);
-      }
-
-    do 
-      {
-	int v3 = p3->GetVertexNr();
-	if (IsMaster(v3))
-	  {
-	    int hv = v3;
-	    do
-	      {
-		vertices[v].connected[cnt++] = hv;
-		hv = NextSlave (hv);
-	      }
-	    while (hv != -1);
-	  }
-	p3 = p3->next;
-      }
-    while (p3 != newp);
-
-
+      int hv = NextSlave(v);
+      while (hv != -1)
+        {
+          vertices[v].connected[cnt++] = hv;
+          hv = NextSlave (hv);
+        }
+      
+      do 
+        {
+          int v3 = p3->GetVertexNr();
+          if (IsMaster(v3))
+            {
+              int hv = v3;
+              do
+                {
+                  vertices[v].connected[cnt++] = hv;
+                  hv = NextSlave (hv);
+                }
+              while (hv != -1);
+            }
+          p3 = p3->next;
+        }
+      while (p3 != newp);
+    }
+      
 
 
     // disconnect slaves 
-    cnt = 0;
-    p3 = newp;
-    do 
-      {
-	cnt++;
-	p3 = p3->next;
-      }
-    while (p3 != newp);
+    {
+      int cnt = 0;
+      CliqueEl * p3 = newp;
+      do 
+        {
+          cnt++;
+          p3 = p3->next;
+        }
+      while (p3 != newp);
 
 
-    p3 = newp;
-    for (int i = 0; i < cnt; i++)
-      {
-	int v3 = p3->GetVertexNr();
+      p3 = newp;
+      for (int i = 0; i < cnt; i++)
+        {
+          int v3 = p3->GetVertexNr();
+          
+          p3 = p3->next;
+          
+          if (!IsMaster (v3))
+            {
+              for (CliqueEl * p1 = cliques[v3]; p1; )
+                {
+                  for (CliqueEl * p2 = p1; true; p2=p2->next)
+                    if (p2->next == p1)
+                      {
+                        p2->next = p2->next->next;
+                        break;
+                      }
 
-	p3 = p3->next;
-
-	if (!IsMaster (v3))
-	  {
-	    for (CliqueEl * p1 = cliques[v3]; p1; )
-	      {
-		for (CliqueEl * p2 = p1; true; p2=p2->next)
-		  if (p2->next == p1)
-		    {
-		      p2->next = p2->next->next;
-		      break;
-		    }
-
-		CliqueEl * hp = p1;
-	        p1 = p1->nextcl;
-
-		ball.Free (hp);
-	      }
-	    cliques[v3] = 0;
-	  }
-      }
+                  CliqueEl * hp = p1;
+                  p1 = p1->nextcl;
+                  
+                  ball.Free (hp);
+                }
+              cliques[v3] = 0;
+            }
+        }
+      t3.Stop();
+    }
   }
-
 
 
 
@@ -591,157 +542,9 @@ namespace ngla
     if (cliques[v]) // NumCliques(v) != 0)
       throw Exception ("Eliminate Slave should have exactly no clique");
 
-
-    // if (NumCliques(v) != 1)
-    //      throw Exception ("Eliminate Slave should have exactly one clique");
-
-    // (*testout) << "Eliminate Slave Vertex " << v << endl;
-    // PrintCliques();
-
-    CliqueEl *p1, *newp;
-    
-    if (cliques[v])
-      {
-	newp = cliques[v]->next;
-	
-	if (newp != cliques[v])
-	  {
-	    p1 = cliques[v];
-	    while (1)
-	      {
-		if (p1->next == cliques[v])
-		  {
-		    p1->next = p1->next->next;
-		    break;
-		  }
-		p1 = p1->next;
-	      }
-	  }
-	else
-	  {
-	    newp = NULL;
-	  }
-	
-	// delete cliques[v];
-	ball.Free (cliques[v]);
-	cliques[v] = NULL;
-      }
-
-
-
-
-    // PrintCliques();
-
-    /*
-    if (newp)
-      {
-	// eliminated node was slave
-	
-	p3 = newp;
-	do
-	  {
-	    int deg = priqueue.GetDegree (p3->GetVertexNr())-1;
-	    priqueue.SetDegree (p3->GetVertexNr(), deg);
-	    p3 = p3->next;
-	  }
-	while (p3 != newp); 
-      }
-    */
-
-    
-    /*
-    int cnt = 0;
-
-    if (newp)
-      {
-	p3 = newp;
-	do 
-	  {
-	    cnt++;
-	    p3 = p3->next;
-	  }
-	while (p3 != newp);
-      
-	vertices[v].nconnected = cnt;
-	vertices[v].connected = new int[cnt];
-	cnt = 0;
-      
-	do 
-	  {
-	    vertices[v].connected[cnt] = p3->vnr;
-	    cnt++;
-	    p3 = p3->next;
-	  }
-	while (p3 != newp);
-      }
-    else
-      {
-	vertices[v].nconnected = 0;
-	vertices[v].connected = NULL;
-      }
-
-    (*testout) << "slave " << v << ", connected: ";
-    for (int i = 0; i < vertices[v].nconnected; i++)
-      (*testout) << vertices[v].connected[i] << " ";
-    (*testout) << endl;
-*/
-
-    /*
-    int master = vertices[v].Master();
-    int cnt = vertices[master].nconnected;
-    int * master_connected = vertices[master].connected;
-    int cnt2 = 0;
-    for (int i = 0; i < cnt; i++)
-      if (!vertices[master_connected[i]].Eliminated() && master_connected[i] != v)
-	cnt2++;
-    */
-
-    /*
-    if (cnt2 != 0)
-      {
-	vertices[v].nconnected = cnt2;
-	vertices[v].connected = new int[cnt2];
-	cnt2 = 0;
-	for (int i = 0; i < cnt; i++)
-	  if (!vertices[master_connected[i]].Eliminated() && master_connected[i] != v)
-	    {
-	      vertices[v].connected[cnt2] = master_connected[i];
-	      cnt2++;
-	    }
-      }
-    else
-      {
-	vertices[v].nconnected = 0;
-	vertices[v].connected = NULL;
-      }
-    */
-
-    vertices[v].nconnected = 0; // cnt2;
+    vertices[v].nconnected = 0; 
     vertices[v].connected = NULL;
-
-
-    /*
-    (*testout) << "slave " << v << ", connected new: ";
-    for (int i = 0; i < vertices[v].nconnected; i++)
-      (*testout) << vertices[v].connected[i] << " ";
-    (*testout) << endl;
-    */
-
-    //  cliques.Elem(v) = savep;
-    // cliques[v] = NULL;
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -760,7 +563,6 @@ namespace ngla
       {
 	// priqueue.SetDegree(j, CalcDegree(j));
 	priqueue.SetDegree(j, 1+NumCliques(j));
-	// cout << "deg = " << CalcDegree(j) << ", numcl = " << NumCliques(j) << endl;
       }
 
     int minj = -1;
@@ -831,14 +633,12 @@ namespace ngla
 
   int MinimumDegreeOrdering :: NumCliques (int v) const
   {
-    int cnt = 0;
+    static Timer t("MinimumDegreeOrdering::NumCliques");
+    RegionTimer reg(t);
 
-    CliqueEl * p1 = cliques[v];
-    while (p1)
-      {
-	p1 = p1->nextcl;
-	cnt++;
-      }
+    int cnt = 0;
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
+      cnt++;
     return cnt;
   }
 
@@ -877,8 +677,7 @@ namespace ngla
 
   void MinimumDegreeOrdering :: SetFlagCliques (int v)
   {
-    CliqueEl * p1 = cliques[v];
-    while (p1)
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
 	do
@@ -887,14 +686,12 @@ namespace ngla
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
   }
 
   void MinimumDegreeOrdering :: ClearFlagCliques (int v)
   {
-    CliqueEl * p1 = cliques[v];
-    while (p1)
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
 	do
@@ -903,20 +700,9 @@ namespace ngla
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
   }
 
-
-  /*
-  int MinimumDegreeOrdering :: GetNZE() const
-  {
-    int cnt = 0;
-    for (int i = 0; i < n; i++)
-      cnt += vertices[i].nconnected;
-    return cnt;
-  }
-  */
 
 
   void MinimumDegreeOrdering :: SetMaster (int master, int slave)

@@ -95,37 +95,24 @@ namespace ngla
   class CliqueEl
   {
   public:
-    /// 
-    CliqueEl *next;
-    CliqueEl *nextcl;
-    ///
-    int vnr:30;
-    ///
-    bool eliminate;
-    ///
-    bool flag;
+    CliqueEl * next = nullptr;
+    CliqueEl * nextcl = nullptr;
+    int vnr;
+    bool eliminate = false;
+    bool flag = false;
   
-    ///
+    /*
     CliqueEl () {
       next = NULL;
       nextcl = NULL;
       eliminate = 0;
       flag = 0;
     }
+    */
 
-    ///
-    CliqueEl * GetNext()
-    { return next; }
-
-    ///
-    CliqueEl * GetNextClique()
-    { return nextcl; }
-
-    ///
-    int GetVertexNr() const
-    {
-      return vnr; 
-    }
+    CliqueEl * GetNext() { return next; }
+    CliqueEl * GetNextClique() { return nextcl; }
+    int GetVertexNr() const { return vnr; }
   
     /*  
    ///
@@ -208,20 +195,11 @@ namespace ngla
       return vertices[vnr].NextSlave();
     }
     ///
-    int NumSlaves (int vnr) const
+    int NumSlaves (int vnr) const 
     {
       return vertices[vnr].numslaves;
-      /*
-	int next = vertices[vnr].NextSlave();
-	int cnt = 0;
-	while (next != -1)
-	{
-	next = vertices[next].NextSlave();
-	cnt++;
-	}
-	return cnt;
-      */
     }
+
     ///
     bool IsMaster (int vnr) const
     {
