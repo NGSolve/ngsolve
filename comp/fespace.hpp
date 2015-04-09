@@ -266,7 +266,14 @@ namespace ngcomp
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar) 
         : IntRange(ar), fes(afes), vb(avb) { ; }
-      INLINE ElementIterator begin () const { return ElementIterator(fes, ElementId(vb,First()), temp_dnums); }
+      // INLINE ElementIterator begin () const 
+      // { return ElementIterator(fes, ElementId(vb,First()), temp_dnums); }  
+      INLINE ElementIterator begin () const 
+      {
+        ElementId ei = ElementId(vb,First());
+        while ((ei.Nr() < IntRange::end()) && !fes.DefinedOn(ei)) ++ei;
+        return ElementIterator(fes, ei, temp_dnums); 
+      }
       INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums); }
       // INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
       INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums); }
