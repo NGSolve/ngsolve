@@ -240,7 +240,7 @@ namespace ngstd
     // #endif
 
     NodeData & mynode_data = *(nodedata[mynode]);
-
+    // mynode_data.participate++;
 
     TaskInfo ti;
     ti.nthreads = thds;
@@ -259,8 +259,10 @@ namespace ngstd
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
             (*func)(ti); 
+            /*
             if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;
+            */
           }
 
       }
@@ -274,8 +276,11 @@ namespace ngstd
           complete[mynode] = true;
         }
       }
-
     
+    /*
+    if (--mynode_data.participate == 0)
+      complete[mynode] = true;
+    */
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
         ;
@@ -345,9 +350,10 @@ namespace ngstd
                 ti.ntasks = ntasks;
                 
                 (*func)(ti); 
-                
+                /*
                 if (++mynode_data.complete_cnt == mytasks.Size())
                   complete[mynode] = true;
+                */
               }
 
           }
@@ -367,7 +373,10 @@ namespace ngstd
 #endif // __MIC__
 
         jobdone = jobnr;
-        mynode_data.participate--;
+        // mynode_data.participate--;
+
+        if (--mynode_data.participate == 0)
+          complete[mynode] = true;
       }
 
     active_workers--;
