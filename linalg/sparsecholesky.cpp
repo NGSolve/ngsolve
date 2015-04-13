@@ -2214,37 +2214,56 @@ namespace ngla
   template class SparseCholesky<Complex>;
   template class SparseCholesky<double, Complex, Complex>;
 
+  template class SparseCholeskyTM<double>;
+  template class SparseCholeskyTM<Complex>;
+
 #if MAX_SYS_DIM >= 1
   template class SparseCholesky<Mat<1,1,double> >;
   template class SparseCholesky<Mat<1,1,Complex> >;
+  template class SparseCholeskyTM<Mat<1,1,double> >;
+  template class SparseCholeskyTM<Mat<1,1,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 2
   template class SparseCholesky<Mat<2,2,double> >;
   template class SparseCholesky<Mat<2,2,Complex> >;
+  template class SparseCholeskyTM<Mat<2,2,double> >;
+  template class SparseCholeskyTM<Mat<2,2,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 3
   template class SparseCholesky<Mat<3,3,double> >;
   template class SparseCholesky<Mat<3,3,Complex> >;
+  template class SparseCholeskyTM<Mat<3,3,double> >;
+  template class SparseCholeskyTM<Mat<3,3,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 4
   template class SparseCholesky<Mat<4,4,double> >;
   template class SparseCholesky<Mat<4,4,Complex> >;
+  template class SparseCholeskyTM<Mat<4,4,double> >;
+  template class SparseCholeskyTM<Mat<4,4,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 5
   template class SparseCholesky<Mat<5,5,double> >;
   template class SparseCholesky<Mat<5,5,Complex> >;
+  template class SparseCholeskyTM<Mat<5,5,double> >;
+  template class SparseCholeskyTM<Mat<5,5,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 6
   template class SparseCholesky<Mat<6,6,double> >;
   template class SparseCholesky<Mat<6,6,Complex> >;
+  template class SparseCholeskyTM<Mat<6,6,double> >;
+  template class SparseCholeskyTM<Mat<6,6,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 7
   template class SparseCholesky<Mat<7,7,double> >;
   template class SparseCholesky<Mat<7,7,Complex> >;
+  template class SparseCholeskyTM<Mat<7,7,double> >;
+  template class SparseCholeskyTM<Mat<7,7,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 8
   template class SparseCholesky<Mat<8,8,double> >;
   template class SparseCholesky<Mat<8,8,Complex> >;
+  template class SparseCholeskyTM<Mat<8,8,double> >;
+  template class SparseCholeskyTM<Mat<8,8,Complex> >;
 #endif
 
 #ifdef CACHEBLOCKSIZE
