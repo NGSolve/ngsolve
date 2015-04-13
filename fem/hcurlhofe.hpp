@@ -86,8 +86,8 @@ namespace ngfem
 
 
     // void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-    INLINE void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
-    INLINE void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+    INLINE void SetOrderEdge (int nr, TORDER order) { order_edge[nr] = order; }
+    INLINE void SetOrderFace (int nr, INT<2,TORDER> order) { order_face[nr] = order; }
 
     INLINE void SetUseGradEdge(int nr, bool uge) { usegrad_edge[nr] = uge; }
     INLINE void SetUseGradFace(int nr, bool ugf) { usegrad_face[nr] = ugf; }

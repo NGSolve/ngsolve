@@ -18,6 +18,9 @@ namespace ngcomp
   class NGS_DLL_HEADER HCurlHighOrderFESpace : public FESpace
   {
   protected:
+
+    typedef short TORDER;
+
     // Level
     int level;
     Array<int> first_edge_dof;
@@ -30,14 +33,14 @@ namespace ngcomp
  
     INT<3> rel_orders; 
 
-    Array<int> order_edge;
+    Array<TORDER> order_edge;
     Array<bool> fine_edge; 
     Array<bool> fine_face; 
     Array<int> cell_ngrad;
     Array<int> face_ngrad;
-    Array<INT<2> > order_face;
-    Array<INT<3> > order_inner;
-    Array<int> order_avertex; 
+    Array<INT<2,TORDER> > order_face;
+    Array<INT<3,TORDER> > order_inner;
+    Array<TORDER> order_avertex; 
     Array<bool> usegrad_edge; 
     Array<bool> usegrad_face; 
     Array<bool> usegrad_cell; 
@@ -96,9 +99,6 @@ namespace ngcomp
     ///
     template <ELEMENT_TYPE ET>
     const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
-
-    ///
-    virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
     ///
