@@ -173,12 +173,6 @@ namespace ngstd
   }
 
 
-  double tm_t1;  
-  double tm_t2;
-  double tm_t3;
-  double tm_t4;
-  double tm_t5;
-  double tm_t6;
 
   void TaskManager :: CreateJob (const function<void(TaskInfo&)> & afunc,
                                  int antasks)
@@ -192,11 +186,8 @@ namespace ngstd
           oldval = 0;
       }
 
-    // tm_t1 = omp_get_wtime();
-
     func = &afunc;
 
-    // tm_t2 = omp_get_wtime();
 
     ntasks.store (antasks, memory_order_relaxed);
     ex = nullptr;
@@ -217,10 +208,6 @@ namespace ngstd
     for (int j = 0; j < num_nodes; j++)
       nodedata[j]->participate.store (0, memory_order_release);
     
-    // tm_t3 = omp_get_wtime();        
-
-    // tm_t4 = omp_get_wtime();        
-
 
 #ifdef CPP11_THREADS
     int thd = 0;
@@ -241,7 +228,6 @@ namespace ngstd
 
     NodeData & mynode_data = *(nodedata[mynode]);
 
-
     TaskInfo ti;
     ti.nthreads = thds;
     ti.thread_nr = thd;
@@ -250,7 +236,6 @@ namespace ngstd
 
     try
       {
-        // 0.862
         while (1)
           {
             int mytask = mynode_data.start_cnt++;
@@ -259,6 +244,7 @@ namespace ngstd
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
             (*func)(ti); 
+
             if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;
           }
@@ -274,7 +260,6 @@ namespace ngstd
           complete[mynode] = true;
         }
       }
-
     
     for (int j = 0; j < num_nodes; j++)
       while (!complete[j])
@@ -345,7 +330,6 @@ namespace ngstd
                 ti.ntasks = ntasks;
                 
                 (*func)(ti); 
-                
                 if (++mynode_data.complete_cnt == mytasks.Size())
                   complete[mynode] = true;
               }
