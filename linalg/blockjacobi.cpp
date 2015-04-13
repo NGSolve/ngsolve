@@ -343,7 +343,7 @@ namespace ngla
     cout << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable.Size() << endl;
 
 
-    clock_t prevtime = clock();
+    double prevtime = WallTime();
 
     /*
     for (int i = 0; i < blocktable.Size(); i++)
@@ -411,12 +411,13 @@ namespace ngla
 #ifndef __MIC__
 #pragma omp atomic
 	cnt++;
-	if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
+        double time = WallTime();
+	if (time > prevtime+0.05)
 	  {
 #pragma omp critical(buildingblockupdate) 
 	    {
 	      cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
-	      prevtime = clock();
+	      prevtime = time;
 	    }
 	  }
 #endif // __MIC__

@@ -171,6 +171,7 @@ namespace ngstd
     T first, next;
   public: 
     INLINE T_Range () { ; }
+    INLINE T_Range (T n) : first(0), next(n) {;}
     INLINE T_Range (T f, T n) : first(f), next(n) {;} 
     INLINE T First() const { return first; }
     INLINE T Next() const { return next; }
