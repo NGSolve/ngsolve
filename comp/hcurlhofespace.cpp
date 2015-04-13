@@ -238,7 +238,7 @@ namespace ngcomp
 	if (!DefinedOn (index)) continue;
 
 	order_inner[i] = INT<3> (p,p,p); 	
-	INT<3> el_orders = ma->GetElOrders(i);
+	INT<3,TORDER> el_orders = ma->GetElOrders(i);
 	
 	ELEMENT_TYPE eltype=ma->GetElType(i); 
 	const FACE * faces = ElementTopology::GetFaces (eltype);
@@ -418,15 +418,15 @@ namespace ngcomp
     for (int i = 0; i < nfa; i++) 
       { 
 	first_face_dof[i] = ndof; 
-	ma->GetFacePNums (i,pnums);  
+	ma->GetFacePNums (i, pnums);  
 	INT<2> p = order_face[i]; 
 	switch(pnums.Size())
 	  {
 	  case 3: //Triangle   
-	    if(p[0]>1)
+	    if (p[0]>1)
 	      {
 		ndof += ((usegrad_face[i]+1)*p[0] + 2)*(p[0]-1)/2;
-		face_ngrad[i] = usegrad_face[i] *p[0]*(p[0]-1)/2;
+		face_ngrad[i] = usegrad_face[i]*p[0]*(p[0]-1)/2;
 	      }
 	    break; 
 	  case 4: //Quad 
@@ -832,10 +832,15 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & HCurlHighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
+    /*
     if (!DefinedOn (ma->GetElIndex (elnr)))
       return * new (lh) HCurlDummyFE<ET>();
 
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+    */
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+    if (!DefinedOn (ngel))
+      return * new (lh) HCurlDummyFE<ET>();
 
     HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
     
@@ -849,8 +854,8 @@ namespace ngcomp
       case 2:
         {
           hofe -> SetOrderCell (order_inner[elnr]);   // old style
-          INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-          FlatArray<INT<2> > of(1, &p);
+          INT<2,TORDER> p(order_inner[elnr][0], order_inner[elnr][1]);
+          FlatArray<INT<2,TORDER> > of(1, &p);
           hofe -> SetOrderFace (of);
           
           hofe -> SetUseGradCell (usegrad_cell[elnr]);  // old style
@@ -1022,7 +1027,7 @@ namespace ngcomp
     if(ma->GetSElType(selnr) == ET_SEGM)
       {
 	hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
-        FlatArray<int> aoe(1, &order_edge[ngel.edges[0]]);
+        FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
         hofe -> SetOrderEdge (aoe);
 	hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
       } 
@@ -1050,32 +1055,6 @@ namespace ngcomp
     return ndof;
   }
 
-  void HCurlHighOrderFESpace :: 
-  GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
-  {
-    dranges.SetSize(0);
-    if (!DefinedOn (ei)) return;
-
-    Ngs_Element ngel = ma->GetElement(ei);
-
-    /*
-    for (int i = 0; i < ngel.edges.Size(); i++)
-      dranges.Append (ngel.edges[i]);
-    */
-    for (int e : ngel.Edges())
-      dranges.Append (IntRange (e, e+1));
-
-    for (int i = 0; i < ngel.edges.Size(); i++)
-      dranges += GetEdgeDofs (ngel.edges[i]);
-
-    if (ma->GetDimension() == 3)
-      for (int i = 0; i < ngel.faces.Size(); i++)
-        dranges += GetFaceDofs (ngel.faces[i]);
-
-    if (ei.IsVolume())
-      dranges += GetElementDofs (ei.Nr());
-  }
-
 
   void HCurlHighOrderFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
@@ -1089,19 +1068,19 @@ namespace ngcomp
 
     Ngs_Element ngel = ma->GetElement (elnr);
      
-      //Nedelec0
+    //Nedelec0
     if ( !discontinuous )
-      for (int i = 0; i < ngel.edges.Size(); i++) 
-	dnums.Append (ngel.edges[i]);
-        
+      for (auto edge : ngel.Edges())
+        dnums.Append (edge);
+    
     //edges
-    for (int i = 0; i < ngel.edges.Size(); i++) 
-      dnums += GetEdgeDofs(ngel.edges[i]); 
-       
+    for (auto edge : ngel.Edges())
+      dnums += GetEdgeDofs(edge);
+
     // faces 
     if (ma->GetDimension() == 3)
-      for(int i = 0; i < ngel.faces.Size(); i++)     
-        dnums += GetFaceDofs(ngel.faces[i]);  
+      for (auto face : ngel.Faces())
+        dnums += GetFaceDofs(face);
         
     dnums += GetElementDofs (elnr); 
   }
