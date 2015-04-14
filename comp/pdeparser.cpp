@@ -736,8 +736,14 @@ namespace ngcomp
                 static int pynp_cnt = 0;
                 string pyname = "_pynumproc"+ToString(pynp_cnt++);
 
-                pyenv["temppde"] = pde; // bp::ptr(pde.get());
-                string command = pyname + " = " + npid + " (temppde, { } ) \n";
+                string command = pyname  + " = " + npid + " (pde,flags) \n";
+		try{
+		   pyenv["pde"] = pde;
+		   pyenv["flags"] = make_shared<Flags>(flags);
+		}
+		catch (bp::error_already_set const &) {
+		  PyErr_Print();
+		}
                 pyenv.exec (command);
                 bp::object pynp = pyenv[pyname.c_str()];
 
