@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 if (USE_GUI)
     add_definitions(-DTCL)
 endif (USE_GUI)

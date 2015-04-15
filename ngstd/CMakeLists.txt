@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 set(ngstd_sources
         exception.cpp table.cpp bitarray.cpp flags.cpp 
         symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp  
