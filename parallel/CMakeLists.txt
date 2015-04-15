@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(parallel OBJECT
         parallelvvector.cpp parallel_matrices.cpp 
         )
