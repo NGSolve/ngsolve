@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(ngmg OBJECT
         mgpre.cpp  prolongation.cpp  smoother.cpp
         )
