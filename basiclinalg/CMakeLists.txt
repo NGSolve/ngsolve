@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp calcinverse.cpp cholesky.cpp 
         eigensystem.cpp vecmat.cpp LapackGEP.cpp LapackInterface.hpp	  
