@@ -1275,9 +1275,65 @@ namespace ngla
 
 
 
+
+
+
+
+  
+  inline void MyAtomicAdd (double & x, double y)
+  {
+#pragma omp atomic
+    x += y;
+  }
+
+  inline void MyAtomicAdd (Complex & x, Complex y)
+  {
+    
+#pragma omp atomic
+    reinterpret_cast<double(&)[2]>(x)[0] += y.real();
+#pragma omp atomic
+    reinterpret_cast<double(&)[2]>(x)[1] += y.imag();
+  }
+
+  template <int DIM, typename SCAL, typename TANY>
+  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
+  {
+    for (int i = 0; i < DIM; i++)
+      MyAtomicAdd (x(i), y(i));
+  }
+  
+  template <int DIM, typename SCAL, typename TANY>
+  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
+  {
+    for (int i = 0; i < DIM; i++)
+      MyAtomicAdd (x(i), y(i));
+  }
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  // template <>
+  // void SparseCholesky<double, double, double> :: 
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  SolveBlock (int bnr, FlatVector<TV> hy) const
+  {
+    cerr << "general form of solveblock not implemented" << endl;
+  }
+
   template <>
-  void SparseCholesky<double, double, double> :: 
-  SolveBlock (int bnr, FlatVector<> hy) const
+  void SparseCholesky<double,double,double> :: 
+  SolveBlock (int bnr, FlatVector<double> hy) const
   {
     auto range = BlockDofs (bnr);
 
@@ -1308,13 +1364,19 @@ namespace ngla
       hy(extdofs[j]) -= temp(j);
   }
 
+
+  template <class TM, class TV_ROW, class TV_COL>
+  void SparseCholesky<TM, TV_ROW, TV_COL> :: 
+  SolveBlockT (int bnr, FlatVector<TV> hy) const
+  {
+    cerr << "general form of solveblock not implemented" << endl;
+  }
+
+
   template <>
   void SparseCholesky<double, double, double> :: 
   SolveBlockT (int bnr, FlatVector<> hy) const
   {
-    // const double * hlfact = &lfact[0];
-
-    // const int * hrowindex2 = &rowindex2[0];
     const int * hfirstinrow = &firstinrow[0];
     const int * hfirstinrow_ri = &firstinrow_ri[0];
 
@@ -1337,7 +1399,7 @@ namespace ngla
 
 
 
-
+  // a simple lock-free queue
   template <typename T>
   class MyQueue
   {
@@ -1357,12 +1419,6 @@ namespace ngla
       int mypos = wcnt++;
       data[mypos] = in;
       ok[mypos] = 1;
-      /*
-#pragma omp critical(output)
-      {
-        cout << "push " << in << " to " << mypos << endl;
-      }
-      */
     }
 
     bool Pop (T & out)
@@ -1377,12 +1433,6 @@ namespace ngla
               int mypos = rcnt;
               rcnt++;
               out = data[mypos];
-              /*
-#pragma omp critical(output)
-              {
-                cout << "pop " << out << " from " << mypos << ",   wcnt = " << wcnt << endl;
-              }
-              */
               return true;
             }
         }
@@ -1398,12 +1448,6 @@ namespace ngla
   template <typename TFUNC>
   void RunParallelDependency (const Table<int> & dag, TFUNC func)
   {
-    static Timer t("parallelDependency");
-    static Timer t2("parallelDependency - dag");
-
-    RegionTimer reg(t);
-
-
     Array<atomic<int>> cnt_dep(dag.Size());
 
     for (auto & d : cnt_dep) 
@@ -1455,19 +1499,15 @@ namespace ngla
     Array< Vec<3> > timings(task_manager -> GetNumThreads());
     // double starttime = omp_get_wtime();
 
-    t2.Start();
+
     task_manager -> CreateJob 
       ([&] (const TaskInfo & ti)
        {
-         // timings[ti.task_nr](0) = omp_get_wtime()-starttime;
-
         TPToken ptoken(queue); 
         TCToken ctoken(queue); 
         
         for (int i : sl)
           queue.enqueue (ptoken, ready[i]);
-
-        // timings[ti.task_nr](1) = omp_get_wtime()-starttime;
 
         while (1)
            {
@@ -1489,18 +1529,11 @@ namespace ngla
                    queue.enqueue (ptoken, j);
                }
            }
-
-        // timings[ti.task_nr](2) = omp_get_wtime()-starttime;
        });
-    t2.Stop();
+
 
     /*
-    ofstream out("depend.out");
-    for (int i = 0; i < timings.Size(); i++)
-      out << 1e6 * timings[i] << endl;
-    */
-
-    /*
+      // my own simple parall
     MyQueue<int> queue(dag.Size());
 
     for (int i : ready)
@@ -1523,7 +1556,7 @@ namespace ngla
                }
            }
         ptqend[ti.task_nr] = omp_get_wtime();         
-       }, 22);
+        });
     */
   }
 
@@ -1534,46 +1567,11 @@ namespace ngla
 
 
 
-  
-  inline void MyAtomicAdd (double & x, double y)
-  {
-#pragma omp atomic
-    x += y;
-  }
-
-  inline void MyAtomicAdd (Complex & x, Complex y)
-  {
-    
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[0] += y.real();
-#pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[1] += y.imag();
-  }
-
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (Vec<DIM,SCAL> & x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-  template <int DIM, typename SCAL, typename TANY>
-  inline void MyAtomicAdd (FlatVec<DIM,SCAL> x, TANY y)
-  {
-    for (int i = 0; i < DIM; i++)
-      MyAtomicAdd (x(i), y(i));
-  }
-  
-
-
-
-
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseCholesky<d,d,d>::MultAdd");
-    static Timer timer0("SparseCholesky<d,d,d>::MultAdd queue only");
     static Timer timer1("SparseCholesky<d,d,d>::MultAdd fac1");
     static Timer timer2("SparseCholesky<d,d,d>::MultAdd fac2");
     RegionTimer reg (timer);
@@ -1588,11 +1586,26 @@ namespace ngla
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
 
+    /*
+    // sequential verision 
+    for (int i = 0; i < blocks.Size()-1; i++)
+      SolveBlock (i, hy);
+    */
 
-    const TM * hdiag = &diag[0];
+    /*
+
+    // first parallel version with dependency graph
+    RunParallelDependency (block_dependency, 
+                           [&] (int nr) 
+                           {
+                             SolveBlock(nr, hy); 
+                           });
+    */
+
 
 
     /*
+    // first parallel version with dependency graph and profiling
 
     class ProfileData
     {
@@ -1604,8 +1617,6 @@ namespace ngla
     Array<ProfileData> prof(blocks.Size()-1);
     
     double tstart = omp_get_wtime();
-
-    timer1.Start();
 
     RunParallelDependency (block_dependency, 
                            [&] (int nr) 
@@ -1636,40 +1647,8 @@ namespace ngla
     */
 
 
+    // parallel version with refined tasks (micri-dependency)
 
-    /*
-    RunParallelDependency (block_dependency, 
-                           [&] (int nr) 
-                           {
-                             SolveBlock(nr, hy); 
-                           });
-    */
-
-
-
-    class ProfileData
-    {
-    public:
-      double tstart, tend;
-      int size, extsize;
-    };
-
-    Array<ProfileData> prof(microtasks.Size());
-
-
-    timer0.Start();
-
-    RunParallelDependency (micro_dependency, 
-                           [&] (int nr) 
-                           {
-                             ;
-                           });
-    timer0.Stop();
-
-
-    timer1.Start();
-
-    // double tstart = omp_get_wtime();
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
                            {
@@ -1677,22 +1656,15 @@ namespace ngla
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
-                             /*
-                             if (range.Size() > 5)
-                               prof[nr].tstart = omp_get_wtime();
-                             prof[nr].size = range.Size();
-                             */
  
                              if (task.solveL)
                                {
-                                 // SolveBlock(blocknr, hy); 
-                                 
+
                                  for (auto i : range)
                                    {
                                      int size = range.end()-i-1;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
 
-                                     // hy.Range(i+1, range.end()) -= hy(i) * vlfact;
                                      TVX hyi = hy(i);
                                      auto hyr = hy.Range(i+1, range.end());
                                      for (int j = 0; j < hyr.Size(); j++)
@@ -1716,7 +1688,7 @@ namespace ngla
                                      int first = firstinrow[i] + range.end()-i-1;
                                      
                                      FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
-                                     // temp += hy(i) * ext_lfact.Range(myr);
+
                                      TVX hyi = hy(i);
                                      for (int j = 0; j < temp.Size(); j++)
                                        temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
@@ -1724,87 +1696,49 @@ namespace ngla
                                  
                                  for (int j : Range(extdofs))
                                    MyAtomicAdd (hy(extdofs[j]), -temp(j));
-                                   /*
-#pragma omp atomic
-                                   hy(extdofs[j]) -= temp(j);
-                                   */
                                }
 
-                             /*
-                             if (range.Size() > 5)
-                               prof[nr].tend = omp_get_wtime();
-                             */
                            });
 
-    // double tend = omp_get_wtime();
     timer1.Stop();
 
-    /*
-    ofstream out ("cholesky.prof");
-    for (int i = 0; i < prof.Size(); i++)
-      if (prof[i].size > 5)
-        out << i << "  " << prof[i].size << ", SolveL = " << microtasks[i].solveL 
-            << ",  ts = " << 1e6*(prof[i].tstart-tstart) 
-            << ", te = " << 1e6*(prof[i].tend-tstart) 
-            << ", delta = " << 1e6*(prof[i].tend-prof[i].tstart) << endl;
 
-    for (int i = 0; i < 48; i++)
-      {
-        out << "process " << i << " qend at " << 1e6*(ptqend[i]-tstart) << endl;
-      }
+    // solve with the diagonal
 
-    out << "queue end: " << 1e6*(tqend-tstart) << endl;
-    out << "total time: " << 1e6*(tend-tstart) << endl;
-    */
-
-
-
-
-
-
-    /*
-    for (int i = 0; i < blocks.Size()-1; i++)
-      SolveBlock (i, hy);
-    */
-
+    const TM * hdiag = &diag[0];
     for (int i = 0; i < n; i++)
       {
         TVX tmp = hdiag[i] * hy[i];
         hy[i] = tmp;
       }
 
+
     timer2.Start();
 
-
     /*
-    for (int i = blocks.Size()-1; i >= 0; i--)
+      // sequential version 
+    for (int i = blocks.Size()-2; i >= 0; i--)
       SolveBlockT (i, hy);
     */
 
+
+    // advanced parallel version 
     RunParallelDependency (micro_dependency_trans, 
                            [&] (int nr) 
                            {
                              auto task = microtasks[nr];
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
-                            
+                             
  
                              if (task.solveL)
                                {
-                                 /*
-                                 for (auto i : range)
-                                   {
-                                     int size = range.end()-i-1;
-                                     FlatVector<> vlfact(size, &lfact[firstinrow[i]]);
-                                     hy.Range(i+1, range.end()) -= hy(i) * vlfact;
-                                   }
-                                 */
                                  for (int i = range.end()-1; i >= range.begin(); i--)
                                    {
                                      int size = range.end()-i-1;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
                                      auto hyr = hy.Range(i+1, range.end());
-                                     // hy(i) -= InnerProduct (vlfact, hyr);
+
                                      TVX hyi = hy(i);
                                      for (int j = 0; j < vlfact.Size(); j++)
                                        hyi -= vlfact(j) * hyr(j);
@@ -1831,17 +1765,9 @@ namespace ngla
                                      
                                      TVX val = InnerProduct (ext_lfact.Range(myr), temp);
                                      MyAtomicAdd (hy(i), -val);
-                                     /*
-#pragma omp atomic
-                                     hy(i) -= val;
-                                     */
                                    }
-                                 
-                                 
                                }
-
                            });
-
 
     timer2.Stop();
 
@@ -1869,169 +1795,6 @@ namespace ngla
   }
   
 
-
-
-
-
-
-  /*
-  template <>
-  void SparseCholesky<double, double, double> :: 
-  MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer timer("SparseCholesky::MultAdd - double");
-    static Timer timerL("SparseCholesky::MultAdd - L");
-    static Timer timerLt("SparseCholesky::MultAdd - Lt");
-    RegionTimer reg (timer);
-    timer.AddFlops (2.0*lfact.Size());
-
-    int n = Height();
-    
-    const FlatVector<> fx = x.FV<double> ();
-    FlatVector<> fy = y.FV<double> ();
-    
-    Vector<> hy(n);
-    for (int i = 0; i < n; i++)
-      hy(order[i]) = fx(i);
-
-    FlatVector<> hhy = hy;
-
-    const double * hlfact = &lfact[0];
-    const double * hdiag = &diag[0];
-    // const int * hrowindex = &rowindex[0];
-    const int * hrowindex2 = &rowindex2[0];
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
-
-    timerL.Start();
-
-    enum { BS = 32 };
-
-    Vector<> tmp1(n);
-
-    for (int i = 0; i < n; i++)
-      {
-        if ( (i+BS <= n) && (blocknrs[i] == blocknrs[i+BS-1]) )
-          // if (false)
-          {
-            // solve with trig factor
-            for (int i2 = 0; i2 < BS; i2++)
-              {
-                double val = hy(i+i2);
-                int first = hfirstinrow[i+i2];
-                int j_ri = hfirstinrow_ri[i+i2];
-
-                for (int j = first; j < first+BS-i2-1; j++, j_ri++)
-                  hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-              }
-
-            
-            int nk =  hfirstinrow[i+1] - (hfirstinrow[i]+BS-1);
-            FlatVector<> tmp = tmp1.Range(0,nk);
-            tmp = 0.0;
-
-            // if (nk < 100)
-            if (true)
-              {
-                for (int i2 = 0; i2 < BS; i2+=4)
-                  {
-                    double val0 = hy(i+i2);
-                    double val1 = hy(i+i2+1);
-                    double val2 = hy(i+i2+2);
-                    double val3 = hy(i+i2+3);
-                    
-                    FlatVector<> v0(nk, (double*)&hlfact[hfirstinrow[i+i2]]+BS-i2-1);
-                    FlatVector<> v1(nk, (double*)&hlfact[hfirstinrow[i+i2+1]]+BS-i2-2);
-                    FlatVector<> v2(nk, (double*)&hlfact[hfirstinrow[i+i2+2]]+BS-i2-3);
-                    FlatVector<> v3(nk, (double*)&hlfact[hfirstinrow[i+i2+3]]+BS-i2-4);
-                    
-                    tmp += val0 * v0 + val1*v1 + val2*v2 + val3*v3;
-                  }
-              }
-            else
-              {
-#pragma omp parallel
-                {
-                  for (int i2 = 0; i2 < BS; i2+=4)
-                    {
-                      double val0 = hy(i+i2);
-                      double val1 = hy(i+i2+1);
-                      double val2 = hy(i+i2+2);
-                      double val3 = hy(i+i2+3);
-                      
-                      FlatVector<> v0(nk, (double*)&hlfact[hfirstinrow[i+i2]]+BS-i2-1);
-                      FlatVector<> v1(nk, (double*)&hlfact[hfirstinrow[i+i2+1]]+BS-i2-2);
-                      FlatVector<> v2(nk, (double*)&hlfact[hfirstinrow[i+i2+2]]+BS-i2-3);
-                      FlatVector<> v3(nk, (double*)&hlfact[hfirstinrow[i+i2+3]]+BS-i2-4);
-                 
-#pragma omp for
-                      for (int j = 0; j < nk; j++)
-                        tmp(j) += val0 * v0(j) + val1*v1(j) + val2*v2(j) + val3*v3(j);
-                    }
-                }
-              }
-
-            int j_ri = hfirstinrow_ri[i]+BS-1;
-            for (int j = 0; j < nk; j++, j_ri++)
-              hhy[hrowindex2[j_ri]] -= tmp(j);
-            
-
-
-            i += BS-1;
-          }
-        else
-          {
-            double val = hy(i);
-            int first = hfirstinrow[i];
-            int last = hfirstinrow[i+1];
-            int j_ri = hfirstinrow_ri[i];
-            for (int j = first; j < last; j++, j_ri++)
-              hhy[hrowindex2[j_ri]] -= Trans (hlfact[j]) * val;
-          }
-      }
-    timerL.Stop();  
-
-    for (int i = 0; i < n; i++)
-      hhy[i] *= hdiag[i];
-
-    timerLt.Start();
-    for (int i = n-1; i >= 0; i--)
-      {
-	int minj = hfirstinrow[i];
-	int maxj = hfirstinrow[i+1];
-	int j_ri = hfirstinrow_ri[i];
-
-	TVX sum;
-	sum = 0.0;
-	
-	for (int j = minj; j < maxj; j++, j_ri++)
-	  sum += lfact[j] * hy(rowindex2[j_ri]);
-	
-	hy(i) -= sum;
-      }
-
-    timerLt.Stop();
-
-    if (inner)
-      {
-	for (int i = 0; i < n; i++)
-	  if (inner->Test(i))
-	    fy(i) += s * hy(order[i]);
-      }
-    else if (cluster)
-      {
-	for (int i = 0; i < n; i++)
-	  if ((*cluster)[i])
-	    fy(i) += s * hy(order[i]);
-      }
-    else
-      {
-	for (int i = 0; i < n; i++)
-	  fy(i) += s * hy(order[i]);
-      }
-
-  }
-  */  
 
 
 
