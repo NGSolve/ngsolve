@@ -9,12 +9,12 @@
 
 #include "taskmanager.hpp"
 
-
+/*
 #ifdef USE_NUMA
 #include <numa.h>
 #include <sched.h>
 #endif
-
+*/
 
 
 // #define CPP11_THREADS 

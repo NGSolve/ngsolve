@@ -66,7 +66,76 @@ namespace ngla
 #endif
 
 
+#ifdef USE_NUMA
+template <typename T>
+class NumaDistributedArray : public Array<T,size_t>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaDistributedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaDistributedArray (size_t s)
+    : Array<T,size_t> (s, (T*)numa_alloc_local(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
 
+    int avail = numa_available();
+    int num_nodes = numa_num_configured_nodes();
+    size_t pagesize = numa_pagesize();
+    
+    int npages = ceil ( double(s)*sizeof(T) / pagesize );
+
+    cout << "size = " << numa_size << endl;
+    cout << "npages = " << npages << endl;
+
+    for (int i = 0; i < num_nodes; i++)
+      {
+        int beg = (i * npages) / num_nodes;
+        int end = ( (i+1) * npages) / num_nodes;
+        cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
+        numa_tonode_memory(numa_ptr+beg*pagesize/sizeof(T), (end-beg)*pagesize, i);
+      }
+  }
+
+  ~NumaDistributedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaDistributedArray & operator= (NumaDistributedArray && a2)
+  {
+    Array<T,size_t>::operator= ((Array<T,size_t>&&)a2);  
+  /*
+    ngstd::Swap (this->size, a2.size);
+    ngstd::Swap (this->data, a2.data);
+    ngstd::Swap (this->allocsize, a2.allocsize);
+    ngstd::Swap (this->mem_to_delete, a2.mem_to_delete);
+  */
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaDistributedArray & b)
+  {
+    Array<T,size_t>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T,size_t>::SetSize(size);
+  }
+};
+#else
+
+  template <typename T>
+  using NumaDistributeArray = Array<T>;
+  
+#endif
 
 
 
@@ -84,7 +153,8 @@ namespace ngla
     size_t nze; 
 
     /// column numbers
-    Array<int, size_t> colnr;
+    // Array<int, size_t> colnr;
+    NumaDistributedArray<int> colnr;
 
     /// pointer to first in row
     Array<size_t> firsti;
@@ -252,7 +322,8 @@ namespace ngla
 					 public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    Array<TM, size_t> data;
+    // Array<TM, size_t> data;
+    NumaDistributedArray<TM> data;
     VFlatVector<typename mat_traits<TM>::TSCAL> asvec;
     TM nul;
 
@@ -261,39 +332,37 @@ namespace ngla
 
     SparseMatrixTM (int as, int max_elsperrow)
       : BaseSparseMatrix (as, max_elsperrow),
-	nul(TSCAL(0))
+	nul(TSCAL(0)), data(nze)
     {
-      data.SetSize (nze);
+      ; 
     }
 
     SparseMatrixTM (const Array<int> & elsperrow, int awidth)
       : BaseSparseMatrix (elsperrow, awidth), 
-	nul(TSCAL(0))
+	nul(TSCAL(0)), data(nze)
     {
-      data.SetSize (nze);
+      ; 
     }
 
     SparseMatrixTM (int size, const Table<int> & rowelements, 
 		    const Table<int> & colelements, bool symmetric)
       : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
-	nul(TSCAL(0))
+	nul(TSCAL(0)), data(nze)
     { 
-      data.SetSize (nze);
+      ; 
     }
 
     SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
       : BaseSparseMatrix (agraph, stealgraph), 
-	nul(TSCAL(0))
+	nul(TSCAL(0)), data(nze)
     { 
-      data.SetSize (nze);
       FindSameNZE();
     }
 
     SparseMatrixTM (const SparseMatrixTM & amat)
     : BaseSparseMatrix (amat), 
-      nul(TSCAL(0)) 
+      nul(TSCAL(0)), data(nze)
     { 
-      data.SetSize(nze);
       AsVector() = amat.AsVector(); 
     }
       
@@ -723,8 +792,11 @@ namespace ngla
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
 
-
+#ifdef GOLD
+#include <sparsematrix_spec.hpp>
+#else
 #include "sparsematrix_spec.hpp"
+#endif
 
   
 #ifdef FILE_SPARSEMATRIX_CPP
