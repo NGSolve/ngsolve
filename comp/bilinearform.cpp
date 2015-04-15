@@ -486,12 +486,6 @@ namespace ngcomp
       }
     
 
-    RunWithTaskManager 
-      ( [&] () 
-        { 
-
-
-
     try
       {
 
@@ -533,7 +527,6 @@ namespace ngcomp
     */
     DoAssemble(lh);
 
-        } );
 
     if (timing)
       {
@@ -547,7 +540,8 @@ namespace ngcomp
         int steps = 0;
         do
           {
-            vecf = (*mats.Last()) * vecu;
+            // vecf = (*mats.Last()) * vecu;
+            vecf = Transpose (*mats.Last()) * vecu;
             steps++;
             time = WallTime()-starttime;
           }

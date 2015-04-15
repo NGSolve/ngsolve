@@ -779,11 +779,6 @@ namespace ngstd
     /// steal array 
     INLINE Array & operator= (Array && a2)
     {
-      allocsize = 0;
-      mem_to_delete = nullptr;
-      size = 0;
-      data = nullptr;
-
       ngstd::Swap (size, a2.size);
       ngstd::Swap (data, a2.data);
       ngstd::Swap (allocsize, a2.allocsize);

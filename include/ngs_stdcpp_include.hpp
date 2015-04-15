@@ -90,6 +90,11 @@
 #include <omp.h>
 #endif
 
+#ifdef USE_NUMA
+#include <numa.h>
+#include <sched.h>
+#endif
+
 
 #ifdef __CUDACC__
 #define CUDA
