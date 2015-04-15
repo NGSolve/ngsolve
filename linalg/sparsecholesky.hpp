@@ -40,6 +40,9 @@ namespace ngla
      A sparse cholesky factorization.
      The unknowns are reordered by the minimum degree
      ordering algorithm
+
+     computs A = L D L^t
+     L is stored column-wise
   */
 
   template<class TM>
@@ -48,13 +51,40 @@ namespace ngla
   class SparseCholeskyTM : public SparseFactorization
   {
   protected:
-    int height, nze;
+    // height of the matrix
+    int height;
 
-    Array<int, size_t> order, firstinrow, firstinrow_ri, rowindex2;
+    // number of non-zero entries in the L-factor
+    int nze;
 
+    // the reordering (original dofnr i -> order[i])
+    Array<int, size_t> order;
+    
+    // L-factor in compressed storage
+    Array<TM, size_t> lfact;
+
+    // index-array to lfact
+    Array<int, size_t> firstinrow;
+
+    // diagonal 
+    Array<TM, size_t> diag;
+
+
+    // row-indices of non-zero entries
+    // all row-indices within one block are identic, and stored just once
+    Array<int, size_t> rowindex2;
+    // index-array to rowindex
+    Array<int, size_t> firstinrow_ri;
+    
+    // blocknr of dof
     Array<int> blocknrs;
-    Array<int> blocks; // block nr. i has dofs  [blocks[i], blocks[i+1])
+
+    // block i has dofs  [blocks[i], blocks[i+1])
+    Array<int> blocks; 
+
+    // dependency graph for elimination
     Table<int> block_dependency; 
+
 
     class MicroTask
     {
@@ -70,12 +100,13 @@ namespace ngla
     Table<int> micro_dependency_trans;     
 
 
-    Array<TM, size_t> lfact;
-    Array<TM, size_t> diag;
-
-    ///
+    //
     MinimumDegreeOrdering * mdo;
+
+    // maximal non-zero entries in a column
     int maxrow;
+
+    // the original matrix
     const SparseMatrixTM<TM> & mat;
 
   public:
@@ -130,8 +161,10 @@ namespace ngla
     { Set (order[i], order[j], val); }
 
 
+    // the dofs of block bnr
     IntRange BlockDofs (int bnr) const { return Range(blocks[bnr], blocks[bnr+1]); }
 
+    // the external dofs of block bnr
     FlatArray<int> BlockExtDofs (int bnr) const
     {
       auto range = BlockDofs (bnr);
@@ -165,10 +198,12 @@ namespace ngla
     using BASE::order;
     using BASE::firstinrow;
 
+    using BASE::blocks;
     using BASE::MicroTask;
     using BASE::microtasks;
     using BASE::micro_dependency;
     using BASE::micro_dependency_trans;
+    using BASE::block_dependency;
     using BASE::BlockDofs;
     using BASE::BlockExtDofs;
   public:
@@ -196,8 +231,8 @@ namespace ngla
     }
 
 
-    void SolveBlock (int i, FlatVector<> hy) const;
-    void SolveBlockT (int i, FlatVector<> hy) const;
+    void SolveBlock (int i, FlatVector<TV> hy) const;
+    void SolveBlockT (int i, FlatVector<TV> hy) const;
   };
 
 
