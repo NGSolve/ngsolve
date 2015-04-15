@@ -74,7 +74,6 @@ set(ngs_install_dir RUNTIME DESTINATION bin COMPONENT ngsolve LIBRARY DESTINATIO
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_BINARY_DIR}")
 include_directories ("${INSTALL_DIR}/include")
@@ -251,16 +250,6 @@ if(USE_PARDISO)
 endif(USE_PARDISO)
 
 #######################################################################
-if(USE_GOLD)
-    add_definitions(-DGOLD -DJS)
-    find_path(NGS_GOLD_DIR ngstd_gold.hpp)
-    include_directories(${NGS_GOLD_DIR})
-    if(NOT INTEL_MIC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma")
-    endif(NOT INTEL_MIC)
-endif(USE_GOLD)
-
-#######################################################################
 if(INTEL_MIC)
     set(MKL_ARCH "mic")
     include(cmake_modules/mic.cmake)
@@ -288,6 +277,14 @@ if(USE_VTUNE)
         find_library(VTUNE_LIB libittnotify.a PATH ${VTUNE_DIR}/lib64)
     endif(INTEL_MIC)
 endif(USE_VTUNE)
+
+
+#######################################################################
+if(USE_GOLD)
+    find_path(NGS_GOLD_DIR ngstd_gold.hpp)
+    add_definitions(-DGOLD -DJS)
+    include_directories(BEFORE ${NGS_GOLD_DIR})
+endif(USE_GOLD)
 
 
 #######################################################################

@@ -24,7 +24,7 @@ endif(USE_CUDA)
 install( FILES
         basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp 
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
-        pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp		       
+        pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp sparsematrix_spec.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp vvector.hpp     
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp cuda_linalg.hpp
         DESTINATION include
