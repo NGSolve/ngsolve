@@ -12,6 +12,7 @@
 
 namespace ngstd
 {
+  class PajeTrace;
 
   class TaskInfo
   {
@@ -30,6 +31,7 @@ namespace ngstd
   
   class TaskManager
   {
+    PajeTrace *trace;
 
     class NodeData
     {

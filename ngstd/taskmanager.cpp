@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "taskmanager.hpp"
+#include "paje_interface.hpp"
 
 /*
 #ifdef USE_NUMA
@@ -132,6 +133,8 @@ namespace ngstd
       jobnr = 0;
       done = 0;
       active_workers = 0;
+      trace = new PajeTrace();
+      trace->Init(omp_get_max_threads());
     }
 
 
@@ -170,6 +173,11 @@ namespace ngstd
     while (active_workers)
       ;
     cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
+
+    static int cnt = 0;
+    char buf[100];
+    sprintf(buf, "ng%d.trace", cnt++);
+    trace->Write(buf);
   }
 
 
@@ -178,6 +186,7 @@ namespace ngstd
                                  int antasks)
   {
 
+    trace->StartJob(jobnr, afunc.target_type());
     for (int j = 0; j < num_nodes; j++)
       {
         while (nodedata[j]->participate > 0);
@@ -268,6 +277,7 @@ namespace ngstd
     if (ex)
       throw Exception (*ex);
 
+    trace->StopJob();
     // atomic_thread_fence (memory_order_acquire);
   }
     
@@ -329,7 +339,9 @@ namespace ngstd
                 ti.task_nr = mytasks.First()+mytask;
                 ti.ntasks = ntasks;
                 
+                trace->StartTask(ti.thread_nr, ti.task_nr, jobnr);
                 (*func)(ti); 
+                trace->StopTask(ti.thread_nr);
                 if (++mynode_data.complete_cnt == mytasks.Size())
                   complete[mynode] = true;
               }
