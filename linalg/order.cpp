@@ -103,8 +103,6 @@ namespace ngla
 
 
 
-
-
   int MinimumDegreeOrdering :: CalcDegree (int v1)
   {
     // static Timer t("MDO::CalcDegree");
@@ -631,30 +629,9 @@ namespace ngla
   }
 
 
-
-  /*
-  int MinimumDegreeOrdering :: NumCliques (int v) const
-  {
-    static Timer t("MinimumDegreeOrdering::NumCliques");
-    RegionTimer reg(t);
-
-    int cnt = 0;
-    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
-      cnt++;
-
-    if (cnt != vertices[v].numcliques)
-      {
-        cerr << "numcliques wrong, cnt = " << cnt << " =!= " << vertices[v].numcliques << endl;
-      }
-    return cnt;
-  }
-  */
-
-
   void MinimumDegreeOrdering :: SetFlagNodes (int v)
   {
-    CliqueEl * p1 = cliques[v];
-    while (p1)
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
 	do
@@ -663,14 +640,12 @@ namespace ngla
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
   }
 
   void MinimumDegreeOrdering :: ClearFlagNodes (int v)
   {
-    CliqueEl * p1 = cliques[v];
-    while (p1)
+    for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
       {
 	CliqueEl * p2 = p1;
 	do
@@ -679,44 +654,21 @@ namespace ngla
 	    p2 = p2->next;
 	  }
 	while (p2 != p1);
-	p1 = p1->nextcl;
       }
   }
 
   void MinimumDegreeOrdering :: SetFlagCliques (int v)
   {
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
-      {
-        p1->SetFlag (true);
-        /*
-	CliqueEl * p2 = p1;
-	do
-	  {
-	    p2->SetFlag (true);
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
-        */
-      }
+      p1->SetFlag (true);
   }
+
 
   void MinimumDegreeOrdering :: ClearFlagCliques (int v)
   {
     for (CliqueEl * p1 = cliques[v]; p1; p1 = p1->nextcl)
-      {
-        p1->SetFlag (false);
-        /*
-	CliqueEl * p2 = p1;
-	do
-	  {
-	    p2->SetFlag (false);
-	    p2 = p2->next;
-	  }
-	while (p2 != p1);
-        */
-      }
+      p1->SetFlag (false);
   }
-
 
 
   void MinimumDegreeOrdering :: SetMaster (int master, int slave)
@@ -810,8 +762,5 @@ namespace ngla
       }
     list[nr].degree = 0;
   }
-
-
-
 
 }

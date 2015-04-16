@@ -274,7 +274,10 @@ namespace ngcomp
     int GetNLevels() const { return mats.Size(); }
 
     /// is the form symmetric ?
-    bool IsSymmetric(void) const { return symmetric; }
+    bool IsSymmetric() const { return symmetric; }
+
+    /// is the form symmetric and positive definite ?
+    bool IsSPD() const { return spd; }
 
     /// don't assemble the matrix
     void SetNonAssemble (bool na = true) { nonassemble = na; }

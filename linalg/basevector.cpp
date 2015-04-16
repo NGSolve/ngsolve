@@ -54,9 +54,22 @@ namespace ngla
   {
     static Timer t("BaseVector::L2Norm");
     RegionTimer reg(t);
-    t.AddFlops (FVDouble().Size());
 
-    return ngbla::L2Norm (FVDouble());
+    // return ngbla::L2Norm (FVDouble());
+
+    FlatVector<double> me = FVDouble();
+    t.AddFlops (me.Size());
+    
+    double sum = 0;
+    ParallelForRange ( me.Range(),
+                       [&] (IntRange r) 
+                       {
+                         double mysum = ngbla::L2Norm2 (me.Range(r));
+#pragma omp atomic
+                         sum += mysum;
+                       });
+
+    return sqrt(sum);
   }
 
   BaseVector & BaseVector :: Scale (double scal)

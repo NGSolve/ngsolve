@@ -512,7 +512,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// default constructor
-    Vector () : FlatVector<T> (0, (T*)0) { ; }
+    Vector () : FlatVector<T> (0, (T*)nullptr) { ; }
 
     /// allocate vector
     explicit Vector (int as) : FlatVector<T> (as, new T[as]) { ; }
@@ -559,7 +559,10 @@ namespace ngbla
       if (this->size == as) return;
       delete [] this->data;
       this->size = as;
-      this->data = new T[this->size];
+      if (as != 0)
+        this->data = new T[this->size];
+      else
+        this->data = nullptr;
     }
 
     /// evaluate matrix expression

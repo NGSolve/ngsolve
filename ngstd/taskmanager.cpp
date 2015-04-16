@@ -133,9 +133,22 @@ namespace ngstd
       jobnr = 0;
       done = 0;
       active_workers = 0;
+
+      num_threads = omp_get_max_threads();
+
       trace = new PajeTrace();
-      trace->Init(omp_get_max_threads());
+      trace->Init(num_threads);
     }
+
+
+  TaskManager :: ~TaskManager ()
+  {
+    static int cnt = 0;
+    char buf[100];
+    sprintf(buf, "ng%d.trace", cnt++);
+    trace->Write(buf);
+    delete trace;
+  }
 
 
   void TaskManager :: StartWorkers()
@@ -144,7 +157,6 @@ namespace ngstd
 
 #ifdef CPP11_THREADS
 
-    num_threads = omp_get_max_threads();
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
@@ -152,7 +164,6 @@ namespace ngstd
 
 #else
 
-    num_threads = omp_get_num_threads();
     for (int i = 0; i < num_threads-1; i++)
 #pragma omp task
       {
@@ -173,11 +184,6 @@ namespace ngstd
     while (active_workers)
       ;
     cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
-
-    static int cnt = 0;
-    char buf[100];
-    sprintf(buf, "ng%d.trace", cnt++);
-    trace->Write(buf);
   }
 
 

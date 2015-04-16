@@ -126,7 +126,7 @@ namespace ngstd
                 int status;
                 char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
                 string name = realname;
-                name.erase( name.find('}')+1);
+                // name.erase( name.find('}')+1);
                 job_names[j.type] = name;
                 free(realname);
               }
