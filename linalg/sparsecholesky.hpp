@@ -36,6 +36,94 @@ namespace ngla
   };
 
 
+
+#ifdef USE_NUMA
+
+template <typename T>
+class NumaInterleavedArray : public Array<T,size_t>
+{
+  T * numa_ptr;
+  size_t numa_size;
+public:
+  NumaInterleavedArray () { numa_size = 0; numa_ptr = nullptr; }
+  NumaInterleavedArray (size_t s)
+    : Array<T,size_t> (s, (T*)numa_alloc_interleaved(s*sizeof(T)))
+  {
+    numa_ptr = this->data;
+    numa_size = s;
+
+    /*
+    int avail = numa_available();
+    int num_nodes = numa_num_configured_nodes();
+    size_t pagesize = numa_pagesize();
+    
+    int npages = ceil ( double(s)*sizeof(T) / pagesize );
+
+    cout << "size = " << numa_size << endl;
+    cout << "npages = " << npages << endl;
+
+    for (int i = 0; i < num_nodes; i++)
+      {
+        int beg = (i * npages) / num_nodes;
+        int end = ( (i+1) * npages) / num_nodes;
+        cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
+        numa_tonode_memory(numa_ptr+beg*pagesize/sizeof(T), (end-beg)*pagesize, i);
+      }
+    */
+  }
+
+  ~NumaInterleavedArray ()
+  {
+    numa_free (numa_ptr, numa_size*sizeof(T));
+  }
+
+  NumaInterleavedArray & operator= (T val)
+  {
+    Array<T,size_t>::operator= (val);      
+    return *this;
+  }
+
+  NumaInterleavedArray & operator= (NumaInterleavedArray && a2)
+  {
+    Array<T,size_t>::operator= ((Array<T,size_t>&&)a2);  
+  /*
+    ngstd::Swap (this->size, a2.size);
+    ngstd::Swap (this->data, a2.data);
+    ngstd::Swap (this->allocsize, a2.allocsize);
+    ngstd::Swap (this->mem_to_delete, a2.mem_to_delete);
+  */
+    ngstd::Swap (numa_ptr, a2.numa_ptr);
+    ngstd::Swap (numa_size, a2.numa_size);
+    return *this;
+  }
+
+  void Swap (NumaInterleavedArray & b)
+  {
+    Array<T,size_t>::Swap(b);    
+    ngstd::Swap (numa_ptr, b.numa_ptr);
+    ngstd::Swap (numa_size, b.numa_size);
+  }
+
+  void SetSize (size_t size)
+  {
+    cerr << "************************* NumaDistArray::SetSize not overloaded" << endl;
+    Array<T,size_t>::SetSize(size);
+  }
+};
+#else
+
+  template <typename T>
+  using NumaDistributeArray = Array<T>;
+  
+#endif
+
+
+
+
+
+
+
+
   /**
      A sparse cholesky factorization.
      The unknowns are reordered by the minimum degree
@@ -61,7 +149,8 @@ namespace ngla
     Array<int, size_t> order;
     
     // L-factor in compressed storage
-    Array<TM, size_t> lfact;
+    // Array<TM, size_t> lfact;
+    NumaInterleavedArray<TM> lfact;
 
     // index-array to lfact
     Array<int, size_t> firstinrow;

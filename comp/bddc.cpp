@@ -206,6 +206,7 @@ namespace ngcomp
         : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
+      dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa.IsSPD() );
       weight.SetSize (fes->GetNDof());
       weight = 0;
 

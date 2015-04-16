@@ -61,6 +61,7 @@ namespace ngstd
   public:
     
     TaskManager();
+    ~TaskManager();
 
 
     void StartWorkers();

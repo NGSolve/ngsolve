@@ -167,7 +167,7 @@ namespace ngla
       {
         if (!symmetric)
           {
-
+            // SharedLoop sl(Range(ndof));
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
                {
@@ -176,6 +176,7 @@ namespace ngla
                  
                  auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
                  for (int i : myr)
+                 // for (int i : sl)                 
                    {
                      rowdofs.SetSize0();
                      if (includediag) rowdofs += i;
@@ -845,7 +846,13 @@ namespace ngla
   {
     if (task_manager)
       {
+        static Timer tinit("SparseMatrix::MultAdd (taskhandler) - init");
+        tinit.Start();
+
         static Timer t("SparseMatrix::MultAdd (taskhandler)");
+        static Timer tm("SparseMatrix::MultAdd (taskhandler) - mult");
+        static Timer tfinish("SparseMatrix::MultAdd (taskhandler) - finish");
+        RegionTimer reg1(t);
 	t.AddFlops (this->NZE());
 	// RegionTimer reg(t);
 
@@ -855,17 +862,41 @@ namespace ngla
         // copy local vectors
         static Timer tc("SparseMatrix::MultAdd - copy source vector (taskhandler)");
         tc.Start();
+        int ntasks = task_manager->GetNumThreads();
+
+        RegionTimer rf(tfinish);
+        tinit.Stop();
+        
+        /*
         Array<Vector<TVX>> locvecs(task_manager->GetNumNodes());
+
         task_manager ->CreateJob 
           ([&] (const TaskInfo & ti)
            {
              locvecs[ti.node_nr].SetSize(fx.Size());
-             locvecs[ti.node_nr] = fx;
+             // locvecs[ti.node_nr] = fx;
            }, task_manager->GetNumNodes());
+
+        task_manager -> CreateJob 
+          ([&] (TaskInfo & ti) 
+           {
+             int tasks_per_node = ti.ntasks / ti.nnodes;
+             int mypart = ti.task_nr / tasks_per_node;
+             int num_in_node = ti.task_nr % tasks_per_node;
+             
+             auto myrange = Range(fx.Size()).Split (num_in_node, tasks_per_node);
+
+             FlatVector<TVX> myfx = locvecs[ti.node_nr];
+
+             for (auto row : myrange) 
+               myfx(row) = fx(row);
+
+           }, ntasks);
+        */
+
         tc.Stop();
 
-	RegionTimer reg(t);
-        int ntasks = task_manager->GetNumThreads();
+	tm.Start();
         task_manager -> CreateJob 
           ([&] (TaskInfo & ti) 
            {
@@ -874,14 +905,22 @@ namespace ngla
              int num_in_part = ti.task_nr % tasks_per_part;
              
              auto myrange = balance[mypart].Split (num_in_part, tasks_per_part);
-             FlatVector<TVX> myfx = locvecs[ti.node_nr];
-             // TVY sum = TVY(0.0);
-             // cout << "on node " << ti.node_nr << ", range = " << myrange << endl;
+             // FlatVector<TVX> myfx = locvecs[ti.node_nr];
+
              for (auto row : myrange) 
-               fy(row) += s * RowTimesVector (row, myfx);
-             // sum += s * RowTimesVector (row, myfx);
-             // fy(myrange.begin()) = sum;
+               fy(row) += s * RowTimesVector (row, fx);
+
            }, ntasks);
+	tm.Stop();
+        
+        /*
+        task_manager ->CreateJob 
+          ([&] (const TaskInfo & ti)
+           {
+             locvecs[ti.node_nr].SetSize(0);
+           }, task_manager->GetNumNodes());
+        */
+
 
         /*
         ParallelFor (balance, [fx,fy,s,this](int row) 
@@ -889,6 +928,7 @@ namespace ngla
                        fy(row) += s * RowTimesVector (row, fx);
                      });
         */
+
 	return;
       }
     

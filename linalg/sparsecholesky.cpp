@@ -127,7 +127,8 @@ namespace ngla
     mdo = 0;
 
     diag.SetSize(n);
-    lfact.SetSize (nze);
+    // lfact.SetSize (nze);
+    lfact = NumaInterleavedArray<TM> (nze);
     lfact = TM(0.0);     // first touch
     
     endtime = clock();
@@ -810,7 +811,11 @@ namespace ngla
     */
 
     int w = b1.Width();
-    int nbl = w / 64 + 1;
+    int nbl = w / 128 + 1;
+
+    // int maxthds = omp_get_max_threads();
+    // omp_set_num_threads(1);
+    static Timer tl("SparseCholesky, CalcAtT, lapack");
 
     if (nbl <= 1)
       {
@@ -826,14 +831,23 @@ namespace ngla
 
                                   auto rowr = Range(w).Split (br, nbl);
                                   auto colr = Range(w).Split (bc, nbl);
-                                  
+
+                                  tl.Start();
                                   btb.Rows(rowr).Cols(colr) = Trans(b1.Cols(rowr)) * b1.Cols(colr) | Lapack;
-                                  
+                                  tl.Stop();
+                                  tl.AddFlops (rowr.Size()*colr.Size()*b1.Height());
+                                  /*
+                                  Matrix<> t1 = Trans(b1.Cols(rowr));
+                                  Matrix<> t2 = Trans(b1.Cols(colr));
+                                  btb.Rows(rowr).Cols(colr) = t1 * Trans(t2) | Lapack;
+                                  */
                                   if (br != bc)
                                     btb.Rows(colr).Cols(rowr) = Trans (btb.Rows(rowr).Cols(colr));
 
                                 }, nbl*nbl);
 
+
+    // omp_set_num_threads(maxthds);
   }
 
 
@@ -849,8 +863,6 @@ namespace ngla
   template <>
   void SparseCholeskyTM<double> :: FactorSPD () 
   {
-    // task_manager -> StopWorkers();
-
     static Timer factor_timer("SparseCholesky::Factor SPD");
 
     static Timer timerb("SparseCholesky::Factor - B");
@@ -871,8 +883,8 @@ namespace ngla
     int * hrowindex2 = rowindex2.Addr(0);
     // double * hlfact = lfact.Addr(0);
     
-    // enum { BS = 4 };
-    // Array<double> sum(BS*maxrow);
+
+
 
 
     for (int i1 = 0; i1 < n;  )
@@ -884,7 +896,7 @@ namespace ngla
         
         timerb.Start();
 
-	// same rows
+	// rows in same block ...
 	int mi = last_same - i1;
 
 
@@ -1059,7 +1071,7 @@ namespace ngla
                   
                   lfact[firstj] -= sum[k];
                   firstj++;
-                    firstj_ri++;
+                  firstj_ri++;
                 }
              });
 
@@ -1583,8 +1595,18 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
     Vector<TVX> hy(n);
+
+    /*
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
+    */
+    ParallelFor (n, [&] (int i)
+                 {
+                   hy(order[i]) = fx(i);
+                 });
+
+    timer1.Start();
+
 
     /*
     // sequential verision 
@@ -1706,11 +1728,11 @@ namespace ngla
     // solve with the diagonal
 
     const TM * hdiag = &diag[0];
-    for (int i = 0; i < n; i++)
-      {
-        TVX tmp = hdiag[i] * hy[i];
-        hy[i] = tmp;
-      }
+    ParallelFor (n, [&] (int i)
+                 {
+                   TVX tmp = hdiag[i] * hy[i];
+                   hy[i] = tmp;
+                 });
 
 
     timer2.Start();
@@ -1776,9 +1798,16 @@ namespace ngla
 
     if (inner)
       {
+        /*
 	for (int i = 0; i < n; i++)
 	  if (inner->Test(i))
 	    fy(i) += s * hy(order[i]);
+        */
+        ParallelFor (n, [&] (int i)
+                     {
+                       if (inner->Test(i))
+                         fy(i) += s * hy(order[i]);
+                     });
       }
     else if (cluster)
       {
@@ -1788,8 +1817,13 @@ namespace ngla
       }
     else
       {
-	for (int i = 0; i < n; i++)
-	  fy(i) += s * hy(order[i]);
+	// for (int i = 0; i < n; i++)
+        // fy(i) += s * hy(order[i]);
+        ParallelFor (n, [&] (int i)
+                     {
+                       fy(i) += s * hy(order[i]);
+                     });
+
       }
 
   }
