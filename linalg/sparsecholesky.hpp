@@ -86,12 +86,6 @@ public:
   NumaInterleavedArray & operator= (NumaInterleavedArray && a2)
   {
     Array<T,size_t>::operator= ((Array<T,size_t>&&)a2);  
-  /*
-    ngstd::Swap (this->size, a2.size);
-    ngstd::Swap (this->data, a2.data);
-    ngstd::Swap (this->allocsize, a2.allocsize);
-    ngstd::Swap (this->mem_to_delete, a2.mem_to_delete);
-  */
     ngstd::Swap (numa_ptr, a2.numa_ptr);
     ngstd::Swap (numa_size, a2.numa_size);
     return *this;
@@ -113,7 +107,7 @@ public:
 #else
 
   template <typename T>
-  using NumaDistributeArray = Array<T>;
+  using NumaInterleavedArray = Array<T>;
   
 #endif
 

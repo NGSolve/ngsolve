@@ -92,6 +92,38 @@ namespace ngla
     CalcBalancing ();
   }
 
+
+
+  template <typename FUNC>
+  void MergeArrays (FlatArray<int*> ptrs,
+                    FlatArray<int> sizes,
+                    FUNC f)
+  {
+    int nactive = 0;
+    for (auto s : sizes)
+      if (s) nactive++;
+    
+    while (nactive)
+      {
+        int minval = numeric_limits<int>::max();
+        for (int i : sizes.Range())
+          {
+            if (sizes[i])
+              minval = min2(minval, *ptrs[i]);
+          }
+        f(minval);
+        for (int i : sizes.Range())
+          {
+            if (sizes[i] && (*ptrs[i] == minval))
+              {
+                ptrs[i]++;
+                sizes[i]--;
+                if (sizes[i] == 0)
+                  nactive--;
+              }
+          }
+      }
+  }  
   
 
   inline void MergeSortedArrays (FlatArray<int> in1, FlatArray<int> in2,
@@ -171,10 +203,41 @@ namespace ngla
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
                {
+                 /*
                  Array<int> rowdofs;
                  Array<int> rowdofs1;
-                 
+                 */
+                 ArrayMem<int, 50> sizes;
+                 ArrayMem<int*, 50> ptrs;
+
+
                  auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
+
+                 for (int i : myr)
+                   {
+                     sizes.SetSize(dof2element[i].Size());
+                     ptrs.SetSize(dof2element[i].Size());
+                     for (int j : dof2element[i].Range())
+                       {
+                         sizes[j] = colelements[dof2element[i][j]].Size();
+                         ptrs[j] = &colelements[dof2element[i][j]][0];
+                       }
+                     
+                     int cnti = 0;
+                     if (loop == 1)
+                       {
+                         MergeArrays(ptrs, sizes, [&] (int col) { cnti++; } );
+                         cnt[i] = cnti;
+                       }
+                     else
+                       MergeArrays(ptrs, sizes, [&] (int col) 
+                                   {
+                                     colnr[firsti[i]+cnti] = col;
+                                     cnti++; 
+                                   } );
+                   }
+
+                 /*
                  for (int i : myr)
                  // for (int i : sl)                 
                    {
@@ -193,6 +256,7 @@ namespace ngla
                      else
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
+                 */
                }, 
                10 * task_manager->GetNumThreads());
           }

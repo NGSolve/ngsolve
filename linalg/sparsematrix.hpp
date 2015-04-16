@@ -332,14 +332,14 @@ public:
 
     SparseMatrixTM (int as, int max_elsperrow)
       : BaseSparseMatrix (as, max_elsperrow),
-	nul(TSCAL(0)), data(nze)
+	data(nze), nul(TSCAL(0))
     {
       ; 
     }
 
     SparseMatrixTM (const Array<int> & elsperrow, int awidth)
       : BaseSparseMatrix (elsperrow, awidth), 
-	nul(TSCAL(0)), data(nze)
+	data(nze), nul(TSCAL(0))
     {
       ; 
     }
@@ -347,21 +347,21 @@ public:
     SparseMatrixTM (int size, const Table<int> & rowelements, 
 		    const Table<int> & colelements, bool symmetric)
       : BaseSparseMatrix (size, rowelements, colelements, symmetric), 
-	nul(TSCAL(0)), data(nze)
+	data(nze), nul(TSCAL(0))
     { 
       ; 
     }
 
     SparseMatrixTM (const MatrixGraph & agraph, bool stealgraph)
       : BaseSparseMatrix (agraph, stealgraph), 
-	nul(TSCAL(0)), data(nze)
+	data(nze), nul(TSCAL(0))
     { 
       FindSameNZE();
     }
 
     SparseMatrixTM (const SparseMatrixTM & amat)
     : BaseSparseMatrix (amat), 
-      nul(TSCAL(0)), data(nze)
+      data(nze), nul(TSCAL(0))
     { 
       AsVector() = amat.AsVector(); 
     }
