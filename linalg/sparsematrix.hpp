@@ -133,7 +133,7 @@ public:
 #else
 
   template <typename T>
-  using NumaDistributeArray = Array<T>;
+  using NumaDistributedArray = Array<T>;
   
 #endif
 
