@@ -439,7 +439,7 @@ namespace ngla
 	    blockmat(j,k) = mat(blocktable[i][j], blocktable[i][k]);
 
 	CalcInverse (blockmat);
-       });
+       }, 10*task_manager->GetNumThreads());
 
     *testout << "block coloring";
     
