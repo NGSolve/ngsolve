@@ -258,7 +258,10 @@ namespace ngstd
             
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
+
+            trace->StartTask(ti.thread_nr, ti.task_nr, jobnr);
             (*func)(ti); 
+            trace->StopTask(ti.thread_nr);
 
             if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;

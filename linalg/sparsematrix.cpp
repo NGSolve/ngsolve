@@ -94,10 +94,11 @@ namespace ngla
 
 
 
+  /*
   template <typename FUNC>
-  void MergeArrays (FlatArray<int*> ptrs,
-                    FlatArray<int> sizes,
-                    FUNC f)
+  INLINE void MergeArrays (FlatArray<int*> ptrs,
+                           FlatArray<int> sizes,
+                           FUNC f)
   {
     int nactive = 0;
     for (auto s : sizes)
@@ -106,25 +107,75 @@ namespace ngla
     while (nactive)
       {
         int minval = numeric_limits<int>::max();
-        for (int i : sizes.Range())
-          {
-            if (sizes[i])
-              minval = min2(minval, *ptrs[i]);
-          }
+        for (int * ptr : ptrs)
+          if (ptr)
+            minval = min2(minval, *ptr);
+
         f(minval);
         for (int i : sizes.Range())
-          {
-            if (sizes[i] && (*ptrs[i] == minval))
-              {
-                ptrs[i]++;
-                sizes[i]--;
-                if (sizes[i] == 0)
-                  nactive--;
-              }
-          }
+          if (ptrs[i] && (*ptrs[i] == minval))
+            {
+              ptrs[i]++;
+              sizes[i]--;
+              if (sizes[i] == 0)
+                {
+                    nactive--;
+                    ptrs[i] = nullptr;
+                  }
+            }
       }
   }  
-  
+  */
+
+
+
+  template <typename FUNC>
+  INLINE void MergeArrays (FlatArray<int*> ptrs,
+                           FlatArray<int> sizes,
+                           FlatArray<int> minvals,
+                           FUNC f)
+  {
+    int nactive = 0;
+    for (auto i : sizes.Range())
+      if (sizes[i]) 
+        {
+          nactive++;
+          minvals[i] = *ptrs[i];
+        }
+      else
+        minvals[i] = numeric_limits<int>::max();
+    
+    while (nactive)
+      {
+        int minval = minvals[0];
+        for (int i = 1; i < minvals.Size(); i++)
+          minval = min2(minval, minvals[i]);
+
+        
+        f(minval);
+
+        for (int i : sizes.Range())
+          if (minvals[i] == minval)
+            {
+              ptrs[i]++;
+              sizes[i]--;
+              if (sizes[i] == 0)
+                {
+                  nactive--;
+                  minvals[i] = numeric_limits<int>::max();
+                }
+              else
+                minvals[i] = *ptrs[i];
+            }
+      }
+}  
+
+
+
+
+
+
+
 
   inline void MergeSortedArrays (FlatArray<int> in1, FlatArray<int> in2,
                                  Array<int> & out)
@@ -195,11 +246,22 @@ namespace ngla
     cnt = 0;
 
 
+    class ProfileData
+    {
+    public:
+      double tstart, tend;
+      int size;
+    };
+    Array<ProfileData> prof(ndof);
+    
+    
+
+
     for (int loop = 1; loop <= 2; loop++)
       {
         if (!symmetric)
           {
-            // SharedLoop sl(Range(ndof));
+            SharedLoop sl(Range(ndof));
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
                {
@@ -209,14 +271,19 @@ namespace ngla
                  */
                  ArrayMem<int, 50> sizes;
                  ArrayMem<int*, 50> ptrs;
-
-
+                 ArrayMem<int,50> tmp;
+                 
                  auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
-
+                 
                  for (int i : myr)
+                   // for (int i : sl)                 
                    {
+                     prof[i].tstart = omp_get_wtime();
+                     prof[i].size = dof2element[i].Size();
+
                      sizes.SetSize(dof2element[i].Size());
                      ptrs.SetSize(dof2element[i].Size());
+                     tmp.SetSize(dof2element[i].Size());
                      for (int j : dof2element[i].Range())
                        {
                          sizes[j] = colelements[dof2element[i][j]].Size();
@@ -226,15 +293,17 @@ namespace ngla
                      int cnti = 0;
                      if (loop == 1)
                        {
-                         MergeArrays(ptrs, sizes, [&] (int col) { cnti++; } );
+                         MergeArrays(ptrs, sizes, tmp, [&] (int col) { cnti++; } );
                          cnt[i] = cnti;
                        }
                      else
-                       MergeArrays(ptrs, sizes, [&] (int col) 
+                       MergeArrays(ptrs, sizes, tmp, [&] (int col) 
                                    {
                                      colnr[firsti[i]+cnti] = col;
                                      cnti++; 
                                    } );
+
+                     prof[i].tend = omp_get_wtime();
                    }
 
                  /*
@@ -257,8 +326,8 @@ namespace ngla
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
                  */
-               }, 
-               10 * task_manager->GetNumThreads());
+               },
+               20 * task_manager->GetNumThreads());
           }
         else
           {
@@ -349,7 +418,20 @@ namespace ngla
             ;
           }
       }
-    
+    /*
+    ofstream out("creategraph.out");
+    double sumtime = 0;
+    for (int i = 0; i < prof.Size(); i++)
+      {
+        out << i << " " << prof[i].size << " ";
+        double t = (prof[i].tend-prof[i].tstart) * 1e6;
+        if (t > 100) out << "           ";
+        out << t << endl;
+        sumtime += t;
+      }
+    cout << "sum time = " << sumtime << endl;
+    cout << "sum time per thread = " << sumtime/48 << endl;
+    */
        });
   }
 

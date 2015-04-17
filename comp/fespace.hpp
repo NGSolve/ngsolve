@@ -613,7 +613,7 @@ namespace ngcomp
               ( [&] (const TaskInfo & ti) 
                 {
                   LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-                  Array<int> temp_dnums;
+                  ArrayMem<int,100> temp_dnums;
 
                   for (int mynr : sl)
                     {

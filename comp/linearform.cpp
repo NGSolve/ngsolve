@@ -211,7 +211,36 @@ namespace ngcomp
 	  {
 	    ProgressOutput progress (ma, "assemble element", ma->GetNE());
 	    gcnt += ne;
+
+
+            /*
+              // no costs ...
+            SharedLoop sl (ma->GetNE());
+            task_manager -> CreateJob
+              ( [this, &clh, &sl] (const TaskInfo & ti) 
+                {
+                  LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                  ArrayMem<int,100> temp_dnums;
+
+                  for (int i : sl)
+                    {
+                      HeapReset hr(lh);
+                      FESpace::Element el(*fespace, 
+                                          ElementId (VOL, i),
+                                          temp_dnums);
+                      fespace->GetFE(el, lh);                  
+                    }
+                } );            
             
+
+                // 1ms costs at first call ???
+	    IterateElements 
+              (*fespace, VOL, clh, 
+               [&] (FESpace::Element el, LocalHeap & lh)
+               {
+                 const FiniteElement & fel = fespace->GetFE(el, lh);
+               });
+            */
             
 	    IterateElements 
               (*fespace, VOL, clh, 
