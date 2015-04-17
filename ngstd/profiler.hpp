@@ -56,6 +56,8 @@ inline double WallTime ()
 #define VT_OFF()
 #endif
 
+#include "paje_interface.hpp"
+
 namespace ngstd
 {
 
@@ -195,6 +197,7 @@ namespace ngstd
 
     /// change name
     static void SetName (int nr, const string & name) { names[nr] = name; }
+    static string GetName (int nr) { return names[nr]; }
     /// print profile
     NGS_DLL_HEADER static void Print (FILE * ost);
     //static void Print (ostream & ost);
@@ -234,13 +237,17 @@ namespace ngstd
     }
     void Start () 
     {
-      if (priority <= 1)
+      if (priority <= 1) {
 	NgProfiler::StartTimer (timernr);
+        if(trace) trace->StartTimer(timernr);
+      }
     }
     void Stop () 
     {
-      if (priority <= 1)
+      if (priority <= 1) {
 	NgProfiler::StopTimer (timernr);
+        if(trace) trace->StopTimer(timernr);
+      }
     }
     void AddFlops (double aflops)
     {

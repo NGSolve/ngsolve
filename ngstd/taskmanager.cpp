@@ -148,6 +148,7 @@ namespace ngstd
     sprintf(buf, "ng%d.trace", cnt++);
     trace->Write(buf);
     delete trace;
+    trace = nullptr;
   }
 
 

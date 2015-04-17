@@ -1,18 +1,14 @@
 #ifndef PAJE_INTERFACE_HPP_INCL__
 #define PAJE_INTERFACE_HPP_INCL__
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
-#include <map>
-#include <cxxabi.h>
 #include <omp.h>
 
 namespace ngstd
 {
+  extern class PajeTrace *trace;
   class PajeTrace
     {
-      stringstream trace;
       double start_time;
       int nthreads;
 
@@ -33,8 +29,24 @@ namespace ngstd
           double stop_time;
         };
 
-      vector<vector<Task> > tasks;
-      vector<Job> jobs;
+        struct TimerEvent
+          {
+            int timer_id;
+            double time;
+            bool is_start;
+
+            bool operator < (const TimerEvent & other) { return time < other.time; }
+          };
+
+        std::vector<std::vector<Task> > tasks;
+        std::vector<Job> jobs;
+        std::vector<TimerEvent> timer_events;
+
+      double GetTime() 
+        {
+          return omp_get_wtime() - start_time;
+        }
+          
 
     public:
       void Init(int anthreads)
@@ -47,164 +59,40 @@ namespace ngstd
           for(auto & t : tasks)
             t.reserve(100000);
           jobs.reserve(100000);
+          timer_events.reserve(100000);
+        }
+
+      void StartTimer(int timer_id) 
+        {
+          timer_events.push_back(TimerEvent{timer_id, GetTime(), true});
+        }
+
+      void StopTimer(int timer_id) 
+        {
+          timer_events.push_back(TimerEvent{timer_id, GetTime(), false});
         }
 
       void StartTask(int thread_id, int task_id, int job_id)
         {
-//           Task t;
-//           t.start_time = omp_get_wtime() - start_time;
-//           t.task_id = task_id;
-//           t.job_id = job_id;
-//           t.thread_id = thread_id;
-//           tasks[thread_id].push_back(t);
-          tasks[thread_id].push_back( Task{task_id, job_id, thread_id, omp_get_wtime()-start_time, 0.0} );
+          tasks[thread_id].push_back( Task{task_id, job_id, thread_id, GetTime(), 0.0} );
         }
 
       void StopTask(int thread_id)
         {
-          tasks[thread_id].back().stop_time = omp_get_wtime() - start_time;
+          tasks[thread_id].back().stop_time = GetTime();
         }
 
       void StartJob(int job_id, const std::type_info & type)
         {
-          jobs.push_back( Job{job_id, &type, omp_get_wtime()-start_time, 0.0 } );
+          jobs.push_back( Job{job_id, &type, GetTime(), 0.0 } );
         }
 
       void StopJob()
         {
-          jobs.back().stop_time = omp_get_wtime() - start_time;
+          jobs.back().stop_time = GetTime();
         }
 
-      void Write(const char *filename)
-        {
-          trace << header << endl;
-          trace << PajeDefineContainerType << '\t'
-            << "TM" << '\t'
-            << 0 << '\t'
-            << "\"Task Manager\"" << endl;
-
-          trace << PajeDefineContainerType << '\t'
-            << "T" << '\t'
-            << "TM" << '\t'
-            << "\"Thread\"" << endl;
-
-          trace << PajeDefineStateType << '\t'
-            << "J" << '\t'
-            << "TM" << '\t'
-            << "\"Job\"" << endl;
-
-          trace << PajeDefineStateType << '\t'
-            << "TS" << '\t'
-            << "T" << '\t'
-            << "\"Task\"" << endl;
-
-          trace << PajeCreateContainer << '\t'
-            << std::setprecision(15) << 1000*(omp_get_wtime()-start_time) << '\t'
-            << "tm" << '\t'
-            << "TM\t"
-            << "0\t"
-            << "\"The task manager\"" << endl;
-
-          for (int i=0; i<nthreads; i++)
-            {
-              trace << PajeCreateContainer << '\t'
-                << std::setprecision(15) << 1000*(omp_get_wtime()-start_time) << '\t'
-                << 't' << i << '\t'
-                << "T\t"
-                << "tm\t"
-                << "\"Thread " << i << '"' << endl;
-            }
-
-          int job_counter = 0;
-          map<const std::type_info *, int> job_map;
-          map<const std::type_info *, string> job_names;
-
-          for(Job & j : jobs)
-            if(job_map.find(j.type) == job_map.end())
-              {
-                job_map[j.type] = job_counter++;
-                int status;
-                char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
-                string name = realname;
-                // name.erase( name.find('}')+1);
-                job_names[j.type] = name;
-                free(realname);
-              }
-
-
-          int njob_types = job_map.size();
-          for( auto & job : job_map )
-            {
-              string name = job_names[job.first];
-              unsigned char u;
-              for (char c : name)
-                u+=c;
-              double x = 1.0*u/255;
-              double d = 1.0/6.0;
-              double r,g,b;
-              if(x<d)
-                r=1, g=6*x,b=0;
-              else if (x<2*d)
-                r=1.0-6*(x-d),g=1,b=0;
-              else if (x<3*d)
-                r=0, g=1,b=6*(x-2*d);
-              else if (x<4*d)
-                r=0, g=1-6*(x-3*d),b=1;
-              else if (x<5*d)
-                r=6*(x-4*d), g=0,b=1;
-              else
-                r=1, g=0,b=1-5*(x-d);
-
-              trace << PajeDefineEntityValue << '\t'
-                << 'J' << job.second << '\t'
-                << 'J' << '\t'
-                << '"' << job_names[job.first] << '"' << '\t'
-                << '"' << r << ' ' << g << ' ' << b << '"' << '\t' << endl;
-
-              trace << PajeDefineEntityValue << '\t'
-                << "TS" << job.second << '\t'
-                << "TS" << '\t'
-                << '"' << job_names[job.first] << '"' << '\t'
-                << '"' << r << ' ' << g << ' ' << b << '"' << '\t' << endl;
-            }
-
-
-          for(Job & j : jobs)
-            {
-              trace << PajePushState << '\t'
-                << std::setprecision(15) << 1000*j.start_time << '\t'
-                << 'J' << '\t'
-                << "tm" << '\t'
-                << 'J' << job_map[j.type] << endl;
-
-              trace << PajePopState << '\t'
-                << std::setprecision(15) << 1000*j.stop_time << '\t'
-                << 'J' << '\t'
-                << "tm" << '\t'
-                << endl;
-            }
-
-          for(auto & vtasks : tasks)
-            for (Task & t : vtasks) {
-                stringstream value;
-                value << "\"taskid: " << t.task_id << ','
-                  << jobs[t.job_id-1].job_id << '"';
-                trace << PajePushState << '\t'
-                  << std::setprecision(15) << 1000*t.start_time << '\t'
-                  << "TS" << '\t'
-                  << 't' << t.thread_id << '\t'
-                  << "TS" << job_map[jobs[t.job_id-1].type] << endl;
-
-                trace << PajePopState << '\t'
-                  << std::setprecision(15) << 1000*t.stop_time << '\t'
-                  << "TS" << '\t'
-                  << 't' << t.thread_id << '\t'
-                  << endl;
-            }
-          ofstream out(filename);
-          out << trace.str() << endl;
-          out.close();
-        }
+      void Write(const char *filename);
 
     private:
       enum

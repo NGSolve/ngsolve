@@ -7,6 +7,7 @@
 /* Date:   10. Mar. 2015                                             */
 /*********************************************************************/
 
+#include <atomic>
 
 
 
@@ -31,7 +32,7 @@ namespace ngstd
   
   class TaskManager
   {
-    PajeTrace *trace;
+//     PajeTrace *trace;
 
     class NodeData
     {
@@ -69,7 +70,6 @@ namespace ngstd
 
     int GetNumThreads() const { return num_threads; }
     int GetNumNodes() const { return num_nodes; }
-
 
     void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
