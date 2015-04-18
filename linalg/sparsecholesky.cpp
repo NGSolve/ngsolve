@@ -457,8 +457,8 @@ namespace ngla
   {
     static Timer factor_timer("SparseCholesky::Factor");
 
-    static Timer timerb("SparseCholesky::Factor - B");
-    static Timer timerc("SparseCholesky::Factor - C");
+    static Timer timerb("SparseCholesky::Factor - B", 3);
+    static Timer timerc("SparseCholesky::Factor - C", 3);
 
     RegionTimer reg (factor_timer);
 
