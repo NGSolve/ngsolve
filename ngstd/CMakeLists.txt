@@ -26,7 +26,8 @@ install( FILES
         profiler.hpp stringops.hpp symboltable.hpp table.hpp templates.hpp    
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
-        mycomplex.hpp tuple.hpp python_ngstd.hpp ngs_utils.hpp taskmanager.hpp   
+        mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp
+        taskmanager.hpp   
         DESTINATION include
         COMPONENT ngsolve_devel
        )
