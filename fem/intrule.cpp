@@ -1100,9 +1100,9 @@ namespace ngfem
           irx = &SelectIntegrationRuleJacobi10 (order);
           iry = &SelectIntegrationRule (ET_SEGM, order);
           
-          int sort[3] = { 0, 0, 0 };
+          int sort[3] = { 0, 1, 2 };
           eltrans.GetSort (FlatArray<int> (3, &sort[0]) );
-          int isort[3] = { 0, 0, 0 };
+          int isort[3];
           for (int i = 0; i < 3; i++) isort[sort[i]] = i;
           
           nip = irx->GetNIP() * iry->GetNIP();
