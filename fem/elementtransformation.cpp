@@ -68,6 +68,7 @@ namespace ngfem
     : pointmat(Trans(pmat))
   {
     fel = GetP1FE<DIMS> (type);
+    SetElementType (type);
   }
 
   template <int DIMS, int DIMR>

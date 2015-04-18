@@ -57,9 +57,9 @@ namespace ngstd
 
           tasks.resize(nthreads);
           for(auto & t : tasks)
-            t.reserve(100000);
-          jobs.reserve(100000);
-          timer_events.reserve(100000);
+            t.reserve(1000000);
+          jobs.reserve(1000000);
+          timer_events.reserve(1000000);
         }
 
       void StartTimer(int timer_id) 
