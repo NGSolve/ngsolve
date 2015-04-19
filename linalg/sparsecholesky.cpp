@@ -815,7 +815,7 @@ namespace ngla
 
     // int maxthds = omp_get_max_threads();
     // omp_set_num_threads(1);
-    static Timer tl("SparseCholesky, CalcAtT, lapack");
+    static Timer tl("SparseCholesky, CalcAtT, lapack", 3);
 
     if (nbl <= 1)
       {
@@ -865,11 +865,11 @@ namespace ngla
   {
     static Timer factor_timer("SparseCholesky::Factor SPD");
 
-    static Timer timerb("SparseCholesky::Factor - B");
-    static Timer timerc("SparseCholesky::Factor - C");
-    static Timer timercla("SparseCholesky::Factor - C(lapack)");
-    static Timer timerc1("SparseCholesky::Factor - C1");
-    static Timer timerc2("SparseCholesky::Factor - C2");
+    static Timer timerb("SparseCholesky::Factor - B", 3);
+    static Timer timerc("SparseCholesky::Factor - C", 3);
+    static Timer timercla("SparseCholesky::Factor - C(lapack)", 3);
+    static Timer timerc1("SparseCholesky::Factor - C1", 3);
+    static Timer timerc2("SparseCholesky::Factor - C2", 3);
 
     RegionTimer reg (factor_timer);
     
