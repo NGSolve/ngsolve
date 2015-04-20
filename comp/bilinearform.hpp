@@ -279,6 +279,9 @@ namespace ngcomp
     /// is the form symmetric and positive definite ?
     bool IsSPD() const { return spd; }
 
+    ///
+    bool SymmetricStorage() const { return false; }
+
     /// don't assemble the matrix
     void SetNonAssemble (bool na = true) { nonassemble = na; }
 
@@ -614,6 +617,9 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
+
+    bool SymmetricStorage() const { return true; }
+
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
   };
