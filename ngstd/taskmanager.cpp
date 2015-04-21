@@ -136,17 +136,15 @@ namespace ngstd
 
       num_threads = omp_get_max_threads();
 
-      trace = new PajeTrace();
-      trace->Init(num_threads);
+      static int cnt = 0;
+      char buf[100];
+      sprintf(buf, "ng%d.trace", cnt++);
+      trace = new PajeTrace(num_threads, buf);
     }
 
 
   TaskManager :: ~TaskManager ()
   {
-    static int cnt = 0;
-    char buf[100];
-    sprintf(buf, "ng%d.trace", cnt++);
-    trace->Write(buf);
     delete trace;
     trace = nullptr;
   }
