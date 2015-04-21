@@ -86,14 +86,14 @@ public:
     
     int npages = ceil ( double(s)*sizeof(T) / pagesize );
 
-    cout << "size = " << numa_size << endl;
-    cout << "npages = " << npages << endl;
+    // cout << "size = " << numa_size << endl;
+    // cout << "npages = " << npages << endl;
 
     for (int i = 0; i < num_nodes; i++)
       {
         int beg = (i * npages) / num_nodes;
         int end = ( (i+1) * npages) / num_nodes;
-        cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
+        // cout << "node " << i << " : [" << beg << "-" << end << ")" << endl;
         numa_tonode_memory(numa_ptr+beg*pagesize/sizeof(T), (end-beg)*pagesize, i);
       }
   }

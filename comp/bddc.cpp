@@ -183,7 +183,7 @@ namespace ngcomp
       if (fes->GetFreeDofs())
 	wb_free_dofs -> And (*fes->GetFreeDofs());
       
-      if (!bfa.IsSymmetric())
+      if (!bfa.SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
 	    new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2ifdofs, false);
@@ -193,17 +193,17 @@ namespace ngcomp
 	harmonicexttrans = sparse_harmonicexttrans = NULL;
 
 
-      innersolve = sparse_innersolve = bfa.IsSymmetric() 
+      innersolve = sparse_innersolve = bfa.SymmetricStorage() 
 	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2ifdofs)
-	: new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2ifdofs, bfa.IsSymmetric());
+	: new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
 
       harmonicext = sparse_harmonicext =
 	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
-      pwbmat = bfa.IsSymmetric() && !hypre
+      pwbmat = bfa.SymmetricStorage() && !hypre
         ? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2wbdofs)
-        : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, bfa.IsSymmetric() && !hypre);
+        : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
       dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa.IsSPD() );
@@ -292,7 +292,7 @@ namespace ngcomp
 	      for (int k = 0; k < sizei; k++)
 		he.Row(k) *= el2ifweight[k]; 
 
-	      if (!bfa.IsSymmetric())
+	      if (!bfa.SymmetricStorage())
 		{	      
 		  het = SCAL(0.0);
 		  het -= b*d  | Lapack;
@@ -331,7 +331,7 @@ namespace ngcomp
         
         sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
         
-        if (!bfa.IsSymmetric())
+        if (!bfa.SymmetricStorage())
           sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
         
         sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
@@ -373,7 +373,7 @@ namespace ngcomp
 	if (weight[i])
 	  sparse_harmonicext->GetRowValues(i) /= weight[i];
       
-      if (!bfa.IsSymmetric())
+      if (!bfa.SymmetricStorage())
         {
           for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
             {
@@ -516,7 +516,7 @@ namespace ngcomp
 
       timerharmonicexttrans.Start();
 
-      if (bfa.IsSymmetric())
+      if (bfa.SymmetricStorage())
 	y += Transpose(*harmonicext) * x; 
       else
 	y += *harmonicexttrans * x;
