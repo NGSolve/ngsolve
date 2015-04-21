@@ -74,7 +74,7 @@ namespace ngstd
         {
           double time;
           std::function<void()> func;
-          bool operator < (const PajeEvent & other) { return time < other.time; }
+          bool operator < (const PajeEvent & other) const { return time < other.time; }
         };
 
       std::vector<PajeEvent> events;
@@ -434,6 +434,7 @@ namespace ngstd
       PajeFile paje(filename);
 
       const int container_type_task_manager = paje.DefineContainerType( 0, "Task Manager" );
+      const int container_type_node = paje.DefineContainerType( container_type_task_manager, "Node");
       const int container_type_thread = paje.DefineContainerType( container_type_task_manager, "Thread");
       const int container_type_timer = paje.DefineContainerType( container_type_task_manager, "Timers");
       const int container_type_jobs = paje.DefineContainerType( container_type_task_manager, "Jobs");
@@ -447,13 +448,14 @@ namespace ngstd
       const int container_task_manager = paje.CreateContainer( container_type_task_manager, 0, "The task manager" );
       const int container_jobs = paje.CreateContainer( container_type_jobs, container_task_manager, "Jobs" );
       paje.SetVariable( 0.0, variable_type_active_threads, container_jobs, 0.0 );
+      const int container_node0 = paje.CreateContainer( container_type_node, container_task_manager, "Node 0" );
 
       std::vector <int> thread_aliases;
       for (int i=0; i<nthreads; i++)
         {
           char name[20];
           sprintf(name, "Thread %d", i);
-          thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_task_manager, name ) );
+          thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_node0, name ) );
         }
 
       int job_counter = 0;
@@ -569,7 +571,7 @@ namespace ngstd
 
       std::vector<ThreadLink> started_links;
 
-      int link_type = paje.DefineLinkType(container_type_task_manager, container_type_thread, container_type_thread, "links");
+      int link_type = paje.DefineLinkType(container_type_node, container_type_thread, container_type_thread, "links");
 
       // match links
       for ( auto & l : links_merged )
@@ -589,8 +591,8 @@ namespace ngstd
                       // Avoid links on same thread
                       if(sl.thread_id != l.thread_id)
                         {
-                          paje.StartLink( sl.time, link_type, container_task_manager, l.key, thread_aliases[sl.thread_id], l.key);
-                          paje.EndLink(    l.time, link_type, container_task_manager, l.key, thread_aliases[l.thread_id], l.key);
+                          paje.StartLink( sl.time, link_type, container_node0, l.key, thread_aliases[sl.thread_id], l.key);
+                          paje.EndLink(    l.time, link_type, container_node0, l.key, thread_aliases[l.thread_id], l.key);
                         }
                       started_links.erase(started_links.begin()+i);
                     }
