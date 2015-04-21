@@ -1229,8 +1229,8 @@ namespace ngcomp
             const double xref[], const double x[], const double dxdxref[],
             double * values) 
   { 
-    static Timer t("visgf::GetValue2");
-    RegionTimer reg(t);
+    // static Timer t("visgf::GetValue2");
+    // RegionTimer reg(t);
     
     try
       {
@@ -1335,9 +1335,8 @@ namespace ngcomp
           }
         return isdefined;
       }
-    static Timer t("visgf::GetMultiValue");
-    static Timer t1("visgf::GetMultiValue - 1");
-    RegionTimer reg(t);
+    // static Timer t("visgf::GetMultiValue");
+    // RegionTimer reg(t);
 
     try
       {
@@ -1405,11 +1404,7 @@ namespace ngcomp
 	    HeapReset hr(lh);
             
 	    FlatMatrix<SCAL> flux(npts, bfi3d[j]->DimFlux(), lh);
-            t1.Start();
 	    bfi3d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
-
-            t1.Stop();
-            t1.AddFlops (elu.Size()*mir.Size());
 	    for (int k = 0; k < npts; k++)
 	      for (int i = 0; i < components; i++)
 		values[k*svalues+i] += ((double*)(void*)&flux(k,0))[i];
@@ -1453,8 +1448,8 @@ namespace ngcomp
                                                     double lam1, double lam2, 
                                                     double * values) 
   { 
-    static Timer t("visgf::GetSurfValue");
-    RegionTimer reg(t);
+    // static Timer t("visgf::GetSurfValue");
+    // RegionTimer reg(t);
 
 
     try
@@ -1534,10 +1529,9 @@ namespace ngcomp
 		const double xref[], const double x[], const double dxdxref[],
 		double * values) 
   { 
-    static Timer t("visgf::GetSurfValue 2");
-    RegionTimer reg(t);
+    // static Timer t("visgf::GetSurfValue 2");
+    // RegionTimer reg(t);
 
-    // cout << "VisGF::GetSurfValue2" << endl;
     try
       {
         if (!bfi2d.Size()) return 0;
@@ -1662,11 +1656,8 @@ namespace ngcomp
         return isdefined;
       }
 
-    static Timer t("visgf::GetMultiSurfValue");
-    static Timer ta("visgf::GetMultiSurfValue a");
-    static Timer tb("visgf::GetMultiSurfValue b");
-    static Timer tc("visgf::GetMultiSurfValue c");
-    RegionTimer reg(t);
+    // static Timer t("visgf::GetMultiSurfValue");
+    // RegionTimer reg(t);
 
     try
       {
@@ -1746,7 +1737,6 @@ namespace ngcomp
           {
             if (!ma->GetDeformation())
               {
-                ta.Start();
                 MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
                 
                 for (int k = 0; k < npts; k++)
@@ -1755,7 +1745,7 @@ namespace ngcomp
                     FlatVec<2> vx( (double*)x + k*sx);
                     mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
                   }
-                ta.Stop();
+
                 bool isdefined = false;
                 for(int j = 0; j < bfi2d.Size(); j++)
                   {
@@ -1763,10 +1753,8 @@ namespace ngcomp
                     isdefined = true;
                     
                     FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
-                    tc.Start();
                     bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
-                    tc.Stop();
-                    
+
                     for (int k = 0; k < npts; k++)
                       mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
                   }
