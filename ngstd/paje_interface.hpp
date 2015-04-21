@@ -37,7 +37,7 @@ namespace ngstd
           double time;
           bool is_start;
 
-          bool operator < (const TimerEvent & other) { return time < other.time; }
+          bool operator < (const TimerEvent & other) const { return time < other.time; }
         };
 
       struct ThreadLink
@@ -46,7 +46,7 @@ namespace ngstd
           int key;
           double time;
           bool is_start;
-          bool operator < (const ThreadLink & other) { return time < other.time; }
+          bool operator < (const ThreadLink & other) const { return time < other.time; }
         };
 
       std::vector<std::vector<Task> > tasks;
