@@ -224,7 +224,7 @@ namespace ngstd
       void SetState ()
         {}
 
-      void PushState ( double time, int type, int container, int value, bool value_is_alias = true )
+      void PushState ( double time, int type, int container, int value, int id = 0, bool value_is_alias = true )
         {
           events.push_back( PajeEvent {time, [=]() {
                            trace_stream << PajePushState;
@@ -233,6 +233,7 @@ namespace ngstd
                            WriteAlias(container);
                            if(value_is_alias) WriteAlias(value);
                            else Write(value);
+                           Write(id);
                            trace_stream << '\n';
                            } } );
         }
@@ -389,6 +390,7 @@ namespace ngstd
         "%       Type string \n"
         "%       Container string \n"
         "%       Value string \n"
+        "%       Id string \n"
         "%EndEventDef\n"
         "%EventDef PajePopState 13 \n"
         "%       Time date \n"
@@ -532,7 +534,7 @@ namespace ngstd
                   print_alias = true;
                 }
 
-              paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, print_alias );
+              paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.task_id, print_alias );
               paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
 
               paje.AddVariable( t.start_time, variable_type_active_threads, container_jobs, 1.0 );
