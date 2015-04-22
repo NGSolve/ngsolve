@@ -438,7 +438,7 @@ namespace ngstd
       const int container_type_task_manager = paje.DefineContainerType( 0, "Task Manager" );
       const int container_type_node = paje.DefineContainerType( container_type_task_manager, "Node");
       const int container_type_thread = paje.DefineContainerType( container_type_task_manager, "Thread");
-      const int container_type_timer = paje.DefineContainerType( container_type_task_manager, "Timers");
+      const int container_type_timer = container_type_thread; //paje.DefineContainerType( container_type_task_manager, "Timers");
       const int container_type_jobs = paje.DefineContainerType( container_type_task_manager, "Jobs");
 
       const int state_type_job = paje.DefineStateType( container_type_jobs, "Job" );
@@ -488,6 +488,12 @@ namespace ngstd
 
       for(auto & event : timer_events)
         timer_ids.insert(event.timer_id);
+
+      for(auto & vtasks : tasks)
+        for (Task & t : vtasks)
+          if(t.id_type==Task::ID_TIMER)
+            timer_ids.insert(t.id);
+
       for(auto id : timer_ids)
         timer_aliases[id] = paje.DefineEntityValue( state_type_timer, NgProfiler::GetName(id).c_str(), -1 );
 
@@ -525,20 +531,29 @@ namespace ngstd
       for(auto & vtasks : tasks)
         {
           for (Task & t : vtasks) {
-              int value_id = t.task_id;
-              bool print_alias = false;
+              int value_id = t.id;
 
-              if(t.job_id!=-1)
+              switch(t.id_type)
                 {
-                  value_id = job_task_map[jobs[t.job_id-1].type];
-                  print_alias = true;
+                case Task::ID_JOB:
+                  value_id = job_task_map[jobs[t.id-1].type];
+                  paje.AddVariable( t.start_time, variable_type_active_threads, container_jobs, 1.0 );
+                  paje.SubVariable( t.stop_time, variable_type_active_threads, container_jobs, 1.0 );
+                  paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.additional_value, true );
+                  paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
+                  break;
+                case Task::ID_TIMER:
+                  value_id = timer_aliases[t.id]; 
+                  paje.PushState( t.start_time, state_type_timer, thread_aliases[t.thread_id], value_id, t.additional_value, true );
+                  paje.PopState( t.stop_time, state_type_timer, thread_aliases[t.thread_id] );
+                  break;
+                default:
+                  paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.additional_value, false );
+                  paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
+                  break;
                 }
 
-              paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.task_id, print_alias );
-              paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
 
-              paje.AddVariable( t.start_time, variable_type_active_threads, container_jobs, 1.0 );
-              paje.SubVariable( t.stop_time, variable_type_active_threads, container_jobs, 1.0 );
           }
 
         }

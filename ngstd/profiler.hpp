@@ -277,6 +277,34 @@ namespace ngstd
     /// stop timer
     ~RegionTimer () { timer.Stop(); }
   };
+
+  class RegionTracer
+    {
+      int nr;
+      int thread_id;
+    public:
+      static constexpr int ID_JOB = PajeTrace::Task::ID_JOB;
+      static constexpr int ID_NONE = PajeTrace::Task::ID_NONE;
+      static constexpr int ID_TIMER = PajeTrace::Task::ID_TIMER;
+
+      /// start trace
+      RegionTracer (int athread_id, int region_id, int id_type = ID_NONE, int additional_value = -1 )
+        : thread_id(athread_id)
+        {
+          nr = trace->StartTask (athread_id, region_id, id_type, additional_value);
+        }
+      /// start trace with timer
+      RegionTracer (int athread_id, Timer & timer, int additional_value = -1 )
+        : thread_id(athread_id)
+        {
+          nr = trace->StartTask (athread_id, (int)timer, ID_TIMER, additional_value);
+        }
+      /// stop trace
+      ~RegionTracer ()
+        {
+          trace->StopTask (thread_id, nr);
+        }
+    };
 #else
 
 

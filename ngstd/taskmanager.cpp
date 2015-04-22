@@ -258,9 +258,10 @@ namespace ngstd
             ti.task_nr = mytasks.First()+mytask;
             ti.ntasks = ntasks;
 
-            trace->StartTask(ti.thread_nr, ti.task_nr, jobnr);
-            (*func)(ti); 
-            trace->StopTask(ti.thread_nr);
+              {
+                RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
+                (*func)(ti); 
+              }
 
             if (++mynode_data.complete_cnt == mytasks.Size())
               complete[mynode] = true;
@@ -347,9 +348,10 @@ namespace ngstd
                 ti.task_nr = mytasks.First()+mytask;
                 ti.ntasks = ntasks;
                 
-                trace->StartTask(ti.thread_nr, ti.task_nr, jobnr);
-                (*func)(ti); 
-                trace->StopTask(ti.thread_nr);
+                  {
+                    RegionTracer t(ti.thread_nr, jobnr, RegionTracer::ID_JOB, ti.task_nr);
+                    (*func)(ti);
+                  }
                 if (++mynode_data.complete_cnt == mytasks.Size())
                   complete[mynode] = true;
               }
