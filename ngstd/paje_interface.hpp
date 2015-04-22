@@ -24,11 +24,19 @@ namespace ngstd
 
       struct Task
         {
-          int task_id;
-          int job_id;
           int thread_id;
+
+          int id;
+          int id_type;
+
+          int additional_value;
+
           double start_time;
           double stop_time;
+
+          static constexpr int ID_NONE = -1;
+          static constexpr int ID_JOB = 1;
+          static constexpr int ID_TIMER = 2;
         };
 
       struct TimerEvent
@@ -36,6 +44,7 @@ namespace ngstd
           int timer_id;
           double time;
           bool is_start;
+          int thread_id;
 
           bool operator < (const TimerEvent & other) const { return time < other.time; }
         };
@@ -96,14 +105,16 @@ namespace ngstd
           timer_events.push_back(TimerEvent{timer_id, GetTime(), false});
         }
 
-      void StartTask(int thread_id, int task_id, int job_id = -1)
+      int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
         {
-          tasks[thread_id].push_back( Task{task_id, job_id, thread_id, GetTime(), 0.0} );
+          int task_num = tasks[thread_id].size();
+          tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime(), 0.0} );
+          return task_num;
         }
 
-      void StopTask(int thread_id)
+      void StopTask(int thread_id, int task_num)
         {
-          tasks[thread_id].back().stop_time = GetTime();
+          tasks[thread_id][task_num].stop_time = GetTime();
         }
 
       void StartJob(int job_id, const std::type_info & type)
