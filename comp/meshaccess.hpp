@@ -422,7 +422,7 @@ namespace ngcomp
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 conversion is done on the fly.
      */
-    Ngs_Element GetElement (int elnr, bool boundary = 0) const
+    INLINE Ngs_Element GetElement (int elnr, bool boundary = 0) const
     {
       switch (dim-boundary)
 	{
@@ -487,7 +487,7 @@ namespace ngcomp
       deformation = def;
     }
 
-    shared_ptr<GridFunction> GetDeformation () const
+    const shared_ptr<GridFunction> & GetDeformation () const
     {
       return deformation;
     }
@@ -687,6 +687,9 @@ namespace ngcomp
     {
       return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
     }
+
+    template <int DIM>
+    ngfem::ElementTransformation & GetTrafoDim (int elnr, bool boundary, LocalHeap & lh) const;
 
 
     // (old style optimization)
