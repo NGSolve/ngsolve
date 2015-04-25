@@ -44,6 +44,10 @@ namespace ngstd
     Flags (string f1, string f2 = "", string f3 = "", string f4 = "", string f5 = "");
     /// delete mem
     ~Flags ();
+
+    Flags & operator= (const Flags & f2) = default;
+    Flags & operator= (Flags && f2) = default;
+
   
     /// Deletes all flags
     void DeleteFlags ();
