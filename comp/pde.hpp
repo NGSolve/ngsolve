@@ -149,6 +149,8 @@ namespace ngcomp
     ///
     SymbolTable<GenericVariable> generic_variables;
     ///
+    SymbolTable<Flags> flags;
+    ///
     Array<shared_ptr<EvalVariable>> evaluators;
     ///
     SymbolTable<shared_ptr<CoefficientFunction>> coefficients;
@@ -240,6 +242,11 @@ namespace ngcomp
 
     ///
     double & GetVariable (const string & aname, bool opt = 0);
+
+    bool FlagsUsed (const string & name) const { return flags.Used(name); }
+    
+    const Flags & GetFlags (const string & name) const { return flags[name]; }
+
     ///
     // CoefficientFunction * GetCoefficientFunction (const string & name, bool opt = 0);
     shared_ptr<CoefficientFunction> GetCoefficientFunction (const string & name, bool opt = 0) const;
@@ -290,6 +297,8 @@ namespace ngcomp
     void AddVariable (const string & name, double val, int im = 5);
     ///
     void AddVariable (const string & name, shared_ptr<EvalVariable> eval);
+    ///
+    void AddFlags (const string & name, const Flags & aflags);
     ///
     void AddVariableEvaluation (shared_ptr<EvalVariable> eval);
     ///

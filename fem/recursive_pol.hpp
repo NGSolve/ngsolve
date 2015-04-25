@@ -419,7 +419,7 @@ namespace ngfem
     template <class S, class T>
     INLINE static void Eval (int n, S x, T && values) 
     {
-      if (n < 0) return;
+      // if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
@@ -625,8 +625,21 @@ namespace ngfem
     }
 
 
-
-
+    template <int N, class S, class T>
+    INLINE static void Eval (integral_constant<int,N> n, S x, T && values) 
+    {
+      S p1, p2;
+      CEvalFO<REC, N>::Eval (x, values, p1, p2);
+      /*
+      S p1 = REC::P1(x), p2 = REC::P0(x);
+      for (int i = 0; i <= n; i++)
+        {
+	  values[i] = p2;
+          EvalNext2 (i+2, x, p1, p2);
+        }
+      */
+    }
+    
 
 
     template <int N, class S, class T>
@@ -1256,16 +1269,16 @@ namespace ngfem
     template <class S>
     static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
       
-    static INLINE double A (int i) 
+    static INLINE double CalcA (int i) 
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static INLINE double B (int i)
+    static INLINE double CalcB (int i)
     { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static INLINE double C (int i) 
+    static INLINE double CalcC (int i) 
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
 
-    static INLINE double CalcA (int i) { return A(i); }
-    static INLINE double CalcB (int i) { return B(i); }
-    static INLINE double CalcC (int i) { return C(i); }
+    static INLINE double A (int i) { return CalcA (i); }
+    static INLINE double B (int i) { return CalcB (i); }
+    static INLINE double C (int i) { return CalcC (i); }
   };
 
 

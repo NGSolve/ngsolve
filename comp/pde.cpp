@@ -171,6 +171,8 @@ namespace ngcomp
       ost << "variable " << variables.GetName(i) << " = " << variables[i] << endl;
     for (int i = 0; i < generic_variables.Size(); i++)
       ost << "variable " << generic_variables.GetName(i) << " = " << generic_variables[i] << endl;
+    for (int i = 0; i < flags.Size(); i++)
+      ost << "flags " << variables.GetName(i) << " = " << flags[i] << endl;
 
     ost << endl;
   
@@ -952,6 +954,12 @@ namespace ngcomp
     AddVariable (name, 0.0);
     eval->SetVariable(*variables[name]);
     cout << IM(2) << "add variable " << name << " = " << eval->Evaluate() << endl;
+  }
+
+  void PDE :: AddFlags (const string & name, const Flags & aflags)
+  {
+    flags.Set (name, aflags);
+    cout << IM(2) << "add flags " << name << " = " << aflags << endl;
   }
 
   void PDE :: AddVariableEvaluation (shared_ptr<EvalVariable> eval)
