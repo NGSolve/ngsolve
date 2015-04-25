@@ -1262,6 +1262,10 @@ namespace ngfem
     { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
     static INLINE double C (int i) 
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
+
+    static INLINE double CalcA (int i) { return A(i); }
+    static INLINE double CalcB (int i) { return B(i); }
+    static INLINE double CalcC (int i) { return C(i); }
   };
 
 
