@@ -935,7 +935,7 @@ namespace ngcomp
 
       eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, deformation.get(), lh); 
 
-    else if (el.is_curved)
+    else if (Ng_IsElementCurved (elnr+1)) //(el.is_curved)//
 
         eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this); 
 
