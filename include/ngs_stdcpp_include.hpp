@@ -102,9 +102,15 @@
 
 
 #ifdef __INTEL_COMPILER
+#ifdef WIN32
+#define ALWAYS_INLINE __forceinline
+#define INLINE __forceinline inline
+#define LAMBDA_INLINE
+#else
 #define ALWAYS_INLINE __forceinline
 #define INLINE __forceinline inline
 #define LAMBDA_INLINE __attribute__ ((__always_inline__))
+#endif
 #else
 #ifdef __GNUC__
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
