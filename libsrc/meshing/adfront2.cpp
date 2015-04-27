@@ -524,7 +524,7 @@ namespace netgen
               if (Det(mat) == 0) continue;
               CalcInverse (mat, inv);
               sol = inv * rhs;
-              if (sol(0) >= 0 && sol(0) <= 1 & sol(1) >= 0 && sol(1) <= 1)
+              if ( (sol(0) >= 0) && (sol(0) <= 1) && (sol(1) >= 0) && (sol(1) <= 1))
                 { cnt++; }
             }
 
@@ -554,7 +554,7 @@ namespace netgen
               if (Det(mat) == 0) continue;
               CalcInverse (mat, inv);
               sol = inv * rhs;
-              if (sol(0) >= 0 && sol(0) <= 1 & sol(1) >= 0 && sol(1) <= 1)
+              if ((sol(0) >= 0) && (sol(0) <= 1) && (sol(1) >= 0) && (sol(1) <= 1))
                 { cnt++; }
             }
       }

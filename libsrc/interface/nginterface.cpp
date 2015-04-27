@@ -1150,8 +1150,12 @@ void Ng_HPRefinement (int levels, double parameter, bool setorders,
 void Ng_HighOrder (int order, bool rational)
 {
   NgLock meshlock (mesh->MajorMutex(), true);
-
+  /*
   mesh -> GetCurvedElements().BuildCurvedElements 
+    (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+     order, rational);
+  */
+  mesh->BuildCurvedElements 
     (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
      order, rational);
 

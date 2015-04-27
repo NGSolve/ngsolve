@@ -81,6 +81,7 @@ namespace netgen
     Ng_Vertices vertices;
     Ng_Edges edges;
     Ng_Faces faces;
+    bool is_curved;
   };
 
   

@@ -5518,6 +5518,17 @@ namespace netgen
     clusters->Update();
   }
 
+  void Mesh :: BuildCurvedElements  (const Refinement * ref, int aorder, bool arational)
+  {
+    GetCurvedElements().BuildCurvedElements (ref, aorder, arational);
+
+    for (SurfaceElementIndex sei = 0; sei < GetNSE(); sei++)
+      {
+        (*this)[sei].SetCurved (GetCurvedElements().IsSurfaceElementCurved (sei));
+      }
+    
+    SetNextMajorTimeStamp();
+  }
 
   void Mesh :: SetMaterial (int domnr, const char * mat)
   {

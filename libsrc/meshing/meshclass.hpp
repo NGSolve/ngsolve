@@ -663,6 +663,8 @@ namespace netgen
     class CurvedElements & GetCurvedElements () const
     { return *curvedelems; }
 
+    void BuildCurvedElements  (const class Refinement * ref, int aorder, bool arational = false);
+
     const class AnisotropicClusters & GetClusters () const
     { return *clusters; }
 

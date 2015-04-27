@@ -304,7 +304,7 @@ namespace netgen
     // Set a new property for each element, to 
     // control whether it is visible or not
     bool visible:1;  // element visible
-
+    bool is_curved:1;   // element is (high order) curved
     /// order for hp-FEM
     unsigned int orderx:6;
     unsigned int ordery:6;
@@ -493,6 +493,9 @@ namespace netgen
     bool TestStrongRefinementFlag () const
     { return strongrefflag; }
 
+
+    bool IsCurved () const { return is_curved; }
+    void SetCurved (bool acurved) { is_curved = acurved; }
   
     SurfaceElementIndex NextElement() { return next; }
 

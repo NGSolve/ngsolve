@@ -172,6 +172,7 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
+    is_curved = false;
   } 
 
 
@@ -197,6 +198,7 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
+    is_curved = false;
   } 
 
   Element2d :: Element2d (ELEMENT_TYPE atyp)
@@ -216,6 +218,7 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
+    is_curved = false;
   } 
 
 
@@ -240,6 +243,7 @@ namespace netgen
     deleted = 0;
     visible = 1;
     orderx = ordery = 1;
+    is_curved = false;
   }
 
   Element2d :: Element2d (int pi1, int pi2, int pi3, int pi4)
