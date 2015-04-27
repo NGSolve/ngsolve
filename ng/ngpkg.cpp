@@ -2324,7 +2324,7 @@ namespace netgen
     static int gopsize = DEFAULT_GOP_SIZE;
     static int bframes = DEFAULT_B_FRAMES;
     static int MPGbufsize = DEFAULT_MPG_BUFSIZE;
-    static CodecID codec_id = CODEC_ID_MPEG1VIDEO;
+    static AVCodecID codec_id = CODEC_ID_MPEG1VIDEO;
     static FILE *MPGfile;
     static buffer_t buff;
     static struct SwsContext *img_convert_ctx;
