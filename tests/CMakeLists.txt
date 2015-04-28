@@ -10,6 +10,7 @@ set(pde_dir "${CMAKE_CURRENT_BINARY_DIR}/pde_tutorial")
 
 
 add_executable( pde_tester pde_tester.cpp)
+install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
 target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
 set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
