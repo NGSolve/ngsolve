@@ -2020,7 +2020,7 @@ namespace ngcomp
         scan -> WriteBack();
         string str;
         *(scan->scanin) >> str;
-	flags.SetCommandLineFlag (str.c_str());
+	flags.SetCommandLineFlag (str.c_str(), &pde->GetFlagsTable());
 	scan->ReadNext();
       }
   }
