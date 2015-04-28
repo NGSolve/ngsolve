@@ -362,6 +362,9 @@ namespace ngcomp
     SymbolTable<shared_ptr<FESpace>> & GetSpaceTable ()
     { return spaces; }
     ///
+    SymbolTable<Flags> & GetFlagsTable ()
+    { return flags; }
+    ///
     SymbolTable<shared_ptr<GridFunction>> & GetGridFunctionTable()
     { return gridfunctions; }
     ///
