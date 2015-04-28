@@ -605,6 +605,11 @@ namespace ngcomp
 				     *mas[0],
 				     *CurvePointIntegrators[i]);
 		    
+    size_t tracefilesize = 100;
+    if(flags.CheckIndex("tracer") != -1)
+      tracefilesize = flags["tracer"].GetNumFlag("max_size", tracefilesize+0.5 );
+    trace->SetMaxTracefileSize( tracefilesize*1024*1024 );
+
     RunWithTaskManager 
       ( [&] () 
         { 
