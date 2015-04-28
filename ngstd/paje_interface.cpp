@@ -8,6 +8,8 @@
 
 namespace ngstd
 {
+  size_t PajeTrace::max_tracefile_size;
+
   using std::string;
   class PajeFile
     {
@@ -31,44 +33,45 @@ namespace ngstd
 
       int alias_counter;
 
-      std::ofstream trace_stream;
+//       std::ofstream trace_stream;
+      FILE * ctrace_stream;
 
-      void Write( double x )
-        {
-          trace_stream << std::setprecision(15) << '\t' << x;
-        }
-
-      void WriteTime( double x )
-        {
-          trace_stream << std::setprecision(15) << '\t' << 1000*x;
-        }
-
-      void WriteAlias( int n )
-        {
-          trace_stream << '\t' << 'a' << n;
-        }
-
-      void Write( int n )
-        {
-          trace_stream << '\t' << n;
-        }
-
-      void Write( string s )
-        {
-          trace_stream << '\t' << '"' << s << '"';
-        }
-
-      void WriteColor( double r, double g, double b )
-        {
-          trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
-        }
-
-      void WriteColor( double hue )
-        {
-          double r,g,b;
-          Hue2RGB( hue, r, g, b );
-          trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
-        }
+//       void Write( double x )
+//         {
+//           trace_stream << std::setprecision(15) << '\t' << x;
+//         }
+// 
+//       void WriteTime( double x )
+//         {
+//           trace_stream << std::setprecision(15) << '\t' << 1000*x;
+//         }
+// 
+//       void WriteAlias( int n )
+//         {
+//           trace_stream << '\t' << 'a' << n;
+//         }
+// 
+//       void Write( int n )
+//         {
+//           trace_stream << '\t' << n;
+//         }
+// 
+//       void Write( string s )
+//         {
+//           trace_stream << '\t' << '"' << s << '"';
+//         }
+// 
+//       void WriteColor( double r, double g, double b )
+//         {
+//           trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
+//         }
+// 
+//       void WriteColor( double hue )
+//         {
+//           double r,g,b;
+//           Hue2RGB( hue, r, g, b );
+//           trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
+//         }
 
       struct PajeEvent
         {
@@ -90,61 +93,70 @@ namespace ngstd
         };
 
       PajeFile( string filename )
-        : trace_stream(filename)
+//         : trace_stream(filename, ios::binary)
         {
-          trace_stream << header;
+//           trace_stream << header;
+          ctrace_stream = fopen ("ngs0.trace","w");
+          fprintf(ctrace_stream, "%s", header );
           alias_counter = 0;
         }
       int DefineContainerType ( int parent_type, string name )
         {
           int alias = ++alias_counter;
-          trace_stream << PajeDefineContainerType;
-          WriteAlias(alias);
-          if(parent_type!=0) WriteAlias(parent_type);
-          else Write(parent_type);
-          Write(name);
-          trace_stream << '\n';
+//           trace_stream << PajeDefineContainerType;
+//           WriteAlias(alias);
+//           if(parent_type!=0) WriteAlias(parent_type);
+//           else Write(parent_type);
+//           Write(name);
+//           trace_stream << '\n';
+          if(parent_type!=0)
+            fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\n", PajeDefineContainerType, alias, parent_type, name.c_str() );
+          else
+            fprintf( ctrace_stream, "%d\ta%d\t%d\t\"%s\"\n", PajeDefineContainerType, alias, parent_type, name.c_str() );
           return alias;
         }
 
       int DefineVariableType ( int container_type, string name )
         {
           int alias = ++alias_counter;
-          trace_stream << PajeDefineVariableType;
-          WriteAlias(alias);
-          WriteAlias(container_type);
-          Write(name);
-          WriteColor( 1.0, 1.0, 1.0 );
-          trace_stream << '\n';
+//           trace_stream << PajeDefineVariableType;
+//           WriteAlias(alias);
+//           WriteAlias(container_type);
+//           Write(name);
+//           WriteColor( 1.0, 1.0, 1.0 );
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\t\"1.0 1.0 1.0\"\n", PajeDefineVariableType, alias, container_type, name.c_str() );
           return alias;
         }
 
       int DefineStateType ( int type, string name )
         {
           int alias = ++alias_counter;
-          trace_stream << PajeDefineStateType;
-          WriteAlias(alias);
-          WriteAlias((int)type);
-          Write(name);
-          trace_stream << '\n';
+//           trace_stream << PajeDefineStateType;
+//           WriteAlias(alias);
+//           WriteAlias((int)type);
+//           Write(name);
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\n", PajeDefineStateType, alias, type, name.c_str() );
           return alias;
         }
 
-      int DefineEventType ()
-        {
-          Write("event not implemented");
-        }
+//       int DefineEventType ()
+//         {
+//           Write("event not implemented");
+//         }
 
       int DefineLinkType (int parent_container_type, int start_container_type, int stop_container_type, string name)
         {
           int alias = ++alias_counter;
-          trace_stream << PajeDefineLinkType;
-          WriteAlias(alias);
-          WriteAlias(parent_container_type);
-          WriteAlias(start_container_type);
-          WriteAlias(stop_container_type);
-          Write(name);
-          trace_stream << '\n';
+//           trace_stream << PajeDefineLinkType;
+//           WriteAlias(alias);
+//           WriteAlias(parent_container_type);
+//           WriteAlias(start_container_type);
+//           WriteAlias(stop_container_type);
+//           Write(name);
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\ta%d\ta%d\ta%d\ta%d\t\"%s\"\n", PajeDefineLinkType, alias, parent_container_type, start_container_type, stop_container_type, name.c_str() );
           return alias;
         }
 
@@ -160,26 +172,33 @@ namespace ngstd
             }
 
           int alias = ++alias_counter;
-          trace_stream << PajeDefineEntityValue;
-          WriteAlias(alias);
-          WriteAlias(type);
-          Write(name);
-          WriteColor(hue);
-          trace_stream << '\n';
+//           trace_stream << PajeDefineEntityValue;
+//           WriteAlias(alias);
+//           WriteAlias(type);
+//           Write(name);
+//           WriteColor(hue);
+//           trace_stream << '\n';
+          double r,g,b;
+          Hue2RGB( hue, r, g, b );
+          fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\t\"%.15g %.15g %.15g\"\n", PajeDefineEntityValue, alias, type, name.c_str(), r,g,b );
           return alias;
         }
 
       int CreateContainer ( int type, int parent, string name )
         {
           int alias = ++alias_counter;
-          trace_stream << PajeCreateContainer;
-          Write(0.0);
-          WriteAlias(alias);
-          WriteAlias(type);
-          if(parent!=0) WriteAlias(parent);
-          else Write(parent);
-          Write(name);
-          trace_stream << '\n';
+//           trace_stream << PajeCreateContainer;
+//           Write(0.0);
+//           WriteAlias(alias);
+//           WriteAlias(type);
+//           if(parent!=0) WriteAlias(parent);
+//           else Write(parent);
+//           Write(name);
+//           trace_stream << '\n';
+          if(parent!=0)
+            fprintf( ctrace_stream, "%d\t0\ta%d\ta%d\ta%d\t\"%s\"\n", PajeCreateContainer, alias, type, parent, name.c_str() );
+          else
+            fprintf( ctrace_stream, "%d\t0\ta%d\ta%d\t%d\t\"%s\"\n", PajeCreateContainer, alias, type, parent, name.c_str() );
           return alias;
         }
       void DestroyContainer ()
@@ -188,36 +207,39 @@ namespace ngstd
       void SetVariable (double time, int type, int container, double value )
         {
           events.push_back( PajeEvent {time, [=]() {
-          trace_stream << PajeSetVariable;
-          WriteTime(time);
-          WriteAlias(type);
-          WriteAlias(container);
-          Write(value);
-          trace_stream << '\n';
+//           trace_stream << PajeSetVariable;
+//           WriteTime(time);
+//           WriteAlias(type);
+//           WriteAlias(container);
+//           Write(value);
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time, type, container, value );
                            } } );
         }
 
       void AddVariable (double time, int type, int container, double value )
         {
           events.push_back( PajeEvent {time, [=]() {
-          trace_stream << PajeAddVariable;
-          WriteTime(time);
-          WriteAlias(type);
-          WriteAlias(container);
-          Write(value);
-          trace_stream << '\n';
+//           trace_stream << PajeAddVariable;
+//           WriteTime(time);
+//           WriteAlias(type);
+//           WriteAlias(container);
+//           Write(value);
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time, type, container, value );
                            } } );
         }
 
       void SubVariable (double time, int type, int container, double value )
         {
           events.push_back( PajeEvent {time, [=]() {
-          trace_stream << PajeSubVariable;
-          WriteTime(time);
-          WriteAlias(type);
-          WriteAlias(container);
-          Write(value);
-          trace_stream << '\n';
+//           trace_stream << PajeSubVariable;
+//           WriteTime(time);
+//           WriteAlias(type);
+//           WriteAlias(container);
+//           Write(value);
+//           trace_stream << '\n';
+          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time, type, container, value );
                            } } );
         }
 
@@ -227,25 +249,30 @@ namespace ngstd
       void PushState ( double time, int type, int container, int value, int id = 0, bool value_is_alias = true )
         {
           events.push_back( PajeEvent {time, [=]() {
-                           trace_stream << PajePushState;
-                           WriteTime(time);
-                           WriteAlias(type);
-                           WriteAlias(container);
-                           if(value_is_alias) WriteAlias(value);
-                           else Write(value);
-                           Write(id);
-                           trace_stream << '\n';
+//                            trace_stream << PajePushState;
+//                            WriteTime(time);
+//                            WriteAlias(type);
+//                            WriteAlias(container);
+//                            if(value_is_alias) WriteAlias(value);
+//                            else Write(value);
+//                            Write(id);
+//                            trace_stream << '\n';
+                           if(value_is_alias)
+                             fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time, type, container, value, id);
+                           else
+                             fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time, type, container, value, id);
                            } } );
         }
 
       void PopState ( double time, int type, int container )
         {
           events.push_back( PajeEvent {time, [=]() {
-                           trace_stream << PajePopState;
-                           WriteTime(time);
-                           WriteAlias(type);
-                           WriteAlias(container);
-                           trace_stream << '\n';
+//                            trace_stream << PajePopState;
+//                            WriteTime(time);
+//                            WriteAlias(type);
+//                            WriteAlias(container);
+//                            trace_stream << '\n';
+                           fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time, type, container );
                            } } );
         }
 
@@ -255,28 +282,30 @@ namespace ngstd
       void StartLink ( double time, int type, int container, int value, int start_container, int key )
         {
           events.push_back( PajeEvent {time, [=]() {
-          trace_stream << PajeStartLink;
-          WriteTime(time);
-          WriteAlias(type);
-          WriteAlias(container);
-          Write(value);
-          WriteAlias(start_container);
-          Write(key);
-          trace_stream << '\n';
+//           trace_stream << PajeStartLink;
+//           WriteTime(time);
+//           WriteAlias(type);
+//           WriteAlias(container);
+//           Write(value);
+//           WriteAlias(start_container);
+//           Write(key);
+//           trace_stream << '\n';
+              fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time, type, container, value, start_container, key );
           } } );
         }
 
       void EndLink ( double time, int type, int container, int value, int end_container, int key )
         {
           events.push_back( PajeEvent {time, [=]() {
-          trace_stream << PajeEndLink;
-          WriteTime(time);
-          WriteAlias(type);
-          WriteAlias(container);
-          Write(value);
-          WriteAlias(end_container);
-          Write(key);
-          trace_stream << '\n';
+//           trace_stream << PajeEndLink;
+//           WriteTime(time);
+//           WriteAlias(type);
+//           WriteAlias(container);
+//           Write(value);
+//           WriteAlias(end_container);
+//           Write(key);
+//           trace_stream << '\n';
+              fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
           } } );
         }
 
@@ -285,9 +314,15 @@ namespace ngstd
 
       void WriteEvents()
         {
+          cout << "Wite trace file..." << endl;
+          double t = omp_get_wtime();
+          cout << __LINE__ << endl;
           std::sort (events.begin(), events.end());
+          cout << __LINE__ << endl;
           for( auto & event : events )
             event.func();
+          cout << __LINE__ << endl;
+          cout << "took " << omp_get_wtime() - t << " seconds." << endl;
         }
 
     private:
@@ -431,7 +466,13 @@ namespace ngstd
   void PajeTrace::Write( string filename )
     {
       std::cout << "Write traces..." << std::endl;
-      std::cout << "Number of Jobs: " << jobs.size() << std::endl;
+      std::cout << "Number of Jobs: " << jobs.Size() << std::endl;
+      if(!tracing_enabled)
+        {
+          cout << "Tracing stopped during computation due to tracefile size limit of " << max_tracefile_size/1024/1024 << " megabytes." << endl;
+          cout << "To increase the limit, set in the pde file:" << endl;
+          cout << "flags tracer = -max_size=size_in_megabytes" << endl << endl;
+        }
 
       PajeFile paje(filename);
 
@@ -482,7 +523,7 @@ namespace ngstd
           paje.PopState( j.stop_time, state_type_job, container_jobs );
         }
 
-      std::sort (timer_events.begin(), timer_events.end());
+//       QuickSort(timer_events);
       std::set<int> timer_ids;
       std::map<int,int> timer_aliases;
 
@@ -543,7 +584,7 @@ namespace ngstd
                   paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
                   break;
                 case Task::ID_TIMER:
-                  value_id = timer_aliases[t.id]; 
+                  value_id = timer_aliases[t.id];
                   paje.PushState( t.start_time, state_type_timer, thread_aliases[t.thread_id], value_id, t.additional_value, true );
                   paje.PopState( t.stop_time, state_type_timer, thread_aliases[t.thread_id] );
                   break;
@@ -562,7 +603,7 @@ namespace ngstd
       // Merge link event
       int nlinks = 0;
       for( auto & l : links)
-        nlinks += l.size();
+        nlinks += l.Size();
 
       std::vector<ThreadLink> links_merged;
       links_merged.reserve(nlinks);
@@ -575,7 +616,7 @@ namespace ngstd
           double mintime = 1e300;
           for (int t = 0; t<nthreads; t++)
             {
-              if(pos[t] < links[t].size() && links[t][pos[t]].time < mintime)
+              if(pos[t] < links[t].Size() && links[t][pos[t]].time < mintime)
                 {
                   minpos = t;
                   mintime = links[t][pos[t]].time;
