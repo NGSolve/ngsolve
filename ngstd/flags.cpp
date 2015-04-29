@@ -10,6 +10,7 @@
 #include <float.h>
 #endif
 
+#include <algorithm>
 
 namespace ngstd
 {
@@ -339,44 +340,57 @@ namespace ngstd
 
   void Flags :: LoadFlags (const char * filename, SymbolTable<Flags> * sf ) 
   {
-    char name[100], str[100];
+    char str[100];
     char ch;
     double val;
     ifstream infile(filename);
 
     while (infile.good())
       {
-	infile >> name;
-	if (strlen (name) == 0) break;
+        string name;
+        string content;
+        string line;
+        getline(infile, line);
+        istringstream line_stream(line);
 
-	if (name[0] == '/' && name[1] == '/')
-	  {
-	    ch = 0;
-	    while (ch != '\n' && infile.good())
-	      {
-		ch = infile.get();
-	      }
-	    continue;
-	  }
+        getline(line_stream, name, '=');
+        name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
 
-	ch = 0;
-	infile >> ch;
-	if (ch != '=')
-	  {
-	    infile.putback (ch);
-	    SetFlag (name);
-	  }
+        getline(line_stream, content);
+        content.erase(std::remove(content.begin(), content.end(), ' '), content.end());
+
+        cout << " name = " << name << endl;
+        cout << " content = " << content << endl;
+        
+	// if (name[0] == '/' && name[1] == '/')
+	//   {
+	//     ch = 0;
+	//     while (ch != '\n' && infile.good())
+	//       {
+	// 	ch = infile.get();
+	//       }
+	//     continue;
+	//   }
+
+        if (strlen(content.c_str())==0)
+        {
+          SetFlag (name);
+          continue;
+        }
 	else
 	  {
-            infile >> ch;
+            istringstream content_stream(content);
+            
+            content_stream >> ch;
             if (ch != '*')
               {
-                infile.putback (ch);
-                infile >> ch;
                 if (ch == '[')
                   {
+                    content_stream.putback (ch);
+                    // content_stream >> ch;
                     string inner_string;
-                    getline(infile, inner_string, ']');
+                    getline(content_stream, inner_string, ']');
+                    cout << " inner_string = " << inner_string << endl;
                     istringstream inner_string_stream(inner_string);
                     
                     Array<double> values;
@@ -400,23 +414,18 @@ namespace ngstd
                   }
                 else
                   {
-                    infile >> val;
-                    if (!infile.good())
-                      {
-                        infile.clear();
-                        infile >> str;
-                        SetFlag (name, str);
-                      }
+                    char* endptr;
+                    double vald = strtod (content.c_str(), &endptr);
+                    if (endptr != content.c_str())
+                      SetFlag (name, vald);
                     else
-                      {
-                        SetFlag (name, val);
-                      }
+                      SetFlag (name, content);
                   }
               }
             else
               {
-                infile.clear();
-                infile >> str;
+                content_stream.clear();
+                content_stream >> str;
                 if (sf)
                   SetFlag (name, (*sf)[str]);
                 else
