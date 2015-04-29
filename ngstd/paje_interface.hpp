@@ -3,7 +3,7 @@
 
 #include <limits>
 #include <omp.h>
-#include "array.hpp"
+#include <vector>
 
 namespace ngstd
 {
@@ -72,10 +72,10 @@ namespace ngstd
           bool operator < (const ThreadLink & other) const { return time < other.time; }
         };
 
-      Array<Array<Task> > tasks;
-      Array<Job> jobs;
-      Array<TimerEvent> timer_events;
-      Array<Array<ThreadLink> > links;
+      std::vector<std::vector<Task> > tasks;
+      std::vector<Job> jobs;
+      std::vector<TimerEvent> timer_events;
+      std::vector<std::vector<ThreadLink> > links;
 
       double GetTime()
         {
@@ -107,17 +107,17 @@ namespace ngstd
           cout << "Tracefile size = " << max_tracefile_size/1024/1024 << "MB." << endl;
           cout << "Tracing " << max_num_events_per_thread << " events per thread." << endl;
 
-          tasks.SetSize(nthreads);
+          tasks.resize(nthreads);
           int reserve_size = min2(1000000, max_num_events_per_thread);
           for(auto & t : tasks)
-            t.SetAllocSize(reserve_size);
+            t.reserve(reserve_size);
 
-          links.SetSize(nthreads);
+          links.resize(nthreads);
           for(auto & l : links)
-            l.SetAllocSize(reserve_size);
+            l.reserve(reserve_size);
 
-          jobs.SetAllocSize(reserve_size);
-          timer_events.SetAllocSize(reserve_size);
+          jobs.reserve(reserve_size);
+          timer_events.reserve(reserve_size);
 
           tracing_enabled = true;
         }
@@ -130,28 +130,28 @@ namespace ngstd
 
       void StartTimer(int timer_id)
         {
-          if(timer_events.Size() == max_num_events_per_thread)
+          if(timer_events.size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
-            timer_events.Append(TimerEvent{timer_id, GetTime(), true});
+            timer_events.push_back(TimerEvent{timer_id, GetTime(), true});
         }
 
       void StopTimer(int timer_id)
         {
-          if(timer_events.Size() == max_num_events_per_thread)
+          if(timer_events.size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
-            timer_events.Append(TimerEvent{timer_id, GetTime(), false});
+            timer_events.push_back(TimerEvent{timer_id, GetTime(), false});
         }
 
       int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
         {
-          if(tasks[thread_id].Size() == max_num_events_per_thread)
+          if(tasks[thread_id].size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
             {
-              int task_num = tasks[thread_id].Size();
-              tasks[thread_id].Append( Task{thread_id, id, id_type, additional_value, GetTime(), 0.0} );
+              int task_num = tasks[thread_id].size();
+              tasks[thread_id].push_back( Task{thread_id, id, id_type, additional_value, GetTime(), 0.0} );
               return task_num;
             }
           return -1;
@@ -165,32 +165,32 @@ namespace ngstd
 
       void StartJob(int job_id, const std::type_info & type)
         {
-          if(jobs.Size() == max_num_events_per_thread)
+          if(jobs.size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
-            jobs.Append( Job{job_id, &type, GetTime(), 0.0 } );
+            jobs.push_back( Job{job_id, &type, GetTime(), 0.0 } );
         }
 
       void StopJob()
         {
           if(tracing_enabled)
-            jobs.Last().stop_time = GetTime();
+            jobs.back().stop_time = GetTime();
         }
 
       void StartLink(int thread_id, int key)
         {
-          if(links[thread_id].Size() == max_num_events_per_thread)
+          if(links[thread_id].size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
-            links[thread_id].Append( ThreadLink{thread_id, key, GetTime(), true} );
+            links[thread_id].push_back( ThreadLink{thread_id, key, GetTime(), true} );
         }
 
       void StopLink(int thread_id, int key)
         {
-          if(links[thread_id].Size() == max_num_events_per_thread)
+          if(links[thread_id].size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
-            links[thread_id].Append( ThreadLink{thread_id, key, GetTime(), false} );
+            links[thread_id].push_back( ThreadLink{thread_id, key, GetTime(), false} );
         }
 
       void Write( std::string filename );

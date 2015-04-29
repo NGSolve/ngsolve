@@ -2,9 +2,13 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <thread>
+#include <atomic>
 
 #include <ngstd.hpp>
 #include "paje_interface.hpp"
+
+static constexpr int MAX_TRACE_LINE_SIZE = 50;
 
 namespace ngstd
 {
@@ -33,82 +37,84 @@ namespace ngstd
 
       int alias_counter;
 
-//       std::ofstream trace_stream;
       FILE * ctrace_stream;
 
-//       void Write( double x )
-//         {
-//           trace_stream << std::setprecision(15) << '\t' << x;
-//         }
-// 
-//       void WriteTime( double x )
-//         {
-//           trace_stream << std::setprecision(15) << '\t' << 1000*x;
-//         }
-// 
-//       void WriteAlias( int n )
-//         {
-//           trace_stream << '\t' << 'a' << n;
-//         }
-// 
-//       void Write( int n )
-//         {
-//           trace_stream << '\t' << n;
-//         }
-// 
-//       void Write( string s )
-//         {
-//           trace_stream << '\t' << '"' << s << '"';
-//         }
-// 
-//       void WriteColor( double r, double g, double b )
-//         {
-//           trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
-//         }
-// 
-//       void WriteColor( double hue )
-//         {
-//           double r,g,b;
-//           Hue2RGB( hue, r, g, b );
-//           trace_stream << '\t' << '"' << r << ' ' << g << ' ' << b << '"';
-//         }
+      enum PType
+        {
+          SET_VARIABLE=1,
+          ADD_VARIABLE,
+          SUB_VARIABLE,
+          PUSH_STATE,
+          POP_STATE,
+          START_LINK,
+          STOP_LINK
+        };
 
       struct PajeEvent
         {
+          PajeEvent( int aevent_type, double atime, int atype, int acontainer, double avar_value )
+            : time(atime), event_type(aevent_type), type(atype), container(acontainer), var_value(avar_value)
+            { }
+
+          PajeEvent( int aevent_type, double atime, int atype, int acontainer, int avalue = 0, int aid = 0, bool avalue_is_alias = true )
+            : time(atime), event_type(aevent_type), type(atype), container(acontainer), value(avalue), id(aid), value_is_alias(avalue_is_alias)
+            { }
+
+          PajeEvent( int aevent_type, double atime, int atype, int acontainer, int avalue, int astart_container, int akey )
+            : time(atime), event_type(aevent_type), type(atype), container(acontainer), value(avalue), start_container(astart_container), id(akey)
+            { }
+
           double time;
-          std::function<void()> func;
+          double var_value = 0.0;
+          int event_type;
+          int type;
+          int container;
+          int value = 0;
+          int id = 0;
+          int start_container = 0;
+          bool value_is_alias = true;
+
           bool operator < (const PajeEvent & other) const { return time < other.time; }
+
+          int write(char *buf)
+            {
+              const int &key = id;
+              const int &end_container = start_container;
+              switch(event_type)
+                {
+                case PajeSetVariable:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time, type, container, var_value );
+                case PajeAddVariable:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time, type, container, var_value );
+                case PajeSubVariable:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time, type, container, var_value );
+                case PajePushState:
+                  if(value_is_alias)
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time, type, container, value, id);
+                  else
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time, type, container, value, id);
+                case PajePopState:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time, type, container );
+                case PajeStartLink:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time, type, container, value, start_container, key );
+                case PajeEndLink:
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
+                }
+            }
         };
 
       std::vector<PajeEvent> events;
 
     public:
-      enum PType
-        {
-          CONTAINER=0,
-          VARIABLE=1,
-          STATE=2,
-          EVENT=3,
-          LINK=4
-        };
-
       PajeFile( string filename )
-//         : trace_stream(filename, ios::binary)
         {
-//           trace_stream << header;
-          ctrace_stream = fopen ("ngs0.trace","w");
+          ctrace_stream = fopen (filename.c_str(),"w");
           fprintf(ctrace_stream, "%s", header );
           alias_counter = 0;
         }
       int DefineContainerType ( int parent_type, string name )
         {
           int alias = ++alias_counter;
-//           trace_stream << PajeDefineContainerType;
-//           WriteAlias(alias);
-//           if(parent_type!=0) WriteAlias(parent_type);
-//           else Write(parent_type);
-//           Write(name);
-//           trace_stream << '\n';
           if(parent_type!=0)
             fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\n", PajeDefineContainerType, alias, parent_type, name.c_str() );
           else
@@ -119,12 +125,6 @@ namespace ngstd
       int DefineVariableType ( int container_type, string name )
         {
           int alias = ++alias_counter;
-//           trace_stream << PajeDefineVariableType;
-//           WriteAlias(alias);
-//           WriteAlias(container_type);
-//           Write(name);
-//           WriteColor( 1.0, 1.0, 1.0 );
-//           trace_stream << '\n';
           fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\t\"1.0 1.0 1.0\"\n", PajeDefineVariableType, alias, container_type, name.c_str() );
           return alias;
         }
@@ -132,30 +132,18 @@ namespace ngstd
       int DefineStateType ( int type, string name )
         {
           int alias = ++alias_counter;
-//           trace_stream << PajeDefineStateType;
-//           WriteAlias(alias);
-//           WriteAlias((int)type);
-//           Write(name);
-//           trace_stream << '\n';
           fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\n", PajeDefineStateType, alias, type, name.c_str() );
           return alias;
         }
 
-//       int DefineEventType ()
-//         {
-//           Write("event not implemented");
-//         }
+      //       int DefineEventType ()
+      //         {
+      //           Write("event not implemented");
+      //         }
 
       int DefineLinkType (int parent_container_type, int start_container_type, int stop_container_type, string name)
         {
           int alias = ++alias_counter;
-//           trace_stream << PajeDefineLinkType;
-//           WriteAlias(alias);
-//           WriteAlias(parent_container_type);
-//           WriteAlias(start_container_type);
-//           WriteAlias(stop_container_type);
-//           Write(name);
-//           trace_stream << '\n';
           fprintf( ctrace_stream, "%d\ta%d\ta%d\ta%d\ta%d\t\"%s\"\n", PajeDefineLinkType, alias, parent_container_type, start_container_type, stop_container_type, name.c_str() );
           return alias;
         }
@@ -172,12 +160,6 @@ namespace ngstd
             }
 
           int alias = ++alias_counter;
-//           trace_stream << PajeDefineEntityValue;
-//           WriteAlias(alias);
-//           WriteAlias(type);
-//           Write(name);
-//           WriteColor(hue);
-//           trace_stream << '\n';
           double r,g,b;
           Hue2RGB( hue, r, g, b );
           fprintf( ctrace_stream, "%d\ta%d\ta%d\t\"%s\"\t\"%.15g %.15g %.15g\"\n", PajeDefineEntityValue, alias, type, name.c_str(), r,g,b );
@@ -187,14 +169,6 @@ namespace ngstd
       int CreateContainer ( int type, int parent, string name )
         {
           int alias = ++alias_counter;
-//           trace_stream << PajeCreateContainer;
-//           Write(0.0);
-//           WriteAlias(alias);
-//           WriteAlias(type);
-//           if(parent!=0) WriteAlias(parent);
-//           else Write(parent);
-//           Write(name);
-//           trace_stream << '\n';
           if(parent!=0)
             fprintf( ctrace_stream, "%d\t0\ta%d\ta%d\ta%d\t\"%s\"\n", PajeCreateContainer, alias, type, parent, name.c_str() );
           else
@@ -206,41 +180,17 @@ namespace ngstd
 
       void SetVariable (double time, int type, int container, double value )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//           trace_stream << PajeSetVariable;
-//           WriteTime(time);
-//           WriteAlias(type);
-//           WriteAlias(container);
-//           Write(value);
-//           trace_stream << '\n';
-          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time, type, container, value );
-                           } } );
+          events.push_back( PajeEvent( PajeSetVariable, time, type, container, value ) );
         }
 
       void AddVariable (double time, int type, int container, double value )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//           trace_stream << PajeAddVariable;
-//           WriteTime(time);
-//           WriteAlias(type);
-//           WriteAlias(container);
-//           Write(value);
-//           trace_stream << '\n';
-          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time, type, container, value );
-                           } } );
+          events.push_back( PajeEvent( PajeAddVariable, time, type, container, value ) );
         }
 
       void SubVariable (double time, int type, int container, double value )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//           trace_stream << PajeSubVariable;
-//           WriteTime(time);
-//           WriteAlias(type);
-//           WriteAlias(container);
-//           Write(value);
-//           trace_stream << '\n';
-          fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time, type, container, value );
-                           } } );
+          events.push_back( PajeEvent( PajeSubVariable, time, type, container, value ) );
         }
 
       void SetState ()
@@ -248,32 +198,12 @@ namespace ngstd
 
       void PushState ( double time, int type, int container, int value, int id = 0, bool value_is_alias = true )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//                            trace_stream << PajePushState;
-//                            WriteTime(time);
-//                            WriteAlias(type);
-//                            WriteAlias(container);
-//                            if(value_is_alias) WriteAlias(value);
-//                            else Write(value);
-//                            Write(id);
-//                            trace_stream << '\n';
-                           if(value_is_alias)
-                             fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time, type, container, value, id);
-                           else
-                             fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time, type, container, value, id);
-                           } } );
+          events.push_back( PajeEvent( PajePushState, time, type, container, value, id) );
         }
 
       void PopState ( double time, int type, int container )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//                            trace_stream << PajePopState;
-//                            WriteTime(time);
-//                            WriteAlias(type);
-//                            WriteAlias(container);
-//                            trace_stream << '\n';
-                           fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time, type, container );
-                           } } );
+          events.push_back( PajeEvent( PajePopState, time, type, container ) );
         }
 
       void ResetState ()
@@ -281,32 +211,12 @@ namespace ngstd
 
       void StartLink ( double time, int type, int container, int value, int start_container, int key )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//           trace_stream << PajeStartLink;
-//           WriteTime(time);
-//           WriteAlias(type);
-//           WriteAlias(container);
-//           Write(value);
-//           WriteAlias(start_container);
-//           Write(key);
-//           trace_stream << '\n';
-              fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time, type, container, value, start_container, key );
-          } } );
+          events.push_back( PajeEvent( PajeStartLink, time, type, container, value, start_container, key ) );
         }
 
       void EndLink ( double time, int type, int container, int value, int end_container, int key )
         {
-          events.push_back( PajeEvent {time, [=]() {
-//           trace_stream << PajeEndLink;
-//           WriteTime(time);
-//           WriteAlias(type);
-//           WriteAlias(container);
-//           Write(value);
-//           WriteAlias(end_container);
-//           Write(key);
-//           trace_stream << '\n';
-              fprintf( ctrace_stream, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
-          } } );
+          events.push_back( PajeEvent(  PajeEndLink, time, type, container, value, end_container, key ) );
         }
 
       void NewEvent ()
@@ -314,15 +224,46 @@ namespace ngstd
 
       void WriteEvents()
         {
-          cout << "Wite trace file..." << endl;
-          double t = omp_get_wtime();
-          cout << __LINE__ << endl;
+          cout << "Sorting traces..." << flush;
           std::sort (events.begin(), events.end());
-          cout << __LINE__ << endl;
-          for( auto & event : events )
-            event.func();
-          cout << __LINE__ << endl;
-          cout << "took " << omp_get_wtime() - t << " seconds." << endl;
+          cout << " finished" << endl;
+          int nthreads = omp_get_max_threads();
+          int buf_size = 100000;
+          std::vector<vector<char>> bufs(nthreads);
+          for(auto & buf : bufs)
+            buf.reserve(buf_size);
+
+          int nevents = events.size();
+          int events_per_thread = 2000;
+          atomic<int> job_counter;
+          job_counter = 0;
+          int round = 0;
+          for( int n = 0; n<nevents; n+=events_per_thread*nthreads )
+            {
+              cout << "\rWriting traces... " << (size_t)n*100/nevents << "%" << flush;
+              round++;
+#pragma omp parallel
+                {
+                  int i = omp_get_thread_num();
+                  int nstart = n+i*events_per_thread;
+                  int nnext = min2(nevents, nstart+events_per_thread);
+                  int counter = 0;
+                  char *buf = &bufs[i][0];
+                  buf[0] = '\0';
+                  for (int k = nstart; k<nnext; k++)
+                    {
+                      int ret = events[k].write( buf+counter );
+                      if(ret>MAX_TRACE_LINE_SIZE)
+                        Exception("Line in tracefile too long, increase MAX_TRACE_LINE_SIZE in " __FILE__ "!\n");
+                      counter += ret;
+
+                    }
+                  job_counter++;
+                }
+              for (int i : Range(nthreads) )
+                fprintf( ctrace_stream, "%s", &bufs[i][0] );
+            }
+          cout << endl;
         }
 
     private:
@@ -466,7 +407,7 @@ namespace ngstd
   void PajeTrace::Write( string filename )
     {
       std::cout << "Write traces..." << std::endl;
-      std::cout << "Number of Jobs: " << jobs.Size() << std::endl;
+      std::cout << "Number of Jobs: " << jobs.size() << std::endl;
       if(!tracing_enabled)
         {
           cout << "Tracing stopped during computation due to tracefile size limit of " << max_tracefile_size/1024/1024 << " megabytes." << endl;
@@ -513,7 +454,6 @@ namespace ngstd
             string name = realname;
             job_map[j.type] = paje.DefineEntityValue( state_type_job, name, -1 );
             job_task_map[j.type] = paje.DefineEntityValue( state_type_task, name, -1 );
-            // name.erase( name.find('}')+1);
             free(realname);
           }
 
@@ -523,7 +463,6 @@ namespace ngstd
           paje.PopState( j.stop_time, state_type_job, container_jobs );
         }
 
-//       QuickSort(timer_events);
       std::set<int> timer_ids;
       std::map<int,int> timer_aliases;
 
@@ -548,7 +487,7 @@ namespace ngstd
               maxdepth = timerdepth>maxdepth ? timerdepth : maxdepth;
             }
           else
-              timerdepth--;
+            timerdepth--;
         }
 
       std::vector<int> timer_container_aliases;
@@ -603,7 +542,7 @@ namespace ngstd
       // Merge link event
       int nlinks = 0;
       for( auto & l : links)
-        nlinks += l.Size();
+        nlinks += l.size();
 
       std::vector<ThreadLink> links_merged;
       links_merged.reserve(nlinks);
@@ -616,7 +555,7 @@ namespace ngstd
           double mintime = 1e300;
           for (int t = 0; t<nthreads; t++)
             {
-              if(pos[t] < links[t].Size() && links[t][pos[t]].time < mintime)
+              if(pos[t] < links[t].size() && links[t][pos[t]].time < mintime)
                 {
                   minpos = t;
                   mintime = links[t][pos[t]].time;
