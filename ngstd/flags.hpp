@@ -31,6 +31,8 @@ namespace ngstd
     SymbolTable<shared_ptr<Array<string>>> strlistflags;
     /// numerical list flags
     SymbolTable<shared_ptr<Array<double>>> numlistflags;
+    /// flags list flags
+    SymbolTable<Flags> flaglistflags;
   public:
     /// no flags
     Flags ();
@@ -58,6 +60,8 @@ namespace ngstd
     Flags & SetFlag (const char * name, double val) &;
     /// Sets boolean flag
     Flags & SetFlag (const char * name) &;
+    /// Sets numerical flag, overwrite if exists
+    Flags & SetFlag (const char * name, Flags & val) &;
 
     /// Sets string flag, overwrite if exists
     Flags & SetFlag (const string & name, const string & val);
@@ -65,6 +69,8 @@ namespace ngstd
     Flags &  SetFlag (const string & name, double val);
     /// Sets boolean flag
     Flags &  SetFlag (const string & name);
+    /// Sets numerical flag, overwrite if exists
+    Flags &  SetFlag (const string & name, Flags & val);
     /// Sets string array flag
     Flags &  SetFlag (const string & name, const Array<string> & val);
     /// Sets double array flag
@@ -81,13 +87,13 @@ namespace ngstd
     /// write flags to stream
     void PrintFlags (ostream & ost) const;
     /// Load flags from file
-    void LoadFlags (const char * filename);
+    void LoadFlags (const char * filename, SymbolTable<Flags> * sf = nullptr);
     /**
        Set command line flag.
        Flag must be in form: -name=hello -val=0.5 -defflag 
-       -names=[Joe,Jim] -values=[1,3,4]
+       -names=[Joe,Jim] -values=[1,3,4] -solverflags=*abc
     */
-    void SetCommandLineFlag (const char * st);
+    void SetCommandLineFlag (const char * st, SymbolTable<Flags> * sf = nullptr);
     /// Returns string flag, default value if not exists
     string GetStringFlag (const string & name, const char * def) const;
     /// Returns string flag, default value if not exists
@@ -105,12 +111,16 @@ namespace ngstd
     const Array<string> & GetStringListFlag (const string & name) const;
     /// Returns num list flag, empty array if not exist
     const Array<double> & GetNumListFlag (const string & name) const;
+    /// Returns flag list flag, empty flag if not exist
+    const Flags & GetFlagsFlag (const string & name) const;
 
 
     /// Test, if string flag is defined
     bool StringFlagDefined (const string & name) const;
     /// Test, if num flag is defined
     bool NumFlagDefined (const string & name) const;
+    /// Test, if num flag is defined
+    bool FlagsFlagDefined (const string & name) const;
     /// Test, if string list flag is defined
     bool StringListFlagDefined (const string & name) const;
     /// Test, if num list flag is defined
@@ -120,6 +130,8 @@ namespace ngstd
     int GetNStringFlags () const { return strflags.Size(); }
     /// number of num flags
     int GetNNumFlags () const { return numflags.Size(); }
+    /// number of num flags
+    int GetNFlagsFlags () const { return flaglistflags.Size(); }
     /// number of define flags
     int GetNDefineFlags () const { return defflags.Size(); }
     /// number of string-list flags
@@ -138,6 +150,8 @@ namespace ngstd
     { name = numlistflags.GetName(i).c_str(); return numlistflags[i]; }
     const shared_ptr<Array<string>> GetStringListFlag (int i, string & name) const
     { name = strlistflags.GetName(i); return strlistflags[i]; }
+    const Flags & GetFlagsFlag (int i, string & name) const
+    { name = flaglistflags.GetName(i); return flaglistflags[i]; }
 
     friend Archive & operator & (Archive & archive, Flags & flags);
   };
