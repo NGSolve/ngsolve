@@ -387,6 +387,7 @@ class NGS_DLL_HEADER SourceHDivIntegrator<2>
   typedef  BaseSourceHDivIntegrator<2>  BASE;
 public:
   using BASE::BaseSourceHDivIntegrator;
+  SourceHDivIntegrator() = delete;
   /*
   SourceHDivIntegrator (CoefficientFunction * coeff1,
                         CoefficientFunction * coeff2);
@@ -400,6 +401,7 @@ class NGS_DLL_HEADER SourceHDivIntegrator<3>
   typedef  BaseSourceHDivIntegrator<3>  BASE;
 public:
   using BASE::BaseSourceHDivIntegrator;
+  SourceHDivIntegrator() = delete;
   /*
   SourceHDivIntegrator (CoefficientFunction * coeff1,
                         CoefficientFunction * coeff2,

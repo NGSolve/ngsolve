@@ -1,3 +1,6 @@
+# Tests currently only working on Linux
+if(NOT WIN32 AND NOT APPLE)
+
 include(CTest)
 
 set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
@@ -5,13 +8,11 @@ set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
 file(COPY ${PROJECT_SOURCE_DIR}/pde_tutorial DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(pde_dir "${CMAKE_CURRENT_BINARY_DIR}/pde_tutorial")
 
-set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
-if(NOT WIN32 AND NOT APPLE)
-    add_executable( pde_tester pde_tester.cpp)
-    target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
-    install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
-endif(NOT WIN32 AND NOT APPLE)
+add_executable( pde_tester pde_tester.cpp)
+install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
+target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+set(pde_tests "d1_square.pde;d2_chip.pde;d3_helmholtz.pde;d4_cube.pde;d5_beam.pde;d6_shaft.pde;d7_coil.pde;d8_coilshield.pde;d9_hybridDG.pde;d10_DGdoubleglazing.pde;d11_chip_nitsche.pde")
 
 if(USE_MPI)
 # currently d8 and d10 is not working in parallel
@@ -74,3 +75,5 @@ if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
     set_tests_properties ( "d6_shaft.pde" PROPERTIES TIMEOUT 60 )
     set_tests_properties ( "d8_coilshield.pde" PROPERTIES TIMEOUT 60 )
 endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
+
+endif(NOT WIN32 AND NOT APPLE)
