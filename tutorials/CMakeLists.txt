@@ -8,4 +8,5 @@ install( FILES
         hinge.stl  part1.stl frame.step  screw.step					   
         squarehole.in2d squarecircle.in2d square.in2d
         DESTINATION share/netgen
+        COMPONENT netgen_tutorial
        )

@@ -30,6 +30,6 @@ endif(APPLE)
 
 if(NOT WIN32)
     target_link_libraries( mesh ${ZLIB_LIBRARIES} ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${METIS_LIBRARY})
-    install( TARGETS mesh DESTINATION lib )
+    install( TARGETS mesh DESTINATION lib COMPONENT netgen )
 endif(NOT WIN32)
 

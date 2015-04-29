@@ -32,10 +32,10 @@ if(USE_GUI)
     if(WIN32)
         set_target_properties( netgenlib PROPERTIES OUTPUT_NAME interface ) 
     else(WIN32)
-        target_link_libraries( netgenlib visual csgvis csg interface mesh togl)
+        target_link_libraries( netgenlib visual csgvis csg interface mesh occ occvis togl)
     endif(WIN32)
 
-    target_link_libraries( netgenlib ${LIBPTHREAD} ${OCCLIBS} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} ${PYTHON_LIBS} ${FFMPEG_LIBRARIES})
+    target_link_libraries( netgenlib ${LIBPTHREAD} ${OCC_LIBRARIES} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} ${PYTHON_LIBS} ${FFMPEG_LIBRARIES})
     target_link_libraries( netgen netgenlib )
 
     install(TARGETS netgenlib ${ng_install_dir})
@@ -60,7 +60,7 @@ install(FILES
     ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  
     ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl 
     occgeom.tcl acisgeom.tcl netgen.ocf
-    DESTINATION bin)
+    DESTINATION bin COMPONENT netgen)
 
 if(USE_GUI AND NOT WIN32)
     add_subdirectory(Togl-1.7)
