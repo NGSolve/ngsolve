@@ -15,6 +15,8 @@ namespace ngstd
       int nthreads;
 
       static size_t max_tracefile_size;
+      static bool trace_thread_counter;
+      static bool trace_threads;
 
 
       // Approximate number of events to trace. Tracing will
@@ -22,9 +24,20 @@ namespace ngstd
       int max_num_events_per_thread;
       bool tracing_enabled;
 
-      static void SetMaxTracefileSize( size_t max_size ) {
+      static void SetTraceThreads( bool atrace_threads )
+        {
+          trace_threads = atrace_threads;
+        }
+
+      static void SetTraceThreadCounter( bool trace_threads )
+        {
+          trace_thread_counter = trace_threads;
+        }
+
+      static void SetMaxTracefileSize( size_t max_size )
+        {
           max_tracefile_size = max_size;
-      }
+        }
 
       std::string tracefile_name;
 
@@ -146,6 +159,7 @@ namespace ngstd
 
       int StartTask(int thread_id, int id, int id_type = Task::ID_NONE, int additional_value = -1)
         {
+          if(!trace_threads && !trace_thread_counter) return -1;
           if(tasks[thread_id].size() == max_num_events_per_thread)
             StopTracing();
           if(tracing_enabled)
@@ -159,6 +173,7 @@ namespace ngstd
 
       void StopTask(int thread_id, int task_num)
         {
+          if(!trace_threads && !trace_thread_counter) return;
           if(task_num>=0)
             tasks[thread_id][task_num].stop_time = GetTime();
         }

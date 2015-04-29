@@ -12,7 +12,13 @@ static constexpr int MAX_TRACE_LINE_SIZE = 50;
 
 namespace ngstd
 {
-  size_t PajeTrace::max_tracefile_size;
+  // Produce max 100MB traces by default
+  size_t PajeTrace::max_tracefile_size = 100*1024*1024;
+
+  // If true, produce variable counting active threads
+  // increases trace by a factor of two
+  bool PajeTrace::trace_thread_counter;
+  bool PajeTrace::trace_threads;
 
   using std::string;
   class PajeFile
@@ -435,12 +441,13 @@ namespace ngstd
       const int container_node0 = paje.CreateContainer( container_type_node, container_task_manager, "Node 0" );
 
       std::vector <int> thread_aliases;
-      for (int i=0; i<nthreads; i++)
-        {
-          char name[20];
-          sprintf(name, "Thread %d", i);
-          thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_node0, name ) );
-        }
+      if(trace_threads)
+        for (int i=0; i<nthreads; i++)
+          {
+            char name[20];
+            sprintf(name, "Thread %d", i);
+            thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_node0, name ) );
+          }
 
       int job_counter = 0;
       std::map<const std::type_info *, int> job_map;
@@ -469,13 +476,14 @@ namespace ngstd
       for(auto & event : timer_events)
         timer_ids.insert(event.timer_id);
 
+
       for(auto & vtasks : tasks)
         for (Task & t : vtasks)
           if(t.id_type==Task::ID_TIMER)
             timer_ids.insert(t.id);
 
-      for(auto id : timer_ids)
-        timer_aliases[id] = paje.DefineEntityValue( state_type_timer, NgProfiler::GetName(id).c_str(), -1 );
+          for(auto id : timer_ids)
+            timer_aliases[id] = paje.DefineEntityValue( state_type_timer, NgProfiler::GetName(id).c_str(), -1 );
 
       int timerdepth = 0;
       int maxdepth = 0;
@@ -517,10 +525,16 @@ namespace ngstd
                 {
                 case Task::ID_JOB:
                   value_id = job_task_map[jobs[t.id-1].type];
-                  paje.AddVariable( t.start_time, variable_type_active_threads, container_jobs, 1.0 );
-                  paje.SubVariable( t.stop_time, variable_type_active_threads, container_jobs, 1.0 );
-                  paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.additional_value, true );
-                  paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
+                  if(trace_thread_counter)
+                    {
+                      paje.AddVariable( t.start_time, variable_type_active_threads, container_jobs, 1.0 );
+                      paje.SubVariable( t.stop_time, variable_type_active_threads, container_jobs, 1.0 );
+                    }
+                  if(trace_threads)
+                    {
+                      paje.PushState( t.start_time, state_type_task, thread_aliases[t.thread_id], value_id, t.additional_value, true );
+                      paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
+                    }
                   break;
                 case Task::ID_TIMER:
                   value_id = timer_aliases[t.id];
@@ -532,10 +546,7 @@ namespace ngstd
                   paje.PopState( t.stop_time, state_type_task, thread_aliases[t.thread_id] );
                   break;
                 }
-
-
           }
-
         }
       paje.WriteEvents();
 
