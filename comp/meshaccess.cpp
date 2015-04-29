@@ -932,18 +932,12 @@ namespace ngcomp
                     ElementId(boundary ? BND : VOL, elnr));
 
     if (deformation)
-
       eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, deformation.get(), lh); 
-
     else if (el.is_curved)
-
-        eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this); 
-
+      eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this); 
     else
-      {
-        // RegionTracer regtrace(omp_get_thread_num(), t, elnr);
-        eltrans = new (lh) Ng_ConstElementTransformation<DIM,DIM> (this); 
-      }
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM,DIM> (this); 
+
 
     eltrans->SetElementType (el.GetType());
     int elind = el.GetIndex();

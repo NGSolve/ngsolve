@@ -194,6 +194,7 @@ namespace ngfem
       // RegionTimer r(t);
       // t.AddFlops (ir.GetNIP()*coefs.Size());
 
+      /*
 #ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
@@ -201,6 +202,7 @@ namespace ngfem
         vals = FlatMatrixFixWidth<SHAPES::NDOF> (pre->shapes) * coefs;
       else
 #endif
+      */
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
@@ -314,8 +316,12 @@ namespace ngfem
       INT<4> f = this -> GetFaceSort (0, vnums);
       // DubinerBasis3::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
 
+
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
+
+      /*
+        // pre c++14
       LegendrePolynomial_CalcCoefficient leg;
       // LegendrePolynomial leg;
       Tx p1, p2, p3, p4;
@@ -331,6 +337,22 @@ namespace ngfem
           shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
           ii++;
         });
+      */
+
+
+      int ii = 0;
+      LegendrePolynomial::EvalScaled 
+        (integral_constant<int,ORDER>(), 
+         y-(1-(1-x-y)), 1-x,
+         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
+                   {
+                     JacobiPolynomialFix<1+2*i,0> jac;
+                     jac.EvalMult (integral_constant<int,ORDER-i>(), 2*x-1, val, 
+                                   SBLambda([&](auto j, Tx v2) 
+                                            {
+                                              shape[ii++] = v2;
+                                            }));
+                   }));
     }
   };
 
