@@ -172,7 +172,7 @@ namespace ngcomp
     for (int i = 0; i < generic_variables.Size(); i++)
       ost << "variable " << generic_variables.GetName(i) << " = " << generic_variables[i] << endl;
     for (int i = 0; i < flags.Size(); i++)
-      ost << "flags " << variables.GetName(i) << " = " << flags[i] << endl;
+      ost << "flags " << flags.GetName(i) << " = " << flags[i] << endl;
 
     ost << endl;
   
