@@ -469,7 +469,9 @@ namespace ngstd
 #endif
             job_map[j.type] = paje.DefineEntityValue( state_type_job, name, -1 );
             job_task_map[j.type] = paje.DefineEntityValue( state_type_task, name, -1 );
+#ifdef HAVE_CXA_DEMANGLE
             free(realname);
+#endif
           }
 
       for(Job & j : jobs)
