@@ -21,7 +21,7 @@ namespace ngstd
 
       // Approximate number of events to trace. Tracing will
       // be stopped if any thread reaches this number of events
-      int max_num_events_per_thread;
+      unsigned int max_num_events_per_thread;
       bool tracing_enabled;
 
       static void SetTraceThreads( bool atrace_threads )
@@ -121,7 +121,7 @@ namespace ngstd
           cout << "Tracing " << max_num_events_per_thread << " events per thread." << endl;
 
           tasks.resize(nthreads);
-          int reserve_size = min2(1000000, max_num_events_per_thread);
+          int reserve_size = min2(1000000U, max_num_events_per_thread);
           for(auto & t : tasks)
             t.reserve(reserve_size);
 

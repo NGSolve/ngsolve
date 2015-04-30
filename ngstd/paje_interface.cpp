@@ -62,7 +62,7 @@ namespace ngstd
       struct PajeEvent
         {
           PajeEvent( int aevent_type, double atime, int atype, int acontainer, double avar_value )
-            : time(atime), event_type(aevent_type), type(atype), container(acontainer), var_value(avar_value)
+            : time(atime), var_value(avar_value), event_type(aevent_type), type(atype), container(acontainer)
             { }
 
           PajeEvent( int aevent_type, double atime, int atype, int acontainer, int avalue = 0, int aid = 0, bool avalue_is_alias = true )
@@ -79,8 +79,8 @@ namespace ngstd
           int type;
           int container;
           int value = 0;
-          int id = 0;
           int start_container = 0;
+          int id = 0;
           bool value_is_alias = true;
 
           bool operator < (const PajeEvent & other) const { return time < other.time; }
@@ -109,6 +109,7 @@ namespace ngstd
                 case PajeEndLink:
                   return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
                 }
+              return 0;
             }
         };
 
@@ -452,7 +453,6 @@ namespace ngstd
             thread_aliases.push_back( paje.CreateContainer( container_type_thread, container_node0, name ) );
           }
 
-      int job_counter = 0;
       std::map<const std::type_info *, int> job_map;
       std::map<const std::type_info *, int> job_task_map;
 
@@ -567,7 +567,7 @@ namespace ngstd
 
       std::vector<ThreadLink> links_merged;
       links_merged.reserve(nlinks);
-      std::vector<int> pos(nthreads);
+      std::vector<unsigned int> pos(nthreads);
 
       int nlinks_merged = 0;
       while(nlinks_merged < nlinks)
@@ -600,7 +600,7 @@ namespace ngstd
             }
           else
             {
-              int i = 0;
+              unsigned int i = 0;
               while(i<started_links.size())
                 {
                   while(i<started_links.size() && started_links[i].key == l.key)
