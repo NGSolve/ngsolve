@@ -1,4 +1,7 @@
+#ifdef HAVE_CXA_DEMANGLE
 #include <cxxabi.h>
+#endif
+
 #include <map>
 #include <set>
 #include <algorithm>
@@ -457,8 +460,13 @@ namespace ngstd
         if(job_map.find(j.type) == job_map.end())
           {
             int status;
+
+#ifdef HAVE_CXA_DEMANGLE
             char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
             string name = realname;
+#else
+            string name = j.type->name();
+#endif
             job_map[j.type] = paje.DefineEntityValue( state_type_job, name, -1 );
             job_task_map[j.type] = paje.DefineEntityValue( state_type_task, name, -1 );
             free(realname);
