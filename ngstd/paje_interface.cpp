@@ -1,7 +1,3 @@
-#ifdef HAVE_CXA_DEMANGLE
-#include <cxxabi.h>
-#endif
-
 #include <map>
 #include <set>
 #include <algorithm>
@@ -10,6 +6,10 @@
 
 #include <ngstd.hpp>
 #include "paje_interface.hpp"
+
+#ifdef HAVE_CXA_DEMANGLE
+#include <cxxabi.h>
+#endif
 
 static constexpr int MAX_TRACE_LINE_SIZE = 50;
 
