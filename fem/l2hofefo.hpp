@@ -339,11 +339,10 @@ namespace ngfem
         });
       */
 
-
       int ii = 0;
       LegendrePolynomial::EvalScaled 
         (integral_constant<int,ORDER>(), 
-         y-(1-(1-x-y)), 1-x,
+         y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
                      JacobiPolynomialFix<1+2*i,0> jac;
