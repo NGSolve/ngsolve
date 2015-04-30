@@ -116,7 +116,7 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++11 /Qopt-report-file:report.log")
+        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++1y /Qopt-report-file:report.log")
     else()
         # MS Visual Compiler
         add_definitions(-DCPP11_THREADS)
@@ -126,7 +126,7 @@ if(WIN32)
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
 endif(WIN32)
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -undefined dynamic_lookup")
