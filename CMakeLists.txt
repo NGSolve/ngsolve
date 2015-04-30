@@ -87,9 +87,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
 include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
-include (CheckFunctionExists)
-set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
-check_function_exists ( abi::__cxa_demangle HAVE_CXA_DEMANGLE )
+include (CheckCXXSymbolExists)
+# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
+check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
