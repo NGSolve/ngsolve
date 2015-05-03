@@ -20,6 +20,12 @@ namespace netgen
   extern VisualSceneMesh vsmesh;
 
 
+  void AddUserVisualizationObject (UserVisualizationObject * vis)
+  {
+    vssolution.AddUserVisualizationObject (vis);
+  }
+
+
   VisualSceneSolution :: SolData :: SolData ()
     : name (0), data (0), solclass(0)
   { ; }
