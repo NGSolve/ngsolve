@@ -12,7 +12,7 @@
 #endif
 
 static constexpr int MAX_TRACE_LINE_SIZE = 50;
-extern const char const *header;
+extern const char *header;
 
 namespace ngstd
 {
@@ -511,7 +511,7 @@ namespace ngstd
     }
 }
 
-static const char const *header = 
+const char *header =
         "%EventDef PajeDefineContainerType 0 \n"
         "%       Alias string \n"
         "%       Type string \n"
