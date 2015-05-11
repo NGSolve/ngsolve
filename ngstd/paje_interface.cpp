@@ -21,8 +21,8 @@ namespace ngstd
 
   // If true, produce variable counting active threads
   // increases trace by a factor of two
-  bool PajeTrace::trace_thread_counter;
-  bool PajeTrace::trace_threads;
+  bool PajeTrace::trace_thread_counter = true;
+  bool PajeTrace::trace_threads = true;
 
   using std::string;
   class PajeFile
