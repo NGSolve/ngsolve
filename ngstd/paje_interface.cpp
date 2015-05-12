@@ -90,25 +90,26 @@ namespace ngstd
             {
               const int &key = id;
               const int &end_container = start_container;
+              double time_ms = time * 1000.0;
               switch(event_type)
                 {
                 case PajeSetVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSetVariable, time_ms, type, container, var_value );
                 case PajeAddVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeAddVariable, time_ms, type, container, var_value );
                 case PajeSubVariable:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time, type, container, var_value );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%.15g\n", PajeSubVariable, time_ms, type, container, var_value );
                 case PajePushState:
                   if(value_is_alias)
-                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time, type, container, value, id);
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\ta%d\t%d\n", PajePushState, time_ms, type, container, value, id);
                   else
-                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time, type, container, value, id);
+                    return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\t%d\n", PajePushState, time_ms, type, container, value, id);
                 case PajePopState:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time, type, container );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\n", PajePopState, time_ms, type, container );
                 case PajeStartLink:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time, type, container, value, start_container, key );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeStartLink, time_ms, type, container, value, start_container, key );
                 case PajeEndLink:
-                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time, type, container, value, end_container, key );
+                  return sprintf( buf, "%d\t%.15g\ta%d\ta%d\t%d\ta%d\t%d\n", PajeEndLink, time_ms, type, container, value, end_container, key );
                 }
               return 0;
             }
