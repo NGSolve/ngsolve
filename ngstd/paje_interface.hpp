@@ -10,19 +10,21 @@ namespace ngstd
   extern class PajeTrace *trace;
   class PajeTrace
     {
-    public:
-      double start_time;
-      int nthreads;
+      friend class TraceDisabler;
 
       static size_t max_tracefile_size;
       static bool trace_thread_counter;
       static bool trace_threads;
 
+      bool tracing_enabled;
+      double start_time;
+      int nthreads;
+
+    public:
 
       // Approximate number of events to trace. Tracing will
       // be stopped if any thread reaches this number of events
       unsigned int max_num_events_per_thread;
-      bool tracing_enabled;
 
       static void SetTraceThreads( bool atrace_threads )
         {
@@ -210,6 +212,27 @@ namespace ngstd
 
       void Write( std::string filename );
 
+    };
+
+  class TraceDisabler
+    {
+      bool trace_thread_counter;
+      bool trace_threads;
+
+    public:
+      TraceDisabler()
+        {
+          trace_thread_counter = PajeTrace::trace_thread_counter;
+          PajeTrace::trace_thread_counter = false;
+          trace_threads = PajeTrace::trace_threads;
+          PajeTrace::trace_threads = false;
+        }
+
+      ~TraceDisabler()
+        {
+          PajeTrace::trace_thread_counter = trace_thread_counter;
+          PajeTrace::trace_threads = trace_threads;
+        }
     };
 }
 
