@@ -794,8 +794,6 @@ public:
 
 #ifdef GOLD
 #include <sparsematrix_spec.hpp>
-#else
-#include "sparsematrix_spec.hpp"
 #endif
 
   

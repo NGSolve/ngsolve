@@ -116,7 +116,7 @@ public:
   static INLINE void Do (FUNC f)
   {
     Cl_Iterate<NUM-1>::Do(f);
-    f(NUM);
+    f(integral_constant<int,NUM>());
   }
 };
 
@@ -125,7 +125,7 @@ class Cl_Iterate<0>
 {
 public:
   template <typename FUNC>
-  static INLINE void Do (FUNC f)  { f(0); }
+  static INLINE void Do (FUNC f)  { f(integral_constant<int,0>()); }
 };
 
 template <int NUM, typename FUNC>

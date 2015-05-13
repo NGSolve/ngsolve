@@ -8,6 +8,11 @@
 /*********************************************************************/
 
 
+namespace std
+{
+}                                      
+
+
 namespace ngfem
 {
 
@@ -16,37 +21,47 @@ namespace ngfem
   */
 
 
-
   // Use Lambda function with square-bracket assignment
-  template <typename FUNC>
+  template <typename TI, typename FUNC>
   class SBLambdaElement
   {
     FUNC f;
-    int i;
+    TI i;
   public:
-    INLINE SBLambdaElement (const SBLambdaElement & e2) = default; // : f(e2.f), i(e2.i) { ; }
-    INLINE SBLambdaElement (FUNC af, int hi) : f(af), i(hi) { ; }
+    INLINE SBLambdaElement (const SBLambdaElement & e2) = default; 
+    INLINE SBLambdaElement (FUNC af, TI hi) : f(af), i(hi) { ; }
     template <typename VAL>
     INLINE VAL operator= (VAL v) { f(i, v); return v; }
   };
 
-  template <typename FUNC>
+  template <typename TI, typename FUNC>
   class Class_SBLambda
   {
     FUNC func;
-    int offset;
+    TI offset;
   public:
-    INLINE Class_SBLambda (const Class_SBLambda & l2) = default; // : func(l2.func), offset(l2.offset) { ; }
-    INLINE Class_SBLambda (FUNC f, int ao = 0) : func(f), offset(ao) { ; }
-    INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
-    INLINE Class_SBLambda<FUNC> operator+ (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
-    INLINE Class_SBLambda<FUNC> Addr (int i) const { return Class_SBLambda<FUNC> (func, offset+i); }
+    INLINE Class_SBLambda (const Class_SBLambda & l2) = default; 
+    INLINE Class_SBLambda (FUNC f, TI ao) : func(f), offset(ao) { ; }
+
+    template <typename TI2>    
+    INLINE auto operator[] (TI2 i) const -> SBLambdaElement<decltype(offset+i),FUNC> 
+    { 
+      return SBLambdaElement<decltype(offset+i),FUNC> (func, offset+i); 
+    }
+
+    template <typename TI2>
+    INLINE auto operator+ (TI2 i) const -> Class_SBLambda<decltype(offset+i),FUNC>
+    { return Class_SBLambda<decltype(offset+i),FUNC> (func, offset+i); }
+
+    template <typename TI2>
+    INLINE auto Addr (TI2 i) const -> Class_SBLambda<decltype(offset+i),FUNC>
+    {return Class_SBLambda<decltype(offset+i),FUNC> (func, offset+i); }
   };
 
   template <typename FUNC> 
-  INLINE const Class_SBLambda<FUNC> SBLambda (FUNC f)
+  INLINE const Class_SBLambda<integral_constant<int,0>,FUNC> SBLambda (FUNC f)
   {
-    return Class_SBLambda<FUNC> (f);
+    return Class_SBLambda<integral_constant<int,0>,FUNC> (f, integral_constant<int,0>());
   }
 
 
@@ -61,7 +76,7 @@ namespace ngfem
   public:
     INLINE Class_SBLambdaDuo (const Class_SBLambdaDuo & l2) : func(l2.func), func2(l2.func2), offset(l2.offset) { ; }
     INLINE Class_SBLambdaDuo (FUNC f, FUNC2 f2, int ao = 0) : func(f), func2(f2), offset(ao) { ; }
-    INLINE SBLambdaElement<FUNC> operator[] (int i) const { return SBLambdaElement<FUNC> (func, offset+i); }
+    INLINE SBLambdaElement<int,FUNC> operator[] (int i) const { return SBLambdaElement<int,FUNC> (func, offset+i); }
     INLINE Class_SBLambdaDuo<FUNC, FUNC2> operator+ (int i) const { return Class_SBLambdaDuo<FUNC,FUNC2> (func, func2, offset+i); }
     INLINE Class_SBLambdaDuo<FUNC, FUNC2> Addr (int i) const { return Class_SBLambdaDuo<FUNC,FUNC2> (func, func2, offset+i); }
     template <typename VAL1, typename VAL2>
@@ -223,8 +238,8 @@ namespace ngfem
   class RecursivePolynomial
   {
   public:
-    template <class S>
-    INLINE static S EvalNext2 (int i, S x, S & p1, S & p2)
+    template <typename TINT, class S>
+    INLINE static S EvalNext2 (TINT i, S x, S & p1, S & p2)
     {
       if (REC::ZERO_B)
         {
@@ -371,8 +386,8 @@ namespace ngfem
         }
     }
 
-    template <class S, class Sy>
-    INLINE static S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2)
+    template <typename TINT, class S, class Sy>
+    INLINE static S EvalScaledNext2 (TINT i, S x, Sy y, S & p1, S & p2)
     {
       if (REC::ZERO_B)
         {
@@ -419,7 +434,7 @@ namespace ngfem
     template <class S, class T>
     INLINE static void Eval (int n, S x, T && values) 
     {
-      if (n < 0) return;
+      // if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
@@ -576,9 +591,31 @@ namespace ngfem
     }
 
 
+    template <int N, class S, class T>
+    INLINE static void Eval (integral_constant<int,N> n, S x, T && values) 
+    {
+      // S p1, p2;
+      // CEvalFO<REC, N>::Eval (x, values, p1, p2);
 
-
-
+      S p1 = REC::P1(x), p2 = REC::P0(x);
+      Iterate<n+1> ( [&] (auto i)
+        {
+	  values[i] = p2;
+          RecursivePolynomial<REC>::EvalNext2 (i+integral_constant<int,2>(), x, p1, p2);
+        } );
+    }
+    
+    template <int N, class S, class Sy, class T>
+    INLINE static void EvalScaled (integral_constant<int,N> n,
+                                   S x, Sy y, T && values)
+    {
+      S p1 = REC::P1(x), p2 = REC::P0(x);
+      Iterate<n+1> ( [&] (auto i)
+        {
+	  values[i] = p2;
+          RecursivePolynomial<REC>::EvalScaledNext2 (i+integral_constant<int,2>(), x, y, p1, p2);
+        });
+    }
 
     template <int N, class S, class T>
     INLINE static void EvalFO (S x, T && values) 
@@ -1018,6 +1055,15 @@ namespace ngfem
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return legendre_coefs[i][1]; } 
 #endif    
+    
+    template <int I>
+    static INLINE double A (integral_constant<int,I> i) { return 2.0-1.0/i; }
+    template <int I>
+    static INLINE double B (integral_constant<int,I> i) { return 0; }
+    template <int I>
+    static INLINE double C (integral_constant<int,I> i) { return 1.0/i-1.0; }
+
+    
     enum { ZERO_B = 1 };
   };
 
@@ -1147,16 +1193,16 @@ namespace ngfem
     template <class S>
     static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
       
-    static INLINE double A (int i) 
+    static INLINE double CalcA (int i) 
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static INLINE double B (int i)
+    static INLINE double CalcB (int i)
     { i--; return (2.0*i+al+be+1)*(al*al-be*be) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
-    static INLINE double C (int i) 
+    static INLINE double CalcC (int i) 
     { i--; return -2.0*(i+al)*(i+be) * (2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
 
-    static INLINE double CalcA (int i) { return A(i); }
-    static INLINE double CalcB (int i) { return B(i); }
-    static INLINE double CalcC (int i) { return C(i); }
+    static INLINE double A (int i) { return CalcA (i); }
+    static INLINE double B (int i) { return CalcB (i); }
+    static INLINE double C (int i) { return CalcC (i); }
   };
 
 

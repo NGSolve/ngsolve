@@ -10,6 +10,7 @@
 #include <float.h>
 #endif
 
+#include <algorithm>
 
 namespace ngstd
 {
@@ -43,6 +44,11 @@ namespace ngstd
       {
 	auto stra = flags.GetStringListFlag (i, name);
 	SetFlag (name, *stra);
+      }
+    for (int i = 0; i < flags.GetNFlagsFlags(); i++)
+      {
+	auto lflags = flags.GetFlagsFlag (i, name);
+	SetFlag (name, lflags);
       }
   }
   
@@ -114,6 +120,13 @@ namespace ngstd
     return *this;
   }
 
+  Flags & Flags :: SetFlag (const char * name, Flags & val) &
+  {
+    flaglistflags.Set (name, val);
+    return *this;
+  }
+
+
   
   Flags & Flags :: SetFlag (const string & name, const string & val)
   {
@@ -135,6 +148,11 @@ namespace ngstd
     return *this;
   }
 
+  Flags & Flags :: SetFlag (const string & name, Flags & val)
+  {
+    flaglistflags.Set (name, val);
+    return *this;
+  }
 
   Flags & Flags :: SetFlag (const string & name, const Array<string> & val)
   {
@@ -241,6 +259,17 @@ namespace ngstd
       }
   }
 
+  const Flags & 
+  Flags ::GetFlagsFlag (const string & name) const
+  {
+    if (flaglistflags.Used (name))
+      return flaglistflags[name];
+    else
+      {
+	static Flags empty;
+	return empty;
+      }
+  }
 
   bool Flags :: StringFlagDefined (const string & name) const
   {
@@ -250,6 +279,11 @@ namespace ngstd
   bool Flags :: NumFlagDefined (const string &name) const
   {
     return numflags.Used (name);
+  }
+
+  bool Flags :: FlagsFlagDefined (const string &name) const
+  {
+    return flaglistflags.Used (name);
   }
   
   bool Flags :: StringListFlagDefined (const string & name) const
@@ -273,6 +307,16 @@ namespace ngstd
       outfile << numflags.GetName(i) << " = " << numflags[i] << endl;
     for (int i = 0; i < defflags.Size(); i++)
       outfile << defflags.GetName(i) << endl;
+    for (int i = 0; i < flaglistflags.Size(); i++)
+      outfile << flaglistflags.GetName(i) << " =*" << flaglistflags[i] << endl;
+    for (int i = 0; i < numlistflags.Size(); i++)
+      {
+        outfile << numlistflags.GetName(i) << " = [";
+        int j = 0;
+        for (j = 0; j < numlistflags[i]->Size() - 1; ++j)
+          outfile << (*numlistflags[i])[j] << ", ";
+        outfile << (*numlistflags[i])[j] << "]" << endl;
+      }
   }
  
 
@@ -289,51 +333,104 @@ namespace ngstd
       ost << strlistflags.GetName(i) << " = " << strlistflags[i] << endl;
     for (int i = 0; i < numlistflags.Size(); i++)
       ost << numlistflags.GetName(i) << " = " << numlistflags[i] << endl;
+    for (int i = 0; i < flaglistflags.Size(); i++)
+      ost << flaglistflags.GetName(i) << " = " << flaglistflags[i] << endl;
   }
 
 
-  void Flags :: LoadFlags (const char * filename) 
+  void Flags :: LoadFlags (const char * filename, SymbolTable<Flags> * sf ) 
   {
-    char name[100], str[100];
+    char str[100];
     char ch;
     double val;
     ifstream infile(filename);
 
     while (infile.good())
       {
-	infile >> name;
-	if (strlen (name) == 0) break;
+        string name;
+        string content;
+        string line;
+        getline(infile, line);
+        istringstream line_stream(line);
 
-	if (name[0] == '/' && name[1] == '/')
-	  {
-	    ch = 0;
-	    while (ch != '\n' && infile.good())
-	      {
-		ch = infile.get();
-	      }
-	    continue;
-	  }
+        getline(line_stream, name, '=');
+        name.erase(std::remove(name.begin(), name.end(), ' '), name.end());
 
-	ch = 0;
-	infile >> ch;
-	if (ch != '=')
-	  {
-	    infile.putback (ch);
-	    SetFlag (name);
-	  }
+        getline(line_stream, content);
+        content.erase(std::remove(content.begin(), content.end(), ' '), content.end());
+
+        cout << " name = " << name << endl;
+        cout << " content = " << content << endl;
+        
+	// if (name[0] == '/' && name[1] == '/')
+	//   {
+	//     ch = 0;
+	//     while (ch != '\n' && infile.good())
+	//       {
+	// 	ch = infile.get();
+	//       }
+	//     continue;
+	//   }
+
+        if (strlen(content.c_str())==0)
+        {
+          SetFlag (name);
+          continue;
+        }
 	else
 	  {
-	    infile >> val;
-	    if (!infile.good())
-	      {
-		infile.clear();
-		infile >> str;
-		SetFlag (name, str);
-	      }
-	    else
-	      {
-		SetFlag (name, val);
-	      }
+            istringstream content_stream(content);
+            
+            content_stream >> ch;
+            if (ch != '*')
+              {
+                if (ch == '[')
+                  {
+                    content_stream.putback (ch);
+                    // content_stream >> ch;
+                    string inner_string;
+                    getline(content_stream, inner_string, ']');
+                    cout << " inner_string = " << inner_string << endl;
+                    istringstream inner_string_stream(inner_string);
+                    
+                    Array<double> values;
+                    Array<string> strings;
+
+                    string cur;
+                    while (getline(inner_string_stream, cur, ','))
+                    {
+                      char* endptr;
+                      double vald = strtod (cur.c_str(), &endptr);
+                      
+                      if (endptr != cur.c_str() && strings.Size() == 0)
+                        values.Append(vald);
+                      else
+                        strings.Append(cur);
+                    }
+                    if (strings.Size() > 0)
+                      SetFlag(name, strings);
+                    else
+                      SetFlag(name, values);
+                  }
+                else
+                  {
+                    char* endptr;
+                    double vald = strtod (content.c_str(), &endptr);
+                    if (endptr != content.c_str())
+                      SetFlag (name, vald);
+                    else
+                      SetFlag (name, content);
+                  }
+              }
+            else
+              {
+                content_stream.clear();
+                content_stream >> str;
+                if (sf)
+                  SetFlag (name, (*sf)[str]);
+                else
+                  throw Exception (" no symboltable of flags ");
+              }
 	  }
       }
   }
@@ -347,10 +444,11 @@ namespace ngstd
     archive & flags.defflags;
     archive & flags.numlistflags;
     archive & flags.strlistflags;
+    archive & flags.flaglistflags;
     return archive;
   }
 
-  void Flags :: SetCommandLineFlag (const char * st)
+  void Flags :: SetCommandLineFlag (const char * st, SymbolTable<Flags> * sf )
   {
     //cout << "SetCommandLineFlag: flag = " << st << endl;
     istringstream inst( (char *)st);
@@ -369,6 +467,7 @@ namespace ngstd
     if (st[1] == '-') st++;
   
     const char * pos = strchr (st, '=');
+    const char * posstar = strchr (st, '*');
     const char * posbrack = strchr (st, '[');
 
     if (!pos)
@@ -420,7 +519,15 @@ namespace ngstd
 
 	if (!posbrack)
 	  {
-	    if (endptr == pos)
+            if (posstar)
+              {
+                pos++;
+                if (sf)
+                  SetFlag (name, (*sf)[pos]);
+                else
+                  throw Exception (" no symboltable of flags ");
+              }
+	    else if (endptr == pos)
 	      {
 		// string-flag
 		//(cout) << "Add String Flag: " << name << " = " << pos << endl;

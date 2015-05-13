@@ -292,6 +292,7 @@ void DomainVariableCoefficientFunction ::
 Evaluate (const BaseMappedIntegrationRule & ir, 
 	  FlatMatrix<double> values) const
 {
+  if (ir.Size() == 0) return;
   int elind = ir.GetTransformation().GetElementIndex();
   if (fun.Size() == 1) elind = 0;
 
@@ -299,8 +300,24 @@ Evaluate (const BaseMappedIntegrationRule & ir,
     {
       ArrayMem<double,2000> mem(ir.Size()*numarg);
       FlatMatrix<> args(ir.Size(), numarg, &mem[0]);
-      for (int i = 0; i < ir.Size(); i++)
-        args.Row(i).Range(0,ir[i].Dim()) = ir[i].GetPoint();
+      
+      int dim = ir[0].Dim();
+      switch (dim)
+        {
+        case 2:
+          for (int i = 0; i < ir.Size(); i++)
+            args.Row(i).Range(0,2) = ir[i].GetPoint();
+          break;
+        case 3:
+          for (int i = 0; i < ir.Size(); i++)
+            args.Row(i).Range(0,3) = ir[i].GetPoint();
+          break;
+        default:
+          for (int i = 0; i < ir.Size(); i++)
+            args.Row(i).Range(0,dim) = ir[i].GetPoint();
+        }
+      
+
       /*
 	args.Row(i).Range(0,DIM) = 
 	  static_cast<const DimMappedIntegrationPoint<DIM> & > (ir[i]).GetPoint();

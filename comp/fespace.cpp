@@ -402,7 +402,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         selement_coloring = Table<int> (low_order_space->selement_coloring);
       }
     else
-    for (auto vb = VOL; vb <= BND; vb++)
+      // for (auto vb = VOL; vb <= BND; vb++)
+      for (auto vb : { VOL, BND })
       {
         Array<int> col(ma->GetNE(vb));
         col = -1;

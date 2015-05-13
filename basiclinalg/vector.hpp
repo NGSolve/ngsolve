@@ -320,7 +320,7 @@ namespace ngbla
     /// vector size
     int size;
     /// the data
-    T * data;
+    T *  __restrict data;
   public:
     /// element type
     typedef Vec<S,T> TELEM;
@@ -728,7 +728,7 @@ namespace ngbla
   protected:
     int s;
     int blocksize;
-    T * data;
+    T *  __restrict data;
   public:
     typedef FlatVector<T> TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -1083,7 +1083,7 @@ namespace ngbla
   class FlatVec : public CMCPMatExpr<FlatVec<S,T> > 
   {
     /// the values
-    T * data;
+    T *  __restrict data;
   public:
     /// type of the elements
     typedef T TELEM;
@@ -1215,7 +1215,7 @@ namespace ngbla
     /// distance between entries
     int dist;
     /// the data
-    T * data;
+    T *  __restrict data;
   public:
     /// the entry type
     typedef T TELEM;
@@ -1403,7 +1403,7 @@ namespace ngbla
     /// vector size
     int s;
     /// the data
-    T * data;
+    T *  __restrict data;
   public:
     /// the entry type
     typedef T TELEM;

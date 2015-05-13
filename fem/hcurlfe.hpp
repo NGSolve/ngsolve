@@ -88,16 +88,16 @@ namespace ngfem
     }
 
     ///
-    const FlatMatrixFixWidth<DIM_CURL_(D)> GetCurlShape (const IntegrationPoint & ip, 
+    const FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> GetCurlShape (const IntegrationPoint & ip, 
                                                          LocalHeap & lh) const
     {
-      FlatMatrixFixWidth<DIM_CURL_(D)> curlshape(ndof, lh);
+      FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curlshape(ndof, lh);
       CalcCurlShape (ip, curlshape);
       return curlshape;
     }  
     
     template <typename TVX>
-    Vec<DIM_CURL_(D), typename TVX::TSCAL> 
+    Vec<DIM_CURL_TRAIT<D>::DIM, typename TVX::TSCAL> 
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       const TVX & x, LocalHeap & lh) const
     {
@@ -105,7 +105,7 @@ namespace ngfem
       return Trans (GetCurlShape(ip, lh)) * x;
     } 
 
-    virtual Vec<DIM_CURL_(D)> 
+    virtual Vec<DIM_CURL_TRAIT<D>::DIM> 
     EvaluateCurlShape (const IntegrationPoint & ip, 
 		       FlatVector<double> x, LocalHeap & lh) const
     {
@@ -114,11 +114,11 @@ namespace ngfem
     }  
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
+    EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
     NGS_DLL_HEADER virtual void 
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                        FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
+                        FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
   protected:
     ///

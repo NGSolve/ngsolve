@@ -181,8 +181,6 @@ namespace ngstd
   template <typename TIN, typename TCALC>
   void EvalFunction :: Eval (const TIN * x, TCALC * stack) const
   {
-    // ArrayMem<TCALC, 100> stack(program.Size());
-
     int stacksize = -1;
     for (int i = 0; i < program.Size(); i++)
       {
