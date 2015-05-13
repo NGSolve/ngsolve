@@ -361,7 +361,7 @@ namespace ngfem
   T_CalcShape (Tx x[], TFA & shape) const
   {
     Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
-    int sort[4] = { 0, 1, 2, 3 };
+    unsigned char sort[4] = { 0, 1, 2, 3 };
     
     if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
     if (vnums[sort[2]] > vnums[sort[3]]) Swap (sort[2], sort[3]);
@@ -414,7 +414,7 @@ namespace ngfem
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
                                   JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                  jac.EvalMult(order - k - j, 2 * lamis[0] - 1, polsy, 
+                                  jac.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
                                                SBLambda([&](int j, Tx val)
                                                         {
                                                           shape[ii] = val; 
