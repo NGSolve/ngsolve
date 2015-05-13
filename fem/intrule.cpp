@@ -1110,7 +1110,10 @@ namespace ngfem
           if (lh)
             Assign (nip, *lh);
           else
-            SetSize(nip);
+            {
+              SetAllocSize(nip+8);
+              SetSize(nip);
+            }
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
