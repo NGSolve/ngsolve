@@ -341,7 +341,7 @@ namespace ngfem
 
       int ii = 0;
       LegendrePolynomial::EvalScaled 
-        (integral_constant<int,ORDER>(), 
+        (IC<ORDER>(), 
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {

@@ -50,20 +50,20 @@ namespace ngstd
   }
 
 
-
-
-  
-
-
-
   // ////////////////    integral constants
+
+  template <int N>
+  using IC = integral_constant<int,N>;
+
+  /*
+  template <int I1, int I2>
+  constexpr INLINE IC<I1+I2> operator+ (IC<I1> i1, IC<I2> i2) { return IC<I1+I2>(); }
+  */
 }
 
-
-
+ 
 namespace std
 {
-
   template <int I1, int I2>
   constexpr INLINE integral_constant<int,I1+I2> 
   operator+ (integral_constant<int,I1> i1,
@@ -71,8 +71,6 @@ namespace std
   {
     return integral_constant<int,I1+I2>();
   }
-
-
 }
 
 
