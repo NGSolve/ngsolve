@@ -59,9 +59,9 @@ namespace ngfem
   };
 
   template <typename FUNC> 
-  INLINE const Class_SBLambda<integral_constant<int,0>,FUNC> SBLambda (FUNC f)
+  INLINE const Class_SBLambda<IC<0>,FUNC> SBLambda (FUNC f)
   {
-    return Class_SBLambda<integral_constant<int,0>,FUNC> (f, integral_constant<int,0>());
+    return Class_SBLambda<IC<0>,FUNC> (f, IC<0>());
   }
 
 
@@ -592,7 +592,7 @@ namespace ngfem
 
 
     template <int N, class S, class T>
-    INLINE static void Eval (integral_constant<int,N> n, S x, T && values) 
+    INLINE static void Eval (IC<N> n, S x, T && values) 
     {
       // S p1, p2;
       // CEvalFO<REC, N>::Eval (x, values, p1, p2);
@@ -601,19 +601,20 @@ namespace ngfem
       Iterate<n+1> ( [&] (auto i)
         {
 	  values[i] = p2;
-          RecursivePolynomial<REC>::EvalNext2 (i+integral_constant<int,2>(), x, p1, p2);
+          RecursivePolynomial<REC>::EvalNext2 (IC<i+2>(), x, p1, p2);
         } );
     }
     
     template <int N, class S, class Sy, class T>
-    INLINE static void EvalScaled (integral_constant<int,N> n,
+    INLINE static void EvalScaled (IC<N> n,
                                    S x, Sy y, T && values)
     {
       S p1 = REC::P1(x), p2 = REC::P0(x);
       Iterate<n+1> ( [&] (auto i)
         {
+          // cout << "eval scaled, type(i) = " << typeid(i).name() << endl;
 	  values[i] = p2;
-          RecursivePolynomial<REC>::EvalScaledNext2 (i+integral_constant<int,2>(), x, y, p1, p2);
+          RecursivePolynomial<REC>::EvalScaledNext2 (i+IC<2>(), x, y, p1, p2);
         });
     }
 
@@ -1057,11 +1058,11 @@ namespace ngfem
 #endif    
     
     template <int I>
-    static INLINE double A (integral_constant<int,I> i) { return 2.0-1.0/i; }
+    static INLINE double A (IC<I> i) { return 2.0-1.0/i; }
     template <int I>
-    static INLINE double B (integral_constant<int,I> i) { return 0; }
+    static INLINE double B (IC<I> i) { return 0; }
     template <int I>
-    static INLINE double C (integral_constant<int,I> i) { return 1.0/i-1.0; }
+    static INLINE double C (IC<I> i) { return 1.0/i-1.0; }
 
     
     enum { ZERO_B = 1 };
