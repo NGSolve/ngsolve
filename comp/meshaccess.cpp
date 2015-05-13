@@ -301,14 +301,14 @@ namespace ngcomp
       elindex = aelindex;
       iscurved = false;
 
-      if (eltype == ET_TET)
+      if ( (DIMR==3) && (eltype == ET_TET) )
         {
           Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
           // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
           p0 = FlatVec<3, const double> (mesh->mesh.GetPoint (nel.Vertices()[3]));
 	  for (int j = 0; j < 3; j++)
 	    {
-	      Vec<3> pj = FlatVec<3, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) -p0;
+	      Vec<3> pj = FlatVec<3, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
 	      for (int k = 0; k < 3; k++)
 		mat(k,j) = pj(k);
 	    }
@@ -316,6 +316,23 @@ namespace ngcomp
           //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
           //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
         }
+      
+      else if ( (DIMR==2) && (DIMS==2) && (eltype == ET_TRIG) )
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
+          p0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+	  for (int j = 0; j < 2; j++)
+	    {
+	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      for (int k = 0; k < 2; k++)
+		mat(k,j) = pj(k);
+	    }
+          //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
+          //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
+          //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
+        }
+
+
       else
         {
           Vec<DIMS> pref = 0.0;
@@ -392,20 +409,22 @@ namespace ngcomp
     virtual void CalcJacobian (const IntegrationPoint & ip,
 			       FlatMatrix<> dxdxi) const
     {
-      dxdxi = mat;
+      // dxdxi = mat;
+      FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
     
     virtual void CalcPoint (const IntegrationPoint & ip,
 			    FlatVector<> point) const
     {
-      point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+      // point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+      FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
     }
 
     virtual void CalcPointJacobian (const IntegrationPoint & ip,
 				    FlatVector<> point, FlatMatrix<> dxdxi) const
     {
-      point = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
-      dxdxi = mat;
+      FlatVec<DIMR> (&point(0)) = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
+      FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
 
     virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
@@ -897,6 +916,49 @@ namespace ngcomp
 
 
 
+
+
+
+  
+  template <int DIM>
+  ElementTransformation & MeshAccess :: 
+  GetTrafoDim (int elnr, bool boundary, LocalHeap & lh) const
+  {
+    // static Timer t("MeshAccess::GetTrafoDim");
+
+    ElementTransformation * eltrans;
+    
+    Ngs_Element el (mesh.GetElement<DIM> (elnr), 
+                    ElementId(boundary ? BND : VOL, elnr));
+
+    if (deformation)
+
+      eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, deformation.get(), lh); 
+
+    //    else if ( IsElementCurved(elnr) )
+    else if ( el.is_curved )
+
+      eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this); 
+
+    else
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM,DIM> (this); 
+
+
+    eltrans->SetElementType (el.GetType());
+    int elind = el.GetIndex();
+    eltrans->SetElement (0, elnr, elind);
+      
+    if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+      eltrans->SetHigherIntegrationOrder();
+    else
+      eltrans->UnSetHigherIntegrationOrder();
+
+    return *eltrans;
+  }
+
+
+
+
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
 
   {
@@ -906,6 +968,18 @@ namespace ngcomp
     
     if (!boundary)
       {
+        switch (dim)
+          {
+          case 1: return GetTrafoDim<1> (elnr, boundary, lh);
+          case 2: return GetTrafoDim<2> (elnr, boundary, lh);
+          case 3: return GetTrafoDim<3> (elnr, boundary, lh);
+
+          default:
+            throw Exception ("MeshAccess::GetTrafo, illegal dimension");
+          }
+                  
+        /*
+        Ngs_Element el = GetElement(elnr);
         if (deformation)
           {
             switch (dim)
@@ -918,7 +992,7 @@ namespace ngcomp
               }
           }
 
-        else if (Ng_IsElementCurved (elnr+1))
+        else if (el.is_curved)    // (Ng_IsElementCurved (elnr+1))
           {
             switch (dim)
               {
@@ -941,14 +1015,15 @@ namespace ngcomp
               }
           }
 
-	eltrans->SetElementType (GetElType(elnr));
-        int elind = GetElIndex (elnr);
+	eltrans->SetElementType (el.GetType());
+        int elind = el.GetIndex();
 	eltrans->SetElement (0, elnr, elind);
       
 	if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
 	  eltrans->SetHigherIntegrationOrder();
 	else
 	  eltrans->UnSetHigherIntegrationOrder();
+        */
       }
     else
       {

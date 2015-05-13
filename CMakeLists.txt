@@ -87,6 +87,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
 include (CheckIncludeFiles)
 check_include_files (dlfcn.h HAVE_DLFCN_H)
+include (CheckCXXSymbolExists)
+# set(CMAKE_REQUIRED_INCLUDES cxxabi.h)
+check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
@@ -105,20 +108,25 @@ macro(get_WIN32_WINNT version)
 endmacro()
 get_WIN32_WINNT(ver)
 if(WIN32)
-    add_definitions(-DCPP11_THREADS)
     add_definitions(-D_WIN32_WINNT=${ver} -DNOMINMAX)
     add_definitions(-DMSVC_EXPRESS -D_CRT_SECURE_NO_WARNINGS -DNGS_EXPORTS)
-#     ADD_DEFINITIONS(-DNETGEN_ELTRANS) 
-    
+
     # build convenience (aka object) libraries in windows)
     set(NGS_LIB_TYPE OBJECT)
 
-    # omit openmp flags due to lacking support of openmp 3.0 in visual studio
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4067 /wd4081 /wd4018 /wd4373 /wd4592 /wd4275 /wd4522 /wd4910 /wd4244 /wd4800 /bigobj") #${OpenMP_CXX_FLAGS} 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+        # Intel Compiler
+        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++1y /Qopt-report-file:report.log")
+    else()
+        # MS Visual Compiler
+        add_definitions(-DCPP11_THREADS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4067 /wd4081 /wd4018 /wd4373 /wd4592 /wd4275 /wd4522 /wd4910 /wd4244 /wd4800 /bigobj")
+    endif()
+
 else(WIN32)
     # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
 endif(WIN32)
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -undefined dynamic_lookup")

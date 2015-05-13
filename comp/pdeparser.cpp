@@ -30,7 +30,8 @@ namespace ngcomp
       LSB = '[', RSB = ']',
       COMMENT = '#',
       KW_DEFINE = 100, KW_GEOMETRY, KW_MESH, KW_SHARED, KW_PYMODULE,
-      KW_CONSTANT, KW_VARIABLE, KW_COEFFICIENT, KW_FESPACE, KW_GRIDFUNCTION, 
+      KW_CONSTANT, KW_VARIABLE, KW_FLAGS,
+      KW_COEFFICIENT, KW_FESPACE, KW_GRIDFUNCTION, 
       KW_BILINEARFORM, KW_LINEARFORM, KW_PRECONDITIONER, 
       KW_INTEGRATOR = 200, KW_NUMPROC_ID,
       KW_NUMPROC = 300, KW_PYNUMPROC,
@@ -54,6 +55,7 @@ namespace ngcomp
       { KW_PYMODULE,    "pymodule" },
       { KW_CONSTANT,    "constant" },
       { KW_VARIABLE,    "variable" },
+      { KW_FLAGS,       "flags" },
       { KW_COEFFICIENT, "coefficient" },
       { KW_FESPACE,     "fespace" },
       { KW_GRIDFUNCTION, "gridfunction" },
@@ -677,6 +679,7 @@ namespace ngcomp
 
           case KW_CONSTANT:
           case KW_VARIABLE:
+          case KW_FLAGS:
           case KW_COEFFICIENT:
           case KW_FESPACE:
           case KW_GRIDFUNCTION:
@@ -1024,6 +1027,26 @@ namespace ngcomp
           */
 	  break;
 	}
+
+
+      case KW_FLAGS:
+	{
+	  scan->ReadNext();
+
+	  string name = scan->GetStringValue ();
+
+	  scan->ReadNext();
+	  if (scan->GetToken() != '=')
+	    scan->Error ("Expected =");
+
+	  scan->ReadNext();
+
+          Flags flags;
+          CheckFlags (flags);
+
+          pde->AddFlags (name, flags);
+          break;
+        }
 
       case KW_COEFFICIENT:
 	{
@@ -1997,7 +2020,7 @@ namespace ngcomp
         scan -> WriteBack();
         string str;
         *(scan->scanin) >> str;
-	flags.SetCommandLineFlag (str.c_str());
+	flags.SetCommandLineFlag (str.c_str(), &pde->GetFlagsTable());
 	scan->ReadNext();
       }
   }

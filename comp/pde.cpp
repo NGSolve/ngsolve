@@ -171,6 +171,8 @@ namespace ngcomp
       ost << "variable " << variables.GetName(i) << " = " << variables[i] << endl;
     for (int i = 0; i < generic_variables.Size(); i++)
       ost << "variable " << generic_variables.GetName(i) << " = " << generic_variables[i] << endl;
+    for (int i = 0; i < flags.Size(); i++)
+      ost << "flags " << flags.GetName(i) << " = " << flags[i] << endl;
 
     ost << endl;
   
@@ -603,6 +605,15 @@ namespace ngcomp
 				     *mas[0],
 				     *CurvePointIntegrators[i]);
 		    
+    if(flags.CheckIndex("tracer") != -1)
+      {
+        Flags & trace_flags = flags["tracer"];
+        if(trace_flags.NumFlagDefined("max_size"))
+          trace->SetMaxTracefileSize( 1024*1024 * trace_flags.GetNumFlag("max_size", 100.0) + 0.5 );
+        trace->SetTraceThreads( !trace_flags.GetDefineFlag("nothreads") );
+        trace->SetTraceThreadCounter( !trace_flags.GetDefineFlag("nothread_counter") );
+      }
+
     RunWithTaskManager 
       ( [&] () 
         { 
@@ -952,6 +963,12 @@ namespace ngcomp
     AddVariable (name, 0.0);
     eval->SetVariable(*variables[name]);
     cout << IM(2) << "add variable " << name << " = " << eval->Evaluate() << endl;
+  }
+
+  void PDE :: AddFlags (const string & name, const Flags & aflags)
+  {
+    flags.Set (name, aflags);
+    cout << IM(2) << "add flags " << name << " = " << aflags << endl;
   }
 
   void PDE :: AddVariableEvaluation (shared_ptr<EvalVariable> eval)

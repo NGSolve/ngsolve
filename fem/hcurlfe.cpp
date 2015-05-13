@@ -181,7 +181,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
+  EvaluateCurl (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     LocalHeapMem<1000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)
@@ -191,7 +191,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
-                      FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
+                      FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const
   {
     /*
     LocalHeapMem<1000> lhdummy("dummy");
@@ -202,7 +202,7 @@ namespace ngfem
       {
         for (int i = 0; i < mir.Size(); i++)
           {
-            Mat<DIM_CURL_(D)> trans = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian();
+            Mat<DIM_CURL_TRAIT<D>::DIM> trans = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian();
             curl.Row(i) = trans*EvaluateCurlShape (mir[i].IP(), coefs, lhdummy);
           }
       }
@@ -215,8 +215,8 @@ namespace ngfem
       {
         for (int i = 0; i < mir.Size(); i++)
           {
-            Vec<DIM_CURL_(D)> hv = curl.Row(i);
-            Mat<DIM_CURL_(D)> trans = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian();
+            Vec<DIM_CURL_TRAIT<D>::DIM> hv = curl.Row(i);
+            Mat<DIM_CURL_TRAIT<D>::DIM> trans = (1.0/mir[i].GetJacobiDet()) * mir[i].GetJacobian();
             curl.Row(i) = trans*hv;
           }
       }

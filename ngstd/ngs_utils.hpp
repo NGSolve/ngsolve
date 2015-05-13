@@ -51,6 +51,28 @@ namespace ngstd
 
 
 
+
+  
+
+
+
+  // ////////////////    integral constants
+}
+
+
+
+namespace std
+{
+
+  template <int I1, int I2>
+  constexpr INLINE integral_constant<int,I1+I2> 
+  operator+ (integral_constant<int,I1> i1,
+             integral_constant<int,I2> i2)
+  {
+    return integral_constant<int,I1+I2>();
+  }
+
+
 }
 
 
