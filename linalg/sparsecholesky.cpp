@@ -827,7 +827,8 @@ namespace ngla
                                   int br = ti.task_nr / nbl;
                                   int bc = ti.task_nr % nbl;
                                   
-                                  if (br > bc) return;
+                                  // if (br > bc) return;
+                                  if ( ((br+bc)%2 == 0)  ==  (br>bc) ) return; // diagonal included !
 
                                   auto rowr = Range(w).Split (br, nbl);
                                   auto colr = Range(w).Split (bc, nbl);
