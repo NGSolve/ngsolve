@@ -243,6 +243,9 @@ namespace netgen
     const Segment & operator[] (SegmentIndex si) const { return segments[si]; }
     Segment & operator[] (SegmentIndex si) { return segments[si]; }
 
+    const Array<Segment> & LineSegments() const { return segments; }
+    Array<Segment> & LineSegments() { return segments; }
+
 
 
 

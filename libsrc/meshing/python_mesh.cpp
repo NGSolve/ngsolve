@@ -52,6 +52,27 @@ DLL_HEADER void ExportNetgenMeshing()
     .add_property("nr", &PointIndex::operator int)
     ;
 
+  bp::class_<ElementIndex>("ElementId3D", bp::init<int>())
+    .def("__repr__", &ToString<ElementIndex>)
+    .def("__str__", &ToString<ElementIndex>)
+    .add_property("nr", &ElementIndex::operator int)
+    ;
+
+
+  bp::class_<SurfaceElementIndex>("ElementId2D", bp::init<int>())
+    .def("__repr__", &ToString<SurfaceElementIndex>)
+    .def("__str__", &ToString<SurfaceElementIndex>)
+    .add_property("nr", &SurfaceElementIndex::operator int)
+    ;
+
+  bp::class_<SegmentIndex>("ElementId1D", bp::init<int>())
+    .def("__repr__", &ToString<SegmentIndex>)
+    .def("__str__", &ToString<SegmentIndex>)
+    .add_property("nr", &SegmentIndex::operator int)
+    ;
+
+
+
   /*  
   bp::class_<Point<3>> ("Point")
     .def(bp::init<double,double,double>())
@@ -59,7 +80,9 @@ DLL_HEADER void ExportNetgenMeshing()
   */
 
   bp::class_<MeshPoint /* ,bp::bases<Point<3>> */ >("MeshPoint")
-    // .def(bp::init<Point<3>>())
+    .def(bp::init<Point<3>>())
+    .def("__str__", &ToString<MeshPoint>)
+    .def("__repr__", &ToString<MeshPoint>)
     .add_property("p", FunctionPointer([](const MeshPoint & self)
                                        {
                                          bp::list l;
@@ -71,6 +94,20 @@ DLL_HEADER void ExportNetgenMeshing()
     ;
   
   bp::class_<Element>("Element3D")
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](int index, bp::list vertices)
+                           {
+                             Element * tmp = new Element(TET);
+                             for (int i = 0; i < 4; i++)
+                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                             tmp->SetIndex(index);
+                             return tmp;
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("index")=1,bp::arg("vertices"))),
+         "create volume element"
+         )
+    .def("__repr__", &ToString<Element>)
     .add_property("index", &Element::GetIndex, &Element::SetIndex)
     .add_property("vertices", 
                   FunctionPointer ([](const Element & self) -> bp::list
@@ -83,6 +120,19 @@ DLL_HEADER void ExportNetgenMeshing()
     ;
 
   bp::class_<Element2d>("Element2D")
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](int index, bp::list vertices)
+                           {
+                             Element2d * tmp = new Element2d(TRIG);
+                             for (int i = 0; i < 3; i++)
+                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                             tmp->SetIndex(index);
+                             return tmp;
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("index")=1,bp::arg("vertices"))),
+         "create surface element"
+         )
     .add_property("index", &Element2d::GetIndex, &Element2d::SetIndex)
     .add_property("vertices",
                   FunctionPointer([](const Element2d & self) -> bp::list
@@ -93,9 +143,59 @@ DLL_HEADER void ExportNetgenMeshing()
                                     return li;
                                   }))
     ;
+
+  bp::class_<Segment>("Element1D")
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](bp::list vertices, bp::list surfaces)
+                           {
+                             Segment * tmp = new Segment;
+                             for (int i = 0; i < 2; i++)
+                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+
+                             tmp->surfnr1 = bp::extract<int>(surfaces[0]);
+                             tmp->surfnr2 = bp::extract<int>(surfaces[1]);
+                             return tmp;
+                           }),
+          bp::default_call_policies(),      
+          (bp::arg("vertices"),bp::arg("surfaces"))),
+         "create segment element"
+         )
+    .def("__repr__", &ToString<Element>)
+    .add_property("vertices", 
+                  FunctionPointer ([](const Segment & self) -> bp::list
+                                   {
+                                     bp::list li;
+                                     for (int i = 0; i < 2; i++)
+                                       li.append (self[i]);
+                                     return li;
+                                   }))
+    .add_property("surfaces", 
+                  FunctionPointer ([](const Segment & self) -> bp::list
+                                   {
+                                     bp::list li;
+                                     li.append (self.surfnr1);
+                                     li.append (self.surfnr2);
+                                     return li;
+                                   }))
+    ;
+
+
+
+
+  bp::class_<FaceDescriptor>("FaceDescriptor")
+    .def(bp::init<const FaceDescriptor&>())
+    .def("__str__", &ToString<FaceDescriptor>)
+    .def("__repr__", &ToString<FaceDescriptor>)
+    .add_property("surfnr", &FaceDescriptor::SurfNr, &FaceDescriptor::SetSurfNr)
+    ;
+
+  
+
   ExportArray<Element>();
   ExportArray<Element2d>();
+  ExportArray<Segment>();
   ExportArray<MeshPoint,PointIndex::BASE,PointIndex>();
+  ExportArray<FaceDescriptor>();
   ;
   
   
@@ -128,10 +228,17 @@ DLL_HEADER void ExportNetgenMeshing()
          static_cast<Array<Element2d>&(Mesh::*)()> (&Mesh::SurfaceElements),
          bp::return_value_policy<bp::reference_existing_object>())
 
+    .def("Elements1D", 
+         static_cast<Array<Segment>&(Mesh::*)()> (&Mesh::LineSegments),
+         bp::return_value_policy<bp::reference_existing_object>())
+
+
     .def("Points", 
          static_cast<Mesh::T_POINTS&(Mesh::*)()> (&Mesh::Points),
          bp::return_value_policy<bp::reference_existing_object>())
 
+    .def("FaceDescriptor", static_cast<FaceDescriptor&(Mesh::*)(int)> (&Mesh::GetFaceDescriptor),
+         bp::return_value_policy<bp::reference_existing_object>())
 
     .def("__getitem__", FunctionPointer ([](const Mesh & self, PointIndex pi)
                                          {
@@ -142,6 +249,27 @@ DLL_HEADER void ExportNetgenMeshing()
                                   {
                                     return self.AddPoint (Point3d(p));
                                   }))
+
+    .def ("Add", FunctionPointer ([](Mesh & self, const Element & el)
+                                  {
+                                    return self.AddVolumeElement (el);
+                                  }))
+
+    .def ("Add", FunctionPointer ([](Mesh & self, const Element2d & el)
+                                  {
+                                    return self.AddSurfaceElement (el);
+                                  }))
+
+    .def ("Add", FunctionPointer ([](Mesh & self, const Segment & el)
+                                  {
+                                    return self.AddSegment (el);
+                                  }))
+
+    .def ("Add", FunctionPointer ([](Mesh & self, const FaceDescriptor & fd)
+                                  {
+                                    return self.AddFaceDescriptor (fd);
+                                  }))
+
     /*
     .def("__init__", bp::make_constructor
          (FunctionPointer ([]()
