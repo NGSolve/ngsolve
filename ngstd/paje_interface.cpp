@@ -24,6 +24,16 @@ namespace ngstd
   bool PajeTrace::trace_thread_counter = true;
   bool PajeTrace::trace_threads = true;
 
+  void PajeTrace::StopTracing()
+    {
+      if(tracing_enabled)
+        {
+          cout << "Maximum number of traces reached, tracing is stopped now. To increase the tracefile size, set in the pde file:" << endl;
+          cout << "flags tracer = -max_size=size_in_megabytes" << endl;
+        }
+      tracing_enabled = false;
+    }
+
   using std::string;
   class PajeFile
     {

@@ -99,15 +99,7 @@ namespace ngstd
 
 
     public:
-      void StopTracing()
-        {
-          if(tracing_enabled)
-            {
-              cout << "Maximum number of traces reached, tracing is stopped now. To increase the tracefile size, set in the pde file:" << endl;
-              cout << "flags tracer = -max_size=size_in_megabytes" << endl;
-            }
-          tracing_enabled = false;
-        }
+      void StopTracing();
 
       PajeTrace(int anthreads, std::string aname = "" )
         {
