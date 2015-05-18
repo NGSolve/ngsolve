@@ -214,8 +214,12 @@ namespace ngla
                   hv1 = elmats[i] * hv2;
 
                   for (int j = 0; j < rdi.Size(); j++)
+                  {
+                      double &res = vy(rdi[j]);
+                      double t = s*hv1(j);
 #pragma omp atomic
-                    vy(rdi[j]) += s * hv1(j);
+                    res += t;
+                  }
                   
                   timer.AddFlops (cdi.Size()*rdi.Size());
                 }
@@ -379,8 +383,12 @@ namespace ngla
                       hv2 = Trans(elmats[i]) * hv1;
 
                       for (int j = 0; j < cdi.Size(); j++)
+                        {
+                          double &res = vy(cdi[j]);
+                          double t = s * hv2(j);
 #pragma omp atomic
-                        vy(cdi[j]) += s * hv2(j);
+                          res += t;
+                        }
                       
                       timer.AddFlops (cdi.Size()*rdi.Size());
                     }

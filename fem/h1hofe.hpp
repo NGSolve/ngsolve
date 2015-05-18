@@ -38,10 +38,11 @@ namespace ngfem
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
 
-    using ET_trait<ET>::N_VERTEX;
-    using ET_trait<ET>::N_EDGE;
-    using ET_trait<ET>::N_FACE;
-    using ET_trait<ET>::N_CELL;
+    static constexpr auto N_VERTEX = ET_trait<ET>::N_VERTEX;
+    static constexpr auto N_EDGE = ET_trait<ET>::N_EDGE;
+    static constexpr auto N_FACE = ET_trait<ET>::N_FACE;
+    static constexpr auto N_CELL = ET_trait<ET>::N_CELL;
+
     using ET_trait<ET>::FaceType;
     using ET_trait<ET>::GetEdgeSort;
     using ET_trait<ET>::GetFaceSort;
