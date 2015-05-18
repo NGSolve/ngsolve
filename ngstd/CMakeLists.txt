@@ -1,4 +1,4 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ngstd_sources
         exception.cpp table.cpp bitarray.cpp flags.cpp 
