@@ -969,7 +969,7 @@ namespace ngfem
       */
 
 
-      S p1 = c*static_cast<const REC&>(*this).P1(x), 
+      S p1 = c*static_cast<const REC&>(*this).P1(x,y), 
         p2 = c * static_cast<const REC&>(*this).P0(x);
       for (int i = 0; i <= n; i++)
         {
