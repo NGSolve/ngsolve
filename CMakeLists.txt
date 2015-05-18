@@ -9,9 +9,9 @@ set(NGSOLVE_VERSION_MINOR 1)
 set(NGSOLVE_VERSION "${NGSOLVE_VERSION_MAJOR}.${NGSOLVE_VERSION_MINOR}-dev")
 set(PACKAGE_VERSION ${NGSOLVE_VERSION})
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT INTEL_MIC)
     option( USE_NATIVE_ARCH  "build which -march=native" ON)
-endif(NOT WIN32)
+endif(NOT WIN32 AND NOT INTEL_MIC)
 
 option( USE_GUI          "build ngsolve with GUI" ON)
 option( USE_PYTHON       "enable python shell" ON)
@@ -26,6 +26,14 @@ option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
+
+#######################################################################
+if(INTEL_MIC)
+    set(MKL_ARCH "mic")
+    include(cmake_modules/mic.cmake)
+else(INTEL_MIC)
+    set(MKL_ARCH "intel64")
+endif(INTEL_MIC)
 
 #######################################################################
 if(USE_NATIVE_ARCH)
@@ -76,7 +84,7 @@ add_definitions(-DUSE_TIMEOFDAY)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_BINARY_DIR}")
-include_directories ("${INSTALL_DIR}/include")
+include_directories (AFTER "${INSTALL_DIR}/include")
 
 link_directories ("${INSTALL_DIR}/lib")
 
@@ -241,7 +249,7 @@ if (USE_PYTHON)
     include_directories(${Boost_INCLUDE_DIRS})
     set(PYTHON_LIBS "${PYTHON_LIBRARIES};${Boost_LIBRARIES}")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))" OUTPUT_VARIABLE PYTHON_PACKAGES_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-    message("python install path: ${PYTHON_PACKAGES_INSTALL_DIR}")
+#     message("python install path: ${PYTHON_PACKAGES_INSTALL_DIR}")
 endif (USE_PYTHON)
 
 #######################################################################
@@ -256,15 +264,6 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
 endif(USE_PARDISO)
-
-#######################################################################
-if(INTEL_MIC)
-    set(MKL_ARCH "mic")
-    include(cmake_modules/mic.cmake)
-else(INTEL_MIC)
-    set(MKL_ARCH "intel64")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-endif(INTEL_MIC)
 
 #######################################################################
 if(USE_NUMA)
@@ -319,7 +318,7 @@ set( NGSCXX_DEFS "" )
 foreach( d ${DirDefs} )
     set( NGSCXX_DEFS "${NGSCXX_DEFS} -D${d}" )
 endforeach()
-message( STATUS "NGSCXX_DEFS: " ${NGSCXX_DEFS} )
+# message( STATUS "NGSCXX_DEFS: " ${NGSCXX_DEFS} )
 
 get_directory_property(NGSCXX_INCLUDE_DIRS INCLUDE_DIRECTORIES)
 foreach( d ${NGSCXX_INCLUDE_DIRS} )
@@ -330,7 +329,7 @@ foreach( d ${NGSCXX_INCLUDE_DIRS} )
     endif(NOT IS_SOURCE_DIR AND NOT IS_BINARY_DIR)
 endforeach()
 list( REMOVE_DUPLICATES NGSCXX_INCLUDE_FLAGS )
-message( STATUS "NGSCXX_INCLUDE_FLAGS: " ${NGSCXX_INCLUDE_FLAGS} )
+# message( STATUS "NGSCXX_INCLUDE_FLAGS: " ${NGSCXX_INCLUDE_FLAGS} )
 
 if(NOT APPLE)
     set(ngscxx_extra_flags "${ngscxx_extra_flags} -Wl,--rpath=${INSTALL_DIR}/lib")  
@@ -393,6 +392,7 @@ message("
   ${PROJECT_NAME} ${NGSOLVE_VERSION}:  Automatic configuration OK.
 
   Build type: ${CMAKE_BUILD_TYPE}
+  Compiler: ${CMAKE_CXX_COMPILER}
   Flags: ${flags}
 
   Enabled functionality:

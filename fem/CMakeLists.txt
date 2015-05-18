@@ -1,4 +1,4 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ngfem ${NGS_LIB_TYPE}
         bdbequations.cpp maxwellintegrator.cpp

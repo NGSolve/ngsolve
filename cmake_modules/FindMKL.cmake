@@ -6,6 +6,7 @@
 #   MKL_STATIC       :   use static linking
 #   MKL_MULTI_THREADED:   use multi-threading
 #   MKL_SDL           :   Single Dynamic Library interface
+#   MKL_ARCH : architecture to link (possible values: intel64, mic)
 #
 # This module defines the following variables:
 #
@@ -20,13 +21,10 @@
 
 # interface layer, either _lp64 or _lp64
 set(MKL_INTERFACE_LAYER "_lp64")
-if(INTEL_MIC)
-    set(MKL_ARCH "mic")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic") 
-else(INTEL_MIC)
-    set(MKL_ARCH "intel64")
-endif(INTEL_MIC)
 
+if(NOT MKL_ARCH)
+    set(MKL_ARCH "intel64")
+endif(NOT MKL_ARCH)
 
 include(FindPackageHandleStandardArgs)
 
@@ -132,5 +130,5 @@ if(MKL_FOUND)
     set(MKL_INCLUDE_DIRS ${MKL_INCLUDE_DIR})
     set(MKL_LIBRARIES ${MKL_LIBRARY})
     set(MKL_MINIMAL_LIBRARIES ${MKL_MINIMAL_LIBRARY})
-    message("***************************************************MKL LIBS:\n${MKL_LIBRARIES}")
+#     message("***************************************************MKL LIBS:\n${MKL_LIBRARIES}")
 endif()
