@@ -320,8 +320,8 @@ namespace ngfem
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
 
-      /*
-        // pre c++14
+#if (defined __ICC || defined _MSC_VER)
+      // pre c++14, Intel and MSVC fail here...
       LegendrePolynomial_CalcCoefficient leg;
       // LegendrePolynomial leg;
       Tx p1, p2, p3, p4;
@@ -337,8 +337,7 @@ namespace ngfem
           shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
           ii++;
         });
-      */
-
+#else
       int ii = 0;
       LegendrePolynomial::EvalScaled 
         (IC<ORDER>(), 
@@ -352,6 +351,7 @@ namespace ngfem
                                               shape[ii++] = v2;
                                             }));
                    }));
+#endif
     }
   };
 
