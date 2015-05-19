@@ -254,8 +254,8 @@ namespace ngla
 
     *testout << "blocknrs = " << endl << blocknrs << endl;
 
-    int cnt = 0;
-    int cnt_master = 0;
+    long int cnt = 0;
+    long int cnt_master = 0;
 
     for (int i = 0; i < n; i++)
       {
@@ -468,8 +468,8 @@ namespace ngla
       cout << IM(4) << " factor " << flush;
 
     // to avoid aliasing:
-    int * hfirstinrow = firstinrow.Addr(0);
-    int * hfirstinrow_ri = firstinrow_ri.Addr(0);
+    size_t * hfirstinrow = firstinrow.Addr(0);
+    size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
     
@@ -879,8 +879,8 @@ namespace ngla
       cout << IM(4) << " factor SPD " << flush;
 
     // to avoid aliasing:
-    int * hfirstinrow = firstinrow.Addr(0);
-    int * hfirstinrow_ri = firstinrow_ri.Addr(0);
+    size_t * hfirstinrow = firstinrow.Addr(0);
+    size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
     // double * hlfact = lfact.Addr(0);
     
@@ -1005,9 +1005,9 @@ namespace ngla
 
 
 	// merge rows
-	int firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
-	int firsti = hfirstinrow[i1] + last_same-i1-1;
-	int lasti = hfirstinrow[i1+1]-1;
+	size_t firsti_ri = hfirstinrow_ri[i1] + last_same-i1-1;
+	size_t firsti = hfirstinrow[i1] + last_same-i1-1;
+	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
         timercla.Start();
@@ -1030,8 +1030,8 @@ namespace ngla
                 FlatVector<> sum = btb.Row(j);
             
                 // merge together
-                int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-                int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+                size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+                size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
                 
                 for (int k = j+1; k < mi; k++)
                   {
@@ -1058,8 +1058,8 @@ namespace ngla
               FlatVector<> sum = btb.Row(j);
               
               // merge together
-              int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-              int firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+              size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+              size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
               
               for (int k = j+1; k < mi; k++)
                 {
@@ -1082,11 +1082,11 @@ namespace ngla
         timerc2.Start();
 	for (int i2 = i1; i2 < last_same; i2++)
 	  {
-	    int first = hfirstinrow[i2] + last_same-i2-1;
-	    int last = hfirstinrow[i2+1];
-	    int j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
+	    size_t first = hfirstinrow[i2] + last_same-i2-1;
+	    size_t last = hfirstinrow[i2+1];
+	    size_t j_ri = hfirstinrow_ri[i2] + last_same-i2-1;
 
-	    for (int j = first; j < last; j++, j_ri++)
+	    for (auto j = first; j < last; j++, j_ri++)
 	      {
 		double q = diag[i2] * lfact[j];
 		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
@@ -1097,10 +1097,10 @@ namespace ngla
         timerc.Stop();
       }
 
-    for (int i = 0, j = 0; i < n; i++)
+    for (size_t i = 0, j = 0; i < n; i++)
       {
 	double ai = diag[i];
-	int last = hfirstinrow[i+1];
+	size_t last = hfirstinrow[i+1];
 
 	for ( ; j < last; j++)
           lfact[j] *= ai;
@@ -1390,8 +1390,8 @@ namespace ngla
   void SparseCholesky<double, double, double> :: 
   SolveBlockT (int bnr, FlatVector<> hy) const
   {
-    const int * hfirstinrow = &firstinrow[0];
-    const int * hfirstinrow_ri = &firstinrow_ri[0];
+    const size_t * hfirstinrow = &firstinrow[0];
+    const size_t * hfirstinrow_ri = &firstinrow_ri[0];
 
 
     for (int i = blocks[bnr+1]-1; i >= blocks[bnr]; i--)
@@ -1708,7 +1708,7 @@ namespace ngla
                                  
                                  for (auto i : range)
                                    {
-                                     int first = firstinrow[i] + range.end()-i-1;
+                                     size_t first = firstinrow[i] + range.end()-i-1;
                                      
                                      FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
 
@@ -1783,7 +1783,7 @@ namespace ngla
 
                                  for (auto i : range)
                                    {
-                                     int first = firstinrow[i] + range.end()-i-1;
+                                     size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
                                      
                                      TVX val = InnerProduct (ext_lfact.Range(myr), temp);
@@ -1919,10 +1919,10 @@ namespace ngla
     //    first = 0;
     //    if (i > 0) first = lastinrow[i-1]+1;
     // last = lastinrow[i];
-    int first = firstinrow[i];
-    int first_ri = firstinrow_ri[i];
-    int last = firstinrow[i+1];
-  
+    size_t first = firstinrow[i];
+    size_t first_ri = firstinrow_ri[i];
+    size_t last = firstinrow[i+1];
+    
     while (first < last)
       {
 	if (rowindex2[first_ri] == j)
@@ -1951,9 +1951,9 @@ namespace ngla
 	cerr << "SparseCholesky::Get: access to upper side not available" << endl;
       }
 
-    int first = firstinrow[i];
-    int first_ri = firstinrow_ri[i];
-    int last = firstinrow[i+1];
+    size_t first = firstinrow[i];
+    size_t first_ri = firstinrow_ri[i];
+    size_t last = firstinrow[i+1];
   
     while (first < last)
       {
