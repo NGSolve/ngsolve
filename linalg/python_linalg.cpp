@@ -73,9 +73,42 @@ void NGS_DLL_HEADER ExportNgla() {
     .def("__add__" , bp::object(expr_namespace["expr_add"]) )
     .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
     .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
-    .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds ) {
-        return self.FVDouble();
-    } ))
+    .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds )
+      {
+        bp::object indices = inds.attr("indices")(self.Size());
+        int start = 0;
+        int step = 1;
+        int stop = -1;
+        int n = 0;
+
+        try
+          {
+            start = bp::extract<int>(indices[0]);
+            stop  = bp::extract<int>(indices[1]);
+            step  = bp::extract<int>(indices[2]);
+            n = (stop-start+step-1) / step;
+          }
+        catch (bp::error_already_set const &)
+          {
+            cout << "Error in Init(slice,...): " << endl;
+            PyErr_Print();
+          }
+          if( self.IsComplex() )
+            {
+              if( step == 1 )
+                return bp::object(self.FVComplex().Range(start, stop));
+              else
+                return bp::object(self.FVComplex().Slice(start, step).Range(n));
+            }
+          else
+            {
+              if( step == 1 )
+                return bp::object(self.FVDouble().Range(start, stop));
+              else
+                return bp::object(self.FVDouble().Slice(start, step).Range(n));
+            }
+      } ))
+    // TODO: __setitem__
     .def(bp::self+=bp::self)
     .def(bp::self-=bp::self)
     .def(bp::self*=double())

@@ -25,6 +25,50 @@ static void Init( const bp::slice &inds, int len, int &start, int &step, int &n 
 }
 
 
+template <typename T, typename TNEW = T>
+struct PyVecAccess : public boost::python::def_visitor<PyVecAccess<T, TNEW> > {
+    typedef typename T::TSCAL TSCAL;
+
+    template <class Tclass>
+    void visit(Tclass& c) const {
+        c.def("__getitem__", FunctionPointer( [](T &self, bp::slice inds )-> TNEW {
+            int start, step, n;
+            Init( inds, self.Size(), start, step, n );
+            TNEW res(n);
+            for (int i=0; i<n; i++, start+=step)
+                res[i] = self[start];
+            return res;
+            } ) );
+        c.def("__getitem__", FunctionPointer( [](T &v, bp::list ind )-> TNEW {
+                int n = bp::len(ind);
+                TNEW res(n);
+                for (int i=0; i<n; i++) {
+                    res[i] = v[ bp::extract<int>(ind[i]) ];
+                }
+                return res;
+            } ) );
+        c.def("__setitem__", FunctionPointer( [](T &self, bp::slice inds, const T & rv ) {
+            int start, step, n;
+            Init( inds, self.Size(), start, step, n );
+            for (int i=0; i<n; i++, start+=step)
+                self[start] = rv[i];
+            } ) );
+        c.def("__setitem__", FunctionPointer( [](T &self, bp::slice inds, TSCAL val ) {
+            int start, step, n;
+            Init( inds, self.Size(), start, step, n );
+            for (int i=0; i<n; i++, start+=step)
+                self[start] = val;
+            } ) );
+        c.def("__add__" , FunctionPointer( [](T &self, T &v) { return TNEW(self+v); }) );
+        c.def("__sub__" , FunctionPointer( [](T &self, T &v) { return TNEW(self-v); }) );
+        c.def("__mul__" , FunctionPointer( [](T &self, TSCAL s) { return TNEW(s*self); }) );
+        c.def("__rmul__" , FunctionPointer( [](T &self, TSCAL s) { return TNEW(s*self); }) );
+        c.def("InnerProduct", FunctionPointer ( [](T & x, T & y) { return InnerProduct (x, y); }));
+    }
+};
+
+
+
 template <typename TMAT, typename TNEW=TMAT>
 struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> > {
     // TODO: correct typedefs
@@ -45,6 +89,23 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
         c.def("__setitem__", &PyMatAccess<TMAT, TNEW>::RowSetIntScal);
         c.def("__setitem__", &PyMatAccess<TMAT, TNEW>::RowSetSlice);
         c.def("__setitem__", &PyMatAccess<TMAT, TNEW>::RowSetSliceScal);
+
+        c.add_property("diag",
+                FunctionPointer( [](TMAT &self) { return Vector<TSCAL>(self.Diag()); }),
+                FunctionPointer( [](TMAT &self, const FlatVector<TSCAL> &v) { self.Diag() = v; }));
+        c.def("__add__" , FunctionPointer( [](TMAT &self, TMAT &m) { return TNEW(self+m); }) );
+        c.def("__sub__" , FunctionPointer( [](TMAT &self, TMAT &m) { return TNEW(self-m); }) );
+        c.def("__mul__" , FunctionPointer( [](TMAT &self, TMAT &m) { return TNEW(self*m); }) );
+        c.def("__mul__" , FunctionPointer( [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); }) );
+        c.def("__mul__" , FunctionPointer( [](TMAT &self, TSCAL s) { return TNEW(s*self); }) );
+        c.def("__rmul__" , FunctionPointer( [](TMAT &self, TSCAL s) { return TNEW(s*self); }) );
+        c.def("Height", &TMAT::Height );
+        c.def("Width", &TMAT::Width );
+        c.add_property("h", &TMAT::Height );
+        c.add_property("w", &TMAT::Width );
+        c.add_property("T", FunctionPointer( [](TMAT &self) { return TNEW(Trans(self)); }) ) ;
+        c.add_property("A", FunctionPointer( [](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); }) ) ;
+        c.def("__len__", FunctionPointer( []( TMAT& self) { return self.Height();} ) );
     }
 
     static bp::object GetTuple( TMAT & self, bp::tuple t) {
@@ -235,12 +296,24 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
     }
 };
 
+template <typename TVEC, typename TNEW, typename TSCAL>
+auto ExportVector( const char * name )
+  {
+    return bp::class_<TVEC >(name, bp::no_init )
+        .def(PyDefVector<TVEC, TSCAL>())
+        .def(PyVecAccess< TVEC, TNEW >())
+        .def(PyDefToString<TVEC >())
+        .def(bp::self+=bp::self)
+        .def(bp::self-=bp::self)
+        .def(bp::self*=TSCAL())
+        ;
+  }
 
 void NGS_DLL_HEADER ExportNgbla() {
     std::string nested_name = "bla";
     if( bp::scope() )
          nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".bla");
-    
+
     bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
 
     cout << "exporting bla as " << nested_name << endl;
@@ -249,54 +322,38 @@ void NGS_DLL_HEADER ExportNgbla() {
 
     bp::scope ngbla_scope(module);
 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    // Vector types
     typedef FlatVector<double> FVD;
-    bp::class_<FVD >("FlatVectorD")
-        .def(PyDefVector<FVD, double>()) 
-        .def(PyDefToString<FVD >())
-        .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
+    typedef FlatVector<Complex> FVC;
+    typedef SliceVector<double> SVD;
+    typedef SliceVector<Complex> SVC;
+    typedef Vector<double> VD;
+    typedef Vector<Complex> VC;
+
+    ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
-        .def(bp::self+=bp::self)
-        .def(bp::self-=bp::self)
+        .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
+        ;
+    ExportVector< FVC, VC, Complex>("FlatVectorC")
         .def(bp::self*=double())
-        .def("__add__" , FunctionPointer( [](FVD &self, FVD &v) { return Vector<double>(self+v); }) )
-        .def("__sub__" , FunctionPointer( [](FVD &self, FVD &v) { return Vector<double>(self-v); }) )
-        .def("__mul__" , FunctionPointer( [](FVD &self, double s) { return Vector<double>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FVD &self, double s) { return Vector<double>(s*self); }) )
+        .def(bp::init<int, Complex *>())
+        .def("Range",    static_cast</* const */ FVC (FVC::*)(int,int) const> (&FVC::Range ) )
+        ;
 
-        .def("__getitem__", FunctionPointer( [](FVD &self, bp::slice inds )-> Vector<double> {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            Vector<double> res(n);
-            for (int i=0; i<n; i++, start+=step)
-                res[i] = self[start];
-            return res;
-            } ) )
-        .def("__setitem__", FunctionPointer( [](FVD &self, bp::slice inds, const FVD & rv ) {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-                self[start] = rv[i];
-            } ) )
-        .def("__setitem__", FunctionPointer( [](FVD &self, bp::slice inds, double val ) {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-                self[start] = val;
-            } ) )
-
-        .def("__getitem__", FunctionPointer( [](FVD &v, bp::list ind )-> Vector<double> {
-                int n = bp::len(ind);
-                Vector<double> res(n);
-                for (int i=0; i<n; i++) {
-                    res[i] = v[ bp::extract<int>(ind[i]) ];
-                }
-                return res;
-            } ) )
-      .def("InnerProduct", FunctionPointer ( [](FVD & x, FVD & y)
-                                 { return InnerProduct (x, y); }))
+    ExportVector< SVD, VD, double>("SliceVectorD")
+        .def("Range",    static_cast<const SVD (SVD::*)(int,int) const> (&SVD::Range ) )
+        ;
+    ExportVector< SVC, VC, Complex>("SliceVectorC")
+        .def("Range",    static_cast<const SVC (SVC::*)(int,int) const> (&SVC::Range ) )
+        .def(bp::self*=double())
         ;
 
     bp::class_<Vector<double>,  bp::bases<FlatVector<double> > >("VectorD")
+        .def(bp::init<int>())
+        ;
+
+    bp::class_<Vector<Complex>,  bp::bases<FlatVector<Complex> > >("VectorC")
         .def(bp::init<int>())
         ;
 
@@ -305,10 +362,13 @@ void NGS_DLL_HEADER ExportNgbla() {
                 if(is_complex) return bp::object(Vector<Complex>(n));
                 else return bp::object(Vector<double>(n));
                 }),
-            (boost::python::arg("length"), 
+            (boost::python::arg("length"),
             boost::python::arg("complex")=false)
            );
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    // Matrix types
     typedef FlatMatrix<double> FMD;
     bp::class_<FlatMatrix<double> >("FlatMatrixD")
         .def(PyDefToString<FMD>())
@@ -316,85 +376,8 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
-        .add_property("diag", 
-                FunctionPointer( [](FMD &self) { return Vector<double>(self.Diag()); }),
-                FunctionPointer( [](FMD &self, const FVD &v) { self.Diag() = v; }))
-        .def("__add__" , FunctionPointer( [](FMD &self, FMD &m) { return Matrix<double>(self+m); }) )
-        .def("__sub__" , FunctionPointer( [](FMD &self, FMD &m) { return Matrix<double>(self-m); }) )
-        .def("__mul__" , FunctionPointer( [](FMD &self, FMD &m) { return Matrix<double>(self*m); }) )
-        .def("__mul__" , FunctionPointer( [](FMD &self, FVD &v) { return Vector<double>(self*v); }) )
-        .def("__mul__" , FunctionPointer( [](FMD &self, double s) { return Matrix<double>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FMD &self, double s) { return Matrix<double>(s*self); }) )
-        .def("Height", &FMD::Height )
-        .def("Width", &FMD::Width )
-        .add_property("h", &FMD::Height )
-        .add_property("w", &FMD::Width )
-        .add_property("T", FunctionPointer( [](FMD &self) { return Matrix<double>(Trans(self)); }) ) 
-        .add_property("A", FunctionPointer( [](FMD &self) { return Vector<double>(FlatVector<double>( self.Width()* self.Height(), &self(0,0)) ); }) ) 
-        .def("__len__", FunctionPointer( []( FMD& self) { return self.Height();} ) )
         ;
 
-
-    bp::class_<Matrix<double>, bp::bases<FMD> >("MatrixD")
-        .def(bp::init<int, int>())
-        ;
-
-    typedef FlatVector<Complex> FVC;
-    bp::class_<FVC >("FlatVectorC")
-        .def(PyDefVector<FVC, Complex>()) 
-        .def(PyDefToString<FVC >())
-        .def("Range",    static_cast</* const */ FVC (FVC::*)(int,int) const> (&FVC::Range ) )
-        .def(bp::init<int, Complex *>())
-        .def(bp::self+=bp::self)
-        .def(bp::self-=bp::self)
-        .def(bp::self*=Complex())
-        .def("__add__" , FunctionPointer( [](FVC &self, FVC &v) { return Vector<Complex>(self+v); }) )
-        .def("__sub__" , FunctionPointer( [](FVC &self, FVC &v) { return Vector<Complex>(self-v); }) )
-        .def("__mul__" , FunctionPointer( [](FVC &self, Complex s) { return Vector<Complex>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FVC &self, Complex s) { return Vector<Complex>(s*self); }) )
-
-        .def("__add__" , FunctionPointer( [](FVC &self, FVD &v) { return Vector<Complex>(self+v); }) )
-        .def("__sub__" , FunctionPointer( [](FVC &self, FVD &v) { return Vector<Complex>(self-v); }) )
-        .def("__radd__" , FunctionPointer( [](FVC &self, FVD &v) { return Vector<Complex>(self+v); }) )
-        .def("__rsub__" , FunctionPointer( [](FVC &self, FVD &v) { return Vector<Complex>(self-v); }) )
-        .def("__mul__" , FunctionPointer( [](FVC &self, double s) { return Vector<Complex>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FVC &self, double s) { return Vector<Complex>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FVC &self, FMD &m) { return Vector<Complex>(m*self); }) )
-
-        .def("__getitem__", FunctionPointer( [](FVC &self, bp::slice inds )-> Vector<Complex> {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            Vector<Complex> res(n);
-            for (int i=0; i<n; i++, start+=step)
-                res[i] = self[start];
-            return res;
-            } ) )
-        .def("__setitem__", FunctionPointer( [](FVC &self, bp::slice inds, const FVC & rv ) {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-                self[start] = rv[i];
-            } ) )
-        .def("__setitem__", FunctionPointer( [](FVC &self, bp::slice inds, Complex val ) {
-            int start, step, n;
-            Init( inds, self.Size(), start, step, n );
-            for (int i=0; i<n; i++, start+=step)
-                self[start] = val;
-            } ) )
-
-        .def("__getitem__", FunctionPointer( [](FVC &v, bp::list ind )-> Vector<Complex> {
-                int n = bp::len(ind);
-                Vector<Complex> res(n);
-                for (int i=0; i<n; i++) {
-                    res[i] = v[ bp::extract<int>(ind[i]) ];
-                }
-                return res;
-            } ) )
-        ;
-
-    bp::class_<Vector<Complex>,  bp::bases<FlatVector<Complex> > >("VectorC")
-        .def(bp::init<int>())
-        ;
 
     typedef FlatMatrix<Complex> FMC;
     bp::class_<FlatMatrix<Complex> >("FlatMatrixC")
@@ -403,22 +386,16 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=Complex())
-        .add_property("diag", 
+        .add_property("diag",
                 FunctionPointer( [](FMC &self) { return Vector<Complex>(self.Diag()); }),
                 FunctionPointer( [](FMC &self, const FVC &v) { self.Diag() = v; }))
-        .def("__add__" , FunctionPointer( [](FMC &self, FMC &m) { return Matrix<Complex>(self+m); }) )
-        .def("__sub__" , FunctionPointer( [](FMC &self, FMC &m) { return Matrix<Complex>(self-m); }) )
-        .def("__mul__" , FunctionPointer( [](FMC &self, FMC &m) { return Matrix<Complex>(self*m); }) )
         .def("__add__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }) )
         .def("__sub__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self*m); }) )
         .def("__radd__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self+m); }) )
         .def("__rsub__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(self-m); }) )
         .def("__rmul__" , FunctionPointer( [](FMC &self, FMD &m) { return Matrix<Complex>(m*self); }) )
-        .def("__mul__" , FunctionPointer( [](FMC &self, FVC &v) { return Vector<Complex>(self*v); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, FVD &v) { return Vector<Complex>(self*v); }) )
-        .def("__mul__" , FunctionPointer( [](FMC &self, Complex s) { return Matrix<Complex>(s*self); }) )
-        .def("__rmul__" , FunctionPointer( [](FMC &self, Complex s) { return Matrix<Complex>(s*self); }) )
         .def("__mul__" , FunctionPointer( [](FMC &self, double s) { return Matrix<Complex>(s*self); }) )
         .def("__rmul__" , FunctionPointer( [](FMC &self, double s) { return Matrix<Complex>(s*self); }) )
         .def("Height", &FMC::Height )
@@ -442,6 +419,10 @@ void NGS_DLL_HEADER ExportNgbla() {
                     result(j,i) = Conj(self(i,j));
             return result;
             }) ) 
+        ;
+
+    bp::class_<Matrix<double>, bp::bases<FMD> >("MatrixD")
+        .def(bp::init<int, int>())
         ;
 
     bp::class_<Matrix<Complex>, bp::bases<FMC> >("MatrixC")
