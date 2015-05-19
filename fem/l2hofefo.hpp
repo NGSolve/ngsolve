@@ -320,7 +320,7 @@ namespace ngfem
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
 
-#if (defined __ICC || defined _MSC_VER)
+#if (defined __ICC || defined _MSC_VER || __cplusplus <= 201103L)
       // pre c++14, Intel and MSVC fail here...
       LegendrePolynomial_CalcCoefficient leg;
       // LegendrePolynomial leg;
