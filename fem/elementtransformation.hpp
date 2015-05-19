@@ -33,7 +33,7 @@ namespace ngfem
 
     bool higher_integration_order;
     /// is the element curved ?
-    bool iscurved;
+    bool iscurved = false;
 
   public:
     ///
@@ -116,7 +116,7 @@ namespace ngfem
     /// has the element non-constant Jacobian ?
     virtual bool IsCurvedElement() const 
     {
-      return false;
+      return iscurved;
     }
 
     virtual void GetSort (FlatArray<int> sort) const
