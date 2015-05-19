@@ -137,17 +137,17 @@ public:
     int height;
 
     // number of non-zero entries in the L-factor
-    int nze;
+    size_t nze;
 
     // the reordering (original dofnr i -> order[i])
-    Array<int, size_t> order;
+    Array<int, int> order;
     
     // L-factor in compressed storage
     // Array<TM, size_t> lfact;
     NumaInterleavedArray<TM> lfact;
 
     // index-array to lfact
-    Array<int, size_t> firstinrow;
+    Array<size_t, size_t> firstinrow;
 
     // diagonal 
     Array<TM, size_t> diag;
@@ -157,7 +157,7 @@ public:
     // all row-indices within one block are identic, and stored just once
     Array<int, size_t> rowindex2;
     // index-array to rowindex
-    Array<int, size_t> firstinrow_ri;
+    Array<size_t, size_t> firstinrow_ri;
     
     // blocknr of dof
     Array<int> blocknrs;
@@ -251,8 +251,8 @@ public:
     FlatArray<int> BlockExtDofs (int bnr) const
     {
       auto range = BlockDofs (bnr);
-      int base = firstinrow_ri[range.begin()] + range.Size()-1;
-      int ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
+      auto base = firstinrow_ri[range.begin()] + range.Size()-1;
+      auto ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
       return rowindex2.Range(base, base+ext_size);
     }
   };
