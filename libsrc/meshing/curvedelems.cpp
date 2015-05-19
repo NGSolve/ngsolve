@@ -337,7 +337,7 @@ namespace netgen
   }
 
   
-  static Array<RecPol*> jacpols2;
+  static Array<shared_ptr<RecPol>> jacpols2;
 
 
   // compute face bubbles up to order n, 0 < y, y-x < 1, x+y < 1
@@ -451,8 +451,6 @@ namespace netgen
 
   CurvedElements :: ~CurvedElements()
   {
-    for (int i = 0; i < jacpols2.Size(); i++) 
-      delete jacpols2[i];
     jacpols2.SetSize(0);
   }
 
@@ -631,7 +629,7 @@ namespace netgen
       {
 	jacpols2.SetSize (100);
 	for (int i = 0; i < 100; i++)
-	  jacpols2[i] = new JacobiRecPol (100, i, 2);
+	  jacpols2[i] = make_shared<JacobiRecPol> (100, i, 2);
       }
 
     PrintMessage (3, "Curving edges");
