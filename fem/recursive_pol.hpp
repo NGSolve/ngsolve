@@ -591,6 +591,8 @@ namespace ngfem
     }
 
 
+// C++14 only
+#if __cplusplus > 201103L
     template <int N, class S, class T>
     INLINE static void Eval (IC<N> n, S x, T && values) 
     {
@@ -617,6 +619,7 @@ namespace ngfem
           RecursivePolynomial<REC>::EvalScaledNext2 (i+IC<2>(), x, y, p1, p2);
         });
     }
+#endif
 
     template <int N, class S, class T>
     INLINE static void EvalFO (S x, T && values) 
