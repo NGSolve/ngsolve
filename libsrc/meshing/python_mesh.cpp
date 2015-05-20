@@ -50,12 +50,18 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__repr__", &ToString<PointIndex>)
     .def("__str__", &ToString<PointIndex>)
     .add_property("nr", &PointIndex::operator int)
+    .def("__eq__" , FunctionPointer( [](PointIndex &self, PointIndex &other)
+                  { return static_cast<int>(self)==static_cast<int>(other); }) )
+    .def("__hash__" , FunctionPointer( [](PointIndex &self ) { return static_cast<int>(self); }) )
     ;
 
   bp::class_<ElementIndex>("ElementId3D", bp::init<int>())
     .def("__repr__", &ToString<ElementIndex>)
     .def("__str__", &ToString<ElementIndex>)
     .add_property("nr", &ElementIndex::operator int)
+    .def("__eq__" , FunctionPointer( [](ElementIndex &self, ElementIndex &other)
+                  { return static_cast<int>(self)==static_cast<int>(other); }) )
+    .def("__hash__" , FunctionPointer( [](ElementIndex &self ) { return static_cast<int>(self); }) )
     ;
 
 
@@ -63,12 +69,18 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__repr__", &ToString<SurfaceElementIndex>)
     .def("__str__", &ToString<SurfaceElementIndex>)
     .add_property("nr", &SurfaceElementIndex::operator int)
+    .def("__eq__" , FunctionPointer( [](SurfaceElementIndex &self, SurfaceElementIndex &other)
+                  { return static_cast<int>(self)==static_cast<int>(other); }) )
+    .def("__hash__" , FunctionPointer( [](SurfaceElementIndex &self ) { return static_cast<int>(self); }) )
     ;
 
   bp::class_<SegmentIndex>("ElementId1D", bp::init<int>())
     .def("__repr__", &ToString<SegmentIndex>)
     .def("__str__", &ToString<SegmentIndex>)
     .add_property("nr", &SegmentIndex::operator int)
+    .def("__eq__" , FunctionPointer( [](SegmentIndex &self, SegmentIndex &other)
+                  { return static_cast<int>(self)==static_cast<int>(other); }) )
+    .def("__hash__" , FunctionPointer( [](SegmentIndex &self ) { return static_cast<int>(self); }) )
     ;
 
 
