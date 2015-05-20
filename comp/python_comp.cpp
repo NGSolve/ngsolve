@@ -122,6 +122,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("nr", &ElementId::Nr, "the element number")    
     .def("IsVolume", &ElementId::IsVolume, "is it a boundary element ?")
     .def("IsBoundary", &ElementId::IsBoundary, "is it a volume element ?")
+    .def(bp::self!=bp::self)
+    .def("__eq__" , FunctionPointer( [](ElementId &self, ElementId &other)
+                                    { return !(self!=other); }) )
+    .def("__hash__" , &ElementId::Nr)
     ;
   
   bp::def("BndElementId", FunctionPointer([] (int nr) { return ElementId(BND,nr); })) ;
