@@ -623,6 +623,8 @@ namespace ngsolve
     const Array<string> & cnts = flags.GetStringListFlag ("constraints");
     for (int i = 0; i < cnts.Size(); i++)
       constraints.Append (apde->GetLinearForm (cnts[i]));
+
+    apde->AddVariable (string("constrbvp.")+flags.GetStringFlag ("name",NULL)+".its", 0.0, 6);
   }
 
   NumProcConstrainedBVP :: ~NumProcConstrainedBVP()
@@ -736,6 +738,15 @@ namespace ngsolve
     *testout << "Solution time = " << double(endtime - starttime)/CLOCKS_PER_SEC << endl;
     *testout << "Iterations: " << invmat->GetSteps() << endl;
 
+
+    {
+      try
+      {
+        GetPDE() -> AddVariable (string("constrbvp.")+GetName()+".its", invmat->GetSteps(), 6);
+      }
+      catch (std::exception e) { ; }
+    }
+    
     
     delete invmat;
 

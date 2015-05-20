@@ -44,3 +44,5 @@ numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c 
 numproc calcflux np2 -bilinearform=a -solution=u -flux=p -applyd
         
 numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture
+        
+numproc testvariable nptv_it -variable=bvp.np1.its -refvalues=[39,42] -tolerance=3 -abstol -cdash
