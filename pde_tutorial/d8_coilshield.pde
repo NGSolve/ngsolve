@@ -48,4 +48,5 @@ numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c 
 
 numproc drawflux np3 -bilinearform=acurl -solution=u -label=flux
 
+numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=45 -tolerance=3 -abstol -cdash
 

@@ -72,3 +72,6 @@ numproc calcflux np2 -bilinearform=a -solution=u -flux=stress -applyd
 
 
 numproc visualization npv1 -vectorfunction=u -subdivision=2 -nolineartexture -deformationscale=100 -scalarfunction=stress.1
+
+numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=92 -tolerance=3 -abstol -cdash
+        

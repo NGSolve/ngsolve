@@ -3256,16 +3256,31 @@ public:
 class NumProcTestVariable : public NumProc
 {
   string varname;
-  double refvalue;
+  Array<double> refvalues;
   double tolerance;
   bool abstol;
   bool cdash;
+  int calls = 0;
 public:
   NumProcTestVariable (shared_ptr<PDE> apde, const Flags & flags)
     : NumProc (apde)
   {
     varname = flags.GetStringFlag("variable");
-    refvalue = flags.GetNumFlag("refvalue",0.0);
+
+    if (flags.NumFlagDefined("refvalue"))
+    {
+      const double refvalue = flags.GetNumFlag("refvalue",0.0);
+      refvalues.Append(refvalue);
+    }
+    else if (flags.NumListFlagDefined("refvalues"))
+    {
+      refvalues = flags.GetNumListFlag("refvalues");
+    }
+    else
+    {
+      cout << "WARNING: no reference values given, will not compare anything" << endl;
+    }
+    
     tolerance = flags.GetNumFlag("tolerance",0.0);
     abstol = flags.GetDefineFlag("abstol");
     cdash = flags.GetDefineFlag("cdash");
@@ -3273,6 +3288,9 @@ public:
 
   virtual void Do(LocalHeap & lh)
   {
+    if (calls >= refvalues.Size())
+      return;
+    const double refvalue = refvalues[calls];
     double variable = pde.lock()->GetVariable(varname, false);
 
     if (cdash)
@@ -3322,6 +3340,7 @@ public:
     std::cout << " value = " << variable << ", refvalue = " << refvalue << std::endl;
     std::cout << " abs. error. = " << abs(variable - refvalue)  << std::endl;
     std::cout << " rel. error. = " << abs(variable - refvalue) / refvalue  << std::endl;
+    calls++;
   }
 
 
@@ -3333,8 +3352,8 @@ public:
   virtual void PrintReport (ostream & ost)
   {
     ost << GetClassName() << endl
-        << "Compare variable" << varname << " with reference value " 
-        << refvalue << "and (";
+        << "Compare variable" << varname << " with reference values " 
+        << refvalues << "and (";
     if (abstol) ost << "absolute)"; else ost << "relative)";
     ost << " tolerance of " << tolerance << endl;
   }
@@ -3349,7 +3368,9 @@ public:
       "value and throw exc. on failure\n\n"\
       "flags:\n"\
       "-variable=<name>\n"\
-      "   variable to compare\n"\
+      "   variables (for diff. levels) to compare\n"\
+      "-refvalues=[<val>,<val>,..]\n"\
+      "   variable to compare (only on first level)\n"\
       "-refvalue=<val>\n"\
       "   reference value\n"\
       "-tolerance=<val>\n"\
