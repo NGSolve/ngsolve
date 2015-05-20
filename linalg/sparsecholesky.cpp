@@ -429,7 +429,7 @@ namespace ngla
     id = 0.0;
     SetIdentity(id);
 
-    for (int i = 0; i < nze; i++) lfact[i] = 0.0;
+    for (size_t i = 0; i < nze; i++) lfact[i] = 0.0;
 
     for (int i = 0; i < height; i++)
       for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
@@ -1980,10 +1980,10 @@ namespace ngla
       }
     ost << endl;
   
-    int j = 1;
+    size_t j = 1;
     for (int i = 1; i <= n; i++)
       {
-	int j_ri = firstinrow_ri[i-1];
+	size_t j_ri = firstinrow_ri[i-1];
 	ost << i << ": ";
 	for ( ; j < firstinrow[i]; j++, j_ri++)
 	  {
