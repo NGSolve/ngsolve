@@ -8,7 +8,6 @@ set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
 file(COPY ${PROJECT_SOURCE_DIR}/pde_tutorial DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(pde_dir "${CMAKE_CURRENT_BINARY_DIR}/pde_tutorial")
 
-
 add_executable( pde_tester pde_tester.cpp)
 install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
 target_link_libraries(pde_tester solve interface ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
@@ -60,6 +59,10 @@ if(USE_MPI)
 endif(USE_MPI)
 
 foreach(pde_test ${pde_tests})
+    if(EXISTS "${PROJECT_SOURCE_DIR}/tests/pde_tutorial/${pde_test}.appx")
+        file(READ ${PROJECT_SOURCE_DIR}/tests/pde_tutorial/${pde_test}.appx CONTENTS)
+        file(APPEND ${pde_dir}/${pde_test} ${CONTENTS})
+    endif()
     add_test(NAME ${pde_test}  COMMAND ${test_driver} "${pde_dir}/${pde_test}" WORKING_DIRECTORY ${pde_dir})
     set_tests_properties ( ${pde_test} PROPERTIES TIMEOUT 30 )
     set_tests_properties ( ${pde_test} PROPERTIES ATTACHED_FILES "${pde_dir}/ng.prof" )

@@ -48,5 +48,3 @@ numproc drawflux np5 -bilinearform=acurl -solution=u  -label=flux
 
 
 numproc visualization npv1 -scalarfunction=flux:0 -clipsolution=scalar -subdivision=2 -clipvec=[0,1,0] -nolineartexture
-
-numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=50 -tolerance=3 -abstol -cdash
