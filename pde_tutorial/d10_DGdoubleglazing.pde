@@ -48,6 +48,3 @@ define preconditioner c -type=direct -bilinearform=adisc -inverse=pardiso
 numproc bvp npdisc -bilinearform=adisc -linearform=fdisc -gridfunction=udisc -preconditioner=c
 
 numproc visualization npvis -scalarfunction=udisc -subdivision=4 -deformationscale=1
-
-numproc testvariable nptv_it -variable=bvp.npdisc.its -refvalue=1 -tolerance=3 -abstol -cdash
-        

@@ -70,4 +70,3 @@ numproc visualization vis1 -scalarfunction=u -subdivision=2
 ## automatic visualization for 3D
 # numproc visualization vis2 -scalarfunction=u -subdivision=1 -clipvec=[0,0,-1] -clipsolution=scalar
 
-numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=1 -tolerance=3 -abstol -cdash
