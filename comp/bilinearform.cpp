@@ -2196,7 +2196,7 @@ namespace ngcomp
 
                  if (eliminate_internal)
                    {
-                     static Timer statcondtimer("static condensation");
+                     static Timer statcondtimer("static condensation", 2);
                      RegionTimer regstat (statcondtimer);
                      
                      ArrayMem<int,100> idofs, idofs1, odofs;
@@ -2518,7 +2518,6 @@ namespace ngcomp
     static Timer timervol ("Apply Matrix - volume");
     static Timer timerbound ("Apply Matrix - boundary");
     RegionTimer reg (timer);
-
 
     static int lh_size = 5000000;
 

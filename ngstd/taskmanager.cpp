@@ -57,6 +57,8 @@ namespace ngstd
     
     task_manager->StartWorkers();
     
+    ParallelFor (100, [&] (int i) { ; });    // startup
+
     alg();
     
     task_manager->StopWorkers();
@@ -94,6 +96,8 @@ namespace ngstd
 
         
         task_manager->StartWorkers();
+        ParallelFor (100, [&] (int i) { ; });    // startup
+
 
         alg();
         

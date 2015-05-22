@@ -59,7 +59,7 @@ namespace ngfem
   {
     if (only_ho_div && (order_inner[0] <= 1)) return;
 
-    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
 
     int ii = 3; 
     if (!only_ho_div)
@@ -69,18 +69,18 @@ namespace ngfem
             INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
 
             //Nedelec low order edge shape function 
-            shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
+            shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
             int p = order_facet[i][0]; 
             //HO-Edge shapes (Gradient Fields)   
             if(p > 0) //  && usegrad_edge[i]) 
               { 
-                Tx xi = lami[e[1]] - lami[e[0]]; 
+                Tx xi = lam[e[1]] - lam[e[0]]; 
                 
                 // LegendrePolynomial::
                 IntLegNoBubble::
-                  EvalScaledMult (p-1, xi, lami[e[0]]+lami[e[1]], 
-                                  lami[e[0]]*lami[e[1]], 
+                  EvalScaledMult (p-1, xi, lam[e[0]]+lam[e[1]], 
+                                  lam[e[0]]*lam[e[1]], 
                                   SBLambda([&](int i, Tx v)
                                            {
                                              shape[ii++] = Du<2>(v);
@@ -105,8 +105,9 @@ namespace ngfem
 
         INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
-	Tx xi  = lami[fav[2]]-lami[fav[1]];
-	Tx eta = lami[fav[0]]; 
+        /*
+	Tx xi  = lam[fav[2]]-lam[fav[1]];
+	Tx eta = lam[fav[0]]; 
 
         TrigShapesInnerLegendre::CalcSplitted(p+1, xi, eta, adpol1, adpol2);
 	
@@ -128,6 +129,51 @@ namespace ngfem
             for (int j = 0; j < p-1; j++, ii++)
               shape[ii] = wuDv_minus_wvDu (lami[fav[1]], lami[fav[2]], adpol2[j]);
           }
+        */
+
+
+	// rotated gradients:
+	if(!only_ho_div)
+          {
+            DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+                                     lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
+                                     SBLambda ([&](int nr, Tx val)
+                                               {
+                                                 shape[ii++] = Du<2> (val);
+                                               }));
+          }
+
+        if (!ho_div_free)
+          {
+            Tx x = lam[fav[0]];
+            Tx y = lam[fav[1]];
+            LegendrePolynomial leg;
+            leg.EvalScaledMult1Assign 
+              (p-2, y-(1-x-y), 1-x, y*(1-x-y),
+               SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
+                         {
+                           JacobiPolynomialAlpha jac(1+2*i);
+                           jac.EvalMult1Assign 
+                             (p-2-i, 2*x-1, x, 
+                              SBLambda([&](int j, Tx val2) 
+                                       {
+                                         shape[ii++] = uDv_minus_vDu<2> (val1,val2);
+                                       }));
+                         }));
+            
+            // rec_pol * Nedelec0 
+            /*
+              for (int j = 0; j < p-1; j++, ii++)
+              shape[ii] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], adpol2[j]);
+            */
+            leg.EvalMult 
+              (p-2, 2*x-1, x, 
+               SBLambda([&] (int j, Tx val)
+                        {
+                          shape[ii++] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], val);
+                        }));
+          }
+
       }
   }
 

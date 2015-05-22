@@ -1,0 +1,2 @@
+
+numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture

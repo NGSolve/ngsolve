@@ -71,6 +71,3 @@ numproc drawflux np2a -bilinearform=a -solution=u -label=stress -applyd
 
 numproc zzerrorestimator np3 -bilinearform=a -linearform=f -solution=u -error=error -flux=p
 numproc markelements np3a -error=error -factor=0.5 -minlevel=1 
-
-numproc testvariable nptv_it -variable=ZZerrest.np3.err -refvalue=0 -tolerance=3 -abstol -cdash
-numproc testvariable nptv_it2 -variable=constrbvp.np1.its -refvalue=51 -tolerance=3 -abstol -cdash
