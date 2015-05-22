@@ -583,6 +583,11 @@ namespace ngbla
       return Spec();
     }
 
+    INLINE T & operator= (const T & v)
+    {
+      Assign<As> (v);
+      return Spec();
+    }
 
     template<typename TB>
     INLINE T & operator+= (const Expr<TB> & v)
