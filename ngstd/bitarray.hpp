@@ -30,6 +30,17 @@ public:
   NGS_DLL_HEADER BitArray (int asize);
   ///
   NGS_DLL_HEADER BitArray (const BitArray & ba2);
+
+  template <typename T>
+  INLINE BitArray (std::initializer_list<T> list) 
+    : BitArray (list.size())
+  {
+    Clear();
+    int cnt = 0;
+    for (auto i = list.begin(); i < list.end(); i++, cnt++)
+      if (*i) Set(cnt);
+  }
+
   /// delete data
   NGS_DLL_HEADER ~BitArray ();
 
