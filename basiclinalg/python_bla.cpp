@@ -297,7 +297,7 @@ struct PyMatAccess : public boost::python::def_visitor<PyMatAccess<TMAT, TNEW> >
 };
 
 template <typename TVEC, typename TNEW, typename TSCAL>
-auto ExportVector( const char * name )
+auto ExportVector( const char * name ) -> bp::class_<TVEC>
   {
     return bp::class_<TVEC >(name, bp::no_init )
         .def(PyDefVector<TVEC, TSCAL>())

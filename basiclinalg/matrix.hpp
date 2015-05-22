@@ -1250,7 +1250,7 @@ namespace ngbla
 
 
   template <typename T, ORDERING ORD>
-  class SliceMatrix : public CMCPMatExpr<SliceMatrix<T> >
+  class SliceMatrix : public CMCPMatExpr<SliceMatrix<T,ORD>>
   {
   protected:
     /// the height
@@ -1272,7 +1272,7 @@ namespace ngbla
     // 
     SliceMatrix() = delete;
     INLINE SliceMatrix(const SliceMatrix &) = default;
-    INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
+    // INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
 
     /// set height, width, and mem
     INLINE SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
@@ -1301,7 +1301,7 @@ namespace ngbla
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
 
-  
+    INLINE SliceMatrix & operator= (const SliceMatrix & m) = delete;
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       return CMCPMatExpr<SliceMatrix>::operator= (m);
