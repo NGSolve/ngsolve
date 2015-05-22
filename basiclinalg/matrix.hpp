@@ -195,22 +195,22 @@ namespace ngbla
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
     using CMCPMatExpr<FlatMatrix<T> >::Cols;
 
-    INLINE const FlatMatrix Rows (int first, int next) const
+    INLINE FlatMatrix Rows (int first, int next) const
     {
       return FlatMatrix (next-first, w, data+first*w);
     }
 
-    INLINE const SliceMatrix<T> Cols (int first, int next) const
+    INLINE SliceMatrix<T> Cols (int first, int next) const
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
     }
 
-    INLINE const FlatMatrix Rows (IntRange range) const
+    INLINE FlatMatrix Rows (IntRange range) const
     {
       return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
     }
 
-    INLINE const SliceMatrix<T> Cols (IntRange range) const
+    INLINE SliceMatrix<T> Cols (IntRange range) const
     {
       return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
     }
@@ -1272,7 +1272,7 @@ namespace ngbla
     // 
     SliceMatrix() = delete;
     INLINE SliceMatrix(const SliceMatrix &) = default;
-    INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
+    // INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
 
     /// set height, width, and mem
     INLINE SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
@@ -1301,7 +1301,12 @@ namespace ngbla
       return CMCPMatExpr<SliceMatrix>::operator= (m);
     }
 
-  
+
+    INLINE SliceMatrix operator= (const SliceMatrix & m) 
+    {
+      return MatExpr<SliceMatrix>::operator= (m);
+    }
+
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       return CMCPMatExpr<SliceMatrix>::operator= (m);
