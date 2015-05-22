@@ -33,8 +33,3 @@ numproc markelements np4 -error=err -minlevel=1 -factor=0.5
 numproc writefile wf -variables=[mesh.levels,fes.v.ndof,ZZerrest.np3.err]  -filename=d2_error.out
 
 numproc visualization npv1 -scalarfunction=u -subdivision=2 -nolineartexture
-
-numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=19 -tolerance=3 -abstol -cdash
-numproc testvariable nptv_it2 -variable=ZZerrest.np3.err -refvalue=0 -tolerance=0.005 -abstol -cdash
-
-        

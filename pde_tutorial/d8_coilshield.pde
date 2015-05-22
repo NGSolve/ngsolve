@@ -47,6 +47,3 @@ define preconditioner c -type=multigrid -bilinearform=a -cylce=1 -smoother=block
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=400 -prec=1.e-8
 
 numproc drawflux np3 -bilinearform=acurl -solution=u -label=flux
-
-numproc testvariable nptv_it -variable=bvp.np1.its -refvalue=45 -tolerance=3 -abstol -cdash
-
