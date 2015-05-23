@@ -7,6 +7,8 @@ set(test_driver "${CMAKE_CURRENT_BINARY_DIR}/pde_tester")
 
 file(COPY ${PROJECT_SOURCE_DIR}/pde_tutorial DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(pde_dir "${CMAKE_CURRENT_BINARY_DIR}/pde_tutorial")
+file(COPY ${PROJECT_SOURCE_DIR}/tests/acc_tests DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set(acc_dir "${CMAKE_CURRENT_BINARY_DIR}/acc_tests")
 
 add_executable( pde_tester pde_tester.cpp)
 install( TARGETS pde_tester DESTINATION bin COMPONENT ngsolve )
@@ -71,6 +73,9 @@ endforeach()
 
     add_test(NAME d4_cube_performance.pde COMMAND ${test_driver} "${pde_dir}/d4_cube.pde" "2" WORKING_DIRECTORY ${pde_dir})
     set_tests_properties ( d4_cube_performance.pde PROPERTIES LABELS "performance")
+
+    add_test(NAME acc_poisson_circle.pde COMMAND ${test_driver} "${acc_dir}/poisson_circle.pde" WORKING_DIRECTORY ${acc_dir})
+    set_tests_properties ( acc_poisson_circle.pde PROPERTIES LABELS "accuracy")
 
     add_test(NAME cpu_usage COMMAND top "-n1" "-b" )
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
