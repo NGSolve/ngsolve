@@ -77,6 +77,9 @@ endforeach()
     add_test(NAME acc_poisson_circle.pde COMMAND ${test_driver} "${acc_dir}/poisson_circle.pde" WORKING_DIRECTORY ${acc_dir})
     set_tests_properties ( acc_poisson_circle.pde PROPERTIES LABELS "accuracy")
 
+    add_test(NAME acc_poisson_circle_HDG.pde COMMAND ${test_driver} "${acc_dir}/poisson_circle_HDG.pde" WORKING_DIRECTORY ${acc_dir})
+    set_tests_properties ( acc_poisson_circle_HDG.pde PROPERTIES LABELS "accuracy")
+
     add_test(NAME cpu_usage COMMAND top "-n1" "-b" )
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
 if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
