@@ -3,6 +3,7 @@
 # with dirichlet values and r.h.s. such that
 # u = 1 + cos(pi*(x*x+y*y)) is the solution        
 # load geometry
+shared = libgeom2d
 geometry = circle.in2d
 
 # and mesh
