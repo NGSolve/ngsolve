@@ -74,11 +74,14 @@ endforeach()
     add_test(NAME d4_cube_performance.pde COMMAND ${test_driver} "${pde_dir}/d4_cube.pde" "2" WORKING_DIRECTORY ${pde_dir})
     set_tests_properties ( d4_cube_performance.pde PROPERTIES LABELS "performance")
 
-    add_test(NAME acc_poisson_circle.pde COMMAND ${test_driver} "${acc_dir}/poisson_circle.pde" WORKING_DIRECTORY ${acc_dir})
-    set_tests_properties ( acc_poisson_circle.pde PROPERTIES LABELS "accuracy")
+    set(acc_tests "poisson_circle.pde;poisson_circle_HDG.pde;poisson_circle_HDG_hodc.pde")
 
-    add_test(NAME acc_poisson_circle_HDG.pde COMMAND ${test_driver} "${acc_dir}/poisson_circle_HDG.pde" WORKING_DIRECTORY ${acc_dir})
-    set_tests_properties ( acc_poisson_circle_HDG.pde PROPERTIES LABELS "accuracy")
+foreach(pde_test ${acc_tests})
+    add_test(NAME acc_${pde_test}  COMMAND ${test_driver} "${acc_dir}/${pde_test}" WORKING_DIRECTORY ${acc_dir})
+    set_tests_properties ( acc_${pde_test} PROPERTIES TIMEOUT 30 )
+    set_tests_properties ( acc_${pde_test} PROPERTIES ATTACHED_FILES "${pde_dir}/ng.prof" )
+    set_tests_properties ( acc_${pde_test} PROPERTIES LABELS "accuracy")
+endforeach()
 
     add_test(NAME cpu_usage COMMAND top "-n1" "-b" )
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UPPER )
