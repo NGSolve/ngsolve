@@ -58,7 +58,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
   {
     Vec<DIM> pt = ip.Point();
 
@@ -70,7 +70,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -102,7 +102,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, FlatVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, SliceVector<double> coefs) const
   {
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -116,7 +116,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationPoint & ip, FlatVector<double> coefs) const -> Vec<DIM>
+  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
   {
     Vec<DIM, AutoDiff<DIM>> adp = ip;
     AutoDiff<DIM> sum = 0.0;
@@ -129,7 +129,8 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const
+  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, 
+                FlatMatrixFixWidth<DIM> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
@@ -145,7 +146,8 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const
+  EvaluateGradTrans (const IntegrationRule & ir, 
+                     FlatMatrixFixWidth<DIM> vals, SliceVector<double> coefs) const
   {
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)

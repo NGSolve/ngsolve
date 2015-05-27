@@ -45,23 +45,31 @@ namespace ngfem
                                               SliceMatrix<> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
-					       FlatVector<double> x) const;
+					       SliceVector<double> x) const;
     
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, 
-					     FlatVector<double> coefs, 
+					     SliceVector<double> coefs, 
 					     FlatVector<double> vals) const;
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
-					       FlatVector<> vals, FlatVector<double> coefs) const;
+                                                  FlatVector<> vals, 
+                                                  SliceVector<double> coefs) const;
 
-    HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, FlatVector<> x) const;
+    HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
+                                                     SliceVector<> x) const;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<DIM> vals) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, 
+                                                 SliceVector<double> coefs, 
+                                                 FlatMatrixFixWidth<DIM> vals) const;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> vals, FlatVector<double> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
+                                                      FlatMatrixFixWidth<DIM> vals, 
+                                                      SliceVector<double> coefs) const;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, SliceMatrix<> values, SliceMatrix<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
+                                                      SliceMatrix<> values, 
+                                                      SliceMatrix<> coefs) const;
 
 /*    
     virtual void CalcDShape (const IntegrationPoint & ip, 

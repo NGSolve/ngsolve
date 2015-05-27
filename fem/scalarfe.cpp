@@ -162,7 +162,7 @@ namespace ngfem
 
   template<int D>
   double ScalarFiniteElement<D> :: 
-  Evaluate (const IntegrationPoint & ip, FlatVector<double> x) const
+  Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
   {
     VectorMem<20, double> shape(ndof);
     CalcShape (ip, shape);
@@ -171,7 +171,7 @@ namespace ngfem
   
   template<int D>
   Vec<D> ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationPoint & ip, FlatVector<double> x) const
+  EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> x) const
   {
     MatrixFixWidth<D> dshape(ndof);
     CalcDShape (ip, dshape);
@@ -182,7 +182,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       vals(i) = Evaluate (ir[i], coefs);
@@ -203,7 +203,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const IntegrationRule & ir, FlatVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
+  EvaluateGrad (const IntegrationRule & ir, SliceVector<double> coefs, FlatMatrixFixWidth<D,double> vals) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       vals.Row(i) = EvaluateGrad (ir[i], coefs);
@@ -211,7 +211,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, FlatVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, SliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);
     coefs = 0.0;
@@ -224,7 +224,8 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, FlatVector<double> coefs) const
+  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, 
+                     SliceVector<double> coefs) const
   {
     MatrixFixWidth<D> dshape(ndof);
     coefs = 0.0;
