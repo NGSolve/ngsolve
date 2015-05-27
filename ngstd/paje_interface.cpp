@@ -360,9 +360,8 @@ namespace ngstd
       for(Job & j : jobs)
         if(job_map.find(j.type) == job_map.end())
           {
-            int status;
-
 #ifdef HAVE_CXA_DEMANGLE
+            int status;
             char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
             string name = realname;
 #else
