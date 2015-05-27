@@ -460,13 +460,19 @@ namespace ngbla
     { return FlatVector<Vec<S,T> > (range.Next()-range.First(), data+S*range.First()); }
 
     /// vector size
-    int Size () const { return size; }
+    INLINE int Size () const { return size; }
 
     /// vector is matrix of height size
-    int Height () const { return size; }
+    INLINE int Height () const { return size; }
 
     /// vector is matrix of with 1
-    int Width () const { return 1; }
+    INLINE int Width () const { return 1; }
+
+
+    INLINE SliceVector<T> Comp (int comp) const
+    {
+      return SliceVector<T> (size, S, data+comp);
+    }
 
     /*
     /// take a slice of the vector. Take elements first+i * dist. 
@@ -752,7 +758,7 @@ namespace ngbla
   
     INLINE FlatSysVector & operator= (const FlatSysVector & v)
     {
-      for (int i = 0; i < this->s * this->bs; i++)
+      for (int i = 0; i < this->s * this->blocksize; i++)
 	data[i] = v.data[i];
       return *this;
     }
@@ -765,7 +771,7 @@ namespace ngbla
   
     INLINE FlatSysVector & operator= (TSCAL s)
     {
-      for (int i = 0; i < this->s*this->bs; i++)
+      for (int i = 0; i < this->s*this->blocksize; i++)
 	data[i] = s;
       return *this;
     }
@@ -787,6 +793,10 @@ namespace ngbla
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
 
+    INLINE SliceVector<T> Comp (int comp) const
+    {
+      return SliceVector<T> (s, blocksize, data+comp);
+    }
 
     INLINE FlatSysVector<T> Range(int first, int last)
     { return FlatSysVector<T> (last-first+1, blocksize, data+(first*blocksize)); }

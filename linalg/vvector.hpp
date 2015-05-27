@@ -170,6 +170,8 @@ namespace ngla
       return *this;
     }
 
+    using S_BaseVectorPtr<TSCAL> :: FV;
+
     FlatVector<T> FV () const throw()
     {
       return FlatVector<T> (this->size, this->pdata);
