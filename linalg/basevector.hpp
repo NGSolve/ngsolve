@@ -197,6 +197,12 @@ namespace ngla
     virtual FlatVector<double> FVDouble () const = 0;
     virtual FlatVector<Complex> FVComplex () const = 0;
 
+    template <typename SCAL = double>
+    FlatSysVector<SCAL> SV () const
+    {
+      return FlatSysVector<SCAL> (Size(), EntrySize() * sizeof(double)/sizeof(SCAL), (SCAL*)Memory());
+    }
+
     template <typename T>
     FlatVector<T> FV () const;
 
