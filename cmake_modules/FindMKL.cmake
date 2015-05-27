@@ -12,6 +12,7 @@
 #
 #   MKL_FOUND            : True if MKL_INCLUDE_DIR are found
 #   MKL_INCLUDE_DIR      : where to find mkl.h, etc.
+#   MKL_LINK_FLAGS       : flags to use when linking with mkl
 #   MKL_INCLUDE_DIRS     : set when MKL_INCLUDE_DIR found
 #   MKL_LIBRARIES        : the library to link against.
 
@@ -70,6 +71,10 @@ if(MKL_SDL)
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
     set(MKL_MINIMAL_LIBRARY ${MKL_LIBRARY})
+    get_filename_component(MKL_LIB_DIR ${MKL_MINIMAL_LIBRARY} PATH)
+    get_filename_component(MKL_LIB_NAME ${MKL_MINIMAL_LIBRARY} NAME_WE)
+    string(SUBSTRING "${MKL_LIB_NAME}" 3 -1 MKL_LIB_NAME)
+    set(MKL_LINK_FLAGS "-L${MKL_LIB_DIR} -l${MKL_LIB_NAME}") # CACHE string "MKL link flags")
 else()
     ######################### Interface layer #######################
     # win32 link advisor:
@@ -78,6 +83,7 @@ else()
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
+    get_filename_component(MKL_LIBRARY_DIR ${MKL_INTERFACE_LIBRARY} PATH)
 
     ######################## Threading layer ########################
     if(MKL_MULTI_THREADED)
@@ -117,7 +123,9 @@ else()
         set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
     else(WIN32)
         set(MKL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY} -Wl,--end-group -ldl -lpthread -lm")
-        set(MKL_MINIMAL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group ${MKL_ROOT}/lib/${MKL_ARCH}/libmkl_blacs_openmpi_lp64.a -ldl -lpthread -lm -fopenmp")
+        set(MKL_LINK_FLAGS "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group -ldl -lpthread -lm" )
+        set(MKL_MINIMAL_LIBRARY ${MKL_LINK_FLAGS})
+#  ${MKL_ROOT}/lib/${MKL_ARCH}/libmkl_blacs_openmpi_lp64.a 
     endif(WIN32)
 endif()
 

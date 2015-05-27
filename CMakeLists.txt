@@ -211,6 +211,8 @@ if (USE_MKL)
     if(NOT WIN32)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
     endif(NOT WIN32)
+#     set( ngscxx_extra_flags "${ngscxx_extra_flags} -l-L${MKL_LIBRARY_DIR}" )
+    set( ngscxx_extra_flags "${ngscxx_extra_flags} ${MKL_LINK_FLAGS}" )
 endif (USE_MKL)
 
 #######################################################################
