@@ -153,16 +153,16 @@ namespace ngfem
   template class MappedIntegrationPoint<2,3>;
   template class MappedIntegrationPoint<3,3>;
   
-
+  /*
   IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
   { 
     const IntegrationRule & ir = SelectIntegrationRule (eltype, order);
     size = ir.Size();
     data = &ir[0];
-    // ownmem = 0;
     mem_to_delete = NULL;
   }
-  
+  */
+
   IntegrationRule :: IntegrationRule (int asize, double (*pts)[3], double * weights)
   {
     for (int i = 0; i < asize; i++)

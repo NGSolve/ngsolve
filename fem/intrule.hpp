@@ -510,6 +510,15 @@ namespace ngfem
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi10 (int order);
   extern NGS_DLL_HEADER const IntegrationRule & SelectIntegrationRuleJacobi20 (int order);
 
+  INLINE IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
+  { 
+    const IntegrationRule & ir = SelectIntegrationRule (eltype, order);
+    size = ir.Size();
+    data = &ir[0];
+    mem_to_delete = NULL;
+  }
+
+
 
   // transformation of (d-1) dimensional integration points on facets to 
   // d-dimensional point in volumes

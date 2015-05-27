@@ -965,6 +965,11 @@ namespace ngla
         char ch_diag = 'N';
         
         dpotrf_ (&uplo, &na1, &a1(0,0), &lda, &info);    // A = L^t L
+        if (info < 0)
+          cerr << "call to lapack-functon dpotrf with illegal value" << endl;
+        if (info > 0)
+          throw Exception ("SparseCholesky - SPD version: matrix not spd");
+        
 
         for (int i = 0; i < mi; i++) 
           da1(i) = a1(i,i);
@@ -1097,7 +1102,8 @@ namespace ngla
         timerc.Stop();
       }
 
-    for (size_t i = 0, j = 0; i < n; i++)
+    size_t j = 0;
+    for (int i = 0; i < n; i++)
       {
 	double ai = diag[i];
 	size_t last = hfirstinrow[i+1];

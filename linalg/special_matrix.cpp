@@ -16,20 +16,24 @@ namespace ngla
 
   void Projector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    /*
     FlatMatrix<> mx(x.Size(), x.EntrySize(), (double*)x.Memory());
     FlatMatrix<> my(y.Size(), y.EntrySize(), (double*)y.Memory());
-    
+    */
+    FlatSysVector<> sx = x.SV<double>();
+    FlatSysVector<> sy = y.SV<double>();
+
     if (keep_values)
       {
         for (int i : Range(bits))
           if (bits[i])
-            my.Row(i) += s * mx.Row(i);
+            sy(i) += s * sx(i);
       }
     else
       {
         for (int i : Range(bits))
           if (!bits[i])
-            my.Row(i) += s * mx.Row(i);
+            sy(i) += s * sx(i);
       }
   }
 
