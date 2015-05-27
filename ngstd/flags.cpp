@@ -342,7 +342,7 @@ namespace ngstd
   {
     char str[100];
     char ch;
-    double val;
+    // double val;
     ifstream infile(filename);
 
     while (infile.good())
