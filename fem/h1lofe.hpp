@@ -24,10 +24,10 @@ namespace ngfem
     }
 
     template<typename Tx, typename TFA>  
-      static INLINE void T_CalcShape (Tx x[1], TFA & shape);
+    static INLINE void T_CalcShape (Tx x[1], TFA & shape);
   };
   
-
+  /*
   class FE_Point : public T_ScalarFiniteElementFO<FE_Point,ET_POINT,1,0>
   {
   public:
@@ -37,9 +37,17 @@ namespace ngfem
       shape[0] = 1;
     }
   }; 
+  */
+
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_POINT,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = 1.0;
+  }
+  using FE_Point = ScalarFE<ET_POINT,0>;
 
 
-  ///
+  /*
   class FE_Segm0 : public T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>
   {
   public:   
@@ -49,8 +57,16 @@ namespace ngfem
       shape[0] = 1;
     }
   }; 
+  */
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_SEGM,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = 1.0;
+  }
+  using FE_Segm0 = ScalarFE<ET_SEGM,0>;
 
-  ///
+
+  /*
   class FE_Segm1 : public T_ScalarFiniteElementFO<FE_Segm1,ET_SEGM,2,1>
   {
   public:
@@ -62,8 +78,18 @@ namespace ngfem
       shape[1] = 1-x[0];
     }
   }; 
+  */
 
-  ///
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_SEGM,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    shape[0] = hx[0];
+    shape[1] = 1-hx[0];
+  }
+  using FE_Segm1 = ScalarFE<ET_SEGM,1>;
+
+
+  /*
   class FE_Segm2 : public T_ScalarFiniteElementFO<FE_Segm2,ET_SEGM,3,2>
   {
   public:
@@ -78,6 +104,17 @@ namespace ngfem
       shape[2] = 4 * x * (1-x);
     }
   }; 
+  */
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_SEGM,2> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+    Tx x = hx[0];
+    shape[0] = 2*x*x - x;
+    shape[1] = 2*x*x - 3*x + 1;  
+    shape[2] = 4 * x * (1-x);
+  }
+  using FE_Segm2 = ScalarFE<ET_SEGM,2>;
+
 
   ///
   class FE_Segm2HB : public T_ScalarFiniteElementFO<FE_Segm2HB,ET_SEGM,3,2>
@@ -204,7 +241,7 @@ namespace ngfem
   {
     shape[0] = 1.0;
   }
-
+  using FE_Trig0 = ScalarFE<ET_TRIG,0>;
 
   /*
   ///
@@ -222,14 +259,18 @@ namespace ngfem
   }; 
   */
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TRIG,1> :: T_CalcShape (Tx x[], TFA & shape) 
+  void ScalarFE<ET_TRIG,1> :: T_CalcShape (Tx hx[], TFA & shape) 
   {
-    shape[0] = x[0];
-    shape[1] = x[1];      
-    shape[2] = 1-x[0]-x[1];
-  }
+    Tx x = hx[0];
+    Tx y = hx[1];
 
-  ///
+    shape[0] = x;
+    shape[1] = y;      
+    shape[2] = 1-x-y;
+  }
+  using FE_Trig1 = ScalarFE<ET_TRIG,1>;
+
+  /*
   class FE_Trig2 : public T_ScalarFiniteElement<FE_Trig2,ET_TRIG>
   {
   public:
@@ -249,6 +290,24 @@ namespace ngfem
       shape[5] = 4 * x * y;
     }
   }; 
+  */
+
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TRIG,2> :: T_CalcShape (Tx hx[], TFA & shape) 
+  {
+      Tx x = hx[0];
+      Tx y = hx[1];
+      Tx lam3 = 1-x-y;
+    
+      shape[0] = x * (2*x-1);
+      shape[1] = y * (2*y-1);
+      shape[2] = lam3 * (2*lam3-1);
+      shape[3] = 4 * y * lam3;
+      shape[4] = 4 * x * lam3;
+      shape[5] = 4 * x * y;
+  }
+  using FE_Trig2 = ScalarFE<ET_TRIG,2>;
+
 
   class FE_Trig2HB : public T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG>
   {
@@ -795,7 +854,7 @@ namespace ngfem
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TRIG,0>,ET_TRIG>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TRIG,1>,ET_TRIG>;
-  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2,ET_TRIG>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2,ET_TRIG>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Trig2HB,ET_TRIG>;
 
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG>;
@@ -893,6 +952,7 @@ namespace ngfem
 
   H1LOFE_EXTERN template class ScalarFE<ET_TRIG,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_TRIG,1>;
+  H1LOFE_EXTERN template class ScalarFE<ET_TRIG,2>;
 
   H1LOFE_EXTERN template class ScalarFE<ET_QUAD,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_QUAD,1>;

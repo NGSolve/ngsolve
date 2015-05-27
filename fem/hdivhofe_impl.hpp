@@ -95,6 +95,9 @@ namespace ngfem
     int p = order_inner[0];      
     if(p > 1) 
       {
+        INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
+
+        /*
 #ifdef VLA
         Tx mem[2*order];
         Tx * adpol1 = &mem[0];
@@ -103,9 +106,6 @@ namespace ngfem
         ArrayMem<Tx,10> adpol1(order),adpol2(order);	
 #endif
 
-        INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
-
-        /*
 	Tx xi  = lam[fav[2]]-lam[fav[1]];
 	Tx eta = lam[fav[0]]; 
 
@@ -148,6 +148,7 @@ namespace ngfem
             Tx x = lam[fav[0]];
             Tx y = lam[fav[1]];
             LegendrePolynomial leg;
+            // IntLegNoBubble leg;
             leg.EvalScaledMult1Assign 
               (p-2, y-(1-x-y), 1-x, y*(1-x-y),
                SBLambda ([&] (int i, Tx val1) LAMBDA_INLINE 
