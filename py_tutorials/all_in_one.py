@@ -21,8 +21,8 @@ f.Assemble()
 # print (Timer (f.Assemble).timeit(number=1000))
 
 a = BilinearForm (v, flags = { "symmetric" : True, "eliminate_internal" : False })
-a.Add (BFI ("mass", 2, ConstantCF(1)))
-a.Add (BFI ("laplace", 2, ConstantCF(1)))
+a.Add (BFI ("mass", dim = 2, coef = ConstantCF(1)))
+a.Add (BFI ("laplace", dim = 2, coef = ConstantCF(1)))
 
 
 c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block" })
@@ -42,6 +42,4 @@ u.vec.data = solver * f.vec
 sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) ]
 
 # sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
-
-
 

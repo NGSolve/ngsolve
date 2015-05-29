@@ -51,8 +51,14 @@ namespace ngstd
   public:
     static MPI_Datatype MPIType () { return MPI_INT; }
   };
-  
-  
+
+  template <>
+  class MPI_Traits<size_t>
+  {
+  public:
+    static MPI_Datatype MPIType () { return MPI_UINT64_T; }
+  };
+    
   template <>
   class MPI_Traits<double>
   {

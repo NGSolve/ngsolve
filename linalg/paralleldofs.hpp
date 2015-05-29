@@ -26,6 +26,9 @@ namespace ngla
     /// local ndof
     int ndof;
 
+    /// global ndof
+    size_t global_ndof;
+
     /// proc 2 dofs
     Table<int> * exchangedofs;
     
@@ -72,14 +75,7 @@ namespace ngla
 
     int GetNDofLocal () const { return ndof; }
 
-    int GetNDofGlobal () const
-    {
-      if (GetNTasks() == 1) return ndof;
-      int nlocal = 0;
-      for (int i = 0; i < ndof; i++)
-	if (ismasterdof.Test(i)) nlocal++;
-      return MyMPI_AllReduce (nlocal);
-    }
+    size_t GetNDofGlobal () const { return global_ndof; }
 
     bool IsExchangeProc (int proc) const
     { return (*exchangedofs)[proc].Size() != 0; }

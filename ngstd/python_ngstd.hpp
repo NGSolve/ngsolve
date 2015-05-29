@@ -395,8 +395,6 @@ class PyDefIterable2 : public bp::def_visitor<PyDefIterable2<T>>
   };
 
 
-
-
 public:
   template <class Tclass>
   void visit (Tclass & c) const
@@ -410,6 +408,72 @@ public:
       ;
   }
 };
+
+
+// the iterator object copies the container (= range_expr)
+// otherwise, it might be destroyed by python too early
+template <typename T>
+class PyDefIterable3 : public bp::def_visitor<PyDefIterable3<T>>
+{
+
+  typedef decltype(GetReturnValue(&T::begin)) TITER;
+  typedef decltype(GetReturnValue(&TITER::operator*)) TELEM;
+
+  class Iterator
+  {
+    T cont2;
+    TITER begin, end;
+  public:
+    Iterator (const T & container)
+      : cont2(container), begin(cont2.begin()), end(cont2.end()) 
+    { 
+      cout << "Iterator from container" << endl;
+    }
+
+    Iterator (T && container)
+      : cont2(move(container)), begin(cont2.begin()), end(cont2.end())
+    { 
+      cout << "Iterator from rvalue - container" << endl;
+    }
+
+    Iterator (const Iterator & it2)
+      : cont2(it2.cont2), begin(cont2.begin()), end(cont2.end()) 
+    {
+      cout << "copy iterator (but move should do it" << endl; 
+    }
+
+    Iterator (Iterator && it2)
+      : cont2(move(it2.cont2)), begin(cont2.begin()), end(cont2.end()) { ; }
+
+    TELEM Next()
+    {
+      if (! (begin != end))
+        bp::exec("raise StopIteration()\n");
+        
+      auto tmp = begin;
+      ++begin;
+      return *tmp;
+    }
+  };
+
+public:
+  template <class Tclass>
+  void visit (Tclass & c) const
+  {
+    string itername = string("PyIterator3_")+GetPyName<T>();
+    bp::class_<Iterator>(itername.c_str(),bp::no_init)
+      .def("__next__", &Iterator::Next)
+      ;
+    c.def("__iter__", FunctionPointer
+          ([](T c) 
+           { 
+             cout << "create python iterator" << endl;
+             return Iterator(move(c)); 
+           }))
+      ;
+  }
+};
+
 
 
 

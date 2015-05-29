@@ -39,8 +39,10 @@ namespace ngla
 	
 	ismasterdof.SetSize(ndof);
 	ismasterdof.Set();
+
+        global_ndof = ndof;
 	return;
-	}
+      }
     
     // transpose table
     Array<int> nexdofs(ntasks);
@@ -99,6 +101,13 @@ namespace ngla
     for (int i = 0; i < ntasks; i++)
       if (IsExchangeProc (i))
 	all_dist_procs.Append (i);
+
+
+
+    size_t nlocal = 0;
+    for (int i = 0; i < ndof; i++)
+      if (ismasterdof.Test(i)) nlocal++;
+    global_ndof = MyMPI_AllReduce (nlocal);
   }
 
 

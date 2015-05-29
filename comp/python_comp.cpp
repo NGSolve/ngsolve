@@ -134,8 +134,14 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   bp::class_<ElementRange,bp::bases<IntRange>> ("ElementRange",bp::init<const MeshAccess&,VorB,IntRange>())
     .def(PyDefIterable2<ElementRange>())
-    // .def("__iter__", bp::iterator<ElementRange>())
     ;
+
+  bp::class_<FESpace::ElementRange,bp::bases<IntRange>> ("FESpaceElementRange",bp::init<const FESpace&,VorB,IntRange>())
+    // .def(bp::init<const FESpace::ElementRange&>())
+    // .def(bp::init<FESpace::ElementRange&&>())
+    .def(PyDefIterable3<FESpace::ElementRange>())
+    ;
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -147,7 +153,36 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("index", &Ngs_Element::GetIndex)
     ;
 
+  bp::class_<FESpace::Element,bp::bases<Ngs_Element>>("FESpaceElement", bp::no_init)
+    .add_property("dofs", FunctionPointer([](FESpace::Element & el) 
+        {
+          Array<int> tmp (el.GetDofs());
+          return bp::tuple(tmp);
+          // return bp::tuple(Array<int>(el.GetDofs()));} ))
+        }))
 
+    .def("GetLH", FunctionPointer([](FESpace::Element & el) -> LocalHeap & 
+                                  {
+                                    return el.GetLH();
+                                  }),
+         bp::return_value_policy<bp::reference_existing_object>()
+         )
+    
+    .def("GetFE", FunctionPointer([](FESpace::Element & el) -> const FiniteElement & 
+                                  {
+                                    return el.GetFE();
+                                  }),
+         bp::return_value_policy<bp::reference_existing_object>()
+         )
+
+    .def("GetTrafo", FunctionPointer([](FESpace::Element & el) -> const ElementTransformation & 
+                                     {
+                                       return el.GetTrafo();
+                                     }),
+         bp::return_value_policy<bp::reference_existing_object>()
+         )
+
+    ;
   //////////////////////////////////////////////////////////////////////////////////////////
 
   PyExportArray<string>();
@@ -196,7 +231,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
-  bp::class_<NGS_Object, shared_ptr<NGS_Object>,  boost::noncopyable>("NGS_Object", bp::no_init)
+  bp::class_<NGS_Object, shared_ptr<NGS_Object>, boost::noncopyable>("NGS_Object", bp::no_init)
     .add_property("name", FunctionPointer
                   ([](const NGS_Object & self)->string { return self.GetName();}))
     ;
@@ -213,7 +248,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                flags.SetFlag("dirichlet", makeCArray<double>(dirichlet));
                              return CreateFESpace (type, ma, flags); 
                            }),
-          bp::default_call_policies(),        // need it to use arguments
+          bp::default_call_policies(),        // need it to use argumentso
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, bp::arg("dirichlet")= bp::list() )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
@@ -236,21 +271,36 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      self.Update(lh);
                                      self.FinalizeUpdate(lh);
                                    }),
-         (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+         (bp::arg("self"),bp::arg("heapsize")=1000000))
 
     .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }))
+
+    // Define function instead of property because the python autocomplete package (rlcompleter) tries to evaluate properties -> lock in mpi function  -> lock should be fixed now
+
+    .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
     .def("__str__", &ToString<FESpace>)
     
+    .def("Elements", 
+         FunctionPointer([](FESpace & self, VorB vb) -> FESpace::ElementRange
+                         {
+                           cout << "call fespace::Elements" << endl;
+                           FESpace::ElementRange r = self.Elements(vb);    
+                           cout << "have range" << endl;
+                           return move(r);
+                         }),
+         // static_cast<FESpace::ElementRange(FESpace::*)(VorB)const> (&FESpace::Elements),
+         (bp::arg("VOL_or_BND")=VOL))
+
+
     .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId ei) 
                                    {
                                      Array<int> tmp; self.GetDofNrs(ei,tmp); 
                                      return bp::tuple (tmp); 
                                    }))
 
-    .def("CouplingType", &FESpace::GetDofCouplingType)
-
-    // Define function instead of property because the python autocomplete package (rlcompleter) tries to evaluate properties -> lock in mpi function
-    .def("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
+    .def("CouplingType", &FESpace::GetDofCouplingType,
+         (bp::arg("self"),bp::arg("dofnr"))
+         )
 
     .def ("GetFE", 
           static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
@@ -260,7 +310,8 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("FreeDofs", FunctionPointer
          ( [] (const FESpace &self, bool coupling) -> const BitArray &{ return *self.GetFreeDofs(coupling); } ),
          bp::return_value_policy<bp::reference_existing_object>(),
-         (bp::arg("self"), bp::arg("coupling")=0))
+         (bp::arg("self"), 
+          bp::arg("coupling")=false))
     ;
   
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>

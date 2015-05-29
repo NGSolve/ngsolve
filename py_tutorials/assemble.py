@@ -29,13 +29,12 @@ lap = fem.BFI (name="laplace", dim=2, coef=lam)
 
 
 
-for i in mesh.Elements():
-    hr = ngstd.HeapReset(lh)
-    el = v.GetFE(i,lh)
-    trafo = mesh.GetTrafo(i,lh)
-    mat = bla.Matrix(el.ndof, el.ndof)
-    lap.CalcElementMatrix(el, trafo, mat, lh)
+for i in v.Elements():
+    fel = i.GetFE()    
+    trafo = i.GetTrafo()
+    mat = bla.Matrix(fel.ndof, fel.ndof)
+    lap.CalcElementMatrix(fel, trafo, mat, i.GetLH())
     print ("Element matrix of element ", i, ":\n", mat)
-    del hr
+    print ("dofs: ", i.dofs, "\n")
 
 
