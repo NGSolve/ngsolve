@@ -100,7 +100,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     .add_property("ndof", &FiniteElement::GetNDof)    
     .add_property("order", &FiniteElement::Order)    
     .add_property("type", &FiniteElement::ElementType)    
-    // .add_property("classname", &FiniteElement::ClassName)   // crashes ???
+    .add_property("classname", &FiniteElement::ClassName)   // crashes ???
     ;
   
   bp::def("H1FE", FunctionPointer

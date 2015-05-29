@@ -225,11 +225,18 @@ namespace ngcomp
     {
       const FESpace & fes;
       Array<int> & temp_dnums;
+      LocalHeap & lh;
+      // HeapReset hr;
       mutable bool dofs_set = false;
     public:     
-      INLINE Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums)  
-        : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), temp_dnums(atemp_dnums)
+      INLINE Element (const FESpace & afes, ElementId id, Array<int> & atemp_dnums,
+                      LocalHeap & alh)
+        : Ngs_Element ((*afes.GetMeshAccess())[id] ), fes(afes), 
+          temp_dnums(atemp_dnums), lh(alh) // , hr(lh)
       { ; }
+
+      INLINE Element (const Element & el) = default;
+      INLINE Element (Element && el) = default;
 
       INLINE FlatArray<int> GetDofs() const
       {
@@ -238,24 +245,44 @@ namespace ngcomp
         dofs_set = true;
         return temp_dnums;
       }
+
+      INLINE const ElementTransformation & GetTrafo() const
+      {
+        return fes.GetMeshAccess()->GetTrafo (ElementId(*this), lh);
+      }
+
+      INLINE const FiniteElement & GetFE() const
+      {
+        return fes.GetFE (ElementId(*this), lh);
+      }
+
+      INLINE LocalHeap & GetLH() const
+      {
+        return lh;
+      }
+
     };
 
     class ElementIterator
     {
       const FESpace & fes;
       ElementId ei;
-      Array<int> & temp_dnums;
+      Array<int> & temp_dnums;      
+      LocalHeap & lh;
+      void * heappointer;
     public:
-      INLINE ElementIterator (const FESpace & afes, ElementId aei, Array<int> & atemp_dnums) 
-        : fes(afes), ei(aei), temp_dnums(atemp_dnums) { ; }
+      INLINE ElementIterator (const FESpace & afes, ElementId aei, 
+                              Array<int> & atemp_dnums, LocalHeap & alh)
+        : fes(afes), ei(aei), temp_dnums(atemp_dnums), lh(alh), heappointer(lh.GetPointer()) { ; }
       INLINE ElementIterator & operator++ ()
       {
+        lh.CleanUp(heappointer);
         ++ei;
         while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && !fes.DefinedOn(ei)) ++ei;
         return *this;
       }
-      INLINE Element operator*() const { return Element (fes, ei, temp_dnums); }          
-      INLINE bool operator!=(ElementIterator id2) const { return ei != id2.ei; }
+      INLINE Element operator*() const { return Element (fes, ei, temp_dnums, lh); }          
+      INLINE bool operator!=(const ElementIterator & id2) const { return ei != id2.ei; }
     };
     
     class ElementRange : public IntRange
@@ -263,18 +290,37 @@ namespace ngcomp
       const FESpace & fes;
       const VorB vb;
       mutable Array<int> temp_dnums;
+      mutable LocalHeap lh;
     public:
-      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar) 
-        : IntRange(ar), fes(afes), vb(avb) { ; }
+      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap lh2 = 10000) 
+        : IntRange(ar), fes(afes), vb(avb), lh(move(lh2))
+      { 
+        ; // cout << "FESpace::ElementRange ctor" << endl;
+      }
+      INLINE ElementRange (const ElementRange & r2) 
+        : IntRange(r2), fes(r2.fes), vb(r2.vb), lh(r2.lh.Available())
+      {
+        cout << "copy FESpace::ElementRange, but move should be sufficient" << endl;
+      }
+      INLINE ElementRange (ElementRange && r2) 
+        : IntRange(r2), fes(r2.fes), vb(r2.vb), temp_dnums(r2.temp_dnums), lh(r2.lh)
+      {
+        ; // cout << "move ctor for ElementRange" << endl;
+      }
+      INLINE ~ElementRange () 
+      {
+        ; // cout << "FESpace::ElementRange dtor" << endl;
+      }
+
       INLINE ElementIterator begin () const 
       {
         ElementId ei = ElementId(vb,First());
         while ((ei.Nr() < IntRange::end()) && !fes.DefinedOn(ei)) ++ei;
-        return ElementIterator(fes, ei, temp_dnums); 
+        return ElementIterator(fes, ei, temp_dnums, lh); 
       }
-      INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums); }
+      INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums, lh); }
       // INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
-      INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums); }
+      INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums, lh); }
     };
 
     ElementRange Elements (VorB vb = VOL) const
@@ -620,9 +666,9 @@ namespace ngcomp
                       HeapReset hr(lh);
                       FESpace::Element el(fes, 
                                           ElementId (vb, els_of_col[mynr]), 
-                                          temp_dnums);
+                                          temp_dnums, lh);
                       
-                      func (el, lh);
+                      func (move(el), lh);
                     }
                 } );
           }
@@ -642,9 +688,9 @@ namespace ngcomp
         for (int i = 0; i < els_of_col.Size(); i++)
           {
             HeapReset hr(lh);
-            FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums);
+            FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
 
-            func (el, lh);
+            func (move(el), lh);
           }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
     }

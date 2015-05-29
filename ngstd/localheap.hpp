@@ -49,10 +49,13 @@ namespace ngstd
 
   public:
     /// Allocate one block of size asize.
-    NGS_DLL_HEADER LocalHeap (size_t asize, const char * aname = "noname");
+    NGS_DLL_HEADER LocalHeap (size_t asize, 
+                              const char * aname = "noname",
+                              bool mult_by_threads = false);
 
     /// Use provided memory for the LocalHeap
-    INLINE LocalHeap (char * adata, size_t asize, const char  * aname) throw ()
+    INLINE LocalHeap (char * adata, size_t asize, 
+                      const char  * aname = "noname") throw ()
     {
       totsize = asize;
       data = adata;
