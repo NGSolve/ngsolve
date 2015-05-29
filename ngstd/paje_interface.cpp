@@ -94,7 +94,13 @@ namespace ngstd
           int id = 0;
           bool value_is_alias = true;
 
-          bool operator < (const PajeEvent & other) const { return time < other.time; }
+          bool operator < (const PajeEvent & other) const {
+              // Same times can occur for very small tasks -> take "starting" events first (eg. PajePushState before PajePopState)
+              if(time == other.time)
+                return event_type < other.event_type;
+              else
+                return (time < other.time);
+          }
 
           int write(char *buf)
             {
@@ -276,7 +282,7 @@ namespace ngstd
                     {
                       int ret = events[k].write( buf+counter );
                       if(ret>MAX_TRACE_LINE_SIZE)
-                        Exception("Line in tracefile too long, increase MAX_TRACE_LINE_SIZE in " __FILE__ "!\n");
+                        throw Exception("Line in tracefile too long, increase MAX_TRACE_LINE_SIZE in " __FILE__ "!\n");
                       counter += ret;
 
                     }
