@@ -292,7 +292,7 @@ namespace ngcomp
       mutable Array<int> temp_dnums;
       mutable LocalHeap lh;
     public:
-      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap lh2 = 10000) 
+      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap lh2) 
         : IntRange(ar), fes(afes), vb(avb), lh(move(lh2))
       { 
         ; // cout << "FESpace::ElementRange ctor" << endl;
@@ -303,7 +303,8 @@ namespace ngcomp
         cout << "copy FESpace::ElementRange, but move should be sufficient" << endl;
       }
       INLINE ElementRange (ElementRange && r2) 
-        : IntRange(r2), fes(r2.fes), vb(r2.vb), temp_dnums(r2.temp_dnums), lh(r2.lh)
+        : IntRange(r2), fes(r2.fes), vb(r2.vb), 
+          temp_dnums(move(r2.temp_dnums)), lh(move(r2.lh))
       {
         ; // cout << "move ctor for ElementRange" << endl;
       }
@@ -323,11 +324,16 @@ namespace ngcomp
       INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums, lh); }
     };
 
-    ElementRange Elements (VorB vb = VOL) const
+    ElementRange Elements (VorB vb = VOL, int heapsize = 10000) const
     {
-      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)));
+      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), LocalHeap(heapsize));
     }
-
+    
+    ElementRange Elements (VorB vb, LocalHeap lh) const
+    {
+      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), move(lh));
+    }
+        
 
 
 

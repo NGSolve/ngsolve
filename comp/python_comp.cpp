@@ -136,7 +136,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def(PyDefIterable2<ElementRange>())
     ;
 
-  bp::class_<FESpace::ElementRange,bp::bases<IntRange>> ("FESpaceElementRange",bp::init<const FESpace&,VorB,IntRange>())
+  bp::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, bp::bases<IntRange>> ("FESpaceElementRange",bp::no_init)
     // .def(bp::init<const FESpace::ElementRange&>())
     // .def(bp::init<FESpace::ElementRange&&>())
     .def(PyDefIterable3<FESpace::ElementRange>())
@@ -281,12 +281,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("__str__", &ToString<FESpace>)
     
     .def("Elements", 
-         FunctionPointer([](FESpace & self, VorB vb) -> FESpace::ElementRange
+         FunctionPointer([](FESpace & self, VorB vb) // -> FESpace::ElementRange
                          {
-                           cout << "call fespace::Elements" << endl;
                            FESpace::ElementRange r = self.Elements(vb);    
-                           cout << "have range" << endl;
-                           return move(r);
+                           return make_shared<FESpace::ElementRange> (move(r));
                          }),
          // static_cast<FESpace::ElementRange(FESpace::*)(VorB)const> (&FESpace::Elements),
          (bp::arg("VOL_or_BND")=VOL))
