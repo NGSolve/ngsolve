@@ -1472,7 +1472,7 @@ namespace ngsolve
       cout << "np integrate,ne = " << ma->GetNE() << endl;
 #pragma omp parallel
       {
-	LocalHeap slh = lh.Split(), lh = slh;
+	LocalHeap slh = lh.Split(), &lh = slh;
 	SCAL lsum = 0;
 #pragma omp for
 	for (int i = 0; i < ma->GetNE(); i++)

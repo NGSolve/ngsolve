@@ -98,7 +98,7 @@ namespace ngcomp
       for (auto vb = VOL; vb <= BND; vb++)
         IterateElements 
           (*fes, vb, lh, 
-           [&] (FESpace::Element el, LocalHeap lh)
+           [&] (FESpace::Element el, LocalHeap & lh)
            {
              int base = (vb == VOL) ? 0 : ma->GetNE();
              for (auto d : el.GetDofs())
@@ -147,7 +147,7 @@ namespace ngcomp
       for (auto vb = VOL; vb <= BND; vb++)
         IterateElements 
           (*fes, vb, lh, 
-           [&] (FESpace::Element el, LocalHeap lh)
+           [&] (FESpace::Element el, LocalHeap & lh)
            {
              int base = (vb == VOL) ? 0 : ma->GetNE();
              int lifcnt = 0;

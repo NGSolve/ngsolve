@@ -194,7 +194,7 @@ namespace ngsolve
     static Timer timer("Equation solving");
     timer.Start();
 
-    if (!lff->IsAssembled()) lff->Assemble(lh);
+    if (!lff->IsAssembled()) lff->Assemble(lh.Borrow());
 
     cout << IM(1) << "solve bvp" << endl;
 
