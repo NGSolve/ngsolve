@@ -54,7 +54,7 @@ namespace ngcomp
     
     if (independent)
       {
-	AssembleIndependent(clh);
+	AssembleIndependent(move(clh));
 	return;
       }
 

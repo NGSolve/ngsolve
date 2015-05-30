@@ -187,15 +187,31 @@ void NGS_DLL_HEADER ExportNgfem() {
                                                       const ElementTransformation&,
                                                       FlatMatrix<double>,LocalHeap&)const>
          (&BilinearFormIntegrator::CalcElementMatrix))
+
     .def("CalcElementMatrix",
          FunctionPointer([] (const BilinearFormIntegrator & self, 
-                             const FiniteElement & fe, const ElementTransformation & trafo)
+                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             LocalHeap & lh)
                          {
                            Matrix<> mat(fe.GetNDof());
-                           LocalHeap lh(100000, "dummy");
                            self.CalcElementMatrix (fe, trafo, mat, lh);
                            return mat;
-                         }))
+                         }),
+         bp::default_call_policies(),        // need it to use named arguments
+         (bp::arg("bfi")=NULL, bp::arg("fel"),bp::arg("trafo"),bp::arg("localheap")))
+
+    .def("CalcElementMatrix",
+         FunctionPointer([] (const BilinearFormIntegrator & self, 
+                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             int heapsize)
+                         {
+                           LocalHeap lh(heapsize);
+                           Matrix<> mat(fe.GetNDof());
+                           self.CalcElementMatrix (fe, trafo, mat, lh);
+                           return mat;
+                         }),
+         bp::default_call_policies(),        // need it to use named arguments
+         (bp::arg("bfi")=NULL, bp::arg("fel"),bp::arg("trafo"),bp::arg("heapsize")=10000))
     ;
 
 

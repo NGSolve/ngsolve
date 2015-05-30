@@ -20,7 +20,7 @@ pde = comp.PDE("d1_square.pde")
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
-v.Update (heapsize=1000000)
+v.Update (heapsize=10000)
 
 lh = ngstd.LocalHeap (10000, "heap")
 
@@ -28,13 +28,10 @@ lam = fem.ConstantCF (4.8)
 lap = fem.BFI (name="laplace", dim=2, coef=lam)
 
 
-
-for i in v.Elements():
-    fel = i.GetFE()    
-    trafo = i.GetTrafo()
-    mat = bla.Matrix(fel.ndof, fel.ndof)
-    lap.CalcElementMatrix(fel, trafo, mat, i.GetLH())
-    print ("Element matrix of element ", i, ":\n", mat)
-    print ("dofs: ", i.dofs, "\n")
+for el in v.Elements():
+    print ("el: ", el)
+    mat = lap.CalcElementMatrix(el.GetFE(), el.GetTrafo(), heapsize=10000)
+    print ("Element matrix of element ", el, ":\n", mat)
+    print ("dofs: ", el.dofs, "\n")
 
 
