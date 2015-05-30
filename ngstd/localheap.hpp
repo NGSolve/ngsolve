@@ -66,6 +66,7 @@ namespace ngstd
       CleanUp();
     }
 
+    /*
     /// Use provided memory for the LocalHeap
     INLINE LocalHeap (const LocalHeap & lh2)
       : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(false),
@@ -73,6 +74,13 @@ namespace ngstd
     {
       next = data + totsize;
     }
+    */
+    INLINE LocalHeap (const LocalHeap & lh2) = delete;
+    INLINE LocalHeap Borrow() 
+    {
+      return LocalHeap (p, Available());
+    }
+
 
     INLINE LocalHeap (LocalHeap && lh2)
       : data(lh2.data), p(lh2.p), totsize(lh2.totsize), owner(lh2.owner),

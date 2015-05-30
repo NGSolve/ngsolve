@@ -421,29 +421,33 @@ class PyDefIterable3 : public bp::def_visitor<PyDefIterable3<T>>
 
   class Iterator
   {
-    T cont2;
+    shared_ptr<T> cont2;
     TITER begin, end;
   public:
-    Iterator (const T & container)
-      : cont2(container), begin(cont2.begin()), end(cont2.end()) 
+    Iterator (shared_ptr<T> container)
+      : cont2(container), begin(cont2->begin()), end(cont2->end()) 
     { 
       cout << "Iterator from container" << endl;
     }
-
+    
+    /*
     Iterator (T && container)
-      : cont2(move(container)), begin(cont2.begin()), end(cont2.end())
+      : cont2(move(container)), begin(cont2->begin()), end(cont2->end())
     { 
       cout << "Iterator from rvalue - container" << endl;
     }
+    */
 
     Iterator (const Iterator & it2)
-      : cont2(it2.cont2), begin(cont2.begin()), end(cont2.end()) 
+      : cont2(it2.cont2), begin(cont2->begin()), end(cont2->end()) 
     {
-      cout << "copy iterator (but move should do it" << endl; 
+      cout << "copy iterator" << endl; 
     }
 
+    /*
     Iterator (Iterator && it2)
       : cont2(move(it2.cont2)), begin(cont2.begin()), end(cont2.end()) { ; }
+    */
 
     TELEM Next()
     {
@@ -465,10 +469,10 @@ public:
       .def("__next__", &Iterator::Next)
       ;
     c.def("__iter__", FunctionPointer
-          ([](T c) 
+          ([](shared_ptr<T> c) 
            { 
              cout << "create python iterator" << endl;
-             return Iterator(move(c)); 
+             return Iterator(c); 
            }))
       ;
   }

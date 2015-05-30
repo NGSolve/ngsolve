@@ -137,7 +137,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
                            })))
     ;
   
-  bp::class_<ngstd::LocalHeap> 
+  bp::class_<ngstd::LocalHeap, boost::noncopyable> 
     ("LocalHeap", 
      bp::init<size_t,const char*>
      ((bp::arg("self"), bp::arg("size")=1000000, bp::arg("name")="PyLocalHeap"),
