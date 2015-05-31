@@ -3290,7 +3290,7 @@ namespace ngcomp
             if (type == 1 && !bfi.BoundaryForm()) continue;
             
             
-            static Timer elementtimer ("Element matrix application");
+            static Timer elementtimer ("Element matrix application", 2);
             elementtimer.Start();
             
             

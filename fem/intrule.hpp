@@ -436,7 +436,7 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
-                                      int order, LocalHeap * lh = NULL);
+                                      int order, bool compute_duffy = true); 
 
     // tensor product rule for a facet
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
@@ -458,6 +458,49 @@ namespace ngfem
     // Vec<D> & GetPoint(int i) const { return x[i]; }
     // Mat<D,D> & GetJacobian(int i) const { return dxdxi[i]; }
     Mat<D,D> & GetDuffyJacobian(int i) const { return dxdxi_duffy[i]; }
+
+    template <ELEMENT_TYPE ET>
+    Mat<D,D> GetDuffyJacobian(int ix, int iy, int iz) const 
+    { 
+      if (dxdxi_duffy.Size())
+        return dxdxi_duffy[(ix*iry->GetNIP()+iy)*irz->GetNIP()+iz]; 
+      else
+        {
+          if (ET == ET_TET)
+            {
+              double x = (*irx)[ix](0);
+              double invx = 1.0 / (1-x);
+                  
+              double y = (*iry)[iy](0);
+              double invxy = 1.0 / ( (1-x) * (1-y) );
+                      
+              double z = (*irz)[iz](0);
+
+              Mat<3> trans3; 
+              
+              // hex -> tet transform
+              trans3(0,0) = 1;
+              trans3(0,1) = 0;
+              trans3(0,2) = 0;
+              
+              trans3(1,0) = y*invx;
+              trans3(1,1) = 1*invx;
+              trans3(1,2) = 0;
+              
+              trans3(2,0) = z*invxy;
+              trans3(2,1) = z*invxy;
+              trans3(2,2) = 1*invxy;
+              
+              return trans3 * dxdxi_permute;
+            }
+          else
+            {
+              cout << "need to compute duffy for ET " << ET << endl;
+              return Mat<D,D> (0.0);
+            }
+        }
+    }
+
     Mat<D,D> GetPermutationJacobian() const { return dxdxi_permute; }
   };
 
