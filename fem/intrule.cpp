@@ -1068,7 +1068,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, LocalHeap * lh)
+                                             int order, bool compute_duffy) 
   {
     irx = &SelectIntegrationRule (ET_SEGM, order);
     int nip = irx->GetNIP();
@@ -1089,7 +1089,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, LocalHeap * lh)
+                                             int order, bool compute_duffy)
   {
     int nip = 0;
 
@@ -1107,13 +1107,8 @@ namespace ngfem
           
           nip = irx->GetNIP() * iry->GetNIP();
 
-          if (lh)
-            Assign (nip, *lh);
-          else
-            {
-              SetAllocSize(nip+8);
-              SetSize(nip);
-            }
+          SetAllocSize(nip+8);
+          SetSize(nip);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
@@ -1211,7 +1206,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, LocalHeap * lh)
+                                             int order, bool compute_duffy)
   {
     int nip = 0;
 
@@ -1230,8 +1225,12 @@ namespace ngfem
           
           nip = irx->GetNIP() * iry->GetNIP() * irz->GetNIP();
 
-	  SetSize(nip);
- 
+          SetAllocSize(nip+8);
+          SetSize(nip);
+
+          static Timer t ("IntegrationruleTP - compute pts", 2);
+          NgProfiler::RegionTimer reg(t);
+
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)
               for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
@@ -1268,37 +1267,39 @@ namespace ngfem
 	  dxdxi_permute = trans2;
 
           // tet permutation plus hex -> tet mapping
-          dxdxi_duffy.SetSize(nip);
-
-          for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
+          if (compute_duffy)
             {
-              double x = (*irx)[i1](0);
-              double invx = 1.0 / (1-x);
-
-              for (int i2 = 0; i2 < iry->GetNIP(); i2++)
+              dxdxi_duffy.SetSize(nip);
+              for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
                 {
-                  double y = (*iry)[i2](0);
-                  double invxy = 1.0 / ( (1-x) * (1-y) );
-                
-                  for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
+                  double x = (*irx)[i1](0);
+                  double invx = 1.0 / (1-x);
+                  
+                  for (int i2 = 0; i2 < iry->GetNIP(); i2++)
                     {
-                      double z = (*irz)[i3](0);
-                      Mat<3> trans3; 
-                    
-                      // hex -> tet transform
-                      trans3(0,0) = 1;
-                      trans3(0,1) = 0;
-                      trans3(0,2) = 0;
-
-                      trans3(1,0) = y*invx;
-                      trans3(1,1) = 1*invx;
-                      trans3(1,2) = 0;
-                    
-                      trans3(2,0) = z*invxy;
-                      trans3(2,1) = z*invxy;
-                      trans3(2,2) = 1*invxy;
-		      
-		      dxdxi_duffy[ii] = trans3 * trans2;
+                      double y = (*iry)[i2](0);
+                      double invxy = 1.0 / ( (1-x) * (1-y) );
+                      
+                      for (int i3 = 0; i3 < irz->GetNIP(); i3++, ii++)
+                        {
+                          double z = (*irz)[i3](0);
+                          Mat<3> trans3; 
+                          
+                          // hex -> tet transform
+                          trans3(0,0) = 1;
+                          trans3(0,1) = 0;
+                          trans3(0,2) = 0;
+                          
+                          trans3(1,0) = y*invx;
+                          trans3(1,1) = 1*invx;
+                          trans3(1,2) = 0;
+                          
+                          trans3(2,0) = z*invxy;
+                          trans3(2,1) = z*invxy;
+                          trans3(2,2) = 1*invxy;
+                          
+                          dxdxi_duffy[ii] = trans3 * trans2;
+                        }
                     }
                 }
             }
