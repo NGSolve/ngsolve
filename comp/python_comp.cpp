@@ -62,7 +62,7 @@ public:
     AcquireGIL gil_lock;
     try
       {
-        this->get_override("Do")(lh);
+        this->get_override("Do")(boost::ref(lh));
       }
     catch (bp::error_already_set const &) {
       cout << "caught a python error:" << endl;
