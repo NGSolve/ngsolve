@@ -96,6 +96,11 @@ void NGS_DLL_HEADER  ExportNgstd() {
 
   bp::def("TestFlags", FunctionPointer( [] (bp::dict const &d) { cout << bp::extract<Flags>(d)() << endl; } ) );
   
+  bp::class_<PajeTrace >("Tracer", bp::no_init)
+    .def("SetTraceThreads", &PajeTrace::SetTraceThreads)
+    .def("SetTraceThreadCounter", &PajeTrace::SetTraceThreadCounter)
+    .def("SetMaxTracefileSize", &PajeTrace::SetMaxTracefileSize)
+    ;
   bp::class_<FlatArray<double> >("FlatArrayD")
     .def(PyDefVector<FlatArray<double>, double>()) 
     .def(PyDefToString<FlatArray<double> >())
