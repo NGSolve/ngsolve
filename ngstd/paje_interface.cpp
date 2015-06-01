@@ -323,6 +323,18 @@ namespace ngstd
 
   void PajeTrace::Write( string filename )
     {
+      int n_events = jobs.size() + timer_events.size();
+      for(auto & vtasks : tasks)
+        n_events += vtasks.size();
+
+      cout << n_events << " events traced." << endl;
+
+      if(n_events==0)
+        {
+          cout << "Skip writing trace file." << endl;
+          return;
+        }
+
       std::cout << "Write traces..." << std::endl;
       std::cout << "Number of Jobs: " << jobs.size() << std::endl;
       if(!tracing_enabled)
@@ -330,6 +342,7 @@ namespace ngstd
           cout << "Tracing stopped during computation due to tracefile size limit of " << max_tracefile_size/1024/1024 << " megabytes." << endl;
           cout << "To increase the limit, set in the pde file:" << endl;
           cout << "flags tracer = -max_size=size_in_megabytes" << endl << endl;
+          cout << "max_size=0 disables tracing" << endl << endl;
         }
 
       PajeFile paje(filename);
