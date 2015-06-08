@@ -71,7 +71,7 @@ namespace ngcomp
     }
 
     ///
-    virtual void Assemble (LocalHeap lh = 1000000) = 0;
+    virtual void Assemble (LocalHeap & lh) = 0;
 
     virtual void CleanUpLevel() { ; }
 
@@ -147,8 +147,8 @@ namespace ngcomp
 				   FlatVector<SCAL> elvec) const = 0;
 
     ///
-    virtual void Assemble (LocalHeap lh);
-    void AssembleIndependent (LocalHeap lh);
+    virtual void Assemble (LocalHeap & lh);
+    void AssembleIndependent (LocalHeap & lh);
   };
 
 

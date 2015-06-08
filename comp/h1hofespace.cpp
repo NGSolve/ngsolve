@@ -91,7 +91,7 @@ namespace ngcomp
     wb_loedge = ma->GetDimension() == 3;
     if (flags.GetDefineFlag("wb_withedges")) wb_loedge = true;
     if (flags.GetDefineFlag("wb_withoutedges")) wb_loedge = false;
-
+    wb_edge = flags.GetDefineFlag ("wb_fulledges");
     
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
@@ -478,9 +478,14 @@ namespace ngcomp
     for (auto edge : Range (ma->GetNEdges()))
       {
 	IntRange range = GetEdgeDofs (edge);
-	ctofdof[range] = INTERFACE_DOF;
-	if (wb_loedge && (range.Size() > 0))
-	  ctofdof[range.First()] = WIREBASKET_DOF;
+        if (wb_edge)
+          ctofdof[range] = WIREBASKET_DOF;
+        else
+          {
+            ctofdof[range] = INTERFACE_DOF;
+            if (wb_loedge && (range.Size() > 0))
+              ctofdof[range.First()] = WIREBASKET_DOF;
+          }
       }
 
     if (ma->GetDimension() == 3)

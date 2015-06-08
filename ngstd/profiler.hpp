@@ -237,21 +237,21 @@ namespace ngstd
     }
     void Start () 
     {
-      if (priority <= 1) {
+      if (priority <= 2) 
 	NgProfiler::StartTimer (timernr);
+      if (priority <= 1)
         if(trace) trace->StartTimer(timernr);
-      }
     }
     void Stop () 
     {
-      if (priority <= 1) {
+      if (priority <= 2) 
 	NgProfiler::StopTimer (timernr);
+      if (priority <= 1)
         if(trace) trace->StopTimer(timernr);
-      }
     }
     void AddFlops (double aflops)
     {
-      if (priority <= 1)
+      if (priority <= 2)
 	NgProfiler::AddFlops (timernr, aflops);
     }
 

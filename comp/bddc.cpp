@@ -71,31 +71,10 @@ namespace ngcomp
       ifcnt = 0;
       const BitArray & freedofs = *fes->GetFreeDofs();
       
-      /*
-      Array<int> dnums;
-      for (int bound = 0, ii = 0; bound <= 1; bound++)
-	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
-	  {
-            ElementId ei (bound ? BND : VOL, i);
-	    fes->GetDofNrs (ei, dnums);
-	    for (int j = 0; j < dnums.Size(); j++)
-	      {
-		if (dnums[j] == -1) continue;
-		if (!freedofs.Test(dnums[j])) continue;
-		COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[j]);
-		if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
-		
-		if (ct == WIREBASKET_DOF)
-		  wbdcnt[ii]++;
-		else
-		  ifcnt[ii]++;
-	      }
-	  }
-      */
 
       LocalHeap lh(10000, "BDDC-constr, dummy heap");
       
-      for (auto vb = VOL; vb <= BND; vb++)
+      for (auto vb : { VOL, BND })
         IterateElements 
           (*fes, vb, lh, 
            [&] (FESpace::Element el, LocalHeap & lh)
@@ -119,32 +98,7 @@ namespace ngcomp
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
       Table<int> el2ifdofs(ifcnt);    // interface dofs on each element
       
-      /*
-      for (int bound = 0, ii = 0; bound <= 1; bound++)
-	for (int i = 0; i < (bound ? ma->GetNSE() : ma->GetNE()); i++, ii++)
-	  {
-            ElementId ei (bound ? BND : VOL, i);
-	    fes->GetDofNrs (ei, dnums);
-	    
-	    int lifcnt = 0;
-	    int lwbcnt = 0;
-	    
-	    for (int j = 0; j < dnums.Size(); j++)
-	      {
-		if (dnums[j] == -1) continue;
-		if (!freedofs.Test(dnums[j])) continue;
-		COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[j]);
-		if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
-		
-		if (ct == WIREBASKET_DOF)
-		  el2wbdofs[ii][lwbcnt++] = dnums[j];
-		else
-		  el2ifdofs[ii][lifcnt++] = dnums[j];
-	      } 
-	  }
-      */
-
-      for (auto vb = VOL; vb <= BND; vb++)
+      for (auto vb : { VOL, BND })
         IterateElements 
           (*fes, vb, lh, 
            [&] (FESpace::Element el, LocalHeap & lh)
@@ -169,13 +123,13 @@ namespace ngcomp
            });
       
 
-      int ndof = fes->GetNDof();      
+      auto ndof = fes->GetNDof();      
 
       wb_free_dofs = new BitArray (ndof);
       wb_free_dofs->Clear();
 
       // *wb_free_dofs = wbdof;
-      for (int i = 0; i < ndof; i++)
+      for (auto i : Range(ndof))
 	if (fes->GetDofCouplingType(i) == WIREBASKET_DOF)
 	  wb_free_dofs -> Set(i);
 
@@ -233,7 +187,7 @@ namespace ngcomp
       
       ArrayMem<int, 100> localwbdofs, localintdofs;
       
-      for (int k = 0; k < dnums.Size(); k++)
+      for (int k : Range(dnums))
 	{
 	  COUPLING_TYPE ct = fes->GetDofCouplingType(dnums[k]);	      
 	  if (ct == WIREBASKET_DOF)
@@ -266,21 +220,17 @@ namespace ngcomp
       FlatMatrix<SCAL> het (sizew, sizei, lh);
       FlatMatrix<SCAL> he (sizei, sizew, lh);
 	  
-      // *testout << "localwb = " << endl << localwbdofs << endl;
-      // *testout << "localintdofs = " << endl << localintdofs << endl;
 
       if (sizei)
 	{      
 	  RegionTimer reg(timer3);
 	  timer3.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
-          // *testout << "inner = " << endl << d << endl;
           if (sizei > 30)
             LapackInverse (d);
           else
             CalcInverse (d);
 
-          // *testout << "inner,inv = " << endl << d << endl;
 	  if (sizew)
 	    {
 	      he = SCAL(0.0);
@@ -314,14 +264,6 @@ namespace ngcomp
       wbdofs = dnums[localwbdofs];
       intdofs = dnums[localintdofs];
 
-      /*
-      *testout << "BDDC:" << endl 
-               << "elmat = " << endl << elmat 
-               << "he = " << endl << he << endl
-               << "het = " << endl << het << endl
-               << "inv_innder = " << endl << d << endl
-               << "schur = " << endl << a << endl;
-      */
 
       // critical can be removed when everything is colored
       // #pragma omp critical(bddcaddelmat)
@@ -340,8 +282,6 @@ namespace ngcomp
           ->AddElementMatrix(wbdofs,wbdofs,a);
         if (coarse)
           dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);
-
-
       }
     }
 
@@ -386,7 +326,6 @@ namespace ngcomp
         }
 
       // now generate wire-basked solver
-
 
       if (block)
 	{

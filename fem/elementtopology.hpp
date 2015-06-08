@@ -42,7 +42,16 @@ namespace ngfem
 
   enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3 };
 
-  inline void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
+  INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
+
+
+  INLINE constexpr int Dim (ELEMENT_TYPE et)
+  {
+    return (et == ET_POINT) ? 0 :
+      (et == ET_SEGM) ? 1 : 
+      (et == ET_TRIG || et == ET_QUAD) ? 2 : 3;
+  }
+
 
 
   /// point coordinates
