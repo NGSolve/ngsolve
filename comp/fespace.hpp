@@ -290,21 +290,31 @@ namespace ngcomp
       const FESpace & fes;
       const VorB vb;
       mutable Array<int> temp_dnums;
-      mutable LocalHeap lh;
+      mutable LocalHeap mylh;
+      LocalHeap & lh;
     public:
-      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap lh2) 
-        : IntRange(ar), fes(afes), vb(avb), lh(move(lh2))
+      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
+        : IntRange(ar), fes(afes), vb(avb), mylh(move(lh2)), lh(mylh)
       { 
         ; // cout << "FESpace::ElementRange ctor" << endl;
       }
-      INLINE ElementRange (const ElementRange & r2) 
+      INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
+        : IntRange(ar), fes(afes), vb(avb), mylh(0), lh(lh2)
+      { 
+        ; // cout << "FESpace::ElementRange ctor" << endl;
+      }
+
+      INLINE ElementRange (const ElementRange & r2) = delete;
+      /*
         : IntRange(r2), fes(r2.fes), vb(r2.vb), lh(r2.lh.Available())
       {
         cout << "copy FESpace::ElementRange, but move should be sufficient" << endl;
       }
+      */
       INLINE ElementRange (ElementRange && r2) 
         : IntRange(r2), fes(r2.fes), vb(r2.vb), 
-          temp_dnums(move(r2.temp_dnums)), lh(move(r2.lh))
+          temp_dnums(move(r2.temp_dnums)), mylh(move(r2.mylh)), 
+          lh( (&r2.mylh == &r2.lh) ? mylh : r2.lh)
       {
         ; // cout << "move ctor for ElementRange" << endl;
       }
@@ -321,17 +331,26 @@ namespace ngcomp
       }
       INLINE ElementIterator end () const { return ElementIterator(fes, ElementId(vb,Next()), temp_dnums, lh); }
       // INLINE Element operator[] (ElementId id) { return *ElementIterator(fes, id, temp_dnums); }
-      INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums, lh); }
+      // INLINE Element operator[] (ElementId id) { return Element(fes, id, temp_dnums, lh); }
     };
 
+    /*
     ElementRange Elements (VorB vb = VOL, int heapsize = 10000) const
     {
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), LocalHeap(heapsize));
     }
-    
-    ElementRange Elements (VorB vb, LocalHeap lh) const
+    */
+
+    ElementRange Elements (VorB vb = VOL, LocalHeap && lh = 10000) const
     {
+      // cout << "C++ FESpace::Elements with lh rvalue, name = " << lh.name << endl;
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), move(lh));
+    }
+
+    ElementRange Elements (VorB vb, LocalHeap & lh) const
+    {
+      // cout << "C++ FESpace::Elements with lh reference, name = " << lh.name << endl;
+      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
     }
         
 

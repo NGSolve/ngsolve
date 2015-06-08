@@ -677,7 +677,7 @@ namespace ngcomp
                 if( lf->InitialAssembling() )
                   {
 		    cout << IM(2) << "Update linear-form " << lf->GetName() << endl;
-		    lf->Assemble(lh.Borrow());
+		    lf->Assemble(lh);
 		  }
 	      }
             

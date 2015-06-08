@@ -64,12 +64,21 @@ namespace ngfem
 
 
   template <int DIMS, int DIMR>
-  FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation (ELEMENT_TYPE type, FlatMatrix<> pmat)
+  FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation (ELEMENT_TYPE type, SliceMatrix<> pmat)
     : pointmat(Trans(pmat))
   {
     fel = GetP1FE<DIMS> (type);
     SetElementType (type);
   }
+
+  template <int DIMS, int DIMR>
+  FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation (ELEMENT_TYPE type)
+    : FE_ElementTransformation (type, SliceMatrix<> (ElementTopology::GetNVertices(type), 
+                                                     Dim(type), 3,
+                                                     (double*)&ElementTopology::GetVertices(type)[0][0]))
+  { ; }
+
+
 
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: ~FE_ElementTransformation ()

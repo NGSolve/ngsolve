@@ -166,7 +166,9 @@ namespace ngfem
     FlatMatrix<> nvmat;
   public:
     /// type of element, np x dim point-matrix
-    FE_ElementTransformation (ELEMENT_TYPE type, FlatMatrix<> pmat);
+    FE_ElementTransformation (ELEMENT_TYPE type, SliceMatrix<> pmat);
+    /// trafo of reference-element
+    FE_ElementTransformation (ELEMENT_TYPE type);
     ///
     FE_ElementTransformation ();
 

@@ -136,7 +136,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def(PyDefIterable2<ElementRange>())
     ;
 
-  bp::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, bp::bases<IntRange>> ("FESpaceElementRange",bp::no_init)
+  bp::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, bp::bases<IntRange>, boost::noncopyable> ("FESpaceElementRange",bp::no_init)
     // .def(bp::init<const FESpace::ElementRange&>())
     // .def(bp::init<FESpace::ElementRange&&>())
     .def(PyDefIterable3<FESpace::ElementRange>())
@@ -280,15 +280,31 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }))
     .def("__str__", &ToString<FESpace>)
     
-    .def("Elements", 
-         FunctionPointer([](FESpace & self, VorB vb) // -> FESpace::ElementRange
-                         {
-                           FESpace::ElementRange r = self.Elements(vb);    
-                           return make_shared<FESpace::ElementRange> (move(r));
-                         }),
-         // static_cast<FESpace::ElementRange(FESpace::*)(VorB)const> (&FESpace::Elements),
-         (bp::arg("VOL_or_BND")=VOL))
 
+    .def("Elements", 
+         FunctionPointer([](FESpace & self, VorB vb, int heapsize) 
+                         {
+                           return make_shared<FESpace::ElementRange> (self.Elements(vb, heapsize));
+                         }),
+         (bp::arg("self"),bp::arg("VOL_or_BND")=VOL,bp::arg("heapsize")=10000))
+
+    .def("Elements", 
+         FunctionPointer([](FESpace & self, VorB vb, LocalHeap & lh) 
+                         {
+                           return make_shared<FESpace::ElementRange> (self.Elements(vb, lh));
+                         }),
+         (bp::arg("self"), bp::arg("VOL_or_BND")=VOL, bp::arg("heap")))
+
+    /*
+    .def("Elements", 
+         FunctionPointer([](FESpace & self, VorB vb, LocalHeap & lh, int heapsize) 
+                         {
+                           cout << "lh.avail = " << lh.Available() << endl;
+                           return make_shared<FESpace::ElementRange> (self.Elements(vb, heapsize));
+                         }),
+         (bp::arg("self"),bp::arg("VOL_or_BND")=VOL, 
+          bp::arg("heap")=LocalHeap(0), bp::arg("heapsize")=10000))
+    */
 
     .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId ei) 
                                    {
@@ -542,7 +558,10 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)
-          { self.Assemble(LocalHeap(heapsize, "LinearForm::Assemble-heap")); }),
+          { 
+            LocalHeap lh(heapsize, "LinearForm::Assemble-heap");
+            self.Assemble(lh);
+          }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
     ;
 

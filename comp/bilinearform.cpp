@@ -395,12 +395,13 @@ namespace ngcomp
       
         if (precompute)
           {
-            precomputed_data.SetSize(0);
-
             Array<int> dnums;
             int ne = ma->GetNE();
             int nse = ma->GetNSE();
-      
+
+            precomputed_data.SetSize( max(ne, nse)*NumIntegrators() );
+            precomputed_data = nullptr;
+
             LocalHeap lh (20000000, "biform - assemble");
             
             int hasbound = 0;
@@ -434,7 +435,8 @@ namespace ngcomp
                       if (bfi.BoundaryForm()) continue;
                       if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
                       
-                      precomputed_data.Append (bfi.PrecomputeData (fel, eltrans, lh));
+                      precomputed_data[i*NumIntegrators()+j] = 
+                        bfi.PrecomputeData (fel, eltrans, lh);
                     }
                 }
 
@@ -454,7 +456,8 @@ namespace ngcomp
                       const BilinearFormIntegrator & bfi = *parts[j];
                       
                       if (!bfi.BoundaryForm()) continue;
-                      precomputed_data.Append (bfi.PrecomputeData (fel, eltrans, lh));
+                      precomputed_data[i*NumIntegrators()+j] = 
+                        bfi.PrecomputeData (fel, eltrans, lh);
                     }
                 }
           }
@@ -3087,7 +3090,7 @@ namespace ngcomp
             // static Timer elementtimer ("Element matrix application");
             // elementtimer.Start();
 
-            if (this->precompute)
+            if (this->precompute)  
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
