@@ -166,6 +166,16 @@ void NGS_DLL_HEADER  ExportNgstd() {
                                    if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
                                    self.Set(i); 
                                  }))
+    .def("__ior__", FunctionPointer ([] (BitArray & self, BitArray & other)
+                                 {
+                                   self.Or(other); 
+                                   return self;
+                                 }))
+    .def("__iand__", FunctionPointer ([] (BitArray & self, BitArray & other)
+                                 {
+                                   self.And(other); 
+                                   return self;
+                                 }))
     .def("Clear", FunctionPointer ([] (BitArray & self, int i)
                                    {
                                    if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
