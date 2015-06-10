@@ -1068,8 +1068,9 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_duffy) 
+                                             INT<1> vorder, bool compute_duffy) 
   {
+    int order = vorder[0];
     irx = &SelectIntegrationRule (ET_SEGM, order);
     int nip = irx->GetNIP();
 
@@ -1089,7 +1090,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_duffy)
+                                             INT<2> order, bool compute_duffy)
   {
     int nip = 0;
 
@@ -1097,8 +1098,8 @@ namespace ngfem
       {
       case ET_TRIG:
         {
-          irx = &SelectIntegrationRuleJacobi10 (order);
-          iry = &SelectIntegrationRule (ET_SEGM, order);
+          irx = &SelectIntegrationRuleJacobi10 (order[0]);
+          iry = &SelectIntegrationRule (ET_SEGM, order[0]);
           
           int sort[3] = { 0, 1, 2 };
           eltrans.GetSort (FlatArray<int> (3, &sort[0]) );
@@ -1167,8 +1168,8 @@ namespace ngfem
 
       case ET_QUAD:
         {
-          irx = &SelectIntegrationRule (ET_SEGM, order);
-          iry = &SelectIntegrationRule (ET_SEGM, order);
+          irx = &SelectIntegrationRule (ET_SEGM, order[0]);
+          iry = &SelectIntegrationRule (ET_SEGM, order[1]);
 
           nip = irx->GetNIP() * iry->GetNIP();
 
@@ -1212,8 +1213,9 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             int order, bool compute_duffy)
+                                             INT<3> vorder, bool compute_duffy)
   {
+    int order = vorder[0];
     int nip = 0;
 
     switch (eltrans.GetElementType())
