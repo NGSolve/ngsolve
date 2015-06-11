@@ -9,7 +9,7 @@ namespace ngcomp
   template <class SCAL, class TV>
   class BDDCMatrix : public BaseMatrix
   {
-    const BilinearForm & bfa;
+    shared_ptr<BilinearForm> bfa;
 
     BaseMatrix *harmonicext, *harmonicexttrans, 
       *innersolve, *pwbmat;    
@@ -39,7 +39,7 @@ namespace ngcomp
     void SetHypre (bool ah = true) { hypre = ah; }
     void SetCoarseGridPreconditioner (bool ah = true) { coarse = ah; }
     
-    BDDCMatrix (const BilinearForm & abfa, 
+    BDDCMatrix (shared_ptr<BilinearForm> abfa, 
                 Flags flags,
 		const string & ainversetype, 
 		const string & acoarsetype, 
@@ -62,7 +62,7 @@ namespace ngcomp
       tmp2 = NULL;
       RegionTimer reg(timer);
 
-      auto fes = bfa.GetFESpace();
+      auto fes = bfa -> GetFESpace();
       shared_ptr<MeshAccess> ma = fes->GetMeshAccess();
 
       Array<int> wbdcnt(ma->GetNE()+ma->GetNSE());
@@ -85,7 +85,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
+                 if (ct == LOCAL_DOF && bfa -> UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)
@@ -112,7 +112,7 @@ namespace ngcomp
                  if (d == -1) continue;
                  if (!freedofs.Test(d)) continue;
                  COUPLING_TYPE ct = fes->GetDofCouplingType(d);
-                 if (ct == LOCAL_DOF && bfa.UsesEliminateInternal()) continue;
+                 if (ct == LOCAL_DOF && bfa->UsesEliminateInternal()) continue;
 		
                  int ii = base + el.Nr();
                  if (ct == WIREBASKET_DOF)
@@ -137,7 +137,7 @@ namespace ngcomp
       if (fes->GetFreeDofs())
 	wb_free_dofs -> And (*fes->GetFreeDofs());
       
-      if (!bfa.SymmetricStorage()) 
+      if (!bfa->SymmetricStorage()) 
 	{
 	  harmonicexttrans = sparse_harmonicexttrans =
 	    new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2ifdofs, false);
@@ -147,7 +147,7 @@ namespace ngcomp
 	harmonicexttrans = sparse_harmonicexttrans = NULL;
 
 
-      innersolve = sparse_innersolve = bfa.SymmetricStorage() 
+      innersolve = sparse_innersolve = bfa->SymmetricStorage() 
 	? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2ifdofs)
 	: new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2ifdofs, false); // bfa.IsSymmetric());
       innersolve->AsVector() = 0.0;
@@ -155,18 +155,18 @@ namespace ngcomp
       harmonicext = sparse_harmonicext =
 	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
-      pwbmat = bfa.SymmetricStorage() && !hypre
+      pwbmat = bfa->SymmetricStorage() && !hypre
         ? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2wbdofs)
         : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
-      dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa.IsSPD() );
+      dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa->IsSPD() );
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
       if (coarse)
       {
-        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (nullptr, flags, "wirebasket"+coarsetype);
+        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
     }
@@ -183,7 +183,7 @@ namespace ngcomp
 
       HeapReset hr(lh);
 
-      auto fes = bfa.GetFESpace();
+      auto fes = bfa->GetFESpace();
       
       ArrayMem<int, 100> localwbdofs, localintdofs;
       
@@ -242,7 +242,7 @@ namespace ngcomp
 	      for (int k = 0; k < sizei; k++)
 		he.Row(k) *= el2ifweight[k]; 
 
-	      if (!bfa.SymmetricStorage())
+	      if (!bfa->SymmetricStorage())
 		{	      
 		  het = SCAL(0.0);
 		  het -= b*d  | Lapack;
@@ -273,7 +273,7 @@ namespace ngcomp
         
         sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
         
-        if (!bfa.SymmetricStorage())
+        if (!bfa->SymmetricStorage())
           sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
         
         sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
@@ -292,7 +292,7 @@ namespace ngcomp
       static Timer timer ("BDDC Finalize");
       RegionTimer reg(timer);
 
-      auto fes = bfa.GetFESpace();
+      auto fes = bfa->GetFESpace();
       int ndof = fes->GetNDof();      
 
 
@@ -313,7 +313,7 @@ namespace ngcomp
 	if (weight[i])
 	  sparse_harmonicext->GetRowValues(i) /= weight[i];
       
-      if (!bfa.SymmetricStorage())
+      if (!bfa->SymmetricStorage())
         {
           for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
             {
@@ -336,8 +336,8 @@ namespace ngcomp
 	  Flags flags;
 	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
-	  cout << "call Create Smoothing Blocks of " << bfa.GetFESpace()->GetName() << endl;
-	  Table<int> & blocks = *(bfa.GetFESpace()->CreateSmoothingBlocks(flags));
+	  cout << "call Create Smoothing Blocks of " << bfa->GetFESpace()->GetName() << endl;
+	  Table<int> & blocks = *(bfa->GetFESpace()->CreateSmoothingBlocks(flags));
 	  cout << "has blocks" << endl << endl;
 	  // *testout << "blocks = " << endl << blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
@@ -351,7 +351,7 @@ namespace ngcomp
 	  
 	  //Coarse Grid of Wirebasket
 	  cout << "call directsolverclusters inverse" << endl;
-	  Array<int> & clusters = *(bfa.GetFESpace()->CreateDirectSolverClusters(flags));
+	  Array<int> & clusters = *(bfa->GetFESpace()->CreateDirectSolverClusters(flags));
 	  cout << "has clusters" << endl << endl;
 	  
 	  cout << "call coarse wirebasket grid inverse" << endl;
@@ -364,9 +364,9 @@ namespace ngcomp
       else
 	{
 #ifdef PARALLEL
-	  if (bfa.GetFESpace()->IsParallel())
+	  if (bfa->GetFESpace()->IsParallel())
 	    {
-	      ParallelDofs * pardofs = &bfa.GetFESpace()->GetParallelDofs();
+	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
 
 	      pwbmat = new ParallelMatrix (shared_ptr<BaseMatrix> (pwbmat, NOOP_Deleter), pardofs);
 	      pwbmat -> SetInverseType (inversetype);
@@ -432,11 +432,11 @@ namespace ngcomp
     
     virtual AutoVector CreateVector () const
     {
-      return bfa.GetMatrix().CreateVector();
+      return bfa->GetMatrix().CreateVector();
     }
 
-    virtual int VHeight() const { return bfa.GetMatrix().VHeight(); }
-    virtual int VWidth() const { return bfa.GetMatrix().VHeight(); }
+    virtual int VHeight() const { return bfa->GetMatrix().VHeight(); }
+    virtual int VWidth() const { return bfa->GetMatrix().VHeight(); }
 
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -455,7 +455,7 @@ namespace ngcomp
 
       timerharmonicexttrans.Start();
 
-      if (bfa.SymmetricStorage())
+      if (bfa->SymmetricStorage())
 	y += Transpose(*harmonicext) * x; 
       else
 	y += *harmonicexttrans * x;
@@ -484,7 +484,7 @@ namespace ngcomp
 	}
       else
 	{
-	  *tmp = (*inv) * y;
+          *tmp = (*inv) * y;
 	}
       timerwb.Stop();
 
@@ -514,30 +514,35 @@ namespace ngcomp
   template <class SCAL, class TV = SCAL>
   class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
   {
-    const S_BilinearForm<SCAL> * bfa;
-    BDDCMatrix<SCAL,TV> * pre;
+    shared_ptr<S_BilinearForm<SCAL>> bfa;
+    shared_ptr<BDDCMatrix<SCAL,TV>> pre;
     string inversetype;
     string coarsetype;
     bool block, hypre;
   public:
-    BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
-      : Preconditioner (&pde, aflags, aname)
-    {
-      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")).get());
-      const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
-      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
-      coarsetype = flags.GetStringFlag("coarsetype", "none");
-      if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
-      block = flags.GetDefineFlag("block");
-      hypre = flags.GetDefineFlag("usehypre");
-      pre = NULL;
-    }
-    
     BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
-                        const string aname = "mgprecond")
+                        const string aname = "bddcprecond")
       : Preconditioner (abfa, aflags, aname)
     {
-      bfa = dynamic_cast<const S_BilinearForm<SCAL>*>(abfa.get());
+      bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
+      bfa -> SetPreconditioner (this);
+      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+      coarsetype = flags.GetStringFlag("coarsetype", "none");
+      if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
+      block = flags.GetDefineFlag("block");
+      hypre = flags.GetDefineFlag("usehypre");
+      // pre = NULL;
+    }
+
+
+    BDDCPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
+      : BDDCPreconditioner (pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")), 
+                            aflags, aname)
+    { ; }
+    /*
+      : Preconditioner (&pde, aflags, aname)
+    {
+    bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>>  (pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")));
       const_cast<S_BilinearForm<SCAL>*> (bfa) -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
       coarsetype = flags.GetStringFlag("coarsetype", "none");
@@ -546,17 +551,18 @@ namespace ngcomp
       hypre = flags.GetDefineFlag("usehypre");
       pre = NULL;
     }
+    */
 
 
     virtual ~BDDCPreconditioner()
     {
-      delete pre;
+      ; // delete pre;
     }
     
     virtual void InitLevel (const BitArray * /* freedofs */) 
     {
-      delete pre;
-      pre = new BDDCMatrix<SCAL,TV>(*bfa, flags, inversetype, coarsetype, block, hypre);
+      // delete pre;
+      pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
     }
 
@@ -588,8 +594,11 @@ namespace ngcomp
 
     virtual void CleanUpLevel ()
     {
+      /*
       delete pre;
       pre = NULL;
+      */
+      pre.reset();
     }
 
 
@@ -622,12 +631,12 @@ namespace ngcomp
     auto fes = bfa->GetFESpace();
 
     int used = 0;
-    for (int i = 0; i < dnums.Size(); i++)
+    for (int i : Range(dnums))
       if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) used++;
     
     FlatArray<int> compress(used, lh);
     int cnt = 0;
-    for (int i = 0; i < dnums.Size(); i++)
+    for (int i : Range(dnums))
       if (dnums[i] != -1 && fes->GetFreeDofs()->Test(dnums[i])) 
         compress[cnt++] = i;
 
