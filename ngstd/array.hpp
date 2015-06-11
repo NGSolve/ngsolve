@@ -77,10 +77,10 @@ namespace ngstd
   template <typename T>
   class AOWrapper : public BaseArrayObject<AOWrapper<T>>
   {
-    const T & ar;
+    T ar;
   public:
-    INLINE AOWrapper (const T & aar) : ar(aar) { ; }
-    INLINE operator const T& () const { return ar; }
+    INLINE AOWrapper (T aar) : ar(aar) { ; }
+    INLINE operator T () const { return ar; }
     INLINE int Size() const { return ar.Size(); }
     INLINE auto operator[] (int i) -> decltype (ar[i]) { return ar[i]; }
     INLINE auto operator[] (int i) const -> decltype (ar[i]) { return ar[i]; }
@@ -89,7 +89,13 @@ namespace ngstd
   };
 
   template <typename T>
-  INLINE AOWrapper<T> ArrayObject (const T & ar)
+  INLINE AOWrapper<const T&> ArrayObject (const T & ar)
+  {
+    return AOWrapper<const T&> (ar);
+  }
+
+  template <typename T>
+  INLINE AOWrapper<T> ArrayObject (T && ar)
   {
     return AOWrapper<T> (ar);
   }
