@@ -66,9 +66,9 @@ namespace ngcomp
   public:
     Ngs_Element (const netgen::Ng_Element & el, ElementId id) 
       : netgen::Ng_Element(el), ElementId(id) { ; }
-    auto Vertices() const -> decltype (ArrayObject(vertices)) { return vertices; }
-    auto Edges() const -> decltype (ArrayObject(edges)) { return edges; }
-    auto Faces() const -> decltype (ArrayObject(faces)) { return faces; }
+    AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
+    AOWrapper<decltype(edges)> Edges() const { return edges; }
+    AOWrapper<decltype(faces)> Faces() const { return faces; }
     
     /*
       Converts element-type from Netgen to element-types of NGSolve.
