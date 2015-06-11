@@ -29,8 +29,8 @@ namespace ngfem
     using H1HighOrderFE<ET>::N_FACE;
 
     // typedef LegendrePolynomial EdgeOrthoPol;
-    // typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
-    typedef ChebyPolynomial EdgeOrthoPol; 
+    typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
+    // typedef ChebyPolynomial EdgeOrthoPol; 
     typedef ChebyPolynomial QuadOrthoPol; 
 
   public:
