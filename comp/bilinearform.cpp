@@ -722,9 +722,9 @@ namespace ngcomp
           IterateElements
             (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
              {
-               if (parts[i] -> DefinedOn (ma->GetElIndex(el)))
-                 parts[i] -> CheckElement (fespace->GetFE(el, lh));
-               ;
+               if (parts[i] -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
+                 parts[i] -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
+                   ;
              });
 
         }

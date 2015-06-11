@@ -83,7 +83,6 @@ namespace ngcomp
     ///
     virtual shared_ptr<BaseVector> GetVectorPtr() const = 0;
     virtual BaseVector & GetVector () const = 0;
-    // operator BaseVector& () const { return GetVector(); }
 
     ///
     virtual string GetClassName () const
