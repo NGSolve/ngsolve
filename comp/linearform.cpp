@@ -120,32 +120,14 @@ namespace ngcomp
                 }
               else
                 {
-
-                  Exception * e = NULL;
-#pragma omp parallel
-                  {
-                    
-                    try
-                      {
-                        LocalHeap lh = clh.Split();
-                        for (Ngs_Element ej : ma->Elements(VOL).OmpSplit())
-                          {
-                            HeapReset hr(lh);
-                            if (lfi -> DefinedOn (ej.GetIndex()))
-                              lfi -> CheckElement (fespace->GetFE(ej, lh));
-                          }
-                      }
-
-                    catch (Exception e1)
-                      {
-#pragma omp critical(justone)
-                        {
-                          delete e;
-                          e = new Exception(e1);
-                        }
-                      }
-                  }
-                  if (e) throw Exception (*e);
+                  
+                  IterateElements
+                    (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+                     {
+                       if (lfi -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
+                         lfi -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
+                       ;
+                     });
                 }
             }
 
@@ -249,8 +231,8 @@ namespace ngcomp
                  RegionTimer reg2 (timer2);
                  progress.Update ();
 
-                 const FiniteElement & fel = fespace->GetFE(el, lh);
-                 const ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+                 const FiniteElement & fel = el.GetFE(); // fespace->GetFE(el, lh);
+                 const ElementTransformation & eltrans = el.GetTrafo(); // ma->GetTrafo (el, lh);
 
                  for (int j = 0; j < parts.Size(); j++)
                    {

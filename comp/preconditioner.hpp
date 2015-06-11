@@ -8,16 +8,9 @@
 /*********************************************************************/
 
 
-/*
-namespace ngsolve
-{
-  class PDE;
-}
-*/
 
 namespace ngcomp
 {
-  // using ngsolve::PDE;
   class PDE;
 
   /**
