@@ -182,9 +182,12 @@ namespace ngla
 	    {
 	      int col = row[j];
 	      if (col <= i)
-		if ( ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i]) ||
-		     i == col )
+		if ( ( (*cluster)[i] == (*cluster)[col] && (*cluster)[i])
+                     // || i == col 
+                     )
                   SetOrig (i, col, a.GetRowValues(i)[j]);
+              if (col == i && (*cluster)[i] == 0)
+                SetOrig (i, i, id);
 	    }
 	}
 
