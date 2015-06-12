@@ -574,6 +574,7 @@ namespace netgen
        unsigned int levelz:6; */ 
     /// stored shape-badness of element
     float badness;
+    bool is_curved:1;   // element is (high order) curved
   
 #ifdef PARALLEL
     /// number of partition for parallel computation 
@@ -771,6 +772,8 @@ namespace netgen
       return flags.deleted; 
     }
 
+    bool IsCurved () const { return is_curved; }
+    void SetCurved (bool acurved) { is_curved = acurved; }
 
 
 #ifdef PARALLEL
@@ -842,6 +845,7 @@ namespace netgen
 
   private:
     string* bcname;
+    bool is_curved;
 
   public:
     /*
@@ -887,6 +891,10 @@ namespace netgen
   
     PointIndex & operator[] (int i) { return pnums[i]; }
     const PointIndex & operator[] (int i) const { return pnums[i]; }
+
+
+    bool IsCurved () const { return is_curved; }
+    void SetCurved (bool acurved) { is_curved = acurved; }
 
 #ifdef PARALLEL
     int GetPartition () const { return partitionNumber; }

@@ -57,6 +57,7 @@ namespace netgen
 
 
   Segment :: Segment() 
+    : is_curved(false)
   {
     pnums[0] = -1;
     pnums[1] = -1; 
@@ -90,7 +91,7 @@ namespace netgen
   }    
 
   Segment::Segment (const Segment & other)
-    :
+    : 
     edgenr(other.edgenr),
     singedge_left(other.singedge_left),
     singedge_right(other.singedge_right),
@@ -104,7 +105,8 @@ namespace netgen
     surfnr2(other.surfnr2),
     epgeominfo(),
     meshdocval(other.meshdocval),
-    hp_elnr(other.hp_elnr)
+    hp_elnr(other.hp_elnr),
+    is_curved(other.is_curved)
   {
     for (int j = 0; j < 3; j++)
       pnums[j] = other.pnums[j];
@@ -140,6 +142,7 @@ namespace netgen
 	meshdocval = other.meshdocval;
 	hp_elnr = other.hp_elnr;
 	bcname = other.bcname;
+        is_curved = other.is_curved;
       }
     
     return *this;
@@ -948,7 +951,7 @@ namespace netgen
     flags.deleted = 0;
     flags.fixed = 0;
     orderx = ordery = orderz = 1;
-
+    is_curved = false;
 #ifdef PARALLEL
     partitionNumber = -1;
 #endif
@@ -984,6 +987,7 @@ namespace netgen
       default: cerr << "Element::Element: unknown element with " << np << " points" << endl;
       }
     orderx = ordery = orderz = 1;
+    is_curved = false;
   }
 
   void Element :: SetOrder (const int aorder) 
@@ -1021,6 +1025,7 @@ namespace netgen
     flags.deleted = 0;
     flags.fixed = 0;
     orderx = ordery = orderz = 1;
+    is_curved = false;
   }
 
 
@@ -1040,6 +1045,7 @@ namespace netgen
     orderz = el2.orderz;
     hp_elnr = el2.hp_elnr;
     flags = el2.flags;
+    is_curved = el2.is_curved;
     return *this;
   }
 

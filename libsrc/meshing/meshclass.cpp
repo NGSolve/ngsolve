@@ -5522,10 +5522,12 @@ namespace netgen
   {
     GetCurvedElements().BuildCurvedElements (ref, aorder, arational);
 
+    for (SegmentIndex seg = 0; seg < GetNSeg(); seg++)
+      (*this)[seg].SetCurved (GetCurvedElements().IsSegmentCurved (seg));
     for (SurfaceElementIndex sei = 0; sei < GetNSE(); sei++)
-      {
-        (*this)[sei].SetCurved (GetCurvedElements().IsSurfaceElementCurved (sei));
-      }
+      (*this)[sei].SetCurved (GetCurvedElements().IsSurfaceElementCurved (sei));
+    for (ElementIndex ei = 0; ei < GetNE(); ei++)
+      (*this)[ei].SetCurved (GetCurvedElements().IsElementCurved (ei));
     
     SetNextMajorTimeStamp();
   }
