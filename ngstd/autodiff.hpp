@@ -387,7 +387,7 @@ INLINE AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
   AutoDiff<D,SCAL> res( abs );
   if (abs != 0.0)
     for (int i = 0; i < D; i++)
-      res.DValue(i) = x.DValue(i) / abs;
+      res.DValue(i) = x.Value()*x.DValue(i) / abs;
   else
     for (int i = 0; i < D; i++)
       res.DValue(i) = 0.0;
