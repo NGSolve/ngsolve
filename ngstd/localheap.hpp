@@ -90,6 +90,9 @@ namespace ngstd
       lh2.owner = false;
     }
 
+    INLINE LocalHeap ()
+      : data(nullptr), next(nullptr), p(nullptr), totsize(0), owner(false) { ; }
+
   
     /// free memory
     INLINE ~LocalHeap ()
