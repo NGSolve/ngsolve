@@ -399,7 +399,7 @@ namespace ngcomp
             int ne = ma->GetNE();
             int nse = ma->GetNSE();
 
-            precomputed_data.SetSize( max(ne, nse)*NumIntegrators() );
+            precomputed_data.SetSize( max2(ne, nse)*NumIntegrators() );
             precomputed_data = nullptr;
 
             LocalHeap lh (20000000, "biform - assemble");

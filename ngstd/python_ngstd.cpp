@@ -266,8 +266,15 @@ void NGS_DLL_HEADER  ExportNgstd() {
                                          { cout << "output array" << endl;
                                            *self & a; return self; }))
   ;
+
   
-  // geht nicht ???
+  bp::def("RunWithTaskManager", 
+          FunctionPointer ([](bp::object lam)
+                           {
+                             cout << "running with task-manager:" << endl;
+                             RunWithTaskManager ([&] () { lam(); });
+                           }))
+          ;
 }
 
 

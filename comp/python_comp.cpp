@@ -391,6 +391,19 @@ void NGS_DLL_HEADER ExportNgcomp()
                    }),
                   "list of coefficient vectors for multi-dim gridfunction")
     
+    .def("CF", FunctionPointer
+         ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
+          {
+            return make_shared<GridFunctionCoefficientFunction> (self);
+          }))
+
+    .def("Deriv", FunctionPointer
+         ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
+          {
+            return make_shared<GridFunctionCoefficientFunction> (self, self->GetFESpace()->GetFluxEvaluator());
+          }))
+
+
     .def("__call__", FunctionPointer
          ([](GF & self, double x, double y, double z)
           {
@@ -490,6 +503,7 @@ void NGS_DLL_HEADER ExportNgcomp()
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
     ;
 
+
   //////////////////////////////////////////////////////////////////////////////////////////
 
   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
@@ -497,10 +511,16 @@ void NGS_DLL_HEADER ExportNgcomp()
   typedef BilinearForm BF;
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, const Flags & flags) 
-                           { return CreateBilinearForm (fespace, name, flags); }),
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name,
+                              bool symmetric, Flags flags)
+                           {
+                             if (symmetric) flags.SetFlag("symmetric");
+                             return CreateBilinearForm (fespace, name, flags);
+                           }),
           bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("space"), bp::arg("name")="bfa", bp::arg("flags") = bp::dict())))
+          (bp::arg("space"), bp::arg("name")="bfa", 
+           bp::arg("symmetric") = true,
+           bp::arg("flags") = bp::dict())))
 
     .def("__str__", &ToString<BF>)
 
@@ -605,6 +625,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   
   bp::implicitly_convertible 
     <shared_ptr<NumProcWrap>, shared_ptr<NumProc> >(); 
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
