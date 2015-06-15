@@ -1495,23 +1495,25 @@ namespace ngla
       }
 
 
-    /*
-    while (ready.Size())
+    if (!task_manager)
       {
-        int size = ready.Size();
-        int nr = ready[size-1];
-        ready.SetSize(size-1);
-
-        func(nr);
-
-        for (int j : dag[nr];
+        while (ready.Size())
           {
-            cnt_dep[j]--;
-            if (cnt_dep[j] == 0)
-              ready.Append(j);
+            int size = ready.Size();
+            int nr = ready[size-1];
+            ready.SetSize(size-1);
+            
+            func(nr);
+            
+            for (int j : dag[nr])
+              {
+                cnt_dep[j]--;
+                if (cnt_dep[j] == 0)
+                  ready.Append(j);
+              }
           }
+        return;
       }
-    */
 
 
 

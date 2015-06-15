@@ -15,13 +15,15 @@
 namespace ngfem
 {
 
-  /*
+
   template <ELEMENT_TYPE ET>
   ScalarFiniteElement<ET_trait<ET>::DIM> * CreateL2HighOrderFE (int order, FlatArray<int> vnums, LocalHeap & lh);
-  */
+
+  /*
+    // not yet understood by icc and msvc
   template <ELEMENT_TYPE ET>
   ScalarFiniteElement<Dim(ET)> * CreateL2HighOrderFE (int order, FlatArray<int> vnums, LocalHeap & lh);
-
+  */
 
 
   template <ELEMENT_TYPE ET> class L2HighOrderFE_Shape;
@@ -50,8 +52,8 @@ namespace ngfem
     typedef BASE T_IMPL;
     typedef SHAPES T_SHAPES;
     
-    static constexpr auto DIM = ET_trait<ET>::DIM;
-    static constexpr auto N_VERTEX = ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::DIM;
+    using ET_trait<ET>::N_VERTEX;
 
     using ET_trait<ET>::PolDimension;
     using ScalarFiniteElement<DIM>::ndof;

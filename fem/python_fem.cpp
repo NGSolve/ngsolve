@@ -375,6 +375,11 @@ void NGS_DLL_HEADER ExportNgfem() {
 
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](double val) -> shared_ptr<CoefficientFunction>
+                           {
+                             return make_shared<ConstantCoefficientFunction> (val);
+                           })))
     .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
     ;
 
