@@ -2,7 +2,7 @@ from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.la import *
 
-import numpy as np
+from numpy import linspace
 from timeit import Timer
 
 mesh = Mesh("square.vol")
@@ -25,8 +25,8 @@ a.Add (BFI ("mass", dim = 2, coef = ConstantCF(1)))
 a.Add (BFI ("laplace", dim = 2, coef = ConstantCF(1)))
 
 
-c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block" })
-# c = Preconditioner (a, "bddc", { "test" : True })
+# c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block", "finesmoothingsteps" : 3 })
+c = Preconditioner (a, "bddc", { "test" : True })
 
 print ("now assemble the matrix ...")
 a.Assemble()
@@ -39,7 +39,9 @@ solver = CGSolver (a.mat, c.mat, printrates=True)
 u.vec.data = solver * f.vec
 
 
-sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) ]
+sampling = [ (x,y,u(x,y)) for x in linspace(0,1,6) for y in linspace(0,1,6) ]
 
+
+# just an idea by now ...
 # sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
 
