@@ -9,12 +9,46 @@
 
 namespace ngcomp
 {
+
+
+  class GridFunction;
+
+  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
+  {
+  protected:
+    shared_ptr<GridFunction> gf;
+    shared_ptr<DifferentialOperator> diffop;
+    int comp;
+  public:
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
+                                     shared_ptr<DifferentialOperator> adiffop, int acomp = 0);
+    
+    virtual ~GridFunctionCoefficientFunction ();
+    /// scalar valued or vector valued
+    virtual bool IsComplex() const;
+    virtual int Dimension() const;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
+
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<> result) const;
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+			  FlatVector<Complex> result) const;
+    
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
+			   FlatMatrix<double> values) const;
+  };
+
+
+
+
  
 
   /** 
       Grid-functions
   */
-  class NGS_DLL_HEADER GridFunction : public NGS_Object
+  class NGS_DLL_HEADER GridFunction 
+    : public NGS_Object, public GridFunctionCoefficientFunction
   {
   protected:
     /// the finite element space
@@ -230,32 +264,6 @@ namespace ngcomp
   
 
 
-
-  class NGS_DLL_HEADER GridFunctionCoefficientFunction : public CoefficientFunction
-  {
-  protected:
-    shared_ptr<GridFunction> gf;
-    shared_ptr<DifferentialOperator> diffop;
-    int comp;
-  public:
-    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
-    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
-                                     shared_ptr<DifferentialOperator> adiffop, int acomp = 0);
-    
-    virtual ~GridFunctionCoefficientFunction ();
-    /// scalar valued or vector valued
-    virtual bool IsComplex() const;
-    virtual int Dimension() const;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
-
-    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<> result) const;
-    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
-			  FlatVector<Complex> result) const;
-    
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, 
-			   FlatMatrix<double> values) const;
-  };
 
 
 

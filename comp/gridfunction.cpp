@@ -58,7 +58,9 @@ namespace ngcomp
   
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
 				const Flags & flags)
-    : NGS_Object (afespace->GetMeshAccess(), name), fespace(afespace)
+    : NGS_Object (afespace->GetMeshAccess(), name), 
+      GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
+      fespace(afespace)
   { 
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
@@ -255,8 +257,6 @@ namespace ngcomp
     else
       return compgfs[compound_comp];
   }
-
-
 
 
 
