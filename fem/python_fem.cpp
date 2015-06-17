@@ -74,6 +74,200 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
 std::mutex PythonCFWrap::m;
 
 
+
+
+template <typename OP> 
+class cl_UnaryOpCF : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  OP lam;
+public:
+  cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
+                OP alam)
+    : c1(ac1), lam(alam) { ; }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return lam (c1->Evaluate(ip));
+  }
+  virtual double EvaluateConst () const
+  {
+    return lam (c1->EvaluateConst());
+  }
+};
+
+template <typename OP> 
+shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
+                                          OP lam)
+{
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP> (c1, lam));
+}
+
+
+template <typename OP> 
+class cl_BinaryOpCF : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1, c2;
+  OP lam;
+public:
+  cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
+                 shared_ptr<CoefficientFunction> ac2, 
+                 OP alam)
+    : c1(ac1), c2(ac2), lam(alam) { ; }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return lam (c1->Evaluate(ip), c2->Evaluate(ip));
+  }
+  virtual double EvaluateConst () const
+  {
+    return lam (c1->EvaluateConst(), c2->EvaluateConst());
+  }
+};
+
+template <typename OP> 
+shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
+                                           shared_ptr<CoefficientFunction> c2, 
+                                           OP lam)
+{
+  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP> (c1, c2, lam));
+}
+
+
+
+class ScaleCoefficientFunction : public CoefficientFunction
+{
+  double scal;
+  shared_ptr<CoefficientFunction> c1;
+public:
+  ScaleCoefficientFunction (double ascal, 
+                            shared_ptr<CoefficientFunction> ac1)
+    : scal(ascal), c1(ac1) { ; }
+  
+  virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual int Dimension() const { return Dimension(); }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return scal * c1->Evaluate(ip);
+  }
+  virtual double EvaluateConst () const
+  {
+    return scal * c1->EvaluateConst();
+  }
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    c1->Evaluate (ip, result);
+    result *= scal;
+  }
+    
+};
+
+
+
+
+
+
+void ExportCoefficientFunction()
+{
+   typedef CoefficientFunction CF;
+  typedef shared_ptr<CF> SPCF;
+
+  bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
+    ("CoefficientFunction", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](double val) -> shared_ptr<CoefficientFunction>
+                           {
+                             return make_shared<ConstantCoefficientFunction> (val);
+                           })))
+    .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
+
+
+
+    // coefficient expressions
+
+    .def ("__add__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a+b; });} ))
+    .def ("__add__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a+b; }); }))
+    .def ("__radd__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a+b; }); }))
+
+    .def ("__sub__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a-b; });} ))
+    .def ("__sub__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a-b; }); }))
+    .def ("__rsub__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return b-a; }); }))
+
+    .def ("__mul__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });} ))
+    .def ("__mul__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
+    .def ("__rmul__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
+
+    // { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+    // [](double a, double b) { return a*b; }); }))
+
+    .def ("__neg__", FunctionPointer 
+          ([] (SPCF coef) -> SPCF
+           { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
+    ;
+  bp::def ("sin", FunctionPointer 
+           ([] (SPCF coef) -> SPCF
+            { return UnaryOpCF (coef, [](double a) { return sin(a); }); }));
+  bp::def ("sin", FunctionPointer ([] (double d) -> double { return sin (d); }));
+
+  bp::def ("exp", FunctionPointer 
+           ([] (SPCF coef) -> SPCF
+            { return UnaryOpCF (coef, [](double a) { return exp(a); }); }));
+  bp::def ("exp", FunctionPointer ([] (double d) -> double { return exp (d); }));
+
+  
+  bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
+    shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
+    ("ConstantCF", bp::init<double>())
+    ;
+  bp::implicitly_convertible 
+    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+  class CoordCoefficientFunction : public CoefficientFunction
+  {
+    int dir;
+  public:
+    CoordCoefficientFunction (int adir) : dir(adir) { ; }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return ip.GetPoint()(dir);
+    }
+  };
+
+  bp::class_<CoordCoefficientFunction,bp::bases<CoefficientFunction>,
+    shared_ptr<CoordCoefficientFunction>, boost::noncopyable>
+    ("CoordCF", bp::init<int>())
+    ;
+  bp::implicitly_convertible 
+    <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+ 
+}
+
+
+
 void NGS_DLL_HEADER ExportNgfem() {
     std::string nested_name = "fem";
     if( bp::scope() )
@@ -373,6 +567,14 @@ void NGS_DLL_HEADER ExportNgfem() {
   
   bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init);  
 
+
+
+
+  ExportCoefficientFunction ();
+  /*
+  typedef CoefficientFunction CF;
+  typedef shared_ptr<CF> SPCF;
+
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction", bp::no_init)
     .def("__init__", bp::make_constructor 
@@ -381,16 +583,92 @@ void NGS_DLL_HEADER ExportNgfem() {
                              return make_shared<ConstantCoefficientFunction> (val);
                            })))
     .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
-    ;
 
+
+
+    // coefficient expressions
+
+    .def ("__add__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a+b; });} ))
+    .def ("__add__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a+b; }); }))
+    .def ("__radd__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a+b; }); }))
+
+    .def ("__sub__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a-b; });} ))
+    .def ("__sub__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a-b; }); }))
+    .def ("__rsub__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return b-a; }); }))
+
+    .def ("__mul__", FunctionPointer 
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });} ))
+    .def ("__mul__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a*b; }); }))
+    .def ("__rmul__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a*b; }); }))
+
+    .def ("__neg__", FunctionPointer 
+          ([] (SPCF c1) -> SPCF
+           { return UnaryOpCF (c1, [](double a) { return -a; });} ))
+    ;
+  bp::def ("sin", FunctionPointer 
+           ([] (SPCF coef) -> SPCF
+            { return UnaryOpCF (coef, [](double a) { return sin(a); }); }));
+  bp::def ("sin", FunctionPointer ([] (double d) -> double { return sin (d); }));
+
+  bp::def ("exp", FunctionPointer 
+           ([] (SPCF coef) -> SPCF
+            { return UnaryOpCF (coef, [](double a) { return exp(a); }); }));
+  bp::def ("exp", FunctionPointer ([] (double d) -> double { return exp (d); }));
+
+  
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
     shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
     ("ConstantCF", bp::init<double>())
     ;
-  
   bp::implicitly_convertible 
-    <shared_ptr<ConstantCoefficientFunction>, 
-    shared_ptr<CoefficientFunction> >(); 
+    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+
+  class CoordCoefficientFunction : public CoefficientFunction
+  {
+    int dir;
+  public:
+    CoordCoefficientFunction (int adir) : dir(adir) { ; }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return ip.GetPoint()(dir);
+    }
+  };
+
+  bp::class_<CoordCoefficientFunction,bp::bases<CoefficientFunction>,
+    shared_ptr<CoordCoefficientFunction>, boost::noncopyable>
+    ("CoordCF", bp::init<int>())
+    ;
+  bp::implicitly_convertible 
+    <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+
+  */
+
+
 
   bp::class_<PythonCFWrap ,bp::bases<CoefficientFunction>, shared_ptr<PythonCFWrap>, boost::noncopyable>("PythonCF", bp::init<>())
 //     .def("MyEvaluate", bp::pure_virtual(static_cast<double (PythonCoefficientFunction::*)(double,double) const>(&PythonCoefficientFunction::MyEvaluate))) 
@@ -435,6 +713,11 @@ void NGS_DLL_HEADER ExportNgfem() {
   bp::implicitly_convertible
     <shared_ptr<DomainConstantCoefficientFunction>, 
     shared_ptr<CoefficientFunction> >(); 
+
+
+
+
+
 
 
 }
