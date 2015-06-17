@@ -241,16 +241,22 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
-                              Flags flags, int order, const bp::list & dirichlet )
+                              Flags flags, int order, const bp::list & dirichlet, int dim)
                            { 
                              if (order > -1) flags.SetFlag ("order", order);
+                             if (dim > -1) flags.SetFlag ("dim", dim);
                              if (dirichlet)
                                flags.SetFlag("dirichlet", makeCArray<double>(dirichlet));
-                             return CreateFESpace (type, ma, flags); 
+                             auto fes = CreateFESpace (type, ma, flags); 
+
+                             LocalHeap lh (1000000, "FESpace::Update-heap");
+                             fes->Update(lh);
+                             fes->FinalizeUpdate(lh);
+                             return fes;
                            }),
           bp::default_call_policies(),        // need it to use argumentso
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
-           bp::arg("order")=-1, bp::arg("dirichlet")= bp::list() )),
+           bp::arg("order")=-1, bp::arg("dirichlet")= bp::list(), bp::arg("dim")=-1 )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
 
@@ -258,7 +264,11 @@ void NGS_DLL_HEADER ExportNgcomp()
          (FunctionPointer ([](bp::list spaces)->shared_ptr<FESpace>
                            {
                              auto sp (makeCArray<shared_ptr<FESpace>> (spaces));
-                             return make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, Flags());
+                             auto fes = make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, Flags());
+                             LocalHeap lh (1000000, "FESpace::Update-heap");
+                             fes->Update(lh);
+                             fes->FinalizeUpdate(lh);
+                             return fes;
                            }),
           bp::default_call_policies(),       
           (bp::arg("spaces"))),
@@ -335,14 +345,16 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
   typedef GridFunction GF;
-  bp::class_<GF, shared_ptr<GF>, boost::noncopyable>
+  bp::class_<GF, shared_ptr<GF>, bp::bases<CoefficientFunction>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
 
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
                            {
                              Flags flags;
-                             return CreateGridFunction (fespace, name, flags);
+                             auto gf = CreateGridFunction (fespace, name, flags);
+                             gf->Update();
+                             return gf;
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"), bp::arg("name")="gfu")),
@@ -503,6 +515,10 @@ void NGS_DLL_HEADER ExportNgcomp()
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
     ;
 
+  bp::implicitly_convertible 
+    <shared_ptr<GridFunction>, shared_ptr<CoefficientFunction> >(); 
+
+
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -539,7 +555,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
-    .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
+    // .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
+    .add_property("mat", FunctionPointer([](BF & self)
+                                         {
+                                           auto mat = self.GetMatrixPtr();
+                                           if (!mat)
+                                             bp::exec("raise RuntimeError('matrix not ready - assemble bilinearform first')\n");
+                                           return mat;
+                                         }))
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
     .def("AssembleLinearization", FunctionPointer

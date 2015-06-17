@@ -210,7 +210,11 @@ namespace ngcomp
     const BaseMatrix & GetMatrix () const { return *mats.Last(); }
     const BaseMatrix & GetMatrix (int level) const { return *mats[level]; }
     /// returns the assembled matrix
-    shared_ptr<BaseMatrix> GetMatrixPtr () const { return mats.Last(); }
+    shared_ptr<BaseMatrix> GetMatrixPtr () const 
+    {
+      if (!mats.Size()) return nullptr;
+      return mats.Last(); 
+    }
 
     // operator const BaseMatrix& () const { return GetMatrix(); }
 
