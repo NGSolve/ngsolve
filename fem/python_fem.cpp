@@ -76,31 +76,40 @@ std::mutex PythonCFWrap::m;
 
 
 
-template <typename OP> 
+template <typename OP, typename OPC> 
 class cl_UnaryOpCF : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1;
   OP lam;
+  OPC lamc;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
-                OP alam)
-    : c1(ac1), lam(alam) { ; }
+                OP alam, OPC alamc)
+    : c1(ac1), lam(alam), lamc(alamc) { ; }
   
+  virtual bool IsComplex() const { return c1->IsComplex(); }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip));
   }
+
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return lamc (c1->EvaluateComplex(ip));
+  }
+
   virtual double EvaluateConst () const
   {
     return lam (c1->EvaluateConst());
   }
 };
 
-template <typename OP> 
+template <typename OP, typename OPC> 
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam)
+                                          OP lam, OPC lamc)
 {
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP> (c1, lam));
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc));
 }
 
 
@@ -135,6 +144,7 @@ shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1,
 
 
 
+
 class ScaleCoefficientFunction : public CoefficientFunction
 {
   double scal;
@@ -151,6 +161,10 @@ public:
   {
     return scal * c1->Evaluate(ip);
   }
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return scal * c1->EvaluateComplex(ip);
+  }
   virtual double EvaluateConst () const
   {
     return scal * c1->EvaluateConst();
@@ -161,9 +175,43 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
-    
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    c1->Evaluate (ip, result);
+    result *= scal;
+  }
 };
 
+
+class ScaleCoefficientFunctionC : public CoefficientFunction
+{
+  Complex scal;
+  shared_ptr<CoefficientFunction> c1;
+public:
+  ScaleCoefficientFunctionC (Complex ascal, 
+                            shared_ptr<CoefficientFunction> ac1)
+    : scal(ascal), c1(ac1) { ; }
+  
+  virtual bool IsComplex() const { return true; }
+  virtual int Dimension() const { return Dimension(); }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    throw Exception ("real Evaluate called for complex CF");
+  }
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return scal * c1->EvaluateComplex(ip);    
+  }
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    c1->Evaluate (ip, result);
+    result *= scal;
+  }
+    
+};
 
 
 
@@ -220,6 +268,17 @@ void ExportCoefficientFunction()
     .def ("__rmul__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (val, coef); }))
+    .def ("__mul__", FunctionPointer 
+          ([] (SPCF coef, Complex val) -> SPCF
+           { return make_shared<ScaleCoefficientFunctionC> (val, coef); }))
+    .def ("__rmul__", FunctionPointer 
+          ([] (SPCF coef, Complex val) -> SPCF
+           { 
+             if (val.imag() == 0)
+               return make_shared<ScaleCoefficientFunction> (val.real(), coef); 
+             else
+               return make_shared<ScaleCoefficientFunctionC> (val, coef); 
+           }))
 
     // { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
     // [](double a, double b) { return a*b; }); }))
@@ -230,12 +289,17 @@ void ExportCoefficientFunction()
     ;
   bp::def ("sin", FunctionPointer 
            ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, [](double a) { return sin(a); }); }));
+            { return UnaryOpCF (coef, 
+                                [](double a) { return sin(a); },
+                                [](Complex a) { return sin(a); }); }));
   bp::def ("sin", FunctionPointer ([] (double d) -> double { return sin (d); }));
+  bp::def ("sin", FunctionPointer ([] (Complex d) -> Complex { return sin (d); }));
 
   bp::def ("exp", FunctionPointer 
            ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, [](double a) { return exp(a); }); }));
+            { return UnaryOpCF (coef, 
+                                [](double a) { return exp(a); },
+                                [](Complex a) { return exp(a); }); }));
   bp::def ("exp", FunctionPointer ([] (double d) -> double { return exp (d); }));
 
   
