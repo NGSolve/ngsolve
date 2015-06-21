@@ -254,7 +254,7 @@ void WriteDiffPackFormat (const Mesh & mesh,
           outfile.width(16);
           outfile << p.X()/scale << ", ";
           outfile.width(16);
-          outfile << p.Y()/scale << ", ";
+          outfile << p.Y()/scale << ") ";
 	 
 	  if(mesh[PointIndex(i)].Type() != INNERPOINT) 
 	    {
