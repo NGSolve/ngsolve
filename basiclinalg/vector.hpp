@@ -7,8 +7,6 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
-// #define FLATVECTOR_WITH_DIST
-
 namespace ngbla
 {
 
@@ -42,12 +40,7 @@ namespace ngbla
   protected:
     /// vector size
     int size;
-#ifdef FLATVECTOR_WITH_DIST
-    /// distance between entries
-    int dist;
-#else
-    enum { dist = 1 };
-#endif
+    // enum { dist = 1 };
     /// the data
     T * __restrict data;
   public:
@@ -62,63 +55,33 @@ namespace ngbla
     INLINE FlatVector () { ; }
     /// set size and mem
     INLINE FlatVector (unsigned int as, T * adata) : size(as), data(adata)
-    { 
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
-
-
-#ifdef FLATVECTOR_WITH_DIST
-    /// set size and mem
-    INLINE FlatVector (unsigned int as, int ad, T * adata) : size(as), dist(ad), data(adata) { ; }
-#endif
+    { ; }
 
     /// set size and mem
     INLINE FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
-    {
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
+    {  ; }
 
     /// put FlatVector over fixed size vector
     template <int S>
     INLINE FlatVector (const Vec<S,TSCAL> & v)
       : size(v.Size()), data(const_cast<T*>(&v(0)))
-    { 
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
+    { ; }
 
     template <int S>
     INLINE FlatVector (const FlatVec<S,TSCAL> & v)
       : size(v.Size()), data(const_cast<T*>(&v(0)))
-    { 
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
+    { ; }
 
     /// allocate FlatVector on local heap
     INLINE FlatVector (int as, LocalHeap & lh) 
       : size(as), data(lh.Alloc<T> (as)) 
-    {
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
+    { ; }
 
     /// put FlatVector over systemvector
     INLINE FlatVector (const SysVector<TSCAL> & sv)
       : size(sv.Size()*sv.BlockSize() / mat_traits<T>::VDIM), 
 	data (sv(0))
-    {
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
-    }
+    { ; }
 
 
 
@@ -127,9 +90,7 @@ namespace ngbla
     INLINE FlatVector (const LocalHeapExpr<TB> & m2) 
     {
       size = m2.A().Height();
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
+
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (size);
 
@@ -143,9 +104,6 @@ namespace ngbla
     INLINE void AssignMemory (int as, LocalHeap & lh) 
     {
       size = as;
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
       data = lh.Alloc<T>(size);
     }
 
@@ -153,17 +111,14 @@ namespace ngbla
     void AssignMemory (int as, T * mem) 
     {
       size = as;
-#ifdef FLATVECTOR_WITH_DIST
-      dist = 1;
-#endif
       data = mem;
     }
 
     /// copy vector. sizes must match
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
-      for (int i = 0; i < size; i++)
-	data[i*dist] = v(i);
+      for (auto i : ::Range(size))
+	data[i] = v(i);
       return *this;
     }
 
@@ -177,8 +132,8 @@ namespace ngbla
     /// assign constant value
     INLINE const FlatVector & operator= (TSCAL scal) const
     {
-      for (int i = 0; i < size; i++)
-	data[i*dist] = scal; 
+      for (auto i : Range())
+	data[i] = scal; 
       return *this;
     }
 
@@ -195,10 +150,10 @@ namespace ngbla
     {
       if (TB::IS_LINEAR)
 	for (int i = 0; i < size; i++)
-	  data[i*dist] += v.Spec()(i);
+	  data[i] += v.Spec()(i);
       else
 	for (int i = 0; i < size; i++)
-	  data[i*dist] += v.Spec()(i,0);
+	  data[i] += v.Spec()(i,0);
       return *this;
     }
     
@@ -208,7 +163,7 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);
 #endif
-      return data[i*dist]; 
+      return data[i]; 
     }
 
     INLINE RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
@@ -223,7 +178,7 @@ namespace ngbla
 #ifdef CHECK_RANGE 
       CheckVecRange(size,i);
 #endif
-      return data[i*dist]; 
+      return data[i]; 
     }
 
     /// constant element access
@@ -232,34 +187,27 @@ namespace ngbla
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);
 #endif
-      return data[i*dist]; 
+      return data[i]; 
     }
 
     // shape functions had a problem with icc v9.1
     // const CArray<T> Addr(int i) const { return CArray<T> (data+i*dist); }
-    INLINE T * Addr(int i) const { return data+i*dist; }
+    INLINE T * Addr(int i) const { return data+i; }
     /*
     const CArray<T> operator+(int i) const
     { return CArray<T> (data+i*dist); }
     */
 
-    T * operator+(int i) const { return data+i*dist; }
-
+    T * operator+(int i) const { return data+i; }
 
     /// sub-vector of size next-first, starting at first
-#ifdef FLATVECTOR_WITH_DIST
-    INLINE const FlatVector<T> Range (int first, int next) const
-    { return FlatVector<T> (next-first, dist, data+dist*first); }
-#else
-    INLINE /* const */ FlatVector<T> Range (int first, int next) const
-    { return FlatVector<T> (next-first, data+dist*first); }
-#endif
-
+    INLINE FlatVector<T> Range (int first, int next) const
+    { return FlatVector<T> (next-first, data+first); }
 
     /// sub-vector given by range
     INLINE FlatVector<T> Range (IntRange range) const
     { return Range (range.First(), range.Next()); }
-
+    
 
     /// vector size
     INLINE int Size () const { return size; }
@@ -273,20 +221,11 @@ namespace ngbla
     INLINE IntRange Range () const
     { return IntRange (0, size); }
 
-
-#ifdef FLATVECTOR_WITH_DIST
-    /// take a slice of the vector. Take elements first+i * dist. 
-    INLINE const FlatVector Slice (int first, int dist2) const
-    {
-      return FlatVector(size/dist2, dist*dist2, data+dist*first);
-    }
-#else
     /// take a slice of the vector. Take elements first+i * dist. 
     INLINE const SliceVector<T> Slice (int first, int dist2) const
     {
-      return SliceVector<T> (size/dist2, dist*dist2, data+first);
+      return SliceVector<T> (size/dist2, dist2, data+first);
     }
-#endif
 
     INLINE FlatMatrix<T> AsMatrix (int h, int w)
     {
@@ -583,6 +522,13 @@ namespace ngbla
     {
       FlatVector<T>::operator= (static_cast<FlatVector<T> >(v2));
       // MatExpr<FlatVector<T> >::operator= (v2);  // does not work, we don't know why
+      return *this;
+    }
+
+    Vector & operator= (Vector && v2)
+    {
+      this->size = v2.size;
+      Swap (this->data, v2.data);
       return *this;
     }
 
