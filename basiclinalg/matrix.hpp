@@ -507,15 +507,6 @@ namespace ngbla
       return *this;
     }
 
-    /*
-    template <typename TA, typename TB>
-    Matrix & operator= (const LapackProduct<TA, TB> & prod) 
-    {
-      // SetSize (m.Height(), m.Width());
-      LapackMult (prod.A(), prod.B(), *this);
-      return *this;
-    }
-    */
 
     /// fill matrix with scalar
     Matrix & operator= (TSCAL s) 
@@ -524,6 +515,21 @@ namespace ngbla
       return *this;
     }
 
+
+    /// fill matrix with scalar
+    Matrix & operator= (const Matrix & m2) 
+    {
+      FlatMatrix<T>::operator= (m2);
+      return *this;
+    }
+
+    Matrix & operator= (Matrix && m2) 
+    {
+      this->h = m2.h;      
+      this->w = m2.w;
+      Swap (this->data, m2.data);
+      return *this;
+    }
   };
 
 
@@ -961,6 +967,20 @@ namespace ngbla
     INLINE MatrixFixWidth & operator= (const Expr<TB> & m)
     {
       MatExpr<FlatMatrixFixWidth<W,T> >::operator= (m);
+      return *this;
+    }
+
+    INLINE MatrixFixWidth & operator= (const MatrixFixWidth & m) throw()
+    {
+      FlatMatrixFixWidth<W,T>::operator= (m);
+      return *this;
+    }
+
+
+    INLINE MatrixFixWidth & operator= (MatrixFixWidth && m)
+    {
+      this->h = m.h;
+      Swap (this->data, m.data);
       return *this;
     }
 
