@@ -702,6 +702,17 @@ namespace ngstd
       return size;
     }
 
+    /// Add element at end of array. reallocation if necessary.
+    INLINE TSIZE Append (T && el)
+    {
+      if (size == allocsize) 
+        ReSize (size+1);
+      data[size] = move(el);
+      size++;
+      return size;
+    }
+
+
     INLINE Array<T> & operator += (const T & el)
     {
       Append (el);
@@ -890,7 +901,7 @@ namespace ngstd
     if (hdata)
       {
         TSIZE mins = (nsize < size) ? nsize : size; 
-        for (TSIZE i = 0; i < mins; i++) data[i] = hdata[i];
+        for (TSIZE i = 0; i < mins; i++) data[i] = move(hdata[i]);
         delete [] mem_to_delete;
       }
 
