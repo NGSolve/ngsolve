@@ -279,8 +279,9 @@ namespace ngcomp
       {
         lh.CleanUp(heappointer);
         ++ei;
+        int index = fes.GetMeshAccess()->GetElIndex(ei);
         while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && 
-               (defined_on.Size() && !defined_on[ei.Nr()])
+               (defined_on.Size() && !defined_on[index])
                ) ++ei;
         return *this;
       }
@@ -320,8 +321,9 @@ namespace ngcomp
       INLINE ElementIterator begin () const 
       {
         ElementId ei = ElementId(vb,First());
+        int index = fes.GetMeshAccess()->GetElIndex(ei);
         while ((ei.Nr() < IntRange::end()) && 
-               (definedon.Size() && !definedon[ei.Nr()])
+               (definedon.Size() && !definedon[index])
                ) ++ei;
         return ElementIterator(fes, ei, definedon, temp_dnums, lh); 
       }
