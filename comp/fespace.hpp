@@ -279,9 +279,9 @@ namespace ngcomp
       {
         lh.CleanUp(heappointer);
         ++ei;
-        int index = fes.GetMeshAccess()->GetElIndex(ei);
         while (ei.Nr() < fes.GetMeshAccess()->GetNE(VorB(ei)) && 
-               (defined_on.Size() && !defined_on[index])
+               (defined_on.Size() && 
+                !defined_on[fes.GetMeshAccess()->GetElIndex(ei)])
                ) ++ei;
         return *this;
       }
@@ -299,12 +299,16 @@ namespace ngcomp
       LocalHeap & lh;
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
-        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? fes.definedon : fes.definedonbound), 
+        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? 
+                                              FlatArray<bool>(fes.definedon) : 
+                                              FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
-        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? fes.definedon : fes.definedonbound), 
+        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? 
+                                              FlatArray<bool> (fes.definedon) : 
+                                              FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
 
@@ -321,10 +325,9 @@ namespace ngcomp
       INLINE ElementIterator begin () const 
       {
         ElementId ei = ElementId(vb,First());
-        int index = fes.GetMeshAccess()->GetElIndex(ei);
         while ((ei.Nr() < IntRange::end()) && 
-               (definedon.Size() && !definedon[index])
-               ) ++ei;
+               (definedon.Size() && !definedon[fes.GetMeshAccess()->GetElIndex(ei)]))
+          ++ei;
         return ElementIterator(fes, ei, definedon, temp_dnums, lh); 
       }
 
