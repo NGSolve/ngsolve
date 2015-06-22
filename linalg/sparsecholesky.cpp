@@ -360,8 +360,8 @@ namespace ngla
         auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
-        if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) 
-          cout << "Info: block of just one" << endl; // continue;
+        // if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) 
+        // cout << "Info: block of just one" << endl; // continue;
 
         int nb = extdofs.Size() / 256 + 1;
 
