@@ -261,10 +261,6 @@ public:
 
 
 
-
-
-
-
   template<class TM, 
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   class TV_COL = typename mat_traits<TM>::TV_COL>

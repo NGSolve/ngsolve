@@ -342,14 +342,15 @@ namespace ngla
             dep.AddUnique (block_of_dof[i], block_of_dof[j]);
       }
 
+
     // generate compressed table
     TableCreator<int> creator(dep.Size());
     for ( ; !creator.Done(); creator++)
       for (int i = 0; i < dep.Size(); i++)
         for (int j : dep[i])
           creator.Add(i, j);
-    block_dependency = creator.MoveTable();
 
+    block_dependency = creator.MoveTable();
 
 
     // genare micro-tasks:
@@ -359,7 +360,8 @@ namespace ngla
         auto extdofs = BlockExtDofs (i);
         first_microtask.Append (microtasks.Size());
 
-        if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) continue;
+        if ( (extdofs.Size() == 0) && (BlockDofs(i).Size() == 1) ) 
+          cout << "Info: block of just one" << endl; // continue;
 
         int nb = extdofs.Size() / 256 + 1;
 
@@ -381,11 +383,12 @@ namespace ngla
           }
       }
     first_microtask.Append (microtasks.Size());
-    {
 
+
+    {
       TableCreator<int> creator(microtasks.Size());
       TableCreator<int> creator_trans(microtasks.Size());
-
+      
       for ( ; !creator.Done(); creator++, creator_trans++)
         {
           for (int i = 0; i < first_microtask.Size()-1; i++)
@@ -405,7 +408,6 @@ namespace ngla
                 }
             }
         }
-
 
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
