@@ -132,6 +132,19 @@ public:
   {
     return lam (c1->EvaluateConst(), c2->EvaluateConst());
   }
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<> result) const
+  {
+#ifdef VLA
+    double hmem[ir.Size()];
+#endif
+
+    FlatMatrix<> temp(ir.Size(), 1, hmem);
+    c1->Evaluate (ir, result);
+    c2->Evaluate (ir, temp);
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = lam (result(i,0), temp(i,0));
+  }
 };
 
 template <typename OP> 
@@ -318,6 +331,12 @@ void ExportCoefficientFunction()
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       return ip.GetPoint()(dir);
+    }
+    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                          FlatMatrix<> result) const
+    {
+      for (int i = 0; i < ir.Size(); i++)
+        result(i,0) = ir[i].GetPoint()(dir);
     }
   };
 
