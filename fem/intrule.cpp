@@ -1187,7 +1187,7 @@ namespace ngfem
           int ii = 0;
           for (IntegrationPoint & ipx : *irx)
             for (IntegrationPoint & ipy : *iry)
-              (*this)[ii++] = IntegrationPoint (ipx(0), ipy(0), ipx.Weight()*ipy.Weight());
+              (*this)[ii++] = IntegrationPoint (ipx(0), ipy(0), 0, ipx.Weight()*ipy.Weight());
 
           Mat<2> id;
           id = 0;
