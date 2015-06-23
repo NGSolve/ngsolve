@@ -201,7 +201,7 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
-    is_curved = false;
+    is_curved = (np >= 4); // false;
   } 
 
   Element2d :: Element2d (ELEMENT_TYPE atyp)
@@ -221,7 +221,7 @@ namespace netgen
     orderx = ordery = 1;
     refflag = 1;
     strongrefflag = false;
-    is_curved = false;
+    is_curved = (np >= 4); // false;
   } 
 
 
@@ -270,6 +270,7 @@ namespace netgen
     deleted = 0;
     visible = 1;
     orderx = ordery = 1;
+    is_curved = true;
   }
 
 
