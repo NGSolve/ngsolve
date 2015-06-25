@@ -346,7 +346,6 @@ void ExportCoefficientFunction()
     ;
   bp::implicitly_convertible 
     <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
- 
 }
 
 
@@ -425,8 +424,18 @@ void NGS_DLL_HEADER ExportNgfem() {
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef, bool imag)
+         (FunctionPointer ([](string name, int dim, bp::object py_coef, bool imag)
                            {
+                             shared_ptr<CoefficientFunction> coef;
+                             if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
+                               coef = bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
+                             else if (bp::extract<double>(py_coef).check())
+                               coef = make_shared<ConstantCoefficientFunction> 
+                                 (bp::extract<double>(py_coef)());
+                             else
+                               bp::exec("raise KeyError()\n");
+
+
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
                              if (!bfi) cerr << "undefined integrator '" << name 
@@ -531,9 +540,19 @@ void NGS_DLL_HEADER ExportNgfem() {
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, shared_ptr<CoefficientFunction> coef,
+         (FunctionPointer ([](string name, int dim, 
+                              bp::object py_coef,
                               bp::object definedon, bool imag, const Flags & flags)
                            {
+                             shared_ptr<CoefficientFunction> coef;
+                             if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
+                               coef = bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
+                             else if (bp::extract<double>(py_coef).check())
+                               coef = make_shared<ConstantCoefficientFunction> 
+                                 (bp::extract<double>(py_coef)());
+                             else
+                               bp::exec("raise KeyError()\n");
+
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
                              if (bp::extract<bp::list> (definedon).check())
