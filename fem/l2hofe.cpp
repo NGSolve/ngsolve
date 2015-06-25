@@ -61,6 +61,25 @@ namespace ngfem
     
     return hofe;
   }
+
+
+  template<>
+  ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_QUAD> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  {
+    DGFiniteElement<2> * hofe = new (lh) L2HighOrderFE<ET_QUAD> (order);
+    for (int j = 0; j < 4; j++)
+      hofe->SetVertexNumber (j, vnums[j]);
+    return hofe;
+  }
+
+  template<>
+  ScalarFiniteElement<3> * CreateL2HighOrderFE<ET_TET> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  {
+    DGFiniteElement<3> * hofe = new (lh) L2HighOrderFE<ET_TET> (order); 
+    for (int j = 0; j < 4; j++)
+      hofe->SetVertexNumber (j, vnums[j]);
+    return hofe;
+  }
   
   
 }
