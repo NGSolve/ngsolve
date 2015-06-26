@@ -22,7 +22,7 @@ class NGS_DLL_HEADER Exception
   /// a verbal description of the exception
   string what;
 public:
-  Exception ();
+  // Exception ();
   /// string s describes the exception
   Exception (const string & s);
   /// string s describes the exception

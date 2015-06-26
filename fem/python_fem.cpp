@@ -137,9 +137,11 @@ public:
   {
 #ifdef VLA
     double hmem[ir.Size()];
+    FlatMatrix<> temp(ir.Size(), 1, hmem);
+#else
+    Matrix<> temp(ir.Size(), 1);
 #endif
 
-    FlatMatrix<> temp(ir.Size(), 1, hmem);
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);
     for (int i = 0; i < ir.Size(); i++)
