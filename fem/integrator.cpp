@@ -55,17 +55,16 @@ namespace ngfem
   void Integrator :: SetDefinedOn (const Array<int> & regions)
   {
     int maxval = 0;
-    for (int i = 0; i < regions.Size(); i++)
-      maxval = max2(maxval, regions[i]);
+    for (int val : regions) maxval = max2(maxval, val);
 
     definedon.SetSize (maxval+1);
     definedon.Clear();
 
-    for (int i = 0; i < regions.Size(); i++)
-      if (regions[i] >= 0)
-        definedon.Set (regions[i]);
+    for (int val : regions)
+      if (val >= 0)
+        definedon.Set (val);
       else
-        throw Exception ("SetDefineon called with negative index");
+        throw Exception ("SetDefinedOn called with negative index");
   }
 
   void Integrator :: SetName (const string & aname)
