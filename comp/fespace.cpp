@@ -564,11 +564,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (!fe)
       {
+        /*
         Exception ex;
         ex << "FESpace" << GetClassName() << ", undefined eltype " 
            << ElementTopology::GetElementName(ma->GetElType(elnr))
            << ", order = " << ToString (order) << "\n";
         throw ex;
+        */
+        stringstream str;
+        str << "FESpace" << GetClassName() << ", undefined eltype " 
+            << ElementTopology::GetElementName(ma->GetElType(elnr))
+            << ", order = " << ToString (order) << "\n";
+        throw Exception (str.str());
       }
     
     return *fe;

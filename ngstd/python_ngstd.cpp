@@ -81,6 +81,13 @@ struct FlagsFromPythonDict
 };
 
 
+void TranslateException (const Exception & ex)
+{
+  string err = string("NGSolve exception: ")+ex.What();
+  PyErr_SetString(PyExc_RuntimeError, err.c_str());
+}
+
+
 void NGS_DLL_HEADER  ExportNgstd() {
   std::string nested_name = "ngstd";
   if( bp::scope() )
@@ -96,6 +103,9 @@ void NGS_DLL_HEADER  ExportNgstd() {
 
   bp::def("TestFlags", FunctionPointer( [] (bp::dict const &d) { cout << bp::extract<Flags>(d)() << endl; } ) );
   
+
+  bp::register_exception_translator<Exception>(&TranslateException);
+
   bp::class_<PajeTrace >("Tracer", bp::no_init)
     .def("SetTraceThreads", &PajeTrace::SetTraceThreads)
     .def("SetTraceThreadCounter", &PajeTrace::SetTraceThreadCounter)
