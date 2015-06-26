@@ -26,6 +26,25 @@ void NGS_DLL_HEADER ExportNgsolve() {
              (bp::arg("blocking")=false)
              );
 
+
+    bp::def ("Draw", FunctionPointer([](shared_ptr<MeshAccess> mesh) 
+                                     {
+                                       Ng_TclCmd ("set ::selectvisual mesh;\n");
+                                     })
+             );
+
+    bp::def ("Draw", FunctionPointer
+             ([](shared_ptr<GridFunction> gf, int sd) 
+              {
+                Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
+                Ng_TclCmd (string("set ::visoptions.subdivisions ")+ToString(sd)+";\n");
+                Ng_TclCmd ("Ng_Vis_Set parameters;\n");
+                Ng_TclCmd ("set ::selectvisual solution;\n");
+              }),
+             (bp::arg("gf"),bp::arg("sd")=2)
+             );
+
+
     ExportBVP();
     ExportDrawFlux();
 }

@@ -1,34 +1,28 @@
 from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.la import *
-from ngsolve.solve import Redraw
-
-import numpy as np
-from timeit import Timer
+from ngsolve.solve import *
 
 from math import sin
 from time import sleep
 
 
-
-mesh = Mesh("square.vol")
+mesh = Mesh("square.vol.gz")
 
 v = FESpace ("h1ho", mesh, order=5)  # , dirichlet=[1,2])
-v.Update()
-
-u = GridFunction (v)
-u.Update()
+u = GridFunction (v, name="potential")
+Draw (u, sd=1)
 
 f = LinearForm (v)
-# f.Add (LFI (name = "source", dim = 2, coef = ConstantCF(1)))
+# f.Add (LFI (name = "source", dim = 2, coef = 1))
 f.Assemble()
 
-a = BilinearForm (v, flags = { "symmetric" : True })
-a.Add (BFI ("laplace", dim = 2, coef = ConstantCF(0.01)))
+a = BilinearForm (v, symmetric = True) 
+a.Add (BFI ("laplace", dim = 2, coef = 0.01))
 a.Assemble()
 
-m = BilinearForm (v, flags = { "symmetric" : True })
-m.Add (BFI ("mass", dim = 2, coef = ConstantCF(1)))
+m = BilinearForm (v, symmetric = True)
+m.Add (BFI ("mass", dim = 2, coef = 1))
 m.Assemble()
 
 
@@ -40,13 +34,15 @@ inv = mstar.Inverse(v.FreeDofs())
         
 d = u.vec.CreateVector()
 w = u.vec.CreateVector()
-        
-u.Set (VariableCF ("exp(-40*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)))"))
-# Redraw(blocking=True)
 
-print ("Switch visualization to 'Solution', and set 'ScalarFunction' to 'gfu'")
+x = CoordCF(0)
+y = CoordCF(1)
+u.Set (exp(-40*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))))
+
+Redraw(blocking=True)
+
+# print ("Switch visualization to 'Solution', and set 'ScalarFunction' to 'gfu'")
 input("I'm waiting for you ... ")
-
 
 t = 0.0;
 while (t <= 1):
@@ -56,7 +52,7 @@ while (t <= 1):
     u.vec.data += tau * w
     
     print ("t = ", t)
-    # Redraw(blocking=True)
+    Redraw(blocking=True)
     sleep (0.01)
            
       
