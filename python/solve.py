@@ -11,5 +11,4 @@ from . import comp
 
 from ngslib.solve import *
 
-__all__ = ['Redraw', 'BVP', 'DrawFlux']
-
+__all__ = ['Redraw', 'Draw', 'BVP', 'DrawFlux']
