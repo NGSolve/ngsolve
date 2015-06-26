@@ -115,7 +115,7 @@ namespace netgen
   extern DLL_HEADER void Render(bool blocking);
   DLL_HEADER void Render (bool blocking)
   {
-    if (blocking)
+    if (blocking && multithread.running)
       {
         multithread.redraw = 2;
         while (multithread.redraw == 2) ; 

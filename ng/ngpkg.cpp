@@ -705,6 +705,15 @@ namespace netgen
       strcat (lstring, " 0");
     Tcl_SetVar  (interp, "::status_tetqualclasses", lstring, 0);
 
+#pragma omp critical(tcltodo)
+    {
+      if (multithread.tcl_todo->length())
+        {
+          Tcl_Eval (interp, multithread.tcl_todo->c_str());
+          *multithread.tcl_todo = "";
+        }
+    }
+
     return TCL_OK;
   }
 

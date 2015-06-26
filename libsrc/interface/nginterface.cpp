@@ -2359,3 +2359,13 @@ void LinkFunction ()
 {
   Ng_Redraw();
 }
+
+
+
+void Ng_TclCmd(string cmd)
+{
+#pragma omp critical(tcltodo)
+  {
+    *(multithread.tcl_todo) += cmd;
+  }
+}

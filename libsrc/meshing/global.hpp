@@ -41,6 +41,7 @@ namespace netgen
     double percent;
     const char * task;
     bool demorunning;
+    string * tcl_todo = new string("");  // tcl commands set from parallel thread
     multithreadt();
   };
 
