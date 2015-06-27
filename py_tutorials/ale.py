@@ -63,13 +63,12 @@ class npALE_instat(PyNumProc):
     
         mstar = a.mat.CreateMatrix()
 
-        # d.Set(VariableCF("(4*y*(1-y)*x*(1-x),(4*y*(1-y)*x*(1-x))"))
         d.Set(VariableCF("(1*y*x*(1-x),(1*y*x*(1-x))"))
         dmax = d.vec.CreateVector()
         dold = d.vec.CreateVector()
         
         dmax.data = d.vec
-        d.vec.data = 0.0 * dmax
+        d.vec[:] = 0
         dold.data = d.vec
         
         inv = a.mat.Inverse (v.FreeDofs())
@@ -82,8 +81,9 @@ class npALE_instat(PyNumProc):
         tau = 0.001
         r = u.vec.CreateVector()
         
-        for j in range(10000):
-            t = tau * j
+        t = 0
+        while (t < 1):
+            t += tau
             print ("t = ", t)
 
             dold.data = d.vec
