@@ -48,9 +48,15 @@ namespace ngcomp
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
-    void AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
+    LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
     {
       parts.Append (lfi);
+      return *this;
+    }
+
+    LinearForm & operator+= (shared_ptr<LinearFormIntegrator> lfi)
+    {
+      return AddIntegrator(lfi);
     }
 
     ///

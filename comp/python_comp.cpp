@@ -73,7 +73,6 @@ public:
 
 
 
-
 void NGS_DLL_HEADER ExportNgcomp()
 {
   bp::docstring_options local_docstring_options(true, true, false);
@@ -545,6 +544,8 @@ void NGS_DLL_HEADER ExportNgcomp()
          bp::return_value_policy<bp::reference_existing_object>(),
          "add integrator to bilinear-form")
     
+    .def(bp::self+=shared_ptr<BilinearFormIntegrator>())
+
     .add_property("integrators", FunctionPointer
                   ([](BF & self) { return bp::object (self.Integrators());} ))
     
@@ -598,6 +599,8 @@ void NGS_DLL_HEADER ExportNgcomp()
           }),
          bp::return_value_policy<bp::reference_existing_object>(),
          (bp::arg("self"), bp::arg("integrator")))
+
+    .def(bp::self+=shared_ptr<LinearFormIntegrator>())
 
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)

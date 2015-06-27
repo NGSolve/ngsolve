@@ -14,15 +14,15 @@ u = GridFunction (v, name="potential")
 Draw (u, sd=1)
 
 f = LinearForm (v)
-# f.Add (LFI (name = "source", dim = 2, coef = 1))
+f += LFI (name = "source", dim = 2, coef = 1)
 f.Assemble()
 
 a = BilinearForm (v, symmetric = True) 
-a.Add (BFI ("laplace", dim = 2, coef = 0.01))
+a += BFI ("laplace", dim = 2, coef = 0.01)
 a.Assemble()
 
 m = BilinearForm (v, symmetric = True)
-m.Add (BFI ("mass", dim = 2, coef = 1))
+m += BFI ("mass", dim = 2, coef = 1)
 m.Assemble()
 
 
