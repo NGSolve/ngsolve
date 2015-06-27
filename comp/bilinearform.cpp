@@ -65,7 +65,7 @@ namespace ngcomp
     fespace2 = NULL;
 
     multilevel = true;
-    symmetric = true;
+    symmetric = flags.GetDefineFlag ("symmetric");
 
     // low_order_bilinear_form = NULL;
     linearform = NULL;
@@ -146,6 +146,9 @@ namespace ngcomp
   
   void BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
+    if (symmetric && !bfi->IsSymmetric())
+      throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
+                       string ("bfi is ")+bfi->Name());
     parts.Append (bfi);
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());
@@ -199,16 +202,6 @@ namespace ngcomp
 
   MatrixGraph * BilinearForm :: GetGraph (int level, bool symmetric)
   {
-    if (!task_manager)
-      {
-        MatrixGraph * gr;
-        RunWithTaskManager ( [&]()
-                             {
-                               gr = this->GetGraph(level, symmetric);
-                             } );
-        return gr;
-      }
-
     static Timer timer ("BilinearForm::GetGraph");
     RegionTimer reg (timer);
 
@@ -232,6 +225,7 @@ namespace ngcomp
     for ( ; !creator.Done(); creator++)
       {
 
+        /*
         task_manager->CreateJob
           ([&] (const TaskInfo & ti)
 
@@ -263,7 +257,37 @@ namespace ngcomp
                    if (d != -1) creator.Add (ne+i, d);
                }
            });
+        */
+        ParallelForRange (Range(ne), [&](IntRange r)
+                          {
+                            Array<int> dnums;
+                            for (auto i : r)
+                              {
+                                if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
+                                
+                                if (eliminate_internal)
+                                  fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+                                else
+                                  fespace->GetDofNrs (i, dnums);
+                                
+                                for (int d : dnums)
+                                  if (d != -1) creator.Add (i, d);
+                              }
+                          });
 
+        
+        ParallelForRange (Range(nse), [&](IntRange r)
+                          {
+                            Array<int> dnums;
+                            for (auto i : r)
+                              {
+                                if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
+                                
+                                fespace->GetSDofNrs (i, dnums);
+                                for (int d : dnums)
+                                  if (d != -1) creator.Add (ne+i, d);
+                              }
+                          });
 
 
         for (int i = 0; i < specialelements.Size(); i++)
@@ -521,13 +545,7 @@ namespace ngcomp
         throw;
       }
 
-    /*
-    RunWithTaskManager 
-      ( [&] () 
-        { 
-          DoAssemble(lh);
-        } );
-    */
+
     DoAssemble(lh);
 
 
