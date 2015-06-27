@@ -229,7 +229,39 @@ public:
 };
 
 
+shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
+{
+  if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
+    return bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
+  else if (bp::extract<double>(py_coef).check())
+    return make_shared<ConstantCoefficientFunction> 
+      (bp::extract<double>(py_coef)());
+  else
+    {
+      bp::exec("raise KeyError()\n");
+      return nullptr;
+    }
+}
 
+Array<shared_ptr<CoefficientFunction>> MakeCoefficients (bp::object py_coef)
+{
+  Array<shared_ptr<CoefficientFunction>> tmp;
+  if (bp::extract<bp::list>(py_coef).check())
+    {
+      auto l = bp::extract<bp::list>(py_coef)();
+      for (int i = 0; i < bp::len(l); i++)
+        tmp += MakeCoefficient(l[i]);
+    }
+  else if (bp::extract<bp::tuple>(py_coef).check())
+    {
+      auto l = bp::extract<bp::tuple>(py_coef)();
+      for (int i = 0; i < bp::len(l); i++)
+        tmp += MakeCoefficient(l[i]);
+    }
+  else
+    tmp += MakeCoefficient(py_coef);
+  return move(tmp);
+}
 
 
 void ExportCoefficientFunction()
@@ -428,16 +460,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, bp::object py_coef, bool imag)
                            {
-                             shared_ptr<CoefficientFunction> coef;
-                             if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
-                               coef = bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
-                             else if (bp::extract<double>(py_coef).check())
-                               coef = make_shared<ConstantCoefficientFunction> 
-                                 (bp::extract<double>(py_coef)());
-                             else
-                               bp::exec("raise KeyError()\n");
-
-
+                             Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
                              if (!bfi) cerr << "undefined integrator '" << name 
@@ -452,6 +475,7 @@ void NGS_DLL_HEADER ExportNgfem() {
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
     
+    /*
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, bp::list coefs_list, bool imag)
                            {
@@ -469,6 +493,8 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
+    */
+    .def("__str__", &ToString<BilinearFormIntegrator>)
 
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
@@ -546,6 +572,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                               bp::object py_coef,
                               bp::object definedon, bool imag, const Flags & flags)
                            {
+                             /*
                              shared_ptr<CoefficientFunction> coef;
                              if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
                                coef = bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
@@ -554,7 +581,8 @@ void NGS_DLL_HEADER ExportNgfem() {
                                  (bp::extract<double>(py_coef)());
                              else
                                bp::exec("raise KeyError()\n");
-
+                             */
+                             Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
                              if (bp::extract<bp::list> (definedon).check())
