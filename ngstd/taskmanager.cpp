@@ -178,7 +178,7 @@ namespace ngstd
 
     while (active_workers < num_threads-1)
       ;
-    cout << "workers are all active !!!!!!!!!!!" << endl;
+    // cout << "workers are all active !!!!!!!!!!!" << endl;
   }
  
   void TaskManager :: StopWorkers()
@@ -186,7 +186,7 @@ namespace ngstd
     done = true;
     while (active_workers)
       ;
-    cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
+    // cout << "workers all stopped !!!!!!!!!!!!!!!!!!!" << endl;
   }
 
 

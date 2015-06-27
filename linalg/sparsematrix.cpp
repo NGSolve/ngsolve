@@ -211,9 +211,12 @@ namespace ngla
                               bool symmetric)
   {
     // make sure that taskmanager is up ...
+    /*
     RunWithTaskManager 
       ([&]() 
        {
+    */
+
 
     static Timer timer("MatrixGraph");
     RegionTimer reg (timer);
@@ -236,7 +239,7 @@ namespace ngla
                        for (auto e : rowelements[i])
                          creator.Add(e, i);
                      },
-                     10 * task_manager->GetNumThreads());
+                     TasksPerThread(10));
       }
 
 
@@ -261,22 +264,21 @@ namespace ngla
       {
         if (!symmetric)
           {
+            /*
             SharedLoop sl(Range(ndof));
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
+            */
+
+            ParallelForRange 
+              (Range(ndof), [&](IntRange myr) 
                {
-                 /*
-                 Array<int> rowdofs;
-                 Array<int> rowdofs1;
-                 */
                  ArrayMem<int, 50> sizes;
                  ArrayMem<int*, 50> ptrs;
                  ArrayMem<int,50> tmp;
                  
-                 auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
-                 
+                 // auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
                  for (int i : myr)
-                   // for (int i : sl)                 
                    {
                      prof[i].tstart = omp_get_wtime();
                      prof[i].size = dof2element[i].Size();
@@ -305,41 +307,25 @@ namespace ngla
 
                      prof[i].tend = omp_get_wtime();
                    }
-
-                 /*
-                 for (int i : myr)
-                 // for (int i : sl)                 
-                   {
-                     rowdofs.SetSize0();
-                     if (includediag) rowdofs += i;
-                     
-                     for (int elnr : dof2element[i])
-                       {
-                         rowdofs.Swap (rowdofs1);
-                         FlatArray<int> row = colelements[elnr];
-                         MergeSortedArrays (rowdofs1, row, rowdofs);
-                       }
-                     
-                     if (loop == 1)
-                       cnt[i] = rowdofs.Size();
-                     else
-                       colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
-                   }
-                 */
                },
-               20 * task_manager->GetNumThreads());
+               TasksPerThread(20));
+            // 20 * task_manager->GetNumThreads());
           }
         else
           {
+            /*
             SharedLoop sl(Range(ndof));
-
             task_manager->CreateJob 
               ([&](const TaskInfo & ti)
+            */
+            ParallelForRange 
+              (Range(ndof),[&](IntRange myr)
                {
                  Array<int> rowdofs;
                  Array<int> rowdofs1;
                  
-                 for (int i : sl)
+                 // for (int i : sl)
+                 for (int i : myr)
                    {
                      rowdofs.SetSize0();
                      if (includediag) rowdofs += i;
@@ -381,9 +367,9 @@ namespace ngla
                        colnr.Range(firsti[i], firsti[i+1]) = rowdofs;
                    }
                });
-
+            
           }
-
+        
         
         if (loop == 1)
           {
@@ -400,12 +386,9 @@ namespace ngla
                 nze += cnt[i];
               }
             firsti[size] = nze;
-            // colnr.SetSize (nze+1);
-            // colnr = Array<int, size_t> (nze+1);
             colnr = NumaDistributedArray<int> (nze+1);
 
 	    CalcBalancing ();
-            
 
             // first touch memory (numa!)
             ParallelFor (balance, [&](int row) 
@@ -432,7 +415,7 @@ namespace ngla
     cout << "sum time = " << sumtime << endl;
     cout << "sum time per thread = " << sumtime/48 << endl;
     */
-       });
+    // });
   }
 
   

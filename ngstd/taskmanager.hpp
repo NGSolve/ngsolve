@@ -105,7 +105,10 @@ namespace ngstd
   
   void RunWithTaskManager (function<void()> alg);
 
-
+  INLINE int TasksPerThread (int tpt)
+  {
+    return task_manager ? tpt*task_manager->GetNumThreads() : 1;
+  }
 
   template <typename TFUNC>
   INLINE void ParallelFor (IntRange r, TFUNC f, 
