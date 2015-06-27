@@ -226,6 +226,27 @@ void NGS_DLL_HEADER  ExportNgstd() {
     }), bp::return_value_policy<bp::reference_existing_object>()       
         )
 
+    .def("__getitem__", FunctionPointer( [](Flags & self, const string& name) -> bp::object {
+
+	  if(self.NumListFlagDefined(name))
+	    return bp::object(self.GetNumListFlag(name));
+
+	  if(self.StringListFlagDefined(name))
+	    return bp::object(self.GetStringListFlag(name));
+	 
+	  if(self.NumFlagDefined(name))
+	    return bp::object(*self.GetNumFlagPtr(name));
+	  
+	  if(self.StringFlagDefined(name))
+	    return bp::object(self.GetStringFlag(name));
+
+	  if(self.FlagsFlagDefined(name))
+	    return bp::object(self.GetFlagsFlag(name));
+
+	  return bp::object(self.GetDefineFlag(name));
+	}))
+
+
     .def("__str__", &ToString<Flags>)   
    ;
 
