@@ -144,7 +144,7 @@ namespace ngcomp
 
 
   
-  void BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
+  BilinearForm & BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
     if (symmetric && !bfi->IsSymmetric())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
@@ -152,6 +152,8 @@ namespace ngcomp
     parts.Append (bfi);
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());
+
+    return *this;
   }
 
 

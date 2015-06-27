@@ -106,7 +106,12 @@ namespace ngcomp
   
 
     ///
-    void AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+    BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+
+    BilinearForm & operator+= (shared_ptr<BilinearFormIntegrator> bfi)
+    {
+      return AddIntegrator(bfi);
+    }
 
     /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,
