@@ -46,6 +46,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 0; }
+    virtual bool IsSymmetric () const { return true; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -214,8 +215,8 @@ namespace ngfem
       return new ConvectionIntegrator (coeffs);
     }
     
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual bool BoundaryForm () const { return 0; }
+    virtual bool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
                                         const ElementTransformation & eltrans, 
@@ -290,6 +291,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 0; }
+    virtual bool IsSymmetric () const { return false; }
     
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -427,6 +429,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
+    virtual bool IsSymmetric () const { return false; }
   
     static Integrator * Create (const Array<shared_ptr<CoefficientFunction>> & coeffs)
     {
@@ -525,6 +528,7 @@ namespace ngfem
     
     virtual bool BoundaryForm () const 
     { return 1; }
+    virtual bool IsSymmetric () const { return true; }
 
     virtual ~DGBoundaryFacet_LaplaceIntegrator () { ; }
 
