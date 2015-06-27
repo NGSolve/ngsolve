@@ -33,6 +33,8 @@ namespace ngfem
     virtual bool BoundaryForm () const 
     { return 0; }
 
+    virtual bool IsSymmetric () const { return true; }
+
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
 				    FlatMatrix<double> elmat,
@@ -522,6 +524,7 @@ namespace ngfem
 
     virtual bool BoundaryForm () const 
     { return 0; }
+    virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -702,6 +705,7 @@ namespace ngfem
 
     virtual bool BoundaryForm () const 
     { return 0; }
+    virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -890,6 +894,7 @@ namespace ngfem
 
     virtual bool BoundaryForm () const 
     { return 0; }
+    virtual bool IsSymmetric () const { return true; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
@@ -1738,8 +1743,8 @@ namespace ngfem
 
     virtual ~HDG_ConvectionIntegrator () { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual bool BoundaryForm () const { return 0; }
+    virtual bool IsSymmetric () const { return false; }
 
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 

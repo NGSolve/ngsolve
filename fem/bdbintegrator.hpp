@@ -204,6 +204,8 @@ public:
 
     virtual ~T_BDBIntegrator_DMat () { delete diffop; }
     
+    virtual bool IsSymmetric () const
+    { return DMATOP::SYMMETRIC; }
     
     virtual int DimFlux () const
     { return DMATOP::DIM_DMAT; }

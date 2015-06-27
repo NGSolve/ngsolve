@@ -7,7 +7,6 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-#pragma interface
 
 namespace ngfem
 {
@@ -186,7 +185,7 @@ namespace ngfem
   };
 
 
-
+  ostream & operator << (ostream & ost, const Integrator & igt);
 
   /**
      A BilinearFormIntegrator computes the element matrices. Different
@@ -201,6 +200,9 @@ namespace ngfem
     BilinearFormIntegrator () throw () { ; }
     ///
     virtual ~BilinearFormIntegrator ();
+
+    /// generates symmetric matrix ? 
+    virtual bool IsSymmetric () const = 0;
 
     /// components of flux
     virtual int DimFlux () const { return -1; }
@@ -656,7 +658,7 @@ namespace ngfem
 
     virtual bool BoundaryForm () const
     { return bfi->BoundaryForm(); }
-
+    virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
 
@@ -803,6 +805,9 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
+    virtual bool IsSymmetric () const
+    { return bfi->IsSymmetric(); }
+
 
     virtual void GetFactor(Complex & fac) const {fac = factor;}
     virtual void GetFactor(double & fac) const {fac = factor.real();}
@@ -929,6 +934,8 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
+    virtual bool IsSymmetric () const
+    { return bfi->IsSymmetric(); }
 
     virtual void CheckElement (const FiniteElement & el) const
     {
@@ -962,7 +969,8 @@ namespace ngfem
     { return bfi->DimElement(); }
     virtual int DimSpace () const
     { return bfi->DimSpace(); }
-
+    virtual bool IsSymmetric () const
+    { return bfi->IsSymmetric(); }
     virtual void CheckElement (const FiniteElement & el) const
     {
       return bfi->CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
@@ -1242,7 +1250,6 @@ namespace ngfem
     { ; }
 
     virtual bool BoundaryForm () const { return lfi->BoundaryForm(); } 
-
     virtual void CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
 
 

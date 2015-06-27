@@ -35,6 +35,13 @@ namespace ngfem
   {
     DeleteCurveIPs();
   }
+
+  ostream & operator << (ostream & ost, const Integrator & igt)
+  {
+    ost << igt.Name();
+    return ost;
+  }
+  
   
   bool Integrator :: DefinedOn (int mat) const
   {
