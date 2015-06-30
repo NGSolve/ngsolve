@@ -21,7 +21,15 @@ namespace ngcomp
     cacheblocksize = 1;
   }
 
+  LinearForm & LinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
+  {
+    auto anydim = dynamic_pointer_cast<LinearFormIntegratorAnyDim> (lfi);
+    if (anydim) lfi = anydim->GetLFI (ma->GetDimension());
 
+    parts.Append (lfi);
+    return *this;
+  }
+  
   void LinearForm :: PrintReport (ostream & ost) const
   {
     ost << "on space " << GetFESpace()->GetName() << endl
@@ -826,7 +834,19 @@ namespace ngcomp
   
 
 
+  ComponentLinearForm :: ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp)
+    : LinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_lf->GetFESpace()))[acomp], "comp-lf", Flags()), 
+      base_lf(abase_lf), comp(acomp), ncomp(ancomp)
+  { 
+    ;
+  }
 
+  LinearForm & ComponentLinearForm :: AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
+  {
+    auto block_lfi = make_shared<CompoundLinearFormIntegrator> (lfi, comp);
+    base_lf -> AddIntegrator (block_lfi);
+    return *this;
+  }
 
 
 

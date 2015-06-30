@@ -150,14 +150,12 @@ public:
 };
 
 template <typename OP> 
-shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                           shared_ptr<CoefficientFunction> c2, 
-                                           OP lam)
+INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
+                                                  shared_ptr<CoefficientFunction> c2, 
+                                                  OP lam)
 {
   return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP> (c1, c2, lam));
 }
-
-
 
 
 class ScaleCoefficientFunction : public CoefficientFunction
@@ -281,7 +279,6 @@ void ExportCoefficientFunction()
 
 
     // coefficient expressions
-
     .def ("__add__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
            { return BinaryOpCF (c1, c2, [](double a, double b) { return a+b; });} ))
@@ -334,6 +331,7 @@ void ExportCoefficientFunction()
           ([] (SPCF coef) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
     ;
+
   bp::def ("sin", FunctionPointer 
            ([] (SPCF coef) -> SPCF
             { return UnaryOpCF (coef, 
@@ -473,7 +471,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                              return bfi;
                            }),
           bp::default_call_policies(),        // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
+          (bp::arg("name")=NULL,bp::arg("dim")=-1,bp::arg("coef"),bp::arg("imag")=false)))
     
     /*
     .def("__init__", bp::make_constructor
@@ -598,7 +596,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                              return lfi;
                            }),
           bp::default_call_policies(),     // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,
+          (bp::arg("name")=NULL,bp::arg("dim")=-1,
            bp::arg("coef"),bp::arg("definedon")=bp::object(), 
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
          )
@@ -623,7 +621,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                              return lfi;
                            }),
           bp::default_call_policies(),     // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,
+          (bp::arg("name")=NULL,bp::arg("dim")=-1,
            bp::arg("coef"),bp::arg("definedon")=bp::object(), 
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
         )

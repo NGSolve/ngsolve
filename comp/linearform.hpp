@@ -48,11 +48,7 @@ namespace ngcomp
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
-    LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi)
-    {
-      parts.Append (lfi);
-      return *this;
-    }
+    virtual LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
 
     LinearForm & operator+= (shared_ptr<LinearFormIntegrator> lfi)
     {
@@ -201,6 +197,26 @@ namespace ngcomp
     virtual void GetElementVector (FlatArray<int> dnums,
 				   FlatVector<TSCAL> elvec) const override;
   };
+
+
+
+
+
+  class ComponentLinearForm : public LinearForm
+  {
+    LinearForm * base_lf;
+    int comp, ncomp;
+  public:
+    ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp);
+    virtual LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
+
+    virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
+    virtual shared_ptr<BaseVector> GetVectorPtr() const
+    { throw Exception ("comp - GetVectorPtr is illegal"); }
+    virtual BaseVector & GetVector () const 
+    { throw Exception ("comp - GetVector is illegal"); }
+  };
+
 
 
   extern NGS_DLL_HEADER shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
