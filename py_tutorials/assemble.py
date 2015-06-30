@@ -22,25 +22,19 @@ mesh = pde.Mesh()
 v = pde.spaces["v"]
 v.Update (heapsize=10000)
 
-lh = ngstd.LocalHeap (10000, "heap")
+lap = fem.BFI ("laplace", coef=4.8)
 
-lam = fem.ConstantCF (4.8)
-lap = fem.BFI (name="laplace", dim=2, coef=lam)
-
-
-for el in v.Elements(heapsize=10000):
+for el in v.Elements():
     print ("el: ", el)
-    mat = lap.CalcElementMatrix(el.GetFE(), el.GetTrafo(), heapsize=10000)
+    mat = lap.CalcElementMatrix(el.GetFE(), el.GetTrafo())
     print ("Element matrix of element ", el, ":\n", mat)
     print ("dofs: ", el.dofs, "\n")
-
 
 
 
 v2 = comp.FESpace ("h1ho", mesh, order=1, dirichlet=[1])
 v2.Update()
 
-lh = ngstd.LocalHeap (10000, "heap")
-for el1,el2 in zip (v.Elements(heap=lh), v2.Elements(heapsize=1000)):
+for el1,el2 in zip (v.Elements(), v2.Elements()):
     print ("el1 dofs:", el1.dofs, "el2 dofs ", el2.dofs)
 

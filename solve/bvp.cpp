@@ -358,7 +358,7 @@ namespace ngsolve
 
     if (solver != DIRECT)  
       {
-        ma->PushStatus ("Iterative solver");
+        if (ma) ma->PushStatus ("Iterative solver");
         invmat->SetMaxSteps (maxsteps);
         invmat->SetPrecision (prec);
         invmat->SetPrintRates ();
@@ -367,7 +367,7 @@ namespace ngsolve
 	invmat->UseSeed(useseedvariant);
       }
     else
-      ma->PushStatus ("Direct solver");
+      if (ma) ma->PushStatus ("Direct solver");
 
       
     double starttime, endtime;
@@ -395,7 +395,7 @@ namespace ngsolve
 	vecu += (*invmat2) * hv;
       }
 
-    ma->PopStatus ();
+    if (ma) ma->PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
@@ -715,7 +715,7 @@ namespace ngsolve
 	  }
       }
 
-    ma->PushStatus ("Iterative solver");
+    if (ma) ma->PushStatus ("Iterative solver");
 
     invmat->SetMaxSteps (maxsteps);
     invmat->SetPrecision (prec);
@@ -727,7 +727,7 @@ namespace ngsolve
 
     invmat->Mult (vecf, vecu);
 
-    ma->PopStatus ();
+    if (ma) ma->PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
@@ -785,6 +785,23 @@ void ExportBVP()
             bp::arg("bf"), bp::arg("lf"), bp::arg("gf"), 
             bp::arg("pre")=NULL, bp::arg("maxsteps")=100, bp::arg("prec")=1e-8)
 	   );
+
+  bp::def ("BVP", FunctionPointer
+           ([](shared_ptr<BilinearForm> bfa,
+               shared_ptr<LinearForm> lff,
+               shared_ptr<GridFunction> gfu,
+               shared_ptr<Preconditioner> pre,
+               int maxsteps,
+               double prec) -> shared_ptr<NumProc>
+            
+            {
+              return make_shared<NumProcBVP> (bfa, lff, gfu, pre, maxsteps, prec);
+            }),
+           (bp::arg("bf"), bp::arg("lf"), bp::arg("gf"), 
+            bp::arg("pre")=NULL, bp::arg("maxsteps")=100, bp::arg("prec")=1e-8)
+	   );
+
+
 
 
 }

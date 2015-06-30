@@ -146,6 +146,9 @@ namespace ngcomp
   
   BilinearForm & BilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
   {
+    auto anydim = dynamic_pointer_cast<BilinearFormIntegratorAnyDim> (bfi);
+    if (anydim) bfi = anydim->GetBFI (ma->GetDimension());
+
     if (symmetric && !bfi->IsSymmetric())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
                        string ("bfi is ")+bfi->Name());
@@ -3627,6 +3630,22 @@ namespace ngcomp
 
 
 
+
+
+  ComponentBilinearForm :: ComponentBilinearForm (BilinearForm * abase_blf, int acomp, int ancomp)
+    : BilinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_blf->GetFESpace()))[acomp], "comp-lf", Flags()), 
+      base_blf(abase_blf), comp(acomp), ncomp(ancomp)
+  { 
+    ;
+  }
+
+  BilinearForm & ComponentBilinearForm :: AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi)
+  {
+    cout << "adding a block-bfi integrator" << endl;
+    auto block_bfi = make_shared<CompoundBilinearFormIntegrator> (bfi, comp);
+    base_blf -> AddIntegrator (block_bfi);
+    return *this;
+  }
 
 
 

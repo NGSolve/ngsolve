@@ -218,6 +218,30 @@ void NGS_DLL_HEADER ExportNgcomp()
 	  }))
     
 
+    .def("Refine", FunctionPointer
+         ([](MeshAccess & ma)
+          {
+            Ng_Refine(NG_REFINE_H);
+            ma.UpdateBuffers();
+          }))
+
+    .def("SetRefinementFlag", FunctionPointer
+         ([] (MeshAccess & ma, ElementId id, bool ref)
+          {
+            if (id.IsVolume())
+              Ng_SetRefinementFlag (id.Nr()+1, ref);
+            else
+              Ng_SetSurfaceRefinementFlag (id.Nr()+1, ref);
+          }))
+
+    .def("Curve", FunctionPointer
+         ([](MeshAccess & ma, int order)
+          {
+            Ng_HighOrder(order);
+          }),
+         (bp::arg("self"),bp::arg("order")))
+
+    
     /*
     // first attempts, but keep for a moment ...
     .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
@@ -369,7 +393,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Set", FunctionPointer
          ([](GF & self, shared_ptr<CoefficientFunction> cf, bool boundary)
           {
-            LocalHeap lh(1000000, "tmplh");
+            LocalHeap lh(1000000, "GridFunction::Set-lh");
             SetValues (cf, self, boundary, NULL, lh);
           }),
           bp::default_call_policies(),        // need it to use arguments
@@ -564,6 +588,23 @@ void NGS_DLL_HEADER ExportNgcomp()
                                              bp::exec("raise RuntimeError('matrix not ready - assemble bilinearform first')\n");
                                            return mat;
                                          }))
+
+    .add_property("components", FunctionPointer
+                  ([](BF & self)-> bp::list 
+                   { 
+                     bp::list bfs;
+                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self.GetFESpace());
+                     if (!fes)
+                       bp::exec("raise RuntimeError('not a compound-fespace')\n");
+                       
+                     int ncomp = fes->GetNSpaces();
+                     for (int i = 0; i < ncomp; i++)
+                       bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(&self, i, ncomp)));
+                     return bfs;
+                   }),
+                  "list of components for bilinearforms on compound-space")
+
+
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
     .def("AssembleLinearization", FunctionPointer
@@ -609,6 +650,21 @@ void NGS_DLL_HEADER ExportNgcomp()
             self.Assemble(lh);
           }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
+
+    .add_property("components", FunctionPointer
+                  ([](LF & self)-> bp::list 
+                   { 
+                     bp::list lfs;
+                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self.GetFESpace());
+                     if (!fes)
+                       bp::exec("raise RuntimeError('not a compound-fespace')\n");
+                       
+                     int ncomp = fes->GetNSpaces();
+                     for (int i = 0; i < ncomp; i++)
+                       lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(&self, i, ncomp)));
+                     return lfs;
+                   }),
+                  "list of components for linearforms on compound-space")
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////

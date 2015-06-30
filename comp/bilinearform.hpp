@@ -106,7 +106,7 @@ namespace ngcomp
   
 
     ///
-    BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
 
     BilinearForm & operator+= (shared_ptr<BilinearFormIntegrator> bfi)
     {
@@ -680,6 +680,77 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
   };
+
+
+
+
+
+  class ComponentBilinearForm : public BilinearForm
+  {
+    BilinearForm * base_blf;
+    int comp, ncomp;
+  public:
+    ComponentBilinearForm (BilinearForm * abase_blf, int acomp, int ancomp);
+    virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
+
+    virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
+
+    virtual void AssembleLinearization (const BaseVector & lin,
+					LocalHeap & lh, 
+					bool reallocate = 0) 
+    { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
+
+    virtual void AddMatrix (double val, const BaseVector & x,
+			    BaseVector & y) const
+      { throw Exception ("comp-bf - AddMatrix is illegal"); }
+
+    virtual void AddMatrix (Complex val, const BaseVector & x,
+			    BaseVector & y) const
+    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+
+    virtual void ApplyLinearizedMatrixAdd (double val,
+					   const BaseVector & lin,
+					   const BaseVector & x,
+					   BaseVector & y) const 
+    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+
+    virtual void ApplyLinearizedMatrixAdd (Complex val,
+					   const BaseVector & lin,
+					   const BaseVector & x,
+					   BaseVector & y) const 
+    { throw Exception ("comp-bf - AddMatrix is illegal"); }
+
+    virtual BaseMatrix & GetHarmonicExtension () const 
+    { throw Exception ("comp-bf - GetHarmonicExt is illegal"); }
+
+    virtual BaseMatrix & GetHarmonicExtensionTrans () const
+    { throw Exception ("comp-bf - GetHarmonicExtTrans is illegal"); } 
+    virtual BaseMatrix & GetInnerSolve () const 
+    { throw Exception ("comp-bf - GetInnerSolve is illegal"); } 
+    virtual BaseMatrix & GetInnerMatrix () const
+    { throw Exception ("comp-bf - GetInnerMatrix is illegal"); } 
+    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const
+    { throw Exception ("comp-bf - ComputeInternal is illegal"); } 
+    virtual void ModifyRHS (BaseVector & f) const 
+    { throw Exception ("comp-bf - ModifyRHS is illegal"); } 
+    virtual shared_ptr<BaseVector> CreateVector() const 
+    { throw Exception ("comp-bf - CreateVector is illegal"); } 
+    virtual void DoAssemble (LocalHeap & lh) 
+    { throw Exception ("comp-bf - DoAssemble is illegal"); } 
+    virtual void AllocateMatrix ()
+    { throw Exception ("comp-bf - AllocateMatrix is illegal"); } 
+    virtual double Energy (const BaseVector & x) const 
+    { throw Exception ("comp-bf - Energy is illegal"); } 
+
+    /*
+    virtual shared_ptr<BaseVector> GetVectorPtr() const
+    { throw Exception ("comp - GetVectorPtr is illegal"); }
+    virtual BaseVector & GetVector () const 
+    { throw Exception ("comp - GetVector is illegal"); }
+    */
+  };
+
+
 
 
 

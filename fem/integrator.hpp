@@ -951,6 +951,52 @@ namespace ngfem
 
 
 
+  class NGS_DLL_HEADER BilinearFormIntegratorAnyDim : public BilinearFormIntegrator
+  {
+    shared_ptr<BilinearFormIntegrator> bfi[4]; // dim 0 ... dim 3
+    shared_ptr<BilinearFormIntegrator> any_dim;
+  public:
+    BilinearFormIntegratorAnyDim (shared_ptr<BilinearFormIntegrator> abfi[4])
+    { 
+      for (int i = 0; i < 4; i++)
+        {
+          bfi[i] = abfi[i];
+          if (bfi[i]) any_dim = bfi[i];
+        }
+    }
+  
+    shared_ptr<BilinearFormIntegrator> GetBFI(int dim) const 
+    { 
+      if (!bfi[dim]) 
+        throw Exception (string("BFI for dimension") + ToString(dim)+"not available");
+      return bfi[dim];
+    }
+
+    virtual bool BoundaryForm () const
+    { return any_dim->BoundaryForm(); }
+
+    virtual int DimFlux () const 
+    { throw Exception("BFI AnyDim - DimFlux not available"); }
+    virtual int DimElement () const
+    { throw Exception("BFI AnyDim - DimElement not available"); }
+    virtual int DimSpace () const
+    { throw Exception("BFI AnyDim - DimSpace not available"); }
+    virtual bool IsSymmetric () const
+    { return any_dim->IsSymmetric(); }
+
+    virtual void CheckElement (const FiniteElement & el) const;
+
+    virtual void
+    CalcElementMatrix (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatMatrix<double> elmat,
+		       LocalHeap & lh) const;
+  };
+
+
+
+
+
   class NGS_DLL_HEADER CompoundBilinearFormIntegrator : public BilinearFormIntegrator
   {
     shared_ptr<BilinearFormIntegrator> bfi;
@@ -1365,6 +1411,43 @@ namespace ngfem
 
 
 
+  class NGS_DLL_HEADER LinearFormIntegratorAnyDim : public LinearFormIntegrator
+  {
+    shared_ptr<LinearFormIntegrator> lfi[4]; // dim 0 ... dim 3
+    shared_ptr<LinearFormIntegrator> any_dim;
+  public:
+    LinearFormIntegratorAnyDim (shared_ptr<LinearFormIntegrator> alfi[4])
+    { 
+      for (int i = 0; i < 4; i++)
+        {
+          lfi[i] = alfi[i];
+          if (lfi[i]) any_dim = lfi[i];
+        }
+    }
+  
+    shared_ptr<LinearFormIntegrator> GetLFI(int dim) const 
+    { 
+      if (!lfi[dim]) 
+        throw Exception (string("LFI for dimension") + ToString(dim)+"not available");
+      return lfi[dim];
+    }
+
+    virtual bool BoundaryForm () const
+    { return any_dim->BoundaryForm(); }
+    virtual int DimElement () const
+    { throw Exception("BFI AnyDim - DimElement not available"); }
+    virtual int DimSpace () const
+    { throw Exception("BFI AnyDim - DimSpace not available"); }
+
+    virtual void CheckElement (const FiniteElement & el) const;
+
+    virtual void
+    CalcElementVector (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatVector<double> elvec,
+		       LocalHeap & lh) const;
+  };
+
 
 
 
@@ -1405,7 +1488,7 @@ namespace ngfem
     ///
     void AddLFIntegrator (const string & aname, int aspacedim, int anumcoeffs,
 			  shared_ptr<LinearFormIntegrator> (*acreator)(const Array<shared_ptr<CoefficientFunction>> &));
-  
+    
     ///
     const Array<IntegratorInfo<BilinearFormIntegrator>*> & GetBFIs() const { return bfis; }
     ///

@@ -1447,6 +1447,30 @@ namespace ngfem
   }
 
 
+
+  void BilinearFormIntegratorAnyDim ::  
+  CheckElement (const FiniteElement & el) const
+  {
+    ;
+  }
+
+  void BilinearFormIntegratorAnyDim ::  
+  CalcElementMatrix (const FiniteElement & bfel, 
+                     const ElementTransformation & eltrans, 
+                     FlatMatrix<double> elmat,
+                     LocalHeap & lh) const
+  {
+    int dim = eltrans.SpaceDim();
+    if (bfi[dim])
+      bfi[dim] -> CalcElementMatrix(bfel, eltrans, elmat, lh);
+    else
+      throw Exception (ToString("Integrator-Anydim not available for dimension ")+
+                       ToString(dim));
+  }
+
+
+
+
   CompoundBilinearFormIntegrator :: 
   CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp)
     : bfi(abfi), comp(acomp) { ; }
@@ -1990,6 +2014,26 @@ namespace ngfem
 
 
 
+  void LinearFormIntegratorAnyDim ::  
+  CheckElement (const FiniteElement & el) const
+  {
+    ;
+  }
+
+  void LinearFormIntegratorAnyDim ::  
+  CalcElementVector (const FiniteElement & bfel, 
+                     const ElementTransformation & eltrans, 
+                     FlatVector<double> elvec,
+                     LocalHeap & lh) const
+  {
+    int dim = eltrans.SpaceDim();
+    if (lfi[dim])
+      lfi[dim] -> CalcElementVector(bfel, eltrans, elvec, lh);
+    else
+      throw Exception (ToString("Integrator-Anydim not available for dimension ")+
+                       ToString(dim));
+  }
+
 
 
 
@@ -2041,6 +2085,17 @@ namespace ngfem
   Integrators::CreateBFI(const string & name, int dim, 
 			 const Array<shared_ptr<CoefficientFunction>> & coeffs) const
   {
+    if (dim == -1)
+      {
+        shared_ptr<BilinearFormIntegrator> abfi[4];
+        for (int i = 0; i < bfis.Size(); i++)
+          if (name == bfis[i]->name)
+            {
+              int spacedim = bfis[i]->spacedim;
+              abfi[spacedim] = bfis[i] -> creator(coeffs);
+            }
+        return make_shared<BilinearFormIntegratorAnyDim> (abfi);
+      }
     auto bfi = GetBFI(name, dim)->creator(coeffs);
     bfi -> SetName (name);
     return bfi;
@@ -2090,6 +2145,19 @@ namespace ngfem
   {
     // LinearFormIntegrator * lfi =
     // dynamic_cast<LinearFormIntegrator*> (GetLFI(name, dim)->creator(coeffs));
+
+    if (dim == -1)
+      {
+        shared_ptr<LinearFormIntegrator> alfi[4];
+        for (int i = 0; i < lfis.Size(); i++)
+          if (name == lfis[i]->name)
+            {
+              int spacedim = lfis[i]->spacedim;
+              alfi[spacedim] = lfis[i] -> creator(coeffs);
+            }
+        return make_shared<LinearFormIntegratorAnyDim> (alfi);
+      }
+
     auto lfi = GetLFI(name, dim)->creator(coeffs);
     lfi -> SetName (name);
     return lfi;
