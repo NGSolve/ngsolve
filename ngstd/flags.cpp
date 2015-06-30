@@ -358,9 +358,6 @@ namespace ngstd
 
         getline(line_stream, content);
         content.erase(std::remove(content.begin(), content.end(), ' '), content.end());
-
-        cout << " name = " << name << endl;
-        cout << " content = " << content << endl;
         
 	// if (name[0] == '/' && name[1] == '/')
 	//   {
@@ -390,7 +387,6 @@ namespace ngstd
                     // content_stream >> ch;
                     string inner_string;
                     getline(content_stream, inner_string, ']');
-                    cout << " inner_string = " << inner_string << endl;
                     istringstream inner_string_stream(inner_string);
                     
                     Array<double> values;
