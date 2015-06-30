@@ -1005,7 +1005,7 @@ namespace ngfem
     CompoundBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int acomp);
   
     shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
-
+    int GetComponent() const {return comp;}
     virtual bool BoundaryForm () const
     { return bfi->BoundaryForm(); }
 
@@ -1017,6 +1017,8 @@ namespace ngfem
     { return bfi->DimSpace(); }
     virtual bool IsSymmetric () const
     { return bfi->IsSymmetric(); }
+    virtual bool SkeletonForm () const
+    { return bfi->SkeletonForm(); }
     virtual void CheckElement (const FiniteElement & el) const
     {
       return bfi->CheckElement (dynamic_cast<const CompoundFiniteElement&>(el)[comp]);
