@@ -386,7 +386,7 @@ namespace ngstd
               {
                 if (ch == '[')
                   {
-                    content_stream.putback (ch);
+                    // content_stream.putback (ch);
                     // content_stream >> ch;
                     string inner_string;
                     getline(content_stream, inner_string, ']');
