@@ -99,7 +99,7 @@ namespace ngstd
 
 
     public:
-      void StopTracing();
+      NGS_DLL_HEADER void StopTracing();
 
       PajeTrace(int anthreads, std::string aname = "" )
         {

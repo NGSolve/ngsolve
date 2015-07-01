@@ -1499,18 +1499,18 @@ namespace ngfem
 
 
 
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<1> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<2> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<3> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<1> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<2> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpId<3> >;
 
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<1> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<2> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<3> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<1> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<2> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundary<3> >;
 
 
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<1> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<2> >;
-  BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<3> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<1> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<2> >;
+  NGS_DLL_HEADER BDBEQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpGradient<3> >;
 
 
 
