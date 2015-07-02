@@ -7,8 +7,8 @@
 
 namespace ngstd
 {
-  extern class PajeTrace *trace;
-  class PajeTrace
+  extern NGS_DLL_HEADER class PajeTrace *trace;
+  class NGS_DLL_HEADER PajeTrace
     {
       friend class TraceDisabler;
 
@@ -99,7 +99,7 @@ namespace ngstd
 
 
     public:
-      NGS_DLL_HEADER void StopTracing();
+      void StopTracing();
 
       PajeTrace(int anthreads, std::string aname = "" )
         {
