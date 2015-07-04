@@ -17,7 +17,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  ScalarFiniteElement<ET_trait<ET>::DIM> * CreateL2HighOrderFE (int order, FlatArray<int> vnums, LocalHeap & lh);
+  ScalarFiniteElement<ET_trait<ET>::DIM> * CreateL2HighOrderFE (int order, FlatArray<int> vnums, Allocator & allocator);
 
   /*
     // not yet understood by icc and msvc

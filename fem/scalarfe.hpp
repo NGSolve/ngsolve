@@ -9,22 +9,27 @@
 
 namespace ngfem
 {
-
+  
+  class BaseScalarFiniteElement : public FiniteElement 
+  {
+  public:
+    using FiniteElement::FiniteElement;
+    /*
+    INLINE BaseScalarFiniteElement () { ; } 
+    INLINE BaseScalarFiniteElement (int andof, int aorder)
+      : FiniteElement (andof, aorder) { ; }
+    */
+  };
 
   /**
      Scalar finite element.
      Provides shape functions and derivaties.
   */
   template <int D>
-  class ScalarFiniteElement : public FiniteElement
+  class ScalarFiniteElement : public BaseScalarFiniteElement
   {
   public:
-    /// empty constructor
-    INLINE ScalarFiniteElement () { ; } 
-    /// provides type, number of dofs, maximal order of shapes
-    INLINE ScalarFiniteElement (int andof, int aorder)
-      : FiniteElement (andof, aorder) 
-    { ; }
+    using BaseScalarFiniteElement::BaseScalarFiniteElement;
 
     /// the name
     NGS_DLL_HEADER virtual string ClassName() const;

@@ -30,7 +30,7 @@ namespace ngfem
     /// default constructor
     INLINE FiniteElement () { ; }
 
-    /// constructor
+    /// provides number of dofs and maximal order of shapes
     INLINE FiniteElement (int andof, int aorder)
       : ndof(andof), order(aorder)
     { ; }
@@ -46,7 +46,12 @@ namespace ngfem
     INLINE int Order () const { return order; }
 
     /// geometry of element
-    HD virtual ELEMENT_TYPE ElementType() const = 0; //  { return eltype; }
+    HD virtual ELEMENT_TYPE ElementType() const = 0; 
+
+    HD virtual int Dim () const
+    {
+      return ElementTopology::GetSpaceDim(ElementType());
+    }
 
     /// the name of the element family
     virtual string ClassName() const;
