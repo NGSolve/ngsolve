@@ -16,7 +16,7 @@ namespace ngfem
 
 
   template<>
-  ScalarFiniteElement<1> * CreateL2HighOrderFE<ET_SEGM> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  ScalarFiniteElement<1> * CreateL2HighOrderFE<ET_SEGM> (int order, FlatArray<int> vnums, Allocator & lh)
   {
     DGFiniteElement<1> * hofe = 0;
     switch (order)
@@ -42,7 +42,7 @@ namespace ngfem
 
 
   template<>
-  ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_TRIG> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_TRIG> (int order, FlatArray<int> vnums, Allocator & lh)
   {
     DGFiniteElement<2> * hofe = 0;
     switch (order)
@@ -64,7 +64,7 @@ namespace ngfem
 
 
   template<>
-  ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_QUAD> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  ScalarFiniteElement<2> * CreateL2HighOrderFE<ET_QUAD> (int order, FlatArray<int> vnums, Allocator & lh)
   {
     DGFiniteElement<2> * hofe = new (lh) L2HighOrderFE<ET_QUAD> (order);
     for (int j = 0; j < 4; j++)
@@ -73,7 +73,7 @@ namespace ngfem
   }
 
   template<>
-  ScalarFiniteElement<3> * CreateL2HighOrderFE<ET_TET> (int order, FlatArray<int> vnums, LocalHeap & lh)
+  ScalarFiniteElement<3> * CreateL2HighOrderFE<ET_TET> (int order, FlatArray<int> vnums, Allocator & lh)
   {
     DGFiniteElement<3> * hofe = new (lh) L2HighOrderFE<ET_TET> (order); 
     for (int j = 0; j < 4; j++)

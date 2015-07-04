@@ -167,14 +167,6 @@ namespace ngfem
   INLINE AutoDiff<3,SCAL> Cross (const AutoDiff<3,SCAL> & u,
                                  const AutoDiff<3,SCAL> & v)
   {
-    /*
-    AutoDiff<3> hv;
-    hv.Value() = 0.0;
-    hv.DValue(0) = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
-    hv.DValue(1) = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
-    hv.DValue(2) = u.DValue(0)*v.DValue(1)-u.DValue(1)*v.DValue(0);
-    return hv;
-    */
     SCAL hv[3];
     hv[0] = u.DValue(1)*v.DValue(2)-u.DValue(2)*v.DValue(1);
     hv[1] = u.DValue(2)*v.DValue(0)-u.DValue(0)*v.DValue(2);
