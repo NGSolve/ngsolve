@@ -7,8 +7,6 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-#pragma interface
-
 namespace ngcomp
 {
 
@@ -292,30 +290,32 @@ namespace ngcomp
     class ElementRange : public IntRange
     {
       const FESpace & fes;
-      FlatArray<bool> definedon;
+      Array<bool> definedon;
       const VorB vb;
       mutable Array<int> temp_dnums;
       mutable LocalHeap mylh;
       LocalHeap & lh;
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
-        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? 
-                                              FlatArray<bool>(fes.definedon) : 
-                                              FlatArray<bool>(fes.definedonbound)), 
+        : IntRange(ar), fes(afes),
+          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
+                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          // FlatArray<bool>(fes.definedon) : FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
-        : IntRange(ar), fes(afes), definedon( (avb==VOL) ? 
-                                              FlatArray<bool> (fes.definedon) : 
-                                              FlatArray<bool> (fes.definedonbound)), 
+        : IntRange(ar), fes(afes), 
+          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
+                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
 
       INLINE ElementRange (const ElementRange & r2) = delete;
 
       INLINE ElementRange (ElementRange && r2) 
-        : IntRange(r2), fes(r2.fes), definedon(r2.definedon), vb(r2.vb), 
+        : IntRange(r2), fes(r2.fes), definedon(move(r2.definedon)), vb(r2.vb), 
           temp_dnums(move(r2.temp_dnums)), mylh(move(r2.mylh)), 
           lh( (&r2.mylh == &r2.lh) ? mylh : r2.lh)
       { ; }

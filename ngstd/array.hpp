@@ -424,7 +424,7 @@ namespace ngstd
       return T_Range<TSIZE> (0, Size());
     }
     
-    INLINE const CArray<T> Addr (int pos)
+    INLINE const CArray<T> Addr (int pos) const
     { return CArray<T> (data+pos); }
 
     // const CArray<T> operator+ (int pos)
