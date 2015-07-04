@@ -262,17 +262,21 @@ void NGS_DLL_HEADER ExportNgla() {
     ;
 
   bp::def("CGSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
-                                          bool iscomplex, bool printrates) -> BaseMatrix *
+                                          bool iscomplex, bool printrates, 
+                                          double precision, int maxsteps) -> BaseMatrix *
                                        {
                                          KrylovSpaceSolver * solver;
                                          if (iscomplex)
                                            solver = new CGSolver<Complex> (mat, pre);
                                          else
-                                           solver = new CGSolver<double> (mat, pre);                               
+                                           solver = new CGSolver<double> (mat, pre);
+                                         solver->SetPrecision(precision);
+                                         solver->SetMaxSteps(maxsteps);
                                          solver->SetPrintRates (printrates);
                                          return solver;
                                        }),
-          (bp::arg("mat"), bp::arg("pre"), bp::arg("complex") = false, bp::arg("printrates")=true),
+          (bp::arg("mat"), bp::arg("pre"), bp::arg("complex") = false, bp::arg("printrates")=true,
+           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
           bp::return_value_policy<bp::manage_new_object>()
           )
     ;

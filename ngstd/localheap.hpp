@@ -11,6 +11,17 @@
 namespace ngstd
 {
 
+
+  class Allocator
+  {
+  public:
+    virtual void * Alloc (size_t size)
+    {
+      return new char[size];
+    }
+  };
+
+
   /**
      Exception on heap overflow.
      Thrown by allocation on LocalHeap.
@@ -31,7 +42,7 @@ namespace ngstd
      With \Ref{CleanUp}, the pointer is reset to the beginning or to a
      specific position. 
   */
-  class LocalHeap
+  class LocalHeap : public Allocator
   {
     char * data;
     char * next;
@@ -257,6 +268,19 @@ namespace ngstd
   };
 
 }
+
+
+
+INLINE void * operator new (size_t size, ngstd::Allocator & alloc)  
+{
+  return alloc.Alloc(size);
+}
+
+INLINE void * operator new [] (size_t size, ngstd::Allocator & alloc)  
+{
+  return alloc.Alloc(size);
+}
+
 
 
 INLINE void * operator new (size_t size, ngstd::LocalHeap & lh)  

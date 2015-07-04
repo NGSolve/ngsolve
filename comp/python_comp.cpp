@@ -589,6 +589,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                                            return mat;
                                          }))
 
+    .def("__getitem__", FunctionPointer( [](BF & self, bp::tuple t)
+                                         {
+                                           int ind1 = bp::extract<int>(t[0])();
+                                           int ind2 = bp::extract<int>(t[1])();
+                                           cout << "get bf, ind = " << ind1 << "," << ind2 << endl;
+                                         }))
+    
+
     .add_property("components", FunctionPointer
                   ([](BF & self)-> bp::list 
                    { 
