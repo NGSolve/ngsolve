@@ -202,9 +202,16 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
 
     .def ("GetTrafo", 
-          static_cast<ElementTransformation&(MeshAccess::*)(ElementId,LocalHeap&)const>
+          static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
           bp::return_value_policy<bp::reference_existing_object>())
+
+    .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id)
+                                      {
+                                        Allocator alloc;
+                                        return &ma.GetTrafo(id, alloc);
+                                      }),
+          bp::return_value_policy<bp::manage_new_object>())
 
     .def("SetDeformation", &MeshAccess::SetDeformation)
     
@@ -349,10 +356,31 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"),bp::arg("dofnr"))
          )
 
+    /*
     .def ("GetFE", 
-          static_cast<const FiniteElement&(FESpace::*)(ElementId,LocalHeap&)const>
+          static_cast<FiniteElement&(FESpace::*)(ElementId,Allocator&)const>
           (&FESpace::GetFE), 
           bp::return_value_policy<bp::reference_existing_object>())
+    */
+    .def ("GetFE", FunctionPointer([](FESpace & self, ElementId ei) -> bp::object
+                                   {
+                                     Allocator alloc;
+
+                                     auto fe = shared_ptr<FiniteElement> (&self.GetFE(ei, alloc));
+
+                                     auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
+                                     if (scalfe) return bp::object(scalfe);
+
+                                     return bp::object(fe);
+
+                                   }))
+    
+    .def ("GetFE", FunctionPointer([](FESpace & self, ElementId ei, LocalHeap & lh)
+                                   {
+                                     return &self.GetFE(ei, lh);
+                                   }),
+          bp::return_value_policy<bp::reference_existing_object>())
+
 
     .def("FreeDofs", FunctionPointer
          ( [] (const FESpace &self, bool coupling) -> const BitArray &{ return *self.GetFreeDofs(coupling); } ),

@@ -23,8 +23,15 @@ namespace ngfem
 
   void FiniteElement :: Print (ostream & ost) const
   {
-    ost << "Finite Element, type = " << ElementType() << ", ndof = " << ndof << endl;
+    ost << ClassName() << ", tpye = " << ElementType() << ", order = " << Order() << ", ndof = " << ndof << endl;
   }
+
+  ostream & operator<< (ostream & ost, const FiniteElement & fel)
+  {
+    fel.Print (ost);
+    return ost;
+  }
+
 
   void FiniteElement :: 
   PrecomputeShapes (const IntegrationRule & ir) 

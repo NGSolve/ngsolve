@@ -32,9 +32,7 @@ print (a.mat)
 
 
 
-
-
-for el in fes.Elements(BND):
+for el in fes.Elements(VOL):
      print (el.GetFE().ndof)
      print (el.dofs)
 

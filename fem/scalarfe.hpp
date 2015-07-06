@@ -34,6 +34,8 @@ namespace ngfem
     /// the name
     NGS_DLL_HEADER virtual string ClassName() const;
 
+    HD NGS_DLL_HEADER virtual int Dim () const { return D; }
+
     /**
        returns shape functions in point ip.
     */

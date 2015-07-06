@@ -24,30 +24,38 @@ namespace ngfem
   class NGS_DLL_HEADER ElementTransformation
   {
   protected:
+    /// geometry of element
+    ELEMENT_TYPE eltype;
     /// element number
     int elnr;
     /// material property
     int elindex;
-    /// geometry of element
-    ELEMENT_TYPE eltype;
-
+    ///
     bool higher_integration_order;
     /// is the element curved ?
     bool iscurved = false;
 
   public:
     ///
-    ElementTransformation () { higher_integration_order = false; } 
+    // ElementTransformation () { higher_integration_order = false; } 
+    ElementTransformation (ELEMENT_TYPE et, bool /* aboundary */, int aelnr, int aelindex)
+      : eltype(et), elnr(aelnr), elindex(aelindex)
+    {
+      higher_integration_order = false; 
+    } 
+    
     ///
     virtual ~ElementTransformation() { ; } 
+    /*
     /// set data: is it a boundary, element number, and element index
-    virtual void SetElement (bool /* aboundary */, int aelnr, int aelindex)
+    virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       elnr = aelnr;
       elindex = aelindex;
     }
+    */
     /// set geometric type of element
-    void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
+    // void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
     /// return element number
     int GetElementNr () const { return elnr; }
     /// return element index
@@ -181,7 +189,7 @@ namespace ngfem
       fel = static_cast<const ScalarFiniteElement<DIMS>*> (afel); 
       elnr = aelnr; 
       elindex = aelindex;
-      SetElementType (fel->ElementType());
+      eltype = fel->ElementType();
       pointmat.SetSize (DIMR, fel->GetNDof());
     }
 

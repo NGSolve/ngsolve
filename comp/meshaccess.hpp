@@ -681,15 +681,15 @@ namespace ngcomp
     /// returns the transformation from the reference element to physical element.
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
-    ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, LocalHeap & lh) const;
+    ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, Allocator & lh) const;
     
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, LocalHeap & lh) const
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const
     {
       return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
     }
 
     template <int DIM>
-    ngfem::ElementTransformation & GetTrafoDim (int elnr, bool boundary, LocalHeap & lh) const;
+    ngfem::ElementTransformation & GetTrafoDim (int elnr, bool boundary, Allocator & lh) const;
 
 
     // (old style optimization)
