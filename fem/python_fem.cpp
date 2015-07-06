@@ -493,8 +493,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
 
                              if (!bfi) cerr << "undefined integrator '" << name 
-                                            << "' in " << dim << " dimension having 1 coefficient"
-                                            << endl;
+                                            << "' in " << dim << " dimension" << endl;
 
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
@@ -504,25 +503,6 @@ void NGS_DLL_HEADER ExportNgfem() {
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=-1,bp::arg("coef"),bp::arg("imag")=false)))
     
-    /*
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, bp::list coefs_list, bool imag)
-                           {
-                             Array<shared_ptr<CoefficientFunction> > coefs = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
-                             auto bfi = GetIntegrators().CreateBFI (name, dim, coefs);
-
-                             if (!bfi) cerr << "undefined integrator '" << name 
-                                            << "' in " << dim << " dimension having 1 coefficient"
-                                            << endl;
-
-                             if (imag)
-                               bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
-
-                             return bfi;
-                           }),
-          bp::default_call_policies(),        // need it to use named arguments
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef"),bp::arg("imag")=false)))
-    */
     .def("__str__", &ToString<BilinearFormIntegrator>)
 
     .def("CalcElementMatrix", 
@@ -548,10 +528,20 @@ void NGS_DLL_HEADER ExportNgfem() {
                              const FiniteElement & fe, const ElementTransformation & trafo,
                              int heapsize)
                          {
-                           LocalHeap lh(heapsize);
                            Matrix<> mat(fe.GetNDof());
-                           self.CalcElementMatrix (fe, trafo, mat, lh);
-                           return mat;
+                           while (true)
+                             {
+                               try
+                                 {
+                                   LocalHeap lh(heapsize);
+                                   self.CalcElementMatrix (fe, trafo, mat, lh);
+                                   return mat;
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             };
                          }),
          bp::default_call_policies(),        // need it to use named arguments
          (bp::arg("bfi")=NULL, bp::arg("fel"),bp::arg("trafo"),bp::arg("heapsize")=10000))
@@ -601,16 +591,6 @@ void NGS_DLL_HEADER ExportNgfem() {
                               bp::object py_coef,
                               bp::object definedon, bool imag, const Flags & flags)
                            {
-                             /*
-                             shared_ptr<CoefficientFunction> coef;
-                             if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
-                               coef = bp::extract<shared_ptr<CoefficientFunction>>(py_coef)();
-                             else if (bp::extract<double>(py_coef).check())
-                               coef = make_shared<ConstantCoefficientFunction> 
-                                 (bp::extract<double>(py_coef)());
-                             else
-                               bp::exec("raise KeyError()\n");
-                             */
                              Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
                              
