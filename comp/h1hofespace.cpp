@@ -523,6 +523,75 @@ namespace ngcomp
     archive & level_adapted_order & nodalp2;
   }
 
+
+  FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    Ngs_Element ngel = ma->GetElement(ei);
+    ELEMENT_TYPE eltype = ngel.GetType();
+
+    if (!DefinedOn (ei))
+      {
+        switch (eltype)
+          {
+          case ET_SEGM:    return * new (alloc) ScalarDummyFE<ET_SEGM> (); break;
+          case ET_TRIG:    return * new (alloc) ScalarDummyFE<ET_TRIG> (); break;
+          case ET_QUAD:    return * new (alloc) ScalarDummyFE<ET_QUAD> (); break;
+          case ET_TET:     return * new (alloc) ScalarDummyFE<ET_TET> (); break;
+          case ET_PYRAMID: return * new (alloc) ScalarDummyFE<ET_PYRAMID> (); break;
+          case ET_PRISM:   return * new (alloc) ScalarDummyFE<ET_PRISM> (); break;
+          case ET_HEX:     return * new (alloc) ScalarDummyFE<ET_HEX> (); break;
+	  case ET_POINT:   break;
+	  }
+      }
+    
+
+    try
+      {
+        int elnr = ei.Nr();
+        if (ei.IsVolume())
+          {
+            switch (eltype)
+              {
+              case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
+                
+              case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, alloc);
+              case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, alloc);
+                
+              case ET_TET:     return T_GetFE<ET_TET> (elnr, alloc);
+              case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, alloc);
+              case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, alloc);
+              case ET_HEX:     return T_GetFE<ET_HEX> (elnr, alloc);
+                
+              default:
+                throw Exception ("illegal element in H1HoFeSpace::GetFE");
+              }
+          }
+        else
+          {
+            switch (eltype)
+              {
+              case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, alloc);
+              case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, alloc);
+                
+              case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, alloc);
+              case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, alloc);
+                
+              default:
+                throw Exception ("illegal element in H1HoFeSpace::GetSFE");
+              }
+          }
+      }
+
+    catch (Exception & e)
+      {
+        e.Append ("in H1HoFESpace::GetElement\n");
+        throw;
+      }
+  }
+
+
+
+
   const FiniteElement & H1HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma->GetElement(elnr);
@@ -597,7 +666,7 @@ namespace ngcomp
 
 
   template <ELEMENT_TYPE ET>
-  const FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
+  FiniteElement & H1HighOrderFESpace :: T_GetFE (int elnr, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
 
@@ -677,7 +746,7 @@ namespace ngcomp
 
 
   template <ELEMENT_TYPE ET>
-  const FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, LocalHeap & lh) const
+  FiniteElement & H1HighOrderFESpace :: T_GetSFE (int elnr, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (elnr);
 

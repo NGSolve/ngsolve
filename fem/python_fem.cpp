@@ -405,15 +405,17 @@ void NGS_DLL_HEADER ExportNgfem() {
     ;
 
 
-  bp::class_<FiniteElement, boost::noncopyable>("FiniteElement", bp::no_init)
+  bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>("FiniteElement", bp::no_init)
     .add_property("ndof", &FiniteElement::GetNDof)    
     .add_property("order", &FiniteElement::Order)    
     .add_property("type", &FiniteElement::ElementType)    
     .add_property("dim", &FiniteElement::Dim)    
     .add_property("classname", &FiniteElement::ClassName)  
+    .def("__str__", &ToString<FiniteElement>)
     ;
 
-  bp::class_<BaseScalarFiniteElement, bp::bases<FiniteElement>, boost::noncopyable>("ScalarFE", bp::no_init)
+  bp::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
+    bp::bases<FiniteElement>, boost::noncopyable>("ScalarFE", bp::no_init)
     .def("CalcShape",
          FunctionPointer
          ([] (const BaseScalarFiniteElement & fe, double x, double y = 0, double z = 0)
@@ -432,9 +434,16 @@ void NGS_DLL_HEADER ExportNgfem() {
                 ;
               }
             return v;
-          }))
+          }),
+         (bp::arg("self"),bp::arg("x"),bp::arg("y")=0.0,bp::arg("z")=0.0)
+         )
     ;
 
+  bp::implicitly_convertible 
+    <shared_ptr<BaseScalarFiniteElement>, 
+    shared_ptr<FiniteElement> >(); 
+
+
   bp::def("H1FE", FunctionPointer
           ([](ELEMENT_TYPE et, int order)
            {
@@ -446,30 +455,9 @@ void NGS_DLL_HEADER ExportNgfem() {
                case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
                default: cerr << "cannot make fe " << et << endl;
                }
-             return fe;
-           }),
-           bp::return_value_policy<bp::manage_new_object>()
-          );
-
-  /*
-    // how to do this the right way ??????
-  bp::def("H1FE", FunctionPointer
-          ([](ELEMENT_TYPE et, int order)
-           {
-             BaseScalarFiniteElement * fe = nullptr;
-             switch (et)
-               {
-               case ET_TRIG: fe = new H1HighOrderFE<ET_TRIG>(order); break;
-               case ET_QUAD: fe = new H1HighOrderFE<ET_QUAD>(order); break;
-               case ET_TET: fe = new H1HighOrderFE<ET_TET>(order); break;
-               default: cerr << "cannot make fe " << et << endl;
-               }
-
-             bp::object ob(boost::ref(fe));   // leads to memory leak !!!!
-             return ob;
+             return shared_ptr<BaseScalarFiniteElement>(fe);
            })
           );
-  */
 
   bp::def("L2FE", FunctionPointer
           ([](ELEMENT_TYPE et, int order)
@@ -482,9 +470,8 @@ void NGS_DLL_HEADER ExportNgfem() {
                case ET_TET: fe = new L2HighOrderFE<ET_TET>(order); break;
                default: cerr << "cannot make fe " << et << endl;
                }
-             return fe;
-           }),
-          bp::return_value_policy<bp::manage_new_object>()
+             return shared_ptr<BaseScalarFiniteElement>(fe);
+           })
           );
     
   bp::class_<ElementTransformation, boost::noncopyable>("ElementTransformation", bp::no_init)

@@ -388,7 +388,6 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
-    // int nv = ma->GetNV();
     int ne = ma->GetNE();
 
     int ned = ma->GetNEdges();
@@ -832,12 +831,6 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   const FiniteElement & HCurlHighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
   {
-    /*
-    if (!DefinedOn (ma->GetElIndex (elnr)))
-      return * new (lh) HCurlDummyFE<ET>();
-
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
-    */
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     if (!DefinedOn (ngel))
       return * new (lh) HCurlDummyFE<ET>();

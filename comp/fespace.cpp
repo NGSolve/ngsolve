@@ -529,6 +529,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
+    const FiniteElement & el = ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh);
+    return const_cast<FiniteElement&> (el);
+  }
+  
+
   const FiniteElement & FESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FiniteElement * fe = NULL;

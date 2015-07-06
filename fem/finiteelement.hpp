@@ -64,7 +64,7 @@ namespace ngfem
   };
 
  
-
+  ostream & operator<< (ostream & ost, const FiniteElement & fel);
 
   /**
      A compound of several elements. 

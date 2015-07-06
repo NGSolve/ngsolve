@@ -209,15 +209,6 @@ namespace ngcomp
     /// number of dofs on the level
     virtual int GetNDofLevel (int level) const;
 
-    /*
-    /// returns finite element. 
-    const FiniteElement & GetFE (int elnr, bool boundary, LocalHeap & lh) const
-    {
-      return boundary ? GetSFE(elnr, lh) : GetFE(elnr, lh);
-    }
-    */
-
-
     
     class Element : public Ngs_Element
     {
@@ -360,10 +351,7 @@ namespace ngcomp
 
 
     /// returns finite element. 
-    const FiniteElement & GetFE (ElementId ei, LocalHeap & lh) const
-    {
-      return ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh);
-    }
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
 
     /// returns finite element. 
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;

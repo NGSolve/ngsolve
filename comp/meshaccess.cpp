@@ -23,16 +23,22 @@ namespace ngcomp
     // const netgen::Ngx_Mesh * mesh;
     const MeshAccess * mesh;	
   public:
-    Ng_ElementTransformation (const MeshAccess * amesh) : mesh(amesh) { ; }
+    Ng_ElementTransformation (const MeshAccess * amesh,
+                              ELEMENT_TYPE aet, ElementId ei, int elindex) 
+      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+        mesh(amesh) 
+    {
+      iscurved = true;
+    }
 
-
+    /*
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       elnr = aelnr;
       elindex = aelindex;
       iscurved = true;
     }
-
+    */
     virtual int SpaceDim () const
     {
       return DIMR;
@@ -166,16 +172,33 @@ namespace ngcomp
   class ALE_ElementTransformation : public Ng_ElementTransformation<DIMS,DIMR>
   {
     const GridFunction * deform;
-    LocalHeap & lh;
+    // LocalHeap & lh;
     const ScalarFiniteElement<DIMR> * fel;
     FlatVector<> elvec;
     FlatMatrix<> elvecs;
   public:
     ALE_ElementTransformation (const MeshAccess * amesh, 
+                               ELEMENT_TYPE aet, ElementId ei, int elindex,
                                const GridFunction * adeform,
-                               LocalHeap & alh)
-      : Ng_ElementTransformation<DIMS,DIMR> (amesh), deform(adeform), lh(alh) { ; }
+                               LocalHeap & lh)
+      : Ng_ElementTransformation<DIMS,DIMR> (amesh, aet, ei, elindex), 
+        deform(adeform) // , lh(alh) 
+    {
+      // ElementId id(aboundary ? BND : VOL, aelnr);
+      fel = dynamic_cast<const ScalarFiniteElement<DIMR>*> (&deform->GetFESpace()->GetFE(ei, lh));
 
+      Array<int> dnums;
+      deform->GetFESpace()->GetDofNrs(ei, dnums);
+
+      elvec.AssignMemory(DIMR*dnums.Size(), lh);
+      deform->GetElementVector(dnums, elvec);
+
+      elvecs.AssignMemory(DIMR, dnums.Size(), lh);
+      for (int j = 0; j < DIMR; j++)
+        elvecs.Row(j) = elvec.Slice(j,DIMR);
+    }
+
+    /*
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       Ng_ElementTransformation<DIMS,DIMR> :: SetElement (aboundary, aelnr, aelindex);
@@ -193,7 +216,7 @@ namespace ngcomp
       for (int j = 0; j < DIMR; j++)
         elvecs.Row(j) = elvec.Slice(j,DIMR);
     }
-
+    */
 
     virtual ~ALE_ElementTransformation() { ; }
 
@@ -291,10 +314,52 @@ namespace ngcomp
     Vec<DIMR> p0;
     Mat<DIMR,DIMS> mat;
   public:
-    Ng_ConstElementTransformation (const MeshAccess * amesh) 
-      : mesh(amesh) 
-    { ; }
+    Ng_ConstElementTransformation (const MeshAccess * amesh,
+                                   ELEMENT_TYPE aet, ElementId ei, int elindex) 
+      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+        mesh(amesh) 
+    { 
+      iscurved = false;
+      if ( (DIMR==3) && (eltype == ET_TET) )
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
+          // p0 = FlatVec<3> (point0[point_delta*nel.Vertices()[0]]);
+          p0 = FlatVec<3, const double> (mesh->mesh.GetPoint (nel.Vertices()[3]));
+	  for (int j = 0; j < 3; j++)
+	    {
+	      Vec<3> pj = FlatVec<3, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      for (int k = 0; k < 3; k++)
+		mat(k,j) = pj(k);
+	    }
+          //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
+          //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
+          //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
+        }
+      
+      else if ( (DIMR==2) && (DIMS==2) && (eltype == ET_TRIG) )
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
+          p0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+	  for (int j = 0; j < 2; j++)
+	    {
+	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      for (int k = 0; k < 2; k++)
+		mat(k,j) = pj(k);
+	    }
+          //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
+          //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
+          //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
+        }
 
+
+      else
+        {
+          Vec<DIMS> pref = 0.0;
+          mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &pref(0), &p0(0), &mat(0));
+        }
+    }
+
+    /*
     virtual void SetElement (bool aboundary, int aelnr, int aelindex)
     {
       elnr = aelnr;
@@ -339,6 +404,7 @@ namespace ngcomp
           mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &pref(0), &p0(0), &mat(0));
         }
     }
+    */
 
     virtual int SpaceDim () const
     {
@@ -922,7 +988,7 @@ namespace ngcomp
   
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetTrafoDim (int elnr, bool boundary, LocalHeap & lh) const
+  GetTrafoDim (int elnr, bool boundary, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim");
 
@@ -933,21 +999,26 @@ namespace ngcomp
 
     if (deformation)
 
-      eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, deformation.get(), lh); 
+      eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, el.GetType(), 
+                                                             ElementId(VOL,elnr), el.GetIndex(),
+                                                             deformation.get(), 
+                                                             dynamic_cast<LocalHeap&> (lh)); 
 
-    //    else if ( IsElementCurved(elnr) )
     else if ( el.is_curved )
 
-      eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this); 
+      eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this, el.GetType(), 
+                                                            ElementId(VOL,elnr), el.GetIndex()); 
 
     else
-      eltrans = new (lh) Ng_ConstElementTransformation<DIM,DIM> (this); 
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM,DIM> (this, el.GetType(), 
+                                                                 ElementId(VOL,elnr), el.GetIndex()); 
 
-
+    /*
     eltrans->SetElementType (el.GetType());
     int elind = el.GetIndex();
     eltrans->SetElement (0, elnr, elind);
-      
+    */
+
     if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
       eltrans->SetHigherIntegrationOrder();
     else
@@ -959,11 +1030,9 @@ namespace ngcomp
 
 
 
-  ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, LocalHeap & lh) const
+  ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
 
   {
-    // static Timer t("GetTrafo"); RegionTimer reg(t);
-
     ElementTransformation * eltrans;
     
     if (!boundary)
@@ -977,63 +1046,20 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetTrafo, illegal dimension");
           }
-                  
-        /*
-        Ngs_Element el = GetElement(elnr);
-        if (deformation)
-          {
-            switch (dim)
-              {
-              case 1: eltrans = new (lh) ALE_ElementTransformation<1,1> (this, deformation.get(), lh); break;
-              case 2: eltrans = new (lh) ALE_ElementTransformation<2,2> (this, deformation.get(), lh); break;
-              case 3: eltrans = new (lh) ALE_ElementTransformation<3,3> (this, deformation.get(), lh); break;
-              default:
-                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-              }
-          }
-
-        else if (el.is_curved)    // (Ng_IsElementCurved (elnr+1))
-          {
-            switch (dim)
-              {
-              case 1: eltrans = new (lh) Ng_ElementTransformation<1,1> (this); break;
-              case 2: eltrans = new (lh) Ng_ElementTransformation<2,2> (this); break;
-              case 3: eltrans = new (lh) Ng_ElementTransformation<3,3> (this); break;
-              default:
-                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-              }
-          }
-        else
-          {
-            switch (dim)
-              {
-              case 1: eltrans = new (lh) Ng_ConstElementTransformation<1,1> (this); break;
-              case 2: eltrans = new (lh) Ng_ConstElementTransformation<2,2> (this); break;
-              case 3: eltrans = new (lh) Ng_ConstElementTransformation<3,3> (this); break;
-              default:
-                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-              }
-          }
-
-	eltrans->SetElementType (el.GetType());
-        int elind = el.GetIndex();
-	eltrans->SetElement (0, elnr, elind);
-      
-	if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
-	  eltrans->SetHigherIntegrationOrder();
-	else
-	  eltrans->UnSetHigherIntegrationOrder();
-        */
       }
     else
       {
+        ElementId ei(BND, elnr);
+        int elind = GetSElIndex (elnr);
+        ELEMENT_TYPE et = GetSElType(elnr);
+
         if (Ng_IsSurfaceElementCurved (elnr+1))
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (this); break;
-              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (this); break;
-              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (this); break;
+              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (this, et, ei, elind); break;
+              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (this, et, ei, elind); break;
+              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (this, et, ei, elind); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
@@ -1042,17 +1068,16 @@ namespace ngcomp
           {
             switch (dim)
               {
-              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (this); break;
-              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (this); break;
-              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (this); break;
+              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (this, et, ei, elind); break;
+              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (this, et, ei, elind); break;
+              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (this, et, ei, elind); break;
               default:
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
           }
         
-        int elind = GetSElIndex (elnr);
-	eltrans->SetElementType (GetSElType(elnr));
-	eltrans->SetElement (1, elnr, elind);
+	// eltrans->SetElementType (GetSElType(elnr));
+	// eltrans->SetElement (1, elnr, elind);
       }
 
     return *eltrans;
