@@ -303,14 +303,15 @@ INLINE void operator delete [] (void * p, ngstd::LocalHeap & lh)
   ; 
 }
 
+
 INLINE void operator delete (void * p, ngstd::Allocator & lh)  
 {
-  ::delete p;
+  ::delete (char*) p;
 }
 
 INLINE void operator delete [] (void * p, ngstd::Allocator & lh)  
 {
-  ::delete [] p;
+  ::delete [] (char*) p;
 }
 
 
