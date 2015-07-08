@@ -699,13 +699,13 @@ namespace ngfem
 #define HCURL_EQUATIONS_EXTERN extern
 #endif
 
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<2> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdEdge<3> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdBoundaryEdge<3> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<2> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlEdge<3> >;
-  NGS_DLL_HEADER HCURL_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpCurlBoundaryEdge<> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdEdge<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdBoundaryEdge<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<2> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlEdge<3> >;
+  HCURL_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpCurlBoundaryEdge<> >;
 
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<2>;
   // HCURL_EQUATIONS_EXTERN template class MassEdgeIntegrator<3>;
