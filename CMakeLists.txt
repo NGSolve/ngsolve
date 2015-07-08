@@ -124,7 +124,7 @@ if(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++1y /Qopt-report-file:report.log")
+        set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++11 /Qopt-report-file:report.log")
     else()
         # MS Visual Compiler
         add_definitions(-DCPP11_THREADS)
