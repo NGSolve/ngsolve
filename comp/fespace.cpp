@@ -1941,7 +1941,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
     spaces.Append (fes);
-    dynamic_cast<CompoundProlongation*> (prol.get()) -> AddProlongation (fes->GetProlongation());
+    dynamic_pointer_cast<CompoundProlongation> (prol) -> AddProlongation (fes->GetProlongation());
   }
 
   CompoundFESpace :: ~CompoundFESpace ()

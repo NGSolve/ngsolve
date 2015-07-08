@@ -13,12 +13,11 @@ namespace ngfem
   class BaseScalarFiniteElement : public FiniteElement 
   {
   public:
-    using FiniteElement::FiniteElement;
-    /*
+    // using FiniteElement::FiniteElement;
+
     INLINE BaseScalarFiniteElement () { ; } 
     INLINE BaseScalarFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; }
-    */
   };
 
   /**
