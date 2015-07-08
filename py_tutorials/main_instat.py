@@ -2,6 +2,7 @@ from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.la import *
 from ngsolve.solve import *
+from ngsolve.utils import *
 
 from math import sin
 from time import sleep
@@ -9,20 +10,20 @@ from time import sleep
 
 mesh = Mesh("square.vol.gz")
 
-v = FESpace ("h1ho", mesh, order=5)  # , dirichlet=[1,2])
+v = H1(mesh, order=5)  # , dirichlet=[1,2])
 u = GridFunction (v, name="potential")
 Draw (u, sd=1)
 
 f = LinearForm (v)
-f += LFI (name = "source", dim = 2, coef = 1)
+f += Source (coef=1)
 f.Assemble()
 
-a = BilinearForm (v, symmetric = True) 
-a += BFI ("laplace", dim = 2, coef = 0.01)
+a = BilinearForm (v, symmetric=True) 
+a += Laplace (coef=0.01)
 a.Assemble()
 
-m = BilinearForm (v, symmetric = True)
-m += BFI ("mass", dim = 2, coef = 1)
+m = BilinearForm (v, symmetric=True)
+m += Mass (coef=1)
 m.Assemble()
 
 
@@ -35,8 +36,6 @@ inv = mstar.Inverse(v.FreeDofs())
 d = u.vec.CreateVector()
 w = u.vec.CreateVector()
 
-x = CoordCF(0)
-y = CoordCF(1)
 u.Set (exp(-40*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))))
 
 Redraw(blocking=True)
