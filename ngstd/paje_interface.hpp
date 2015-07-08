@@ -7,7 +7,7 @@
 
 namespace ngstd
 {
-  extern class PajeTrace *trace;
+  extern NGS_DLL_HEADER class PajeTrace *trace;
   class PajeTrace
     {
       friend class TraceDisabler;

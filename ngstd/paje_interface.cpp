@@ -319,7 +319,7 @@ namespace ngstd
 
     };
 
-  PajeTrace *trace;
+  NGS_DLL_HEADER PajeTrace *trace;
 
   void PajeTrace::Write( string filename )
     {
