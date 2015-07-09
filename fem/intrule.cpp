@@ -153,6 +153,8 @@ namespace ngfem
   template class MappedIntegrationPoint<2,3>;
   template class MappedIntegrationPoint<3,3>;
   
+  template class MappedIntegrationPoint<0,2>;
+  template class MappedIntegrationPoint<0,3>;
   /*
   IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
   { 
@@ -206,6 +208,8 @@ namespace ngfem
   template class MappedIntegrationRule<1,2>;
   template class MappedIntegrationRule<2,3>;
 
+  template class MappedIntegrationRule<0,2>;
+  template class MappedIntegrationRule<0,3>;
 
 
   
