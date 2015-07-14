@@ -29,8 +29,8 @@ namespace ngla
  
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
-    int VHeight(){ return matrix.VWidth();}
-    int VWidth(){ return matrix.VHeight();}
+    int VHeight() const { return matrix.VWidth();}
+    int VWidth() const { return matrix.VHeight();}
 
     bool SmoothIsProjection () const { return smooth_is_projection; }
   };
