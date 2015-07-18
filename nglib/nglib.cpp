@@ -651,14 +651,17 @@ namespace nglib
                        stlgeometry->GetBoundingBox().PMax() + Vec3d(10, 10, 10),
                        0.3);
 
-      me -> LoadLocalMeshSize (mp->meshsize_filename);
+      // cout << "meshsize = " << mp->meshsize_filename << endl;
+      if (mp->meshsize_filename)
+        me -> LoadLocalMeshSize (mp->meshsize_filename);
+
       /*
       if (mp->meshsize_filename)
-      {
-      ifstream infile (mp->meshsize_filename);
-      if (!infile.good()) return NG_FILE_NOT_FOUND;
-      me -> LoadLocalMeshSize (infile);
-      }
+        {
+          ifstream infile (mp->meshsize_filename);
+          if (!infile.good()) return NG_FILE_NOT_FOUND;
+          me -> LoadLocalMeshSize (infile);
+        }
       */
 
       STLMeshing (*stlgeometry, *me);
@@ -1056,8 +1059,10 @@ namespace nglib
       mparam.secondorder = second_order;
       mparam.quad = quad_dominated;
 
-      mparam.meshsizefilename = meshsize_filename;
-
+      if (meshsize_filename)
+        mparam.meshsizefilename = meshsize_filename;
+      else
+        mparam.meshsizefilename = "";
       mparam.optsteps2d = optsteps_2d;
       mparam.optsteps3d = optsteps_3d;
 
