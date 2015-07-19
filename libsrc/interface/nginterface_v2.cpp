@@ -25,8 +25,6 @@ namespace netgen
     shared_ptr<Mesh> hmesh = netgen::mesh;
 
     netgen::mesh = mesh;
-    // vssolution.SetMesh(mesh);
-    // vsmesh.SetMesh(mesh);
     SetGlobalMesh (mesh);
 
     return hmesh;
@@ -60,8 +58,6 @@ namespace netgen
     netgen::mesh = make_shared<Mesh>();
     netgen::mesh -> Load (ist);
     mesh = netgen::mesh;
-    // vssolution.SetMesh(mesh);
-    // vsmesh.SetMesh(mesh);
     SetGlobalMesh (mesh);
   }
 
@@ -104,12 +100,8 @@ namespace netgen
 
   Ngx_Mesh :: ~Ngx_Mesh ()
   {
-    ;
-    /*
-    if (netgen::mesh.Ptr() == mesh) 
-      netgen::mesh.Ptr() = NULL;
-    delete mesh;
-    */
+    if (mesh == netgen::mesh)
+      netgen::mesh = nullptr;
   }
 
   int Ngx_Mesh :: GetDimension() const
