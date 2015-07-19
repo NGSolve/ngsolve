@@ -12,6 +12,7 @@ libinterface_la_SOURCES = nginterface.cpp nginterface_v2.cpp \
 
 libinterface_la_LIBADD = $(top_builddir)/libsrc/meshing/libmesh.la \
 	$(top_builddir)/libsrc/visualization/libvisual.la \
-	$(top_builddir)/libsrc/csg/libcsg.la
+	$(top_builddir)/libsrc/csg/libcsg.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2d.la
 
 # libinterface_la_LDFLAGS = -rdynamic
