@@ -80,7 +80,7 @@ public:
     numa_ptr = this->data;
     numa_size = s;
 
-    int avail = numa_available();
+    /* int avail = */ numa_available();   // initialize libnuma
     int num_nodes = numa_num_configured_nodes();
     size_t pagesize = numa_pagesize();
     
