@@ -586,7 +586,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"), bp::arg("name")="bfa", 
-           bp::arg("symmetric") = true,
+           bp::arg("symmetric") = false,
            bp::arg("flags") = bp::dict())))
 
     .def("__str__", &ToString<BF>)
