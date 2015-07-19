@@ -418,7 +418,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     bp::bases<FiniteElement>, boost::noncopyable>("ScalarFE", bp::no_init)
     .def("CalcShape",
          FunctionPointer
-         ([] (const BaseScalarFiniteElement & fe, double x, double y = 0, double z = 0)
+         ([] (const BaseScalarFiniteElement & fe, double x, double y, double z)
           {
             IntegrationPoint ip(x,y,z);
             Vector<> v(fe.GetNDof());

@@ -66,6 +66,14 @@ namespace ngstd
       return 1; 
     }
 
+    /// any ints unequal ?
+    INLINE bool operator!= (const INT & in2) const
+    {
+      for (int j = 0; j < N; j++)
+        if (i[j] != in2.i[j]) return 1;
+      return 0;
+    }
+
     /// sort integers
     INLINE void Sort ()
     {
