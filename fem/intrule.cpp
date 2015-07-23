@@ -1519,10 +1519,13 @@ namespace ngfem
 
 
 
+  template <>
+  IntegrationRuleTP<1> :: IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
+                                             NODE_TYPE nt, int nodenr, int order, LocalHeap & lh)
+  { ; }
 
-
-  template <int D>
-  IntegrationRuleTP<D> :: IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
+  template <>
+  IntegrationRuleTP<2> :: IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
                                              NODE_TYPE nt, int nodenr, int order, LocalHeap & lh)
   {
     int nip;
@@ -1547,7 +1550,6 @@ namespace ngfem
               // eltrans.GetSort (FlatArray<int> (3, sort) );
               int isort[3];
               for (int i = 0; i < 3; i++) isort[sort[i]] = i;
-
 
               const EDGE & edge = ElementTopology::GetEdges (ET_TRIG)[nodenr];
               EDGE sedge;
@@ -1576,6 +1578,7 @@ namespace ngfem
 
               nip = irx->GetNIP() * iry->GetNIP();
 	      SetSize(nip);
+
 	      /*
               xi.SetSize(nip);
               weight.SetSize(nip);
@@ -1639,6 +1642,48 @@ namespace ngfem
             }
           
         }
+
+      default:
+        {
+          stringstream str;
+          str<< "IntegratonRuleTP,2 not available for element type " 
+             << ElementTopology::GetElementName(eltype) << endl;
+          throw Exception (str.str());
+        }
+      }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+  template <>
+  IntegrationRuleTP<3> :: IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
+                                             NODE_TYPE nt, int nodenr, int order, LocalHeap & lh)
+  {
+    int nip;
+
+    static IntegrationRule ir0, ir1;
+#pragma omp critical(intruletpfacet)
+    {
+      if (ir0.GetNIP() == 0)
+	{
+	  ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
+	  ir1.AddIntegrationPoint (IntegrationPoint (1.0, 0, 0, 1.0));
+	}
+    }
+
+    switch (eltype)
+      {
+
       case ET_TET:
         {
 	  int isort[4];
@@ -1824,6 +1869,11 @@ namespace ngfem
         }
       }
   }
+
+
+
+
+
 
 
 
