@@ -2,6 +2,8 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <boost/python/slice.hpp>
 #include <bla.hpp>
+// #include "/usr/lib/python3/dist-packages/numpy/core/include/numpy/arrayobject.h"
+#include <numpy/arrayobject.h>
 
 using namespace ngbla;
 
@@ -321,7 +323,7 @@ void NGS_DLL_HEADER ExportNgbla() {
     parent.attr("bla") = module ;
 
     bp::scope ngbla_scope(module);
-
+    _import_array();
     ///////////////////////////////////////////////////////////////////////////////////////
     // Vector types
     typedef FlatVector<double> FVD;
@@ -334,6 +336,12 @@ void NGS_DLL_HEADER ExportNgbla() {
     ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
+        .def("NumPy", FunctionPointer([] (FVD & self)
+                                   {
+                                     npy_intp dims[] = { self.Size() };
+                                     PyObject * ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &self(0));
+                                     return ob;
+                                   }))
         ;
     ExportVector< FVC, VC, Complex>("FlatVectorC")
         .def(bp::self*=double())
@@ -376,6 +384,13 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
+        .def("NumPy", FunctionPointer([] (FMD & self)
+                                   {
+                                     npy_intp dims[] = { self.Height(), self.Width() };
+                                     PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &self(0,0));
+                                     return ob;
+                                   }))
+
         ;
 
 
