@@ -168,7 +168,7 @@ echo "from boost python:  boost_python_lib = $BOOST_PYTHON_LIB"
 pyon=false
 AC_ARG_ENABLE([python],
 	[AC_HELP_STRING([--enable-python],[enable python shell])],
- 	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS"]
+ 	[CXXFLAGS+=" -DNGS_PYTHON $PYTHON_CPPFLAGS -I${PYTHON_SITE_PKG}/numpy/core/include"]
         [LDFLAGS+=" $PYTHON_LDFLAGS -l$BOOST_PYTHON_LIB"]
         [pyon=true]
 	)
