@@ -808,7 +808,8 @@ namespace ngcomp
   int MeshAccess :: 
   GetSElFace (int selnr) const
   {
-    return Ng_GetSurfaceElement_Face (selnr+1, 0)-1;
+    return GetElement<2,BND>(selnr).Faces()[0];
+    // return Ng_GetSurfaceElement_Face (selnr+1, 0)-1;
   }
   
   void MeshAccess :: 
@@ -820,10 +821,13 @@ namespace ngcomp
 
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
   {
+    pnums = ArrayObject (mesh.GetNode<2> (fnr).vertices);
+    /*
     pnums.SetSize(4);
     int nv = Ng_GetFace_Vertices (fnr+1, &pnums[0]);
     pnums.SetSize(nv);
     for (int i = 0; i < nv; i++) pnums[i]--;
+    */
   }
 
  
@@ -1053,7 +1057,9 @@ namespace ngcomp
         int elind = GetSElIndex (elnr);
         ELEMENT_TYPE et = GetSElType(elnr);
 
-        if (Ng_IsSurfaceElementCurved (elnr+1))
+        Ngs_Element el = GetElement (ElementId(BND, elnr));
+
+        if (el.is_curved) // Ng_IsSurfaceElementCurved (elnr+1))
           {
             switch (dim)
               {
