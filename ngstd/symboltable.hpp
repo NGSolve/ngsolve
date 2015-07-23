@@ -150,6 +150,9 @@ public:
     return ost;
   }
 
+  template <typename T>
+  INLINE void SymTabEl_DummyInit (T & data) { ; }
+  INLINE void SymTabEl_DummyInit (string *& data) { data = nullptr; }
 
   template <typename T> 
   Archive & operator & (Archive & ar, SymbolTable<T> & table)
@@ -171,6 +174,7 @@ public:
           {
             string name;
             T entry;
+            SymTabEl_DummyInit (entry);  // no un-initialized warning
             ar & name & entry;
             table.Set (name, entry);
           }

@@ -12,10 +12,10 @@ namespace ngstd
     shared_ptr<ostream> fout;
   public:
     TextOutArchive (string filename);
-    TextOutArchive (shared_ptr<ostream> afout) : fout(afout) { ; }
+    TextOutArchive (shared_ptr<ostream> afout) : Archive(true), fout(afout) { ; }
 
-    virtual bool Output ();
-    virtual bool Input ();
+    // virtual bool Output ();
+    // virtual bool Input ();
 
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
@@ -34,10 +34,10 @@ namespace ngstd
     shared_ptr<istream> fin;
   public:
     TextInArchive (string filename);
-    TextInArchive (shared_ptr<istream> afin) : fin(afin) { ; }
+    TextInArchive (shared_ptr<istream> afin) : Archive(false), fin(afin) { ; }
 
-    virtual bool Output ();
-    virtual bool Input ();
+    // virtual bool Output ();
+    // virtual bool Input ();
 
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
@@ -56,10 +56,10 @@ namespace ngstd
     shared_ptr<ostream> fout;
   public:
     BinaryOutArchive (string filename);
-    BinaryOutArchive (shared_ptr<ostream> afout) : fout(afout) { ; }
+    BinaryOutArchive (shared_ptr<ostream> afout) : Archive(true), fout(afout) { ; }
 
-    virtual bool Output ();
-    virtual bool Input ();
+    // virtual bool Output ();
+    // virtual bool Input ();
 
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
@@ -78,10 +78,10 @@ namespace ngstd
     shared_ptr<istream> fin;
   public:
     BinaryInArchive (string filename);
-    BinaryInArchive (shared_ptr<istream> afin) : fin(afin) { ; }
+    BinaryInArchive (shared_ptr<istream> afin) : Archive(false), fin(afin) { ; }
 
-    virtual bool Output ();
-    virtual bool Input ();
+    // virtual bool Output ();
+    // virtual bool Input ();
 
     virtual Archive & operator & (double & d);
     virtual Archive & operator & (int & i);
