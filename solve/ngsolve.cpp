@@ -200,7 +200,7 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
   {
     Socket & sock;
   public:
-    SocketOutArchive (Socket & asock) : sock(asock) { ; }
+    SocketOutArchive (Socket & asock) : Archive(true), sock(asock) { ; }
 
     virtual bool Output () { return true; }
     virtual bool Input () { return false; }
@@ -257,9 +257,8 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
   {
     Socket & sock;
   public:
-    SocketInArchive (Socket & asock) : sock(asock) { ; }
-    virtual bool Output () { return false; }
-    virtual bool Input () { return true; }
+    SocketInArchive (Socket & asock) : Archive(false), sock(asock) { ; }
+
     virtual Archive & operator & (double & d) 
     {
       sock.Trecv (d);
@@ -317,10 +316,7 @@ NGS_DLL_HEADER shared_ptr<ngsolve::PDE> pde;
   {
     // Socket & sock;
   public:
-    WorkerOutArchive () { ; }
-
-    virtual bool Output () { return true; }
-    virtual bool Input () { return false; }
+    WorkerOutArchive () : Archive(true) { ; }
 
     virtual Archive & operator & (double & d) 
     {

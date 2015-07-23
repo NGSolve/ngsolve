@@ -14,11 +14,9 @@ namespace ngstd
   
 
   BinaryOutArchive :: BinaryOutArchive (string filename) 
-  { fout = make_shared<ofstream>(filename.c_str()); }
+    : BinaryOutArchive(make_shared<ofstream>(filename.c_str()))
+  { ; }
 
-  bool BinaryOutArchive :: Output () { return true; }
-  bool BinaryOutArchive :: Input () { return false; }
-  
   Archive & BinaryOutArchive :: operator & (double & d) 
   {
     fout->write(reinterpret_cast<char*>(&d), sizeof(double));
@@ -85,11 +83,8 @@ namespace ngstd
 
 
   BinaryInArchive :: BinaryInArchive (string filename) 
-  { fin = make_shared<ifstream>(filename.c_str()); }
-
-  bool BinaryInArchive :: Output () { return false; }
-  bool BinaryInArchive :: Input () { return true; }
-
+    : BinaryInArchive(make_shared<ifstream>(filename.c_str())) { ; }
+  // { fin = make_shared<ifstream>(filename.c_str()); }
 
   Archive & BinaryInArchive :: operator & (double & d) 
   {
@@ -187,11 +182,8 @@ namespace ngstd
   
 
   TextOutArchive :: TextOutArchive (string filename) 
-  { fout = make_shared<ofstream>(filename.c_str()); }
+    : TextOutArchive(make_shared<ofstream>(filename.c_str())) { ; }
 
-  
-  bool TextOutArchive :: Output () { return true; }
-  bool TextOutArchive :: Input () { return false; }
   
   Archive & TextOutArchive :: operator & (double & d) 
   {
@@ -261,10 +253,7 @@ namespace ngstd
 
 
   TextInArchive :: TextInArchive (string filename) 
-  { fin = make_shared<ifstream>(filename.c_str()); }
-
-  bool TextInArchive :: Output () { return false; }
-  bool TextInArchive :: Input () { return true; }
+    : TextInArchive(make_shared<ifstream>(filename.c_str())) { ; }
 
 
   Archive & TextInArchive :: operator & (double & d) 

@@ -8,9 +8,11 @@ namespace ngstd
 
   class Archive
   {
+    bool is_output;
   public:
-    virtual bool Output () = 0;
-    virtual bool Input () { return !Output(); }
+    Archive (bool ais_output) : is_output(ais_output) { ; }
+    bool Output () { return is_output; }
+    bool Input () { return !is_output; }
 
     virtual Archive & operator & (double & d) = 0;
     virtual Archive & operator & (int & i) = 0;
