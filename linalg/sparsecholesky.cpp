@@ -500,17 +500,16 @@ namespace ngla
 
         for (int jj = 0; jj < miBS; jj+=4)
           {
-            for (int j2 = jj; j2 < jj+4; j2++)
-              if (n > 2000 && (i1+j2) % 1000 == 999)
+            for (int j2 = 0; j2 < 4; j2++)
+              if (n > 2000 && (i1+jj+j2) % 1000 == 999)
                 {
-                  if ((i1+j2) % 10000 == 9999)
+                  if ((i1+jj+j2) % 10000 == 9999)
                     cout << IM(4) << "+" << flush;
                   else
                     cout << IM(4) << "." << flush;
                 }
             
             int nk = hfirstinrow[i1+jj+1]-hfirstinrow[i1+jj];
-            
             for (int k = 0; k < nk*BS; k++) 
               sum[k] = 0;
 
@@ -558,8 +557,9 @@ namespace ngla
               }
             
             
-            for (int j2 = jj; j2 < jj+4; j2++)
+            for (int hj2 = 0; hj2 < 4; hj2++)
               {
+                int j2 = jj+hj2;
                 int firstj = hfirstinrow[i1+j2];
                 for (int i2 = jj; i2 < j2; i2++)
                   {
