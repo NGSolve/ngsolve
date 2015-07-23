@@ -1,3 +1,20 @@
+"""
+Basic Linear Algebra
+====================
+
+vectors and matrices
+
+Examples:
+x = Vector(5)
+x[:] = 2
+m = Matrix(3,5)
+m[:,:] = 0
+m[:,2] = 1
+
+y = m * x
+"""
+
+
 from . import ngstd
 
 ##from ngsolve import __platform

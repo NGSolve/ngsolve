@@ -1,5 +1,5 @@
 """
-Fintie Elements
+Finite Elements
 ===============
 
 finite element shape functions, and element-matrix/vector integrators
