@@ -1432,13 +1432,11 @@ namespace netgen
 
   int MeshTopology :: GetSurfaceElementFace (int elnr) const
   {
-    // return (surffaces.Get(elnr)-1) / 8 + 1;  
     return surffaces.Get(elnr).fnr+1;
   }
 
   int MeshTopology :: GetFace (SurfaceElementIndex elnr) const
   {
-    // return (surffaces[elnr]-1) / 8;  
     return surffaces[elnr].fnr;
   }
 

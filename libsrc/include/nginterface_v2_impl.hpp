@@ -75,9 +75,7 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<2> (int nr) const
   ret.faces.num = MeshTopology::GetNFaces (el.GetType());
   ret.faces.ptr = (T_FACE2*)mesh->GetTopology().GetSurfaceElementFacesPtr (nr);
 
-  // ret.is_curved = mesh->GetCurvedElements().IsSurfaceElementCurved(nr);
   ret.is_curved = el.IsCurved();
-
   return ret;
 }
 

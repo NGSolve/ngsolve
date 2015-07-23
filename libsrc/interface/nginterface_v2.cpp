@@ -50,6 +50,7 @@ namespace netgen
   {
     netgen::mesh.reset();
     Ng_LoadMesh (filename.c_str());
+    // mesh = move(netgen::mesh);
     mesh = netgen::mesh;
   }
 
@@ -57,6 +58,7 @@ namespace netgen
   {
     netgen::mesh = make_shared<Mesh>();
     netgen::mesh -> Load (ist);
+    // mesh = move(netgen::mesh);
     mesh = netgen::mesh;
     SetGlobalMesh (mesh);
   }
