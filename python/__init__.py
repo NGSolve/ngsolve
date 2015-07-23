@@ -1,3 +1,15 @@
+"""
+NGSolve
+=======
+
+A high order finite element library
+
+Modules:
+ngsolve.bla .... simple vectors and matrices
+ngsolve.fem .... finite elements and integrators
+ngsolve.comp ... function spaces, forms
+"""
+
 from os import environ
 from sys import path
 path.append(environ['NETGENDIR']+'/../lib')

@@ -1,3 +1,10 @@
+"""
+Fintie Elements
+===============
+
+finite element shape functions, and element-matrix/vector integrators
+"""
+
 from . import bla
 
 ##from ngsolve import __platform
