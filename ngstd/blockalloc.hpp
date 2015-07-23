@@ -74,6 +74,10 @@ INLINE void * operator new (size_t size, ngstd::BlockAllocator & ball)
   return ball.Alloc();
 }
 
+INLINE void operator delete (void * p, ngstd::BlockAllocator & ball)  
+{
+  ball.Free (p);
+}
 
 
 
