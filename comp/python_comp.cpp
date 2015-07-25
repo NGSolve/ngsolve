@@ -941,7 +941,9 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("numprocs", FunctionPointer([](PDE & self) { return bp::object(self.GetNumProcTable()); }))
     ;
   
+#ifdef PARALLEL
   import_mpi4py();
+#endif
 }
 
 
