@@ -224,7 +224,7 @@ namespace ngstd
 
 
     template <typename TFUNC>
-    void Calc (int n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 8)
+    void Calc (int n, TFUNC costs, int size = task_manager ? task_manager->GetNumThreads() : 1)
     {
       Array<size_t> prefix (n);
 
