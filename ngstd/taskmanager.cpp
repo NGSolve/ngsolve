@@ -75,7 +75,7 @@ namespace ngstd
         cout << "new task-based parallelization" << endl;
 
 #ifdef USE_NUMA
-        int num_nodes = numa_max_node() + 1;
+        int num_nodes = task_manager->GetNumNodes();
 
         int thd = omp_get_thread_num();
         int thds = omp_get_num_threads();
@@ -119,9 +119,13 @@ namespace ngstd
 
   TaskManager :: TaskManager()
     {
+      num_threads = omp_get_max_threads();
+      if (MyMPI_GetNTasks() > 1) num_threads = 1;
+
 #ifdef USE_NUMA
       numa_available();
       num_nodes = numa_max_node() + 1;
+      if (num_nodes > num_threads) num_nodes = num_threads;
 
       for (int j = 0; j < num_nodes; j++)
         {
@@ -137,10 +141,6 @@ namespace ngstd
       jobnr = 0;
       done = 0;
       active_workers = 0;
-
-      num_threads = omp_get_max_threads();
-
-      if (MyMPI_GetNTasks() > 1) num_threads = 1;
 
       static int cnt = 0;
       char buf[100];

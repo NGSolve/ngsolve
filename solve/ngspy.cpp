@@ -35,6 +35,29 @@ BOOST_PYTHON_MODULE(ngslib)
   a = 1; b = 2;
   c = a*b | Lapack;
   */
+#ifdef PARALLEL
+
+  int flag;
+  MPI_Initialized (&flag);
+  if (!flag)
+    {
+      cerr << "MPI not initialized !!!" << endl;
+      cerr << "run 'from mpi4py import MPI' before importing ngsolve" << endl;
+      throw Exception ("mpi not initialized as required from parallel-ngslib");
+      /*
+      const char * progname = "ngslib";
+      typedef const char * pchar;
+      pchar ptrs[2] = { progname, nullptr };
+      pchar * pptr = &ptrs[0];
+      int argc = 1;
+      MPI_Init (&argc, (char***)&pptr);
+      */
+    }
+  cout << "ngslib module, rank = " << MyMPI_GetId(MPI_COMM_WORLD) << "/" << MyMPI_GetNTasks(MPI_COMM_WORLD) << endl;
+  
+  NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD) == 0);
+#endif
+
 
     try
     {

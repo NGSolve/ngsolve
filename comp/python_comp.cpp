@@ -88,7 +88,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
   
-  cout << "exporting comp as " << nested_name << endl;
+  cout << IM(1) << "exporting comp as " << nested_name << endl;
   bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
   parent.attr("comp") = module;
   
@@ -191,9 +191,46 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   PyExportArray<string>();
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
-                                                 "the mesh", 
-                                                 bp::init<string>())
+                                                 "the mesh")
     .def(bp::init<shared_ptr<netgen::Mesh>>())
+
+
+#ifndef PARALLEL
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](const string & filename)
+                           { 
+                             return make_shared<MeshAccess> (filename);
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("filename"))
+          ))
+
+#else
+
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](const string & filename,
+                              bp::object py_mpicomm)
+                           { 
+                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
+                             if (py_mpicomm_ptr != Py_None)
+                               {
+                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
+                                 ngs_comm = *comm;
+                               }
+                             else
+                               ngs_comm = MPI_COMM_WORLD;
+
+                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
+                             return make_shared<MeshAccess> (filename, ngs_comm);
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("filename"), bp::arg("mpicomm")=bp::object())
+          ))
+#endif
+
+
+
+
 
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")

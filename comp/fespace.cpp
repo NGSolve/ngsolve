@@ -2337,7 +2337,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   ParallelMeshDofs :: ParallelMeshDofs (shared_ptr<MeshAccess> ama, 
 					const Array<Node> & adofnodes, 
 					int dim, bool iscomplex)
-    : ParallelDofs (ma->GetCommunicator(),
+    : ParallelDofs (ama->GetCommunicator(),
 		    Nodes2Table (*ama, adofnodes), dim, iscomplex),		    
       ma(ama), dofnodes(adofnodes)
   { ; }

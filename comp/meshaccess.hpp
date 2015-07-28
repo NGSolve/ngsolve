@@ -227,14 +227,17 @@ namespace ngcomp
 
     /// for ALE
     shared_ptr<GridFunction> deformation;  
-
+    
+    ///
+    MPI_Comm mesh_comm;
   public:
     /// connects to Netgen - mesh
     MeshAccess (shared_ptr<netgen::Mesh> amesh = NULL);
     /// loads mesh from file
-    MeshAccess (string filename)
-      : MeshAccess() 
+    MeshAccess (string filename, MPI_Comm amesh_comm = ngs_comm)
+      : MeshAccess()
     {
+      mesh_comm = amesh_comm;
       LoadMesh (filename);
     }
     /// select this mesh in netgen visuaization
@@ -817,7 +820,7 @@ namespace ngcomp
     template <int DIMS, int DIMR> friend class Ng_ConstElementTransformation;
 
 
-    MPI_Comm GetCommunicator () const { return ngs_comm; }
+    MPI_Comm GetCommunicator () const { return mesh_comm; }
 
     /**
        Returns the list of other MPI - processes where node is present.

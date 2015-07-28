@@ -532,7 +532,7 @@ namespace ngcomp
 
 
   MeshAccess :: MeshAccess (shared_ptr<netgen::Mesh> amesh)
-    : mesh(amesh)
+    : mesh(amesh), mesh_comm(ngs_comm)
   {
     // the connection to netgen global variables
     ngstd::testout = netgen::testout;
