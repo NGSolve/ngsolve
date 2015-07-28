@@ -1,6 +1,11 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+
+#ifdef PARALLEL
+#include </usr/lib/python3/dist-packages/mpi4py/include/mpi4py/mpi4py.h>
+#endif
+
 using namespace ngcomp;
 
 
@@ -763,11 +768,46 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     // .def(bp::init<const string&>())
 
+#ifndef PARALLEL
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & filename)
                            { 
                              return LoadPDE (filename);
-                           })))
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("filename"))
+          ))
+
+#else
+
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](const string & filename,
+                              bp::object py_mpicomm)
+                           { 
+                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
+                             if (py_mpicomm_ptr != Py_None)
+                               {
+                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
+                                 ngs_comm = *comm;
+                               }
+                             else
+                               ngs_comm = MPI_COMM_WORLD;
+
+                             cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
+                                  << MyMPI_GetNTasks(ngs_comm) << endl;
+
+                             NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
+                             return LoadPDE (filename);
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("filename"), bp::arg("mpicomm")=bp::object())
+          ))
+#endif
+
+
+
+
+
     
     /*
     .def("Load", 
@@ -903,7 +943,6 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("numprocs", FunctionPointer([](PDE & self) { return bp::object(self.GetNumProcTable()); }))
     ;
   
-  
   bp::def("Integrate", 
           FunctionPointer([](shared_ptr<CoefficientFunction> cf,
                              shared_ptr<MeshAccess> ma, 
@@ -927,6 +966,10 @@ void NGS_DLL_HEADER ExportNgcomp()
                                });
                             return sum;
                           }));
+
+#ifdef PARALLEL
+  import_mpi4py();
+#endif
 }
 
 

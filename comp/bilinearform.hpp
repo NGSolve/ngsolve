@@ -289,7 +289,7 @@ namespace ngcomp
     bool IsSPD() const { return spd; }
 
     ///
-    bool SymmetricStorage() const { return false; }
+    virtual bool SymmetricStorage() const { return false; }
 
     /// don't assemble the matrix
     void SetNonAssemble (bool na = true) { nonassemble = na; }
@@ -627,7 +627,7 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
 
-    bool SymmetricStorage() const { return true; }
+    virtual bool SymmetricStorage() const { return true; }
 
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;

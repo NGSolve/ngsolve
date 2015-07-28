@@ -140,6 +140,8 @@ namespace ngstd
 
       num_threads = omp_get_max_threads();
 
+      if (MyMPI_GetNTasks() > 1) num_threads = 1;
+
       static int cnt = 0;
       char buf[100];
       sprintf(buf, "ng%d.trace", cnt++);
