@@ -712,7 +712,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                               Flags flags)
                            { 
                              return GetPreconditionerClasses().GetPreconditioner(type)->creatorbf(bfa, flags, "noname-pre");
-                           })
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("bf"), bp::arg("type"), bp::arg("flags")=bp::dict())
           ))
 
     .def ("Update", &Preconditioner::Update)
@@ -902,6 +904,29 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
   
   
+  bp::def("Integrate", 
+          FunctionPointer([](shared_ptr<CoefficientFunction> cf,
+                             shared_ptr<MeshAccess> ma, 
+                             VorB vb, int order)
+                          {
+                            LocalHeap lh(1000000, "lh-Integrate");
+                            double sum = 0;
+                            ma->IterateElements
+                              (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                               {
+                                 auto & trafo = ma->GetTrafo (el, lh);
+                                 IntegrationRule ir(trafo.GetElementType(), order);
+                                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                                 FlatMatrix<> values(ir.Size(), 1, lh);
+                                 cf -> Evaluate (mir, values);
+                                 double hsum = 0;
+                                 for (int i = 0; i < values.Height(); i++)
+                                   hsum += mir[i].GetWeight() * values(i,0);
+#pragma omp atomic
+                                 sum += hsum;
+                               });
+                            return sum;
+                          }));
 }
 
 

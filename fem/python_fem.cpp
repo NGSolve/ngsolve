@@ -168,7 +168,7 @@ public:
     : scal(ascal), c1(ac1) { ; }
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
-  virtual int Dimension() const { return Dimension(); }
+  virtual int Dimension() const { return c1->Dimension(); }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -207,7 +207,7 @@ public:
     : scal(ascal), c1(ac1) { ; }
   
   virtual bool IsComplex() const { return true; }
-  virtual int Dimension() const { return Dimension(); }
+  virtual int Dimension() const { return c1->Dimension(); }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -225,6 +225,87 @@ public:
   }
     
 };
+
+
+class MultScalVecCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;  // scalar
+  shared_ptr<CoefficientFunction> c2;  // vector
+public:
+  MultScalVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                  shared_ptr<CoefficientFunction> ac2)
+    : c1(ac1), c2(ac2) { ; }
+  
+  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+  virtual int Dimension() const { return c2->Dimension(); }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    throw Exception ("double MultScalVecCF::Evaluate called");
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    Vec<1> v1;
+    c1->Evaluate (ip, v1);
+    c2->Evaluate (ip, result);
+    result *= v1(0);
+  }
+};
+
+
+class MultVecVecCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  shared_ptr<CoefficientFunction> c2;
+public:
+  MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                 shared_ptr<CoefficientFunction> ac2)
+    : c1(ac1), c2(ac2) { ; }
+  
+  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+  virtual int Dimension() const { return 1; }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
+    c1->Evaluate (ip, v1);
+    c2->Evaluate (ip, v2);
+    result(0) = InnerProduct (v1, v2);
+  }
+};
+
+
+class ComponentCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  int comp;
+public:
+  ComponentCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                int acomp)
+    : c1(ac1), comp(acomp) { ; }
+  
+  virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual int Dimension() const { return 1; }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    Vector<> v1(c1->Dimension());
+    c1->Evaluate (ip, v1);
+    return v1(comp);
+  }
+};
+
+
+
 
 
 shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
@@ -276,7 +357,12 @@ void ExportCoefficientFunction()
                            })))
     .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
 
-
+    .add_property("dim", &CoefficientFunction::Dimension)    
+    
+    .def("__getitem__", FunctionPointer( [](SPCF & self, int comp) -> SPCF
+                                         {
+                                           return make_shared<ComponentCoefficientFunction> (self, comp); 
+                                         }))
 
     // coefficient expressions
     .def ("__add__", FunctionPointer 
@@ -305,7 +391,15 @@ void ExportCoefficientFunction()
 
     .def ("__mul__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });} ))
+           { 
+             if (c1->Dimension() > 1 && c2->Dimension() > 1)
+               return make_shared<MultVecVecCoefficientFunction> (c1, c2);
+             if (c1->Dimension() == 1 && c2->Dimension() > 1)
+               return make_shared<MultScalVecCoefficientFunction> (c1, c2);
+             if (c1->Dimension() > 1 && c2->Dimension() == 1)
+               return make_shared<MultScalVecCoefficientFunction> (c2, c1);
+             return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });
+           } ))
     .def ("__mul__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (val, coef); }))

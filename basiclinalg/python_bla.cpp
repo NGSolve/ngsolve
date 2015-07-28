@@ -2,7 +2,6 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <boost/python/slice.hpp>
 #include <bla.hpp>
-// #include "/usr/lib/python3/dist-packages/numpy/core/include/numpy/arrayobject.h"
 #include <numpy/arrayobject.h>
 
 using namespace ngbla;
