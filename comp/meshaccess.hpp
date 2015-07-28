@@ -302,6 +302,55 @@ namespace ngcomp
       return TElementRange<VB> (*this, IntRange (0, GetNE(VB)));
     }
 
+
+
+    template <typename TFUNC>
+    void IterateElements (VorB vb, 
+                          LocalHeap & clh, 
+                          const TFUNC & func)
+    {
+      if (task_manager)
+        {
+          SharedLoop sl(Range (GetNE(vb)));
+
+          task_manager -> CreateJob
+            ( [&] (const TaskInfo & ti) 
+              {
+                LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+
+                for (int mynr : sl)
+                  {
+                    HeapReset hr(lh);
+                    ElementId ei(vb, mynr);
+                    Ngs_Element el(GetElement(ei), ei);
+                    func (move(el), lh);
+                  }
+              } );
+          return;
+        }
+      
+#pragma omp parallel 
+      {
+        LocalHeap lh = clh.Split();
+        
+#pragma omp for schedule(dynamic)
+        for (int i = 0; i < GetNE(vb); i++)
+          {
+            HeapReset hr(lh);
+            ElementId ei(vb, i);
+            Ngs_Element el(GetElement(ei), ei);
+            func (move(el), lh);
+          }
+      }
+    }
+
+
+
+
+
+
+
+
     /// the geometry type of the element
     ELEMENT_TYPE GetElType (int elnr) const
     { return GetElement(elnr).GetType(); }
