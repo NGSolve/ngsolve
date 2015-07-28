@@ -1220,12 +1220,11 @@ namespace ngcomp
 	if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
 	else 
-	*/
-
 	if (type == "local") 
 	  pre = make_shared<LocalPreconditioner> (this, flags, name);
-	
-	else if (type == "twolevel")
+	else
+	*/
+        if (type == "twolevel")
 	  pre = make_shared<TwoLevelPreconditioner> (this, flags, name);
 	
 	else if (type == "complex") 
@@ -1263,13 +1262,14 @@ namespace ngcomp
 	  }
 	else 
 	*/
+	/*
 	if (type == "local")
 	  pre = make_shared<LocalPreconditioner> (this, flags, name);
-	/*
 	  else if (strcmp (type, "direct") == 0)
 	  pre = new DirectPreconditioner (this, flags, name);
+	else 
 	*/
-	else if (type == "twolevel") 
+        if (type == "twolevel") 
 	  pre = make_shared<TwoLevelPreconditioner> (this, flags, name);
 
 	else if (type == "complex") 

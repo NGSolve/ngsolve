@@ -199,6 +199,70 @@ namespace ngcomp
 
 
 
+
+  /**
+     Multigrid preconditioner.
+     High level objects, contains a \Ref{MultigridPreconditioner} 
+  */
+  class NGS_DLL_HEADER MGPreconditioner : public Preconditioner
+  {
+    ///
+    ngmg::MultigridPreconditioner * mgp;
+    ///
+    ngmg::TwoLevelMatrix * tlp;
+    ///
+    shared_ptr<BilinearForm> bfa;
+    ///
+    MGPreconditioner * low_order_preconditioner;
+    ///
+    shared_ptr<Preconditioner> coarse_pre;
+    ///
+    int finesmoothingsteps;
+    ///
+    string smoothertype;
+    /// 
+    bool mgtest; 
+    string mgfile; 
+    int mgnumber; 
+  
+    string inversetype;
+
+  public:
+    ///
+    MGPreconditioner (const PDE & pde, const Flags & aflags,
+		      const string aname = "mgprecond");
+    MGPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+		      const string aname = "mgprecond");
+    ///
+    virtual ~MGPreconditioner();
+
+    void FreeSmootherMem(void);
+
+    ///
+    virtual void Update ();
+    ///
+    virtual void CleanUpLevel ();
+    ///
+    virtual const BaseMatrix & GetMatrix() const;
+    ///
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix(); 
+    }
+    ///
+    virtual const char * ClassName() const
+    { return "Multigrid Preconditioner"; }
+
+    virtual void PrintReport (ostream & ost);
+
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
+
+    void MgTest () const;
+  };
+
+
+
+
   MGPreconditioner :: MGPreconditioner (const PDE & pde, const Flags & aflags, const string aname)
     : Preconditioner (&pde,aflags,aname)
   {
@@ -612,12 +676,114 @@ namespace ngcomp
   // ****************************** LocalPreconditioner *******************************
 
 
-
-  LocalPreconditioner :: LocalPreconditioner (PDE * pde, const Flags & aflags, 
-					      const string aname)
-    : Preconditioner (pde,aflags,aname)
+  /**
+     Local (Block-Jacobi or Block-Gauss-Seidel) preconditioner
+  */
+  class LocalPreconditioner : public Preconditioner
   {
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+  protected:
+    ///
+    shared_ptr<BilinearForm> bfa;
+    ///
+    shared_ptr<BaseMatrix> jacobi;
+    ///
+    bool block;
+    bool locprectest; 
+    string locprecfile; 
+
+    string ct;
+    shared_ptr<Preconditioner> coarse_pre;
+  public:
+    ///
+    LocalPreconditioner (const PDE & pde, const Flags & aflags,
+			 const string aname = "localprecond");
+    LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+			 const string aname = "localprecond");
+    ///
+    virtual ~LocalPreconditioner();
+    ///
+    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    { 
+      cout << IM(1) << "Update Local Preconditioner" << flush;
+      
+      int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
+      
+      // if (MyMPI_GetNTasks() != 1) return;
+      bool parallel = (this->on_proc == -1);
+      /*
+        if ( !parallel && id != this->on_proc )
+        {
+	jacobi = 0; 
+	return;
+        }
+      */
+
+//     BaseBlockJacobiPrecond::COARSE_TYPE bbct;
+//     switch ( ct  )
+//       {
+//       case NO_COARSE:
+// 	bbct = NO_COARSE; break;
+//       case DIRECT_COARSE:
+// 	bbct = DIRECT_COARSE; break;
+//       }
+
+      if ( block && blocktype == -1 ) blocktype = 0;
+      if ( blocktype >= 0 )
+        {
+          // new: blocktypes, specified in fespace
+          if (bfa->UsesEliminateInternal())
+            flags.SetFlag("eliminate_internal");
+          Table<int> * blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
+          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
+            .CreateBlockJacobiPrecond(*blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
+        }
+      else if (block)
+        {
+          cout << "\nFlag block deprecated: use -blocktype=<typeno> instead" << endl;
+        }
+      else
+        {
+          const BaseMatrix * mat = &bfa->GetMatrix();
+#ifdef PARALLEL
+          if (dynamic_cast<const ParallelMatrix*> (mat))
+            mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
+#endif
+          jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
+            .CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
+        }
+    }
+
+    virtual void Update ()
+    {
+      if (test) Test();
+      if(locprectest) LocPrecTest(); 
+    }
+
+
+    ///
+    virtual const BaseMatrix & GetMatrix() const;
+    ///
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix(); 
+    }
+    ///
+    virtual const char * ClassName() const
+    { return "Local Preconditioner"; }
+    void LocPrecTest () const;
+  };
+
+
+
+
+
+  LocalPreconditioner :: LocalPreconditioner (const PDE & pde, const Flags & aflags, 
+					      const string aname)
+    : Preconditioner (&pde,aflags,aname)
+  {
+    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+    bfa -> SetPreconditioner (this);
+
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");
     locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
@@ -635,76 +801,37 @@ namespace ngcomp
       ct = "DIRECT_COARSE";
 
     coarse_pre = 
-      pde->GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
+      pde.GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
     if (coarse_pre)
       ct = "USER_COARSE";
   }
 
+  LocalPreconditioner :: 
+  LocalPreconditioner  (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                        const string aname)
+
+    : Preconditioner (abfa,aflags,aname), bfa(abfa)
+  {
+    bfa -> SetPreconditioner (this);
+
+    block = flags.GetDefineFlag ("block");
+    locprectest = flags.GetDefineFlag ("mgtest");
+    locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
+
+    string smoother = flags.GetStringFlag("smoother","");
+    if ( smoother == "block" )
+      block = true;
+
+    // coarse-grid preconditioner only used in parallel!!
+    ct = "NO_COARSE";
+  }
+
+
+
+
   LocalPreconditioner :: ~LocalPreconditioner()
   {
     ; 
-  }
-
-  void LocalPreconditioner :: Update ()
-  {
-    cout << IM(1) << "Update Local Preconditioner" << flush;
-    // delete jacobi;
-    
-    // const BaseSparseMatrix& amatrix = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix());
-    // 	if ( inversetype != "none" )
-    // 	amatrix.SetInverseType ( inversetype );
-	
-    int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
-
-    // if (MyMPI_GetNTasks() != 1) return;
-    bool parallel = (this->on_proc == -1);
-    /*
-    if ( !parallel && id != this->on_proc )
-      {
-	jacobi = 0; 
-	return;
-      }
-    */
-
-//     BaseBlockJacobiPrecond::COARSE_TYPE bbct;
-//     switch ( ct  )
-//       {
-//       case NO_COARSE:
-// 	bbct = NO_COARSE; break;
-//       case DIRECT_COARSE:
-// 	bbct = DIRECT_COARSE; break;
-//       }
-
-    if ( block && blocktype == -1 ) blocktype = 0;
-    if ( blocktype >= 0 )
-      {
-	// new: blocktypes, specified in fespace
-	if (bfa->UsesEliminateInternal())
-	  flags.SetFlag("eliminate_internal");
-	Table<int> * blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
-	jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-	  .CreateBlockJacobiPrecond(*blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
-      }
-    else if (block)
-      {
-	cout << "\nFlag block deprecated: use -blocktype=<typeno> instead" << endl;
-      }
-    else
-      {
-	const BaseMatrix * mat = &bfa->GetMatrix();
-#ifdef PARALLEL
-	if (dynamic_cast<const ParallelMatrix*> (mat))
-	  mat = &(dynamic_cast<const ParallelMatrix*> (mat)->GetMatrix());
-#endif
-	jacobi = dynamic_cast<const BaseSparseMatrix&> (*mat)
-	  .CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
-      }
-
-
-    
-    if (test) Test();
-    if(locprectest) LocPrecTest(); 
-    //    cout << " done" << endl;
   }
 
   const ngla::BaseMatrix & LocalPreconditioner :: GetMatrix() const
@@ -1215,6 +1342,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   RegisterPreconditioner<MGPreconditioner> registerMG("multigrid");
   RegisterPreconditioner<DirectPreconditioner> registerDirect("direct");
+  RegisterPreconditioner<LocalPreconditioner> registerlocal("local");
 
 }
 
