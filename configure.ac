@@ -234,6 +234,7 @@ AM_CONDITIONAL([NGPYTHON], [test x$pythonon = xtrue])
 # AC_CHECK_HEADERS([limits.h])
 
 # AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(dl, dlsym)
 
 
 # LDFLAGS+=" -L/usr/lib/Togl1.7"
