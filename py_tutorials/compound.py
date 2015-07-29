@@ -11,8 +11,11 @@ fes = FESpace([fes1,fes2])
 
 
 f = LinearForm (fes)
-f.components[0] += LFI("neumann", coef=1)
-f.components[1] += LFI("source", coef=1)
+# f.components[0] += LFI("neumann", coef=1)
+# f.components[1] += LFI("source", coef=1)
+f1,f2 = f.components
+f1 += LFI("neumann", coef=1)
+f2 += LFI("source", coef=1)
 
 f.Assemble()
 
@@ -26,10 +29,7 @@ a.components[1] += BFI("mass", coef=1)
 
 print ("integrators: ", a.integrators)
 a.Assemble()
-print (a.mat)
-
-
-
+# print (a.mat)
 
 
 for el in fes.Elements(VOL):

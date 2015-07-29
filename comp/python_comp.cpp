@@ -645,6 +645,13 @@ void NGS_DLL_HEADER ExportNgcomp()
                    }),
                   "list of components for bilinearforms on compound-space")
 
+    .def("__call__", FunctionPointer
+         ([](BF & self, const GridFunction & u, const GridFunction & v)
+          {
+            auto au = self.GetMatrix().CreateVector();
+            au = self.GetMatrix() * u.GetVector();
+            return InnerProduct (au, v.GetVector());
+          }))
 
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
@@ -706,6 +713,13 @@ void NGS_DLL_HEADER ExportNgcomp()
                      return lfs;
                    }),
                   "list of components for linearforms on compound-space")
+    
+    .def("__call__", FunctionPointer
+         ([](LF & self, const GridFunction & v)
+          {
+            return InnerProduct (self.GetVector(), v.GetVector());
+          }))
+
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
