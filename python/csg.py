@@ -4,8 +4,7 @@ if __platform.startswith('linux') or __platform.startswith('darwin'):
     from libcsg.csg import *
     import libcsgvis.csgvis as csgvis
     from libcsgvis.csgvis import MouseMove
-    import libmesh.meshing
-#    from libmesh.meshing import *
+    from libmesh.meshing import *
 if __platform.startswith('win'):
     # Windows
     from nglib.csg import *
@@ -19,4 +18,15 @@ del csgvis
 
 def VS (obj):
     return obj.VS()
+
+
+
+def csg_meshing_func (geom, maxh):
+    return GenerateMesh (geom, MeshingParameters (maxh=maxh))
+
+CSGeometry.GenerateMesh = csg_meshing_func
+
+
+unit_cube = CSGeometry()
+unit_cube.Add (OrthoBrick(Pnt(0,0,0), Pnt(1,1,1)))
 
