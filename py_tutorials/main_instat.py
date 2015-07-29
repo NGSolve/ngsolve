@@ -12,7 +12,10 @@ mesh = Mesh("square.vol.gz")
 
 v = H1(mesh, order=5)  # , dirichlet=[1,2])
 u = GridFunction (v, name="potential")
+
+u.Set (exp(-40*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))))
 Draw (u, sd=1)
+
 
 f = LinearForm (v)
 f += Source (coef=1)
@@ -35,8 +38,6 @@ inv = mstar.Inverse(v.FreeDofs())
         
 d = u.vec.CreateVector()
 w = u.vec.CreateVector()
-
-u.Set (exp(-40*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))))
 
 Redraw(blocking=True)
 

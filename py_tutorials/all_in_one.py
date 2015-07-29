@@ -48,3 +48,6 @@ sampling = [ (x,y,u(x,y)) for x in linspace(0,1,6) for y in linspace(0,1,6) ]
 # just an idea by now ...
 # sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
 
+
+print ("f(u) = ", f(u))
+print ("A(u,u) = ", a(u,u))
