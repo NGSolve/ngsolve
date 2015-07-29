@@ -5,6 +5,15 @@
 using namespace ngfem;
 using ngfem::ELEMENT_TYPE;
 
+#include "pml.hpp"
+
+namespace ngfem
+{
+  extern SymbolTable<double> * constant_table_for_FEM;
+  SymbolTable<double> pmlpar;
+}
+
+
 struct PythonCoefficientFunction : public CoefficientFunction {
     PythonCoefficientFunction() { }
 
@@ -113,21 +122,30 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 }
 
 
-template <typename OP> 
+template <typename OP, typename OPC> 
 class cl_BinaryOpCF : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
+  OPC lamc;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam)
-    : c1(ac1), c2(ac2), lam(alam) { ; }
+                 OP alam, OPC alamc)
+    : c1(ac1), c2(ac2), lam(alam), lamc(alamc) { ; }
+
+  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip), c2->Evaluate(ip));
   }
+
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+  {
+    return lamc (c1->EvaluateComplex(ip), c2->EvaluateComplex(ip));
+  }
+
   virtual double EvaluateConst () const
   {
     return lam (c1->EvaluateConst(), c2->EvaluateConst());
@@ -149,12 +167,12 @@ public:
   }
 };
 
-template <typename OP> 
+template <typename OP, typename OPC> 
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
-                                                  OP lam)
+                                                  OP lam, OPC lamc)
 {
-  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP> (c1, c2, lam));
+  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC> (c1, c2, lam, lamc));
 }
 
 
@@ -367,27 +385,40 @@ void ExportCoefficientFunction()
     // coefficient expressions
     .def ("__add__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a+b; });} ))
+           { return BinaryOpCF (c1, c2, 
+                                [](double a, double b) { return a+b; },
+                                [](Complex a, Complex b) { return a+b; }
+                                );} ))
     .def ("__add__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; }); }))
+                                [](double a, double b) { return a+b; },
+                                [](Complex a, Complex b) { return a+b; }
+                                ); }))
     .def ("__radd__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; }); }))
-
+                                [](double a, double b) { return a+b; },
+                                [](Complex a, Complex b) { return a+b; }
+                                ); }))
     .def ("__sub__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a-b; });} ))
+           { return BinaryOpCF (c1, c2, 
+                                [](double a, double b) { return a-b; },
+                                [](Complex a, Complex b) { return a-b; }
+                                );} ))
     .def ("__sub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a-b; }); }))
+                                [](double a, double b) { return a-b; },
+                                [](Complex a, Complex b) { return a-b; }
+                                );}))
     .def ("__rsub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return b-a; }); }))
+                                [](double a, double b) { return b-a; },
+                                [](Complex a, Complex b) { return b-a; }
+                                ); }))
 
     .def ("__mul__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
@@ -398,7 +429,10 @@ void ExportCoefficientFunction()
                return make_shared<MultScalVecCoefficientFunction> (c1, c2);
              if (c1->Dimension() > 1 && c2->Dimension() == 1)
                return make_shared<MultScalVecCoefficientFunction> (c2, c1);
-             return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });
+             return BinaryOpCF (c1, c2, 
+                                [](double a, double b) { return a*b; },
+                                [](Complex a, Complex b) { return a*b; }
+                                );
            } ))
     .def ("__mul__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
@@ -953,7 +987,20 @@ void NGS_DLL_HEADER ExportNgfem() {
 
 
 
-
+  bp::def ("SetPMLParameters", 
+           FunctionPointer([] (double rad, double alpha)
+                           {
+                             cout << "set pml parameters, r = " << rad << ", alpha = " << alpha << endl;
+                             constant_table_for_FEM = &pmlpar;
+                             pmlpar.Set("pml_r", rad);
+                             pmlpar.Set("pml_alpha", alpha);
+                             SetPMLParameters();
+                           }),
+           (bp::arg("rad")=1,bp::arg("alpha")=1))
+    ;
+    
+                           
+                           
 
 }
 
