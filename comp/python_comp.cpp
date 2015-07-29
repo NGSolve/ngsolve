@@ -313,10 +313,11 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
-                              Flags flags, int order, const bp::list & dirichlet, int dim)
+                              Flags flags, int order, bool is_complex, const bp::list & dirichlet, int dim)
                            { 
                              if (order > -1) flags.SetFlag ("order", order);
                              if (dim > -1) flags.SetFlag ("dim", dim);
+                             if (is_complex) flags.SetFlag ("complex");
                              if (dirichlet)
                                flags.SetFlag("dirichlet", makeCArray<double>(dirichlet));
                              auto fes = CreateFESpace (type, ma, flags); 
@@ -328,7 +329,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                            }),
           bp::default_call_policies(),        // need it to use argumentso
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
-           bp::arg("order")=-1, bp::arg("dirichlet")= bp::list(), bp::arg("dim")=-1 )),
+           bp::arg("order")=-1, 
+           bp::arg("complex")=false, 
+           bp::arg("dirichlet")= bp::list(), bp::arg("dim")=-1 )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
 

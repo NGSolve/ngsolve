@@ -945,6 +945,16 @@ namespace ngcomp
     return flux(0);
   }
 
+  Complex GridFunctionCoefficientFunction :: 
+  EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
+  {
+    VectorMem<10,Complex> flux(Dimension());
+    Evaluate (ip, flux);
+    return flux(0);
+  }
+
+
+
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {

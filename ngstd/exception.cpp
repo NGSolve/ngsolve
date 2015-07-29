@@ -19,7 +19,7 @@ namespace ngstd
   { 
 #pragma omp critical(printexception)
     {
-      ; // cout << "create ngstd::Exception, what = " << s << endl;
+      cout << "create ngstd::Exception, what = " << s << endl;
     }
   }
 
@@ -28,7 +28,7 @@ namespace ngstd
   { 
 #pragma omp critical(printexception)
     {
-      ; // cout << "create ngstd::Exception, what = " << s << endl;
+      cout << "create ngstd::Exception, what = " << s << endl;
     }
   }
 
