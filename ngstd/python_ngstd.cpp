@@ -95,7 +95,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
   
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
   
-  cout << "exporting ngstd as " << nested_name << endl;
+  cout << IM(1) << "exporting ngstd as " << nested_name << endl;
   bp::object parent = bp::scope() ? bp::scope() : bp::import("__main__");
   parent.attr("ngstd") = module ;
   
