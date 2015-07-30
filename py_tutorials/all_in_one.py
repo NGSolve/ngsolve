@@ -1,7 +1,8 @@
 from ngsolve.fem import *
 from ngsolve.comp import *
-from ngsolve.solve import *
 from ngsolve.la import *
+from ngsolve.solve import *
+from ngsolve.utils import *
 
 from numpy import linspace
 from timeit import Timer
@@ -13,15 +14,13 @@ v = FESpace ("h1ho", mesh, order=4, dirichlet=[1])
 u = GridFunction (v)
 
 f = LinearForm (v)
-f += LFI (name = "source", coef = 1, 
-          flags = { "something" : 123 }, definedon = [0,1,2])
+f += Source (coef=x*y)
+
 f.Assemble()
-# print (Timer (f.Assemble).timeit(number=1000))
 
-
-a = BilinearForm (v, flags = { "symmetric" : True, "eliminate_internal" : False })
-a += BFI ("mass", coef = 1)
-a += BFI ("laplace", coef = 1)
+a = BilinearForm (v, symmetric=True, flags = { "eliminate_internal" : False })
+a += Mass (coef=1)
+a += Laplace (coef=1)
 
 
 # c = Preconditioner (a, "multigrid", { "test" : True, "smoother" : "block", "finesmoothingsteps" : 1 })
@@ -42,12 +41,42 @@ u.vec.data = solver * f.vec
 
 Draw (u)
 
-sampling = [ (x,y,u(x,y)) for x in linspace(0,1,6) for y in linspace(0,1,6) ]
+print ("f(u) = ", f(u))
+print ("A(u,u) = ", a(u,u))
 
+
+
+# evaluate solution on square ...
+
+sampling = [ (x,y,u(x,y)) for x in linspace(0,1,6) for y in linspace(0,1,6) ]
 
 # just an idea by now ...
 # sampling = [ (x,y,u(x,y)) for x in np.linspace(0,1,6) for y in np.linspace(0,1,6) if mesh.Contains(x,y)]
 
+# ... and along a line
 
-print ("f(u) = ", f(u))
-print ("A(u,u) = ", a(u,u))
+xpnts = linspace(0,1,21)
+vals = [ u(x,0.5) for x in xpnts ]
+
+import pickle
+outfile = open ("linevalues.dat", "wb")
+pickle.dump (xpnts, outfile)
+pickle.dump (vals, outfile)
+outfile.close()
+
+
+
+
+
+# reload data for post-processing
+
+import pickle
+infile = open("linevalues.dat", "rb")
+pnts2 = pickle.load(infile)
+vals2 = pickle.load(infile)
+
+import matplotlib.pyplot as plt
+plt.plot(pnts2, vals2, "-*")
+plt.ion()
+plt.show()
+

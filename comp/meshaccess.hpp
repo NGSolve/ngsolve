@@ -276,6 +276,11 @@ namespace ngcomp
     /// maximal boundary condition index. range is [0, nboundaries)
     int GetNBoundaries () const { return nboundaries; }
 
+    int GetNRegions (VorB vb) const
+    {
+      return (vb == VOL) ? ndomains : nboundaries;
+    }
+
     /// returns point coordinate
     template <int D>
     void GetPoint (int pi, Vec<D> & p) const

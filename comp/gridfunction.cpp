@@ -920,6 +920,15 @@ namespace ngcomp
   }
 
   GridFunctionCoefficientFunction :: 
+  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
+				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
+    : gf(agf), bfi (abfi), comp (acomp) 
+  {
+    ;
+  }
+
+
+  GridFunctionCoefficientFunction :: 
   ~GridFunctionCoefficientFunction ()
   {
     ;
@@ -928,6 +937,7 @@ namespace ngcomp
   int GridFunctionCoefficientFunction::Dimension() const
   { 
     if (diffop) return diffop->Dim();
+    if (bfi) return bfi->DimFlux();
     return gf->GetFESpace()->GetIntegrator()->DimFlux();
   }
 
@@ -935,7 +945,6 @@ namespace ngcomp
   { 
     return gf->GetFESpace()->IsComplex(); 
   }
-
 
   double GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationPoint & ip) const
@@ -1005,6 +1014,8 @@ namespace ngcomp
     fes->TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
     if (diffop)
       diffop->Apply (fel, ip, elu, result, lh2);
+    else if (bfi)
+      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
       fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
@@ -1042,6 +1053,8 @@ namespace ngcomp
 
     if (diffop)
       diffop->Apply (fel, ip, elu, result, lh2);
+    else if (bfi)
+      bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
       fes.GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
   }
@@ -1088,6 +1101,8 @@ namespace ngcomp
 
     if (diffop)
       diffop->Apply (fel, ir, elu, values, lh2);
+    else if (bfi)
+      bfi->CalcFlux (fel, ir, elu, values, true, lh2);
     else
       fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
   }

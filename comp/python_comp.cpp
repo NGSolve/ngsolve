@@ -290,6 +290,29 @@ void NGS_DLL_HEADER ExportNgcomp()
           }),
          (bp::arg("self"),bp::arg("order")))
 
+
+
+/*
+      work in progress ....
+    .def("__call__", FunctionPointer
+         ([](MeshAccess & ma, double x, double y, double z) // -> ElementTransformation*
+          {
+            IntegrationPoint ip;
+            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            if (elnr < 0) throw Exception ("point out of domain");
+            Allocator alloc;
+
+            ElementTransformation & trafo = ma.GetTrafo(elnr, false, alloc);
+            // BaseMappedIntegrationPoint & mip = trafo(ip, alloc);
+            // return bp::object(trafo);
+            return &trafo;
+          } 
+          ), 
+         (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0),
+         bp::return_value_policy<bp::manage_new_object>()
+         )
+*/
+
     
     /*
     // first attempts, but keep for a moment ...
@@ -313,8 +336,10 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
-                              Flags flags, int order, bool is_complex, const bp::list & dirichlet, int dim)
+                              bp::dict bpflags, int order, bool is_complex, const bp::list & dirichlet, int dim)
                            { 
+                             Flags flags = bp::extract<Flags> (bpflags)();
+
                              if (order > -1) flags.SetFlag ("order", order);
                              if (dim > -1) flags.SetFlag ("dim", dim);
                              if (is_complex) flags.SetFlag ("complex");
@@ -702,6 +727,12 @@ void NGS_DLL_HEADER ExportNgcomp()
 	    self.AssembleLinearization (ulin, lh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
+
+    .def("Flux", FunctionPointer
+         ([](BF & self, shared_ptr<GridFunction> gf) -> shared_ptr<CoefficientFunction>
+          {
+            return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
+          }))
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1000,10 +1031,13 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::def("Integrate", 
           FunctionPointer([](shared_ptr<CoefficientFunction> cf,
                              shared_ptr<MeshAccess> ma, 
-                             VorB vb, int order)
+                             VorB vb, int order, bool region_wise)
                           {
                             LocalHeap lh(1000000, "lh-Integrate");
                             double sum = 0;
+                            Vector<> region_sum(ma->GetNRegions(vb));
+                            region_sum = 0;
+
                             ma->IterateElements
                               (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                {
@@ -1017,9 +1051,20 @@ void NGS_DLL_HEADER ExportNgcomp()
                                    hsum += mir[i].GetWeight() * values(i,0);
 #pragma omp atomic
                                  sum += hsum;
+#pragma omp atomic
+                                 region_sum(el.GetIndex()) += hsum;
                                });
-                            return sum;
-                          }));
+                            bp::object result;
+                            if (!region_wise)
+                              result = bp::object(sum);
+                            else
+                              result = bp::list(bp::object(region_sum));
+                            return result;
+                          }),
+          (bp::arg("cf"), bp::arg("mesh"), bp::arg("VOL_or_BND")=VOL, 
+           bp::arg("order")=5, bp::arg("region_wise")=false)
+          );
+  
 
 #ifdef PARALLEL
   import_mpi4py();
