@@ -61,7 +61,6 @@ void SpawnPython (string initfile)
                   {
                     AcquireGIL gil_lock;
                     try{
-                      cout << "**************************** In SpawnPython **************" << endl;
                       Ng_SetRunning (1); 
                       pythread_id = std::this_thread::get_id();
                       pyenv.exec_file(init_file_.c_str());

@@ -25,8 +25,8 @@ uscat.Set (uin)
 Draw (uscat)
 
 a = BilinearForm (v, symmetric=True)
-a += BFI("PML_laplace", coef=ConstantCF(1))
-a += BFI("PML_mass", coef=ConstantCF(-k*k))
+a += BFI("PML_laplace", coef=1)
+a += BFI("PML_mass", coef=-k*k)
 
 
 f = LinearForm (v)

@@ -196,14 +196,12 @@ void NGS_DLL_HEADER  ExportNgstd() {
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
     .def("__init__", bp::make_constructor (FunctionPointer ([](const bp::dict & aflags) 
                                                             {
-      cout << "Calling Flags constructor with dict input" << endl;
       shared_ptr<Flags> self = make_shared<Flags>();
       for (int i = 0; i < bp::len(aflags); i++)
       {   
             char * s = bp::extract<char *>(aflags.keys()[i]);          
             SetFlag(*self, s, aflags.values()[i]);
       }
-      cout << "flags from dict: " << endl << *self << endl;
       return self;
                 })))
 

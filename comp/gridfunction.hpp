@@ -18,11 +18,14 @@ namespace ngcomp
   protected:
     shared_ptr<GridFunction> gf;
     shared_ptr<DifferentialOperator> diffop;
+    shared_ptr<BilinearFormIntegrator> bfi;
     int comp;
   public:
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<DifferentialOperator> adiffop, int acomp = 0);
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
+                                     shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
     
     virtual ~GridFunctionCoefficientFunction ();
     /// scalar valued or vector valued
