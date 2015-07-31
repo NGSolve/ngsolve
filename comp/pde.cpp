@@ -997,12 +997,6 @@ namespace ngcomp
     int meshnr = int (flags.GetNumFlag ("mesh", 1)) - 1;
     shared_ptr<MeshAccess> ma = GetMeshAccess (meshnr);
 
-    if (flags.GetDefineFlag ("vec"))
-      flags.SetFlag ("dim", ma->GetDimension());
-    if (flags.GetDefineFlag ("tensor")) 
-      flags.SetFlag ("dim", sqr (ma->GetDimension()));
-    if (flags.GetDefineFlag ("symtensor")) 
-      flags.SetFlag ("dim", ma->GetDimension()*(ma->GetDimension()+1) / 2);
 
     string type = flags.GetStringFlag("type", "");
     shared_ptr<FESpace> space;

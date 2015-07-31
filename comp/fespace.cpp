@@ -47,6 +47,14 @@ namespace ngcomp
 
     order = int (flags.GetNumFlag ("order", 1));
     dimension = int (flags.GetNumFlag ("dim", 1));
+
+    if (flags.GetDefineFlag ("vec"))
+      dimension = ma->GetDimension();
+    if (flags.GetDefineFlag ("tensor")) 
+      dimension = sqr (ma->GetDimension());
+    if (flags.GetDefineFlag ("symtensor")) 
+      dimension = ma->GetDimension()*(ma->GetDimension()+1) / 2;
+    
     iscomplex = flags.GetDefineFlag ("complex");
 //     eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     timing = flags.GetDefineFlag("timing");
