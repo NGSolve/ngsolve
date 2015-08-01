@@ -77,6 +77,55 @@ public:
 };
 
 
+class ProxyFunction : public CoefficientFunction
+{
+  const FESpace * space;
+  bool testfunction; // true .. test, false .. trial
+  shared_ptr<DifferentialOperator> evaluator;
+  shared_ptr<DifferentialOperator> deriv_evaluator;
+  bool bind_proxy = false;
+  int active_component = 0;
+public:
+  ProxyFunction (const FESpace * aspace, bool atestfunction,
+                 shared_ptr<DifferentialOperator> aevaluator, 
+                 shared_ptr<DifferentialOperator> aderiv_evaluator)
+    : space(aspace), testfunction(atestfunction),
+      evaluator(aevaluator), deriv_evaluator(aderiv_evaluator)
+  { ; }
+
+  virtual int Dimension () const { return evaluator->Dim(); }
+  virtual bool Complex () const { return space->IsComplex(); }
+
+  const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
+  shared_ptr<ProxyFunction> Deriv() const
+  {
+    return make_shared<ProxyFunction> (space, testfunction, deriv_evaluator, nullptr);
+  }
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    if (!bind_proxy)
+      throw Exception ("cannot evaluate ProxyFunction");
+    if (active_component == 0) return 1;
+    return 0;
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    if (!bind_proxy)
+      throw Exception ("cannot evaluate ProxyFunction");
+    result = 0;
+    if (active_component >= 0 && active_component < Dimension())
+      result(active_component) = 1;
+  }
+
+  void SetActiveComponent (int acomp, bool abind)
+  {
+    bind_proxy = abind;
+    active_component = acomp;
+  }
+};
+
 
 void NGS_DLL_HEADER ExportNgcomp()
 {
@@ -292,26 +341,22 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
 
-/*
-      work in progress ....
     .def("__call__", FunctionPointer
-         ([](MeshAccess & ma, double x, double y, double z) // -> ElementTransformation*
+         ([](MeshAccess & ma, double x, double y, double z) 
           {
             IntegrationPoint ip;
-            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
-            Allocator alloc;
 
-            ElementTransformation & trafo = ma.GetTrafo(elnr, false, alloc);
-            // BaseMappedIntegrationPoint & mip = trafo(ip, alloc);
-            // return bp::object(trafo);
-            return &trafo;
+            ElementTransformation & trafo = ma.GetTrafo(elnr, false, global_alloc);
+            BaseMappedIntegrationPoint & mip = trafo(ip, global_alloc);
+            mip.SetOwnsTrafo(true);
+            return &mip;
           } 
           ), 
          (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0),
          bp::return_value_policy<bp::manage_new_object>()
          )
-*/
 
     
     /*
@@ -333,6 +378,26 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+  bp::class_<ProxyFunction, shared_ptr<ProxyFunction>, 
+    bp::bases<CoefficientFunction>,
+    boost::noncopyable> ("ProxyFunction", bp::init<FESpace*,bool,
+                         shared_ptr<DifferentialOperator>,
+                         shared_ptr<DifferentialOperator>>())
+    .def("Deriv", FunctionPointer
+         ([](const ProxyFunction & self)
+          {
+            return self.Deriv();
+          }))
+    ;
+
+  bp::implicitly_convertible 
+    <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >(); 
+
+
+  //////////////////////////////////////////////////////////////////////////////////////////
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
@@ -457,6 +522,15 @@ void NGS_DLL_HEADER ExportNgcomp()
          bp::return_value_policy<bp::reference_existing_object>(),
          (bp::arg("self"), 
           bp::arg("coupling")=false))
+
+    .def("ProxyFunction", FunctionPointer
+         ( [] (const FESpace & self, bool test_function) 
+           {
+             return make_shared<ProxyFunction> (&self, test_function, 
+                                                self.GetEvaluator(),
+                                                self.GetFluxEvaluator());
+           }),
+         (bp::args("self"),bp::args("testfunction")=true))
     ;
   
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
@@ -1065,6 +1139,69 @@ void NGS_DLL_HEADER ExportNgcomp()
            bp::arg("order")=5, bp::arg("region_wise")=false)
           );
   
+
+  bp::def("IntegrateLF", 
+          FunctionPointer
+          ([](shared_ptr<LinearForm> lf, 
+              shared_ptr<CoefficientFunction> cf)
+           {
+             cout << "cf = " << *cf << endl;
+             lf->AllocateVector();
+             lf->GetVector() = 0.0;
+
+             Array<ProxyFunction*> proxies;
+             cf->TraverseTree( [&] (CoefficientFunction & nodecf)
+                               {
+                                 cout << "node: " << nodecf << endl;
+                                 auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+                                 if (proxy) proxies.Append (proxy);
+                               });
+
+             for (auto proxy : proxies)
+               proxy -> SetActiveComponent (-1, true);
+             
+
+             LocalHeap lh(1000000, "lh-Integrate");
+
+             // IterateElements (*lf->GetFESpace(), VOL, lh,
+             for (auto el : lf->GetFESpace()->Elements(VOL, lh))
+               {
+                 const FiniteElement & fel = el.GetFE();
+                 auto & trafo = lf->GetMeshAccess()->GetTrafo (el, lh);
+                 IntegrationRule ir(trafo.GetElementType(), 5);
+                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                 FlatVector<> elvec(fel.GetNDof(), lh);
+                 FlatVector<> elvec1(fel.GetNDof(), lh);
+
+                 FlatMatrix<> values(ir.Size(), cf->Dimension(), lh);
+
+                 elvec = 0;
+                 for (auto proxy : proxies)
+                   {
+                     FlatMatrix<> proxyvalues(ir.Size(), proxy->Dimension(), lh);
+                     for (int k = 0; k < proxy->Dimension(); k++)
+                       {
+                         proxy -> SetActiveComponent(k, true);
+                         
+                         cf -> Evaluate (mir, values);
+                         for (int i = 0; i < mir.Size(); i++)
+                           values.Row(i) *= mir[i].GetWeight();
+                         proxyvalues.Col(k) = values.Col(0);
+                       }
+
+                     proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
+                     elvec += elvec1;
+                   }
+                 lf->AddElementVector (el.GetDofs(), elvec);
+               }
+             
+             for (auto proxy : proxies)
+               proxy -> SetActiveComponent (-1, false);
+           }));
+           
+
+
+
 
 #ifdef PARALLEL
   import_mpi4py();

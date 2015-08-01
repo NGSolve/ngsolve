@@ -350,10 +350,11 @@ namespace ngstd
       : size(asize), data(adata) { ; }
 
     /// memory from local heap
-    INLINE FlatArray(TSIZE asize, LocalHeap & lh)
+    INLINE FlatArray(TSIZE asize, Allocator & lh)
       : size(asize),
         // data(static_cast<T*> (lh.Alloc(asize*sizeof(T))))
-        data (lh.Alloc<T> (asize))
+        // data (lh.Alloc<T> (asize))
+        data(new (lh) T[asize])
     { ; }
 
     /// the size
@@ -577,7 +578,7 @@ namespace ngstd
     }
 
     /// Generate array in user data
-    INLINE Array(TSIZE asize, LocalHeap & lh)
+    INLINE Array(TSIZE asize, Allocator & lh)
       : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 
@@ -586,6 +587,15 @@ namespace ngstd
 
     INLINE Array (Array && a2) 
     {
+      size = a2.size; 
+      data = a2.data;
+      allocsize = a2.allocsize;
+      mem_to_delete = a2.mem_to_delete;
+      a2.size = 0;
+      a2.allocsize = 0;
+      a2.data = nullptr;
+      a2.mem_to_delete = nullptr;
+      /*
       allocsize = 0;
       mem_to_delete = nullptr;
       size = 0;
@@ -595,6 +605,7 @@ namespace ngstd
       ngstd::Swap (data, a2.data);
       ngstd::Swap (allocsize, a2.allocsize);
       ngstd::Swap (mem_to_delete, a2.mem_to_delete);
+      */
     }
 
     /// array copy 

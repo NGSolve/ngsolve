@@ -91,6 +91,7 @@ namespace ngfem
     }
 
     virtual void PrintReport (ostream & ost) const;
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
   };
 
   inline ostream & operator<< (ostream & ost, CoefficientFunction & cf)

@@ -71,7 +71,7 @@ namespace ngfem
     Mat<2,2> hdxdxi;
     Vec<2> hpoint;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
+    eltrans->CalcPointJacobian (ip, hpoint, hdxdxi);
 
     
     // rect_pml = 3;
@@ -201,7 +201,7 @@ namespace ngfem
     Mat<3,3> hdxdxi;
     Vec<3> hpoint, hvec;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
+    eltrans->CalcPointJacobian (ip, hpoint, hdxdxi);
     // eltrans.CalcJacobian (ip, hdxdxi, lh);
     // eltrans.CalcPoint (ip, hpoint, lh);
 
@@ -304,7 +304,7 @@ namespace ngfem
     Mat<2,2> hdxdxi;
     Vec<2> hpoint;
 
-    eltrans->CalcPointJacobian (*ip, hpoint, hdxdxi);
+    eltrans->CalcPointJacobian (ip, hpoint, hdxdxi);
 
 
 

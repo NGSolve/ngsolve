@@ -148,29 +148,37 @@ namespace ngfem
   {
   protected:
     /// IP on the reference element
-    const IntegrationPoint * ip;
+    // const IntegrationPoint * ip;
+    IntegrationPoint ip;
     /// computed by the transformation
     const ElementTransformation * eltrans;
+    ///
+    bool owns_trafo = false;
     /// fabs(det)
     double measure; 
   public:
     ///
+    INLINE BaseMappedIntegrationPoint () = default;
+    ///
     INLINE BaseMappedIntegrationPoint (const IntegrationPoint & aip,
-				const ElementTransformation & aeltrans)
-      : ip(&aip), eltrans(&aeltrans)  { ; }
+                                       const ElementTransformation & aeltrans)
+      : ip(aip), eltrans(&aeltrans)  { ; }
+    ///
+    ~BaseMappedIntegrationPoint ();
     /// 
-    INLINE const IntegrationPoint & IP () const { return *ip; }
+    INLINE const IntegrationPoint & IP () const { return ip; }
     ///
     INLINE const ElementTransformation & GetTransformation () const { return *eltrans; }
     ///
-    INLINE int GetIPNr() const { return ip->Nr(); }
+    INLINE int GetIPNr() const { return ip.Nr(); }
     ///
     INLINE double GetMeasure() const { return measure; }
     ///
-    INLINE double GetWeight() const { return measure * ip->Weight(); }
+    INLINE double GetWeight() const { return measure * ip.Weight(); }
 
     FlatVector<> GetPoint() const;
     int Dim() const;
+    void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
   };
 
 
@@ -181,6 +189,8 @@ namespace ngfem
     ///
     Vec<R,SCAL> point;
   public:
+    ///
+    INLINE DimMappedIntegrationPoint () = default;
     ///
     INLINE DimMappedIntegrationPoint (const IntegrationPoint & aip,
 				 const ElementTransformation & aeltrans)
@@ -210,6 +220,8 @@ namespace ngfem
  
   public:
     typedef SCAL TSCAL;
+    ///
+    NGS_DLL_HEADER MappedIntegrationPoint () = default;
     ///
     NGS_DLL_HEADER MappedIntegrationPoint (const IntegrationPoint & aip,
 					   const ElementTransformation & aeltrans);
@@ -342,10 +354,16 @@ namespace ngfem
   */
 
 
-  template <int DIMS, int DIMR, typename SCAL> 
-  inline ostream & operator<< (ostream & ost, const MappedIntegrationPoint<DIMS,DIMR,SCAL> & sip)
+  inline ostream & operator<< (ostream & ost, const BaseMappedIntegrationPoint & mip)
   {
-    ost << sip.GetPoint() << ", dxdxi = " << sip.GetJacobian();
+    ost << mip.GetPoint(); //  << ", dxdxi = " << mip.GetJacobian();
+    return ost;
+  }
+
+  template <int DIMS, int DIMR, typename SCAL> 
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationPoint<DIMS,DIMR,SCAL> & mip)
+  {
+    ost << mip.GetPoint() << ", dxdxi = " << mip.GetJacobian();
     return ost;
   }
 
@@ -949,12 +967,12 @@ namespace ngfem
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & aeltrans, 
-			   LocalHeap & lh);
+			   Allocator & lh);
 
     INLINE MappedIntegrationRule (const IntegrationRule & ir, 
                                   const ElementTransformation & eltrans, 
                                   int dummy,
-                                  LocalHeap & lh)
+                                  Allocator & lh)
       : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);

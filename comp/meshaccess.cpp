@@ -123,12 +123,12 @@ namespace ngcomp
       mesh->mesh.ElementTransformation <DIMS,DIMR> (elnr, &ip(0), &point(0), &dxdxi(0));
     }
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    
@@ -493,12 +493,12 @@ namespace ngcomp
       FlatMatrixFixWidth<DIMS> (DIMR, &dxdxi(0,0)) = mat;
     }
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    

@@ -98,6 +98,12 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
 
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip));
@@ -135,7 +141,15 @@ public:
     : c1(ac1), c2(ac2), lam(alam), lamc(alamc) { ; }
 
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  
+  virtual int Dimension() const { return c1->Dimension(); }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip), c2->Evaluate(ip));
@@ -150,20 +164,38 @@ public:
   {
     return lam (c1->EvaluateConst(), c2->EvaluateConst());
   }
+
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
+                        FlatVector<> result) const
+  {
+#ifdef VLA
+    double hmem[Dimension()];
+    FlatVector<> temp(Dimension(), hmem);
+#else
+    Vector<> temp(Dimension());
+#endif
+
+    c1->Evaluate (mip, result);
+    c2->Evaluate (mip, temp);
+    for (int i = 0; i < result.Size(); i++)
+      result(i) = lam (result(i), temp(i));
+  }
+
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
 #ifdef VLA
-    double hmem[ir.Size()];
-    FlatMatrix<> temp(ir.Size(), 1, hmem);
+    double hmem[ir.Size()*Dimension()];
+    FlatMatrix<> temp(ir.Size(), Dimension(), hmem);
 #else
-    Matrix<> temp(ir.Size(), 1);
+    Matrix<> temp(ir.Size(), Dimension());
 #endif
 
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);
-    for (int i = 0; i < ir.Size(); i++)
-      result(i,0) = lam (result(i,0), temp(i,0));
+    for (int i = 0; i < result.Height()*result.Width(); i++)
+      result(i) = lam (result(i), temp(i));
   }
 };
 
@@ -187,6 +219,19 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return c1->Dimension(); }
+
+  virtual void PrintReport (ostream & ost) const
+  {
+    ost << scal << "*(";
+    c1->PrintReport(ost);
+    ost << ")";
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -227,6 +272,12 @@ public:
   virtual bool IsComplex() const { return true; }
   virtual int Dimension() const { return c1->Dimension(); }
 
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     throw Exception ("real Evaluate called for complex CF");
@@ -257,6 +308,13 @@ public:
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return c2->Dimension(); }
 
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     throw Exception ("double MultScalVecCF::Evaluate called");
@@ -284,6 +342,13 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -313,6 +378,12 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return 1; }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -373,7 +444,7 @@ void ExportCoefficientFunction()
                            {
                              return make_shared<ConstantCoefficientFunction> (val);
                            })))
-    .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
+    .def("__call__", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
 
     .add_property("dim", &CoefficientFunction::Dimension)    
     
@@ -601,6 +672,12 @@ void NGS_DLL_HEADER ExportNgfem() {
              return shared_ptr<BaseScalarFiniteElement>(fe);
            })
           );
+
+
+  bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init)
+    .def("__str__", &ToString<BaseMappedIntegrationPoint>)
+    ;
+
     
   bp::class_<ElementTransformation, boost::noncopyable>("ElementTransformation", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -608,8 +685,16 @@ void NGS_DLL_HEADER ExportNgfem() {
                            {
                              return new FE_ElementTransformation<2,2> (et, pmat); 
                            })))
-    .def ("IsBoundary", &ElementTransformation::Boundary)
+    .add_property("is_boundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
+    .def ("__call__", FunctionPointer
+          ([&] (ElementTransformation & self, double x, double y, double z)
+           {
+             
+             return &self(IntegrationPoint(x,y,z), global_alloc);
+           }),
+          (bp::args("self"), bp::args("x"), bp::args("y")=0, bp::args("z")=0),
+          bp::return_value_policy<bp::manage_new_object>())
     ;
   
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
@@ -834,9 +919,6 @@ void NGS_DLL_HEADER ExportNgfem() {
     ;
   */
   
-  bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init);  
-
-
 
 
   ExportCoefficientFunction ();
