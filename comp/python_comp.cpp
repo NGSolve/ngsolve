@@ -387,7 +387,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                          shared_ptr<DifferentialOperator>,
                          shared_ptr<DifferentialOperator>>())
     .def("Deriv", FunctionPointer
-         ([](const ProxyFunction & self)
+         ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
           {
             return self.Deriv();
           }))
@@ -523,14 +523,23 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"), 
           bp::arg("coupling")=false))
 
-    .def("ProxyFunction", FunctionPointer
-         ( [] (const FESpace & self, bool test_function) 
+
+    .def("TrialFunction", FunctionPointer
+         ( [] (const FESpace & self) -> shared_ptr<CoefficientFunction>
            {
-             return make_shared<ProxyFunction> (&self, test_function, 
+             return make_shared<ProxyFunction> (&self, false, 
                                                 self.GetEvaluator(),
                                                 self.GetFluxEvaluator());
            }),
-         (bp::args("self"),bp::args("testfunction")=true))
+         (bp::args("self")))
+    .def("TestFunction", FunctionPointer
+         ( [] (const FESpace & self) -> shared_ptr<CoefficientFunction>
+           {
+             return make_shared<ProxyFunction> (&self, true, 
+                                                self.GetEvaluator(),
+                                                self.GetFluxEvaluator());
+           }),
+         (bp::args("self")))
     ;
   
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
@@ -1154,8 +1163,12 @@ void NGS_DLL_HEADER ExportNgcomp()
                                {
                                  cout << "node: " << nodecf << endl;
                                  auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-                                 if (proxy) proxies.Append (proxy);
+                                 if (proxy) 
+                                   if (!proxies.Contains(proxy))
+                                     proxies.Append (proxy);
                                });
+
+             cout << "proxies: " << proxies << endl;
 
              for (auto proxy : proxies)
                proxy -> SetActiveComponent (-1, true);
@@ -1188,7 +1201,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                            values.Row(i) *= mir[i].GetWeight();
                          proxyvalues.Col(k) = values.Col(0);
                        }
-
+                     proxy -> SetActiveComponent(-1, true);
+                     // cout << "proxy-values = " << endl << proxyvalues << enld;
                      proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
                      elvec += elvec1;
                    }
