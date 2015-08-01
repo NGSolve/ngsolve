@@ -21,6 +21,13 @@ namespace ngfem
     return ost;
   }
   
+
+  BaseMappedIntegrationPoint :: ~BaseMappedIntegrationPoint ()
+  {
+    if (owns_trafo) delete eltrans;
+  }
+
+
   FlatVector<> BaseMappedIntegrationPoint :: GetPoint() const
   {
     switch (eltrans->SpaceDim())
@@ -94,8 +101,8 @@ namespace ngfem
     Mat<2> jacr, jacl;
     for (int dir = 0; dir < 2; dir++)
       {
-	IntegrationPoint ipr = *this->ip;
-	IntegrationPoint ipl = *this->ip;
+	IntegrationPoint ipr = this->ip;
+	IntegrationPoint ipl = this->ip;
 	ipr(dir) += eps;
 	ipl(dir) -= eps;
 	this->eltrans->CalcJacobian (ipr, jacr);    
@@ -186,7 +193,7 @@ namespace ngfem
   MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
   MappedIntegrationRule (const IntegrationRule & ir, 
 			 const ElementTransformation & aeltrans, 
-			 LocalHeap & lh)
+			 Allocator & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
     baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);

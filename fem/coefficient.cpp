@@ -25,6 +25,11 @@ namespace ngfem
   {
     ost << "CoefficientFunction is " << typeid(*this).name() << endl;
   }
+
+  void CoefficientFunction :: TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    func(*this);
+  }
   
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const

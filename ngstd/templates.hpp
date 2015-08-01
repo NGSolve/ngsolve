@@ -46,9 +46,14 @@ INLINE T max3 (T a, T b, T c)
 template <class T>
 INLINE void Swap (T & a, T & b)
 {
+  /*
   T temp = a;
   a = b;
   b = temp;
+  */
+  T temp = move(a);
+  a = move(b);
+  b = move(temp);
 }
 
 

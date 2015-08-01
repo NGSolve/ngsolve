@@ -131,10 +131,10 @@ namespace ngfem
     { ; }
 
     /// return a mapped integration point on localheap
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const = 0;
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const = 0;
 
     /// return a mapped integration rule on localheap
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const = 0;
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const = 0;
 
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
@@ -258,12 +258,12 @@ namespace ngfem
     { ; }
 
 
-    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, LocalHeap & lh) const
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationPoint<DIMS,DIMR> (ip, *this);
     }
 
-    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, LocalHeap & lh) const
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }

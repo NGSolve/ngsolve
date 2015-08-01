@@ -74,6 +74,8 @@ namespace ngcomp
 
     ///
     virtual void Assemble (LocalHeap & lh) = 0;
+    ///
+    virtual void AllocateVector () = 0;
 
     virtual void CleanUpLevel() { ; }
 
@@ -134,9 +136,6 @@ namespace ngcomp
 
     ///
     using LinearForm::LinearForm;
-
-    ///
-    virtual void AllocateVector () = 0;
 
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
@@ -210,6 +209,7 @@ namespace ngcomp
     ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp);
     virtual LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
 
+    virtual void AllocateVector () { cerr << "comp - allocate is illegal" << endl; }
     virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
     virtual shared_ptr<BaseVector> GetVectorPtr() const
     { throw Exception ("comp - GetVectorPtr is illegal"); }

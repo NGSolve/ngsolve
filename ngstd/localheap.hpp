@@ -20,7 +20,7 @@ namespace ngstd
       return new char[size];
     }
   };
-
+  static Allocator global_alloc;
 
   /**
      Exception on heap overflow.
