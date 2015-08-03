@@ -93,10 +93,12 @@ public:
       evaluator(aevaluator), deriv_evaluator(aderiv_evaluator)
   { ; }
 
+  bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
   virtual bool Complex () const { return space->IsComplex(); }
 
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
+  const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
   shared_ptr<ProxyFunction> Deriv() const
   {
     return make_shared<ProxyFunction> (space, testfunction, deriv_evaluator, nullptr);
@@ -125,6 +127,100 @@ public:
     active_component = acomp;
   }
 };
+
+
+class CompoundDifferentialOperator : public DifferentialOperator
+{
+  shared_ptr<DifferentialOperator> diffop;
+  int comp;
+public:
+  CompoundDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
+                                int acomp)
+    : diffop(adiffop), comp(acomp) { ; }
+  
+  virtual ~CompoundDifferentialOperator () = default;
+  
+  /// dimension of range
+  virtual int Dim() const { return diffop->Dim(); }
+  virtual bool Boundary() const { return diffop->Boundary(); }
+  virtual int DiffOrder() const { return diffop->DiffOrder(); }
+  
+  
+  NGS_DLL_HEADER virtual void
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const
+  {
+    mat = 0;
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = fel.GetRange(comp);
+    diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
+    /*
+    FlatMatrix<double,ColMajor> mat1(mat.Height(), fel[comp].GetNDof(), lh);
+    diffop->CalcMatrix (fel[comp], mip, mat1, lh);
+    cout << "mat1 = " << mat1 << endl;
+    cout << "r = " << r << endl;
+    mat.Cols(r) = mat1;
+    cout << "mat = " << mat << endl;
+    */
+    // CalcMatrix (fel[comp], mip, mat.Cols(fel.GetRange(comp)), lh);
+  }
+  
+  
+  NGS_DLL_HEADER virtual void
+  Apply (const FiniteElement & fel,
+         const BaseMappedIntegrationPoint & mip,
+         FlatVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    cout << "compounddiffop::apply not implemented" << endl;
+  }
+};
+
+
+bp::object MakeProxyFunction2 (const FESpace & fes,
+                              bool testfunction,
+                              const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
+{
+  auto compspace = dynamic_cast<const CompoundFESpace*> (&fes);
+  if (compspace)
+    {
+      bp::list l;
+      int nspace = compspace->GetNSpaces();
+      for (int i = 0; i < nspace; i++)
+        {
+          l.append (MakeProxyFunction2 ( *(*compspace)[i], testfunction,
+                                         [&] (shared_ptr<ProxyFunction> proxy)
+                                         {
+                                           auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
+                                           auto block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
+                                           auto block_proxy = make_shared<ProxyFunction> (&fes, testfunction, block_eval, block_deriv_eval);
+                                           block_proxy = addblock(block_proxy);
+                                           return block_proxy;
+                                         }));
+        }
+      return l;
+    }
+
+  shared_ptr<CoefficientFunction> proxy =
+    addblock(make_shared<ProxyFunction> (&fes, testfunction, 
+                                         fes.GetEvaluator(),
+                                         fes.GetFluxEvaluator()));
+  return bp::object(proxy);
+}
+
+bp::object MakeProxyFunction (const FESpace & fes,
+                              bool testfunction) 
+{
+
+  return 
+    MakeProxyFunction2 (fes, testfunction, 
+                        [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
+}
+
+
 
 
 void NGS_DLL_HEADER ExportNgcomp()
@@ -525,19 +621,15 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .def("TrialFunction", FunctionPointer
-         ( [] (const FESpace & self) -> shared_ptr<CoefficientFunction>
+         ( [] (const FESpace & self) 
            {
-             return make_shared<ProxyFunction> (&self, false, 
-                                                self.GetEvaluator(),
-                                                self.GetFluxEvaluator());
+             return MakeProxyFunction (self, false);
            }),
          (bp::args("self")))
     .def("TestFunction", FunctionPointer
-         ( [] (const FESpace & self) -> shared_ptr<CoefficientFunction>
+         ( [] (const FESpace & self) 
            {
-             return make_shared<ProxyFunction> (&self, true, 
-                                                self.GetEvaluator(),
-                                                self.GetFluxEvaluator());
+             return MakeProxyFunction (self, true);
            }),
          (bp::args("self")))
     ;
@@ -1154,25 +1246,20 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<LinearForm> lf, 
               shared_ptr<CoefficientFunction> cf)
            {
-             cout << "cf = " << *cf << endl;
              lf->AllocateVector();
              lf->GetVector() = 0.0;
 
              Array<ProxyFunction*> proxies;
              cf->TraverseTree( [&] (CoefficientFunction & nodecf)
                                {
-                                 cout << "node: " << nodecf << endl;
                                  auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
                                  if (proxy) 
                                    if (!proxies.Contains(proxy))
                                      proxies.Append (proxy);
                                });
 
-             cout << "proxies: " << proxies << endl;
-
              for (auto proxy : proxies)
                proxy -> SetActiveComponent (-1, true);
-             
 
              LocalHeap lh(1000000, "lh-Integrate");
 
@@ -1202,7 +1289,6 @@ void NGS_DLL_HEADER ExportNgcomp()
                          proxyvalues.Col(k) = values.Col(0);
                        }
                      proxy -> SetActiveComponent(-1, true);
-                     // cout << "proxy-values = " << endl << proxyvalues << enld;
                      proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
                      elvec += elvec1;
                    }
@@ -1210,6 +1296,94 @@ void NGS_DLL_HEADER ExportNgcomp()
                }
              
              for (auto proxy : proxies)
+               proxy -> SetActiveComponent (-1, false);
+           }));
+           
+
+
+  bp::def("IntegrateBF", 
+          FunctionPointer
+          ([](shared_ptr<BilinearForm> bf1, 
+              shared_ptr<CoefficientFunction> cf)
+           {
+             // lf->AllocateVector();
+             auto bf = dynamic_pointer_cast<S_BilinearForm<double>> (bf1);
+             bf->GetMatrix().SetZero();
+
+             Array<ProxyFunction*> trial_proxies, test_proxies;
+             cf->TraverseTree( [&] (CoefficientFunction & nodecf)
+                               {
+                                 auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+                                 if (proxy) 
+                                   {
+                                     if (proxy->IsTestFunction())
+                                       {
+                                         if (!test_proxies.Contains(proxy))
+                                           test_proxies.Append (proxy);
+                                       }
+                                     else
+                                       {                                         
+                                         if (!trial_proxies.Contains(proxy))
+                                           trial_proxies.Append (proxy);
+                                       }
+                                   }
+                               });
+
+             for (auto proxy : test_proxies)
+               proxy -> SetActiveComponent (-1, true);
+             for (auto proxy : trial_proxies)
+               proxy -> SetActiveComponent (-1, true);
+
+             LocalHeap lh(1000000, "lh-Integrate");
+
+             // IterateElements (*lf->GetFESpace(), VOL, lh,
+             for (auto el : bf->GetFESpace()->Elements(VOL, lh))
+               {
+                 const FiniteElement & fel = el.GetFE();
+                 auto & trafo = bf->GetMeshAccess()->GetTrafo (el, lh);
+                 IntegrationRule ir(trafo.GetElementType(), 5);
+                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                 FlatMatrix<> elmat(fel.GetNDof(), lh);
+
+                 FlatMatrix<> values(ir.Size(), 1, lh);
+
+                 elmat = 0;
+
+                 for (int i = 0; i < mir.Size(); i++)
+                   {
+                     auto & mip = mir[i];
+                     
+                     for (auto proxy1 : trial_proxies)
+                       for (auto proxy2 : test_proxies)
+                         {
+                           FlatMatrix<> proxyvalues(proxy2->Dimension(), 
+                                                    proxy1->Dimension(), 
+                                                    lh);
+                           for (int k = 0; k < proxy1->Dimension(); k++)
+                             for (int l = 0; l < proxy2->Dimension(); l++)
+                               {
+                                 proxy1 -> SetActiveComponent(k, true);
+                                 proxy2 -> SetActiveComponent(l, true);
+                                 
+                                 proxyvalues(l,k) = 
+                                 mip.GetWeight() * cf -> Evaluate (mip);
+                               }
+                           
+                           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                           proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
+                           proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
+                           elmat += Trans(bmat2) * proxyvalues * bmat1;
+                           proxy1 -> SetActiveComponent(-1, true);
+                           proxy2 -> SetActiveComponent(-1, true);
+                         }
+                   }
+                 bf->AddElementMatrix (el.GetDofs(), el.GetDofs(), elmat, el, lh);
+               }
+             
+             for (auto proxy : test_proxies)
+               proxy -> SetActiveComponent (-1, false);
+             for (auto proxy : trial_proxies)
                proxy -> SetActiveComponent (-1, false);
            }));
            
