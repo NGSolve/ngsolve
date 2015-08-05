@@ -1233,12 +1233,15 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::def("Integrate", 
           FunctionPointer([](shared_ptr<CoefficientFunction> cf,
                              shared_ptr<MeshAccess> ma, 
-                             VorB vb, int order, bool region_wise)
+                             VorB vb, int order, 
+                             bool region_wise, bool element_wise)
                           {
                             LocalHeap lh(1000000, "lh-Integrate");
                             double sum = 0;
                             Vector<> region_sum(ma->GetNRegions(vb));
+                            Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                             region_sum = 0;
+                            element_sum = 0;
 
                             ma->IterateElements
                               (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
@@ -1255,17 +1258,23 @@ void NGS_DLL_HEADER ExportNgcomp()
                                  sum += hsum;
 #pragma omp atomic
                                  region_sum(el.GetIndex()) += hsum;
+                                 if (element_wise)
+                                   element_sum(el.Nr()) = hsum;
                                });
                             bp::object result;
-                            if (!region_wise)
-                              result = bp::object(sum);
-                            else
+                            if (region_wise)
                               result = bp::list(bp::object(region_sum));
+                            else if (element_wise)
+                              result = bp::object(element_sum);
+                            else
+                              result = bp::object(sum);
                             return result;
                           }),
           (bp::arg("cf"), bp::arg("mesh"), bp::arg("VOL_or_BND")=VOL, 
-           bp::arg("order")=5, bp::arg("region_wise")=false)
-          );
+           bp::arg("order")=5, 
+           bp::arg("region_wise")=false,
+           bp::arg("element_wise")=false))
+    ;
   
 
 
