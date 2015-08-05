@@ -76,6 +76,14 @@ public:
   }
 };
 
+class ProxyUserData
+{
+public:
+  class ProxyFunction * testfunction;
+  int test_comp;
+  class ProxyFunction * trialfunction;
+  int trial_comp;
+};
 
 class ProxyFunction : public CoefficientFunction
 {
@@ -105,20 +113,39 @@ public:
   }
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
+    /*
     if (!bind_proxy)
       throw Exception ("cannot evaluate ProxyFunction");
     if (active_component == 0) return 1;
     return 0;
+    */
+    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+    if (ud->testfunction == this || ud->trialfunction == this)
+      return 1;
+    else
+      return 0;
   }
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const
   {
+    /*
     if (!bind_proxy)
       throw Exception ("cannot evaluate ProxyFunction");
     result = 0;
     if (active_component >= 0 && active_component < Dimension())
       result(active_component) = 1;
+    */
+    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+    result = 0;
+    if (ud->testfunction == this)
+      result (ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      result (ud->trial_comp) = 1;
   }
 
   void SetActiveComponent (int acomp, bool abind)
@@ -1241,6 +1268,172 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
   
 
+
+  class SymbolicLinearFormIntegrator : public LinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<ProxyFunction*> proxies;
+
+  public:
+    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
+      : cf(acf)
+    {
+      if (cf->Dimension() != 1)
+        throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
+      cf->TraverseTree
+        ([&] (CoefficientFunction & nodecf)
+         {
+           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+           if (proxy && !proxies.Contains(proxy))
+             proxies.Append (proxy);
+         });
+    }
+
+    virtual bool BoundaryForm() const { return false; }
+
+    virtual void 
+    CalcElementVector (const FiniteElement & fel,
+		       const ElementTransformation & trafo, 
+		       FlatVector<double> elvec,
+		       LocalHeap & lh) const
+    {
+      IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+      BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+      FlatVector<> elvec1(fel.GetNDof(), lh);
+
+      FlatMatrix<> values(ir.Size(), 1 /* cf->Dimension() */, lh);
+      ProxyUserData ud;
+      const_cast<ElementTransformation&>(trafo).userdata = &ud;
+
+      elvec = 0;
+      for (auto proxy : proxies)
+        {
+          FlatMatrix<> proxyvalues(ir.Size(), proxy->Dimension(), lh);
+          for (int k = 0; k < proxy->Dimension(); k++)
+            {
+              ud.testfunction = proxy;
+              ud.test_comp = k;
+              
+              cf -> Evaluate (mir, values);
+              for (int i = 0; i < mir.Size(); i++)
+                values.Row(i) *= mir[i].GetWeight();
+              proxyvalues.Col(k) = values.Col(0);
+            }
+          
+          proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
+          elvec += elvec1;
+        }
+    }
+
+  };
+
+
+
+  class SymbolicBilinearFormIntegrator : public BilinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<ProxyFunction*> trial_proxies, test_proxies;
+
+  public:
+    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
+      : cf(acf)
+    {
+      if (cf->Dimension() != 1)
+        throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
+
+
+      cf->TraverseTree
+        ( [&] (CoefficientFunction & nodecf)
+          {
+            auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+            if (proxy) 
+              {
+                if (proxy->IsTestFunction())
+                  {
+                    if (!test_proxies.Contains(proxy))
+                      test_proxies.Append (proxy);
+                  }
+                else
+                  {                                         
+                    if (!trial_proxies.Contains(proxy))
+                      trial_proxies.Append (proxy);
+                  }
+              }
+          });
+    }
+
+    virtual bool BoundaryForm() const { return false; }
+    virtual bool IsSymmetric() const { return true; } 
+
+    virtual void 
+    CalcElementMatrix (const FiniteElement & fel,
+		       const ElementTransformation & trafo, 
+		       FlatMatrix<double> elmat,
+		       LocalHeap & lh) const
+    {
+      IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+      BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+      // FlatMatrix<> values(ir.Size(), 1, lh);
+      ProxyUserData ud;
+      const_cast<ElementTransformation&>(trafo).userdata = &ud;
+
+      elmat = 0;
+      for (int i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+          
+          for (auto proxy1 : trial_proxies)
+            for (auto proxy2 : test_proxies)
+              {
+                HeapReset hr(lh);
+                FlatMatrix<> proxyvalues(proxy2->Dimension(), proxy1->Dimension(), lh);
+                for (int k = 0; k < proxy1->Dimension(); k++)
+                  for (int l = 0; l < proxy2->Dimension(); l++)
+                    {
+                      ud.trialfunction = proxy1;
+                      ud.trial_comp = k;
+                      ud.testfunction = proxy2;
+                      ud.test_comp = l;
+                      
+                      proxyvalues(l,k) =
+                        mip.GetWeight() * cf -> Evaluate (mip);
+                    }
+                
+                {
+                  FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                  FlatMatrix<double,ColMajor> dbmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                  FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+
+                  proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
+                  dbmat1 = proxyvalues * bmat1;
+                  elmat += Trans (bmat2) * dbmat1;
+                }
+              }
+        }
+    }
+
+  };
+
+
+
+
+
+  bp::def("SymbolicLFI", FunctionPointer
+          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<LinearFormIntegrator>
+           {
+             return make_shared<SymbolicLinearFormIntegrator> (cf);
+           }));
+
+  bp::def("SymbolicBFI", FunctionPointer
+          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<BilinearFormIntegrator>
+           {
+             return make_shared<SymbolicBilinearFormIntegrator> (cf);
+           }));
+
+          
   bp::def("IntegrateLF", 
           FunctionPointer
           ([](shared_ptr<LinearForm> lf, 
@@ -1253,27 +1446,27 @@ void NGS_DLL_HEADER ExportNgcomp()
              cf->TraverseTree( [&] (CoefficientFunction & nodecf)
                                {
                                  auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-                                 if (proxy) 
-                                   if (!proxies.Contains(proxy))
-                                     proxies.Append (proxy);
+                                 if (proxy && !proxies.Contains(proxy))
+                                   proxies.Append (proxy);
                                });
+             
+             LocalHeap lh1(1000000, "lh-Integrate");
 
-             for (auto proxy : proxies)
-               proxy -> SetActiveComponent (-1, true);
-
-             LocalHeap lh(1000000, "lh-Integrate");
-
-             // IterateElements (*lf->GetFESpace(), VOL, lh,
-             for (auto el : lf->GetFESpace()->Elements(VOL, lh))
+             // for (auto el : lf->GetFESpace()->Elements(VOL, lh))
+             IterateElements 
+               (*lf->GetFESpace(), VOL, lh1,
+                [&] (FESpace::Element el, LocalHeap & lh)
                {
                  const FiniteElement & fel = el.GetFE();
                  auto & trafo = lf->GetMeshAccess()->GetTrafo (el, lh);
-                 IntegrationRule ir(trafo.GetElementType(), 5);
+                 IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
                  BaseMappedIntegrationRule & mir = trafo(ir, lh);
                  FlatVector<> elvec(fel.GetNDof(), lh);
                  FlatVector<> elvec1(fel.GetNDof(), lh);
 
                  FlatMatrix<> values(ir.Size(), cf->Dimension(), lh);
+                 ProxyUserData ud;
+                 trafo.userdata = &ud;
 
                  elvec = 0;
                  for (auto proxy : proxies)
@@ -1281,22 +1474,20 @@ void NGS_DLL_HEADER ExportNgcomp()
                      FlatMatrix<> proxyvalues(ir.Size(), proxy->Dimension(), lh);
                      for (int k = 0; k < proxy->Dimension(); k++)
                        {
-                         proxy -> SetActiveComponent(k, true);
+                         ud.testfunction = proxy;
+                         ud.test_comp = k;
                          
                          cf -> Evaluate (mir, values);
                          for (int i = 0; i < mir.Size(); i++)
                            values.Row(i) *= mir[i].GetWeight();
                          proxyvalues.Col(k) = values.Col(0);
                        }
-                     proxy -> SetActiveComponent(-1, true);
+
                      proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
                      elvec += elvec1;
                    }
                  lf->AddElementVector (el.GetDofs(), elvec);
-               }
-             
-             for (auto proxy : proxies)
-               proxy -> SetActiveComponent (-1, false);
+               });
            }));
            
 
@@ -1306,7 +1497,6 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<BilinearForm> bf1, 
               shared_ptr<CoefficientFunction> cf)
            {
-             // lf->AllocateVector();
              auto bf = dynamic_pointer_cast<S_BilinearForm<double>> (bf1);
              bf->GetMatrix().SetZero();
 
@@ -1329,11 +1519,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                    }
                                });
 
-             for (auto proxy : test_proxies)
-               proxy -> SetActiveComponent (-1, true);
-             for (auto proxy : trial_proxies)
-               proxy -> SetActiveComponent (-1, true);
-
+             ProxyUserData ud;
              LocalHeap lh(1000000, "lh-Integrate");
 
              // IterateElements (*lf->GetFESpace(), VOL, lh,
@@ -1341,7 +1527,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                {
                  const FiniteElement & fel = el.GetFE();
                  auto & trafo = bf->GetMeshAccess()->GetTrafo (el, lh);
-                 IntegrationRule ir(trafo.GetElementType(), 5);
+                 trafo.userdata = &ud;
+                 IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
                  BaseMappedIntegrationRule & mir = trafo(ir, lh);
                  FlatMatrix<> elmat(fel.GetNDof(), lh);
 
@@ -1356,35 +1543,34 @@ void NGS_DLL_HEADER ExportNgcomp()
                      for (auto proxy1 : trial_proxies)
                        for (auto proxy2 : test_proxies)
                          {
+                           HeapReset hr(lh);
+
                            FlatMatrix<> proxyvalues(proxy2->Dimension(), 
                                                     proxy1->Dimension(), 
                                                     lh);
                            for (int k = 0; k < proxy1->Dimension(); k++)
                              for (int l = 0; l < proxy2->Dimension(); l++)
                                {
-                                 proxy1 -> SetActiveComponent(k, true);
-                                 proxy2 -> SetActiveComponent(l, true);
-                                 
+                                 ud.trialfunction = proxy1;
+                                 ud.trial_comp = k;
+                                 ud.testfunction = proxy2;
+                                 ud.test_comp = l;
                                  proxyvalues(l,k) = 
-                                 mip.GetWeight() * cf -> Evaluate (mip);
+                                   mip.GetWeight() * cf -> Evaluate (mip);
                                }
                            
                            FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                           FlatMatrix<double,ColMajor> dbmat1(proxy1->Dimension(), fel.GetNDof(), lh);
                            FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+
                            proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
                            proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
-                           elmat += Trans(bmat2) * proxyvalues * bmat1;
-                           proxy1 -> SetActiveComponent(-1, true);
-                           proxy2 -> SetActiveComponent(-1, true);
+                           dbmat1 = proxyvalues * bmat1;
+                           elmat += Trans (bmat2) * dbmat1;
                          }
                    }
                  bf->AddElementMatrix (el.GetDofs(), el.GetDofs(), elmat, el, lh);
                }
-             
-             for (auto proxy : test_proxies)
-               proxy -> SetActiveComponent (-1, false);
-             for (auto proxy : trial_proxies)
-               proxy -> SetActiveComponent (-1, false);
            }));
            
 

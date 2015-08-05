@@ -138,7 +138,8 @@ namespace ngfem
 
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
-    
+
+    void * userdata = nullptr;
   private:
     ElementTransformation (const ElementTransformation & eltrans2) { ; }
     ElementTransformation & operator= (const ElementTransformation & eltrans2) 
