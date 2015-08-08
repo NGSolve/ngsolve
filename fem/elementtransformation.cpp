@@ -23,6 +23,16 @@ namespace ngfem
 
   template <int DIM> ScalarFiniteElement<DIM> * GetP1FE (ELEMENT_TYPE type);
 
+  template <> ScalarFiniteElement<0> * GetP1FE (ELEMENT_TYPE type)
+  {
+    static FE_Point point;
+    switch (type)
+      {
+      case ET_POINT: return (&point);
+      default:
+        throw ("FE_ElementTrafo, undefined 0D elementtype");
+      }
+  }
   template <> ScalarFiniteElement<1> * GetP1FE (ELEMENT_TYPE type)
   {
     static FE_Segm1 segm;
@@ -150,4 +160,7 @@ namespace ngfem
   template class FE_ElementTransformation<3,3>;
   template class FE_ElementTransformation<1,2>;
   template class FE_ElementTransformation<2,3>;
+  
+  template class FE_ElementTransformation<0,2>;
+  template class FE_ElementTransformation<0,3>;
 }
