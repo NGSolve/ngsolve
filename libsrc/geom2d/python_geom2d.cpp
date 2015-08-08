@@ -9,12 +9,29 @@
 using namespace netgen;
 namespace bp = boost::python;
 
+namespace netgen
+{
+  extern std::shared_ptr<NetgenGeometry> ng_geometry;
+}
+
 
 DLL_HEADER void ExportGeom2d() 
 {
   ModuleScope module("geom2d");
 
-  bp::class_<SplineGeometry2d, boost::noncopyable>("SplineGeometry")
+  bp::class_<SplineGeometry2d, shared_ptr<SplineGeometry2d>, boost::noncopyable>("SplineGeometry")
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer
+          ([](const string & filename)
+           {
+             cout << "load geometry";
+             ifstream ist(filename);
+             auto geom = make_shared<SplineGeometry2d>();
+             geom->Load (filename.c_str());
+             ng_geometry = geom;
+             return geom;
+           })))
+    
 	.def("Load",&SplineGeometry2d::Load)
 	.def("AppendPoint", FunctionPointer([](SplineGeometry2d &self, double px, double py)
 	  {
@@ -201,10 +218,11 @@ DLL_HEADER void ExportGeom2d()
 			  //cout << i << " : " << self.splines[i]->GetPoint(0.1) << " , " << self.splines[i]->GetPoint(0.5) << endl;
 		  }
 	  }))
-	  .def("GenerateMesh", FunctionPointer([](SplineGeometry2d &self, MeshingParameters & mparam)
+	  .def("GenerateMesh", FunctionPointer([](shared_ptr<SplineGeometry2d> self, MeshingParameters & mparam)
 		{
-		  shared_ptr<Mesh> mesh;
-		  self.GenerateMesh(mesh, mparam, 0, 0);
+		  shared_ptr<Mesh> mesh = make_shared<Mesh> ();
+                  ng_geometry = self;
+		  self->GenerateMesh(mesh, mparam, 0, 0);
 		  return mesh;
 	  }))
 	  

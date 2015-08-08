@@ -15,7 +15,8 @@ extern void Ng_PrintDest(const char * s);
 //the dots for progression of program
 void PrintDot(char ch)
 {
-  if (printdots)
+  // if (printdots)
+  if (printmessage_importance >= 4)
     {
       char st[2];
       st[0] = ch;

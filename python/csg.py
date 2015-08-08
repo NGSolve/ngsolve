@@ -21,8 +21,8 @@ def VS (obj):
 
 
 
-def csg_meshing_func (geom, maxh):
-    return GenerateMesh (geom, MeshingParameters (maxh=maxh))
+def csg_meshing_func (geom, **args):
+    return GenerateMesh (geom, MeshingParameters (**args))
 
 CSGeometry.GenerateMesh = csg_meshing_func
 
