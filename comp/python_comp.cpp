@@ -1405,6 +1405,7 @@ void NGS_DLL_HEADER ExportNgcomp()
       const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
       elmat = 0;
+
       for (int i = 0; i < mir.Size(); i++)
         {
           auto & mip = mir[i];
@@ -1426,16 +1427,15 @@ void NGS_DLL_HEADER ExportNgcomp()
                         mip.GetWeight() * cf -> Evaluate (mip);
                     }
                 
-                {
-                  FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-                  FlatMatrix<double,ColMajor> dbmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-                  FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                
+                proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
+                proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
 
-                  proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
-                  dbmat1 = proxyvalues * bmat1;
-                  elmat += Trans (bmat2) * dbmat1;
-                }
+                dbmat1 = proxyvalues * bmat1;
+                elmat += Trans (bmat2) * dbmat1;
               }
         }
     }
