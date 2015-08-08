@@ -15,7 +15,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hdivfes.cpp hdivhofespace.cpp hierarchicalee.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp bddc.cpp hypre_precond.cpp 
-        python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp 
+        python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         )
 
 if(NOT WIN32)
@@ -29,7 +29,7 @@ install( FILES
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   
         l2hofespace.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp 
-        pde.hpp numproc.hpp 
+        pde.hpp numproc.hpp vtkoutput.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )
