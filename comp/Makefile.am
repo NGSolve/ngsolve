@@ -7,7 +7,7 @@ gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp \
 hdivfes.cpp hdivhofespace.cpp hierarchicalee.cpp l2hofespace.cpp     \
 linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     \
 preconditioner.cpp vectorfacetfespace.cpp bddc.cpp hypre_precond.cpp \
-python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp
+python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
 
 libngcomp_la_LIBADD = $(top_builddir)/fem/libngfem.la \
 $(top_builddir)/linalg/libngla.la \
@@ -21,7 +21,7 @@ include_HEADERS = bilinearform.hpp comp.hpp facetfespace.hpp	   \
  hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp		   \
  l2hofespace.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   \
  postproc.hpp preconditioner.hpp vectorfacetfespace.hpp hypre_precond.hpp \
- pde.hpp numproc.hpp 
+ pde.hpp numproc.hpp vtkoutput.hpp
 
 libngcomp_la_LDFLAGS = -avoid-version
 #  -L/opt/hypre-2.8.0b/lib -lHYPRE
