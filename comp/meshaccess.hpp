@@ -539,6 +539,15 @@ namespace ngcomp
     }
 
 
+    void SetRefinementFlag (ElementId id, bool ref)
+    {
+      if (id.IsVolume())
+        Ng_SetRefinementFlag (id.Nr()+1, ref);
+      else
+        Ng_SetSurfaceRefinementFlag (id.Nr()+1, ref);
+    }
+    
+
     void SetDeformation (shared_ptr<GridFunction> def)
     {
       deformation = def;
