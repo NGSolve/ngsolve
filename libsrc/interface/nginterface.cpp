@@ -158,10 +158,7 @@ void Ng_LoadMeshFromStream ( istream & input )
 {
   mesh.reset (new Mesh());
   mesh -> Load(input);
-  /*
-  vssolution.SetMesh(mesh);
-  vsmesh.SetMesh(mesh);
-  */
+
   SetGlobalMesh (mesh);
   for (int i = 0; i < geometryregister.Size(); i++)
     {
@@ -172,6 +169,8 @@ void Ng_LoadMeshFromStream ( istream & input )
 	  break;
 	}
     }
+
+  mesh->SetGeometry (ng_geometry);
 }
 
 
@@ -1017,7 +1016,7 @@ void Ng_Refine (NG_REFINEMENT_TYPE reftype)
   if (reftype == NG_REFINE_HP)
     biopt.refine_hp = 1;
 
-  const Refinement & ref = ng_geometry->GetRefinement();
+  const Refinement & ref = mesh->GetGeometry()->GetRefinement();
 
   // Refinement * ref;
   MeshOptimize2d * opt = NULL;
@@ -1063,7 +1062,7 @@ void Ng_Refine (NG_REFINEMENT_TYPE reftype)
 
 void Ng_SecondOrder ()
 {
-  const_cast<Refinement&> (ng_geometry->GetRefinement()).MakeSecondOrder(*mesh);
+  const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()).MakeSecondOrder(*mesh);
   /*
     if (stlgeometry)
     {
@@ -1130,7 +1129,7 @@ void Ng_HPRefinement (int levels, double parameter, bool setorders,
                       bool ref_level)
 {
   NgLock meshlock (mesh->MajorMutex(), true);
-  Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+  Refinement & ref = const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement());
   HPRefinement (*mesh, &ref, levels, parameter, setorders, ref_level);
   /*
     Refinement * ref;
@@ -1156,7 +1155,7 @@ void Ng_HighOrder (int order, bool rational)
      order, rational);
   */
   mesh->BuildCurvedElements 
-    (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+    (&const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()),
      order, rational);
 
   mesh -> SetNextMajorTimeStamp();
@@ -2105,7 +2104,7 @@ int Ng_Bisect_WithInfo ( const char * refinementfile, double ** qualityloss, int
   biopt.femcode = "fepp";
   biopt.refinementfilename = refinementfile;
   
-  Refinement * ref = const_cast<Refinement*> (&ng_geometry -> GetRefinement());
+  Refinement * ref = const_cast<Refinement*> (&mesh->GetGeometry()->GetRefinement());
   MeshOptimize2d * opt = NULL;
   /*
     if (stlgeometry)

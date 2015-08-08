@@ -16,15 +16,11 @@ if __platform.startswith('win'):
 
 
 unit_square = SplineGeometry()
-pi1 = unit_square.AppendPoint(0,0)
-pi2 = unit_square.AppendPoint(1,0)
-pi3 = unit_square.AppendPoint(1,1)
-pi4 = unit_square.AppendPoint(0,1)
-unit_square.Append(["line",pi1,pi2], bc=1)
-unit_square.Append(["line",pi2,pi3], bc=2)
-unit_square.Append(["line",pi3,pi4], bc=3)
-unit_square.Append(["line",pi4,pi1], bc=4)
-
+pnts = [ (0,0), (1,0), (1,1), (0,1) ]
+lines = [ (0,1,1), (1,2,2), (2,3,3), (3,0,4) ]
+pnums = [unit_square.AppendPoint(*p) for p in pnts]
+for l1,l2,bc in lines:
+    unit_square.Append( ["line", pnums[l1], pnums[l2]], bc=bc)
 
 all = ['SplineGeometry', 'unit_square']
 

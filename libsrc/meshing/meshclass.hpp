@@ -139,6 +139,8 @@ namespace netgen
 
 #endif
 
+    
+    shared_ptr<NetgenGeometry> geometry;
 
   private:
     void BuildBoundaryEdges(void);
@@ -721,6 +723,15 @@ namespace netgen
     NgMutex & Mutex ()   { return mutex; }
     NgMutex & MajorMutex ()   { return majormutex; }
 
+
+    shared_ptr<NetgenGeometry> GetGeometry() const
+    { 
+      return geometry; 
+    }
+    void SetGeometry (shared_ptr<NetgenGeometry> geom) 
+    {
+      geometry = geom;
+    }
 
     ///
     void SetUserData(const char * id, Array<int> & data);

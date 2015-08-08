@@ -221,6 +221,7 @@ DLL_HEADER void ExportGeom2d()
 	  .def("GenerateMesh", FunctionPointer([](shared_ptr<SplineGeometry2d> self, MeshingParameters & mparam)
 		{
 		  shared_ptr<Mesh> mesh = make_shared<Mesh> ();
+                  mesh->SetGeometry(self);
                   ng_geometry = self;
 		  self->GenerateMesh(mesh, mparam, 0, 0);
 		  return mesh;

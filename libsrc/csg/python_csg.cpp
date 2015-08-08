@@ -252,7 +252,7 @@ DLL_HEADER void ExportCSG()
                                   }));
 
 
-  bp::class_<CSGeometry, boost::noncopyable> ("CSGeometry")
+  bp::class_<CSGeometry,shared_ptr<CSGeometry>, boost::noncopyable> ("CSGeometry")
     .def("__init__", bp::make_constructor (FunctionPointer
                                            ([](const string & filename)
                                             {
@@ -352,13 +352,13 @@ DLL_HEADER void ExportCSG()
     ;
 
   bp::def("GenerateMesh", FunctionPointer
-          ([](CSGeometry & geo, MeshingParameters & param)
+          ([](shared_ptr<CSGeometry> geo, MeshingParameters & param)
            {
-             // testout = new ofstream ("test.out");
-             shared_ptr<Mesh> dummy;
-             geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
-             geo.GenerateMesh (dummy, param, 0, 6);
-	     ng_geometry.reset (&geo, NOOP_Deleter);
+             auto dummy = make_shared<Mesh>();
+             dummy->SetGeometry(geo);
+	     ng_geometry = geo;
+             geo->FindIdenticSurfaces(1e-8 * geo->MaxSize()); 
+             geo->GenerateMesh (dummy, param, 0, 6);
              return dummy;
            }))
     ;
