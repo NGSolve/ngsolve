@@ -21,6 +21,7 @@ class SPSolid
   shared_ptr<SPSolid> s1, s2;
   Solid * solid;
   int bc = -1;
+  string bcname = "";
   double maxh = -1;
   string material;
   bool owner;
@@ -97,6 +98,25 @@ public:
           }
       }
   }
+
+  void SetBCName(string name) 
+  {
+    if (bcname == "") 
+      {
+        bcname = name;
+        if (s1) s1 -> SetBCName(name);
+        if (s2) s2 -> SetBCName(name);
+        if (op == TERM)
+          {
+            Primitive * prim = solid -> GetPrimitive();
+            for (int i = 0; i < prim->GetNSurfaces(); i++)
+              prim->GetSurface(i).SetBCName (name);
+            // cout << "set " << prim->GetNSurfaces() << " surfaces to bc " << bc << endl;
+          }
+      }
+  }
+
+
 
   void SetMaxH(double amaxh) 
   {
@@ -201,6 +221,8 @@ DLL_HEADER void ExportCSG()
 
     .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, int nr) -> shared_ptr<SPSolid> 
                                 { self->SetBC(nr); return self; }))
+    .def ("bc", FunctionPointer([](shared_ptr<SPSolid> & self, string name) -> shared_ptr<SPSolid> 
+                                { self->SetBCName(name); return self; }))
     .def ("maxh", FunctionPointer([](shared_ptr<SPSolid> & self, double maxh) -> shared_ptr<SPSolid> 
                                 { self->SetMaxH(maxh); return self; }))
     .def ("mat", FunctionPointer([](shared_ptr<SPSolid> & self, string mat) -> shared_ptr<SPSolid> 
@@ -252,7 +274,7 @@ DLL_HEADER void ExportCSG()
                                   }));
 
 
-  bp::class_<CSGeometry, boost::noncopyable> ("CSGeometry")
+  bp::class_<CSGeometry,shared_ptr<CSGeometry>, boost::noncopyable> ("CSGeometry")
     .def("__init__", bp::make_constructor (FunctionPointer
                                            ([](const string & filename)
                                             {
@@ -352,13 +374,13 @@ DLL_HEADER void ExportCSG()
     ;
 
   bp::def("GenerateMesh", FunctionPointer
-          ([](CSGeometry & geo, MeshingParameters & param)
+          ([](shared_ptr<CSGeometry> geo, MeshingParameters & param)
            {
-             // testout = new ofstream ("test.out");
-             shared_ptr<Mesh> dummy;
-             geo.FindIdenticSurfaces(1e-8 * geo.MaxSize()); 
-             geo.GenerateMesh (dummy, param, 0, 6);
-	     ng_geometry.reset (&geo, NOOP_Deleter);
+             auto dummy = make_shared<Mesh>();
+             dummy->SetGeometry(geo);
+	     ng_geometry = geo;
+             geo->FindIdenticSurfaces(1e-8 * geo->MaxSize()); 
+             geo->GenerateMesh (dummy, param, 0, 6);
              return dummy;
            }))
     ;

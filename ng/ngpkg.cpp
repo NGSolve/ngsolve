@@ -859,12 +859,13 @@ namespace netgen
     else
 #endif
       {
-	ng_geometry -> GetRefinement().Refine(*mesh);
+	// ng_geometry -> GetRefinement().Refine(*mesh);
+        mesh->GetGeometry()->GetRefinement().Refine(*mesh);
       }
 
 //redo second order refinement if desired
     if (mparam.secondorder)
-      const_cast<Refinement&> (ng_geometry->GetRefinement()).MakeSecondOrder(*mesh);
+      const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()).MakeSecondOrder(*mesh);
 
     return TCL_OK;
   }
@@ -884,7 +885,7 @@ namespace netgen
 	return TCL_ERROR;
       }
     
-    const_cast<Refinement&> (ng_geometry -> GetRefinement()).MakeSecondOrder (*mesh);
+    const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()).MakeSecondOrder (*mesh);
 
     return TCL_OK;
   }
@@ -895,7 +896,7 @@ namespace netgen
     //  mparam.elementorder = atoi (Tcl_GetVar (interp, "options.elementorder", 0));
     const char * savetask = multithread.task;
 
-    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+    Refinement & ref = const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement());
     mesh -> GetCurvedElements().BuildCurvedElements (&ref, mparam.elementorder);
 
     multithread.task = savetask;
@@ -936,7 +937,7 @@ namespace netgen
 
   void * ValidateDummy (void *)
   {
-    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+    Refinement & ref = const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement());
     ref.ValidateSecondOrder (*mesh);
 
     multithread.running = 0;
@@ -1010,7 +1011,7 @@ namespace netgen
     int levels = atoi (argv[1]);
 
 
-    Refinement & ref = const_cast<Refinement&> (ng_geometry -> GetRefinement());
+    Refinement & ref = const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement());
     HPRefinement (*mesh, &ref, levels);
     return TCL_OK;
   }
@@ -1334,6 +1335,7 @@ namespace netgen
               mesh = make_shared<Mesh> ();
               // vsmesh.SetMesh (mesh);
               SetGlobalMesh (mesh);
+              mesh -> SetGeometry(ng_geometry);
               int res = ng_geometry -> GenerateMesh (mesh, mparam, perfstepsstart, perfstepsend);
 
 	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
@@ -1355,13 +1357,13 @@ namespace netgen
 	
 	if (mparam.secondorder)
 	  {
-	    const_cast<Refinement&> (ng_geometry -> GetRefinement()).MakeSecondOrder (*mesh);
+	    const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()).MakeSecondOrder (*mesh);
 	    mesh -> SetNextMajorTimeStamp();
 	  }
 
 	if (mparam.elementorder > 1)
 	  {
-	    mesh -> GetCurvedElements().BuildCurvedElements (&const_cast<Refinement&> (ng_geometry -> GetRefinement()),
+	    mesh -> GetCurvedElements().BuildCurvedElements (&const_cast<Refinement&> (mesh->GetGeometry()->GetRefinement()),
 							     mparam.elementorder);
 
 	    mesh -> SetNextMajorTimeStamp();
@@ -1709,7 +1711,7 @@ namespace netgen
 
   void * BisectDummy (void *)
   {
-    const Refinement & ref = ng_geometry->GetRefinement();
+    const Refinement & ref = mesh->GetGeometry()->GetRefinement();
     MeshOptimize2d * opt = NULL;
 
     /*

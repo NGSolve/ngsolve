@@ -794,6 +794,12 @@ namespace netgen
 
   void Mesh :: Load (istream & infile)
   {
+    if (! (infile.good()) )
+      {
+        cout << "cannot load mesh" << endl;
+        throw NgException ("mesh file not found");
+      }
+
     char str[100];
     int i, n;
 
