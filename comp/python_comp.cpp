@@ -247,6 +247,19 @@ bp::object MakeProxyFunction (const FESpace & fes,
                         [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
 }
 
+class GlobalDummyVariables 
+{
+public:
+  int GetMsgLevel() { return printmessage_importance; }
+  void SetMsgLevel(int msg_level) 
+  {
+    cout << "set printmessage_importance to " << msg_level << endl;
+    printmessage_importance = msg_level; 
+    netgen::printmessage_importance = msg_level; 
+  }
+  
+};
+static GlobalDummyVariables globvar;
 
 
 
@@ -361,6 +374,17 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
   //////////////////////////////////////////////////////////////////////////////////////////
 
+
+  bp::class_<GlobalDummyVariables> ("GlobalVariables", bp::no_init)
+    .add_property("msg_level", 
+                 &GlobalDummyVariables::GetMsgLevel,
+                 &GlobalDummyVariables::SetMsgLevel)
+    ;
+
+  bp::scope().attr("ngsglobals") = bp::object(bp::ptr(&globvar));
+
+  //////////////////////////////////////////////////////////////////////////////////
+
   PyExportArray<string>();
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
                                                  "the mesh")
@@ -422,8 +446,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def ("GetTrafo", FunctionPointer([](MeshAccess & ma, ElementId id)
                                       {
-                                        Allocator alloc;
-                                        return &ma.GetTrafo(id, alloc);
+                                        return &ma.GetTrafo(id, global_alloc);
                                       }),
           bp::return_value_policy<bp::manage_new_object>())
 
@@ -446,14 +469,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             ma.UpdateBuffers();
           }))
 
-    .def("SetRefinementFlag", FunctionPointer
-         ([] (MeshAccess & ma, ElementId id, bool ref)
-          {
-            if (id.IsVolume())
-              Ng_SetRefinementFlag (id.Nr()+1, ref);
-            else
-              Ng_SetSurfaceRefinementFlag (id.Nr()+1, ref);
-          }))
+    .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag)
 
     .def("Curve", FunctionPointer
          ([](MeshAccess & ma, int order)

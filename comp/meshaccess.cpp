@@ -640,7 +640,11 @@ namespace ngcomp
     ndomains = -1;
     int ne = GetNE(); 
     for (int i = 0; i < ne; i++)
-      ndomains = max2(ndomains, GetElIndex(i));
+      {
+        int elindex = GetElIndex(i);
+        if (elindex < 0) throw Exception("mesh with negative element-index");
+        ndomains = max2(ndomains, elindex);
+      }
 
     ndomains++;
     ndomains = MyMPI_AllReduce (ndomains, MPI_MAX);
@@ -648,7 +652,11 @@ namespace ngcomp
     nboundaries = -1;
     int nse = GetNSE(); 
     for (int i = 0; i < nse; i++)
-      nboundaries = max2(nboundaries, GetSElIndex(i));
+      {
+        int elindex = GetSElIndex(i);
+        if (elindex < 0) throw Exception("mesh with negative boundary-condition number");
+        nboundaries = max2(nboundaries, elindex);
+      }
 
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
