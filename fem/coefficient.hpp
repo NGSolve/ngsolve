@@ -90,6 +90,43 @@ namespace ngfem
       result(0) = f; 
     }
 
+
+    virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
+                                FlatVector<> result,
+                                FlatVector<> deriv) const
+    {
+      Evaluate (ip, result);
+      deriv = 0;
+    }
+
+    virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
+                                FlatVector<Complex> result,
+                                FlatVector<Complex> deriv) const
+    {
+      Evaluate (ip, result);
+      deriv = 0;
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
+                                 FlatVector<> result,
+                                 FlatVector<> deriv,
+                                 FlatVector<> dderiv) const
+    {
+      EvaluateDeriv (ip, result, deriv);
+      dderiv = 0;
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
+                                 FlatVector<Complex> result,
+                                 FlatVector<Complex> deriv,
+                                 FlatVector<Complex> dderiv) const
+    {
+      EvaluateDeriv (ip, result, deriv);
+      dderiv = 0;
+    }
+
+
+
     virtual void PrintReport (ostream & ost) const;
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
   };

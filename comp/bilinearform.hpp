@@ -363,7 +363,7 @@ namespace ngcomp
     /// frees matrix 
     virtual void CleanUpLevel() { ; }
 
-  private:
+  protected:
     /// assemble matrix
     virtual void DoAssemble (LocalHeap & lh) = 0;
 

@@ -2095,6 +2095,9 @@ namespace ngcomp
 
     RegionTimer reg (timer);
 
+    if (this->mats.Size() < this->ma->GetNLevels())
+      AllocateMatrix();
+
     try
       {
         int ndof = fespace->GetNDof();
