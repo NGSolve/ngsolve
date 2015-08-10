@@ -79,10 +79,14 @@ public:
 class ProxyUserData
 {
 public:
-  class ProxyFunction * testfunction;
+  class ProxyFunction * testfunction = nullptr;
   int test_comp;
-  class ProxyFunction * trialfunction;
+  class ProxyFunction * trialfunction = nullptr;
   int trial_comp;
+
+  const FiniteElement * fel = nullptr;
+  const FlatVector<double> * elx;
+  LocalHeap * lh;
 };
 
 class ProxyFunction : public CoefficientFunction
@@ -91,8 +95,6 @@ class ProxyFunction : public CoefficientFunction
   bool testfunction; // true .. test, false .. trial
   shared_ptr<DifferentialOperator> evaluator;
   shared_ptr<DifferentialOperator> deriv_evaluator;
-  bool bind_proxy = false;
-  int active_component = 0;
 public:
   ProxyFunction (const FESpace * aspace, bool atestfunction,
                  shared_ptr<DifferentialOperator> aevaluator, 
@@ -111,36 +113,27 @@ public:
   {
     return make_shared<ProxyFunction> (space, testfunction, deriv_evaluator, nullptr);
   }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
-    /*
-    if (!bind_proxy)
-      throw Exception ("cannot evaluate ProxyFunction");
-    if (active_component == 0) return 1;
-    return 0;
-    */
-    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
-    if (ud->testfunction == this || ud->trialfunction == this)
-      return 1;
-    else
-      return 0;
+    Vector<> tmp(Dimension());
+    Evaluate (ip, tmp);
+    return tmp(0);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const
   {
-    /*
-    if (!bind_proxy)
-      throw Exception ("cannot evaluate ProxyFunction");
-    result = 0;
-    if (active_component >= 0 && active_component < Dimension())
-      result(active_component) = 1;
-    */
     ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction");
+
+    if (!testfunction && ud->fel)
+      {
+        evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
+        return;
+      }
+
     result = 0;
     if (ud->testfunction == this)
       result (ud->test_comp) = 1;
@@ -148,11 +141,50 @@ public:
       result (ud->trial_comp) = 1;
   }
 
-  void SetActiveComponent (int acomp, bool abind)
+
+  virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result,
+                              FlatVector<> deriv) const
   {
-    bind_proxy = abind;
-    active_component = acomp;
+    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    deriv = 0;
+    result = 0;
+
+    if (!testfunction && ud->fel)
+      evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
+
+    if (ud->testfunction == this)
+      result(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv(ud->trial_comp) = 1;
   }
+
+
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
+                               FlatVector<> result,
+                               FlatVector<> deriv,
+                               FlatVector<> dderiv) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    result = 0;
+    deriv = 0;
+    dderiv = 0;
+
+    if (!testfunction && ud->fel)
+      evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
+
+    if (ud->testfunction == this)
+      deriv(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv(ud->trial_comp) = 1;
+  }
+
 };
 
 
@@ -1444,6 +1476,193 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
 
+  class SymbolicEnergy : public BilinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<ProxyFunction*> trial_proxies;
+
+  public:
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf)
+      : cf(acf)
+    {
+      if (cf->Dimension() != 1)
+        throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
+
+
+      cf->TraverseTree
+        ( [&] (CoefficientFunction & nodecf)
+          {
+            auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+            if (proxy) 
+              {
+                if (!proxy->IsTestFunction())
+                  {                                         
+                    if (!trial_proxies.Contains(proxy))
+                      trial_proxies.Append (proxy);
+                  }
+              }
+          });
+    }
+
+    virtual bool BoundaryForm() const { return false; }
+    virtual bool IsSymmetric() const { return true; } 
+
+    virtual void 
+    CalcElementMatrix (const FiniteElement & fel,
+		       const ElementTransformation & trafo, 
+		       FlatMatrix<double> elmat,
+		       LocalHeap & lh) const
+    {
+      cout << "SymbolicEnergy :: CalcMatrix not implemented" << endl;
+    }
+
+    virtual void 
+    CalcLinearizedElementMatrix (const FiniteElement & fel,
+                                 const ElementTransformation & trafo, 
+				 FlatVector<double> elveclin,
+                                 FlatMatrix<double> elmat,
+                                 LocalHeap & lh) const
+    {
+      IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+      BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+      ProxyUserData ud;
+      const_cast<ElementTransformation&>(trafo).userdata = &ud;
+      ud.fel = &fel;
+      ud.elx = &elveclin;
+      ud.lh = &lh;
+      FlatVector<> val(1,lh), deriv(1,lh), dderiv(1,lh);
+
+      elmat = 0;
+
+      for (int i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+          
+          for (auto proxy1 : trial_proxies)
+            for (auto proxy2 : trial_proxies)
+              {
+                HeapReset hr(lh);
+                FlatMatrix<> proxyvalues(proxy2->Dimension(), proxy1->Dimension(), lh);
+                for (int k = 0; k < proxy1->Dimension(); k++)
+                  for (int l = 0; l < proxy2->Dimension(); l++)
+                    {
+                      ud.trialfunction = proxy1;
+                      ud.trial_comp = k;
+                      ud.testfunction = proxy2;
+                      ud.test_comp = l;
+                      
+                      cf -> EvaluateDDeriv (mip, val, deriv, dderiv);
+                      proxyvalues(l,k) = dderiv(0);
+
+                      if (proxy1 != proxy2 || k != l)
+                        {
+                          ud.trialfunction = proxy1;
+                          ud.trial_comp = k;
+                          ud.testfunction = proxy1;
+                          ud.test_comp = k;
+                          cf -> EvaluateDDeriv (mip, val, deriv, dderiv);
+                          proxyvalues(l,k) -= dderiv(0);
+
+                          ud.trialfunction = proxy2;
+                          ud.trial_comp = l;
+                          ud.testfunction = proxy2;
+                          ud.test_comp = l;
+                          cf -> EvaluateDDeriv (mip, val, deriv, dderiv);
+                          proxyvalues(l,k) -= dderiv(0);
+                        }
+                    }
+
+                proxyvalues *= mip.GetWeight();
+
+                FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                
+                proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
+                proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
+
+                dbmat1 = proxyvalues * bmat1;
+                elmat += Trans (bmat2) * dbmat1;
+              }
+        }
+    }
+
+
+
+    virtual double Energy (const FiniteElement & fel, 
+			   const ElementTransformation & trafo, 
+                           FlatVector<double> elx, 
+			   LocalHeap & lh) const
+    {
+      ProxyUserData ud;
+      const_cast<ElementTransformation&>(trafo).userdata = &ud;
+      ud.fel = &fel;
+      ud.elx = &elx;
+      ud.lh = &lh;
+
+      IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+      BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+      double sum = 0;
+      for (int i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+          sum += mip.GetWeight() * cf -> Evaluate (mip);
+        }
+      return sum;
+    }
+
+    virtual void 
+    ApplyElementMatrix (const FiniteElement & fel, 
+			const ElementTransformation & trafo, 
+			const FlatVector<double> elx, 
+			FlatVector<double> ely,
+			void * precomputed,
+			LocalHeap & lh) const
+    {
+      ProxyUserData ud;
+      const_cast<ElementTransformation&>(trafo).userdata = &ud;
+      ud.fel = &fel;
+      ud.elx = &elx;
+      ud.lh = &lh;
+
+      HeapReset hr(lh);
+      IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+      BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+      ely = 0;
+      FlatVector<> ely1(ely.Size(), lh);
+      FlatVector<> val(1,lh), deriv(1,lh);
+
+      for (int i = 0; i < mir.Size(); i++)
+        {
+          auto & mip = mir[i];
+
+          for (auto proxy : trial_proxies)
+            {
+              HeapReset hr(lh);
+              FlatVector<> proxyvalues(proxy->Dimension(), lh);
+              for (int k = 0; k < proxy->Dimension(); k++)
+                {
+                  ud.trialfunction = proxy;
+                  ud.trial_comp = k;
+                  cf -> EvaluateDeriv (mip, val, deriv);
+                  proxyvalues(k) = mip.GetWeight() * deriv(0);
+                }
+              proxy->Evaluator()->ApplyTrans(fel, mip, proxyvalues, ely1, lh);
+              ely += ely1;
+            }
+        }
+    }
+    
+
+  };
+
+
+
+
+
 
 
   bp::def("SymbolicLFI", FunctionPointer
@@ -1457,6 +1676,13 @@ void NGS_DLL_HEADER ExportNgcomp()
            {
              return make_shared<SymbolicBilinearFormIntegrator> (cf);
            }));
+
+  bp::def("SymbolicEnergy", FunctionPointer
+          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<BilinearFormIntegrator>
+           {
+             return make_shared<SymbolicEnergy> (cf);
+           }));
+
 
           
   bp::def("IntegrateLF", 

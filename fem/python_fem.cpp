@@ -128,17 +128,21 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 }
 
 
-template <typename OP, typename OPC> 
+template <typename OP, typename OPC, typename DERIV, typename DDERIV> 
 class cl_BinaryOpCF : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1, c2;
   OP lam;
   OPC lamc;
+  DERIV lam_deriv;
+  DDERIV lam_dderiv;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, OPC alamc)
-    : c1(ac1), c2(ac2), lam(alam), lamc(alamc) { ; }
+                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv)
+    : c1(ac1), c2(ac2), lam(alam), lamc(alamc),
+      lam_deriv(alam_deriv), lam_dderiv(alam_dderiv)
+  { ; }
 
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return c1->Dimension(); }
@@ -197,14 +201,95 @@ public:
     for (int i = 0; i < result.Height()*result.Width(); i++)
       result(i) = lam (result(i), temp(i));
   }
+
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & mip,
+                             FlatVector<> result, FlatVector<> deriv) const
+  {
+#ifdef VLA
+    double ha[Dimension()];
+    double hb[Dimension()];
+    FlatVector<> ra(Dimension(), ha);
+    FlatVector<> rb(Dimension(), hb);
+    double hda[Dimension()];
+    double hdb[Dimension()];
+    FlatVector<> da(Dimension(), hda);
+    FlatVector<> db(Dimension(), hdb);
+#else
+    Vector<> ra(Dimension());
+    Vector<> rb(Dimension());
+    Vector<> da(Dimension());
+    Vector<> db(Dimension());
+#endif
+
+    c1->EvaluateDeriv (mip, ra, da);
+    c2->EvaluateDeriv (mip, rb, db);
+    for (int i = 0; i < result.Size(); i++)
+      {
+        result(i) = lam (ra(i), rb(i));
+        double dda, ddb;
+        lam_deriv (ra(i), rb(i), dda, ddb);
+        deriv(i) = dda * da(i) + ddb * db(i);
+      }
+  }
+
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & mip,
+                              FlatVector<> result, 
+                              FlatVector<> deriv,
+                              FlatVector<> dderiv) const
+  {
+#ifdef VLA
+    double ha[Dimension()];
+    double hb[Dimension()];
+    FlatVector<> ra(Dimension(), ha);
+    FlatVector<> rb(Dimension(), hb);
+    double hda[Dimension()];
+    double hdb[Dimension()];
+    FlatVector<> da(Dimension(), hda);
+    FlatVector<> db(Dimension(), hdb);
+    double hdda[Dimension()];
+    double hddb[Dimension()];
+    FlatVector<> dda(Dimension(), hdda);
+    FlatVector<> ddb(Dimension(), hddb);
+#else
+    Vector<> ra(Dimension());
+    Vector<> rb(Dimension());
+    Vector<> da(Dimension());
+    Vector<> db(Dimension());
+    Vector<> dda(Dimension());
+    Vector<> ddb(Dimension());
+#endif
+
+    c1->EvaluateDDeriv (mip, ra, da, dda);
+    c2->EvaluateDDeriv (mip, rb, db, ddb);
+    for (int i = 0; i < result.Size(); i++)
+      {
+        result(i) = lam (ra(i), rb(i));
+        double d_da, d_db;
+        lam_deriv (ra(i), rb(i), d_da, d_db);
+        deriv(i) = d_da * da(i) + d_db * db(i);
+
+        double d_dada, d_dadb, d_dbdb;
+        lam_dderiv (ra(i), rb(i), d_dada, d_dadb, d_dbdb);
+
+        dderiv(i) = d_da * dda(i) + d_db * ddb(i) +
+          d_dada * da(i)*da(i) + 2 * d_dadb * da(i)*db(i) + d_dbdb * db(i) * db(i);
+      }
+  }
+
+
+
 };
 
-template <typename OP, typename OPC> 
+template <typename OP, typename OPC, typename DERIV, typename DDERIV> 
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
-                                                  OP lam, OPC lamc)
+                                                  OP lam, OPC lamc, DERIV lam_deriv,
+                                                  DDERIV lam_dderiv)
 {
-  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC> (c1, c2, lam, lamc));
+  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV> 
+                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv));
 }
 
 
@@ -257,6 +342,23 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
+  virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result, FlatVector<> deriv) const
+  {
+    c1->EvaluateDeriv (ip, result, deriv);
+    result *= scal;
+    deriv *= scal;
+  }
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
+                               FlatVector<> result, FlatVector<> deriv,
+                               FlatVector<> dderiv) const
+  {
+    c1->EvaluateDDeriv (ip, result, deriv, dderiv);
+    result *= scal;
+    deriv *= scal;
+    dderiv *= scal;
+  }
+
 };
 
 
@@ -356,6 +458,7 @@ public:
     Evaluate (ip, res);
     return res(0);
   }
+
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const
   {
@@ -364,6 +467,36 @@ public:
     c2->Evaluate (ip, v2);
     result(0) = InnerProduct (v1, v2);
   }
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
+                             FlatVector<> result,
+                             FlatVector<> deriv) const
+  {
+    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
+    Vector<> dv1(c1->Dimension()), dv2(c2->Dimension());
+    c1->EvaluateDeriv (ip, v1, dv1);
+    c2->EvaluateDeriv (ip, v2, dv2);
+    result(0) = InnerProduct (v1, v2);
+    deriv(0) = InnerProduct (v1, dv2)+InnerProduct(v2,dv1);
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result,
+                              FlatVector<> deriv,
+                              FlatVector<> dderiv) const
+  {
+    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
+    Vector<> dv1(c1->Dimension()), dv2(c2->Dimension());
+    Vector<> ddv1(c1->Dimension()), ddv2(c2->Dimension());
+    c1->EvaluateDDeriv (ip, v1, dv1, ddv1);
+    c2->EvaluateDDeriv (ip, v2, dv2, ddv2);
+    result(0) = InnerProduct (v1, v2);
+    deriv(0) = InnerProduct (v1, dv2)+InnerProduct(v2,dv1);
+    dderiv(0) = InnerProduct (v1, ddv2)+2*InnerProduct(dv1,dv2)+InnerProduct(ddv1,v2);
+  }
+
+
+
 };
 
 
@@ -458,37 +591,55 @@ void ExportCoefficientFunction()
           ([] (SPCF c1, SPCF c2) -> SPCF
            { return BinaryOpCF (c1, c2, 
                                 [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; }
+                                [](Complex a, Complex b) { return a+b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 );} ))
     .def ("__add__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
                                 [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; }
+                                [](Complex a, Complex b) { return a+b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 ); }))
     .def ("__radd__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
                                 [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; }
+                                [](Complex a, Complex b) { return a+b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 ); }))
     .def ("__sub__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
            { return BinaryOpCF (c1, c2, 
                                 [](double a, double b) { return a-b; },
-                                [](Complex a, Complex b) { return a-b; }
+                                [](Complex a, Complex b) { return a-b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 );} ))
     .def ("__sub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
                                 [](double a, double b) { return a-b; },
-                                [](Complex a, Complex b) { return a-b; }
+                                [](Complex a, Complex b) { return a-b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 );}))
     .def ("__rsub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
                                 [](double a, double b) { return b-a; },
-                                [](Complex a, Complex b) { return b-a; }
+                                [](Complex a, Complex b) { return b-a; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 0; ddbdb = 0; }
                                 ); }))
 
     .def ("__mul__", FunctionPointer 
@@ -502,7 +653,10 @@ void ExportCoefficientFunction()
                return make_shared<MultScalVecCoefficientFunction> (c2, c1);
              return BinaryOpCF (c1, c2, 
                                 [](double a, double b) { return a*b; },
-                                [](Complex a, Complex b) { return a*b; }
+                                [](Complex a, Complex b) { return a*b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = 1; ddbdb = 0; }
                                 );
            } ))
     .def ("__mul__", FunctionPointer 
