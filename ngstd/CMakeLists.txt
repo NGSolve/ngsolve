@@ -5,7 +5,7 @@ set(ngstd_sources
         symboltable.cpp blockalloc.cpp evalfunc.cpp templates.cpp  
         localheap.cpp stringops.cpp profiler.cpp archive.cpp
         cuda_ngstd.cpp python_ngstd.cpp taskmanager.cpp
-        paje_interface.cpp
+        paje_interface.cpp bspline.cpp
         )
 
 if(NOT WIN32)
@@ -27,7 +27,7 @@ install( FILES
         parthreads.hpp statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
         polorder.hpp archive.hpp archive_base.hpp sockets.hpp cuda_ngstd.hpp  
         mycomplex.hpp tuple.hpp paje_interface.hpp python_ngstd.hpp ngs_utils.hpp
-        taskmanager.hpp   
+        taskmanager.hpp bspline.hpp   
         DESTINATION include
         COMPONENT ngsolve_devel
        )
