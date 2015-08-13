@@ -194,6 +194,10 @@ namespace ngfem
   */
   class NGS_DLL_HEADER BilinearFormIntegrator : public Integrator
   {
+  protected:
+    // evaluate something, e.g. energy, ...
+    SymbolTable<shared_ptr<DifferentialOperator>> evaluators;
+
   public:
     // typedef double TSCAL;
     ///
@@ -545,6 +549,10 @@ namespace ngfem
 			       LocalHeap & lh) const;
 
 
+    shared_ptr<DifferentialOperator> GetEvaluator(string name) const
+    {
+      return evaluators[name];
+    }
 
     /*
     virtual const IntegrationRule & GetIntegrationRule (const FiniteElement & fel,

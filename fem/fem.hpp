@@ -69,8 +69,8 @@ namespace ngfem
 #include "specialelement.hpp"
 #include "coefficient.hpp"
 
-#include "integrator.hpp"
 #include "diffop.hpp"
+#include "integrator.hpp"
 #include "diffop_impl.hpp"
 #include "bdbintegrator.hpp"
 #include "bdbequations.hpp"

@@ -49,7 +49,8 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
     
     bp::def ("Draw", FunctionPointer
-             ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name) 
+             ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+                 bool draw_vol, bool draw_surf) 
               {
                 netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf);
                 Ng_SolutionData soldata;
@@ -60,8 +61,8 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 soldata.components = cf -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
                 soldata.iscomplex = cf -> IsComplex();
-                soldata.draw_surface = true;
-                soldata.draw_volume  = true; 
+                soldata.draw_surface = draw_surf;
+                soldata.draw_volume  = draw_vol; 
                 /* 
                 if (flags.GetDefineFlag("volume"))
                   soldata.draw_surface = false;
@@ -81,7 +82,9 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
-              }));
+              }),
+             (bp::arg("cf"),bp::arg("mesh"),bp::arg("name"),bp::arg("draw_vol")=true,bp::arg("draw_surf")=true)
+             );
 
 
 

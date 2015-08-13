@@ -18,6 +18,8 @@ from . import bla
 
 from ngslib.fem import *
 
-__all__ = ['BFI', 'BlockBFI', 'BlockLFI', 'CoefficientFunction', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'DomainConstantCF', 'CoordCF', 'ET', 'ElementTransformation', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF', 'SetPMLParameters', 'sin', 'exp' ]
+__all__ = ['BFI', 'CoefficientFunction',  'DomainConstantCF', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VariableCF', 'SetPMLParameters', 'sin', 'cos', 'tan', 'exp', 'log', 'Conj', \
+           'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'ConstantCF' \
+           ]
 
 

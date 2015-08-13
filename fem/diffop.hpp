@@ -353,8 +353,10 @@ namespace ngfem
     class V2VS 
     {
       FlatVector<> v;
+      FlatVector<Complex> vc;
     public:
-      V2VS (FlatVector<> av) : v(av) { ; }
+      V2VS (FlatVector<> av) : v(av), vc(0,(Complex*)nullptr) { ; }
+      V2VS (FlatVector<Complex> avc) : v(0,(double*)nullptr), vc(avc) { ; }
       
       template <int D>
       V2VS (Vec<D> av) : v(av) { ; }
@@ -365,6 +367,9 @@ namespace ngfem
       
       template <int D>
       operator Vec<D> () { return v; }
+
+      template <int D>
+      operator Vec<D,Complex> () { return vc; }
     };
     
     
@@ -375,7 +380,7 @@ namespace ngfem
     T_FunctionDiffOp (const F & afunc, int adim) : func(afunc), dim(adim) { ; }
     
     virtual int Dim() const { return dim; }
-    
+    virtual int DiffOrder () const { return 0; }
     virtual void Apply (const FiniteElement & fel,
 			const BaseMappedIntegrationPoint & mip,
 			FlatVector<double> x, 
@@ -383,17 +388,30 @@ namespace ngfem
 			LocalHeap & lh) const 
     {
       Vec<DOP::DIM_DMAT> u;
-      DOP::Apply (fel, mip, x, u, lh);
+      DOP::Apply (fel, static_cast<const MappedIntegrationPoint<3,3>&> (mip), x, u, lh);
       flux = func(V2VS(u));
     }
+
+/*
+    virtual void Apply (const FiniteElement & fel,
+			const BaseMappedIntegrationPoint & mip,
+			FlatVector<Complex> x, 
+			FlatVector<Complex> flux,
+			LocalHeap & lh) const 
+    {
+      Vec<DOP::DIM_DMAT,Complex> u;
+      DOP::Apply (fel, static_cast<const MappedIntegrationPoint<3,3>&> (mip), x, u, lh);
+      flux = func(V2VS(u));
+    }
+*/
   };
   
   
   template <typename DOP, typename F>
-  DifferentialOperator * CreateFunctionDiffOp (const DOP & dop, 
-					       const F & func, int dim = 1)
+  shared_ptr<DifferentialOperator> CreateFunctionDiffOp (const DOP & dop, 
+                                                         const F & func, int dim = 1)
   {
-    return new T_FunctionDiffOp<DOP, F> (func, dim);
+    return make_shared<T_FunctionDiffOp<DOP, F>> (func, dim);
   }
 
 
