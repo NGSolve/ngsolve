@@ -70,9 +70,12 @@ namespace ngfem
   /// Topology and coordinate information of master element:
   class NGS_DLL_HEADER ElementTopology
   {
+    ELEMENT_TYPE myet;
   public:
+    ElementTopology (ELEMENT_TYPE amyet) : myet(amyet) { ; }
     /// returns name of element type
     static const char * GetElementName (ELEMENT_TYPE et);
+    const char * GetElementName () { return GetElementName(myet); }
 
     /// returns space dimension of element type
     static INLINE int GetSpaceDim (ELEMENT_TYPE et)
@@ -90,6 +93,7 @@ namespace ngfem
 	}
       return 0;
     }
+    INLINE int GetSpaceDim () { return GetSpaceDim(myet); }
 
     /// returns number of vertices
     static INLINE int GetNVertices (ELEMENT_TYPE et)

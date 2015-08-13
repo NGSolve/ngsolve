@@ -215,15 +215,6 @@ public:
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
-    /*
-    FlatMatrix<double,ColMajor> mat1(mat.Height(), fel[comp].GetNDof(), lh);
-    diffop->CalcMatrix (fel[comp], mip, mat1, lh);
-    cout << "mat1 = " << mat1 << endl;
-    cout << "r = " << r << endl;
-    mat.Cols(r) = mat1;
-    cout << "mat = " << mat << endl;
-    */
-    // CalcMatrix (fel[comp], mip, mat.Cols(fel.GetRange(comp)), lh);
   }
   
   
@@ -528,15 +519,6 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0),
          bp::return_value_policy<bp::manage_new_object>()
          )
-
-    
-    /*
-    // first attempts, but keep for a moment ...
-    .def("GetElement", static_cast< Ngs_Element (MeshAccess::*)(int, bool)const> (&MeshAccess::GetElement),
-         (bp::arg("arg1")=NULL,bp::arg("arg2")=0))
-    .def("GetElement", static_cast<Ngs_Element(MeshAccess::*)(ElementId)const> (&MeshAccess::GetElement))
-    .add_property ("ne", static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE))
-    */
     ;
 
 
@@ -588,7 +570,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                              fes->FinalizeUpdate(lh);
                              return fes;
                            }),
-          bp::default_call_policies(),        // need it to use argumentso
+          bp::default_call_policies(),        // need it to use arguments
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, 
            bp::arg("complex")=false, 
@@ -778,6 +760,13 @@ void NGS_DLL_HEADER ExportNgcomp()
          ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
           {
             return make_shared<GridFunctionCoefficientFunction> (self);
+          }))
+
+    .def("CF", FunctionPointer
+         ([](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop)
+          -> shared_ptr<CoefficientFunction>
+          {
+            return make_shared<GridFunctionCoefficientFunction> (self, diffop);
           }))
 
     .def("Deriv", FunctionPointer
@@ -1285,38 +1274,78 @@ void NGS_DLL_HEADER ExportNgcomp()
                              bool region_wise, bool element_wise)
                           {
                             LocalHeap lh(1000000, "lh-Integrate");
-                            double sum = 0;
-                            Vector<> region_sum(ma->GetNRegions(vb));
-                            Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
-                            region_sum = 0;
-                            element_sum = 0;
-
-                            ma->IterateElements
-                              (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
-                               {
-                                 auto & trafo = ma->GetTrafo (el, lh);
-                                 IntegrationRule ir(trafo.GetElementType(), order);
-                                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                 FlatMatrix<> values(ir.Size(), 1, lh);
-                                 cf -> Evaluate (mir, values);
-                                 double hsum = 0;
-                                 for (int i = 0; i < values.Height(); i++)
-                                   hsum += mir[i].GetWeight() * values(i,0);
+                            
+                            if (!cf->IsComplex())
+                              {
+                                double sum = 0;
+                                Vector<> region_sum(ma->GetNRegions(vb));
+                                Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
+                                region_sum = 0;
+                                element_sum = 0;
+                                
+                                ma->IterateElements
+                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                   {
+                                     auto & trafo = ma->GetTrafo (el, lh);
+                                     IntegrationRule ir(trafo.GetElementType(), order);
+                                     BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                                     FlatMatrix<> values(ir.Size(), 1, lh);
+                                     cf -> Evaluate (mir, values);
+                                     double hsum = 0;
+                                     for (int i = 0; i < values.Height(); i++)
+                                       hsum += mir[i].GetWeight() * values(i,0);
 #pragma omp atomic
-                                 sum += hsum;
+                                     sum += hsum;
 #pragma omp atomic
-                                 region_sum(el.GetIndex()) += hsum;
-                                 if (element_wise)
-                                   element_sum(el.Nr()) = hsum;
-                               });
-                            bp::object result;
-                            if (region_wise)
-                              result = bp::list(bp::object(region_sum));
-                            else if (element_wise)
-                              result = bp::object(element_sum);
+                                     region_sum(el.GetIndex()) += hsum;
+                                     if (element_wise)
+                                       element_sum(el.Nr()) = hsum;
+                                   });
+                                bp::object result;
+                                if (region_wise)
+                                  result = bp::list(bp::object(region_sum));
+                                else if (element_wise)
+                                  result = bp::object(element_sum);
+                                else
+                                  result = bp::object(sum);
+                                return result;
+                              }
                             else
-                              result = bp::object(sum);
-                            return result;
+                              {
+                                Complex sum = 0;
+                                Vector<Complex> region_sum(ma->GetNRegions(vb));
+                                Vector<Complex> element_sum(element_wise ? ma->GetNE(vb) : 0);
+                                region_sum = 0;
+                                element_sum = 0;
+                                
+                                ma->IterateElements
+                                  (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
+                                   {
+                                     auto & trafo = ma->GetTrafo (el, lh);
+                                     IntegrationRule ir(trafo.GetElementType(), order);
+                                     BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                                     FlatMatrix<Complex> values(ir.Size(), 1, lh);
+                                     cf -> Evaluate (mir, values);
+                                     Complex hsum = 0;
+                                     for (int i = 0; i < values.Height(); i++)
+                                       hsum += mir[i].GetWeight() * values(i,0);
+#pragma omp critical(addcomplex)
+                                     {
+                                       sum += hsum;
+                                       region_sum(el.GetIndex()) += hsum;
+                                     }
+                                     if (element_wise)
+                                       element_sum(el.Nr()) = hsum;
+                                   });
+                                bp::object result;
+                                if (region_wise)
+                                  result = bp::list(bp::object(region_sum));
+                                else if (element_wise)
+                                  result = bp::object(element_sum);
+                                else
+                                  result = bp::object(sum);
+                                return result;
+                              }
                           }),
           (bp::arg("cf"), bp::arg("mesh"), bp::arg("VOL_or_BND")=VOL, 
            bp::arg("order")=5, 

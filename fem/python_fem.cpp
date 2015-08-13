@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+#include "../ngstd/bspline.hpp"
 #include <fem.hpp>
 #include <mutex>
 using namespace ngfem;
@@ -83,7 +84,7 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
 std::mutex PythonCFWrap::m;
 
 
-
+// *************************** CoefficientFunction Algebra ********************************
 
 template <typename OP, typename OPC> 
 class cl_UnaryOpCF : public CoefficientFunction
@@ -118,6 +119,23 @@ public:
   {
     return lam (c1->EvaluateConst());
   }
+
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    c1->Evaluate (ip, result);
+    for (int j = 0; j < result.Size(); j++)
+      result(j) = lam(result(j));
+  }
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    c1->Evaluate (ip, result);
+    for (int j = 0; j < result.Size(); j++)
+      result(j) = lamc(result(j));
+  }
+
 };
 
 template <typename OP, typename OPC> 
@@ -430,6 +448,16 @@ public:
     c2->Evaluate (ip, result);
     result *= v1(0);
   }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    Vec<1,Complex> v1;
+    c1->Evaluate (ip, v1);
+    c2->Evaluate (ip, result);
+    result *= v1(0);
+  }
+
 };
 
 
@@ -463,6 +491,15 @@ public:
                         FlatVector<> result) const
   {
     Vector<> v1(c1->Dimension()), v2(c2->Dimension());
+    c1->Evaluate (ip, v1);
+    c2->Evaluate (ip, v2);
+    result(0) = InnerProduct (v1, v2);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    Vector<Complex> v1(c1->Dimension()), v2(c2->Dimension());
     c1->Evaluate (ip, v1);
     c2->Evaluate (ip, v2);
     result(0) = InnerProduct (v1, v2);
@@ -564,12 +601,55 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (bp::object py_coef)
   return move(tmp);
 }
 
+typedef CoefficientFunction CF;
+typedef shared_ptr<CF> SPCF;
+
+
+template <typename FUNC>
+void ExportStdMathFunction(string name)
+{
+  bp::def (name.c_str(), FunctionPointer 
+           ([] (bp::object x) -> bp::object
+            {
+              FUNC func;
+              if (bp::extract<SPCF>(x).check())
+                {
+                  auto coef = bp::extract<SPCF>(x)();
+                  return bp::object(UnaryOpCF(coef, func, func));
+                }
+              bp::extract<double> ed(x);
+              if (ed.check()) return bp::object(func(ed()));
+              if (bp::extract<Complex> (x).check())
+                return bp::object(func(bp::extract<Complex> (x)()));
+              throw Exception ("can't compute sin");
+            }));
+}
+
+
+struct GenericSin {
+  template <typename T> T operator() (T x) const { return sin(x); }
+};
+struct GenericCos {
+  template <typename T> T operator() (T x) const { return cos(x); }
+};
+struct GenericTan {
+  template <typename T> T operator() (T x) const { return tan(x); }
+};
+struct GenericExp {
+  template <typename T> T operator() (T x) const { return exp(x); }
+};
+struct GenericLog {
+  template <typename T> T operator() (T x) const { return log(x); }
+};
+struct GenericConj {
+  template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+};
+
+
+
 
 void ExportCoefficientFunction()
 {
-   typedef CoefficientFunction CF;
-  typedef shared_ptr<CF> SPCF;
-
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction", bp::no_init)
     .def("__init__", bp::make_constructor 
@@ -685,20 +765,12 @@ void ExportCoefficientFunction()
            { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
     ;
 
-  bp::def ("sin", FunctionPointer 
-           ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, 
-                                [](double a) { return sin(a); },
-                                [](Complex a) { return sin(a); }); }));
-  bp::def ("sin", FunctionPointer ([] (double d) -> double { return sin (d); }));
-  bp::def ("sin", FunctionPointer ([] (Complex d) -> Complex { return sin (d); }));
-
-  bp::def ("exp", FunctionPointer 
-           ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, 
-                                [](double a) { return exp(a); },
-                                [](Complex a) { return exp(a); }); }));
-  bp::def ("exp", FunctionPointer ([] (double d) -> double { return exp (d); }));
+  ExportStdMathFunction<GenericSin>("sin");
+  ExportStdMathFunction<GenericCos>("cos");
+  ExportStdMathFunction<GenericTan>("tan");
+  ExportStdMathFunction<GenericExp>("exp");
+  ExportStdMathFunction<GenericLog>("log");
+  ExportStdMathFunction<GenericConj>("Conj");
 
   
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
@@ -731,8 +803,40 @@ void ExportCoefficientFunction()
     ;
   bp::implicitly_convertible 
     <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+
+  bp::class_<BSpline> ("BSpline", bp::no_init)
+   .def("__init__", bp::make_constructor 
+        (FunctionPointer ([](int order, bp::list knots, bp::list vals)
+                           {
+                             return new BSpline (order, 
+                                                 makeCArray<double> (knots),
+                                                 makeCArray<double> (vals));
+                           })))
+    .def("__call__", &BSpline::Evaluate)
+    .def("__call__", FunctionPointer
+         ([](const BSpline & sp, SPCF coef) -> SPCF 
+          {
+            return UnaryOpCF (coef,
+                              sp,
+                              [](Complex a) { return 0; });                             
+          }))
+    .def("Integrate", 
+         FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Integrate()); }),
+         bp::return_value_policy<bp::manage_new_object>()
+         )
+    .def("Differentiate", 
+         FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Differentiate()); }),
+         bp::return_value_policy<bp::manage_new_object>()
+         )
+    ;
 }
 
+
+
+
+
+// *************************************** Export FEM ********************************
 
 
 void NGS_DLL_HEADER ExportNgfem() {
@@ -757,6 +861,32 @@ void NGS_DLL_HEADER ExportNgfem() {
     .export_values()
     ;
 
+
+  bp::class_<ElementTopology> ("ElementTopology", bp::init<ELEMENT_TYPE>())
+    .add_property("name", 
+                  static_cast<const char*(ElementTopology::*)()> (&ElementTopology::GetElementName))
+    .add_property("vertices", FunctionPointer([](ElementTopology & self)
+                                              {
+                                                bp::list verts;
+                                                ELEMENT_TYPE et = ET_TRIG;
+                                                const POINT3D * pts = self.GetVertices(et);
+                                                int dim = self.GetSpaceDim(et);
+                                                for (int i : Range(self.GetNVertices(et)))
+                                                  {
+                                                    switch (dim)
+                                                      {
+                                                      case 2: 
+                                                        {
+                                                          bp::list v; v.append(pts[i][0]); v.append(pts[i][1]);
+                                                          verts.append(bp::tuple(v)); break;
+                                                        }
+                                                      default:
+                                                        ;
+                                                      }
+                                                  }
+                                                return verts;
+                                              }));
+    ;
 
   bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>("FiniteElement", bp::no_init)
     .add_property("ndof", &FiniteElement::GetNDof)    
@@ -835,10 +965,28 @@ void NGS_DLL_HEADER ExportNgfem() {
     
   bp::class_<ElementTransformation, boost::noncopyable>("ElementTransformation", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](ELEMENT_TYPE et, Matrix<> pmat) -> ElementTransformation*
+         (FunctionPointer ([](ELEMENT_TYPE et, bp::object vertices) -> ElementTransformation*
                            {
-                             return new FE_ElementTransformation<2,2> (et, pmat); 
-                           })))
+                             int nv = ElementTopology::GetNVertices(et);
+                             int dim = bp::len(vertices[0]);
+                             Matrix<> pmat(nv,dim);
+                             for (int i : Range(nv))
+                               for (int j : Range(dim))
+                                 pmat(i,j) = bp::extract<double> (vertices[i][j])();
+                             switch (Dim(et))
+                               {
+                               case 1:
+                                 return new FE_ElementTransformation<1,1> (et, pmat); 
+                               case 2:
+                                 return new FE_ElementTransformation<2,2> (et, pmat); 
+                               case 3:
+                                 return new FE_ElementTransformation<3,3> (et, pmat); 
+                               default:
+                                 throw Exception ("cannot create ElementTransformation");
+                               }
+                           }),
+          bp::default_call_policies(),        // need it to use named arguments
+          (bp::arg("et")=ET_TRIG,bp::arg("vertices"))))
     .add_property("is_boundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
     .def ("__call__", FunctionPointer
@@ -850,6 +998,12 @@ void NGS_DLL_HEADER ExportNgfem() {
           (bp::args("self"), bp::args("x"), bp::args("y")=0, bp::args("z")=0),
           bp::return_value_policy<bp::manage_new_object>())
     ;
+
+
+  bp::class_<DifferentialOperator, shared_ptr<DifferentialOperator>, boost::noncopyable>
+    ("DifferentialOperator", bp::no_init)
+    ;
+
   
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
     ("BFI", bp::no_init)
@@ -872,6 +1026,9 @@ void NGS_DLL_HEADER ExportNgfem() {
     
     .def("__str__", &ToString<BilinearFormIntegrator>)
 
+    .def("Evaluator", &BilinearFormIntegrator::GetEvaluator)
+
+    /*
     .def("CalcElementMatrix", 
          static_cast<void(BilinearFormIntegrator::*) (const FiniteElement&, 
                                                       const ElementTransformation&,
@@ -889,6 +1046,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                          }),
          bp::default_call_policies(),        // need it to use named arguments
          (bp::arg("bfi")=NULL, bp::arg("fel"),bp::arg("trafo"),bp::arg("localheap")))
+    */
 
     .def("CalcElementMatrix",
          FunctionPointer([] (const BilinearFormIntegrator & self, 
@@ -1007,6 +1165,28 @@ void NGS_DLL_HEADER ExportNgfem() {
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
+    .def("CalcElementVector",
+         FunctionPointer([] (const LinearFormIntegrator & self, 
+                             const FiniteElement & fe, const ElementTransformation & trafo,
+                             int heapsize)
+                         {
+                           Vector<> vec(fe.GetNDof());
+                           while (true)
+                             {
+                               try
+                                 {
+                                   LocalHeap lh(heapsize);
+                                   self.CalcElementVector (fe, trafo, vec, lh);
+                                   return vec;
+                                 }
+                               catch (LocalHeapOverflow ex)
+                                 {
+                                   heapsize *= 10;
+                                 }
+                             };
+                         }),
+         bp::default_call_policies(),        // need it to use named arguments
+         (bp::arg("lfi")=NULL, bp::arg("fel"),bp::arg("trafo"),bp::arg("heapsize")=10000))
     ;
 
 
@@ -1047,132 +1227,8 @@ void NGS_DLL_HEADER ExportNgfem() {
     shared_ptr<LinearFormIntegrator> >(); 
 
 
-  /*
-  bp::def("CreateBFI", FunctionPointer 
-          ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
-           {
-             auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
-             if (!bfi) cerr << "undefined integrator '" << name 
-                            << "' in " << dim << " dimension having 1 coefficient"
-                            << endl;
-             return bfi;
-           }),
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
-    ;
-  bp::def("CreateLFI", FunctionPointer
-          ([](string name, int dim, shared_ptr<CoefficientFunction> coef)
-           {
-             auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
-             if (!lfi) cerr << "undefined integrator '" << name 
-                             << "' in " << dim << " dimension having 1 coefficient"
-                             << endl;
-             
-             return lfi;
-           }),
-          (bp::arg("name")=NULL,bp::arg("dim")=2,bp::arg("coef")))
-    ;
-  */
-  
-
 
   ExportCoefficientFunction ();
-  /*
-  typedef CoefficientFunction CF;
-  typedef shared_ptr<CF> SPCF;
-
-  bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
-    ("CoefficientFunction", bp::no_init)
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](double val) -> shared_ptr<CoefficientFunction>
-                           {
-                             return make_shared<ConstantCoefficientFunction> (val);
-                           })))
-    .def("Evaluate", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
-
-
-
-    // coefficient expressions
-
-    .def ("__add__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a+b; });} ))
-    .def ("__add__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; }); }))
-    .def ("__radd__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; }); }))
-
-    .def ("__sub__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a-b; });} ))
-    .def ("__sub__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a-b; }); }))
-    .def ("__rsub__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return b-a; }); }))
-
-    .def ("__mul__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, [](double a, double b) { return a*b; });} ))
-    .def ("__mul__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a*b; }); }))
-    .def ("__rmul__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a*b; }); }))
-
-    .def ("__neg__", FunctionPointer 
-          ([] (SPCF c1) -> SPCF
-           { return UnaryOpCF (c1, [](double a) { return -a; });} ))
-    ;
-  bp::def ("sin", FunctionPointer 
-           ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, [](double a) { return sin(a); }); }));
-  bp::def ("sin", FunctionPointer ([] (double d) -> double { return sin (d); }));
-
-  bp::def ("exp", FunctionPointer 
-           ([] (SPCF coef) -> SPCF
-            { return UnaryOpCF (coef, [](double a) { return exp(a); }); }));
-  bp::def ("exp", FunctionPointer ([] (double d) -> double { return exp (d); }));
-
-  
-  bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
-    shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
-    ("ConstantCF", bp::init<double>())
-    ;
-  bp::implicitly_convertible 
-    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
-
-
-  class CoordCoefficientFunction : public CoefficientFunction
-  {
-    int dir;
-  public:
-    CoordCoefficientFunction (int adir) : dir(adir) { ; }
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
-    {
-      return ip.GetPoint()(dir);
-    }
-  };
-
-  bp::class_<CoordCoefficientFunction,bp::bases<CoefficientFunction>,
-    shared_ptr<CoordCoefficientFunction>, boost::noncopyable>
-    ("CoordCF", bp::init<int>())
-    ;
-  bp::implicitly_convertible 
-    <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
-
-
-  */
-
 
 
   bp::class_<PythonCFWrap ,bp::bases<CoefficientFunction>, shared_ptr<PythonCFWrap>, boost::noncopyable>("PythonCF", bp::init<>())

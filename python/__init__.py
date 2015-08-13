@@ -23,14 +23,18 @@ if __platform.startswith('win'):
 del environ
 del path
 
-__all__ = ['ngstd','bla','fem','la','comp','solve'];
+__all__ = ['ngstd','bla','fem','la','comp','solve','utils']
  
-# print ("importing ngsolve modules")
-# from . import ngstd
-# from . import bla
-# from . import fem
-# from . import la
-# from . import comp
-# from . import solve
-# print ("done main init")
+# ngsmodules = ['ngstd','bla','fem','la','comp','solve']
+# variable in import-name ????
+# for mod in ngsmodules:
+#    from ngsolve.mod import *
+
+# from ngsolve.ngstd import *
+# from ngsolve.bla import *
+# from ngsolve.la import *
+# from ngsolve.fem import *
+# from ngsolve.comp import *
+# from ngsolve.solve import *
+# from ngsolve.utils import *
 

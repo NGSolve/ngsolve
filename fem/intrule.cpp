@@ -56,18 +56,11 @@ namespace ngfem
 	det = Det (dxdxi); 
 	if(det == 0) 
 	  { 
-	    cout << " dxdxi " << dxdxi << endl; 
-	    cout << " GetJacobiDet is ZERO !!! " << endl; 
-	    *testout << " GetJacobieDet is ZERO !!! " << endl; 
-            *testout << "ip = " << this -> ip << endl;
-            *testout << "point = " << this->point << endl;
-            *testout << "dxdxi = " << dxdxi << endl;
-	    exit(0); 
+	    throw Exception ("Jacobi-det is zero");
 	  } 
 	if (det < 0 && 0)
 	  {
-	    cout << "A,det<0" << endl;
-	    (*testout) << "A,det<0" << endl;
+	    throw Exception ("Jacobi-det is negative");
 	  }
 	// dxidx = Inv (dxdxi);
       }

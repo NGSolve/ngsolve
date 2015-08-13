@@ -68,7 +68,7 @@ def CalcError():
 
 
 
-for level in range(20):
+for level in range(10):
     SolveBVP()
     CalcError()
     mesh.Refine()
