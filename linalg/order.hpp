@@ -122,7 +122,7 @@ namespace ngla
   {
   public:
     ///
-    int n;
+    int n, nused;
     ///
     Array<CliqueEl*> cliques;
     ///
@@ -159,6 +159,9 @@ namespace ngla
       return vertices[v].numcliques;
     }
 
+    ///
+    void SetUnusedVertex (int v) { vertices[v].SetEliminated(true); order[v] = -1; }
+      
     /// set/clear flag for all nodes in clique
     void SetFlagNodes (int v);
     ///

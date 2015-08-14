@@ -1,3 +1,5 @@
+// #define DEBUG
+
 /* *************************************************************************/
 /* File:   sparseldl.cc                                                    */
 /* Author: Joachim Schoeberl                                               */
@@ -61,6 +63,17 @@ namespace ngla
     starttime = clock();
     
     mdo = new MinimumDegreeOrdering (n);
+
+    if (inner)
+      for (int i = 0; i < n; i++)
+        if (!inner->Test(i))
+          mdo->SetUnusedVertex(i);
+    if (cluster)
+      for (int i = 0; i < n; i++)
+        if (!(*cluster)[i])
+          mdo->SetUnusedVertex(i);
+    
+
     
     if (!inner && !cluster)
       for (int i = 0; i < n; i++)
@@ -77,7 +90,7 @@ namespace ngla
 	  {
 	    int col = a.GetRowIndices(i)[j];
 	    if (col <= i)
-	      if ( (inner->Test(i) && inner->Test(col)) || i==col)
+	      if ( (inner->Test(i) && inner->Test(col)) ) //  || i==col)
 		mdo->AddEdge (i, col);
 	  }
 
@@ -89,25 +102,27 @@ namespace ngla
 	    {
 	      int col = row[j];
 	      if (col <= i)
-		if ( ( ((*cluster)[i] == (*cluster)[col]) && (*cluster)[i]) ||
-		     i == col )
+		if ( ( ((*cluster)[i] == (*cluster)[col]) && (*cluster)[i]) )
+                  // || i == col )
 		  mdo->AddEdge (i, col);
 	    }
 	}
     
+    /*
     for (int i = 0; i < n; i++)
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	{
 	  mdo->AddEdge (i, i);
 	  *testout << "add unsused position " << i << endl;
 	}
+    */
 
     if (printstat)
       cout << IM(4) << "start ordering" << endl;
     
     // mdo -> PrintCliques ();
     mdo->Order();
-    
+    nused = mdo->nused;
     endtime = clock();
     if (printstat)
       cout << IM(4) << "ordering time = "
@@ -126,7 +141,7 @@ namespace ngla
     delete mdo;
     mdo = 0;
 
-    diag.SetSize(n);
+    diag.SetSize(nused);
     // lfact.SetSize (nze);
     lfact = NumaInterleavedArray<TM> (nze);
     lfact = TM(0.0);     // first touch
@@ -138,6 +153,7 @@ namespace ngla
     
     starttime = endtime;
 
+    /*
     TM id;
     id = 0.0;
     SetIdentity(id);
@@ -145,7 +161,7 @@ namespace ngla
     for (int i = 0; i < n; i++)
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	SetOrig (i, i, id);
-
+    */
     
     if (!inner && !cluster)
       for (int i = 0; i < n; i++)
@@ -168,9 +184,11 @@ namespace ngla
                  {
                    if ( (inner->Test(i) && inner->Test(col)) )
                      SetOrig (i, col, a.GetRowValues(i)[j]);
+                   /*
                    else
                      if (i==col)
                        SetOrig (i, col, id);
+                   */
                  }
              }
          });
@@ -186,8 +204,10 @@ namespace ngla
                      // || i == col 
                      )
                   SetOrig (i, col, a.GetRowValues(i)[j]);
+              /*
               if (col == i && (*cluster)[i] == 0)
                 SetOrig (i, i, id);
+              */
 	    }
 	}
 
@@ -205,7 +225,7 @@ namespace ngla
       Factor(); 
 
 
-
+    /*
     for (int i = 0; i < n; i++)
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	diag[order[i]] = TM(0.0);
@@ -223,7 +243,7 @@ namespace ngla
 	  if (!(*cluster)[i])
 	    diag[order[i]] = TM(0.0);
       }
-
+    */
 
     if (printstat)
       cout << IM(4) << "done" << endl;
@@ -246,21 +266,20 @@ namespace ngla
     int n = aorder.Size();
 
     order.SetSize (n);
-    blocknrs.SetSize (n);
+    blocknrs.SetSize (nused);
     
     // order: now inverse map 
-    for (int i = 0; i < n; i++)
+    order = -1;
+    for (int i = 0; i < nused; i++)
       order[aorder[i]] = i;
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < nused; i++)
       blocknrs[i] = in_blocknr[i];
-
-    *testout << "blocknrs = " << endl << blocknrs << endl;
 
     long int cnt = 0;
     long int cnt_master = 0;
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < nused; i++)
       {
 	cnt += vertices[aorder[blocknrs[i]]].nconnected - (i-blocknrs[i]);
 	if (blocknrs[i] == i)
@@ -278,15 +297,15 @@ namespace ngla
      *testout << " Sparse Cholesky mem needed " << double(cnt*sizeof(TM)+cnt_master*sizeof(int))*1e-6 << " MBytes " << endl; 
      */  
 
-    firstinrow.SetSize(n+1);
-    firstinrow_ri.SetSize(n+1);
+    firstinrow.SetSize(nused+1);
+    firstinrow_ri.SetSize(nused+1);
     rowindex2.SetSize (cnt_master);
 
 
     cnt = 0;
     cnt_master = 0;
     maxrow = 0;
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < nused; i++)
       {
 	firstinrow[i] = cnt;
 	int ii = aorder[i];
@@ -311,8 +330,8 @@ namespace ngla
 	    cnt += firstinrow[i]-firstinrow[i-1]-1;
 	  }
       }
-    firstinrow[n] = cnt;
-    firstinrow_ri[n] = cnt_master;
+    firstinrow[nused] = cnt;
+    firstinrow_ri[nused] = cnt_master;
 
 
     for (int i = 1; i < blocknrs.Size(); i++)
@@ -324,17 +343,17 @@ namespace ngla
 
     // cout << "finding block-dependeny ... " << endl;
 
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < nused; i++)
       if(blocknrs[i] == i) blocks.Append(i);
-    blocks.Append(n);
+    blocks.Append(nused);
 
     // find block dependency
-    Array<int> block_of_dof(n);
+    Array<int> block_of_dof(nused);
     for (int i = 0; i < blocks.Size()-1; i++)
       block_of_dof[Range(blocks[i], blocks[i+1])] = i;
 
     DynamicTable<int> dep(blocks.Size()-1);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < nused; i++)
       {
         auto cols = rowindex2.Range(firstinrow_ri[i], firstinrow_ri[i+1]);
         for (int j : cols)
@@ -879,7 +898,7 @@ namespace ngla
 
     RegionTimer reg (factor_timer);
     
-    int n = Height();
+    int n = nused; // Height();
     if (n > 2000)
       cout << IM(4) << " factor SPD " << flush;
 
@@ -887,11 +906,8 @@ namespace ngla
     size_t * hfirstinrow = firstinrow.Addr(0);
     size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
-    // double * hlfact = lfact.Addr(0);
+    double * hlfact = lfact.Addr(0);
     
-
-
-
 
     for (int i1 = 0; i1 < n;  )
       {
@@ -899,22 +915,19 @@ namespace ngla
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
 	  last_same++;
 
-        
         timerb.Start();
 
 	// rows in same block ...
 	int mi = last_same - i1;
-
-
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+
         Matrix<> a(mi, nk);
         a = 0.0;
 	for (int j = 0; j < mi; j++)
 	  {
             a(j,j) = diag[i1+j];
-            a.Row(j).Range(j+1,nk) = FlatVector<>(nk-j-1, &lfact[hfirstinrow[i1+j]]);
+            a.Row(j).Range(j+1,nk) = FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
-
 
         /*
           // the original version
@@ -958,8 +971,7 @@ namespace ngla
 
         *testout << "b-block = " << a.Cols(mi, nk);
         */
-
-
+        
         Matrix<> a1 = a.Cols(0, mi);
         Vector<> da1(mi);
 
@@ -1006,7 +1018,7 @@ namespace ngla
 	for (int j = 0; j < mi; j++)
 	  {
             diag[i1+j] = a(j,j);
-            FlatVector<>(nk-j-1, &lfact[hfirstinrow[i1+j]]) = a.Row(j).Range(j+1,nk);
+            FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]) = a.Row(j).Range(j+1,nk);
           }
 
 
@@ -1031,7 +1043,6 @@ namespace ngla
 
 
         timerc1.Start();
-
 
         if (mi < 100)
           {
@@ -1087,7 +1098,6 @@ namespace ngla
              });
 
         timerc1.Stop();
-
 
         timerc2.Start();
 	for (int i2 = i1; i2 < last_same; i2++)
@@ -1603,20 +1613,22 @@ namespace ngla
     RegionTimer reg (timer);
     timer.AddFlops (2.0*lfact.Size());
 
-    int n = Height();
+    // int n = Height();
     
     const FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
-    Vector<TVX> hy(n);
+    int nused = this->nused;
+    Vector<TVX> hy(nused);
 
     /*
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
     */
-    ParallelFor (n, [&] (int i)
+    ParallelFor (height, [&] (int i)
                  {
-                   hy(order[i]) = fx(i);
+                   if (order[i] != -1)
+                     hy(order[i]) = fx(i);
                  });
 
     timer1.Start();
@@ -1684,7 +1696,6 @@ namespace ngla
 
 
     // parallel version with refined tasks (micri-dependency)
-
     RunParallelDependency (micro_dependency, 
                            [&] (int nr) 
                            {
@@ -1692,10 +1703,9 @@ namespace ngla
                              int blocknr = task.blocknr;
                              auto range = BlockDofs (blocknr);
                             
- 
                              if (task.solveL)
                                {
-
+                                 
                                  for (auto i : range)
                                    {
                                      int size = range.end()-i-1;
@@ -1740,9 +1750,8 @@ namespace ngla
 
 
     // solve with the diagonal
-
     const TM * hdiag = &diag[0];
-    ParallelFor (n, [&] (int i)
+    ParallelFor (nused, [&] (int i)
                  {
                    TVX tmp = hdiag[i] * hy[i];
                    hy[i] = tmp;
@@ -1756,7 +1765,6 @@ namespace ngla
     for (int i = blocks.Size()-2; i >= 0; i--)
       SolveBlockT (i, hy);
     */
-
 
     // advanced parallel version 
     RunParallelDependency (micro_dependency_trans, 
@@ -1817,7 +1825,7 @@ namespace ngla
 	  if (inner->Test(i))
 	    fy(i) += s * hy(order[i]);
         */
-        ParallelFor (n, [&] (int i)
+        ParallelFor (height, [&] (int i)
                      {
                        if (inner->Test(i))
                          fy(i) += s * hy(order[i]);
@@ -1825,7 +1833,7 @@ namespace ngla
       }
     else if (cluster)
       {
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < height; i++)
 	  if ((*cluster)[i])
 	    fy(i) += s * hy(order[i]);
       }
@@ -1833,9 +1841,10 @@ namespace ngla
       {
 	// for (int i = 0; i < n; i++)
         // fy(i) += s * hy(order[i]);
-        ParallelFor (n, [&] (int i)
+        ParallelFor (height, [&] (int i)
                      {
-                       fy(i) += s * hy(order[i]);
+                       if (order[i] != -1)
+                         fy(i) += s * hy(order[i]);
                      });
 
       }
