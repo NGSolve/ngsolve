@@ -572,7 +572,16 @@ namespace ngla
     if (n > 5000)
       cout << IM(4) << "order " << flush;
 
+    int locked_dofs = 0;
     for (int i = 0; i < n; i++)
+      if (vertices[i].Eliminated())                
+        {
+          locked_dofs++;
+          priqueue.SetDegree (i, n);                  
+        }
+    nused = n-locked_dofs;
+
+    for (int i = 0; i < nused; i++)
       {
 	if (n > 5000 && i % 1000 == 999)
 	  {
@@ -616,7 +625,6 @@ namespace ngla
       }
     // PrintCliques();
     // NgProfiler::Print (cout);
-
     if (task_manager) task_manager -> StartWorkers();
   }
 
@@ -624,8 +632,9 @@ namespace ngla
 
   MinimumDegreeOrdering:: ~MinimumDegreeOrdering ()
   {
-    for (int i = 0; i < vertices.Size(); i++)
-      delete [] vertices[i].connected;
+    cout << "~MDO: all data should be deleted, please double-check" << endl;
+    // for (int i = 0; i < vertices.Size(); i++)
+    // delete [] vertices[i].connected;
   }
 
 

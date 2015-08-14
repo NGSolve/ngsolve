@@ -135,7 +135,8 @@ public:
   protected:
     // height of the matrix
     int height;
-
+    // number of real unknowns
+    int nused;
     // number of non-zero entries in the L-factor
     size_t nze;
 
