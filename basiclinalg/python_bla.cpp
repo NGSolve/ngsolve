@@ -372,6 +372,15 @@ void NGS_DLL_HEADER ExportNgbla() {
             (boost::python::arg("length"),
             boost::python::arg("complex")=false)
            );
+    bp::def("Vector",
+            FunctionPointer( [] (bp::list values) {
+                               Vector<> v(len(values));
+                               for (int i = 0; i < v.Size(); i++)
+                                 v(i) = bp::extract<double>(values[i])();
+                               return v;
+                             }),
+            (boost::python::arg("vals"))
+           );
 
 
     ///////////////////////////////////////////////////////////////////////////////////////

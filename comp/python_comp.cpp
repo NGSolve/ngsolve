@@ -519,6 +519,17 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0),
          bp::return_value_policy<bp::manage_new_object>()
          )
+
+    .def("Contains", FunctionPointer
+         ([](MeshAccess & ma, double x, double y, double z) 
+          {
+            IntegrationPoint ip;
+            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            return (elnr >= 0);
+          }), 
+         (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0)
+         )
+
     ;
 
 
@@ -814,6 +825,41 @@ void NGS_DLL_HEADER ExportNgcomp()
           }
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
 
+
+   .def("__call__", FunctionPointer
+        ([](GF & self, const BaseMappedIntegrationPoint & mip)
+          {
+            auto space = self.GetFESpace();
+            auto evaluator = space->GetEvaluator();
+            LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
+
+            int elnr = mip.GetTransformation().GetElementNr();
+            const FiniteElement & fel = space->GetFE(elnr, lh);
+
+            Array<int> dnums(fel.GetNDof(), lh);
+            space->GetDofNrs(elnr, dnums);
+
+            if (space->IsComplex())
+              {
+                Vector<Complex> elvec(fel.GetNDof()*space->GetDimension());
+                Vector<Complex> values(evaluator->Dim());
+                self.GetElementVector(dnums, elvec);
+
+                evaluator->Apply(fel, mip, elvec, values, lh);
+                return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
+              }
+            else
+              {
+                Vector<> elvec(fel.GetNDof()*space->GetDimension());
+                Vector<> values(evaluator->Dim());
+                self.GetElementVector(dnums, elvec);
+
+                evaluator->Apply(fel, mip, elvec, values, lh);
+                return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
+              }
+          }), 
+        (bp::arg("self"), bp::arg("mip")))
+    
 
     .def("D", FunctionPointer
          ([](GF & self, const double &x, const double &y, const double &z)
