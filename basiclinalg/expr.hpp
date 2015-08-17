@@ -1289,6 +1289,10 @@ namespace ngbla
   INLINE Complex InnerProduct (Complex a, double b) {return a * b;}
   INLINE int InnerProduct (int a, int b) {return a * b;}
 
+  template <int DIM>
+  AutoDiff<DIM> InnerProduct (AutoDiff<DIM> a, AutoDiff<DIM> b) {return a * b;}
+
+
   /**
      Inner product
   */
