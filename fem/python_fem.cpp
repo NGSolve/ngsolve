@@ -566,7 +566,144 @@ public:
 
 
 
+class DomainWiseCoefficientFunction : public CoefficientFunction
+{
+  Array<shared_ptr<CoefficientFunction>> ci;
+public:
+  DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
+    : ci(aci) 
+  { 
+    cout << "construct domainwise-cf: " << ci << endl;
+  }
+  
+  virtual bool IsComplex() const 
+  { 
+    for (auto cf : ci)
+      if (cf && cf->IsComplex()) return true;
+    return false;
+  }
 
+  virtual int Dimension() const
+  {
+    for (auto cf : ci)
+      if (cf) return cf->Dimension();
+    return 0;
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    for (auto cf : ci)
+      cf->TraverseTree (func);
+  }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    result = 0;
+    if (!&ip.GetTransformation()) return;
+
+    int matindex = ip.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ip, result);
+  }
+
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    result = 0;
+    if (!&ip.GetTransformation()) return;
+
+    int matindex = ip.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ip, result);
+  }
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
+                             FlatVector<> result,
+                             FlatVector<> deriv) const
+  {
+    result = 0;
+    deriv = 0;
+    if (!&ip.GetTransformation()) return;
+
+    int matindex = ip.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> EvaluateDeriv (ip, result, deriv);
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result,
+                              FlatVector<> deriv,
+                              FlatVector<> dderiv) const
+  {
+    result = 0;
+    deriv = 0;
+    dderiv = 0;
+    if (!&ip.GetTransformation()) return;
+
+    int matindex = ip.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> EvaluateDDeriv (ip, result, deriv, dderiv);
+  }
+};
+
+
+
+class VectorialCoefficientFunction : public CoefficientFunction
+{
+  Array<shared_ptr<CoefficientFunction>> ci;
+public:
+  VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
+    : ci(aci) 
+  { ; }
+  
+  virtual bool IsComplex() const 
+  { 
+    for (auto cf : ci)
+      if (cf && cf->IsComplex()) return true;
+    return false;
+  }
+
+  virtual int Dimension() const
+  {
+    return ci.Size();
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    for (auto cf : ci)
+      cf->TraverseTree (func);
+  }
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    for (int i : Range(ci))
+      ci[i]->Evaluate(ip, result.Range(i,i+1));
+  }
+
+};
+
+
+
+
+
+/*
 shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
 {
   if (bp::extract<shared_ptr<CoefficientFunction>>(py_coef).check())
@@ -579,6 +716,38 @@ shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
       bp::exec("raise KeyError()\n");
       return nullptr;
     }
+}
+*/
+
+shared_ptr<CoefficientFunction> MakeCoefficient (bp::object val)
+{
+  bp::extract<shared_ptr<CoefficientFunction>> ecf(val);
+  if (ecf.check()) return ecf();
+
+  bp::extract<double> ed(val);
+  if (ed.check()) 
+    return make_shared<ConstantCoefficientFunction> (ed());
+
+  bp::extract<bp::list> el(val);
+  if (el.check())
+    {
+      Array<shared_ptr<CoefficientFunction>> cflist(bp::len(el()));
+      for (int i : Range(cflist))
+        cflist[i] = MakeCoefficient(el()[i]);
+      return make_shared<DomainWiseCoefficientFunction>(move(cflist));
+    }
+
+  bp::extract<bp::tuple> et(val);
+  if (et.check())
+    {
+      Array<shared_ptr<CoefficientFunction>> cflist(bp::len(et()));
+      for (int i : Range(cflist))
+        cflist[i] = MakeCoefficient(et()[i]);
+      return make_shared<VectorialCoefficientFunction>(move(cflist));
+    }
+
+
+  throw Exception ("cannot make coefficient");
 }
 
 Array<shared_ptr<CoefficientFunction>> MakeCoefficients (bp::object py_coef)
@@ -652,11 +821,18 @@ void ExportCoefficientFunction()
 {
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction", bp::no_init)
+    /*
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](double val) -> shared_ptr<CoefficientFunction>
                            {
                              return make_shared<ConstantCoefficientFunction> (val);
                            })))
+    */
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](bp::object val) 
+                           { return MakeCoefficient(val); })))
+    
+
     .def("__call__", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
 
     .add_property("dim", &CoefficientFunction::Dimension)    
