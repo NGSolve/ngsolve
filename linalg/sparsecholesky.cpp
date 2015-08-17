@@ -487,7 +487,7 @@ namespace ngla
     RegionTimer reg (factor_timer);
 
     
-    int n = Height();
+    int n = nused; // Height();
     if (n > 2000)
       cout << IM(4) << " factor " << flush;
 
