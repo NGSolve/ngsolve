@@ -57,7 +57,7 @@ for i in range(10):
     for k in range(10):
         B[k,i] = complex(k*k+i+1, i+1+k)
 
-v = A*w
+v = B*w
 
 
 # Create numpy matrix from Matrix

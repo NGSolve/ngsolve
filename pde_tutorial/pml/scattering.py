@@ -9,7 +9,7 @@ from math import sqrt
 # geometry = scattering.in2d
 mesh = Mesh ("scattering.vol.gz")
 
-SetPMLParameters (rad=1, alpha=2)
+SetPMLParameters (rad=1, alpha=0.2)
 
 kx = 50
 ky = 10
@@ -17,7 +17,7 @@ k = sqrt(kx*kx+ky*ky)
 
 uin = exp (1J*kx*x+1J*ky*y)
 
-v = FESpace("h1ho", mesh, complex=True, order=2, dirichlet=[1])
+v = FESpace("h1ho", mesh, complex=True, order=3, dirichlet=[1])
 
 uscat = GridFunction (v, "uscat")
 uscat.Set (uin)

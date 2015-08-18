@@ -1,7 +1,7 @@
 from ngsolve import *
 
 pde = comp.PDE("d1_square.pde")
-# pde.Solve()
+pde.Solve()
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
