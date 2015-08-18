@@ -836,7 +836,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             int elnr = mip.GetTransformation().GetElementNr();
             const FiniteElement & fel = space->GetFE(elnr, lh);
 
-            Array<int> dnums(fel.GetNDof(), lh);
+            Array<int> dnums(fel.GetNDof());
             space->GetDofNrs(elnr, dnums);
 
             if (space->IsComplex())
