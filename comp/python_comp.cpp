@@ -590,17 +590,19 @@ void NGS_DLL_HEADER ExportNgcomp()
          )
 
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::list spaces)->shared_ptr<FESpace>
+         (FunctionPointer ([](bp::list spaces, bp::dict bpflags)->shared_ptr<FESpace>
                            {
+                             Flags flags = bp::extract<Flags> (bpflags)();
+
                              auto sp (makeCArray<shared_ptr<FESpace>> (spaces));
-                             auto fes = make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, Flags());
+                             auto fes = make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, flags);
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              return fes;
                            }),
           bp::default_call_policies(),       
-          (bp::arg("spaces"))),
+          (bp::arg("spaces"), bp::arg("flags") = bp::dict())),
          "construct compound-FESpace from list of component spaces"
          )
 
