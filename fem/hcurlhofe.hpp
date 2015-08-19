@@ -34,10 +34,10 @@ namespace ngfem
   class HCurlHighOrderFE : public BASE, public ET_trait<ET>
   {
   protected:
-    static constexpr auto N_VERTEX = ET_trait<ET>::N_VERTEX;
-    static constexpr auto N_EDGE   = ET_trait<ET>::N_EDGE;
-    static constexpr auto N_FACE   = ET_trait<ET>::N_FACE;
-    static constexpr auto N_CELL   = ET_trait<ET>::N_CELL;
+    using ET_trait<ET>::N_VERTEX;
+    using ET_trait<ET>::N_EDGE;
+    using ET_trait<ET>::N_FACE;
+    using ET_trait<ET>::N_CELL;
 
     using ET_trait<ET>::FaceType;
 
@@ -59,6 +59,10 @@ namespace ngfem
     using BASE::order;
 
     typedef IntegratedLegendreMonomialExt T_ORTHOPOL;
+
+    // typedef LegendrePolynomial EdgeOrthoPol;
+    typedef IntLegNoBubble EdgeOrthoPol;  // Integrated Legendre divided by bubble
+    // typedef ChebyPolynomial EdgeOrthoPol; 
 
   public:
     /* INLINE */ HCurlHighOrderFE () { ; } 

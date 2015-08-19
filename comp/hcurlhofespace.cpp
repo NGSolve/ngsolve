@@ -2709,7 +2709,7 @@ namespace ngcomp
       }
   
     //sparse matrix with above matrix graph cnts 
-    SparseMatrix<double> & grad = *new SparseMatrix<double>(cnts); 
+    SparseMatrix<double> & grad = *new SparseMatrix<double>(cnts, fesh1.GetNDof()); 
     
     // vertices - nedelec
     // ho-edges
