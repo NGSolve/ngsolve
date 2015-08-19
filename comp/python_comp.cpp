@@ -734,13 +734,16 @@ void NGS_DLL_HEADER ExportNgcomp()
          "update vector size to finite element space dimension after mesh refinement")
     
     .def("Set", FunctionPointer
-         ([](GF & self, shared_ptr<CoefficientFunction> cf, bool boundary)
+         ([](GF & self, shared_ptr<CoefficientFunction> cf, 
+             bool boundary, int heapsize)
           {
-            LocalHeap lh(1000000, "GridFunction::Set-lh");
+            LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             SetValues (cf, self, boundary, NULL, lh);
           }),
           bp::default_call_policies(),        // need it to use arguments
-         (bp::arg("self"),bp::arg("coefficient"),bp::arg("boundary")=false),
+         (bp::arg("self"),bp::arg("coefficient"),
+          bp::arg("boundary")=false,
+          bp::arg("heapsize")=1000000),
          "Set values (on boundary)"
       )
 
@@ -1407,13 +1410,14 @@ void NGS_DLL_HEADER ExportNgcomp()
   {
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
-
+    VorB vb;
+    
   public:
-    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
-      : cf(acf)
+    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
+      : cf(acf), vb(avb)
     {
       if (cf->Dimension() != 1)
-        throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
+        throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
       cf->TraverseTree
         ([&] (CoefficientFunction & nodecf)
          {
@@ -1423,7 +1427,7 @@ void NGS_DLL_HEADER ExportNgcomp()
          });
     }
 
-    virtual bool BoundaryForm() const { return false; }
+    virtual bool BoundaryForm() const { return vb==BND; }
 
     virtual void 
     CalcElementVector (const FiniteElement & fel,
@@ -1468,10 +1472,11 @@ void NGS_DLL_HEADER ExportNgcomp()
   {
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    VorB vb;
 
   public:
-    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
-      : cf(acf)
+    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
+      : cf(acf), vb(avb)
     {
       if (cf->Dimension() != 1)
         throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
@@ -1497,7 +1502,7 @@ void NGS_DLL_HEADER ExportNgcomp()
           });
     }
 
-    virtual bool BoundaryForm() const { return false; }
+    virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; } 
 
     virtual void 
@@ -1743,16 +1748,20 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   bp::def("SymbolicLFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<LinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<LinearFormIntegrator>
            {
-             return make_shared<SymbolicLinearFormIntegrator> (cf);
-           }));
+             return make_shared<SymbolicLinearFormIntegrator> (cf, vb);
+           }),
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          );
 
   bp::def("SymbolicBFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<BilinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<BilinearFormIntegrator>
            {
-             return make_shared<SymbolicBilinearFormIntegrator> (cf);
-           }));
+             return make_shared<SymbolicBilinearFormIntegrator> (cf, vb);
+           }),
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          );
 
   bp::def("SymbolicEnergy", FunctionPointer
           ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<BilinearFormIntegrator>
