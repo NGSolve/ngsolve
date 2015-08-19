@@ -127,7 +127,8 @@ namespace ngfem
     //HO-Edge shapes (Gradient Fields)   
     if(p > 0 && usegrad_cell)
       { 
-        LegendrePolynomial::
+        // LegendrePolynomial::
+        EdgeOrthoPol::
           EvalScaledMult (p-1, 
                           lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                           lam[e[0]]*lam[e[1]], adpol1);
@@ -164,7 +165,8 @@ namespace ngfem
 	//HO-Edge shapes (Gradient Fields)   
 	if(p > 0 && usegrad_edge[i]) 
 	  { 
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalScaledMult (order_edge[i]-1, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 			      lam[e[0]]*lam[e[1]], 
@@ -281,7 +283,8 @@ namespace ngfem
 	    for (int j = 0; j < p; j++)
               shape[ii++] = Du<2> (pol_xi[j]);
             */
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalMult (order_edge[i]-1, 
 			xi, bub, SBLambda ([&](int i, Tx val)
                                            {
@@ -380,7 +383,8 @@ namespace ngfem
 	//HO-Edge shape functions (Gradient Fields) 	
 	if (p > 0 && usegrad_edge[i]) 
 	  {     
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalScaledMult (p-1, 
 			      lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 			      lam[e[0]]*lam[e[1]], 
@@ -501,7 +505,8 @@ namespace ngfem
             Tx eta = lam[e[0]]+lam[e[1]]; 
             Tx bub = lam[e[0]]*lam[e[1]]*muz[e[1]];
 
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalScaledMult (p-1, xi, eta, bub, adpolxy1);
 	    for(int j = 0; j <= p-1; j++)
               shape[ii++] = Du<3> (adpolxy1[j]);
@@ -523,7 +528,8 @@ namespace ngfem
 	    // for (int j = 0; j < p; j++)
 	    //   shape[ii++] = Du<3> (adpolz[j] * lam[e[1]]);
 
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalMult (p-1, 
 			muz[e[1]]-muz[e[0]], 
 			muz[e[0]]*muz[e[1]]*lam[e[1]], adpolz);
@@ -761,7 +767,8 @@ namespace ngfem
 	// High Order edges ... Gradient fields 
 	if(p > 0 && usegrad_edge[i])
 	  {
-	    LegendrePolynomial::
+	    //LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalMult (p-1, 
 			xi, bub, pol_xi);
 
@@ -947,7 +954,8 @@ namespace ngfem
 	if(p > 0 && usegrad_edge[i])
 	  {
             Tx bub = 0.25*(1-xi*xi)*(1-z)*(1-z)*lam_t;
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalScaledMult (p-1,
 			      xi*(1-z), 1-z, bub,
                               SBLambda ([&](int i, Tx val)
@@ -971,7 +979,8 @@ namespace ngfem
             Tx lam_e = lami[e[0]]+lami[e[1]];
             Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
 
-	    LegendrePolynomial::
+	    // LegendrePolynomial::
+            EdgeOrthoPol::
 	      EvalScaledMult (p-1,
                               xi, lam_e, bub, 
                               SBLambda ([&](int i, Tx val)

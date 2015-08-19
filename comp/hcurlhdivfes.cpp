@@ -666,7 +666,7 @@ namespace ngcomp
     for (i = 0; i < ned; i++)
       cnts[i] = (FineLevelOfEdge(i) == level) ? 2 : 0;
 
-    SparseMatrix<double> & grad = *new SparseMatrix<double>(cnts);
+    SparseMatrix<double> & grad = *new SparseMatrix<double>(cnts, ma->GetNV());
 
     for (i = 0; i < ned; i++)
       {
