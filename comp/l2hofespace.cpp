@@ -54,6 +54,9 @@ namespace ngcomp
       {
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order "); 
       }
+
+    for (auto & et : et_bonus) et = 0;
+    et_bonus[ET_QUAD] = int (flags.GetNumFlag("quadbonus",0));
     
     integrator = CreateBFI("mass", ma->GetDimension(),
                            make_shared<ConstantCoefficientFunction>(1));
@@ -142,12 +145,15 @@ namespace ngcomp
 
     if(var_order) 
       for(int i = 0; i < nel; i++) 
-        order_inner[i] = Max(ma->GetElOrders(i)+INT<3>(rel_order), INT<3>(0));
-
+        order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+    
     for(int i = 0; i < nel; i++) 
-      if (!DefinedOn (ma->GetElIndex (i))) 
-        order_inner[i] = 0;
-
+      {
+        order_inner[i] = order_inner[i] + INT<3> (et_bonus[ma->GetElType(i)]);
+        order_inner[i] = Max(order_inner[i], INT<3>(0));
+        if (!DefinedOn (ma->GetElIndex (i)))
+          order_inner[i] = 0;
+      }
     if(print) 
       *testout << " order_inner (l2ho) " << order_inner << endl; 
 

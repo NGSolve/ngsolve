@@ -32,6 +32,7 @@ namespace ngcomp
     // table of first element dofnumber 
     Array<int> first_element_dof;
     bool all_dofs_together;
+    int et_bonus[30]; // order increase for element-type
   public:
 
     L2HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
