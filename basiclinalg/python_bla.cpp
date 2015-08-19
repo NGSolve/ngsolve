@@ -335,10 +335,14 @@ void NGS_DLL_HEADER ExportNgbla() {
     ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
-        .def("NumPy", FunctionPointer([] (FVD & self)
+      .def("NumPy", FunctionPointer([] (bp::object & self)
                                    {
-                                     npy_intp dims[] = { self.Size() };
-                                     PyObject * ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &self(0));
+				     bp::incref(self.ptr());
+				     FVD* fv = bp::extract<FVD*>(self);
+                                     npy_intp dims[] = { fv->Size() };
+                                     PyObject* ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &(*fv)(0));
+				     PyArrayObject* aob = (PyArrayObject *) ob;
+				     PyArray_SetBaseObject(aob,self.ptr());
                                      return ob;
                                    }))
         ;
@@ -392,10 +396,14 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
-        .def("NumPy", FunctionPointer([] (FMD & self)
+      .def("NumPy", FunctionPointer([] (bp::object & self)
                                    {
-                                     npy_intp dims[] = { self.Height(), self.Width() };
-                                     PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &self(0,0));
+				     bp::incref(self.ptr());
+				     FMD* fm = bp::extract<FMD*>(self);
+                                     npy_intp dims[] = { fm->Height(), fm->Width() };
+                                     PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &(*fm)(0,0));
+				     PyArrayObject* aob = (PyArrayObject *) ob;
+				     PyArray_SetBaseObject(aob,self.ptr());
                                      return ob;
                                    }))
 
