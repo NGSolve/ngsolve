@@ -1112,16 +1112,23 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Set", FunctionPointer
          ([](GF & self, shared_ptr<CoefficientFunction> cf, 
-             bool boundary, int heapsize)
+             bool boundary, int heapsize, bp::object heap)
           {
+            if (bp::extract<LocalHeap&> (heap).check())
+              {
+                LocalHeap & lh = bp::extract<LocalHeap&> (heap)();
+                SetValues (cf, self, boundary, NULL, lh);                
+                return;
+              }
+
             LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             SetValues (cf, self, boundary, NULL, lh);
           }),
           bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"),bp::arg("coefficient"),
           bp::arg("boundary")=false,
-          bp::arg("heapsize")=1000000),
-         "Set values (on boundary)"
+          bp::arg("heapsize")=1000000, bp::arg("heap")=bp::object()),
+         "Set values"
       )
 
 
@@ -1340,7 +1347,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Assemble", FunctionPointer([](BF & self, int heapsize, bool reallocate)
                                      {
-                                       LocalHeap lh (heapsize*omp_get_max_threads(), "BilinearForm::Assemble-heap");
+                                       LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
                                        self.ReAssemble(lh,reallocate);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
