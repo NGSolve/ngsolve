@@ -572,9 +572,7 @@ class DomainWiseCoefficientFunction : public CoefficientFunction
 public:
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
     : ci(aci) 
-  { 
-    cout << "construct domainwise-cf: " << ci << endl;
-  }
+  { ; }
   
   virtual bool IsComplex() const 
   { 
@@ -933,8 +931,36 @@ void ExportCoefficientFunction()
                return make_shared<ScaleCoefficientFunctionC> (val, coef); 
            }))
 
-    // { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-    // [](double a, double b) { return a*b; }); }))
+    .def ("__truediv__", FunctionPointer 
+          ([] (SPCF coef, SPCF coef2) -> SPCF
+           { return BinaryOpCF (coef, coef2,
+                                [](double a, double b) { return a/b; },
+                                [](Complex a, Complex b) { return a/b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
+                                ); }))
+
+    .def ("__truediv__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return a/b; },
+                                [](Complex a, Complex b) { return a/b; },
+                                [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
+                                ); }))
+
+
+    .def ("__rtruediv__", FunctionPointer 
+          ([] (SPCF coef, double val) -> SPCF
+           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
+                                [](double a, double b) { return b/a; },
+                                [](Complex a, Complex b) { return b/a; },
+                                [](double a, double b, double & dda, double & ddb) { dda = -b/(a*a); ddb = 1.0/a; },
+                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                                { ddada = 2*b/(a*a*a); ddadb = -b/(a*a); ddbdb = 0; }
+                                ); }))
 
     .def ("__neg__", FunctionPointer 
           ([] (SPCF coef) -> SPCF
