@@ -335,17 +335,22 @@ void NGS_DLL_HEADER ExportNgbla() {
     ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
-      .def("NumPy", FunctionPointer([] (bp::object & self)
-                                   {
-				     // bp::incref(self.ptr());
-				     FVD* fv = bp::extract<FVD*>(self);
-                                     npy_intp dims[] = { fv->Size() };
-                                     PyObject* ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &(*fv)(0));
-				     // PyArrayObject* aob = (PyArrayObject *) ob;
-				     // PyArray_SetBaseObject(aob,self.ptr());  // requires numpy xxx
-                                     return ob;
-                                   }))
-        ;
+      .def("NumPy", FunctionPointer
+           ([] (bp::object & self)
+            {
+              bp::incref(self.ptr());
+              FVD* fv = bp::extract<FVD*>(self);
+              npy_intp dims[] = { fv->Size() };
+              PyObject* ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &(*fv)(0));
+              PyArrayObject* aob = (PyArrayObject *) ob;
+#if NPY_API_VERSION >= 0x00000007
+              PyArray_SetBaseObject(aob,self.ptr());  // requires numpy 1.7
+#else
+              PyArray_BASE(aob) = self.ptr();
+#endif
+              return ob;
+            }))
+      ;
     ExportVector< FVC, VC, Complex>("FlatVectorC")
         .def(bp::self*=double())
         .def(bp::init<int, Complex *>())
@@ -396,17 +401,24 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
-      .def("NumPy", FunctionPointer([] (bp::object & self)
-                                   {
-				     // bp::incref(self.ptr());
-				     FMD* fm = bp::extract<FMD*>(self);
-                                     npy_intp dims[] = { fm->Height(), fm->Width() };
-                                     PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &(*fm)(0,0));
-				     // PyArrayObject* aob = (PyArrayObject *) ob;
-				     // PyArray_SetBaseObject(aob,self.ptr());  // requires numpy xxx
-                                     return ob;
-                                   }))
-
+      .def("NumPy", FunctionPointer
+           ([] (bp::object & self)
+            {
+              bp::incref(self.ptr());
+              FMD* fm = bp::extract<FMD*>(self);
+              npy_intp dims[] = { fm->Height(), fm->Width() };
+              PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &(*fm)(0,0));
+              PyArrayObject* aob = (PyArrayObject *) ob;
+              // PyArray_SetBaseObject(aob,self.ptr());  // requires numpy xxx
+              
+#if NPY_API_VERSION >= 0x00000007
+              PyArray_SetBaseObject(aob,self.ptr());  // requires numpy 1.7
+#else
+              PyArray_BASE(aob) = self.ptr();
+#endif
+              return ob;
+            }))
+      
         ;
 
 
