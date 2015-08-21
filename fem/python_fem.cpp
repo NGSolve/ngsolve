@@ -98,6 +98,7 @@ public:
     : c1(ac1), lam(alam), lamc(alamc) { ; }
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual int Dimension() const { return c1->Dimension(); }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -695,6 +696,13 @@ public:
       ci[i]->Evaluate(ip, result.Range(i,i+1));
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    for (int i : Range(ci))
+      ci[i]->Evaluate(ip, result.Range(i,i+1));
+  }
+
 };
 
 
@@ -807,6 +815,9 @@ struct GenericExp {
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
+};
+struct GenericSqrt {
+  template <typename T> T operator() (T x) const { return sqrt(x); }
 };
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
@@ -972,6 +983,7 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericTan>("tan");
   ExportStdMathFunction<GenericExp>("exp");
   ExportStdMathFunction<GenericLog>("log");
+  ExportStdMathFunction<GenericSqrt>("sqrt");
   ExportStdMathFunction<GenericConj>("Conj");
 
   
