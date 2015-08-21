@@ -50,7 +50,7 @@ namespace ngstd
     stringstream str;
     str << "Current heapsize is " << size << '\n';
     Append (str.str());
-    Append ("please use 'define constant heapsize = xxx' with larger value\n");
+    // Append ("please use 'define constant heapsize = xxx' with larger value\n");
   }
   
   LocalHeapOverflow :: ~LocalHeapOverflow ()

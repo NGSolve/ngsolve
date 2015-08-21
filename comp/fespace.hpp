@@ -691,25 +691,45 @@ namespace ngcomp
         return;
       }
 
+
+    Exception * ex = nullptr;
+
 #pragma omp parallel 
     {
       LocalHeap lh = clh.Split();
       Array<int> temp_dnums;
 
       // lh.ClearValues();
-
+      
       for (FlatArray<int> els_of_col : element_coloring)
         
 #pragma omp for schedule(dynamic)
         for (int i = 0; i < els_of_col.Size(); i++)
           {
-            HeapReset hr(lh);
-            FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
-
-            func (move(el), lh);
+            try
+              {
+                HeapReset hr(lh);
+                FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
+                
+                func (move(el), lh);
+              }
+            
+            catch (Exception e)
+              {
+#pragma omp critical(copyex)
+                {
+                  delete ex;
+                  ex = new Exception (e);
+                }
+              }
           }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
     }
+    
+    if (ex)
+      {
+        throw Exception (*ex);
+      }
   }
 
 
