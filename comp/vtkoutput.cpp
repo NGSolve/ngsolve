@@ -18,7 +18,8 @@ namespace ngcomp
     : VTKOutput(ama, a_coefs, 
                 flags.GetStringListFlag ("fieldnames" ),
                 flags.GetStringFlag ("filename","output"),
-                (int) flags.GetNumFlag ( "subdivision", 0))
+                (int) flags.GetNumFlag ( "subdivision", 0),
+                (int) flags.GetNumFlag ( "only_element", -1))
   {;}
 
 
@@ -26,9 +27,9 @@ namespace ngcomp
   VTKOutput<D>::VTKOutput (shared_ptr<MeshAccess> ama,
                            const Array<shared_ptr<CoefficientFunction>> & a_coefs,
                            const Array<string> & a_field_names,
-                           string a_filename, int a_subdivision)
+                           string a_filename, int a_subdivision, int a_only_element)
     : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-      filename(a_filename), subdivision(a_subdivision)
+      filename(a_filename), subdivision(a_subdivision), only_element(a_only_element)
   {
     value_field.SetSize(a_coefs.Size());
     for (int i = 0; i < a_coefs.Size(); i++)
@@ -237,7 +238,10 @@ namespace ngcomp
     *fileout << "DATASET UNSTRUCTURED_GRID" << endl;
 
     int ne = ma->GetNE();
-    for ( int elnr : Range(ne))
+
+    IntRange range = only_element >= 0 ? IntRange(only_element,only_element+1) : Range(ne);
+    
+    for ( int elnr : range)
     {
       HeapReset hr(lh);
 

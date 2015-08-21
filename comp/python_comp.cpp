@@ -1954,7 +1954,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>,  boost::noncopyable>("VTKOutput", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](shared_ptr<MeshAccess> ma, bp::list coefs_list,
-                              bp::list names_list, string filename, int subdivision)
+                              bp::list names_list, string filename, int subdivision, int only_element)
                            {
                              Array<shared_ptr<CoefficientFunction> > coefs
                                = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
@@ -1962,9 +1962,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                                = makeCArray<string> (names_list);
                              shared_ptr<BaseVTKOutput> ret;
                              if (ma->GetDimension() == 2)
-                               ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision);
+                               ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element);
                              else
-                               ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision);
+                               ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
                              return ret;
                            }),
 
@@ -1974,7 +1974,8 @@ void NGS_DLL_HEADER ExportNgcomp()
             bp::arg("coefs")= bp::list(),
             bp::arg("names") = bp::list(),
             bp::arg("filename") = "vtkout",
-            bp::arg("subdivision") = 0
+            bp::arg("subdivision") = 0,
+            bp::arg("only_element") = -1
             )
            )
       )
