@@ -6,8 +6,9 @@ libngcomp_la_SOURCES = bilinearform.cpp facetfespace.cpp fespace.cpp \
 gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp \
 hdivfes.cpp hdivhofespace.cpp hierarchicalee.cpp l2hofespace.cpp     \
 linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     \
-preconditioner.cpp vectorfacetfespace.cpp bddc.cpp hypre_precond.cpp \
-python_comp.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
+preconditioner.cpp vectorfacetfespace.cpp numberfespace.cpp bddc.cpp \
+hypre_precond.cpp python_comp.cpp basenumproc.cpp pde.cpp	     \
+pdeparser.cpp vtkoutput.cpp
 
 libngcomp_la_LIBADD = $(top_builddir)/fem/libngfem.la \
 $(top_builddir)/linalg/libngla.la \
