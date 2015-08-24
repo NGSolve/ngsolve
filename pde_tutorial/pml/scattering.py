@@ -1,3 +1,4 @@
+from ngsolve.ngstd import *
 from ngsolve.comp import *
 from ngsolve.fem import *
 from ngsolve.utils import *

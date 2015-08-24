@@ -924,15 +924,25 @@ void ExportCoefficientFunction()
                                 { ddada = 0; ddadb = 1; ddbdb = 0; }
                                 );
            } ))
+    /*
+      // it's using the complex functions anyway ...
     .def ("__mul__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return make_shared<ScaleCoefficientFunction> (val, coef); }))
+           { 
+             return make_shared<ScaleCoefficientFunction> (val, coef); 
+           }))
     .def ("__rmul__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (val, coef); }))
+    */
     .def ("__mul__", FunctionPointer 
           ([] (SPCF coef, Complex val) -> SPCF
-           { return make_shared<ScaleCoefficientFunctionC> (val, coef); }))
+           { 
+             if (val.imag() == 0)
+               return make_shared<ScaleCoefficientFunction> (val.real(), coef); 
+             else
+               return make_shared<ScaleCoefficientFunctionC> (val, coef); 
+           }))
     .def ("__rmul__", FunctionPointer 
           ([] (SPCF coef, Complex val) -> SPCF
            { 
