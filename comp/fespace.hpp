@@ -343,12 +343,9 @@ namespace ngcomp
 
     ElementRange Elements (VorB vb, LocalHeap & lh) const
     {
-      // cout << "C++ FESpace::Elements with lh reference, name = " << lh.name << endl;
       return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), lh);
     }
         
-
-
 
     /// returns finite element. 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
@@ -1036,6 +1033,9 @@ namespace ngcomp
 
     /// get component space
     shared_ptr<FESpace> operator[] (int i) const { return spaces[i]; }
+
+    /// returns a compound finite element
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const;
 
     /// returns a compound finite element
     virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
