@@ -110,7 +110,7 @@ public:
 
   bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
-  virtual bool Complex () const { return space->IsComplex(); }
+  virtual bool IsComplex () const { return space->IsComplex(); }
 
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -151,6 +151,13 @@ public:
       result (ud->trial_comp) = 1;
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    Vector<> result_double(result.Size());
+    Evaluate (ip, result_double);
+    result = result_double;
+  }
 
   virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
                               FlatVector<> result,
@@ -354,7 +361,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
                 values.Row(i) *= mir[i].GetWeight();
               proxyvalues.Col(k) = values.Col(0);
             }
-          
+
           proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
           elvec += elvec1;
         }
