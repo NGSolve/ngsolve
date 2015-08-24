@@ -39,3 +39,6 @@ def HDiv(mesh, **args):
     """ Create H(div) finite element space. """
     return FESpace("hdivho", mesh, **args)
 
+
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'HCurl', 'HDiv', 'L2' ]

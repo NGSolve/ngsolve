@@ -2080,6 +2080,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
+  FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    FlatArray<const FiniteElement*> fea(spaces.Size(), alloc);
+    for (int i = 0; i < fea.Size(); i++)
+      fea[i] = &spaces[i]->GetFE(ei, alloc);
+    return *new (alloc) CompoundFiniteElement (fea);
+  }
+
   const FiniteElement & CompoundFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     FlatArray<const FiniteElement*> fea(spaces.Size(), lh);
@@ -2227,11 +2235,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100005> lh("CompoundFESpace - transformmat");
     for (int i = 0; i < spaces.Size(); i++)
       {
+        /*
 	int nd = boundary  ?
 	  spaces[i]->GetSFE(elnr, lh).GetNDof()
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
-
-	lh.CleanUp();
+        */
+        HeapReset hr(lh);
+        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
 
 	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
 	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
@@ -2247,11 +2257,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
     for (int i = 0, base = 0; i < spaces.Size(); i++)
       {
+        /*
 	int nd = boundary ? 
 	  spaces[i]->GetSFE(elnr, lh).GetNDof() :
 	  spaces[i]->GetFE(elnr, lh).GetNDof();
 	
 	lh.CleanUp();
+        */
+        HeapReset hr(lh);
+        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+
 
 	// VEC svec (nd, &vec(base));
 	spaces[i]->TransformVec (elnr, boundary, vec.Range(base, base+nd), tt);
