@@ -46,21 +46,33 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const
     {
-      return *new (lh) NumberFiniteElement();
+      if (DefinedOn(ei))
+        return *new (lh) NumberFiniteElement();
+      else
+        return *new (lh) DummyFE<ET_POINT>();
     }
 
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const
     {
-      dnums.SetSize(1);
-      dnums[0] = 0;
+      if (DefinedOn(ElementId(VOL,elnr)))
+        {
+          dnums.SetSize(1);
+          dnums[0] = 0;
+        }
+      else
+        dnums.SetSize(0);
     }
 
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const
     {
-      dnums.SetSize(1);
-      dnums[0] = 0;
+      if (DefinedOn(ElementId(BND,selnr)))
+        {
+          dnums.SetSize(1);
+          dnums[0] = 0;
+        }
+      else
+        dnums.SetSize(0);        
     }
-
   };
 
 
