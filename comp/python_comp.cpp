@@ -244,6 +244,20 @@ public:
   {
     cout << "compounddiffop::apply not implemented" << endl;
   }
+
+  NGS_DLL_HEADER virtual void
+  ApplyTrans (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatVector<double> flux,
+              FlatVector<double> x, 
+              LocalHeap & lh) const
+  {
+    x = 0;
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = fel.GetRange(comp);
+    diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
+  }
+
 };
 
 
