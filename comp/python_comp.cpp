@@ -863,7 +863,16 @@ void NGS_DLL_HEADER ExportNgcomp()
 	    Array<string> materials(ma.GetNDomains());
 	    for (int i : materials.Range())
 	      materials[i] = ma.GetDomainMaterial(i);
-	    return bp::tuple(materials);
+	    return bp::list(materials);
+	  }))
+
+    .def("GetBoundaries", FunctionPointer
+	 ([](const MeshAccess & ma)
+	  {
+	    Array<string> materials(ma.GetNBoundaries());
+	    for (int i : materials.Range())
+	      materials[i] = ma.GetBCNumBCName(i);
+	    return bp::list(materials);
 	  }))
     
 
