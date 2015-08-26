@@ -329,7 +329,12 @@ DLL_HEADER void ExportCSG()
               {
                 bp::tuple tup = bp::extract<bp::tuple> (bcmod[i]) ();
                 auto mod_solid = bp::extract<shared_ptr<SPSolid>> (tup[0]) ();
-                auto mod_nr = bp::extract<int> (tup[1])();
+                int mod_nr = -1;
+                string * bcname = nullptr;
+                bp::object val = tup[1];
+                if (bp::extract<int>(val).check()) mod_nr = bp::extract<int> (val)();
+                if (bp::extract<string>(val).check()) bcname = new string ( bp::extract<string> (val)());
+
                 Array<int> si;
                 mod_solid -> GetSolid() -> GetSurfaceIndices (si);
                 // cout << "change bc on surfaces: " << si << " to " << mod_nr << endl;
@@ -337,12 +342,13 @@ DLL_HEADER void ExportCSG()
                 for (int j = 0; j < si.Size(); j++)
                   {
                     CSGeometry::BCModification bcm;
-                    bcm.bcname = NULL;
+                    bcm.bcname = bcname ? new string (*bcname) : nullptr;
                     bcm.tlonr = tlonr;
                     bcm.si = si[j];
 		    bcm.bcnr = mod_nr;
 		    self.bcmodifications.Append (bcm);
                   }
+                delete bcname;
               }
 
           }),
