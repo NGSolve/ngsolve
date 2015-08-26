@@ -4567,6 +4567,7 @@ namespace netgen
     else
 
       {
+        int ps_startelement = 0;  // disable global buffering
         // int i, j;
         int ne;
 
