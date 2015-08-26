@@ -89,7 +89,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
-    cout << "called base class apply trans" << endl;
+    cout << "called base class apply trans, type = " << typeid(*this).name() << endl;
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
@@ -106,7 +106,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
 #ifndef FASTCOMPILE
-    cout << "called base class apply trans, complex" << endl;
+    cout << "called base class apply trans complex, type = " << typeid(*this).name() << endl;
 #endif
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat(Dim(), x.Size(), lh);
