@@ -26,8 +26,6 @@ def geom2d_meshing_func (geom, **args):
 SplineGeometry.GenerateMesh = geom2d_meshing_func
 
 
-
-
 unit_square = SplineGeometry()
 pnts = [ (0,0), (1,0), (1,1), (0,1) ]
 lines = [ (0,1,1), (1,2,2), (2,3,3), (3,0,4) ]
