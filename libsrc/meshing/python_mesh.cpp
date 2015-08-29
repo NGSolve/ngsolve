@@ -196,9 +196,25 @@ DLL_HEADER void ExportNetgenMeshing()
 
   bp::class_<FaceDescriptor>("FaceDescriptor")
     .def(bp::init<const FaceDescriptor&>())
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](int surfnr, int domin, int domout)
+                           {
+                             auto fd = new FaceDescriptor();
+                             fd->SetSurfNr(surfnr);
+                             fd->SetDomainIn(domin);
+                             fd->SetDomainOut(domout);
+                             return fd;
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("surfnr")=1, 
+           bp::arg("domin")=1,
+           bp::arg("domout")=0)),
+         "create facedescriptor")
     .def("__str__", &ToString<FaceDescriptor>)
     .def("__repr__", &ToString<FaceDescriptor>)
     .add_property("surfnr", &FaceDescriptor::SurfNr, &FaceDescriptor::SetSurfNr)
+    .add_property("domin", &FaceDescriptor::DomainIn, &FaceDescriptor::SetDomainIn)
+    .add_property("domout", &FaceDescriptor::DomainOut, &FaceDescriptor::SetDomainOut)
     ;
 
   
@@ -282,17 +298,20 @@ DLL_HEADER void ExportNetgenMeshing()
                                     return self.AddFaceDescriptor (fd);
                                   }))
 
-    /*
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([]()
-                           {
-                             cout << "create new mesh" << endl;
-                             auto tmp = make_shared<Mesh>();
-                             return tmp;
-                           })),
-         "create empty mesh"
-      )
-    */
+    .def ("GenerateVolumeMesh", FunctionPointer
+          ([](Mesh & self)
+           {
+             cout << "generate vol mesh" << endl;
+             MeshingParameters mp;
+             MeshVolume (mp, self);
+           }))
+
+    .def ("Refine", FunctionPointer
+          ([](Mesh & self)
+           {
+             self.GetGeometry()->GetRefinement().Refine(self);
+           }))
+
     .def ("BoundaryLayer", FunctionPointer 
           ([](Mesh & self, int bc, double thickness, int volnr, string material)
            {
