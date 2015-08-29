@@ -1455,7 +1455,9 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
                            {
-                             return CreateLinearForm (fespace, name, flags);
+                             auto f = CreateLinearForm (fespace, name, flags);
+                             f->AllocateVector();
+                             return f;
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags") = bp::dict()))

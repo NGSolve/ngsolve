@@ -9,7 +9,7 @@ from netgen.meshing import MeshingParameters
 
 geom = SplineGeometry("chip.in2d")
 mp = MeshingParameters (maxh=0.1)
-mesh = Mesh(geom.GenerateMesh (mp))
+mesh = Mesh(geom.GenerateMesh (mp=mp))
 
 
 # one coefficient per sub-domain
