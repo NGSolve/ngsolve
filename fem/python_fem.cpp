@@ -205,6 +205,24 @@ public:
       result(i) = lam (result(i), temp(i));
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
+                        FlatVector<Complex> result) const
+  {
+#ifdef VLA
+    Complex hmem[Dimension()];
+    FlatVector<Complex> temp(Dimension(), hmem);
+#else
+    Vector<Complex> temp(Dimension());
+#endif
+
+    c1->Evaluate (mip, result);
+    c2->Evaluate (mip, temp);
+    for (int i = 0; i < result.Size(); i++)
+      result(i) = lamc (result(i), temp(i));
+  }
+
+
+
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {

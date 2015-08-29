@@ -352,6 +352,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
                               FlatVector<SCAL> elvec,
                               LocalHeap & lh) const
     {
+      HeapReset hr(lh);
       IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
       BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -428,10 +429,29 @@ bp::object MakeProxyFunction (const FESpace & fes,
 		       FlatMatrix<double> elmat,
 		       LocalHeap & lh) const
     {
+      T_CalcElementMatrix<double> (fel, trafo, elmat, lh);
+    }
+
+    virtual void 
+    CalcElementMatrix (const FiniteElement & fel,
+		       const ElementTransformation & trafo, 
+		       FlatMatrix<Complex> elmat,
+		       LocalHeap & lh) const
+    {
+      T_CalcElementMatrix<Complex> (fel, trafo, elmat, lh);
+    }
+
+      
+    template <typename SCAL>
+    void T_CalcElementMatrix (const FiniteElement & fel,
+                              const ElementTransformation & trafo, 
+                              FlatMatrix<SCAL> elmat,
+                              LocalHeap & lh) const
+
+    {
       IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
       BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
-      // FlatMatrix<> values(ir.Size(), 1, lh);
       ProxyUserData ud;
       const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
@@ -445,7 +465,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
             for (auto proxy2 : test_proxies)
               {
                 HeapReset hr(lh);
-                FlatMatrix<> proxyvalues(proxy2->Dimension(), proxy1->Dimension(), lh);
+                FlatMatrix<SCAL> proxyvalues(proxy2->Dimension(), proxy1->Dimension(), lh);
                 for (int k = 0; k < proxy1->Dimension(); k++)
                   for (int l = 0; l < proxy2->Dimension(); l++)
                     {
@@ -454,12 +474,13 @@ bp::object MakeProxyFunction (const FESpace & fes,
                       ud.testfunction = proxy2;
                       ud.test_comp = l;
                       
-                      proxyvalues(l,k) =
-                        mip.GetWeight() * cf -> Evaluate (mip);
+                      Vec<1,SCAL> result;
+                      cf->Evaluate (mip, result);
+                      proxyvalues(l,k) = mip.GetWeight() * result(0);
                     }
                 
                 FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-                FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
                 FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
                 
                 proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
@@ -1480,7 +1501,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)
           { 
-            LocalHeap lh(heapsize, "LinearForm::Assemble-heap");
+            LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
             self.Assemble(lh);
           }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
