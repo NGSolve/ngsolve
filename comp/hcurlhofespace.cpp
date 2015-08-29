@@ -125,11 +125,13 @@ namespace ngcomp
     
     if (ma->GetDimension() == 2)
       {
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
         evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
         flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<2>>>();
       }
     else
       {
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
         evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
         flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
       }

@@ -1482,19 +1482,23 @@ namespace ngla
   template <typename TFUNC>
   void RunParallelDependency (const Table<int> & dag, TFUNC func)
   {
-    Array<atomic<int>> cnt_dep(dag.Size());
+    // Array<atomic<int>> cnt_dep(dag.Size());
+    Array<int> cnt_dep(dag.Size());
 
     for (auto & d : cnt_dep) 
-      d.store (0, memory_order_relaxed);
+      d = 0;
+      // d.store (0, memory_order_relaxed);
 
-
+    static Timer t_cntdep("count dep");
+    t_cntdep.Start();
     ParallelFor (Range(dag),
                  [&] (int i)
                  {
                    for (int j : dag[i])
+#pragma omp atomic
                      cnt_dep[j]++;
                  });
-    
+    t_cntdep.Stop();    
 
     Array<int> ready(dag.Size());
     ready.SetSize0();
@@ -1561,8 +1565,15 @@ namespace ngla
 
              for (int j : dag[nr])
                {
+                 /*
                  if (--cnt_dep[j] == 0)
                    queue.enqueue (ptoken, j);
+                 */
+                 int ncnt;
+#pragma omp atomic capture
+                 ncnt = --cnt_dep[j];
+                 if (ncnt == 0)
+                   queue.enqueue (ptoken, j);                   
                }
            }
        });
