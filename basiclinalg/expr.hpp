@@ -1636,7 +1636,7 @@ namespace ngbla
   INLINE Mat<1,1,T> Cof (Mat<1,1,T> m)
   {
     Mat<1,1,T> cof;
-    cof(0,0) = m(0,0);
+    cof(0,0) = T(1); // m(0,0);
     return cof;
   }
 
