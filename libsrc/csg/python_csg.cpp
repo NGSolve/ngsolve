@@ -363,6 +363,42 @@ DLL_HEADER void ExportCSG()
          )
 
     .def("CloseSurfaces", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, bp::list aslices )
+          {
+            Array<int> si1, si2;
+            s1->GetSolid()->GetSurfaceIndices (si1);
+            s2->GetSolid()->GetSurfaceIndices (si2);
+            cout << "surface ids1 = " << si1 << endl;
+            cout << "surface ids2 = " << si2 << endl;
+
+            Flags flags;
+
+            try
+            {
+                int n = bp::len(aslices);
+                Array<double> slices(n);
+                for(int i=0; i<n; i++)
+                {
+                    slices[i]= bp::extract<double>(aslices[i])();
+                }
+                flags.SetFlag("slices", slices);
+            }
+            catch( bp::error_already_set const & ) {
+                cout << "caught python error:" << endl;
+                PyErr_Print();
+            }
+
+            const TopLevelObject * domain = nullptr;
+            self.AddIdentification
+              (new CloseSurfaceIdentification
+               (self.GetNIdentifications()+1, self,
+                self.GetSurface (si1[0]), self.GetSurface (si2[0]),
+                domain,
+                flags));
+          }),
+         (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("slices"))
+         )
+    .def("CloseSurfaces", FunctionPointer
          ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, int reflevels)
           {
             Array<int> si1, si2;
