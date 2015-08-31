@@ -609,6 +609,32 @@ namespace netgen
 
 
   template <>
+  DLL_HEADER int Ngx_Mesh :: FindElementOfPoint <1> 
+  (double * hp, double * lami,
+   bool build_searchtree, 
+   int * const indices, int numind) const
+
+  {
+    if (mesh->GetDimension() != 1)
+      throw NgException("FindElementOfPoint<1> called for multidim mesh");
+
+    Point<3> p(hp[0], 0,0);
+    for (SegmentIndex si = 0; si < mesh->GetNSeg(); si++)
+      {
+        auto & seg = (*mesh)[si];
+        Point<3> p1 = (*mesh)[seg[0]];
+        Point<3> p2 = (*mesh)[seg[1]];
+        double lam = (p(0)-p1(0)) / (p2(0)-p1(0));
+        if (lam >= -1e-10 && lam <= 1+1e-10)
+          {
+            lami[0] = 1-lam;
+            return si;
+          }
+      }
+    return -1;
+  }
+
+  template <>
   DLL_HEADER int Ngx_Mesh :: FindElementOfPoint <2> 
   (double * p, double * lami,
    bool build_searchtree, 

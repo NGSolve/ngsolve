@@ -158,18 +158,24 @@ DLL_HEADER void ExportNetgenMeshing()
 
   bp::class_<Segment>("Element1D")
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](bp::list vertices, bp::list surfaces)
+         (FunctionPointer ([](bp::list vertices, bp::list surfaces, int index)
                            {
                              Segment * tmp = new Segment;
                              for (int i = 0; i < 2; i++)
                                (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-
-                             tmp->surfnr1 = bp::extract<int>(surfaces[0]);
-                             tmp->surfnr2 = bp::extract<int>(surfaces[1]);
+                             tmp -> si = index;
+                             if (len(surfaces))
+                               {
+                                 tmp->surfnr1 = bp::extract<int>(surfaces[0]);
+                                 tmp->surfnr2 = bp::extract<int>(surfaces[1]);
+                               }
                              return tmp;
                            }),
           bp::default_call_policies(),      
-          (bp::arg("vertices"),bp::arg("surfaces"))),
+          (bp::arg("vertices"),
+           bp::arg("surfaces")=bp::list(),
+           bp::arg("index")=1
+           )),
          "create segment element"
          )
     .def("__repr__", &ToString<Element>)
@@ -233,11 +239,16 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("Load",  FunctionPointer 
 	 ([](Mesh & self, const string & filename)
 	  {
-	    ifstream input(filename);
-	    self.Load(input);
+            istream * infile;
+            if (filename.find(".vol.gz") != string::npos)
+              infile = new igzstream (filename.c_str());
+            else
+              infile = new ifstream (filename.c_str());
+	    // ifstream input(filename);
+	    self.Load(*infile);
 	    for (int i = 0; i < geometryregister.Size(); i++)
 	      {
-		NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (input);
+		NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (*infile);
 		if (hgeom)
 		  {
 		    ng_geometry.reset (hgeom);
@@ -247,6 +258,8 @@ DLL_HEADER void ExportNetgenMeshing()
 	  }))
     // static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
+
+    .add_property("dim", &Mesh::GetDimension, &Mesh::SetDimension)
 
     .def("Elements3D", 
          static_cast<Array<Element>&(Mesh::*)()> (&Mesh::VolumeElements),
