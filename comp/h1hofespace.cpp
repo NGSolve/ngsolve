@@ -475,7 +475,9 @@ namespace ngcomp
     for (auto i : Range (ma->GetNV()))
       ctofdof[i] = used_vertex[i] ? WIREBASKET_DOF : UNUSED_DOF;
 
-    for (auto edge : Range (ma->GetNEdges()))
+    int dim = ma->GetDimension();
+    int ned = (dim <= 1) ? 0 : ma->GetNEdges();
+    for (auto edge : Range (ned))
       {
 	IntRange range = GetEdgeDofs (edge);
         if (wb_edge)

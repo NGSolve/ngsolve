@@ -1221,6 +1221,9 @@ namespace ngcomp
       {
         switch (dim)
           {
+          case 1:
+            return mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, 
+                                               &(*indices)[0],indices->Size());
           case 2:
             return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
                                                &(*indices)[0],indices->Size());
@@ -1233,6 +1236,7 @@ namespace ngcomp
       {  
         switch (dim)
           {
+          case 1: return mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0);
           case 2: return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
           case 3: return mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0);
           }

@@ -18,6 +18,17 @@ namespace ngfem
     INLINE BaseScalarFiniteElement () { ; } 
     INLINE BaseScalarFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; }
+
+
+    /// compute shape
+    HD NGS_DLL_HEADER 
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            SliceVector<> shape) const = 0;
+
+    /// compute dshape, matrix: ndof x spacedim
+    HD NGS_DLL_HEADER 
+    virtual void CalcDShape (const IntegrationPoint & ip, 
+			     SliceMatrix<> dshape) const = 0;
   };
 
   /**
@@ -57,21 +68,14 @@ namespace ngfem
       return dshape;
     }
 
-
-    /// compute shape
-    HD NGS_DLL_HEADER 
-    virtual void CalcShape (const IntegrationPoint & ip, 
-                            SliceVector<> shape) const = 0;
+    using  BaseScalarFiniteElement::CalcShape;
+    using  BaseScalarFiniteElement::CalcDShape;
 
     /// compute shape, row is shape nr, col is ip nr
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationRule & ir, 
                             SliceMatrix<> shape) const;
   
-    /// compute dshape, matrix: ndof x spacedim
-    HD NGS_DLL_HEADER 
-    virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const = 0;
     
 /*    
     NGS_DLL_HEADER 
