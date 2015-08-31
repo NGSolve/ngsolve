@@ -356,6 +356,7 @@ DLL_HEADER void ExportCSG()
                   }
                 delete bcname;
               }
+            return tlonr;
 
           }),
          (bp::arg("self"), bp::arg("solid"), bp::arg("bcmod")=bp::list())
@@ -381,7 +382,36 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("reflevels")=2)
          )
-          
+    .def("GetTransparent", FunctionPointer
+         ([] (CSGeometry & self, int tlonr)
+          {
+            return self.GetTopLevelObject(tlonr)->GetTransparent();
+          }),
+         (bp::arg("self"), bp::arg("tlonr"))
+         )
+    .def("SetTransparent", FunctionPointer
+         ([] (CSGeometry & self, int tlonr, bool transparent)
+          {
+            self.GetTopLevelObject(tlonr)->SetTransparent(transparent);
+          }),
+         (bp::arg("self"), bp::arg("tlonr"), bp::arg("transparent"))
+         )
+
+    .def("GetVisible", FunctionPointer
+         ([] (CSGeometry & self, int tlonr)
+          {
+            return self.GetTopLevelObject(tlonr)->GetVisible();
+          }),
+         (bp::arg("self"), bp::arg("tlonr"))
+         )
+    .def("SetVisible", FunctionPointer
+         ([] (CSGeometry & self, int tlonr, bool visible)
+          {
+            self.GetTopLevelObject(tlonr)->SetVisible(visible);
+          }),
+         (bp::arg("self"), bp::arg("tlonr"), bp::arg("visible"))
+         )
+
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
 
