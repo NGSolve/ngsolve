@@ -251,6 +251,12 @@ DLL_HEADER void ExportCSG()
                                       Solid * sol = new Solid (sp);
                                       return make_shared<SPSolid> (sol);
                                     }));
+  bp::def ("Cone", FunctionPointer([](Point<3> a, Point<3> b, double ra, double rb)
+                                       {
+                                         Cone * cyl = new Cone (a, b, ra, rb);
+                                         Solid * sol = new Solid (cyl);
+                                         return make_shared<SPSolid> (sol);
+                                       }));
   bp::def ("Cylinder", FunctionPointer([](Point<3> a, Point<3> b, double r)
                                        {
                                          Cylinder * cyl = new Cylinder (a, b, r);
