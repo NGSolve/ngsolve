@@ -1162,7 +1162,32 @@ void NGS_DLL_HEADER ExportNgfem() {
           }),
          (bp::arg("self"),bp::arg("x"),bp::arg("y")=0.0,bp::arg("z")=0.0)
          )
+    .def("CalcDShape",
+         FunctionPointer
+         ([] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Matrix<> mat(fe.GetNDof(), fe.Dim());
+            switch (fe.Dim())
+              {
+              case 1:
+                dynamic_cast<const ScalarFiniteElement<1>&> (fe).
+                  CalcMappedDShape(static_cast<const MappedIntegrationPoint<1,1>&> (mip), mat); break;
+              case 2:
+                dynamic_cast<const ScalarFiniteElement<2>&> (fe).
+                  CalcMappedDShape(static_cast<const MappedIntegrationPoint<2,2>&> (mip), mat); break;
+              case 3:
+                dynamic_cast<const ScalarFiniteElement<3>&> (fe).
+                  CalcMappedDShape(static_cast<const MappedIntegrationPoint<3,3>&> (mip), mat); break;
+              default:
+                ;
+              }
+            return mat;
+          }),
+         (bp::arg("self"),bp::arg("mip"))
+         )
     ;
+
+
 
   bp::implicitly_convertible 
     <shared_ptr<BaseScalarFiniteElement>, 
@@ -1201,7 +1226,38 @@ void NGS_DLL_HEADER ExportNgfem() {
 
 
   bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init)
-    .def("__str__", &ToString<BaseMappedIntegrationPoint>)
+    .def("__str__", FunctionPointer
+         ([] (const BaseMappedIntegrationPoint & bmip)
+          {
+            stringstream str;
+            str << "p = " << bmip.GetPoint() << endl;
+            switch (bmip.Dim())
+              {
+              case 1: 
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<1,1>&>(bmip);
+                  str << "jac = " << mip.GetJacobian() << endl;
+                  break;
+                }
+              case 2: 
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<2,2>&>(bmip);
+                  str << "jac = " << mip.GetJacobian() << endl;
+                  break;
+                }
+              case 3: 
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<3,3>&>(bmip);
+                  str << "jac = " << mip.GetJacobian() << endl;
+                  break;
+                }
+              default:
+                ;
+              }
+            str << "measure = " << bmip.GetMeasure() << endl;
+            return str.str();
+          }))
+    .add_property("measure", &BaseMappedIntegrationPoint::GetMeasure)
     ;
 
     
