@@ -26,14 +26,14 @@ ngsmesh = Mesh(m)
 V = H1(ngsmesh, order=2)
 V.FreeDofs().Clear(0)    # left boundary
 V.FreeDofs().Clear(nel)  # right boundary
-print (V.FreeDofs())
+print ("freedofs:\n", V.FreeDofs())
 
 
 a = BilinearForm(V)
 a += Laplace(1)
 a.Assemble()
 
-print (a.mat)
+print ("mat = \n", a.mat)
 
 f = LinearForm(V)    
 f += Source(1)
@@ -42,7 +42,12 @@ f.Assemble()
 u = GridFunction(V)
 u.vec.data = a.mat.Inverse(V.FreeDofs()) * f.vec
 
-print ("sol =", u.vec)
+print ("sol =\n", u.vec)
+
+
+print ("u(0.5) =", u(0.5))
+
+
 
 pnts = []
 for i in range(101): pnts.append (i/100)
@@ -55,6 +60,6 @@ import matplotlib.pyplot as plt
 pnts,vals = zip(*pnts_vals)
 plt.plot(pnts,vals, "-*")
 
-# plt.ion()
-# plt.show()
+plt.ion()
+plt.show()
 
