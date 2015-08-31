@@ -995,8 +995,8 @@ namespace ngla
 
 	char trans = 'N';  // 'T' 'N'
 	Matrix<> b1t = Trans(a.Cols(mi,nk));
-	int nrhs = nk-mi;
-	int ldb = mi;
+	integer nrhs = nk-mi;
+	integer ldb = mi;
         dtrtrs_ (&uplo, &trans, &ch_diag, &na1, &nrhs, &a1(0,0), &lda, &b1t(0,0), &ldb, &info);
 	Matrix<> b1 = Trans(b1t);
 	a.Cols(mi,nk) = b1; 
