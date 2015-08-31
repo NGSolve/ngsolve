@@ -14,6 +14,7 @@ if __platform.startswith('win'):
 
 
 CSGeometry.VS = csgvis.VS
+SetBackGroundColor = csgvis.SetBackGroundColor
 del csgvis
 
 def VS (obj):
