@@ -72,6 +72,10 @@ namespace ngsolve
     ///
     NumProcCalcFlux (shared_ptr<PDE> apde, const Flags & flags);
     ///
+    NumProcCalcFlux (shared_ptr<PDE> apde, shared_ptr<BilinearForm> abfa,
+                     shared_ptr<GridFunction> agfu, shared_ptr<GridFunction> agfflux,
+                     bool aapplyd);
+    ///
     virtual ~NumProcCalcFlux() { ; }
 
     static void PrintDoc (ostream & ost);
@@ -110,6 +114,17 @@ namespace ngsolve
     applyd = flags.GetDefineFlag ("applyd");
     // useall = flags.GetDefineFlag ("useall");
     domain = static_cast<int>(flags.GetNumFlag("domain",0))-1;
+  }
+
+  NumProcCalcFlux :: NumProcCalcFlux (shared_ptr<PDE> apde,
+                     shared_ptr<BilinearForm> abfa,
+                     shared_ptr<GridFunction> agfu,
+                     shared_ptr<GridFunction> agfflux,
+                     bool aapplyd)
+      : NumProc(apde), bfa(abfa), gfu(agfu), gfflux(agfflux), applyd(aapplyd), domain(-1)
+  {
+    if (bfa->NumIntegrators()==0)
+      throw Exception ("bilinearform used for CalcFlux needs at least one integrator");
   }
 
 
@@ -3481,8 +3496,21 @@ public:
 using namespace ngsolve;
 void ExportDrawFlux()
 {
-  cout << "exporting DrawFlux numproc" << endl;
-  
+  cout << "exporting CalcFlux and DrawFlux numproc" << endl;
+
+  bp::def ("CalcFlux", FunctionPointer
+           ([](shared_ptr<PDE> pde,
+               shared_ptr<BilinearForm> bfa,
+               shared_ptr<GridFunction> gfu,
+               shared_ptr<GridFunction> gfflux,
+               bool applyd) -> shared_ptr<NumProc>
+
+            {
+              return make_shared<NumProcCalcFlux> (pde, bfa, gfu, gfflux, applyd);
+            }),
+           (bp::arg("pde"), bp::arg("bf"), bp::arg("gf"),
+            bp::arg("flux"), bp::arg("applyd")=false)
+	   );
   bp::def ("DrawFlux", FunctionPointer
            ([](shared_ptr<BilinearForm> bfa,
                shared_ptr<GridFunction> gfu,
