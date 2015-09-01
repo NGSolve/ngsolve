@@ -317,7 +317,12 @@ DLL_HEADER void ExportNetgenMeshing()
                                   }))
 
     .def ("SetBCName", &Mesh::SetBCName)
-
+    .def ("GetBCName", FunctionPointer([](Mesh & self, int bc)->string 
+                                       { return self.GetBCName(bc); }))
+    .def ("SetMaterial", &Mesh::SetMaterial)
+    .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
+                                         { return string(self.GetMaterial(domnr)); }))
+ 
     .def ("GenerateVolumeMesh", FunctionPointer
           ([](Mesh & self)
            {
