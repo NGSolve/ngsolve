@@ -210,6 +210,13 @@ namespace ngcomp
 
     for (Ngs_Element el : ma->Elements(VOL))
       {
+        if (!DefinedOn (el))
+          {
+            order_inner[el.Nr()] = 0;
+            order_inner_curl[el.Nr()] = 0;
+            continue;
+          }
+          
 	ELEMENT_TYPE eltype = el.GetType();
 	const POINT3D * points = ElementTopology :: GetVertices (eltype);
 	
@@ -881,6 +888,9 @@ namespace ngcomp
     for (int i = 0; i < fanums.Size(); i++)
       dnums += IntRange (first_facet_dof[fanums[i]],
                          first_facet_dof[fanums[i]+1]);
+
+    if (!DefinedOn (ElementId(BND,selnr)))
+      dnums = -1;
   }
 
 
