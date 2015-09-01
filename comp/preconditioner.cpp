@@ -238,6 +238,11 @@ namespace ngcomp
 
     void FreeSmootherMem(void);
 
+    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    {
+      Update();
+    }
+
     ///
     virtual void Update ();
     ///
@@ -274,6 +279,7 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = pde.GetMeshAccess();
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+    bfa -> SetPreconditioner (this);
 
     shared_ptr<LinearForm> lfconstraint = 
       pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
@@ -371,6 +377,8 @@ namespace ngcomp
 
     shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
     bfa = abfa;
+    bfa -> SetPreconditioner (this);
+
 
     // shared_ptr<LinearForm> lfconstraint = pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
     shared_ptr<FESpace> fes = bfa->GetFESpace();
