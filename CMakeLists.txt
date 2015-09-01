@@ -26,6 +26,7 @@ option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
+option( USE_CPP_THREADS  "use C++11 threads instead of OpenMP")
 
 #######################################################################
 if(INTEL_MIC)
@@ -34,6 +35,11 @@ if(INTEL_MIC)
 else(INTEL_MIC)
     set(MKL_ARCH "intel64")
 endif(INTEL_MIC)
+
+#######################################################################
+if(USE_CPP11_THREADS
+    add_definitions(-DCPP11_THREADS)
+endif(USE_CPP11_THREADS
 
 #######################################################################
 if(USE_NATIVE_ARCH)
