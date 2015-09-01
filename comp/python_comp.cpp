@@ -1383,8 +1383,9 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](shared_ptr<FESpace> fespace, string name,
-                              bool symmetric, Flags flags)
+                              bool symmetric, bp::dict bpflags)
                            {
+                             Flags flags = bp::extract<Flags> (bpflags)();
                              if (symmetric) flags.SetFlag("symmetric");
                              return CreateBilinearForm (fespace, name, flags);
                            }),

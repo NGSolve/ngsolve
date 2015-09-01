@@ -170,12 +170,27 @@ void NGS_DLL_HEADER  ExportNgstd() {
     .def(bp::init<int>())
     .def(bp::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)
-    .def("__getitem__", &BitArray::Test)
+    .def("__len__", &BitArray::Size)
+    // .def("__getitem__", &BitArray::Test)
+    .def("__getitem__", FunctionPointer ([] (BitArray & self, int i)
+                                         {
+                                           if (i < 0 || i >= self.Size()) 
+                                             bp::exec("raise IndexError()\n");
+                                           return self.Test(i); 
+                                         }))
+
     .def("Set", FunctionPointer ([] (BitArray & self, int i)
                                  {
-                                   if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
+                                   if (i < 0 || i >= self.Size()) 
+                                     bp::exec("raise IndexError()\n");
                                    self.Set(i); 
                                  }))
+    .def("Clear", FunctionPointer ([] (BitArray & self, int i)
+                                   {
+                                   if (i < 0 || i >= self.Size()) 
+                                     bp::exec("raise IndexError()\n");
+                                   self.Clear(i); 
+                                   }))
     .def("__ior__", FunctionPointer ([] (BitArray & self, BitArray & other)
                                  {
                                    self.Or(other); 
@@ -186,11 +201,6 @@ void NGS_DLL_HEADER  ExportNgstd() {
                                    self.And(other); 
                                    return self;
                                  }))
-    .def("Clear", FunctionPointer ([] (BitArray & self, int i)
-                                   {
-                                   if (i < 0 || i >= self.Size()) bp::exec("raise IndexError()\n");
-                                   self.Clear(i); 
-                                   }))
     ;
 
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)

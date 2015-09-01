@@ -1,6 +1,4 @@
-from ngsolve.comp import *
-from ngsolve.solve import *
-from ngsolve.utils import *
+from ngsolve import *
 from math import pi
 
 #
@@ -11,11 +9,9 @@ from math import pi
 #  du/dn = 1  on Gamma2
 
 from netgen.geom2d import unit_square
-from netgen.meshing import MeshingParameters
 
 ngsglobals.msg_level = 1
-
-mesh = Mesh (unit_square.GenerateMesh(MeshingParameters(maxh=0.1)))
+mesh = Mesh (unit_square.GenerateMesh(maxh=0.1))
 
 
 # define a finite element space
