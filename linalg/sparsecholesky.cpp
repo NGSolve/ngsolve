@@ -888,6 +888,15 @@ namespace ngla
   template <>
   void SparseCholeskyTM<double> :: FactorSPD () 
   {
+    if (!task_manager)
+      {
+        RunWithTaskManager ([&] ()
+                            {
+                              FactorSPD();
+                            });
+        return;
+      }
+
     static Timer factor_timer("SparseCholesky::Factor SPD");
 
     static Timer timerb("SparseCholesky::Factor - B", 3);

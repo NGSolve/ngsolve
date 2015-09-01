@@ -968,7 +968,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
-    static Timer timer ("GFCoeffFunc::Eval-scal");
+    static Timer timer ("GFCoeffFunc::Eval-scal", 3);
     RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ip.GetTransformation();
@@ -1024,7 +1024,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval complex");
-    static Timer timer ("GFCoeffFunc::Eval-scal");
+    static Timer timer ("GFCoeffFunc::Eval-scal", 3);
     RegionTimer reg (timer);
 
     
@@ -1064,7 +1064,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
-    static Timer timer ("GFCoeffFunc::Eval-vec");
+    static Timer timer ("GFCoeffFunc::Eval-vec", 3);
     RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ir.GetTransformation();

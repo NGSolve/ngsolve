@@ -1,6 +1,4 @@
-from ngsolve.comp import *
-from ngsolve.solve import *
-from ngsolve.utils import *
+from ngsolve import *
 from math import pi
 
 from netgen.geom2d import SplineGeometry
@@ -28,8 +26,8 @@ a += Laplace(lam)
 f = LinearForm(v)
 f += Source(source)
 
-# c = Preconditioner(a, type="multigrid")
-c = Preconditioner(a, type="local")
+c = Preconditioner(a, type="multigrid", flags={ "inverse" : "sparsecholesky" })
+# c = Preconditioner(a, type="local")
 
 bvp = BVP(bf=a, lf=f, gf=u, pre=c, maxsteps=1000)
 
