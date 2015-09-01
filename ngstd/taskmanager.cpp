@@ -66,45 +66,55 @@ namespace ngstd
 
 #else
 
-
+    // openmp-threads
+    
+    Exception * ex = nullptr;
 
 #pragma omp parallel
     {
 #pragma omp single 
       {
-        cout << "new task-based parallelization" << endl;
-
+        try
+          {
+            cout << "new task-based parallelization" << endl;
+            
 #ifdef USE_NUMA
-        int num_nodes = task_manager->GetNumNodes();
-
-        int thd = omp_get_thread_num();
-        int thds = omp_get_num_threads();
-        int mynode = num_nodes * thd/thds;
-        numa_run_on_node (mynode);
+            int num_nodes = task_manager->GetNumNodes();
+            
+            int thd = omp_get_thread_num();
+            int thds = omp_get_num_threads();
+            int mynode = num_nodes * thd/thds;
+            numa_run_on_node (mynode);
 #endif
+            
 
-
-        
+            
 #ifndef WIN32
-        // master has maximal priority !
-        int policy;
-        struct sched_param param;
-        pthread_getschedparam(pthread_self(), &policy, &param);
-        param.sched_priority = sched_get_priority_max(policy);
-        pthread_setschedparam(pthread_self(), policy, &param);
+            // master has maximal priority !
+            int policy;
+            struct sched_param param;
+            pthread_getschedparam(pthread_self(), &policy, &param);
+            param.sched_priority = sched_get_priority_max(policy);
+            pthread_setschedparam(pthread_self(), policy, &param);
 #endif // WIN32
+            
+            
+            task_manager->StartWorkers();
+            ParallelFor (100, [&] (int i) { ; });    // startup
 
-        
-        task_manager->StartWorkers();
-        ParallelFor (100, [&] (int i) { ; });    // startup
-
-
-        alg();
-        
-        task_manager->StopWorkers();
-
+            alg();
+            
+            task_manager->StopWorkers();
+          }
+        catch (Exception e)
+          {
+            ex = new Exception (e);
+          }
       }
     }
+
+    if (ex) throw Exception (*ex);
+
 #endif
 
     
