@@ -37,9 +37,9 @@ else(INTEL_MIC)
 endif(INTEL_MIC)
 
 #######################################################################
-if(USE_CPP11_THREADS
+if(USE_CPP11_THREADS)
     add_definitions(-DCPP11_THREADS)
-endif(USE_CPP11_THREADS
+endif(USE_CPP11_THREADS)
 
 #######################################################################
 if(USE_NATIVE_ARCH)
