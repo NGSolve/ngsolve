@@ -203,24 +203,29 @@ DLL_HEADER void ExportNetgenMeshing()
   bp::class_<FaceDescriptor>("FaceDescriptor")
     .def(bp::init<const FaceDescriptor&>())
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](int surfnr, int domin, int domout)
+         (FunctionPointer ([](int surfnr, int domin, int domout, int bc)
                            {
                              auto fd = new FaceDescriptor();
                              fd->SetSurfNr(surfnr);
                              fd->SetDomainIn(domin);
                              fd->SetDomainOut(domout);
+                             fd->SetBCProperty(bc);
                              return fd;
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("surfnr")=1, 
            bp::arg("domin")=1,
-           bp::arg("domout")=0)),
+           bp::arg("domout")=0,
+           bp::arg("bc")=0
+           )),
          "create facedescriptor")
     .def("__str__", &ToString<FaceDescriptor>)
     .def("__repr__", &ToString<FaceDescriptor>)
     .add_property("surfnr", &FaceDescriptor::SurfNr, &FaceDescriptor::SetSurfNr)
     .add_property("domin", &FaceDescriptor::DomainIn, &FaceDescriptor::SetDomainIn)
     .add_property("domout", &FaceDescriptor::DomainOut, &FaceDescriptor::SetDomainOut)
+    .add_property("bc", &FaceDescriptor::BCProperty, &FaceDescriptor::SetBCProperty)
+    .add_property("bcname", FunctionPointer ([](FaceDescriptor & self) -> string { return self.GetBCName(); }))
     ;
 
   
@@ -310,6 +315,8 @@ DLL_HEADER void ExportNetgenMeshing()
                                   {
                                     return self.AddFaceDescriptor (fd);
                                   }))
+
+    .def ("SetBCName", &Mesh::SetBCName)
 
     .def ("GenerateVolumeMesh", FunctionPointer
           ([](Mesh & self)

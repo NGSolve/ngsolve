@@ -5570,11 +5570,23 @@ namespace netgen
 
   void Mesh ::SetBCName ( int bcnr, const string & abcname )
   {
+    if (bcnr >= bcnames.Size())
+      {
+        int oldsize = bcnames.Size();
+        bcnames.SetSize (bcnr+1);  // keeps contents
+        for (int i = oldsize; i <= bcnr; i++)
+          bcnames[i] = nullptr;
+      }
+
     if ( bcnames[bcnr] ) delete bcnames[bcnr];
     if ( abcname != "default" )
       bcnames[bcnr] = new string ( abcname );
     else
-      bcnames[bcnr] = 0;
+      bcnames[bcnr] = nullptr;
+
+    for (auto & fd : facedecoding)
+      if (fd.BCProperty() < bcnames.Size())
+        fd.SetBCName (bcnames[fd.BCProperty()]);
   }
 
   const string & Mesh ::GetBCName ( int bcnr ) const
