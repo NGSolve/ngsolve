@@ -262,6 +262,19 @@ namespace ngla
   }
 
 
+  void VMatVecExpr :: CheckSize (BaseVector & dest_vec) const
+  {
+    if (m.Height() != dest_vec.Size() || m.Width() != x.Size())
+      throw Exception (ToString ("matrix-vector: size does not fit\n") +
+                       "matrix-type = " + typeid(m).name() + "\n" +
+                       "matrix:     " + ToString(m.Height()) + " x " + ToString(m.Width()) + "\n"
+                       "vector in : " + ToString(x.Size()) + "\n"
+                       "vector res: " + ToString(dest_vec.Size()));
+
+  }
+
+
+
   string GetInverseName (INVERSETYPE type)
   {
     switch (type)
