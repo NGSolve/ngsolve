@@ -155,6 +155,7 @@ namespace netgen
       int prismlayers = blp.prismlayers;
       double hfirst = blp.hfirst;
       double growthfactor = blp.growthfactor;
+      Array<double> heights (blp.heights);
 
       bool grow_edges = false; // grow layer at edges
       
@@ -179,13 +180,20 @@ namespace netgen
 
           double layerht = hfirst;
           
-          if(growthfactor == 1)
+          if(heights.Size()>0)
             {
-              layerht = layer * hfirst;
+              layerht = heights[layer-1];
             }
           else
             {
-              layerht = hfirst*(pow(growthfactor,(layer+1)) - 1)/(growthfactor - 1);
+              if(growthfactor == 1)
+                {
+                  layerht = layer * hfirst;
+                }
+              else
+                {
+                  layerht = hfirst*(pow(growthfactor,(layer+1)) - 1)/(growthfactor - 1);
+                }
             }
           
          cout << "Layer Height = " << layerht << endl;
@@ -510,7 +518,10 @@ namespace netgen
                  Element el(types[classify]);
                  for (int i = 0; i < 6; i++)
                    el[i] = nums[vertices[classify][i]];
-                 el.SetIndex(blp.new_matnr);
+                   if(blp.new_matnrs.Size() > 0)
+                      el.SetIndex(blp.new_matnrs[layer-1]);
+                   else
+                      el.SetIndex(blp.new_matnr);
                  // cout << "el = " << el << endl;
                  if (classify != 0)
                    mesh.AddVolumeElement(el);

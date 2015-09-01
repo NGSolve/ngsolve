@@ -251,6 +251,12 @@ DLL_HEADER void ExportCSG()
                                       Solid * sol = new Solid (sp);
                                       return make_shared<SPSolid> (sol);
                                     }));
+  bp::def ("Cone", FunctionPointer([](Point<3> a, Point<3> b, double ra, double rb)
+                                       {
+                                         Cone * cyl = new Cone (a, b, ra, rb);
+                                         Solid * sol = new Solid (cyl);
+                                         return make_shared<SPSolid> (sol);
+                                       }));
   bp::def ("Cylinder", FunctionPointer([](Point<3> a, Point<3> b, double r)
                                        {
                                          Cylinder * cyl = new Cylinder (a, b, r);
@@ -350,11 +356,48 @@ DLL_HEADER void ExportCSG()
                   }
                 delete bcname;
               }
+            return tlonr;
 
           }),
          (bp::arg("self"), bp::arg("solid"), bp::arg("bcmod")=bp::list())
          )
 
+    .def("CloseSurfaces", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, bp::list aslices )
+          {
+            Array<int> si1, si2;
+            s1->GetSolid()->GetSurfaceIndices (si1);
+            s2->GetSolid()->GetSurfaceIndices (si2);
+            cout << "surface ids1 = " << si1 << endl;
+            cout << "surface ids2 = " << si2 << endl;
+
+            Flags flags;
+
+            try
+            {
+                int n = bp::len(aslices);
+                Array<double> slices(n);
+                for(int i=0; i<n; i++)
+                {
+                    slices[i]= bp::extract<double>(aslices[i])();
+                }
+                flags.SetFlag("slices", slices);
+            }
+            catch( bp::error_already_set const & ) {
+                cout << "caught python error:" << endl;
+                PyErr_Print();
+            }
+
+            const TopLevelObject * domain = nullptr;
+            self.AddIdentification
+              (new CloseSurfaceIdentification
+               (self.GetNIdentifications()+1, self,
+                self.GetSurface (si1[0]), self.GetSurface (si2[0]),
+                domain,
+                flags));
+          }),
+         (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("slices"))
+         )
     .def("CloseSurfaces", FunctionPointer
          ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, int reflevels)
           {
@@ -375,7 +418,36 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("reflevels")=2)
          )
-          
+    .def("GetTransparent", FunctionPointer
+         ([] (CSGeometry & self, int tlonr)
+          {
+            return self.GetTopLevelObject(tlonr)->GetTransparent();
+          }),
+         (bp::arg("self"), bp::arg("tlonr"))
+         )
+    .def("SetTransparent", FunctionPointer
+         ([] (CSGeometry & self, int tlonr, bool transparent)
+          {
+            self.GetTopLevelObject(tlonr)->SetTransparent(transparent);
+          }),
+         (bp::arg("self"), bp::arg("tlonr"), bp::arg("transparent"))
+         )
+
+    .def("GetVisible", FunctionPointer
+         ([] (CSGeometry & self, int tlonr)
+          {
+            return self.GetTopLevelObject(tlonr)->GetVisible();
+          }),
+         (bp::arg("self"), bp::arg("tlonr"))
+         )
+    .def("SetVisible", FunctionPointer
+         ([] (CSGeometry & self, int tlonr, bool visible)
+          {
+            self.GetTopLevelObject(tlonr)->SetVisible(visible);
+          }),
+         (bp::arg("self"), bp::arg("tlonr"), bp::arg("visible"))
+         )
+
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
 

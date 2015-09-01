@@ -338,6 +338,37 @@ DLL_HEADER void ExportNetgenMeshing()
            }))
 
     .def ("BoundaryLayer", FunctionPointer 
+          ([](Mesh & self, int bc, bp::list thicknesses, int volnr, bp::list materials)
+           {
+             int n = bp::len(thicknesses);
+             BoundaryLayerParameters blp;
+
+             for (int i = 1; i <= self.GetNFD(); i++)
+               if (self.GetFaceDescriptor(i).BCProperty() == bc)
+                   blp.surfid.Append (i);
+
+             cout << "add layer at surfaces: " << blp.surfid << endl;
+
+             blp.prismlayers = n;
+             blp.growthfactor = 1.0;
+
+             // find max domain nr
+             int maxind = 0;
+             for (ElementIndex ei = 0; ei < self.GetNE(); ei++)
+               maxind = max (maxind, self[ei].GetIndex());
+             cout << "maxind = " << maxind << endl;
+             for ( int i=0; i<n; i++ )
+               {
+                 blp.heights.Append( bp::extract<double>(thicknesses[i])()) ;
+                 blp.new_matnrs.Append( maxind+1+i );
+                 self.SetMaterial (maxind+1+i, bp::extract<string>(materials[i])().c_str());
+               }
+             blp.bulk_matnr = volnr;
+             GenerateBoundaryLayer (self, blp);
+           }
+           ))
+
+    .def ("BoundaryLayer", FunctionPointer
           ([](Mesh & self, int bc, double thickness, int volnr, string material)
            {
              BoundaryLayerParameters blp;

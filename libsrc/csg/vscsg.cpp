@@ -503,6 +503,8 @@ DLL_HEADER void ExportCSGVis()
 		.def("Draw", &VisualSceneGeometry::DrawScene)
 		;
 
+    bp::def("SetBackGroundColor", &VisualSceneGeometry::SetBackGroundColor);
+
 	bp::def("VS", FunctionPointer
 		([](CSGeometry & geom)
 	{
