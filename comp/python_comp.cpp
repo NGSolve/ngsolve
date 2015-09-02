@@ -1,5 +1,7 @@
 #ifdef NGS_PYTHON
 #include "../ngstd/python_ngstd.hpp"
+#include <boost/python/slice.hpp>
+#include <boost/python/iterator.hpp>
 #include <comp.hpp>
 
 #ifdef PARALLEL
@@ -997,6 +999,86 @@ void NGS_DLL_HEADER ExportNgcomp()
     <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >(); 
 
 
+
+  struct OrderProxy 
+  {
+    const FESpace & fes;
+    OrderProxy (const FESpace & afes) : fes(afes) { ; }
+  };
+
+
+  bp::class_<OrderProxy> ("OrderProxy", bp::no_init)
+    /*
+    .def("__setitem__", FunctionPointer([] (OrderProxy & self, ElementId ei, int o) 
+                                        {
+                                          cout << "set order of el " << ei << " to order " << o << endl;
+                                        }))
+    .def("__setitem__", FunctionPointer([] (OrderProxy & self, bp::slice inds, int o) 
+                                        {
+                                          cout << "set order to slice, o = " <<o << endl;
+                                          auto ndof = self.fes.GetNDof();
+                                          bp::object indices = inds.attr("indices")(ndof);
+                                          int start = bp::extract<int> (indices[0]);
+                                          int stop = bp::extract<int> (indices[1]);
+                                          int step = bp::extract<int> (indices[2]);
+                                          cout << "start = " << start << ", stop = " << stop << ", step = " << step << endl;
+                                        }))
+
+    .def("__setitem__", FunctionPointer([] (OrderProxy & self, bp::list inds, int o) 
+                                        {
+                                          cout << "set order list" << endl;
+
+                                          for (int i = 0; i < len(inds); i++)
+                                            cout << bp::extract<int> (inds[i]) << endl;
+                                        }))
+    */
+
+    .def("__setitem__", FunctionPointer([] (OrderProxy & self, bp::object generator, int o) 
+                                        {
+                                          cout << "general setitem called" << endl;
+
+                                          if (bp::extract<int> (generator).check())
+                                            {
+                                              cout << " set order, int" << endl;
+                                              return;
+                                            }
+
+                                          if (bp::extract<ElementId> (generator).check())
+                                            {
+                                              cout << " set order, elid" << endl;
+                                              return;
+                                            }
+                                          if (bp::extract<bp::slice> (generator).check())
+                                            {
+                                              cout << " set order, slice" << endl;
+                                              return;
+                                            }
+                                          
+                                          cout << "set order from generator" << endl;
+                                          try
+                                            {
+                                              auto iter = generator.attr("__iter__")();
+                                              while (1)
+                                                {
+                                                  auto el = iter.attr("__next__")();
+                                                  cout << bp::extract<int> (el) << " ";
+                                                }
+                                            }
+                                          catch (bp::error_already_set&) 
+                                            { 
+                                              if (PyErr_ExceptionMatches (PyExc_StopIteration))
+                                                {
+                                                  cout << endl;
+                                                  PyErr_Clear();
+                                                }
+                                              else
+                                                {
+                                                  cout << "some other error" << endl;
+                                                }
+                                            };
+                                        }))
+    ;
+
   //////////////////////////////////////////////////////////////////////////////////////////
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
     .def("__init__", bp::make_constructor 
@@ -1058,6 +1140,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                    "global number of dofs on MPI-distributed mesh")
     .def("__str__", &ToString<FESpace>)
     
+    .add_property("order", FunctionPointer([] (FESpace & self) { return OrderProxy(self); }))
 
     .def("Elements", 
          FunctionPointer([](FESpace & self, VorB vb, int heapsize) 
@@ -1139,6 +1222,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              return MakeProxyFunction (self, true);
            }),
          (bp::args("self")))
+
     ;
   
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
@@ -1169,6 +1253,17 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("Update", FunctionPointer ([](GF & self) { self.Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
+    
+    .def("Save", FunctionPointer([](GF & self, string filename)
+                                 {
+                                   ofstream out(filename);
+                                   self.Save(out);
+                                 }))
+    .def("Load", FunctionPointer([](GF & self, string filename)
+                                 {
+                                   ifstream in(filename);
+                                   self.Load(in);
+                                 }))
     
     .def("Set", FunctionPointer
          ([](GF & self, shared_ptr<CoefficientFunction> cf, 
