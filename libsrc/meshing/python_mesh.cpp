@@ -329,6 +329,7 @@ DLL_HEADER void ExportNetgenMeshing()
              cout << "generate vol mesh" << endl;
              MeshingParameters mp;
              MeshVolume (mp, self);
+             OptimizeVolume (mp, self);
            }))
 
     .def ("Refine", FunctionPointer
