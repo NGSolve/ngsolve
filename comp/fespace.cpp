@@ -243,6 +243,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     paralleldofs = NULL;
 
     ctofdof.SetSize(0);
+
+    for (auto & et : et_bonus_order) et = 0;
+    et_bonus_order[ET_QUAD] = int (flags.GetNumFlag("quadbonus",0));
   }
 
   
@@ -1245,7 +1248,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dofnodes = Node (NT_VERTEX, -1);
     Array<int> dnums;
 
-    for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+    // for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+    for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
       for ( int nr = 0; nr < ma->GetNNodes (nt); nr++ )
 	{
 	  GetNodeDofNrs (nt, nr, dnums);

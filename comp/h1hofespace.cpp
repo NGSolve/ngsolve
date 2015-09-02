@@ -194,6 +194,13 @@ namespace ngcomp
     static Timer timer ("H1HighOrderFESpace::Update");
     RegionTimer reg(timer);
 
+    /*
+    cout << "bonus-order: " << endl;
+    for (int bonus : et_bonus_order)
+      cout << bonus << " ";
+    cout << endl;
+    */
+
     FESpace :: Update (lh);
 
     TORDER maxorder = 0;
@@ -259,14 +266,14 @@ namespace ngcomp
           vnums = el.Vertices();
           eledges = el.Edges();
 	
-          INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order); 
+          INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order);
 
           maxorder = max2 (maxorder, Max(el_orders));
           minorder = min2 (minorder, Min(el_orders));
           // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
           // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
           
-          order_inner[i] = Max (order_inner[i], el_orders);
+          order_inner[i] = Max (order_inner[i], el_orders + INT<3,TORDER>(et_bonus_order[eltype]));
           // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
 
           for(int j=0;j<eledges.Size();j++)
@@ -274,7 +281,8 @@ namespace ngcomp
               for(int k=0;k<dim;k++)
                 if(points[edges[j][0]][k] != points[edges[j][1]][k])
                   { 
-                    order_edge[eledges[j]] = max2(order_edge[eledges[j]],el_orders[k]);
+                    order_edge[eledges[j]] = max2(order_edge[eledges[j]],
+                                                  TORDER(el_orders[k]+et_bonus_order[ET_SEGM]));
                     k=dim; 
                   }
             }
@@ -286,8 +294,9 @@ namespace ngcomp
                   // trig_face
                   if(faces[j][3]==-1) 
                     {
-                      order_face[elfaces[j]][0] = int(max2(order_face[elfaces[j]][0], 
-                                                           el_orders[0]));
+                      order_face[elfaces[j]][0] = 
+                        int(max2(order_face[elfaces[j]][0], 
+                                 TORDER(el_orders[0]+et_bonus_order[ET_TRIG])));
                       order_face[elfaces[j]][1] = order_face[elfaces[j]][0]; 
                     }
                   else //quad_face
@@ -303,8 +312,9 @@ namespace ngcomp
                         for(int k=0;k<3;k++)
                           if(points[faces[j][fmax]][k] != points[faces[j][f[l] ]][k])
                             {
-                              order_face[elfaces[j]][l] = int(max2(order_face[elfaces[j]][l], 
-                                                                   el_orders[k]));
+                              order_face[elfaces[j]][l] = 
+                                int(max2(order_face[elfaces[j]][l], 
+                                         TORDER(el_orders[k]+et_bonus_order[ET_TRIG])));
                               break;
                             }
                     }
@@ -312,6 +322,25 @@ namespace ngcomp
             }
         }
     
+    else  // not var_order
+      
+      for (Ngs_Element el : ma->Elements<VOL>())
+        {	
+          if (!DefinedOn (el)) continue;
+          int i = el.Nr();
+          
+          ELEMENT_TYPE eltype = el.GetType(); 
+
+          for (int e : el.Edges())
+            order_edge[e] = p + et_bonus_order[ET_SEGM];
+          
+          if (dim == 3)
+            for (int f : el.Faces())
+              order_face[f] = p + et_bonus_order[ma->GetFacetType(f)];
+
+          order_inner[i] = p + et_bonus_order[eltype];
+        }
+
     /* 
        if (ma->GetDimension() == 2 && uniform_order_trig != -1 && uniform_order_quad != -1)
        {

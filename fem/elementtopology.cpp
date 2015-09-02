@@ -21,6 +21,21 @@ namespace ngfem
     return ost;
   }
 
+  ostream & operator<< (ostream & ost, NODE_TYPE nt)
+  {
+    switch (nt)
+      {
+      case NT_VERTEX: ost << "Vertex"; break;
+      case NT_EDGE: ost << "Edge"; break;
+      case NT_FACE: ost << "Face"; break;
+      case NT_CELL: ost << "Cell"; break;
+      case NT_ELEMENT: ost << "Element"; break;
+      case NT_FACET: ost << "Facet"; break;
+      }
+    return ost;
+  }
+
+
   const char * ElementTopology :: GetElementName (ELEMENT_TYPE et)
   {
     switch (et)

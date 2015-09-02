@@ -1103,6 +1103,16 @@ void NGS_DLL_HEADER ExportNgfem() {
     .export_values()
     ;
 
+  bp::enum_<NODE_TYPE>("NODE_TYPE")
+    .value("VERTEX", NT_VERTEX)
+    .value("EDGE", NT_EDGE)
+    .value("FACE", NT_FACE)
+    .value("CELL", NT_CELL)
+    .value("ELEMENT", NT_ELEMENT)
+    .value("FACET", NT_FACET)
+    .export_values()
+    ;
+
 
   bp::class_<ElementTopology> ("ElementTopology", bp::init<ELEMENT_TYPE>())
     .add_property("name", 
