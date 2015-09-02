@@ -1002,17 +1002,77 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   struct OrderProxy 
   {
-    const FESpace & fes;
-    OrderProxy (const FESpace & afes) : fes(afes) { ; }
+    FESpace & fes;
+    OrderProxy (FESpace & afes) : fes(afes) { ; }
   };
 
 
   bp::class_<OrderProxy> ("OrderProxy", bp::no_init)
+    .def("__setitem__", FunctionPointer
+         ([] (OrderProxy & self, ElementId ei, int o) 
+          {
+            cout << "set order of el " << ei << " to order " << o << endl;
+            cout << "(not implemented)" << endl;
+          }))
+
+    .def("__setitem__", FunctionPointer
+         ([] (OrderProxy & self, ELEMENT_TYPE et, int o) 
+          {
+            cout << "set order of eltype " << et << " to order " << o << endl;
+            self.fes.SetBonusOrder (et, o - self.fes.GetOrder());
+
+            LocalHeap lh (100000, "FESpace::Update-heap", true);
+            self.fes.Update(lh);
+            self.fes.FinalizeUpdate(lh);
+          }))
+    
+    .def("__setitem__", FunctionPointer
+         ([] (OrderProxy & self, NODE_TYPE nt, int o) 
+          {
+            cout << "set order of nodetype " << int(nt) << " to order " << o << endl;
+            nt = StdNodeType (nt, self.fes.GetMeshAccess()->GetDimension());
+            cout << "canonical nt = " << int(nt) << endl;
+            int bonus = o-self.fes.GetOrder();
+            switch (nt)
+              {
+              case 1: 
+                self.fes.SetBonusOrder(ET_SEGM, bonus); break;
+              case 2: 
+                self.fes.SetBonusOrder(ET_QUAD, bonus); 
+                self.fes.SetBonusOrder(ET_TRIG, bonus); break;
+              case 3: 
+                self.fes.SetBonusOrder(ET_TET, bonus); 
+                self.fes.SetBonusOrder(ET_PRISM, bonus);
+                self.fes.SetBonusOrder(ET_PYRAMID, bonus);
+                self.fes.SetBonusOrder(ET_HEX, bonus); break;
+              default: ;
+              }
+
+            LocalHeap lh (100000, "FESpace::Update-heap", true);
+            self.fes.Update(lh);
+            self.fes.FinalizeUpdate(lh);
+          }))
+
+    .def("__setitem__", FunctionPointer
+         ([] (OrderProxy & self, NODE_TYPE nt, int nr, int o) 
+          {
+            cout << "set order of " << nt << " " << nr << " to " << o << endl;
+            cout << "(not implemented)" << endl;
+          }))
+
+    .def("__setitem__", FunctionPointer
+         ([] (OrderProxy & self, bp::tuple tup, int o) 
+          {
+            NODE_TYPE nt = bp::extract<NODE_TYPE>(tup[0])();
+            int nr = bp::extract<int>(tup[1])();
+            cout << "set order of " << nt << " " << nr << " to " << o << endl;
+            cout << "(not implemented)" << endl;
+          }))
+    
+
+    
+
     /*
-    .def("__setitem__", FunctionPointer([] (OrderProxy & self, ElementId ei, int o) 
-                                        {
-                                          cout << "set order of el " << ei << " to order " << o << endl;
-                                        }))
     .def("__setitem__", FunctionPointer([] (OrderProxy & self, bp::slice inds, int o) 
                                         {
                                           cout << "set order to slice, o = " <<o << endl;
@@ -1033,6 +1093,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                         }))
     */
 
+    /*
     .def("__setitem__", FunctionPointer([] (OrderProxy & self, bp::object generator, int o) 
                                         {
                                           cout << "general setitem called" << endl;
@@ -1077,6 +1138,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                 }
                                             };
                                         }))
+    */
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////

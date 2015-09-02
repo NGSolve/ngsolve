@@ -287,7 +287,8 @@ namespace ngcomp
 	const FESpace & fes = *GetFESpace();
 	Array<int> dnums;
 	
-	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+        for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
 	    int nnodes = ma->GetNNodes (nt);
 
@@ -491,7 +492,8 @@ namespace ngcomp
     if (ntasks == 1)
       {
 	Array<int> dnums;	    
-	for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+	// for (NODE_TYPE nt = NT_VERTEX; nt <= NT_CELL; nt++)
+        for (NODE_TYPE nt : { NT_VERTEX, NT_EDGE, NT_FACE, NT_CELL })
 	  {
 	    int nnodes = ma->GetNNodes (nt);
 

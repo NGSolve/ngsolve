@@ -40,9 +40,18 @@ namespace ngfem
      3D elements have vertex, edge, face and cell nodes
   */
 
-  enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3 };
+  enum NODE_TYPE { NT_VERTEX = 0, NT_EDGE = 1, NT_FACE = 2, NT_CELL = 3, NT_ELEMENT = 4, NT_FACET = 5 };
 
-  INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
+  INLINE NODE_TYPE StdNodeType (NODE_TYPE nt, int meshdim)
+  {
+    switch (nt)
+      {
+      case NT_ELEMENT: return NODE_TYPE(meshdim);
+      case NT_FACET: return NODE_TYPE(meshdim-1);
+      default: return nt;
+      }
+  }
+  // INLINE void operator++(NODE_TYPE & nt, int)  { nt = NODE_TYPE(nt+1); } 
 
 
   INLINE constexpr int Dim (ELEMENT_TYPE et)
@@ -491,6 +500,7 @@ namespace ngfem
 
 
   ostream & operator<< (ostream & ost, ELEMENT_TYPE et);
+  ostream & operator<< (ostream & ost, NODE_TYPE nt);
 
   ostream & operator<< (ostream & ost, const Node & node);
 

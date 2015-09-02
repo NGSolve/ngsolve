@@ -160,6 +160,8 @@ namespace ngcomp
     ParallelDofs * paralleldofs; // = NULL;
 
     bool no_low_order_space;
+
+    int et_bonus_order[30]; // order increase for element-type
   public:
     string type;
 
@@ -196,6 +198,9 @@ namespace ngcomp
 
     /// order of finite elements
     int GetOrder () const { return order; }
+
+    void SetBonusOrder (ELEMENT_TYPE et, int bonus) 
+    { et_bonus_order[et] = bonus; }
 
     /// how many components
     int GetDimension () const { return dimension; }
