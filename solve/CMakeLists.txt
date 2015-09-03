@@ -22,7 +22,14 @@ add_library( ngslib SHARED ngspy.cpp )
 
 set_target_properties(ngslib PROPERTIES SUFFIX ".so")
 set_target_properties(ngslib PROPERTIES PREFIX "")
-target_link_libraries(ngslib ngsolve ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+target_link_libraries(ngslib ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
+
+if(USE_GUI)
+    target_link_libraries(ngslib ngsolve)
+else(USE_GUI)
+    target_link_libraries(ngslib solve)
+endif(USE_GUI)
+
 if(WIN32)
     set_target_properties( ngslib PROPERTIES SUFFIX ".pyd" )
 endif(WIN32)
