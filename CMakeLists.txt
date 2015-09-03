@@ -209,6 +209,10 @@ if (USE_MKL)
         set(MKL_SDL OFF)
     endif(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
 
+    if("${MKL_INTERFACE_LAYER}" STREQUAL "ilp64")
+        add_definitions(-DMKL_ILP64)
+    endif()
+
     set(USE_LAPACK ON)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
