@@ -148,7 +148,12 @@ int main(int argc, char ** argv)
       if (argv[i][0] == '-')
 	parameters.SetCommandLineFlag (argv[i]);
       else
-	parameters.SetFlag ("geofile", argv[i]);
+        {
+          if (strstr(argv[i], ".py"))
+            parameters.SetFlag ("py", argv[i]);
+          else
+            parameters.SetFlag ("geofile", argv[i]);
+        }
     }
 
 
