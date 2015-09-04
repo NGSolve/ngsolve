@@ -36,7 +36,7 @@ namespace ngfem
       pi[2] = aip(2);
       weight = aip.Weight();
       precomputed_geometry = aip.precomputed_geometry;
-      facetnr = -1;
+      facetnr = aip.facetnr;
       return *this;
     }
 
@@ -188,6 +188,9 @@ namespace ngfem
   protected:
     ///
     Vec<R,SCAL> point;
+    Vec<R,SCAL> normalvec;
+    Vec<R,SCAL> tangentialvec;  // for independent integrator
+ 
   public:
     ///
     INLINE DimMappedIntegrationPoint () = default;
@@ -201,6 +204,15 @@ namespace ngfem
     INLINE Vec<R,SCAL> & Point () { return point; }
     ///
     INLINE SCAL operator() (int i) const { return point(i); }
+
+    ///
+    INLINE const Vec<R,SCAL> GetNV () const { return normalvec; }
+    /// 
+    INLINE void SetNV ( Vec<R,SCAL> vec) { normalvec = vec; }
+    ///
+    INLINE void SetTV ( Vec<R,SCAL> vec) { tangentialvec = vec; }
+    ///
+    INLINE const Vec<R,SCAL> GetTV () const { return tangentialvec; }
   };
 
 
@@ -214,10 +226,8 @@ namespace ngfem
     /// (pseudo)inverse of Jacobi matrix
     SCAL det;
     /// for boundary points
-    Vec<DIMR,SCAL> normalvec;
-    Vec<DIMR,SCAL> tangentialvec;  // for independent integrator
-  
- 
+    using DimMappedIntegrationPoint<DIMR,SCAL>::normalvec;
+    using DimMappedIntegrationPoint<DIMR,SCAL>::tangentialvec;
   public:
     typedef SCAL TSCAL;
     ///
@@ -317,16 +327,6 @@ namespace ngfem
       return adp;
     }
 
-
-
-    ///
-    INLINE const Vec<DIMR,SCAL> GetNV () const { return normalvec; }
-    /// 
-    INLINE void SetNV ( const Vec<DIMR,SCAL> & vec) { normalvec = vec; }
-    ///
-    INLINE void SetTV ( const Vec<DIMR,SCAL> & vec) { tangentialvec = vec; }
-    ///
-    INLINE const Vec<DIMR,SCAL> GetTV () const { return tangentialvec; }
     ///
     INLINE int IsBoundary () const { return DIMS != DIMR; }
 

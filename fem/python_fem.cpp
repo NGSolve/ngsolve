@@ -842,6 +842,25 @@ struct GenericConj {
 };
 
 
+  template <int D>
+  class NormalVectorCF : public CoefficientFunction
+  {
+  public:
+    NormalVectorCF () { ; }
+    virtual int Dimension() const { return D; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return 0;
+    }
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    {
+      if (ip.Dim() != D)
+        throw Exception("illegal dim of normal vector");
+      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
+    }
+  };
+
 
 
 void ExportCoefficientFunction()
@@ -1046,6 +1065,41 @@ void ExportCoefficientFunction()
   bp::implicitly_convertible 
     <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
+
+  class MeshSizeCF : public CoefficientFunction
+  {
+  public:
+    MeshSizeCF () { ; }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return pow(ip.GetMeasure(), 1.0/ip.Dim());
+    }
+  };
+
+
+  class SpecialCoefficientFunctions
+  {
+  public:
+    shared_ptr<CoefficientFunction> GetMeshSizeCF ()
+    { return make_shared<MeshSizeCF>(); }
+
+    shared_ptr<CoefficientFunction> GetNormalVectorCF (int dim)
+    { 
+      if (dim == 2)
+        return make_shared<NormalVectorCF<2>>(); 
+      else
+        return make_shared<NormalVectorCF<3>>(); 
+    }
+  };
+
+  bp::class_<SpecialCoefficientFunctions> ("SpecialCFCreator", bp::no_init)
+    .add_property("mesh_size", 
+                  &SpecialCoefficientFunctions::GetMeshSizeCF)
+    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF)
+    ;
+  static SpecialCoefficientFunctions specialcf;
+  
+  bp::scope().attr("specialcf") = bp::object(bp::ptr(&specialcf));
 
   bp::class_<BSpline> ("BSpline", bp::no_init)
    .def("__init__", bp::make_constructor 

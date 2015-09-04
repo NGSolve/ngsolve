@@ -617,6 +617,7 @@ namespace ngcomp
       : Preconditioner(&pde,aflags,aname)
     {
       bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
+      bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
 
@@ -624,6 +625,7 @@ namespace ngcomp
 			  const string aname = "directprecond")
       : Preconditioner(abfa,aflags,aname), bfa(abfa)
     {
+      bfa -> SetPreconditioner (this);
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
 
@@ -634,6 +636,10 @@ namespace ngcomp
       ; //delete inverse;
     }
     
+    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    {
+      Update();
+    }
     
     ///
     virtual void Update ()
