@@ -360,7 +360,7 @@ namespace ngcomp
 
     u.GetVector() = 0.0;
 
-    ProgressOutput progress (ma, "setvalues element", ma->GetNE());
+    ProgressOutput progress (ma, "setvalues element", ma->GetNE(vorb));
 
     IterateElements 
       (fes, vorb, clh, 

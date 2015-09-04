@@ -8,6 +8,35 @@
 namespace ngcomp
 { 
 
+  /// Identity
+  template <int D>
+  class DiffOpIdFacet : public DiffOp<DiffOpIdFacet<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+
+      int facetnr = mip.IP().FacetNr();
+      mat = 0.0;
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element");
+      else
+        fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
+                                           mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+    }
+  }; 
+
+
+
 
   FacetFESpace ::  FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : FESpace(ama, flags)
@@ -82,12 +111,16 @@ namespace ngcomp
     static ConstantCoefficientFunction one(1);
     if (ma->GetDimension() == 2)
       {
-        integrator = make_shared<MassIntegrator<2>> (&one);
+        // integrator = make_shared<MassIntegrator<2>> (&one);
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
         boundary_integrator = make_shared<RobinIntegrator<2>> (&one);
       }
     else
       {
-        integrator = make_shared<MassIntegrator<3>> (&one);
+        // integrator = make_shared<MassIntegrator<3>> (&one);
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>();
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         boundary_integrator = make_shared<RobinIntegrator<3>> (&one);
       }
 

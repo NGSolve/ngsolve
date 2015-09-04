@@ -393,10 +393,12 @@ bp::object MakeProxyFunction (const FESpace & fes,
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     VorB vb;
+    bool element_boundary;
 
   public:
-    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
-      : cf(acf), vb(avb)
+    SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
+                                    bool aelement_boundary)
+      : cf(acf), vb(avb), element_boundary(aelement_boundary)
     {
       if (cf->Dimension() != 1)
         throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
@@ -451,6 +453,11 @@ bp::object MakeProxyFunction (const FESpace & fes,
                               LocalHeap & lh) const
 
     {
+      if (element_boundary)
+        {
+          T_CalcElementMatrixEB<2,SCAL> (fel, trafo, elmat, lh);
+          return;
+        }
       IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
       BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
@@ -494,6 +501,81 @@ bp::object MakeProxyFunction (const FESpace & fes,
         }
     }
 
+
+
+
+    template <int D, typename SCAL>
+    void T_CalcElementMatrixEB (const FiniteElement & fel,
+                                const ElementTransformation & trafo, 
+                                FlatMatrix<SCAL> elmat,
+                                LocalHeap & lh) const
+
+    {
+      elmat = 0;
+
+      auto eltype = trafo.GetElementType();
+      int nfacet = ElementTopology::GetNFacets(eltype);
+
+      Facet2ElementTrafo transform(eltype); 
+      FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
+
+      for (int k = 0; k < nfacet; k++)
+        {
+          HeapReset hr(lh);
+          ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+        
+          Vec<2> normal_ref = normals[k];
+        
+          IntegrationRule ir_facet(etfacet, 2*fel.Order());
+          IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+          MappedIntegrationRule<D,D> mir(ir_facet_vol, trafo, lh);
+          
+          
+          ProxyUserData ud;
+          const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          
+          for (int i = 0; i < mir.Size(); i++)
+            {
+              auto & mip = mir[i];
+              Mat<D> inv_jac = mip.GetJacobianInverse();
+              double det = mip.GetMeasure();
+              Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+              double len = L2Norm (normal);    // that's the surface measure 
+              normal /= len;                   // normal vector on physical element
+
+              mip.SetNV(normal);
+              
+              for (auto proxy1 : trial_proxies)
+                for (auto proxy2 : test_proxies)
+                  {
+                    HeapReset hr(lh);
+                    FlatMatrix<SCAL> proxyvalues(proxy2->Dimension(), proxy1->Dimension(), lh);
+                    for (int k = 0; k < proxy1->Dimension(); k++)
+                      for (int l = 0; l < proxy2->Dimension(); l++)
+                        {
+                          ud.trialfunction = proxy1;
+                          ud.trial_comp = k;
+                          ud.testfunction = proxy2;
+                          ud.test_comp = l;
+                      
+                          Vec<1,SCAL> result;
+                          cf->Evaluate (mip, result);
+                          proxyvalues(l,k) = ir_facet[i].Weight() * len * result(0);
+                        }
+                    
+                    FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                    FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
+                    FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                    
+                    proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
+                    proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
+                    
+                    dbmat1 = proxyvalues * bmat1;
+                    elmat += Trans (bmat2) * dbmat1;
+                  }
+            }
+        }
+    }
   };
 
 
@@ -699,6 +781,15 @@ public:
     printmessage_importance = msg_level; 
     netgen::printmessage_importance = msg_level; 
   }
+  string GetTestoutFile () const
+  {
+    return "no-filename-here";
+  }
+  void SetTestoutFile(string filename) 
+  {
+    cout << "set testout-file to " << filename << endl;
+    testout = new ofstream(filename);
+  }
   
 };
 static GlobalDummyVariables globvar;
@@ -821,6 +912,9 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("msg_level", 
                  &GlobalDummyVariables::GetMsgLevel,
                  &GlobalDummyVariables::SetMsgLevel)
+    .add_property("testout", 
+                 &GlobalDummyVariables::GetTestoutFile,
+                 &GlobalDummyVariables::SetTestoutFile)
     ;
 
   bp::scope().attr("ngsglobals") = bp::object(bp::ptr(&globvar));
@@ -880,7 +974,8 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def ("GetNE", static_cast<int(MeshAccess::*)(VorB)const> (&MeshAccess::GetNE))
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
-
+    .add_property ("ne",  static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
+    .add_property ("dim", &MeshAccess::GetDimension, "mesh dimension")
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
@@ -2023,11 +2118,13 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicBFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<BilinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary)
+           -> shared_ptr<BilinearFormIntegrator>
            {
-             return make_shared<SymbolicBilinearFormIntegrator> (cf, vb);
+             return make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
            }),
-          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL,
+           bp::args("element_boundary")=false)
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
