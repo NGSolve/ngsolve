@@ -232,6 +232,10 @@ namespace ngcomp
 	
       }
     
+
+    for (int i = 0; i < nfa; i++)
+      if (!fine_facet[i]) order_facet[i] = 0;
+
     // distribute dofs
     ncfa = 0; 
     ndof = nfa; // low_order space

@@ -632,7 +632,7 @@ namespace ngla
 
   MinimumDegreeOrdering:: ~MinimumDegreeOrdering ()
   {
-    cout << "~MDO: all data should be deleted, please double-check" << endl;
+    // cout << "~MDO: all data should be deleted, please double-check" << endl;
     // for (int i = 0; i < vertices.Size(); i++)
     // delete [] vertices[i].connected;
   }

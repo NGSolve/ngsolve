@@ -431,7 +431,7 @@ namespace ngla
       micro_dependency = creator.MoveTable();
       micro_dependency_trans = creator_trans.MoveTable();
 
-      cout << "dag.size = " << micro_dependency.Size() << endl;
+      // cout << "dag.size = " << micro_dependency.Size() << endl;
     }
   }
   
