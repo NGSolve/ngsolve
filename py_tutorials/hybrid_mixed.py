@@ -2,12 +2,12 @@ from netgen.geom2d import unit_square
 from ngsolve import *
 
 
-# ngsglobals.msg_level = 1
+ngsglobals.msg_level = 1
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
 mesh.Refine()
-mesh.Refine()
-mesh.Refine()
+# mesh.Refine()
+# mesh.Refine()
 
 order = 2
 fes1 = HDiv(mesh, order=order, flags = { "discontinuous" : True } )
