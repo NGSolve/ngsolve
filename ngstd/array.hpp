@@ -764,7 +764,7 @@ namespace ngstd
     INLINE void RemoveElement (TSIZE i)
     {
       for(TSIZE j = i; j < this->size-1; j++)
-	this->data[i] = this->data[i+1];
+	this->data[j] = this->data[j+1];
       this->size--;
     }
 
