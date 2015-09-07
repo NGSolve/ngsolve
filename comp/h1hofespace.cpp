@@ -165,6 +165,7 @@ namespace ngcomp
     if (dimension > 1)
       {
 	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
+	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
 	boundary_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
       }
