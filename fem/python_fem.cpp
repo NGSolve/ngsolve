@@ -918,6 +918,8 @@ void ExportCoefficientFunction()
     
     .def("__getitem__", FunctionPointer( [](SPCF & self, int comp) -> SPCF
                                          {
+                                           if (comp < 0 || comp >= self->Dimension())
+                                             bp::exec("raise IndexError()\n");
                                            return make_shared<ComponentCoefficientFunction> (self, comp); 
                                          }))
 
