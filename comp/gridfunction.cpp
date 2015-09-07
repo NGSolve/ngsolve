@@ -1066,8 +1066,8 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evalute 3");
-    static Timer timer ("GFCoeffFunc::Eval-vec", 3);
-    RegionTimer reg (timer);
+    // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
+    // RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ir.GetTransformation();
     

@@ -524,6 +524,24 @@ public:
     result(0) = InnerProduct (v1, v2);
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<> result) const
+  {
+#ifdef VLA
+    double hmem1[ir.Size()*c1->Dimension()];
+    FlatMatrix<> temp1(ir.Size(), c1->Dimension(), hmem1);
+    double hmem2[ir.Size()*c1->Dimension()];
+    FlatMatrix<> temp2(ir.Size(), c1->Dimension(), hmem2);
+#else
+    Matrix<> temp1(ir.Size(), c1->Dimension());
+    Matrix<> temp2(ir.Size(), c1->Dimension());
+#endif
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, temp2);
+    for (int i = 0; i < ir.Size(); i++)
+      result(i) = InnerProduct(temp1.Row(i), temp2.Row(i));
+  }
+
   virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
                              FlatVector<> result,
                              FlatVector<> deriv) const
@@ -721,6 +739,21 @@ public:
       ci[i]->Evaluate(ip, result.Range(i,i+1));
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<> result) const
+  {
+    for (int i : Range(ci))
+      {
+#ifdef VLA
+        double hmem[ir.Size()*ci[i]->Dimension()];
+        FlatMatrix<> temp(ir.Size(), ci[i]->Dimension(), hmem);
+#else
+        Matrix<> temp(ir.Size(), ci[i]->Dimension());
+#endif
+        ci[i]->Evaluate(ir, temp);
+        result.Col(i) = temp.Col(0);
+      }
+  }    
 };
 
 
@@ -1193,18 +1226,20 @@ void NGS_DLL_HEADER ExportNgfem() {
                                                 return verts;
                                               }));
     ;
-
-  bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>("FiniteElement", bp::no_init)
-    .add_property("ndof", &FiniteElement::GetNDof)    
-    .add_property("order", &FiniteElement::Order)    
-    .add_property("type", &FiniteElement::ElementType)    
-    .add_property("dim", &FiniteElement::Dim)    
-    .add_property("classname", &FiniteElement::ClassName)  
+    
+  bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>
+      ("FiniteElement", "any finite element", bp::no_init)
+    .add_property("ndof", &FiniteElement::GetNDof, "number of degrees of freedom of element")    
+    .add_property("order", &FiniteElement::Order, "maximal polynomial order of element")    
+    .add_property("type", &FiniteElement::ElementType, "geometric type of element")    
+    .add_property("dim", &FiniteElement::Dim, "spatial dimension of element")    
+    .add_property("classname", &FiniteElement::ClassName, "name of element family")  
     .def("__str__", &ToString<FiniteElement>)
     ;
 
   bp::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
-    bp::bases<FiniteElement>, boost::noncopyable>("ScalarFE", bp::no_init)
+    bp::bases<FiniteElement>, boost::noncopyable>
+      ("ScalarFE", "a scalar-valued finite element", bp::no_init)
     .def("CalcShape",
          FunctionPointer
          ([] (const BaseScalarFiniteElement & fe, double x, double y, double z)
@@ -1270,7 +1305,8 @@ void NGS_DLL_HEADER ExportNgfem() {
                default: cerr << "cannot make fe " << et << endl;
                }
              return shared_ptr<BaseScalarFiniteElement>(fe);
-           })
+           }),
+          "creates an H1 finite element of given geometric shape and polynomial order"
           );
 
   bp::def("L2FE", FunctionPointer
