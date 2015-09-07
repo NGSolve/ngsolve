@@ -775,7 +775,12 @@ namespace ngla
     else if (ainversetype == "superlu_dist")  SetInverseType ( SUPERLU_DIST );
     else if (ainversetype == "mumps")         SetInverseType ( MUMPS );
     else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
-    else SetInverseType ( SPARSECHOLESKY );
+    else if (ainversetype == "sparsecholesky") SetInverseType ( SPARSECHOLESKY );
+    else
+      {
+        throw Exception (ToString("undefined inverse ")+ainversetype+
+                         "\nallowed is: 'sparsecholesky', 'pardiso', 'pardisospd', 'mumps', 'masterinverse'");
+      }
     return old_invtype;
   }
 

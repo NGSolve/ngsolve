@@ -241,10 +241,13 @@ void NGS_DLL_HEADER ExportNgla() {
         m.AsVector()+=m2.AsVector();
     }))
 
-    .def("Inverse", FunctionPointer( [](BM &m, BitArray & freedofs)->shared_ptr<BaseMatrix>
-                                     { return m.InverseMatrix(&freedofs); }))
-    // bp::return_value_policy<bp::manage_new_object>(),
-    // (bp::arg("self"), bp::arg("freedofs")))
+    .def("Inverse", FunctionPointer( [](BM &m, BitArray * freedofs, string inverse)
+                                     ->shared_ptr<BaseMatrix>
+                                     { 
+                                       if (inverse != "") m.SetInverseType(inverse);
+                                       return m.InverseMatrix(freedofs);
+                                     }),
+         (bp::arg("self"), bp::arg("freedofs"), bp::arg("inverse")=""))
     .def("Inverse", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
                                      { return m.InverseMatrix(); }))
     .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
