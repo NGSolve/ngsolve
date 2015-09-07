@@ -1,3 +1,11 @@
+"""
+Finite Element Spaces and Forms
+===============================
+
+scalar and vectorial finite element spaces
+gridfunctions, bilinear- and linar-forms, preconditioners
+"""
+
 from . import fem
 from . import la
 

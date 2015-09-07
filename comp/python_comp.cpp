@@ -93,18 +93,22 @@ public:
 
 class ProxyFunction : public CoefficientFunction
 {
-  const FESpace * space;
+  // const FESpace * space;
   bool testfunction; // true .. test, false .. trial
+  bool is_complex;
+
   shared_ptr<DifferentialOperator> evaluator;
   shared_ptr<DifferentialOperator> deriv_evaluator;
   shared_ptr<DifferentialOperator> trace_evaluator;
 public:
-  ProxyFunction (const FESpace * aspace, bool atestfunction,
+  ProxyFunction (// const FESpace * aspace, 
+                 bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
                  shared_ptr<DifferentialOperator> atrace_evaluator)
                  
-    : space(aspace), testfunction(atestfunction),
+    : // space(aspace), 
+    testfunction(atestfunction), is_complex(ais_complex),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
       trace_evaluator(atrace_evaluator)
@@ -112,18 +116,18 @@ public:
 
   bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
-  virtual bool IsComplex () const { return space->IsComplex(); }
+  virtual bool IsComplex () const { return is_complex; } // space->IsComplex(); }
 
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TraceEvaluator() const { return trace_evaluator; }
   shared_ptr<ProxyFunction> Deriv() const
   {
-    return make_shared<ProxyFunction> (space, testfunction, deriv_evaluator, nullptr, nullptr);
+    return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, nullptr);
   }
   shared_ptr<ProxyFunction> Trace() const
   {
-    return make_shared<ProxyFunction> (space, testfunction, trace_evaluator, nullptr, nullptr);
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, nullptr, nullptr);
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -280,7 +284,7 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
                                            auto block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
                                            auto block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-                                           auto block_proxy = make_shared<ProxyFunction> (&fes, testfunction, block_eval, block_deriv_eval, block_trace_eval);
+                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval);
                                            block_proxy = addblock(block_proxy);
                                            return block_proxy;
                                          }));
@@ -374,6 +378,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
               ud.test_comp = k;
               
               cf -> Evaluate (mir, values);
+
               for (int i = 0; i < mir.Size(); i++)
                 values.Row(i) *= mir[i].GetWeight();
               proxyvalues.Col(k) = values.Col(0);
@@ -1237,7 +1242,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
-  bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace", bp::no_init)
+  bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
                               bp::dict bpflags, int order, bool is_complex, const bp::list & dirichlet, int dim)
@@ -1445,12 +1450,12 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .add_property("components", FunctionPointer
-                  ([](GF & self)-> bp::list 
+                  ([](GF & self)-> bp::tuple
                    { 
                      bp::list vecs;
                      for (int i = 0; i < self.GetNComponents(); i++) 
                        vecs.append(self.GetComponent(i));
-                     return vecs;
+                     return bp::tuple(vecs);
                    }),
                   "list of gridfunctions for compound gridfunction")
 
