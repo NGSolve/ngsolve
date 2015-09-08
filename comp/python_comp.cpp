@@ -8,6 +8,8 @@
 #include </usr/lib/python3/dist-packages/mpi4py/include/mpi4py/mpi4py.h>
 #endif
 
+#include <regex>
+
 using namespace ngcomp;
 
 
@@ -1242,15 +1244,29 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
-                              bp::dict bpflags, int order, bool is_complex, const bp::list & dirichlet, int dim)
+                              bp::dict bpflags, int order, bool is_complex, bp::object dirichlet, int dim)
                            { 
                              Flags flags = bp::extract<Flags> (bpflags)();
 
                              if (order > -1) flags.SetFlag ("order", order);
                              if (dim > -1) flags.SetFlag ("dim", dim);
                              if (is_complex) flags.SetFlag ("complex");
-                             if (dirichlet)
-                               flags.SetFlag("dirichlet", makeCArray<double>(dirichlet));
+
+                             bp::extract<bp::list> dirlist(dirichlet);
+                             if (dirlist.check())
+                               flags.SetFlag("dirichlet", makeCArray<double>(dirlist()));
+
+                             bp::extract<string> dirstring(dirichlet);
+                             if (dirstring.check())
+                               {
+                                 std::regex pattern(dirstring());
+                                 Array<double> dirlist;
+                                 for (int i = 0; i < ma->GetNBoundaries(); i++)
+                                   if (std::regex_match (ma->GetBCNumBCName(i), pattern))
+                                     dirlist.Append (i+1);
+                                 flags.SetFlag("dirichlet", dirlist);
+                               }
+
                              auto fes = CreateFESpace (type, ma, flags); 
 
                              LocalHeap lh (1000000, "FESpace::Update-heap");
@@ -1262,7 +1278,7 @@ void NGS_DLL_HEADER ExportNgcomp()
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, 
            bp::arg("complex")=false, 
-           bp::arg("dirichlet")= bp::list(), bp::arg("dim")=-1 )),
+           bp::arg("dirichlet")= bp::object(), bp::arg("dim")=-1 )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
 
