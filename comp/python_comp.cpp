@@ -109,9 +109,9 @@ public:
                  
     : // space(aspace), 
     testfunction(atestfunction), is_complex(ais_complex),
-      evaluator(aevaluator), 
-      deriv_evaluator(aderiv_evaluator),
-      trace_evaluator(atrace_evaluator)
+    evaluator(aevaluator), 
+    deriv_evaluator(aderiv_evaluator),
+    trace_evaluator(atrace_evaluator)
   { ; }
 
   bool IsTestFunction () const { return testfunction; }
@@ -293,7 +293,7 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
     }
 
   shared_ptr<CoefficientFunction> proxy =
-    addblock(make_shared<ProxyFunction> (&fes, testfunction, 
+    addblock(make_shared<ProxyFunction> (testfunction, fes.IsComplex(),
                                          fes.GetEvaluator(),
                                          fes.GetFluxEvaluator(),
                                          fes.GetEvaluator(BND)));
@@ -303,7 +303,6 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
 bp::object MakeProxyFunction (const FESpace & fes,
                               bool testfunction) 
 {
-
   return 
     MakeProxyFunction2 (fes, testfunction, 
                         [&] (shared_ptr<ProxyFunction> proxy) { return proxy; });
@@ -406,8 +405,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
       : cf(acf), vb(avb), element_boundary(aelement_boundary)
     {
       if (cf->Dimension() != 1)
-        throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
-
+        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
 
       cf->TraverseTree
         ( [&] (CoefficientFunction & nodecf)
@@ -470,7 +468,6 @@ bp::object MakeProxyFunction (const FESpace & fes,
       const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
       elmat = 0;
-
       for (int i = 0; i < mir.Size(); i++)
         {
           auto & mip = mir[i];
@@ -492,7 +489,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
                       cf->Evaluate (mip, result);
                       proxyvalues(l,k) = mip.GetWeight() * result(0);
                     }
-                
+
                 FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
                 FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
                 FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
@@ -2115,21 +2112,30 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   bp::def("SymbolicLFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<LinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) 
+           -> shared_ptr<LinearFormIntegrator>
            {
-             return make_shared<SymbolicLinearFormIntegrator> (cf, vb);
+             auto lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb);
+
+             if (bp::extract<bp::list> (definedon).check())
+               lfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             return lfi;
            }),
-          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL, bp::arg("definedon")=bp::object())
           );
 
   bp::def("SymbolicBFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary)
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary, bp::object definedon)
            -> shared_ptr<BilinearFormIntegrator>
            {
-             return make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+             auto bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+             if (bp::extract<bp::list> (definedon).check())
+               bfi -> SetDefinedOn (makeCArray<int> (definedon));
+             return bfi;
            }),
           (bp::args("self"), bp::args("VOL_or_BND")=VOL,
-           bp::args("element_boundary")=false)
+           bp::args("element_boundary")=false, bp::arg("definedon")=bp::object())
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
