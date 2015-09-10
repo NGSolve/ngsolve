@@ -4,6 +4,8 @@ from math import pi
 from netgen.geom2d import SplineGeometry
 from netgen.meshing import MeshingParameters
 
+ngsglobals.pajetrace = True
+
 
 geom = SplineGeometry("chip.in2d")
 mp = MeshingParameters (maxh=0.1)
