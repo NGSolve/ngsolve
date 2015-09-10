@@ -1141,7 +1141,82 @@ lot of new non-zero entries in the matrix!\n" << endl;
       return &free_dofs;
   }
 
+  void IterateElements (const FESpace & fes, 
+			VorB vb, 
+			LocalHeap & clh, 
+			const function<void(FESpace::Element,LocalHeap&)> & func)
+  {
+    const Table<int> & element_coloring = fes.ElementColoring(vb);
+    
+    if (task_manager)
+      {
+        for (FlatArray<int> els_of_col : element_coloring)
+          {
+            SharedLoop sl(els_of_col.Range());
 
+            task_manager -> CreateJob
+              ( [&] (const TaskInfo & ti) 
+                {
+                  LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                  ArrayMem<int,100> temp_dnums;
+
+                  for (int mynr : sl)
+                    {
+                      HeapReset hr(lh);
+                      FESpace::Element el(fes, 
+                                          ElementId (vb, els_of_col[mynr]), 
+                                          temp_dnums, lh);
+                      
+                      func (move(el), lh);
+                    }
+                } );
+          }
+        return;
+      }
+
+
+    Exception * ex = nullptr;
+
+#pragma omp parallel 
+    {
+      LocalHeap lh = clh.Split();
+      Array<int> temp_dnums;
+
+      // lh.ClearValues();
+      
+      for (FlatArray<int> els_of_col : element_coloring)
+        
+#pragma omp for schedule(dynamic)
+        for (int i = 0; i < els_of_col.Size(); i++)
+          {
+            try
+              {
+                HeapReset hr(lh);
+                FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
+                
+                func (move(el), lh);
+              }
+	    
+            catch (const Exception & e)
+              {
+#pragma omp critical(copyex)
+                {
+                  if (!ex)
+		    ex = new Exception (e);
+                }
+              }
+	    catch (...)
+	      { ; }
+          }
+      // cout << "lh, used size = " << lh.UsedSize() << endl;
+    }
+    
+    if (ex)
+      {
+        throw Exception (*ex);
+      }
+  }
+  
 
   // Aendern, Bremse!!!
   template < int S, class T >
