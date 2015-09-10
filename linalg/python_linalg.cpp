@@ -48,6 +48,7 @@ void NGS_DLL_HEADER ExportNgla() {
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
+    .def("__len__", &BaseVector::Size)
     .def("CreateVector", FunctionPointer( [] ( BaseVector & self)
         { return shared_ptr<BaseVector>(self.CreateVector()); } ))
 
@@ -92,13 +93,16 @@ void NGS_DLL_HEADER ExportNgla() {
     .def("__add__" , bp::object(expr_namespace["expr_add"]) )
     .def("__sub__" , bp::object(expr_namespace["expr_sub"]) )
     .def("__rmul__" , bp::object(expr_namespace["expr_rmul"]) )
-    .def("__getitem__", FunctionPointer( [](BaseVector & self,  int ind )
-      {
-          if( self.IsComplex() )
-              return bp::object(self.FVComplex()[ind]);
-          else
-              return bp::object(self.FVDouble()[ind]);
-      } ))
+    .def("__getitem__", FunctionPointer
+         ( [](BaseVector & self,  int ind )
+           {
+             if (ind < 0 || ind >= self.Size()) 
+               bp::exec("raise IndexError()\n");
+             if( self.IsComplex() )
+               return bp::object(self.FVComplex()[ind]);
+             else
+               return bp::object(self.FVDouble()[ind]);
+           } ))
     .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds )
       {
           int start, step, n;
@@ -225,7 +229,7 @@ void NGS_DLL_HEADER ExportNgla() {
                                        bp::list pyvals (vals);
                                        return bp::make_tuple (pyri, pyci, pyvals);
                                      }
-				   throw Exception ("COO needs sparse matrix");
+				   throw Exception ("COO needs real-valued sparse matrix");
                                  }))
 
     .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
