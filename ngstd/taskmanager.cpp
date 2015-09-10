@@ -23,9 +23,8 @@
 namespace ngstd
 {
   TaskManager * task_manager = nullptr;
-
+  bool TaskManager :: use_paje_trace = false;
   
-
   void RunWithTaskManager (function<void()> alg)
   {
     if (task_manager)
@@ -154,7 +153,10 @@ namespace ngstd
 
       static int cnt = 0;
       char buf[100];
-      sprintf(buf, "ng%d.trace", cnt++);
+      if (use_paje_trace)
+	sprintf(buf, "ng%d.trace", cnt++);
+      else
+	sprintf(buf, "");
       trace = new PajeTrace(num_threads, buf);
     }
 
