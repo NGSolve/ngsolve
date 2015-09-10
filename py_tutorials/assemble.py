@@ -15,14 +15,14 @@
 
 from ngsolve import *
 
-pde = comp.PDE("d1_square.pde")
+pde = PDE("d1_square.pde")
 # SetDefaultPDE (pde)
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
 v.Update (heapsize=10000)
 
-lap = fem.BFI ("laplace", coef=4.8)
+lap = BFI ("laplace", coef=4.8)
 
 for el in v.Elements():
     print ("el: ", el)
@@ -32,7 +32,7 @@ for el in v.Elements():
 
 
 
-v2 = comp.FESpace ("h1ho", mesh, order=1, dirichlet=[1])
+v2 = FESpace ("h1ho", mesh, order=1, dirichlet=[1])
 v2.Update()
 
 for el1,el2 in zip (v.Elements(), v2.Elements()):
