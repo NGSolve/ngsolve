@@ -406,11 +406,10 @@ namespace ngsolve
     if (solver != DIRECT)
       {
 	cout << IM(1) << "Iterations: " << invmat->GetSteps() << endl;
-        try
-          {
-            GetPDE() -> AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps(), 6);
-          }
-        catch (std::exception e) { ; }
+
+	auto sp = pde.lock();
+	if (sp)
+	  sp -> AddVariable (string("bvp.")+GetName()+".its", invmat->GetSteps(), 6);
       }
 
     if (solver != DIRECT) 
