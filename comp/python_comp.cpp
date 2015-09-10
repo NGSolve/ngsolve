@@ -12,6 +12,7 @@
 
 using namespace ngcomp;
 
+using ngfem::ELEMENT_TYPE;
 
 template <typename T>
 struct PythonTupleFromFlatArray {
@@ -919,6 +920,11 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("testout", 
                  &GlobalDummyVariables::GetTestoutFile,
                  &GlobalDummyVariables::SetTestoutFile)
+    .add_property("pajetrace",
+		  &GlobalDummyVariables::GetTestoutFile,
+		  FunctionPointer([] (GlobalDummyVariables&, bool use)
+				  { TaskManager::SetPajeTrace(use); }));
+    // &GlobalDummyVariables::SetTestoutFile)
     ;
 
   bp::scope().attr("ngsglobals") = bp::object(bp::ptr(&globvar));
@@ -2064,8 +2070,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                                        hsum += mir[i].GetWeight() * values(i,0);
 #pragma omp atomic
                                      sum += hsum;
+                                     double & rsum = region_sum(el.GetIndex());
 #pragma omp atomic
-                                     region_sum(el.GetIndex()) += hsum;
+				     rsum += hsum;
                                      if (element_wise)
                                        element_sum(el.Nr()) = hsum;
                                    });

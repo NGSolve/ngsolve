@@ -58,7 +58,8 @@ namespace ngstd
 
     int num_nodes;
     int num_threads;
-    
+
+    static bool use_paje_trace;
   public:
     
     TaskManager();
@@ -71,6 +72,8 @@ namespace ngstd
     int GetNumThreads() const { return num_threads; }
     int GetNumNodes() const { return num_nodes; }
 
+    static void SetPajeTrace (bool use)  { use_paje_trace = use; }
+    
     void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 

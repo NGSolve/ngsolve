@@ -52,8 +52,8 @@ namespace ngfem
     typedef BASE T_IMPL;
     typedef SHAPES T_SHAPES;
     
-    using ET_trait<ET>::DIM;
-    using ET_trait<ET>::N_VERTEX;
+    enum { DIM = ET_trait<ET>::DIM };
+    enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
 
     using ET_trait<ET>::PolDimension;
     using ScalarFiniteElement<DIM>::ndof;
