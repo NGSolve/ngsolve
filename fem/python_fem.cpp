@@ -911,9 +911,29 @@ void ExportCoefficientFunction()
          (FunctionPointer ([](bp::object val) 
                            { return MakeCoefficient(val); })))
     
-
+    /*
     .def("__call__", static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))
-
+    */
+    .def("__call__", FunctionPointer
+	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
+	  {
+	    if (!self.IsComplex())
+	      {
+                if (self.Dimension() == 1)
+                  return bp::object(self.Evaluate(mip));
+                Vector<> vec(self.Dimension());
+                self.Evaluate (mip, vec);
+                return bp::tuple(vec);
+	      }
+	    else
+	      {
+		if (self.Dimension() == 1)
+		  return bp::object(self.EvaluateComplex(mip));
+                Vector<Complex> vec(self.Dimension());
+                self.Evaluate (mip, vec);
+                return bp::tuple(vec);
+	      }
+	  }))
     .add_property("dim", &CoefficientFunction::Dimension)    
     
     .def("__getitem__", FunctionPointer( [](SPCF & self, int comp) -> SPCF
