@@ -1250,7 +1250,8 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
-                              bp::dict bpflags, int order, bool is_complex, bp::object dirichlet, int dim)
+                              bp::dict bpflags, int order, bool is_complex,
+                              bp::object dirichlet, bp::object definedon, int dim)
                            { 
                              Flags flags = bp::extract<Flags> (bpflags)();
 
@@ -1273,8 +1274,22 @@ void NGS_DLL_HEADER ExportNgcomp()
                                  flags.SetFlag("dirichlet", dirlist);
                                }
 
+                             bp::extract<string> definedon_string(definedon);
+                             if (definedon_string.check())
+                               {
+                                 regex definedon_pattern(definedon_string());
+                                 Array<double> defonlist;
+                                 for (int i = 0; i < ma->GetNDomains(); i++)
+                                   {
+                                     cout << "checking domain " << i << endl;
+                                     cout << "mat = " << ma->GetDomainMaterial(i) << endl;
+                                     if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
+                                       defonlist.Append(i+1);
+                                   }
+                                 cout << "defonlist = " << defonlist << endl;
+                                 flags.SetFlag ("definedon", defonlist);
+                               }
                              auto fes = CreateFESpace (type, ma, flags); 
-
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
@@ -1284,10 +1299,12 @@ void NGS_DLL_HEADER ExportNgcomp()
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, 
            bp::arg("complex")=false, 
-           bp::arg("dirichlet")= bp::object(), bp::arg("dim")=-1 )),
+           bp::arg("dirichlet")= bp::object(),
+           bp::arg("definedon")=bp::object(), // everywhere
+           bp::arg("dim")=-1 )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
-
+    
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](bp::list spaces, bp::dict bpflags)->shared_ptr<FESpace>
                            {
