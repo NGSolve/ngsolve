@@ -123,6 +123,11 @@ DLL_HEADER void ExportGeom2d()
 	//	  seg->copyfrom = -1;
 	//	  self.AppendSegment(seg);
 	//  }))//, (bp::arg("self"), bp::arg("point_index1"), bp::arg("point_index2"), bp::arg("point_index3"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0 ) )
+
+
+    .def("SetMaterial", &SplineGeometry2d::SetMaterial)
+
+    
 	.def("PlotData", FunctionPointer([](SplineGeometry2d &self)
 	  {
 		  Box<2> box(self.GetBoundingBox());

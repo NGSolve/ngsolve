@@ -159,7 +159,8 @@ namespace netgen
     void CopyEdgeMesh (int from, int to, Mesh & mesh2d, Point3dTree & searchtree);
 
 
-    void GetMaterial( const int  domnr, char* & material );
+    void GetMaterial (int  domnr, char* & material );
+    void SetMaterial (int  domnr, const string & material);
 
     double GetDomainMaxh ( const int domnr );
     bool GetDomainQuadMeshing ( int domnr ) 

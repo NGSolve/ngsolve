@@ -908,7 +908,7 @@ namespace netgen
 
 
 
-  void SplineGeometry2d :: GetMaterial( const int  domnr, char* & material )
+  void SplineGeometry2d :: GetMaterial (int  domnr, char* & material )
   {
     if ( materials.Size() >= domnr)
       material =  materials[domnr-1];
@@ -916,6 +916,24 @@ namespace netgen
       material = 0;
   }
 
+  void SplineGeometry2d :: SetMaterial (int  domnr, const string & material)
+  {
+    int oldsize = materials.Size();
+    if (domnr > materials.Size()) materials.SetSize (domnr);
+    for (int i = oldsize; i < domnr; i++)
+      materials[i] = nullptr;
+    
+    if (domnr >= 1) //  && domnr <= materials.Size())
+      {
+        delete materials[domnr-1];
+        materials[domnr-1] = new char[material.size()+1];
+        strcpy(materials[domnr-1], material.c_str());
+      }
+    else
+      throw NgException ("material index out of range");
+  }
+
+  
 
   double SplineGeometry2d :: GetDomainMaxh( const int  domnr )
   {
