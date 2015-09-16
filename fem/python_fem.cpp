@@ -1410,7 +1410,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     .add_property("is_boundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
     .def ("__call__", FunctionPointer
-          ([&] (ElementTransformation & self, double x, double y, double z)
+          ([] (ElementTransformation & self, double x, double y, double z)
            {
              
              return &self(IntegrationPoint(x,y,z), global_alloc);

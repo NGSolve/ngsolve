@@ -800,7 +800,6 @@ public:
 static GlobalDummyVariables globvar;
 
 
-
 void NGS_DLL_HEADER ExportNgcomp()
 {
   bp::docstring_options local_docstring_options(true, true, false);
@@ -1280,15 +1279,11 @@ void NGS_DLL_HEADER ExportNgcomp()
                                  regex definedon_pattern(definedon_string());
                                  Array<double> defonlist;
                                  for (int i = 0; i < ma->GetNDomains(); i++)
-                                   {
-                                     cout << "checking domain " << i << endl;
-                                     cout << "mat = " << ma->GetDomainMaterial(i) << endl;
-                                     if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
-                                       defonlist.Append(i+1);
-                                   }
-                                 cout << "defonlist = " << defonlist << endl;
+                                   if (regex_match(ma->GetDomainMaterial(i), definedon_pattern))
+                                     defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
                                }
+                             
                              auto fes = CreateFESpace (type, ma, flags); 
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
@@ -1300,7 +1295,7 @@ void NGS_DLL_HEADER ExportNgcomp()
            bp::arg("order")=-1, 
            bp::arg("complex")=false, 
            bp::arg("dirichlet")= bp::object(),
-           bp::arg("definedon")=bp::object(), // everywhere
+           bp::arg("definedon")=bp::object(),
            bp::arg("dim")=-1 )),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
