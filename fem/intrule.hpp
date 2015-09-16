@@ -164,7 +164,7 @@ namespace ngfem
                                        const ElementTransformation & aeltrans)
       : ip(aip), eltrans(&aeltrans)  { ; }
     ///
-    ~BaseMappedIntegrationPoint ();
+    NGS_DLL_HEADER ~BaseMappedIntegrationPoint ();
     /// 
     INLINE const IntegrationPoint & IP () const { return ip; }
     ///

@@ -210,7 +210,7 @@ namespace ngla
       m.MultAdd (s, x, v);
     }
 
-    void CheckSize (BaseVector & dest_vec) const;
+    NGS_DLL_HEADER void CheckSize (BaseVector & dest_vec) const;
   };
 
 
