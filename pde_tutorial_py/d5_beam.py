@@ -10,7 +10,8 @@ nu = 0.2
 a = BilinearForm(V)
 a += BFI("elasticity", coef=[E,nu])
 
-c = Preconditioner(a,"local")
+c = Preconditioner(a,"multigrid")
+# c = Preconditioner(a,"direct")
 a.Assemble()
 
 
