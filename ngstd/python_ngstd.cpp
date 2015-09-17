@@ -171,12 +171,17 @@ void NGS_DLL_HEADER  ExportNgstd() {
     .def(bp::init<const BitArray&>())
     .def("__str__", &ToString<BitArray>)
     .def("__len__", &BitArray::Size)
-    // .def("__getitem__", &BitArray::Test)
-    .def("__getitem__", FunctionPointer ([] (BitArray & self, int i)
+    .def("__getitem__", FunctionPointer ([] (BitArray & self, int i) 
                                          {
-                                           if (i < 0 || i >= self.Size()) 
+                                           if (i < 0 || i >= self.Size())
                                              bp::exec("raise IndexError()\n");
                                            return self.Test(i); 
+                                         }))
+    .def("__setitem__", FunctionPointer ([] (BitArray & self, int i, bool b) 
+                                         {
+                                           if (i < 0 || i >= self.Size())
+                                             bp::exec("raise IndexError()\n");
+                                           if (b) self.Set(i); else self.Clear(i); 
                                          }))
 
     .def("Set", FunctionPointer ([] (BitArray & self, int i)

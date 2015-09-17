@@ -1827,8 +1827,6 @@ namespace ngla
                                      size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
 
-                                     // does not work for systems (why ??)
-                                     // TVX val = InnerProduct (ext_lfact.Range(myr), temp);
                                      TVX val(0.0);
                                      for (int j : Range(extdofs))
                                        val += ext_lfact(myr.begin()+j) * temp(j);
