@@ -332,8 +332,9 @@ namespace ngcomp
           
           ELEMENT_TYPE eltype = el.GetType(); 
 
-          for (int e : el.Edges())
-            order_edge[e] = p + et_bonus_order[ET_SEGM];
+          if (dim >= 2)
+            for (int e : el.Edges())
+              order_edge[e] = p + et_bonus_order[ET_SEGM];
           
           if (dim == 3)
             for (int f : el.Faces())
