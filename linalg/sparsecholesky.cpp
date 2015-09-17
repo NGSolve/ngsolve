@@ -1175,6 +1175,7 @@ namespace ngla
   
 
 
+  // #define OLD_MULTADD
 #ifdef OLD_MULTADD
 
   
@@ -1622,7 +1623,6 @@ namespace ngla
 
 
 
-
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
   MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
@@ -1826,8 +1826,12 @@ namespace ngla
                                    {
                                      size_t first = firstinrow[i] + range.end()-i-1;
                                      FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
-                                     
-                                     TVX val = InnerProduct (ext_lfact.Range(myr), temp);
+
+                                     // does not work for systems (why ??)
+                                     // TVX val = InnerProduct (ext_lfact.Range(myr), temp);
+                                     TVX val(0.0);
+                                     for (int j : Range(extdofs))
+                                       val += ext_lfact(myr.begin()+j) * temp(j);
                                      MyAtomicAdd (hy(i), -val);
                                    }
                                }
@@ -1874,7 +1878,7 @@ namespace ngla
 
 
 
-
+  
 
 
 
