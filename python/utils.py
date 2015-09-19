@@ -25,7 +25,9 @@ def H1(mesh, **args):
     Create H1 finite element space.
     documentation of arguments is available in FESpace.
     """
-    return FESpace("h1ho", mesh, **args)
+    fes = FESpace("h1ho", mesh, **args)
+    fes.__dict__["mesh"]=mesh
+    return fes
 
 def L2(mesh, **args):
     """ Create L2 finite element space. """

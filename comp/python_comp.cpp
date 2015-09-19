@@ -931,11 +931,116 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////
 
   PyExportArray<string>();
+
+  struct MeshAccess_pickle_suite : bp::pickle_suite
+  {
+    static
+    bp::tuple getinitargs(const MeshAccess & ma)
+    {
+      cout << "MA::GetInitArgs of object at " << &ma << endl;
+      return bp::make_tuple(); 
+    }
+
+    static
+    bp::tuple getstate(bp::object o)
+    {
+      auto & ma = bp::extract<MeshAccess const&>(o)();
+      stringstream str;
+      ma.SaveMesh(str);
+      return bp::make_tuple (o.attr("__dict__"), str.str());
+    }
+    
+    static
+    void setstate(bp::object o, bp::tuple state)
+    {
+      auto & ma = bp::extract<MeshAccess&>(o)();
+
+      /*
+      if (len(state) != 2)
+        {
+          PyErr_SetObject(PyExc_ValueError,
+                          ("expected 2-item tuple in call to __setstate__; got %s"
+                           % state).ptr()
+                          );
+          throw_error_already_set();
+        }
+      */
+
+      bp::dict d = bp::extract<bp::dict>(o.attr("__dict__"))();
+      d.update(state[0]);
+      string s = bp::extract<string>(state[1]);
+      stringstream str(s);
+      ma.LoadMesh (str);
+    }
+
+    static bool getstate_manages_dict() { return true; }
+  };
+
+
+  struct FESpace_pickle_suite : bp::pickle_suite
+  {
+    /*
+    static
+    bp::tuple getinitargs(const FESpace & fes)
+    {
+      cout << "FESpace::GetInitArgs" << endl;
+      return bp::make_tuple(fes.type, fes.GetMeshAccess()); // w.get_country());
+    }
+    */
+    static
+    bp::tuple getinitargs(const bp::object & o)
+    {
+      auto & fes = bp::extract<FESpace const&>(o)();
+      cout << "FESpace::GetInitArgs" << endl;
+      // return bp::make_tuple(fes.type, fes.GetMeshAccess());
+
+      bp::dict d = bp::extract<bp::dict> (o.attr("__dict__"))();
+      const bp::object & m = d.get("mesh");
+      return bp::make_tuple(fes.type, m, bp::dict(), fes.GetOrder(), fes.IsComplex());
+    }
+
+    static
+    bp::tuple getstate(bp::object o)
+    {
+      auto & fes = bp::extract<FESpace const&>(o)();
+      // stringstream str;
+      // ma.SaveMesh(str);
+      return bp::make_tuple (o.attr("__dict__")); // , str.str());
+    }
+    
+    static
+    void setstate(bp::object o, bp::tuple state)
+    {
+      auto & fes = bp::extract<FESpace&>(o)();
+
+      /*
+      if (len(state) != 2)
+        {
+          PyErr_SetObject(PyExc_ValueError,
+                          ("expected 2-item tuple in call to __setstate__; got %s"
+                           % state).ptr()
+                          );
+          throw_error_already_set();
+        }
+      */
+
+      bp::dict d = bp::extract<bp::dict>(o.attr("__dict__"))();
+      d.update(state[0]);
+      // string s = bp::extract<string>(state[1]);
+      // stringstream str(s);
+      // ma.LoadMesh (str);
+    }
+
+    static bool getstate_manages_dict() { return true; }
+  };
+  
+
+  
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
                                                  "the mesh")
     .def(bp::init<shared_ptr<netgen::Mesh>>())
-
-
+    .def_pickle(MeshAccess_pickle_suite())
+    
 #ifndef PARALLEL
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](const string & filename)
@@ -1251,7 +1356,8 @@ void NGS_DLL_HEADER ExportNgcomp()
          (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
                               bp::dict bpflags, int order, bool is_complex,
                               bp::object dirichlet, bp::object definedon, int dim)
-                           { 
+                           {
+                             
                              Flags flags = bp::extract<Flags> (bpflags)();
 
                              if (order > -1) flags.SetFlag ("order", order);
@@ -1289,7 +1395,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              return fes;
-                           }),
+                             }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, 
@@ -1316,7 +1422,7 @@ void NGS_DLL_HEADER ExportNgcomp()
           (bp::arg("spaces"), bp::arg("flags") = bp::dict())),
          "construct compound-FESpace from list of component spaces"
          )
-
+    .def_pickle(FESpace_pickle_suite())
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
                                    { 
                                      LocalHeap lh (heapsize, "FESpace::Update-heap");
