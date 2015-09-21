@@ -69,9 +69,9 @@ def MpiShell():
             readline.parse_and_bind("tab:complete") # autocomplete
         except:
             print('readline not found')
-    vars = globals()
-    vars.update(locals())
-    mshell = InteractiveMPIConsole(vars)
+    vars2 = globals()
+    vars2.update(locals())
+    mshell = InteractiveMPIConsole(vars2)
     mshell.interact()
 
 def startConsole():
@@ -86,10 +86,10 @@ def startConsole():
             readline.parse_and_bind("tab:complete") # autocomplete
         except:
             print('readline not found')
-    vars = globals()
-    vars.update(locals())
+    vars2 = globals()
+    vars2.update(locals())
 #     shell = code.InteractiveConsole({'execfile':execfile,'MpiShell':MpiShell})
-    shell = code.InteractiveConsole(vars)
+    shell = code.InteractiveConsole(vars2)
     shell.push('from netgen import *')
     shell.push('from ngsolve import *')
     shell.interact(banner="NGS-Python console is up ...")
