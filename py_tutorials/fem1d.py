@@ -1,4 +1,4 @@
-from netgen.meshing import *
+# from netgen.meshing import *
 from netgen.csg import *
 
 
@@ -23,9 +23,9 @@ for i in range(0,nel):
 from ngsolve import *
 ngsmesh = Mesh(m)
 
-V = H1(ngsmesh, order=2)
-V.FreeDofs().Clear(0)    # left boundary
-V.FreeDofs().Clear(nel)  # right boundary
+V = H1(ngsmesh, order=1)
+V.FreeDofs()[0] = False    # left boundary
+V.FreeDofs()[nel] = False  # right boundary
 print ("freedofs:\n", V.FreeDofs())
 
 
