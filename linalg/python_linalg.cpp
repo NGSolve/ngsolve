@@ -44,8 +44,57 @@ void NGS_DLL_HEADER ExportNgla() {
     bp::object expr_namespace = expr_module.attr("__dict__");
 
 
+
+
+    struct BaseVector_pickle_suite : bp::pickle_suite
+    {
+      static
+      bp::tuple getinitargs(const BaseVector & v)
+      {
+        return bp::make_tuple(v.Size(), v.IsComplex()); 
+      }
+
+      static
+      bp::tuple getstate(bp::object obj)
+      {
+        const BaseVector & vec = bp::extract<BaseVector const&>(obj)();
+        bp::list data;
+        for (int i : Range(vec))
+          data.append (vec.FV<double>()(i));
+        return bp::make_tuple (obj.attr("__dict__"), data);
+      }
+    
+      static
+      void setstate(bp::object obj, bp::tuple state)
+      {
+        BaseVector & vec = bp::extract<BaseVector&>(obj)();
+
+        bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
+        d.update(state[0]);
+        bp::list data = bp::extract<bp::list>(state[1]);
+        for (int i : Range(vec))
+          vec.FV<double>()(i) = bp::extract<double> (data[i]);
+      }
+
+    static bool getstate_manages_dict() { return true; }
+  };
+    
+    
   
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](int size, bool is_complex) -> shared_ptr<BaseVector>
+                           {
+                             if (is_complex)
+                               return make_shared<VVector<Complex>> (size);
+                             else
+                               return make_shared<VVector<double>> (size);                               
+                           }),
+          bp::default_call_policies(),        // need it to use argumentso
+          (bp::arg("size"), bp::arg("complex")=false)
+          ))
+    .def_pickle(BaseVector_pickle_suite())
+    
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
     .def("__len__", &BaseVector::Size)

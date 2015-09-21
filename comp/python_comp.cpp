@@ -14,6 +14,7 @@ using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
 
+
 template <typename T>
 struct PythonTupleFromFlatArray {
   static PyObject* convert(FlatArray<T> ar)
@@ -979,23 +980,12 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   struct FESpace_pickle_suite : bp::pickle_suite
   {
-    /*
     static
-    bp::tuple getinitargs(const FESpace & fes)
+    bp::tuple getinitargs(bp::object obj)
     {
+      auto & fes = bp::extract<FESpace const&>(obj)();
       cout << "FESpace::GetInitArgs" << endl;
-      return bp::make_tuple(fes.type, fes.GetMeshAccess()); // w.get_country());
-    }
-    */
-    static
-    bp::tuple getinitargs(const bp::object & o)
-    {
-      auto & fes = bp::extract<FESpace const&>(o)();
-      cout << "FESpace::GetInitArgs" << endl;
-      // return bp::make_tuple(fes.type, fes.GetMeshAccess());
-
-      bp::dict d = bp::extract<bp::dict> (o.attr("__dict__"))();
-      const bp::object & m = d.get("mesh");
+      bp::object m = obj.attr("__dict__")["mesh"];
       return bp::make_tuple(fes.type, m, bp::dict(), fes.GetOrder(), fes.IsComplex());
     }
 
@@ -1003,8 +993,6 @@ void NGS_DLL_HEADER ExportNgcomp()
     bp::tuple getstate(bp::object o)
     {
       auto & fes = bp::extract<FESpace const&>(o)();
-      // stringstream str;
-      // ma.SaveMesh(str);
       return bp::make_tuple (o.attr("__dict__")); // , str.str());
     }
     
@@ -1012,29 +1000,17 @@ void NGS_DLL_HEADER ExportNgcomp()
     void setstate(bp::object o, bp::tuple state)
     {
       auto & fes = bp::extract<FESpace&>(o)();
-
-      /*
-      if (len(state) != 2)
-        {
-          PyErr_SetObject(PyExc_ValueError,
-                          ("expected 2-item tuple in call to __setstate__; got %s"
-                           % state).ptr()
-                          );
-          throw_error_already_set();
-        }
-      */
-
       bp::dict d = bp::extract<bp::dict>(o.attr("__dict__"))();
       d.update(state[0]);
-      // string s = bp::extract<string>(state[1]);
-      // stringstream str(s);
-      // ma.LoadMesh (str);
     }
 
     static bool getstate_manages_dict() { return true; }
   };
   
 
+
+
+  
   
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
                                                  "the mesh")
@@ -1351,13 +1327,14 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
-  bp::class_<FESpace, shared_ptr<FESpace>,  boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](const string & type, shared_ptr<MeshAccess> ma, 
+  bp::class_<FESpace, shared_ptr<FESpace>, boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
+
+
+    .def("__dummy_init__", bp::make_constructor 
+         (FunctionPointer ([](shared_ptr<MeshAccess> ma, const string & type, 
                               bp::dict bpflags, int order, bool is_complex,
                               bp::object dirichlet, bp::object definedon, int dim)
                            {
-                             
                              Flags flags = bp::extract<Flags> (bpflags)();
 
                              if (order > -1) flags.SetFlag ("order", order);
@@ -1395,16 +1372,31 @@ void NGS_DLL_HEADER ExportNgcomp()
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
                              return fes;
-                             }),
-          bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
+                             })
+          ))
+
+    // the raw - constructor
+    .def("__init__", 
+         FunctionPointer ([](bp::object self, const string & type, bp::object bp_ma, 
+                             bp::dict bpflags, int order, bool is_complex,
+                             bp::object dirichlet, bp::object definedon, int dim)
+                          {
+                            shared_ptr<MeshAccess> ma = bp::extract<shared_ptr<MeshAccess>>(bp_ma)();
+                            auto ret = self.attr("__dummy_init__")(ma, type, bpflags, order, is_complex, dirichlet, definedon, dim);
+                            self.attr("__dict__")["mesh"] = bp_ma;
+                            return ret;   
+                           }),
+         bp::default_call_policies(),        // need it to use arguments
+         (bp::arg("type"), bp::arg("mesh"), bp::arg("flags") = bp::dict(), 
            bp::arg("order")=-1, 
            bp::arg("complex")=false, 
            bp::arg("dirichlet")= bp::object(),
            bp::arg("definedon")=bp::object(),
-           bp::arg("dim")=-1 )),
+          bp::arg("dim")=-1 ),
          "allowed types are: 'h1ho', 'l2ho', 'hcurlho', 'hdivho' etc."
          )
+    
+
     
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](bp::list spaces, bp::dict bpflags)->shared_ptr<FESpace>
@@ -1529,24 +1521,72 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
-
+  
   typedef GridFunction GF;
+
+  struct GF_pickle_suite : bp::pickle_suite
+  {
+    static
+    bp::tuple getinitargs(bp::object obj)
+    {
+      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      bp::object space = obj.attr("__dict__")["space"];
+      return bp::make_tuple(space, gf->GetName());
+    }
+
+    static
+    bp::tuple getstate(bp::object obj)
+    {
+      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      bp::object bp_vec(gf->GetVectorPtr());
+      return bp::make_tuple (obj.attr("__dict__"), bp_vec);
+    }
+    
+    static
+    void setstate(bp::object obj, bp::tuple state)
+    {
+      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
+      d.update(state[0]);
+      bp::object bp_vec(gf->GetVectorPtr());
+      gf->GetVector() = *bp::extract<shared_ptr<BaseVector>> (state[1])();
+
+    }
+
+    static bool getstate_manages_dict() { return true; }
+  };
+  
+
+
+  
   bp::class_<GF, shared_ptr<GF>, bp::bases<CoefficientFunction>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
 
-    .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
-                           {
-                             Flags flags;
-                             auto gf = CreateGridFunction (fespace, name, flags);
-                             gf->Update();
-                             return gf;
-                           }),
-          bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("space"), bp::arg("name")="gfu")),
+
+    
+    // raw - constructor
+    .def("__init__",
+         FunctionPointer ([](bp::object self, bp::object bp_fespace, string name)
+                          {
+                            auto fespace = bp::extract<shared_ptr<FESpace>>(bp_fespace)();
+
+                            auto ret = 
+                              bp::make_constructor
+                              (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
+                              {
+                                Flags flags;
+                                auto gf = CreateGridFunction (fespace, name, flags);
+                                gf->Update();
+                                return gf;
+                              }))(self, fespace, name);
+                            
+                            self.attr("__dict__")["space"] = bp_fespace;
+                            return ret;   
+                          }),
+         (bp::arg("space"), bp::arg("name")="gfu"),
          "creates a gridfunction in finite element space"
          )
-
+    .def_pickle(GF_pickle_suite())    
     .def("__str__", &ToString<GF>)
     .add_property("space", &GF::GetFESpace, "the finite element spaces")
 
