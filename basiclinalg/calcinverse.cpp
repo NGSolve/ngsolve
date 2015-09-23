@@ -210,7 +210,7 @@ namespace ngbla
 
 
 #ifndef LAPACK
-  template void CalcInverse (FlatMatrix<Complex> inv);
+  template void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il);
 #endif
 
 
