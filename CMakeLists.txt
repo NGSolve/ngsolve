@@ -428,11 +428,22 @@ message("
 
 
   Building:
+  ")
+if(WIN32)
+message("
+    Open ${CMAKE_BINARY_DIR}/NGSolve.sln and build solution to compile ${PROJECT_NAME}.
 
+    Build \"INSTALL\" to install ${PROJECT_NAME}.
+")
+else(WIN32)
+message("
     Type 'make' to compile ${PROJECT_NAME}.
 
     Type 'make install' to install ${PROJECT_NAME}.
 
+")
+endif(WIN32)
+message("
   Install directory:
 
     ${CMAKE_INSTALL_PREFIX}")
