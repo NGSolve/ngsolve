@@ -109,11 +109,22 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](int index, bp::list vertices)
                            {
-                             Element * tmp = new Element(TET);
-                             for (int i = 0; i < 4; i++)
-                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                             tmp->SetIndex(index);
-                             return tmp;
+                             if (bp::len(vertices) == 4)
+                               {
+                                 Element * tmp = new Element(TET);
+                                 for (int i = 0; i < 4; i++)
+                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                                 tmp->SetIndex(index);
+                                 return tmp;
+                               }
+                             if (bp::len(vertices) == 8)
+                               {
+                                 Element * tmp = new Element(HEX);
+                                 for (int i = 0; i < 8; i++)
+                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                                 tmp->SetIndex(index);
+                                 return tmp;
+                               }
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("index")=1,bp::arg("vertices"))),
@@ -135,11 +146,23 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](int index, bp::list vertices)
                            {
-                             Element2d * tmp = new Element2d(TRIG);
-                             for (int i = 0; i < 3; i++)
-                               (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
-                             tmp->SetIndex(index);
-                             return tmp;
+                             if (bp::len(vertices) == 3)
+                               {
+                                 Element2d * tmp = new Element2d(TRIG);
+                                 for (int i = 0; i < 3; i++)
+                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                                 tmp->SetIndex(index);
+                                 return tmp;
+                               }
+                             else
+                               {
+                                 Element2d * tmp = new Element2d(QUAD);
+                                 for (int i = 0; i < 4; i++)
+                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                                 tmp->SetIndex(index);
+                                 return tmp;
+                               }
+                               
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("index")=1,bp::arg("vertices"))),
