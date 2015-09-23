@@ -44,7 +44,7 @@ if(USE_GUI)
 endif(USE_GUI)
 
 if(USE_PYTHON)
-    add_library(pynglib MODULE netgenpy.cpp)
+    add_library(pynglib SHARED netgenpy.cpp)
     target_link_libraries( pynglib nglib )
     if(APPLE)
         set_target_properties( pynglib PROPERTIES SUFFIX ".so")
