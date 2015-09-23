@@ -591,7 +591,11 @@ namespace ngcomp
 
   void BilinearForm :: ReAssemble (LocalHeap & lh, bool reallocate)
   {
-    if (nonassemble) return;
+    if (nonassemble)
+      {
+        Assemble(lh);
+        return;
+      }
 
     if (low_order_bilinear_form)
       low_order_bilinear_form->ReAssemble(lh);
@@ -2642,7 +2646,6 @@ namespace ngcomp
                        
 		       {
 			 if (!fespace->DefinedOn (ei)) return;
-			 
 			 const FiniteElement & fel = fespace->GetFE (ei, lh);
 			 ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
 			 Array<int> dnums (fel.GetNDof(), lh);
@@ -3149,7 +3152,6 @@ namespace ngcomp
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
             BilinearFormIntegrator & bfi = *this->parts[j];
-            
             if (bfi.SkeletonForm()) continue;
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
@@ -3355,7 +3357,6 @@ namespace ngcomp
         for (int j = 0; j < this->NumIntegrators(); j++)
           {
             BilinearFormIntegrator & bfi = *this->parts[j];
-            
             if (bfi.SkeletonForm()) continue;
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
@@ -3364,7 +3365,6 @@ namespace ngcomp
             
             static Timer elementtimer ("Element matrix application", 2);
             elementtimer.Start();
-            
             
             if (this->precompute)
               // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
