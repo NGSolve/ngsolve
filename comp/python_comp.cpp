@@ -1548,9 +1548,7 @@ void NGS_DLL_HEADER ExportNgcomp()
       auto gf = bp::extract<shared_ptr<GF>>(obj)();
       bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
       d.update(state[0]);
-      bp::object bp_vec(gf->GetVectorPtr());
       gf->GetVector() = *bp::extract<shared_ptr<BaseVector>> (state[1])();
-
     }
 
     static bool getstate_manages_dict() { return true; }
@@ -1588,7 +1586,7 @@ void NGS_DLL_HEADER ExportNgcomp()
          )
     .def_pickle(GF_pickle_suite())    
     .def("__str__", &ToString<GF>)
-    .add_property("space", &GF::GetFESpace, "the finite element spaces")
+    // .add_property("space", &GF::GetFESpace, "the finite element spaces")
 
     .def("Update", FunctionPointer ([](GF & self) { self.Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
