@@ -447,14 +447,12 @@ namespace ngfem
   {
     const IntegrationRule *irx, *iry, *irz;
 
-    // ArrayMem<Vec<D>, 100> x;
-    // ArrayMem<Mat<D,D>, 100> dxdxi;
     ArrayMem<Mat<D,D>, 100> dxdxi_duffy;
     Mat<D,D> dxdxi_permute;
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
-                                      INT<D> order, bool compute_duffy = true); 
+                                      INT<D> order, bool compute_duffy = true, bool compute_points = true); 
 
     // tensor product rule for a facet
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 
@@ -464,7 +462,16 @@ namespace ngfem
     const IntegrationRule & GetIRY() const { return *iry; }
     const IntegrationRule & GetIRZ() const { return *irz; }
 
-    int GetNIP() const { return Size(); }
+    int GetNIP() const
+    {
+      switch (D)
+        {
+        case 1: return irx->GetNIP();
+        case 2: return irx->GetNIP()*iry->GetNIP();
+        case 3: return irx->GetNIP()*iry->GetNIP()*irz->GetNIP();
+        }
+      return 0;
+    }
     double GetWeight (int i) const { return (*this)[i].Weight(); }  // weight[i]; }
     const Vec<D> GetXi(int i) const 
     { 
