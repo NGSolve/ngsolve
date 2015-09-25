@@ -357,6 +357,13 @@ namespace ngstd
         data(new (lh) T[asize])
     { ; }
 
+    INLINE FlatArray(TSIZE asize, LocalHeap & lh)
+      : size(asize),
+        // data(static_cast<T*> (lh.Alloc(asize*sizeof(T))))
+        data (lh.Alloc<T> (asize))
+                    // data(new (lh) T[asize])
+    { ; }
+
     /// the size
     INLINE TSIZE Size() const { return size; }
 
