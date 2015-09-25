@@ -1072,7 +1072,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<1> vorder, bool compute_duffy) 
+                                             INT<1> vorder, bool compute_duffy, bool compute_points) 
   {
     int order = vorder[0];
     irx = &SelectIntegrationRule (ET_SEGM, order);
@@ -1094,7 +1094,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<2> order, bool compute_duffy)
+                                             INT<2> order, bool compute_duffy, bool compute_points)
   {
     int nip = 0;
 
@@ -1175,31 +1175,27 @@ namespace ngfem
           irx = &SelectIntegrationRule (ET_SEGM, order[0]);
           iry = &SelectIntegrationRule (ET_SEGM, order[1]);
 
-          nip = irx->GetNIP() * iry->GetNIP();
-
-	  SetSize(nip);
-          dxdxi_duffy.SetSize(nip);
-
-          /*
-          for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
-            for (int i2 = 0; i2 < iry->GetNIP(); i2++, ii++)
-              {
-		(*this)[ii] = IntegrationPoint ((*irx)[i1](0), (*iry)[i2](0), 0, 
-						(*irx)[i1].Weight()*(*iry)[i2].Weight());
-              }
-          */
-          int ii = 0;
-          for (IntegrationPoint & ipx : *irx)
-            for (IntegrationPoint & ipy : *iry)
-              (*this)[ii++] = IntegrationPoint (ipx(0), ipy(0), 0, ipx.Weight()*ipy.Weight());
-
-          Mat<2> id;
-          id = 0;
-          id(0,0) = id(1,1) = 1;
-        
-          for (int i = 0; i < nip; i++)
-            dxdxi_duffy[i] = id;
-
+          if (compute_points)
+            {
+              nip = irx->GetNIP() * iry->GetNIP();
+              SetSize(nip);
+              
+              int ii = 0;
+              for (IntegrationPoint & ipx : *irx)
+                for (IntegrationPoint & ipy : *iry)
+                  (*this)[ii++] = IntegrationPoint (ipx(0), ipy(0), 0, ipx.Weight()*ipy.Weight());
+            }
+          
+          if (compute_duffy)
+            {
+              Mat<2> id;
+              id = 0;
+              id(0,0) = id(1,1) = 1;
+              
+              dxdxi_duffy.SetSize(nip);
+              for (int i = 0; i < nip; i++)
+                dxdxi_duffy[i] = id;
+            }
           break;
         }
       default:
@@ -1217,7 +1213,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<3> vorder, bool compute_duffy)
+                                             INT<3> vorder, bool compute_duffy, bool compute_points)
   {
     int order = vorder[0];
     int nip = 0;
