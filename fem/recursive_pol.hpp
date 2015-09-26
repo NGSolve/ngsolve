@@ -462,7 +462,7 @@ namespace ngfem
 
 
 
-      S p1 = c * REC::P0(x);
+      S p1(c * REC::P0(x));
       S p2 = c * REC::P1(x);
 
       int i = 0;
