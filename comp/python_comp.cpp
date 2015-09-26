@@ -986,7 +986,8 @@ void NGS_DLL_HEADER ExportNgcomp()
       auto & fes = bp::extract<FESpace const&>(obj)();
       cout << "FESpace::GetInitArgs" << endl;
       bp::object m = obj.attr("__dict__")["mesh"];
-      return bp::make_tuple(fes.type, m, bp::dict(), fes.GetOrder(), fes.IsComplex());
+      bp::object flags = obj.attr("__dict__")["flags"];
+      return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
     }
 
     static
@@ -1378,12 +1379,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     // the raw - constructor
     .def("__init__", 
          FunctionPointer ([](bp::object self, const string & type, bp::object bp_ma, 
-                             bp::dict bpflags, int order, bool is_complex,
+                             bp::dict bp_flags, int order, bool is_complex,
                              bp::object dirichlet, bp::object definedon, int dim)
                           {
                             shared_ptr<MeshAccess> ma = bp::extract<shared_ptr<MeshAccess>>(bp_ma)();
-                            auto ret = self.attr("__dummy_init__")(ma, type, bpflags, order, is_complex, dirichlet, definedon, dim);
+                            auto ret = self.attr("__dummy_init__")(ma, type, bp_flags, order, is_complex, dirichlet, definedon, dim);
                             self.attr("__dict__")["mesh"] = bp_ma;
+                            self.attr("__dict__")["flags"] = bp_flags;
                             return ret;   
                            }),
          bp::default_call_policies(),        // need it to use arguments
