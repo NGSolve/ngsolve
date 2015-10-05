@@ -154,9 +154,15 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		FlatMatrix<double,ColMajor> mat,    // should be col major !!!
+		FlatMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const;
 
+    virtual void
+    CalcMatrix (const FiniteElement & bfel,
+		const BaseMappedIntegrationPoint & bmip,
+		FlatMatrix<Complex,ColMajor> mat, 
+		LocalHeap & lh) const;
+    
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
@@ -238,8 +244,7 @@ namespace ngfem
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
 		FlatMatrix<double,ColMajor> mat, 
-		LocalHeap & lh) const;
-
+		LocalHeap & lh) const;    
 
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -275,7 +280,7 @@ namespace ngfem
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
-
+    
 #ifndef FASTCOMPILE
     virtual void
     Apply (const FiniteElement & bfel,

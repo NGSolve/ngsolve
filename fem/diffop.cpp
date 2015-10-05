@@ -27,6 +27,19 @@ namespace ngfem
   }
 
   void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const BaseMappedIntegrationPoint & mip,
+              FlatMatrix<Complex,ColMajor> mat, 
+              LocalHeap & lh) const 
+  {
+    cerr << "DifferentialOperator::CalcMatrix<complex> called for base class, type = " 
+         << typeid(*this).name()
+         << endl;
+  }
+
+
+
+  void DifferentialOperator ::
   Apply (const FiniteElement & fel,
          const BaseMappedIntegrationPoint & mip,
          FlatVector<double> x, 

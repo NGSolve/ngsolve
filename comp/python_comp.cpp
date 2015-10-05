@@ -449,11 +449,14 @@ bp::object MakeProxyFunction (const FESpace & fes,
 		       FlatMatrix<Complex> elmat,
 		       LocalHeap & lh) const
     {
-      T_CalcElementMatrix<Complex> (fel, trafo, elmat, lh);
+      if (fel.ComplexShapes())
+        T_CalcElementMatrix<Complex,Complex> (fel, trafo, elmat, lh);
+      else
+        T_CalcElementMatrix<Complex,double> (fel, trafo, elmat, lh);
     }
 
       
-    template <typename SCAL>
+    template <typename SCAL, typename SCAL_SHAPES = double>
     void T_CalcElementMatrix (const FiniteElement & fel,
                               const ElementTransformation & trafo, 
                               FlatMatrix<SCAL> elmat,
@@ -462,7 +465,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
     {
       if (element_boundary)
         {
-          T_CalcElementMatrixEB<2,SCAL> (fel, trafo, elmat, lh);
+          T_CalcElementMatrixEB<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
           return;
         }
       IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
@@ -494,9 +497,9 @@ bp::object MakeProxyFunction (const FESpace & fes,
                       proxyvalues(l,k) = mip.GetWeight() * result(0);
                     }
 
-                FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
                 FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
-                FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
                 
                 proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
                 proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
@@ -510,7 +513,7 @@ bp::object MakeProxyFunction (const FESpace & fes,
 
 
 
-    template <int D, typename SCAL>
+    template <int D, typename SCAL, typename SCAL_SHAPES>
     void T_CalcElementMatrixEB (const FiniteElement & fel,
                                 const ElementTransformation & trafo, 
                                 FlatMatrix<SCAL> elmat,
@@ -569,9 +572,9 @@ bp::object MakeProxyFunction (const FESpace & fes,
                           proxyvalues(l,k) = ir_facet[i].Weight() * len * result(0);
                         }
                     
-                    FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
+                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
                     FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
-                    FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
                     
                     proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
                     proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);

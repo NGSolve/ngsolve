@@ -53,6 +53,8 @@ namespace ngfem
       return ElementTopology::GetSpaceDim(ElementType());
     }
 
+    HD virtual bool ComplexShapes() const { return false; }
+
     /// the name of the element family
     virtual string ClassName() const;
 
