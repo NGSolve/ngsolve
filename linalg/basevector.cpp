@@ -334,15 +334,29 @@ namespace ngla
   template<>
   void S_BaseVector<double> :: GetIndirect (const FlatArray<int> & ind, 
 					    const FlatVector<double> & v) const 
-  { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-    FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
-
-    for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
-	sv(i) = lsv(ind[i]);
-      else
-	sv(i) = -1.0;
+  {
+    if (EntrySize() == 1)
+      {
+        FlatVector<double> lsv(Size(), &FVDouble()(0));
+        FlatVector<double> sv = v;
+        
+        for (int i = 0; i < ind.Size(); i++)
+          if (ind[i] != -1)
+            sv(i) = lsv(ind[i]);
+          else
+            sv(i) = 0;
+      }
+    else
+      {
+        FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
+        FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+        
+        for (int i = 0; i < ind.Size(); i++)
+          if (ind[i] != -1)
+            sv(i) = lsv(ind[i]);
+          else
+            sv(i) = -1.0;
+      }
   }
   
   template<>
@@ -492,13 +506,25 @@ namespace ngla
 
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
 				  FlatVector<double> v) 
-  { 
-    FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
-    FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+  {
+    if (EntrySize() == 1)
+      {
+        FlatVector<double> lsv(Size(), &FVDouble()(0));
+        
+        for (int i = 0; i < ind.Size(); i++)
+          if (ind[i] != -1)
+            lsv(ind[i]) += v(i);
 
-    for (int i = 0; i < ind.Size(); i++)
-      if (ind[i] != -1)
-	lsv(ind[i]) += sv(i);
+      }
+    else
+      {
+        FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
+        FlatSysVector<double> sv(ind.Size(), EntrySize(), &v(0));
+        
+        for (int i = 0; i < ind.Size(); i++)
+          if (ind[i] != -1)
+            lsv(ind[i]) += sv(i);
+      }
   }
 
   void BaseVector :: AddIndirect (FlatArray<int> ind, 

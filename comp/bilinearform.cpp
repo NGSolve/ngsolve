@@ -3161,8 +3161,7 @@ namespace ngcomp
             // static Timer elementtimer ("Element matrix application");
             // elementtimer.Start();
 
-            if (this->precompute)  
-              // bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
+            if (this->precompute)
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
             else
