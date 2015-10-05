@@ -48,6 +48,7 @@ namespace netgen
     optyp op;
     bool visited;
     double maxh;
+    int num_surfs;
 
     // static int cntnames;
 

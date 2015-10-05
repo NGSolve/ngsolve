@@ -31,7 +31,8 @@ namespace netgen
     prim = aprim;
     s1 = s2 = NULL;
     maxh = 1e10;
-    name = NULL;   
+    name = NULL;
+    num_surfs = prim->GetNSurfaces();
   }
 
   Solid :: Solid (optyp aop, Solid * as1, Solid * as2)
@@ -42,6 +43,9 @@ namespace netgen
     prim = NULL;
     name = NULL;
     maxh = 1e10;
+    num_surfs = 0;
+    if (s1) num_surfs += s1->num_surfs;
+    if (s2) num_surfs += s2->num_surfs;
   }
 
   Solid :: ~Solid ()
@@ -1231,8 +1235,7 @@ namespace netgen
 
   Solid * Solid :: RecGetReducedSolid (const BoxSphere<3> & box, INSOLID_TYPE & in) const
   {
-
-
+    if (num_surfs <= 2)
     {
       // checking special case for degenerated plane - cylinder, Dec 2014
       int cnt_plane = 0, cnt_cyl = 0;
