@@ -1,15 +1,7 @@
-from ngsolve.fem import *
-from ngsolve.la import *
-from ngsolve.comp import *
-from ngsolve.solve import *
-from ngsolve.utils import *
+from ngsolve import *
+from netgen.geom2d import unit_square
 
-import netgen
-import netgen.geom2d
-
-# mesh = Mesh (netgen.csg.unit_cube.GenerateMesh(maxh=0.2))
-mp = netgen.meshing.MeshingParameters (maxh=0.2)
-mesh = Mesh (netgen.geom2d.unit_square.GenerateMesh(mp))
+mesh = Mesh (unit_square.GenerateMesh(maxh=0.2))
 
 
 V = H1(mesh, order=4, dirichlet=[1,2,3,4])

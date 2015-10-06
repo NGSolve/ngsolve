@@ -1,22 +1,6 @@
-##import sys
-##import os
-##from os import environ
-##sys.path.append(environ['NETGENDIR']+"/../lib")
-
-##from libngspy import *
-
-# being sloppy ....
-# from libngspy.ngstd import *
-# from libngspy.ngbla import *
-# from libngspy.ngfem import *
-# from libngspy.ngcomp import *
-# from libngspy.ngsolve import *
-
-
 from ngsolve import *
 
 pde = PDE("d1_square.pde")
-# SetDefaultPDE (pde)
 mesh = pde.Mesh()
 
 v = pde.spaces["v"]
@@ -32,7 +16,7 @@ for el in v.Elements():
 
 
 
-v2 = FESpace ("h1ho", mesh, order=1, dirichlet=[1])
+v2 = H1(mesh, order=1, dirichlet=[1])
 v2.Update()
 
 for el1,el2 in zip (v.Elements(), v2.Elements()):
