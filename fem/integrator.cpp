@@ -7,8 +7,6 @@
    Finite Element Integrators
 */
 
-#pragma implementation "integrator.hpp"
-
 #include <fem.hpp>
   
 namespace ngfem

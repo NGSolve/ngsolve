@@ -27,40 +27,6 @@ namespace ngcomp
   class Ngs_Element;
 
 
-  enum VorB { VOL, BND };
-  inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
-  inline ostream & operator<< (ostream & ost, VorB vb)
-  {
-    if (vb == VOL) ost << "VOL"; else ost << "BND";
-    return ost;
-  }
-
-  class ElementId
-  {
-    const VorB vb;
-    int nr;
-  public:
-    ElementId (VorB avb, int anr) : vb(avb), nr(anr) { ; }
-    ElementId (int anr) : vb(VOL), nr(anr) { ; }
-    int Nr() const { return nr; }
-    explicit operator int () const { return nr; }
-    explicit operator VorB () const { return vb; }
-    bool IsVolume() const { return vb == VOL; }
-    bool IsBoundary() const { return vb == BND; }
-    // VorB VolumeOrBoundary() const { return vb; }
-    bool operator< (int nr2) { return nr < nr2; }
-    ElementId operator++ (int) { return ElementId(vb,nr++); }
-    ElementId operator++ () { return ElementId(vb,++nr); }
-    ElementId operator*() const { return *this; }
-    bool operator!=(ElementId id2) const { return nr != id2.nr || vb != id2.vb; }
-  };
-
-  inline ostream & operator<< (ostream & ost, ElementId id)
-  {
-    return ost << (id.IsVolume() ? "VEl" : "BEl") << ' ' << id.Nr();
-  }
-
-
   class Ngs_Element : public netgen::Ng_Element, public ElementId
   {
   public:

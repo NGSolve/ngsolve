@@ -77,6 +77,7 @@ namespace ngfem
 #include "hcurl_equations.hpp"
 #include "hdiv_equations.hpp"
 #include "elasticity_equations.hpp"
+#include "symbolicintegrator.hpp"
 
 // #include "pml.hpp" 
 

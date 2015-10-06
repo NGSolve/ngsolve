@@ -9,7 +9,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp python_fem.cpp DGIntegrators.cpp pml.cpp
-        h1hofe_segm.cpp h1hofe_trig.cpp
+        h1hofe_segm.cpp h1hofe_trig.cpp  symbolicintegrator.cpp
         )
 
 if(USE_CUDA)
@@ -38,7 +38,8 @@ install( FILES
         specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp	
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
-        diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp thcurlfe_impl.hpp
+        diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp
+        thcurlfe_impl.hpp symbolicintegrator.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )

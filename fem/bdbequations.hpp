@@ -106,10 +106,9 @@ namespace ngfem
 			    const TVX & x, TVY & y,
 			    LocalHeap & lh) 
     {
-      // typedef typename TVX::TSCAL TSCAL;
-      // Vec<D,TSCAL> hv = mip.GetJacobianInverse() * x;
-
-      auto hv = mip.GetJacobianInverse() * x;
+      typedef typename TVX::TSCAL TSCAL;
+      Vec<D,TSCAL> vx = x;
+      auto hv = mip.GetJacobianInverse() * vx;
       y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
     }
 
