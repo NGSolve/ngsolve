@@ -59,7 +59,9 @@ namespace ngcomp
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
 				const Flags & flags)
     : NGS_Object (afespace->GetMeshAccess(), name), 
-      GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
+      // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
+      GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter),
+                                       shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       fespace(afespace)
   { 
     nested = flags.GetDefineFlag ("nested");
@@ -940,7 +942,7 @@ namespace ngcomp
   { 
     if (diffop) return diffop->Dim();
     if (bfi) return bfi->DimFlux();
-    return gf->GetFESpace()->GetIntegrator()->DimFlux();
+    return gf->GetFESpace()->GetEvaluator()->Dim();
   }
 
   bool GridFunctionCoefficientFunction::IsComplex() const
@@ -1019,7 +1021,8 @@ namespace ngcomp
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
-      fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      // fes->GetIntegrator(boundary) -> CalcFlux (fel, ip, elu, result, false, lh2);
+      fes->GetEvaluator(boundary) -> Apply (fel, ip, elu, result, lh2);
   }
 
   void GridFunctionCoefficientFunction :: 
