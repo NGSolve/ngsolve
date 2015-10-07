@@ -264,59 +264,27 @@ void ExportCoefficientFunction()
 
     // coefficient expressions
     .def ("__add__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, 
-                                [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                );} ))
+          ([] (SPCF c1, SPCF c2) -> SPCF { return c1+c2; } ))
     .def ("__add__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                ); }))
+           {
+             return coef + make_shared<ConstantCoefficientFunction>(val);
+           }))
     .def ("__radd__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a+b; },
-                                [](Complex a, Complex b) { return a+b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                ); }))
+           { return coef + make_shared<ConstantCoefficientFunction>(val); }))
+
     .def ("__sub__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
-           { return BinaryOpCF (c1, c2, 
-                                [](double a, double b) { return a-b; },
-                                [](Complex a, Complex b) { return a-b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                );} ))
+           { return c1-c2; }))
+
     .def ("__sub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a-b; },
-                                [](Complex a, Complex b) { return a-b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                );}))
+           { return coef - make_shared<ConstantCoefficientFunction>(val); }))
+
     .def ("__rsub__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return b-a; },
-                                [](Complex a, Complex b) { return b-a; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 0; ddbdb = 0; }
-                                ); }))
+           { return make_shared<ConstantCoefficientFunction>(val) - coef; }))
 
     .def ("__mul__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF

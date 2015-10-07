@@ -1044,6 +1044,23 @@ public:
     c1->Evaluate (ip, v1);
     return v1(comp);
   }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    Vector<> v1(c1->Dimension());
+    c1->Evaluate (ip, v1);
+    result(0) = v1(comp);
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    Vector<Complex> v1(c1->Dimension());
+    c1->Evaluate (ip, v1);
+    result(0) = v1(comp);
+  }  
+
 };
 
 
@@ -1204,7 +1221,32 @@ public:
 
 
 
+
+  INLINE
+  shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2, 
+                       [](double a, double b) { return a+b; },
+                       [](Complex a, Complex b) { return a+b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       );
+  }
   
+  INLINE
+  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2, 
+                       [](double a, double b) { return a-b; },
+                       [](Complex a, Complex b) { return a-b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       );
+  }
+  
+                                             
 
 
   
