@@ -255,7 +255,7 @@ void ExportCoefficientFunction()
 	  }))
     .add_property("dim", &CoefficientFunction::Dimension)    
     
-    .def("__getitem__", FunctionPointer( [](SPCF & self, int comp) -> SPCF
+    .def("__getitem__", FunctionPointer( [](SPCF self, int comp) -> SPCF
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
                                              bp::exec("raise IndexError()\n");
@@ -537,7 +537,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     ;
     
   bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>
-      ("FiniteElement", "any finite element", bp::no_init)
+    ("FiniteElement", "any finite element", bp::no_init)
     .add_property("ndof", &FiniteElement::GetNDof, "number of degrees of freedom of element")    
     .add_property("order", &FiniteElement::Order, "maximal polynomial order of element")    
     .add_property("type", &FiniteElement::ElementType, "geometric type of element")    
