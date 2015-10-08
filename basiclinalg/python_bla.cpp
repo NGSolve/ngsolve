@@ -2,7 +2,6 @@
 #include "../ngstd/python_ngstd.hpp"
 #include <boost/python/slice.hpp>
 #include <bla.hpp>
-#include <numpy/arrayobject.h>
 
 using namespace ngbla;
 
@@ -25,6 +24,100 @@ static void Init( const bp::slice &inds, int len, int &start, int &step, int &n 
 
 }
 
+template <typename T> char * getPythonFormatString();
+template <> char * getPythonFormatString<float>() { static char f[2]="f"; return f; }
+template <> char * getPythonFormatString<double>() { static char f[2]="d"; return f; }
+template <> char * getPythonFormatString<Complex>() { static char f[2]="D"; return f; }
+
+
+template <typename T, int DIM>
+struct PyBufferProtocol : public boost::python::def_visitor<PyBufferProtocol<T, DIM> > {
+    typedef typename T::TSCAL TSCAL;
+
+    template <class Tclass>
+    void visit(Tclass& c) const {
+        c.def("NumPy", FunctionPointer
+            ([] (bp::object & self)
+              {
+                try {
+                  T& fv = bp::extract<T&>(self);
+                  auto numpy = bp::import("numpy");
+                  auto frombuffer = numpy.attr("frombuffer");
+                  if (DIM==1)
+                    return frombuffer(self);
+                  if (DIM==2)
+                    return frombuffer(self).attr("reshape")(fv.Width(),fv.Height());
+                } catch (bp::error_already_set const &) {
+                  PyErr_Print();
+                }
+                return bp::object();
+              } ) );
+
+        // update exported type so it implements the buffer protocol
+        const bp::converter::registration& fb_reg(bp::converter::registry::lookup(bp::type_id<T>()));
+        PyTypeObject* fb_type = fb_reg.get_class_object();
+
+        // buffer protocol
+        static PyBufferProcs buffer_functions = {
+            PyBufferProtocol<T, DIM>::getbuffer,/* bf_getbuffer */
+            PyBufferProtocol<T, DIM>::releasebuffer/* bf_releasebuffer */
+        };
+
+        // register buffer protocol functions in PyType object
+        fb_type->tp_as_buffer = &buffer_functions;
+    }
+
+    static int getbuffer(PyObject *exporter, Py_buffer *view, int flags) {
+        boost::python::extract<T&> b(exporter);
+
+        if (!b.check()) {
+            PyErr_SetString(PyExc_BufferError, "Invalid exporter instance");
+            view->obj = NULL;
+            return -1;
+        }
+
+        T& array = b();
+
+        if (view == NULL)
+          return 0;
+
+        view->obj = exporter;
+        Py_INCREF(view->obj);
+        view->buf = &array(0);
+        view->len = sizeof(TSCAL) * array.Width() * array.Height();
+        view->readonly = PyBUF_WRITABLE;
+        view->itemsize = sizeof(TSCAL);
+        view->format = getPythonFormatString<TSCAL>();
+        view->ndim = DIM;
+        static_assert(DIM==1 || DIM==2, "invalid dimension for buffer protocol export!");
+        view->shape = NULL;
+        if(DIM==2)
+          {
+            view->shape = new Py_ssize_t[2];
+            view->shape[0] = array.Width();
+            view->shape[1] = array.Height();
+          }
+        view->strides = NULL;
+        view->suboffsets = NULL;
+        view->internal = NULL;
+        return 0;
+    }
+
+    static void releasebuffer(PyObject *exporter, Py_buffer *view) {
+        boost::python::extract<T&> b(exporter);
+
+        if (!b.check()) {
+            PyErr_SetString(PyExc_BufferError, "Invalid buffer exporter instance");
+            return;
+        }
+
+        if (view->shape)
+          {
+            delete view->shape;
+            view->shape = NULL;
+          }
+    }
+};
 
 template <typename T, typename TNEW = T>
 struct PyVecAccess : public boost::python::def_visitor<PyVecAccess<T, TNEW> > {
@@ -302,6 +395,7 @@ auto ExportVector( const char * name ) -> bp::class_<TVEC>
   {
     return bp::class_<TVEC >(name, bp::no_init )
         .def(PyDefVector<TVEC, TSCAL>())
+        .def(PyBufferProtocol<TVEC, 1>())
         .def(PyVecAccess< TVEC, TNEW >())
         .def(PyDefToString<TVEC >())
         .def(bp::self+=bp::self)
@@ -322,7 +416,6 @@ void NGS_DLL_HEADER ExportNgbla() {
     parent.attr("bla") = module ;
 
     bp::scope ngbla_scope(module);
-    _import_array();
     ///////////////////////////////////////////////////////////////////////////////////////
     // Vector types
     typedef FlatVector<double> FVD;
@@ -335,21 +428,6 @@ void NGS_DLL_HEADER ExportNgbla() {
     ExportVector< FVD, VD, double>("FlatVectorD")
         .def(bp::init<int, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(int,int) const> (&FVD::Range ) )
-      .def("NumPy", FunctionPointer
-           ([] (bp::object & self)
-            {
-              bp::incref(self.ptr());
-              FVD* fv = bp::extract<FVD*>(self);
-              npy_intp dims[] = { fv->Size() };
-              PyObject* ob = PyArray_SimpleNewFromData (1, dims, NPY_DOUBLE, &(*fv)(0));
-              PyArrayObject* aob = (PyArrayObject *) ob;
-#if NPY_API_VERSION >= 0x00000007
-              PyArray_SetBaseObject(aob,self.ptr());  // requires numpy 1.7
-#else
-              PyArray_BASE(aob) = self.ptr();
-#endif
-              return ob;
-            }))
       ;
     ExportVector< FVC, VC, Complex>("FlatVectorC")
         .def(bp::self*=double())
@@ -401,24 +479,7 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
-      .def("NumPy", FunctionPointer
-           ([] (bp::object & self)
-            {
-              bp::incref(self.ptr());
-              FMD* fm = bp::extract<FMD*>(self);
-              npy_intp dims[] = { fm->Height(), fm->Width() };
-              PyObject * ob = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, &(*fm)(0,0));
-              PyArrayObject* aob = (PyArrayObject *) ob;
-              // PyArray_SetBaseObject(aob,self.ptr());  // requires numpy xxx
-              
-#if NPY_API_VERSION >= 0x00000007
-              PyArray_SetBaseObject(aob,self.ptr());  // requires numpy 1.7
-#else
-              PyArray_BASE(aob) = self.ptr();
-#endif
-              return ob;
-            }))
-      
+        .def(PyBufferProtocol<FMD, 2>())
         ;
 
 
@@ -429,6 +490,7 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self+=bp::self)
         .def(bp::self-=bp::self)
         .def(bp::self*=Complex())
+        .def(PyBufferProtocol<FMC, 2>())
         .add_property("diag",
                 FunctionPointer( [](FMC &self) { return Vector<Complex>(self.Diag()); }),
                 FunctionPointer( [](FMC &self, const FVC &v) { self.Diag() = v; }))

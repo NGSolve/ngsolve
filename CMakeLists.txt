@@ -257,12 +257,9 @@ if (USE_PYTHON)
         message(FATAL_ERROR "Could NOT find Boost-Python" )
     endif(NOT Boost_LIBRARIES)
 
-    find_package(Numpy REQUIRED)
-
     add_definitions(-DNGS_PYTHON)
     include_directories(${PYTHON_INCLUDE_DIRS})
     include_directories(${Boost_INCLUDE_DIRS})
-    include_directories(${NUMPY_INCLUDE_DIR})
     set(PYTHON_LIBS "${PYTHON_LIBRARIES};${Boost_LIBRARIES}")
     execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))" OUTPUT_VARIABLE PYTHON_PACKAGES_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 #     message("python install path: ${PYTHON_PACKAGES_INSTALL_DIR}")
