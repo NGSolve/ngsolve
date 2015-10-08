@@ -13,7 +13,7 @@ intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp   \
 scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp	      \
 hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp   \
 facethofe.cpp python_fem.cpp fem_kernels.cu  DGIntegrators.cpp pml.cpp \
-h1hofe_segm.cpp h1hofe_trig.cpp
+h1hofe_segm.cpp h1hofe_trig.cpp symbolicintegrator.cpp
 # 
 #  
 
