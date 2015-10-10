@@ -46,7 +46,11 @@ if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth t
     }
 
     bind .ndraw <B3-Motion> {
-	Ng_MouseMove $oldmousex $oldmousey %x %y zoom
+        if { $tcl_platform(os) == "Darwin" } {
+            Ng_MouseMove $oldmousex $oldmousey %x %y move
+        } { 
+            Ng_MouseMove $oldmousex $oldmousey %x %y zoom
+        }
 	.ndraw render
 	set oldmousex %x; set oldmousey %y;
     }
