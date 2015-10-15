@@ -33,14 +33,18 @@ DLL_HEADER void ExportGeom2d()
            })))
     
 	.def("Load",&SplineGeometry2d::Load)
-	.def("AppendPoint", FunctionPointer([](SplineGeometry2d &self, double px, double py)
-	  {
-		  Point<2> p;
-		  p(0) = px;
-		  p(1) = py;
-		  self.geompoints.Append(GeomPoint<2>(p,1));
-		  return self.geompoints.Size()-1;
-	  }))
+    .def("AppendPoint", FunctionPointer
+         ([](SplineGeometry2d &self, double px, double py, double maxh)
+          {
+            Point<2> p;
+            p(0) = px;
+            p(1) = py;
+            GeomPoint<2> gp(p);
+            gp.hmax = maxh;
+            self.geompoints.Append(gp);
+            return self.geompoints.Size()-1;
+	  }),
+         (bp::arg("self"), bp::arg("x"), bp::arg("y"), bp::arg("maxh") = 1e99))
     .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain, int bc)
 	  {
 		  bp::extract<std::string> segtype(segment[0]);
@@ -227,6 +231,7 @@ DLL_HEADER void ExportGeom2d()
 		{
 		  shared_ptr<Mesh> mesh = make_shared<Mesh> ();
                   mesh->SetGeometry(self);
+                  SetGlobalMesh (mesh);
                   ng_geometry = self;
 		  self->GenerateMesh(mesh, mparam, 0, 0);
 		  return mesh;

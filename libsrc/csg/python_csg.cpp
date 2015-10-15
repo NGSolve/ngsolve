@@ -455,6 +455,7 @@ DLL_HEADER void ExportCSG()
           ([](shared_ptr<CSGeometry> geo, MeshingParameters & param)
            {
              auto dummy = make_shared<Mesh>();
+             SetGlobalMesh (dummy);
              dummy->SetGeometry(geo);
 	     ng_geometry = geo;
              geo->FindIdenticSurfaces(1e-8 * geo->MaxSize()); 
