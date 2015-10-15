@@ -7,6 +7,8 @@
 ##    # Windows
 ##    from ngslib.ngstd import *
 
-from ngslib.ngstd import *
+# from ngslib.ngstd import *
+import ngslib
+from ngsolve.ngstd import *
 
 __all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager']

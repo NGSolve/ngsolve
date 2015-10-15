@@ -26,7 +26,9 @@ from . import ngstd
 ##    # Windows
 ##    from ngslib.bla import *
 
-from ngslib.bla import *
+# from ngslib.bla import *
+import ngslib
+from ngsolve.bla import *
 
 __all__ = ['Matrix', 'Vector', 'InnerProduct']
 
