@@ -361,7 +361,6 @@ add_custom_target(performance_tests ctest -L performance -D Experimental)
 #######################################################################
 # Debian packager
 set(CPACK_PACKAGE_VERSION ${PACKAGE_VERSION} )
-set(CPACK_PACKAGING_INSTALL_PREFIX "${INSTALL_DIR}")
 set(CPACK_PACKAGE_NAME ngsolve)
 
 set(CPACK_SOURCE_GENERATOR "TGZ")
@@ -370,6 +369,7 @@ set(CPACK_SOURCE_IGNORE_FILES "/cmake/;/build/;/.gz/;~$;${CPACK_SOURCE_IGNORE_FI
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "NGSolve Finite Element Library")
 set(CPACK_PACKAGE_DESCRIPTION "NGSolve is a general purpose Finite Element Library on top of Netgen. With the basic library one can solve heat flow equations, Maxwell equations, and solid mechanical problems. Several add-ons are available for particular application classes.") 
 if(UNIX)
+    set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/netgen")
     set(CPACK_GENERATOR "DEB")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>)
