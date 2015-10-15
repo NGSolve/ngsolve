@@ -110,8 +110,20 @@ namespace ngfem
   {
     if (element_boundary)
       {
-        T_CalcElementMatrixEB<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
-        return;
+        switch (trafo.SpaceDim())
+          {
+          case 1:
+            T_CalcElementMatrixEB<1,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            return;
+          case 2:
+            T_CalcElementMatrixEB<2,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            return;
+          case 3:
+            T_CalcElementMatrixEB<3,SCAL, SCAL_SHAPES> (fel, trafo, elmat, lh);
+            return;
+          default:
+            throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
+          }
       }
 
     IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
