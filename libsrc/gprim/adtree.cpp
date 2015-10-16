@@ -451,7 +451,7 @@ namespace netgen
   void ADTree3 :: PrintRec (ostream & ost, const ADTreeNode3 * node) const
   {
   
-    if (node->data)
+    // if (node->data)  // true anyway
       {
 	ost << node->pi << ": ";
 	ost << node->nchilds << " childs, ";
@@ -1751,8 +1751,8 @@ namespace netgen
 
   void ADTree6 :: PrintRec (ostream & ost, const ADTreeNode6 * node) const
   {
-  
-    if (node->data)
+    
+    // if (node->data)     // true anyway
       {
 	ost << node->pi << ": ";
 	ost << node->nchilds << " childs, ";
