@@ -192,7 +192,7 @@ namespace ngfem
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
         
-          Vec<2> normal_ref = normals[k];
+          Vec<D> normal_ref = normals[k];
         
           IntegrationRule ir_facet(etfacet, 2*fel.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
