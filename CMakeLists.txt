@@ -134,7 +134,7 @@ if(WIN32)
     else()
         # MS Visual Compiler
         add_definitions(-DCPP11_THREADS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /wd4067 /wd4081 /wd4018 /wd4373 /wd4592 /wd4275 /wd4522 /wd4910 /wd4244 /wd4800 /bigobj")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /w /bigobj")
     endif()
 
 else(WIN32)
