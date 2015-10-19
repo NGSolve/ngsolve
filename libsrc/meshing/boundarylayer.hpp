@@ -3,7 +3,7 @@
 
 
 ///
-extern void InsertVirtualBoundaryLayer (Mesh & mesh);
+DLL_HEADER extern void InsertVirtualBoundaryLayer (Mesh & mesh);
 
 /// Create a typical prismatic boundary layer on the given 
 /// surfaces
@@ -23,7 +23,7 @@ public:
   bool optimize = true;
 };
 
-extern void GenerateBoundaryLayer (Mesh & mesh, BoundaryLayerParameters & blp);
+DLL_HEADER extern void GenerateBoundaryLayer (Mesh & mesh, BoundaryLayerParameters & blp);
 
 
 #endif

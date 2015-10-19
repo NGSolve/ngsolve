@@ -159,12 +159,12 @@ namespace netgen
     // weak_ptr<Mesh> wp_mesh;
 
   public:
-    VisualSceneMesh ();
-    virtual ~VisualSceneMesh ();
+    DLL_HEADER VisualSceneMesh ();
+	DLL_HEADER virtual ~VisualSceneMesh ();
 
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
-    virtual void MouseDblClick (int px, int py);
+	DLL_HEADER virtual void BuildScene (int zoomall = 0);
+	DLL_HEADER virtual void DrawScene ();
+	DLL_HEADER virtual void MouseDblClick (int px, int py);
 
     // void SetMesh (shared_ptr<Mesh> mesh) { wp_mesh = mesh; }
     // shared_ptr<Mesh> GetMesh () { return shared_ptr<Mesh>(wp_mesh); }
@@ -174,16 +174,16 @@ namespace netgen
     { user_me_handler = handler; }
 
 
-    int SelectedFace () const
+	DLL_HEADER int SelectedFace () const
     { return selface; }
-    void SetSelectedFace (int asf);
+	DLL_HEADER void SetSelectedFace (int asf);
     //    { selface = asf; selecttimestamp = GetTimeStamp(); }
 
-    int SelectedEdge () const
+	DLL_HEADER int SelectedEdge () const
     { return seledge; }
-    int SelectedElement () const
+	DLL_HEADER int SelectedElement () const
     { return selelement; }
-    int SelectedPoint () const
+	DLL_HEADER int SelectedPoint () const
     { return selpoint; }
     void BuildFilledList (bool names);
     // private:
@@ -201,10 +201,10 @@ namespace netgen
     void BuildDomainSurfList();
   };
 
-  extern VisualSceneMesh vsmesh;
+  DLL_HEADER extern VisualSceneMesh vsmesh;
   
 
-  class VisualSceneSpecPoints : public VisualScene
+  class DLL_HEADER VisualSceneSpecPoints : public VisualScene
   {
   public:
     VisualSceneSpecPoints ();

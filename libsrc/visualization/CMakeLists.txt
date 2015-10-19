@@ -4,7 +4,7 @@ install(FILES soldata.hpp DESTINATION include COMPONENT netgen_devel )
 # AM_CPPFLAGS =  $(MPI_INCLUDES) -I$(top_srcdir)/libsrc/include  -DOPENGL -D$(TOGL_WINDOWINGSYSTEM) $(OCCFLAGS) $(TCL_INCLUDES)
 
 if(USE_GUI)
-    set( LIB_VISUAL_SOURCES meshdoc.cpp mvdraw.cpp vsfieldlines.cpp vsmesh.cpp vssolution.cpp importsolution.cpp visualpkg.cpp )
+    set( LIB_VISUAL_SOURCES meshdoc.cpp mvdraw.cpp vsfieldlines.cpp vsmesh.cpp vssolution.cpp importsolution.cpp )
 else(USE_GUI)
     set( LIB_VISUAL_SOURCES visual_dummy.cpp )
 endif(USE_GUI)

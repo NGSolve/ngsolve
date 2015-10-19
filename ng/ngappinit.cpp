@@ -33,7 +33,7 @@ namespace netgen
 namespace netgen
 {
 #include "../libsrc/interface/writeuser.hpp"
-  extern string ngdir;
+  //extern string ngdir;
   Flags parameters;
 }
  
@@ -69,11 +69,7 @@ bool shellmode = false;
  *
  */
 
-#ifdef WIN32
-int DLL_HEADER NG_main(int argc, char ** argv)
-#else
 int main(int argc, char ** argv)
-#endif
 {
 
 #ifdef PARALLEL

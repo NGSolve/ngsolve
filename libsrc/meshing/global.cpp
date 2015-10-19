@@ -17,8 +17,8 @@ namespace netgen
   ostream * myerr = &cerr;
 
   // some functions (visualization) still need a global mesh 
-  shared_ptr<Mesh> mesh;
-  shared_ptr<NetgenGeometry> ng_geometry;
+  DLL_HEADER shared_ptr<Mesh> mesh;
+  DLL_HEADER shared_ptr<NetgenGeometry> ng_geometry;
 
   weak_ptr<Mesh> global_mesh;
 

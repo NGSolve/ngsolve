@@ -18,7 +18,7 @@ namespace netgen
 
   extern shared_ptr<Mesh> mesh;
 
-void ImportSolution (const char * filename)
+DLL_HEADER void ImportSolution2 (const char * filename)
 {
   ifstream inf (filename);
   char buf[100], name[1000];

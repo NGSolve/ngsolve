@@ -334,9 +334,9 @@ public:
   STL_GEOM_STATUS GetStatus () const { return status; }
   const string & GetStatusText () const { return statustext; }
 
-  void InvertTrig (int trig);
-  void DeleteTrig (int trig);
-  void OrientAfterTrig (int trig);
+  DLL_HEADER void InvertTrig (int trig);
+  DLL_HEADER void DeleteTrig (int trig);
+  DLL_HEADER void OrientAfterTrig (int trig);
 
 
   // Table will be constructed, if topology is not ok

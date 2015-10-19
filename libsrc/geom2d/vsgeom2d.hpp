@@ -10,7 +10,7 @@
 namespace netgen
 {
 
-  class VisualSceneGeometry2d : public VisualScene
+  class DLL_HEADER VisualSceneGeometry2d : public VisualScene
   {
     const class SplineGeometry2d * geometry2d;
   public:

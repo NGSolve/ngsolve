@@ -107,7 +107,7 @@ namespace netgen
   int Ng_CreatePrimitive (ClientData clientData,
 			  Tcl_Interp * interp,
 			  int argc, tcl_const char *argv[])
-  {
+  {/*
     CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
     if (!geometry)
       {
@@ -134,7 +134,7 @@ namespace netgen
       }
 
     geometry->SetSolid (name, nsol);
-
+	*/
     return TCL_OK;
   }
 
@@ -180,7 +180,7 @@ namespace netgen
   int Ng_SetSolidData (ClientData clientData,
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
-  {
+  {/*
     CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
     if (!geometry)
       {
@@ -199,7 +199,7 @@ namespace netgen
 
     Solid * nsol = Solid::CreateSolid (vst, geometry->GetSolids());
     geometry->SetSolid (name, nsol);
-
+	*/
     return TCL_OK;
   }
 
@@ -245,7 +245,7 @@ namespace netgen
   int Ng_GetSolidData (ClientData clientData,
 		       Tcl_Interp * interp,
 		       int argc, tcl_const char *argv[])
-  {
+  {/*
     CSGeometry * geometry = dynamic_cast<CSGeometry*> (ng_geometry.get());
     if (!geometry)
       {
@@ -264,7 +264,7 @@ namespace netgen
     cout << "GetSolidData, name = " << name << ", data = " << vst.str() << endl;
 
     Tcl_SetVar  (interp, valuevar, (char*)vst.str().c_str(), 0);
-
+	*/
     return TCL_OK;
   }
 

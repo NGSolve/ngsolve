@@ -35,8 +35,8 @@ class CurvedElements
   bool ishighorder;
 
 public:
-  CurvedElements (const Mesh & amesh);
-  ~CurvedElements();
+  DLL_HEADER CurvedElements (const Mesh & amesh);
+  DLL_HEADER ~CurvedElements();
 
   // bool IsHighOrder() const { return order > 1; }
   bool IsHighOrder() const { return ishighorder; }
@@ -44,7 +44,7 @@ public:
   // void SetHighOrder (int aorder) { order=aorder; }
   void SetIsHighOrder (bool ho) { ishighorder = ho; }
   
-  void BuildCurvedElements(const Refinement * ref, int aorder, bool arational = false);
+  DLL_HEADER void BuildCurvedElements(const Refinement * ref, int aorder, bool arational = false);
 
   int GetOrder () { return order; }
 

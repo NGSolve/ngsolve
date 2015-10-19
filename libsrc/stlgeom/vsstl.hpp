@@ -16,12 +16,12 @@ namespace netgen
     class STLGeometry * stlgeometry;
 
   public:
-    VisualSceneSTLGeometry ();
-    virtual ~VisualSceneSTLGeometry ();
-    void SetGeometry (class STLGeometry * astlgeometry) { stlgeometry = astlgeometry; }
+    DLL_HEADER VisualSceneSTLGeometry ();
+	DLL_HEADER virtual ~VisualSceneSTLGeometry ();
+	DLL_HEADER void SetGeometry (class STLGeometry * astlgeometry) { stlgeometry = astlgeometry; }
 
-    virtual void BuildScene (int zoomall = 0);
-    virtual void DrawScene ();
+	DLL_HEADER virtual void BuildScene (int zoomall = 0);
+	DLL_HEADER virtual void DrawScene ();
   };
 
 
@@ -32,8 +32,8 @@ namespace netgen
     class STLGeometry * stlgeometry;
 
   public:
-    VisualSceneSTLMeshing ();
-    virtual ~VisualSceneSTLMeshing ();
+    DLL_HEADER VisualSceneSTLMeshing ();
+	DLL_HEADER virtual ~VisualSceneSTLMeshing ();
 
     void SetGeometry (class STLGeometry * astlgeometry) { stlgeometry = astlgeometry; }
 

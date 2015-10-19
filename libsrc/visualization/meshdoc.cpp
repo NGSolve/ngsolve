@@ -16,50 +16,8 @@ namespace netgen
 
 
 MeshDoctorParameters meshdoctor;
-VisualSceneMeshDoctor vsmeshdoc;
 
-extern shared_ptr<Mesh> mesh;
-
-  int Ng_MeshDoctor (ClientData clientData,
-		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[])
-{
-  cout << "Mesh Doctor:" << endl;
-  int i;
-  for (i = 0; i < argc; i++)
-    cout << argv[i] << " ";
-  cout << endl;
-
-  meshdoctor.active = 
-      atoi (Tcl_GetVar (interp, "::meshdoctor.active", 0)); 
-
-
-  if (argc >= 2)
-    {
-      if (strcmp (argv[1], "markedgedist") == 0)
-	{
-	  vsmeshdoc.SetMarkEdgeDist (atoi (argv[2]));
-	}
-
-      if (strcmp (argv[1], "deletemarkedsegments") == 0)
-	{
-	  for (i = 1; i <= mesh->GetNSeg(); i++)
-	    if (vsmeshdoc.IsSegmentMarked (i))
-	      mesh->DeleteSegment (i);
-
-	  //	  for (i = 1; i <= mesh->GetNSE(); i++)
-	  //	    mesh->SurfaceElement(i).SetIndex (1);
-	  mesh->Compress();
-	}
-    }
-
-
-  vsmeshdoc.UpdateTables ();
-  vsmeshdoc.BuildScene();
-  return TCL_OK;
-}
-
-
+DLL_HEADER extern shared_ptr<Mesh> mesh;
 
 
 

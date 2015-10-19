@@ -15,7 +15,7 @@ namespace netgen
    Base class for the generic SYMBOLTABLE.
    An array of identifiers is maintained.
 */
-class BASE_SYMBOLTABLE
+class DLL_HEADER BASE_SYMBOLTABLE
 {
 protected:
   /// identifiers

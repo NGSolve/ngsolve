@@ -1244,23 +1244,3 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 void Ng_InitSolutionData (Ng_SolutionData * soldata) { ; }
 */
 
-
-
-
-#ifdef WIN32
-#ifdef NG_PYTHON
-#include <boost/python.hpp>
-void ExportNetgenMeshing();
-void ExportMeshVis();
-void ExportCSG();
-void ExportCSGVis();
-void ExportGeom2d();
-BOOST_PYTHON_MODULE(nglib) {
-    ExportCSG();
-    ExportCSGVis();
-    ExportNetgenMeshing();
-    ExportMeshVis();
-	ExportGeom2d();
-}
-#endif
-#endif

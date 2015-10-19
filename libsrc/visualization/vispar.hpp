@@ -120,7 +120,7 @@ public:
 public:
   VisualizationParameters();
 };
-extern VisualizationParameters vispar;
+DLL_HEADER extern VisualizationParameters vispar;
 }
 
 #endif

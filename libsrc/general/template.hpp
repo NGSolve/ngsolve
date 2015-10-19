@@ -26,10 +26,10 @@ namespace netgen
 DLL_HEADER extern ostream * testout;
 
 /** use instead of cout */
-extern ostream * mycout;
+DLL_HEADER extern ostream * mycout;
 
 /** error output stream */
-extern ostream * myerr;
+DLL_HEADER extern ostream * myerr;
 
 /** Error messages display.
   Error messages are displayed by this function */
@@ -38,7 +38,7 @@ DLL_HEADER extern void MyError (const char * ch);
 
 /** Rings the bell.
   Produces nr beeps. */
-extern void MyBeep (int nr = 1);
+DLL_HEADER extern void MyBeep (int nr = 1);
 
 
 template <class T>

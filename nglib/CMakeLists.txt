@@ -1,31 +1,25 @@
-# dist_pkgdata_DATA = cube.surf
-
 add_definitions(-DNGLIB_EXPORTS)
-# ADD_LIBRARY(nglib SHARED nglib.cpp)
-# TARGET_LINK_LIBRARIES( nglib interface geom2d csg stl occ mesh ${OCC_LIBRARIES} ${MPI_CXX_LIBRARIES} )
-set(nglib_sources nglib.cpp)
 
 if(WIN32)
     set(nglib_objects 
-        $<TARGET_OBJECTS:interface>
-        $<TARGET_OBJECTS:geom2d>
-        $<TARGET_OBJECTS:csg>
-        $<TARGET_OBJECTS:stl>
-        $<TARGET_OBJECTS:occ>
-        $<TARGET_OBJECTS:mesh>
-        $<TARGET_OBJECTS:gen>
-        $<TARGET_OBJECTS:la>
-        $<TARGET_OBJECTS:gprim>
+          $<TARGET_OBJECTS:mesh>
+          $<TARGET_OBJECTS:stlvis>
+          $<TARGET_OBJECTS:stl>
+          $<TARGET_OBJECTS:geom2dvis>
+          $<TARGET_OBJECTS:interface>
+          $<TARGET_OBJECTS:geom2d>
+          $<TARGET_OBJECTS:csg>
+          $<TARGET_OBJECTS:stl>
+          $<TARGET_OBJECTS:gen>
+          $<TARGET_OBJECTS:la>
+          $<TARGET_OBJECTS:gprim>
 
-        $<TARGET_OBJECTS:visual>
-        $<TARGET_OBJECTS:csgvis>
-#         $<TARGET_OBJECTS:geom2dvis>
-#         $<TARGET_OBJECTS:occvis>
-#         $<TARGET_OBJECTS:stlvis>
+          $<TARGET_OBJECTS:visual>
+          $<TARGET_OBJECTS:csgvis>
        )
 endif(WIN32)
 
-add_library(nglib SHARED ${nglib_sources} ${nglib_objects})
+add_library(nglib SHARED nglib.cpp ${nglib_objects})
 
 target_link_libraries( nglib ${LIBPTHREAD} ${OCC_LIBRARIES} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} )
 

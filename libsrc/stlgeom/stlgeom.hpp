@@ -188,19 +188,19 @@ namespace netgen
     virtual void Save (string filename) const;
 
 
-    void STLInfo(double* data);
+	DLL_HEADER void STLInfo(double* data);
     //stldoctor:
-    void SmoothNormals();
-    void MarkNonSmoothNormals();
+	DLL_HEADER void SmoothNormals();
+	DLL_HEADER void MarkNonSmoothNormals();
 
-    void CalcEdgeData();
-    void CalcEdgeDataAngles();
+	DLL_HEADER void CalcEdgeData();
+	DLL_HEADER void CalcEdgeDataAngles();
 
     const STLEdgeDataList& EdgeDataList() const {return *edgedata;}
 
-    void UndoEdgeChange();
-    void StoreEdgeData();
-    void RestoreEdgeData();
+	DLL_HEADER void UndoEdgeChange();
+	DLL_HEADER void StoreEdgeData();
+	DLL_HEADER void RestoreEdgeData();
 
     //void ClearSelectedMultiEdge() {selectedmultiedge.SetSize(0);}
     //void AddSelectedMultiEdge(twoint ep) {selectedmultiedge.Append(ep);}
@@ -211,64 +211,64 @@ namespace netgen
     void BuildSelectedEdge(twoint ep);
     void BuildSelectedCluster(twoint ep);
 
-    void ImportEdges();
-    void AddEdges(const Array<Point<3> >& eps);
-    void ExportEdges();
-    void LoadEdgeData(const char* file);
-    void SaveEdgeData(const char* file);
+	DLL_HEADER void ImportEdges();
+	DLL_HEADER void AddEdges(const Array<Point<3> >& eps);
+	DLL_HEADER void ExportEdges();
+	DLL_HEADER void LoadEdgeData(const char* file);
+	DLL_HEADER void SaveEdgeData(const char* file);
     //  void SetEdgeAtSelected(int mode);
   
 
-    void STLDoctorConfirmEdge();
-    void STLDoctorCandidateEdge();
-    void STLDoctorExcludeEdge();
-    void STLDoctorUndefinedEdge();
+	DLL_HEADER void STLDoctorConfirmEdge();
+	DLL_HEADER void STLDoctorCandidateEdge();
+	DLL_HEADER void STLDoctorExcludeEdge();
+	DLL_HEADER void STLDoctorUndefinedEdge();
 
-    void STLDoctorSetAllUndefinedEdges();
-    void STLDoctorEraseCandidateEdges();
-    void STLDoctorConfirmCandidateEdges();
-    void STLDoctorConfirmedToCandidateEdges();
+	DLL_HEADER void STLDoctorSetAllUndefinedEdges();
+	DLL_HEADER void STLDoctorEraseCandidateEdges();
+	DLL_HEADER void STLDoctorConfirmCandidateEdges();
+	DLL_HEADER void STLDoctorConfirmedToCandidateEdges();
 
-    void STLDoctorDirtyEdgesToCandidates();
-    void STLDoctorLongLinesToCandidates();
+	DLL_HEADER void STLDoctorDirtyEdgesToCandidates();
+	DLL_HEADER void STLDoctorLongLinesToCandidates();
 
-    void UndoExternalEdges();
-    void StoreExternalEdges();
-    void RestoreExternalEdges();
+	DLL_HEADER void UndoExternalEdges();
+	DLL_HEADER void StoreExternalEdges();
+	DLL_HEADER void RestoreExternalEdges();
 
-    void ImportExternalEdges(const char * filename);  // Flame edges, JS
+	DLL_HEADER void ImportExternalEdges(const char * filename);  // Flame edges, JS
     //  void LoadExternalEdges();
 
-    void BuildExternalEdgesFromEdges();
-    void SaveExternalEdges();
-    void AddExternalEdgeAtSelected();
-    void AddClosedLinesToExternalEdges();
-    void AddLongLinesToExternalEdges();
-    void AddAllNotSingleLinesToExternalEdges();
-    void STLDoctorBuildEdges();
-    void AddExternalEdgesFromGeomLine();
-    void DeleteDirtyExternalEdges();
-    void DeleteExternalEdgeAtSelected();
-    void DeleteExternalEdgeInVicinity();
+	DLL_HEADER void BuildExternalEdgesFromEdges();
+	DLL_HEADER void SaveExternalEdges();
+	DLL_HEADER void AddExternalEdgeAtSelected();
+	DLL_HEADER void AddClosedLinesToExternalEdges();
+	DLL_HEADER void AddLongLinesToExternalEdges();
+	DLL_HEADER void AddAllNotSingleLinesToExternalEdges();
+	DLL_HEADER void STLDoctorBuildEdges();
+	DLL_HEADER void AddExternalEdgesFromGeomLine();
+	DLL_HEADER void DeleteDirtyExternalEdges();
+	DLL_HEADER void DeleteExternalEdgeAtSelected();
+	DLL_HEADER void DeleteExternalEdgeInVicinity();
     void AddExternalEdge(int p1, int p2);
     void DeleteExternalEdge(int p1, int p2);
     int IsExternalEdge(int p1, int p2);
     int NOExternalEdges() const {return externaledges.Size();}
     twoint GetExternalEdge(int i) const {return externaledges.Get(i);}
 
-    void DestroyDirtyTrigs();
-    void CalcNormalsFromGeometry();
-    void MoveSelectedPointToMiddle();
-    void NeighbourAnglesOfSelectedTrig();
-    void PrintSelectInfo();
-    void ShowSelectedTrigChartnum();
-    void ShowSelectedTrigCoords();
-    void SmoothGeometry ();
+	DLL_HEADER void DestroyDirtyTrigs();
+	DLL_HEADER void CalcNormalsFromGeometry();
+	DLL_HEADER void MoveSelectedPointToMiddle();
+	DLL_HEADER void NeighbourAnglesOfSelectedTrig();
+	DLL_HEADER void PrintSelectInfo();
+	DLL_HEADER void ShowSelectedTrigChartnum();
+	DLL_HEADER void ShowSelectedTrigCoords();
+	DLL_HEADER void SmoothGeometry ();
 
 
-    void LoadMarkedTrigs();
-    void SaveMarkedTrigs();
-    void ClearMarkedSegs() {markedsegs.SetSize(0);}
+	DLL_HEADER void LoadMarkedTrigs();
+	DLL_HEADER void SaveMarkedTrigs();
+	void ClearMarkedSegs() {markedsegs.SetSize(0);}
     void AddMarkedSeg(const Point<3> & ap1, const Point<3> & ap2) 
     {
       markedsegs.Append(ap1);markedsegs.Append(ap2);
@@ -280,26 +280,26 @@ namespace netgen
       ap2=markedsegs.Get(i*2);
     }
     int GetNMarkedSegs() {return markedsegs.Size()/2;}
-    void CalcVicinity(int starttrig);
-    void GetVicinity(int starttrig, int size, Array<int>& vic);
+	DLL_HEADER void CalcVicinity(int starttrig);
+	DLL_HEADER void GetVicinity(int starttrig, int size, Array<int>& vic);
 
-    int Vicinity(int trig) const;
+	DLL_HEADER int Vicinity(int trig) const;
 
-    void InitMarkedTrigs();
-    void MarkDirtyTrigs();
-    void SmoothDirtyTrigs();
-    void GeomSmoothRevertedTrigs();
-    void MarkRevertedTrigs();
-    double CalcTrigBadness(int i);
-    int IsMarkedTrig(int trig) const;
-    void SetMarkedTrig(int trig, int num);
-    void MarkTopErrorTrigs ();
+	DLL_HEADER void InitMarkedTrigs();
+	DLL_HEADER void MarkDirtyTrigs();
+	DLL_HEADER void SmoothDirtyTrigs();
+	DLL_HEADER void GeomSmoothRevertedTrigs();
+	DLL_HEADER void MarkRevertedTrigs();
+	DLL_HEADER double CalcTrigBadness(int i);
+	DLL_HEADER int IsMarkedTrig(int trig) const;
+	DLL_HEADER void SetMarkedTrig(int trig, int num);
+	DLL_HEADER void MarkTopErrorTrigs ();
 
     //Selected triangle
-    void SetSelectTrig(int trig);
-    int GetSelectTrig() const;
-    void SetNodeOfSelTrig(int n);
-    int GetNodeOfSelTrig() const;
+	DLL_HEADER void SetSelectTrig(int trig);
+	DLL_HEADER int GetSelectTrig() const;
+	DLL_HEADER void SetNodeOfSelTrig(int n);
+	DLL_HEADER int GetNodeOfSelTrig() const;
 
 
     int AddNormal(const Vec3d& n) {return normals.Append(n);}
@@ -444,7 +444,7 @@ namespace netgen
     int LineEndPointsSet() const {return lineendpoints.Size() == GetNP();}
     void ClearLineEndPoints();
 
-    void RestrictLocalH(class Mesh & mesh, double gh);
+	DLL_HEADER void RestrictLocalH(class Mesh & mesh, double gh);
     void RestrictLocalHCurv(class Mesh & mesh, double gh);
     void RestrictHChartDistOneChart(int chartnum, Array<int>& acttrigs, class Mesh & mesh, 
 				    double gh, double fact, double minh);

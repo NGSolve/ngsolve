@@ -9,8 +9,7 @@ struct Tcl_Interp;
 namespace netgen
 {
 
-extern 
-void ImportSolution (const char * filename);
+DLL_HEADER extern void ImportSolution (const char * filename);
 
 
 class FieldLineCalc;
@@ -21,7 +20,7 @@ class FieldLineCalc;
 
 
 
-class VisualSceneSolution : public VisualScene
+class DLL_HEADER VisualSceneSolution : public VisualScene
 {
   friend class FieldLineCalc;
   
@@ -437,7 +436,7 @@ public:
 
 
 
-extern VisualSceneSolution vssolution;
+DLL_HEADER extern VisualSceneSolution vssolution;
 
 
 }

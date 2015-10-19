@@ -12,22 +12,22 @@ public:
   int usemarkedelements;
   bool refine_hp;
   bool refine_p;
-  BisectionOptions ();
+  DLL_HEADER BisectionOptions ();
 };
 
 class ZRefinementOptions
 {
 public:
   int minref;
-  ZRefinementOptions();
+  DLL_HEADER ZRefinementOptions();
 };
 
 
 
-extern void BisectTetsCopyMesh (Mesh &, const NetgenGeometry *,
+DLL_HEADER extern void BisectTetsCopyMesh (Mesh &, const NetgenGeometry *,
 				BisectionOptions & opt);
 
-extern void ZRefinement (Mesh &, const class NetgenGeometry *,
+DLL_HEADER extern void ZRefinement (Mesh &, const class NetgenGeometry *,
 			 ZRefinementOptions & opt);
 
 

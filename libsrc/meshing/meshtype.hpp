@@ -961,7 +961,7 @@ namespace netgen
     // Philippose - 06/07/2009
     // Get Surface colour
     Vec3d SurfColour () const { return surfcolour; }
-    const string & GetBCName () const; 
+	DLL_HEADER const string & GetBCName () const;
     // string * BCNamePtr () { return bcname; }
     // const string * BCNamePtr () const  { return bcname; }
     void SetSurfNr (int sn) { surfnr = sn; }

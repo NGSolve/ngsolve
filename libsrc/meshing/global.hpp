@@ -17,17 +17,17 @@ namespace netgen
 
   ///
   DLL_HEADER extern double GetTime ();
-  extern void ResetTime ();
+  DLL_HEADER extern void ResetTime ();
 
   ///
-  extern int testmode;
+  DLL_HEADER extern int testmode;
 
   /// calling parameters
   // extern Flags parameters;
 
   // extern DLL_HEADER MeshingParameters mparam;
 
-  extern Array<int> tets_in_qualclass;
+  DLL_HEADER extern Array<int> tets_in_qualclass;
 
   class multithreadt
   {
@@ -45,17 +45,17 @@ namespace netgen
     multithreadt();
   };
 
-  extern volatile multithreadt multithread;
+  DLL_HEADER extern volatile multithreadt multithread;
 
   DLL_HEADER extern string ngdir;
-  extern DebugParameters debugparam;
-  extern bool verbose;  
+  DLL_HEADER extern DebugParameters debugparam;
+  DLL_HEADER extern bool verbose;
 
-  extern int h_argc;
-  extern char ** h_argv;
+  DLL_HEADER extern int h_argc;
+  DLL_HEADER extern char ** h_argv;
 
 
-  extern weak_ptr<Mesh> global_mesh;
+  DLL_HEADER extern weak_ptr<Mesh> global_mesh;
   inline void SetGlobalMesh (shared_ptr<Mesh> m)
   {
     cout << "set global mesh" << endl;

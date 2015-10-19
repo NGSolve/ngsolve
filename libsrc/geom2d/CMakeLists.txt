@@ -10,7 +10,7 @@ if(NOT WIN32)
 endif(NOT WIN32)
 
 if(USE_GUI)
-    add_library(geom2dvis ${NG_LIB_TYPE} geom2dpkg.cpp vsgeom2d.cpp)
+    add_library(geom2dvis ${NG_LIB_TYPE} vsgeom2d.cpp)
     if(NOT WIN32)
         target_link_libraries(geom2dvis geom2d)
         install( TARGETS geom2dvis DESTINATION lib COMPONENT netgen)

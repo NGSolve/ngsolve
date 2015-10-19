@@ -17,17 +17,17 @@ class VisualSceneMeshDoctor : public VisualScene
   
 
 public:
-  VisualSceneMeshDoctor ();
-  virtual ~VisualSceneMeshDoctor ();
+  DLL_HEADER VisualSceneMeshDoctor ();
+  DLL_HEADER virtual ~VisualSceneMeshDoctor ();
 
-  virtual void BuildScene (int zoomall = 0);
-  virtual void DrawScene ();
-  virtual void MouseDblClick (int px, int py);
+  DLL_HEADER virtual void BuildScene (int zoomall = 0);
+  DLL_HEADER virtual void DrawScene ();
+  DLL_HEADER virtual void MouseDblClick (int px, int py);
 
-  void SetMarkEdgeDist (int dist);
-  void ClickElement (int elnr);
-  void UpdateTables ();
-  int IsSegmentMarked (int segnr) const;
+  DLL_HEADER void SetMarkEdgeDist (int dist);
+  DLL_HEADER void ClickElement (int elnr);
+  DLL_HEADER void UpdateTables ();
+  DLL_HEADER int IsSegmentMarked (int segnr) const;
 };
 
 class MeshDoctorParameters 
@@ -37,6 +37,6 @@ public:
 };
 
 
-extern MeshDoctorParameters meshdoctor;
+DLL_HEADER extern MeshDoctorParameters meshdoctor;
 
 }

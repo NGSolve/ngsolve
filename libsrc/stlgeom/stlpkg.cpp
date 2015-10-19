@@ -19,8 +19,8 @@ extern "C" int Ng_STL_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern shared_ptr<NetgenGeometry>  ng_geometry;
-  extern shared_ptr<Mesh> mesh;
+  DLL_HEADER extern shared_ptr<NetgenGeometry>  ng_geometry;
+  DLL_HEADER extern shared_ptr<Mesh> mesh;
 
   static VisualSceneSTLGeometry vsstlgeom;
   static VisualSceneSTLMeshing vsstlmeshing;

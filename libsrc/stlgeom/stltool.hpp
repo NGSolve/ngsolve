@@ -218,7 +218,7 @@ public:
   void Print (ostream & ost) const;
 };
 
-extern STLDoctorParams stldoctor;
+DLL_HEADER extern STLDoctorParams stldoctor;
 
 
 
@@ -267,7 +267,7 @@ public:
   void Print (ostream & ost) const;
 };
 
-extern STLParameters stlparam;
+DLL_HEADER extern STLParameters stlparam;
 
 
 void STLMeshing (STLGeometry & geom,

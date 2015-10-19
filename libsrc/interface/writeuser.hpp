@@ -8,7 +8,7 @@
 /**************************************************************************/
 
 
-extern
+DLL_HEADER extern
 void WriteFile (int typ,
                 const Mesh & mesh,
                 const NetgenGeometry & geom,
@@ -18,7 +18,7 @@ void WriteFile (int typ,
 
 
 
-extern
+DLL_HEADER extern
 void ReadFile (Mesh & mesh,
                const string & filename);
 
@@ -153,11 +153,11 @@ void WriteDolfinFormat (const Mesh & mesh,
                         const string & filename);
 
 
-extern void RegisterUserFormats (Array<const char*> & names,
+extern void DLL_HEADER RegisterUserFormats (Array<const char*> & names,
                                  Array<const char*> & extensions);
 
 
-extern bool WriteUserFormat (const string & format,
+extern bool DLL_HEADER WriteUserFormat (const string & format,
                              const Mesh & mesh,
                              const NetgenGeometry & geom,
                              const string & filename);

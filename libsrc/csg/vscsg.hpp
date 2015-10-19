@@ -10,7 +10,7 @@
 namespace netgen
 {
 
-  class VisualSceneGeometry : public VisualScene
+  class DLL_HEADER VisualSceneGeometry : public VisualScene
   {
     class CSGeometry * geometry;
     Array<int> trilists;

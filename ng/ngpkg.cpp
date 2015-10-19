@@ -35,7 +35,8 @@ extern bool nodisplay;
 
 namespace netgen
 {
-  extern MeshingParameters mparam;
+  DLL_HEADER extern MeshingParameters mparam;
+  DLL_HEADER extern void ImportSolution2(const char * filename);
 #include "../libsrc/interface/writeuser.hpp"
 #include "demoview.hpp"
 }
@@ -92,8 +93,8 @@ namespace netgen
   }
   */
 
-  extern std::shared_ptr<NetgenGeometry> ng_geometry;
-  extern std::shared_ptr<Mesh> mesh;
+  DLL_HEADER extern std::shared_ptr<NetgenGeometry> ng_geometry;
+  DLL_HEADER extern std::shared_ptr<Mesh> mesh;
   Tcl_Interp * tcl_interp;
 
 
@@ -110,8 +111,8 @@ namespace netgen
   // visualization scenes, pointer vs selects which one is drawn:
 
   static VisualScene vscross;
-  extern VisualSceneSurfaceMeshing vssurfacemeshing;
-  extern VisualSceneMeshDoctor vsmeshdoc;
+  DLL_HEADER extern VisualSceneSurfaceMeshing vssurfacemeshing;
+  DLL_HEADER extern VisualSceneMeshDoctor vsmeshdoc;
 
   static VisualSceneSpecPoints vsspecpoints;
 
@@ -154,7 +155,7 @@ namespace netgen
     */
   }
 #endif
-  DLL_HEADER void MyError2(const char * ch)
+  void MyError2(const char * ch)
   {
     cout << ch;
     (*testout) << "Error !!! " << ch << endl << flush;
@@ -168,7 +169,7 @@ namespace netgen
   }
 
 #ifndef SMALLLIB
-  DLL_HEADER double GetTime2 ()
+  double GetTime2 ()
   {
     return double(clock() - starttimea) / CLOCKS_PER_SEC;
   }
@@ -418,7 +419,7 @@ namespace netgen
     const char * filename = argv[1];
     PrintMessage (1, "Import solution from file ", filename);
 
-    ImportSolution (filename);
+    ImportSolution2 (filename);
     return TCL_OK;
   }
 
@@ -721,7 +722,7 @@ namespace netgen
   int Ng_MemInfo (ClientData clientData,
 		  Tcl_Interp * interp,
 		  int argc, tcl_const char *argv[])
-  {
+  {/*
     if (argc < 2) return TCL_ERROR;
 
     if (strcmp (argv[1], "usedmb") == 0)
@@ -736,7 +737,7 @@ namespace netgen
 	Tcl_SetResult (interp, usedmb, TCL_STATIC);
 	return TCL_OK;
       }
-
+	*/
     return TCL_ERROR;
   }
 
@@ -3157,8 +3158,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
   extern "C" int Ng_Init (Tcl_Interp * interp);
   extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
 
-#ifdef _MSC_VER
   extern "C" int Ng_stl_Init (Tcl_Interp * interp);
+#ifdef _MSC_VER
   extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
   #ifdef OCCGEOMETRY
     extern "C" int Ng_occ_Init (Tcl_Interp * interp);
@@ -3181,8 +3182,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 #endif
 
     Ng_CSG_Init(interp);
-#ifdef _MSC_VER
     Ng_stl_Init(interp);
+#ifdef _MSC_VER
     Ng_geom2d_Init (interp);
 #ifdef OCCGEOMETRY
     Ng_occ_Init (interp);

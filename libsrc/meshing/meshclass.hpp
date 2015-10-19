@@ -189,14 +189,14 @@ namespace netgen
     void ClearSurfaceElements();
 
     ///
-    void ClearVolumeElements()
+	DLL_HEADER void ClearVolumeElements()
     {
       volelements.SetSize(0); 
       timestamp = NextTimeStamp();
     }
 
     ///
-    void ClearSegments()
+	DLL_HEADER void ClearSegments()
     { 
       segments.SetSize(0); 
       timestamp = NextTimeStamp();
@@ -398,11 +398,11 @@ namespace netgen
     ///
     DLL_HEADER void SetGlobalH (double h);
     ///
-    void SetMinimalH (double h);
+	DLL_HEADER void SetMinimalH (double h);
     ///
-    double MaxHDomain (int dom) const;
+	DLL_HEADER double MaxHDomain (int dom) const;
     ///
-    void SetMaxHDomain (const Array<double> & mhd);
+	DLL_HEADER void SetMaxHDomain (const Array<double> & mhd);
     ///
     double GetH (const Point3d & p) const;
     ///
@@ -430,10 +430,10 @@ namespace netgen
     bool HasOpenQuads () const;
 
     /// split into connected pieces
-    void SplitIntoParts ();
+	DLL_HEADER void SplitIntoParts ();
 
     /// 
-    void SplitSeparatedFaces ();
+	DLL_HEADER void SplitSeparatedFaces ();
 
     /// Refines mesh and projects points to true surface
     // void Refine (int levels, const CSGeometry * geom);
@@ -470,21 +470,21 @@ namespace netgen
     DLL_HEADER void Compress ();
 
     ///
-    void Save (ostream & outfile) const;
+	DLL_HEADER void Save (ostream & outfile) const;
     ///
-    void Load (istream & infile);
+	DLL_HEADER void Load (istream & infile);
     ///
-    void Merge (istream & infile, const int surfindex_offset = 0);
+	DLL_HEADER void Merge (istream & infile, const int surfindex_offset = 0);
     ///
-    void Save (const string & filename) const;
+	DLL_HEADER void Save (const string & filename) const;
     ///
-    void Load (const string & filename);
+	DLL_HEADER void Load (const string & filename);
     ///
-    void Merge (const string & filename, const int surfindex_offset = 0);
+	DLL_HEADER void Merge (const string & filename, const int surfindex_offset = 0);
 
 
     ///
-    void ImproveMesh (const MeshingParameters & mp, OPTIMIZEGOAL goal = OPT_QUALITY);
+	DLL_HEADER void ImproveMesh (const MeshingParameters & mp, OPTIMIZEGOAL goal = OPT_QUALITY);
 
     ///
     void ImproveMeshJacobian (const MeshingParameters & mp, OPTIMIZEGOAL goal = OPT_QUALITY, const BitArray * usepoint = NULL);
@@ -518,19 +518,19 @@ namespace netgen
        triangle angles min/max, tetangles min/max
        if null, output results on cout
     */
-    void CalcMinMaxAngle (double badellimit, double * retvalues = NULL);
+	DLL_HEADER void CalcMinMaxAngle (double badellimit, double * retvalues = NULL);
 
     /*
       Marks elements which are dangerous to refine
       return: number of illegal elements
     */
-    int MarkIllegalElements ();
+	DLL_HEADER int MarkIllegalElements ();
 
     /// orient surface mesh, for one sub-domain only
-    void SurfaceMeshOrientation ();
+	DLL_HEADER void SurfaceMeshOrientation ();
 
     /// convert mixed element mesh to tet-mesh
-    void Split2Tets();
+	DLL_HEADER void Split2Tets();
 
 
     /// build box-search tree
@@ -656,19 +656,19 @@ namespace netgen
   
 
 
-    bool PureTrigMesh (int faceindex = 0) const;
-    bool PureTetMesh () const;
+	DLL_HEADER bool PureTrigMesh (int faceindex = 0) const;
+	DLL_HEADER bool PureTetMesh () const;
 
 
     const class MeshTopology & GetTopology () const
     { return *topology; }
 
-    void UpdateTopology();
+	DLL_HEADER void UpdateTopology();
   
     class CurvedElements & GetCurvedElements () const
     { return *curvedelems; }
 
-    void BuildCurvedElements  (const class Refinement * ref, int aorder, bool arational = false);
+	DLL_HEADER void BuildCurvedElements  (const class Refinement * ref, int aorder, bool arational = false);
 
     const class AnisotropicClusters & GetClusters () const
     { return *clusters; }

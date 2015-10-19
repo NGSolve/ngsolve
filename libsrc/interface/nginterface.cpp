@@ -21,7 +21,7 @@
 // #include <pthread.h>
 namespace netgen
 {
-    MeshingParameters mparam;
+	DLL_HEADER MeshingParameters mparam;
 }
 
 static pthread_t meshingthread;

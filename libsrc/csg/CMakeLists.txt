@@ -19,7 +19,7 @@ endif(NOT WIN32)
 
 
 if(USE_GUI)
-    add_library(csgvis ${NG_LIB_TYPE} vscsg.cpp csgpkg.cpp)
+    add_library(csgvis ${NG_LIB_TYPE} vscsg.cpp )
     if(NOT WIN32)
         target_link_libraries(csgvis csg visual)
         if(APPLE)

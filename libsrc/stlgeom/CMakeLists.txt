@@ -11,7 +11,7 @@ endif(NOT WIN32)
 
 if(USE_GUI)
     add_library(stlvis ${NG_LIB_TYPE}
-            stlpkg.cpp vsstl.cpp
+            vsstl.cpp
             )
     if(NOT WIN32)
         target_link_libraries( stlvis stl )

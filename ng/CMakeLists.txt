@@ -1,44 +1,13 @@
-add_definitions(-DNGINTERFACE_EXPORTS)
-
-set(netgen_sources main.cpp )
-set(netgenlib_sources demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp )
+set(netgen_sources demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp ../libsrc/stlgeom/stlpkg.cpp ../libsrc/visualization/visualpkg.cpp ../libsrc/csg/csgpkg.cpp ../libsrc/geom2d/geom2dpkg.cpp)
 
 if(USE_GUI)
-    if(WIN32)
-    set(netgenlib_objects
-            $<TARGET_OBJECTS:mesh>
-            $<TARGET_OBJECTS:stlvis>
-            $<TARGET_OBJECTS:stl>
-            $<TARGET_OBJECTS:geom2dvis>
-            $<TARGET_OBJECTS:interface>
-            $<TARGET_OBJECTS:geom2d>
-            $<TARGET_OBJECTS:csg>
-            $<TARGET_OBJECTS:stl>
-            $<TARGET_OBJECTS:gen>
-            $<TARGET_OBJECTS:la>
-            $<TARGET_OBJECTS:gprim>
-
-            $<TARGET_OBJECTS:visual>
-            $<TARGET_OBJECTS:csgvis>
-
-#         $<TARGET_OBJECTS:occ>
-#         $<TARGET_OBJECTS:occvis>
-       )
-    endif(WIN32)
 
     add_executable(netgen ${netgen_sources})
-    add_library(netgenlib SHARED ${netgenlib_sources} ${netgenlib_objects})
+    target_link_libraries( netgen nglib ${ZLIB_LIBRARIES} ${LIBTOGL} ${TK_LIBRARY} ${TCL_LIBRARY} ${JPEG_LIBRARIES} ${FFMPEG_LIBRARIES})
+    if(NOT WIN32)
+      target_link_libraries( netgen mesh stlvis stl geom2dvis interface geom2d csg stl visual csgvis )
+    endif(NOT WIN32)
 
-    if(WIN32)
-        set_target_properties( netgenlib PROPERTIES OUTPUT_NAME interface ) 
-    else(WIN32)
-        target_link_libraries( netgenlib visual csgvis csg interface mesh occ occvis togl)
-    endif(WIN32)
-
-    target_link_libraries( netgenlib ${LIBPTHREAD} ${OCC_LIBRARIES} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} ${PYTHON_LIBS} ${FFMPEG_LIBRARIES})
-    target_link_libraries( netgen netgenlib )
-
-    install(TARGETS netgenlib ${ng_install_dir})
     install(TARGETS netgen    ${ng_install_dir})
 
 endif(USE_GUI)
