@@ -859,7 +859,7 @@ namespace ngcomp
     double prevtime;
     bool is_root;
 
-    int cnt;
+    atomic<int> cnt;
     bool done_called;
   public:
     NGS_DLL_HEADER ProgressOutput (shared_ptr<MeshAccess> ama,

@@ -1475,7 +1475,6 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
   void ProgressOutput :: Update ()
   {
-#pragma omp atomic
     cnt++;
     Update(cnt);
   }
@@ -1500,7 +1499,6 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
               // changed from BSend (VSC-problem)
 	    }
 #endif
-	  
 	  prevtime = WallTime();
 	}
       }
