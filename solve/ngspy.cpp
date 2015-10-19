@@ -1,6 +1,5 @@
 #undef NGS_EXPORTS
 
-#include "../ngstd/python_ngstd.hpp"
 #include <solve.hpp>
 //using namespace ngsolve;
 //#include "../ngstd/python_ngstd.hpp"
@@ -30,12 +29,6 @@ void NGS_DLL_HEADER ExportNgsolve();
 BOOST_PYTHON_MODULE(ngslib)
 {
 
-  bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule("ngsolve"))));
-  bp::object parent = bp::import("__main__");
-  parent.attr("ngsolve") = module;
-  bp::scope local_scope(module);
-
-  
   /*
   cout << "do some lapack stuff" << endl;
   Matrix<> a(1000), b(1000), c(1000);

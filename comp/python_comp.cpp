@@ -161,6 +161,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   std::string nested_name = "comp";
   if( bp::scope() )
     nested_name = bp::extract<std::string>(bp::scope().attr("__name__") + ".comp");
+  
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule(nested_name.c_str()))));
   
   cout << IM(1) << "exporting comp as " << nested_name << endl;
