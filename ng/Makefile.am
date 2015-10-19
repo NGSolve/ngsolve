@@ -9,7 +9,7 @@ if NGGUI
 bin_PROGRAMS = netgen
 endif
 
-netgen_SOURCES = demoview.cpp ngappinit.cpp netgenpy.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h main.cpp netgenpy.cpp
+netgen_SOURCES = demoview.cpp ngappinit.cpp netgenpy.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h netgenpy.cpp
 #  nginterface.cpp nginterface_v2.cpp
 
 
@@ -22,6 +22,10 @@ endif
 netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.la \
 	$(top_builddir)/libsrc/csg/libcsgvis.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
+	$(top_builddir)/libsrc/stlgeom/libstlvis.la \
+	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la \
 	-L$(TK_BIN_DIR)/../Togl1.7 -lTogl1.7 $(TOGLLIBDIR)  $(LIBGLU) $(TK_LIB_SPEC) $(TCL_LIB_SPEC) $(MPI_LIBS) $(FFMPEG_LIBS) $(JPEGLIB_LIBS) $(PKG_LIBS) $(MKL_LIBS) 
