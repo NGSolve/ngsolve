@@ -339,6 +339,7 @@ void NGS_DLL_HEADER ExportNgcomp()
       auto & fes = bp::extract<FESpace const&>(obj)();
       cout << "FESpace::GetInitArgs" << endl;
       bp::object m = obj.attr("__dict__")["mesh"];
+      // bp::object m (fes.GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
       return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
     }
@@ -404,9 +405,12 @@ void NGS_DLL_HEADER ExportNgcomp()
           ))
 #endif
 
-
-
-
+    
+    .def("__eq__", FunctionPointer
+         ( [] (shared_ptr<MeshAccess> self, shared_ptr<MeshAccess> other)
+           {
+             return self == other;
+           }))
 
     .def("LoadMesh", static_cast<void(MeshAccess::*)(const string &)>(&MeshAccess::LoadMesh),
          "Load mesh from file")
@@ -785,7 +789,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }), 
                    "global number of dofs on MPI-distributed mesh")
     .def("__str__", &ToString<FESpace>)
-    
+
+    // .add_property("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
+    // { return self.GetMeshAccess(); }))
+
     .add_property("order", FunctionPointer([] (FESpace & self) { return OrderProxy(self); }))
 
     .def("Elements", 

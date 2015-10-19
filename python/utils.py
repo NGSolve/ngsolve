@@ -26,7 +26,6 @@ def H1(mesh, **args):
     documentation of arguments is available in FESpace.
     """
     fes = FESpace("h1ho", mesh, **args)
-    fes.__dict__["mesh"]=mesh
     return fes
 
 def L2(mesh, **args):
