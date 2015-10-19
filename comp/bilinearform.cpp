@@ -712,47 +712,11 @@ namespace ngcomp
         }
       else
         {
-          /*
-#ifdef FULLSPEED
-          int checkels = min (1, ma->GetNE());
-#else
-          int checkels = ma->GetNE();
-#endif
-
-
-	  Exception * e = NULL;
-#pragma omp parallel
-	  {
-	    LocalHeap lh = clh.Split();
-	    
-#pragma omp for
-	    for (int j = 0; j < checkels; j++)
-	      {
-		HeapReset hr(lh);
-		
-		try
-		  {
-		    if (parts[i] -> DefinedOn (ma->GetElIndex(j)) && !e)
-		      parts[i] -> CheckElement (fespace->GetFE(j, lh));
-		  }
-		catch (Exception e1)
-		  {
-#pragma omp critical(justone)
-		    {
-		      delete e;
-		      e = new Exception(e1);
-		    }
-		  }
-	      }
-	  }
-	  if (e) throw Exception (*e);
-          */
-          
           IterateElements
             (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
              {
-               if (parts[i] -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
-                 parts[i] -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
+               if (parts[i] -> DefinedOn (el.GetIndex()))  
+                 parts[i] -> CheckElement (el.GetFE());    
                    ;
              });
 
@@ -2138,36 +2102,6 @@ namespace ngcomp
             RegionTimer reg(timervol);
             ProgressOutput progress (ma, "assemble element", ma->GetNE());
 
-
-            /*
-            int cnt = 0;
-
-            const Table<int> * element_coloring = &fespace->ElementColoring();
-            int ncolors = (element_coloring) ? element_coloring->Size() : 1;
-            for (int icol = 0; icol < ncolors; icol++)
-              {
-#pragma omp parallel 
-                {
-                  LocalHeap & clh = lh;
-                  LocalHeap lh = clh.Split();
-                  
-                  Array<int> dnums, idofs, idofs1, odofs;
-                  int nec = (element_coloring) ? (*element_coloring)[icol].Size() : ne;
-                  
-#pragma omp for schedule(dynamic) 
-                  for (int ii = 0; ii < nec; ii++)
-                    {
-                      int i = (element_coloring) ? (*element_coloring)[icol][ii] : ii;
-                      
-                      
-#pragma omp atomic
-                      cnt++;
-                      progress.Update (cnt);
-                      HeapReset hr(lh);
-                      if (!fespace->DefinedOn (ma->GetElIndex (i))) continue;
-            */
-
-
             IterateElements 
               (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
@@ -2408,28 +2342,6 @@ namespace ngcomp
             RegionTimer reg(timerbound);
             ProgressOutput progress (ma, "assemble surface element", nse);
 
-
-            /*
-            int cnt = 0;
-#pragma omp parallel 
-            {
-              LocalHeap & clh = lh;
-              LocalHeap lh = clh.Split();
-              
-              Array<int> dnums;
-#pragma omp for 
-              for (int i = 0; i < nse; i++)
-                {
-                  HeapReset hr(lh);
-
-#pragma omp atomic
-                  cnt++;
-                  progress.Update (cnt);
-                  if (!fespace->DefinedOnBoundary (ma->GetSElIndex (i))) continue;
-
-            */
-
-            
             IterateElements 
               (*fespace, BND, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                {
@@ -3482,21 +3394,17 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
-    // #pragma omp critical (addelmat)
-    {
-
-      for (int i = 0; i < dnums1.Size(); i++)
-        if (dnums1[i] != -1)
-          {
-            TM & mij = mat(dnums1[i], dnums1[i]);
-            int hi = Height (mij);
-            int wi = Width (mij);
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (dnums1[i] != -1)
+        {
+          TM & mij = mat(dnums1[i], dnums1[i]);
+          int hi = Height (mij);
+          int wi = Width (mij);
           
-            for (int k = 0; k < hi; k++)
-              for (int l = 0; l < wi; l++)
-                mij(k,l) += elmat(i*hi+k, i*wi+l);
-          }
-    }
+          for (int k = 0; k < hi; k++)
+            for (int l = 0; l < wi; l++)
+              mij(k,l) += elmat(i*hi+k, i*wi+l);
+        }
   }
 
 
@@ -3511,12 +3419,9 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
-    // #pragma omp critical (addelmat)
-    {
-      for (int i = 0; i < dnums1.Size(); i++)
-        if (dnums1[i] != -1)
-          mat(dnums1[i], dnums1[i]) += elmat(i, i);
-    }
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (dnums1[i] != -1)
+        mat(dnums1[i], dnums1[i]) += elmat(i, i);
   }
 
 
@@ -3532,12 +3437,9 @@ namespace ngcomp
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
-    // #pragma omp critical (addelmat)
-    {
-      for (int i = 0; i < dnums1.Size(); i++)
-        if (dnums1[i] != -1)
-          mat(dnums1[i], dnums1[i]) += elmat(i, i);
-    }
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (dnums1[i] != -1)
+        mat(dnums1[i], dnums1[i]) += elmat(i, i);
   }
 
 

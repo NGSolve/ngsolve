@@ -265,24 +265,20 @@ namespace ngcomp
       intdofs = dnums[localintdofs];
 
 
-      // critical can be removed when everything is colored
-      // #pragma omp critical(bddcaddelmat)
-      {
-        for (int j = 0; j < intdofs.Size(); j++)
-          weight[intdofs[j]] += el2ifweight[j];
-        
-        sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
-        
-        if (!bfa->SymmetricStorage())
-          sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
-        
-        sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
+      for (int j = 0; j < intdofs.Size(); j++)
+        weight[intdofs[j]] += el2ifweight[j];
+      
+      sparse_harmonicext->AddElementMatrix(intdofs,wbdofs,he);
+      
+      if (!bfa->SymmetricStorage())
+        sparse_harmonicexttrans->AddElementMatrix(wbdofs,intdofs,het);
+      
+      sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 	
-        dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
-          ->AddElementMatrix(wbdofs,wbdofs,a);
-        if (coarse)
-          dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);
-      }
+      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
+        ->AddElementMatrix(wbdofs,wbdofs,a);
+      if (coarse)
+        dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);
     }
 
 
