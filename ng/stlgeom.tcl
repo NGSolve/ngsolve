@@ -1,7 +1,7 @@
-if { [catch { load libstlvis[info sharedlibextension] Ng_STL } result ] } {
+#if { [catch { load libstlvis[info sharedlibextension] Ng_STL } result ] } {
 #    puts "cannot load stl" 
 #    puts "error: $result"
-}
+#}
 
 
 .ngmenu.geometry add separator

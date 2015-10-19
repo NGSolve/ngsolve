@@ -3159,8 +3159,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
   extern "C" int Ng_CSG_Init (Tcl_Interp * interp);
 
   extern "C" int Ng_stl_Init (Tcl_Interp * interp);
-#ifdef _MSC_VER
   extern "C" int Ng_geom2d_Init (Tcl_Interp * interp);
+#ifdef _MSC_VER
   #ifdef OCCGEOMETRY
     extern "C" int Ng_occ_Init (Tcl_Interp * interp);
   #endif
@@ -3183,8 +3183,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
 
     Ng_CSG_Init(interp);
     Ng_stl_Init(interp);
-#ifdef _MSC_VER
     Ng_geom2d_Init (interp);
+#ifdef _MSC_VER
 #ifdef OCCGEOMETRY
     Ng_occ_Init (interp);
 #endif
