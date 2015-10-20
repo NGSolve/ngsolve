@@ -25,9 +25,10 @@ libcsg_la_LIBADD =  $(top_builddir)/libsrc/meshing/libmesh.la
 if NGGUI
 lib_LTLIBRARIES += libcsgvis.la 
 
-libcsgvis_la_SOURCES = vscsg.cpp csgpkg.cpp
+libcsgvis_la_SOURCES = csgpkg.cpp
 libcsgvis_la_LIBADD = libcsg.la $(top_builddir)/libsrc/visualization/libvisual.la
+libcsg_la_SOURCES += vscsg.cpp 
+libcsg_la_LIBADD += $(top_builddir)/libsrc/visualization/libvisual.la
 endif
 
-#   $(top_builddir)/libsrc/geom2d/libgeom2d.la 
 

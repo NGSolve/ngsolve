@@ -52,12 +52,9 @@ libngpy_la_SOURCES = netgenpy.cpp
 libngpy_la_LDFLAGS = -avoid-version -module
 
 libngpy_la_LIBADD =  $(top_builddir)/libsrc/visualization/libvisual.la \
-	$(top_builddir)/libsrc/csg/libcsgvis.la \
 	$(top_builddir)/libsrc/csg/libcsg.la \
-	$(top_builddir)/libsrc/stlgeom/libstlvis.la \
 	$(top_builddir)/libsrc/stlgeom/libstl.la \
 	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
-	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la \
 	$(top_builddir)/libsrc/interface/libinterface.la \
 	$(top_builddir)/libsrc/meshing/libmesh.la
 
