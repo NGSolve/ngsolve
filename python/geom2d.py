@@ -1,16 +1,5 @@
-from netgen import __platform
-if __platform.startswith('linux') or __platform.startswith('darwin'):
-    # Linux or Mac OS X
-    from libgeom2d.geom2d import *
-#    import libcsgvis.csgvis as csgvis
-#    from libcsgvis.csgvis import MouseMove
-    from libmesh.meshing import *
-if __platform.startswith('win'):
-    # Windows
-    from nglib.geom2d import *
-#    import nglib.csgvis as csgvis
-#    from nglib.csgvis import MouseMove
-    from nglib.meshing import *
+from libngpy.geom2d import *
+from libngpy.meshing import *
 
 
 

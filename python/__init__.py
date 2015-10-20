@@ -6,6 +6,9 @@ if __platform.startswith('linux') or __platform.startswith('darwin'):
 if __platform.startswith('win'):
     path.append(environ['NETGENDIR'])
 
+
+from libngpy import *
+    
 from . import csg
 from . import meshing
 

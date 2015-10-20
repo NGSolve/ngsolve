@@ -35,13 +35,10 @@ win_geom = Window( name=b"ngs", drawfunc=mydraw, mousefunc=mymouse)
 
 ###########################################
 # press ctrl+c to break loop
-try:
-    while(True):
-        for i in range(10000):
-            glutMainLoopEvent()
+while(True):
+    for i in range(10000):
+        glutMainLoopEvent()
         print('press ctrl+c to create second window!')
-except:
-    pass
 
 ###########################################
 # create second window (transformation matrices are shared)

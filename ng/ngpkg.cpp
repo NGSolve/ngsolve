@@ -1959,6 +1959,7 @@ namespace netgen
 
     int w = Togl_Width (togl);
     int h = Togl_Height (togl);
+    cout << "togl h x w = " << h << " x " << w << endl;
 
     glViewport(0, 0, w, h);
 

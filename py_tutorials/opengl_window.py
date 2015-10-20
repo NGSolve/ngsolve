@@ -15,7 +15,7 @@ class Window():
         self.drawfunc()
 
     def __init__( self, name=b"Window", width=500, height=500, drawfunc=None, mousefunc=None ):
-        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,GLUT_ACTION_GLUTMAINLOOP_RETURNS) 
+#        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,GLUT_ACTION_GLUTMAINLOOP_RETURNS) 
         glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
         glutInitWindowSize(width, height)                      # set window size
         glutInitWindowPosition(0, 0)                           # set window position
