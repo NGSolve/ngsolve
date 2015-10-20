@@ -32,8 +32,6 @@ option( USE_CPP_THREADS  "use C++11 threads instead of OpenMP")
 if(INTEL_MIC)
     set(MKL_ARCH "mic")
     include(cmake_modules/mic.cmake)
-else(INTEL_MIC)
-    set(MKL_ARCH "intel64")
 endif(INTEL_MIC)
 
 #######################################################################
