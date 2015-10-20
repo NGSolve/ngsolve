@@ -9,7 +9,7 @@ if NGGUI
 bin_PROGRAMS = netgen
 endif
 
-netgen_SOURCES = demoview.cpp ngappinit.cpp netgenpy.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h netgenpy.cpp
+netgen_SOURCES = demoview.cpp ngappinit.cpp onetcl.cpp parallelfunc.cpp ngpkg.cpp demoview.hpp parallelfunc.hpp togl_1_7.h
 #  nginterface.cpp nginterface_v2.cpp
 
 
@@ -44,6 +44,24 @@ netgen_LDADD = $(top_builddir)/libsrc/visualization/libvisual.la \
 #   /opt/netgen/lib/libngsolve.a /opt/netgen/lib/libngcomp.a /opt/netgen/lib/libngcomp.a  /opt/netgen/lib/libngfemng.a   /opt/netgen/lib/libngmg.a  /opt/netgen/lib/libngla.a  /opt/netgen/lib/libngbla.a  /opt/netgen/lib/libngstd.a -L/opt/intel/mkl/10.2.1.017/lib/em64t /opt/intel/mkl/10.2.1.017/lib/em64t/libmkl_solver_lp64.a  -lmkl_intel_lp64  -lmkl_gnu_thread -lmkl_core 
 #
 #
+
+
+
+lib_LTLIBRARIES = libngpy.la	
+libngpy_la_SOURCES = netgenpy.cpp
+libngpy_la_LDFLAGS = -avoid-version -module
+
+libngpy_la_LIBADD =  $(top_builddir)/libsrc/visualization/libvisual.la \
+	$(top_builddir)/libsrc/csg/libcsgvis.la \
+	$(top_builddir)/libsrc/csg/libcsg.la \
+	$(top_builddir)/libsrc/stlgeom/libstlvis.la \
+	$(top_builddir)/libsrc/stlgeom/libstl.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2d.la \
+	$(top_builddir)/libsrc/geom2d/libgeom2dvis.la \
+	$(top_builddir)/libsrc/interface/libinterface.la \
+	$(top_builddir)/libsrc/meshing/libmesh.la
+
+
 
 dist_bin_SCRIPTS = dialog.tcl menustat.tcl ngicon.tcl ng.tcl	  \
 ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  \
