@@ -163,6 +163,8 @@ namespace netgen
     void SetMaterial (int  domnr, const string & material);
 
     double GetDomainMaxh ( const int domnr );
+    void SetDomainMaxh ( const int domnr, double maxh );
+    
     bool GetDomainQuadMeshing ( int domnr ) 
     { 
       if ( quadmeshing.Size() ) return quadmeshing[domnr-1]; 

@@ -935,7 +935,7 @@ namespace netgen
 
   
 
-  double SplineGeometry2d :: GetDomainMaxh( const int  domnr )
+  double SplineGeometry2d :: GetDomainMaxh (const int domnr )
   {
     if ( maxh.Size() >= domnr  && domnr > 0)
       return maxh[domnr-1];
@@ -943,7 +943,20 @@ namespace netgen
       return -1;
   }
 
+  void SplineGeometry2d :: SetDomainMaxh (int domnr, double h)
+  {
+    int oldsize = maxh.Size();
+    if (domnr > maxh.Size()) maxh.SetSize (domnr);
+    for (int i = oldsize; i < domnr; i++)
+      maxh[i] = 1e99;
+    
+    if (domnr >= 1) 
+      maxh[domnr] = h;
+    else
+      throw NgException ("material index out of range");
+  }
 
+  
 
   extern void MeshFromSpline2D (SplineGeometry2d & geometry,
 				shared_ptr<Mesh> & mesh, 
