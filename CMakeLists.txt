@@ -188,6 +188,12 @@ if (USE_PYTHON)
     endif(NOT Boost_LIBRARIES)
 
     add_definitions(-DNG_PYTHON)
+
+    if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+        # fix problems with boosts config/auto_link.hpp
+        add_definitions(-DBOOST_LIB_TOOLSET="iw")
+    endif()
+
     include_directories(${PYTHON_INCLUDE_DIRS})
     include_directories(${Boost_INCLUDE_DIRS})
     set(PYTHON_LIBS "${PYTHON_LIBRARIES};${Boost_LIBRARIES}")

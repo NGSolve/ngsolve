@@ -76,8 +76,8 @@ protected:
     gzstreambuf buf;
 public:
     gzstreambase() { init(&buf); }
-    gzstreambase( const char* name, int open_mode);
-    ~gzstreambase();
+    DLL_HEADER gzstreambase( const char* name, int open_mode);
+    DLL_HEADER ~gzstreambase();
     void open( const char* name, int open_mode);
     void close();
     gzstreambuf* rdbuf() { return &buf; }

@@ -586,7 +586,7 @@ namespace netgen
     flagstruct flags;
 
     ///
-    Element ();
+    DLL_HEADER Element ();
     ///
     Element (int anp);
     ///

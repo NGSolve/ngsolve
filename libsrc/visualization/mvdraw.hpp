@@ -24,12 +24,12 @@ namespace netgen
     int changeval;
     static DLL_HEADER GLdouble backcolor;
 
-    static int selface;
+    static int DLL_HEADER selface;
     static int selelement;
-    static int selpoint;
+    static int DLL_HEADER selpoint;
     static int selpoint2;
     static int locpi;
-    static int seledge;
+    static int DLL_HEADER seledge;
 
     static int selecttimestamp;
 
