@@ -36,7 +36,9 @@ namespace ngla
     ElementByElementMatrix (int h, int w, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols);
     ElementByElementMatrix (int h, int ane, bool isymmetric, bool adisjointrows, bool adisjointcols)
       : ElementByElementMatrix(h, h, ane, isymmetric, adisjointrows, adisjointcols) {};
-    ~ElementByElementMatrix(); 
+    ~ElementByElementMatrix();
+    virtual bool IsComplex() const { return typeid(SCAL)==typeid(Complex); }
+
     void SetDisjointRows(bool newval){disjointrows=newval;}
     void SetDisjointCols(bool newval){disjointcols=newval;}
     virtual int VHeight() const { return height; }

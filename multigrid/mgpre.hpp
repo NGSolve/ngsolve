@@ -68,6 +68,8 @@ namespace ngmg
 			     shared_ptr<Prolongation> aprolongation);
     ///
     ~MultigridPreconditioner ();
+    ///
+    virtual bool IsComplex() const { return fespace.IsComplex(); } 
 
     ///
     void FreeMem(void);
@@ -163,6 +165,8 @@ namespace ngmg
 		    Smoother * asmoother, int alevel);
     ///
     ~TwoLevelMatrix ();
+
+    virtual bool IsComplex() const { return mat->IsComplex(); } 
 
     ///
     void FreeMem(void);

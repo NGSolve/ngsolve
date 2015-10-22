@@ -26,7 +26,9 @@ namespace ngla
     SparseFactorization (const BaseSparseMatrix & amatrix,
 			 const BitArray * ainner,
 			 const Array<int> * acluster);
- 
+
+    virtual bool IsComplex() const { return matrix.IsComplex(); }
+
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
     int VHeight() const { return matrix.VWidth();}

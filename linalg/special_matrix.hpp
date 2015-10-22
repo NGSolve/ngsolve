@@ -20,6 +20,8 @@ namespace ngla
     Projector (const BitArray & abits, bool akeep_values = true)
       : bits(abits), keep_values(akeep_values) { ; }
 
+    virtual bool IsComplex() const { return false; } 
+
     virtual int VHeight() const { return bits.Size(); }
     virtual int VWidth() const { return bits.Size(); }
 
@@ -33,6 +35,7 @@ namespace ngla
     VVector<TVR> hx, hy;
   public:
     NGS_DLL_HEADER Real2ComplexMatrix (const BaseMatrix * arealmatrix = 0);
+    virtual bool IsComplex() const { return true; }     
     void SetMatrix (const BaseMatrix * arealmatrix);
     const BaseMatrix & GetMatrix () const { return *realmatrix; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
@@ -69,6 +72,7 @@ namespace ngla
   public:
     Small2BigNonSymMatrix (const BaseMatrix * abasematrix = 0);
     void SetMatrix (const BaseMatrix * abasematrix);
+    virtual bool IsComplex() const { return base->IsComplex(); }     
     const BaseMatrix & GetMatrix () const { return *base; }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     //  virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const;

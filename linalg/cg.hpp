@@ -54,6 +54,9 @@ namespace ngla
     void SetPrecond (const BaseMatrix & ac)
     { c = &ac; }
     ///
+
+    virtual bool IsComplex() const { return a->IsComplex(); }
+    /// 
     void SetMaxSteps (int amaxsteps)
     { maxsteps = amaxsteps; }
 

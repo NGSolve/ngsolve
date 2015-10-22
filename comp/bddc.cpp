@@ -171,6 +171,7 @@ namespace ngcomp
       }
     }
 
+    virtual bool IsComplex() const { return pwbmat -> IsComplex(); }
     
     void AddMatrix (FlatMatrix<SCAL> elmat, FlatArray<int> dnums, 
 		    ElementId id, LocalHeap & lh)

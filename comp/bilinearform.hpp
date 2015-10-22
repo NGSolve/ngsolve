@@ -780,6 +780,12 @@ namespace ngcomp
   public:
     ///
     BilinearFormApplication (shared_ptr<BilinearForm> abf);
+
+    virtual bool IsComplex() const
+    {
+      return bf->GetFESpace()->IsComplex();
+    }
+    
     ///
     virtual void Mult (const BaseVector & v, BaseVector & prod) const;
     ///

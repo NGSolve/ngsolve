@@ -61,6 +61,9 @@ namespace ngcomp
     {
       return *this; 
     }
+
+    virtual bool IsComplex() const { return GetMatrix().IsComplex(); }
+        
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const
     {
@@ -289,6 +292,8 @@ namespace ngcomp
     ///
     virtual ~NonsymmetricPreconditioner();
     ///
+    virtual bool IsComplex() const { return cm->IsComplex(); }
+
     virtual void Update ();
     ///
     virtual const BaseMatrix & GetMatrix() const

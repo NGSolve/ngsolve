@@ -25,6 +25,8 @@ namespace ngla
   public:
     ///
     ChebyshevIteration (const BaseMatrix & aa, const BaseMatrix & ac, int steps);
+    
+    virtual bool IsComplex() const { return a->IsComplex(); } 
     ///
     void SetBounds (double almin, double almax);
     ///
