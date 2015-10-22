@@ -39,6 +39,11 @@ void ExportArray ()
     ;
 }
 
+void TranslateException (const NgException & ex)
+{
+  string err = string("Netgen exception: ")+ex.What();
+  PyErr_SetString(PyExc_RuntimeError, err.c_str());
+}
 
 
 DLL_HEADER void ExportNetgenMeshing() 
@@ -46,6 +51,8 @@ DLL_HEADER void ExportNetgenMeshing()
   
   ModuleScope module("meshing");
 
+  bp::register_exception_translator<NgException>(&TranslateException);
+  
   bp::class_<PointIndex>("PointId", bp::init<int>())
     .def("__repr__", &ToString<PointIndex>)
     .def("__str__", &ToString<PointIndex>)
