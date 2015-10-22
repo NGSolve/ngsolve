@@ -629,7 +629,6 @@ namespace ngcomp
       inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
     }
 
-    
     ///
     virtual ~DirectPreconditioner()
     {
@@ -715,6 +714,9 @@ namespace ngcomp
 			 const string aname = "localprecond");
     ///
     virtual ~LocalPreconditioner();
+    ///
+    virtual bool IsComplex() const { return jacobi->IsComplex(); }
+    
     ///
     virtual void FinalizeLevel (const BaseMatrix * mat) 
     { 

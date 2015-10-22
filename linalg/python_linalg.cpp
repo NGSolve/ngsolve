@@ -322,6 +322,8 @@ void NGS_DLL_HEADER ExportNgla() {
                                           double precision, int maxsteps) -> BaseMatrix *
                                        {
                                          KrylovSpaceSolver * solver;
+                                         if(mat.IsComplex()) iscomplex = true;
+                                         
                                          if (iscomplex)
                                            solver = new CGSolver<Complex> (mat, pre);
                                          else

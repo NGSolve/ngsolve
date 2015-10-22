@@ -29,6 +29,8 @@ namespace ngla
     virtual ~CommutingAMG () 
     { ; }
 
+    virtual bool IsComplex() const { return false; }
+
     virtual void ComputeMatrices (const BaseSparseMatrix & mat) = 0;
     virtual void Mult (const BaseVector & x, BaseVector & y) const = 0;
 

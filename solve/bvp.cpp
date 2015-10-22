@@ -512,7 +512,7 @@ namespace ngsolve
 
     virtual int VHeight() const { return c1->VHeight(); }
     virtual int VWidth() const { return c1->VWidth(); }
-
+    virtual bool IsComplex() const { return c1->IsComplex(); } 
     void AddConstraint (shared_ptr<BaseVector> hv)
     {
       constraints.Append (hv);
@@ -564,6 +564,7 @@ namespace ngsolve
     
     virtual ~ConstrainedMatrix () { ; }
 
+    virtual bool IsComplex() const { return a1 -> IsComplex(); } 
     void AddConstraint (const BaseVector * hv)
     {
       constraints.Append (hv);

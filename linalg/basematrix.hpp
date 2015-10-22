@@ -53,6 +53,9 @@ namespace ngla
       return VWidth();
     }
 
+    /// is matrix complex ?
+    virtual bool IsComplex() const = 0;
+    
     /// scalar assignment
     BaseMatrix & operator= (double s)
     {
@@ -142,6 +145,8 @@ namespace ngla
     S_BaseMatrix ();
     ///
     virtual ~S_BaseMatrix ();
+
+    virtual bool IsComplex() const { return false; }
   };
 
   // specifies the scalar type Complex.
@@ -153,7 +158,8 @@ namespace ngla
     S_BaseMatrix ();
     ///
     virtual ~S_BaseMatrix ();
-
+    virtual bool IsComplex() const { return true; }
+    
     /// calls MultAdd (Complex s);
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     /// must be overloaded
@@ -233,6 +239,10 @@ namespace ngla
   public:
     ///
     Transpose (const BaseMatrix & abm) : bm(abm) { ; }
+
+    ///
+    virtual bool IsComplex() const { return bm.IsComplex(); }
+
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
@@ -275,6 +285,7 @@ namespace ngla
   public:
     ///
     VScaleMatrix (const BaseMatrix & abm, double ascale) : bm(abm), scale(ascale) { ; }
+    virtual bool IsComplex() const { return bm.IsComplex(); } 
     ///
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {

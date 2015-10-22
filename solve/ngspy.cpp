@@ -29,11 +29,15 @@ void NGS_DLL_HEADER ExportNgsolve();
 
 BOOST_PYTHON_MODULE(ngslib)
 {
-
+  /*
   bp::object module(bp::handle<>(bp::borrowed(PyImport_AddModule("ngsolve"))));
   bp::object parent = bp::import("__main__");
   parent.attr("ngsolve") = module;
   bp::scope local_scope(module);
+  */
+
+  // oder doch einfach nur so:
+  bp::scope().attr("__name__") = "ngsolve";
 
   
   /*

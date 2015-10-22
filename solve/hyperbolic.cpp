@@ -97,10 +97,11 @@ public:
     summat->AsVector() = matm.AsVector() + (dt*dt/4) * mata.AsVector();
 
     // A sparse matrix can compute a sparse factorization. One has to cast to a sparse matrix:
-    auto invmat = * dynamic_cast<BaseSparseMatrix&> (*summat) . InverseMatrix();
+    // auto invmat = * dynamic_cast<BaseSparseMatrix&> (*summat) . InverseMatrix();
+    auto & invmat = * summat -> InverseMatrix();
 
 
-    // implicite Euler method
+    // Newmark method
     vecu = 0;
     v = 0;
     a = 0;
