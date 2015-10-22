@@ -262,7 +262,22 @@ DLL_HEADER void ExportNetgenMeshing()
   
   
   bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
-    .def(bp::init<>("create empty mesh"))
+    // .def(bp::init<>("create empty mesh"))
+
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](int dim)
+                           {
+                             auto mesh = make_shared<Mesh>();
+                             mesh->SetDimension(dim);
+                             return mesh;
+                           }),
+          bp::default_call_policies(),     // need it to use named arguments
+          (
+           bp::arg("dim")=3
+           )
+          ))
+
+    
     .def("__str__", &ToString<Mesh>)
     .def("Load",  FunctionPointer 
 	 ([](Mesh & self, const string & filename)
