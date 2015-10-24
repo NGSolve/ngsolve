@@ -76,6 +76,15 @@ namespace ngfem
     virtual bool IsComplex() const { return false; }
     virtual int Dimension() const { return 1; }
 
+    virtual Array<int> Dimensions() const
+    {
+      int d = Dimension();
+      if (Dimension() == 1)
+        return Array<int> (0);
+      else
+        return Array<int> ( { d } );
+    }
+    
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<> result) const
     {
@@ -1059,7 +1068,32 @@ public:
     Vector<Complex> v1(c1->Dimension());
     c1->Evaluate (ip, v1);
     result(0) = v1(comp);
-  }  
+  }
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
+                             FlatVector<> result,
+                             FlatVector<> deriv) const
+  {
+    Vector<> v1(c1->Dimension());
+    Vector<> dv1(c1->Dimension());
+    c1->EvaluateDeriv (ip, v1, dv1);
+    result(0) = v1(comp);
+    deriv(0) = dv1(comp);
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result,
+                              FlatVector<> deriv,
+                              FlatVector<> dderiv) const
+  {
+    Vector<> v1(c1->Dimension());
+    Vector<> dv1(c1->Dimension());
+    Vector<> ddv1(c1->Dimension());
+    c1->EvaluateDDeriv (ip, v1, dv1, ddv1);
+    result(0) = v1(comp);
+    deriv(0) = dv1(comp);
+    dderiv(0) = ddv1(comp);
+  }
 
 };
 
@@ -1158,9 +1192,15 @@ public:
 class VectorialCoefficientFunction : public CoefficientFunction
 {
   Array<shared_ptr<CoefficientFunction>> ci;
+  Array<int> dims;  // tensor valued ...
 public:
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : ci(aci) 
+    : ci(aci), dims( { aci.Size() } )
+  { ; }
+
+  VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
+                                const Array<int> & adims)
+    : ci(aci), dims(adims)
   { ; }
   
   virtual bool IsComplex() const 
@@ -1175,6 +1215,11 @@ public:
     return ci.Size();
   }
 
+  virtual Array<int> Dimensions() const
+  {
+    return Array<int> (dims);
+  }
+  
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     for (auto cf : ci)
@@ -1216,9 +1261,91 @@ public:
         ci[i]->Evaluate(ir, temp);
         result.Col(i) = temp.Col(0);
       }
-  }    
+  }
+
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
+                             FlatVector<> result,
+                             FlatVector<> deriv) const
+  {
+    for (int i : Range(ci))
+      ci[i]->EvaluateDeriv(ip, result.Range(i,i+1), deriv.Range(i,i+1));
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
+                              FlatVector<> result,
+                              FlatVector<> deriv,
+                              FlatVector<> dderiv) const
+  {
+    for (int i : Range(ci))
+      ci[i]->EvaluateDDeriv(ip, result.Range(i,i+1),
+                            deriv.Range(i,i+1), dderiv.Range(i,i+1));
+  }
+
+
+
+  
 };
 
+
+
+
+  /* ******************** matrix operations ********************** */
+  
+class TransposeCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  Array<int> dims;
+public:
+  TransposeCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : c1(ac1)
+  {
+    auto dims_c1 = c1 -> Dimensions();
+    if (dims_c1.Size() != 2)
+      throw Exception("Transpose of non-matrix called");
+    dims = { dims_c1[1], dims_c1[0] };
+  }
+  
+  virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual int Dimension() const { return c1->Dimension(); }
+  virtual Array<int> Dimensions() const { return Array<int> (dims); } 
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    c1->Evaluate (ip, result);
+    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
+    Matrix<> tmp = Trans(reshape);
+    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
+    reshape2 = tmp;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    cout << "Transpose: complex not implemented" << endl;
+  }  
+
+};
+
+
+
+
+
+
+
+  
 
 
 

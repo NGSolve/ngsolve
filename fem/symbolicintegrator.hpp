@@ -176,13 +176,15 @@ public:
   
   
   NGS_DLL_HEADER virtual void
-  Apply (const FiniteElement & fel,
+  Apply (const FiniteElement & bfel,
          const BaseMappedIntegrationPoint & mip,
          FlatVector<double> x, 
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
-    cout << "compounddiffop::apply not implemented" << endl;
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = fel.GetRange(comp);
+    diffop->Apply (fel[comp], mip, x.Range(r), flux, lh);
   }
 
   NGS_DLL_HEADER virtual void
