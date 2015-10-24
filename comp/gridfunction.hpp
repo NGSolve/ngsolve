@@ -31,6 +31,7 @@ namespace ngcomp
     /// scalar valued or vector valued
     virtual bool IsComplex() const;
     virtual int Dimension() const;
+    virtual Array<int> Dimensions() const;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const;
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const;
 

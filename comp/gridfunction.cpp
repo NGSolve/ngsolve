@@ -945,6 +945,16 @@ namespace ngcomp
     return gf->GetFESpace()->GetEvaluator()->Dim();
   }
 
+  Array<int> GridFunctionCoefficientFunction::Dimensions() const
+  {
+    int d = Dimension();
+    int spacedim = gf->GetFESpace()->GetDimension();
+    if (diffop && spacedim > 1)
+      return Array<int> ( { spacedim, d/spacedim } );
+    return Array<int>( { d } );
+  }
+
+  
   bool GridFunctionCoefficientFunction::IsComplex() const
   { 
     return gf->GetFESpace()->IsComplex(); 
@@ -957,7 +967,7 @@ namespace ngcomp
     Evaluate (ip, flux);
     return flux(0);
   }
-
+  
   Complex GridFunctionCoefficientFunction :: 
   EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
   {

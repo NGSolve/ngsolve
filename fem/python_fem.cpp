@@ -253,13 +253,31 @@ void ExportCoefficientFunction()
                 return bp::tuple(vec);
 	      }
 	  }))
-    .add_property("dim", &CoefficientFunction::Dimension)    
+    .add_property("dim", &CoefficientFunction::Dimension)
+
+    .add_property("dims", &CoefficientFunction::Dimensions)    
     
     .def("__getitem__", FunctionPointer( [](SPCF self, int comp) -> SPCF
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
                                              bp::exec("raise IndexError()\n");
                                            return make_shared<ComponentCoefficientFunction> (self, comp); 
+                                         }))
+    .def("__getitem__", FunctionPointer( [](SPCF self, bp::tuple comps) -> SPCF
+                                         {
+                                           if (bp::len(comps) != 2)
+                                             bp::exec("raise IndexError()\n");
+                                           Array<int> dims = self->Dimensions();
+                                           if (dims.Size() != 2)
+                                             bp::exec("raise IndexError()\n");
+                                           
+                                           int c1 = bp::extract<int> (comps[0]);
+                                           int c2 = bp::extract<int> (comps[1]);
+                                           if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+                                             bp::exec("raise IndexError()\n");
+
+                                           int comp = c1 * dims[1] + c2;
+                                           return make_shared<ComponentCoefficientFunction> (self, comp);
                                          }))
 
     // coefficient expressions
@@ -365,6 +383,10 @@ void ExportCoefficientFunction()
     .def ("__neg__", FunctionPointer 
           ([] (SPCF coef) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
+
+    .def ("trans", FunctionPointer
+          ([] (SPCF coef) -> SPCF
+           { return make_shared<TransposeCoefficientFunction> (coef); }))
     ;
 
   ExportStdMathFunction<GenericSin>("sin");
