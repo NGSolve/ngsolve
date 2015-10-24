@@ -7,7 +7,8 @@ if __platform.startswith('win'):
     path.append(environ['NETGENDIR'])
 
 
-from libngpy import *
+# from libngpy import *
+import libngpy 
     
 from . import csg
 from . import meshing
