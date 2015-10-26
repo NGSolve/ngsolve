@@ -238,6 +238,7 @@ namespace ngfem
     virtual int Dim() const { return dim*diffop->Dim(); }
     virtual bool Boundary() const { return diffop->Boundary(); }
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
+    shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
 
 
     NGS_DLL_HEADER virtual void

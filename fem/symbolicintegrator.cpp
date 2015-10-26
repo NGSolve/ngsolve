@@ -27,6 +27,19 @@ namespace ngfem
     LocalHeap * lh;
   };
 
+  Array<int> ProxyFunction ::
+  Dimensions() const
+  {
+    int dim = evaluator->Dim();
+    auto blockdiffop = dynamic_pointer_cast<BlockDifferentialOperator> (evaluator);
+    if (blockdiffop)
+      {
+        int basedim = blockdiffop->BaseDiffOp()->Dim();
+        return Array<int> { basedim, dim/basedim };
+      }
+    else
+      return Array<int> ({ dim });
+  }
   
   
   void ProxyFunction ::
@@ -434,6 +447,7 @@ namespace ngfem
                     ud.test_comp = l;
                     cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
                     proxyvalues(STAR,l,k) -= dderiv.Col(0);
+                    proxyvalues(STAR,l,k) *= 0.5;
                   }
               }
           td.Stop();
@@ -443,13 +457,12 @@ namespace ngfem
               HeapReset hr(lh);
               proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
               
-              FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-              FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
-              FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+              FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
               
               proxy1->Evaluator()->CalcMatrix(fel, mir[i], bmat1, lh);
               proxy2->Evaluator()->CalcMatrix(fel, mir[i], bmat2, lh);
-              
               dbmat1 = proxyvalues(i,STAR,STAR) * bmat1;
               elmat += Trans (bmat2) * dbmat1;
             }
@@ -543,12 +556,14 @@ namespace ngfem
               ud.trialfunction = proxy;
               ud.trial_comp = k;
               cf -> EvaluateDeriv (mir, val, deriv);
-              for (int i = 0; i < mir.Size(); i++)
-                proxyvalues(i,k) = mir[i].GetWeight() * deriv(i,0);
+              proxyvalues.Col(k) = deriv.Col(0);
             }
 
           // const MappedIntegrationPoint<2,2> & cmip =
           // static_cast<const MappedIntegrationPoint<2,2>&> (mip);
+
+          for (int i = 0; i < mir.Size(); i++)
+            proxyvalues.Row(i) *= mir[i].GetWeight();
 
           proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
           ely += ely1;

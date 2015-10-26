@@ -620,7 +620,8 @@ public:
 
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return c1->Dimension(); }
-
+  virtual Array<int> Dimensions() const { return c1->Dimensions(); }
+  
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -800,7 +801,8 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return c1->Dimension(); }
-
+  virtual Array<int> Dimensions() const { return c1->Dimensions(); }
+  
   virtual void PrintReport (ostream & ost) const
   {
     ost << scal << "*(";
@@ -1206,16 +1208,22 @@ class VectorialCoefficientFunction : public CoefficientFunction
 {
   Array<shared_ptr<CoefficientFunction>> ci;
   Array<int> dims;  // tensor valued ...
+  int dim;
 public:
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : ci(aci), dims( { aci.Size() } )
-  { ; }
+    : ci(aci)
+  {
+    dim = 0;
+    for (auto cf : ci)
+      dim += cf->Dimension();
+    dims = { dim }; 
+  }
 
-  VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
-                                const Array<int> & adims)
-    : ci(aci), dims(adims)
-  { ; }
-  
+  void SetDimensions (const Array<int> & adims)
+  {
+    dims = adims;
+  }
+                
   virtual bool IsComplex() const 
   { 
     for (auto cf : ci)
@@ -1225,7 +1233,7 @@ public:
 
   virtual int Dimension() const
   {
-    return ci.Size();
+    return dim;
   }
 
   virtual Array<int> Dimensions() const
@@ -1249,20 +1257,49 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const
   {
-    for (int i : Range(ci))
-      ci[i]->Evaluate(ip, result.Range(i,i+1));
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+        cf->Evaluate(ip, result.Range(base,base+dimi));
+        base += dimi;
+      }
   }
 
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
-    for (int i : Range(ci))
-      ci[i]->Evaluate(ip, result.Range(i,i+1));
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+        cf->Evaluate(ip, result.Range(base,base+dimi));
+        base += dimi;
+      }
+
+    // for (int i : Range(ci))
+    // ci[i]->Evaluate(ip, result.Range(i,i+1));
   }
 
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+#ifdef VLA
+        double hmem[ir.Size()*dimi];
+        FlatMatrix<> temp(ir.Size(), dimi, hmem);
+#else
+        Matrix<> temp(ir.Size(), dimi);
+#endif
+        cf->Evaluate(ir, temp);
+        result.Cols(base,base+dimi) = temp;
+        base += dimi;
+      }
+
+    /*
     for (int i : Range(ci))
       {
 #ifdef VLA
@@ -1274,6 +1311,7 @@ public:
         ci[i]->Evaluate(ir, temp);
         result.Col(i) = temp.Col(0);
       }
+    */
   }
 
 
@@ -1281,13 +1319,16 @@ public:
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    for (int i : Range(ci))
+    int base = 0;
+    for (auto cf : ci)
       {
-        Matrix<> hval(mir.Size(), 1);
-        Matrix<> hderiv(mir.Size(), 1);
-        ci[i]->EvaluateDeriv(mir, hval, hderiv);
-        result.Cols(i,i+1) = hval;
-        deriv.Cols(i,i+1) = hderiv;
+        int dimi = cf->Dimension();
+        Matrix<> hval(mir.Size(), dimi);
+        Matrix<> hderiv(mir.Size(), dimi);
+        cf->EvaluateDeriv(mir, hval, hderiv);
+        result.Cols(base, base+dimi) = hval;
+        deriv.Cols(base, base+dimi) = hderiv;
+        base += dimi;
       }
       // ci[i]->EvaluateDeriv(ip, result.Range(i,i+1), deriv.Range(i,i+1));
   }
@@ -1297,15 +1338,18 @@ public:
                               FlatMatrix<> deriv,
                               FlatMatrix<> dderiv) const
   {
-    for (int i : Range(ci))
+    int base = 0;
+    for (auto cf : ci)
       {
-        Matrix<> hval(mir.Size(), 1);
-        Matrix<> hderiv(mir.Size(), 1);
-        Matrix<> hdderiv(mir.Size(), 1);
-        ci[i]->EvaluateDDeriv(mir, hval, hderiv, hdderiv);
-        result.Cols(i,i+1) = hval;
-        deriv.Cols(i,i+1) = hderiv;
-        dderiv.Cols(i,i+1) = hdderiv;
+        int dimi = cf->Dimension();
+        Matrix<> hval(mir.Size(), dimi);
+        Matrix<> hderiv(mir.Size(), dimi);
+        Matrix<> hdderiv(mir.Size(), dimi);
+        cf->EvaluateDDeriv(mir, hval, hderiv, hdderiv);
+        result.Cols(base, base+dimi) = hval;
+        deriv.Cols(base, base+dimi) = hderiv;
+        dderiv.Cols(base, base+dimi) = hdderiv;
+        base += dimi;
       }
   }
 
@@ -1363,6 +1407,76 @@ public:
   {
     cout << "Transpose: complex not implemented" << endl;
   }  
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatMatrix<> result) const
+  {
+    c1->Evaluate (mir, result);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+  }  
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    c1->EvaluateDeriv (mir, result, deriv);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+  }
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    c1->EvaluateDDeriv (mir, result, deriv, dderiv);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dderiv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    
+  }
 
 };
 
