@@ -230,8 +230,19 @@ void ExportCoefficientFunction()
     ("CoefficientFunction", bp::no_init)
 
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::object val) 
-                           { return MakeCoefficient(val); })))
+         (FunctionPointer ([](bp::object val, bp::object dims) 
+                           {
+                             auto coef = MakeCoefficient(val);
+                             if (dims)
+                               {
+                                 Array<int> cdims = makeCArray<int> (dims);
+                                 dynamic_pointer_cast<VectorialCoefficientFunction> (coef)->SetDimensions(cdims);
+                               }
+                             return coef;
+                           }),
+          bp::default_call_policies(),        // need it to use named arguments
+          (bp::arg("coef"),bp::arg("dims")=bp::object())
+          ))
     
     .def("__call__", FunctionPointer
 	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
@@ -321,6 +332,14 @@ void ExportCoefficientFunction()
                                 { ddada = 0; ddadb = 1; ddbdb = 0; }
                                 );
            } ))
+
+    .def ("InnerProduct", FunctionPointer
+          ([] (SPCF c1, SPCF c2) -> SPCF
+           { 
+             return make_shared<MultVecVecCoefficientFunction> (c1, c2);
+           }))
+          
+
     /*
       // it's using the complex functions anyway ...
     .def ("__mul__", FunctionPointer 
@@ -384,9 +403,9 @@ void ExportCoefficientFunction()
           ([] (SPCF coef) -> SPCF
            { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
 
-    .def ("trans", FunctionPointer
-          ([] (SPCF coef) -> SPCF
-           { return make_shared<TransposeCoefficientFunction> (coef); }))
+    .add_property ("trans", FunctionPointer
+                   ([] (SPCF coef) -> SPCF
+                    { return make_shared<TransposeCoefficientFunction> (coef); }))
     ;
 
   ExportStdMathFunction<GenericSin>("sin");

@@ -38,6 +38,7 @@ public:
 
   bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
+  virtual Array<int> Dimensions() const;
   virtual bool IsComplex () const { return is_complex; } // space->IsComplex(); }
 
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
