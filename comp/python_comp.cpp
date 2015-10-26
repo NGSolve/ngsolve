@@ -1690,7 +1690,7 @@ void NGS_DLL_HEADER ExportNgcomp()
            }));
 
 
-          
+  /*
   bp::def("IntegrateLF", 
           FunctionPointer
           ([](shared_ptr<LinearForm> lf, 
@@ -1829,7 +1829,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                  bf->AddElementMatrix (el.GetDofs(), el.GetDofs(), elmat, el, lh);
                }
            }));
-           
+  */
 
   bp::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>,  boost::noncopyable>("VTKOutput", bp::no_init)
     .def("__init__", bp::make_constructor 

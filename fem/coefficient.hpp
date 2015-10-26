@@ -100,37 +100,37 @@ namespace ngfem
     }
 
 
-    virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
-                                FlatVector<> result,
-                                FlatVector<> deriv) const
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                FlatMatrix<> result,
+                                FlatMatrix<> deriv) const
     {
-      Evaluate (ip, result);
+      Evaluate (ir, result);
       deriv = 0;
     }
 
-    virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
-                                FlatVector<Complex> result,
-                                FlatVector<Complex> deriv) const
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                FlatMatrix<Complex> result,
+                                FlatMatrix<Complex> deriv) const
     {
-      Evaluate (ip, result);
+      Evaluate (ir, result);
       deriv = 0;
     }
 
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
-                                 FlatVector<> result,
-                                 FlatVector<> deriv,
-                                 FlatVector<> dderiv) const
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv,
+                                 FlatMatrix<> dderiv) const
     {
-      EvaluateDeriv (ip, result, deriv);
+      EvaluateDeriv (ir, result, deriv);
       dderiv = 0;
     }
 
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
-                                 FlatVector<Complex> result,
-                                 FlatVector<Complex> deriv,
-                                 FlatVector<Complex> dderiv) const
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatMatrix<Complex> result,
+                                 FlatMatrix<Complex> deriv,
+                                 FlatMatrix<Complex> dderiv) const
     {
-      EvaluateDeriv (ip, result, deriv);
+      EvaluateDeriv (ir, result, deriv);
       dderiv = 0;
     }
 
@@ -695,81 +695,85 @@ public:
   }
 
 
-  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & mip,
-                             FlatVector<> result, FlatVector<> deriv) const
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result, FlatMatrix<> deriv) const
   {
+    int dim = result.Width();
 #ifdef VLA
-    double ha[Dimension()];
-    double hb[Dimension()];
-    FlatVector<> ra(Dimension(), ha);
-    FlatVector<> rb(Dimension(), hb);
-    double hda[Dimension()];
-    double hdb[Dimension()];
-    FlatVector<> da(Dimension(), hda);
-    FlatVector<> db(Dimension(), hdb);
+    double ha[mir.Size()*dim];
+    double hb[mir.Size()*dim];
+    FlatMatrix<> ra(mir.Size(), dim, ha);
+    FlatMatrix<> rb(mir.Size(), dim, hb);
+    double hda[mir.Size()*dim];
+    double hdb[mir.Size()*dim];
+    FlatMatrix<> da(mir.Size(), dim, hda);
+    FlatMatrix<> db(mir.Size(), dim, hdb);
 #else
-    Vector<> ra(Dimension());
-    Vector<> rb(Dimension());
-    Vector<> da(Dimension());
-    Vector<> db(Dimension());
+    Matrix<> ra(mir.Size(), dim);
+    Matrix<> rb(mir.Size(), dim);
+    Matrix<> da(mir.Size(), dim);
+    Matrix<> db(mir.Size(), dim);
 #endif
 
-    c1->EvaluateDeriv (mip, ra, da);
-    c2->EvaluateDeriv (mip, rb, db);
-    for (int i = 0; i < result.Size(); i++)
-      {
-        result(i) = lam (ra(i), rb(i));
-        double dda, ddb;
-        lam_deriv (ra(i), rb(i), dda, ddb);
-        deriv(i) = dda * da(i) + ddb * db(i);
-      }
+    c1->EvaluateDeriv (mir, ra, da);
+    c2->EvaluateDeriv (mir, rb, db);
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < result.Width(); i++)
+        {
+          result(k,i) = lam (ra(k,i), rb(k,i));
+          double dda, ddb;
+          lam_deriv (ra(k,i), rb(k,i), dda, ddb);
+          deriv(k,i) = dda * da(k,i) + ddb * db(k,i);
+        }
   }
 
 
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & mip,
-                              FlatVector<> result, 
-                              FlatVector<> deriv,
-                              FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result, 
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
   {
+    int dim = result.Width();
 #ifdef VLA
-    double ha[Dimension()];
-    double hb[Dimension()];
-    FlatVector<> ra(Dimension(), ha);
-    FlatVector<> rb(Dimension(), hb);
-    double hda[Dimension()];
-    double hdb[Dimension()];
-    FlatVector<> da(Dimension(), hda);
-    FlatVector<> db(Dimension(), hdb);
-    double hdda[Dimension()];
-    double hddb[Dimension()];
-    FlatVector<> dda(Dimension(), hdda);
-    FlatVector<> ddb(Dimension(), hddb);
+    double ha[mir.Size()*dim];
+    double hb[mir.Size()*dim];
+    FlatMatrix<> ra(mir.Size(), dim, ha);
+    FlatMatrix<> rb(mir.Size(), dim, hb);
+    double hda[mir.Size()*dim];
+    double hdb[mir.Size()*dim];
+    FlatMatrix<> da(mir.Size(), dim, hda);
+    FlatMatrix<> db(mir.Size(), dim, hdb);
+    double hdda[mir.Size()*dim];
+    double hddb[mir.Size()*dim];
+    FlatMatrix<> dda(mir.Size(), dim, hdda);
+    FlatMatrix<> ddb(mir.Size(), dim, hddb);
 #else
-    Vector<> ra(Dimension());
-    Vector<> rb(Dimension());
-    Vector<> da(Dimension());
-    Vector<> db(Dimension());
-    Vector<> dda(Dimension());
-    Vector<> ddb(Dimension());
+    Matrix<> ra(mir.Size(), dim);
+    Matrix<> rb(mir.Size(), dim);
+    Matrix<> da(mir.Size(), dim);
+    Matrix<> db(mir.Size(), dim);
+    Matrix<> dda(mir.Size(), dim);
+    Matrix<> ddb(mir.Size(), dim);
 #endif
 
-    c1->EvaluateDDeriv (mip, ra, da, dda);
-    c2->EvaluateDDeriv (mip, rb, db, ddb);
-    for (int i = 0; i < result.Size(); i++)
-      {
-        result(i) = lam (ra(i), rb(i));
-        double d_da, d_db;
-        lam_deriv (ra(i), rb(i), d_da, d_db);
-        deriv(i) = d_da * da(i) + d_db * db(i);
-
-        double d_dada, d_dadb, d_dbdb;
-        lam_dderiv (ra(i), rb(i), d_dada, d_dadb, d_dbdb);
-
-        dderiv(i) = d_da * dda(i) + d_db * ddb(i) +
-          d_dada * da(i)*da(i) + 2 * d_dadb * da(i)*db(i) + d_dbdb * db(i) * db(i);
-      }
+    c1->EvaluateDDeriv (mir, ra, da, dda);
+    c2->EvaluateDDeriv (mir, rb, db, ddb);
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < dim; i++)
+        {
+          result(k,i) = lam (ra(k,i), rb(k,i));
+          double d_da, d_db;
+          lam_deriv (ra(k,i), rb(k,i), d_da, d_db);
+          deriv(k,i) = d_da * da(k,i) + d_db * db(k,i);
+          
+          double d_dada, d_dadb, d_dbdb;
+          lam_dderiv (ra(k,i), rb(k,i), d_dada, d_dadb, d_dbdb);
+          
+          dderiv(k,i) = d_da * dda(k,i) + d_db * ddb(k,i) +
+            d_dada * da(k,i)*da(k,i) + 2 * d_dadb * da(k,i)*db(k,i) + d_dbdb * db(k,i) * db(k,i);
+        }
   }
-
+  
 
 
 };
@@ -834,18 +838,18 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
-  virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result, FlatVector<> deriv) const
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                              FlatMatrix<> result, FlatMatrix<> deriv) const
   {
-    c1->EvaluateDeriv (ip, result, deriv);
+    c1->EvaluateDeriv (ir, result, deriv);
     result *= scal;
     deriv *= scal;
   }
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
-                               FlatVector<> result, FlatVector<> deriv,
-                               FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                               FlatMatrix<> result, FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
   {
-    c1->EvaluateDDeriv (ip, result, deriv, dderiv);
+    c1->EvaluateDDeriv (ir, result, deriv, dderiv);
     result *= scal;
     deriv *= scal;
     dderiv *= scal;
@@ -997,31 +1001,40 @@ public:
       result(i) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
-                             FlatVector<> result,
-                             FlatVector<> deriv) const
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
   {
-    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
-    Vector<> dv1(c1->Dimension()), dv2(c2->Dimension());
-    c1->EvaluateDeriv (ip, v1, dv1);
-    c2->EvaluateDeriv (ip, v2, dv2);
-    result(0) = InnerProduct (v1, v2);
-    deriv(0) = InnerProduct (v1, dv2)+InnerProduct(v2,dv1);
+    Matrix<> v1(mir.Size(), c1->Dimension()), v2(mir.Size(),c2->Dimension());
+    Matrix<> dv1(mir.Size(), c1->Dimension()), dv2(mir.Size(), c2->Dimension());
+    c1->EvaluateDeriv (mir, v1, dv1);
+    c2->EvaluateDeriv (mir, v2, dv2);
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+      }
   }
 
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result,
-                              FlatVector<> deriv,
-                              FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
   {
-    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
-    Vector<> dv1(c1->Dimension()), dv2(c2->Dimension());
-    Vector<> ddv1(c1->Dimension()), ddv2(c2->Dimension());
-    c1->EvaluateDDeriv (ip, v1, dv1, ddv1);
-    c2->EvaluateDDeriv (ip, v2, dv2, ddv2);
-    result(0) = InnerProduct (v1, v2);
-    deriv(0) = InnerProduct (v1, dv2)+InnerProduct(v2,dv1);
-    dderiv(0) = InnerProduct (v1, ddv2)+2*InnerProduct(dv1,dv2)+InnerProduct(ddv1,v2);
+    Matrix<> v1(mir.Size(), c1->Dimension()), v2(mir.Size(), c2->Dimension());
+    Matrix<> dv1(mir.Size(), c1->Dimension()), dv2(mir.Size(), c2->Dimension());
+    Matrix<> ddv1(mir.Size(), c1->Dimension()), ddv2(mir.Size(), c2->Dimension());
+    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
+    c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
+
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
+          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
+      }
+
   }
 
 
@@ -1070,29 +1083,29 @@ public:
     result(0) = v1(comp);
   }
 
-  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
-                             FlatVector<> result,
-                             FlatVector<> deriv) const
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
   {
-    Vector<> v1(c1->Dimension());
-    Vector<> dv1(c1->Dimension());
-    c1->EvaluateDeriv (ip, v1, dv1);
-    result(0) = v1(comp);
-    deriv(0) = dv1(comp);
+    Matrix<> v1(mir.Size(), c1->Dimension());
+    Matrix<> dv1(mir.Size(), c1->Dimension());
+    c1->EvaluateDeriv (mir, v1, dv1);
+    result.Col(0) = v1.Col(comp);
+    deriv.Col(0) = dv1.Col(comp);
   }
 
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result,
-                              FlatVector<> deriv,
-                              FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
   {
-    Vector<> v1(c1->Dimension());
-    Vector<> dv1(c1->Dimension());
-    Vector<> ddv1(c1->Dimension());
-    c1->EvaluateDDeriv (ip, v1, dv1, ddv1);
-    result(0) = v1(comp);
-    deriv(0) = dv1(comp);
-    dderiv(0) = ddv1(comp);
+    Matrix<> v1(mir.Size(), c1->Dimension());
+    Matrix<> dv1(mir.Size(), c1->Dimension());
+    Matrix<> ddv1(mir.Size(), c1->Dimension());
+    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
+    result.Col(0) = v1.Col(comp);
+    deriv.Col(0) = dv1.Col(comp);
+    dderiv.Col(0) = ddv1.Col(comp);
   }
 
 };
@@ -1158,32 +1171,32 @@ public:
       ci[matindex] -> Evaluate (ip, result);
   }
 
-  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
-                             FlatVector<> result,
-                             FlatVector<> deriv) const
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
   {
     result = 0;
     deriv = 0;
-    if (!&ip.GetTransformation()) return;
+    if (!&mir.GetTransformation()) return;
 
-    int matindex = ip.GetTransformation().GetElementIndex();
+    int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
-      ci[matindex] -> EvaluateDeriv (ip, result, deriv);
+      ci[matindex] -> EvaluateDeriv (mir, result, deriv);
   }
 
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result,
-                              FlatVector<> deriv,
-                              FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
   {
     result = 0;
     deriv = 0;
     dderiv = 0;
-    if (!&ip.GetTransformation()) return;
+    if (!&mir.GetTransformation()) return;
 
-    int matindex = ip.GetTransformation().GetElementIndex();
+    int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
-      ci[matindex] -> EvaluateDDeriv (ip, result, deriv, dderiv);
+      ci[matindex] -> EvaluateDDeriv (mir, result, deriv, dderiv);
   }
 };
 
@@ -1264,22 +1277,36 @@ public:
   }
 
 
-  virtual void EvaluateDeriv(const BaseMappedIntegrationPoint & ip,
-                             FlatVector<> result,
-                             FlatVector<> deriv) const
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
   {
     for (int i : Range(ci))
-      ci[i]->EvaluateDeriv(ip, result.Range(i,i+1), deriv.Range(i,i+1));
+      {
+        Matrix<> hval(mir.Size(), 1);
+        Matrix<> hderiv(mir.Size(), 1);
+        ci[i]->EvaluateDeriv(mir, hval, hderiv);
+        result.Cols(i,i+1) = hval;
+        deriv.Cols(i,i+1) = hderiv;
+      }
+      // ci[i]->EvaluateDeriv(ip, result.Range(i,i+1), deriv.Range(i,i+1));
   }
 
-  virtual void EvaluateDDeriv(const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result,
-                              FlatVector<> deriv,
-                              FlatVector<> dderiv) const
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
   {
     for (int i : Range(ci))
-      ci[i]->EvaluateDDeriv(ip, result.Range(i,i+1),
-                            deriv.Range(i,i+1), dderiv.Range(i,i+1));
+      {
+        Matrix<> hval(mir.Size(), 1);
+        Matrix<> hderiv(mir.Size(), 1);
+        Matrix<> hdderiv(mir.Size(), 1);
+        ci[i]->EvaluateDDeriv(mir, hval, hderiv, hdderiv);
+        result.Cols(i,i+1) = hval;
+        deriv.Cols(i,i+1) = hderiv;
+        dderiv.Cols(i,i+1) = hdderiv;
+      }
   }
 
 

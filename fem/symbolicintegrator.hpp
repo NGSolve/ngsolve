@@ -12,18 +12,6 @@ namespace ngfem
 {
 
   
-class ProxyUserData
-{
-public:
-  class ProxyFunction * testfunction = nullptr;
-  int test_comp;
-  class ProxyFunction * trialfunction = nullptr;
-  int trial_comp;
-
-  const FiniteElement * fel = nullptr;
-  const FlatVector<double> * elx;
-  LocalHeap * lh;
-};
 
 class ProxyFunction : public CoefficientFunction
 {
@@ -72,76 +60,19 @@ public:
   }
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<> result) const
-  {
-    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
-
-    if (!testfunction && ud->fel)
-      {
-        evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
-        return;
-      }
-
-    result = 0;
-    if (ud->testfunction == this)
-      result (ud->test_comp) = 1;
-    if (ud->trialfunction == this)
-      result (ud->trial_comp) = 1;
-  }
+                         FlatVector<> result) const;
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
-                         FlatVector<Complex> result) const
-  {
-    Vector<> result_double(result.Size());
-    Evaluate (ip, result_double);
-    result = result_double;
-  }
+                         FlatVector<Complex> result) const;
 
-  virtual void EvaluateDeriv (const BaseMappedIntegrationPoint & ip,
-                              FlatVector<> result,
-                              FlatVector<> deriv) const
-  {
-    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const;
 
-    deriv = 0;
-    result = 0;
-
-    if (!testfunction && ud->fel)
-      evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
-
-    if (ud->testfunction == this)
-      result(ud->test_comp) = 1;
-    if (ud->trialfunction == this)
-      deriv(ud->trial_comp) = 1;
-  }
-
-
-  virtual void EvaluateDDeriv (const BaseMappedIntegrationPoint & ip,
-                               FlatVector<> result,
-                               FlatVector<> deriv,
-                               FlatVector<> dderiv) const
-  {
-    ProxyUserData * ud = (ProxyUserData*)ip.GetTransformation().userdata;
-    if (!ud) 
-      throw Exception ("cannot evaluate ProxyFunction");
-
-    result = 0;
-    deriv = 0;
-    dderiv = 0;
-
-    if (!testfunction && ud->fel)
-      evaluator->Apply (*ud->fel, ip, *ud->elx, result, *ud->lh);
-
-    if (ud->testfunction == this)
-      deriv(ud->test_comp) = 1;
-    if (ud->trialfunction == this)
-      deriv(ud->trial_comp) = 1;
-  }
-
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const;
 };
 
 
