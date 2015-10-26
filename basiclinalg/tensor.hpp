@@ -182,6 +182,8 @@ public:
   T * Data () const { return data; }  
   FlatTensor<0,T> operator() () { return FlatTensor<0,T> (data); }
   void operator= (double d) { *data = d; }
+  void operator-= (double d) { *data -= d; }
+  void operator+= (double d) { *data += d; }
 };
 
 
