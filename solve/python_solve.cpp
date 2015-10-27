@@ -36,6 +36,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
     bp::def ("Draw", FunctionPointer
              ([](shared_ptr<GridFunction> gf, int sd) 
               {
+                Visualize (gf, gf->GetName());
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
                 else

@@ -154,7 +154,8 @@ namespace ngcomp
 
 
       }
-    if (archive.Input()) Visualize(name);
+    if (archive.Input())
+      Visualize(shared_ptr<GridFunction>(this, NOOP_Deleter), name);
   }
 
 
@@ -200,9 +201,10 @@ namespace ngcomp
   }
 
 
-  void GridFunction :: Visualize(const string & given_name)
+  // void GridFunction :: Visualize(const string & given_name)
+  void Visualize(shared_ptr<GridFunction> gf, const string & given_name)
   {
-    if (!visual) return;
+    // if (!visual) return;
 
     /*
       for (int i = 0; i < compgfs.Size(); i++)
@@ -215,6 +217,9 @@ namespace ngcomp
 
     shared_ptr<BilinearFormIntegrator> bfi2d, bfi3d;
 
+    auto fespace = gf->GetFESpace();
+    auto ma = fespace->GetMeshAccess();
+    
     if (ma->GetDimension() == 2)
       {
 	bfi2d = fespace->GetIntegrator();
@@ -229,9 +234,9 @@ namespace ngcomp
       {
         netgen::SolutionData * vis;
 	if (!fespace->IsComplex())
-	  vis = new VisualizeGridFunction<double> (ma, this, bfi2d, bfi3d, 0);
+	  vis = new VisualizeGridFunction<double> (ma, gf, bfi2d, bfi3d, 0);
 	else
-	  vis = new VisualizeGridFunction<Complex> (ma, this, bfi2d, bfi3d, 0);
+	  vis = new VisualizeGridFunction<Complex> (ma, gf, bfi2d, bfi3d, 0);
 
 	Ng_SolutionData soldata;
 	Ng_InitSolutionData (&soldata);
@@ -721,8 +726,11 @@ namespace ngcomp
 	this->compgfs.SetSize(nsp);
 	for (int i = 0; i < nsp; i++)
 	  this->compgfs[i] = make_shared<S_ComponentGridFunction<SCAL>> (*this, i);
-      }    
-    this->Visualize (this->name);
+      }
+    
+    // this->Visualize (this->name);
+    if (this->visual)
+      Visualize (shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
   }
 
   template <class SCAL>
@@ -794,7 +802,9 @@ namespace ngcomp
 	  compgfs[i] = make_shared<S_ComponentGridFunction<TSCAL>> (*this, i);
       }    
 
-    this->Visualize (this->name);
+    // this->Visualize (this->name);
+    if (this->visual)
+      Visualize(shared_ptr<GridFunction> (this, NOOP_Deleter), this->name);
   }
 
 
@@ -1129,13 +1139,13 @@ namespace ngcomp
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::
   VisualizeGridFunction (shared_ptr<MeshAccess>  ama,
-			 const GridFunction * agf,
+			 shared_ptr<GridFunction> agf,
 			 shared_ptr<BilinearFormIntegrator> abfi2d,
 			 shared_ptr<BilinearFormIntegrator> abfi3d,
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace()->IsComplex()),
-      ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
+      ma(ama), gf(dynamic_pointer_cast<S_GridFunction<SCAL>> (agf)), 
       applyd(aapplyd) // , lh(10000013, "VisualizedGridFunction 2")
   { 
     if(abfi2d)
@@ -1152,13 +1162,13 @@ namespace ngcomp
   template <class SCAL>
   VisualizeGridFunction<SCAL> ::
   VisualizeGridFunction (shared_ptr<MeshAccess>  ama,
-			 const GridFunction * agf,
+			 shared_ptr<GridFunction> agf,
 			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
 			 const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
 			 bool aapplyd)
 
     : SolutionData (agf->GetName(), -1, agf->GetFESpace()->IsComplex()),
-      ma(ama), gf(dynamic_cast<const S_GridFunction<SCAL>*> (agf)), 
+      ma(ama), gf(dynamic_pointer_cast<S_GridFunction<SCAL>> (agf)), 
       applyd(aapplyd) // , lh(10000002, "VisualizeGridFunction")
   { 
     for(int i=0; i<abfi2d.Size(); i++)

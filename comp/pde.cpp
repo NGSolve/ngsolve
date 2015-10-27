@@ -916,8 +916,8 @@ namespace ngcomp
             auto gf = CreateGridFunction (GetFESpace(fesname), name, { "novisual" } );
             // cout << "got gf, type = " << typeid(*gf).name() << endl;
             AddGridFunction (name, gf);
-            gridfunctions[i] -> DoArchive (archive);            
-            gridfunctions[i] -> Visualize(name);
+            gridfunctions[i] -> DoArchive (archive);
+            Visualize (gridfunctions[i], name);
           }
       }
   }

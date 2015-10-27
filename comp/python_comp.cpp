@@ -939,6 +939,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                               (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
                               {
                                 Flags flags;
+                                flags.SetFlag ("novisual");
                                 auto gf = CreateGridFunction (fespace, name, flags);
                                 gf->Update();
                                 return gf;
