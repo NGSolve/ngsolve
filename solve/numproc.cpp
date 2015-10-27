@@ -313,9 +313,9 @@ namespace ngsolve
         }
 
       if (!bfa->GetFESpace()->IsComplex())
-        vis = new VisualizeGridFunction<double> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+        vis = new VisualizeGridFunction<double> (ma, gfu, bfi2d, bfi3d, applyd);
       else
-        vis = new VisualizeGridFunction<Complex> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+        vis = new VisualizeGridFunction<Complex> (ma, gfu, bfi2d, bfi3d, applyd);
       
       Ng_SolutionData soldata;
       Ng_InitSolutionData (&soldata);
@@ -414,9 +414,9 @@ namespace ngsolve
     */
 
     if (!bfa->GetFESpace()->IsComplex())
-      vis = new VisualizeGridFunction<double> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+      vis = new VisualizeGridFunction<double> (ma, gfu, bfi2d, bfi3d, applyd);
     else
-      vis = new VisualizeGridFunction<Complex> (ma, gfu.get(), bfi2d, bfi3d, applyd);
+      vis = new VisualizeGridFunction<Complex> (ma, gfu, bfi2d, bfi3d, applyd);
 
     Ng_SolutionData soldata;
     Ng_InitSolutionData (&soldata);
@@ -1264,7 +1264,7 @@ namespace ngsolve
 
 	// const FESpace & fes = gfu->GetFESpace();
 
-	VisualizeGridFunction<double> vgfu(shared_ptr<PDE>(pde)->GetMeshAccess(),gfu.get(),
+	VisualizeGridFunction<double> vgfu(shared_ptr<PDE>(pde)->GetMeshAccess(),gfu,
 					   BoundaryIntegrator_ptr,
 					   Integrator_ptr,false);
 

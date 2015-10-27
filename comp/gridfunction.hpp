@@ -120,7 +120,7 @@ namespace ngcomp
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
     ///
-    void Visualize(const string & name);
+    // void Visualize(const string & name);
 
     ///
     virtual void SetCacheBlockSize (const int size) {cacheblocksize = size;}
@@ -189,7 +189,8 @@ namespace ngcomp
   };
 
 
-
+  extern void Visualize(shared_ptr<GridFunction> gf, const string & name);
+  
   template <class SCAL>
   class NGS_DLL_HEADER S_GridFunction : public GridFunction
   {
@@ -276,7 +277,7 @@ namespace ngcomp
   class NGS_DLL_HEADER VisualizeGridFunction : public netgen::SolutionData
   {
     shared_ptr<MeshAccess> ma;
-    const S_GridFunction<SCAL> * gf;
+    shared_ptr<S_GridFunction<SCAL>> gf;
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;
@@ -291,12 +292,12 @@ namespace ngcomp
 
   public:
     VisualizeGridFunction (shared_ptr<MeshAccess> ama,
-			   const GridFunction * agf,
+			   shared_ptr<GridFunction> agf,
 			   const shared_ptr<BilinearFormIntegrator> abfi2d,
 			   const shared_ptr<BilinearFormIntegrator> abfi3d,
 			   bool aapplyd);
     VisualizeGridFunction (shared_ptr<MeshAccess> ama,
-			   const GridFunction * agf,
+			   shared_ptr<GridFunction> agf,
 			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi2d,
 			   const Array<shared_ptr<BilinearFormIntegrator>> & abfi3d,
 			   bool aapplyd);
