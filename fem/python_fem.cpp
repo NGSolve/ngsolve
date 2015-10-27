@@ -317,7 +317,9 @@ void ExportCoefficientFunction()
 
     .def ("__mul__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
-           { 
+           {
+             if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
+               return make_shared<MultMatMatCoefficientFunction> (c1, c2);
              if (c1->Dimension() > 1 && c2->Dimension() > 1)
                return make_shared<MultVecVecCoefficientFunction> (c1, c2);
              if (c1->Dimension() == 1 && c2->Dimension() > 1)

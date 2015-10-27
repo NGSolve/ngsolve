@@ -1482,6 +1482,139 @@ public:
 
 
 
+class MultMatMatCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  shared_ptr<CoefficientFunction> c2;
+  Array<int> dims;
+  int inner_dim;
+public:
+  MultMatMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                 shared_ptr<CoefficientFunction> ac2)
+    : c1(ac1), c2(ac2)
+  {
+    auto dims_c1 = c1 -> Dimensions();
+    auto dims_c2 = c2 -> Dimensions();
+    if (dims_c1.Size() != 2 || dims_c2.Size() != 2)
+      throw Exception("Mult of non-matrices called");
+    if (dims_c1[1] != dims_c2[0])
+      throw Exception("Matrix dimensions don't fit");
+    dims = { dims_c1[0], dims_c2[1] };
+    inner_dim = dims_c1[1];
+  }
+  
+  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+  virtual int Dimension() const { return dims[0]*dims[1]; }
+  virtual Array<int> Dimensions() const { return Array<int> (dims); } 
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    Vector<> va(dims[0]*inner_dim);
+    Vector<> vb(dims[1]*inner_dim);
+    FlatMatrix<> a(dims[0], inner_dim, &va[0]);
+    FlatMatrix<> b(inner_dim, dims[1], &vb[0]);
+    
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+
+    FlatMatrix<> c(dims[0], dims[1], &result(0));
+    c = a*b;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    cout << "Transpose: complex not implemented" << endl;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatMatrix<> result) const
+  {
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    c1->Evaluate (mir, va);
+    c2->Evaluate (mir, vb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        c = a*b;
+      }
+  }  
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    c1->EvaluateDeriv (mir, va, vda);
+    c2->EvaluateDeriv (mir, vb, vdb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+      }
+  }
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vdda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vddb(mir.Size(), dims[1]*inner_dim);
+    c1->EvaluateDDeriv (mir, va, vda, vdda);
+    c2->EvaluateDDeriv (mir, vb, vdb, vddb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> dda(dims[0], inner_dim, &vdda(i,0));
+        FlatMatrix<> ddb(inner_dim, dims[1], &vddb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        FlatMatrix<> ddc(dims[0], dims[1], &dderiv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+        ddc = a*ddb+2*da*db+dda*b;
+      }
+  }
+
+};
+
+
 
 
 
