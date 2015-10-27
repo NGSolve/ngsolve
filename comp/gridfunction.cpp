@@ -1128,8 +1128,12 @@ namespace ngcomp
       diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
-    else
+    else if (fes.GetEvaluator(boundary))
+      fes.GetEvaluator(boundary) -> Apply (fel, ir, elu, values, lh2);
+    else if (fes.GetIntegrator(boundary))
       fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
+    else
+      throw Exception ("don't know how I shall evaluate");
   }
 
 
