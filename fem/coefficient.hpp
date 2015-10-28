@@ -33,6 +33,11 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
+                           FlatMatrix<double> values) const
+    {
+      Evaluate (ir, values);
+    }
 
     ///
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
@@ -134,10 +139,32 @@ namespace ngfem
       dderiv = 0;
     }
 
+    
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatArray<FlatMatrix<>*> input,
+                                 FlatArray<FlatMatrix<>*> dinput,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv) const
+    {
+      EvaluateDeriv (ir, result, deriv);
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatArray<FlatMatrix<>*> input,
+                                 FlatArray<FlatMatrix<>*> dinput,
+                                 FlatArray<FlatMatrix<>*> ddinput,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv,
+                                 FlatMatrix<> dderiv) const
+    {
+      EvaluateDDeriv (ir, result, deriv, dderiv);
+    }
 
 
     virtual void PrintReport (ostream & ost) const;
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
+    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+    { return Array<CoefficientFunction*>(); }
   };
 
   inline ostream & operator<< (ostream & ost, CoefficientFunction & cf)
@@ -561,6 +588,9 @@ public:
     func(*this);
   }
 
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() }); }
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip));
@@ -584,6 +614,8 @@ public:
     for (int j = 0; j < result.Size(); j++)
       result(j) = lam(result(j));
   }
+
+  
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
@@ -629,6 +661,9 @@ public:
     func(*this);
   }
 
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return lam (c1->Evaluate(ip), c2->Evaluate(ip));
@@ -660,6 +695,7 @@ public:
     for (int i = 0; i < result.Size(); i++)
       result(i) = lam (result(i), temp(i));
   }
+
 
   virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
                         FlatVector<Complex> result) const
@@ -695,6 +731,18 @@ public:
       result(i) = lam (result(i), temp(i));
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<double> result) const
+  {
+    FlatMatrix<> ra = *input[0], rb = *input[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < result.Width(); i++)
+        result(k,i) = lam (ra(k,i), rb(k,i));
+  }
+    
+  
+  
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result, FlatMatrix<> deriv) const
@@ -777,6 +825,59 @@ public:
   
 
 
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatArray<FlatMatrix<>*> input,
+                             FlatArray<FlatMatrix<>*> dinput,
+                             FlatMatrix<> result, FlatMatrix<> deriv) const
+  {
+    int dim = result.Width();
+    FlatMatrix<> ra = *input[0], rb = *input[1];
+    FlatMatrix<> da = *dinput[0], db = *dinput[1];
+
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < result.Width(); i++)
+        {
+          result(k,i) = lam (ra(k,i), rb(k,i));
+          double dda, ddb;
+          lam_deriv (ra(k,i), rb(k,i), dda, ddb);
+          deriv(k,i) = dda * da(k,i) + ddb * db(k,i);
+        }
+  }
+
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatArray<FlatMatrix<>*> ddinput,
+                              FlatMatrix<> result, 
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    int dim = result.Width();
+    FlatMatrix<> ra = *input[0], rb = *input[1];
+    FlatMatrix<> da = *dinput[0], db = *dinput[1];
+    FlatMatrix<> dda = *ddinput[0], ddb = *ddinput[1];    
+
+    for (int k = 0; k < mir.Size(); k++)
+      for (int i = 0; i < dim; i++)
+        {
+          result(k,i) = lam (ra(k,i), rb(k,i));
+          double d_da, d_db;
+          lam_deriv (ra(k,i), rb(k,i), d_da, d_db);
+          deriv(k,i) = d_da * da(k,i) + d_db * db(k,i);
+          
+          double d_dada, d_dadb, d_dbdb;
+          lam_dderiv (ra(k,i), rb(k,i), d_dada, d_dadb, d_dbdb);
+          
+          dderiv(k,i) = d_da * dda(k,i) + d_db * ddb(k,i) +
+            d_dada * da(k,i)*da(k,i) + 2 * d_dadb * da(k,i)*db(k,i) + d_dbdb * db(k,i) * db(k,i);
+        }
+  }
+  
+
+
+  
+
 };
 
 template <typename OP, typename OPC, typename DERIV, typename DDERIV> 
@@ -816,6 +917,10 @@ public:
     func(*this);
   }
 
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() }); }
+
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     return scal * c1->Evaluate(ip);
@@ -834,12 +939,14 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
+  
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
     c1->Evaluate (ip, result);
     result *= scal;
   }
+  
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result, FlatMatrix<> deriv) const
   {
@@ -847,6 +954,7 @@ public:
     result *= scal;
     deriv *= scal;
   }
+  
   virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
                                FlatMatrix<> result, FlatMatrix<> deriv,
                                FlatMatrix<> dderiv) const
@@ -857,6 +965,47 @@ public:
     dderiv *= scal;
   }
 
+
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<> result) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    result = scal * v1;
+  }
+
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+
+    result = scal * v1;
+    deriv = scal * dv1;
+  }
+
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+    FlatMatrix<> ddv1 = *ddinput[0];
+
+    result = scal * v1;
+    deriv = scal * dv1;
+    dderiv = scal * ddv1;
+  }
+
+  
 };
 
 
@@ -877,6 +1026,10 @@ public:
     c1->TraverseTree (func);
     func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() }); }
+  
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -915,6 +1068,9 @@ public:
     func(*this);
   }
 
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
     throw Exception ("double MultScalVecCF::Evaluate called");
@@ -959,6 +1115,9 @@ public:
     c2->TraverseTree (func);
     func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -1000,8 +1159,19 @@ public:
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
     for (int i = 0; i < ir.Size(); i++)
-      result(i) = InnerProduct(temp1.Row(i), temp2.Row(i));
+      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<double> result) const
+  {
+    FlatMatrix<> temp1 = *input[0];
+    FlatMatrix<> temp2 = *input[1];
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
+  }
+
+  
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
@@ -1039,6 +1209,26 @@ public:
 
   }
 
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    FlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
+          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
+      }
+  }
 
 
 };
@@ -1062,6 +1252,9 @@ public:
     func(*this);
   }
 
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() }); }
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     Vector<> v1(c1->Dimension());
@@ -1110,6 +1303,50 @@ public:
     dderiv.Col(0) = ddv1.Col(comp);
   }
 
+
+
+
+  
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<> result) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    result.Col(0) = v1.Col(comp);
+  }  
+  
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+    
+    result.Col(0) = v1.Col(comp);
+    deriv.Col(0) = dv1.Col(comp);
+   }  
+
+
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+    FlatMatrix<> ddv1 = *ddinput[0];
+    
+    result.Col(0) = v1.Col(comp);
+    deriv.Col(0) = dv1.Col(comp);
+    dderiv.Col(0) = ddv1.Col(comp);
+   }  
+
 };
 
 
@@ -1137,11 +1374,21 @@ public:
     return 0;
   }
 
-  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
   {
     for (auto cf : ci)
       cf->TraverseTree (func);
+    func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  {
+    Array<CoefficientFunction*> cfa;
+    for (auto cf : ci)
+      cfa.Append (cf.get());
+    return Array<CoefficientFunction*>(cfa);
+  } 
+  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -1245,7 +1492,16 @@ public:
   {
     for (auto cf : ci)
       cf->TraverseTree (func);
+    func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  {
+    Array<CoefficientFunction*> cfa;
+    for (auto cf : ci)
+      cfa.Append (cf.get());
+    return Array<CoefficientFunction*>(cfa);
+  } 
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -1355,6 +1611,56 @@ public:
 
 
 
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<> result) const
+  {
+    int base = 0;
+    for (int i : Range(ci))
+      {
+        int dimi = ci[i]->Dimension();
+        result.Cols(base, base+dimi) = *input[i];
+        base += dimi;
+      }
+  }
+  
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    int base = 0;
+    for (int i : Range(ci))
+      {
+        int dimi = ci[i]->Dimension();
+        result.Cols(base, base+dimi) = *input[i];
+        deriv.Cols(base, base+dimi) = *dinput[i];
+        base += dimi;
+      }
+  }
+
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    int base = 0;
+    for (int i : Range(ci))
+      {
+        int dimi = ci[i]->Dimension();
+        result.Cols(base, base+dimi) = *input[i];
+        deriv.Cols(base, base+dimi) = *dinput[i];
+        dderiv.Cols(base, base+dimi) = *ddinput[i];
+        base += dimi;
+      }
+  }
+
   
 };
 
@@ -1386,6 +1692,9 @@ public:
     c1->TraverseTree (func);
     func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() } ); }  
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -1475,10 +1784,82 @@ public:
         FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
         reshape2 = tmp;
       }
+  }
+
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<> result) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+  }  
+  
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+  }  
+
+
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+    FlatMatrix<> ddv1 = *ddinput[0];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &ddv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
     
   }
 
-};
+  
+  };
 
 
 
@@ -1513,6 +1894,9 @@ public:
     c2->TraverseTree (func);
     func(*this);
   }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -1612,6 +1996,83 @@ public:
       }
   }
 
+
+  
+
+
+
+  virtual void Evaluate(const BaseMappedIntegrationRule & mir,
+                        FlatArray<FlatMatrix<>*> input,
+                        FlatMatrix<> result) const
+  {
+    FlatMatrix<> va = *input[0], vb = *input[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        c = a*b;
+      }
+  }
+
+
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatArray<FlatMatrix<>*> input,
+                             FlatArray<FlatMatrix<>*> dinput,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> va = *input[0], vb = *input[1];
+    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+      }
+  }
+
+
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatArray<FlatMatrix<>*> ddinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> va = *input[0], vb = *input[1];
+    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
+    FlatMatrix<> vdda = *ddinput[0], vddb = *ddinput[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> dda(dims[0], inner_dim, &vdda(i,0));
+        FlatMatrix<> ddb(inner_dim, dims[1], &vddb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        FlatMatrix<> ddc(dims[0], dims[1], &dderiv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+        ddc = a*ddb+2*da*db+dda*b;
+      }
+  }
+
+
+  
 };
 
 
@@ -1649,7 +2110,7 @@ public:
   
                                              
 
-
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
   
 }
 

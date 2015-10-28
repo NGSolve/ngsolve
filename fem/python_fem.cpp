@@ -408,6 +408,12 @@ void ExportCoefficientFunction()
     .add_property ("trans", FunctionPointer
                    ([] (SPCF coef) -> SPCF
                     { return make_shared<TransposeCoefficientFunction> (coef); }))
+
+    .def ("Compile", FunctionPointer
+          ([] (SPCF coef) -> SPCF
+           {
+             return Compile (coef);
+           }))
     ;
 
   ExportStdMathFunction<GenericSin>("sin");

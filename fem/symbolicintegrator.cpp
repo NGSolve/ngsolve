@@ -23,7 +23,7 @@ namespace ngfem
     
     const FiniteElement * fel = nullptr;
     const FlatVector<double> * elx;
-    map<CoefficientFunction*, Vector<double>> remember;
+    map<ProxyFunction*, Matrix<double>> remember;
     LocalHeap * lh;
   };
 
@@ -109,6 +109,7 @@ namespace ngfem
                   FlatMatrix<> dderiv) const
   {
     static Timer t("ProxyFunction :: Evaluate", 2);
+    static Timer t2("ProxyFunction :: Evaluate, calc only", 2);
     RegionTimer reg(t);
     
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
@@ -120,8 +121,13 @@ namespace ngfem
     dderiv = 0;
 
     if (!testfunction && ud->fel)
-      evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
-
+      {
+        RegionTimer reg2(t2);
+        if (ud->remember.count (const_cast<ProxyFunction*>(this)))
+          result = ud->remember[const_cast<ProxyFunction*>(this)];
+        else
+          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+      }
     if (ud->testfunction == this)
       deriv.Col(ud->test_comp) = 1;
     if (ud->trialfunction == this)
@@ -409,15 +415,41 @@ namespace ngfem
     ud.fel = &fel;
     ud.elx = &elveclin;
     ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
+        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
+      }
+    
     FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh), dderiv(mir.Size(), 1,lh);
     
     elmat = 0;
     
-        // ud.remember.clear();
+
+
+    FlatArray<FlatMatrix<>> diags(trial_proxies.Size(), lh);
+    for (int k1 : Range(trial_proxies))
+      {
+        auto proxy = trial_proxies[k1];
+        diags[k1].AssignMemory(mir.Size(), proxy->Dimension(), lh);
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.trialfunction = proxy;
+            ud.trial_comp = k;
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
+
+            diags[k1].Col(k) = dderiv.Col(0);
+          }
+      }
+           
     
-    for (auto proxy1 : trial_proxies)
-      for (auto proxy2 : trial_proxies)
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(trial_proxies))
         {
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = trial_proxies[l1];
           td.Start();
           Tensor<3> proxyvalues(mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           
@@ -432,21 +464,10 @@ namespace ngfem
                 cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
                 proxyvalues(STAR,l,k) = dderiv.Col(0);
                 
-                if (proxy1 != proxy2 || k != l)
+                if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
                   {
-                    ud.trialfunction = proxy1;
-                    ud.trial_comp = k;
-                    ud.testfunction = proxy1;
-                    ud.test_comp = k;
-                    cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
-                    proxyvalues(STAR,l,k) -= dderiv.Col(0);
-                        
-                    ud.trialfunction = proxy2;
-                    ud.trial_comp = l;
-                    ud.testfunction = proxy2;
-                    ud.test_comp = l;
-                    cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
-                    proxyvalues(STAR,l,k) -= dderiv.Col(0);
+                    proxyvalues(STAR,l,k) -= diags[k1].Col(k);
+                    proxyvalues(STAR,l,k) -= diags[l1].Col(l);
                     proxyvalues(STAR,l,k) *= 0.5;
                   }
               }
@@ -515,65 +536,26 @@ namespace ngfem
     ely = 0;
     FlatVector<> ely1(ely.Size(), lh);
 
-    /*
-    FlatVector<> val(1,lh), deriv(1,lh);
-    for (int i = 0; i < mir.Size(); i++)
-      {
-        auto & mip = mir[i];
-        
-        for (auto proxy : trial_proxies)
-          {
-            HeapReset hr(lh);
-            FlatVector<> proxyvalues(proxy->Dimension(), lh);
-            for (int k = 0; k < proxy->Dimension(); k++)
-              {
-                ud.trialfunction = proxy;
-                ud.trial_comp = k;
-                cf -> EvaluateDeriv (mip, val, deriv);
-                proxyvalues(k) = mip.GetWeight() * deriv(0);
-              }
-
-            const MappedIntegrationPoint<2,2> & cmip =
-              static_cast<const MappedIntegrationPoint<2,2>&> (mip);
-
-            proxy->Evaluator()->ApplyTrans(fel, mip, proxyvalues, ely1, lh);
-            ely += ely1;
-          }
-      }
-    */
-
     FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
-    // for (int i = 0; i < mir.Size(); i++)
-    {
-      // auto & mip = mir[i];
       
-      for (auto proxy : trial_proxies)
-        {
-          HeapReset hr(lh);
-          FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-          for (int k = 0; k < proxy->Dimension(); k++)
-            {
-              ud.trialfunction = proxy;
-              ud.trial_comp = k;
-              cf -> EvaluateDeriv (mir, val, deriv);
-              proxyvalues.Col(k) = deriv.Col(0);
-            }
-
-          // const MappedIntegrationPoint<2,2> & cmip =
-          // static_cast<const MappedIntegrationPoint<2,2>&> (mip);
-
-          for (int i = 0; i < mir.Size(); i++)
-            proxyvalues.Row(i) *= mir[i].GetWeight();
-
-          proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
-          ely += ely1;
-        }
-    }
-
-
-
-
-
+    for (auto proxy : trial_proxies)
+      {
+        HeapReset hr(lh);
+        FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.trialfunction = proxy;
+            ud.trial_comp = k;
+            cf -> EvaluateDeriv (mir, val, deriv);
+            proxyvalues.Col(k) = deriv.Col(0);
+          }
+        
+        for (int i = 0; i < mir.Size(); i++)
+          proxyvalues.Row(i) *= mir[i].GetWeight();
+        
+        proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+        ely += ely1;
+      }
   }
   
   
