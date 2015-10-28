@@ -647,6 +647,162 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
 }
 
-}
+
+
+  class CompiledCoefficientFunction : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<CoefficientFunction*> steps;
+    DynamicTable<int> inputs;
+    Array<int> dim;
+    Array<bool> is_complex;
+
+  public:
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
+      : cf(acf)
+    {
+      cf -> TraverseTree
+        ([&] (CoefficientFunction & stepcf)
+         {
+           if (!steps.Contains(&stepcf))
+             {
+               steps.Append (&stepcf);
+               dim.Append (stepcf.Dimension());
+               is_complex.Append (stepcf.IsComplex());
+             }
+         });
+
+      cout << "Compiled CF:" << endl;
+      for (auto cf : steps)
+        cout << typeid(*cf).name() << endl;
+      
+      inputs = DynamicTable<int> (steps.Size());
+      
+      cf -> TraverseTree
+        ([&] (CoefficientFunction & stepcf)
+         {
+           int mypos = steps.Pos (&stepcf);
+           if (!inputs[mypos].Size())
+             {
+               Array<CoefficientFunction*> in = stepcf.InputCoefficientFunctions();
+               for (auto incf : in)
+                 inputs.Add (mypos, steps.Pos(incf));
+             }
+         });
+
+      cout << "inputs = " << endl << inputs << endl;
+    }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+    {
+      cf -> TraverseTree (func);
+      func(*cf);
+    }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    {
+      cout << "compiled evaluate not implemented" << endl;
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+    {
+      Array<Matrix<>*> temp;
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          temp.Append (new Matrix<>(ir.Size(), dim[i]));
+          
+          Array<FlatMatrix<>*> in;
+          for (int j : inputs[i])
+            in.Append (temp[j]);
+          
+          steps[i] -> Evaluate (ir, in, *temp[i]);
+        }
+
+      values = *temp.Last();
+      
+      for (int i = 0; i < steps.Size(); i++)
+        delete temp[i];
+    }
+
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                FlatMatrix<double> values, FlatMatrix<double> deriv) const
+    {
+      Array<Matrix<>*> temp;
+      Array<Matrix<>*> dtemp;
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          temp.Append (new Matrix<>(ir.Size(), dim[i]));
+          dtemp.Append (new Matrix<>(ir.Size(), dim[i]));
+          
+          Array<FlatMatrix<>*> in;
+          for (int j : inputs[i])
+            in.Append (temp[j]);
+          Array<FlatMatrix<>*> din;
+          for (int j : inputs[i])
+            din.Append (dtemp[j]);
+          
+          steps[i] -> EvaluateDeriv (ir, in, din, *temp[i], *dtemp[i]);
+        }
+
+      values = *temp.Last();
+      deriv = *dtemp.Last();
+      
+      for (int i = 0; i < steps.Size(); i++)
+        delete temp[i];
+      for (int i = 0; i < steps.Size(); i++)
+        delete dtemp[i];
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatMatrix<double> values, FlatMatrix<double> deriv,
+                                 FlatMatrix<double> dderiv) const
+    {
+      int totdim = 0;
+      for (int d : dim) totdim += d;
+      ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
+      int mem_ptr = 0;
+      
+      Array<FlatMatrix<>> temp(steps.Size());
+      Array<FlatMatrix<>> dtemp(steps.Size());
+      Array<FlatMatrix<>> ddtemp(steps.Size());
+      ArrayMem<FlatMatrix<>*, 20> in, din, ddin;
+
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
+          mem_ptr += ir.Size()*dim[i];
+          dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
+          mem_ptr += ir.Size()*dim[i];
+          ddtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
+          mem_ptr += ir.Size()*dim[i];
+
+          in.SetSize(0);
+          din.SetSize(0);
+          ddin.SetSize(0);
+          for (int j : inputs[i])
+            in.Append (&temp[j]);
+          for (int j : inputs[i])
+            din.Append (&dtemp[j]);
+          for (int j : inputs[i])
+            ddin.Append (&ddtemp[j]);
+
+          steps[i] -> EvaluateDDeriv (ir, in, din, ddin, temp[i], dtemp[i], ddtemp[i]);
+        }
+
+      values = temp.Last();
+      deriv = dtemp.Last();
+      dderiv = ddtemp.Last();
+    }
+    
+  };
+
+
+
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c)
+  {
+    return make_shared<CompiledCoefficientFunction> (c);
+  }
+  
 
  
+}
