@@ -33,6 +33,10 @@ namespace ngstd
     ci = 0;
     for (int j = 0; j < t.Size()-order; j++)
       ci[j+1] = ci[j] + c[j] * (t[j+order] - t[j]) / order;
+    // better, but still not correct ...
+    int last = t.Size()-order-1;
+    for (int j = t.Size()-order; j < ci.Size()-1; j++)
+      ci[j+1] = ci[j] + c[last] * (t[last+order] - t[j]) / order;
 
     cout << "integral, c = " << c << endl << "ci = " << ci << endl;
     return BSpline (order+1, move(text), move(ci));
@@ -56,7 +60,36 @@ namespace ngstd
     return 0;
   }
 
+  AutoDiff<1> BSpline :: operator() (AutoDiff<1> x) const
+  {
+    double eps = 1e-6;
+    double val = (*this)(x.Value());
+    double valr = (*this)(x.Value()+eps);
+    double vall = (*this)(x.Value()-eps);
 
+    double dval = (valr-vall) / (2*eps);
+
+    AutoDiff<1> res(val);
+    res.DValue(0) = dval * x.DValue(0);
+    return res;
+  }
+  AutoDiffDiff<1> BSpline :: operator() (AutoDiffDiff<1> x) const
+  {
+    double eps = 1e-6;
+    double val = (*this)(x.Value());
+    double valr = (*this)(x.Value()+eps);
+    double vall = (*this)(x.Value()-eps);
+
+    double dval = (valr-vall) / (2*eps);
+    double ddval = (valr+vall-2*val) / (eps*eps);
+
+    AutoDiffDiff<1> res(val);
+    res.DValue(0) = dval * x.DValue(0);
+    res.DDValue(0) = ddval * x.DValue(0)*x.DValue(0) + dval*x.DDValue(0);
+    return res;
+
+  }
+ 
   ostream & operator<< (ostream & ost, const BSpline & sp)
   {
     ost << "bspline, order = " << sp.order << endl

@@ -624,6 +624,41 @@ public:
       result(j) = lamc(result(j));
   }
 
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    c1->EvaluateDeriv (ir, result, deriv);
+    for (int j = 0; j < result.Height()*result.Width(); j++)
+      {
+        AutoDiff<1> in(result(j));
+        in.DValue(0) = deriv(j);
+        AutoDiff<1> out = lam(in);
+        result(j) = out.Value();
+        deriv(j) = out.DValue(0);
+      }
+  }
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+    
+  {
+    c1->EvaluateDDeriv (ir, result, deriv, dderiv);
+    for (int j = 0; j < result.Height()*result.Width(); j++)
+      {
+        AutoDiffDiff<1> in(result(j));
+        in.DValue(0) = deriv(j);
+        in.DDValue(0,0) = dderiv(j);
+        AutoDiffDiff<1> out = lam(in);
+        result(j) = out.Value();
+        deriv(j) = out.DValue(0);
+        dderiv(j) = out.DDValue(0,0);
+      }
+  }
+    
+
 };
 
 template <typename OP, typename OPC> 

@@ -180,26 +180,49 @@ void ExportStdMathFunction(string name)
 }
 
 
+using std::exp;
+template <int D, typename SCAL>
+AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = std::exp(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * res.Value();
+  return res;
+}
+
+
+
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("sin(AD) not implemented"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("sin(ADD) not implemented"); }
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("cos(AD) not implemented"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("cos(ADD) not implemented"); }
 };
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("tan(AD) not implemented"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("tan(ADD) not implemented"); }
 };
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("exp(ADD) not implemented"); }
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("log(ADD) not implemented"); }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
 };
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(AD) not implemented"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(AD) not implemented"); }
 };
 
 
