@@ -355,15 +355,12 @@ namespace netgen
   {
     PrintMessage (1, "Generate Mesh from spline geometry");
 
-    double h = mp.maxh;
-
     Box<2> bbox = geometry.GetBoundingBox ();
 
-    if (bbox.Diam() < h) 
-      {
-	h = bbox.Diam();
-	mp.maxh = h;
-      }
+    if (bbox.Diam() < mp.maxh) 
+      mp.maxh = bbox.Diam();
+
+    // double h = mp.maxh;
 
     // mesh = make_shared<Mesh>();
     mesh->SetDimension (2);
@@ -372,11 +369,11 @@ namespace netgen
     Point3d pmax(bbox.PMax()(0), bbox.PMax()(1), bbox.Diam());
 
     mesh->SetLocalH (pmin, pmax, mp.grading);
-    mesh->SetGlobalH (h);
+    mesh->SetGlobalH (mp.maxh);
 
     
 
-    geometry.PartitionBoundary (mp, h, *mesh);
+    geometry.PartitionBoundary (mp, mp.maxh, *mesh);
     
     PrintMessage (3, "Boundary mesh done, np = ", mesh->GetNP());
 
@@ -517,7 +514,8 @@ namespace netgen
     for (int domnr = 1; domnr <= maxdomnr; domnr++)
       {
         if (geometry.GetDomainTensorMeshing (domnr)) continue;
-
+        
+        double h = mp.maxh;
 	if ( geometry.GetDomainMaxh ( domnr ) > 0 )
 	  h = geometry.GetDomainMaxh(domnr);
 

@@ -887,24 +887,47 @@ namespace netgen
 
 
 
-
-  string SplineGeometry2d :: GetBCName( const int  bcnr ) const
+  void SplineGeometry2d :: SetBCName (int bcnr, string name) 
   {
-    if ( bcnames.Size() >= bcnr)
+    if (bcnr < 1)
+      throw NgException ("Illegal nr in SetBCName");
+    int new_to_add = bcnr - bcnames.Size();
+    for (int i = 0; i < new_to_add; i++)
+      bcnames.Append (new string("default"));
+    delete bcnames[bcnr-1];
+    bcnames[bcnr-1] = new string(name);
+  }
+  
+  string SplineGeometry2d :: GetBCName( int  bcnr ) const
+  {
+    if (bcnames.Size() >= bcnr)
       if (bcnames[bcnr-1] )
 	return *bcnames[bcnr-1];
     return "default";
   }
 
-  string * SplineGeometry2d :: BCNamePtr( const int bcnr ) 
+  string * SplineGeometry2d :: BCNamePtr( int bcnr ) 
   {
     if ( bcnr > bcnames.Size() )
-      return 0;
+      return nullptr;
     else
       return bcnames[bcnr-1];
   }
 
 
+  int SplineGeometry2d :: GetBCNumber (string name) const
+  {
+    for (int i = 0; i < bcnames.Size(); i++)
+      if (*bcnames[i] == name)
+        return i+1;
+    return 0;
+  }
+
+  int SplineGeometry2d :: AddBCName (string name)
+  {
+    bcnames.Append (new string(name));
+    return bcnames.Size();
+  }
 
 
 
@@ -951,9 +974,10 @@ namespace netgen
       maxh[i] = 1e99;
     
     if (domnr >= 1) 
-      maxh[domnr] = h;
+      maxh[domnr-1] = h;
     else
       throw NgException ("material index out of range");
+    cout << "maxh = " << maxh << endl;
   }
 
   

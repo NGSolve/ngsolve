@@ -19,7 +19,9 @@ DLL_HEADER void ExportGeom2d()
 {
   ModuleScope module("geom2d");
 
-  bp::class_<SplineGeometry2d, shared_ptr<SplineGeometry2d>, boost::noncopyable>("SplineGeometry")
+  bp::class_<SplineGeometry2d, shared_ptr<SplineGeometry2d>, boost::noncopyable>
+    ("SplineGeometry",
+     "a 2d boundary representation geometry model by lines and splines")
     .def("__init__", bp::make_constructor 
          (FunctionPointer
           ([](const string & filename)
@@ -45,43 +47,57 @@ DLL_HEADER void ExportGeom2d()
             return self.geompoints.Size()-1;
 	  }),
          (bp::arg("self"), bp::arg("x"), bp::arg("y"), bp::arg("maxh") = 1e99))
-    .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain, int bc)
+    .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain, bp::object bc)
 	  {
-		  bp::extract<std::string> segtype(segment[0]);
+            bp::extract<std::string> segtype(segment[0]);
+            
+            SplineSegExt * seg;
+            if (segtype().compare("line") == 0)
+              {
+                bp::extract<int> point_index1(segment[1]);
+                bp::extract<int> point_index2(segment[2]);
+                //point_index1.check()
+                
+                LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()));
+                seg = new SplineSegExt(*l);
+              }
+            else if (segtype().compare("spline3") == 0)
+              {
+                bp::extract<int> point_index1(segment[1]);
+                bp::extract<int> point_index2(segment[2]);
+                bp::extract<int> point_index3(segment[3]);
+                
+                SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()), self.GetPoint(point_index3()));
+                seg = new SplineSegExt(*seg3);
+              }
+            else
+              {
+                cout << "Appended segment is not a line or a spline3" << endl;
+              }
+            seg->leftdom = leftdomain;
+            seg->rightdom = rightdomain;
+            seg->hmax = 1e99;
+            seg->reffak = 1;
+            seg->copyfrom = -1;
+            if (bp::extract<int>(bc).check())
+              seg->bc = bp::extract<int>(bc)();
+            else if (bp::extract<string>(bc).check())
+              {
+                string bcname = bp::extract<string>(bc)();
+                int bcnum = self.GetBCNumber(bcname);
+                if (bcnum == 0)
+                  bcnum = self.AddBCName(bcname);
+                seg->bc = bcnum;
+              }
+            else
+              seg->bc = self.GetNSplines()+1;
+            self.AppendSegment(seg);
+	  }), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0,
+               bp::arg("bc")=bp::object()))
 
-		  SplineSegExt * seg;
-		  if (segtype().compare("line") == 0)
-		  {
-			  bp::extract<int> point_index1(segment[1]);
-			  bp::extract<int> point_index2(segment[2]);
-			  //point_index1.check()
-
-			  LineSeg<2> * l = new LineSeg<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()));
-			  seg = new SplineSegExt(*l);
-		  }
-		  else if (segtype().compare("spline3") == 0)
-		  {
-			  bp::extract<int> point_index1(segment[1]);
-			  bp::extract<int> point_index2(segment[2]);
-			  bp::extract<int> point_index3(segment[3]);
-
-			  SplineSeg3<2> * seg3 = new SplineSeg3<2>(self.GetPoint(point_index1()), self.GetPoint(point_index2()), self.GetPoint(point_index3()));
-			  seg = new SplineSegExt(*seg3);
-		  }
-		  else
-		  {
-			  cout << "Appended segment is not a line or a spline3" << endl;
-		  }
-		  seg->leftdom = leftdomain;
-		  seg->rightdom = rightdomain;
-		  seg->hmax = 1e99;
-		  seg->reffak = 1;
-		  seg->copyfrom = -1;
-		  seg->bc = (bc >= 0) ? bc : self.GetNSplines();
-		  self.AppendSegment(seg);
-	  }), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0, bp::arg("bc")=-1))
-	.def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, bp::list point_indices, int leftdomain, int rightdomain)
-		{
+    
+    .def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, bp::list point_indices, int leftdomain, int rightdomain)
+                                          {
 		  int npts = bp::len(point_indices);
 		  SplineSegExt * seg;
 		  //int a = bp::extract<int>(point_indices[0]);
@@ -130,6 +146,10 @@ DLL_HEADER void ExportGeom2d()
 
 
     .def("SetMaterial", &SplineGeometry2d::SetMaterial)
+    .def("SetDomainMaxH", &SplineGeometry2d::SetDomainMaxh)
+
+
+
 
     
 	.def("PlotData", FunctionPointer([](SplineGeometry2d &self)

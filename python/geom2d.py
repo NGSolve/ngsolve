@@ -1,8 +1,6 @@
 from libngpy.geom2d import *
 from libngpy.meshing import *
 
-
-
 tmp_generate_mesh = SplineGeometry.GenerateMesh
 
 def geom2d_meshing_func (geom, **args):
@@ -22,7 +20,7 @@ pnums = [unit_square.AppendPoint(*p) for p in pnts]
 for l1,l2,bc in lines:
     unit_square.Append( ["line", pnums[l1], pnums[l2]], bc=bc)
 
-all = ['SplineGeometry', 'unit_square']
+__all__ = ['SplineGeometry', 'unit_square']
 
 
 

@@ -9,7 +9,7 @@ if __platform.startswith('win'):
 
 # from libngpy import *
 import libngpy 
-    
+
 from . import csg
 from . import meshing
 

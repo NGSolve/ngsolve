@@ -182,7 +182,10 @@ namespace netgen
     }
 
 
-    string GetBCName ( const int bcnr ) const;
+    string GetBCName (int bcnr) const;
+    void SetBCName (int bcnr, string name);
+    int GetBCNumber (string name) const; // 0 if not exists
+    int AddBCName (string name);
 
     string * BCNamePtr ( const int bcnr );
 
