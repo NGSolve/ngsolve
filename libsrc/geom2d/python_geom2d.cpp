@@ -47,7 +47,7 @@ DLL_HEADER void ExportGeom2d()
             return self.geompoints.Size()-1;
 	  }),
          (bp::arg("self"), bp::arg("x"), bp::arg("y"), bp::arg("maxh") = 1e99))
-    .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain, bp::object bc)
+    .def("Append", FunctionPointer([](SplineGeometry2d &self, bp::list segment, int leftdomain, int rightdomain, bp::object bc, double maxh)
 	  {
             bp::extract<std::string> segtype(segment[0]);
             
@@ -76,7 +76,7 @@ DLL_HEADER void ExportGeom2d()
               }
             seg->leftdom = leftdomain;
             seg->rightdom = rightdomain;
-            seg->hmax = 1e99;
+            seg->hmax = maxh;
             seg->reffak = 1;
             seg->copyfrom = -1;
             if (bp::extract<int>(bc).check())
@@ -93,7 +93,8 @@ DLL_HEADER void ExportGeom2d()
               seg->bc = self.GetNSplines()+1;
             self.AppendSegment(seg);
 	  }), (bp::arg("self"), bp::arg("point_indices"), bp::arg("leftdomain") = 1, bp::arg("rightdomain") = 0,
-               bp::arg("bc")=bp::object()))
+               bp::arg("bc")=bp::object(), bp::arg("maxh")=1e99
+               ))
 
     
     .def("AppendSegment", FunctionPointer([](SplineGeometry2d &self, bp::list point_indices, int leftdomain, int rightdomain)
