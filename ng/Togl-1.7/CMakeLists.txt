@@ -4,7 +4,7 @@ add_definitions("-DPACKAGE_NAME=\"Togl\" -DPACKAGE_TARNAME=\"togl\" -DPACKAGE_VE
 # SET(CMAKE_CXX_FLAGS "-O2 -fomit-frame-pointer -Wall -Wno-implicit-int -fPIC -c")
 include_directories("${TCL_INCLUDE_PATH}/tk-private/generic" "${TCL_INCLUDE_PATH}/tk-private/unix")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -fomit-frame-pointer -Wall -Wno-implicit-int")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64 -O2 -fomit-frame-pointer -Wall -Wno-implicit-int")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -fomit-frame-pointer -Wall -Wno-implicit-int")
 add_library(togl togl.c)
 target_link_libraries(togl ${OPENGL_LIBRARIES})
 set_target_properties(togl PROPERTIES POSITION_INDEPENDENT_CODE ON )
