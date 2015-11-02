@@ -977,7 +977,6 @@ namespace netgen
       maxh[domnr-1] = h;
     else
       throw NgException ("material index out of range");
-    cout << "maxh = " << maxh << endl;
   }
 
   
