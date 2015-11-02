@@ -701,7 +701,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
-      cout << "compiled evaluate not implemented" << endl;
+      throw Exception ("compiled evaluate not implemented");
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const

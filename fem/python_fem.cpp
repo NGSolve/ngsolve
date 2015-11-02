@@ -523,6 +523,7 @@ void ExportCoefficientFunction()
                                                  makeCArray<double> (knots),
                                                  makeCArray<double> (vals));
                            })))
+    .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
     .def("__call__", FunctionPointer
          ([](const BSpline & sp, SPCF coef) -> SPCF 
