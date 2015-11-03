@@ -30,9 +30,16 @@ if(NOT MKL_ARCH)
     set(MKL_ARCH "intel64")
   else()
     set(MKL_ARCH "ia32")
-    set(MKL_INTERFACE_LAYER "")
   endif()
 endif(NOT MKL_ARCH)
+
+if(MKL_ARCH STREQUAL "ia32")
+  if(WIN32)
+    set(MKL_INTERFACE_LAYER "_c")
+  else(WIN32)
+    set(MKL_INTERFACE_LAYER "")
+  endif(WIN32)
+endif(MKL_ARCH STREQUAL "ia32")
 
 include(FindPackageHandleStandardArgs)
 
@@ -86,6 +93,9 @@ else()
     ######################### Interface layer #######################
     # win32 link advisor:
     # mkl_intel_lp64.lib mkl_core.lib mkl_intel_thread.lib libiomp5md.lib -ldl
+    message("******************************************")
+    message("mkl_intel${MKL_INTERFACE_LAYER}")
+    message("******************************************")
     set(MKL_INTERFACE_LIBNAME "mkl_intel${MKL_INTERFACE_LAYER}")
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
