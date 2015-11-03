@@ -612,6 +612,7 @@ namespace ngcomp
           trace->SetMaxTracefileSize( 1024*1024 * trace_flags.GetNumFlag("max_size", 100.0) + 0.5 );
         trace->SetTraceThreads( !trace_flags.GetDefineFlag("nothreads") );
         trace->SetTraceThreadCounter( !trace_flags.GetDefineFlag("nothread_counter") );
+        TaskManager::SetPajeTrace(true);
       }
 
     RunWithTaskManager 
