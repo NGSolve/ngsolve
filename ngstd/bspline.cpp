@@ -24,7 +24,8 @@ namespace ngstd
       if (t[j+order-1] != t[j])
         cp[j] = (order-1) * (c[j]-c[j-1]) / (t[j+order-1] - t[j]);
       else
-        throw Exception ("cannot differentiate, B-spline is discontinuous");
+        cp[j] = 0;
+    // throw Exception ("cannot differentiate, B-spline is discontinuous");
     return BSpline (order-1, Array<double>(t), move(cp));
   }
   
@@ -102,26 +103,36 @@ namespace ngstd
 
   AutoDiff<1> BSpline :: operator() (AutoDiff<1> x) const
   {
-    double eps = 1e-6;
+    double eps = 1e-5;
     double val = (*this)(x.Value());
     double valr = (*this)(x.Value()+eps);
     double vall = (*this)(x.Value()-eps);
 
     double dval = (valr-vall) / (2*eps);
 
+    double dval2 = Differentiate()(x.Value());
+    // cout << "dval = " << dval << " =?= " << dval2 << endl;
+
     AutoDiff<1> res(val);
-    res.DValue(0) = dval * x.DValue(0);
+    res.DValue(0) = dval2 * x.DValue(0);
     return res;
   }
   AutoDiffDiff<1> BSpline :: operator() (AutoDiffDiff<1> x) const
   {
-    double eps = 1e-6;
+    /*
+    double eps = 1e-5;
     double val = (*this)(x.Value());
     double valr = (*this)(x.Value()+eps);
     double vall = (*this)(x.Value()-eps);
 
     double dval = (valr-vall) / (2*eps);
     double ddval = (valr+vall-2*val) / (eps*eps);
+    */
+    auto diff = Differentiate();
+    auto ddiff = diff.Differentiate();
+    double val = (*this)(x.Value());
+    double dval = diff(x.Value());
+    double ddval = ddiff(x.Value());
 
     AutoDiffDiff<1> res(val);
     res.DValue(0) = dval * x.DValue(0);
