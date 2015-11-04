@@ -373,8 +373,9 @@ namespace ngfem
 
 
   
-  SymbolicEnergy :: SymbolicEnergy (shared_ptr<CoefficientFunction> acf)
-    : cf(acf)
+  SymbolicEnergy :: SymbolicEnergy (shared_ptr<CoefficientFunction> acf,
+                                    VorB avb)
+    : cf(acf), vb(avb)
   {
     if (cf->Dimension() != 1)
       throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");

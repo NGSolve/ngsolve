@@ -254,12 +254,13 @@ public:
   class SymbolicEnergy : public BilinearFormIntegrator
   {
     shared_ptr<CoefficientFunction> cf;
+    VorB vb;
     Array<ProxyFunction*> trial_proxies;
 
   public:
-    SymbolicEnergy (shared_ptr<CoefficientFunction> acf);
+    SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
 
-    virtual bool BoundaryForm() const { return false; }
+    virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; } 
 
     virtual void 
