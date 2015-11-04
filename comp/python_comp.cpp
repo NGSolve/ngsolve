@@ -1698,7 +1698,9 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<BilinearFormIntegrator>
            {
              return make_shared<SymbolicEnergy> (cf, vb);
-           }));
+           }),
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          );
 
 
   /*
