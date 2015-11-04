@@ -1695,9 +1695,9 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf) -> shared_ptr<BilinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<BilinearFormIntegrator>
            {
-             return make_shared<SymbolicEnergy> (cf);
+             return make_shared<SymbolicEnergy> (cf, vb);
            }));
 
 
