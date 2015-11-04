@@ -953,8 +953,18 @@ void NGS_DLL_HEADER ExportNgcomp()
          )
     .def_pickle(GF_pickle_suite())    
     .def("__str__", &ToString<GF>)
-    // .add_property("space", &GF::GetFESpace, "the finite element spaces")
+    .add_property("space", FunctionPointer([](bp::object self) -> bp::object
+                                           {
+                                             bp::dict d = bp::extract<bp::dict>(self.attr("__dict__"))();
+                                             // if gridfunction is created from python, it has the space attribute
+                                             if (d.has_key("space"))
+                                               return d.get("space");
 
+                                             // if not, make a new python space object from C++ space
+                                             return bp::object(bp::extract<GF&>(self)().GetFESpace());
+                                           }),
+                  "the finite element space")
+    // .add_property ("space", &GF::GetFESpace, "the finite element spaces")
     .def("Update", FunctionPointer ([](GF & self) { self.Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
     

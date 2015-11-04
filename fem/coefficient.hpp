@@ -865,7 +865,6 @@ public:
                              FlatArray<FlatMatrix<>*> dinput,
                              FlatMatrix<> result, FlatMatrix<> deriv) const
   {
-    int dim = result.Width();
     FlatMatrix<> ra = *input[0], rb = *input[1];
     FlatMatrix<> da = *dinput[0], db = *dinput[1];
 
