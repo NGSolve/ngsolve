@@ -537,6 +537,14 @@ int NGS_LoadPy (ClientData clientData,
             try{
               Ng_SetRunning (1); 
               pythread_id = std::this_thread::get_id();
+
+              // change working directory to the python file
+              stringstream s;
+              s << "import os" << endl
+                << "os.chdir(os.path.dirname('" << init_file_ << "'))" << endl
+                << "del os" << endl;
+              pyenv.exec(s.str());
+
               pyenv.exec_file(init_file_.c_str());
               Ng_SetRunning (0); 
             }
