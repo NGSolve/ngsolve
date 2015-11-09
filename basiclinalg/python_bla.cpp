@@ -547,7 +547,40 @@ void NGS_DLL_HEADER ExportNgbla() {
     bp::def ("InnerProduct",
              FunctionPointer( [] (bp::object x, bp::object y) -> bp::object
                               { return x.attr("InnerProduct") (y); }));
-}
+
+
+
+    bp::def ("CheckPerformance",
+             FunctionPointer( [] ()
+                              {
+                                int n = 4000;
+                                Matrix<> a(n,n), b(n,n), c(n,n);
+                                a = 1; b = 2;
+                                Timer t("matmat");
+                                t.Start();
+                                c = a * b | Lapack;
+                                t.Stop();
+                                cout << "Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
+
+
+                                Timer t2("matmat - par");
+                                t2.Start();
+                                
+                                RunWithTaskManager
+                                  ([n] ()
+                                   {
+                                     ParallelFor (Range(8), [n] (int nr)
+                                                  {
+                                                    Matrix<> a(n,n), b(n,n), c(n,n);
+                                                    a = 1; b = 2;
+                                                    c = a * b | Lapack;
+                                                  });
+                                   }
+                                   );
+                                t2.Stop();
+                                cout << "Task-manager Lapack GFlops = " << 8 * 1e-9 * n*n*n / t2.GetTime() << endl;
+                              }));
+             }
 
 
 BOOST_PYTHON_MODULE(libngbla) {
