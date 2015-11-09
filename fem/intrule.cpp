@@ -36,8 +36,30 @@ namespace ngfem
       case 2: return static_cast<const DimMappedIntegrationPoint<2>&> (*this).GetPoint();
       case 3: return static_cast<const DimMappedIntegrationPoint<3>&> (*this).GetPoint();
       }
-    return FlatVector<>(0,(double*)NULL);
+    throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
   }
+
+  FlatMatrix<> BaseMappedIntegrationPoint :: GetJacobian() const
+  {
+    if (!eltrans->Boundary())
+      switch (eltrans->SpaceDim())
+        {
+        case 1: return static_cast<const MappedIntegrationPoint<1,1>&> (*this).GetJacobian();
+        case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
+        case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
+        }
+    else
+      switch (eltrans->SpaceDim())
+        {
+        case 1: return static_cast<const MappedIntegrationPoint<0,1>&> (*this).GetJacobian();
+        case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
+        case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
+        }
+
+    throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
+  }
+
+  
   int BaseMappedIntegrationPoint :: Dim() const
   {
     return eltrans->SpaceDim();

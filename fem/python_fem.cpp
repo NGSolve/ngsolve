@@ -180,9 +180,9 @@ void ExportStdMathFunction(string name)
 }
 
 
-using std::exp;
+
 template <int D, typename SCAL>
-AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
+INLINE AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
 {
   AutoDiff<D,SCAL> res;
   res.Value() = std::exp(x.Value());
@@ -191,38 +191,127 @@ AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
   return res;
 }
 
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = std::sin(x.Value());
+  SCAL c = std::cos(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * c;
+  return res;
+}
+
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> cos (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = std::cos(x.Value());
+  SCAL ms = -std::sin(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * ms;
+  return res;
+}
+
+
+// df(u)/dx  = exp(x) * du/dx
+// d^2 f(u) / dx^2 = exp(x) * (du/dx)^2 + exp(x) * d^2u /dx^2
+template <int D>
+INLINE AutoDiffDiff<D> exp (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  res.Value() = std::exp(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * res.Value();
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = (x.DValue(k) * x.DValue(l)+x.DDValue(k,l)) * res.Value();
+  return res;
+}
+
+template <int D>
+INLINE AutoDiffDiff<D> log (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  res.Value() = std::log(x.Value());
+  double xinv = 1.0/x.Value();
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * xinv;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -xinv*xinv*x.DValue(k) * x.DValue(l) + xinv * x.DDValue(k,l);
+  return res;
+}
+
+
+
+template <int D>
+INLINE AutoDiffDiff<D> sin (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double s = std::sin(x.Value());
+  double c = std::cos(x.Value());
+  
+  res.Value() = s;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * c;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -s * x.DValue(k) * x.DValue(l) + c * x.DDValue(k,l);
+  return res;
+}
+
+
+template <int D>
+INLINE AutoDiffDiff<D> cos (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double s = std::sin(x.Value());
+  double c = std::cos(x.Value());
+  
+  res.Value() = c;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = -s * x.DValue(k);
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -c * x.DValue(k) * x.DValue(l) - s * x.DDValue(k,l);
+  return res;
+}
+
+
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> tan (AutoDiff<D,SCAL> x)
+{ return sin(x) / cos(x); }
+
+template <int D>
+INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
+{ return sin(x) / cos(x); }
+
+
 
 
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
-  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("sin(AD) not implemented"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("sin(ADD) not implemented"); }
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
-  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("cos(AD) not implemented"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("cos(ADD) not implemented"); }
 };
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
-  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("tan(AD) not implemented"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("tan(ADD) not implemented"); }
 };
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("exp(ADD) not implemented"); }
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("log(ADD) not implemented"); }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
 };
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
-  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(AD) not implemented"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(AD) not implemented"); }
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
 
 
@@ -349,13 +438,7 @@ void ExportCoefficientFunction()
                return make_shared<MultScalVecCoefficientFunction> (c1, c2);
              if (c1->Dimension() > 1 && c2->Dimension() == 1)
                return make_shared<MultScalVecCoefficientFunction> (c2, c1);
-             return BinaryOpCF (c1, c2, 
-                                [](double a, double b) { return a*b; },
-                                [](Complex a, Complex b) { return a*b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = 1; ddbdb = 0; }
-                                );
+             return c1*c2;
            } ))
 
     .def ("InnerProduct", FunctionPointer
@@ -395,34 +478,16 @@ void ExportCoefficientFunction()
 
     .def ("__truediv__", FunctionPointer 
           ([] (SPCF coef, SPCF coef2) -> SPCF
-           { return BinaryOpCF (coef, coef2,
-                                [](double a, double b) { return a/b; },
-                                [](Complex a, Complex b) { return a/b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
-                                ); }))
+           { return coef/coef2;
+           }))
 
     .def ("__truediv__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return a/b; },
-                                [](Complex a, Complex b) { return a/b; },
-                                [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
-                                ); }))
-
+           { return coef / make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__rtruediv__", FunctionPointer 
           ([] (SPCF coef, double val) -> SPCF
-           { return BinaryOpCF (coef, make_shared<ConstantCoefficientFunction>(val), 
-                                [](double a, double b) { return b/a; },
-                                [](Complex a, Complex b) { return b/a; },
-                                [](double a, double b, double & dda, double & ddb) { dda = -b/(a*a); ddb = 1.0/a; },
-                                [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                                { ddada = 2*b/(a*a*a); ddadb = -b/(a*a); ddbdb = 0; }
-                                ); }))
+           { return make_shared<ConstantCoefficientFunction>(val) / coef; }))
 
     .def ("__neg__", FunctionPointer 
           ([] (SPCF coef) -> SPCF
@@ -743,6 +808,8 @@ void NGS_DLL_HEADER ExportNgfem() {
             return str.str();
           }))
     .add_property("measure", &BaseMappedIntegrationPoint::GetMeasure)
+    .add_property("point", &BaseMappedIntegrationPoint::GetPoint)
+    .add_property("jacobi", &BaseMappedIntegrationPoint::GetJacobian)
     ;
 
     
@@ -802,6 +869,13 @@ void NGS_DLL_HEADER ExportNgfem() {
                              if (bp::extract<bp::list> (definedon).check())
                                bfi -> SetDefinedOn (makeCArray<int> (definedon));
 
+                             if (bp::extract<BitArray> (definedon).check())
+                               {
+                                 // cout << "defon with bitarray: " << flush;
+                                 // cout << bp::extract<BitArray> (definedon)() << endl;
+                                 bfi -> SetDefinedOn (bp::extract<BitArray> (definedon)());
+                               }
+                             
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
 

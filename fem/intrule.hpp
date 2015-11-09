@@ -177,6 +177,7 @@ namespace ngfem
     INLINE double GetWeight() const { return measure * ip.Weight(); }
 
     FlatVector<> GetPoint() const;
+    FlatMatrix<> GetJacobian() const;
     int Dim() const;
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
   };

@@ -977,6 +977,7 @@ namespace ngfem
     { 
       if (!bfi[dim]) 
         throw Exception (string("BFI for dimension") + ToString(dim)+"not available");
+      bfi[dim]->SetDefinedOn(definedon);
       return bfi[dim];
     }
 

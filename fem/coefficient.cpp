@@ -99,7 +99,8 @@ namespace ngfem
 	throw Exception (ost.str());
       }
     
-    values = val[elind]; 
+    values = val[elind];
+    if (val[elind] < 1e-50 && val[elind] > 0) cout << "very small" << endl;
   }
 
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
@@ -647,8 +648,54 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
 }
 
+  // ///////////////////////////// operators  /////////////////////////
 
+  shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2, 
+                       [](double a, double b) { return a+b; },
+                       [](Complex a, Complex b) { return a+b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       );
+  }
+  
+  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2, 
+                       [](double a, double b) { return a-b; },
+                       [](Complex a, Complex b) { return a-b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       );
+  }
+  shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2, 
+                       [](double a, double b) { return a*b; },
+                       [](Complex a, Complex b) { return a*b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = 1; ddbdb = 0; }
+                       );
+  }
 
+  shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  {
+    return BinaryOpCF (c1, c2,
+                       [](double a, double b) { return a/b; },
+                       [](Complex a, Complex b) { return a/b; },
+                       [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
+                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
+                       { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
+                       );
+  }
+
+  
+  // ///////////////////////////// Compiled CF /////////////////////////
+  
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf;
