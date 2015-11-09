@@ -10,7 +10,7 @@
 
 #include <comp.hpp>
 #include "../fem/h1lofe.hpp"
-
+#include <regex>
 
 namespace ngcomp
 {
@@ -1097,6 +1097,33 @@ namespace ngcomp
     return *eltrans;
   }
 
+
+  Region :: Region (shared_ptr<MeshAccess> amesh,
+                    VorB avb, string pattern)
+    : mesh(amesh), vb(avb)
+  {
+    if (vb == VOL)
+      {
+        mask = BitArray(mesh->GetNDomains());
+        mask.Clear();
+        regex re_pattern(pattern);
+        for (int i : Range(mask))
+          if (regex_match(mesh->GetDomainMaterial(i), re_pattern))
+            mask.Set(i);
+      }
+    else
+      {
+        mask = BitArray(mesh->GetNBoundaries());
+        mask.Clear();
+        regex re_pattern(pattern);
+        for (int i : Range(mask))
+          if (regex_match(mesh->GetBCNumBCName(i), re_pattern))
+            mask.Set(i);
+      }
+  }      
+
+
+  
 
   double MeshAccess :: ElementVolume (int elnr) const
   {
