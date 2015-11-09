@@ -311,10 +311,8 @@ void NGS_DLL_HEADER ExportNgla() {
 
 
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
-    // .def(bp::init<const BaseMatrix &, const BaseMatrix &>())
     ;
   bp::class_<CGSolver<Complex>, shared_ptr<CGSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverC", bp::no_init)
-    // .def(bp::init<const BaseMatrix &, const BaseMatrix &>())
     ;
 
   bp::def("CGSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
@@ -339,6 +337,26 @@ void NGS_DLL_HEADER ExportNgla() {
           )
     ;
 
+  bp::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverD", bp::no_init)
+    ;
+  bp::def("QMRSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+                                           bool printrates, 
+                                           double precision, int maxsteps) -> BaseMatrix *
+                                        {
+                                          KrylovSpaceSolver * solver;
+                                          solver = new QMRSolver<double> (mat, pre);
+                                          solver->SetPrecision(precision);
+                                          solver->SetMaxSteps(maxsteps);
+                                          solver->SetPrintRates (printrates);
+                                          return solver;
+                                        }),
+          (bp::arg("mat"), bp::arg("pre"), bp::arg("printrates")=true,
+           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
+          bp::return_value_policy<bp::manage_new_object>()
+          )
+    ;
+  
+  
 
   bp::def("DoArchive" , FunctionPointer( [](shared_ptr<Archive> & arch, BaseMatrix & mat) 
                                          { cout << "output basematrix" << endl;
