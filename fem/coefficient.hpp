@@ -2118,34 +2118,20 @@ public:
 
 
 
-  INLINE
-  shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
-  {
-    return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a+b; },
-                       [](Complex a, Complex b) { return a+b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; }
-                       );
-  }
+  extern 
+  shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
   
-  INLINE
-  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
-  {
-    return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a-b; },
-                       [](Complex a, Complex b) { return a-b; },
-                       [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
-                       [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; }
-                       );
-  }
-  
-                                             
+  extern
+  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
+  extern
+  shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
+
+  extern
+  shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
+
   
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
 }
 
 
