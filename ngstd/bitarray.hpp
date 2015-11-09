@@ -106,13 +106,13 @@ public:
 
   
   /// invert all bits
-  NGS_DLL_HEADER void Invert ();
+  NGS_DLL_HEADER BitArray & Invert ();
 
   /// logical AND with ba2
-  NGS_DLL_HEADER void And (const BitArray & ba2);
+  NGS_DLL_HEADER BitArray & And (const BitArray & ba2);
 
   /// logical OR with ba2
-  NGS_DLL_HEADER void Or (const BitArray & ba2);
+  NGS_DLL_HEADER BitArray & Or (const BitArray & ba2);
 
   /// copy from ba2
   NGS_DLL_HEADER BitArray & operator= (const BitArray & ba2);
