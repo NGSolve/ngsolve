@@ -397,7 +397,6 @@ namespace ngcomp
     { return Ng_GetBCNumBCName (bcnr); }
 
 
-
     /// not sure who needs that
     int GetSElSurfaceNumber (const int elnr) const
     { return Ng_GetSurfaceElementSurfaceNumber (elnr+1)-1; }
@@ -832,7 +831,7 @@ namespace ngcomp
   };
 
 
-
+  
 
 
   INLINE Ngs_Element ElementIterator :: operator*() const { return ma[ei]; }
@@ -843,8 +842,44 @@ namespace ngcomp
     return ma[ElementId(VB,nr)]; 
   }
 
-
-
+  
+  class Region
+  {
+    shared_ptr<MeshAccess> mesh;
+    VorB vb;
+    BitArray mask;
+  public:
+    Region (shared_ptr<MeshAccess> amesh, VorB avb, string pattern);
+    Region (shared_ptr<MeshAccess> amesh, VorB avb, const BitArray & amask)
+      : mesh(amesh), vb(avb), mask(amask) { ; }
+    Region (const Region &) = default;
+    explicit operator VorB () const { return vb; }
+    bool IsVolume () const { return vb == VOL; }
+    bool IsBoundary () const { return vb == BND; }
+    const BitArray & Mask() const { return mask; }
+    operator const BitArray & () const { return mask; }
+    
+    Region operator+ (const Region & r2) const
+    {
+      return Region (mesh, vb, BitArray(mask).Or (r2.Mask()));
+    }
+    Region operator- (const Region & r2) const
+    {
+      return Region (mesh, vb, BitArray(mask).And ( BitArray(r2.Mask()).Invert() ));
+    }
+    Region operator~ () const
+    {
+      return Region (mesh, vb, BitArray(mask).Invert());
+    }
+    Region operator+ (const string & pattern2) const
+    {
+      return *this + Region(mesh, vb, pattern2);
+    }
+    Region operator- (const string & pattern2) const
+    {
+      return *this - Region(mesh, vb, pattern2);
+    }
+  };
 
   /**
      Controls the progress - output.

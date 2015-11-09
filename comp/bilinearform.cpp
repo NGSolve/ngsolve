@@ -2372,6 +2372,7 @@ namespace ngcomp
                      const BilinearFormIntegrator & bfi = *parts[j];
                      
                      if (!bfi.BoundaryForm()) continue;
+                     if (!bfi.DefinedOn (el.GetIndex())) continue;
                      
                      bfi.CalcLinearizedElementMatrix (fel, eltrans, elveclin, elmat, lh);
                      
@@ -2552,6 +2553,7 @@ namespace ngcomp
 #else
 		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
 #endif
+
 		    IterateElements 
 		      (*fespace, VOL, clh, 
 		       [&] (ElementId ei, LocalHeap & lh)
@@ -3068,6 +3070,7 @@ namespace ngcomp
             if (type == 0 && bfi.BoundaryForm()) continue;
             if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;
+            if (type == 1 && !bfi.DefinedOn (this->ma->GetSElIndex (elnum))) continue;
             
             
             // static Timer elementtimer ("Element matrix application");

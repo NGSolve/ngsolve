@@ -363,7 +363,22 @@ void NGS_DLL_HEADER ExportNgcomp()
   
 
 
+  //////////////////////////////////////////////////////////////////////////////////////////
 
+  bp::class_<Region> ("Region", bp::no_init)
+    .def(bp::init<shared_ptr<MeshAccess>,VorB,string>())
+    .def("Mask", FunctionPointer([](Region & reg)->BitArray { return reg.Mask(); }))
+    .def(bp::self + bp::self)
+    .def(bp::self + string())
+    .def(bp::self - bp::self)
+    .def(bp::self - string())
+    .def(~bp::self)
+    ;
+
+  bp::implicitly_convertible <Region, BitArray> ();
+
+
+  //////////////////////////////////////////////////////////////////////////////////////////
   
   
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
@@ -443,8 +458,21 @@ void NGS_DLL_HEADER ExportNgcomp()
 	    for (int i : materials.Range())
 	      materials[i] = ma.GetDomainMaterial(i);
 	    return bp::list(materials);
-	  }))
+	  }),
+         (bp::arg("self")),
+         "returns list of materials"
+         )
 
+    .def("Materials", FunctionPointer
+	 ([](shared_ptr<MeshAccess> ma, string pattern) 
+	  {
+            return new Region (ma, VOL, pattern);
+	  }),
+         // (bp::arg("self"), bp::arg("pattern")),
+         // "checks whether domain materials match regex pattern, retuns volume region",
+         bp::return_value_policy<bp::manage_new_object>()
+         )
+    
     .def("GetBoundaries", FunctionPointer
 	 ([](const MeshAccess & ma)
 	  {
@@ -454,15 +482,13 @@ void NGS_DLL_HEADER ExportNgcomp()
 	    return bp::list(materials);
 	  }))
 
-    .def("GetBoundaries", FunctionPointer
-	 ([](const MeshAccess & ma)
+    .def("Boundaries", FunctionPointer
+	 ([](shared_ptr<MeshAccess> ma, string pattern)
 	  {
-	    Array<string> materials(ma.GetNBoundaries());
-	    for (int i : materials.Range())
-	      materials[i] = ma.GetBCNumBCName(i);
-	    return bp::tuple(materials);
-	  }))
-    
+            return new Region (ma, BND, pattern);
+	  }),
+         bp::return_value_policy<bp::manage_new_object>()
+         )
 
     .def("Refine", FunctionPointer
          ([](MeshAccess & ma)
@@ -510,7 +536,6 @@ void NGS_DLL_HEADER ExportNgcomp()
          )
 
     ;
-
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
@@ -1695,11 +1720,47 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb) -> shared_ptr<BilinearFormIntegrator>
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) -> shared_ptr<BilinearFormIntegrator>
            {
-             return make_shared<SymbolicEnergy> (cf, vb);
+             bp::extract<Region> defon_region(definedon);
+
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
+             cout << "symbolic energy, vb = " << vb << endl;
+             auto bfi = make_shared<SymbolicEnergy> (cf, vb);
+             
+             if (defon_region.check())
+               {
+                 cout << "defineon = " << defon_region().Mask() << endl;
+                 bfi->SetDefinedOn(defon_region().Mask());
+               }
+             
+             /*
+             bp::extract<bp::list> defon_list(definedon);
+             if (defon_list.check())
+               {
+                 BitArray bits(bp::len (defon_list));
+                 bits.Clear();
+                 bool all_booleans = true;
+                 for (int i : Range(bits))
+                   {
+                     cout << "class = " << defon_list().attr("__class__") << endl;
+                     bp::extract<bool> extbool(defon_list()[i]);
+                     if (extbool.check())
+                       {
+                         if (extbool()) bits.Set(i);
+                       }
+                     else
+                       all_booleans = false;
+                   }
+                 cout << "bits: " << bits << endl;
+                 cout << "allbool = " << all_booleans << endl;
+               }
+             */
+             return bfi;
            }),
-          (bp::args("self"), bp::args("VOL_or_BND")=VOL)
+          (bp::args("self"), bp::args("VOL_or_BND")=VOL, bp::args("definedon")=bp::object())
           );
 
 
