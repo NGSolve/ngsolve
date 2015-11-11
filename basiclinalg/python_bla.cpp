@@ -553,16 +553,28 @@ void NGS_DLL_HEADER ExportNgbla() {
     bp::def ("CheckPerformance",
              FunctionPointer( [] ()
                               {
-                                int n = 4000;
+                                int n = 2000;
                                 Matrix<> a(n,n), b(n,n), c(n,n);
                                 a = 1; b = 2;
-                                Timer t("matmat");
-                                t.Start();
-                                c = a * b | Lapack;
-                                t.Stop();
-                                cout << "Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
 
+                                {
+                                  Timer t("matmat");
+                                  t.Start();
+                                  c = a * b | Lapack;
+                                  t.Stop();
+                                  cout << "Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
+                                }
 
+                                /*
+                                {
+                                  Timer t("matmat2");
+                                  t.Start();
+                                  c = a * b;
+                                  t.Stop();
+                                  cout << "without Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
+                                }
+                                */
+                                
                                 Timer t2("matmat - par");
                                 t2.Start();
                                 
