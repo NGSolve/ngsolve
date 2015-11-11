@@ -195,13 +195,6 @@ namespace ngcomp
     static Timer timer ("H1HighOrderFESpace::Update");
     RegionTimer reg(timer);
 
-    /*
-    cout << "bonus-order: " << endl;
-    for (int bonus : et_bonus_order)
-      cout << bonus << " ";
-    cout << endl;
-    */
-
     FESpace :: Update (lh);
 
     TORDER maxorder = 0;

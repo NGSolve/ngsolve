@@ -448,6 +448,8 @@ namespace ngcomp
     {
       switch (dim-boundary)
 	{
+        case 0:	return Ngs_Element (mesh.GetElement<0> (elnr), 
+                                    ElementId(boundary ? BND : VOL, elnr));
 	case 1:	return Ngs_Element (mesh.GetElement<1> (elnr), 
                                     ElementId(boundary ? BND : VOL, elnr));
 	case 2: return Ngs_Element (mesh.GetElement<2> (elnr), 
@@ -464,6 +466,7 @@ namespace ngcomp
       if (ei.IsBoundary()) hdim--;
       switch (hdim)
 	{
+        case 0:	return Ngs_Element (mesh.GetElement<0> (ei.Nr()), ei);
 	case 1:	return Ngs_Element (mesh.GetElement<1> (ei.Nr()), ei);
 	case 2: return Ngs_Element (mesh.GetElement<2> (ei.Nr()), ei);
 	case 3:

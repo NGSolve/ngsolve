@@ -15,6 +15,9 @@ for i in range(0, nel+1):
 
 for i in range(0,nel):
     m.Add (Element1D ([pnums[i],pnums[i+1]], index=1))
+
+m.Add (Element0D (pnums[0], index=1))
+m.Add (Element0D (pnums[nel], index=2))    
 # m.Save("test.vol")
 
 
@@ -23,9 +26,7 @@ for i in range(0,nel):
 from ngsolve import *
 ngsmesh = Mesh(m)
 
-V = H1(ngsmesh, order=1)
-V.FreeDofs()[0] = False    # left boundary
-V.FreeDofs()[nel] = False  # right boundary
+V = H1(ngsmesh, order=2, dirichlet=[1])
 print ("freedofs:\n", V.FreeDofs())
 
 
@@ -37,7 +38,10 @@ print ("mat = \n", a.mat)
 
 f = LinearForm(V)    
 f += Source(1)
+# f += Neumann(1)
 f.Assemble()
+
+print ("rhs = \n", f.vec)
 
 u = GridFunction(V)
 u.vec.data = a.mat.Inverse(V.FreeDofs()) * f.vec

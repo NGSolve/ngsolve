@@ -304,7 +304,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
           if (dirichlet_boundaries[ngel.GetIndex()])
             {
               dirichlet_vertex[ngel.Vertices()] = true;
-              dirichlet_edge[ngel.Edges()] = true;
+              if (dim >= 2)
+                dirichlet_edge[ngel.Edges()] = true;
               if (dim == 3)
                 dirichlet_face[ngel.Faces()[0]] = true;
             }
@@ -1616,11 +1617,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
 
     trig = new FE_NcTrig1;
-
+    segm = new FE_Segm0;
+      
+    auto one = make_shared<ConstantCoefficientFunction> (1);
     if (ma->GetDimension() == 2)
       {
-	integrator.reset (new MassIntegrator<2> (new ConstantCoefficientFunction(1)));
-	boundary_integrator = 0;
+	integrator = make_shared<MassIntegrator<2>> (one);
+        boundary_integrator = make_shared<RobinIntegrator<2>> (one);
+        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+        flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
       }
     else
       {
