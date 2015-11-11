@@ -247,9 +247,8 @@ namespace netgen
 
     const Array<Segment> & LineSegments() const { return segments; }
     Array<Segment> & LineSegments() { return segments; }
-
-
-
+    
+    Array<Element0d> pointelements;  // only via python interface
 
     DLL_HEADER SurfaceElementIndex AddSurfaceElement (const Element2d & el);
     void DeleteSurfaceElement (int eli)

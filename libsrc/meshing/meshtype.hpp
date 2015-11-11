@@ -907,7 +907,14 @@ namespace netgen
   ostream & operator<<(ostream  & s, const Segment & seg);
 
 
+  class Element0d
+  {
+  public:
+    PointIndex pnum;
+    int index;
+  };
 
+  ostream & operator<<(ostream  & s, const Element0d & el);
 
   // class Surface;  
   // class FaceDescriptor;

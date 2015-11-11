@@ -914,6 +914,11 @@ namespace netgen
 
 
 
+  ostream & operator<<(ostream  & s, const Element0d & el)
+  {
+    s << el.pnum << ", index = " << el.index;
+    return s;
+  }
 
 
   ostream & operator<<(ostream  & s, const Element2d & el)

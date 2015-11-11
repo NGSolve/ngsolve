@@ -208,7 +208,7 @@ DLL_HEADER void ExportNetgenMeshing()
            )),
          "create segment element"
          )
-    .def("__repr__", &ToString<Element>)
+    .def("__repr__", &ToString<Segment>)
     .add_property("vertices", 
                   FunctionPointer ([](const Segment & self) -> bp::list
                                    {
@@ -228,6 +228,33 @@ DLL_HEADER void ExportNetgenMeshing()
     ;
 
 
+  bp::class_<Element0d>("Element0D")
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](PointIndex vertex, int index)
+                           {
+                             Element0d * tmp = new Element0d;
+                             tmp->pnum = vertex;
+                             tmp->index = index;
+                             return tmp;
+                           }),
+          bp::default_call_policies(),      
+          (bp::arg("vertex"),
+           bp::arg("index")=1
+           )),
+         "create point element"
+         )
+    .def("__repr__", &ToString<Element0d>)
+    .add_property("vertices", 
+                  FunctionPointer ([](const Element0d & self) -> bp::list
+                                   {
+                                     bp::list li;
+                                     li.append (self.pnum);
+                                     return li;
+                                   }))
+    ;
+  
+  
+  
 
 
   bp::class_<FaceDescriptor>("FaceDescriptor")
@@ -263,6 +290,7 @@ DLL_HEADER void ExportNetgenMeshing()
   ExportArray<Element>();
   ExportArray<Element2d>();
   ExportArray<Segment>();
+  ExportArray<Element0d>();
   ExportArray<MeshPoint,PointIndex::BASE,PointIndex>();
   ExportArray<FaceDescriptor>();
   ;
@@ -323,6 +351,11 @@ DLL_HEADER void ExportNetgenMeshing()
          static_cast<Array<Segment>&(Mesh::*)()> (&Mesh::LineSegments),
          bp::return_value_policy<bp::reference_existing_object>())
 
+    .def("Elements0D", FunctionPointer([] (Mesh & self) -> Array<Element0d>&
+                                       {
+                                         return self.pointelements;
+                                       } ),
+         bp::return_value_policy<bp::reference_existing_object>())
 
     .def("Points", 
          static_cast<Mesh::T_POINTS&(Mesh::*)()> (&Mesh::Points),
@@ -354,6 +387,11 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("Add", FunctionPointer ([](Mesh & self, const Segment & el)
                                   {
                                     return self.AddSegment (el);
+                                  }))
+    
+    .def ("Add", FunctionPointer ([](Mesh & self, const Element0d & el)
+                                  {
+                                    return self.pointelements.Append (el);
                                   }))
 
     .def ("Add", FunctionPointer ([](Mesh & self, const FaceDescriptor & fd)

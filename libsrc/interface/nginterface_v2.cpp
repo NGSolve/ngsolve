@@ -120,7 +120,7 @@ namespace netgen
   {
     switch (dim)
       {
-      case 0: return 0; // mesh -> GetNV();
+      case 0: return mesh -> pointelements.Size();
       case 1: return mesh -> GetNSeg();
       case 2: return mesh -> GetNSE();
       case 3: return mesh -> GetNE();
@@ -147,13 +147,30 @@ namespace netgen
   }
   */
 
+  /*
   template <> DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<0> (int nr) const
   {
-    cout << "Netgen does not support 0-D elements" << endl;
-	Ng_Element ret;
-	return ret;
-  }
+    const Element0d & el = mesh->pointelements[nr];
+    
+    Ng_Element ret;
+    ret.type = NG_PNT;
+    ret.index = el.index;
 
+    ret.points.num = 1;
+    ret.points.ptr = (int*)&el.pnum;
+
+    ret.vertices.num = 1;
+    ret.vertices.ptr = (int*)&el.pnum;
+
+    ret.edges.num = 0;
+    ret.edges.ptr = NULL;
+
+    ret.faces.num = 0;
+    ret.faces.ptr = NULL;
+
+    return ret;
+  }
+  */
   /*
   template <> DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<1> (int nr) const
   {
@@ -508,7 +525,9 @@ namespace netgen
                               double * x,
                               double * dxdxi) const
   {
-    cout << "1D not supported" << endl;
+    PointIndex pnum = mesh->pointelements[elnr].pnum;
+    if (x) x[0] = (*mesh)[pnum](0);
+    if (dxdxi) dxdxi[0] = 0;
   }
 
 
@@ -574,7 +593,8 @@ namespace netgen
                                    double * x, size_t sx,
                                    double * dxdxi, size_t sdxdxi) const
   {
-    cout << "1D not supported" << endl;
+    for (int i = 0; i < npts; i++)
+      ElementTransformation<0,1> (elnr, xi + i*sxi, x+i*sx, dxdxi+i*sdxdxi);
   }
 
 
