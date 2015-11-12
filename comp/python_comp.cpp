@@ -788,12 +788,19 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::list spaces, bp::dict bpflags)->shared_ptr<FESpace>
+         (FunctionPointer ([](bp::list lspaces, bp::dict bpflags)->shared_ptr<FESpace>
                            {
                              Flags flags = bp::extract<Flags> (bpflags)();
 
-                             auto sp (makeCArray<shared_ptr<FESpace>> (spaces));
-                             auto fes = make_shared<CompoundFESpace> (sp[0]->GetMeshAccess(), sp, flags);
+                             auto spaces = makeCArray<shared_ptr<FESpace>> (lspaces);
+                             if (spaces.Size() == 0)
+                               throw Exception("Compound space must have at least one space");
+                             int dim = spaces[0]->GetDimension();
+                             for (auto space : spaces)
+                               if (space->GetDimension() != dim)
+                                 throw Exception("Compound space of spaces with different dimensions is not allowed");
+                             flags.SetFlag ("dim", dim);
+                             auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
