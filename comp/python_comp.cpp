@@ -560,6 +560,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Trace", FunctionPointer
          ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
           { return self.Trace(); }))
+    .add_property("derivname", FunctionPointer
+                  ([](const ProxyFunction & self) -> string
+                   {
+                     if (!self.Deriv()) return "";
+                     return self.DerivEvaluator()->Name();
+                   }))
     ;
 
   bp::implicitly_convertible 
@@ -1069,6 +1075,13 @@ void NGS_DLL_HEADER ExportNgcomp()
             return make_shared<GridFunctionCoefficientFunction> (self, self->GetFESpace()->GetFluxEvaluator());
           }))
 
+    .add_property("derivname", FunctionPointer
+                  ([](shared_ptr<GF> self) -> string
+                   {
+                     auto deriv = self->GetFESpace()->GetFluxEvaluator();
+                     if (!deriv) return "";
+                     return deriv->Name();
+                   }))
 
     .def("__call__", FunctionPointer
          ([](GF & self, double x, double y, double z)
@@ -1727,7 +1740,6 @@ void NGS_DLL_HEADER ExportNgcomp()
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             cout << "symbolic energy, vb = " << vb << endl;
              auto bfi = make_shared<SymbolicEnergy> (cf, vb);
              
              if (defon_region.check())

@@ -42,4 +42,22 @@ def HDiv(mesh, **args):
 
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'HCurl', 'HDiv', 'L2' ]
+def grad(func):
+    if func.derivname != "grad":
+        raise Exception("cannot form grad")
+    return func.Deriv()
+
+def curl(func):
+    if func.derivname != "curl":
+        raise Exception("cannot form curl")
+    return func.Deriv()
+
+def div(func):
+    if func.derivname != "div":
+        raise Exception("cannot form div")
+    return func.Deriv()
+
+
+
+
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'HCurl', 'HDiv', 'L2', 'grad', 'curl', 'div' ]
