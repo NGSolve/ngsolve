@@ -1,6 +1,8 @@
 #ifndef FILE_UMFPACKINVERSE
 #define FILE_UMFPACKINVERSE
 
+#ifdef USE_UMFPACK
+
 /* *************************************************************************/
 /* File:   umfpackinverse.hpp                                              */
 /* Author: Matthias Hochsteger                                             */
@@ -112,4 +114,5 @@ namespace ngla
 
 }
 
+#endif
 #endif
