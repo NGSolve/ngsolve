@@ -144,6 +144,8 @@ namespace ngfem
     virtual string Name() const { return "noname"; }
     /// dimension of range
     NGS_DLL_HEADER virtual int Dim() const = 0;
+    /// number of copies of finite element by BlockDifferentialOperator
+    NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
     /// does it live on the boundary ?
     virtual bool Boundary() const { return false; }
 
@@ -236,6 +238,7 @@ namespace ngfem
 
     /// dimension of range
     virtual int Dim() const { return dim*diffop->Dim(); }
+    virtual int BlockDim() const { return dim*diffop->BlockDim(); }
     virtual bool Boundary() const { return diffop->Boundary(); }
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
