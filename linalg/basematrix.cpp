@@ -286,6 +286,7 @@ namespace ngla
       case SUPERLU_DIST:    return "superlu_dist";
       case MUMPS:           return "mumps";
       case MASTERINVERSE:   return "masterinverse";
+      case UMFPACK:         return "umfpack";
       }
     return "";
   }

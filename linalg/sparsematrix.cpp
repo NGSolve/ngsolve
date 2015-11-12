@@ -776,10 +776,11 @@ namespace ngla
     else if (ainversetype == "mumps")         SetInverseType ( MUMPS );
     else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
     else if (ainversetype == "sparsecholesky") SetInverseType ( SPARSECHOLESKY );
+    else if (ainversetype == "umfpack")       SetInverseType ( UMFPACK );
     else
       {
         throw Exception (ToString("undefined inverse ")+ainversetype+
-                         "\nallowed is: 'sparsecholesky', 'pardiso', 'pardisospd', 'mumps', 'masterinverse'");
+                         "\nallowed is: 'sparsecholesky', 'pardiso', 'pardisospd', 'mumps', 'masterinverse', 'umfpack'");
       }
     return old_invtype;
   }
@@ -1229,6 +1230,14 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
       }
+    else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
+      {
+#ifdef USE_UMFPACK
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, subset);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
+#endif
+      }
     else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS)
       {
 #ifdef USE_MUMPS
@@ -1280,6 +1289,14 @@ namespace ngla
 	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
+#endif
+      }
+    else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
+      {
+#ifdef USE_UMFPACK
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
 #endif
       }
     else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
@@ -1972,6 +1989,14 @@ namespace ngla
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
 #endif
       }
+    else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
+      {
+#ifdef USE_UMFPACK
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
+#endif
+      }
     else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
       {
 #ifdef USE_MUMPS
@@ -2020,6 +2045,14 @@ namespace ngla
 	return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
+#endif
+      }
+    else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
+      {
+#ifdef USE_UMFPACK
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
+#else
+	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
 #endif
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS )
