@@ -10,11 +10,11 @@ add_library(ngla ${NGS_LIB_TYPE}
         jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp	     
         sparsematrix.cpp special_matrix.cpp superluinverse.cpp		     
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp   
-        python_linalg.cpp
+        python_linalg.cpp umfpackinverse.cpp
         )
 
 if(NOT WIN32)
-    target_link_libraries(ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${MKL_LIBRARIES} ${MUMPS_LIBRARIES} )
+    target_link_libraries(ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${MKL_LIBRARIES} ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES})
     install( TARGETS ngla ${ngs_install_dir} )
 endif(NOT WIN32)
 

@@ -1,0 +1,115 @@
+#ifndef FILE_UMFPACKINVERSE
+#define FILE_UMFPACKINVERSE
+
+/* *************************************************************************/
+/* File:   umfpackinverse.hpp                                              */
+/* Author: Matthias Hochsteger                                             */
+/* Date:   Nov. 15                                                         */
+/* *************************************************************************/
+
+/*
+  interface to the UMFPACK - package
+*/
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+#include <umfpack.h>
+
+namespace ngla
+{
+
+  template<class TM>
+  class UmfpackInverseTM : public SparseFactorization
+  {
+  public:
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+
+  protected:
+    typedef SuiteSparse_long suite_long;
+
+    int height;             // matrix size in scalars
+    int compressed_height;  // matrix size after compression in scalars
+    suite_long nze, entrysize;
+    bool print;
+
+    void *Symbolic = nullptr;
+    void *Numeric = nullptr;
+
+    Array<suite_long, size_t> rowstart, indices;
+    Array<TSCAL, size_t> values;
+
+    bool symmetric, is_complex;
+
+    void SetMatrixType();
+
+    bool compressed;
+    Array<int> compress;
+
+  public:
+
+    ///
+    UmfpackInverseTM (const SparseMatrixTM<TM> & a,
+		      const BitArray * ainner = NULL,
+		      const Array<int> * acluster = NULL,
+		      int symmetric = 0);
+    ///
+
+    template <typename TSUBSET>
+    void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
+
+    virtual ~UmfpackInverseTM ();
+    ///
+    int VHeight() const { return height/entrysize; }
+    ///
+    int VWidth() const { return height/entrysize; }
+    ///
+    virtual ostream & Print (ostream & ost) const;
+
+    virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const
+    {
+      mu.Append (new MemoryUsageStruct ("SparseChol", nze*sizeof(TM), 1));
+    }
+  };
+
+
+  template<class TM,
+	   class TV_ROW = typename mat_traits<TM>::TV_ROW,
+	   class TV_COL = typename mat_traits<TM>::TV_COL>
+  class UmfpackInverse : public UmfpackInverseTM<TM>
+  {
+    using UmfpackInverseTM<TM>::height;
+    using UmfpackInverseTM<TM>::is_complex;
+    using UmfpackInverseTM<TM>::compressed_height;
+    using UmfpackInverseTM<TM>::entrysize;
+    using UmfpackInverseTM<TM>::rowstart;
+    using UmfpackInverseTM<TM>::indices;
+    using UmfpackInverseTM<TM>::compressed;
+    using UmfpackInverseTM<TM>::compress;
+
+  public:
+    typedef TV_COL TV;
+    typedef TV_ROW TVX;
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+
+    ///
+    UmfpackInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a,
+		    const BitArray * ainner = NULL,
+		    const Array<int> * acluster = NULL,
+		    int symmetric = 0)
+      : UmfpackInverseTM<TM> (a, ainner, acluster, symmetric) { ; }
+
+    virtual ~UmfpackInverse () { ; }
+    ///
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    ///
+    virtual AutoVector CreateVector () const
+    {
+      return make_shared<VVector<TV>> (height/entrysize);
+    }
+  };
+
+}
+
+#endif

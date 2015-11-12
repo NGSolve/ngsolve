@@ -1210,6 +1210,10 @@ int NGSolve_Init (Tcl_Interp * interp)
   cout << "Including sparse direct solver Pardiso" << endl;
 #endif
 
+#ifdef USE_UMFPACK
+  cout << "Including sparse direct solver UMFPACK" << endl;
+#endif
+
 #ifdef USE_SUPERLU
   cout << "Including sparse direct solver SuperLU by Lawrence Berkeley National Laboratory" << endl;
 #endif

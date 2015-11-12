@@ -36,6 +36,7 @@ namespace ngla
 #include "order.hpp"
 #include "sparsecholesky.hpp"
 #include "pardisoinverse.hpp"
+#include "umfpackinverse.hpp"
 #include "superluinverse.hpp"
 #include "mumpsinverse.hpp"
 #include "jacobi.hpp"

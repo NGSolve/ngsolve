@@ -26,6 +26,7 @@ option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_PARDISO      "enable pardiso sparse direct solver")
+option( USE_UMFPACK      "enable umfpack sparse direct solver")
 option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
@@ -282,6 +283,40 @@ if(USE_PARDISO)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
 endif(USE_PARDISO)
+
+#######################################################################
+
+if(USE_UMFPACK)
+  add_definitions(-DUSE_UMFPACK)
+
+  if(NOT UMFPACK_INCLUDE_DIR)
+    find_path(UMFPACK_INCLUDE_DIR umfpack.h PATH_SUFFIXES suitesparse)
+  endif()
+
+  if(NOT UMFPACK_LIBRARIES)
+    find_library(UMFPACK_LIB NAMES libumfpack.a )
+    if(UMFPACK_LIB)
+      find_library(UMFPACK_AMD_LIB NAMES libamd.a)
+      find_library(UMFPACK_COLAMD_LIB NAMES libcolamd.a)
+      find_library(UMFPACK_CONFIG_LIB NAMES libsuitesparseconfig.a)
+      find_library(UMFPACK_CHOLMOD_LIB NAMES libcholmod.a)
+    else(UMFPACK_LIB)
+      find_library(UMFPACK_LIB NAMES libumfpack.so)
+    endif(UMFPACK_LIB)
+  endif(NOT UMFPACK_LIBRARIES)
+
+  set(UMFPACK_LIBRARIES ${UMFPACK_LIB} ${UMFPACK_AMD_LIB} ${UMFPACK_COLAMD_LIB} ${UMFPACK_CHOLMOD_LIB} ${UMFPACK_CONFIG_LIB} CACHE STRING "List of UMFPACK libraries")
+
+  if(NOT UMFPACK_LIBRARIES OR NOT UMFPACK_INCLUDE_DIR)
+    message(FATAL_ERROR "Could NOT find UMFPACK")
+  else()
+    message(STATUS "Found Umfpack include:   ${UMFPACK_INCLUDE_DIR}")
+    message(STATUS "Found Umfpack libraries: ${UMFPACK_LIBRARIES}")
+  endif()
+
+  include_directories(${UMFPACK_INCLUDE_DIR})
+
+endif(USE_UMFPACK)
 
 #######################################################################
 if(USE_NUMA)
