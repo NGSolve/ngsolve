@@ -90,9 +90,11 @@ public:
   
   /// dimension of range
   virtual int Dim() const { return diffop->Dim(); }
+  virtual int BlockDim() const { return diffop->BlockDim(); }
   virtual bool Boundary() const { return diffop->Boundary(); }
   virtual int DiffOrder() const { return diffop->DiffOrder(); }
-  
+  virtual string Name() const { return diffop->Name(); }
+
   
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
@@ -102,7 +104,7 @@ public:
   {
     mat = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = fel.GetRange(comp);
+    IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
   }
   
@@ -115,7 +117,7 @@ public:
          LocalHeap & lh) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = fel.GetRange(comp);
+    IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->Apply (fel[comp], mip, x.Range(r), flux, lh);
   }
 
@@ -128,7 +130,7 @@ public:
   {
     x = 0;
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
-    IntRange r = fel.GetRange(comp);
+    IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
   }
 
