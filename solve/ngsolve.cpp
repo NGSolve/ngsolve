@@ -541,7 +541,7 @@ int NGS_LoadPy (ClientData clientData,
               // change working directory to the python file
               stringstream s;
               s << "import os" << endl
-                << "os.chdir(os.path.dirname('" << init_file_ << "'))" << endl
+                << "os.chdir(os.path.dirname(os.path.abspath('" << init_file_ << "')))" << endl
                 << "del os" << endl;
               pyenv.exec(s.str());
 
