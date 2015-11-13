@@ -40,6 +40,7 @@ namespace ngcomp
       : FESpace (ama, flags)
     { 
       evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      boundary_evaluator = make_shared<T_DifferentialOperator<NumberDiffOp>>();
     }
 
     virtual int GetNDof() const { return 1; }
