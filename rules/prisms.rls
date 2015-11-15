@@ -1,0 +1,259 @@
+tolfak 0.5
+
+rule "prism on quad"
+
+quality 1
+
+mappoints
+(0, 0, 0);
+(1, 0, 0);
+(1, 1, 0);
+(0, 1, 0);
+(0.5, 0, -0.86);
+(0.5, 1, -0.86);
+
+mapfaces
+(1, 2, 3, 4) del;
+(1, 5, 2) del;
+(4, 3, 6) del;
+
+newpoints
+
+newfaces
+(5, 2, 3, 6);
+(1, 5, 6, 4);
+
+elements
+(1, 5, 2, 4, 6, 3);
+
+orientations
+(1, 2, 3, 5);
+(1, 3, 4, 6);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ 0.3 P1, -0.1 P2, -0.1 P3, 0.3 P4, 0.3 P5, 0.3 P6 };
+{ -0.1 P1, 0.3 P2, 0.3 P3, -0.1 P4, 0.3 P5, 0.3 P6 };
+
+freezonelimit
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ 0.25 P1, 0 P2, 0 P3, 0.25 P4, 0.25 P5, 0.25 P6 };
+{ 0 P1, 0.25 P2, 0.25 P3, 0 P4, 0.25 P5, 0.25 P6 };
+
+
+endrule
+
+
+
+rule "prism on 2 quad"
+
+quality 1
+
+mappoints
+(0, 0, 0);
+(1, 0, 0);
+(1, 1, 0);
+(0, 1, 0);
+(0.5, 0, -0.86);
+(0.5, 1, -0.86);
+
+mapfaces
+(1, 2, 3, 4) del;
+(2, 5, 6, 3) del;
+(1, 5, 2) del;
+(4, 3, 6) del;
+
+newpoints
+
+newfaces
+(1, 5, 6, 4);
+
+elements
+(1, 5, 2, 4, 6, 3);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ 0.3 P1, -0.1 P2, -0.1 P3, 0.3 P4, 0.3 P5, 0.3 P6 };
+
+freezonelimit
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ 0.25 P1, 0 P2, 0 P3, 0.25 P4, 0.25 P5, 0.25 P6 };
+
+freeset
+1 2 4 5 6 7;
+
+freeset
+2 3 4 6;
+
+
+endrule
+
+
+
+
+rule "prism on 2 quada"
+
+quality 1
+
+mappoints
+(0, 0, 0);
+(1, 0, 0);
+(1, 1, 0);
+(0, 1, 0);
+(0.5, 0, -0.86);
+(0.5, 1, -0.86);
+
+mapfaces
+(1, 2, 3, 4) del;
+(5, 1, 4, 6) del;
+(1, 5, 2) del;
+(4, 3, 6) del;
+
+newpoints
+
+newfaces
+(5, 2, 3, 6);
+
+elements
+(1, 5, 2, 4, 6, 3);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ -0.1 P1, 0.3 P2, 0.3 P3, -0.1 P4, 0.3 P5, 0.3 P6 };
+
+freezonelimit
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+{ 0 P1, 0.25 P2, 0.25 P3, 0 P4, 0.25 P5, 0.25 P6 };
+
+freeset
+1 2 3 5 6 7;
+
+freeset
+1 3 4 6;
+
+
+endrule
+
+
+
+
+
+rule "fill prism"
+
+quality 1
+
+mappoints
+(0, 0, 0);
+(1, 0, 0);
+(1, 1, 0);
+(0, 1, 0);
+(0.5, 0, -0.86);
+(0.5, 1, -0.86);
+
+mapfaces
+(1, 2, 3, 4) del;
+(2, 5, 6, 3) del;
+(5, 1, 4, 6) del;
+(1, 5, 2) del;
+(4, 3, 6) del;
+
+newpoints
+
+newfaces
+
+
+elements
+(1, 5, 2, 4, 6, 3);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P3 };
+{ 1 P4 };
+{ 1 P5 };
+{ 1 P6 };
+
+freeset
+1 2 4 5;
+
+freeset
+2 3 4 6;
+
+endrule
+
+
+
+
+
+
+
+
+
+rule "flat prism"
+
+quality 1
+
+mappoints
+(0, 0, 0);
+(1, 0, 0);
+(0.5, 0.866, 0);
+(0, 0, -1);
+(1, 0, -1);
+(0.5, 0.866, -1);
+
+
+mapfaces
+(1, 2, 3) del;
+(5, 4, 6) del;
+
+newpoints
+
+newfaces
+(1, 2, 4);
+(4, 2, 5);
+(2, 3, 5);
+(5, 3, 6);
+(3, 1, 6);
+(6, 1, 4);
+
+
+
+elements
+(1, 2, 3, 5, 4, 6);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P5 };
+{ 1 P6 };
+endrule
