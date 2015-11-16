@@ -1322,6 +1322,27 @@ void NGS_DLL_HEADER ExportNgcomp()
           {
             return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
           }))
+    .add_property("harmonic_extension", FunctionPointer
+                  ([](BF & self)
+                   {
+                     return shared_ptr<BaseMatrix> (&self.GetHarmonicExtension(),
+                                                    &NOOP_Deleter);
+                   })
+                  )
+    .add_property("harmonic_extension_trans", FunctionPointer
+                  ([](BF & self)
+                   {
+                     return shared_ptr<BaseMatrix> (&self.GetHarmonicExtensionTrans(),
+                                                    &NOOP_Deleter);
+                   })
+                  )
+    .add_property("inner_solve", FunctionPointer
+                  ([](BF & self)
+                   {
+                     return shared_ptr<BaseMatrix> (&self.GetInnerSolve(),
+                                                    &NOOP_Deleter);
+                   })
+                  )
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
