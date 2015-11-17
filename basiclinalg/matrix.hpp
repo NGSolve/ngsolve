@@ -372,6 +372,18 @@ namespace ngbla
     {
       return FlatMatrix (h, range.Size(), data+range.First()*h);
     }
+
+
+    INLINE const SliceMatrix<T,ColMajor> Rows (int first, int next) const
+    {
+      return SliceMatrix<T,ColMajor> (next-first, w, h, data+first);
+    }
+
+    INLINE const SliceMatrix<T,ColMajor> Rows (IntRange range) const
+    {
+      return SliceMatrix<T,ColMajor> (range.Size(), w, h, data+range.First());
+    }
+
     
     /*
     using CMCPMatExpr<FlatMatrix<T> >::Rows;
