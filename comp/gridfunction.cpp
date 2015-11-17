@@ -952,7 +952,9 @@ namespace ngcomp
   { 
     if (diffop) return diffop->Dim();
     if (bfi) return bfi->DimFlux();
-    return gf->GetFESpace()->GetEvaluator()->Dim();
+    if (gf->GetFESpace()->GetEvaluator())
+      return gf->GetFESpace()->GetEvaluator()->Dim();
+    throw Exception("don't know my dimension");
   }
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
