@@ -473,7 +473,8 @@ namespace ngfem
                   }
               }
           td.Stop();
-          
+
+          /*
           for (int i = 0; i < mir.Size(); i++)
             {
               HeapReset hr(lh);
@@ -486,8 +487,73 @@ namespace ngfem
               proxy1->Evaluator()->CalcMatrix(fel, mir[i], bmat1, lh);
               proxy2->Evaluator()->CalcMatrix(fel, mir[i], bmat2, lh);
               dbmat1 = proxyvalues(i,STAR,STAR) * bmat1;
-              elmat += Trans (bmat2) * dbmat1;
+              elmat += Trans (bmat2) * dbmat1 | Lapack;
             }
+          */
+          
+          for (int i = 0; i < mir.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+
+          t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
+
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+          int i = 0;
+
+          enum { BS = 16 };
+          for ( ; i+BS <= mir.Size(); i+=BS)
+            {
+              HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bdbmat1(BS*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(BS*proxy2->Dimension(), elmat.Height(), lh);
+
+              for (int j = 0; j < BS; j++)
+                {
+                  int ii = i+j;
+                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+            }
+
+
+          if (i < mir.Size())
+            {
+              HeapReset hr(lh);
+              int rest = mir.Size()-i;
+              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+              
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+            }
+          /*
+          for ( ; i < mir.Size(); i++)
+            {
+              HeapReset hr(lh);
+              // proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+              
+              FlatMatrix<double,ColMajor> dbmat1(proxy2->Dimension(), elmat.Width(), lh);
+              
+              proxy1->Evaluator()->CalcMatrix(fel, mir[i], bmat1, lh);
+              proxy2->Evaluator()->CalcMatrix(fel, mir[i], bmat2, lh);
+              dbmat1 = proxyvalues(i,STAR,STAR) * bmat1;
+              elmat += Trans (bmat2) * dbmat1 | Lapack;
+            }
+          */
         }
   }
   
