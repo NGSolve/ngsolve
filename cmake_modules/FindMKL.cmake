@@ -80,7 +80,7 @@ endif()
 
 # MKL is composed by four layers: Interface, Threading, Computational and RTL
 
-if(MKL_SDL)
+if(MKL_SDL AND NOT MKL_STATIC)
     find_library(MKL_LIBRARY mkl_rt
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
@@ -93,9 +93,6 @@ else()
     ######################### Interface layer #######################
     # win32 link advisor:
     # mkl_intel_lp64.lib mkl_core.lib mkl_intel_thread.lib libiomp5md.lib -ldl
-    message("******************************************")
-    message("mkl_intel${MKL_INTERFACE_LAYER}")
-    message("******************************************")
     set(MKL_INTERFACE_LIBNAME "mkl_intel${MKL_INTERFACE_LAYER}")
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
