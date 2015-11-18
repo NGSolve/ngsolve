@@ -494,8 +494,8 @@ public:
 namespace ngfem
 {
 
-HDIV_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdHDiv<2> >;
-HDIV_EQUATIONS_EXTERN template class T_DifferentialOperator<DiffOpIdHDiv<3> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdHDiv<2> >;
+HDIV_EQUATIONS_EXTERN template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdHDiv<3> >;
 
 HDIV_EQUATIONS_EXTERN template class MassHDivIntegrator<2>;
 HDIV_EQUATIONS_EXTERN template class DivDivHDivIntegrator<2>;

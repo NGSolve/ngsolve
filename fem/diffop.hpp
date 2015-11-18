@@ -159,7 +159,7 @@ namespace ngfem
 		FlatMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
 		FlatMatrix<Complex,ColMajor> mat, 
