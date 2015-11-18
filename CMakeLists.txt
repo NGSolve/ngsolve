@@ -198,31 +198,18 @@ endif (USE_CUDA)
 if (USE_MKL)
     set(MKL_MULTI_THREADED ON)
 
-    if(NOT DEFINED MKL_STATIC)
-        set(MKL_STATIC OFF)
-    else(NOT DEFINED MKL_STATIC)
-        if(MKL_STATIC)
-            set(MKL_SDL OFF)
-        endif(MKL_STATIC)
-    endif(NOT DEFINED MKL_STATIC)
-
-    if(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
-        set(MKL_SDL ON)
-    else(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
-        set(MKL_SDL OFF)
-    endif(NOT DEFINED MKL_SDL AND NOT MKL_STATIC)
-
-    if("${MKL_INTERFACE_LAYER}" STREQUAL "ilp64")
-        add_definitions(-DMKL_ILP64)
-    endif()
+    set(MKL_STATIC OFF CACHE BOOL "Link static MKL")
+    set(MKL_SDL ON CACHE BOOL "Link single dynamic MKL lib")
 
     set(USE_LAPACK ON)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
     add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
     set( MKL_LIBRARIES "${MKL_MINIMAL_LIBRARIES}")
-#     set( ngscxx_extra_flags "${ngscxx_extra_flags} -l-L${MKL_LIBRARY_DIR}" )
-    set( ngscxx_extra_flags "${ngscxx_extra_flags} ${MKL_LINK_FLAGS}" )
+
+    if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
+        add_definitions(-DMKL_ILP64)
+    endif()
 endif (USE_MKL)
 
 #######################################################################
@@ -366,35 +353,18 @@ add_subdirectory(tests)
 #######################################################################
 # generate ngscxx compiler wrapper
 
-get_directory_property( DirDefs COMPILE_DEFINITIONS )
-set( NGSCXX_DEFS "" )
-foreach( d ${DirDefs} )
-    set( NGSCXX_DEFS "${NGSCXX_DEFS} -D${d}" )
-endforeach()
-# message( STATUS "NGSCXX_DEFS: " ${NGSCXX_DEFS} )
-
-get_directory_property(NGSCXX_INCLUDE_DIRS INCLUDE_DIRECTORIES)
-foreach( d ${NGSCXX_INCLUDE_DIRS} )
-    string(COMPARE EQUAL ${d} "${PROJECT_SOURCE_DIR}/include" IS_SOURCE_DIR)
-    string(COMPARE EQUAL ${d} "${PROJECT_BINARY_DIR}" IS_BINARY_DIR)
-    if(NOT IS_SOURCE_DIR AND NOT IS_BINARY_DIR)
-        SET( NGSCXX_INCLUDE_FLAGS "${NGSCXX_INCLUDE_FLAGS} -I${d}" )
-    endif(NOT IS_SOURCE_DIR AND NOT IS_BINARY_DIR)
-endforeach()
-list( REMOVE_DUPLICATES NGSCXX_INCLUDE_FLAGS )
-# message( STATUS "NGSCXX_INCLUDE_FLAGS: " ${NGSCXX_INCLUDE_FLAGS} )
-
-if(APPLE)
-  if(CMAKE_OSX_SYSROOT)
-    set(ngscxx_extra_flags "${ngscxx_extra_flags}  -I${CMAKE_OSX_SYSROOT}/usr/include")
-  endif()
-else(APPLE)
-    set(ngscxx_extra_flags "${ngscxx_extra_flags} -Wl,--rpath=${INSTALL_DIR}/lib")  
-endif(APPLE)
+get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(flags "${${name}} ${CMAKE_CXX_FLAGS}")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${CMAKE_CXX_COMPILER} -I. ${flags} -L${INSTALL_DIR}/lib -fpic ${NGSCXX_DEFS} ${NGSCXX_INCLUDE_FLAGS} \$* ${ngscxx_extra_flags} \n")
-
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS}")
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+file(GENERATE OUTPUT ngscxx CONTENT
+"${CMAKE_CXX_COMPILER} ${ngscxx_flags}\
+ -D$<JOIN:${ngscxx_defines}, -D>\
+ -I$<JOIN:${ngscxx_include_dirs}, -I>\
+$<$<AND:$<BOOL:${APPLE}>,$<BOOL:CMAKE_OSX_SYSROOT>>: -I${CMAKE_OSX_SYSROOT}/usr/include>\
+$<$<AND:$<BOOL:${USE_MKL}>,$<NOT:$<BOOL:${MKL_STATIC}>>>: ${MKL_LINK_FLAGS}>\
+$<$<BOOL:NOT APPLE>: -Wl,--rpath=${INSTALL_DIR}/lib>\
+ $*\n")
 
 #######################################################################
 # CTest
