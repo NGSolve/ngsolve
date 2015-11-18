@@ -28,7 +28,7 @@ namespace ngstd
     int nnodes;
   };
 
-  extern class TaskManager * task_manager;
+  NGS_DLL_HEADER extern class TaskManager * task_manager;
   
   class TaskManager
   {
@@ -74,7 +74,7 @@ namespace ngstd
 
     static void SetPajeTrace (bool use)  { use_paje_trace = use; }
     
-    void CreateJob (const function<void(TaskInfo&)> & afunc, 
+    NGS_DLL_HEADER void CreateJob (const function<void(TaskInfo&)> & afunc, 
                     int antasks = task_manager->GetNumThreads());
 
 
