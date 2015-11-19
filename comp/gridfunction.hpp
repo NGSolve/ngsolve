@@ -25,7 +25,7 @@ namespace ngcomp
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<DifferentialOperator> adiffop,
-                                     shared_ptr<DifferentialOperator> atrace_diffop,
+                                     shared_ptr<DifferentialOperator> atrace_diffop = nullptr,
                                      int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
