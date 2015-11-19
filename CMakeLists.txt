@@ -32,6 +32,16 @@ option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
 option( USE_CPP_THREADS  "use C++11 threads instead of OpenMP")
+option( USE_CCACHE       "use ccache")
+
+#######################################################################
+if(USE_CCACHE)
+  find_program(CCACHE_FOUND ccache)
+  if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+  endif(CCACHE_FOUND)
+endif(USE_CCACHE)
 
 #######################################################################
 if(INTEL_MIC)
