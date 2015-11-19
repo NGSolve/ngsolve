@@ -375,7 +375,7 @@ file(GENERATE OUTPUT ngscxx CONTENT
  -fPIC\
 $<$<AND:$<BOOL:${APPLE}>,$<BOOL:CMAKE_OSX_SYSROOT>>: -I${CMAKE_OSX_SYSROOT}/usr/include>\
 $<$<AND:$<BOOL:${USE_MKL}>,$<NOT:$<BOOL:${MKL_STATIC}>>>: ${MKL_LINK_FLAGS}>\
-$<$<BOOL:NOT APPLE>: -Wl,--rpath=${INSTALL_DIR}/lib>\
+$<$<NOT:$<BOOL:APPLE>>: -Wl,--rpath=${INSTALL_DIR}/lib>\
  $*\n")
 
 #######################################################################
