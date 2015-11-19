@@ -362,6 +362,21 @@ DLL_HEADER void ExportCSG()
          (bp::arg("self"), bp::arg("solid"), bp::arg("bcmod")=bp::list())
          )
 
+    .def("AddSurface", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> surface, shared_ptr<SPSolid> solid)
+          {
+            solid->AddSurfaces (self);
+            solid->GiveUpOwner();
+            int tlonr = self.SetTopLevelObject (solid->GetSolid(), &surface->GetSolid()->GetPrimitive()->GetSurface());
+            self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
+            self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
+            self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
+          }),
+         (bp::arg("self"), bp::arg("surface"), bp::arg("solid"))
+         )
+         
+
+    
     .def("CloseSurfaces", FunctionPointer
          ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, bp::list aslices )
           {
