@@ -361,6 +361,8 @@ file(GENERATE OUTPUT ngscxx CONTENT
 "${CMAKE_CXX_COMPILER} ${ngscxx_flags}\
  -D$<JOIN:${ngscxx_defines}, -D>\
  -I$<JOIN:${ngscxx_include_dirs}, -I>\
+ -L${INSTALL_DIR}/lib\
+ -fPIC\
 $<$<AND:$<BOOL:${APPLE}>,$<BOOL:CMAKE_OSX_SYSROOT>>: -I${CMAKE_OSX_SYSROOT}/usr/include>\
 $<$<AND:$<BOOL:${USE_MKL}>,$<NOT:$<BOOL:${MKL_STATIC}>>>: ${MKL_LINK_FLAGS}>\
 $<$<BOOL:NOT APPLE>: -Wl,--rpath=${INSTALL_DIR}/lib>\
