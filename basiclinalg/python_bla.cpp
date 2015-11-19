@@ -551,18 +551,19 @@ void NGS_DLL_HEADER ExportNgbla() {
 
 
     bp::def ("CheckPerformance",
-             FunctionPointer( [] ()
+             FunctionPointer( [] (int n, int m, int k)
                               {
-                                int n = 2000;
-                                Matrix<> a(n,n), b(n,n), c(n,n);
+                                Matrix<> a(n,k), b(m,k), c(n,m);
                                 a = 1; b = 2;
-
+                                double tot = double(n)*k*m;
+                                int its = 1e10 / tot;
                                 {
                                   Timer t("matmat");
                                   t.Start();
-                                  c = a * b | Lapack;
+                                  for (int j = 0; j < its; j++)
+                                    c = a * Trans(b) | Lapack;
                                   t.Stop();
-                                  cout << "Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
+                                  cout << "Lapack GFlops = " << 1e-9 * n*k*m*its / t.GetTime() << endl;
                                 }
 
                                 /*
@@ -574,23 +575,25 @@ void NGS_DLL_HEADER ExportNgbla() {
                                   cout << "without Lapack GFlops = " << 1e-9 * n*n*n / t.GetTime() << endl;
                                 }
                                 */
-                                
+
+                                {
                                 Timer t2("matmat - par");
                                 t2.Start();
-                                
                                 RunWithTaskManager
-                                  ([n] ()
+                                  ([=] ()
                                    {
-                                     ParallelFor (Range(8), [n] (int nr)
+                                     ParallelFor (Range(8), [=] (int nr)
                                                   {
-                                                    Matrix<> a(n,n), b(n,n), c(n,n);
+                                                    Matrix<> a(n,k), b(m,k), c(n,m);
                                                     a = 1; b = 2;
-                                                    c = a * b | Lapack;
+                                                    for (int j = 0; j < its; j++)
+                                                      c = a * Trans(b) | Lapack;
                                                   });
                                    }
                                    );
                                 t2.Stop();
-                                cout << "Task-manager Lapack GFlops = " << 8 * 1e-9 * n*n*n / t2.GetTime() << endl;
+                                cout << "Task-manager Lapack GFlops = " << 8 * 1e-9 * n*k*m*its / t2.GetTime() << endl;
+                                }
                               }));
              }
 
