@@ -78,7 +78,10 @@ def startConsole():
     try:
         import readline
         import rlcompleter
-        readline.parse_and_bind("tab:complete") # autocomplete
+        if 'libedit' in readline.__doc__:
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind("tab: complete")
     except:
         try:
             import pyreadline as readline
