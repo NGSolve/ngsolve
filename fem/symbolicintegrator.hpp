@@ -22,18 +22,21 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> evaluator;
   shared_ptr<DifferentialOperator> deriv_evaluator;
   shared_ptr<DifferentialOperator> trace_evaluator;
+  shared_ptr<DifferentialOperator> trace_deriv_evaluator;
 public:
   ProxyFunction (// const FESpace * aspace, 
                  bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
-                 shared_ptr<DifferentialOperator> atrace_evaluator)
+                 shared_ptr<DifferentialOperator> atrace_evaluator,
+                 shared_ptr<DifferentialOperator> atrace_deriv_evaluator)
                  
     : // space(aspace), 
     testfunction(atestfunction), is_complex(ais_complex),
     evaluator(aevaluator), 
     deriv_evaluator(aderiv_evaluator),
-    trace_evaluator(atrace_evaluator)
+    trace_evaluator(atrace_evaluator), 
+    trace_deriv_evaluator(atrace_deriv_evaluator)
   { ; }
 
   bool IsTestFunction () const { return testfunction; }
@@ -44,13 +47,14 @@ public:
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TraceEvaluator() const { return trace_evaluator; }
+  const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
   shared_ptr<ProxyFunction> Deriv() const
   {
-    return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, nullptr);
+    return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, trace_deriv_evaluator, nullptr);
   }
   shared_ptr<ProxyFunction> Trace() const
   {
-    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, nullptr, nullptr);
+    return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, nullptr, nullptr);
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -147,19 +151,7 @@ public:
     VorB vb;
     
   public:
-    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
-      : cf(acf), vb(avb)
-    {
-      if (cf->Dimension() != 1)
-        throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
-      cf->TraverseTree
-        ([&] (CoefficientFunction & nodecf)
-         {
-           auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-           if (proxy && !proxies.Contains(proxy))
-             proxies.Append (proxy);
-         });
-    }
+    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 
     virtual bool BoundaryForm() const { return vb==BND; }
 
@@ -193,31 +185,7 @@ public:
 
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
-                                    bool aelement_boundary)
-      : cf(acf), vb(avb), element_boundary(aelement_boundary)
-    {
-      if (cf->Dimension() != 1)
-        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
-
-      cf->TraverseTree
-        ( [&] (CoefficientFunction & nodecf)
-          {
-            auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
-            if (proxy) 
-              {
-                if (proxy->IsTestFunction())
-                  {
-                    if (!test_proxies.Contains(proxy))
-                      test_proxies.Append (proxy);
-                  }
-                else
-                  {                                         
-                    if (!trial_proxies.Contains(proxy))
-                      trial_proxies.Append (proxy);
-                  }
-              }
-          });
-    }
+                                    bool aelement_boundary);
 
     virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; } 

@@ -135,6 +135,23 @@ namespace ngfem
   }
   
 
+
+  SymbolicLinearFormIntegrator ::
+  SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb)
+    : cf(acf), vb(avb)
+  {
+    if (cf->Dimension() != 1)
+      throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
+    cf->TraverseTree
+      ([&] (CoefficientFunction & nodecf)
+       {
+         auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+         if (proxy && !proxies.Contains(proxy))
+           proxies.Append (proxy);
+       });
+  }
+
+  
   void 
   SymbolicLinearFormIntegrator ::
   CalcElementVector (const FiniteElement & fel,
@@ -196,8 +213,39 @@ namespace ngfem
   
 
 
-
-
+  SymbolicBilinearFormIntegrator ::
+  SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
+                                  bool aelement_boundary)
+    : cf(acf), vb(avb), element_boundary(aelement_boundary)
+  {
+    if (cf->Dimension() != 1)
+        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
+    
+    cf->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+          if (proxy) 
+            {
+              if (proxy->IsTestFunction())
+                {
+                  if (!test_proxies.Contains(proxy))
+                    test_proxies.Append (proxy);
+                  auto eval = proxy->Evaluator();
+                  if (eval) cout << "found evaluator, tpye = " << typeid(*eval).name() << endl;
+                  auto traceeval = proxy->TraceEvaluator();
+                  if (traceeval) cout << "found trace evaluator, tpye = " << typeid(*traceeval).name() << endl;
+                }
+              else
+                {                                         
+                  if (!trial_proxies.Contains(proxy))
+                    trial_proxies.Append (proxy);
+                }
+            }
+        });
+  }
+  
+  
   void 
   SymbolicBilinearFormIntegrator ::
   CalcElementMatrix (const FiniteElement & fel,
