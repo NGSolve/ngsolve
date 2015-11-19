@@ -14,7 +14,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         )
 
 if(NOT WIN32)
-    target_link_libraries(ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${MKL_LIBRARIES} ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES})
+    target_link_libraries(ngla ngbla ngstd ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${MUMPS_LIBRARIES} ${UMFPACK_LIBRARIES})
     install( TARGETS ngla ${ngs_install_dir} )
 endif(NOT WIN32)
 

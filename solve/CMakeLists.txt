@@ -63,7 +63,7 @@ if (USE_GUI)
             ${ngsolve_object_libs}
             ngsolve.cpp shapetester.cpp 
             )
-    target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB} ${MKL_LIBRARIES} )
+    target_link_libraries(ngsolve nglib ${MPI_CXX_LIBRARIES} ${PYTHON_LIBS} ${LAPACK_LIBRARIES} ${TCL_LIBRARY} ${PARDISO_LIB})
     if(NOT WIN32)
         target_link_libraries(ngsolve solve ngcomp ngstd ngfem ngla ngbla)
     endif(NOT WIN32)
