@@ -99,7 +99,8 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
                                            auto block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
                                            auto block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval);
+                                           auto block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
+                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
                                            block_proxy = addblock(block_proxy);
                                            return block_proxy;
                                          }));
@@ -111,7 +112,9 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
     addblock(make_shared<ProxyFunction> (testfunction, fes.IsComplex(),
                                          fes.GetEvaluator(),
                                          fes.GetFluxEvaluator(),
-                                         fes.GetEvaluator(BND)));
+                                         fes.GetEvaluator(BND),
+                                         fes.GetFluxEvaluator(BND)
+                                         ));
   return bp::object(proxy);
 }
 
@@ -1062,7 +1065,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                      return vecs;
                    }),
                   "list of coefficient vectors for multi-dim gridfunction")
-    
+
+    /*
     .def("CF", FunctionPointer
          ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
           {
@@ -1075,11 +1079,13 @@ void NGS_DLL_HEADER ExportNgcomp()
           {
             return make_shared<GridFunctionCoefficientFunction> (self, diffop);
           }))
-
+    */
     .def("Deriv", FunctionPointer
          ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
           {
-            return make_shared<GridFunctionCoefficientFunction> (self, self->GetFESpace()->GetFluxEvaluator());
+            return make_shared<GridFunctionCoefficientFunction> (self,
+                                                                 self->GetFESpace()->GetFluxEvaluator(),
+                                                                 self->GetFESpace()->GetFluxEvaluator(BND));
           }))
 
     .add_property("derivname", FunctionPointer

@@ -61,6 +61,7 @@ namespace ngcomp
     : NGS_Object (afespace->GetMeshAccess(), name), 
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
       GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter),
+                                       shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       fespace(afespace)
   { 
@@ -927,8 +928,10 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
-				   shared_ptr<DifferentialOperator> adiffop, int acomp)
-    : gf(agf), diffop (adiffop), comp (acomp) 
+				   shared_ptr<DifferentialOperator> adiffop,
+                                   shared_ptr<DifferentialOperator> atrace_diffop,
+                                   int acomp)
+    : gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
   {
     ;
   }
@@ -1038,8 +1041,10 @@ namespace ngcomp
 
     gf->GetElementVector (comp, dnums, elu);
     fes->TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
-    if (diffop)
+    if (diffop && !boundary)
       diffop->Apply (fel, ip, elu, result, lh2);
+    else if (trace_diffop && boundary)
+      trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
@@ -1078,8 +1083,10 @@ namespace ngcomp
     gf->GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
-    if (diffop)
+    if (diffop && !boundary)
       diffop->Apply (fel, ip, elu, result, lh2);
+    else if (trace_diffop && boundary)
+      trace_diffop->Apply (fel, ip, elu, result, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ip, elu, result, true, lh2);
     else
@@ -1126,8 +1133,10 @@ namespace ngcomp
     gf->GetElementVector (comp, dnums, elu);
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
-    if (diffop)
+    if (diffop && !boundary)
       diffop->Apply (fel, ir, elu, values, lh2);
+    else if (trace_diffop && boundary)
+      trace_diffop->Apply (fel, ir, elu, values, lh2);
     else if (bfi)
       bfi->CalcFlux (fel, ir, elu, values, true, lh2);
     else if (fes.GetEvaluator(boundary))

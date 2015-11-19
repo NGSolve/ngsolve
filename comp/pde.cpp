@@ -1127,8 +1127,9 @@ namespace ngcomp
     if (addcf && gf->GetFESpace()->GetFluxEvaluator())
       {
         auto diffop = gf->GetFESpace()->GetFluxEvaluator();
+        auto trace_diffop = gf->GetFESpace()->GetFluxEvaluator(BND);
         string fluxname = diffop->Name() + "_" + name;
-        AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(gf, diffop));
+        AddCoefficientFunction (fluxname, make_shared<GridFunctionCoefficientFunction>(gf, diffop, trace_diffop));
       }
     
 

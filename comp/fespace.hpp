@@ -130,6 +130,8 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> boundary_evaluator; 
     /// Evaluator for flux
     shared_ptr<DifferentialOperator> flux_evaluator; 
+    /// Evaluator for boundary flux
+    shared_ptr<DifferentialOperator> boundary_flux_evaluator; 
 
     /// Evaluator for visualization (old style)
     shared_ptr<BilinearFormIntegrator> integrator; 
@@ -583,9 +585,12 @@ namespace ngcomp
 	return evaluator; 
     }
 
-    shared_ptr<DifferentialOperator> GetFluxEvaluator () const
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool vb = VOL) const
     {
-      return flux_evaluator;
+      if (vb == BND)
+	return boundary_flux_evaluator; 
+      else
+        return flux_evaluator;
     }
 
     /// returns function-evaluator
