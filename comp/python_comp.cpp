@@ -1022,21 +1022,32 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Set", FunctionPointer
          ([](GF & self, shared_ptr<CoefficientFunction> cf, 
-             bool boundary, int heapsize, bp::object heap)
+             bool boundary, bp::object definedon, int heapsize, bp::object heap)
           {
+            Region * reg = nullptr;
+            if (bp::extract<Region&> (definedon).check())
+              reg = &bp::extract<Region&>(definedon)();
+            
             if (bp::extract<LocalHeap&> (heap).check())
               {
                 LocalHeap & lh = bp::extract<LocalHeap&> (heap)();
-                SetValues (cf, self, boundary, NULL, lh);                
+                if (reg)
+                  SetValues (cf, self, *reg, NULL, lh);
+                else
+                  SetValues (cf, self, boundary, NULL, lh);                
                 return;
               }
 
             LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
-            SetValues (cf, self, boundary, NULL, lh);
+            if (reg)
+              SetValues (cf, self, *reg, NULL, lh);
+            else
+              SetValues (cf, self, boundary, NULL, lh);
           }),
           bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"),bp::arg("coefficient"),
           bp::arg("boundary")=false,
+          bp::arg("definedon")=bp::object(),
           bp::arg("heapsize")=1000000, bp::arg("heap")=bp::object()),
          "Set values"
       )
