@@ -204,7 +204,7 @@ class Tensor : public FlatTensor<DIM,T>
 public:
   
   template <typename ... ARG>
-  Tensor (ARG ... args) : FlatTensor<DIM> (args...)
+  Tensor (ARG ... args) : FlatTensor<DIM,T> (args...)
   {
     int totsize = this->GetTotalSize();
     this->Data() = new T[totsize];

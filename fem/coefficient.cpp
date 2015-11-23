@@ -753,6 +753,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
+      /*
       Array<Matrix<>*> temp;
       for (int i = 0; i < steps.Size(); i++)
         {
@@ -766,9 +767,29 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
         }
 
       values = *temp.Last();
-      
       for (int i = 0; i < steps.Size(); i++)
         delete temp[i];
+      */
+      
+      int totdim = 0;
+      for (int d : dim) totdim += d;
+      ArrayMem<double, 10000> hmem(ir.Size()*totdim);
+      int mem_ptr = 0;
+      
+      Array<FlatMatrix<>> temp(steps.Size());
+      ArrayMem<FlatMatrix<>*, 20> in;
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
+          mem_ptr += ir.Size()*dim[i];
+
+          in.SetSize(0);
+          for (int j : inputs[i])
+            in.Append (&temp[j]);
+          steps[i] -> Evaluate (ir, in, temp[i]);
+        }
+
+      values = temp.Last();
     }
 
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
