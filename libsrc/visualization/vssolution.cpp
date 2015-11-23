@@ -2054,6 +2054,11 @@ namespace netgen
                     cp(k) = lp[0](k) + 
                       lam1 * (lp[1](k)-lp[0](k)) + 
                       lam2 * (lp[2](k)-lp[0](k));
+
+                  Point<2> xref(lam1, lam2);
+                  if (mesh->GetCurvedElements().IsHighOrder())
+                    mesh->GetCurvedElements().
+                      CalcSurfaceTransformation (xref, sei, cp);
                   
                   Vec<3> v;
                   double values[6];
