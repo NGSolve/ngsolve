@@ -367,16 +367,27 @@ get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS}")
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
-file(GENERATE OUTPUT ngscxx CONTENT
-"${CMAKE_CXX_COMPILER} ${ngscxx_flags}\
- -D$<JOIN:${ngscxx_defines}, -D>\
- -I$<JOIN:${ngscxx_include_dirs}, -I>\
- -L${INSTALL_DIR}/lib\
- -fPIC\
-$<$<AND:$<BOOL:${APPLE}>,$<BOOL:CMAKE_OSX_SYSROOT>>: -I${CMAKE_OSX_SYSROOT}/usr/include>\
-$<$<AND:$<BOOL:${USE_MKL}>,$<NOT:$<BOOL:${MKL_STATIC}>>>: ${MKL_LINK_FLAGS}>\
-$<$<NOT:$<BOOL:APPLE>>: -Wl,--rpath=${INSTALL_DIR}/lib>\
- $*\n")
+
+set(ngscxx_string "${CMAKE_CXX_COMPILER} ${ngscxx_flags} -fPIC" )
+foreach( d ${ngscxx_defines} )
+    set( ngscxx_string "${ngscxx_string} -D${d}" )
+endforeach()
+
+foreach( d ${ngscxx_include_dirs} )
+    set( ngscxx_string "${ngscxx_string} -I${d}" )
+endforeach()
+
+if(USE_MKL AND NOT MKL_STATIC)
+    set( ngscxx_string "${ngscxx_string} ${MKL_LINK_FLAGS}" )
+endif()
+if(NOT APPLE)
+    set( ngscxx_string "${ngscxx_string} -Wl,--rpath=${INSTALL_DIR}/lib" )
+endif()
+if(APPLE AND CMAKE_OSX_SYSROOT)
+    set( ngscxx_string "${ngscxx_string} -I${CMAKE_OSX_SYSROOT}/usr/include>" )
+endif()
+set(ngscxx_string "${ngscxx_string} $*\n" )
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}" )
 
 #######################################################################
 # CTest
