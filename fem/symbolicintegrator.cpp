@@ -183,7 +183,7 @@ namespace ngfem
     IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
-    FlatVector<SCAL> elvec1(fel.GetNDof(), lh);
+    FlatVector<SCAL> elvec1(elvec.Size(), lh);
     
     FlatMatrix<SCAL> values(ir.Size(), 1, lh);
     ProxyUserData ud;
@@ -231,10 +231,6 @@ namespace ngfem
                 {
                   if (!test_proxies.Contains(proxy))
                     test_proxies.Append (proxy);
-                  auto eval = proxy->Evaluator();
-                  if (eval) cout << "found evaluator, tpye = " << typeid(*eval).name() << endl;
-                  auto traceeval = proxy->TraceEvaluator();
-                  if (traceeval) cout << "found trace evaluator, tpye = " << typeid(*traceeval).name() << endl;
                 }
               else
                 {                                         
@@ -325,9 +321,9 @@ namespace ngfem
                     proxyvalues(l,k) = mip.GetWeight() * result(0);
                   }
 
-              FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-              FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
-              FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+              FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+              FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
               
               proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
               proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
@@ -401,9 +397,9 @@ namespace ngfem
                           proxyvalues(l,k) = ir_facet[i].Weight() * len * result(0);
                         }
                     
-                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), fel.GetNDof(), lh);
-                    FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), fel.GetNDof(), lh);
-                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), fel.GetNDof(), lh);
+                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                    FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), elmat.Width(), lh);
+                    FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
                     
                     proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
                     proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);

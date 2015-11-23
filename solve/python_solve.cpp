@@ -79,7 +79,8 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 if (cf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+name+":1;\n");
                 else
-                  Ng_TclCmd (string("set ::visoptions.vecfunction ")+name+";\n");
+                  if (cf->Dimension() == 3 || cf->Dimension() == ma->GetDimension())
+                    Ng_TclCmd (string("set ::visoptions.vecfunction ")+name+";\n");
                 Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
