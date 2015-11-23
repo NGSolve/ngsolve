@@ -42,6 +42,13 @@ namespace ngcomp
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh);
   
+  extern NGS_DLL_HEADER 
+  void SetValues (shared_ptr<CoefficientFunction> coef,
+		  GridFunction & u,
+		  const Region & region, 
+		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
+		  LocalHeap & clh);
+  
 
 
   template <class SCAL>
