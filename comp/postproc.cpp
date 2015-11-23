@@ -334,6 +334,7 @@ namespace ngcomp
   void SetValues (shared_ptr<CoefficientFunction> coef,
 		  GridFunction & bu,
 		  bool bound,
+                  const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh)
   {
@@ -346,6 +347,7 @@ namespace ngcomp
 
     ma->PushStatus ("setvalues");
 
+    if (reg) bound = reg->IsBoundary();
     VorB vorb = VorB(bound);
     int dim   = fes.GetDimension();
 
@@ -367,10 +369,17 @@ namespace ngcomp
        [&] (FESpace::Element ei, LocalHeap & lh)
        {
           progress.Update ();
-          
-	  if (bound && !fes.IsDirichletBoundary(ei.GetIndex()))
-	    return;
 
+          if (reg)
+            {
+              if (!reg->Mask().Test(ei.GetIndex())) return;
+            }
+          else
+            {
+              if (bound && !fes.IsDirichletBoundary(ei.GetIndex()))
+                return;
+            }
+          
 	  const FiniteElement & fel = fes.GetFE (ei, lh);
 	  const ElementTransformation & eltrans = ma->GetTrafo (ei, lh); 
 
@@ -467,11 +476,22 @@ namespace ngcomp
 				 LocalHeap & clh)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, bound, diffop, clh);
+      SetValues<Complex> (coef, u, bound, nullptr, diffop, clh);
     else
-      SetValues<double> (coef, u, bound, diffop, clh);
+      SetValues<double> (coef, u, bound, nullptr, diffop, clh);
   }
 
+  NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
+				 GridFunction & u,
+				 const Region & reg, 
+				 DifferentialOperator * diffop,
+				 LocalHeap & clh)
+  {
+    if (u.GetFESpace()->IsComplex())
+      SetValues<Complex> (coef, u, false, &reg, diffop, clh);
+    else
+      SetValues<double> (coef, u, false, &reg, diffop, clh);
+  }
 
 
 
