@@ -367,8 +367,12 @@ DLL_HEADER void ExportCSG()
           {
             solid->AddSurfaces (self);
             solid->GiveUpOwner();
-            int tlonr = self.SetTopLevelObject (solid->GetSolid(), &surface->GetSolid()->GetPrimitive()->GetSurface());
-            self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
+            Surface & surf = surface->GetSolid()->GetPrimitive()->GetSurface();
+            int tlonr = self.SetTopLevelObject (solid->GetSolid(), &surf);
+            // self.GetTopLevelObject(tlonr) -> SetMaterial(solid->GetMaterial());
+            self.GetTopLevelObject(tlonr) -> SetBCProp(surf.GetBCProperty());
+            self.GetTopLevelObject(tlonr) -> SetBCName(surf.GetBCName());
+            
             self.GetTopLevelObject(tlonr) -> SetRGB(solid->GetRed(),solid->GetGreen(),solid->GetBlue());
             self.GetTopLevelObject(tlonr)->SetTransparent(solid->IsTransparent());
           }),
