@@ -2349,6 +2349,7 @@ namespace netgen
       << ", domout = " << fd.DomainOut()
       << ", tlosurf = " << fd.TLOSurface()
       << ", bcprop = " << fd.BCProperty()
+      << ", bcname = " << fd.GetBCName()
       << ", domin_sing = " << fd.DomainInSingular()
       << ", domout_sing = " << fd.DomainOutSingular()
       << ", colour = " << fd.SurfColour();

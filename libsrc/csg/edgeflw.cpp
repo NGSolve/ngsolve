@@ -1776,15 +1776,15 @@ namespace netgen
 			  {
 			    seg1.domin = j;
 			    seg2.domin = j;
-			    seg1.tlosurf = j;
-			    seg2.tlosurf = j;
+			    seg1.tlosurf = -1;
+			    seg2.tlosurf = -1;
 			  }
 			else
 			  {
 			    seg1.domout = j;
 			    seg2.domout = j;
-			    seg1.tlosurf = j;
-			    seg2.tlosurf = j;
+			    seg1.tlosurf = -1;
+			    seg2.tlosurf = -1;
 			  }
 			//        seg.s2 = i;
 			//        seg.invs1 = surfaces[i] -> Inverse();
