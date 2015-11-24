@@ -657,8 +657,48 @@ public:
         dderiv(j) = out.DDValue(0,0);
       }
   }
-    
 
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                              FlatArray<FlatMatrix<>*> ainput,
+                              FlatArray<FlatMatrix<>*> adinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> input = *ainput[0];
+    FlatMatrix<> dinput = *adinput[0];
+    for (int j = 0; j < result.Height()*result.Width(); j++)
+      {
+        AutoDiff<1> in(input(j));
+        in.DValue(0) = dinput(j);
+        AutoDiff<1> out = lam(in);
+        result(j) = out.Value();
+        deriv(j) = out.DValue(0);
+      }
+  }
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                               FlatArray<FlatMatrix<>*> ainput,
+                               FlatArray<FlatMatrix<>*> adinput,
+                               FlatArray<FlatMatrix<>*> addinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> input = *ainput[0];
+    FlatMatrix<> dinput = *adinput[0];
+    FlatMatrix<> ddinput = *addinput[0];
+    for (int j = 0; j < result.Height()*result.Width(); j++)
+      {
+        AutoDiffDiff<1> in(input(j));
+        in.DValue(0) = dinput(j);
+        in.DDValue(0,0) = ddinput(j);
+        AutoDiffDiff<1> out = lam(in);
+        result(j) = out.Value();
+        deriv(j) = out.DValue(0);
+        dderiv(j) = out.DDValue(0,0);
+      }
+  }
+  
 };
 
 template <typename OP, typename OPC> 
