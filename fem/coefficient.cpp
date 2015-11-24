@@ -703,7 +703,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
     DynamicTable<int> inputs;
     Array<int> dim;
     Array<bool> is_complex;
-
+    // Array<Timer*> timers;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : cf(acf)
@@ -714,6 +714,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
            if (!steps.Contains(&stepcf))
              {
                steps.Append (&stepcf);
+               // timers.Append (new Timer(string("CompiledCF")+typeid(stepcf).name()));
                dim.Append (stepcf.Dimension());
                is_complex.Append (stepcf.IsComplex());
              }
@@ -799,6 +800,8 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
       Array<Matrix<>*> dtemp;
       for (int i = 0; i < steps.Size(); i++)
         {
+          // timers[i]->Start();
+          
           temp.Append (new Matrix<>(ir.Size(), dim[i]));
           dtemp.Append (new Matrix<>(ir.Size(), dim[i]));
           
@@ -810,6 +813,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
             din.Append (dtemp[j]);
           
           steps[i] -> EvaluateDeriv (ir, in, din, *temp[i], *dtemp[i]);
+          // timers[i]->Stop();
         }
 
       values = *temp.Last();

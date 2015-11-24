@@ -175,7 +175,7 @@ void ExportStdMathFunction(string name)
               if (ed.check()) return bp::object(func(ed()));
               if (bp::extract<Complex> (x).check())
                 return bp::object(func(bp::extract<Complex> (x)()));
-              throw Exception ("can't compute sin");
+              throw Exception ("can't compute math-function");
             }));
 }
 
