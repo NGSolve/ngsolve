@@ -1,7 +1,7 @@
 from libngpy.csg import *
 import libngpy.csgvis as csgvis
 from libngpy.csgvis import MouseMove
-from libngpy.meshing import *
+from libngpy.meshing import MeshingParameters
 
 
 CSGeometry.VS = csgvis.VS
