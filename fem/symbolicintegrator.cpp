@@ -307,8 +307,8 @@ namespace ngfem
 
     int intorder = 2*fel.Order();
     auto et = trafo.GetElementType();
-    if (et == ET_TRIG || et == ET_TET)
-      intorder -= test_difforder+trial_difforder;
+    // if (et == ET_TRIG || et == ET_TET)
+    // intorder -= test_difforder+trial_difforder;
     IntegrationRule ir(trafo.GetElementType(), intorder);
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
     
