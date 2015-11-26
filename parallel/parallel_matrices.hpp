@@ -27,6 +27,7 @@ namespace ngla
     MasterInverse (const SparseMatrixTM<TM> & mat, const BitArray * asubset, 
 		   const ParallelDofs * apardofs);
     virtual ~MasterInverse ();
+    virtual bool IsComplex() const { return inv->IsComplex(); } 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     virtual int VHeight() const { return pardofs->GetNDofLocal(); }
@@ -44,6 +45,7 @@ namespace ngla
     // {const_cast<BaseMatrix&>(mat).SetParallelDofs (apardofs);}
 
     virtual ~ParallelMatrix ();
+    virtual bool IsComplex() const { return mat->IsComplex(); } 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
