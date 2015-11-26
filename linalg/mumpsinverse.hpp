@@ -83,7 +83,8 @@ namespace ngla
     
     ///
     int VWidth() const { return height; }
-
+    ///
+    virtual bool IsComplex() const { return iscomplex; }
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
@@ -133,7 +134,8 @@ namespace ngla
     
     ///
     int VWidth() const { return height; }
-
+    ///
+    virtual bool IsComplex() const { return iscomplex; }
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
 
