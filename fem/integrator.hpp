@@ -1440,6 +1440,7 @@ namespace ngfem
     { 
       if (!lfi[dim]) 
         throw Exception (string("LFI for dimension") + ToString(dim)+"not available");
+      lfi[dim]->SetDefinedOn(definedon);
       return lfi[dim];
     }
 
