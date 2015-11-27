@@ -983,6 +983,7 @@ void NGS_DLL_HEADER ExportNgfem() {
 
                              if (!lfi) throw Exception(string("undefined integrator '")+name+
                                                        "' in "+ToString(dim)+ " dimension having 1 coefficient");
+
                              
                              if (bp::extract<bp::list> (definedon).check())
                                lfi -> SetDefinedOn (makeCArray<int> (definedon));

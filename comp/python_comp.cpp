@@ -757,6 +757,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      defonlist.Append(i+1);
                                  flags.SetFlag ("definedon", defonlist);
                                }
+                             bp::extract<bp::list> definedon_list(definedon);
+                             if (definedon_list.check())
+                               flags.SetFlag ("definedon", makeCArray<double> (definedon));
                              
                              auto fes = CreateFESpace (type, ma, flags); 
                              LocalHeap lh (1000000, "FESpace::Update-heap");

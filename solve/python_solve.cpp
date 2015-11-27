@@ -29,6 +29,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
     bp::def ("Draw", FunctionPointer([](shared_ptr<MeshAccess> mesh) 
                                      {
+                                       mesh->SelectMesh();
                                        Ng_TclCmd ("set ::selectvisual mesh;\n");
                                      })
              );
@@ -36,6 +37,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
     bp::def ("Draw", FunctionPointer
              ([](shared_ptr<GridFunction> gf, int sd) 
               {
+                gf->GetMeshAccess()->SelectMesh();
                 Visualize (gf, gf->GetName());
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
@@ -53,6 +55,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
              ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  bool draw_vol, bool draw_surf) 
               {
+                ma->SelectMesh();
                 netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf);
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
