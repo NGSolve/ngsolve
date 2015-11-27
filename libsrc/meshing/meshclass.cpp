@@ -4526,7 +4526,7 @@ namespace netgen
     if (dimension == 2)
       {
         int ne;
-
+        int ps_startelement = 0;  // disable global buffering
 
         if(ps_startelement != 0 && ps_startelement <= GetNSE() && PointContainedIn2DElement(p,lami,ps_startelement))
           return ps_startelement;
