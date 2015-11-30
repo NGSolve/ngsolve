@@ -31,6 +31,12 @@ namespace ngfem
   Dimensions() const
   {
     int dim = evaluator->Dim();
+    int blockdim = evaluator->BlockDim();
+    if (blockdim == 1)
+      return Array<int> ({dim});
+    else
+      return Array<int> ({dim/blockdim, blockdim});
+    /*
     auto blockdiffop = dynamic_pointer_cast<BlockDifferentialOperator> (evaluator);
     if (blockdiffop)
       {
@@ -39,6 +45,7 @@ namespace ngfem
       }
     else
       return Array<int> ({ dim });
+    */
   }
   
   
