@@ -1,5 +1,5 @@
 # Tests currently only working on Linux
-if(NOT WIN32 AND NOT APPLE)
+if(NOT WIN32)
 
 include(CTest)
 
@@ -90,4 +90,4 @@ if(BUILD_TYPE_UPPER STREQUAL "DEBUG")
     set_tests_properties ( "d8_coilshield.pde" PROPERTIES TIMEOUT 60 )
 endif(BUILD_TYPE_UPPER STREQUAL "DEBUG")
 
-endif(NOT WIN32 AND NOT APPLE)
+endif(NOT WIN32)
