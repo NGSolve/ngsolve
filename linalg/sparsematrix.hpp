@@ -61,7 +61,11 @@ namespace ngla
 #ifdef USE_MUMPS
   const INVERSETYPE default_inversetype = MUMPS;
 #else
+#ifdef USE_UMFPACK
+  const INVERSETYPE default_inversetype = UMFPACK;
+#else
   const INVERSETYPE default_inversetype = SPARSECHOLESKY;
+#endif
 #endif
 #endif
 
