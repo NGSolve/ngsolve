@@ -377,17 +377,17 @@ foreach( d ${ngscxx_include_dirs} )
     set( ngscxx_string "${ngscxx_string} -I${d}" )
 endforeach()
 
-if(USE_MKL AND NOT MKL_STATIC)
-    set( ngscxx_string "${ngscxx_string} ${MKL_LINK_FLAGS}" )
-endif()
 if(NOT APPLE)
     set( ngscxx_string "${ngscxx_string} -Wl,--rpath=${INSTALL_DIR}/lib" )
 endif()
 if(APPLE AND CMAKE_OSX_SYSROOT)
     set( ngscxx_string "${ngscxx_string} -I${CMAKE_OSX_SYSROOT}/usr/include" )
 endif()
-set(ngscxx_string "${ngscxx_string} -L${INSTALL_DIR}/lib $*\n" )
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}" )
+set(ngscxx_string "${ngscxx_string} -L${INSTALL_DIR}/lib $*" )
+if(USE_MKL AND NOT MKL_STATIC)
+    set( ngscxx_string "${ngscxx_string} ${MKL_LINK_FLAGS}" )
+endif()
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}\n" )
 
 #######################################################################
 # CTest
