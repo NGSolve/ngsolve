@@ -363,6 +363,8 @@ DLL_HEADER void ExportNetgenMeshing()
 
     .def("FaceDescriptor", static_cast<FaceDescriptor&(Mesh::*)(int)> (&Mesh::GetFaceDescriptor),
          bp::return_value_policy<bp::reference_existing_object>())
+    .def("GetNFaceDescriptors", &Mesh::GetNFD)
+    
 
     .def("__getitem__", FunctionPointer ([](const Mesh & self, PointIndex pi)
                                          {
@@ -411,9 +413,18 @@ DLL_HEADER void ExportNetgenMeshing()
            {
              cout << "generate vol mesh" << endl;
              MeshingParameters mp;
+             mp.optsteps3d = 5;
              MeshVolume (mp, self);
              OptimizeVolume (mp, self);
            }))
+
+   .def ("OptimizeVolumeMesh", FunctionPointer
+         ([](Mesh & self)
+          {
+            MeshingParameters mp;
+            mp.optsteps3d = 5;
+            OptimizeVolume (mp, self);
+          }))
 
     .def ("Refine", FunctionPointer
           ([](Mesh & self)

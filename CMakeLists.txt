@@ -128,6 +128,7 @@ else(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif(WIN32)
 if(APPLE)
+#    set(MACOSX_BUNDLE ON)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -undefined dynamic_lookup")
 #     set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
 endif(APPLE)
@@ -313,9 +314,22 @@ if(UNIX)
         set(CPACK_DEBIAN_PACKAGE_NAME ${CPACK_PACKAGE_NAME})
         set(CPACK_PACKAGE_FILE_NAME "netgen-${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")   
     endif(temp)
-    include(CPack)
 endif(UNIX)
 
+if(APPLE)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/startup2.sh DESTINATION bin)
+    set(CPACK_GENERATOR "Bundle")
+    set(CPACK_BUNDLE_NAME "NGSuite")
+    set(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+    set(CPACK_BUNDLE_ICON
+    ${CMAKE_CURRENT_SOURCE_DIR}/../netgen/windows/netgen.ico)
+#    set(CPACK_BUNDLE_STARTUP_COMMAND /Applications/NGSuite.app/Contents/MacOS/NGSuite)
+#    set(CPACK_BUNDLE_STARTUP_COMMAND /Applications/NGSuite.app/Contents/Resources/bin/netgen)
+      set(CPACK_BUNDLE_STARTUP_COMMAND startup.sh)
+#    set(CPACK_SOURCE_GENERATOR "TGZ")
+endif(APPLE)
+
+include(CPack) 
 
 #######################################################################
 # uninstall target
