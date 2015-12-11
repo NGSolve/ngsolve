@@ -406,6 +406,7 @@ set(CPACK_SOURCE_IGNORE_FILES "/cmake/;/build/;/.gz/;~$;${CPACK_SOURCE_IGNORE_FI
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "NGSolve Finite Element Library")
 set(CPACK_PACKAGE_DESCRIPTION "NGSolve is a general purpose Finite Element Library on top of Netgen. With the basic library one can solve heat flow equations, Maxwell equations, and solid mechanical problems. Several add-ons are available for particular application classes.") 
 if(UNIX)
+        message(" ****************************** cpack - unix *******")
     set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/netgen")
     set(CPACK_GENERATOR "DEB")
     execute_process(COMMAND dpkg --print-architecture OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -424,6 +425,13 @@ if(WIN32)
     set(CPACK_INSTALL_PREFIX "")
     set(CPACK_PACKAGING_INSTALL_PREFIX "")
 endif(WIN32)
+
+if(APPLE)
+    set(CPACK_GENERATOR "Bundle")
+    set(CPACK_BUNDLE_NAME "NGSuite")
+    set(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
+    set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/../netgen/windows/netgen.ico)  
+endif(APPLE)
 
 include(CPack)
 
