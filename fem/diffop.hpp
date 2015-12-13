@@ -150,7 +150,9 @@ namespace ngfem
     virtual bool Boundary() const { return false; }
 
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
-    virtual int DiffOrder() const = 0; 
+    virtual int DiffOrder() const = 0;
+
+    virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
     /// calculates the matrix
     NGS_DLL_HEADER virtual void

@@ -99,6 +99,12 @@ public:
   virtual int DiffOrder() const { return diffop->DiffOrder(); }
   virtual string Name() const { return diffop->Name(); }
 
+  virtual IntRange UsedDofs(const FiniteElement & bfel) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    return r;
+  }
   
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,

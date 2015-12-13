@@ -349,7 +349,9 @@ namespace ngfem
             proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
           
           t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
-          
+
+          IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
+          IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
           FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
           FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
           int i = 0;
@@ -373,7 +375,8 @@ namespace ngfem
                 }
               tb.Stop();
               tlapack.Start();
-              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+              // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
               tlapack.Stop();
             }
           
@@ -398,7 +401,8 @@ namespace ngfem
                 }
               tb.Stop();
               tlapack.Start();
-              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+              // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
               tlapack.Stop();
             }
         }
