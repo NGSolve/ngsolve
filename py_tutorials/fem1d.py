@@ -1,4 +1,4 @@
-# from netgen.meshing import *
+from netgen.meshing import *
 from netgen.csg import *
 
 
