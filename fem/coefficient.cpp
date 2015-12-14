@@ -23,9 +23,30 @@ namespace ngfem
 
   void CoefficientFunction :: PrintReport (ostream & ost) const
   {
-    ost << "CoefficientFunction is " << typeid(*this).name() << endl;
+    // ost << "CoefficientFunction is " << typeid(*this).name() << endl;
+    PrintReportRec (ost, 0);
   }
+  
+  void CoefficientFunction :: PrintReportRec (ostream & ost, int level) const
+  {
+    for (int i = 0; i < 2*level; i++)
+      ost << ' ';
+    ost << "coef " << GetName()
+        << (IsComplex() ? " complex" : " real")
+        << " dim=" << Dimension()
+        << endl;
 
+    Array<CoefficientFunction*> input = InputCoefficientFunctions();
+    for (int i = 0; i < input.Size(); i++)
+      input[i] -> PrintReportRec (ost, level+1);
+  }
+  
+  string CoefficientFunction :: GetName () const
+  {
+    return typeid(*this).name();
+  }    
+
+  
   void CoefficientFunction :: TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     func(*this);

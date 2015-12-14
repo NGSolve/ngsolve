@@ -15,7 +15,6 @@ namespace ngfem
 
 class ProxyFunction : public CoefficientFunction
 {
-  // const FESpace * space;
   bool testfunction; // true .. test, false .. trial
   bool is_complex;
 
@@ -24,25 +23,23 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
 public:
-  ProxyFunction (// const FESpace * aspace, 
-                 bool atestfunction, bool ais_complex,
+  ProxyFunction (bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
                  shared_ptr<DifferentialOperator> aderiv_evaluator,
                  shared_ptr<DifferentialOperator> atrace_evaluator,
                  shared_ptr<DifferentialOperator> atrace_deriv_evaluator)
                  
-    : // space(aspace), 
-    testfunction(atestfunction), is_complex(ais_complex),
-    evaluator(aevaluator), 
-    deriv_evaluator(aderiv_evaluator),
-    trace_evaluator(atrace_evaluator), 
-    trace_deriv_evaluator(atrace_deriv_evaluator)
+    : testfunction(atestfunction), is_complex(ais_complex),
+      evaluator(aevaluator), 
+      deriv_evaluator(aderiv_evaluator),
+      trace_evaluator(atrace_evaluator), 
+      trace_deriv_evaluator(atrace_deriv_evaluator)
   { ; }
 
   bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
   virtual Array<int> Dimensions() const;
-  virtual bool IsComplex () const { return is_complex; } // space->IsComplex(); }
+  virtual bool IsComplex () const { return is_complex; } 
 
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }

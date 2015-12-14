@@ -162,12 +162,15 @@ namespace ngfem
 
 
     virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReportRec (ostream & ost, int level) const;
+    virtual string GetName () const;
+    
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
     { return Array<CoefficientFunction*>(); }
   };
 
-  inline ostream & operator<< (ostream & ost, CoefficientFunction & cf)
+  inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
   {
     cf.PrintReport (ost);
     return ost;
@@ -1107,7 +1110,7 @@ public:
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
-    throw Exception ("real Evaluate called for complex CF");
+    throw Exception ("real Evaluate called for complex ScaleCF");
   }
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
   {
