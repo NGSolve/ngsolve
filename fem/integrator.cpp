@@ -1466,6 +1466,21 @@ namespace ngfem
                        ToString(dim));
   }
 
+  void BilinearFormIntegratorAnyDim ::  
+  CalcElementMatrix (const FiniteElement & bfel, 
+                     const ElementTransformation & eltrans, 
+                     FlatMatrix<Complex> elmat,
+                     LocalHeap & lh) const
+  {
+    int dim = eltrans.SpaceDim();
+    if (bfi[dim])
+      bfi[dim] -> CalcElementMatrix(bfel, eltrans, elmat, lh);
+    else
+      throw Exception (ToString("Integrator-Anydim not available for dimension ")+
+                       ToString(dim));
+  }
+
+  
 
 
 

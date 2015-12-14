@@ -117,6 +117,12 @@ namespace ngcomp
       return "GridFunction";
     }
 
+    virtual string GetName () const
+    {
+      return name;
+    }
+    
+
     ///
     virtual void PrintReport (ostream & ost) const;
     ///
@@ -192,6 +198,13 @@ namespace ngcomp
   };
 
 
+  inline ostream & operator<< (ostream & ost, const GridFunction & gf)
+  {
+    gf.PrintReport (ost);
+    return ost;
+  }
+
+  
   extern void Visualize(shared_ptr<GridFunction> gf, const string & name);
   
   template <class SCAL>

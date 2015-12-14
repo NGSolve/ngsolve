@@ -265,6 +265,13 @@ namespace ngfem
                 FlatVector<double> flux,
                 FlatVector<double> x, 
                 LocalHeap & lh) const;
+    
+    NGS_DLL_HEADER virtual void
+    ApplyTrans (const FiniteElement & fel,
+                const BaseMappedIntegrationPoint & mip,
+                FlatVector<Complex> flux,
+                FlatVector<Complex> x, 
+                LocalHeap & lh) const;
 
   };
 

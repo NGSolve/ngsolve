@@ -36,16 +36,6 @@ namespace ngfem
       return Array<int> ({dim});
     else
       return Array<int> ({dim/blockdim, blockdim});
-    /*
-    auto blockdiffop = dynamic_pointer_cast<BlockDifferentialOperator> (evaluator);
-    if (blockdiffop)
-      {
-        int basedim = blockdiffop->BaseDiffOp()->Dim();
-        return Array<int> { basedim, dim/basedim };
-      }
-    else
-      return Array<int> ({ dim });
-    */
   }
   
   
@@ -200,20 +190,20 @@ namespace ngfem
     for (auto proxy : proxies)
       {
         FlatMatrix<SCAL> proxyvalues(ir.Size(), proxy->Dimension(), lh);
-          for (int k = 0; k < proxy->Dimension(); k++)
-            {
-              ud.testfunction = proxy;
-              ud.test_comp = k;
-              
-              cf -> Evaluate (mir, values);
-              
-              for (int i = 0; i < mir.Size(); i++)
-                values.Row(i) *= mir[i].GetWeight();
-              proxyvalues.Col(k) = values.Col(0);
-            }
-          
-          proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
-          elvec += elvec1;
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            
+            cf -> Evaluate (mir, values);
+            
+            for (int i = 0; i < mir.Size(); i++)
+              values.Row(i) *= mir[i].GetWeight();
+            proxyvalues.Col(k) = values.Col(0);
+          }
+        
+        proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
+        elvec += elvec1;
       }
   }
   

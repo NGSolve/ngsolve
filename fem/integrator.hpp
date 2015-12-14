@@ -1000,6 +1000,11 @@ namespace ngfem
 		       const ElementTransformation & eltrans, 
 		       FlatMatrix<double> elmat,
 		       LocalHeap & lh) const;
+    virtual void
+    CalcElementMatrix (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatMatrix<Complex> elmat,
+		       LocalHeap & lh) const;
   };
 
 

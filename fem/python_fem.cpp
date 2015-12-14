@@ -355,7 +355,8 @@ void ExportCoefficientFunction()
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("coef"),bp::arg("dims")=bp::object())
           ))
-    
+    .def("__str__", &ToString<CoefficientFunction>)
+
     .def("__call__", FunctionPointer
 	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
 	  {
@@ -369,10 +370,16 @@ void ExportCoefficientFunction()
 	      }
 	    else
 	      {
+                /*
 		if (self.Dimension() == 1)
 		  return bp::object(self.EvaluateComplex(mip));
                 Vector<Complex> vec(self.Dimension());
                 self.Evaluate (mip, vec);
+                return bp::tuple(vec);
+                */
+                Vector<Complex> vec(self.Dimension());
+                self.Evaluate (mip, vec);
+                if (vec.Size()==1) return bp::object(vec(0));
                 return bp::tuple(vec);
 	      }
 	  }))
