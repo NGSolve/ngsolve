@@ -1771,11 +1771,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         integrator.reset (new MassIntegrator<2> (&one));
         boundary_integrator = 0;
+        evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
       }
     else
       {
         integrator.reset (new MassIntegrator<3> (&one));
         boundary_integrator = 0;
+        evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
       }
     
     if (dimension > 1)
