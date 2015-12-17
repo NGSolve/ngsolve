@@ -55,6 +55,14 @@ from ngsolve.comp import *
 from ngsolve.solve import *
 from ngsolve.utils import *
 
+fem.__doc__ = \
+"""Finite Elements
+===============
+
+finite element shape functions, and element-matrix/vector integrators
+"""
+
+
 __all__ = ngstd.__all__ + bla.__all__ +la.__all__ + fem.__all__ + comp.__all__ + solve.__all__ + utils.__all__
 
 
