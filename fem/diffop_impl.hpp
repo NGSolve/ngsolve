@@ -14,7 +14,7 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & bmip,
-              FlatMatrix<double,ColMajor> mat, 
+              SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const
   {
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
@@ -22,6 +22,19 @@ namespace ngfem
     DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
   }
 
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationRule & bmir,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const
+  {
+    const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::GenerateMatrixIR (bfel, mir, mat, lh);
+  }
+
+  
 #ifndef FASTCOMPILE
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::

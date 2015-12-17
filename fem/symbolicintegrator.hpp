@@ -106,7 +106,7 @@ public:
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<double,ColMajor> mat, 
+              SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const
   {
     mat = 0;
@@ -114,6 +114,20 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
   }
+
+  NGS_DLL_HEADER virtual void
+  CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationRule & mir,
+              SliceMatrix<double,ColMajor> mat, 
+              LocalHeap & lh) const
+  {
+    mat = 0;
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
+  }
+  
+
   
   
   NGS_DLL_HEADER virtual void

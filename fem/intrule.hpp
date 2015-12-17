@@ -966,6 +966,16 @@ namespace ngfem
 
     INLINE const BaseMappedIntegrationPoint & operator[] (int i) const
     { return *static_cast<const BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
+    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) = 0;
+    /*
+    {
+      BaseMappedIntegrationRule mir(ir.Range(first,next), eltrans);
+      mir.baseip = baseip + incr * first;
+      mir.incr = incr;
+      return move(mir);
+    }
+    */
+
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -1008,6 +1018,12 @@ namespace ngfem
     {
       return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
+
+    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh)
+    {
+      return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
+    }
+    
   };
 
 
