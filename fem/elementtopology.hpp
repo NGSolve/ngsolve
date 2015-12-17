@@ -139,7 +139,7 @@ namespace ngfem
 	}
       return 0;
     }
-    INLINE int GetSpaceDim () { return GetSpaceDim(myet); }
+    INLINE int GetSpaceDim () const { return GetSpaceDim(myet); }
 
     /// returns number of vertices
     static INLINE int GetNVertices (ELEMENT_TYPE et)
@@ -157,7 +157,8 @@ namespace ngfem
 	}
       return 0;
     }
-
+    INLINE int GetNVertices () const { return GetNVertices(myet); } 
+      
     /// returns number of edges
     static INLINE int GetNEdges (ELEMENT_TYPE et)
     { 
@@ -298,6 +299,8 @@ namespace ngfem
 
     /// returns vertex coordinates (as 3D points)
     static  const POINT3D * GetVertices (ELEMENT_TYPE et);
+    INLINE const POINT3D * GetVertices () const
+    { return GetVertices(myet); }
 
     /// returns edges of elements. zero-based pairs of integers
     static const EDGE * GetEdges (ELEMENT_TYPE et)
