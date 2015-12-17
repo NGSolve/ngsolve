@@ -1515,16 +1515,16 @@ namespace ngbla
     }
 
 
-    /*
+
     const SliceMatrix Rows (int first, int next) const
     {
-      return SliceMatrix (next-first, w, dist, data+first*dist);
+      return SliceMatrix (next-first, w, dist, data+first);
     }
     const SliceMatrix Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
-    */
+
 
     const SliceMatrix Cols (int first, int next) const
     {
