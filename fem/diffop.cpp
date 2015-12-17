@@ -18,7 +18,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<double,ColMajor> mat, 
+              SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     cerr << "DifferentialOperator::CalcMatrix called for base class, type = " 
@@ -29,7 +29,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<Complex,ColMajor> mat, 
+              SliceMatrix<Complex,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     cerr << "DifferentialOperator::CalcMatrix<complex> called for base class, type = " 
@@ -37,7 +37,28 @@ namespace ngfem
          << endl;
   }
 
+  void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const BaseMappedIntegrationRule & mir,
+              SliceMatrix<double,ColMajor> mat,   
+              LocalHeap & lh) const
+  {
+    int dim = Dim(); 
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMatrix (fel, mir[i], mat.Rows(i*dim, (i+1)*dim), lh);
+  }
 
+  void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const BaseMappedIntegrationRule & mir,
+              SliceMatrix<Complex,ColMajor> mat,   
+              LocalHeap & lh) const
+  {
+    int dim = Dim(); 
+    for (int i = 0; i < mir.Size(); i++)
+      CalcMatrix (fel, mir[i], mat.Rows(i*dim, (i+1)*dim), lh);
+  }
+  
 
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,
@@ -169,7 +190,7 @@ namespace ngfem
   void BlockDifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              FlatMatrix<double,ColMajor> mat, 
+              SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);

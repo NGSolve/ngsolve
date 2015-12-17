@@ -256,10 +256,13 @@ namespace ngfem
                      FlatMatrix<Complex> elmat,
                      LocalHeap & lh) const
   {
+    /*
     if (fel.ComplexShapes())
       T_CalcElementMatrix<Complex,Complex> (fel, trafo, elmat, lh);
     else
       T_CalcElementMatrix<Complex,double> (fel, trafo, elmat, lh);
+    */
+    ;
   }
   
   
@@ -274,6 +277,7 @@ namespace ngfem
     static Timer t("symbolicBFI - CalcElementMatrix", 2);
     static Timer td("symboliBFI - CalcElementMatrix dmats", 2);
     static Timer tb("symboliBFI - CalcElementMatrix diffops", 2);
+    static Timer tdb("symboliBFI - CalcElementMatrix D * B", 2);
     static Timer tlapack("symboliBFI - CalcElementMatrix lapack", 2);
     RegionTimer reg(t);
 
@@ -350,20 +354,36 @@ namespace ngfem
           for ( ; i+BS <= mir.Size(); i+=BS)
             {
               HeapReset hr(lh);
+              FlatMatrix<SCAL,ColMajor> bbmat1(BS*proxy1->Dimension(), elmat.Width(), lh);
               FlatMatrix<SCAL,ColMajor> bdbmat1(BS*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<SCAL,ColMajor> bbmat2(BS*proxy2->Dimension(), elmat.Height(), lh);
               tb.Start();
+              /*
               for (int j = 0; j < BS; j++)
                 {
                   int ii = i+j;
                   IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
                   proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
-                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  // proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
-                  bbmat2.Rows(r2) = bmat2;
+                  // bbmat2.Rows(r2) = bmat2;
                 }
+              */
+              BaseMappedIntegrationRule & bmir = mir.Range(i, i+BS, lh);
+              proxy1->Evaluator()->CalcMatrix(fel, bmir, bbmat1, lh);
+              proxy2->Evaluator()->CalcMatrix(fel, bmir, bbmat2, lh);
               tb.Stop();
+              tdb.Start();              
+              for (int j = 0; j < BS; j++)
+                {
+                  int ii = i+j;
+                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bbmat1.Rows(r1);
+                }
+
+              tdb.Stop();
               tlapack.Start();
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
@@ -375,10 +395,12 @@ namespace ngfem
             {
               HeapReset hr(lh);
               int rest = mir.Size()-i;
+              FlatMatrix<SCAL,ColMajor> bbmat1(rest*proxy1->Dimension(), elmat.Width(), lh);
               FlatMatrix<SCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
               FlatMatrix<SCAL,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
 
               tb.Start();
+              /*
               for (int j = 0; j < rest; j++)
                 {
                   int ii = i+j;
@@ -389,7 +411,20 @@ namespace ngfem
                   bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
                   bbmat2.Rows(r2) = bmat2;
                 }
+              */
+              BaseMappedIntegrationRule & bmir = mir.Range(i, i+rest, lh);
+              proxy1->Evaluator()->CalcMatrix(fel, bmir, bbmat1, lh);
+              proxy2->Evaluator()->CalcMatrix(fel, bmir, bbmat2, lh);
               tb.Stop();
+              tdb.Start();
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bbmat1.Rows(r1);
+                }              
+              tdb.Stop();
               tlapack.Start();
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
