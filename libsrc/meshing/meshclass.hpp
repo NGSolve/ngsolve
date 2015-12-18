@@ -582,7 +582,7 @@ namespace netgen
     const string & GetBCName ( int bcnr ) const;
 
     string * GetBCNamePtr ( int bcnr )
-    { return bcnames[bcnr]; }
+    { return bcnr < bcnames.Size() ? bcnames[bcnr] : nullptr; }
 
     ///
     void ClearFaceDescriptors()
