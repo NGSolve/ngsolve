@@ -56,11 +56,7 @@ namespace netgen
 
 
   DLL_HEADER extern weak_ptr<Mesh> global_mesh;
-  inline void SetGlobalMesh (shared_ptr<Mesh> m)
-  {
-    cout << "set global mesh" << endl;
-    global_mesh = m;
-  }
+  DLL_HEADER void SetGlobalMesh (shared_ptr<Mesh> m);
 }
 
 #endif

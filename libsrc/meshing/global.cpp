@@ -21,7 +21,14 @@ namespace netgen
   DLL_HEADER shared_ptr<NetgenGeometry> ng_geometry;
 
   weak_ptr<Mesh> global_mesh;
+  void SetGlobalMesh (shared_ptr<Mesh> m)
+  {
+    PrintMessage(5, "set global mesh");
+    global_mesh = m;
+  }
+  
 
+  
   //  Flags parameters;
   int silentflag = 0;
   int testmode = 0;
