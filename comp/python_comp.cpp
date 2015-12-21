@@ -139,7 +139,7 @@ public:
   int GetMsgLevel() { return printmessage_importance; }
   void SetMsgLevel(int msg_level) 
   {
-    cout << "set printmessage_importance to " << msg_level << endl;
+    // cout << "set printmessage_importance to " << msg_level << endl;
     printmessage_importance = msg_level; 
     netgen::printmessage_importance = msg_level; 
   }
@@ -149,7 +149,7 @@ public:
   }
   void SetTestoutFile(string filename) 
   {
-    cout << "set testout-file to " << filename << endl;
+    // cout << "set testout-file to " << filename << endl;
     testout = new ofstream(filename);
   }
   
