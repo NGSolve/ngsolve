@@ -315,7 +315,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
   bp::def("RunWithTaskManager", 
           FunctionPointer ([](bp::object lam)
                            {
-                             cout << "running with task-manager:" << endl;
+                             cout << IM(3) << "running Python function with task-manager:" << endl;
                              RunWithTaskManager ([&] () { lam(); });
                            }))
           ;

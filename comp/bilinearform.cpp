@@ -1868,7 +1868,7 @@ namespace ngcomp
       }
     catch (Exception & e)
       {
-        cout << "catch in AssembleBilinearform 2" << endl;
+        cout << "catch in AssembleBilinearform 2: " << e.What() << endl;
         e.Append (string ("in Assemble BilinearForm '") + 
                   GetName() + string("'\n"));
         throw;
