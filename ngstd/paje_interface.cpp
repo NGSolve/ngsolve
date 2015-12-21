@@ -24,6 +24,41 @@ namespace ngstd
   bool PajeTrace::trace_thread_counter = true;
   bool PajeTrace::trace_threads = true;
 
+
+  PajeTrace :: PajeTrace(int anthreads, std::string aname)
+  {
+    start_time = omp_get_wtime();
+    
+    nthreads = anthreads;
+    tracefile_name = aname;
+    
+    int bytes_per_event=33;
+    max_num_events_per_thread = min2( (size_t)std::numeric_limits<int>::max, max_tracefile_size/bytes_per_event/(2*nthreads+1)*10/7);
+    cout << IM(3) << "Tracefile size = " << max_tracefile_size/1024/1024 << "MB." << endl;
+    cout << IM(3) << "Tracing " << max_num_events_per_thread << " events per thread." << endl;
+    
+    tasks.resize(nthreads);
+    int reserve_size = min2(1000000U, max_num_events_per_thread);
+    for(auto & t : tasks)
+      t.reserve(reserve_size);
+    
+    links.resize(nthreads);
+    for(auto & l : links)
+      l.reserve(reserve_size);
+    
+    jobs.reserve(reserve_size);
+    timer_events.reserve(reserve_size);
+    
+    tracing_enabled = true;
+  }
+  
+  PajeTrace :: ~PajeTrace()
+  {
+    if(tracefile_name.size()>0)
+      Write(tracefile_name);
+  }
+  
+  
   void PajeTrace::StopTracing()
     {
       if(tracing_enabled)
