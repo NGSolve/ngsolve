@@ -708,23 +708,20 @@ void NGS_DLL_HEADER ExportNgfem() {
           {
             IntegrationPoint ip(x,y,z);
             Vector<> v(fe.GetNDof());
-            /*
-            switch (fe.Dim())
-              {
-              case 1:
-                dynamic_cast<const ScalarFiniteElement<1>&> (fe).CalcShape(ip, v); break;
-              case 2:
-                dynamic_cast<const ScalarFiniteElement<2>&> (fe).CalcShape(ip, v); break;
-              case 3:
-                dynamic_cast<const ScalarFiniteElement<3>&> (fe).CalcShape(ip, v); break;
-              default:
-                ;
-              }
-            */
             fe.CalcShape (ip, v);
             return v;
           }),
          (bp::arg("self"),bp::arg("x"),bp::arg("y")=0.0,bp::arg("z")=0.0)
+         )
+    .def("CalcShape",
+         FunctionPointer
+         ([] (const BaseScalarFiniteElement & fe, const BaseMappedIntegrationPoint & mip)
+          {
+            Vector<> v(fe.GetNDof());
+            fe.CalcShape (mip.IP(), v);
+            return v;
+          }),
+         (bp::arg("self"),bp::arg("mip"))
          )
     .def("CalcDShape",
          FunctionPointer
@@ -796,6 +793,8 @@ void NGS_DLL_HEADER ExportNgfem() {
           {
             stringstream str;
             str << "p = " << bmip.GetPoint() << endl;
+            str << "jac = " << bmip.GetJacobian() << endl;
+            /*
             switch (bmip.Dim())
               {
               case 1: 
@@ -819,12 +818,20 @@ void NGS_DLL_HEADER ExportNgfem() {
               default:
                 ;
               }
+            */
             str << "measure = " << bmip.GetMeasure() << endl;
             return str.str();
           }))
     .add_property("measure", &BaseMappedIntegrationPoint::GetMeasure)
     .add_property("point", &BaseMappedIntegrationPoint::GetPoint)
     .add_property("jacobi", &BaseMappedIntegrationPoint::GetJacobian)
+    // .add_property("trafo", &BaseMappedIntegrationPoint::GetTransformation)
+    .add_property("trafo", bp::make_function( &BaseMappedIntegrationPoint::GetTransformation,
+                                              bp::return_value_policy<bp::reference_existing_object>()))
+    .add_property("elementid", FunctionPointer([](BaseMappedIntegrationPoint & mip)
+                                               {
+                                                 return mip.GetTransformation().GetElementId();
+                                               }))
     ;
 
     
@@ -854,6 +861,7 @@ void NGS_DLL_HEADER ExportNgfem() {
           (bp::arg("et")=ET_TRIG,bp::arg("vertices"))))
     .add_property("is_boundary", &ElementTransformation::Boundary)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
+    .add_property("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer
           ([] (ElementTransformation & self, double x, double y, double z)
            {

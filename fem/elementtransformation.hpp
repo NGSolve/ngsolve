@@ -58,6 +58,8 @@ namespace ngfem
     // void SetElementType (ELEMENT_TYPE aet) { eltype = aet; }
     /// return element number
     int GetElementNr () const { return elnr; }
+    ///
+    ElementId GetElementId () const { return ElementId(Boundary() ? BND : VOL, elnr); }
     /// return element index
     int GetElementIndex () const { return elindex; }
     /// return element geometry type 
