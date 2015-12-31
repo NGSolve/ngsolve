@@ -55,7 +55,7 @@ HDG_laplace one alpha
 HDG_convection b
 
 
-define preconditioner c -type=direct -bilinearform=a -inverse=pardiso
+define preconditioner c -type=direct -bilinearform=a # -inverse=pardiso
 
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c
 
