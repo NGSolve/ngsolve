@@ -40,24 +40,39 @@ int main ()
 
 enum typestar { STAR };
 
-template <int DIM, typename T = double> class FlatTensor;
+template <int DIM, typename T = double, int DIMLIN = DIM> class FlatTensor;
 
 
 
 
-template <int DIM, typename T>
-INLINE auto LargerTensor (FlatTensor<DIM,T> tensor, int as, int ad)
-  -> FlatTensor<DIM+1,T> 
+template <int DIM, typename T, int LINDIM>
+INLINE auto LargerTensor (FlatTensor<DIM,T,LINDIM> tensor, int as, int ad)
+  -> FlatTensor<DIM+1,T,LINDIM> 
 {
-  return FlatTensor<DIM+1,T> (as, ad, tensor);
+  return FlatTensor<DIM+1,T,LINDIM> (as, ad, tensor);
 }
 
-template <typename T>
-INLINE auto LargerTensor (FlatTensor<0,T> tensor, int as, int ad)
+/*
+template <typename T, int LINDIM>
+INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, int as, int ad)
   -> SliceVector<T> 
 {
   return SliceVector<T> (as, ad, tensor.Data());
 }
+*/
+template <typename T>
+INLINE auto LargerTensor (FlatTensor<0,T,0> tensor, int as, int ad)
+  -> SliceVector<T> 
+{
+  return SliceVector<T> (as, ad, tensor.Data());
+}
+template <typename T, int LINDIM>
+INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, int as, int ad)
+  -> FlatVector<T> 
+{
+  return FlatVector<T> (as, tensor.Data());
+}
+
 
 template <typename T>
 INLINE auto LargerTensor (SliceVector<T> vec, int as, int ad)
@@ -68,13 +83,35 @@ INLINE auto LargerTensor (SliceVector<T> vec, int as, int ad)
 }
 
 template <typename T>
-INLINE auto LargerTensor (DoubleSliceMatrix<T> mat, int as, int ad)
-  -> FlatTensor<3,T> 
+INLINE auto LargerTensor (FlatVector<T> vec, int as, int ad)
+  -> SliceMatrix<T> 
 {
-  FlatTensor<2,T> tens (mat.Height(), mat.DistRow(),
-                        FlatTensor<1,T> (mat.Width(),mat.DistCol(),
-                                         FlatTensor<0,T> (mat.Data())));
+  return SliceMatrix<T> (as, vec.Size(),
+                         ad, vec.Data());
+}
 
+
+
+
+template <typename T>
+INLINE auto LargerTensor (DoubleSliceMatrix<T> mat, int as, int ad)
+  -> FlatTensor<3,T,0> 
+{
+  FlatTensor<2,T,0> tens (mat.Height(), mat.DistRow(),
+                          FlatTensor<1,T> (mat.Width(),mat.DistCol(),
+                                           FlatTensor<0,T> (mat.Data())));
+  
+  return LargerTensor (tens , as, ad);
+}
+
+template <typename T>
+INLINE auto LargerTensor (SliceMatrix<T> mat, int as, int ad)
+  -> FlatTensor<3,T,0> 
+{
+  FlatTensor<2,T,1> tens (mat.Height(), mat.Dist(),
+                          FlatTensor<1,T,1> (mat.Width(),1,
+                                             FlatTensor<0,T,1> (mat.Data())));
+  
   return LargerTensor (tens , as, ad);
 }
 
@@ -84,9 +121,9 @@ INLINE auto LargerTensor (DoubleSliceMatrix<T> mat, int as, int ad)
 
 
 
-template <int DIM, typename T>
-INLINE auto OffsetTensor (FlatTensor<DIM,T> tensor, int offset)
-  -> FlatTensor<DIM,T> 
+template <int DIM, typename T, int LINDIM>
+INLINE auto OffsetTensor (FlatTensor<DIM,T,LINDIM> tensor, int offset)
+  -> FlatTensor<DIM,T,LINDIM<DIM?LINDIM:DIM> 
 {
   tensor.Data() += offset;
   return tensor;
@@ -100,6 +137,13 @@ INLINE auto OffsetTensor (SliceVector<T> vec, int offset)
 }
 
 template <typename T>
+INLINE auto OffsetTensor (FlatVector<T> vec, int offset)
+  -> FlatVector<T> 
+{
+  return FlatVector<T> (vec.Size(), vec.Data()+offset);
+}
+
+template <typename T>
 INLINE auto OffsetTensor (DoubleSliceMatrix<T> mat, int offset)
   -> DoubleSliceMatrix<T> 
 {
@@ -108,16 +152,26 @@ INLINE auto OffsetTensor (DoubleSliceMatrix<T> mat, int offset)
                                mat.Data()+offset);
 }
 
+template <typename T>
+INLINE auto OffsetTensor (SliceMatrix<T> mat, int offset)
+  -> SliceMatrix<T> 
+{
+  return SliceMatrix<T> (mat.Height(),mat.Width(),
+                         mat.Dist(),
+                         &mat(0,0)+offset);
+}
 
 
 
 
-template <int DIM, typename T>
+
+
+template <int DIM, typename T, int DIMLIN>
 class FlatTensor
 {
   int size;
   int dist;
-  FlatTensor<DIM-1,T> sub;
+  FlatTensor<DIM-1,T, DIMLIN> sub;
 
 
 public: 
@@ -128,13 +182,29 @@ public:
   {
     dist = sub.GetSize()*sub.GetDist(); 
   }
+
+  template <typename ... ARG>
+  FlatTensor (LocalHeap & lh, ARG ... args)
+    : FlatTensor (args...)
+  {
+    int totsize = this->GetTotalSize();    
+    this->Data() = new(lh) T[totsize];
+  }  
   
   FlatTensor (int as, int ad, FlatTensor<DIM-1,T> asub) 
     : size(as), dist(ad), sub(asub) { ; }
 
+  template <int DIMLIN2> 
+  FlatTensor (FlatTensor<DIM,T,DIMLIN2> t2)
+    : size(t2.GetSize()), dist(t2.GetDist()), sub(t2.GetSubTensor())
+  {
+    static_assert(DIMLIN <= DIMLIN2, "illegal tensor copy");
+    ;
+  }
 
+  
   template <typename ... ARG>
-  auto operator() (int i, ARG ... args) -> decltype ( sub(args...) )
+  auto operator() (int i, ARG ... args) -> decltype ( OffsetTensor (sub(args...), i*dist) )
   {
     return OffsetTensor (sub(args...), i*dist);
   }
@@ -156,7 +226,10 @@ public:
   int GetSize () const { return size; }
   int GetDist () const { return dist; }
   int GetTotalSize () const { return size*sub.GetTotalSize(); }
-  FlatTensor<DIM-1,T> GetSubTensor (int i = 0) const 
+
+  auto GetSubTensor() const -> decltype(sub)
+  { return sub; } 
+  FlatTensor<DIM-1,T> GetSubTensor (int i) const 
   {
     return OffsetTensor (sub, i*dist);
   }
@@ -167,20 +240,23 @@ public:
 
 
 
-template <typename T>
-class FlatTensor<0,T>
+template <typename T, int LINDIM>
+class FlatTensor<0,T,LINDIM>
 {
   T * data;
 public: 
   FlatTensor () { ; }
   FlatTensor (T * adata) : data(adata) { ; }
-  
+  template <int DIMLIN2>
+  FlatTensor (FlatTensor<0,T,DIMLIN2> t2)
+    : data(t2.Data()) { ; } 
+              
   int GetSize () const { return 1; }
   int GetDist () const { return 1; }
   int GetTotalSize () const { return 1; }
   T *& Data () { return data; }
   T * Data () const { return data; }  
-  FlatTensor<0,T> operator() () { return FlatTensor<0,T> (data); }
+  FlatTensor<0,T,LINDIM> operator() () { return FlatTensor<0,T,LINDIM> (data); }
   void operator= (double d) { *data = d; }
   void operator-= (double d) { *data -= d; }
   void operator+= (double d) { *data += d; }
@@ -208,8 +284,6 @@ public:
   {
     int totsize = this->GetTotalSize();
     this->Data() = new T[totsize];
-    for (int i = 0; i < totsize; i++)
-      this->Data()[i] = -1;
   }
   
   ~Tensor() 
