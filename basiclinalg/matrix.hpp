@@ -1673,6 +1673,22 @@ namespace ngbla
     return SliceMatrix<Complex> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
   }
 
+  INLINE 
+  const SliceMatrix<double,ColMajor> Trans (SliceMatrix<double,RowMajor> mat)
+  {
+    return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+  }
+
+  INLINE 
+  const SliceMatrix<Complex,ColMajor> Trans (SliceMatrix<Complex,RowMajor> mat)
+  {
+    return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), &mat(0,0));
+  }
+
+
+
+
+  
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
   {
