@@ -154,6 +154,8 @@ namespace ngfem
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
+    virtual bool operator== (const DifferentialOperator & diffop2) const { return false; }
+    
     /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
@@ -307,6 +309,10 @@ namespace ngfem
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
     virtual string Name() const { return DIFFOP::Name(); }
     virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
+    
+    virtual bool operator== (const DifferentialOperator & diffop2) const
+    { return typeid(*this) == typeid(diffop2); }
+
     
     virtual void
     CalcMatrix (const FiniteElement & bfel,
