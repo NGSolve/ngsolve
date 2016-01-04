@@ -39,6 +39,22 @@ namespace ngstd
 
     INLINE const T & Spec() const { return static_cast<const T&> (*this); }
     INLINE int Size() const { return Spec().Size(); }
+    template <typename T2>
+    INLINE bool Contains(const T2 & el) const
+    {
+      for (int i = 0; i < Size(); i++)
+        if (Spec()[i] == el)
+          return true;
+      return false;
+    }
+    template <typename T2>
+    INLINE int Pos(const T2 & el) const
+    {
+      for (int i = 0; i < Size(); i++)
+        if (Spec()[i] == el)
+          return i;
+      return -1;
+    }
     // INLINE auto operator[] (int i) -> decltype (Spec()[i]) { return Spec()[i]; }
     // INLINE auto operator[] (int i) const -> decltype (T::operator[](i)) { return Spec()[i]; }
   };

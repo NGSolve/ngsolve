@@ -57,7 +57,7 @@ namespace ngstd
             i[j] = in2[j];
         }
     }
-  
+    INLINE int Size() const { return N; }
     /// all ints equal ?
     INLINE bool operator== (const INT & in2) const
     { 
