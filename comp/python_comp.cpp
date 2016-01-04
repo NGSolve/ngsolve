@@ -836,7 +836,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     // .add_property("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
 
-    .add_property("order", FunctionPointer([] (FESpace & self) { return OrderProxy(self); }))
+    .add_property("order", FunctionPointer([] (FESpace & self) { return OrderProxy(self); }),
+                  "proxy to set order for individual nodes")
+    .add_property("globalorder", FunctionPointer([] (FESpace & self) { return self.GetOrder(); }),
+                  "query global order of space")    
 
     .def("Elements", 
          FunctionPointer([](FESpace & self, VorB vb, int heapsize) 
@@ -1246,7 +1249,6 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   bp::implicitly_convertible 
     <shared_ptr<GridFunction>, shared_ptr<CoefficientFunction> >(); 
-
 
 
   //////////////////////////////////////////////////////////////////////////////////////////

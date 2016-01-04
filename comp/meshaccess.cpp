@@ -895,6 +895,20 @@ namespace ngcomp
     pn2 = v2[1]-1;
   }
 
+  auto MeshAccess :: GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()))
+  {
+    int v2[2];
+    Ng_GetEdge_Vertices (enr+1, v2);
+    return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
+  }
+  /*
+  INT<2> MeshAccess :: GetEdgePNums (int enr) const
+  {
+    int v2[2];
+    Ng_GetEdge_Vertices (enr+1, v2);
+    return INT<2> (v2[0]-1, v2[1]-1);
+  }
+  */
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);

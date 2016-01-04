@@ -553,7 +553,11 @@ namespace ngcomp
 
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
-    { vnums = ArrayObject (GetElement(elnr).vertices); }
+    { vnums = GetElement(elnr).Vertices(); }
+
+    auto GetElVertices (int elnr) const
+      -> decltype(GetElement(ElementId(VOL,elnr)).Vertices())
+    { return GetElement(ElementId(VOL,elnr)).Vertices(); }
     
     ///
     void GetElVertices (ElementId ei, Array<int> & vnums) const
@@ -596,6 +600,8 @@ namespace ngcomp
     void GetEdgePNums (int enr, int & pn1, int & pn2) const;
     /// returns vertex numbers of edge
     void GetEdgePNums (int enr, Array<int> & pnums) const;
+    /// returns vertex numbers of edge
+    auto GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()));
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
     /// returns all elements connected to an edge
