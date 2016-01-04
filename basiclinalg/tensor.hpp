@@ -257,6 +257,8 @@ public:
   T *& Data () { return data; }
   T * Data () const { return data; }  
   FlatTensor<0,T,LINDIM> operator() () { return FlatTensor<0,T,LINDIM> (data); }
+  operator T  () const { return *data; }
+  operator T& () { return *data; }
   void operator= (double d) { *data = d; }
   void operator-= (double d) { *data -= d; }
   void operator+= (double d) { *data += d; }
