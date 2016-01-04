@@ -22,6 +22,7 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> deriv_evaluator;
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
+  shared_ptr<ProxyFunction> deriv_proxy;
 public:
   ProxyFunction (bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
@@ -34,7 +35,11 @@ public:
       deriv_evaluator(aderiv_evaluator),
       trace_evaluator(atrace_evaluator), 
       trace_deriv_evaluator(atrace_deriv_evaluator)
-  { ; }
+  {
+    if (deriv_evaluator || trace_deriv_evaluator)
+      deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
+                                                trace_deriv_evaluator, nullptr);
+  }
 
   bool IsTestFunction () const { return testfunction; }
   virtual int Dimension () const { return evaluator->Dim(); }
@@ -47,7 +52,8 @@ public:
   const shared_ptr<DifferentialOperator> & TraceDerivEvaluator() const { return trace_deriv_evaluator; }
   shared_ptr<ProxyFunction> Deriv() const
   {
-    return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, trace_deriv_evaluator, nullptr);
+    return deriv_proxy;
+    // return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, trace_deriv_evaluator, nullptr);
   }
   shared_ptr<ProxyFunction> Trace() const
   {
@@ -67,6 +73,10 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const;
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         FlatMatrix<> result) const;
+
+  
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const;
@@ -75,6 +85,10 @@ public:
                                FlatMatrix<> result,
                                FlatMatrix<> deriv,
                                FlatMatrix<> dderiv) const;
+
+  virtual bool ElementwiseConstant () const { return true; }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;  
 };
 
 
@@ -199,6 +213,8 @@ public:
     Array<ProxyFunction*> trial_proxies, test_proxies;
     VorB vb;
     bool element_boundary;
+    Matrix<bool> nonzeros;
+    bool elementwise_constant;
 
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,

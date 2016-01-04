@@ -1,3 +1,47 @@
+// #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
+#define __assume(cond) if (!(cond)) __builtin_unreachable(); 
+
+
+
+
+template <typename T> struct FooAMatrixType
+{
+  typedef FlatMatrix<T> type;
+};
+
+
+template <typename T> struct FooAVectorType
+{
+  typedef FlatVector<T> type;
+};
+
+
+
+
+#if defined(__AVX2__)
+
+class AFlatVectorD;
+class AFlatMatrixD;
+
+template <> struct FooAVectorType<double>
+{
+  typedef AFlatVectorD type;
+};
+template <> struct FooAMatrixType<double>
+{
+  typedef AFlatMatrixD type;
+};
+
+#endif
+
+
+template <typename T> 
+using AFlatVector = typename FooAVectorType<T>::type;
+template <typename T> 
+using AFlatMatrix = typename FooAMatrixType<T>::type;
+
+
+
 
 
 template <typename TA, typename TB, typename TC>
@@ -6,11 +50,33 @@ void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
   c = a * b;
 }
 
+template <typename TA, typename TB, typename TC>
+void MultMatDiagMat(TA a, TB b, TC c)
+{
+  for (int i = 0; i < a.Width(); i++)
+    c.Col(i) = b(i) * a.Col(i);
+}
 
-#if defined(__AVX__)
+template <typename T>
+INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
+{
+  c += a * Trans(b) | Lapack; 
+}
+
+template <typename T>
+INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
+{
+  c += a * Trans(b) | Lapack; 
+}
+
+
+
+
+
+
+#if defined(__AVX2__)
 
 // mat-mat product
-
 
 // b.Width <= 4
 INLINE
@@ -167,7 +233,6 @@ void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
 
 
 
-
 // aligned AVX vectors
 
 INLINE ostream & operator<< (ostream & ost, __m256d v4)
@@ -248,12 +313,12 @@ operator* (double s, const AVXExpr<TA> & a)
 
 
 
-class AFlatVector : public AVXExpr<AFlatVector>
+class AFlatVectorD : public AVXExpr<AFlatVectorD>
 {
   int size, vsize;
   __m256d * data;
 public:
-  AFlatVector(int asize, LocalHeap & lh)
+  AFlatVectorD(int asize, LocalHeap & lh)
   {
     size = asize;
     vsize = (size+3) / 4;
@@ -262,6 +327,7 @@ public:
 
   enum { IS_LINEAR = true };
   int Size () const { return size; }
+  int VSize () const { return vsize; }
   int Height () const { return size; }
   int Width () const { return 1; }
   
@@ -275,16 +341,16 @@ public:
     return ((double*)data)[i]; 
   }
 
-  __m256d Get(int i) const { return data[i]; }
+  __m256d & Get(int i) const { return data[i]; }
 
-  AFlatVector & operator= (double d)
+  AFlatVectorD & operator= (double d)
   {
     for (int i = 0; i < vsize; i++)
       data[i] = _mm256_set1_pd(d);
   }
 
   template<typename TB>
-  INLINE const AFlatVector & operator= (const Expr<TB> & v) const
+  INLINE const AFlatVectorD & operator= (const Expr<TB> & v) const
   {
     for (int i = 0; i < size; i++)
       ((double*)data)[i] = v.Spec()(i);
@@ -292,7 +358,7 @@ public:
   }
 
   template<typename TB>
-  INLINE const AFlatVector & operator= (const AVXExpr<TB> & v) const
+  INLINE const AFlatVectorD & operator= (const AVXExpr<TB> & v) const
   {
     /*
     for (int i = 0; i < vsize; i++)
@@ -356,7 +422,7 @@ public:
   __m256d & Get(int i) const { return data[i]; }
   __m256d & Get(int i, int j) const { return data[i*vw+j]; }
 
-  AFlatVector & operator= (double d)
+  AFlatVectorD & operator= (double d)
   {
     for (int i = 0; i < h*vw; i++)
       data[i] = _mm256_set1_pd(d);
@@ -375,6 +441,11 @@ public:
   SliceVector<> Col (int c) const
   {
     return SliceVector<> (h, 4*vw, ((double*)data)+c);
+  }
+
+  FlatVector<> Row (int r) const
+  {
+    return FlatVector<> (w, (double*)&Get(r,0));
   }
   
   AFlatMatrixD Rows(int begin, int end) const
@@ -396,28 +467,14 @@ public:
 
 
 
-template <typename T> struct FooType
-{
-  typedef FlatMatrix<T> type;
-};
 
-template <> struct FooType<double>
-{
-  typedef AFlatMatrixD type;
-};
-
-
-template <typename T> 
-using AFlatMatrix = typename FooType<T>::type;
-
-
-
+/*
 template <typename T>
 INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
 {
   c += a * Trans(b) | Lapack; 
 }
-
+*/
 
 INLINE SliceMatrix<double,ColMajor> Trans (const AFlatMatrixD & mat)
 {
@@ -442,6 +499,27 @@ INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
 
 
 
+INLINE void MyScal1x4 (int n, 
+                       __m256d * a1,
+                       __m256d * b1, __m256d * b2, __m256d * b3, __m256d * b4,
+                       __m256d & s1)
+{
+  __m256d sum11 = _mm256_setzero_pd();
+  __m256d sum12 = _mm256_setzero_pd();
+  __m256d sum13 = _mm256_setzero_pd();
+  __m256d sum14 = _mm256_setzero_pd();
+
+  for (int i = 0; i < n; i++)
+    {
+      sum11 += a1[i] * b1[i];
+      sum12 += a1[i] * b2[i];
+      sum13 += a1[i] * b3[i];
+      sum14 += a1[i] * b4[i];
+    }
+  
+  s1 = HAdd (sum11, sum12, sum13, sum14);
+}
+
 INLINE void MyScal2x4 (int n, 
                        __m256d * a1, __m256d * a2,
                        __m256d * b1, __m256d * b2, __m256d * b3, __m256d * b4,
@@ -459,7 +537,7 @@ INLINE void MyScal2x4 (int n,
   __m256d sum14 = _mm256_setzero_pd();
   __m256d sum24 = _mm256_setzero_pd();
 
-  for (int i = 0; i < n/4; i++)
+  for (int i = 0; i < n; i++)
     {
       sum11 += a1[i] * b1[i];
       sum21 += a2[i] * b1[i];
@@ -476,6 +554,8 @@ INLINE void MyScal2x4 (int n,
 }
 
 
+
+
 // C += A * Trans(B)
 
 INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
@@ -485,6 +565,9 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
   if (a.Width() != 4*a.VWidth())
     {
       int r = 4*a.VWidth()-a.Width();
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+                                        _mm256_set_epi64x(0,1,2,3));
+      /*
       __m256i mask;
       switch (r)
         {
@@ -495,15 +578,15 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
         case 3:
           mask = _mm256_set_epi64x(-1,-1,-1,0); break;
         }
+      */
       __m256d zero = _mm256_setzero_pd();
       for (int i = 0; i < a.Height(); i++)
-        // _mm256_maskstore_pd(a.Data()+i*a.VWidth()+a.VWidth()-1, mask, zero);
         _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
       for (int i = 0; i < b.Height(); i++)
         _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
     }
   
-
+  if (a.VWidth() <= 0) return;
   
   for ( ; i < c.Height()-1; i += 2)
     {
@@ -511,7 +594,7 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
       for ( ; j < c.Width()-3; j += 4)
         {
           __m256d s1, s2;
-          MyScal2x4 (4*a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           s1 += _mm256_loadu_pd(&c(i,j));
           s2 += _mm256_loadu_pd(&c(i+1,j));
@@ -521,7 +604,7 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
       if (j < c.Width())
         {
           __m256d s1, s2;
-          MyScal2x4 (4*a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           for (int j2 = 0; j2 < c.Width()-j; j2++)
             {
@@ -538,7 +621,7 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
       for ( ; j < c.Width()-3; j += 4)
         {
           __m256d s1, s2;
-          MyScal2x4 (4*a.VWidth(), &a.Get(i,0), &a.Get(i,0),
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           s1 += _mm256_loadu_pd(&c(i,j));
           _mm256_storeu_pd(&c(i,j), s1);
@@ -546,7 +629,7 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
       if (j < c.Width())
         {
           __m256d s1, s2;
-          MyScal2x4 (4*a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           for (int j2 = 0; j2 < c.Width()-j; j2++)
             c(i,j+j2) += s1[j2];
@@ -555,15 +638,176 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
 }
 
 
+INLINE void AddABtSymV1 (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
+{
+  int i = 0;
+  // clear overhead
+  if (a.Width() != 4*a.VWidth())
+    {
+      int r = 4*a.VWidth()-a.Width();
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+                                        _mm256_set_epi64x(0,1,2,3));
+
+      __m256d zero = _mm256_setzero_pd();
+      for (int i = 0; i < a.Height(); i++)
+        _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
+      for (int i = 0; i < b.Height(); i++)
+        _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
+    }
+  
+  if (a.VWidth() <= 0) return;
+  
+  for ( ; i < c.Height()-1; i += 2)
+    {
+      int j = 0;
+      for ( ; j < i; j += 4)
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+          s1 += _mm256_loadu_pd(&c(i,j));
+          s2 += _mm256_loadu_pd(&c(i+1,j));
+          _mm256_storeu_pd(&c(i,j), s1);
+          _mm256_storeu_pd(&c(i+1,j), s2);
+        }
+      if (j <= i)
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+          __m128d s1l = _mm256_extractf128_pd(s1, 0);
+          __m128d s2l = _mm256_extractf128_pd(s2, 0);
+          s1l += _mm_loadu_pd(&c(i,j));
+          s2l += _mm_loadu_pd(&c(i+1,j));
+          _mm_storeu_pd(&c(i,j), s1l);
+          _mm_storeu_pd(&c(i+1,j), s2l);
+        }
+    }
+  
+  if (i < c.Height())
+    {
+      int j = 0;
+      for ( ; j < c.Width()-3; j += 4)
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+          s1 += _mm256_loadu_pd(&c(i,j));
+          _mm256_storeu_pd(&c(i,j), s1);
+        }
+      if (j < c.Width())
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+          for (int j2 = 0; j2 < c.Width()-j; j2++)
+            c(i,j+j2) += s1[j2];
+        }
+    }
+}
+
+
+
+INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
+{
+  // clear overhead
+  if (a.Width() != 4*a.VWidth())
+    {
+      int r = 4*a.VWidth()-a.Width();
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+                                        _mm256_set_epi64x(0,1,2,3));
+
+      __m256d zero = _mm256_setzero_pd();
+      for (int i = 0; i < a.Height(); i++)
+        _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
+      for (int i = 0; i < b.Height(); i++)
+        _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
+    }
+  
+  if (a.VWidth() <= 0) return;
+  
+  int j = 0;
+  for ( ; j < c.Width()-3; j += 4)
+    {
+      int i = j;
+      double * pc = &c(i,j);
+      for ( ; i < c.Height()-1; i += 2)
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+          /*
+          s1 += _mm256_loadu_pd(&c(i,j));
+          s2 += _mm256_loadu_pd(&c(i+1,j));
+          _mm256_storeu_pd(&c(i,j), s1);
+          _mm256_storeu_pd(&c(i+1,j), s2);
+          */
+
+          s1 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(&c(i,j), s1);
+          pc += c.Dist();
+          s2 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s2);
+          pc += c.Dist();          
+        }
+      if (i < c.Height())
+        {
+          __m256d s1, s2;
+          MyScal1x4 (a.VWidth(), &a.Get(i,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1);
+
+          s1 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s1);
+        }
+    }
+
+  for ( ; j < c.Width(); j++)
+    for (int i = j; i < c.Height(); i++)
+      c(i,j) += InnerProduct(a.Row(i), b.Row(j));
+}
+
+
+
+
+
+
+// c = a * Diag (d)
+void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
+{
+  /*
+  for (int i = 0; i < diag.Size(); i++)
+    c.Col(i) = diag(i) * a.Col(i);
+  */
+  int rest = 4*diag.VSize() - diag.Size();
+  int loops = diag.VSize();
+  if (rest) loops--;
+  
+  for (int i = 0; i < c.Height(); i++)
+    for (int j = 0; j < loops; j++)
+      c.Get(i,j) = a.Get(i,j) * diag.Get(j);
+
+  if (rest)
+    {
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(4-rest),
+                                        _mm256_set_epi64x(3, 2, 1, 0));
+
+      __m256d md = _mm256_maskload_pd((double*)&diag.Get(loops), mask);
+
+      for (int i = 0; i < c.Height(); i++)
+        {
+          __m256d ma = _mm256_maskload_pd((double*)&a.Get(i,loops), mask);
+          __m256d prod = md * ma;
+          _mm256_maskstore_pd((double*)&c.Get(i,loops), mask, prod);
+        }
+    }
+}
+
+
+
 #else
 
-template <typename T>
-using AFlatMatrix = FlatMatrix<T>;
+// template <typename T>
+// using AFlatMatrix = FlatMatrix<T>;
 
-template <typename T>
-INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
-{
-  c += a * Trans(b) | Lapack; 
-}
 
 #endif
