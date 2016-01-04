@@ -55,6 +55,7 @@ namespace ngfem
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
+    // cout << "evaluate - ir to ip, type = " << typeid(*this).name() << endl;
     for (int i = 0; i < ir.Size(); i++)
       Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
   }
@@ -66,6 +67,12 @@ namespace ngfem
       Evaluate (ir[i], values.Row(i)); 
   }
 
+  void CoefficientFunction :: 
+  NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    nonzero = true;
+  }
+  
 
   ///
   ConstantCoefficientFunction ::   
@@ -678,7 +685,8 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
                        [](Complex a, Complex b) { return a+b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       { ddada = 0; ddadb = 0; ddbdb = 0; },
+                       [](bool a, bool b) { return a||b; }
                        );
   }
   
@@ -689,7 +697,8 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
                        [](Complex a, Complex b) { return a-b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 0; ddbdb = 0; }
+                       { ddada = 0; ddadb = 0; ddbdb = 0; },
+                       [](bool a, bool b) { return a||b; }
                        );
   }
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -699,7 +708,8 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
                        [](Complex a, Complex b) { return a*b; },
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = 1; ddbdb = 0; }
+                       { ddada = 0; ddadb = 1; ddbdb = 0; },
+                       [](bool a, bool b) { return a&&b; }
                        );
   }
 
@@ -710,7 +720,8 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
                        [](Complex a, Complex b) { return a/b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
-                       { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); }
+                       { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
+                       [](bool a, bool b) { return a; }
                        );
   }
 
