@@ -160,7 +160,8 @@ namespace ngfem
       EvaluateDDeriv (ir, result, deriv, dderiv);
     }
 
-
+    virtual bool ElementwiseConstant () const { return false; }
+    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetName () const;
@@ -231,7 +232,12 @@ namespace ngfem
     {
       return val;
     }
-
+    
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+    {
+      values = val;
+    }
+    
     virtual void PrintReport (ostream & ost) const;
   };
 
@@ -712,7 +718,7 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
 }
 
 
-template <typename OP, typename OPC, typename DERIV, typename DDERIV> 
+  template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
 class cl_BinaryOpCF : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1, c2;
@@ -720,12 +726,14 @@ class cl_BinaryOpCF : public CoefficientFunction
   OPC lamc;
   DERIV lam_deriv;
   DDERIV lam_dderiv;
+  NONZERO lam_nonzero;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv)
+                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero)
     : c1(ac1), c2(ac2), lam(alam), lamc(alamc),
-      lam_deriv(alam_deriv), lam_dderiv(alam_dderiv)
+      lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
+      lam_nonzero(alam_nonzero)
   { ; }
 
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
@@ -952,19 +960,26 @@ public:
   }
   
 
-
-  
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(Dimension()), v2(Dimension());
+    c1->NonZeroPattern(ud, v1);
+    c2->NonZeroPattern(ud, v2);
+    for (int i = 0; i < nonzero.Size(); i++)
+      nonzero(i) = lam_nonzero(v1(i), v2(i));
+  }
 
 };
 
-template <typename OP, typename OPC, typename DERIV, typename DDERIV> 
+  template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
 INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction> c1, 
                                                   shared_ptr<CoefficientFunction> c2, 
                                                   OP lam, OPC lamc, DERIV lam_deriv,
-                                                  DDERIV lam_dderiv)
+                                                  DDERIV lam_dderiv,
+                                                  NONZERO lam_nonzero)
 {
-  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV> 
-                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv));
+  return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO> 
+                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero));
 }
 
 
@@ -1022,6 +1037,20 @@ public:
   {
     c1->Evaluate (ip, result);
     result *= scal;
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         FlatMatrix<double> values) const
+  {
+    c1->Evaluate (ir, values);
+    values *= scal;
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         FlatMatrix<Complex> values) const
+  {
+    c1->Evaluate (ir, values);
+    values *= scal;
   }
   
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
@@ -1082,7 +1111,10 @@ public:
     dderiv = scal * ddv1;
   }
 
-  
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    c1->NonZeroPattern (ud, nonzero);
+  }  
 };
 
 
@@ -1122,6 +1154,11 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    c1->NonZeroPattern (ud, nonzero);
+  }  
     
 };
 
@@ -1171,6 +1208,15 @@ public:
     result *= v1(0);
   }
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vec<1,bool> v1;
+    c1->NonZeroPattern (ud, v1);
+    if (v1(0))
+      c2->NonZeroPattern (ud, nonzero);
+    else
+      nonzero = false;
+  }
 };
 
 
@@ -1206,7 +1252,15 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const
   {
-    Vector<> v1(c1->Dimension()), v2(c2->Dimension());
+#ifdef VLA
+    double hmem1[c1->Dimension()];
+    FlatVector<> v1(c1->Dimension(), hmem1);
+    double hmem2[c2->Dimension()];
+    FlatVector<> v2(c2->Dimension(), hmem2);
+#else
+    Vector<> v1(c1->Dimension());
+    Vector<> v2(c2->Dimension());
+#endif
     c1->Evaluate (ip, v1);
     c2->Evaluate (ip, v2);
     result(0) = InnerProduct (v1, v2);
@@ -1307,6 +1361,19 @@ public:
       }
   }
 
+  virtual bool ElementwiseConstant () const
+  { return c1->ElementwiseConstant() && c2->ElementwiseConstant(); }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(c1->Dimension()), v2(c2->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    bool nz = false;
+    for (int i = 0; i < c1->Dimension(); i++)
+      if (v1(i) && v2(i)) nz = true;
+    nonzero = nz;
+  }
 
 };
 
@@ -1355,6 +1422,23 @@ public:
     result(0) = v1(comp);
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         FlatMatrix<> result) const
+  {
+    int dim1 = c1->Dimension();
+#ifdef VLA
+    double hmem[ir.Size()*dim1];
+    FlatMatrix<> temp(ir.Size(), dim1, hmem);
+#else
+    Matrix<> temp(ir.Size(), dim1);
+#endif
+    // Matrix<> m1(ir.Size(), c1->Dimension());
+    
+    c1->Evaluate (ir, temp);
+    result.Col(0) = temp.Col(comp);
+  }  
+
+  
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
@@ -1424,6 +1508,12 @@ public:
     dderiv.Col(0) = ddv1.Col(comp);
    }  
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    nonzero(0) = v1(comp);
+  }  
 };
 
 
