@@ -488,7 +488,7 @@ namespace ngfem
                 for (int i = 0; i < mir.Size(); i+=BS)
                   {
                     HeapReset hr(lh);
-                    int bs = min(int(BS), mir.Size()-i);
+                    int bs = min2(int(BS), mir.Size()-i);
                     
                     AFlatMatrix<SCAL> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);

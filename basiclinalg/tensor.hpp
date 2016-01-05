@@ -123,7 +123,7 @@ INLINE auto LargerTensor (SliceMatrix<T> mat, int as, int ad)
 
 template <int DIM, typename T, int LINDIM>
 INLINE auto OffsetTensor (FlatTensor<DIM,T,LINDIM> tensor, int offset)
-  -> FlatTensor<DIM,T,LINDIM<DIM?LINDIM:DIM> 
+  -> FlatTensor<DIM,T,((LINDIM<DIM)?LINDIM:DIM)>
 {
   tensor.Data() += offset;
   return tensor;
