@@ -1224,10 +1224,16 @@ class MultVecVecCoefficientFunction : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1;
   shared_ptr<CoefficientFunction> c2;
+  int dim1;
 public:
   MultVecVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                  shared_ptr<CoefficientFunction> ac2)
-    : c1(ac1), c2(ac2) { ; }
+    : c1(ac1), c2(ac2)
+  {
+    dim1 = c1->Dimension();
+    if (dim1 != c2->Dimension())
+      throw Exception("MultVecVec : dimensions don't fit");
+  }
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
@@ -1253,13 +1259,13 @@ public:
                         FlatVector<> result) const
   {
 #ifdef VLA
-    double hmem1[c1->Dimension()];
-    FlatVector<> v1(c1->Dimension(), hmem1);
-    double hmem2[c2->Dimension()];
-    FlatVector<> v2(c2->Dimension(), hmem2);
+    double hmem1[dim1];
+    FlatVector<> v1(dim1, hmem1);
+    double hmem2[dim1];
+    FlatVector<> v2(dim1, hmem2);
 #else
-    Vector<> v1(c1->Dimension());
-    Vector<> v2(c2->Dimension());
+    Vector<> v1(dim1);
+    Vector<> v2(dim1);
 #endif
     c1->Evaluate (ip, v1);
     c2->Evaluate (ip, v2);
@@ -1269,7 +1275,7 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
-    Vector<Complex> v1(c1->Dimension()), v2(c2->Dimension());
+    Vector<Complex> v1(dim1), v2(dim1);
     c1->Evaluate (ip, v1);
     c2->Evaluate (ip, v2);
     result(0) = InnerProduct (v1, v2);
@@ -1279,13 +1285,13 @@ public:
                         FlatMatrix<> result) const
   {
 #ifdef VLA
-    double hmem1[ir.Size()*c1->Dimension()];
-    FlatMatrix<> temp1(ir.Size(), c1->Dimension(), hmem1);
-    double hmem2[ir.Size()*c1->Dimension()];
-    FlatMatrix<> temp2(ir.Size(), c1->Dimension(), hmem2);
+    double hmem1[ir.Size()*dim1];
+    FlatMatrix<> temp1(ir.Size(), dim1, hmem1);
+    double hmem2[ir.Size()*dim1];
+    FlatMatrix<> temp2(ir.Size(), dim1, hmem2);
 #else
-    Matrix<> temp1(ir.Size(), c1->Dimension());
-    Matrix<> temp2(ir.Size(), c1->Dimension());
+    Matrix<> temp1(ir.Size(), dim1);
+    Matrix<> temp2(ir.Size(), dim1);
 #endif
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
@@ -1308,8 +1314,8 @@ public:
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    Matrix<> v1(mir.Size(), c1->Dimension()), v2(mir.Size(),c2->Dimension());
-    Matrix<> dv1(mir.Size(), c1->Dimension()), dv2(mir.Size(), c2->Dimension());
+    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(),dim1);
+    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
     c1->EvaluateDeriv (mir, v1, dv1);
     c2->EvaluateDeriv (mir, v2, dv2);
     for (int k = 0; k < mir.Size(); k++)
@@ -1324,9 +1330,9 @@ public:
                               FlatMatrix<> deriv,
                               FlatMatrix<> dderiv) const
   {
-    Matrix<> v1(mir.Size(), c1->Dimension()), v2(mir.Size(), c2->Dimension());
-    Matrix<> dv1(mir.Size(), c1->Dimension()), dv2(mir.Size(), c2->Dimension());
-    Matrix<> ddv1(mir.Size(), c1->Dimension()), ddv2(mir.Size(), c2->Dimension());
+    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(), dim1);
+    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
+    Matrix<> ddv1(mir.Size(), dim1), ddv2(mir.Size(), dim1);
     c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
     c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
 
@@ -1366,11 +1372,11 @@ public:
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
-    Vector<bool> v1(c1->Dimension()), v2(c2->Dimension());
+    Vector<bool> v1(dim1), v2(dim1);
     c1->NonZeroPattern (ud, v1);
     c2->NonZeroPattern (ud, v2);
     bool nz = false;
-    for (int i = 0; i < c1->Dimension(); i++)
+    for (int i = 0; i < dim1; i++)
       if (v1(i) && v2(i)) nz = true;
     nonzero = nz;
   }
