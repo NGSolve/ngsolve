@@ -750,7 +750,8 @@ namespace ngfem
 	  }
 	default:
 	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
-	} 
+	}
+      ipvol.SetWeight(ipfac.Weight());
       ipvol.FacetNr() = fnr;
     }
 
@@ -800,12 +801,11 @@ namespace ngfem
 	  throw Exception ("undefined facet type in Facet2ElementTrafo()\n");
 	} 
 
-      /*
       for (int i = 0; i < irfacet.GetNIP(); i++)
-	(*this) (fnr, irfacet[i], irvol[i]);
-      */
-      for (int i = 0; i < irfacet.GetNIP(); i++)
-	irvol[i].FacetNr() = fnr;
+        {
+          irvol[i].FacetNr() = fnr;
+          irvol[i].SetWeight(irfacet[i].Weight());
+        }
 
       return irvol;
     }
