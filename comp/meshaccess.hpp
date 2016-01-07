@@ -285,7 +285,8 @@ namespace ngcomp
     {
       if (task_manager)
         {
-          SharedLoop sl(Range (GetNE(vb)));
+          // SharedLoop sl(Range (GetNE(vb)));
+          SharedLoop sl(GetNE(vb));
 
           task_manager -> CreateJob
             ( [&] (const TaskInfo & ti) 
@@ -296,8 +297,11 @@ namespace ngcomp
                   {
                     HeapReset hr(lh);
                     ElementId ei(vb, mynr);
+                    /*
                     Ngs_Element el(GetElement(ei), ei);
                     func (move(el), lh);
+                    */
+                    func (GetElement(ei), lh);
                   }
               } );
           return;
@@ -460,7 +464,7 @@ namespace ngcomp
 	}
     }
 
-    Ngs_Element GetElement (ElementId ei) const
+    INLINE Ngs_Element GetElement (ElementId ei) const
     {
       int hdim = dim;
       if (ei.IsBoundary()) hdim--;
@@ -474,7 +478,7 @@ namespace ngcomp
 	}
     }
 
-    Ngs_Element operator[] (ElementId ei) const    
+    INLINE Ngs_Element operator[] (ElementId ei) const    
     {
       return GetElement (ei);
     }
@@ -554,10 +558,6 @@ namespace ngcomp
     /// returns the vertices of an element
     void GetElVertices (int elnr, Array<int> & vnums) const
     { vnums = GetElement(elnr).Vertices(); }
-
-    auto GetElVertices (int elnr) const
-      -> decltype(GetElement(ElementId(VOL,elnr)).Vertices())
-    { return GetElement(ElementId(VOL,elnr)).Vertices(); }
     
     ///
     void GetElVertices (ElementId ei, Array<int> & vnums) const
