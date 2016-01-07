@@ -334,6 +334,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: FinalizeUpdate(LocalHeap & lh)
   {
     static Timer timer ("FESpace::FinalizeUpdate");
+    static Timer tcol ("FESpace::FinalizeUpdate - coloring");
     
     if (low_order_space) low_order_space -> FinalizeUpdate(lh);
 
@@ -407,7 +408,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (print)
       *testout << "coloring ... " << flush;
 
-
     if (low_order_space)
       {
         element_coloring = Table<int> (low_order_space->element_coloring);
@@ -417,6 +417,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       // for (auto vb = VOL; vb <= BND; vb++)
       for (auto vb : { VOL, BND })
       {
+        tcol.Start();
         Array<int> col(ma->GetNE(vb));
         col = -1;
         // bool found;
@@ -462,7 +463,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
             basecol += 8*sizeof(unsigned int); // 32;
           }
         while (found < cnt);
-
 
 	/*
 	  // didn't help anything ...
@@ -513,14 +513,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
 
 	*/
-
-
+        
+        tcol.Stop();
 
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
+
         for (ElementId el : Elements(vb))
           cntcol[col[el.Nr()]]++;
-
+        
         Table<int> & coloring = (vb == VOL) ? element_coloring : selement_coloring;
         coloring = Table<int> (cntcol);
 
