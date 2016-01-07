@@ -100,7 +100,7 @@ namespace netgen
     mutable int elementsearchtreets;
 
     /// element -> face, element -> edge etc ...
-    class MeshTopology * topology;
+    MeshTopology * topology;
     /// methods for high order elements
     class CurvedElements * curvedelems;
 
@@ -655,19 +655,19 @@ namespace netgen
   
 
 
-	DLL_HEADER bool PureTrigMesh (int faceindex = 0) const;
-	DLL_HEADER bool PureTetMesh () const;
+    DLL_HEADER bool PureTrigMesh (int faceindex = 0) const;
+    DLL_HEADER bool PureTetMesh () const;
 
 
-    const class MeshTopology & GetTopology () const
+    const MeshTopology & GetTopology () const
     { return *topology; }
 
-	DLL_HEADER void UpdateTopology();
+    DLL_HEADER void UpdateTopology();
   
     class CurvedElements & GetCurvedElements () const
     { return *curvedelems; }
-
-	DLL_HEADER void BuildCurvedElements  (const class Refinement * ref, int aorder, bool arational = false);
+    
+    DLL_HEADER void BuildCurvedElements  (const class Refinement * ref, int aorder, bool arational = false);
 
     const class AnisotropicClusters & GetClusters () const
     { return *clusters; }

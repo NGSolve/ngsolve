@@ -114,6 +114,7 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<3> (int nr) const
   Ng_Element ret;
   ret.type = NG_ELEMENT_TYPE(el.GetType());
   ret.index = el.GetIndex();
+
   ret.points.num = el.GetNP();
   ret.points.ptr = (int*)&el[0];
 
@@ -126,8 +127,6 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<3> (int nr) const
   ret.faces.num = MeshTopology::GetNFaces (el.GetType());
   ret.faces.ptr = (T_FACE2*)mesh->GetTopology().GetElementFacesPtr (nr);
 
-  // ret.is_curved = mesh->GetCurvedElements().IsElementCurved(nr);
   ret.is_curved = el.IsCurved();
-
   return ret;
 }

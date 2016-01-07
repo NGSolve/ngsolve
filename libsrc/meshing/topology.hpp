@@ -12,7 +12,9 @@
     (Elements, Faces, Edges, Vertices
 */
 
-
+namespace netgen
+{
+  
 struct T_EDGE
 {
   int orient:1;
@@ -67,30 +69,22 @@ public:
   int GetNEdges () const { return edge2vert.Size(); }
   int GetNFaces () const { return face2vert.Size(); }
 
-  static inline int GetNVertices (ELEMENT_TYPE et);
-  static inline int GetNPoints (ELEMENT_TYPE et);
-  static inline int GetNEdges (ELEMENT_TYPE et);
-  static inline int GetNFaces (ELEMENT_TYPE et);
+  static inline short int GetNVertices (ELEMENT_TYPE et);
+  static inline short int GetNPoints (ELEMENT_TYPE et);
+  static inline short int GetNEdges (ELEMENT_TYPE et);
+  static inline short int GetNFaces (ELEMENT_TYPE et);
 
   static const Point3d * GetVertices (ELEMENT_TYPE et);
   inline static const ELEMENT_EDGE * GetEdges1 (ELEMENT_TYPE et);
   inline static const ELEMENT_EDGE * GetEdges0 (ELEMENT_TYPE et);
   inline static const ELEMENT_FACE * GetFaces1 (ELEMENT_TYPE et);
   inline static const ELEMENT_FACE * GetFaces0 (ELEMENT_TYPE et);
-
   
-  // int GetSegmentEdge (int segnr) const { return abs(segedges[segnr-1]); }
-  // int GetSegmentEdgeOrientation (int segnr) const { return sgn(segedges[segnr-1]); }
-  // int GetEdge (SegmentIndex segnr) const { return abs(segedges[segnr])-1; }
   int GetSegmentEdge (int segnr) const { return segedges[segnr-1].nr+1; }
   int GetEdge (SegmentIndex segnr) const { return segedges[segnr].nr; }
 
   void GetSegmentEdge (int segnr, int & enr, int & orient) const
   {
-    /*
-    enr = abs(segedges.Get(segnr));
-    orient = segedges.Get(segnr) > 0 ? 1 : -1;
-    */
     enr = segedges.Get(segnr).nr+1;
     orient = segedges.Get(segnr).orient;
   }
@@ -160,7 +154,7 @@ public:
 
 
 
-inline int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
+inline short int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -198,7 +192,7 @@ inline int MeshTopology :: GetNVertices (ELEMENT_TYPE et)
 }
 
 
-inline int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
+inline short int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
 {
   switch (et)
     {
@@ -240,8 +234,9 @@ inline int MeshTopology :: GetNPoints (ELEMENT_TYPE et)
 
 
 
-inline int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
+inline short int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
 {
+  __assume(et >= SEGMENT && et <= HEX);
   switch (et)
     {
     case SEGMENT:
@@ -270,16 +265,18 @@ inline int MeshTopology :: GetNEdges (ELEMENT_TYPE et)
 
     case HEX:
       return 12;
-
+    default:
+      return 0;
       // default:
       // cerr << "Ng_ME_GetNEdges, illegal element type " << et << endl;
     }
-  return 0;
+  // return 0;
 }
 
 
-inline int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
+inline short int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
 {
+  __assume(et >= SEGMENT && et <= HEX);  
   switch (et)
     {
     case SEGMENT:
@@ -309,10 +306,11 @@ inline int MeshTopology :: GetNFaces (ELEMENT_TYPE et)
     case HEX:
       return 6;
 
+    default:
+      return -99;
       // default:
       // cerr << "Ng_ME_GetNVertices, illegal element type " << et << endl;
     }
-  return 0;
 }
 
 
@@ -683,24 +681,6 @@ inline const ELEMENT_FACE * MeshTopology :: GetFaces0 (ELEMENT_TYPE et)
   return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 #endif

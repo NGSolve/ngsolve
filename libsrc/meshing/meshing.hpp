@@ -22,6 +22,7 @@ namespace netgen
 #include "msghandler.hpp"
 #include "meshtype.hpp"
 #include "localh.hpp"
+#include "topology.hpp"
 #include "meshclass.hpp"
 #include "global.hpp"
 
@@ -48,7 +49,6 @@ namespace netgen
 #include "findip.hpp"
 #include "findip2.hpp"
 
-#include "topology.hpp"
 #include "curvedelems.hpp"
 #include "clusters.hpp"
 

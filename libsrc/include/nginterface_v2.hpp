@@ -251,7 +251,11 @@ namespace netgen
 
 namespace netgen
 {
+#ifdef __GNUC__
+#define NGX_INLINE  __attribute__ ((__always_inline__)) inline
+#else
 #define NGX_INLINE inline
+#endif  
 #include <nginterface_v2_impl.hpp>
 }
 

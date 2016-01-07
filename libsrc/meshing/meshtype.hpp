@@ -17,7 +17,7 @@ namespace netgen
 
 
 
-  enum ELEMENT_TYPE { 
+  enum ELEMENT_TYPE : unsigned char { 
     SEGMENT = 1, SEGMENT3 = 2,
     TRIG = 10, QUAD=11, TRIG6 = 12, QUAD6 = 13, QUAD8 = 14,
     TET = 20, TET10 = 21, 
@@ -292,7 +292,7 @@ namespace netgen
     /// surface nr
     int index:16;
     ///
-    ELEMENT_TYPE typ:6;
+    ELEMENT_TYPE typ;
     /// number of points
     unsigned int np:4;
     bool badel:1;
@@ -545,7 +545,7 @@ namespace netgen
     /// point numbers
     PointIndex pnum[ELEMENT_MAXPOINTS];
     ///
-    ELEMENT_TYPE typ:6;
+    ELEMENT_TYPE typ;
     /// number of points (4..tet, 5..pyramid, 6..prism, 8..hex, 10..quad tet, 12..quad prism)
     int np:5;
     ///
@@ -601,27 +601,27 @@ namespace netgen
     ///
     int GetNP () const { return np; }
     ///
-    int GetNV() const
+    short int GetNV() const
     {
+      __assume(typ >= TET && typ <= HEX);        
       switch (typ)
 	{
-	case TET: 
-	case TET10: 
-	  return 4;
-	case PRISM12: 
-	case PRISM: 
+        case TET: 
+        case TET10: 
+          return 4;
+        case PRISM12: 
+        case PRISM: 
 	  return 6; 
 	case PYRAMID:
 	  return 5;
 	case HEX:
 	  return 8;
-	default:
+        default: // not a 3D element
 #ifdef DEBUG
-	  PrintSysError ("Element3d::GetNV not implemented for typ ", typ)
+          PrintSysError ("Element3d::GetNV not implemented for typ ", typ)
 #endif
-	    ;
-	}
-      return np;
+            return -1;
+        }
     }
 
     bool operator==(const Element & el2) const;

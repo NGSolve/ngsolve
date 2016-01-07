@@ -35,6 +35,22 @@
 #endif
 
 
+
+
+#ifndef __assume
+#ifdef __GNUC__
+#define __assume(cond) if (!(cond)) __builtin_unreachable(); else;
+#else
+#define __assume(cond)
+#endif
+#endif
+
+
+
+
+
+
+
 #define noDEMOVERSION
 #define noDEVELOP
 #define noSTEP
