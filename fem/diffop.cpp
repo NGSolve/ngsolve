@@ -21,9 +21,8 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    cerr << "DifferentialOperator::CalcMatrix called for base class, type = " 
-         << typeid(*this).name()
-         << endl;
+    throw Exception (string("Error: DifferentialOperator::CalcMatrix called for base class, type = ")
+                     + typeid(*this).name());
   }
 
   void DifferentialOperator ::
@@ -32,9 +31,8 @@ namespace ngfem
               SliceMatrix<Complex,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    cerr << "DifferentialOperator::CalcMatrix<complex> called for base class, type = " 
-         << typeid(*this).name()
-         << endl;
+    throw Exception (string("Error: DifferentialOperator::CalcMatrix<Complex> called for base class, type = ")
+                     + typeid(*this).name());
   }
 
   void DifferentialOperator ::
