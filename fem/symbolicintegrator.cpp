@@ -490,10 +490,10 @@ namespace ngfem
                     HeapReset hr(lh);
                     int bs = min2(int(BS), mir.Size()-i);
                     
-                    AFlatMatrix<SCAL> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
-                    AFlatMatrix<SCAL> bbmat2 = samediffop ?
-                      bbmat1 : AFlatMatrix<SCAL>(elmat.Height(), bs*proxy2->Dimension(), lh);
+                    AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
+                      bbmat1 : AFlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
                     
                     
                     // tb.Start();

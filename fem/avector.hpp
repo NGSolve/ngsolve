@@ -57,14 +57,39 @@ void MultMatDiagMat(TA a, TB b, TC c)
     c.Col(i) = b(i) * a.Col(i);
 }
 
-template <typename T>
-INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
+
+
+// we don't have a lapack function for that 
+inline void LapackMultAdd (SliceMatrix<double> a, 
+                           SliceMatrix<Complex,ColMajor> b, 
+                           Complex alpha,
+                           SliceMatrix<Complex> c,
+                           Complex beta)
+{
+  if (beta == 0.0)
+    c = alpha * (a * b);
+  else
+    {
+      c *= beta;
+      c += alpha * (a * b);
+    }
+  // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
+}
+
+
+
+template <typename TA, typename TB, typename TC>
+INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
 {
   c += a * Trans(b) | Lapack; 
 }
 
+/*
 template <typename T>
 INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
+*/
+template <typename TA, typename TB, typename TC>
+INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
 {
   c += a * Trans(b) | Lapack; 
 }
@@ -100,7 +125,7 @@ void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
     }
   */
   unsigned int da = a.Dist();
-  unsigned int wa = a.Width();
+  int wa = a.Width();
   int r = 0;
   double * bpc = &c(0,0);
   unsigned int dc = c.Dist();
@@ -347,6 +372,7 @@ public:
   {
     for (int i = 0; i < vsize; i++)
       data[i] = _mm256_set1_pd(d);
+    return *this;
   }
 
   template<typename TB>
@@ -422,10 +448,11 @@ public:
   __m256d & Get(int i) const { return data[i]; }
   __m256d & Get(int i, int j) const { return data[i*vw+j]; }
 
-  AFlatVectorD & operator= (double d)
+  AFlatMatrixD & operator= (double d)
   {
     for (int i = 0; i < h*vw; i++)
       data[i] = _mm256_set1_pd(d);
+    return *this;
   }
 
 
@@ -438,6 +465,11 @@ public:
     return *this;
   }
 
+  operator SliceMatrix<double> () const
+  {
+    return SliceMatrix<double> (h, w, 4*vw, (double*)data);
+  }
+   
   SliceVector<> Col (int c) const
   {
     return SliceVector<> (h, 4*vw, ((double*)data)+c);
@@ -752,7 +784,7 @@ INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix
         }
       if (i < c.Height())
         {
-          __m256d s1, s2;
+          __m256d s1;
           MyScal1x4 (a.VWidth(), &a.Get(i,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1);
 
