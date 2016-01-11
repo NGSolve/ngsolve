@@ -191,10 +191,11 @@ if (USE_PYTHON)
     endif( PYTHON_VERSION STREQUAL "3")
     set(Boost_FIND_QUIETLY ON)
 
-    foreach( component IN ITEMS PYTHON${PYTHON_VERSION_MAJOR} PYTHON-PY${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} PYTHON)
+    foreach( component IN ITEMS python${PYTHON_VERSION_MAJOR} python-py${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} python)
+      string(TOUPPER ${component} component_upper)
       if(NOT Boost_LIBRARIES)
           find_package(Boost COMPONENTS ${component})
-          set(BOOST_PYTHON_LIB ${Boost_${component}_LIBRARY_RELEASE})
+          set(BOOST_PYTHON_LIB ${Boost_${component_upper}_LIBRARY_RELEASE})
       endif(NOT Boost_LIBRARIES)
     endforeach()
 
