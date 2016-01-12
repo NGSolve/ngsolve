@@ -211,8 +211,8 @@ namespace ngfem
                        LocalHeap & lh) const
   {
     static Timer t("symbolicLFI - CalcElementVector", 2);
-    static Timer td("symboliLFI - CalcElementVector dvecs", 2);
-    static Timer tb("symboliLFI - CalcElementVector diffops", 2);
+    // static Timer td("symboliLFI - CalcElementVector dvecs", 2);
+    // static Timer tb("symboliLFI - CalcElementVector diffops", 2);
     RegionTimer reg(t);
     
     HeapReset hr(lh);
@@ -228,7 +228,7 @@ namespace ngfem
     elvec = 0;
     for (auto proxy : proxies)
       {
-        td.Start();
+        // td.Start();
         FlatMatrix<SCAL> proxyvalues(ir.Size(), proxy->Dimension(), lh);
         for (int k = 0; k < proxy->Dimension(); k++)
           {
@@ -239,10 +239,10 @@ namespace ngfem
             for (int i = 0; i < mir.Size(); i++)
               proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
           }
-        td.Stop();
-        tb.Start();
+        // td.Stop();
+        // tb.Start();
         proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
-        tb.Stop();
+        // tb.Stop();
         elvec += elvec1;
       }
   }
@@ -466,7 +466,6 @@ namespace ngfem
                           diagproxyvalues.Slice(k, proxy1->Dimension()) = val(0,0);
                         }
                     }
-                
             
                 // td.Stop();
 
@@ -494,22 +493,20 @@ namespace ngfem
                     AFlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
                     AFlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
                       bbmat1 : AFlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
-                    
-                    
+
                     // tb.Start();
                     BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
                     proxy1->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat1), lh);
                     if (!samediffop)
                       proxy2->Evaluator()->CalcMatrix(fel, bmir, Trans(bbmat2), lh);
                     // tb.Stop();
-                    
+
                     // tdb.Start();
                     if (is_diagonal)
                       {
                         AFlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
                         diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
                                                       (i+bs)*proxy1->Dimension());
-                        
                         /*
                         for (int i = 0; i < diagd.Size(); i++)
                           bdbmat1.Col(i) = diagd(i) * bbmat1.Col(i);
@@ -543,10 +540,11 @@ namespace ngfem
                     // tlapack.Stop();
                     // tlapack.AddFlops (r2.Size()*r1.Size()*bdbmat1.Width());
                   }
+
                 if (samediffop && is_diagonal)
                   for (int i = 0; i < part_elmat.Height(); i++)
-                    for (int j = 0; j < i; j++)
-                      part_elmat(j,i) = part_elmat(i,j);
+                    for (int j = i+1; j < part_elmat.Width(); j++)
+                      part_elmat(i,j) = part_elmat(j,i);
               }
             
             l1 += proxy2->Dimension();  
