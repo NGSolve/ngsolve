@@ -886,9 +886,9 @@ namespace ngla
                       SliceMatrix<T> b,
                       SliceMatrix<T> c)
   {
-    static Timer timer1("SparseCholesky::Factor gemm 1");
-    static Timer timer2("SparseCholesky::Factor gemm 2");
-    static Timer timer3("SparseCholesky::Factor gemm 3");
+    static Timer timer1("SparseCholesky::Factor gemm 1", 2);
+    static Timer timer2("SparseCholesky::Factor gemm 2", 2);
+    static Timer timer3("SparseCholesky::Factor gemm 3", 2);
             
     if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
       {
