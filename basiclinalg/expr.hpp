@@ -514,9 +514,10 @@ namespace ngbla
 	  int h = Expr<T>::Height();
 	  int w = Expr<T>::Width();
 
-          for (int j = 0; j < w; j++)
-            for (int i = 0; i < h; i++)
-              TOP()(Spec()(i,j), v.Spec()(i,j));
+          if (h > 0)
+            for (int j = 0; j < w; j++)
+              for (int i = 0; i < h; i++)
+                TOP()(Spec()(i,j), v.Spec()(i,j));
           return Spec();
         }
 
@@ -533,25 +534,28 @@ namespace ngbla
 	    {
 	      int h = Expr<T>::Height();
 	      int w = Expr<T>::Width();
-	      for (int i = 0, k = 0; i < h; i++)
-		for (int j = 0; j < w; j++, k++)
-		  TOP() (Spec()(i,j), v.Spec()(k));
+              if (w > 0)
+                for (int i = 0, k = 0; i < h; i++)
+                  for (int j = 0; j < w; j++, k++)
+                    TOP() (Spec()(i,j), v.Spec()(k));
 	    }
 	}
       else
 	{
 	  int h = Expr<T>::Height();
 	  int w = Expr<T>::Width();
-          if (w <= 0) return Spec();
-	  if (T::IS_LINEAR)
-	    for (int i = 0, k = 0; i < h; i++)
-	      for (int j = 0; j < w; j++, k++)
-		TOP() (Spec()(k), v.Spec()(i,j));
-	  else
-	    for (int i = 0; i < h; i++)
-	      for (int j = 0; j < w; j++)
-		TOP() (Spec()(i,j), v.Spec()(i,j));
-	}
+          if (w > 0)
+            {
+              if (T::IS_LINEAR)
+                for (int i = 0, k = 0; i < h; i++)
+                  for (int j = 0; j < w; j++, k++)
+                    TOP() (Spec()(k), v.Spec()(i,j));
+              else
+                for (int i = 0; i < h; i++)
+                  for (int j = 0; j < w; j++)
+                    TOP() (Spec()(i,j), v.Spec()(i,j));
+            }
+        }
       return Spec();
     }
 
