@@ -1435,6 +1435,11 @@ namespace ngbla
       return Cols (range.First(), range.Next());
     }
 
+    INLINE const SliceVector<T> Diag () const
+    {
+      return SliceVector<T> (h, dist+1, &data[0]);
+    }
+
   };
 
 
