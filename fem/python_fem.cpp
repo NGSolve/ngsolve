@@ -445,21 +445,13 @@ void ExportCoefficientFunction()
     .def ("__mul__", FunctionPointer 
           ([] (SPCF c1, SPCF c2) -> SPCF
            {
-             if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
-               return make_shared<MultMatMatCoefficientFunction> (c1, c2);
-             if (c1->Dimension() > 1 && c2->Dimension() > 1)
-               return make_shared<MultVecVecCoefficientFunction> (c1, c2);
-             if (c1->Dimension() == 1 && c2->Dimension() > 1)
-               return make_shared<MultScalVecCoefficientFunction> (c1, c2);
-             if (c1->Dimension() > 1 && c2->Dimension() == 1)
-               return make_shared<MultScalVecCoefficientFunction> (c2, c1);
              return c1*c2;
            } ))
 
     .def ("InnerProduct", FunctionPointer
           ([] (SPCF c1, SPCF c2) -> SPCF
            { 
-             return make_shared<MultVecVecCoefficientFunction> (c1, c2);
+             return InnerProduct (c1, c2);
            }))
           
 
@@ -478,17 +470,17 @@ void ExportCoefficientFunction()
           ([] (SPCF coef, Complex val) -> SPCF
            { 
              if (val.imag() == 0)
-               return make_shared<ScaleCoefficientFunction> (val.real(), coef); 
+               return val.real() * coef;
              else
-               return make_shared<ScaleCoefficientFunctionC> (val, coef); 
+               return val * coef;
            }))
     .def ("__rmul__", FunctionPointer 
           ([] (SPCF coef, Complex val) -> SPCF
            { 
              if (val.imag() == 0)
-               return make_shared<ScaleCoefficientFunction> (val.real(), coef); 
+               return val.real() * coef; 
              else
-               return make_shared<ScaleCoefficientFunctionC> (val, coef); 
+               return val * coef;
            }))
 
     .def ("__truediv__", FunctionPointer 
@@ -506,7 +498,7 @@ void ExportCoefficientFunction()
 
     .def ("__neg__", FunctionPointer 
           ([] (SPCF coef) -> SPCF
-           { return make_shared<ScaleCoefficientFunction> (-1, coef); }))
+           { return -1.0 * coef; }))
 
     .add_property ("trans", FunctionPointer
                    ([] (SPCF coef) -> SPCF
