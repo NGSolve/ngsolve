@@ -239,11 +239,132 @@ void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
     }
 }
 
-// c = a * b
+// b.Width() = 8
+INLINE
+void MultMatMat8(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+{
+  unsigned int da = a.Dist();
+  int wa = a.Width();
+  int r = 0;
+  double * bpc = &c(0,0);
+  unsigned int dc = c.Dist();
+  double * ar = &a(0,0);
+  for ( ; r < a.Height()-3; r+=4)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum21 = _mm256_setzero_pd();
+      __m256d sum31 = _mm256_setzero_pd();
+      __m256d sum41 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+      __m256d sum22 = _mm256_setzero_pd();
+      __m256d sum32 = _mm256_setzero_pd();
+      __m256d sum42 = _mm256_setzero_pd();
 
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          __m256d a2 = _mm256_set1_pd(*(arj+da));
+          __m256d a3 = _mm256_set1_pd(*(arj+2*da));
+          __m256d a4 = _mm256_set1_pd(*(arj+3*da));
+
+          sum11 += a1 * rb1;
+          sum21 += a2 * rb1;
+          sum31 += a3 * rb1;
+          sum41 += a4 * rb1;
+          sum12 += a1 * rb2;
+          sum22 += a2 * rb2;
+          sum32 += a3 * rb2;
+          sum42 += a4 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum21);
+      _mm256_storeu_pd(bpc+4, sum22);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum31);
+      _mm256_storeu_pd(bpc+4, sum32);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum41);
+      _mm256_storeu_pd(bpc+4, sum42);
+      bpc += dc;
+      ar += 4*da;
+    }
+
+  for ( ; r < a.Height()-1; r+=2)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum21 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+      __m256d sum22 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          __m256d a2 = _mm256_set1_pd(*(arj+da));
+
+          sum11 += a1 * rb1;
+          sum21 += a2 * rb1;
+          sum12 += a1 * rb2;
+          sum22 += a2 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum21);
+      _mm256_storeu_pd(bpc+4, sum22);
+      bpc += dc;
+      ar += 2*da;
+    }
+
+  for ( ; r < a.Height(); r++)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          sum11 += a1 * rb1;
+          sum12 += a1 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      ar += da;
+    }
+}
+
+
+
+
+
+// c = a * b
+static
 void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
 {
-  for (int k = 0; k < b.Width(); k += 4)
+  int k = 0;
+  for ( ; k < b.Width()-7; k += 8)
+    MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
+  for ( ; k < b.Width(); k += 4)
     {
       int end = min(b.Width(), k+4);
       MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
@@ -586,6 +707,51 @@ INLINE void MyScal2x4 (int n,
 }
 
 
+INLINE
+void MyScal4x4 (int n,
+                __m128d * pa1, __m128d * pa2, __m128d * pa3, __m128d * pa4,
+                __m128d * pb1, __m128d * pb2, __m128d * pb3, __m128d * pb4,
+                __m256d & s1, __m256d & s2, __m256d & s3, __m256d & s4)
+{
+  __m256d sum11 = _mm256_setzero_pd();
+  __m256d sum21 = _mm256_setzero_pd();
+  __m256d sum31 = _mm256_setzero_pd();
+  __m256d sum41 = _mm256_setzero_pd();
+  __m256d sum12 = _mm256_setzero_pd();
+  __m256d sum22 = _mm256_setzero_pd();
+  __m256d sum32 = _mm256_setzero_pd();
+  __m256d sum42 = _mm256_setzero_pd();
+
+  int n2 = n/2;
+  for (int i = 0; i < n2; i++)
+    {
+      __m256d a1 = _mm256_broadcast_pd(pa1+i);
+      __m256d a2 = _mm256_broadcast_pd(pa2+i);
+      __m256d a3 = _mm256_broadcast_pd(pa3+i);
+      __m256d a4 = _mm256_broadcast_pd(pa4+i);
+
+      __m256d b1 = _mm256_broadcast_pd(pb1+i);
+      __m256d b2 = _mm256_broadcast_pd(pb2+i);
+      __m256d b3 = _mm256_broadcast_pd(pb3+i);
+      __m256d b4 = _mm256_broadcast_pd(pb4+i);
+      __m256d mb1 = _mm256_blend_pd(b1, b3, 12);
+      __m256d mb2 = _mm256_blend_pd(b2, b4, 12);
+      
+      sum11 += a1 * mb1;
+      sum21 += a2 * mb1;
+      sum31 += a3 * mb1;
+      sum41 += a4 * mb1;
+      sum12 += a1 * mb2;
+      sum22 += a2 * mb2;
+      sum32 += a3 * mb2;
+      sum42 += a4 * mb2;
+    }
+  s1 = _mm256_hadd_pd(sum11, sum12);
+  s2 = _mm256_hadd_pd(sum21, sum22);
+  s3 = _mm256_hadd_pd(sum31, sum32);
+  s4 = _mm256_hadd_pd(sum41, sum42);
+}
+        
 
 
 // C += A * Trans(B)
@@ -739,7 +905,7 @@ INLINE void AddABtSymV1 (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatr
 }
 
 
-
+/*
 INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
 {
   // clear overhead
@@ -768,20 +934,96 @@ INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix
           __m256d s1, s2;
           MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
-          /*
-          s1 += _mm256_loadu_pd(&c(i,j));
-          s2 += _mm256_loadu_pd(&c(i+1,j));
-          _mm256_storeu_pd(&c(i,j), s1);
-          _mm256_storeu_pd(&c(i+1,j), s2);
-          */
+
+          // s1 += _mm256_loadu_pd(&c(i,j));
+          // s2 += _mm256_loadu_pd(&c(i+1,j));
+          // _mm256_storeu_pd(&c(i,j), s1);
+          // _mm256_storeu_pd(&c(i+1,j), s2);
+
 
           s1 += _mm256_loadu_pd(pc);
-          _mm256_storeu_pd(&c(i,j), s1);
+          _mm256_storeu_pd(pc, s1);
           pc += c.Dist();
           s2 += _mm256_loadu_pd(pc);
           _mm256_storeu_pd(pc, s2);
           pc += c.Dist();          
         }
+      if (i < c.Height())
+        {
+          __m256d s1;
+          MyScal1x4 (a.VWidth(), &a.Get(i,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1);
+
+          s1 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s1);
+        }
+    }
+
+  for ( ; j < c.Width(); j++)
+    for (int i = j; i < c.Height(); i++)
+      c(i,j) += InnerProduct(a.Row(i), b.Row(j));
+}
+*/
+
+INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c)
+{
+  // clear overhead
+  if (a.Width() != 4*a.VWidth())
+    {
+      int r = 4*a.VWidth()-a.Width();
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+                                        _mm256_set_epi64x(0,1,2,3));
+
+      __m256d zero = _mm256_setzero_pd();
+      for (int i = 0; i < a.Height(); i++)
+        _mm256_maskstore_pd((double*)&a.Get(i, a.VWidth()-1), mask, zero);
+      for (int i = 0; i < b.Height(); i++)
+        _mm256_maskstore_pd((double*)&b.Get(i, b.VWidth()-1), mask, zero);
+    }
+  
+  if (a.VWidth() <= 0) return;
+  
+  int j = 0;
+  for ( ; j < c.Width()-3; j += 4)
+    {
+      int i = j;
+      double * pc = &c(i,j);
+      for ( ; i < c.Height()-3; i += 4)
+        {
+          __m256d s1, s2, s3, s4;
+          MyScal4x4 (4*a.VWidth(),
+                     (__m128d*)&a.Get(i,0), (__m128d*)&a.Get(i+1,0), (__m128d*)&a.Get(i+2,0), (__m128d*)&a.Get(i+3,0),
+                     (__m128d*)&b.Get(j,0), (__m128d*)&b.Get(j+1,0), (__m128d*)&b.Get(j+2,0), (__m128d*)&b.Get(j+3,0), s1, s2, s3, s4);
+
+          s1 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s1);
+          pc += c.Dist();
+          s2 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s2);
+          pc += c.Dist();          
+          s3 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s3);
+          pc += c.Dist();
+          s4 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s4);
+          pc += c.Dist();          
+        }
+
+      if (i < c.Height()-1)
+        {
+          __m256d s1, s2;
+          MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
+                     &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
+
+          s1 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s1);
+          pc += c.Dist();
+          s2 += _mm256_loadu_pd(pc);
+          _mm256_storeu_pd(pc, s2);
+          pc += c.Dist();
+          i += 2;
+        }
+
       if (i < c.Height())
         {
           __m256d s1;
@@ -803,7 +1045,10 @@ INLINE void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix
 
 
 
+
+
 // c = a * Diag (d)
+static 
 void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
 {
   /*
