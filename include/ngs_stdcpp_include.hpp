@@ -130,6 +130,16 @@
 #endif
 
 
+
+#ifndef __assume
+#ifdef __GNUC__
+#define __assume(cond) if (!(cond)) __builtin_unreachable(); else;
+#else
+#define __assume(cond)
+#endif
+#endif
+
+
 //#define INLINE __attribute__ ((__always_inline__)) inline
 //#define INLINE inline
 
