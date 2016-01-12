@@ -59,29 +59,13 @@ void MultMatDiagMat(TA a, TB b, TC c)
 
 
 
-// we don't have a lapack function for that 
-inline void LapackMultAdd (SliceMatrix<double> a, 
-                           SliceMatrix<Complex,ColMajor> b, 
-                           Complex alpha,
-                           SliceMatrix<Complex> c,
-                           Complex beta)
-{
-  if (beta == 0.0)
-    c = alpha * (a * b);
-  else
-    {
-      c *= beta;
-      c += alpha * (a * b);
-    }
-  // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
-}
-
 
 
 template <typename TA, typename TB, typename TC>
 INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
 {
-  c += a * Trans(b) | Lapack; 
+  c += a * Trans(b) | Lapack;
+  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
 }
 
 /*
@@ -91,7 +75,8 @@ INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
 template <typename TA, typename TB, typename TC>
 INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
 {
-  c += a * Trans(b) | Lapack; 
+  c += a * Trans(b) | Lapack;
+  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
 }
 
 
