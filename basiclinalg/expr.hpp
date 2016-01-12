@@ -542,7 +542,7 @@ namespace ngbla
 	{
 	  int h = Expr<T>::Height();
 	  int w = Expr<T>::Width();
-
+          if (w <= 0) return Spec();
 	  if (T::IS_LINEAR)
 	    for (int i = 0, k = 0; i < h; i++)
 	      for (int j = 0; j < w; j++, k++)
@@ -1059,7 +1059,7 @@ namespace ngbla
     INLINE int Width() const { return a.Height(); }
 
     INLINE auto operator() (int i, int j) const -> decltype(Trans (a(j,i))) { return Trans (a(j,i)); }
-    INLINE auto operator() (int i) const -> decltype(Trans(a(0,0))) { return 0; }
+    INLINE auto operator() (int i) const -> decltype(Trans(a(0,0))) { return Trans(a(0,0)); }
     // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
     // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
     enum { IS_LINEAR = 0 };
