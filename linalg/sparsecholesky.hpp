@@ -217,6 +217,8 @@ public:
     void Factor (); 
 #ifdef LAPACK
     void FactorSPD (); 
+    template <typename T>
+    void FactorSPD1 (T dummy); 
 #endif
     ///
     void FactorNew (const SparseMatrix<TM> & a);

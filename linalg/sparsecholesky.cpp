@@ -215,15 +215,16 @@ namespace ngla
     
     if (printstat)
       cout << IM(4) << "do factor " << flush;
-    
-    
+
+    FactorSPD();
+    /*
 #ifdef LAPACK
     if (a.IsSPD())
       FactorSPD();
     else
 #endif
       Factor(); 
-
+    */
 
     /*
     for (int i = 0; i < n; i++)
@@ -878,44 +879,224 @@ namespace ngla
 
 
 
+
+
+  template <typename T>
+  INLINE void SubABt (SliceMatrix<T> a,
+                      SliceMatrix<T> b,
+                      SliceMatrix<T> c)
+  {
+    static Timer timer1("SparseCholesky::Factor gemm 1");
+    static Timer timer2("SparseCholesky::Factor gemm 2");
+    static Timer timer3("SparseCholesky::Factor gemm 3");
+            
+    if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
+      {
+        timer1.Start();
+        c -= a * Trans(b);
+        timer1.Stop();
+        timer1.AddFlops(c.Height()*c.Width()*a.Width());
+      }
+    else
+      {
+        if (c.Height() < 128 && c.Width() < 128)
+          {
+            timer2.Start();
+            c -= a * Trans(b) | Lapack;
+            timer2.Stop();
+            timer2.AddFlops(c.Height()*c.Width()*a.Width());
+          }
+        else
+          {
+            timer3.Start();
+            int nr = c.Height()/128+1;
+            int nc = c.Width()/128+1;
+            task_manager -> CreateJob
+                         ( [&] (const TaskInfo & ti)
+                           {
+                             int br = ti.task_nr % nr;
+                             int bc = ti.task_nr / nr;
+                             auto rowr = Range(c.Height()).Split (br, nr);
+                             auto colr = Range(c.Width()).Split (bc, nc);
+                             c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
+                           }, nr*nc);
+            timer3.AddFlops(c.Height()*c.Width()*a.Width());
+            timer3.Stop();
+          }
+      }
+  }
+                      
+/*
+  A   B^t     =  L1        D1  0       L1^t  B1 
+  B   C       =  B1 L2      0  D2            L2^t
+ */ 
+
+// Solve for B1:   B1 D1 L1^t = B
+template <typename T>
+void CalcLDL_SolveL (SliceMatrix<T> L, SliceMatrix<T> B)
+{
+  int n = L.Height();
+  if (n >= 8)
+    {
+      IntRange r1(0,n/2), r2(n/2,n);
+      SliceMatrix<T> L1 = L.Rows(r1).Cols(r1);
+      SliceMatrix<T> L21 = L.Rows(r2).Cols(r1);
+      SliceMatrix<T> L2 = L.Rows(r2).Cols(r2);
+      SliceMatrix<T> B1 = B.Cols(r1);
+      SliceMatrix<T> B2 = B.Cols(r2);
+      
+      CalcLDL_SolveL(L1, B1);
+      // B2 -= B1 * Trans(L21) | Lapack;
+      SubABt (B1, L21, B2);
+      CalcLDL_SolveL(L2, B2);
+      return;
+    }
+
+  for (int i = 0; i < L.Height(); i++)
+    for (int j = i+1; j < L.Height(); j++)
+      for (int k = 0; k < B.Height(); k++)
+        B(k,j) -= L(j,i) * B(k,i);
+      // B.Col(j) -= L(j,i) * B.Col(i);
+}
+
+// calc new A-block
+template <typename T>
+void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
+{
+  int n = B.Height();
+  if (n >= 8)
+    {
+      IntRange r1(0,n/2), r2(n/2,n);
+      CalcLDL_A2(L1, B.Rows(r1), A2.Rows(r1).Cols(r1));
+      // A2.Rows(r2).Cols(r1) -= B.Rows(r2) * Trans(B.Rows(r1)) | Lapack;
+      SubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
+      CalcLDL_A2(L1, B.Rows(r2), A2.Rows(r2).Cols(r2));
+      return;
+    }
+
+  for (int i = 0; i < A2.Height(); i++)
+    {
+      for (int j = 0; j < i; j++)
+        {
+          T sum(0.0);
+          for (int k = 0; k < B.Width(); k++)
+            sum += B(i,k) * Trans(B(j,k));
+          A2(i,j) -= sum;
+        }
+      T sum(0.0);
+      for (int k = 0; k < B.Width(); k++)
+        {
+          T invd;
+          CalcInverse(L1(k,k), invd);
+          T bik = B(i,k);
+          B(i,k) = bik * invd;
+          sum += B(i,k) * Trans(bik);
+        }
+      A2(i,i) -= sum;
+    }
+}
+
+
+
+// Calc A = L D L^t
+template <typename T>
+void CalcLDL (SliceMatrix<T> mat)
+{
+  int n = mat.Height();
+
+  if (n >= 8)
+    {
+      int n1 = n/2;
+      SliceMatrix<T> L1 = mat.Rows(0,n1).Cols(0,n1);
+      SliceMatrix<T> L2 = mat.Rows(n1,n).Cols(n1,n);
+      SliceMatrix<T> B = mat.Rows(n1,n).Cols(0,n1);
+      CalcLDL (L1);
+      CalcLDL_SolveL (L1,B);
+      CalcLDL_A2 (L1,B,L2);
+      CalcLDL (L2);
+      return;
+    }
+  
+  
+  for (int i = 0; i < n; i++)
+    {
+      T dii = mat(i,i);
+      T inv_dii;
+      CalcInverse (dii, inv_dii);
+      for (int j = i+1; j < n; j++)
+        {
+          T hji = mat(j,i);
+          T hjiD = hji * inv_dii;
+          mat(j,i) = hjiD;
+          for (int k = i+1; k <= j; k++)
+            mat(j,k) -= hji * Trans(mat(k,i));
+        }
+    }
+}
+
+
+
+  
+  /*
   template <class TM>
   void SparseCholeskyTM<TM> :: FactorSPD () 
   {
     throw Exception ("FactorSPD called for non-double matrix");
   }
+  */
 
+  // template <>
+  template <class TM>
+  void SparseCholeskyTM<TM> :: FactorSPD ()
+  {
+    Factor();
+  }
 
   template <>
-  void SparseCholeskyTM<double> :: FactorSPD () 
+  void SparseCholeskyTM<double> :: FactorSPD ()
+  {
+    FactorSPD1(5.3);
+  }
+  template <>
+  void SparseCholeskyTM<Complex> :: FactorSPD ()
+  {
+    FactorSPD1(5.2);
+  }
+
+  
+  template <class TM> template<typename T>
+  void SparseCholeskyTM<TM> :: FactorSPD1 (T dummy) 
   {
     if (!task_manager)
       {
         RunWithTaskManager ([&] ()
                             {
-                              FactorSPD();
+                              FactorSPD1(dummy);
                             });
         return;
       }
 
     static Timer factor_timer("SparseCholesky::Factor SPD");
+    static Timer factor_dense1("SparseCholesky::Factor SPD - setup dense cholesky", 2);
+    static Timer factor_dense("SparseCholesky::Factor SPD - dense cholesky", 2);
 
-    static Timer timerb("SparseCholesky::Factor - B", 3);
-    static Timer timerc("SparseCholesky::Factor - C", 3);
-    static Timer timercla("SparseCholesky::Factor - C(lapack)", 3);
-    static Timer timerc1("SparseCholesky::Factor - C1", 3);
-    static Timer timerc2("SparseCholesky::Factor - C2", 3);
+    static Timer timerb("SparseCholesky::Factor - B", 2);
+    static Timer timerc("SparseCholesky::Factor - C", 2);
+    static Timer timercla("SparseCholesky::Factor - C(lapack)", 2);
+    static Timer timerc1("SparseCholesky::Factor - C1", 2);
+    static Timer timerc2("SparseCholesky::Factor - C2", 2);
 
     RegionTimer reg (factor_timer);
     
     int n = nused; // Height();
-    if (n > 2000)
+    if (n > 20)
       cout << IM(4) << " factor SPD " << flush;
 
     // to avoid aliasing:
     size_t * hfirstinrow = firstinrow.Addr(0);
     size_t * hfirstinrow_ri = firstinrow_ri.Addr(0);
     int * hrowindex2 = rowindex2.Addr(0);
-    double * hlfact = lfact.Addr(0);
+    TM * hlfact = lfact.Addr(0);
     
 
     for (int i1 = 0; i1 < n;  )
@@ -929,15 +1110,36 @@ namespace ngla
 	// rows in same block ...
 	int mi = last_same - i1;
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
+        
+        factor_dense1.Start();
 
-        Matrix<> a(mi, nk);
-        a = 0.0;
+        Matrix<TM> tmp(nk, nk);
 	for (int j = 0; j < mi; j++)
 	  {
-            a(j,j) = diag[i1+j];
-            a.Row(j).Range(j+1,nk) = FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]);
+            tmp(j,j) = diag[i1+j];
+            tmp.Row(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
-
+        for (int j = 0; j < mi; j++)
+          for (int i = 0; i < j; i++)
+            tmp(j,i) = Trans(tmp(i,j));
+        for (int j = mi; j < nk; j++)
+          {
+            for (int i = 0; i < mi; i++)
+              tmp(j,i) = Trans(tmp(i,j));
+            for (int i = mi; i <= j; i++)
+              tmp(j,i) = TM(0.0);
+          }
+        
+        factor_dense1.Stop();
+        
+        SliceMatrix<TM> A11 = tmp.Rows(0,mi).Cols(0,mi);
+        SliceMatrix<TM> B   = tmp.Rows(mi,nk).Cols(0,mi);
+        SliceMatrix<TM> A22 = tmp.Rows(mi,nk).Cols(mi,nk);
+        factor_dense.Start();
+        CalcLDL (A11);
+        CalcLDL_SolveL (A11,B);
+        CalcLDL_A2 (A11,B,A22);
+        factor_dense.Stop();          
         /*
           // the original version
         for (int j = 0; j < mi; j++)
@@ -953,83 +1155,18 @@ namespace ngla
         */
 
 
-        /*
-          // first factor A, then calc B
-        for (int j = 0; j < mi; j++)
-          {
-            for (int k = 0; k < j; k++)
-              {
-                double q = -a(k,k)*a(k,j);
-                for (int l = j; l < mi; l++)
-                  a(j,l) += q * a(k,l);
-              }
-            a(j,j) = 1.0 / a(j,j);
-          }
-
-        *testout << "ldl = " << endl << a.Cols(0,mi);
-
-
-        for (int l = mi; l < nk; l++)
-          for (int k = 0; k < mi; k++)
-            {
-              double q = -a(k,k)*a(k,l);
-
-              for (int j = k+1; j < mi; j++)
-                a(j,l) += q*a(k,j);
-            }
-
-        *testout << "b-block = " << a.Cols(mi, nk);
-        */
-        
-        Matrix<> a1 = a.Cols(0, mi);
-        Vector<> da1(mi);
-
-        integer na1 = a1.Width();
-        integer lda = a1.Width();
-        integer info;
-        char uplo = 'L';
-        char ch_diag = 'N';
-        
-        dpotrf_ (&uplo, &na1, &a1(0,0), &lda, &info);    // A = L^t L
-        if (info < 0)
-          cerr << "call to lapack-functon dpotrf with illegal value" << endl;
-        if (info > 0)
-          throw Exception ("SparseCholesky - SPD version: matrix not spd");
-        
-
-        for (int i = 0; i < mi; i++) 
-          da1(i) = a1(i,i);
-
-        a.Cols(0,mi) = a1;
-
-	char trans = 'N';  // 'T' 'N'
-	Matrix<> b1t = Trans(a.Cols(mi,nk));
-	integer nrhs = nk-mi;
-	integer ldb = mi;
-        dtrtrs_ (&uplo, &trans, &ch_diag, &na1, &nrhs, &a1(0,0), &lda, &b1t(0,0), &ldb, &info);
-	Matrix<> b1 = Trans(b1t);
-	a.Cols(mi,nk) = b1; 
-	// *testout << "b1 with lapack: " << Trans(b1t) << endl;
-	
-	/*
-        dtrtri_ (&uplo, &ch_diag, &na1, &a1(0,0), &lda, &info);
-        Matrix<> b1 = Trans(a1) * a.Cols(mi,nk) | Lapack;
-        a.Cols(mi,nk) = b1;
-	*/
-	// *testout << "b1 with invert: " << b1 << endl;
-
-        for (int i = 0; i < na1; i++)
-          a.Row(i) *= da1(i);
-        
-        for (int i = 0; i < mi; i++)
-          a(i,i) = 1.0/sqr(da1(i)); 
-
 	for (int j = 0; j < mi; j++)
 	  {
-            diag[i1+j] = a(j,j);
-            FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]) = a.Row(j).Range(j+1,nk);
+            // diag[i1+j] = a(j,j);
+            TM inv;
+            CalcInverse (A11(j,j), inv);
+            diag[i1+j] = inv;  // 1.0 / A11(j,j);
+            
+            // FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]) = a.Row(j).Range(j+1,nk);
+            for (int k = j+1; k < nk; k++)
+              tmp(k,j) = A11(j,j) * tmp(k,j);
+            FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
           }
-
 
         timerb.Stop();
         timerc.Start();
@@ -1043,21 +1180,28 @@ namespace ngla
 
         timercla.Start();
 
-        // Matrix<> btb = Trans(b1)*b1 | Lapack;
-        Matrix<> btb(b1.Width());
-        CalcAtA (b1, btb);
+        if (mi < 100)
+          for (int i = 0; i < A22.Height(); i++)
+            for (int j = i+1; j < A22.Width(); j++)
+              A22(i,j) = Trans(A22(j,i));
+        else
+          ParallelFor 
+            (Range(mi), [&] (int i)
+             {
+               for (int j = i+1; j < A22.Width(); j++)
+                 A22(i,j) = Trans(A22(j,i));
+             });
         
+        
+        // SliceMatrix<TM> btb = A22;
         timercla.Stop();
-        // *testout << "b^t b = " << endl << btb << endl;
-
-
         timerc1.Start();
 
         if (mi < 100)
           {
             for (int j = 0; j < mi; j++)
               {
-                FlatVector<> sum = btb.Row(j);
+                FlatVector<TM> sum = A22.Row(j);
             
                 // merge together
                 size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
@@ -1072,7 +1216,7 @@ namespace ngla
                         firstj_ri++;
                       }
                     
-                    lfact[firstj] -= sum[k];
+                    lfact[firstj] += sum[k];
                     firstj++;
                     firstj_ri++;
                   }
@@ -1085,14 +1229,14 @@ namespace ngla
           ParallelFor 
             (Range(mi), [&] (int j)
              {
-              FlatVector<> sum = btb.Row(j);
+               FlatVector<TM> sum = A22.Row(j);
               
               // merge together
-              size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-              size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+               size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+               size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
               
-              for (int k = j+1; k < mi; k++)
-                {
+               for (int k = j+1; k < mi; k++)
+                 {
                   int kk = hrowindex2[firsti_ri+k];
                   while (hrowindex2[firstj_ri] != kk)
                     {
@@ -1100,12 +1244,12 @@ namespace ngla
                       firstj_ri++;
                     }
                   
-                  lfact[firstj] -= sum[k];
+                  lfact[firstj] += sum[k];
                   firstj++;
                   firstj_ri++;
                 }
              });
-
+        
         timerc1.Stop();
 
         timerc2.Start();
@@ -1117,7 +1261,7 @@ namespace ngla
 
 	    for (auto j = first; j < last; j++, j_ri++)
 	      {
-		double q = diag[i2] * lfact[j];
+		TM q = diag[i2] * lfact[j];
 		diag[rowindex2[j_ri]] -= Trans (lfact[j]) * q;
 	      }
 	  }
@@ -1129,11 +1273,12 @@ namespace ngla
     size_t j = 0;
     for (int i = 0; i < n; i++)
       {
-	double ai = diag[i];
+	TM ai = diag[i];
 	size_t last = hfirstinrow[i+1];
 
 	for ( ; j < last; j++)
-          lfact[j] *= ai;
+          // lfact[j] *= ai;
+          lfact[j] = lfact[j] * ai;
       }
 
 
