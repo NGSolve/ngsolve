@@ -311,7 +311,7 @@ namespace ngbla
   { BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta); }
 
 
-
+  /*
   template <typename TA>
   inline void LapackMultAdd (SliceMatrix<double> a, 
 			     TransExpr<TA> b, 
@@ -335,7 +335,7 @@ namespace ngbla
 			     SliceMatrix<double> c,
 			     double beta = 1.0)
   { BASE_LapackMultAdd<double> (a.A(), true, b.A(), true, alpha, c, beta); }
-
+  */
 
 
   inline void LapackMultAdd (SliceMatrix<Complex> a, 
@@ -395,6 +395,23 @@ namespace ngbla
 
 
 
+  // we don't have a lapack function for that 
+  inline void LapackMultAdd (SliceMatrix<double> a, 
+                             SliceMatrix<Complex,ColMajor> b, 
+                             Complex alpha,
+                             SliceMatrix<Complex> c,
+                             Complex beta)
+  {
+    if (beta == 0.0)
+      c = alpha * (a * b);
+    else
+      {
+        c *= beta;
+        c += alpha * (a * b);
+      }
+    // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
+  }
+  
 
 
   /*
