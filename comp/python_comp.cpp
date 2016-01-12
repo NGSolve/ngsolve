@@ -275,10 +275,19 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("testout", 
                  &GlobalDummyVariables::GetTestoutFile,
                  &GlobalDummyVariables::SetTestoutFile)
+    /*
     .add_property("pajetrace",
 		  &GlobalDummyVariables::GetTestoutFile,
 		  FunctionPointer([] (GlobalDummyVariables&, bool use)
 				  { TaskManager::SetPajeTrace(use); }));
+    */
+    .add_property("pajetrace",
+		  &GlobalDummyVariables::GetTestoutFile,
+		  FunctionPointer([] (GlobalDummyVariables&, int size)
+				  {
+                                    TaskManager::SetPajeTrace(size > 0);
+                                    PajeTrace::SetMaxTracefileSize(size);
+                                  }));
     // &GlobalDummyVariables::SetTestoutFile)
     ;
 
