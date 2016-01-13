@@ -1,5 +1,5 @@
-// #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
-#define __assume(cond) if (!(cond)) __builtin_unreachable(); 
+#ifndef FILE_AVECTOR
+#define FILE_AVECTOR
 
 
 
@@ -1073,3 +1073,5 @@ void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
 
 
 #endif
+
+#endif // FILE_AVECTOR
