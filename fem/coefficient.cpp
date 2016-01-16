@@ -1471,6 +1471,236 @@ public:
 
 
 
+class MultMatVecCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  shared_ptr<CoefficientFunction> c2;
+  Array<int> dims;
+  int inner_dim;
+public:
+  MultMatVecCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                 shared_ptr<CoefficientFunction> ac2)
+    : c1(ac1), c2(ac2)
+  {
+    auto dims_c1 = c1 -> Dimensions();
+    auto dims_c2 = c2 -> Dimensions();
+    if (dims_c1.Size() != 2 || dims_c2.Size() != 1)
+      throw Exception("Not a mat-vec multiplication");
+    if (dims_c1[1] != dims_c2[0])
+      throw Exception("Matrix dimensions don't fit");
+    dims = Array<int> ({ dims_c1[0] });
+    inner_dim = dims_c1[1];
+  }
+  
+  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+  virtual int Dimension() const { return dims[0]; }
+  virtual Array<int> Dimensions() const { return Array<int> (dims); } 
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    c2->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    Vector<> va(dims[0]*inner_dim);
+    Vector<> vb(inner_dim);
+    FlatMatrix<> a(dims[0], inner_dim, &va[0]);
+    
+    c1->Evaluate (ip, va);
+    c2->Evaluate (ip, vb);
+
+    result = a * vb;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    cout << "Transpose: complex not implemented" << endl;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatMatrix<> result) const
+  {
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), inner_dim);
+    c1->Evaluate (mir, va);
+    c2->Evaluate (mir, vb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatVector<> b = vb.Row(i);
+        result.Row(i) = a * vb.Row(i);
+      }
+  }  
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    throw Exception ("mat-vec EvaluateDeriv not implemented");
+    /*
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    c1->EvaluateDeriv (mir, va, vda);
+    c2->EvaluateDeriv (mir, vb, vdb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+      }
+    */
+  }
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    throw Exception ("mat-vec EvaluateDDeriv not implemented");
+    /*
+    Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vdda(mir.Size(), dims[0]*inner_dim);
+    Matrix<> vddb(mir.Size(), dims[1]*inner_dim);
+    c1->EvaluateDDeriv (mir, va, vda, vdda);
+    c2->EvaluateDDeriv (mir, vb, vdb, vddb);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> dda(dims[0], inner_dim, &vdda(i,0));
+        FlatMatrix<> ddb(inner_dim, dims[1], &vddb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        FlatMatrix<> ddc(dims[0], dims[1], &dderiv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+        ddc = a*ddb+2*da*db+dda*b;
+      }
+    */
+  }
+
+
+  
+
+
+
+  virtual void Evaluate(const BaseMappedIntegrationRule & mir,
+                        FlatArray<FlatMatrix<>*> input,
+                        FlatMatrix<> result) const
+  {
+    throw Exception ("mat-vec Evaluate input-result not implemented");
+    /*
+    FlatMatrix<> va = *input[0], vb = *input[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        c = a*b;
+      }
+    */
+  }
+
+
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatArray<FlatMatrix<>*> input,
+                             FlatArray<FlatMatrix<>*> dinput,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    throw Exception ("mat-vec EvaluateDeriv input-result not implemented");
+    /*
+    FlatMatrix<> va = *input[0], vb = *input[1];
+    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+      }
+    */
+  }
+
+
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatArray<FlatMatrix<>*> ddinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    throw Exception ("mat-vec EvaluateDDeriv input-result not implemented");
+    /*
+    FlatMatrix<> va = *input[0], vb = *input[1];
+    FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
+    FlatMatrix<> vdda = *ddinput[0], vddb = *ddinput[1];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
+        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
+        FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
+        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
+        FlatMatrix<> dda(dims[0], inner_dim, &vdda(i,0));
+        FlatMatrix<> ddb(inner_dim, dims[1], &vddb(i,0));
+        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        FlatMatrix<> ddc(dims[0], dims[1], &dderiv(i,0));
+        c = a*b;
+        dc = a*db+da*b;
+        ddc = a*ddb+2*da*db+dda*b;
+      }
+    */
+  }
+
+
+  
+};
+
+
+
+  
+
+
+
   
 
   
@@ -1503,6 +1733,8 @@ public:
   {
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);
+    if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
+      return make_shared<MultMatVecCoefficientFunction> (c1, c2);
     if (c1->Dimension() > 1 && c2->Dimension() > 1)
       {
         switch (c1->Dimension())
