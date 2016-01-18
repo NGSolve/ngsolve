@@ -341,7 +341,7 @@ namespace netgen
 	case QUAD6: np = 6; break;
 	case QUAD8: np = 8; break;
 	default:
-	  PrintSysError ("Element2d::SetType, illegal type ", typ);
+	  PrintSysError ("Element2d::SetType, illegal type ", int(typ));
 	}
     }
     ///

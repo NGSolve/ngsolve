@@ -428,7 +428,7 @@ namespace netgen
       case TRIG: pp = &eltriqp[0][0]; break;
       case QUAD: pp = &elquadqp[ip-1][0]; break;
       default:
-        PrintSysError ("Element2d::GetIntegrationPoint, illegal type ", typ);
+        PrintSysError ("Element2d::GetIntegrationPoint, illegal type ", int(typ));
       }
 
     p.X() = pp[0];
@@ -483,7 +483,7 @@ namespace netgen
       case TRIG: dshapep = &ipdtrig.Get(ip)->dshape; break;
       case QUAD: dshapep = &ipdquad.Get(ip)->dshape; break;
       default:
-        PrintSysError ("Element2d::GetTransformation, illegal type ", typ);
+        PrintSysError ("Element2d::GetTransformation, illegal type ", int(typ));
       }
   
     CalcABt (pmat, *dshapep, trans);
@@ -512,7 +512,7 @@ namespace netgen
         shape(3) = (1-p.X()) * p.Y();
         break;
       default:
-        PrintSysError ("Element2d::GetShape, illegal type ", typ);
+        PrintSysError ("Element2d::GetShape, illegal type ", int(typ));
       }
   }
 
@@ -582,7 +582,7 @@ namespace netgen
         break;
 
       default:
-        PrintSysError ("Element2d::GetDShape, illegal type ", typ);
+        PrintSysError ("Element2d::GetDShape, illegal type ", int(typ));
       }
   }
 

@@ -244,7 +244,7 @@ namespace netgen
 	      break;
 	    }
 	  default:
-	    PrintSysError ("MakeSecondOrder, illegal vol type ", el.GetType());
+	    PrintSysError ("MakeSecondOrder, illegal vol type ", int(el.GetType()));
 	  }
 
 
