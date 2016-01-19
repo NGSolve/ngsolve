@@ -24,6 +24,14 @@ endif(USE_CUDA)
 if(NOT WIN32)
     target_link_libraries(ngfem ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
     install( TARGETS ngfem ${ngs_install_dir} )
+
+    if(NOT USE_NATIVE_ARCH)
+        add_library(ngfem_haswell ${NGS_LIB_TYPE} $<TARGET_PROPERTY:ngfem,SOURCES> )
+        target_link_libraries(ngfem_haswell $<TARGET_PROPERTY:ngfem,INTERFACE_LINK_LIBRARIES> )
+        target_compile_options(ngfem_haswell PUBLIC ${AVX2_FLAG})
+        install( TARGETS ngfem_haswell ${ngs_install_dir} )
+    endif(NOT USE_NATIVE_ARCH)
+
 endif(NOT WIN32)
 
 install( FILES
