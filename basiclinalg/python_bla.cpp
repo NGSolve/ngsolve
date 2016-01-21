@@ -158,6 +158,7 @@ struct PyVecAccess : public boost::python::def_visitor<PyVecAccess<T, TNEW> > {
         c.def("__mul__" , FunctionPointer( [](T &self, TSCAL s) { return TNEW(s*self); }) );
         c.def("__rmul__" , FunctionPointer( [](T &self, TSCAL s) { return TNEW(s*self); }) );
         c.def("InnerProduct", FunctionPointer ( [](T & x, T & y) { return InnerProduct (x, y); }));
+        c.def("Norm", FunctionPointer ( [](T & x) { return L2Norm(x); }));
     }
 };
 
@@ -461,6 +462,15 @@ void NGS_DLL_HEADER ExportNgbla() {
            );
     bp::def("Vector",
             FunctionPointer( [] (bp::list values) {
+                               Vector<> v(len(values));
+                               for (int i = 0; i < v.Size(); i++)
+                                 v(i) = bp::extract<double>(values[i])();
+                               return v;
+                             }),
+            (boost::python::arg("vals"))
+           );
+    bp::def("Vector",
+            FunctionPointer( [] (bp::tuple values) {
                                Vector<> v(len(values));
                                for (int i = 0; i < v.Size(); i++)
                                  v(i) = bp::extract<double>(values[i])();
