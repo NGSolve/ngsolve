@@ -432,6 +432,8 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
+    if (task_manager) task_manager -> StopWorkers();
+
     if (compressed)
       {
 	Matrix<TVX> hx(nrhs, compress.Size());
@@ -459,6 +461,8 @@ namespace ngla
 			    static_cast<double *>((void*)fx.Data()), 
 			    static_cast<double *>((void*)fy.Data()), &error );
       }
+
+    if (task_manager) task_manager -> StartWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
@@ -496,6 +500,8 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
+    if (task_manager) task_manager -> StopWorkers();
+
     F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
 			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
 			&phase, const_cast<integer *>(&compressed_height), 
@@ -503,6 +509,8 @@ namespace ngla
 			&rowstart[0], &indices[0],
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
+
+    if (task_manager) task_manager -> StartWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
@@ -538,9 +546,11 @@ namespace ngla
     integer * params = const_cast <integer*> (&hparams[0]);
 
     //    cout << "call pardiso (clean up) ..." << endl;
+    if (task_manager) task_manager -> StopWorkers();
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			&rowstart[0], &indices[0], NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
+    if (task_manager) task_manager -> StartWorkers();
     if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
   }
