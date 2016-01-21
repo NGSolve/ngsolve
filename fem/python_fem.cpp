@@ -779,6 +779,44 @@ void NGS_DLL_HEADER ExportNgfem() {
           );
 
 
+
+  bp::class_<IntegrationRule, boost::noncopyable>("IntegrationRule", bp::no_init)
+    .def("__init__",  bp::make_constructor 
+         (FunctionPointer ([](ELEMENT_TYPE et, int order) -> IntegrationRule *
+                           {
+                             return new IntegrationRule (SelectIntegrationRule(et, order));
+                           }),
+          bp::default_call_policies(),
+          (bp::arg("element type"), bp::arg("order"))))
+    .def("Integrate", FunctionPointer
+         ([](IntegrationRule & ir, bp::object func) -> bp::object
+          {
+            bp::object sum;
+            for (const IntegrationPoint & ip : ir)
+              {
+                bp::object val;
+                switch (ir.Dim())
+                  {
+                  case 1:
+                    val = func(ip(0)); break;
+                  case 2:
+                    val = func(ip(0), ip(1)); break;
+                  case 3:
+                    val = func(ip(0), ip(1), ip(2)); break;
+                  default:
+                    throw Exception("integration rule with illegal dimension");
+                  }
+
+                val = val * ip.Weight();
+                if (sum == bp::object())
+                  sum = val;
+                else
+                  sum = sum+val;
+              }
+            return sum;
+          }))
+    ;
+
   bp::class_<BaseMappedIntegrationPoint, boost::noncopyable>( "BaseMappedIntegrationPoint", bp::no_init)
     .def("__str__", FunctionPointer
          ([] (const BaseMappedIntegrationPoint & bmip)

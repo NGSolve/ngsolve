@@ -379,6 +379,7 @@ namespace ngfem
 
   class IntegrationRule : public Array<IntegrationPoint> 
   {
+    int dimension = -1;
   public:
     ///
     INLINE IntegrationRule () { ; }
@@ -394,7 +395,7 @@ namespace ngfem
 
 
     INLINE NGS_DLL_HEADER IntegrationRule (const IntegrationRule & ir2)
-      : Array<IntegrationPoint> (ir2.Size(), &ir2[0])
+      : Array<IntegrationPoint> (ir2.Size(), &ir2[0]), dimension(ir2.dimension)
     { ; }
 
     INLINE NGS_DLL_HEADER IntegrationRule (int asize, LocalHeap & lh)
@@ -419,6 +420,8 @@ namespace ngfem
     {
       return IntegrationRule (next-first, &(*this)[first]);
     }
+    int Dim() const { return dimension; }
+    void SetDim (int dim) { dimension = dim; }
   };
 
   DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);
@@ -585,6 +588,7 @@ namespace ngfem
     size = ir.Size();
     data = &ir[0];
     mem_to_delete = NULL;
+    dimension = ElementTopology::GetSpaceDim(eltype);
   }
 
 
