@@ -1768,10 +1768,16 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) 
            -> shared_ptr<LinearFormIntegrator>
            {
+             bp::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+             
              auto lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb);
 
              if (bp::extract<bp::list> (definedon).check())
                lfi -> SetDefinedOn (makeCArray<int> (definedon));
+             if (defon_region.check())
+               lfi->SetDefinedOn(defon_region().Mask());
 
              return lfi;
            }),
