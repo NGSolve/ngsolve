@@ -1240,7 +1240,7 @@ public:
     dim = 0;
     for (auto cf : ci)
       dim += cf->Dimension();
-    dims = { dim }; 
+    dims = Array<int> ( { dim } ); 
   }
 
   void SetDimensions (const Array<int> & adims)
