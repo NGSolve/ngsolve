@@ -1478,10 +1478,12 @@ void CalcLDL (SliceMatrix<T> mat)
   inline void MyAtomicAdd (Complex & x, Complex y)
   {
     
+    auto real = y.real();
 #pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[0] += y.real();
+    reinterpret_cast<double(&)[2]>(x)[0] += real;
+    auto imag = y.imag();
 #pragma omp atomic
-    reinterpret_cast<double(&)[2]>(x)[1] += y.imag();
+    reinterpret_cast<double(&)[2]>(x)[1] += imag;
   }
 
   template <int DIM, typename SCAL, typename TANY>
