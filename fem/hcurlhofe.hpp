@@ -53,7 +53,8 @@ namespace ngfem
     //bool usegrad_edge[N_EDGE]; 
     INT<N_EDGE, bool> usegrad_edge;
     INT<N_FACE, bool> usegrad_face;
-    bool usegrad_cell; 
+    bool usegrad_cell;
+    bool type1;   
 
     using BASE::ndof;
     using BASE::order;
@@ -71,8 +72,8 @@ namespace ngfem
     {
       order_edge = aorder;
       order_face = aorder;
-      // for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
-      // for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;
+      type1 = false;
+      
       if (DIM == 3) order_cell = aorder;
       
       for(int i = 0; i < N_EDGE; i++) usegrad_edge[i] = 1;
@@ -123,6 +124,9 @@ namespace ngfem
     INLINE void SetUseGradCell (bool ugc) 
     { usegrad_cell = ugc; }
 
+    INLINE void SetType1 (bool t1)
+    { type1 = t1; }
+    
     void ComputeNDof();
   };
 
