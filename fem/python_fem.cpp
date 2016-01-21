@@ -784,7 +784,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     .def("__init__",  bp::make_constructor 
          (FunctionPointer ([](ELEMENT_TYPE et, int order) -> IntegrationRule *
                            {
-                             return new IntegrationRule (SelectIntegrationRule(et, order));
+                             return new IntegrationRule (et, order);
                            }),
           bp::default_call_policies(),
           (bp::arg("element type"), bp::arg("order"))))
