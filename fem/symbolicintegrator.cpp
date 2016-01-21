@@ -276,11 +276,11 @@ namespace ngfem
                 }
             }
         });
-    cout << "num test_proxies " << test_proxies.Size() << endl;
-    cout << "num trial_proxies " << trial_proxies.Size() << endl;
+    cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
+    cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
 
     elementwise_constant = cf -> ElementwiseConstant();
-    cout << "element-wise constant = " << elementwise_constant << endl;
+    cout << IM(3) << "element-wise constant = " << elementwise_constant << endl;
     
     // find non-zeros
     int cnttest = 0, cnttrial = 0;
@@ -310,7 +310,7 @@ namespace ngfem
               }
           k++;
         }
-    cout << "nonzeros: " << endl << nonzeros << endl;
+    cout << IM(3) << "nonzeros: " << endl << nonzeros << endl;
   }
   
   
