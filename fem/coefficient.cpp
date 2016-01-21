@@ -919,6 +919,24 @@ public:
     result *= v1(0);
   }
 
+
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<> result) const
+  {
+#ifdef VLA
+    double hmem1[ir.Size()];
+    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+#else
+    Matrix<> temp1(ir.Size(), 1);
+#endif
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, result);
+    for (int i = 0; i < ir.Size(); i++)
+      result.Row(i) *= temp1(i,0);
+  }
+
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
     Vec<1,bool> v1;
@@ -1843,6 +1861,11 @@ public:
       func(*cf);
     }
 
+    virtual bool IsComplex() const { return cf->IsComplex(); }
+    virtual int Dimension() const { return cf->Dimension(); }
+    virtual Array<int> Dimensions() const  { return cf->Dimensions(); } 
+    
+    
     virtual bool ElementwiseConstant () const { return false; }
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
     { cf->NonZeroPattern (ud, nonzero); }
@@ -1850,7 +1873,8 @@ public:
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
-      throw Exception ("compiled evaluate not implemented");
+      return cf -> Evaluate(ip);
+      // throw Exception ("compiled mip evaluate not implemented");
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
