@@ -516,7 +516,7 @@ namespace ngcomp
 
   
   static PDEScanner * scan;
-  static shared_ptr<PDE> pde;
+  NGS_DLL_HEADER shared_ptr<PDE> pde;  // valid douring pde-parsing
   
   
   void CommandList (bool nomeshload, const bool nogeometryload)
