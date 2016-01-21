@@ -31,8 +31,14 @@ namespace ngfem
     for(int i = 0; i < N_FACE; i++)
       if (FaceType(i) == ET_TRIG)
         {
-          if (order_face[i][0] > 1) 
-            ndof += ((usegrad_face[i]+1)*order_face[i][0]+2)*(order_face[i][0]-1)/2 ;
+          if (order_face[i][0] > 1)
+            {
+              int p = order_face[i][0];
+              int pg = p - (type1 ? 1 : 0);
+              ndof += usegrad_face[i]*pg*(pg-1)/2;
+              ndof += (p+2)*(p-1)/2;
+                // ndof += ((usegrad_face[i]+1)*order_face[i][0]+2)*(order_face[i][0]-1)/2;
+            }
         }
       else
         {
@@ -192,7 +198,8 @@ namespace ngfem
 	// gradients:
 	if(usegrad_face[0])
           {
-            DubinerBasis3::EvalMult (p-2, lam[fav[0]], lam[fav[1]], 
+            int pg = p-2 - (type1 ? 1 : 0);
+            DubinerBasis3::EvalMult (pg, lam[fav[0]], lam[fav[1]], 
                                      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                      SBLambda ([&](int nr, Tx val)
                                                {

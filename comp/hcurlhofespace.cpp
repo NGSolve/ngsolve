@@ -32,9 +32,11 @@ namespace ngcomp
     DefineNumFlag("augmented");
     DefineDefineFlag("fast"); 
     DefineDefineFlag ("discontinuous");
+    DefineDefineFlag ("type1");
     
     if(parseflags) CheckFlags(flags);
-    
+
+    type1 = flags.GetDefineFlag("type1");
     // Variable order space: 
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
@@ -173,7 +175,7 @@ namespace ngcomp
     fine_face.SetSize (nfa); 
 
     int p = var_order ? 0 : order; 
-    order_edge = p; 
+    order_edge = p - (type1 ? 1 : 0); 
     // order_inner = INT<3> (p,p,p); 
     order_inner = INT<3> (0,0,0); 
 
@@ -426,8 +428,13 @@ namespace ngcomp
 	  case 3: //Triangle   
 	    if (p[0]>1)
 	      {
+                /*
 		ndof += ((usegrad_face[i]+1)*p[0] + 2)*(p[0]-1)/2;
 		face_ngrad[i] = usegrad_face[i]*p[0]*(p[0]-1)/2;
+                */
+                int pg = p[0] - (type1 ? 1 : 0);
+		face_ngrad[i] = usegrad_face[i]*pg*(pg-1)/2;
+                ndof += face_ngrad[i] + (p[0] + 2)*(p[0]-1)/2;
 	      }
 	    break; 
 	  case 4: //Quad 
@@ -453,8 +460,13 @@ namespace ngcomp
 	  case ET_TRIG:
 	    if(p[0]>1)
 	      {
+                int pg = p[0] - (type1 ? 1 : 0);
+		cell_ngrad[i] = usegrad_cell[i]*pg*(pg-1)/2;
+                ndof += cell_ngrad[i] + (p[0] + 2)*(p[0]-1)/2;
+                /*
 		ndof += ((usegrad_cell[i]+1)*p[0] + 2) * (p[0]-1) /2;
 		cell_ngrad[i] = ((usegrad_cell[i])*p[0]) * (p[0]-1) /2;
+                */
 	      }
 	    break; 
 	  case ET_QUAD: 
@@ -856,7 +868,7 @@ namespace ngcomp
           hofe -> SetUseGradCell (usegrad_cell[elnr]);  // old style
           FlatArray<bool> augf(1,&usegrad_cell[elnr]);
           hofe -> SetUseGradFace (augf); 
-          
+          hofe -> SetType1 (type1);
           break;
         }
       case 3:
@@ -866,7 +878,7 @@ namespace ngcomp
           
           hofe -> SetOrderCell (order_inner[elnr]);
           hofe -> SetUseGradCell (usegrad_cell[elnr]); 
-          
+          hofe -> SetType1 (type1);          
           break;
         }
       }
