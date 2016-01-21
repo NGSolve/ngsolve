@@ -193,14 +193,7 @@ int NGS_Help (ClientData clientData,
 
 
 
-<<<<<<< 6bfbbcbec0c47736d29e578053fc06037037afa3
-namespace ngcomp
-{
-  extern ngcomp::shared_ptr<PDE> pde;
-}
-=======
 static shared_ptr<PDE> pde;
->>>>>>> global pde-ptrs douring pde-load
 
 #ifdef _NGSOLVE_SOCKETS_HPP
   class SocketOutArchive : public Archive
