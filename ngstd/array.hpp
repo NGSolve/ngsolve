@@ -880,6 +880,11 @@ namespace ngstd
       StoreToArray (*this, tup);
       return *this;
     }
+
+    Array & operator= (std::initializer_list<T> list)
+    {
+      *this = Array<T> (list); 
+    }
       
 
     INLINE void Swap (Array & b)
