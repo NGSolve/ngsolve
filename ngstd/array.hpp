@@ -884,6 +884,7 @@ namespace ngstd
     Array & operator= (std::initializer_list<T> list)
     {
       *this = Array<T> (list); 
+      return *this;
     }
       
 
