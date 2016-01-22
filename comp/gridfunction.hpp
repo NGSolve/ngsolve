@@ -205,7 +205,7 @@ namespace ngcomp
   }
 
   
-  extern void Visualize(shared_ptr<GridFunction> gf, const string & name);
+  extern NGS_DLL_HEADER void Visualize(shared_ptr<GridFunction> gf, const string & name);
   
   template <class SCAL>
   class NGS_DLL_HEADER S_GridFunction : public GridFunction
