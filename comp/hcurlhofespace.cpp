@@ -868,7 +868,6 @@ namespace ngcomp
           hofe -> SetUseGradCell (usegrad_cell[elnr]);  // old style
           FlatArray<bool> augf(1,&usegrad_cell[elnr]);
           hofe -> SetUseGradFace (augf); 
-          hofe -> SetType1 (type1);
           break;
         }
       case 3:
@@ -878,11 +877,10 @@ namespace ngcomp
           
           hofe -> SetOrderCell (order_inner[elnr]);
           hofe -> SetUseGradCell (usegrad_cell[elnr]); 
-          hofe -> SetType1 (type1);          
           break;
         }
       }
-
+    hofe -> SetType1 (type1);          
     hofe -> ComputeNDof();
     // hofe -> SetDiscontinuous(discontinuous);
 
@@ -1049,7 +1047,7 @@ namespace ngcomp
 	hofe -> SetUseGradFace(augf); 
 	hofe -> SetUseGradCell(usegrad_face[ma->GetSElFace(selnr)]);   // old style
       }
-    
+    hofe -> SetType1 (type1);              
     hofe -> ComputeNDof();
     return *hofe;
   }
