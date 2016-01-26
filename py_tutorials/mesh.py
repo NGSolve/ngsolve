@@ -15,10 +15,10 @@ from ngsolve import *
 
 from tkinter import filedialog
 filename = filedialog.askopenfilename(filetypes=[("vol-files","*.vol *.vol.gz")])
-mesh = comp.Mesh(filename)
+mesh = Mesh(filename)
 
 
-for i in mesh.Elements(comp.VOL):
+for i in mesh.Elements(VOL):
     print (i)
     print (mesh[i])
     print (mesh[i].vertices)

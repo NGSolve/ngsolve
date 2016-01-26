@@ -35,7 +35,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
              );
 
     bp::def ("Draw", FunctionPointer
-             ([](shared_ptr<GridFunction> gf, int sd) 
+             ([](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max) 
               {
                 gf->GetMeshAccess()->SelectMesh();
                 Visualize (gf, gf->GetName());
@@ -44,10 +44,16 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 else
                   Ng_TclCmd (string("set ::visoptions.vecfunction ")+gf->GetName()+";\n");
                 Ng_TclCmd (string("set ::visoptions.subdivisions ")+ToString(sd)+";\n");
-                Ng_TclCmd ("Ng_Vis_Set parameters;\n");
+		Ng_TclCmd ("set ::visoptions.autoscale "+ToString(autoscale)+";\n");
+		if(!autoscale){
+		  Ng_TclCmd ("set ::visoptions.mminval "+ToString(min)+";\n");
+		  Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(max)+";\n");
+		}
+		Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
               }),
-             (bp::arg("gf"),bp::arg("sd")=2)
+             (bp::arg("gf"),bp::arg("sd")=2,bp::arg("autoscale")=true,
+	      bp::arg("min")=0.0,bp::arg("max")=1.0)
              );
 
     
