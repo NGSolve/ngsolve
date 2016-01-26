@@ -667,7 +667,6 @@ void NGS_DLL_HEADER ExportNgfem() {
     .add_property("vertices", FunctionPointer([](ElementTopology & self)
                                               {
                                                 bp::list verts;
-                                                ELEMENT_TYPE et = ET_TRIG;
                                                 const POINT3D * pts = self.GetVertices();
                                                 int dim = self.GetSpaceDim();
                                                 for (int i : Range(self.GetNVertices()))

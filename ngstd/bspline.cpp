@@ -1,4 +1,4 @@
-#define DEBUG
+// #define DEBUG
 #include <ngstd.hpp>
 #include "bspline.hpp"
 using namespace ngstd;
@@ -103,12 +103,11 @@ namespace ngstd
 
   AutoDiff<1> BSpline :: operator() (AutoDiff<1> x) const
   {
-    double eps = 1e-5;
+    // double eps = 1e-5;
     double val = (*this)(x.Value());
-    double valr = (*this)(x.Value()+eps);
-    double vall = (*this)(x.Value()-eps);
-
-    double dval = (valr-vall) / (2*eps);
+    // double valr = (*this)(x.Value()+eps);
+    // double vall = (*this)(x.Value()-eps);
+    // double dval = (valr-vall) / (2*eps);
 
     double dval2 = Differentiate()(x.Value());
     // cout << "dval = " << dval << " =?= " << dval2 << endl;

@@ -774,7 +774,6 @@ namespace ngfem
               for (int j = 0; j < BS; j++)
                 {
                   int ii = i+j;
-                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
                   proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
                   proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
@@ -795,7 +794,6 @@ namespace ngfem
               for (int j = 0; j < rest; j++)
                 {
                   int ii = i+j;
-                  IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
                   IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
                   proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
                   proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
