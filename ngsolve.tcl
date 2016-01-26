@@ -152,15 +152,15 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    redraw
 	}
     
-    button .bubar.pde -text "Recent" \
+    ttk::button .bubar.pde -text "Recent" \
         -command { .ngmenu.solve invoke "Solve Recent PDE"; }
     pack .bubar.pde -side right
     
-    button .bubar.solve -text "Solve" \
+    ttk::button .bubar.solve -text "Solve" \
         -command { .ngmenu.solve invoke "Solve PDE"; }
     pack .bubar.solve -side right
     
-    button .bubar.visualize -text "Visual" \
+    ttk::button .bubar.visualize -text "Visual" \
 	-command { visual_dialog }
     pack .bubar.visualize -side right
     

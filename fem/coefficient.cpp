@@ -1559,7 +1559,7 @@ public:
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        FlatVector<> b = vb.Row(i);
+        // FlatVector<> b = vb.Row(i);
         result.Row(i) = a * vb.Row(i);
       }
   }  
