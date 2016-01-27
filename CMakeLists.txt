@@ -229,7 +229,13 @@ if (USE_MKL)
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIRS})
     add_definitions(-DUSE_MKL -DUSE_PARDISO -DLAPACK)
-    set( LAPACK_LIBRARIES "${MKL_MINIMAL_LIBRARIES}")
+
+    if(USE_MUMPS)
+        # include scalapack
+        set( LAPACK_LIBRARIES "${MKL_LIBRARIES}")
+    else(USE_MUMPS)
+        set( LAPACK_LIBRARIES "${MKL_MINIMAL_LIBRARIES}")
+    endif(USE_MUMPS)
 
     if("${MKL_INTERFACE_LAYER}" STREQUAL "_ilp64")
         add_definitions(-DMKL_ILP64)
