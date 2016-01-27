@@ -5,8 +5,6 @@ from ngsolve import *
 ngsglobals.msg_level = 1
 
 mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
-mesh.Refine()
-# mesh.Refine()
 # mesh.Refine()
 
 order = 2
@@ -45,3 +43,4 @@ BVP(bf=a,lf=f,gf=u,pre=c).Do()
 # u.vec.data = a.mat.Inverse(fes.FreeDofs()) * f.vec
 
 Draw (u.components[1], mesh, "sol")
+Draw (u.components[0], mesh, "flux")
