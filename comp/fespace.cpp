@@ -759,6 +759,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
           GetInnerDofNrs(nr, dnums); 
         break;
       case NT_CELL:   GetInnerDofNrs(nr, dnums); break;
+      case NT_ELEMENT: case NT_FACET:
+        GetNodeDofNrs (StdNodeType(nt, ma->GetDimension()), nr, dnums);
+        break;
       }
   }
 

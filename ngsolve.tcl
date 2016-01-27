@@ -116,7 +116,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	}
     
     .ngmenu.solve add cascade -label "Recent Files" -menu .ngmenu.solve.recent 
-    menu .ngmenu.solve.recent
+    menu .ngmenu.solve.recent -tearoff 0
 
     .ngmenu.solve add command -label "Load Python..." -accelerator "<l><y>"\
 	-command { 
@@ -329,7 +329,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	
 	if { [.ngmenu.solve.recent index last] >= 6 } {
 	    .ngmenu.solve.recent delete last }
-	
+
 	savengsinifile;
     }
     
@@ -344,7 +344,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	if {[catch { set datei [open $ngsinifilename w]  } result ]} {
 	    puts "cannot write to $ngsinifilename file"
 	} {
-	    for { set i [.ngmenu.solve.recent index last] } { $i >= 1 } { incr i -1 } {
+	    for { set i [.ngmenu.solve.recent index last] } { $i >= 0 } { incr i -1 } {
 		puts $datei "recentfile \"[.ngmenu.solve.recent entrycget $i -label]\""
 	    }
 	    close $datei
