@@ -566,7 +566,8 @@ void NGS_DLL_HEADER ExportNgbla() {
                                 Matrix<> a(n,k), b(m,k), c(n,m);
                                 a = 1; b = 2;
                                 double tot = double(n)*k*m;
-                                int its = 1e10 / tot;
+                                c = a * Trans(b) | Lapack; // warmup
+                                int its = 1e10 / tot + 1;
                                 {
                                   Timer t("matmat");
                                   t.Start();
@@ -588,6 +589,7 @@ void NGS_DLL_HEADER ExportNgbla() {
 
                                 {
                                 Timer t2("matmat - par");
+                                c = a * Trans(b) | Lapack; // warmup
                                 t2.Start();
                                 RunWithTaskManager
                                   ([=] ()
