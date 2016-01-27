@@ -121,6 +121,9 @@ else()
     find_library(MKL_SCALAPACK_LIBRARY mkl_scalapack${MKL_INTERFACE_LAYER}
         PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
+    find_library(MKL_BLACS_LIBRARY mkl_blacs_openmpi${MKL_INTERFACE_LAYER}
+        PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
+
 #     ############################ RTL layer ##########################
     if(WIN32)
         set(MKL_RTL_LIBNAME libiomp5md)
@@ -136,7 +139,7 @@ else()
         set(MKL_MINIMAL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
         set(MKL_LIBRARY ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_RTL_LIBRARY})
     else(WIN32)
-        set(MKL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY} -Wl,--end-group -ldl -lpthread -lm")
+        set(MKL_LIBRARY "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} ${MKL_FFT_LIBRARY} ${MKL_BLACS_LIBRARY} ${MKL_SCALAPACK_LIBRARY} ${MKL_RTL_LIBRARY} -Wl,--end-group -ldl -lpthread -lm")
         set(MKL_LINK_FLAGS "-Wl,--start-group ${MKL_INTERFACE_LIBRARY} ${MKL_THREADING_LIBRARY} ${MKL_CORE_LIBRARY} -Wl,--end-group -ldl -lpthread -lm" )
         set(MKL_MINIMAL_LIBRARY ${MKL_LINK_FLAGS})
 #  ${MKL_ROOT}/lib/${MKL_ARCH}/libmkl_blacs_openmpi_lp64.a 
