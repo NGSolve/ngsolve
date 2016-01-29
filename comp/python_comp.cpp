@@ -218,6 +218,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def(PyDefIterable2<ElementRange>())
     ;
 
+  bp::register_ptr_to_python<shared_ptr<FESpace::ElementRange>>();
   bp::class_<FESpace::ElementRange,shared_ptr<FESpace::ElementRange>, bp::bases<IntRange>, boost::noncopyable> ("FESpaceElementRange",bp::no_init)
     // .def(bp::init<const FESpace::ElementRange&>())
     // .def(bp::init<FESpace::ElementRange&&>())
@@ -393,6 +394,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
   
   
+  bp::register_ptr_to_python<shared_ptr<MeshAccess>>();
   bp::class_<MeshAccess, shared_ptr<MeshAccess>>("Mesh", 
                                                  "the mesh")
     .def(bp::init<shared_ptr<netgen::Mesh>>())
@@ -551,6 +553,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
+  bp::register_ptr_to_python<shared_ptr<NGS_Object>>();
   bp::class_<NGS_Object, shared_ptr<NGS_Object>, boost::noncopyable>("NGS_Object", bp::no_init)
     .add_property("name", FunctionPointer
                   ([](const NGS_Object & self)->string { return self.GetName();}))
@@ -727,6 +730,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
+  bp::register_ptr_to_python<shared_ptr<FESpace>>();
   bp::class_<FESpace, shared_ptr<FESpace>, boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
 
 
@@ -938,6 +942,7 @@ void NGS_DLL_HEADER ExportNgcomp()
            }))
     ;
   
+  bp::register_ptr_to_python<shared_ptr<CompoundFESpace>>();
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
     ("CompoundFESpace", bp::no_init)
     ;
@@ -979,6 +984,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   
+  bp::register_ptr_to_python<shared_ptr<GF>>();
   bp::class_<GF, shared_ptr<GF>, bp::bases<CoefficientFunction>, boost::noncopyable>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
 
@@ -1265,6 +1271,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
   typedef BilinearForm BF;
+  bp::register_ptr_to_python<shared_ptr<BF>>();
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](shared_ptr<FESpace> fespace, string name,
@@ -1379,6 +1386,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
   typedef LinearForm LF;
+  bp::register_ptr_to_python<shared_ptr<LF>>();
   bp::class_<LF, shared_ptr<LF>, boost::noncopyable>("LinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
@@ -1439,6 +1447,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
   typedef Preconditioner PRE;
+  bp::register_ptr_to_python<shared_ptr<PRE>>();
   bp::class_<PRE, shared_ptr<PRE>, boost::noncopyable>("Preconditioner", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](shared_ptr<BilinearForm> bfa, const string & type, 
@@ -1461,6 +1470,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  bp::register_ptr_to_python<shared_ptr<NumProc>>();
   bp::class_<NumProc, shared_ptr<NumProc>,bp::bases<NGS_Object>,boost::noncopyable> ("NumProc", bp::no_init)
     .def("Do", FunctionPointer([](NumProc & self, int heapsize)
                                {
@@ -1471,6 +1481,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   // die geht
+  bp::register_ptr_to_python<shared_ptr<NumProcWrap>>();
   bp::class_<NumProcWrap,shared_ptr<NumProcWrap>, bp::bases<NumProc>,boost::noncopyable>("PyNumProc", bp::init<shared_ptr<PDE>, const Flags&>())
     .def("Do", bp::pure_virtual(&PyNumProc::Do)) 
     .add_property("pde", &PyNumProc::GetPDE)
@@ -1982,6 +1993,7 @@ void NGS_DLL_HEADER ExportNgcomp()
            }));
   */
 
+  bp::register_ptr_to_python<shared_ptr<BaseVTKOutput>>();
   bp::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>,  boost::noncopyable>("VTKOutput", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](shared_ptr<MeshAccess> ma, bp::list coefs_list,
