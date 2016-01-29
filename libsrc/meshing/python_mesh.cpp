@@ -296,7 +296,9 @@ DLL_HEADER void ExportNetgenMeshing()
   ;
   
   
+#if BOOST_VERSION < 106000
   bp::register_ptr_to_python<shared_ptr<Mesh>>();
+#endif
   bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
     // .def(bp::init<>("create empty mesh"))
 
