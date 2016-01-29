@@ -210,7 +210,7 @@ DLL_HEADER void ExportCSG()
            ([] (double x, double y) { return Vec<2>(x,y); }));
 
 
-#if BOOST_VERSION < 106000
+#if BOOST_VERSION >= 106000
   bp::register_ptr_to_python<shared_ptr<SPSolid>>();
 #endif
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
