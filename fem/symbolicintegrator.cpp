@@ -631,8 +631,156 @@ namespace ngfem
 
 
   
+  void 
+  SymbolicBilinearFormIntegrator ::
+  CalcLinearizedElementMatrix (const FiniteElement & fel,
+                               const ElementTransformation & trafo, 
+                               FlatVector<double> elveclin,
+                               FlatMatrix<double> elmat,
+                               LocalHeap & lh) const
+  {
+    static Timer t("symbolicbfi - calclinearized", 2);
+    static Timer td("symbolicbfi - calclinearized dmats", 2);
+    RegionTimer reg(t);
+    
+    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    ud.elx = &elveclin;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
+        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
+      }
+    
+    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+    
+    elmat = 0;
+               
+    
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(test_proxies))
+        {
+          HeapReset hr(lh);
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = test_proxies[l1];
+          td.Start();
+          FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+          
+          for (int k = 0; k < proxy1->Dimension(); k++)
+            for (int l = 0; l < proxy2->Dimension(); l++)
+              {
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+                
+                cf -> EvaluateDeriv (mir, val, deriv);
+                proxyvalues(STAR,l,k) = deriv.Col(0);
+              }
+          td.Stop();
+
+          for (int i = 0; i < mir.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+
+          t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
+
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+          int i = 0;
+
+          enum { BS = 16 };
+          for ( ; i+BS <= mir.Size(); i+=BS)
+            {
+              HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bdbmat1(BS*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(BS*proxy2->Dimension(), elmat.Height(), lh);
+
+              for (int j = 0; j < BS; j++)
+                {
+                  int ii = i+j;
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+            }
 
 
+          if (i < mir.Size())
+            {
+              HeapReset hr(lh);
+              int rest = mir.Size()-i;
+              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+              
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+              elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+            }
+        }
+  }
+
+  void
+  SymbolicBilinearFormIntegrator :: ApplyElementMatrix (const FiniteElement & fel, 
+                                                        const ElementTransformation & trafo, 
+                                                        const FlatVector<double> elx, 
+                                                        FlatVector<double> ely,
+                                                        void * precomputed,
+                                                        LocalHeap & lh) const
+  {
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    ud.elx = &elx;
+    ud.lh = &lh;
+
+    HeapReset hr(lh);
+    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+      
+    ely = 0;
+    FlatVector<> ely1(ely.Size(), lh);
+
+    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (mir, val);
+            proxyvalues.Col(k) = val.Col(0);
+          }
+
+        for (int i = 0; i < mir.Size(); i++)
+          proxyvalues.Row(i) *= mir[i].GetWeight();
+        
+        proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+        ely += ely1;
+      }
+  }
+
+
+
+
+
+  
 
   
   SymbolicEnergy :: SymbolicEnergy (shared_ptr<CoefficientFunction> acf,
