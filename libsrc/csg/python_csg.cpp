@@ -210,6 +210,7 @@ DLL_HEADER void ExportCSG()
            ([] (double x, double y) { return Vec<2>(x,y); }));
 
 
+  bp::register_ptr_to_python<shared_ptr<SPSolid>>();
   bp::class_<SPSolid, shared_ptr<SPSolid>, boost::noncopyable> ("Solid", bp::no_init)
     .def ("__str__", &ToString<SPSolid>)
     .def ("__add__", FunctionPointer( [] ( shared_ptr<SPSolid> self, shared_ptr<SPSolid> other) { return make_shared<SPSolid> (SPSolid::UNION, self, other); }))

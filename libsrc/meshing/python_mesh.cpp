@@ -296,6 +296,7 @@ DLL_HEADER void ExportNetgenMeshing()
   ;
   
   
+  bp::register_ptr_to_python<shared_ptr<Mesh>>();
   bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
     // .def(bp::init<>("create empty mesh"))
 
