@@ -314,6 +314,8 @@ namespace ngcomp
 		  case NT_EDGE: ma->GetEdgePNums (i, pnums); break;
 		  case NT_FACE: ma->GetFacePNums (i, pnums); break;
 		  case NT_CELL: ma->GetElPNums (i, pnums); break;
+                  default:
+                    __assume(false);
 		  }
 		Vec<8> key; 
 		key = -1;
