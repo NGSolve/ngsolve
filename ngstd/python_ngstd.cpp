@@ -208,7 +208,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
                                  }))
     ;
 
-  bp::register_ptr_to_python<shared_ptr<Flags>>();
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Flags>);
   bp::class_<ngstd::Flags, shared_ptr<Flags>, boost::noncopyable> ("Flags", bp::no_init)
     .def("__init__", bp::make_constructor (FunctionPointer ([](const bp::dict & aflags) 
                                                             {
@@ -288,7 +288,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
   
   FlagsFromPythonDict();
 
-  bp::register_ptr_to_python<shared_ptr<Archive>>();
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Archive>);
   bp::class_<Archive, shared_ptr<Archive>, boost::noncopyable> ("Archive", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](const string & filename, bool write,
