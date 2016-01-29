@@ -338,6 +338,7 @@ struct GenericConj {
 
 void ExportCoefficientFunction()
 {
+  bp::register_ptr_to_python<shared_ptr<CoefficientFunction>>();
   bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
     ("CoefficientFunction",
      "A CoefficientFunction (CF) is some function defined on a mesh.\n"
@@ -520,10 +521,12 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericConj>("Conj");
 
   
+  bp::register_ptr_to_python<shared_ptr<ConstantCoefficientFunction>>();
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
     shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
     ("ConstantCF", "same as CoefficientFunction(c), obsolete", bp::init<double>())
     ;
+
   bp::implicitly_convertible 
     <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
@@ -680,6 +683,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                                               }));
     ;
     
+  bp::register_ptr_to_python<shared_ptr<FiniteElement>>();
   bp::class_<FiniteElement, shared_ptr<FiniteElement>, boost::noncopyable>
     ("FiniteElement", "any finite element", bp::no_init)
     .add_property("ndof", &FiniteElement::GetNDof, "number of degrees of freedom of element")    
@@ -690,6 +694,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     .def("__str__", &ToString<FiniteElement>)
     ;
 
+  bp::register_ptr_to_python<shared_ptr<BaseScalarFiniteElement>>();
   bp::class_<BaseScalarFiniteElement, shared_ptr<BaseScalarFiniteElement>, 
     bp::bases<FiniteElement>, boost::noncopyable>
       ("ScalarFE", "a scalar-valued finite element", bp::no_init)
@@ -902,11 +907,13 @@ void NGS_DLL_HEADER ExportNgfem() {
     ;
 
 
+  bp::register_ptr_to_python<shared_ptr<DifferentialOperator>>();
   bp::class_<DifferentialOperator, shared_ptr<DifferentialOperator>, boost::noncopyable>
     ("DifferentialOperator", bp::no_init)
     ;
 
   
+  bp::register_ptr_to_python<shared_ptr<BilinearFormIntegrator>>();
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -1006,10 +1013,12 @@ void NGS_DLL_HEADER ExportNgfem() {
       );
 
 
+  bp::register_ptr_to_python<shared_ptr<CompoundBilinearFormIntegrator>>();
   bp::class_<CompoundBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
              shared_ptr<CompoundBilinearFormIntegrator>, boost::noncopyable>
       ("CompoundBilinearFormIntegrator", bp::no_init);
 
+  bp::register_ptr_to_python<shared_ptr<BlockBilinearFormIntegrator>>();
   bp::class_<BlockBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
              shared_ptr<BlockBilinearFormIntegrator>, boost::noncopyable>
       ("BlockBilinearFormIntegrator", bp::no_init);
@@ -1023,6 +1032,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     shared_ptr<BilinearFormIntegrator> >(); 
 
 
+  bp::register_ptr_to_python<shared_ptr<LinearFormIntegrator>>();
   bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -1125,10 +1135,12 @@ void NGS_DLL_HEADER ExportNgfem() {
       );
 
 
+  bp::register_ptr_to_python<shared_ptr<CompoundLinearFormIntegrator>>();
   bp::class_<CompoundLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
              shared_ptr<CompoundLinearFormIntegrator>, boost::noncopyable>
       ("CompoundLinearFormIntegrator", bp::no_init);
 
+  bp::register_ptr_to_python<shared_ptr<BlockLinearFormIntegrator>>();
   bp::class_<BlockLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
              shared_ptr<BlockLinearFormIntegrator>, boost::noncopyable>
       ("BlockLinearFormIntegrator", bp::no_init);
@@ -1175,6 +1187,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     shared_ptr<CoefficientFunction> >(); 
 
 
+  bp::register_ptr_to_python<shared_ptr<DomainConstantCoefficientFunction>>();
   bp::class_<DomainConstantCoefficientFunction,bp::bases<CoefficientFunction>, 
     shared_ptr<DomainConstantCoefficientFunction>, boost::noncopyable>
     ("DomainConstantCF", bp::no_init)

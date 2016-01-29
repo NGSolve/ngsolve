@@ -81,6 +81,7 @@ void NGS_DLL_HEADER ExportNgla() {
     
     
   
+  bp::register_ptr_to_python<shared_ptr<BaseVector>>();
   bp::class_<BaseVector, shared_ptr<BaseVector>, boost::noncopyable>("BaseVector", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](int size, bool is_complex) -> shared_ptr<BaseVector>
@@ -238,6 +239,7 @@ void NGS_DLL_HEADER ExportNgla() {
   typedef BaseMatrix BM;
   typedef BaseVector BV;
 
+  bp::register_ptr_to_python<shared_ptr<BaseMatrix>>();
   bp::class_<BaseMatrix, shared_ptr<BaseMatrix>, boost::noncopyable>("BaseMatrix", bp::no_init)
     .def("__str__", &ToString<BaseMatrix>)
     .add_property("height", &BaseMatrix::Height)
@@ -310,8 +312,11 @@ void NGS_DLL_HEADER ExportNgla() {
 
 
 
+  bp::register_ptr_to_python<shared_ptr<CGSolver<double>>>();
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
     ;
+
+  bp::register_ptr_to_python<shared_ptr<CGSolver<Complex>>>();
   bp::class_<CGSolver<Complex>, shared_ptr<CGSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverC", bp::no_init)
     ;
 
@@ -337,6 +342,7 @@ void NGS_DLL_HEADER ExportNgla() {
           )
     ;
 
+  bp::register_ptr_to_python<shared_ptr<QMRSolver<double>>>();
   bp::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverD", bp::no_init)
     ;
   bp::def("QMRSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
