@@ -119,8 +119,6 @@ int netrule :: IsInFreeZone2 (const Point2d & p) const
 
 int netrule :: IsLineInFreeZone2 (const Point2d & p1, const Point2d & p2) const
 {
-  int left, right, allleft, allright;
-
   if ( (p1.X() > fzmaxx && p2.X() > fzmaxx) ||
        (p1.X() < fzminx && p2.X() < fzminx) ||
        (p1.Y() > fzmaxy && p2.Y() > fzmaxy) ||
@@ -144,21 +142,20 @@ int netrule :: IsLineInFreeZone2 (const Point2d & p1, const Point2d & p2) const
       ny /= nl;
       double c = - (p1.X() * nx + p1.Y() * ny);
 
-      allleft = 1;
-      allright = 1;
+      bool allleft = true;
+      bool allright = true;
 
       for (int i = 1; i <= transfreezone.Size(); i++)
 	{
-	  left  = transfreezone.Get(i).X() * nx + transfreezone.Get(i).Y() + c <  1e-7;
-	  right = transfreezone.Get(i).X() * nx + transfreezone.Get(i).Y() + c > -1e-7;
-
-	  if (!left) allleft = 0;
-	  if (!right) allright = 0;
+	  bool left  = transfreezone.Get(i).X() * nx + transfreezone.Get(i).Y() * ny + c <  1e-7;
+          bool right = transfreezone.Get(i).X() * nx + transfreezone.Get(i).Y() * ny + c > -1e-7;
+	  if (!left) allleft = false;
+	  if (!right) allright = false;
 	}
-      if (allleft || allright) return 0;
+      if (allleft || allright) return false;
     }
 
-  return 1;
+  return true;
 }
 
 int netrule :: ConvexFreeZone () const
