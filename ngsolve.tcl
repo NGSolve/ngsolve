@@ -124,6 +124,7 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    set file [tk_getOpenFile -filetypes $types -initialdir $dirname]
 	    if {$file != ""} {
 		set dirname [file dirname $file]
+		AddRecentPYNGSFile $file;
                 NGS_LoadPy  $file;  
 	    }
 	}
@@ -144,9 +145,14 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 
     .ngmenu.solve add command -label "Solve Recent PDE" -accelerator "<s><r>"\
-	-command { 
-	    NGS_LoadPDE  [.ngmenu.solve.recent entrycget 1 -label]
-	    NGS_SolvePDE
+	-command {
+#            set filename [.ngmenu.solve.recent entrycget 0 -label]
+#            puts "solve filename: $filename"
+#	    NGS_LoadPDE  [.ngmenu.solve.recent entrycget 0 -label]
+            .ngmenu.solve.recent invoke 0
+            if { [ string match "*.pde" [.ngmenu.solve.recent entrycget 0 -label]] } {
+                NGS_SolvePDE
+            }
 	    set selectvisual solution
 	    Ng_SetVisParameters	
 	    redraw
@@ -156,7 +162,7 @@ if { [catch { NGS_GetData } ] == 0 } {
         -command { .ngmenu.solve invoke "Solve Recent PDE"; }
     pack .bubar.pde -side right
     
-    ttk::button .bubar.solve -text "Solve" \
+    ttk::button .bubar.solve -text "Solve PDE" \
         -command { .ngmenu.solve invoke "Solve PDE"; }
     pack .bubar.solve -side right
     
@@ -332,6 +338,19 @@ if { [catch { NGS_GetData } ] == 0 } {
 
 	savengsinifile;
     }
+    proc AddRecentPYNGSFile { filename } {
+	global progname
+	catch { [.ngmenu.solve.recent delete $filename] }
+	.ngmenu.solve.recent insert 0 command -label $filename \
+	    -command "AddRecentPYNGSFile {$filename}; 
+                wm title . [concat \" $progname - $filename \"];
+		NGS_LoadPy  {$filename};"
+	
+	if { [.ngmenu.solve.recent index last] >= 6 } {
+	    .ngmenu.solve.recent delete last }
+
+	savengsinifile;
+    }
     
 
     # the ini file is saved  on demand :
@@ -357,7 +376,12 @@ if { [catch { NGS_GetData } ] == 0 } {
 	    set datei [open $ngsinifilename r]
 	    while { [gets $datei line] >= 0 } {
 		if {[lindex $line 0] == "recentfile"} {
-		    AddRecentNGSFile [lindex $line 1]
+                    if { [string match "*.pde" [lindex $line 1]] } {
+                        AddRecentNGSFile [lindex $line 1];
+                    }
+                    if { [string match "*.py" [lindex $line 1]] } {
+                        AddRecentPYNGSFile [lindex $line 1];
+                    }
 		}
 	    }
 	    close $datei
