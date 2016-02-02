@@ -145,7 +145,7 @@ check_cxx_symbol_exists ( abi::__cxa_demangle "cxxabi.h" HAVE_CXA_DEMANGLE )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
-install (FILES ngsolve.tcl DESTINATION bin COMPONENT ngsolve )
+install (FILES ngsolve.tcl DESTINATION ${ng_install_dir_bin} COMPONENT ngsolve )
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION bin COMPONENT ngsolve_devel )
 
 #######################################################################
