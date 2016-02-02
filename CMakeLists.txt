@@ -110,7 +110,16 @@ endif("${isSystemDir}" STREQUAL "-1")
 #######################################################################
 # build options
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake_modules")
-set(ngs_install_dir RUNTIME DESTINATION bin COMPONENT ngsolve LIBRARY DESTINATION lib COMPONENT ngsolve_devel ARCHIVE DESTINATION lib COMPONENT ngsolve_devel )
+if(APPLE)
+  set(ngs_install_dir_bin ../MacOS)
+  set(ngs_install_dir_lib ../MacOS)
+else(APPLE)
+  set(ngs_install_dir_bin bin)
+  set(ngs_install_dir_lib lib)
+endif(APPLE)
+set(ngs_install_dir RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve \
+                    LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel \
+                    ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
