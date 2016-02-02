@@ -84,7 +84,11 @@ if(NOT INSTALL_DIR)
         set(INSTALL_DIR ${NETGEN_BASEDIR} CACHE PATH "Path to install NGSolve (i.e. where netgen is installed)")
     endif(NOT netgen_env)
 endif(NOT INSTALL_DIR)
-set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" CACHE INTERNAL "Prefix prepended to install directories" FORCE)
+if(APPLE)
+  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}/Netgen.app/Contents/Resources" CACHE INTERNAL "Prefix prepended to install directories" FORCE)
+else(APPLE)
+  set(CMAKE_INSTALL_PREFIX "${INSTALL_DIR}" CACHE INTERNAL "Prefix prepended to install directories" FORCE) 
+endif(APPLE)
 
 #######################################################################
 # append install paths of software in non-standard paths (e.g. openmpi, metis, intel mkl, ...)
@@ -117,18 +121,16 @@ else(APPLE)
   set(ngs_install_dir_bin bin)
   set(ngs_install_dir_lib lib)
 endif(APPLE)
-set(ngs_install_dir RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve \
-                    LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel \
-                    ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
+set(ngs_install_dir RUNTIME DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve LIBRARY DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel ARCHIVE DESTINATION ${ngs_install_dir_lib} COMPONENT ngsolve_devel )
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DUSE_TIMEOFDAY)
 
 include_directories ("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_BINARY_DIR}")
-include_directories (AFTER "${INSTALL_DIR}/include")
+include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
-link_directories ("${INSTALL_DIR}/lib")
+link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
 find_package(OpenMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
