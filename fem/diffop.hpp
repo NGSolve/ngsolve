@@ -258,7 +258,7 @@ namespace ngfem
     virtual bool Boundary() const { return diffop->Boundary(); }
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
-
+    virtual IntRange UsedDofs(const FiniteElement & fel) const { return dim*diffop->UsedDofs(fel); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
