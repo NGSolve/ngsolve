@@ -24,19 +24,16 @@ namespace ngstd
 {
   TaskManager * task_manager = nullptr;
   bool TaskManager :: use_paje_trace = false;
-  
-  void RunWithTaskManager (function<void()> alg)
+
+  int EnterTaskManager ()
   {
     if (task_manager)
       {
-        alg();
-        return;
+        // no task manager started
+        return 0;
       }
 
     task_manager = new TaskManager();
-
-
-#ifdef CPP11_THREADS 
 
     cout << IM(3) << "new task-based parallelization (C++11 threads)" << endl;
 
@@ -52,20 +49,44 @@ namespace ngstd
     param.sched_priority = sched_get_priority_max(policy);
     pthread_setschedparam(pthread_self(), policy, &param);
 #endif // WIN32
-    
-    
-    task_manager->StartWorkers();
-    
+
+
+    task_manager->StartWorkersWithCppThreads();
+
     ParallelFor (100, [&] (int i) { ; });    // startup
+    return task_manager->GetNumThreads();
+  }
 
+
+  void ExitTaskManager (int num_threads)
+  {
+    if(num_threads > 0)
+      {
+        task_manager->StopWorkers();
+        delete task_manager;
+        task_manager = nullptr;
+      }
+  }
+
+#ifdef CPP11_THREADS
+  void RunWithTaskManager (function<void()> alg)
+  {
+    int num_threads = EnterTaskManager();
     alg();
-    
-    task_manager->StopWorkers();
-    
+    ExitTaskManager(num_threads);
+  }
 
-#else
+#else // openmp-threads
+  void RunWithTaskManager (function<void()> alg)
+  {
+    if (task_manager)
+      {
+        alg();
+        return;
+      }
 
-    // openmp-threads
+    task_manager = new TaskManager();
+
     
     Exception * ex = nullptr;
 
@@ -114,13 +135,13 @@ namespace ngstd
 
     if (ex) throw Exception (*ex);
 
-#endif
 
     
     delete task_manager;
     task_manager = nullptr;
   }
 
+#endif
 
 
 
@@ -167,19 +188,26 @@ namespace ngstd
     trace = nullptr;
   }
 
-
-  void TaskManager :: StartWorkers()
+  void TaskManager :: StartWorkersWithCppThreads()
   {
     done = false;
-
-#ifdef CPP11_THREADS
 
     for (int i = 1; i < num_threads; i++)
       {
         std::thread([this,i]() { this->Loop(i); }).detach();
       }
 
+    while (active_workers < num_threads-1)
+      ;
+  }
+
+
+  void TaskManager :: StartWorkers()
+  {
+#ifdef CPP11_THREADS
+    StartWorkersWithCppThreads();
 #else
+    done = false;
 
     for (int i = 0; i < num_threads-1; i++)
 #pragma omp task
@@ -187,12 +215,10 @@ namespace ngstd
         Loop(omp_get_thread_num());
       }
 
-
-#endif
-
     while (active_workers < num_threads-1)
       ;
     // cout << "workers are all active !!!!!!!!!!!" << endl;
+#endif
   }
  
   void TaskManager :: StopWorkers()

@@ -66,6 +66,7 @@ namespace ngstd
     ~TaskManager();
 
 
+    void StartWorkersWithCppThreads();
     void StartWorkers();
     void StopWorkers();
 
@@ -107,6 +108,10 @@ namespace ngstd
 
   
   void RunWithTaskManager (function<void()> alg);
+
+  // For Python context manager
+  int  EnterTaskManager ();
+  void ExitTaskManager (int num_threads);
 
   INLINE int TasksPerThread (int tpt)
   {
