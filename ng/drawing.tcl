@@ -9,12 +9,41 @@ set oldmousey 0
 # if { 1 } {
 
 # use this one for Togl 2.0
-# if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false -create init  -display draw -reshape reshape  }] } {    
+#if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false }] } {
 
-if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false }] } {    puts "no OpenGL" 
+# if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false -create init  -display draw -reshape reshape  }] } {    
+#   puts "no OpenGL" 
+# } {
+
+puts "********* query toglversion *******"
+set toglversion [Ng_GetToglVersion]
+puts "togl-version : $toglversion"
+
+set toglok 0
+if { [Ng_GetToglVersion] == 2 } {
+    # Togl 2.x
+    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false  -create init  -display draw -reshape reshape }] } {    
+        puts "no OpenGL" 
+    } {
+        # puts "have Togl 2.1"        
+        set toglok 1
+    }
 } {
+    # Togl 1.7
+    if {[catch {togl .ndraw -width 400 -height 300  -rgba true -double true -depth true -privatecmap false -stereo false -indirect false  }] } {    
+        puts "no OpenGL" 
+    } {
+        # puts "have Togl 1.7"
+        set toglok 1
+    }
+}
+
+if { $toglok == 1} {
+    puts "***** togl is ok ********"
+    
     #
     pack .ndraw -expand true -fill both -padx 10 -pady 10
+    catch { tkdnd::drop_target register .ndraw DND_Files }
     #
     bind .ndraw <Button-1> {
 	set oldmousex %x; set oldmousey %y;
@@ -115,3 +144,52 @@ bind . <Button-5> \
 
 bind . <MouseWheel> { Ng_MouseMove 0 0 0 [expr {%D/-5}] zoom; redraw }
 
+
+
+# Drop callbacks:
+bind .ndraw <<Drop:DND_Files>> {
+  #tk_messageBox -message "Dropped files: \"[join %D {, }]\""
+  #%W state !active  
+  set index [string first . %D end-6]
+  #tk_messageBox -message $index
+  set type [string range %D $index+1 end]
+  # tk_messageBox -message $type
+  set ispde [string match -nocase $type "pde"]
+  set isgeo [expr max([string match -nocase $type "geo"],[string match -nocase $type "in2d"])]
+  set ismesh [expr max([string match -nocase $type "vol"],[string match -nocase $type "vol.gz"])]
+  set ispy [string match -nocase $type "py"]
+  if {$ispde == 1} {
+      AddRecentNGSFile %D;
+      NGS_LoadPDE  %D;
+      SetNumProcHelpMenu
+      set selectvisual mesh;
+      Ng_SetVisParameters
+  }
+  if {$ispy == 1} {
+      AddRecentPYNGSFile %D;
+      NGS_LoadPy  %D;
+  }
+  if {$isgeo == 1} {
+	    AddRecentFile %D;
+	    Ng_LoadGeometry %D;
+	    Ng_ParseGeometry
+	    set selectvisual geometry
+	    Ng_SetVisParameters
+	    redraw
+	    wm title . [concat "$progname - " %D]
+	    set dirname [file dirname %D]
+	    set basefilename [file tail [file rootname %D]]
+	}
+	if {$ismesh == 1} {
+	    AddRecentMeshFile %D;
+	    Ng_LoadMesh %D; 
+	    set selectvisual mesh
+	    Ng_SetVisParameters
+	    redraw
+	    Ng_ReadStatus; 
+	    wm title . [concat "$progname - " %D] 
+	    set dirname [file dirname %D]
+	    set basefilename [file tail [file rootname %D]]
+	}
+  return %A
+}

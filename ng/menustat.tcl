@@ -103,7 +103,7 @@ menu .ngmenu.file
 
 
 .ngmenu.file add cascade -label "Recent Files" -menu .ngmenu.file.recent 
-menu .ngmenu.file.recent
+menu .ngmenu.file.recent -tearoff 0
 
 
 proc AddRecentFile { filename } {
@@ -815,11 +815,13 @@ tk_messageBox -message "This is NETGEN \nmainly written by \nJoachim Schoeberl \
 #                                                   #
 #####################################################
 
-frame .bubar -relief raised -bd 2
+ttk::frame .bubar
+# -relief raised
+#-relief raised -bd 2
 pack .bubar -side top -fill x
 
 button .bubar.testb -text "Test" -command { Ng_SaveGeometry }
-button .bubar.surfm -text "Generate Mesh" -command \
+ttk::button .bubar.surfm -text "Generate Mesh" -command \
     { 
 	.ngmenu.mesh invoke "Generate Mesh"; 
 #	set selectvisual mesh; 
@@ -827,13 +829,13 @@ button .bubar.surfm -text "Generate Mesh" -command \
 #	Ng_GenerateMesh ${meshoptions.firststep} ${meshoptions.laststep}
 #	redraw 
     }
-button .bubar.stopm -text "Stop" -command \
+ttk::button .bubar.stopm -text "Stop" -command \
     { 
 	# Ng_StopMeshing;  
 	set multithread_terminate 1;
 	set stopdemo 1;
     }
-button .bubar.exitb -text "Quit" \
+ttk::button .bubar.exitb -text "Quit" \
     -command { 
 	   set ans [tk_messageBox -title "Quit Netgen?" -message "Do you really want to quit Netgen?" -type yesno -default "no" -icon question]
 	   if { $ans == "yes" } {
@@ -845,20 +847,20 @@ pack  .bubar.exitb .bubar.surfm .bubar.stopm -side left
 #button .bubar.scan -text "Scan" \
 #    -command { Ng_ParseGeometry; set selectvisual geometry; Ng_SetVisParameters; redraw }
 
-button .bubar.zoomall -text "Zoom All" \
+ttk::button .bubar.zoomall -text "Zoom All" \
     -command { Ng_ZoomAll; redraw }
 
-button .bubar.center -text "Center" \
+ttk::button .bubar.center -text "Center" \
     -command { Ng_Center; redraw }
 
 # tk_optionMenu .bubar.modesel drawmode "rotate" "move  " "zoom  "
 tixOptionMenu .bubar.modesel \
-    -options {
-	label.width  0
-	label.anchor e
-	menubutton.width 6
-    } \
-    -variable drawmode
+     -options {
+ 	label.width  0
+ 	label.anchor e
+ 	menubutton.width 6
+     } \
+     -variable drawmode
 
 .bubar.modesel add command rotate -label Rotate
 .bubar.modesel add command move -label Move
@@ -890,15 +892,15 @@ foreach viewv $viewvals {
     .bubar.selview add command $viewv -label $viewvallabs($viewv)
 }
 
-
-
 .bubar.selview config -variable selectvisual
 .bubar.selview config -command { Ng_SetVisParameters; redraw }
 
 
-pack .bubar.modesel -side right
-pack forget .bubar.modesel
-pack .bubar.center .bubar.zoomall .bubar.selview -side right
+# pack .bubar.modesel -side right
+# pack forget .bubar.modesel
+
+pack .bubar.center .bubar.zoomall -side right
+# pack .bubar.selview -side right
 
 .ngmenu.view add checkbutton -variable viewrotatebutton \
     -label "Enable LeftButton Selection" \
@@ -910,7 +912,22 @@ pack .bubar.center .bubar.zoomall .bubar.selview -side right
 	}
     }
 
+puts "bubar selviewmenu"
+menu .bubar.selviewmenu
+ttk::menubutton .bubar.selview1 -menu .bubar.selviewmenu -text "Geometry"
+foreach viewv $viewvals {
+    .bubar.selviewmenu add command -label $viewvallabs($viewv) -command \
+        ".bubar.selview1 configure -text \"$viewvallabs($viewv)\" ; set selectvisual $viewv ; Ng_SetVisParameters; redraw"
+}
+pack .bubar.selview1 -side right
+# .bubar.selviewmenu invoke $viewvallabs($selectvisual)
 
+trace add variable selectvisual write selvis_monitor
+proc selvis_monitor { name args } {
+    global selectvisual viewvallabs    
+    .bubar.selviewmenu invoke $viewvallabs($selectvisual)
+} 
+# set selectvisual solution
 
 
 #####################################################
@@ -922,18 +939,19 @@ pack .bubar.center .bubar.zoomall .bubar.selview -side right
 label .helpline -text "None"
 pack forget .helpline -side bottom -fill x
 
-frame .statbar -relief flat -bd 2
+ttk::frame .statbar -relief flat
+# -bd 2
 pack .statbar -side bottom -fill x
 
-label .statbar.ptslabel -text "Points: "
-label .statbar.ptsval -textvariable status_np
-label .statbar.elslabel -text "   Elements: "
-label .statbar.elsval -textvariable status_ne
-label .statbar.selslabel -text "   Surf Elements: "
-label .statbar.selsval -textvariable status_nse
+ttk::label .statbar.ptslabel -text "Points: "
+ttk::label .statbar.ptsval -textvariable status_np
+ttk::label .statbar.elslabel -text "   Elements: "
+ttk::label .statbar.elsval -textvariable status_ne
+ttk::label .statbar.selslabel -text "   Surf Elements: "
+ttk::label .statbar.selsval -textvariable status_nse
 # label .statbar.memlabel -text "   Mem: "
 # label .statbar.memval -textvariable mem_moveable
-label .statbar.task -textvariable status_task
+ttk::label .statbar.task -textvariable status_task
 
 pack .statbar.ptslabel .statbar.ptsval -side left -ipady 3p 
 pack .statbar.elslabel .statbar.elsval -side left -ipady 3p 

@@ -24,8 +24,12 @@ The interface between the GUI and the netgen library
 
 
 // to be sure to include the 'right' togl-version
+#ifdef USE_TOGL_2
+#include "Togl2.1/togl.h"
+#else // USE_TOGL_2
 #include "togl_1_7.h"
-// #include "togl_2_0.h"
+#endif // USE_TOGL_2
+#include "fonts.hpp"
 
 extern bool nodisplay;
 
@@ -1318,28 +1322,15 @@ namespace netgen
 	  }
 	else
 #endif
-	  /*
-	    if (geometry2d)
+          if (ng_geometry)
 	    {
-	      extern void MeshFromSpline2D (SplineGeometry2d & geometry2d,
-	      Mesh *& mesh, MeshingParameters & mp);
-	      MeshFromSpline2D (*geometry2d, mesh.Ptr(), mparam);
-	      }
-	      else
-	  */
-	    {
-              /*
-              Mesh * hmesh = NULL;
-              int res = ng_geometry -> GenerateMesh (hmesh, mparam, perfstepsstart, perfstepsend);
-              mesh = shared_ptr<Mesh> (hmesh);
-              */
               mesh = make_shared<Mesh> ();
               // vsmesh.SetMesh (mesh);
               SetGlobalMesh (mesh);
               mesh -> SetGeometry(ng_geometry);
+              
               int res = ng_geometry -> GenerateMesh (mesh, mparam, perfstepsstart, perfstepsend);
 
-	      // int res = ng_geometry -> GenerateMesh (mesh.Ptr(), mparam, perfstepsstart, perfstepsend);
 	      if (res != MESHING3_OK) 
 		{
 		  multithread.task = savetask;
@@ -1347,6 +1338,14 @@ namespace netgen
 		  return 0;
 		}
 	    }
+          else // no ng_geometry
+            {
+              multithread.task = savetask;
+              multithread.running = 0;
+              return 0;
+            }
+
+
 
 	if (mparam.autozrefine)
 	  {
@@ -1928,7 +1927,12 @@ namespace netgen
     glCallLists (GLsizei(strlen(text)), GL_UNSIGNED_BYTE, text);
   }
 
-
+  static int
+  Ng_ToglVersion(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    Tcl_SetResult (interp,  (char*)"1", TCL_STATIC);
+    return TCL_OK;
+  }
 
   static void init( struct Togl *togl )
   {
@@ -2047,30 +2051,33 @@ namespace netgen
 
   // Sorry, Togl 2.0 not supported
 
-  Tcl_Obj * togl_font;
+  Font * font = nullptr;
   Togl * togl = NULL;
 
-  void MyOpenGLText (const char * text)
+  void MyOpenGLText_GUI (const char * text)
   {
-    // cout << "togl - text: " << text << endl;
-    Togl_WriteChars (togl, togl_font, text, strlen(text));
+    glListBase (font->getDisplayListsBase());
+    glCallLists (GLsizei(strlen(text)), GL_UNSIGNED_BYTE, text);
+  }
+
+  static int
+  Ng_ToglVersion(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+  {
+    Tcl_SetResult (interp,  (char*)"2", TCL_STATIC);
+    return TCL_OK;
   }
   
   static int
   init(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
   {
-    cout << "call init" << endl;
+    // cout << "call init" << endl;
 
 
     if (Togl_GetToglFromObj(interp, objv[1], &togl) != TCL_OK) 
       return TCL_ERROR;
 
-    cout << "call Togl - load font (crashes on my OpenSuse Linux64)" << endl;
-    // togl_font = Togl_LoadBitmapFont( togl, "Helvetica"); 
-    // togl_font = Togl_LoadBitmapFont( togl, "Times"); 
-    // togl_font = Togl_LoadBitmapFont( togl, TOGL_BITMAP_8_BY_13 );
-    togl_font = Togl_LoadBitmapFont( togl, NULL );
-    cout << "success" << endl;
+    // possible values: 12,14,16,18,20,22,24,28,32
+    font = selectFont(18);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -2078,6 +2085,7 @@ namespace netgen
 
     SetVisualScene (Togl_Interp(togl));
     vs->DrawScene();
+    Set_OpenGLText_Callback (&MyOpenGLText_GUI);
     return TCL_OK;
   }
 
@@ -2110,7 +2118,21 @@ namespace netgen
     int w = Togl_Width (togl);
     int h = Togl_Height (togl);
 
-    glViewport(0, 0, w, h);
+    // glViewport(0, 0, w, h);
+    int res[4];
+    glGetIntegerv(GL_VIEWPORT, res);
+    // cout << "w = " << w << " h = " << h << endl;
+    w = res[2];
+    h = res[3];
+    /*
+    cout << "viewport: "
+         << res[0] << " "
+         << res[1] << " "
+         << res[2] << " "
+         << res[3] << endl;
+    */
+    // change font size according to window width
+    font = selectFont(w/80);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -3453,6 +3475,8 @@ void PlayAnimFile(const char* name, int speed, int maxcnt)
      * Specify the C callback functions for widget creation, display,
      * and reshape.
      */
+    Tcl_CreateObjCommand(interp, "Ng_GetToglVersion", Ng_ToglVersion, NULL, NULL);
+
 #if TOGL_MAJOR_VERSION==1
     if (!nodisplay)
       {

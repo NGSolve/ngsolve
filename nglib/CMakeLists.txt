@@ -24,7 +24,7 @@ if(NOT WIN32)
       target_link_libraries( nglib mesh stlvis stl geom2dvis interface geom2d csg stl visual csgvis )
 endif(NOT WIN32)
 
-target_link_libraries( nglib ${LIBPTHREAD} ${OCC_LIBRARIES} ${LIBTOGL} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} )
+target_link_libraries( nglib ${LIBPTHREAD} ${OCC_LIBRARIES} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} )
 
 if(USE_PYTHON)
     target_link_libraries(nglib ${PYTHON_LIBS})

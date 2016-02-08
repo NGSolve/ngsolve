@@ -14,6 +14,9 @@ if(USE_GUI)
     endif(NOT WIN32)
 
     install(TARGETS netgen    ${ng_install_dir})
+    if(APPLE)
+        set_target_properties(netgen PROPERTIES OUTPUT_NAME netgen_main)
+    endif(APPLE)
 
 endif(USE_GUI)
 
@@ -31,12 +34,16 @@ endif(USE_PYTHON)
 
 install(FILES
     dialog.tcl menustat.tcl ngicon.tcl ng.tcl	
-    ngvisual.tcl sockets.tcl drawing.tcl nghelp.tcl ngshell.tcl	  
+    ngvisual.tcl sockets.tcl nghelp.tcl ngshell.tcl	  
     ngtesting.tcl parameters.tcl variables.tcl csgeom.tcl stlgeom.tcl 
     occgeom.tcl acisgeom.tcl netgen.ocf
-    DESTINATION bin COMPONENT netgen)
+    DESTINATION ${ng_install_dir_bin} COMPONENT netgen)
+
 
 if(USE_GUI AND NOT WIN32)
-    add_subdirectory(Togl-1.7)
+    add_subdirectory(Togl2.1)
+    install(FILES drawing.tcl DESTINATION ${ng_install_dir_bin} COMPONENT netgen)
+else()
+    install(FILES drawing_togl17.tcl RENAME drawing.tcl DESTINATION ${ng_install_dir_bin} COMPONENT netgen)
 endif(USE_GUI AND NOT WIN32)
 

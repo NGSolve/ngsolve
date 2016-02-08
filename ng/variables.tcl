@@ -642,7 +642,7 @@ proc saveinifile { } {
     if {[catch { set datei [open $inifilename w] } result ]} {
 	puts "cannot write file $inifilename"
     } {
-	for { set i [.ngmenu.file.recent index last] } { $i >= 1 } { incr i -1 } {
+	for { set i [.ngmenu.file.recent index last] } { $i >= 0 } { incr i -1 } {
 	    puts $datei "recentfile \"[.ngmenu.file.recent entrycget $i -label]\""
 	}
 	close $datei

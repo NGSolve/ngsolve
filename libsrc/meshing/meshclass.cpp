@@ -5585,8 +5585,8 @@ namespace netgen
       bcnames[bcnr] = nullptr;
 
     for (auto & fd : facedecoding)
-      if (fd.BCProperty() < bcnames.Size())
-        fd.SetBCName (bcnames[fd.BCProperty()]);
+      if (fd.BCProperty() <= bcnames.Size())
+        fd.SetBCName (bcnames[fd.BCProperty()-1]);
   }
 
   const string & Mesh ::GetBCName ( int bcnr ) const

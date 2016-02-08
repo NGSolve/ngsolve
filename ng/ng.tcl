@@ -1,16 +1,25 @@
+lappend auto_path $env(NETGENDIR) 
+
 set batchmode [Ng_GetCommandLineParameter batchmode]
 if {$batchmode=="undefined"} {
-	if {[catch {package require Tix } result ]} {
-		puts "cannot load package Tix"
-		puts "error : $result"
-	}
+    if {[catch {package require Tix } result ]} {
+        puts "cannot load package Tix"
+        puts "error : $result"
+    }
+    if {[catch {package require tkdnd } result ]} {
+#        puts "cannot load package tkdnd"
+#        puts "error : $result"
+    }	
 }
 # if {[catch {package require Togl 2.0 } result ]} {
 #    puts "cannot load package Togl 2.0"
 #    puts "error : $result"
 # }
 
-
+# load [file dirname [info script]]/gears[info sharedlibextension]
+# puts "load togl lib"
+# load /Users/joachim/tcl_native3/Togl2.1/libTogl2.1.dylib
+# puts "have togl lib"
 # if {[catch {package require Togl 2.0 } result ]} {
 #    puts "cannot load package Togl 2.0"
 #    puts "error : $result"
@@ -66,7 +75,7 @@ if { $batchmode != "defined" } {
 	wm withdraw .
      
 	wm title . $progname
-	wm geometry . =800x600
+	wm geometry . =850x600
 	wm minsize . 400 300
     }
 }
@@ -75,16 +84,15 @@ if { $batchmode != "defined" } {
 source ${ngdir}/variables.tcl
 source ${ngdir}/parameters.tcl
 
-
 if { $batchmode != "defined" } {
-    catch {
+#    catch {
 	source ${ngdir}/menustat.tcl
-    }
+#    }
 }
 
-catch { 
+# catch { 
     source ${ngdir}/dialog.tcl
-}
+# }
 
 catch {
     source ${ngdir}/drawing.tcl

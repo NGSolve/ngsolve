@@ -345,12 +345,12 @@ proc lineplotdialog { } {
 
 	pack $w.filesettings -fill x -ipady 3
 	
-	frame $w.settings -relief  groove -borderwidth 3
-	label $w.settings.title -text "\nSettings\n"
+	ttk::frame $w.settings -relief  groove -borderwidth 3
+	ttk::label $w.settings.title -text "\nSettings\n"
 	pack $w.settings.title
 
-	frame $w.settings.minmax 
-	checkbutton $w.settings.minmax.autoscale -text "Autoscale" -variable visoptions.lineplotautoscale
+	ttk::frame $w.settings.minmax 
+	ttk::checkbutton $w.settings.minmax.autoscale -text "Autoscale" -variable visoptions.lineplotautoscale
 	tixControl $w.settings.minmax.xmin -label "Min. x: " \
 	    -integer false -variable visoptions.lineplotxmin \
 	    -options {
@@ -981,7 +981,6 @@ proc visual_dialog { } {
 
     set w .visoptions_dlg
 
-    
     global visual_dialog_pop1
     global visual_dialog_pop2
     global visual_dialog_pop3
@@ -1003,10 +1002,7 @@ proc visual_dialog { } {
 	focus $w
     } {
 
-	toplevel $w
-
-
-	
+	toplevel $w 
 
 
 	frame $w.grid -relief groove -borderwidth 3
@@ -1016,7 +1012,7 @@ proc visual_dialog { } {
 	    -resolution 1    \
 	    -variable  visoptions.gridsize \
 	    -command { popupcheckredraw visual_dialog_pop2 }
-    
+        
 
 	# x- and y- offset
 	scale $w.grid.xoffset -orient horizontal -length 80 -from 0 -to 1 \
@@ -1042,27 +1038,32 @@ proc visual_dialog { } {
 
 
 
-	frame $w.deform -relief groove -borderwidth 3
-	checkbutton $w.deform.cb -text "Deformation" \
+	ttk::frame $w.deform -relief groove -borderwidth 3
+	ttk::checkbutton $w.deform.cb -text "Deformation" \
 	    -variable visoptions.deformation \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	tixControl $w.deform.sc1 -label "Scale: " -integer false \
-	    -variable visoptions.scaledeform1 \
-	    -command { Ng_Vis_Set parameters; redraw } \
-	    -options {
-		entry.width 6
-		label.width 7
-		label.anchor e
-	    }	
+        ttk::label $w.deform.l -text "Scale: "
+        ttk::spinbox $w.deform.sc1 -from 0 -to 1e99 -textvariable visoptions.scaledeform1 -width 5 \
+            -command { Ng_Vis_Set parameters; redraw } \
+            -validate focusout -validatecommand { Ng_Vis_Set parameters; redraw; string is double %P } \
+            -invalidcommand { puts "invalid value, %P %s"; set visoptions.scaledeform1 1; }
+        
+	# tixControl $w.deform.sc1 -label "Scale: " -integer false \
+	#     -variable visoptions.scaledeform1 \
+	#     -command { Ng_Vis_Set parameters; redraw } \
+	#     -options {
+	# 	entry.width 6
+	# 	label.width 7
+	# 	label.anchor e
+	#     }	
 
-	scale $w.deform.sc2 -orient horizontal -length 100 -from 0 -to 1 \
-	    -resolution 0.01    \
+	ttk::scale $w.deform.sc2 -orient horizontal -length 100 -from 0 -to 1 \
 	    -variable  visoptions.scaledeform2 \
 	    -command { popupcheckredraw visual_dialog_pop5 }
 
 	pack $w.deform -fill x -ipady 2
-	pack $w.deform.cb $w.deform.sc1 $w.deform.sc2 -side left -expand yes
+	pack $w.deform.cb $w.deform.l  $w.deform.sc1 $w.deform.sc2 -side left -expand yes
 	
 
 	frame $w.as -relief groove -borderwidth 3
@@ -1093,31 +1094,30 @@ proc visual_dialog { } {
 
 
 
-	frame $w.iso -relief groove -borderwidth 3
+	ttk::frame $w.iso -relief groove -borderwidth 3
 	pack $w.iso -fill x -ipady 3
 
-	frame $w.iso.cb
+	ttk::frame $w.iso.cb
 	pack $w.iso.cb -side left
 
-	checkbutton $w.iso.cb.isolines -text "Iso-lines" \
+	ttk::checkbutton $w.iso.cb.isolines -text "Iso-lines" \
 	    -variable visoptions.isolines \
 	    -command { Ng_Vis_Set parameters; redraw }
-	pack $w.iso.cb.isolines -side top
+	pack $w.iso.cb.isolines -side top -anchor w
 
-	checkbutton $w.iso.cb.isosurf -text "Iso-Surface" \
+	ttk::checkbutton $w.iso.cb.isosurf -text "Iso-Surface" \
 	    -variable visoptions.isosurf \
 	    -command { Ng_Vis_Set parameters; redraw }
-	pack $w.iso.cb.isosurf -side top
+	pack $w.iso.cb.isosurf -side top -anchor w
 
 
-
-	scale $w.iso.numiso -orient horizontal -length 100 -from 2 -to 50 \
-	    -label "" \
-	    -resolution 1    \
+	ttk::scale $w.iso.numiso -orient horizontal -length 100 -from 2 -to 50 \
 	    -variable  visoptions.numiso \
 	    -command { popupcheckredraw visual_dialog_pop6 }
+	    # -resolution 1    \
+	    # -label "" \
 
-	pack $w.iso.numiso -side left
+	pack $w.iso.numiso -side left -anchor n
 
 
 # 	scale $w.iso.subdiv -orient horizontal -length 100 -from 0 -to 5 \
@@ -1127,39 +1127,39 @@ proc visual_dialog { } {
 # 	    -command { popupcheckredraw visual_dialog_pop7  }
 # #	    -command { puts "subdiv-vis"; Ng_Vis_Set parameters; puts "cal redraw"; redraw  }
 
-	frame $w.iso.subdiv
-	radiobutton $w.iso.subdiv.zero -text "0" -variable visoptions.subdivisions -value 0 \
+	ttk::frame $w.iso.subdiv 
+	ttk::radiobutton $w.iso.subdiv.zero -text "0" -variable visoptions.subdivisions -value 0 \
 	    -command { 
 		#set visoptions.subdivisions  1; 
 		Ng_Vis_Set parameters; redraw;
 	}
-	radiobutton $w.iso.subdiv.one -text "1" -variable visoptions.subdivisions -value 1 \
+	ttk::radiobutton $w.iso.subdiv.one -text "1" -variable visoptions.subdivisions -value 1 \
 	    -command { 
 		#set visoptions.subdivisions  1; 
 		Ng_Vis_Set parameters; redraw;
 	}
-	radiobutton $w.iso.subdiv.two -text "2" -variable visoptions.subdivisions -value 2 \
+	ttk::radiobutton $w.iso.subdiv.two -text "2" -variable visoptions.subdivisions -value 2 \
 	    -command { 
 		#set visoptions.subdivisions  2; 
 		Ng_Vis_Set parameters; redraw;
 	}
-	radiobutton $w.iso.subdiv.three -text "3" -variable visoptions.subdivisions -value 3 \
+	ttk::radiobutton $w.iso.subdiv.three -text "3" -variable visoptions.subdivisions -value 3 \
 	    -command { 
 		#set visoptions.subdivisions  3; 
 		Ng_Vis_Set parameters; redraw;
 	}
-	radiobutton $w.iso.subdiv.four -text "4" -variable visoptions.subdivisions -value 4 \
+	ttk::radiobutton $w.iso.subdiv.four -text "4" -variable visoptions.subdivisions -value 4 \
 	    -command { 
 		#set visoptions.subdivisions  4; 
 		Ng_Vis_Set parameters; redraw;
 	}
-	radiobutton $w.iso.subdiv.five -text "5" -variable visoptions.subdivisions -value 5 \
+	ttk::radiobutton $w.iso.subdiv.five -text "5" -variable visoptions.subdivisions -value 5 \
 	    -command { 
 		#set visoptions.subdivisions  5; 
 		Ng_Vis_Set parameters; redraw;
 	    }
 
- 	label $w.iso.subdiv.text  -text "subdivision"
+ 	ttk::label $w.iso.subdiv.text  -text "subdivision"
 
 	pack $w.iso.subdiv -side right -ipadx 10
 
@@ -1184,18 +1184,18 @@ proc visual_dialog { } {
 
 
 
-	frame $w.redraw -relief groove -borderwidth 3
-	checkbutton $w.redraw.auto -text "Auto-redraw" \
+	ttk::frame $w.redraw -relief groove -borderwidth 3
+	ttk::checkbutton $w.redraw.auto -text "Auto-redraw after (sec)" \
 	    -variable visoptions.autoredraw 
 
-	tixControl $w.redraw.val -label " after (sec) " -integer false \
-	    -variable visoptions.autoredrawtime \
-	    -options {
-		entry.width 6
-		label.width 0
-		label.anchor w
-	    }	
-
+	# tixControl $w.redraw.val -integer false \
+	#     -variable visoptions.autoredrawtime \
+	#     -options {
+	# 	entry.width 6
+	# 	label.width 0
+	# 	label.anchor w
+	#     }	
+        ttk::spinbox $w.redraw.val -textvariable visoptions.autoredrawtime -from 0 -to 100 -width 3 
 	pack $w.redraw -fill x -ipady 3
 	pack $w.redraw.auto  $w.redraw.val -side left
 
@@ -1212,19 +1212,129 @@ proc visual_dialog { } {
 		label.width 0
 		label.anchor w
 	    }	
-	pack $w.redraw.simtime -side left
-	
+	# pack $w.redraw.simtime -side left
+
+        pack [ttk::frame $w.f] -fill x
+        pack [ttk::frame $w.f.f1] -expand yes
+        set f [ttk::frame $w.f.f1.clipsol] 
+        pack $f  -anchor e
+        menu $f.m
+        ttk::menubutton $f.b -menu $f.m -width 12
+        ttk::label $f.l -text "Clipping Plane Sol: "
+        
+        global visoptions.clipsolution        
+        set clipsollabs(none) "None"
+        set clipsollabs(scal) "Scalar Function"
+        set clipsollabs(vec) "Vector Function"
+        foreach i { none scal vec } {
+            set textval $clipsollabs($i)
+            $f.m add command -label "$textval" -command \
+                "$f.b configure -text \"$textval\" ; set visoptions.clipsolution $i ; "                
+        }
+
+        pack $f.b $f.l -side right
+        $f.m invoke $clipsollabs(${visoptions.clipsolution})
+
+        
+        # pack [ttk::frame $w.f1.scalfun] -anchor e
+        set f [ttk::frame $w.f.f1.scalfun] 
+        pack $f -anchor e
+        menu $f.m
+        ttk::menubutton $f.b -menu $f.m -width 12
+        ttk::label $f.l -text "Scalar Function: "
+        set scalentries [list none None]
+
+	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+            set fname [Ng_Vis_Field getfieldname $i]
+            set fcomp [Ng_Vis_Field getfieldcomponents $i]
+            if { $fcomp == 1 } {
+                lappend scalentries $fname:1 $fname
+            } {
+                for { set j 1 } { $j <= $fcomp } { incr j } {
+                    lappend scalentries $fname:$j "$fname ($j)"
+                }
+                lappend scalentries $fname:0 "func ($fname)"
+            }
+        }
+        global visoptions.scalfunction
+        foreach { name textval } $scalentries {
+            $f.m add command -label "$textval" -command \
+                "$f.b configure -text \"$textval\" ; set visoptions.scalfunction $name ; Ng_Vis_Set parameters ; redraw ; "
+        }
+        
+        pack $f.b $f.l -side right
+        foreach { name textval } $scalentries {
+            if { ${visoptions.scalfunction} == $name } {
+                $f.m invoke $textval
+            }
+        }
+        
 
 
 
+        set f [ttk::frame $w.f.f1.vecfun]
+        pack $f -anchor e
+        menu $f.m
+        ttk::menubutton $f.b -menu $f.m -width 12
+        ttk::label $f.l -text "Vector Function: "
+        set vecentries [list none None]
+
+	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
+	    set fname [Ng_Vis_Field getfieldname $i]
+	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
+	    set iscomplex [Ng_Vis_Field iscomplex $i]
+	    set sdim [Ng_Vis_Field getdimension]
+	    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
+	    if { ($fcomp == $sdim) || ($fcomp == 3) } {
+                lappend vecentries $fname $fname
+	    } 
+        }
+        global visoptions.vecfunction
+        foreach { name textval } $vecentries {
+            $f.m add command -label "$textval" -command \
+                "$f.b configure -text \"$textval\" ; set visoptions.vecfunction $name ; Ng_Vis_Set parameters ; redraw ; "
+        }
+        
+        pack $f.b $f.l -side right
+        foreach { name textval } $vecentries {
+            if { ${visoptions.vecfunction} == $name } {
+                $f.m invoke $textval
+            }
+        }
+        
+
+
+        set f [ttk::frame $w.f.f1.evaluate]
+        pack $f -anchor e
+
+        menu $f.m
+        ttk::menubutton $f.b -menu $f.m -width 12
+        ttk::label $f.l -text "Evaluate: "
+        
+        global visoptions.evaluate        
+        set evallabs(abs) "| |"
+        set evallabs(abstens) "|tensor|"
+        set evallabs(mises) "Mises"
+        set evallabs(main) "Main"
+        foreach i { abs abstens mises main } {
+            set textval $evallabs($i)
+            $f.m add command -label "$textval" -command \
+                "$f.b configure -text \"$textval\" ; set visoptions.evaluate $i ; "
+        }
+        pack $f.b $f.l -side right
+        $f.m invoke $evallabs(${visoptions.evaluate})
+
+        
+        
+
+        
 	tixOptionMenu $w.clipsol -label "Clipping Plane Sol: " \
 	    -options {
 		label.width  18
 		label.anchor e
 		menubutton.width 12
 	    }
-
-	set none 1
+        
 	$w.clipsol add command none -label None
 	$w.clipsol add command scal -label "Scalar Function"
 	$w.clipsol add command vec -label "Vector Function"
@@ -1232,8 +1342,7 @@ proc visual_dialog { } {
 	$w.clipsol configure -variable visoptions.clipsolution
 	$w.clipsol configure -command { Ng_Vis_Set parameters; redraw }
 
-	pack $w.clipsol
-
+	# pack $w.clipsol
 
 
 
@@ -1300,8 +1409,18 @@ proc visual_dialog { } {
 	    redraw 
 	}
 
-	pack $w.scalfun $w.vecfun $w.evaluate
+	# pack $w.scalfun $w.vecfun $w.evaluate
 
+        pack [ttk::frame $w.multidim] -fill x
+        set f [ttk::frame $w.multidim.f]
+        pack $f 
+        ttk::label $f.l1 -text "multidim-component: "
+        ttk::spinbox $f.sb1 -from 0 -to 1e99 -textvariable visoptions.multidimcomponent -width 3 \
+            -command { Ng_Vis_Set parameters; redraw }
+        pack $f.l1 $f.sb1 -side left
+            
+
+        
 	tixControl $w.multidimcomp -label "multidim-component: " -integer true \
 	    -variable visoptions.multidimcomponent -min 0 \
 	    -command { Ng_Vis_Set parameters; redraw } \
@@ -1310,44 +1429,44 @@ proc visual_dialog { } {
 		label.width 18
 		label.anchor e
 	    }	
+	# pack $w.multidimcomp
 
-	pack $w.multidimcomp
-
-
-	checkbutton $w.showsurfsolution -text "Draw Surface Vectors" \
+        pack [ttk::frame $w.fcb] -fill x
+        ttk::frame $w.fcb.cb
+        pack $w.fcb.cb
+        
+	ttk::checkbutton $w.fcb.cb.showsurfsolution -text "Draw Surface Vectors" \
 	    -variable visoptions.showsurfacesolution \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	checkbutton $w.showcurves -text "Show Curves" \
+	ttk::checkbutton $w.fcb.cb.showcurves -text "Show Curves" \
 	    -variable visoptions.drawpointcurves \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	checkbutton $w.imaginary -text "Imaginary Part" \
+	ttk::checkbutton $w.fcb.cb.imaginary -text "Imaginary Part" \
 	    -variable visoptions.imaginary \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	checkbutton $w.logscale -text "Log Scale" \
+	ttk::checkbutton $w.fcb.cb.logscale -text "Log Scale" \
 	    -variable visoptions.logscale \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	checkbutton $w.invcolor -text "Inverse Color" \
+	ttk::checkbutton $w.fcb.cb.invcolor -text "Inverse Color" \
 	    -variable visoptions.invcolor \
 	    -command { Ng_Vis_Set parametersrange; redraw }
 
 
-	frame $w.texframe
+	ttk::frame $w.fcb.cb.texframe
 
-	checkbutton $w.texframe.usetexture -text "Use Textures (" \
+	ttk::checkbutton $w.fcb.cb.texframe.usetexture -text "Use Textures (" \
 	    -variable visoptions.usetexture \
 	    -command { Ng_Vis_Set parameters; redraw }
 	
-	checkbutton $w.texframe.lintexture -text "Linear )" \
+	ttk::checkbutton $w.fcb.cb.texframe.lintexture -text "Linear )" \
 	    -variable visoptions.lineartexture \
 	    -command { Ng_Vis_Set parametersrange; redraw }
-
-
 	
-	checkbutton $w.lineartexture -text "Use Linear Texture" \
+	ttk::checkbutton $w.fcb.cb.lineartexture -text "Use Linear Texture" \
 	    -variable visoptions.lineartexture \
 	    -command { Ng_Vis_Set parameters; redraw }
 	
@@ -1356,12 +1475,12 @@ proc visual_dialog { } {
 	    -variable  visoptions.numtexturecols \
 	    -command { popupcheckredraw visual_dialog_pop1 }
 
-	checkbutton $w.showclipsolution -text "Draw Clipping Plane Solution" \
+	ttk::checkbutton $w.fcb.cb.showclipsolution -text "Draw Clipping Plane Solution" \
 	    -variable visoptions.showclipsolution \
 	    -command { Ng_Vis_Set parameters; redraw }
 
 
-	checkbutton $w.redrawperiodic -text "Animate periodic" \
+	ttk::checkbutton $w.fcb.cb.redrawperiodic -text "Animate periodic" \
 	    -variable visoptions.redrawperiodic \
 	    -command { 
 		redrawperiodic
@@ -1369,38 +1488,38 @@ proc visual_dialog { } {
 		redraw 
 	    }
 
-
-	pack $w.showsurfsolution $w.showcurves
-	pack $w.imaginary $w.logscale $w.texframe $w.invcolor $w.redrawperiodic
-	pack $w.texframe.usetexture $w.texframe.lintexture -side left -expand yes
+	pack $w.fcb.cb.showsurfsolution $w.fcb.cb.showcurves -anchor w
+	pack $w.fcb.cb.imaginary $w.fcb.cb.logscale $w.fcb.cb.texframe $w.fcb.cb.invcolor $w.fcb.cb.redrawperiodic -side top -anchor w
+	pack $w.fcb.cb.texframe.usetexture $w.fcb.cb.texframe.lintexture -side left -expand yes
 	
 
 
 
-	frame $w.bu
-	pack $w.bu  -pady 5
+	frame $w.fcb.bu -relief groove -borderwidth 3
+	pack $w.fcb.bu  -pady 5
 
-	button $w.bu.showsol -text "Show Solution" -command { 
+	ttk::button $w.fcb.bu.showsol -text "Show Solution" -command { 
 	    set selectvisual solution
 	    Ng_SetVisParameters
 	    redraw
 	}
-	button $w.bu.clipping -text "Clipping" -command { 
+	ttk::button $w.fcb.bu.clipping -text "Clipping" -command { 
 	    clippingdialog; 
 	}
-	button $w.bu.fieldlines -text "Fieldlines" -command { 
+	ttk::button $w.fcb.bu.fieldlines -text "Fieldlines" -command { 
 	    fieldlinesdialog; 
 	}
 
-	button $w.bu.lineplot -text "2D Lineplot" -command {
+	ttk::button $w.fcb.bu.lineplot -text "2D Lineplot" -command {
 	    lineplotdialog;
 	}
 
-	button $w.bu.done -text "Close" -command { 
+	ttk::button $w.fcb.bu.done -text "Close" -command { 
 	    destroy .visoptions_dlg
 	}
 
-	pack $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes
+	pack $w.fcb.bu.showsol $w.fcb.bu.clipping $w.fcb.bu.fieldlines $w.fcb.bu.lineplot $w.fcb.bu.done -side left -expand yes 
+
 
 	wm withdraw $w
 	wm geom $w +100+100

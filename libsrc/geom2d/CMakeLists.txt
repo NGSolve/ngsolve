@@ -6,14 +6,14 @@ endif(APPLE)
 
 if(NOT WIN32)
     target_link_libraries(geom2d mesh ${PYTHON_LIBS})
-    install( TARGETS geom2d DESTINATION lib COMPONENT netgen)
+    install( TARGETS geom2d ${ng_install_dir})
 endif(NOT WIN32)
 
 if(USE_GUI)
     add_library(geom2dvis ${NG_LIB_TYPE} vsgeom2d.cpp)
     if(NOT WIN32)
         target_link_libraries(geom2dvis geom2d)
-        install( TARGETS geom2dvis DESTINATION lib COMPONENT netgen)
+        install( TARGETS geom2dvis ${ng_install_dir})
     endif(NOT WIN32)
 endif(USE_GUI)
 
