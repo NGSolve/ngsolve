@@ -309,7 +309,7 @@ file(GLOB libs ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib}/*.dylib ${CMAKE_INS
 message(\"\${libs}\")
 netgen_fixup_bundle( \${APP}/Contents/MacOS/netgen_main \"\${libs}\" ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib} )
 execute_process(COMMAND ln -s /Applications ${INSTALL_DIR}/Applications)
-execute_process(COMMAND hdiutil create -volname Netgen -srcfolder ${INSTALL_DIR} -ov -format UDZO Netgen.dmg)
+execute_process(COMMAND hdiutil create -volname Netgen -srcfolder ${INSTALL_DIR} -ov -format UDZO netgen-${PACKAGE_VERSION}.dmg)
 ")
   add_custom_target(bundle COMMAND ${CMAKE_COMMAND} "-P" "${CMAKE_CURRENT_BINARY_DIR}/fixup.cmake")
 endif(INSTALL_DEPENDENCIES)
