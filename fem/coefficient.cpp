@@ -935,7 +935,60 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                              FlatMatrix<> result, FlatMatrix<> deriv) const
+  {
+#ifdef VLA
+    double hmem1[ir.Size()];
+    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+    double hmem2[ir.Size()];
+    FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
+#else
+    Matrix<> temp1(ir.Size(), 1);
+    Matrix<> deriv1(ir.Size(), 1);
+#endif
+    c1->EvaluateDeriv(ir, temp1, deriv1);
+    c2->EvaluateDeriv(ir, result, deriv);
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        deriv.Row(i) *= temp1(i,0);
+        deriv.Row(i) += deriv1(i,0) * result.Row(i);
+        result.Row(i) *= temp1(i,0);
+      }
+  }
 
+
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                               FlatMatrix<> result, FlatMatrix<> deriv, FlatMatrix<> dderiv) const
+  {
+#ifdef VLA
+    double hmem1[ir.Size()];
+    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+    double hmem2[ir.Size()];
+    FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
+    double hmem3[ir.Size()];
+    FlatMatrix<> dderiv1(ir.Size(), 1, hmem3);
+#else
+    Matrix<> temp1(ir.Size(), 1);
+    Matrix<> deriv1(ir.Size(), 1);
+    Matrix<> dderiv1(ir.Size(), 1);
+#endif
+    c1->EvaluateDDeriv(ir, temp1, deriv1, dderiv1);
+    c2->EvaluateDDeriv(ir, result, deriv, dderiv);
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        dderiv.Row(i) *= temp1(i,0);
+        dderiv.Row(i) += 2*deriv1(i,0) * deriv.Row(i);
+        dderiv.Row(i) += dderiv1(i,0) * result.Row(i);
+        deriv.Row(i) *= temp1(i,0);
+        deriv.Row(i) += deriv1(i,0) * result.Row(i);
+        result.Row(i) *= temp1(i,0);
+      }
+  }
+
+
+
+  
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
