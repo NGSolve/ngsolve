@@ -363,6 +363,43 @@ void NGS_DLL_HEADER ExportNgla() {
           )
     ;
   
+  bp::def("ArnoldiSolver", FunctionPointer ([](BaseMatrix & mata, BaseMatrix & matm, const BitArray & freedofs,
+                                               bp::list vecs, bp::object bpshift)
+                                            {
+                                              if (mata.IsComplex())
+                                                {
+                                                  Arnoldi<Complex> arnoldi (mata, matm, &freedofs);
+                                                  Complex shift = 0.0;
+                                                  if (bp::extract<Complex>(bpshift).check())
+                                                    shift = bp::extract<Complex>(bpshift)();
+                                                  cout << "shift = " << shift << endl;
+                                                  arnoldi.SetShift (shift);
+                                                  
+                                                  int nev = bp::len(vecs);
+                                                  cout << "num vecs: " << nev << endl;
+                                                  Array<shared_ptr<BaseVector>> evecs(nev);
+                                                  
+                                                  Array<Complex> lam(nev);
+                                                  arnoldi.Calc (2*nev+1, lam, nev, evecs, 0);
+                                            
+                                                  for (int i = 0; i < nev; i++)
+                                                    * bp::extract<shared_ptr<BaseVector>>(vecs[i])() = *evecs[i];
+
+                                                  Vector<Complex> vlam(nev);
+                                                  for (int i = 0; i < nev; i++)
+                                                    vlam(i) = lam[i];
+                                                  return vlam;
+                                                }
+                                              
+                                              cout << "real Arnoldi not supported" << endl;
+                                              Vector<Complex> lam(5);
+                                              return lam;
+                                            }),
+          (bp::arg("mata"), bp::arg("matm"), bp::arg("freedofs"), bp::arg("vecs"), bp::arg("shift")=bp::object())
+          // bp::return_value_policy<bp::manage_new_object>()
+          )
+    ;
+
   
 
   bp::def("DoArchive" , FunctionPointer( [](shared_ptr<Archive> & arch, BaseMatrix & mat) 
