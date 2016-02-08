@@ -59,7 +59,7 @@ elasticity E nu
 # otherwise the multigrid is faster (and needs much less memory)
  
 # define preconditioner c -type=direct -bilinearform=a
-define preconditioner c -type=multigrid -bilinearform=a -inverse=sparsecholesky
+define preconditioner c -type=multigrid -bilinearform=a  # -inverse=sparsecholesky
 
 #solve the problem by calling the cg-iteration
 numproc bvp np1 -bilinearform=a -linearform=f -gridfunction=u -preconditioner=c -maxsteps=200
