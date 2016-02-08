@@ -192,7 +192,7 @@ namespace ngla
                     }
 		else
 		  for (int k = 0; k < entrysize; k++ )
-		    rowstart[ccol+k+1] += entrysize-k;
+		    rowstart[ccol+k+1] += entrysize; // -k;
 	      }
 	  }
 
@@ -223,11 +223,10 @@ namespace ngla
 
 		for (int k = 0; k < entrysize; k++)
 		  for (int l = 0; l < entrysize; l++ )
-                    if ( (i != ind[j]) || (k <= l) )
+                    if ( (i != ind[j]) || (k >= l) )
                       {
                         int row = ri+k;
-                        int col = ci+k;
-
+                        int col = ci+l;
                         // set entry
                         size_t index = rowstart[row]+counter[row];
                         indices[index] = col;
@@ -362,7 +361,8 @@ namespace ngla
         Vector<double> hy(compressed_height);
 
         for (int i : Range(compress.Size()) )
-             hx(i) = GetReal(mx(compress[i]));
+          for (int j = 0; j < entrysize; j++)
+            hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
 
         int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
         umfpack_dl_report_status( nullptr, status );
@@ -370,20 +370,23 @@ namespace ngla
 
         my = 0;
         for (int i : Range(compress.Size()) )
-             my(compress[i]) = hy(i);
+          for (int j = 0; j < entrysize; j++)
+            my(compress[i]*entrysize+j) = hy(i*entrysize+j);
 
         if(is_vector_complex)
           {
             // complex vectors
             for (int i : Range(compress.Size()) )
-              hx(i) = GetImag(mx(compress[i]));
+              for (int j = 0; j < entrysize; j++)
+                hx(i*entrysize+j) = GetImag(mx(compress[i]*entrysize+j));
 
             int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
             umfpack_dl_report_status( nullptr, status );
             if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
             for (int i : Range(compress.Size()) )
-              SetImag(my(i), hy(compress[i]));
+              for (int j = 0; j < entrysize; j++)
+                SetImag(my(i*entrysize+j), hy(compress[i]*entrysize+j));
           }
       }
   }
