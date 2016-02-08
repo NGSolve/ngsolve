@@ -16,8 +16,8 @@ extern const char *header;
 
 namespace ngstd
 {
-  // Produce max 100MB traces by default
-  size_t PajeTrace::max_tracefile_size = 100*1024*1024;
+  // Produce no traces by default
+  size_t PajeTrace::max_tracefile_size = 0;
 
   // If true, produce variable counting active threads
   // increases trace by a factor of two
@@ -34,8 +34,11 @@ namespace ngstd
     
     int bytes_per_event=33;
     max_num_events_per_thread = min2( (size_t)std::numeric_limits<int>::max, max_tracefile_size/bytes_per_event/(2*nthreads+1)*10/7);
-    cout << IM(3) << "Tracefile size = " << max_tracefile_size/1024/1024 << "MB." << endl;
-    cout << IM(3) << "Tracing " << max_num_events_per_thread << " events per thread." << endl;
+    if(max_num_events_per_thread>0)
+    {
+      cout << IM(3) << "Tracefile size = " << max_tracefile_size/1024/1024 << "MB." << endl;
+      cout << IM(3) << "Tracing " << max_num_events_per_thread << " events per thread." << endl;
+    }
     
     tasks.resize(nthreads);
     int reserve_size = min2(1000000U, max_num_events_per_thread);
@@ -61,7 +64,7 @@ namespace ngstd
   
   void PajeTrace::StopTracing()
     {
-      if(tracing_enabled)
+      if(tracing_enabled && max_num_events_per_thread>0)
         {
           cout << "Maximum number of traces reached, tracing is stopped now. To increase the tracefile size, set in the pde file:" << endl;
           cout << "flags tracer = -max_size=size_in_megabytes" << endl;
