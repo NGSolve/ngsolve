@@ -32,5 +32,5 @@ install( FILES
         COMPONENT ngsolve_devel
        )
 
-install (PROGRAMS init.py DESTINATION bin COMPONENT ngsolve )
+install (PROGRAMS init.py DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
 
