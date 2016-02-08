@@ -42,7 +42,7 @@ from ngslib import *
 
 ngstd.__all__ = ['ArrayD', 'ArrayI', 'BitArray', 'Flags', 'HeapReset', 'IntRange', 'LocalHeap', 'Timers', 'RunWithTaskManager']
 bla.__all__ = ['Matrix', 'Vector', 'InnerProduct']
-la.__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct', 'CGSolver', 'QMRSolver']
+la.__all__ = ['BaseMatrix', 'BaseVector', 'InnerProduct', 'CGSolver', 'QMRSolver', 'ArnoldiSolver']
 fem.__all__ =  ['BFI', 'CoefficientFunction',  'DomainConstantCF', 'CoordCF', 'ET', 'ElementTransformation', 'ElementTopology', 'FiniteElement', 'ScalarFE', 'H1FE', 'HEX', 'L2FE', 'LFI', 'POINT', 'PRISM', 'PYRAMID', 'PythonCF', 'QUAD', 'SEGM', 'TET', 'TRIG', 'VERTEX', 'EDGE', 'FACE', 'CELL', 'ELEMENT', 'FACET', 'VariableCF', 'SetPMLParameters', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'Conj', 'specialcf', \
            'BlockBFI', 'BlockLFI', 'CompoundBFI', 'CompoundLFI', 'ConstantCF', 'BSpline', \
            'IntegrationRule' \

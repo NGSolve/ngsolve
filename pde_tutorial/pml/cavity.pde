@@ -9,10 +9,10 @@ define constant pml_r = 0.8
 # define constant pml_ymax =  0.8
 define constant pml_alpha = 2
 
-define constant geometryorder = 8
+define constant geometryorder = 5
 define constant hpref = 4
 
-define fespace v -type=h1ho -order=8 -complex  -dirichlet=[3]
+define fespace v -type=h1ho -order=5 -complex  -dirichlet=[3]
 
 define gridfunction u -fespace=v  -multidim=100
 

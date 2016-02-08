@@ -992,25 +992,27 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     // raw - constructor
     .def("__init__",
-         FunctionPointer ([](bp::object self, bp::object bp_fespace, string name)
+         FunctionPointer ([](bp::object self, bp::object bp_fespace, string name, bp::object multidim)
                           {
                             auto fespace = bp::extract<shared_ptr<FESpace>>(bp_fespace)();
 
                             auto ret = 
                               bp::make_constructor
-                              (FunctionPointer ([](shared_ptr<FESpace> fespace, string name)
+                              (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, bp::object multidim)
                               {
                                 Flags flags;
                                 flags.SetFlag ("novisual");
+                                if (bp::extract<int>(multidim).check())
+                                  flags.SetFlag ("multidim", bp::extract<int>(multidim)());
                                 auto gf = CreateGridFunction (fespace, name, flags);
                                 gf->Update();
                                 return gf;
-                              }))(self, fespace, name);
+                              }))(self, fespace, name, multidim);
                             
                             self.attr("__dict__")["space"] = bp_fespace;
                             return ret;   
                           }),
-         (bp::arg("space"), bp::arg("name")="gfu"),
+         (bp::arg("space"), bp::arg("name")="gfu", bp::arg("multidim")=bp::object()),
          "creates a gridfunction in finite element space"
          )
     .def_pickle(GF_pickle_suite())    
