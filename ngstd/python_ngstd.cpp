@@ -328,7 +328,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
       int num_threads;
     public:
       ParallelContextManager() : num_threads(0) {};
-      int Enter() { num_threads = EnterTaskManager(); }
+      void Enter() {num_threads = EnterTaskManager(); }
       void Exit(bp::object exc_type, bp::object exc_value, bp::object traceback) {
           ExitTaskManager(num_threads);
       }
