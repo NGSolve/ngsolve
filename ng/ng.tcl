@@ -85,14 +85,14 @@ source ${ngdir}/variables.tcl
 source ${ngdir}/parameters.tcl
 
 if { $batchmode != "defined" } {
-#    catch {
+    catch {
 	source ${ngdir}/menustat.tcl
-#    }
+    }
 }
 
-# catch { 
+catch { 
     source ${ngdir}/dialog.tcl
-# }
+}
 
 catch {
     source ${ngdir}/drawing.tcl
