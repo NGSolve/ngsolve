@@ -34,6 +34,25 @@ void NGS_DLL_HEADER ExportNgsolve() {
                                      })
              );
 
+
+    bp::def("SetVisualization", FunctionPointer
+            ([](bp::object deformation)
+             {
+               bool need_redraw = false;
+               if (bp::extract<bool>(deformation).check())
+                 {
+                   bool def = bp::extract<bool>(deformation)();
+                   Ng_TclCmd ("set ::visoptions.deformation "+ToString(def)+";\n");
+                   Ng_TclCmd ("Ng_Vis_Set parameters;\n");
+                   need_redraw = true;
+                 }
+               if (need_redraw)
+                 Ng_Redraw(true);
+             }),
+            (bp::arg("deformation")=bp::object())
+            )
+      ;
+    
     bp::def ("Draw", FunctionPointer
              ([](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max) 
               {
