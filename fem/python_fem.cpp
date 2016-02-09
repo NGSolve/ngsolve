@@ -334,6 +334,26 @@ struct GenericConj {
     }
   };
 
+  template <int D>
+  class TangentialVectorCF : public CoefficientFunction
+  {
+  public:
+    TangentialVectorCF () { ; }
+    virtual int Dimension() const { return D; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return 0;
+    }
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> res) const 
+    {
+      if (ip.Dim() != D)
+        throw Exception("illegal dim of tangential vector");
+      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetTV();
+    }
+  };
+
+
 
 
 void ExportCoefficientFunction()
@@ -579,6 +599,14 @@ void ExportCoefficientFunction()
       else
         return make_shared<NormalVectorCF<3>>(); 
     }
+
+    shared_ptr<CoefficientFunction> GetTangentialVectorCF (int dim)
+    { 
+      if (dim == 2)
+        return make_shared<TangentialVectorCF<2>>(); 
+      else
+        return make_shared<TangentialVectorCF<3>>(); 
+    }
   };
 
   bp::class_<SpecialCoefficientFunctions> ("SpecialCFCreator", bp::no_init)
@@ -586,6 +614,9 @@ void ExportCoefficientFunction()
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
     .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF,
          "depending on contents: normal-vector to geometry or element\n"
+         "space-dimension must be provided")
+    .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF,
+         "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
     ;
   static SpecialCoefficientFunctions specialcf;

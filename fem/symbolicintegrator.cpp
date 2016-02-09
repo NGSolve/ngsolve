@@ -345,17 +345,15 @@ namespace ngfem
                        FlatMatrix<SCAL> elmat,
                        LocalHeap & lh) const
     
-  {
+  { 
     // static Timer t("symbolicBFI - CalcElementMatrix", 2);
     // static Timer tstart("symboliBFI - CalcElementMatrix startup", 2);
     // static Timer tstart1("symboliBFI - CalcElementMatrix startup 1", 2);
     // static Timer tmain("symboliBFI - CalcElementMatrix main", 2);
-    /*
-    static Timer td("symboliBFI - CalcElementMatrix dmats", 2);
-    static Timer tb("symboliBFI - CalcElementMatrix diffops", 2);
-    static Timer tdb("symboliBFI - CalcElementMatrix D * B", 2);
-    static Timer tlapack("symboliBFI - CalcElementMatrix lapack", 2);
-    */
+    // static Timer td("symboliBFI - CalcElementMatrix dmats", 2);
+    // static Timer tb("symboliBFI - CalcElementMatrix diffops", 2);
+    // static Timer tdb("symboliBFI - CalcElementMatrix D * B", 2);
+    // static Timer tlapack("symboliBFI - CalcElementMatrix lapack", 2);
     // RegionTimer reg(t);
 
 
