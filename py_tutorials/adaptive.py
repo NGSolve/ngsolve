@@ -113,17 +113,17 @@ SolveBVP()
 
 
 
-import matplotlib.pyplot as plt
+## import matplotlib.pyplot as plt
 
-plt.yscale('log')
-plt.xscale('log')
-plt.xlabel("ndof")
-plt.ylabel("H1 error-estimate")
-ndof,err = zip(*l)
-plt.plot(ndof,err, "-*")
+## plt.yscale('log')
+## plt.xscale('log')
+## plt.xlabel("ndof")
+## plt.ylabel("H1 error-estimate")
+## ndof,err = zip(*l)
+## plt.plot(ndof,err, "-*")
 
-# plt.ion()
-plt.show()
+## plt.ion()
+## plt.show()
 
-input("<press enter to quit>")
+## input("<press enter to quit>")
 
