@@ -9,13 +9,11 @@ fes = H1(mesh, order=3)
 a = BilinearForm(fes)
 a += Laplace(1)
 
-def run():
 
-    print('sequential assembly...')
+print('sequential assembly...')
+a.Assemble()
+
+print('parallel assembly...')
+with TaskManager():
     a.Assemble()
-
-    print('parallel assembly...')
-    with TaskManager():
-        a.Assemble()
-
-run()
+    
