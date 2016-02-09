@@ -309,7 +309,7 @@ file(GLOB libs ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib}/*.dylib ${CMAKE_INS
 message(\"\${libs}\")
 netgen_fixup_bundle( \${APP}/Contents/MacOS/netgen_main \"\${libs}\" ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib} )
 execute_process(COMMAND ln -s /Applications ${INSTALL_DIR}/Applications)
-bundle_filename=\$ENV{NETGEN_BUNDLE_NAME}
+set (bundle_filename \$ENV{NETGEN_BUNDLE_NAME})
 if(NOT bundle_filename)
   set(bundle_filename netgen)
 endif(NOT bundle_filename)
