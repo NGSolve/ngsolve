@@ -523,7 +523,9 @@ void ExportCoefficientFunction()
 
     .add_property ("trans", FunctionPointer
                    ([] (SPCF coef) -> SPCF
-                    { return make_shared<TransposeCoefficientFunction> (coef); }),
+                    {
+                      return TransposeCF(coef);
+                    }),
                    "transpose of matrix-valued CF")
 
     .def ("Compile", FunctionPointer
