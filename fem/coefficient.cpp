@@ -1612,7 +1612,6 @@ public:
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        // FlatVector<> b = vb.Row(i);
         result.Row(i) = a * vb.Row(i);
       }
   }  
@@ -1621,27 +1620,21 @@ public:
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    throw Exception ("mat-vec EvaluateDeriv not implemented");
-    /*
     Matrix<> va(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vb(mir.Size(), inner_dim);
     Matrix<> vda(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vdb(mir.Size(), inner_dim);
     c1->EvaluateDeriv (mir, va, vda);
     c2->EvaluateDeriv (mir, vb, vdb);
 
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
         FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
-        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
-        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
+
+        result.Row(i) = a*vb.Row(i);
+        deriv.Row(i) = a*vdb.Row(i) + da*vb.Row(i);
       }
-    */
   }
   
   virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
