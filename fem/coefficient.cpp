@@ -987,6 +987,14 @@ public:
   }
 
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<double> result) const
+  {
+    FlatMatrix<> temp1 = *input[0];
+    FlatMatrix<> temp2 = *input[1];
+    for (int i = 0; i < ir.Size(); i++)
+      result.Row(i) = temp1(i,0) * temp2.Row(i);
+  }
 
   
   
@@ -1579,16 +1587,16 @@ public:
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
-    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+    throw Exception ("MultMatVecCF:: scalar evaluate for matrix called");
   }
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const
   {
-    Vector<> va(dims[0]*inner_dim);
-    Vector<> vb(inner_dim);
+    VectorMem<20> va(dims[0]*inner_dim);
+    VectorMem<20> vb(inner_dim);
     FlatMatrix<> a(dims[0], inner_dim, &va[0]);
-    
+
     c1->Evaluate (ip, va);
     c2->Evaluate (ip, vb);
 
@@ -1643,32 +1651,26 @@ public:
                               FlatMatrix<> dderiv) const
   {
     throw Exception ("mat-vec EvaluateDDeriv not implemented");
-    /*
+
     Matrix<> va(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vb(mir.Size(), inner_dim);
     Matrix<> vda(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vdb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vdb(mir.Size(), inner_dim);
     Matrix<> vdda(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vddb(mir.Size(), dims[1]*inner_dim);
+    Matrix<> vddb(mir.Size(), inner_dim);
     c1->EvaluateDDeriv (mir, va, vda, vdda);
     c2->EvaluateDDeriv (mir, vb, vdb, vddb);
 
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
         FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
         FlatMatrix<> dda(dims[0], inner_dim, &vdda(i,0));
-        FlatMatrix<> ddb(inner_dim, dims[1], &vddb(i,0));
-        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
-        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
-        FlatMatrix<> ddc(dims[0], dims[1], &dderiv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
-        ddc = a*ddb+2*da*db+dda*b;
+
+        result.Row(i) = a*vb.Row(i);
+        deriv.Row(i) = a*vdb.Row(i) + da*vb.Row(i);
+        dderiv.Row(i) = a*vddb.Row(i) + 2*da*vdb.Row(i) + dda*vb.Row(i);
       }
-    */
   }
 
 
@@ -1680,18 +1682,12 @@ public:
                         FlatArray<FlatMatrix<>*> input,
                         FlatMatrix<> result) const
   {
-    throw Exception ("mat-vec Evaluate input-result not implemented");
-    /*
     FlatMatrix<> va = *input[0], vb = *input[1];
-
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
-        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
-        c = a*b;
+        result.Row(i) = a * vb.Row(i);
       }
-    */
   }
 
 
@@ -1762,6 +1758,208 @@ public:
 
 
   
+class TransposeCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  Array<int> dims;
+public:
+  TransposeCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : c1(ac1)
+  {
+    auto dims_c1 = c1 -> Dimensions();
+    if (dims_c1.Size() != 2)
+      throw Exception("Transpose of non-matrix called");
+    dims = { dims_c1[1], dims_c1[0] };
+  }
+  
+  virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual int Dimension() const { return c1->Dimension(); }
+  virtual Array<int> Dimensions() const { return Array<int> (dims); } 
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() } ); }  
+
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+  {
+    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<> result) const
+  {
+    VectorMem<20> input(result.Size());
+    c1->Evaluate (ip, input);    
+    FlatMatrix<> reshape1(dims[1], dims[0], &input(0));  // source matrix format
+    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
+    reshape2 = Trans(reshape1);
+    
+    /*
+    c1->Evaluate (ip, result);
+    static Timer t("Transpose - evaluate");
+    RegionTimer reg(t);
+    FlatMatrix<> reshape(dims[1], dims[0], &result(0));  // source matrix format
+    Matrix<> tmp = Trans(reshape);
+    FlatMatrix<> reshape2(dims[0], dims[1], &result(0));  // range matrix format
+    reshape2 = tmp;
+    */
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+                         FlatVector<Complex> result) const
+  {
+    cout << "Transpose: complex not implemented" << endl;
+  }  
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatMatrix<> result) const
+  {
+    c1->Evaluate (mir, result);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+  }  
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    c1->EvaluateDeriv (mir, result, deriv);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+  }
+  
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    c1->EvaluateDDeriv (mir, result, deriv, dderiv);
+    Matrix<> tmp (dims[0], dims[1]);
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &result(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &deriv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dderiv(i,0));  // source matrix format
+        tmp = Trans(reshape);
+        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
+        reshape2 = tmp;
+      }
+  }
+
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & mir,
+                         FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<> result) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+  }  
+  
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+  }  
+
+
+  
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0];
+    FlatMatrix<> dv1 = *dinput[0];
+    FlatMatrix<> ddv1 = *ddinput[0];
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &v1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &result(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &dv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &deriv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        FlatMatrix<> reshape(dims[1], dims[0], &ddv1(i,0));  // source matrix format
+        FlatMatrix<> reshape2(dims[0], dims[1], &dderiv(i,0));  // range matrix format
+        reshape2 = Trans (reshape);
+      }
+    
+  }
+
+  
+  };  
+
 
 
 
@@ -1841,6 +2039,12 @@ public:
     return make_shared<MultVecVecCoefficientFunction> (c1, c2);
   }
 
+  shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
+  {
+    return make_shared<TransposeCoefficientFunction> (coef);
+  }
+
+  
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2,
@@ -1951,6 +2155,7 @@ public:
       ArrayMem<FlatMatrix<>*, 100> in;
       for (int i = 0; i < steps.Size(); i++)
         {
+          // timers[i]->Start();
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
 
@@ -1958,6 +2163,7 @@ public:
           for (int j : inputs[i])
             in.Append (&temp[j]);
           steps[i] -> Evaluate (ir, in, temp[i]);
+          // timers[i]->Stop();
         }
       values = temp.Last();
     }
