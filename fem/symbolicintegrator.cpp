@@ -567,33 +567,57 @@ namespace ngfem
       int nfacet = ElementTopology::GetNFacets(eltype);
 
       Facet2ElementTrafo transform(eltype); 
-      FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
 
       for (int k = 0; k < nfacet; k++)
         {
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
         
-          Vec<D> normal_ref = normals[k];
-        
           IntegrationRule ir_facet(etfacet, 2*fel.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-          MappedIntegrationRule<D,D> mir(ir_facet_vol, trafo, lh);
-          
+          const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
           
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           
           for (int i = 0; i < mir.Size(); i++)
             {
-              auto & mip = mir[i];
-              Mat<D> inv_jac = mip.GetJacobianInverse();
-              double det = mip.GetMeasure();
-              Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
-              double len = L2Norm (normal);    // that's the surface measure 
-              normal /= len;                   // normal vector on physical element
+              double len;
+              if (!trafo.Boundary())
+                {
+                  FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
+                  Vec<D> normal_ref = normals[k];
+                  auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
+                  Mat<D> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+                  len = L2Norm (normal);    // that's the surface measure 
+                  normal /= len;                   // normal vector on physical element
+                  
+                  const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
+                }
+              else
+                {
+                  if (D != 3)
+                    throw Exception ("element boundary for surface elements is only possible in 3D");
+                  FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
+                  Vec<D-1> normal_ref = normals[k];
 
-              mip.SetNV(normal);
+                  auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
+                  Mat<2,3> inv_jac = mip.GetJacobianInverse();
+                  // cout << "jac = " << FlatMatrix<>(mip.GetJacobian()) << endl;
+                  // cout << "inv_jac = " << FlatMatrix<>(inv_jac) << endl;
+                  // cout << "n_ref = " << normal_ref << endl;
+                  double det = mip.GetMeasure();
+                  Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
+                  len = L2Norm (normal);    // that's the surface measure
+                  // cout << "det = " << det << endl;
+                  // cout << "len = " << len << endl;
+                  normal /= len;                   // normal vector on physical element
+                  Vec<3> tang = Cross(normal, mip.GetNV());
+                  // cout << "tang = " << tang << endl;
+                  const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
+                }
               
               for (auto proxy1 : trial_proxies)
                 for (auto proxy2 : test_proxies)
@@ -609,7 +633,7 @@ namespace ngfem
                           ud.test_comp = l;
                       
                           Vec<1,SCAL> result;
-                          cf->Evaluate (mip, result);
+                          cf->Evaluate (mir[i], result);
                           proxyvalues(l,k) = ir_facet[i].Weight() * len * result(0);
                         }
                     
@@ -617,8 +641,8 @@ namespace ngfem
                     FlatMatrix<SCAL,ColMajor> dbmat1(proxy2->Dimension(), elmat.Width(), lh);
                     FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
                     
-                    proxy1->Evaluator()->CalcMatrix(fel, mip, bmat1, lh);
-                    proxy2->Evaluator()->CalcMatrix(fel, mip, bmat2, lh);
+                    proxy1->Evaluator()->CalcMatrix(fel, mir[i], bmat1, lh);
+                    proxy2->Evaluator()->CalcMatrix(fel, mir[i], bmat2, lh);
                     
                     dbmat1 = proxyvalues * bmat1;
                     elmat += Trans (bmat2) * dbmat1;
