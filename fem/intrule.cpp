@@ -162,7 +162,34 @@ namespace ngfem
   void MappedIntegrationPoint<S,R,SCAL> :: 
   CalcHesse (Mat<2> & ddx1, Mat<2> & ddx2, Mat<2> & ddx3) const
   {
-    this -> CalcHesse(ddx1, ddx2); 
+    if (S == R)
+      {
+        this -> CalcHesse(ddx1, ddx2);
+        return;
+      }
+
+    // for 2D -> 3D
+        
+    double eps = 1e-6;
+
+    Mat<3,2> jacr, jacl;
+    for (int dir = 0; dir < 2; dir++)
+      {
+	IntegrationPoint ipr = this->ip;
+	IntegrationPoint ipl = this->ip;
+	ipr(dir) += eps;
+	ipl(dir) -= eps;
+	this->eltrans->CalcJacobian (ipr, jacr);    
+	this->eltrans->CalcJacobian (ipl, jacl);    
+
+	for (int j = 0; j < 2; j++)
+	  {
+	    ddx1(dir,j) = (jacr(0,j) - jacl(0,j) ) / (2*eps);
+	    ddx2(dir,j) = (jacr(1,j) - jacl(1,j) ) / (2*eps);
+            ddx3(dir,j) = (jacr(2,j) - jacl(2,j) ) / (2*eps);
+	  }
+      }
+
   }
 
 
