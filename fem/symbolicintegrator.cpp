@@ -667,7 +667,6 @@ namespace ngfem
               }
         }
     }
-  
 
   
   void 
@@ -678,8 +677,30 @@ namespace ngfem
                                FlatMatrix<double> elmat,
                                LocalHeap & lh) const
   {
-    // CalcElementMatrix(fel, trafo, elmat, lh);
-    // return;
+    /*
+      CalcElementMatrix(fel, trafo, elmat, lh);
+      return;
+    */
+
+      
+    if (element_boundary)
+      {
+        switch (trafo.SpaceDim())
+          {
+          case 1:
+            T_CalcLinearizedElementMatrixEB<1,double,double> (fel, trafo, elveclin, elmat, lh);
+            return;
+          case 2:
+            T_CalcLinearizedElementMatrixEB<2,double,double> (fel, trafo, elveclin, elmat, lh);            
+            return;
+          case 3:
+            T_CalcLinearizedElementMatrixEB<3,double,double> (fel, trafo, elveclin, elmat, lh);
+            return;
+          default:
+            throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
+          }
+      }
+
     
     static Timer t("symbolicbfi - calclinearized", 2);
     static Timer td("symbolicbfi - calclinearized dmats", 2);
@@ -776,6 +797,180 @@ namespace ngfem
         }
   }
 
+
+
+  template <int D, typename SCAL, typename SCAL_SHAPES>
+  void SymbolicBilinearFormIntegrator ::
+  T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
+                                   const ElementTransformation & trafo, 
+                                   FlatVector<double> elveclin,
+                                   FlatMatrix<double> elmat,
+                                   LocalHeap & lh) const
+  {
+    static Timer t("symbolicbfi - calclinearized", 2);
+    static Timer td("symbolicbfi - calclinearized dmats", 2);
+    RegionTimer reg(t);
+    
+    // IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    // BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    ud.elx = &elveclin;
+    ud.lh = &lh;
+    /*
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
+        proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
+      }
+    */
+    
+    elmat = 0;
+
+
+
+      auto eltype = trafo.GetElementType();
+      int nfacet = ElementTopology::GetNFacets(eltype);
+
+      Facet2ElementTrafo transform(eltype); 
+
+      for (int k = 0; k < nfacet; k++)
+        {
+          HeapReset hr(lh);
+          ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+        
+          IntegrationRule ir_facet(etfacet, 2*fel.Order());
+          IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+          const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+          
+          ProxyUserData ud;
+          const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          FlatVector<> measure(mir.Size(), lh);
+          
+          for (int i = 0; i < mir.Size(); i++)
+            {
+              double len;
+              if (!trafo.Boundary())
+                {
+                  FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
+                  Vec<D> normal_ref = normals[k];
+                  auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
+                  Mat<D> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+                  len = L2Norm (normal);    // that's the surface measure 
+                  normal /= len;                   // normal vector on physical element
+                  
+                  const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
+                }
+              else
+                {
+                  if (D != 3)
+                    throw Exception ("element boundary for surface elements is only possible in 3D");
+                  FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
+                  Vec<D-1> normal_ref = normals[k];
+
+                  auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
+                  Mat<2,3> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
+                  len = L2Norm (normal);    // that's the surface measure
+                  normal /= len;                   // normal vector on physical element
+                  Vec<3> tang = Cross(normal, mip.GetNV());
+                  const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
+                }
+              measure(i) = len;
+            }
+
+
+    
+    
+          FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+          for (int k1 : Range(trial_proxies))
+            for (int l1 : Range(test_proxies))
+              {
+                HeapReset hr(lh);
+                auto proxy1 = trial_proxies[k1];
+                auto proxy2 = test_proxies[l1];
+                td.Start();
+                FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+                
+                for (int k = 0; k < proxy1->Dimension(); k++)
+                  for (int l = 0; l < proxy2->Dimension(); l++)
+                    {
+                      ud.trialfunction = proxy1;
+                      ud.trial_comp = k;
+                      ud.testfunction = proxy2;
+                      ud.test_comp = l;
+                      
+                      cf -> EvaluateDeriv (mir, val, deriv);
+                      proxyvalues(STAR,l,k) = deriv.Col(0);
+                    }
+                td.Stop();
+
+                for (int i = 0; i < mir.Size(); i++)
+                  proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * measure(i);
+                
+                t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
+                
+                FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+                int i = 0;
+                
+                enum { BS = 16 };
+                for ( ; i+BS <= mir.Size(); i+=BS)
+                  {
+                    HeapReset hr(lh);
+                    FlatMatrix<double,ColMajor> bdbmat1(BS*proxy2->Dimension(), elmat.Width(), lh);
+                    FlatMatrix<double,ColMajor> bbmat2(BS*proxy2->Dimension(), elmat.Height(), lh);
+                    
+                    for (int j = 0; j < BS; j++)
+                      {
+                        int ii = i+j;
+                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                        proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                        proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                        bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                        bbmat2.Rows(r2) = bmat2;
+                      }
+                    elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+                  }
+                
+                
+                if (i < mir.Size())
+                  {
+                    HeapReset hr(lh);
+                    int rest = mir.Size()-i;
+                    FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+                    FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+                    
+                    for (int j = 0; j < rest; j++)
+                      {
+                        int ii = i+j;
+                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                        proxy1->Evaluator()->CalcMatrix(fel, mir[ii], bmat1, lh);
+                        proxy2->Evaluator()->CalcMatrix(fel, mir[ii], bmat2, lh);
+                        bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                        bbmat2.Rows(r2) = bmat2;
+                      }
+                    elmat += Trans (bbmat2) * bdbmat1 | Lapack;
+                  }
+              }
+        }
+  }
+
+
+
+
+
+
+
+
+
+  
+  
   void
   SymbolicBilinearFormIntegrator :: ApplyElementMatrix (const FiniteElement & fel, 
                                                         const ElementTransformation & trafo, 
@@ -785,11 +980,33 @@ namespace ngfem
                                                         LocalHeap & lh) const
   {
     /*
-    FlatMatrix<> elmat(elx.Size(), lh);
-    CalcElementMatrix(fel, trafo, elmat, lh);
-    ely = elmat * elx;
-    return;
+    if (element_boundary)
+      {
+        FlatMatrix<> elmat(elx.Size(), lh);
+        CalcElementMatrix(fel, trafo, elmat, lh);
+        ely = elmat * elx;
+        return;
+      }
     */
+    
+    if (element_boundary)
+      {
+        switch (trafo.SpaceDim())
+          {
+          case 1:
+            T_ApplyElementMatrixEB<1,double,double> (fel, trafo, elx, ely, precomputed, lh);
+            return;
+          case 2:
+            T_ApplyElementMatrixEB<2,double,double> (fel, trafo, elx, ely, precomputed, lh);            
+            return;
+          case 3:
+            T_ApplyElementMatrixEB<3,double,double> (fel, trafo, elx, ely, precomputed, lh);            
+            return;
+          default:
+            throw Exception ("Illegal space dimension" + ToString(trafo.SpaceDim()));
+          }
+      }
+
 
     
     ProxyUserData ud;
@@ -805,7 +1022,7 @@ namespace ngfem
     ely = 0;
     FlatVector<> ely1(ely.Size(), lh);
 
-    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
+    FlatMatrix<> val(mir.Size(), 1,lh);
     for (auto proxy : test_proxies)
       {
         HeapReset hr(lh);
@@ -827,6 +1044,100 @@ namespace ngfem
   }
 
 
+  template <int D, typename SCAL, typename SCAL_SHAPES>
+  void SymbolicBilinearFormIntegrator ::
+  T_ApplyElementMatrixEB (const FiniteElement & fel, 
+                          const ElementTransformation & trafo, 
+                          const FlatVector<double> elx, 
+                          FlatVector<double> ely,
+                          void * precomputed,
+                          LocalHeap & lh) const
+  {
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    ud.elx = &elx;
+    ud.lh = &lh;
+
+    ely = 0;
+    
+    auto eltype = trafo.GetElementType();
+    int nfacet = ElementTopology::GetNFacets(eltype);
+
+    Facet2ElementTrafo transform(eltype); 
+
+    for (int k = 0; k < nfacet; k++)
+      {
+        HeapReset hr(lh);
+        ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+          
+        IntegrationRule ir_facet(etfacet, 2*fel.Order());
+        IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+        const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+        
+        // ProxyUserData ud;
+        // const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        FlatVector<> measure(mir.Size(), lh);
+        
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            double len;
+            if (!trafo.Boundary())
+              {
+                FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
+                Vec<D> normal_ref = normals[k];
+                auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
+                Mat<D> inv_jac = mip.GetJacobianInverse();
+                double det = mip.GetMeasure();
+                Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
+                len = L2Norm (normal);    // that's the surface measure 
+                normal /= len;                   // normal vector on physical element
+                
+                const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
+              }
+            else
+              {
+                if (D != 3)
+                  throw Exception ("element boundary for surface elements is only possible in 3D");
+                FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
+                Vec<D-1> normal_ref = normals[k];
+                
+                auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
+                Mat<2,3> inv_jac = mip.GetJacobianInverse();
+                double det = mip.GetMeasure();
+                Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
+                len = L2Norm (normal);    // that's the surface measure
+                normal /= len;                   // normal vector on physical element
+                Vec<3> tang = Cross(normal, mip.GetNV());
+                const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
+              }
+            measure(i) = len;
+          }
+        
+    
+    
+        FlatVector<> ely1(ely.Size(), lh);
+        FlatMatrix<> val(mir.Size(), 1,lh);
+        for (auto proxy : test_proxies)
+          {
+            HeapReset hr(lh);
+            FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
+            for (int k = 0; k < proxy->Dimension(); k++)
+              {
+                ud.testfunction = proxy;
+                ud.test_comp = k;
+                cf -> Evaluate (mir, val);
+                proxyvalues.Col(k) = val.Col(0);
+              }
+            
+            for (int i = 0; i < mir.Size(); i++)
+              proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
+            
+            proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+            ely += ely1;
+          }
+      }
+  }
 
 
 

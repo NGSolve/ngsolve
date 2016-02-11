@@ -1690,31 +1690,27 @@ public:
       }
   }
 
-
-
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatArray<FlatMatrix<>*> input,
                              FlatArray<FlatMatrix<>*> dinput,
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
-    throw Exception ("mat-vec EvaluateDeriv input-result not implemented");
-    /*
     FlatMatrix<> va = *input[0], vb = *input[1];
     FlatMatrix<> vda = *dinput[0], vdb = *dinput[1];
 
     for (int i = 0; i < mir.Size(); i++)
       {
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
-        FlatMatrix<> b(inner_dim, dims[1], &vb(i,0));
         FlatMatrix<> da(dims[0], inner_dim, &vda(i,0));
-        FlatMatrix<> db(inner_dim, dims[1], &vdb(i,0));
-        FlatMatrix<> c(dims[0], dims[1], &result(i,0));
-        FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
-        c = a*b;
-        dc = a*db+da*b;
+
+        // FlatMatrix<> c(dims[0], dims[1], &result(i,0));
+        // FlatMatrix<> dc(dims[0], dims[1], &deriv(i,0));
+        // c = a*b;
+        // dc = a*db+da*b;
+        result.Row(i) = a * vb.Row(i);
+        deriv.Row(i) = da * vb.Row(i) + a*vdb.Row(i);        
       }
-    */
   }
 
 
