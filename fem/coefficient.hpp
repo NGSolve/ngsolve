@@ -1279,6 +1279,19 @@ public:
       cfa.Append (cf.get());
     return Array<CoefficientFunction*>(cfa);
   } 
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+        cf->NonZeroPattern(ud, nonzero.Range(base,base+dimi));
+        base += dimi;
+      }
+  }  
+
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
