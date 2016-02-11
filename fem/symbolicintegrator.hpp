@@ -254,6 +254,13 @@ public:
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const;
 
+    template <int D, typename SCAL, typename SCAL_SHAPES>
+    void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,
+                                          const ElementTransformation & trafo, 
+                                          FlatVector<double> elveclin,
+                                          FlatMatrix<double> elmat,
+                                          LocalHeap & lh) const;
+    
     virtual void 
     ApplyElementMatrix (const FiniteElement & fel, 
 			const ElementTransformation & trafo, 
@@ -261,6 +268,15 @@ public:
 			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & lh) const;
+
+    template <int D, typename SCAL, typename SCAL_SHAPES>
+    void T_ApplyElementMatrixEB (const FiniteElement & fel, 
+                                 const ElementTransformation & trafo, 
+                                 const FlatVector<double> elx, 
+                                 FlatVector<double> ely,
+                                 void * precomputed,
+                                 LocalHeap & lh) const;
+    
   };
 
 
