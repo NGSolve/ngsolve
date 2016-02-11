@@ -211,6 +211,7 @@ public:
   {
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
     Matrix<bool> nonzeros;

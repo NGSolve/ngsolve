@@ -996,6 +996,23 @@ public:
       result.Row(i) = temp1(i,0) * temp2.Row(i);
   }
 
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result.Row(k) = v1(k,0)*v2.Row(k);
+        deriv.Row(k) = v1(k,0)*dv2.Row(k)+dv1(k,0)*v2.Row(k);
+      }
+  }
+  
+
   
   
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
@@ -1134,6 +1151,23 @@ public:
           2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
       }
 
+  }
+
+
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+      }
   }
 
   virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
@@ -1290,6 +1324,25 @@ public:
 
   }
 
+
+
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+      }
+  }
+
+  
   virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatArray<FlatMatrix<>*> input,
                                FlatArray<FlatMatrix<>*> dinput,
@@ -1367,6 +1420,23 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
 
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(dims[0]*inner_dim), v2(dims[1]*inner_dim);
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    nonzero = false;
+    FlatMatrix<bool> m1(dims[0], inner_dim, &v1(0));
+    FlatMatrix<bool> m2(inner_dim, dims[1], &v2(0));
+    FlatMatrix<bool> m3(dims[0], dims[1], &nonzero(0));
+    for (int i = 0; i < dims[0]; i++)
+      for (int j = 0; j < dims[1]; j++)
+        for (int k = 0; k < inner_dim; k++)
+          nonzero(i,j) |= m1(i,k) && m2(k,j);
+  }
+
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     throw Exception ("TransposeCF:: scalar evaluate for matrix called");
@@ -1583,7 +1653,20 @@ public:
   }
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
+  { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(dims[0]*inner_dim), v2(inner_dim);
+    c1->NonZeroPattern (ud, v1);
+    c2->NonZeroPattern (ud, v2);
+    nonzero = false;
+    FlatMatrix<bool> m1(dims[0], inner_dim, &v1(0));
+    for (int i = 0; i < dims[0]; i++)
+      for (int j = 0; j < inner_dim; j++)
+        nonzero(i) |= m1(i,j) && v2(j);
+  }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -1781,6 +1864,16 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() } ); }  
 
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(dims[0]*dims[1]);
+    c1->NonZeroPattern (ud, v1);
+    FlatMatrix<bool> m1(dims[1], dims[0], &v1(0));
+    FlatMatrix<bool> m2(dims[0], dims[1], &nonzero(0));
+    m2 = Trans(m1);
+  }
+
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     throw Exception ("TransposeCF:: scalar evaluate for matrix called");
@@ -2167,6 +2260,7 @@ public:
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<double> values, FlatMatrix<double> deriv) const
     {
+      /*
       Array<Matrix<>*> temp;
       Array<Matrix<>*> dtemp;
       for (int i = 0; i < steps.Size(); i++)
@@ -2194,6 +2288,37 @@ public:
         delete temp[i];
       for (int i = 0; i < steps.Size(); i++)
         delete dtemp[i];
+      */
+
+      int totdim = 0;
+      for (int d : dim) totdim += d;
+      ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
+      int mem_ptr = 0;
+      
+      Array<FlatMatrix<>> temp(steps.Size());
+      Array<FlatMatrix<>> dtemp(steps.Size());
+      ArrayMem<FlatMatrix<>*, 20> in, din;
+
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          //timers[i]->Start();
+          temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
+          mem_ptr += ir.Size()*dim[i];
+          dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
+          mem_ptr += ir.Size()*dim[i];
+
+          in.SetSize(0);
+          din.SetSize(0);
+          for (int j : inputs[i])
+            in.Append (&temp[j]);
+          for (int j : inputs[i])
+            din.Append (&dtemp[j]);
+          steps[i] -> EvaluateDeriv (ir, in, din, temp[i], dtemp[i]);
+          // timers[i]->Stop();
+        }
+
+      values = temp.Last();
+      deriv = dtemp.Last();
     }
 
     virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
