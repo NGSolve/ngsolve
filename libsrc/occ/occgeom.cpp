@@ -1034,17 +1034,17 @@ namespace netgen
 
 
 
-   void OCCGeometry :: WriteOCC_STL(char * filename)
-   {
-      cout << "writing stl..."; cout.flush();
-      StlAPI_Writer writer;
-      writer.RelativeMode() = Standard_False;
-
-      writer.SetDeflection(0.02);
-      writer.Write(shape,filename);
-
-      cout << "done" << endl;
-   }
+//    void OCCGeometry :: WriteOCC_STL(char * filename)
+//    {
+//       cout << "writing stl..."; cout.flush();
+//       StlAPI_Writer writer;
+//       writer.RelativeMode() = Standard_False;
+// 
+//       writer.SetDeflection(0.02);
+//       writer.Write(shape,filename);
+// 
+//       cout << "done" << endl;
+//    }
 
 
 

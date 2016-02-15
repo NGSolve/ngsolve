@@ -385,7 +385,7 @@ namespace netgen
       void GetNotDrawableFaces (stringstream & str);
       bool ErrorInSurfaceMeshing ();
 
-     void WriteOCC_STL(char * filename);
+//      void WriteOCC_STL(char * filename);
 
      virtual int GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam, 
          int perfstepsstart, int perfstepsend);

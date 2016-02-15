@@ -26,6 +26,10 @@ endif(NOT WIN32)
 
 target_link_libraries( nglib ${LIBPTHREAD} ${OCC_LIBRARIES} ${MPI_CXX_LIBRARIES} ${OPENGL_LIBRARIES} ${TK_LIBRARY} ${TCL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${X11_Xmu_LIB} ${JPEG_LIBRARIES} ${MKL_LIBRARIES} ${ZLIB_LIBRARIES} )
 
+if(USE_OCC)
+    target_link_libraries(nglib occ)
+endif(USE_OCC)
+
 if(USE_PYTHON)
     target_link_libraries(nglib ${PYTHON_LIBS})
 endif(USE_PYTHON)
