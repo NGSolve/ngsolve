@@ -51,6 +51,11 @@ if(INTEL_MIC)
 endif(INTEL_MIC)
 
 #######################################################################
+if(USE_CPP_THREADS)
+    add_definitions(-DCPP11_THREADS)
+endif(USE_CPP_THREADS)
+
+#######################################################################
 if(USE_NATIVE_ARCH)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 else(USE_NATIVE_ARCH)
