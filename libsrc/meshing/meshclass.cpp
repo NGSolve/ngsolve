@@ -906,7 +906,7 @@ namespace netgen
                 el.SetIndex(hi);
                 infile >> nep;
                 el.SetNP(nep);
-
+                el.SetCurved (nep != 4);
                 for (int j = 0; j < nep; j++)
                   infile >> (int&)(el[j]);
 

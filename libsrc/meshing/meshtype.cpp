@@ -993,7 +993,7 @@ namespace netgen
       default: cerr << "Element::Element: unknown element with " << np << " points" << endl;
       }
     orderx = ordery = orderz = 1;
-    is_curved = false;
+    is_curved = typ != TET; // false;
   }
 
   void Element :: SetOrder (const int aorder) 
@@ -1031,7 +1031,7 @@ namespace netgen
     flags.deleted = 0;
     flags.fixed = 0;
     orderx = ordery = orderz = 1;
-    is_curved = false;
+    is_curved =  typ != TET; // false;
   }
 
 
