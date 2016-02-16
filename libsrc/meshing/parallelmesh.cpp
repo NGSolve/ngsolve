@@ -794,10 +794,10 @@ namespace netgen
     eptr.Append (eind.Size());
     Array<idx_t> epart(ne), npart(nn);
 
-    int nparts = ntasks-1;
-    int edgecut;
+    idxtype nparts = ntasks-1;
+    idxtype edgecut;
 
-    int ncommon = 3;
+    idxtype ncommon = 3;
     METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], NULL, NULL, &ncommon, &nparts,
 			NULL, NULL,
 			&edgecut, &epart[0], &npart[0]);
@@ -1029,11 +1029,11 @@ namespace netgen
     eptr.Append (eind.Size());
     Array<idx_t> epart(ne), npart(nn);
 
-    int nparts = ntasks-1;
-    int edgecut;
+    idxtype nparts = ntasks-1;
+    idxtype edgecut;
 
 
-    int ncommon = 3;
+    idxtype ncommon = 3;
     METIS_PartMeshDual (&ne, &nn, &eptr[0], &eind[0], &nwgt[0], NULL, &ncommon, &nparts,
 			NULL, NULL,
 			&edgecut, &epart[0], &npart[0]);
@@ -1266,7 +1266,7 @@ namespace netgen
 
     for ( int vert = 0; vert < nn; vert++ )
       {
-	FlatArray<int> array ( cnt[vert], &adjacency[ xadj[vert] ] );
+	FlatArray<idxtype> array ( cnt[vert], &adjacency[ xadj[vert] ] );
 	BubbleSort(array);
       }
 
@@ -1377,7 +1377,7 @@ namespace netgen
 
     for ( int el = 0; el < ne; el++ )
       {
-	FlatArray<int> array ( cnt[el], &adjacency[ xadj[el] ] );
+	FlatArray<idxtype> array ( cnt[el], &adjacency[ xadj[el] ] );
 	BubbleSort(array);
       }
 
@@ -1428,7 +1428,7 @@ namespace netgen
   void Mesh :: PartDualHybridMesh2D ( ) 
   {
 #ifdef METIS
-    int ne = GetNSE();
+    idxtype ne = GetNSE();
     int nv = GetNV();
 
     Array<idxtype> xadj(ne+1);
@@ -1484,11 +1484,11 @@ namespace netgen
 
     idxtype *v_weights = NULL, *e_weights = NULL;
 
-    int weightflag = 0;
+    idxtype weightflag = 0;
     // int numflag = 0;
-    int nparts = ntasks - 1;
+    idxtype nparts = ntasks - 1;
 
-    int edgecut;
+    idxtype edgecut;
     Array<idxtype> part(ne);
 
     for ( int el = 0; el < ne; el++ )
