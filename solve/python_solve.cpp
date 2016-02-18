@@ -21,6 +21,8 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
     bp::scope local_scope(module);
 
+    bp::def ("Tcl_Eval", &Ng_TclCmd);
+
     bp::def ("Redraw", 
              FunctionPointer([](bool blocking) {Ng_Redraw(blocking);}),
              (bp::arg("blocking")=false)
