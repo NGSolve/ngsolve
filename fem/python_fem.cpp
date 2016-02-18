@@ -113,6 +113,10 @@ shared_ptr<CoefficientFunction> MakeCoefficient (bp::object val)
   if (ed.check()) 
     return make_shared<ConstantCoefficientFunction> (ed());
 
+  bp::extract<Complex> ec(val);
+  if (ec.check()) 
+    return make_shared<ConstantCoefficientFunctionC> (ec());
+
   bp::extract<bp::list> el(val);
   if (el.check())
     {

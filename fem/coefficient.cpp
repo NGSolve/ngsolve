@@ -103,6 +103,24 @@ namespace ngfem
     ost << "ConstantCF, val = " << val << endl;
   }
 
+  
+  ///
+  ConstantCoefficientFunctionC ::   
+  ConstantCoefficientFunctionC (Complex aval) 
+    : val(aval) 
+  { ; }
+
+  ConstantCoefficientFunctionC ::
+  ~ConstantCoefficientFunctionC ()
+  { ; }
+
+  void ConstantCoefficientFunctionC :: PrintReport (ostream & ost) const
+  {
+    ost << "ConstantCFC, val = " << val << endl;
+  }
+
+
+  
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
     : val(aval) { ; }
