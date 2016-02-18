@@ -246,6 +246,37 @@ namespace ngfem
   };
 
 
+  /// The coefficient is constant everywhere
+  class NGS_DLL_HEADER ConstantCoefficientFunctionC : public CoefficientFunction
+  {
+    ///
+    Complex val;
+  public:
+    ///
+    ConstantCoefficientFunctionC (Complex aval);
+    ///
+    virtual ~ConstantCoefficientFunctionC ();
+    ///
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    {
+      throw Exception("no real evaluate for ConstantCF-Complex");
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const
+    {
+      values = val;
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+    {
+      values = val;
+    }
+    
+    virtual void PrintReport (ostream & ost) const;
+  };
+
+
+  
 
   /// The coefficient is constant in every sub-domain
   class NGS_DLL_HEADER DomainConstantCoefficientFunction : public CoefficientFunction
