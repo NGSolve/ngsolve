@@ -373,6 +373,44 @@ namespace ngfem
 
 
 
+template <typename FEL = HCurlFiniteElement<2> >
+class DiffOpCurlBoundaryEdgeVec : public DiffOp<DiffOpCurlBoundaryEdgeVec<FEL> >
+{
+public:
+  enum { DIM = 1 };
+  enum { DIM_SPACE = 3 };
+  enum { DIM_ELEMENT = 2 };
+  enum { DIM_DMAT = 3 };
+  enum { DIFFORDER = 1 };
+
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
+
+  template <typename AFEL, typename MIP, typename MAT>
+  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+			      MAT & mat, LocalHeap & lh)
+  {
+    Vec<3> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+    mat = scaled_nv * Trans(Cast(fel).GetCurlShape (mip.IP(), lh));
+  }
+
+  template <typename AFEL, typename MIP, class TVX, class TVY> 
+  static void Apply (const AFEL & fel, const MIP & mip,
+		     const TVX & x, TVY & y,
+		     LocalHeap & lh)
+  {
+    y = ( (1.0/mip.GetJacobiDet())*(InnerProduct (Cast(fel).GetCurlShape (mip.IP(), lh), x) )) * mip.GetNV();
+  }
+
+  template <typename AFEL, typename MIP, class TVX, class TVY>
+  static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			  const TVX & x, TVY & y,
+			  LocalHeap & lh)
+  {
+    y = ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+  }
+};
+
 
 
 
