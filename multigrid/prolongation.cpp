@@ -33,10 +33,10 @@ namespace ngmg
     int parents[2];
     Array< int > indicesPerRow( space.GetNDof() );
 
-    if ( &( space.LowOrderFESpace() ) )
+    if (space.LowOrderFESpacePtr())
       {
-        nf = space.LowOrderFESpace().GetNDofLevel( finelevel );
-        nc = space.LowOrderFESpace().GetNDofLevel( finelevel-1 );
+        nf = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel );
+        nc = space.LowOrderFESpacePtr()->GetNDofLevel( finelevel-1 );
       }
     else
       {
@@ -414,7 +414,7 @@ namespace ngmg
   SurfaceElementProlongation :: 
   SurfaceElementProlongation(shared_ptr<MeshAccess> ama, 
 			     const SurfaceElementFESpace & aspace)
-    : ma(ama), space(aspace)
+    : ma(ama) // , space(aspace)
   {
     ;
   }

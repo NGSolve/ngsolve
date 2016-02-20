@@ -231,7 +231,7 @@ namespace ngmg
     ///
     shared_ptr<MeshAccess> ma;
     ///
-    const SurfaceElementFESpace & space;
+    // const SurfaceElementFESpace & space;
   public:
     ///
     SurfaceElementProlongation(shared_ptr<MeshAccess> ama,

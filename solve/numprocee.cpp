@@ -24,7 +24,7 @@ namespace ngsolve
 
     static void PrintDoc (ostream & ost);
     virtual void Do(LocalHeap & lh);
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -129,7 +129,7 @@ namespace ngsolve
 	    << " " << sqrt(sum) << endl;
   }
 
-  void NumProcZZErrorEstimator :: PrintReport (ostream & ost)
+  void NumProcZZErrorEstimator :: PrintReport (ostream & ost) const
   {
     ost << "NumProcZZErrorEstimator:" << endl;
     ost << "Bilinear-form = " << endl;
@@ -177,7 +177,7 @@ namespace ngsolve
 
     static void PrintDoc (ostream & ost);
     virtual void Do(LocalHeap & lh);
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -319,7 +319,7 @@ namespace ngsolve
 
 
 
-  void NumProcDifference :: PrintReport (ostream & ost)
+  void NumProcDifference :: PrintReport (ostream & ost) const
   {
     ost << "NumProcDifference:" << endl;
     ost << "Bilinear-form = " << endl;
@@ -354,7 +354,7 @@ namespace ngsolve
     virtual ~NumProcRTZZErrorEstimator();
   
     virtual void Do(LocalHeap & lh);
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -420,7 +420,7 @@ namespace ngsolve
 	   << " " << sqrt(sum) << endl;
   }
 
-  void NumProcRTZZErrorEstimator :: PrintReport (ostream & ost)
+  void NumProcRTZZErrorEstimator :: PrintReport (ostream & ost) const
   {
     ost << "NumProcRTZZErrorEstimator:" << endl;
     ost << "Bilinear-form = " << endl;
@@ -495,7 +495,7 @@ namespace ngsolve
     }
 
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << "NumProcHierarchicalErrorEstimator:" << endl;
       ost << "Bilinear-form = " << endl;
@@ -547,7 +547,7 @@ namespace ngsolve
     {
       return "Element Marker";
     }
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
   };
 
 
@@ -668,7 +668,7 @@ namespace ngsolve
 	  
   }
 
-  void NumProcMarkElements :: PrintReport (ostream & ost)
+  void NumProcMarkElements :: PrintReport (ostream & ost) const
   {
     ost << "NumProcMarkElements:" << endl;
   }
@@ -761,7 +761,7 @@ namespace ngsolve
     virtual ~NumProcPrimalDualErrorEstimator() { ; }
 
     virtual void Do(LocalHeap & lh);
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
     static void PrintDoc (ostream & ost);
 
     virtual string GetClassName () const
@@ -823,7 +823,7 @@ namespace ngsolve
   
   
 
-  void NumProcPrimalDualErrorEstimator :: PrintReport (ostream & ost)
+  void NumProcPrimalDualErrorEstimator :: PrintReport (ostream & ost) const
   {
     ost << "NumProcPrimalDualErrorEstimator:" << endl;
     ost << "Bilinear-form = " << endl;

@@ -89,7 +89,7 @@ namespace ngsolve
     }
 
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl
 	  << "Bilinear-form    = " << bfa->GetName() << endl
@@ -259,7 +259,7 @@ namespace ngsolve
       return "SetValues";
     }
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl
 	  << "Gridfunction-Out = " << gfu->GetName() << endl;
@@ -347,7 +347,7 @@ namespace ngsolve
     }
 
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl;
       if (bfa) ost << "Bilinear-form    = " << bfa->GetName() << endl;
@@ -488,7 +488,7 @@ namespace ngsolve
 
     static void PrintDoc (ostream & ost);
     virtual string GetClassName () const {return "Draw Flux";}
-    virtual void PrintReport (ostream & ost) { ; }
+    virtual void PrintReport (ostream & ost) const { ; }
   };
 
 
@@ -604,7 +604,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const; 
 
     virtual string GetClassName () const
     {
@@ -1075,7 +1075,7 @@ namespace ngsolve
     ofile.close();
   }
 
-  void NumProcEvaluate :: PrintReport (ostream & ost)
+  void NumProcEvaluate :: PrintReport (ostream & ost) const
   {
     ost << "NumProcEvaluate:" << endl;
   }
@@ -1122,7 +1122,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -1433,7 +1433,7 @@ namespace ngsolve
       }
   }
 
-  void NumProcAnalyze :: PrintReport (ostream & ost)
+  void NumProcAnalyze :: PrintReport (ostream & ost) const
   {
     ost << "NumProcAnalyze:" << endl;
   }
@@ -1664,7 +1664,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -1785,7 +1785,7 @@ namespace ngsolve
   }
 
 
-  void NumProcWarn :: PrintReport (ostream & ost)
+  void NumProcWarn :: PrintReport (ostream & ost) const
   {
     ost << "NumProcWarn:" << endl;
   }
@@ -1824,7 +1824,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -1920,7 +1920,7 @@ namespace ngsolve
   }
 
 
-  void NumProcTclTable :: PrintReport (ostream & ost)
+  void NumProcTclTable :: PrintReport (ostream & ost) const
   {
     ost << "NumProcTclTable:" << endl;
   }
@@ -1944,7 +1944,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const; 
 
     virtual string GetClassName () const
     {
@@ -1982,7 +1982,7 @@ namespace ngsolve
 
   }
 
-  void NumProcSaveSolution :: PrintReport (ostream & ost)
+  void NumProcSaveSolution :: PrintReport (ostream & ost) const
   {
     ost << "NumProcSaveSolution:" << endl;
   }
@@ -2011,7 +2011,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -2059,7 +2059,7 @@ namespace ngsolve
 
   }
 
-  void NumProcSaveZipSolution :: PrintReport (ostream & ost)
+  void NumProcSaveZipSolution :: PrintReport (ostream & ost) const
   {
     ost << "NumProcSaveZipSolution:" << endl;
   }
@@ -2090,7 +2090,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const; 
 
     virtual string GetClassName () const
     {
@@ -2127,7 +2127,7 @@ namespace ngsolve
 
   }
 
-  void NumProcLoadSolution :: PrintReport (ostream & ost)
+  void NumProcLoadSolution :: PrintReport (ostream & ost) const
   {
     ost << "NumProcLoadSolution:" << endl;
   }
@@ -2153,7 +2153,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -2200,7 +2200,7 @@ namespace ngsolve
 
   }
 
-  void NumProcLoadZipSolution :: PrintReport (ostream & ost)
+  void NumProcLoadZipSolution :: PrintReport (ostream & ost) const
   {
     ost << "NumProcLoadZipSolution:" << endl;
   }
@@ -2346,7 +2346,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -2642,7 +2642,7 @@ namespace ngsolve
   }
 
 
-  void NumProcTclMenu :: PrintReport (ostream & ost)
+  void NumProcTclMenu :: PrintReport (ostream & ost) const
   {
     ost << "NumProcTclMenu:" << endl;
   }
@@ -2675,7 +2675,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -2741,7 +2741,7 @@ namespace ngsolve
 
   }
 
-  void NumProcGenerateOne  :: PrintReport (ostream & ost)
+  void NumProcGenerateOne  :: PrintReport (ostream & ost) const
   {
     ost << "NumProcGenerateOne:" << endl;
   }
@@ -2774,7 +2774,7 @@ namespace ngsolve
     ///
     virtual void Do(LocalHeap & lh);
     ///
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual string GetClassName () const
     {
@@ -3076,7 +3076,7 @@ namespace ngsolve
   }
 
 
-  void NumProcVisualization :: PrintReport (ostream & ost)
+  void NumProcVisualization :: PrintReport (ostream & ost) const
   {
     ost << "NumProcVisualization:" << endl;
   }
@@ -3201,7 +3201,7 @@ public:
     return "NumProcPause";
   }
 
-  virtual void PrintReport (ostream & ost)
+  virtual void PrintReport (ostream & ost) const
   {
     ost << GetClassName() << endl
         << "pause for " << seconds << " seconds" << endl;
@@ -3248,7 +3248,7 @@ public:
     return "NumProcVtuneProfiling";
   }
 
-  virtual void PrintReport (ostream & ost)
+  virtual void PrintReport (ostream & ost) const
   {
     ost << GetClassName() << endl
         << "pause/resume vtune profiling" << endl;
@@ -3364,7 +3364,7 @@ public:
     return "NumProcTestVariable";
   }
 
-  virtual void PrintReport (ostream & ost)
+  virtual void PrintReport (ostream & ost) const
   {
     ost << GetClassName() << endl
         << "Compare variable" << varname << " with reference values " 

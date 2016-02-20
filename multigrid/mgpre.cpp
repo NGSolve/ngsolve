@@ -358,7 +358,6 @@ namespace ngmg
     //  const_cast<BaseMatrix*> (cpre) -> Update();
     if ( smoother )
     smoother -> Update();
-    //  jacsmoother -> Update();
     //    cout << "update 2level smoother" << endl;
   }
 

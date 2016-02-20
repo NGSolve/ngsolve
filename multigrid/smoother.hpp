@@ -166,7 +166,7 @@ namespace ngmg
   class BlockSmoother : public Smoother
   {
     ///
-    const MeshAccess & ma;
+    // const MeshAccess & ma;
     ///
     const BilinearForm & biform;
     ///

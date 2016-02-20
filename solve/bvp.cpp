@@ -69,7 +69,7 @@ namespace ngsolve
       return "Boundary Value Problem";
     }
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl
 	  << "Bilinear-form = " << bfa->GetName() << endl
@@ -479,7 +479,7 @@ namespace ngsolve
       return "Boundary Value Problem";
     }
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl
 	  << "Bilinear-form = " << bfa->GetName() << endl
