@@ -88,13 +88,21 @@ namespace std
     return sum;
   }
 
+  template<typename T>
+  INLINE atomic<T> & AsAtomic (T & d)
+  {
+    return reinterpret_cast<atomic<T>&> (d);
+  }
   
   INLINE void MyAtomicAdd (double & sum, double val)
   {
+    AsAtomic(sum) += val;
+    /*
     auto & asum = reinterpret_cast<atomic<double>&>(sum);
     auto current = asum.load();
     while (!asum.compare_exchange_weak(current, current + val))
       ;
+    */
   }
   
 }

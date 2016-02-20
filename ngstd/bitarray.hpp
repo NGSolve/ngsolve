@@ -68,8 +68,12 @@ public:
     unsigned char * p = data+Addr(i);
     unsigned char mask = Mask(i);
 
+    /*
 #pragma omp atomic
     (*p) |= mask;
+    */
+    AsAtomic(*p) |= mask;
+    
     // data[Addr(i)] |= Mask(i); 
   }
 
