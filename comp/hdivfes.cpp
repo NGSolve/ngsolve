@@ -155,15 +155,16 @@ namespace ngcomp
     // (*testout) << "sel = " << selnr << ", dofs = " << dnums << endl;
   }
 
+  /*
   Table<int> * RaviartThomasFESpace :: CreateSmoothingBlocks (int type) const
   {
     return 0;
   }
-  
+  */
   
   void RaviartThomasFESpace :: 
   VTransformMR (int elnr, bool boundary,
-		FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const
+		const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
     
@@ -191,7 +192,7 @@ namespace ngcomp
     
   void  RaviartThomasFESpace ::
   VTransformVR (int elnr, bool boundary,
-		FlatVector<double> & vec, TRANSFORM_TYPE tt) const
+		const FlatVector<double> & vec, TRANSFORM_TYPE tt) const
   {
     int nd = 3;
     

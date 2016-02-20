@@ -430,7 +430,7 @@ namespace ngla
 
 
   template <class SCAL>
-  BaseMatrix *  ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const
+  shared_ptr<BaseMatrix> ElementByElementMatrix<SCAL> :: InverseMatrix ( BitArray * subset ) const
   {
     cout << "wird das tatsaechlich verwendet ???" << endl;
     throw Exception ("not available any longer!");

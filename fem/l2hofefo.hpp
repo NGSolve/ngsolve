@@ -188,7 +188,7 @@ namespace ngfem
     }
     */
 
-    HD virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+    HD virtual void Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
     {
       // static Timer t("evaluate");
       // RegionTimer r(t);
@@ -206,7 +206,7 @@ namespace ngfem
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
-    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
+    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, SliceVector<> coefs) const
     {
       /*
         static Timer t("evaluate grad trans");

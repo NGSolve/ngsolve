@@ -1961,9 +1961,11 @@ namespace ngcomp
 
 
 
-  Table<int> * NedelecFESpace2 :: 
-  CreateSmoothingBlocks (int type) const
+  Table<int> * NedelecFESpace2 ::
+  CreateSmoothingBlocks (const Flags & precflags) const
+  // CreateSmoothingBlocks (int type) const
   {
+    int type = int(precflags.GetNumFlag("blocktype", NedelecFESpace::SB_AFW));
     cout << "Ned2, CreateSmoothingblocks, type = " << type << endl;
     int ne = ma->GetNE();
     // int nse = ma->GetNSE();

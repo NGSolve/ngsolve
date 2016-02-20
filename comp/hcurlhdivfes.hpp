@@ -291,7 +291,8 @@ public:
   ///
   virtual void LockSomeDofs (BaseMatrix & mat) const;
   ///
-  virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+  // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+  virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
   /// for anisotropic plane smoothing
   virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
 

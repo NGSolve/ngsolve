@@ -119,7 +119,7 @@ namespace ngcomp
     augmented = int (flags.GetNumFlag ("augmented", 0));
 
 
-    // Evaluator 
+    // Evaluator
     static ConstantCoefficientFunction one(1);
     integrator = GetIntegrators().CreateBFI("massedge", ma->GetDimension(), &one);
     if (!discontinuous)

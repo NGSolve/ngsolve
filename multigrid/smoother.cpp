@@ -43,7 +43,7 @@ namespace ngmg
   GSSmoother :: 
   GSSmoother  (const MeshAccess & ama,
 	       const BilinearForm & abiform)
-    : ma(ama), biform(abiform)
+    : /* ma(ama), */ biform(abiform)
   {
     Update();
   }

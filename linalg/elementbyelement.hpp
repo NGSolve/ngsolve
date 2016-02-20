@@ -95,8 +95,8 @@ namespace ngla
 //       return new BlockJacobiPrecond_ElByEl<SCAL> (*this, blocks );
 //     }
 
-
-    virtual BaseMatrix * 
+    using BaseMatrix::InverseMatrix;
+    virtual shared_ptr<BaseMatrix> 
     InverseMatrix (BitArray * subset = 0) const;
 
     int GetNZE () const

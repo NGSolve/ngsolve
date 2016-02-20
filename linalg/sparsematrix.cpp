@@ -1903,7 +1903,7 @@ namespace ngla
     *cmat = 0.;
     RegionTimer reg2(tcomp);
 
-#pragma omp parallel for	  
+    // #pragma omp parallel for	  
     for (int i = 0; i < n; i++)
       {
         FlatArray<int> mat_ri = this->GetRowIndices(i);
@@ -1928,14 +1928,14 @@ namespace ngla
                   if ( kk>=ll && kk < cmat->Height() )
                     {
                       auto val = prol_rowval[k] * prol_colval[l] * mat_val;
-#pragma omp atomic                      
+                      // #pragma omp atomic                      
                       (*cmat)(kk,ll) += val;
                     }
                   
                   if (ll >= kk && i != col && ll < cmat->Height() )
                     {
                       auto val = prol_colval[l] * prol_rowval[k] * Trans(mat_val);
-#pragma omp atomic                      
+                      // #pragma omp atomic                      
                       (*cmat)(ll,kk) += val;
                     }
                   

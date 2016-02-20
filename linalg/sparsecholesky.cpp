@@ -1462,28 +1462,38 @@ void CalcLDL (SliceMatrix<T> mat)
 #endif
 
 
-
-
-
-
-
-
+  /*
+  INLINE void MyAtomicAdd (double & sum, double val)
+  {
+    auto & asum = reinterpret_cast<atomic<double>&>(sum);
+    auto current = asum.load();
+    while (!asum.compare_exchange_weak(current, current + val))
+      ;
+  }
+  */
   
+  /*
   inline void MyAtomicAdd (double & x, double y)
   {
 #pragma omp atomic
     x += y;
   }
-
+  */
+  using ngstd::MyAtomicAdd;
   inline void MyAtomicAdd (Complex & x, Complex y)
   {
-    
+    /*
     auto real = y.real();
 #pragma omp atomic
     reinterpret_cast<double(&)[2]>(x)[0] += real;
     auto imag = y.imag();
 #pragma omp atomic
     reinterpret_cast<double(&)[2]>(x)[1] += imag;
+    */
+    auto real = y.real();
+    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
+    auto imag = y.imag();
+    ngstd::MyAtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
   }
 
   template <int DIM, typename SCAL, typename TANY>

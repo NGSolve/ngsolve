@@ -40,10 +40,10 @@ namespace ngcomp
 
   void LinearForm :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
-    if (&GetVector())  
+    if (GetVectorPtr())  
       {
 	int olds = mu.Size();
-	GetVector().MemoryUsage (mu);
+	GetVectorPtr()->MemoryUsage (mu);
 	for (int i = olds; i < mu.Size(); i++)
 	  mu[i]->AddName (string(" lf ")+GetName());
       }
@@ -204,7 +204,7 @@ namespace ngcomp
 
 
             /*
-              // no costs ...
+            // no costs ...
             SharedLoop sl (ma->GetNE());
             task_manager -> CreateJob
               ( [this, &clh, &sl] (const TaskInfo & ti) 
@@ -836,7 +836,7 @@ namespace ngcomp
 
   ComponentLinearForm :: ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp)
     : LinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_lf->GetFESpace()))[acomp], "comp-lf", Flags()), 
-      base_lf(abase_lf), comp(acomp), ncomp(ancomp)
+      base_lf(abase_lf), comp(acomp) // , ncomp(ancomp)
   { 
     ;
   }

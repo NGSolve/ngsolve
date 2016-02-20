@@ -539,7 +539,7 @@ namespace ngfem
     PolynomialCoefficientFunction(const Array < Array< Array<double>* >* > & polycoeffs_in, const Array < Array<double>* > & polybounds_in);
   
     virtual ~PolynomialCoefficientFunction();
-
+    using CoefficientFunction::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const; 
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip, const double & t) const;

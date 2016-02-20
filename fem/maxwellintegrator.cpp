@@ -10,7 +10,6 @@
 */
 
 #define FILE_HCURL_EQUATIONS_CPP 
-#pragma implementation "hcurl_equations.hpp"
 
 #include <fem.hpp>
 #include <diffop_impl.hpp>

@@ -77,32 +77,32 @@ namespace ngcomp
     ///
     virtual ~HCurlHighOrderFESpace ();
   
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "HCurlHighOrderFESpace";
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     ///
-    virtual void DoArchive (Archive & archive);
+    virtual void DoArchive (Archive & archive) override;
     ///
-    virtual int GetNDof () const throw();
+    virtual int GetNDof () const throw() override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     const FiniteElement & T_GetFE (int elnr, LocalHeap & lh) const;
 
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
 
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
     ///
 
 
@@ -111,11 +111,11 @@ namespace ngcomp
     ///
     void SetGradientBoundaries (const BitArray & abnds);
 
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
   
     //virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
     ///
     SparseMatrix<double> * CreateGradient() const; 
  
@@ -134,17 +134,16 @@ namespace ngcomp
     int GetMinOrder() const {return minorder;}; 
 
 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
 
     bool GetFineEdge( const int i ) const {return fine_edge[i]; };
     bool GetFineFace( const int i ) const {return fine_face[i]; };
 
-    virtual bool VarOrder() const { return var_order; }
-
-    virtual int GetRelOrder() const { return rel_order; } 
+    virtual bool VarOrder() const override { return var_order; }
+    virtual int GetRelOrder() const override { return rel_order; } 
 
     virtual bool Discontinuous() const { return discontinuous; }
 

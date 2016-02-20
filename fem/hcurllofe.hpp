@@ -997,12 +997,13 @@ static Matrix<> trans;
   public:
     FE_Quad3();
     virtual ~FE_Quad3();
-    virtual ELEMENT_TYPE ElementType() const { return ET_QUAD; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_QUAD; }
 
+    using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const;
+			    SliceVector<> shape) const override;
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const;
+			     SliceMatrix<> dshape) const override;
   }; 
 
 

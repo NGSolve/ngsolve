@@ -28,7 +28,7 @@ namespace ngcomp
     ;
   }
 
-  void NumProc :: PrintReport (ostream & ost)
+  void NumProc :: PrintReport (ostream & ost) const
   {
     ost << "Base-class NumProc" << endl;
   }

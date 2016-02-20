@@ -46,7 +46,7 @@ public:
   ///
   shared_ptr<PDE> GetPDE() const { return shared_ptr<PDE>(pde); }
   ///
-  virtual void PrintReport (ostream & ost);
+  virtual void PrintReport (ostream & ost) const;
   ///
   static void PrintDoc (ostream & ost);
 };
