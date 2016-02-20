@@ -297,10 +297,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dirichlet_edge = false;
     dirichlet_face = false;
 
-#pragma omp parallel
+    // for clang compatibility ... 
+    // #pragma omp parallel    
     {
       if (dirichlet_boundaries.Size())
-        for (Ngs_Element ngel : ma->Elements(BND).OmpSplit())
+        for (Ngs_Element ngel : ma->Elements(BND))  // .OmpSplit())
           if (dirichlet_boundaries[ngel.GetIndex()])
             {
               dirichlet_vertex[ngel.Vertices()] = true;

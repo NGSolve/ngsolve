@@ -709,7 +709,7 @@ namespace ngcomp
   {
     typedef  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> > BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using  T_BDBIntegrator<DiffOpIdHDG<D>, DiagDMat<1> >::T_BDBIntegrator;
     virtual string Name () const { return "Mass-HDG"; }
   };
 

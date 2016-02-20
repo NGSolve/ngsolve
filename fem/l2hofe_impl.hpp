@@ -103,7 +103,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
-  Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const
+  Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const
   {
 #ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
@@ -117,7 +117,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, SliceVector<> coefs) const
   {
 #ifndef __CUDA_ARCH__
     int classnr =  ET_trait<ET>::GetClassNr (vnums);
@@ -132,7 +132,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
-  EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const
+  EvaluateGrad (const IntegrationRule & ir, SliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const
     {
 #ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);
@@ -150,7 +150,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, class SHAPES, class BASE>
   void L2HighOrderFE<ET,SHAPES,BASE> :: 
-  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const
+  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, SliceVector<> coefs) const
     {
 #ifndef __CUDA_ARCH__
       int classnr =  ET_trait<ET>::GetClassNr (vnums);

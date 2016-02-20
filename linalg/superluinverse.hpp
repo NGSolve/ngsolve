@@ -123,7 +123,7 @@ template<class TM,
     ///
     const TM & Get (int i, int j) const;
 */
-    virtual BaseVector * CreateVector () const
+    virtual AutoVector CreateVector () const
     {
       return new VVector<TV> (height);
     }

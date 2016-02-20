@@ -1,6 +1,5 @@
 puts "loading ngsolve library"
 if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
-    puts "library loaded"
     puts "cannot load ngsolve" 
     puts "error: $result"
 } 

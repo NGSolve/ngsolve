@@ -107,13 +107,13 @@ namespace ngfem
     NGS_DLL_HEADER virtual void PrecomputeShapes (const IntegrationRule & ir);
 
     using BASE::Evaluate;
-    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, FlatVector<double> vals) const;
-    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, FlatVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceVector<double> coefs, FlatVector<double> vals) const;
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, FlatVector<> values, SliceVector<> coefs) const;
 
-    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, FlatVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, SliceVector<> coefs, FlatMatrixFixWidth<DIM> values) const;
 
     using BASE::EvaluateGradTrans;
-    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, FlatVector<> coefs) const;
+    HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, SliceVector<> coefs) const;
 
     NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<DIM> grad) const;
     NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<DIM> grad, FlatVector<> coefs) const;

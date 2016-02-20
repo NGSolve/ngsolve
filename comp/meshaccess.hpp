@@ -107,8 +107,8 @@ namespace ngcomp
     ElementIterator end () const { return ElementIterator(ma, ElementId(vb,IntRange::Next())); }
     ElementId operator[] (int nr) { return ElementId(vb, IntRange::First()+nr); }
 
-    ElementRange OmpSplit() const 
-    {
+    // ElementRange OmpSplit() const 
+    // {
       /*
       int id = omp_get_thread_num();
       int tot = omp_get_num_threads();
@@ -116,8 +116,8 @@ namespace ngcomp
       int n = IntRange::First() + (long(Size()) * (id+1)) / tot;
       return ElementRange (ma, vb, IntRange(f,n));
       */
-      return ElementRange (ma, vb, ::OmpSplit(IntRange(*this)));
-    }
+    // return ElementRange (ma, vb, ::OmpSplit(IntRange(*this)));
+    // }
   };
 
   template <VorB VB>

@@ -514,7 +514,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpStrain<D>, OrthotropicElasticityDMat<D>, ScalarFiniteElement<D> >::T_BDBIntegrator;
     ///
     /*
     OrthotropicElasticityIntegrator (CoefficientFunction * coefE1,
@@ -549,7 +549,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> > BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpStrain<D>, OrthotropicCylElasticityDMat<D>, ScalarFiniteElement<D> >::T_BDBIntegrator;
     ///
     /*
     OrthotropicCylElasticityIntegrator (CoefficientFunction * coefE1,

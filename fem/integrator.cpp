@@ -886,7 +886,7 @@ namespace ngfem
   }  
 
 
-
+#ifdef OLD_REMOVED_FOR_CLANG
   void  BlockBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
@@ -992,7 +992,7 @@ namespace ngfem
       }
     */
   }
-
+#endif
 
 
   void  BlockBilinearFormIntegrator :: 
@@ -1389,7 +1389,7 @@ namespace ngfem
 
 
   
-
+  /*
   void ComplexBilinearFormIntegrator :: 
   CalcFlux (const FiniteElement & fel,
 	    const ElementTransformation & eltrans,
@@ -1402,6 +1402,7 @@ namespace ngfem
     bfi->CalcFlux (fel, eltrans(ip, lh), elx, flux, applyd, lh);
     flux *= factor;
   }
+  */
 
   void ComplexBilinearFormIntegrator ::
   CalcFlux (const FiniteElement & fel,

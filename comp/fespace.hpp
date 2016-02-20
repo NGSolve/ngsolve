@@ -725,7 +725,7 @@ namespace ngcomp
 
 
 
-
+#ifdef OLD_REMOVED_FOR_CLANG
   template <typename TFUNC>
   inline void IterateElementsInsideParallel (const FESpace & fes, 
                                              VorB vb, 
@@ -749,7 +749,7 @@ namespace ngcomp
         }
     // cout << "lh, used size = " << lh.UsedSize() << endl;
   }
-
+#endif
 
 
 

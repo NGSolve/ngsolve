@@ -283,7 +283,7 @@ public:
     using BASE::firstinrow;
 
     using BASE::blocks;
-    using BASE::MicroTask;
+    using typename BASE::MicroTask;
     using BASE::microtasks;
     using BASE::micro_dependency;
     using BASE::micro_dependency_trans;

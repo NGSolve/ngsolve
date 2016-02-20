@@ -445,7 +445,7 @@ public:
   {
     typedef T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> > BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurlBoundaryEdge<>, DiagDMat<1>, HCurlFiniteElement<2> >::T_BDBIntegrator;
     ///
     virtual bool BoundaryForm () const { return 1; }
     ///
@@ -459,7 +459,7 @@ public:
   {
     typedef  T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurlEdge<D>, OrthoDMat<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BDBIntegrator;
     ///
     virtual string Name () const { return "CurlCurlEdgeOrtho"; }
   };
@@ -566,7 +566,7 @@ public:
   {
     typedef T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DiagDMat<D>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "RobinEdge"; }
   };
 
@@ -582,7 +582,7 @@ public:
   {
     typedef T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpIdEdge<D>, DVec<D>, FEL>::T_BIntegrator;
     virtual string Name () const { return "SourceEdge"; }
   };
 
@@ -612,7 +612,7 @@ public:
   {
     typedef T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DVec<D>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpIdBoundaryEdge<D,FEL>, DVec<D>, FEL>::T_BIntegrator;
     ///
     /*
     NeumannEdgeIntegrator (CoefficientFunction * coeff1,
@@ -660,7 +660,7 @@ public:
   {
     typedef  T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpCurlEdge<D>, DVec<DIM_CURL_TRAIT<D>::DIM>, FEL>::T_BIntegrator;
     /*
     ///
     CurlEdgeIntegrator (CoefficientFunction * coeff1)
@@ -708,7 +708,7 @@ public:
   {
     typedef T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpCurlBoundaryEdge<FEL>, DVec<1>, FEL>::T_BIntegrator;
     /*
     ///
     CurlBoundaryEdgeIntegrator (CoefficientFunction * coeff1)

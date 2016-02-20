@@ -605,7 +605,7 @@ namespace ngfem
     virtual void CalcElementMatrix (const FiniteElement & fel,
 				    const ElementTransformation & eltrans, 
 				    FlatMatrix<double> elmat,
-				    LocalHeap & lh) {
+				    LocalHeap & lh) const {
       throw Exception ("FacetBilinearFormIntegrator can not assemble volumetric element matrices!");
     }
     
@@ -714,7 +714,7 @@ namespace ngfem
 				 FlatMatrix<Complex> elmat,
 				 LocalHeap & lh) const;
 
-
+    /*
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const ElementTransformation & eltrans,
@@ -732,7 +732,7 @@ namespace ngfem
 	      FlatVector<Complex> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
-
+    */
 
 
     virtual void
@@ -892,7 +892,7 @@ namespace ngfem
 			FlatVector<Complex> ely,
 			void * precomputed,
 			LocalHeap & lh) const;
-
+    /*
     virtual void
     CalcFlux (const FiniteElement & fel,
 	      const ElementTransformation & eltrans,
@@ -901,7 +901,7 @@ namespace ngfem
 	      FlatVector<Complex> flux,
 	      bool applyd,
 	      LocalHeap & lh) const;
-
+    */
 
     virtual void
     CalcFlux (const FiniteElement & fel,

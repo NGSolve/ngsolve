@@ -265,15 +265,7 @@ class MassHDivIntegrator
 {
   typedef  T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> > BASE;
 public:
-  using BASE::T_BDBIntegrator;
-  /*
-  NGS_DLL_HEADER MassHDivIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new MassHDivIntegrator (coeffs[0]);
-  }
-  */
+  using T_BDBIntegrator<DiffOpIdHDiv<D>, DiagDMat<D>, HDivFiniteElement<D> >::T_BDBIntegrator;
   virtual string Name () const { return "MassHDiv"; }
 };
 
@@ -286,15 +278,7 @@ class DivDivHDivIntegrator
 {
   typedef  T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> > BASE;
 public:
-  using BASE::T_BDBIntegrator;
-  /*
-  NGS_DLL_HEADER DivDivHDivIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new DivDivHDivIntegrator (coeffs[0]);
-  }
-  */
+  using T_BDBIntegrator<DiffOpDivHDiv<D>, DiagDMat<1>, HDivFiniteElement<D> >::T_BDBIntegrator;
   virtual string Name () const { return "DivDivHDiv"; }
 };
 
@@ -308,15 +292,7 @@ class NGS_DLL_HEADER DivSourceHDivIntegrator
 {
   typedef  T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, HDivFiniteElement<D> > BASE;
 public:
-  using BASE::T_BIntegrator;
-  /*
-  DivSourceHDivIntegrator (CoefficientFunction * coeff);
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs)
-  {
-    return new DivSourceHDivIntegrator (coeffs[0]);
-  }
-  */
+  using T_BIntegrator<DiffOpDivHDiv<D>, DVec<1>, HDivFiniteElement<D> >::T_BIntegrator;
   virtual string Name () const { return "DivSourceHDiv"; }
 };
 
@@ -357,24 +333,7 @@ class NGS_DLL_HEADER BaseSourceHDivIntegrator
 {
   typedef  T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> > BASE;
 public:
-  using BASE::T_BIntegrator;
-  /*
-  BaseSourceHDivIntegrator(const DVec<D> & dvec)
-    : T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> > (dvec) { ; }
-
-  static Integrator * Create (Array<CoefficientFunction*> & coeffs);
-  */
-
-
-  /*
-  {
-    if(D == 2)
-      return new SourceHDivIntegrator<2> (coeffs[0], coeffs[1]);
-    else if (D == 3)
-      return new SourceHDivIntegrator<3> (coeffs[0], coeffs[1], coeffs[2]);
-  }
-  */
-  ///
+  using T_BIntegrator<DiffOpIdHDiv<D>, DVec<D>, HDivFiniteElement<D> >::T_BIntegrator;
   virtual string Name () const { return "SourceHDiv"; }
 };
 
@@ -386,12 +345,8 @@ class NGS_DLL_HEADER SourceHDivIntegrator<2>
 {
   typedef  BaseSourceHDivIntegrator<2>  BASE;
 public:
-  using BASE::BaseSourceHDivIntegrator;
+  using BaseSourceHDivIntegrator<2>::BaseSourceHDivIntegrator;
   SourceHDivIntegrator() = delete;
-  /*
-  SourceHDivIntegrator (CoefficientFunction * coeff1,
-                        CoefficientFunction * coeff2);
-  */
 };
 
 template <>
@@ -400,13 +355,8 @@ class NGS_DLL_HEADER SourceHDivIntegrator<3>
 {
   typedef  BaseSourceHDivIntegrator<3>  BASE;
 public:
-  using BASE::BaseSourceHDivIntegrator;
+  using BaseSourceHDivIntegrator<3>::BaseSourceHDivIntegrator;
   SourceHDivIntegrator() = delete;
-  /*
-  SourceHDivIntegrator (CoefficientFunction * coeff1,
-                        CoefficientFunction * coeff2,
-                        CoefficientFunction * coeff3);
-  */
 };
 
 
@@ -417,11 +367,7 @@ class NGS_DLL_HEADER SourceHDivIntegratorN
 {
   typedef  T_BIntegrator<DiffOpIdHDiv<D>, DVecN<D>, HDivFiniteElement<D> > BASE;
 public:
-  using BASE::T_BIntegrator;
-  /*
-  SourceHDivIntegratorN(CoefficientFunction * coeff)
-    : T_BIntegrator<DiffOpIdHDiv<D>, DVecN<D>, HDivFiniteElement<D> > (DVecN<D> (coeff)) { ; }
-  */
+  using T_BIntegrator<DiffOpIdHDiv<D>, DVecN<D>, HDivFiniteElement<D> >::T_BIntegrator;
   virtual string Name () const { return "VecSourceHDiv"; }
 };
 
@@ -438,7 +384,7 @@ class NGS_DLL_HEADER NeumannHDivIntegrator
 {
   typedef  T_BIntegrator<DiffOpIdHDivBoundary<D>, DVec<1>, FEL> BASE;
 public:
-  using BASE::T_BIntegrator;
+  using T_BIntegrator<DiffOpIdHDivBoundary<D>, DVec<1>, FEL>::T_BIntegrator;
   ///
   /*
   NeumannHDivIntegrator (CoefficientFunction * coeff)
@@ -464,7 +410,7 @@ class RobinHDivIntegrator
 {
   typedef  T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<D>, HDivNormalFiniteElement<D-1> > BASE;
 public:
-  using BASE::T_BDBIntegrator;
+  using T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<D>, HDivNormalFiniteElement<D-1> >::T_BDBIntegrator;
   /*
   NGS_DLL_HEADER RobinHDivIntegrator (CoefficientFunction * coeff)
     : T_BDBIntegrator<DiffOpIdVecHDivBoundary<D>, DiagDMat<D>, HDivNormalFiniteElement<D-1> > (DiagDMat<D> (coeff))

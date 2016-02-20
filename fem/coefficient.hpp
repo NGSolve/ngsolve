@@ -1209,7 +1209,7 @@ public:
                         FlatVector<> result) const
   {
     result = 0;
-    if (!&ip.GetTransformation()) return;
+    // if (!&ip.GetTransformation()) return;
 
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -1221,7 +1221,7 @@ public:
                         FlatVector<Complex> result) const
   {
     result = 0;
-    if (!&ip.GetTransformation()) return;
+    // if (!&ip.GetTransformation()) return;
 
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -1234,7 +1234,7 @@ public:
   {
     result = 0;
     deriv = 0;
-    if (!&mir.GetTransformation()) return;
+    // if (!&mir.GetTransformation()) return;
 
     int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -1249,7 +1249,7 @@ public:
     result = 0;
     deriv = 0;
     dderiv = 0;
-    if (!&mir.GetTransformation()) return;
+    // if (!&mir.GetTransformation()) return;
 
     int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
