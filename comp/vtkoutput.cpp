@@ -304,8 +304,11 @@ namespace ngcomp
   {
     vtkout->Do(lh);
   }
-  
-static RegisterNumProc<NumProcVTKOutput> npvtkout("vtkoutput");
 
+  
+  static RegisterNumProc<NumProcVTKOutput> npvtkout("vtkoutput");
+
+  template class VTKOutput<2>;
+  template class VTKOutput<3>;
 }
 
