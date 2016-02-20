@@ -71,6 +71,32 @@ namespace std
   {
     return integral_constant<int,I1+I2>();
   }
+
+
+
+ /*
+  INLINE void MyAtomicAdd(atomic<double> & sum, double val) {
+    auto current = sum.load();
+    while (!sum.compare_exchange_weak(current, current + val))
+      ;
+  }
+  */
+  INLINE atomic<double> & operator+= (atomic<double> & sum, double val) {
+    auto current = sum.load();
+    while (!sum.compare_exchange_weak(current, current + val))
+      ;
+    return sum;
+  }
+
+  
+  INLINE void MyAtomicAdd (double & sum, double val)
+  {
+    auto & asum = reinterpret_cast<atomic<double>&>(sum);
+    auto current = asum.load();
+    while (!asum.compare_exchange_weak(current, current + val))
+      ;
+  }
+  
 }
 
 

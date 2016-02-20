@@ -16,8 +16,6 @@
 namespace ngla
 {
 
-  
-
 
   /*
   BaseVector :: BaseVector ()
@@ -60,12 +58,13 @@ namespace ngla
     FlatVector<double> me = FVDouble();
     t.AddFlops (me.Size());
     
-    double sum = 0;
+    atomic<double> sum(0.0);
     ParallelForRange ( me.Range(),
                        [&] (IntRange r) 
                        {
                          double mysum = ngbla::L2Norm2 (me.Range(r));
-#pragma omp atomic
+                         // #pragma omp atomic
+                         // sum += mysum;
                          sum += mysum;
                        });
 
@@ -139,7 +138,7 @@ namespace ngla
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
   {
     if(Size() != v.Size())
-        throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
+      throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
     FVComplex() = scal * v.FVComplex();
     return *this;
   }
@@ -165,7 +164,7 @@ namespace ngla
   BaseVector & BaseVector :: Add (Complex scal, const BaseVector & v)
   {
     if(Size() != v.Size())
-        throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size() + " != size of other = " + ToString(v.Size())));
+      throw Exception (string ("BaseVector::Add: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
     FVComplex() += scal * v.FVComplex();
     return *this;
   }
@@ -589,13 +588,13 @@ namespace ngla
     FlatVector<double> you = v2.FVDouble();
 	
     t.AddFlops (me.Size());
-    double scal = 0;
+    atomic<double> scal(0);
 
     ParallelForRange ( ngstd::Range(me.Size()),
                        [me,you,&scal] (IntRange r)
                       {
                         double myscal = ngbla::InnerProduct (me.Range(r), you.Range(r));
-#pragma omp atomic
+                        // #pragma omp atomic
                         scal += myscal;
                       } );
 	

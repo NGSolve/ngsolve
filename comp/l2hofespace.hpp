@@ -165,8 +165,7 @@ namespace ngcomp
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
   
-    virtual Table<int> * CreateSmoothingBlocks ( int type = 0) const;
-
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
     /// 
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;

@@ -85,7 +85,7 @@ namespace ngmg
   class GSSmoother : public Smoother
   {
     ///
-    const MeshAccess & ma;
+    // const MeshAccess & ma;
     ///
     const BilinearForm & biform;
     ///

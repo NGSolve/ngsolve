@@ -60,48 +60,48 @@ namespace ngcomp
     ///
     virtual ~H1HighOrderFESpace ();
 
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "H1HighOrderFESpace";
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
 
-    virtual void DoArchive (Archive & archive);
+    virtual void DoArchive (Archive & archive) override;
 
     ///
-    virtual int GetNDof () const throw() { return ndof; }
+    virtual int GetNDof () const throw() override { return ndof; }
     ///
-    virtual int GetNDofLevel (int alevel) const;
+    virtual int GetNDofLevel (int alevel) const override;
     ///
-    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     /// 
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetFE (int elnr, Allocator & alloc) const;
     ///
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const;
+    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
   
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const; 
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
     ///
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & flags) const override;
 
     void UpdateDofTables ();
     ///
@@ -112,8 +112,8 @@ namespace ngcomp
     void SetElementOrder (int elnr, INT<3> elo) { order_inner[elnr] = elo; }
 
     /// get relative (to mesh) order of finite elements
-    virtual int GetRelOrder() const { return rel_order; }
-    virtual bool VarOrder() const { return var_order; }
+    virtual int GetRelOrder() const override { return rel_order; }
+    virtual bool VarOrder() const override { return var_order; }
 
     IntRange GetEdgeDofs (int nr) const
     {

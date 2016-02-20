@@ -34,6 +34,7 @@ namespace ngfem
 
     HD virtual ELEMENT_TYPE ElementType() const { return fe.ElementType(); }
 
+    using ScalarFiniteElement<D>::CalcShape;
     HD virtual void CalcShape (const IntegrationPoint & ip, 
                                SliceVector<> shape) const
     {

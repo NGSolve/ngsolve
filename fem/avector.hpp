@@ -16,10 +16,7 @@ template <typename T> struct FooAVectorType
 };
 
 
-
-
 #if defined(__AVX2__)
-
 class AFlatVectorD;
 class AFlatMatrixD;
 

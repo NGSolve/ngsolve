@@ -179,13 +179,13 @@ namespace ngcomp
     virtual ~T_LinearForm ();
 
     ///
-    virtual BaseVector & GetVector () const { return *vec; }
-    virtual shared_ptr<BaseVector> GetVectorPtr () const { return vec; }
+    virtual BaseVector & GetVector () const override { return *vec; }
+    virtual shared_ptr<BaseVector> GetVectorPtr () const override { return vec; }
 
     ///
-    virtual void AllocateVector ();
+    virtual void AllocateVector () override;
     ///
-    virtual void CleanUpLevel();
+    virtual void CleanUpLevel() override;
 
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
@@ -204,7 +204,7 @@ namespace ngcomp
   class ComponentLinearForm : public LinearForm
   {
     LinearForm * base_lf;
-    int comp, ncomp;
+    int comp;
   public:
     ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp);
     virtual LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);

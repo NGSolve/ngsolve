@@ -92,7 +92,7 @@ namespace ngcomp
     { return "base-class Preconditioner"; }
 
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << "type = " << ClassName() << endl;
     }

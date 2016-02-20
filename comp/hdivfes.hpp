@@ -49,18 +49,18 @@ namespace ngcomp
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
 
     ///
-    virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
+    // virtual Table<int> * CreateSmoothingBlocks (int type = 0) const;
 
 
     virtual void VTransformMR (int elnr, bool boundary,
-			       FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+			       const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
     virtual void VTransformMC (int elnr, bool boundary,
-			       FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const { ; }
+			       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const { ; }
 
     virtual void VTransformVR (int elnr, bool boundary,
-			       FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+			       const FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
     virtual void VTransformVC (int elnr, bool boundary,
-			       FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const { ; }
+			       const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const { ; }
 
     void GetTransformationFactors (int elnr, FlatVector<> & fac) const;
 

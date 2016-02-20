@@ -634,7 +634,8 @@ namespace ngcomp
   }
   
   Table<int> * L2SurfaceHighOrderFESpace :: 
-  CreateSmoothingBlocks ( int type) const
+  // CreateSmoothingBlocks ( int type) const
+  CreateSmoothingBlocks (const Flags & precflags) const    
   {
     int i, j, first;
     Array<int> cnt(nel);
