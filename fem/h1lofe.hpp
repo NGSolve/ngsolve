@@ -331,9 +331,10 @@ namespace ngfem
 
 
 
-  class FE_NcTrig1 : public T_ScalarFiniteElementFO<FE_NcTrig1,ET_TRIG,3,1>
+  class FE_NcTrig1 : public T_ScalarFiniteElement<FE_NcTrig1,ET_TRIG>
   {
   public:
+    FE_NcTrig1() { ndof = 3; order = 1;}
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
     {
@@ -921,7 +922,7 @@ namespace ngfem
   */
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TRIG,0>,ET_TRIG,1,0>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TRIG,1>,ET_TRIG,3,1>;
-  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_NcTrig1,ET_TRIG,3,1>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_NcTrig1,ET_TRIG,3,1>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_QUAD,0>,ET_QUAD,1,0>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_QUAD,1>,ET_QUAD,4,1>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Quad2,ET_QUAD,9,2>;

@@ -1076,7 +1076,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> >::T_BDBIntegrator;
     /*
     NormalRobinIntegrator (CoefficientFunction * coeff)
       : T_BDBIntegrator<DiffOpNormal<D>, DiagDMat<1>, ScalarFiniteElement<D-1> > (DiagDMat<1> (coeff))
@@ -1108,7 +1108,7 @@ namespace ngfem
     typedef T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL> BASE;
     
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpGradient<D>, DiagDMat<D>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "Laplace"; }
   };
 
@@ -1120,7 +1120,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpGradientBoundary<D>, DiagDMat<D>, FEL>::T_BDBIntegrator;
     /*
     LaplaceBoundaryIntegrator (shared_ptr<CoefficientFunction> coeff) 
       : BASE(DiagDMat<D>(coeff)) { ; }
@@ -1137,7 +1137,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpGradient<D>, RotSymLaplaceDMat<D>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "RotSymLaplace"; }
   };
 
@@ -1149,7 +1149,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpGradient<D>, OrthoDMat<D>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "OrthoLaplace"; }
   };
 
@@ -1161,7 +1161,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpId<D>, DiagDMat<1>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "Mass"; }
   };
 
@@ -1173,7 +1173,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpIdBoundary<D>, DiagDMat<1>, FEL>::T_BDBIntegrator;
     // RobinIntegrator (shared_ptr<CoefficientFunction> coeff) : BASE(DiagDMat<1> (coeff)) { ; }
     // nvirtual ~RobinIntegrator () { ; }
     // virtual bool BoundaryForm () const { return 1; }
@@ -1240,7 +1240,7 @@ namespace ngfem
   {
     typedef  T_BDBIntegrator<DiffOpDiv<D>, DiagDMat<1>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpDiv<D>, DiagDMat<1>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "DivDiv"; }
   };
 
@@ -1282,7 +1282,7 @@ namespace ngfem
   {
     typedef  T_BDBIntegrator<DiffOpCurl, DiagDMat<1>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurl, DiagDMat<1>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "CurlCurl"; }
   };
 
@@ -1328,7 +1328,7 @@ namespace ngfem
   {
     typedef T_BDBIntegrator<DiffOpCurl3d, DiagDMat<3>, FEL> BASE;
   public:
-    using BASE::T_BDBIntegrator;
+    using T_BDBIntegrator<DiffOpCurl3d, DiagDMat<3>, FEL>::T_BDBIntegrator;
     virtual string Name () const { return "CurlCurl3d"; }
   };
 
@@ -1365,7 +1365,7 @@ namespace ngfem
   {
     typedef T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using  T_BIntegrator<DiffOpId<D>, DVec<1>, FEL>::T_BIntegrator;
     /*
     SourceIntegrator (shared_ptr<CoefficientFunction> coeff)
       : T_BIntegrator<DiffOpId<D>, DVec<1>, FEL> (DVec<1> (coeff))
@@ -1383,7 +1383,7 @@ namespace ngfem
   {
     typedef  T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL>::T_BIntegrator;
     /*
     NeumannIntegrator (shared_ptr<CoefficientFunction> coeff)
       : T_BIntegrator<DiffOpIdBoundary<D>, DVec<1>, FEL> (DVec<1> (coeff))
@@ -1402,7 +1402,7 @@ namespace ngfem
   {
     typedef T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpNormal<D>, DVec<1>, FEL>::T_BIntegrator;
     virtual string Name () const { return "NormalNeumann"; }
   };
 
@@ -1416,7 +1416,7 @@ namespace ngfem
   {
     typedef T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL> BASE;
   public:
-    using BASE::T_BIntegrator;
+    using T_BIntegrator<DiffOpGradient<D>, DVec<D>, FEL>::T_BIntegrator;
     virtual string Name () const { return "GradSource"; }
   };
 

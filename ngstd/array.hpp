@@ -215,7 +215,7 @@ namespace ngstd
 
   using IntRange = T_Range<int>;
 
-
+  /*
   template <typename T>
   inline T_Range<T> OmpSplit (T_Range<T> r)
   {
@@ -233,6 +233,7 @@ namespace ngstd
   {
     return data.OmpSplit();
   }
+  */
 
   template <typename T>
   INLINE T_Range<T> Range (T a, T b)
@@ -524,10 +525,12 @@ namespace ngstd
     ArrayIterator<T, TSIZE> end() const
     { return ArrayIterator<T,TSIZE> (*this, size); }
 
+    /*
     FlatArray<T,TSIZE> OmpSplit() const
     {
       return Range(ngstd::OmpSplit(Range()));
     }
+    */
   };
 
 

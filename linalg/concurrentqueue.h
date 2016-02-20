@@ -369,7 +369,7 @@ namespace details
 		return *it;
 	}
 	
-#if !defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if !defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8) || defined(__clang__)
 	template<typename T> struct is_trivially_destructible : std::is_trivially_destructible<T> { };
 #else
 	template<typename T> struct is_trivially_destructible : std::has_trivial_destructor<T> { };

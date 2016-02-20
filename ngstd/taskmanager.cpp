@@ -149,7 +149,12 @@ namespace ngstd
 
   TaskManager :: TaskManager()
     {
+#ifdef _OPENMP
       num_threads = omp_get_max_threads();
+#else //  for clang 
+      num_threads = 4; 
+#endif
+  
       if (MyMPI_GetNTasks() > 1) num_threads = 1;
 
 #ifdef USE_NUMA

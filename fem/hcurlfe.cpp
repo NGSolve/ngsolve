@@ -404,11 +404,9 @@ namespace ngfem
       }
   }
   
-  /*
   template class HCurlFiniteElement<1>;
   template class HCurlFiniteElement<2>;
   template class HCurlFiniteElement<3>;
-  */
 
   /*
     Input: Matrix a, H <= W

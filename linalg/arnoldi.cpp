@@ -31,7 +31,7 @@ namespace ngla
     auto hva = a.CreateVector();
     auto hvm = a.CreateVector();
    
-    int n = hv.FV<SCAL>().Size();    
+    int n = hv.template FV<SCAL>().Size();    
     int m = min2 (numval, n);
 
 
@@ -55,7 +55,7 @@ namespace ngla
 
     hv.SetRandom();
     hv.SetParallelStatus (CUMULATED);
-    FlatVector<SCAL> fv = hv.FV<SCAL>();
+    FlatVector<SCAL> fv = hv.template FV<SCAL>();
     if (freedofs)
       for (int i = 0; i < hv.Size(); i++)
 	if (! (*freedofs)[i] ) fv(i) = 0;

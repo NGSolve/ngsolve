@@ -359,11 +359,12 @@ namespace ngfem
 #define HCURLFE_EXTERN
 #else
 #define HCURLFE_EXTERN extern
-#endif
   
   HCURLFE_EXTERN template class HCurlFiniteElement<1>;
   HCURLFE_EXTERN template class HCurlFiniteElement<2>;
   HCURLFE_EXTERN template class HCurlFiniteElement<3>;
+
+#endif
 
 }
 

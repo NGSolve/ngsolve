@@ -290,6 +290,7 @@ namespace ngstd
 
       void WriteEvents()
         {
+#ifdef _OPENMP // for clang
           cout << "Sorting traces..." << flush;
           std::sort (events.begin(), events.end());
           cout << " finished" << endl;
@@ -330,6 +331,9 @@ namespace ngstd
                 fprintf( ctrace_stream, "%s", &bufs[i][0] );
             }
           cout << endl;
+#else
+          cout << "WriteEvents disabled due to non-existent openmp" << endl;
+#endif
         }
 
     private:

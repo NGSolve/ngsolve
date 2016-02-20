@@ -658,7 +658,7 @@ namespace ngla
   
 
   template class S_BaseVector<double>;
-  // template class S_BaseVector<Complex>;
+  template class S_BaseVector<Complex>;
   
   template class VFlatVector<double>;
   
