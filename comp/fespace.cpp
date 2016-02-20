@@ -8,12 +8,13 @@
    Finite Element Space
 */
 
-#pragma implementation "fespace.hpp"
+// #pragma implementation "fespace.hpp"
 
 #include <comp.hpp>
 #include <multigrid.hpp>
 
 #include "../fem/h1lofe.hpp"
+// #include <tscalarfe_impl.hpp>
 #include <parallelngs.hpp>
 
 

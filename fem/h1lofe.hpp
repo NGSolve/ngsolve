@@ -8,6 +8,13 @@
 /*********************************************************************/
 
 
+#ifdef FILE_H1LOFE_CPP
+#define H1LOFE_EXTERN
+#include <tscalarfe_impl.hpp>
+#else
+#define H1LOFE_EXTERN extern
+#endif
+
 
 namespace ngfem
 {
@@ -794,11 +801,6 @@ namespace ngfem
 
   
 
-#ifdef FILE_H1LOFE_CPP
-#define H1LOFE_EXTERN
-#else
-#define H1LOFE_EXTERN extern
-#endif
 
 
   H1LOFE_EXTERN template class  T_ScalarFiniteElement<ScalarDummyFE<ET_POINT>,ET_POINT>;
