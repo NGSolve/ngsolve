@@ -688,7 +688,7 @@ namespace ngcomp
   class ComponentBilinearForm : public BilinearForm
   {
     BilinearForm * base_blf;
-    int comp, ncomp;
+    int comp; // , ncomp;
   public:
     ComponentBilinearForm (BilinearForm * abase_blf, int acomp, int ancomp);
     virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);

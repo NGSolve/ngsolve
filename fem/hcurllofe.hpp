@@ -603,6 +603,7 @@ namespace ngfem
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceMatrix<> shape) const;
 
+    using HCurlFiniteElement<3>::CalcCurlShape;
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 FlatMatrixFixWidth<3> curlshape) const;
 
@@ -756,6 +757,7 @@ static Matrix<> trans3;
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
     ///
+    using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const;
 			  

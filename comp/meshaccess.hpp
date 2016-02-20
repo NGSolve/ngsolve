@@ -285,7 +285,6 @@ namespace ngcomp
     {
       if (task_manager)
         {
-          // SharedLoop sl(Range (GetNE(vb)));
           SharedLoop sl(GetNE(vb));
 
           task_manager -> CreateJob
@@ -297,16 +296,21 @@ namespace ngcomp
                   {
                     HeapReset hr(lh);
                     ElementId ei(vb, mynr);
-                    /*
-                    Ngs_Element el(GetElement(ei), ei);
-                    func (move(el), lh);
-                    */
                     func (GetElement(ei), lh);
                   }
               } );
-          return;
         }
-      
+      else
+        {
+          for (int i = 0; i < GetNE(vb); i++)
+            {
+              HeapReset hr(clh);
+              ElementId ei(vb, i);
+              Ngs_Element el(GetElement(ei), ei);
+              func (move(el), clh);
+            }
+        }
+      /*
 #pragma omp parallel 
       {
         LocalHeap lh = clh.Split();
@@ -320,6 +324,7 @@ namespace ngcomp
             func (move(el), lh);
           }
       }
+      */
     }
 
 

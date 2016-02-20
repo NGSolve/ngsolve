@@ -59,8 +59,8 @@ namespace ngmg
     jac.SetSize (biform.GetNLevels());
     for (i = 0; i < biform.GetNLevels(); i++)
       {
-	if (&biform.GetMatrix(i))
-	  jac[i] = dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(i))
+	if (biform.GetMatrixPtr(i))
+	  jac[i] = dynamic_cast<const BaseSparseMatrix&> (*biform.GetMatrixPtr(i))
 	    .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
 	else
 	  jac[i] = NULL;
@@ -674,7 +674,7 @@ namespace ngmg
   BlockSmoother :: 
   BlockSmoother  (const MeshAccess & ama,
 		  const BilinearForm & abiform, const Flags & aflags)
-    : Smoother(aflags), ma(ama), biform(abiform), constraint(NULL), direct(NULL)
+    : Smoother(aflags), /* ma(ama), */ biform(abiform), constraint(NULL), direct(NULL)
   {
     Update();
   }
@@ -683,7 +683,7 @@ namespace ngmg
   BlockSmoother  (const MeshAccess & ama,
 		  const BilinearForm & abiform,
 		  const LinearForm & aconstraint, const Flags & aflags)
-    : Smoother(aflags), ma(ama), biform(abiform), constraint(&aconstraint), direct(NULL)
+    : Smoother(aflags), /* ma(ama), */ biform(abiform), constraint(&aconstraint), direct(NULL)
   {
     Update();
   }

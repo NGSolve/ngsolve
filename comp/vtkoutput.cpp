@@ -184,10 +184,10 @@ namespace ngcomp
     *fileout << "CELL_TYPES " << cells.Size() << endl;
     if (D==3)
       for (auto c : cells)
-        *fileout << "10 " << endl;
+        { *fileout << "10 " << endl; (void)c; } // no warning 
     else
       for (auto c : cells)
-        *fileout << "5 " << endl;
+        { *fileout << "5 " << endl; (void)c; } // no warning 
     *fileout << "CELL_DATA " << cells.Size() << endl;
     *fileout << "POINT_DATA " << points.Size() << endl;
   }

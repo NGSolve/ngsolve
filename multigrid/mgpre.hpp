@@ -149,8 +149,6 @@ namespace ngmg
     ///
     const BaseMatrix * cpre;
     ///
-    BaseJacobiPrecond * jacsmoother;
-    ///
     Smoother * smoother;
     ///
     int level;

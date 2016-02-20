@@ -39,7 +39,7 @@ namespace ngsolve
       return " Eigenvalue Solver";
     }
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ost << GetClassName() << endl
 	  << "Bilinear-form A = " << bfa->GetName() << endl

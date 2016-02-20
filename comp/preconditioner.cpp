@@ -258,7 +258,7 @@ namespace ngcomp
     virtual const char * ClassName() const
     { return "Multigrid Preconditioner"; }
 
-    virtual void PrintReport (ostream & ost);
+    virtual void PrintReport (ostream & ost) const;
 
     virtual void MemoryUsage (Array<MemoryUsageStruct*> & mu) const;
 
@@ -544,7 +544,7 @@ namespace ngcomp
       return *mgp; 
   }
 
-  void MGPreconditioner::PrintReport (ostream & ost)
+  void MGPreconditioner::PrintReport (ostream & ost) const
   {
     ost << "Multigrid preconditioner" << endl
 	<< "bilinear-form = " << bfa->GetName() << endl

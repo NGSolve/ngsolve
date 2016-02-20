@@ -394,7 +394,7 @@ namespace ngcomp
 			   const double xref[], const double x[], const double dxdxref[],
 			   double * values) ;
 
-    virtual bool GetMultiValue (int elnr, int npts,
+    virtual bool GetMultiValue (int elnr, int facetnr, int npts,
 				const double * xref, int sxref,
 				const double * x, int sx,
 				const double * dxdxref, int sdxdxref,

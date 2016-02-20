@@ -286,7 +286,7 @@ namespace ngfem {
 	  
 	  
 	  __m128i mask = _mm_cmplt_epi32 (_mm_set_epi32(3,2,1,0), _mm_set1_epi32(n-j));
-	  __m256i mask64;
+	  __m256i mask64 = _mm256_setzero_si256();
 	  mask64 = _mm256_insertf128_si256 (mask64, _mm_unpacklo_epi32(mask,mask),0);
 	  mask64 = _mm256_insertf128_si256 (mask64, _mm_unpackhi_epi32(mask,mask),1);
  

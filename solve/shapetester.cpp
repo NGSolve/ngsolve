@@ -98,7 +98,7 @@ namespace ngsolve
       return "Shape tester";
     }
 
-    virtual void PrintReport (ostream & ost)
+    virtual void PrintReport (ostream & ost) const
     {
       ;
     }

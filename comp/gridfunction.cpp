@@ -181,7 +181,7 @@ namespace ngcomp
   void GridFunction :: MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     //if (&const_cast<GridFunction&> (*this).GetVector())
-    if (&this->GetVector())
+    if (this->GetVectorPtr())
       {
 	int olds = mu.Size();
 	//const_cast<GridFunction&> (*this).GetVector().MemoryUsage (mu);
@@ -2164,7 +2164,7 @@ namespace ngcomp
   }
 
   bool VisualizeCoefficientFunction :: 
-  GetMultiValue (int elnr, int npts,
+  GetMultiValue (int elnr, int facetnr, int npts,
 		 const double * xref, int sxref,
 		 const double * x, int sx,
 		 const double * dxdxref, int sdxdxref,

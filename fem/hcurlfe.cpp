@@ -516,6 +516,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_TRIG; }
 
     ///
+    using ScalarFiniteElement<2>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    SliceVector<> shape) const
     {
@@ -1473,10 +1474,11 @@ namespace ngfem
     FE_Tet3EdgeBubble()
       : ScalarFiniteElement<3> (12, 3) { ; }
 
-    virtual ELEMENT_TYPE ElementType() const { return ET_TET; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_TET; }
 
+    using ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    FlatVector<> shape) const
+			    SliceVector<> shape) const override
     {
       shape = 0.0; //!
       double x = ip(0);
@@ -1502,8 +1504,9 @@ namespace ngfem
       shape(11) = c2 * z * (y-z) * y;
     }
 
+    using ScalarFiniteElement<3>::CalcDShape;
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     FlatMatrixFixWidth<3> dshape) const
+			     SliceMatrix<> dshape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -4194,11 +4197,12 @@ namespace ngfem
     FE_Pyramid3RefEdgeBubble()
       : ScalarFiniteElement<3> (16, 3) { ; } 
 
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_PYRAMID; }
     
     ///
+    using  ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const
+			    SliceVector<> shape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -4240,7 +4244,7 @@ namespace ngfem
 
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const
+			     SliceMatrix<> dshape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -4382,10 +4386,11 @@ namespace ngfem
     }
     ///
 
-    virtual ELEMENT_TYPE ElementType() const { return ET_PYRAMID; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET_PYRAMID; }
 
+    using ScalarFiniteElement<3>::CalcShape;
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceVector<> shape) const
+			    SliceVector<> shape) const override
     {
       double x = ip(0);
       double y = ip(1);
@@ -4402,12 +4407,10 @@ namespace ngfem
     }
 
     virtual void CalcDShape (const IntegrationPoint & ip, 
-			     SliceMatrix<> dshape) const
+			     SliceMatrix<> dshape) const override
     {
       cerr << "shape not implemented" << endl;
     }
-    ///
-    // virtual const Array<IPData> & GetIPData () const { return ipdata; }
   };
 
 
