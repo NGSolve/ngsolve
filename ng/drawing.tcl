@@ -15,7 +15,6 @@ set oldmousey 0
 #   puts "no OpenGL" 
 # } {
 
-puts "********* query toglversion *******"
 set toglversion [Ng_GetToglVersion]
 puts "togl-version : $toglversion"
 
@@ -39,7 +38,6 @@ if { [Ng_GetToglVersion] == 2 } {
 }
 
 if { $toglok == 1} {
-    puts "***** togl is ok ********"
     
     #
     pack .ndraw -expand true -fill both -padx 10 -pady 10

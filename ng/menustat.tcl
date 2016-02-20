@@ -912,7 +912,6 @@ pack .bubar.center .bubar.zoomall -side right
 	}
     }
 
-puts "bubar selviewmenu"
 menu .bubar.selviewmenu
 ttk::menubutton .bubar.selview1 -menu .bubar.selviewmenu -text "Geometry"
 foreach viewv $viewvals {
