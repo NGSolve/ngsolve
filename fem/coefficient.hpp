@@ -822,8 +822,8 @@ public:
                         FlatVector<Complex> result) const
   {
 #ifdef VLA
-    Complex hmem[Dimension()];
-    FlatVector<Complex> temp(Dimension(), hmem);
+    double hmem[2*Dimension()];
+    FlatVector<Complex> temp(Dimension(), (Complex*)(void*)hmem);
 #else
     Vector<Complex> temp(Dimension());
 #endif

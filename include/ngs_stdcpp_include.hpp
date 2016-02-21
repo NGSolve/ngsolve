@@ -121,9 +121,9 @@
 #define ALWAYS_INLINE __attribute__ ((__always_inline__))
 #define INLINE __attribute__ ((__always_inline__)) inline   HD 
 #define LAMBDA_INLINE __attribute__ ((__always_inline__))
-#ifndef __clang__
+// #ifndef __clang__
 #define VLA
-#endif
+// #endif
 #else
 #define ALWAYS_INLINE
 #define INLINE inline
