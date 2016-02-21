@@ -30,17 +30,20 @@ public:
 
 
   /// elements are undefined
-  INLINE AutoDiff  () throw() { }; 
+  // INLINE AutoDiff  () throw() { };
+  AutoDiff() = default;
   // { val = 0; for (int i = 0; i < D; i++) dval[i] = 0; }  // !
 
   /// copy constructor
+  AutoDiff  (const AutoDiff & ad2) = default;
+  /*
   INLINE AutoDiff  (const AutoDiff & ad2) throw()
   {
     val = ad2.val;
     for (int i = 0; i < D; i++)
       dval[i] = ad2.dval[i];
   }
-
+  */
   /// initial object with constant value
   INLINE AutoDiff  (SCAL aval) throw()
   {
