@@ -8,7 +8,7 @@ include_directories("${TK_INCLUDE_PATH}/../PrivateHeaders")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -fomit-frame-pointer -Wall -Wno-implicit-int")
 
 if(APPLE)
-    set(CMAKE_C_COMPILER "gcc")
+    set(CMAKE_C_COMPILER "/usr/bin/gcc")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -x objective-c")
 endif(APPLE)
 
