@@ -1515,6 +1515,11 @@ public:
   extern
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
 
+  extern
+  shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
+                                         shared_ptr<CoefficientFunction> cf_then,
+                                         shared_ptr<CoefficientFunction> cf_else);
+  
   extern    
   shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
 }

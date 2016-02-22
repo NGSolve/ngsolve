@@ -2164,6 +2164,144 @@ public:
                        );
   }
 
+
+  // ///////////////////////////// IfPos   ////////////////////////////////  
+
+  class IfPosCoefficientFunction : public CoefficientFunction
+  {
+    shared_ptr<CoefficientFunction> cf_if;
+    shared_ptr<CoefficientFunction> cf_then;
+    shared_ptr<CoefficientFunction> cf_else;
+  public:
+    IfPosCoefficientFunction (shared_ptr<CoefficientFunction> acf_if,
+                              shared_ptr<CoefficientFunction> acf_then,
+                              shared_ptr<CoefficientFunction> acf_else)
+      : cf_if(acf_if), cf_then(acf_then), cf_else(acf_else)
+    { ; }
+
+    virtual ~IfPosCoefficientFunction () { ; }
+    ///
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    {
+      if (cf_if->Evaluate(ip) > 0)
+        return cf_then->Evaluate(ip);
+      else
+        return cf_else->Evaluate(ip);      
+    }
+    
+    ///
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+    {
+      Matrix<> if_values(ir.Size(), 1);
+      Matrix<> then_values(ir.Size(), values.Width());
+      Matrix<> else_values(ir.Size(), values.Width());
+      
+      cf_if->Evaluate (ir, if_values);
+      cf_then->Evaluate (ir, then_values);
+      cf_else->Evaluate (ir, else_values);
+
+      for (int i = 0; i < ir.Size(); i++)
+        if (if_values(i) > 0)
+          values.Row(i) = then_values.Row(i);
+        else
+          values.Row(i) = else_values.Row(i);
+    }
+
+    /*
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
+                           FlatMatrix<double> values) const
+    {
+      ;
+    }
+    */
+    virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }
+    virtual int Dimension() const { return cf_then->Dimension(); }
+
+    virtual Array<int> Dimensions() const
+    {
+      return cf_then->Dimensions();
+    }
+
+    /*
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                FlatMatrix<> result,
+                                FlatMatrix<> deriv) const
+    {
+      Evaluate (ir, result);
+      deriv = 0;
+    }
+
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                FlatMatrix<Complex> result,
+                                FlatMatrix<Complex> deriv) const
+    {
+      Evaluate (ir, result);
+      deriv = 0;
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv,
+                                 FlatMatrix<> dderiv) const
+    {
+      EvaluateDeriv (ir, result, deriv);
+      dderiv = 0;
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatMatrix<Complex> result,
+                                 FlatMatrix<Complex> deriv,
+                                 FlatMatrix<Complex> dderiv) const
+    {
+      EvaluateDeriv (ir, result, deriv);
+      dderiv = 0;
+    }
+
+    
+    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatArray<FlatMatrix<>*> input,
+                                 FlatArray<FlatMatrix<>*> dinput,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv) const
+    {
+      EvaluateDeriv (ir, result, deriv);
+    }
+
+    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
+                                 FlatArray<FlatMatrix<>*> input,
+                                 FlatArray<FlatMatrix<>*> dinput,
+                                 FlatArray<FlatMatrix<>*> ddinput,
+                                 FlatMatrix<> result,
+                                 FlatMatrix<> deriv,
+                                 FlatMatrix<> dderiv) const
+    {
+      EvaluateDDeriv (ir, result, deriv, dderiv);
+    }
+    */
+
+    // virtual bool ElementwiseConstant () const { return false; }
+    
+    // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
+
+    /*
+    virtual void PrintReport (ostream & ost) const;
+    virtual void PrintReportRec (ostream & ost, int level) const;
+    virtual string GetName () const;
+    
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
+    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+    { return Array<CoefficientFunction*>(); }
+    */
+  };
+  
+  extern
+  shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,
+                                         shared_ptr<CoefficientFunction> cf_then,
+                                         shared_ptr<CoefficientFunction> cf_else)
+  {
+    return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
+  }
+
   
   // ///////////////////////////// Compiled CF /////////////////////////
   

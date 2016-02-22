@@ -545,7 +545,15 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericLog>("log");
   ExportStdMathFunction<GenericSqrt>("sqrt");
   ExportStdMathFunction<GenericConj>("Conj");
-
+  
+  bp::def ("IfPos", FunctionPointer 
+           ([] (SPCF c1, bp::object then_obj, bp::object else_obj) -> SPCF
+            {
+              return IfPos(c1,
+                           MakeCoefficient(then_obj),
+                           MakeCoefficient(else_obj));
+            } ))
+    ;
   
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ConstantCoefficientFunction>);
   bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
