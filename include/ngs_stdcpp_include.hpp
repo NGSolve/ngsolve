@@ -79,6 +79,7 @@
 #include <memory>
 #include <initializer_list>
 #include <functional>
+#include <atomic>
 
 
 
