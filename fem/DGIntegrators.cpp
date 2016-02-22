@@ -35,7 +35,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> coef_lam;
   public:
     DGInnerFacet_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetBilinearFormIntegrator(coeffs)
+    // : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
       if (dgtype!=DG_FORMULATIONS::BO)
@@ -280,7 +280,7 @@ namespace ngfem
     Array<shared_ptr<CoefficientFunction> > coef_b;
   public:
     DGInnerFacet_ConvectionIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetBilinearFormIntegrator(coeffs)
+    // : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_b.SetSize(D);
       for (int i=0; i<D; i++)
@@ -418,7 +418,7 @@ namespace ngfem
     Array<shared_ptr<CoefficientFunction> > coef_b;
   public:
     DGBoundaryFacet_ConvectionIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetBilinearFormIntegrator(coeffs)
+    // : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_b.SetSize(D);
       for (int i=0; i<D; i++)
@@ -519,7 +519,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> coef_lam;
   public:
     DGBoundaryFacet_LaplaceIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetBilinearFormIntegrator(coeffs)
+    // : FacetBilinearFormIntegrator(coeffs)
     { 
       coef_lam  = coeffs[0];
       if (dgtype!=DG_FORMULATIONS::BO)

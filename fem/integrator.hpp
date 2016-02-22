@@ -588,7 +588,7 @@ namespace ngfem
   {
     public:
       
-    FacetBilinearFormIntegrator(const Array<shared_ptr<CoefficientFunction>> & coeffs) 
+    FacetBilinearFormIntegrator() // const Array<shared_ptr<CoefficientFunction>> & coeffs) 
       : BilinearFormIntegrator() { ; }
 
     ~FacetBilinearFormIntegrator() { ; }

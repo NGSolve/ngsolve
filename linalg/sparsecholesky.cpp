@@ -1563,8 +1563,11 @@ void CalcLDL (SliceMatrix<T> mat)
     for (int j : Range(extdofs))
       {
         auto val = temp(j);
+        /*
 #pragma omp atomic
         hy(extdofs[j]) -= val;
+        */
+        MyAtomicAdd (hy(extdofs[j]), -val);
       }
   }
 
