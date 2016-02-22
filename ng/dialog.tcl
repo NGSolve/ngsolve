@@ -37,9 +37,8 @@ proc meshingoptionsdialog { } {
         # ############################################################
         
         set f $w.nb.general
-
-        ttk::frame $f.f2
-        pack $f.f2  -pady 10
+        ttk::labelframe $f.f2 -relief groove -borderwidth 3 -text "General meshing options"
+        pack $f.f2  -pady 15 -fill x 
         set f $f.f2
         
 	set finevals { 1 2 3 4 5 6 }
@@ -69,7 +68,7 @@ proc meshingoptionsdialog { } {
         global meshoptions.fineness
         ttk::frame $f.fine2 
         ttk::label  $f.fine2.l -text "Mesh granularity: "
-        ttk::menubutton $f.fine2.c -menu $f.fine2.m -text "coarse" -width 14
+        ttk::menubutton $f.fine2.c -menu $f.fine2.m -text "coarse" -width 20
 
         menu $f.fine2.m  -tearoff 0
 	foreach finev { 1 2 3 4 5 6 } {
@@ -79,7 +78,7 @@ proc meshingoptionsdialog { } {
         $f.fine2.m invoke $finelabs(${meshoptions.fineness})                
 
 
-        pack $f.fine2 -fill x
+        pack $f.fine2 -fill x -padx 50
         pack  $f.fine2.c $f.fine2.l -side right
 
 
@@ -95,20 +94,20 @@ proc meshingoptionsdialog { } {
         ttk::frame $f.first2 
         ttk::label  $f.first2.l -text "First Step: "
         # ttk::menubutton $f.first2.c -menu $f.first2.m -text "Analyze Geometry" -width 12
-        ttk::menubutton $f.first2.c -menu $f.first2.m  -width 14
+        ttk::menubutton $f.first2.c -menu $f.first2.m  -width 20
         
         menu $f.first2.m  -tearoff 0
 	foreach i $mgsteps {
 	    $f.first2.m add command -label $mgsteplabel($i) -command "set meshoptions.firststep $i ; $f.first2.c configure -text \"$mgsteplabel($i)\""
 	}
         $f.first2.m invoke $mgsteplabel(${meshoptions.firststep})        
-        pack $f.first2 -fill x
+        pack $f.first2 -fill x -padx 50
         pack  $f.first2.c $f.first2.l -side right
 
         global meshoptions.laststep 
         ttk::frame $f.last2
         ttk::label  $f.last2.l -text "Last Step: "
-        ttk::menubutton $f.last2.c -menu $f.last2.m -width 14
+        ttk::menubutton $f.last2.c -menu $f.last2.m -width 20
 
         menu $f.last2.m  -tearoff 0
 
@@ -116,8 +115,8 @@ proc meshingoptionsdialog { } {
 	    $f.last2.m add command -label $mgsteplabel($i) -command "set meshoptions.laststep $i ; $f.last2.c configure -text \"$mgsteplabel($i)\""
 	}
         $f.last2.m invoke $mgsteplabel(${meshoptions.laststep})
-        pack $f.last2 -fill x
-        pack  $f.last2.c $f.last2.l -side right
+        pack $f.last2 -fill x -padx 50
+        pack $f.last2.c $f.last2.l -side right
         
 
 	
@@ -174,39 +173,39 @@ proc meshingoptionsdialog { } {
         ttk::frame $f.msg2 
         ttk::label  $f.msg2.l -text "Print Messages: "
         menu $f.msg2.m  -tearoff 0
-        ttk::menubutton $f.msg2.c -menu $f.msg2.m  -width 14
+        ttk::menubutton $f.msg2.c -menu $f.msg2.m  -width 20
 	foreach step {0 1 2 3 4 5 } {
 	    $f.msg2.m add command -label $msg($step) -command "set options.printmsg $step ; $f.msg2.c configure -text $msg($step)"
             #            if { ${options.printmsg} == $step } { $f.msg2.c configure -text $msg($step) }
 	}
         $f.msg2.m invoke ${options.printmsg}
-        pack $f.msg2 -fill x
+        pack $f.msg2 -fill x -padx 50
         pack  $f.msg2.c $f.msg2.l -side right
         
         
         set f $w.nb.general
         
-        ttk::frame $f.bts 
-        pack $f.bts -side top -pady 10
-
-	ttk::checkbutton $f.bts.parthread -text "Parallel meshing thread" \
+        ttk::labelframe $f.bts -borderwidth 3 -relief groove -text "Additional meshing options"
+        pack $f.bts -fill x -pady 15
+	ttk::frame $f.bts.btnframe
+	ttk::checkbutton $f.bts.btnframe.parthread -text "Parallel meshing thread" \
 	    -variable options.parthread
-	ttk::checkbutton $f.bts.second -text "Second order elements" \
+	ttk::checkbutton $f.bts.btnframe.second -text "Second order elements" \
 	    -variable options.secondorder
-	ttk::checkbutton $f.bts.quad -text "Quad dominated" \
+	ttk::checkbutton $f.bts.btnframe.quad -text "Quad dominated" \
 	    -variable options.quad -command {
 		if { ${options.quad} } {
 		    set meshoptions.laststep os
 		}
 	    }
-	ttk::checkbutton $f.bts.invtets -text "Invert volume elements" \
+	ttk::checkbutton $f.bts.btnframe.invtets -text "Invert volume elements" \
 	    -variable options.inverttets
-	ttk::checkbutton $f.bts.invtrigs -text "Invert surface elements" \
+	ttk::checkbutton $f.bts.btnframe.invtrigs -text "Invert surface elements" \
 	    -variable options.inverttrigs
-	ttk::checkbutton $f.bts.azref -text "Automatic Z-refinement" \
+	ttk::checkbutton $f.bts.btnframe.azref -text "Automatic Z-refinement" \
 	    -variable options.autozrefine
-
-	pack $f.bts.parthread $f.bts.second $f.bts.quad $f.bts.invtets $f.bts.invtrigs $f.bts.azref -fill x
+	pack $f.bts.btnframe -anchor e -padx 50
+	pack $f.bts.btnframe.parthread $f.bts.btnframe.second $f.bts.btnframe.quad $f.bts.btnframe.invtets $f.bts.btnframe.invtrigs $f.bts.btnframe.azref -anchor w
         
 
 
@@ -219,11 +218,11 @@ proc meshingoptionsdialog { } {
 	#     }	
         # pack $f.elementorder
 
-        ttk::frame $f.sbox
-        pack $f.sbox
-        ttk::label $f.sbox.l -text "Element order: "
-        ttk::spinbox $f.sbox.elementorder2 -from 1 -to 20 -textvariable options.elementorder -width 2
-        pack $f.sbox.l $f.sbox.elementorder2  -side left
+        ttk::frame $f.bts.btnframe.sbox
+        pack $f.bts.btnframe.sbox -anchor w -pady 10
+        ttk::label $f.bts.btnframe.sbox.l -text "Element order"
+        ttk::spinbox $f.bts.btnframe.sbox.elementorder2 -from 1 -to 20 -textvariable options.elementorder -width 2
+        pack $f.bts.btnframe.sbox.l $f.bts.btnframe.sbox.elementorder2  -anchor w -side left
         
 
 
@@ -234,7 +233,7 @@ proc meshingoptionsdialog { } {
         set f $w.nb.meshsize
 
         ttk::frame $f.f2
-        pack $f.f2  -pady 10
+        pack $f.f2 -pady 10
 
         # # ttk::style configure Tframe -background red
         # puts "********************"
@@ -255,19 +254,22 @@ proc meshingoptionsdialog { } {
         
         ttk::frame $f.meshsize
         ttk::label $f.meshsize.l -text "max mesh-size"
-        ttk::spinbox $f.meshsize.s -from 1e-9 -to 1e9 -textvariable options.meshsize -width 5
+        ttk::spinbox $f.meshsize.s -from 1e-9 -to 1e9 -textvariable options.meshsize -width 5 -validate focus -validatecommand [list my_validatespinbox $f.meshsize.s %P 2] \
+	    -invalidcommand [list my_invalidspinbox $f.meshsize.s]
         pack $f.meshsize -fill x
         pack $f.meshsize.s $f.meshsize.l -side right
 
         ttk::frame $f.minmeshsize
         ttk::label $f.minmeshsize.l -text "min mesh-size"
-        ttk::spinbox $f.minmeshsize.s -from 0 -to 1e9 -textvariable options.minmeshsize -width 5
+        ttk::spinbox $f.minmeshsize.s -from 0 -to 1e9 -textvariable options.minmeshsize -width 5 -validate focus -validatecommand [list my_validatespinbox $f.minmeshsize.s %P 2] \
+	    -invalidcommand [list my_invalidspinbox $f.minmeshsize.s]
         pack $f.minmeshsize -fill x
         pack $f.minmeshsize.s $f.minmeshsize.l -side right
 
         ttk::frame $f.grading
         ttk::label $f.grading.l -text "mesh-size grading"
-        ttk::spinbox $f.grading.s -from 0.1 -to 1.0 -textvariable options.grading -width 5 -increment 0.1
+        ttk::spinbox $f.grading.s -from 0.1 -to 1.0 -textvariable options.grading -width 5 -increment 0.1 -validate focus -validatecommand [list my_validatespinbox $f.grading.s %P 2] \
+        -invalidcommand [list my_invalidspinbox $f.grading.s]
         pack $f.grading -fill x
         pack $f.grading.s $f.grading.l -side right
 
@@ -416,101 +418,194 @@ proc meshingoptionsdialog { } {
 
 	ttk::button $f.stl.calch -text "Calc New H" -command { redraw; Ng_STLCalcLocalH }
 	pack $f.stl.calch
-
-
-
-
-
-
+	
         # set f [$w.nb subwidget chartopt]
+	
+        # round ttk::scale values to n_digits
+        proc mycom {w n_digits val} {
+	    global [$w cget -variable]
+	    if {$n_digits == 0 } {
+                set [$w cget -variable] [tcl::mathfunc::round $val]
+	    } else {
+                set [$w cget -variable] [format "%.[append n_digits "f"]" $val]
+	    }
+	}
+
+        # validate ttk::entry which are linked to ttk::scales widgets
+        proc my_validate {w val n_digits} {
+            if {[string length $val] == 0} {return 0}
+            if {[string is double $val] == 1} {
+                set scale_loc [lindex [winfo children [winfo parent $w]] [lsearch [winfo children [winfo parent $w]] *scale]]
+                global [$scale_loc cget -variable]
+                if { $n_digits == 0 } {
+                    set [$scale_loc cget -variable] [tcl::mathfunc::max [$scale_loc cget -from] [tcl::mathfunc::min [$scale_loc cget -to] [tcl::mathfunc::round $val]]]
+                } else {
+                    set [$scale_loc cget -variable] [tcl::mathfunc::max [$scale_loc cget -from] [tcl::mathfunc::min [$scale_loc cget -to] [format "%.[append n_digits "f"]" $val]]]
+                }
+                    return 1
+                } else {
+                    return 0
+                }
+        }
+
+        # if my_validate returns 0, this function gets called
+        proc my_invalid {w} {
+            set scale_loc [lindex [winfo children [winfo parent $w]] [lsearch [winfo children [winfo parent $w]] *scale]]
+            global [$scale_loc cget -variable]
+            set [$scale_loc cget -variable] [tcl::mathfunc::round [$scale_loc get]]
+        }
+		
         set f $w.nb.chartopt
-        
-	label $f.lab1 -text "Yellow Edges Angle ()" -bg  [ttk::style lookup TNotebook -background]
-        #
-	scale $f.scale1 -orient horizontal -length 300 \
-	    -from 0 -to 90 -resolution 1  -tickinterval 10 \
-	    -variable  stloptions.yangle 
+        ttk::labelframe $f.mainframe -text "STL angles" -relief groove -borderwidth 3
+		
+        pack $f.mainframe -fill x -pady 15
+        set f $f.mainframe
+		
+        ttk::frame $f.f1
+        ttk::label $f.f1.labYangles -text "Yellow Edges Angle ()"
+        ttk::scale $f.f1.scale -orient horizontal -length 150 -from 0 -to 90 -variable stloptions.yangle -takefocus 0 -command [list mycom $f.f1.scale 1]
+        ttk::entry $f.f1.entry -textvariable stloptions.yangle -width 5 -validate focusout -takefocus 0 -validatecommand [list my_validate $f.f1.entry %P 1] \
+            -invalidcommand [list my_invalid $f.f1.entry]
 
-	pack $f.lab1 $f.scale1
+        pack $f.f1 -anchor w -padx 30
+        pack $f.f1.scale $f.f1.entry $f.f1.labYangles -side left -padx 4 -pady 6
+		
+        ttk::frame $f.f21
+        ttk::label $f.f21.labEangles -text "Edge Corner Angle ()"
+        ttk::scale $f.f21.scale -orient horizontal -length 150 -from 0 -to 180 -variable stloptions.edgecornerangle -takefocus 0 -command [list mycom $f.f21.scale 1]
+        ttk::entry $f.f21.entry -textvariable stloptions.edgecornerangle -width 5 -validate focusout -takefocus 0 -validatecommand [list my_validate $f.f21.entry %P 1] \
+            -invalidcommand [list my_invalid $f.f21.entry]		
 
-	label $f.lab2e -text "Edge Corner Angle ()"
-	scale $f.scale2e -orient horizontal -length 360 -from 0 -to 180 \
-	    -resolution 1  -tickinterval 20 \
-	    -variable  stloptions.edgecornerangle 
-	pack $f.lab2e $f.scale2e
-	
-	label $f.lab2 -text "Chart Angle ()"
-	scale $f.scale2 -orient horizontal -length 360 -from 0 -to 180 \
-	    -resolution 1  -tickinterval 20 \
-	    -variable  stloptions.chartangle 
-	pack $f.lab2 $f.scale2
-	
-	label $f.lab2b -text "Outer Chart Angle ()"
-	scale $f.scale2b -orient horizontal -length 360 -from 0 -to 180 \
-	    -resolution 1  -tickinterval 20 \
-	    -variable  stloptions.outerchartangle 
-	pack $f.lab2b $f.scale2b
+        pack $f.f21 -anchor w -padx 30
+        pack $f.f21.scale $f.f21.entry $f.f21.labEangles -side left -padx 4 -pady 6
 
+        frame $f.f31
+        ttk::label $f.f31.lab31 -text "Chart Angle ()"
+        ttk::scale $f.f31.scale -orient horizontal -length 150 -from 0 -to 180 -variable stloptions.chartangle -takefocus 0 -command [list mycom $f.f31.scale 1]
+        ttk::entry $f.f31.entry -textvariable stloptions.chartangle -width 5 -validate focusout -takefocus 0 -validatecommand [list my_validate $f.f31.entry %P 1] \
+            -invalidcommand [list my_invalid $f.f31.entry]
 
+        pack $f.f31 -anchor w -padx 30
+        pack $f.f31.scale $f.f31.entry $f.f31.lab31 -side left -padx 4 -pady 6
 
+        frame $f.f41
+        ttk::label $f.f41.lab41 -text "Outer Chart Angle ()"
+        ttk::scale $f.f41.scale -orient horizontal -length 150 -from 0 -to 180 -variable stloptions.outerchartangle -takefocus 0 -command [list mycom $f.f41.scale 1]
+        ttk::entry $f.f41.entry -textvariable stloptions.outerchartangle -width 5 -validate focusout -takefocus 0 -validatecommand [list my_validate $f.f41.entry %P 1] \
+            -invalidcommand [list my_invalid $f.f41.entry]		
 
+        pack $f.f41 -anchor w -padx 30
+        pack $f.f41.scale $f.f41.entry $f.f41.lab41 -side left -padx 4 -pady 6
+		
 	# Optimization options
+
+        global last_accepted
+        # Used to validate the entries linked with a ttk::spinbox widget
+        proc my_validatespinbox {w val n_digits} {
+            global last_accepted
+                if {[string length $val] == 0} {return 0}
+                if {[string is double $val] == 1} {
+                    if { $n_digits == 0 } {set val [tcl::mathfunc::int $val] } else { set val [format "%.[append n_digits "f"]" $val] }; #{set val [expr 0.1*[tcl::mathfunc::int [expr 10*$val]]] }
+                        $w set [tcl::mathfunc::max [$w cget -from] [tcl::mathfunc::min [$w cget -to] $val]]
+                        set last_accepted $val
+                        return 1
+                } else {
+                    return 0
+                }
+        }
 	
-    # set f [$w.nb subwidget optimizer]
-    set f $w.nb.optimizer
+        proc my_invalidspinbox {w} {		
+            global last_accepted
+            $w set $last_accepted
+        }
+        # set f [$w.nb subwidget optimizer]
+        set f $w.nb.optimizer
+        ttk::labelframe $f.optframe -text "Optimization settings" -relief groove -borderwidth 3
+	pack $f.optframe -fill x -pady 15
 	
+        ttk::frame $f.optframe.sos
+        ttk::label $f.optframe.sos.l -text "Surface opt steps"
+        ttk::spinbox $f.optframe.sos.s -from 0 -to 99 -textvariable options.optsteps2d -width 5 -increment 1 -validate focus -validatecommand [list my_validatespinbox $f.optframe.sos.s %P 0] \
+            -invalidcommand [list my_invalidspinbox $f.optframe.sos.s]
 
+        pack $f.optframe.sos -padx 60 -anchor e
+        pack $f.optframe.sos.s $f.optframe.sos.l -side right -fill x -pady 2
 
-	tixControl $f.os2d -label "Surface opt steps: " -integer true \
-	    -variable options.optsteps2d -min 0 -max 99 -step 1 \
-	    -options {
-		entry.width 3
-		label.width 25
-		label.anchor e
-	    }	
+        ttk::frame $f.optframe.vos
+        ttk::label $f.optframe.vos.l -text "Volume opt steps"
+        ttk::spinbox $f.optframe.vos.s -from 0 -to 99 -textvariable options.optsteps3d -width 5 -increment 1 -validate focus -validatecommand [list my_validatespinbox $f.optframe.vos.s %P 0] \
+            -invalidcommand [list my_invalidspinbox $f.optframe.vos.s]
 
-	tixControl $f.os3d -label "Volume opt steps: " -integer true \
-	    -variable options.optsteps3d -min 0 -max 99 -step 1 \
-	    -options {
-		entry.width 3
-		label.width 25
-		label.anchor e
-	    }	
+        pack $f.optframe.vos -padx 60 -anchor e 
+        pack $f.optframe.vos.s $f.optframe.vos.l -side right -fill x -pady 2
 	
-	tixControl $f.elw -label "Element size weight: " -integer false \
-	    -variable options.elsizeweight -min 0 -max 1 -step 0.1 \
-	    -options {
-		entry.width 3
-		label.width 25
-		label.anchor e
-	    }	
+        ttk::frame $f.optframe.esw
+        ttk::label $f.optframe.esw.l -text "Element size weight"
+        ttk::spinbox $f.optframe.esw.s -from 0 -to 1 -textvariable options.elsizeweight -width 5 -increment 0.1 -validate focus -validatecommand [list my_validatespinbox $f.optframe.esw.s %P 1] \
+            -invalidcommand [list my_invalidspinbox $f.optframe.esw.s]
 
-	tixControl $f.wem -label "Worst element measure: " -integer false \
-	    -variable options.opterrpow -min 1 -max 10 -step 1 \
-	    -options {
-		entry.width 3
-		label.width 25
-		label.anchor e
-	    }	
+        pack $f.optframe.esw -padx 60 -anchor e
+        pack $f.optframe.esw.s $f.optframe.esw.l -side right -fill x -pady 2
 
-	pack $f.os2d $f.os3d $f.elw $f.wem
-	
-	ttk::frame $f.badellimit
-	pack $f.badellimit
-        # -fill x
-	label $f.badellimit.lab -text "bad element criterion";
-	scale $f.badellimit.scale -orient horizontal -length 150 \
-	    -from 160 -to 180 -resolution 1 \
-	-variable options.badellimit
-	pack $f.badellimit.scale $f.badellimit.lab -side right -anchor s
+        ttk::frame $f.optframe.wem
+        ttk::label $f.optframe.wem.l -text "Worst element measure"
+        ttk::spinbox $f.optframe.wem.s -from 1 -to 10 -textvariable options.opterrpow -width 5 -increment 1 -validate focus -validatecommand [list my_validatespinbox $f.optframe.wem.s %P 0] \
+            -invalidcommand [list my_invalidspinbox $f.wem.s]
+
+        pack $f.optframe.wem -padx 60 -anchor e
+        pack $f.optframe.wem.s $f.optframe.wem.l -side right -fill x -pady 2
+
+        # These functions are needed due to a bug within the aqua theme
+        # if a ttk::scale widget has a from value larger than 100.
+	proc mycom_helper_osx {w val} {
+            global [$w cget -variable] options.badellimit
+            set [$w cget -variable] [tcl::mathfunc::round $val]
+            set options.badellimit [expr [tcl::mathfunc::round $val]+100]
+        }
+
+        proc my_validate_helper_osx {w val} {
+            if {[string length $val] == 0} {return 0}
+            if {[string is double $val] == 1} {			
+                set scale_loc [lindex [winfo children [winfo parent $w]] [lsearch [winfo children [winfo parent $w]] *scale]]            
+                global [$scale_loc cget -variable] options.badellimit			
+                set [$scale_loc cget -variable] [tcl::mathfunc::max [$scale_loc cget -from] [tcl::mathfunc::min [$scale_loc cget -to] [expr [tcl::mathfunc::round $val]-100]]]
+                set options.badellimit [tcl::mathfunc::max [expr [$scale_loc cget -from]+100] [tcl::mathfunc::min [expr [$scale_loc cget -to]+100] [tcl::mathfunc::round $val]]]
+                return 1
+            } else {
+                return 0
+            }
+        }
+
+        proc my_invalid_helper_osx {w} {
+            global options.badellimit
+            set scale_loc [lindex [winfo children [winfo parent $w]] [lsearch [winfo children [winfo parent $w]] *scale]]
+            global [$scale_loc cget -variable]
+            set [$scale_loc cget -variable] [tcl::mathfunc::round [$scale_loc get]]
+            set options.badellimit [expr [tcl::mathfunc::round [$scale_loc get]]+100]
+        }    
+    
+        global dummy_badellimit
+        set dummy_badellimit 75 
+        ttk::labelframe $f.optframe2 -text "Bad elements" -relief groove -borderwidth 3
+        pack $f.optframe2 -fill x -pady 10 -ipadx 20 -ipady 5
+        ttk::frame $f.optframe2.badellimit        
+        ttk::label $f.optframe2.badellimit.lab -text "bad element criterion";
+        ttk::scale $f.optframe2.badellimit.scale -orient horizontal -length 100 -from 60 -to 80 -variable dummy_badellimit -takefocus 0 -command [list mycom_helper_osx $f.optframe2.badellimit.scale]
+        ttk::entry $f.optframe2.badellimit.entry -textvariable options.badellimit -width 3 -validate focusout -takefocus 0 -validatecommand [list my_validate_helper_osx $f.optframe2.badellimit.entry %P] \
+            -invalidcommand [list my_invalid_helper_osx $f.optframe2.badellimit.entry]
+        pack $f.optframe2.badellimit -pady 8    
+        pack $f.optframe2.badellimit.scale $f.optframe2.badellimit.entry $f.optframe2.badellimit.lab -side left -padx 4
+
 
 
 	# insider options
         # set f [$w.nb subwidget insider]
         set f $w.nb.debug    
-        ttk::frame $f.f2
-        pack $f.f2
-        set f $f.f2
+        ttk::labelframe $f.f2 -text "Advanced options" -borderwidth 3 -relief groove
+        pack $f.f2 -fill x -pady 15
+        ttk::frame $f.f2.frame
+        pack $f.f2.frame 
+        set f $f.f2.frame
 	ttk::checkbutton $f.localh -text "Use Local Meshsize" \
 	    -variable options.localh
 	ttk::checkbutton $f.delauney -text "Use Delaunay" \
@@ -522,88 +617,98 @@ proc meshingoptionsdialog { } {
 	ttk::checkbutton $f.blockfill -text "Do Blockfilling" \
 	    -variable options.blockfill
 
-	# pack  $f.localh  $f.delauney $f.checkoverlap  $f.blockfill $f.checkcb   -anchor w
-        grid $f.localh  $f.delauney    -sticky nw
-        grid $f.checkoverlap $f.blockfill  -sticky nw
-        grid  $f.checkcb  -sticky nw
-
+        grid $f.localh  $f.delauney -sticky nw
+        grid $f.checkoverlap $f.blockfill -sticky nw
+        grid $f.checkcb -sticky nw
 	
-	# debugging options
-        # set f [$w.nb subwidget debug]
+        # debugging options    
         set f $w.nb.debug
 
-	ttk::frame $f.cb
-	pack $f.cb -side top
-
+        # enable / disable ttk::entry widgets linked to ttk::checkbuttons
+        proc enable_cb {w1 w2 w3} {
+            Ng_SetDebugParameters
+            if {[string match *selected* [$w1 state]] == 1 } {
+                $w2 configure -state normal
+                $w3 configure -state normal
+            } else {
+                $w2 configure -state disabled
+                $w3 configure -state disabled
+            }
+        }
 	
+        ttk::labelframe $f.cb1 -text "Debugging options" -borderwidth 3 -relief groove
+        pack $f.cb1 -fill x -pady 15
+        
+        frame $f.cb1.cb0
+        pack $f.cb1.cb0
+        
+        ttk::checkbutton $f.cb1.cb0.slowchecks -text "Slow checks" \
+            -variable debug.slowchecks -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.debugoutput -text "Debugging outout" \
+            -variable debug.debugoutput -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltexline -text "Halt on exising line" \
+            -variable debug.haltexistingline  -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltoverlap -text "Halt on Overlap" \
+            -variable debug.haltoverlap  -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltsuc -text "Halt on success" \
+            -variable debug.haltsuccess  -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltnosuc -text "Halt on no success" \
+            -variable debug.haltnosuccess  -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltlargequal -text "Halt on large quality class" \
+            -variable debug.haltlargequalclass  -command { Ng_SetDebugParameters }
+        ttk::checkbutton $f.cb1.cb0.haltseg -text "Halt on Segment:" \
+            -variable debug.haltsegment  -command [list enable_cb $f.cb1.cb0.haltseg $f.cb1.cb0.segs.ent1 $f.cb1.cb0.segs.ent2]
+        ttk::checkbutton $f.cb1.cb0.haltnode -text "Halt on Node:" \
+            -variable debug.haltnode  -command [list enable_cb $f.cb1.cb0.haltnode $f.cb1.cb0.segs.ent1 $f.cb1.cb0.segs.ent2]
+        ttk::frame $f.cb1.cb0.fr
+        ttk::checkbutton $f.cb1.cb0.fr.cb -text "Halt on Face:" \
+            -variable debug.haltface -command [list enable_cb $f.cb1.cb0.fr.cb $f.cb1.cb0.fr.ent $f.cb1.cb0.fr.ent]
+        ttk::entry $f.cb1.cb0.fr.ent -textvariable debug.haltfacenr -width 3 -state disabled
+        
+        pack $f.cb1.cb0.fr.cb $f.cb1.cb0.fr.ent -side left 
 
-	ttk::checkbutton $f.cb.slowchecks -text "Slow checks" \
-	    -variable debug.slowchecks -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.debugoutput -text "Debugging outout" \
-	    -variable debug.debugoutput -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltexline -text "Halt on exising line" \
-	    -variable debug.haltexistingline  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltoverlap -text "Halt on Overlap" \
-	    -variable debug.haltoverlap  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltsuc -text "Halt on success" \
-	    -variable debug.haltsuccess  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltnosuc -text "Halt on no success" \
-	    -variable debug.haltnosuccess  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltlargequal -text "Halt on large quality class" \
-	    -variable debug.haltlargequalclass  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltseg -text "Halt on Segment:" \
-	    -variable debug.haltsegment  -command { Ng_SetDebugParameters }
-	ttk::checkbutton $f.cb.haltnode -text "Halt on Node:" \
-	    -variable debug.haltnode  -command { Ng_SetDebugParameters }
+        ttk::frame $f.cb1.cb0.segs
+        ttk::label $f.cb1.cb0.segs.lab1 -text "P1:"
+        ttk::entry $f.cb1.cb0.segs.ent1 -width 8 \
+            -textvariable debug.haltsegmentp1  -state disabled
+        ttk::label $f.cb1.cb0.segs.lab2 -text "P2:"
+        ttk::entry $f.cb1.cb0.segs.ent2 -width 8 \
+            -textvariable debug.haltsegmentp2  -state disabled
 
-
-        pack $f.cb.slowchecks $f.cb.debugoutput $f.cb.haltexline $f.cb.haltoverlap
-        pack $f.cb.haltsuc $f.cb.haltnosuc $f.cb.haltlargequal  $f.cb.haltseg   $f.cb.haltnode 
-
-	ttk::frame $f.cb.hf
-	pack $f.cb.hf -pady 5
-	ttk::checkbutton $f.cb.hf.cb -text "Halt on Face:" \
-	    -variable debug.haltface  -command { Ng_SetDebugParameters }
-	ttk::entry $f.cb.hf.ent -textvariable debug.haltfacenr -width 5  
-	pack $f.cb.hf.cb $f.cb.hf.ent -side left 
-
-	ttk::checkbutton $f.cb.showactivechart -text "Show Active Meshing-Chart" \
-	    -variable stloptions.showactivechart -command { Ng_SetVisParameters; redraw }
-
-
-
-
-	pack $f.cb.showactivechart
-	
-
-	ttk::frame $f.segs
-	pack $f.segs -pady 5
-	ttk::label $f.segs.lab1 -text "P1:";
-	ttk::entry $f.segs.ent1 -width 8 \
-	    -textvariable debug.haltsegmentp1 
-	ttk::label $f.segs.lab2 -text "P2:";
-	ttk::entry $f.segs.ent2 -width 8 \
-	    -textvariable debug.haltsegmentp2 
-	pack $f.segs.lab1 $f.segs.ent1 $f.segs.lab2 $f.segs.ent2  -side left
+        pack $f.cb1.cb0.segs.lab1 $f.cb1.cb0.segs.ent1 $f.cb1.cb0.segs.lab2 $f.cb1.cb0.segs.ent2 -side left
 
 
+        grid $f.cb1.cb0.slowchecks $f.cb1.cb0.debugoutput -sticky nw
+        grid $f.cb1.cb0.haltexline $f.cb1.cb0.haltoverlap -sticky nw
+        grid $f.cb1.cb0.haltsuc $f.cb1.cb0.haltnosuc  -sticky nw
+        grid $f.cb1.cb0.haltlargequal  $f.cb1.cb0.fr -sticky nw
+        grid $f.cb1.cb0.haltnode -sticky nw
+        grid $f.cb1.cb0.haltseg  -stick nw
+        grid $f.cb1.cb0.segs -stick w -row 4 -rowspan 2 -column 1
 
-	ttk::frame $f.cont -relief groove -borderwidth 3
-	pack $f.cont 
-	#-fill x 
-	
-	ttk::checkbutton $f.cont.multidrawing -text "Draw Meshing" \
-	    -variable multithread_drawing 
-	pack $f.cont.multidrawing
-	
-	ttk::checkbutton $f.cont.multitestmode -text "Meshing Testmode" \
-	-variable multithread_testmode 
-	pack $f.cont.multitestmode
-	
-        ttk::button $f.cont.goon -text "Go On" -command { set multithread_pause 0 }
-	pack $f.cont.multidrawing $f.cont.multitestmode $f.cont.goon -side left -expand yes
-	
+        grid rowconfigure $f.cb1.cb0 3 -pad 8
 
+        ttk::checkbutton $f.cb1.cb0.showactivechart -text "Show Active Meshing-Chart" -variable stloptions.showactivechart -command { Ng_SetVisParameters; redraw }
+
+        grid $f.cb1.cb0.showactivechart
+        grid rowconfigure $f.cb1.cb0 3 -pad 8
+        grid rowconfigure $f.cb1.cb0 5 -pad 8
+        set f $f.cb1
+        set f $w.nb.debug
+        ttk::labelframe $f.cont -relief groove -borderwidth 3 -text "Debugging aisualization"
+        pack $f.cont -fill x -pady 15
+        ttk::frame $f.cont.f
+        pack $f.cont.f
+
+        ttk::checkbutton $f.cont.f.multidrawing -text "Draw Meshing" -variable multithread_drawing
+        ttk::checkbutton $f.cont.f.multitestmode -text "Meshing Testmode" -variable multithread_testmode
+        ttk::button $f.cont.f.goon -text "Go On" -command { set multithread_pause 0 }
+
+        grid $f.cont.f.multidrawing -sticky nw
+        grid $f.cont.f.multitestmode -sticky nw
+        grid $f.cont.f.goon -row 0 -rowspan 2 -column 1 -sticky w
+        grid columnconfigure $f.cont.f 0 -pad 30
+        grid columnconfigure $f.cont.f 1 -pad 20
 
 
 	global userlevel
@@ -640,42 +745,26 @@ proc meshingoptionsdialog { } {
 # 		destroy .options_dlg
 # 	    }
 	
-# 	pack $w.bbox -side bottom -fill x
+#       pack $w.bbox -side bottom -fill x
 
-	
+
         ttk::frame $w.bu
         pack $w.bu -fill x -ipady 3
 
-        ttk::button $w.bu.apl -text "Apply" -command { 
-	    # .options_dlg.nb.meshsize.meshsize invoke
-	    # .options_dlg.nb.meshsize.grading invoke
-	    .options_dlg.nb.optimizer.os2d invoke
-	    .options_dlg.nb.optimizer.os3d invoke
-	    .options_dlg.nb.optimizer.elw invoke
-	    .options_dlg.nb.optimizer.wem invoke
+        ttk::button $w.bu.apl -text "Apply" -command { 	    
+            Ng_SetMeshingParameters 
+            Ng_SetDebugParameters
+        }
 
-	    Ng_SetMeshingParameters 
-	    Ng_SetDebugParameters
-	}
+        ttk::button $w.bu.ok -text "Done" -command {
+            Ng_SetMeshingParameters
+            Ng_SetDebugParameters
+            wm withdraw .options_dlg
+#           destroy .options_dlg
+        }
 
-	ttk::button $w.bu.ok -text "Done" -command {
-	    # .options_dlg.nb.meshsize.meshsize invoke
-	    # .options_dlg.nb.meshsize.grading invoke
-	    .options_dlg.nb.optimizer.os2d invoke
-	    .options_dlg.nb.optimizer.os3d invoke
-	    .options_dlg.nb.optimizer.elw invoke
-	    .options_dlg.nb.optimizer.wem invoke
-
-	    Ng_SetMeshingParameters
-	    Ng_SetDebugParameters
-	    wm withdraw .options_dlg
-#	    destroy .options_dlg
-	}
-
-	pack  $w.bu.apl $w.bu.ok -side left -expand yes
-    
-	
-	wm withdraw $w
+        pack  $w.bu.apl $w.bu.ok -side left -expand yes 
+        wm withdraw $w
 	wm geom $w +100+100
 	wm deiconify $w
 	wm title $w "Meshing Options"
@@ -769,7 +858,7 @@ proc viewingoptionsdialog { } {
 
 
         menu $f.stylemenu
-        ttk::menubutton $f.style -menu $f.stylemenu
+        ttk::menubutton $f.style -menu $f.stylemenu -width 10
         # -text [ttk::getTheme]
         pack $f.style
         
