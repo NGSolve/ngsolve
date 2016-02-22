@@ -16,7 +16,7 @@
 
 #define USE_TOGL_STUB_PROCS
 #include "togl.h"
-#include <GL/glext.h>
+// #include <GL/glext.h>
 #include <tkInt.h>
 #include <limits.h>
 

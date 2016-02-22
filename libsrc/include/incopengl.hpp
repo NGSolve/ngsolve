@@ -5,8 +5,13 @@
 #    include <OpenGL/gl.h>
 #    include <OpenGL/glu.h>
 #  else
+#  if defined(TOGL_NSOPENGL)
+#    include <gl.h>
+#    include <glu.h>
+#  else
 #    include <GL/gl.h>
 #    include <GL/glu.h>
+#  endif
 #  endif
 
 
