@@ -17,7 +17,7 @@
 #define USE_TOGL_STUB_PROCS
 #include "togl.h"
 // #include <GL/glext.h>
-#include <tkInt.h>
+#include <tkInt.h>   // don't need it on osx ???
 #include <limits.h>
 
 #ifndef TOGL_USE_FONTS

@@ -6,6 +6,9 @@
 #    include <OpenGL/glu.h>
 #  else
 #  if defined(TOGL_NSOPENGL)
+// ?????? which one is right ??????
+// #    include <OpenGL/OpenGL.h>
+// #    include <OpenGL.h>
 #    include <gl.h>
 #    include <glu.h>
 #  else
