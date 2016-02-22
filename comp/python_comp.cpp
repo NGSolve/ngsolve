@@ -359,14 +359,14 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getstate(bp::object o)
     {
-      auto & fes = bp::extract<FESpace const&>(o)();
+      // auto & fes = bp::extract<FESpace const&>(o)();
       return bp::make_tuple (o.attr("__dict__")); // , str.str());
     }
     
     static
     void setstate(bp::object o, bp::tuple state)
     {
-      auto & fes = bp::extract<FESpace&>(o)();
+      // auto & fes = bp::extract<FESpace&>(o)();
       bp::dict d = bp::extract<bp::dict>(o.attr("__dict__"))();
       d.update(state[0]);
     }
@@ -571,10 +571,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                          bp::no_init)
     .def("Deriv", FunctionPointer
          ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
-          { return self.Deriv(); }))
+          { return self.Deriv(); }),
+         "take canonical derivative (grad, curl, div)")
     .def("Trace", FunctionPointer
          ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
-          { return self.Trace(); }))
+          { return self.Trace(); }),
+         "take canonical boundary trace")
+    .def("Other", FunctionPointer
+         ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
+          { return self.Other(); }),
+         "take value from neighbour element (DG)")
     .add_property("derivname", FunctionPointer
                   ([](const ProxyFunction & self) -> string
                    {
@@ -1801,7 +1807,23 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary, bp::object definedon)
            -> shared_ptr<BilinearFormIntegrator>
            {
-             auto bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+             // check for DG terms
+             bool has_other = false;
+             cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
+                               {
+                                 if (dynamic_cast<ProxyFunction*> (&cf))
+                                   if (dynamic_cast<ProxyFunction&> (cf).IsOther())
+                                     has_other = true;
+                               });
+             if (has_other && !element_boundary)
+               throw Exception("DG-facet terms need element_boundary=True");
+             
+             shared_ptr<BilinearFormIntegrator> bfi;
+             if (!has_other)
+               bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+             else
+               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf);
+             
              if (bp::extract<bp::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
              return bfi;

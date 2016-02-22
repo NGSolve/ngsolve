@@ -299,7 +299,7 @@ namespace ngfem
 
     elementwise_constant = cf -> ElementwiseConstant();
     cout << IM(3) << "element-wise constant = " << elementwise_constant << endl;
-    
+
     // find non-zeros
     int cnttest = 0, cnttrial = 0;
     for (auto proxy : trial_proxies)
@@ -1176,8 +1176,262 @@ namespace ngfem
           }
       }
   }
+  
+  SymbolicFacetBilinearFormIntegrator ::
+  SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
+    : cf(acf)
+  {
+    if (cf->Dimension() != 1)
+        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
+    trial_cum.Append(0);
+    test_cum.Append(0);    
+    cf->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+          if (proxy) 
+            {
+              if (proxy->IsTestFunction())
+                {
+                  if (!test_proxies.Contains(proxy))
+                    {
+                      test_proxies.Append (proxy);
+                      test_cum.Append(test_cum.Last()+proxy->Dimension());
+                    }
+                }
+              else
+                {                                         
+                  if (!trial_proxies.Contains(proxy))
+                    {
+                      trial_proxies.Append (proxy);
+                      trial_cum.Append(trial_cum.Last()+proxy->Dimension());
+                    }
+                }
+            }
+        });
+    cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
+    cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
+    cout << IM(3) << "cumulated test_proxy dims  " << test_cum << endl;
+    cout << IM(3) << "cumulated trial_proxy dims " << trial_cum << endl;
+  }
 
 
+  void SymbolicFacetBilinearFormIntegrator ::
+  CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
+                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                   const FiniteElement & fel2, int LocalFacetNr2,
+                   const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
+                   FlatMatrix<double> & elmat,
+                   LocalHeap & lh) const
+  {
+    cout << "calc facet matrix (DG)" << endl;
+    elmat = 0.0;
+
+    if (LocalFacetNr2==-1) throw Exception ("SymbolicFacetBFI: LocalFacetNr2==-1");
+
+    int maxorder = max2 (fel1.Order(), fel2.Order());
+
+    auto eltype1 = trafo1.GetElementType();
+    auto eltype2 = trafo2.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1); 
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
+    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    
+    Facet2ElementTrafo transform2(eltype2); 
+    IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
+    const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(test_proxies))
+        {
+          HeapReset hr(lh);
+          FlatMatrix<> val(mir1.Size(), 1,lh);
+          
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = test_proxies[l1];
+
+          FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatVector<> measure(mir1.Size(), lh);
+          switch (trafo1.SpaceDim())
+            {
+            case 2:
+              {
+                Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
+                for (int i = 0; i < mir1.Size(); i++)
+                  {
+                    auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
+                    Mat<2> inv_jac = mip.GetJacobianInverse();
+                    double det = mip.GetMeasure();
+                    Vec<2> normal = det * Trans (inv_jac) * normal_ref;       
+                    double len = L2Norm (normal);    // that's the surface measure 
+                    normal /= len;                   // normal vector on physical element
+                    const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
+                    measure(i) = len;
+                  }
+                break;
+              }
+            default:
+              cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
+            }
+          
+          for (int k = 0; k < proxy1->Dimension(); k++)
+            for (int l = 0; l < proxy2->Dimension(); l++)
+              {
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+                
+                cf -> Evaluate (mir1, val);
+                proxyvalues(STAR,l,k) = val.Col(0);
+              }
+
+          for (int i = 0; i < mir1.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
+
+          IntRange trial_range = proxy1->IsOther() ? IntRange(fel1.GetNDof(), elmat.Width()) : IntRange(0, fel1.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(fel1.GetNDof(), elmat.Height()) : IntRange(0, fel1.GetNDof());
+
+          auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
+
+          enum { BS = 16 };
+          for (int i = 0; i < mir1.Size(); i+=BS)
+            {
+              int rest = min2(int(BS), mir1.Size()-i);
+              HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
+
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  if (proxy1->IsOther())
+                    proxy1->Evaluator()->CalcMatrix(fel2, mir2[ii], bmat1, lh);
+                  else
+                    proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
+                  
+                  if (proxy2->IsOther())
+                    proxy2->Evaluator()->CalcMatrix(fel2, mir2[ii], bmat2, lh);
+                  else
+                    proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(proxy1->IsOther() ? fel2 : fel1);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(proxy2->IsOther() ? fel2 : fel1);
+              loc_elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+            }
+        }
+
+
+    
+    /*
+    const ScalarFiniteElement<D> * fel1_l2 = 
+      dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel1);
+    ELEMENT_TYPE eltype1 = volumefel1.ElementType();
+    int nd1 = fel1_l2->GetNDof();
+
+    const ScalarFiniteElement<D> * fel2_l2 =  
+      dynamic_cast<const ScalarFiniteElement<D>*> (&volumefel2);
+    ELEMENT_TYPE eltype2 = volumefel2.ElementType();
+    eltype2 = volumefel2.ElementType();
+    int nd2 = fel2_l2->GetNDof();
+    int maxorder = max2(fel1_l2->Order(),fel2_l2->Order());
+      
+    elmat = 0.0;
+    
+    FlatVector<> mat1_shape(nd1, lh);
+    FlatVector<> mat2_shape(nd2, lh);
+    
+    FlatVector<> b1mat(nd1+nd2, lh); //B(v)
+    FlatVector<> b2mat(nd1+nd2, lh); //B(u)
+    //       double dmat; //bn
+    FlatMatrixFixWidth<D> dshape(nd1, lh);
+    FlatMatrixFixWidth<D> fac_dshape(nd1, lh);
+    Facet2ElementTrafo transform1(eltype1,ElVertices1); 
+    const NORMAL * normals1 = ElementTopology::GetNormals(eltype1);
+    Facet2ElementTrafo transform2(eltype2,ElVertices2); 
+    const NORMAL * normals2 = ElementTopology::GetNormals(eltype2);
+    
+    HeapReset hr(lh);
+    ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    Vec<D> normal_ref1, normal_ref2;
+    for (int i=0; i<D; i++){
+      normal_ref1(i) = normals1[LocalFacetNr1][i];
+      normal_ref2(i) = normals2[LocalFacetNr2][i];
+    }
+    const IntegrationRule & ir_facet =
+	SelectIntegrationRule (etfacet, 2*maxorder);
+    if (maxorder==0) maxorder=1;
+    
+    b1mat = 0.0;
+    b2mat = 0.0;
+    for (int l = 0; l < ir_facet.GetNIP(); l++)
+      {
+        IntegrationPoint ip1 = transform1(LocalFacetNr1, ir_facet[l]);
+	
+        MappedIntegrationPoint<D,D> sip1 (ip1, eltrans1);
+        
+	  // Mat<D> jac1 = sip1.GetJacobian();
+	  Mat<D> inv_jac1 = sip1.GetJacobianInverse();
+	  double det1 = sip1.GetJacobiDet();
+
+	  Vec<D> normal1 = det1 * Trans (inv_jac1) * normal_ref1;       
+	  double len1 = L2Norm (normal1);
+	  normal1 /= len1;
+
+	  IntegrationPoint ip2 = transform2(LocalFacetNr2, ir_facet[l]);
+	  MappedIntegrationPoint<D,D> sip2 (ip2, eltrans2);
+
+	  // Mat<D> jac2 = sip2.GetJacobian();
+	  Mat<D> inv_jac2 = sip2.GetJacobianInverse();
+	  double det2 = sip2.GetJacobiDet();
+	  
+	  Vec<D> normal2 = det2 * Trans (inv_jac2) * normal_ref2;       
+	  double len2 = L2Norm (normal2); 
+	  
+	  if(abs(len1-len2)>1e-6){
+	    std::cout << "len :\t" << len1 << "\t=?=\t" << len2 << std::endl;
+	    throw Exception("DGInnerFacet_ConvectionIntegrator: len1 != len2");
+	  }
+	  
+	  normal2 /= len2;
+	  fel1_l2->CalcShape(sip1.IP(), mat1_shape);
+	  fel2_l2->CalcShape(sip2.IP(), mat2_shape);
+	  
+	  double bn = 0;//, bn1 = 0, bn2 = 0;
+	  for (int i=0; i<D;i++){
+	    bn += 0.5 * (coef_b[i]->Evaluate(sip1) + coef_b[i]->Evaluate(sip2) )  * normal1(i);
+	  }
+	  b1mat = 0.0; 
+	  b1mat.Range (0   , nd1)   = mat1_shape;
+	  b1mat.Range (nd1   , nd1+nd2)   = -mat2_shape; //sign for outer normal (bn2 = - bn1)
+	  b2mat = 0.0;
+	  if(bn>0) //flow from 1 to 2 => 1 is upwind direction
+	    b2mat.Range (0   , nd1) = mat1_shape;
+	  else
+	    b2mat.Range (nd1   , nd1+nd2) = mat2_shape;
+	  // dmat = bn;
+	  b1mat *= bn * len1 * ir_facet[l].Weight();
+	  elmat += b1mat * Trans (b2mat);
+	}
+      }
+    */
+
+    
+  }
 
   
 

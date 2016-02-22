@@ -17,6 +17,7 @@ class ProxyFunction : public CoefficientFunction
 {
   bool testfunction; // true .. test, false .. trial
   bool is_complex;
+  bool is_other;    // neighbour element (DG)
 
   shared_ptr<DifferentialOperator> evaluator;
   shared_ptr<DifferentialOperator> deriv_evaluator;
@@ -30,7 +31,7 @@ public:
                  shared_ptr<DifferentialOperator> atrace_evaluator,
                  shared_ptr<DifferentialOperator> atrace_deriv_evaluator)
                  
-    : testfunction(atestfunction), is_complex(ais_complex),
+    : testfunction(atestfunction), is_complex(ais_complex), is_other(false),
       evaluator(aevaluator), 
       deriv_evaluator(aderiv_evaluator),
       trace_evaluator(atrace_evaluator), 
@@ -45,7 +46,8 @@ public:
   virtual int Dimension () const { return evaluator->Dim(); }
   virtual Array<int> Dimensions() const;
   virtual bool IsComplex () const { return is_complex; } 
-
+  bool IsOther() const { return is_other; }
+  
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
   const shared_ptr<DifferentialOperator> & TraceEvaluator() const { return trace_evaluator; }
@@ -53,11 +55,16 @@ public:
   shared_ptr<ProxyFunction> Deriv() const
   {
     return deriv_proxy;
-    // return make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr, trace_deriv_evaluator, nullptr);
   }
   shared_ptr<ProxyFunction> Trace() const
   {
     return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, nullptr, nullptr);
+  }
+  shared_ptr<ProxyFunction> Other() const
+  {
+    auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator);
+    other->is_other = true;
+    return other;
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -222,7 +229,7 @@ public:
                                     bool aelement_boundary);
 
     virtual bool BoundaryForm() const { return vb == BND; }
-    virtual bool IsSymmetric() const { return true; } 
+    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
 
     virtual void 
     CalcElementMatrix (const FiniteElement & fel,
@@ -277,10 +284,30 @@ public:
                                  FlatVector<double> ely,
                                  void * precomputed,
                                  LocalHeap & lh) const;
-    
+
+
   };
 
 
+  class SymbolicFacetBilinearFormIntegrator : public FacetBilinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
+
+  public:
+    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf);
+
+    virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
+
+    virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                     const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                     const FiniteElement & volumefel2, int LocalFacetNr2,
+                     const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                     FlatMatrix<double> & elmat,
+                     LocalHeap & lh) const;
+  };
 
   class SymbolicEnergy : public BilinearFormIntegrator
   {
