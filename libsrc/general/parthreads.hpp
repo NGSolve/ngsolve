@@ -187,6 +187,27 @@ public:
 
 #endif
 
+// Simple ParallelFor function to replace OpenMP
+template<typename TFunc>
+void ParallelFor( int first, int next, const TFunc & f )
+{
+  int nthreads = thread::hardware_concurrency();
+  thread * threads = new thread[nthreads];
+  for (int i=0; i<nthreads; i++)
+    {
+      threads[i] = std::thread( [&] ()
+        {
+          int myfirst = first + (next-first)*i/nthreads;
+          int mynext = first + (next-first)*(i+1)/nthreads;
+          f(myfirst, mynext);
+        });
+    }
+
+  for (int i=0; i<nthreads; i++)
+    threads[i].join();
+  delete [] threads;
+}
+
 }
 
 #endif

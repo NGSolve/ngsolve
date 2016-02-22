@@ -21,6 +21,8 @@
 #include <climits>
 #include <algorithm>
 #include <memory>
+#include <thread>
+#include <mutex>
 
 
 #include <new>
@@ -35,9 +37,6 @@
 #include <unistd.h>  // for usleep (only for parallel)
 #endif
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 
 /*

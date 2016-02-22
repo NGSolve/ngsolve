@@ -68,6 +68,8 @@ namespace netgen
 
   Array<int> tets_in_qualclass;
 
+  mutex tcl_todo_mutex;
+
   int h_argc = 0;
   char ** h_argv = NULL;
 

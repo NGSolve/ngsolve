@@ -4,6 +4,8 @@
 namespace netgen
 {
 
+  static mutex buildsearchtree_mutex;
+
   Mesh :: Mesh ()
     : surfarea(*this)
   {
@@ -4101,8 +4103,8 @@ namespace netgen
   {
     if (elementsearchtreets == GetTimeStamp()) return;
 
-#pragma omp critical (buildsearchtree)
     {
+      std::lock_guard<std::mutex> guard(buildsearchtree_mutex);
       if (elementsearchtreets != GetTimeStamp())
         {
           NgLock lock(mutex);

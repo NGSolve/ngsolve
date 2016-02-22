@@ -2474,27 +2474,36 @@ namespace netgen
               NgProfiler::RegionTimer reg1 (timer1);
               
               int ne = mesh->GetNE();
-              double hminv = numeric_limits<double>::max();
-              double hmaxv = -numeric_limits<double>::max();
-              bool hhasit = false;
-#if defined _OPENMP && _OPENMP >= 201107
-#pragma omp parallel for reduction (max : hmaxv) reduction (min : hminv) reduction (|| : hhasit)
-#endif
-              for (int i = 0; i < ne; i++) 
-                {
-                  double val;
-                  bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
-                  if (considerElem)
-                    {
-                      if (val > hmaxv) hmaxv = val;
-                      if (val < hminv) hminv = val;
-                      hhasit = true;
-                    }
-                }
 
-              minv = min(minv, hminv);
-              maxv = max(maxv, hmaxv);
-              hasit |= hhasit;
+              mutex min_mutex;
+              mutex max_mutex;
+
+              ParallelFor(0, ne, [&] (int first, int next)
+                {
+                  double minv_local = numeric_limits<double>::max();
+                  double maxv_local = -numeric_limits<double>::max();
+                  for (int i=first; i<next; i++)
+                    {
+                      double val;
+                      bool considerElem = GetValue (sol, i, 0.333, 0.333, 0.333, comp, val);
+                      if (considerElem)
+                        {
+                          if (val > maxv_local) maxv_local = val;
+                          if (val < minv_local) minv_local = val;
+                          hasit = true;
+                        }
+                    }
+                  if(minv_local < minv)
+                    {
+                      lock_guard<mutex> guard(min_mutex);
+                      minv = minv_local;
+                    }
+                  if(maxv_local > maxv)
+                    {
+                      lock_guard<mutex> guard(max_mutex);
+                      maxv = maxv_local;
+                    }
+                });
             }
           
           if (sol->draw_surface)

@@ -710,8 +710,8 @@ namespace netgen
       strcat (lstring, " 0");
     Tcl_SetVar  (interp, "::status_tetqualclasses", lstring, 0);
 
-#pragma omp critical(tcltodo)
     {
+      lock_guard<mutex> guard(tcl_todo_mutex);
       if (multithread.tcl_todo->length())
         {
           Tcl_Eval (interp, multithread.tcl_todo->c_str());

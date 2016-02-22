@@ -2363,8 +2363,6 @@ void LinkFunction ()
 
 void Ng_TclCmd(string cmd)
 {
-#pragma omp critical(tcltodo)
-  {
-    *(multithread.tcl_todo) += cmd;
-  }
+  lock_guard<mutex> guard(tcl_todo_mutex);
+  *(multithread.tcl_todo) += cmd;
 }

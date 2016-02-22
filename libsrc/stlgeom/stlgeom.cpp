@@ -2138,13 +2138,13 @@ int STLGeometry :: CheckGeometryOverlapping()
     }
 
 
-#pragma omp parallel
   {
     Array<int> inters;
+    mutex inters_mutex;
     
-#pragma omp for
-    for (int i = 1; i <= GetNT(); i++)
-      {
+    ParallelFor( 1, GetNT()+1, [&] (int first, int next)
+    {
+      for (int i=first; i<next; i++) {
 	const STLTriangle & tri = GetTriangle(i);
 	
 	Point<3> tpmin = tri.box.PMin();
@@ -2176,7 +2176,7 @@ int STLGeometry :: CheckGeometryOverlapping()
 
 	    if (IntersectTriangleTriangle (&trip1[0], &trip2[0]))
 	      {
-#pragma omp critical
+                lock_guard<mutex> guard(inters_mutex);
 		{
 		  oltrigs++;
 		  PrintMessage(5,"Intersecting Triangles: trig ",i," with ",inters.Get(j),"!");
@@ -2186,6 +2186,7 @@ int STLGeometry :: CheckGeometryOverlapping()
 	      }
 	  }
       }
+    });
   }
   PrintMessage(3,"Check overlapping geometry ... ", oltrigs, " triangles overlap");
   return oltrigs;

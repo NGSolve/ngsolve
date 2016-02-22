@@ -14,6 +14,7 @@
 
 namespace netgen
 {
+  static mutex block_allocator_mutex;
 
   BlockAllocator :: BlockAllocator (unsigned asize, unsigned ablocks)
     : bablocks (0)
@@ -36,8 +37,8 @@ namespace netgen
   void * BlockAllocator :: Alloc ()
   {
     void * p;
-#pragma omp critical (BlockAllocator)
     {
+      lock_guard<mutex> guard(block_allocator_mutex); 
       //  return new char[size];
       if (!freelist)
         {
@@ -60,8 +61,8 @@ namespace netgen
 
   void BlockAllocator :: Free (void * p)
   {
-#pragma omp critical (BlockAllocator)
     {
+      lock_guard<mutex> guard(block_allocator_mutex); 
       if (bablocks.Size())
         {
           *(void**)p = freelist;

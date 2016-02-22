@@ -29,6 +29,8 @@ namespace netgen
 
   DLL_HEADER extern Array<int> tets_in_qualclass;
 
+  DLL_HEADER extern mutex tcl_todo_mutex;
+
   class multithreadt
   {
   public:
