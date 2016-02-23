@@ -195,10 +195,10 @@ void ParallelFor( int first, int next, const TFunc & f )
   thread * threads = new thread[nthreads];
   for (int i=0; i<nthreads; i++)
     {
-      threads[i] = std::thread( [&] ()
+      int myfirst = first + (next-first)*i/nthreads;
+      int mynext = first + (next-first)*(i+1)/nthreads;
+      threads[i] = std::thread( [myfirst,mynext,&f] ()
         {
-          int myfirst = first + (next-first)*i/nthreads;
-          int mynext = first + (next-first)*(i+1)/nthreads;
           f(myfirst, mynext);
         });
     }
