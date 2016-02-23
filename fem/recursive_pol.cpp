@@ -14,10 +14,11 @@ namespace ngfem
   
   void LegendrePolynomial :: Calc (int n)
   {
+    static mutex calclegendre_mutex;
     if (coefs.Size() > n) return;
 
-#pragma omp critical (calclegendre)
     {
+      lock_guard<mutex> guard(calclegendre_mutex);
       if (coefs.Size() <= n)
         {
           coefs.SetSize (n+1);
@@ -38,10 +39,11 @@ namespace ngfem
 
   void IntLegNoBubble :: Calc (int n)
   {
+    static mutex calcintlegnobub_mutex;
     if (coefs.Size() > n) return;
 
-#pragma omp critical (calcintlegnobub)
     {
+      lock_guard<mutex> guard(calcintlegnobub_mutex);
       if (coefs.Size() <= n)
         {
           coefs.SetSize (n+1);

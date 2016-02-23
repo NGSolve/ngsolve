@@ -13,6 +13,9 @@
    
 namespace ngfem
 {
+  static mutex intruletpfacet_mutex;
+  static mutex genintrule_mutex;
+
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
     ost << " locnr = " << ip.nr << ": (" 
@@ -1580,8 +1583,8 @@ namespace ngfem
     int nip;
 
     static IntegrationRule ir0, ir1;
-#pragma omp critical(intruletpfacet)
     {
+      lock_guard<mutex> guard(intruletpfacet_mutex);
       if (ir0.GetNIP() == 0)
 	{
 	  ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
@@ -1721,8 +1724,8 @@ namespace ngfem
     int nip;
 
     static IntegrationRule ir0, ir1;
-#pragma omp critical(intruletpfacet)
     {
+      lock_guard<mutex> guard(intruletpfacet_mutex);
       if (ir0.GetNIP() == 0)
 	{
 	  ir0.AddIntegrationPoint (IntegrationPoint (0.0, 0, 0, 1.0));
@@ -2397,8 +2400,8 @@ namespace ngfem
         GenerateIntegrationRule (ET_QUAD, order);
       }
 
-#pragma omp critical(genintrule)
     {
+      lock_guard<mutex> guard(genintrule_mutex);
   
       switch (eltyp)
 	{
@@ -2661,8 +2664,8 @@ namespace ngfem
     Array<IntegrationRule*> * ira;
     ira = &jacobirules10; 
 
-#pragma omp critical(genintrule)
     {
+      lock_guard<mutex> guard(genintrule_mutex);
       if (ira -> Size() < order+1)
 	{
 	  int oldsize = ira -> Size();
@@ -2711,8 +2714,8 @@ namespace ngfem
     Array<IntegrationRule*> * ira;
     ira = &jacobirules20; 
 
-#pragma omp critical(genintrule)
     {
+      lock_guard<mutex> guard(genintrule_mutex);
       if (ira -> Size() < order+1)
 	{
 	  int oldsize = ira -> Size();

@@ -1483,6 +1483,7 @@ namespace ngsolve
     template <typename SCAL>
     SCAL DoScal (LocalHeap & lh)
     {
+      mutex npintegrate_mutex;
       SCAL sum = 0;
       cout << "np integrate,ne = " << ma->GetNE() << endl;
 #pragma omp parallel
@@ -1505,8 +1506,8 @@ namespace ngsolve
 
 	    lsum += hsum;
 	  }
-#pragma omp critical(npintegrate)
 	{
+          lock_guard<mutex> guard(npintegrate_mutex);
 	  sum += lsum;
 	}
       }

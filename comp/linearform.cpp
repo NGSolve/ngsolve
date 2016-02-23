@@ -56,6 +56,8 @@ namespace ngcomp
     static Timer timer1("Vector assembling 1", 2);
     static Timer timer2("Vector assembling 2", 2);
     static Timer timer3("Vector assembling 3", 2);
+    static mutex linformsurfneighprint_mutex;
+    static mutex addelvec3_mutex;
     RegionTimer reg (timer);
 
     assembled = true;
@@ -335,8 +337,8 @@ namespace ngcomp
 #pragma omp for	      
 	      for (int i = 0; i < nse; i++)
 		{
-#pragma omp critical (linformsurfneighprint)		    
 		  {
+                    lock_guard<mutex> guard(linformsurfneighprint_mutex);
 		    gcnt++;
 		    if (i % 10 == 0)
 		      cout << "\rassemble facet surface element " << i << "/" << nse << flush;
@@ -388,8 +390,8 @@ namespace ngcomp
 
 		      fespace->TransformVec (i, false, elvec, TRANSFORM_RHS);
 		    
-#pragma omp critical (addelvec3)		    
 		      {
+                        lock_guard<mutex> guard(addelvec3_mutex);
 			AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
 		      }
 		    }
