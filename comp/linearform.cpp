@@ -328,14 +328,13 @@ namespace ngcomp
 	}
 	if(hasskeletonbound)
 	{
-#pragma omp parallel
+          ParallelForRange( IntRange(nse), [&] ( IntRange r )
 	  {
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
 	    Array<int> fnums, elnums, vnums;
 	    //Schleife fuer Facet-Integrators: 
-#pragma omp for	      
-	      for (int i = 0; i < nse; i++)
+	      for (int i : r)
 		{
 		  {
                     lock_guard<mutex> guard(linformsurfneighprint_mutex);
@@ -397,7 +396,7 @@ namespace ngcomp
 		    }
 		}
 		
-	  }//end of parallel
+	  });//end of parallel
 	  cout << "\rassemble facet surface element  " << nse << "/" << nse << endl;	  
 	}//endof hasskeletonbound
 

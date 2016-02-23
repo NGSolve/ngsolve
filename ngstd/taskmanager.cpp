@@ -18,12 +18,12 @@
 */
 
 
-// #define CPP11_THREADS 
-
 namespace ngstd
 {
   TaskManager * task_manager = nullptr;
   bool TaskManager :: use_paje_trace = false;
+  int TaskManager :: max_threads = std::thread::hardware_concurrency();
+  thread_local int TaskManager :: thread_id;
 
   static mutex copyex_mutex;
 
@@ -53,7 +53,7 @@ namespace ngstd
 #endif // WIN32
 
 
-    task_manager->StartWorkersWithCppThreads();
+    task_manager->StartWorkers();
 
     ParallelFor (100, [&] (int i) { ; });    // startup
     return task_manager->GetNumThreads();
@@ -70,7 +70,6 @@ namespace ngstd
       }
   }
 
-#ifdef CPP11_THREADS
   void RunWithTaskManager (function<void()> alg)
   {
     int num_threads = EnterTaskManager();
@@ -78,84 +77,23 @@ namespace ngstd
     ExitTaskManager(num_threads);
   }
 
-#else // openmp-threads
-  void RunWithTaskManager (function<void()> alg)
-  {
-    if (task_manager)
-      {
-        alg();
-        return;
-      }
 
-    task_manager = new TaskManager();
 
-    
-    Exception * ex = nullptr;
 
-#pragma omp parallel
-    {
-#pragma omp single 
-      {
-        try
-          {
-            cout << IM(3) << "new task-based parallelization" << endl;
-            
-#ifdef USE_NUMA
-            int num_nodes = task_manager->GetNumNodes();
-            
-            int thd = omp_get_thread_num();
-            int thds = omp_get_num_threads();
-            int mynode = num_nodes * thd/thds;
-            numa_run_on_node (mynode);
-#endif
-            
-
-            
-#ifndef WIN32
-            // master has maximal priority !
-            int policy;
-            struct sched_param param;
-            pthread_getschedparam(pthread_self(), &policy, &param);
-            param.sched_priority = sched_get_priority_max(policy);
-            pthread_setschedparam(pthread_self(), policy, &param);
-#endif // WIN32
-            
-            
-            task_manager->StartWorkers();
-            ParallelFor (100, [&] (int i) { ; });    // startup
-
-            alg();
-            
-            task_manager->StopWorkers();
-          }
-        catch (Exception e)
-          {
-            ex = new Exception (e);
-          }
-      }
+  void TaskManager :: SetNumThreads(int amax_threads)
+    { 
+      if(task_manager && task_manager->active_workers>0)
+        {
+          cerr << "Warning: can't change number of threads while TaskManager active!" << endl;
+          return;
+        }
+      max_threads = amax_threads;
     }
-
-    if (ex) throw Exception (*ex);
-
-
-    
-    delete task_manager;
-    task_manager = nullptr;
-  }
-
-#endif
-
-
-
 
 
   TaskManager :: TaskManager()
     {
-#ifdef _OPENMP
-      num_threads = omp_get_max_threads();
-#else //  for clang 
-      num_threads = 4; 
-#endif
+      num_threads = GetMaxThreads();
   
       if (MyMPI_GetNTasks() > 1) num_threads = 1;
 
@@ -195,7 +133,8 @@ namespace ngstd
     trace = nullptr;
   }
 
-  void TaskManager :: StartWorkersWithCppThreads()
+
+  void TaskManager :: StartWorkers()
   {
     done = false;
 
@@ -206,26 +145,6 @@ namespace ngstd
 
     while (active_workers < num_threads-1)
       ;
-  }
-
-
-  void TaskManager :: StartWorkers()
-  {
-#ifdef CPP11_THREADS
-    StartWorkersWithCppThreads();
-#else
-    done = false;
-
-    for (int i = 0; i < num_threads-1; i++)
-#pragma omp task
-      {
-        Loop(omp_get_thread_num());
-      }
-
-    while (active_workers < num_threads-1)
-      ;
-    // cout << "workers are all active !!!!!!!!!!!" << endl;
-#endif
   }
  
   void TaskManager :: StopWorkers()
@@ -274,11 +193,7 @@ namespace ngstd
       nodedata[j]->participate.store (0, memory_order_release);
     
 
-#ifdef CPP11_THREADS
     int thd = 0;
-#else
-    int thd = omp_get_thread_num();
-#endif
 
     int thds = GetNumThreads();
 
@@ -343,6 +258,7 @@ namespace ngstd
     
   void TaskManager :: Loop(int thd)
   {
+    thread_id = thd;
     active_workers++;
 
     int thds = GetNumThreads();

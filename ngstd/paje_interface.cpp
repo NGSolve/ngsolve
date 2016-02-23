@@ -27,7 +27,7 @@ namespace ngstd
 
   PajeTrace :: PajeTrace(int anthreads, std::string aname)
   {
-    start_time = omp_get_wtime();
+    start_time = WallTime();
     
     nthreads = anthreads;
     tracefile_name = aname;
@@ -290,11 +290,10 @@ namespace ngstd
 
       void WriteEvents()
         {
-#ifdef _OPENMP // for clang
           cout << "Sorting traces..." << flush;
           std::sort (events.begin(), events.end());
           cout << " finished" << endl;
-          int nthreads = omp_get_max_threads();
+          int nthreads = TaskManager::GetMaxThreads();
           int buf_size = 100000;
           std::vector<vector<char>> bufs(nthreads);
           for(auto & buf : bufs)
@@ -302,22 +301,18 @@ namespace ngstd
 
           int nevents = events.size();
           int events_per_thread = 2000;
-          atomic<int> job_counter;
-          job_counter = 0;
-          int round = 0;
-          for( int n = 0; n<nevents; n+=events_per_thread*nthreads )
+          int nrounds = (nevents+events_per_thread*nthreads-1)/(events_per_thread*nthreads);
+          for( int round : IntRange(nrounds) )
             {
-              cout << "\rWriting traces... " << (size_t)n*100/nevents << "%" << flush;
-              round++;
-#pragma omp parallel
+              cout << "\rWriting traces... " << (size_t)round*100/nrounds << "%" << flush;
+              atomic<int> thread_counter(0);
+              ParallelForRange( IntRange(nevents).Split(round, nrounds), [&] (IntRange r)
                 {
-                  int i = omp_get_thread_num();
-                  int nstart = n+i*events_per_thread;
-                  int nnext = min2(nevents, nstart+events_per_thread);
+                  int i = thread_counter++;
                   int counter = 0;
                   char *buf = &bufs[i][0];
                   buf[0] = '\0';
-                  for (int k = nstart; k<nnext; k++)
+                  for (int k : r)
                     {
                       int ret = events[k].write( buf+counter );
                       if(ret>MAX_TRACE_LINE_SIZE)
@@ -325,15 +320,11 @@ namespace ngstd
                       counter += ret;
 
                     }
-                  job_counter++;
-                }
+                });
               for (int i : Range(nthreads) )
                 fprintf( ctrace_stream, "%s", &bufs[i][0] );
             }
           cout << endl;
-#else
-          cout << "WriteEvents disabled due to non-existent openmp" << endl;
-#endif
         }
 
     private:

@@ -1486,12 +1486,11 @@ namespace ngsolve
       mutex npintegrate_mutex;
       SCAL sum = 0;
       cout << "np integrate,ne = " << ma->GetNE() << endl;
-#pragma omp parallel
+      ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
       {
 	LocalHeap slh = lh.Split(), &lh = slh;
 	SCAL lsum = 0;
-#pragma omp for
-	for (int i = 0; i < ma->GetNE(); i++)
+	for (int i : r)
 	  {
 	    HeapReset hr(lh);
 	    ElementTransformation & eltrans = ma->GetTrafo (i, 0, lh);
@@ -1510,7 +1509,7 @@ namespace ngsolve
           lock_guard<mutex> guard(npintegrate_mutex);
 	  sum += lsum;
 	}
-      }
+      });
 
       sum = MyMPI_AllReduce (sum);
       return sum;

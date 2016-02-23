@@ -1301,13 +1301,12 @@ namespace ngcomp
             if (hasskeletonbound)
               {
                 int cnt = 0;          
-#pragma omp parallel
+                ParallelForRange( IntRange(nse), [&] ( IntRange r )
                 {
                   LocalHeap lh = clh.Split();
                   Array<int> fnums, elnums, vnums, dnums;
                 
-#pragma omp for 
-                  for (int i = 0; i < nse; i++)
+                  for (int i : r)
                     {
                       {
                         lock_guard<mutex> guard(printmatasstatus2_mutex);
@@ -1409,7 +1408,7 @@ namespace ngcomp
                           }
                         }//end for (numintegrators)
                     }//end for nse                  
-                }//end of parallel
+                });//end of parallel
                 cout << "\rassemble facet surface element " << nse << "/" << nse << endl;         
               }//end of hasskeletonbound
             if (hasskeletoninner)
@@ -1429,14 +1428,13 @@ namespace ngcomp
                   }
 
                 int cnt = 0;
-#pragma omp parallel 
+                ParallelForRange( IntRange(nf), [&] ( IntRange r )
                 {
                   LocalHeap lh = clh.Split();
 
                   // ElementTransformation eltrans1, eltrans2;
                   Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
-#pragma omp for 
-                  for (int i = 0; i < nf; i++)
+                  for (int i : r)
                     {
                       if (!fine_facet.Test(i)) continue;
                       HeapReset hr(lh);
@@ -1638,7 +1636,7 @@ namespace ngcomp
                           }
                         }
                     }
-                }
+                });
                 cout << "\rassemble inner facet element " << nf << "/" << nf << endl;     
               }
             ma->SetThreadPercentage ( 100.0 );
@@ -1657,13 +1655,12 @@ namespace ngcomp
             
             
             int nspecel = 0;
-#pragma omp parallel 
+            ParallelForRange( IntRange(fespace->specialelements.Size()), [&] ( IntRange r )
             {
               LocalHeap lh = clh.Split();
               Array<int> dnums;
               
-#pragma omp for 
-              for (int i = 0; i < fespace->specialelements.Size(); i++)
+              for (int i : r)
                 {
                   {
                     lock_guard<mutex> guard(printmatspecel_mutex);
@@ -1693,7 +1690,7 @@ namespace ngcomp
                   assembledspecialelements = true;
                   lh.CleanUp();
                 }
-            }
+            });
             if(assembledspecialelements) cout << "\rassemble special element " 
                                               << fespace->specialelements.Size() << "/" << fespace->specialelements.Size() << endl;
             
@@ -2557,11 +2554,7 @@ namespace ngcomp
                 if (hasinner)
                   {
                     RegionTimer reg (timervol);
-#ifdef _OPENMP
-		    LocalHeap clh (lh_size*omp_get_max_threads(), "biform-AddMatrix - Heap");
-#else
-		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
-#endif
+		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
 
 		    IterateElements 
 		      (*fespace, VOL, clh, 
@@ -2584,11 +2577,7 @@ namespace ngcomp
                   {
                     RegionTimer reg (timerbound);
 
-#ifdef _OPENMP
-		    LocalHeap clh (lh_size*omp_get_max_threads(), "biform-AddMatrix - Heap");
-#else
-		    LocalHeap clh (lh_size, "biform-AddMatrix - Heap");
-#endif
+		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     
 		    IterateElements 
 		      (*fespace, BND, clh, 
@@ -2773,7 +2762,7 @@ namespace ngcomp
   template <class SCAL>
   double S_BilinearForm<SCAL> :: Energy (const BaseVector & x) const
   {
-    double energy = 0;
+    atomic<double> energy(0.0);
 
     if (!MixedSpaces())
       {
@@ -2814,7 +2803,6 @@ namespace ngcomp
                    energy_T += bfi->Energy (fel, eltrans, elvecx, lh);
                  }
 
-#pragma omp atomic
                energy += energy_T;
              });
 

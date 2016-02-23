@@ -31,7 +31,6 @@ option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
-option( USE_CPP_THREADS  "use C++11 threads instead of OpenMP" ON)
 option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 
@@ -49,11 +48,6 @@ if(INTEL_MIC)
     set(MKL_ARCH "mic")
     include(cmake_modules/mic.cmake)
 endif(INTEL_MIC)
-
-#######################################################################
-if(USE_CPP_THREADS)
-    add_definitions(-DCPP11_THREADS)
-endif(USE_CPP_THREADS)
 
 #######################################################################
 if(USE_NATIVE_ARCH)
@@ -130,10 +124,6 @@ include_directories (AFTER "${CMAKE_INSTALL_PREFIX}/include")
 
 link_directories ("${CMAKE_INSTALL_PREFIX}/${ngs_install_dir_lib}")
 
-if(NOT APPLE)
-    find_package(OpenMP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif(NOT APPLE)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -Wall")
 
 include (CheckIncludeFiles)
@@ -170,7 +160,6 @@ if(WIN32)
         set(CMAKE_CXX_FLAGS "/Od ${CMAKE_CXX_FLAGS} /MP /Qstd=c++11 /Qopt-report-file:report.log")
     else()
         # MS Visual Compiler
-        add_definitions(-DCPP11_THREADS)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /w /bigobj")
     endif()
 

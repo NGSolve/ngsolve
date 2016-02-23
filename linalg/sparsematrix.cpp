@@ -280,7 +280,7 @@ namespace ngla
                  // auto myr = Range(ndof).Split (ti.task_nr,ti.ntasks);
                  for (int i : myr)
                    {
-                     prof[i].tstart = omp_get_wtime();
+                     prof[i].tstart = WallTime();
                      prof[i].size = dof2element[i].Size();
 
                      sizes.SetSize(dof2element[i].Size());
@@ -305,7 +305,7 @@ namespace ngla
                                      cnti++; 
                                    } );
 
-                     prof[i].tend = omp_get_wtime();
+                     prof[i].tend = WallTime();
                    }
                },
                TasksPerThread(20));

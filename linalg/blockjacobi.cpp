@@ -398,7 +398,7 @@ namespace ngla
       }
 
 
-    int cnt = 0;
+    atomic<int> cnt(0);
     /*
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < blocktable.Size(); i++)
@@ -410,7 +410,6 @@ namespace ngla
        {
          
 #ifndef __MIC__
-#pragma omp atomic
 	cnt++;
         double time = WallTime();
 	if (time > prevtime+0.05)
@@ -891,7 +890,7 @@ namespace ngla
 	  // data[i].Alloc (memneed[i]);
 
         clock_t prevtime = clock();
-        int cnt = 0;
+        atomic<int> cnt(0);
 
         // #pragma omp parallel for	
         // for (int i = 0; i < blocktable.Size(); i++)
@@ -900,7 +899,6 @@ namespace ngla
                       [&] (int i)
                       {
 #ifndef __MIC__
-#pragma omp atomic
                         cnt++;
                         if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
                           {
