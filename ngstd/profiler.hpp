@@ -7,9 +7,29 @@
 /* Date:   5. Jan. 2005                                                  */
 /**************************************************************************/
 
-#include <chrono>
-#include <sys/time.h>
 
+// Philippose - 27 January 2010
+// Windows does not provide a "sys/time.h" include, 
+// and neither does it define the function "gettimeofday" 
+// anywhere..... This is a workaround...
+#ifdef _WIN32
+#include <sys/timeb.h>
+#include <sys/types.h>
+#include <winsock.h>
+
+
+inline void gettimeofday(struct timeval* t,void* timezone)
+{       struct _timeb timebuffer;
+        _ftime( &timebuffer );
+        t->tv_sec=timebuffer.time;
+        t->tv_usec=1000*timebuffer.millitm;
+}
+
+#else
+#include <sys/time.h>
+#endif
+
+#include <chrono>
 inline double WallTime ()
 {
   typedef std::chrono::time_point<std::chrono::system_clock> time_point;
