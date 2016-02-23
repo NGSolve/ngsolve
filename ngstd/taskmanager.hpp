@@ -60,8 +60,12 @@ namespace ngstd
     int num_nodes;
     int num_threads;
     static int max_threads;
+#ifndef __clang__    
     static thread_local int thread_id;
-
+#else
+    static __thread int thread_id;
+#endif
+    
     static bool use_paje_trace;
   public:
     
