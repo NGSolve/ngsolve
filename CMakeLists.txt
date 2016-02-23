@@ -150,7 +150,6 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 
 #######################################################################
 if (USE_GUI)
-    set(CMAKE_THREAD_PREFER_PTHREAD ON)
     find_package(TCL 8.5)
     find_package(Threads REQUIRED)
     if(APPLE)
@@ -163,7 +162,6 @@ if (USE_GUI)
           find_package(X11 REQUIRED) 
     endif(APPLE)
     find_package(OpenGL REQUIRED)
-    find_library(LIBPTHREAD NAMES pthread HINTS ${MY_LIB_DIR} )
 
     add_definitions(-DTCL -DOPENGL)
     include_directories(${TCL_INCLUDE_PATH})

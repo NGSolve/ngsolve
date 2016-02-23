@@ -1777,7 +1777,6 @@ namespace netgen
       biopt.refinementfilename = argv[1];
 
 
-    //  pthread_create (&meshingthread, NULL, &BisectDummy, NULL);
     BisectDummy (0);
 
     /*

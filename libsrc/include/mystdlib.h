@@ -48,11 +48,6 @@ namespace metis { extern "C" {
 */
 
 
-#ifndef NO_PARALLEL_THREADS
-#ifndef WIN32
-#include <pthread.h>
-#endif
-#endif
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -64,7 +59,6 @@ namespace metis { extern "C" {
 # define WIN32_LEAN_AND_MEAN
 # ifndef NO_PARALLEL_THREADS
 #  ifdef MSVC_EXPRESS
-#   include <pthread.h>
 #  else
 #   include <afxwin.h>
 #   include <afxmt.h>
@@ -76,9 +70,6 @@ namespace metis { extern "C" {
 
 #else // Not using MC VC++
 
-# ifndef NO_PARALLEL_THREADS
-#  include <pthread.h>
-# endif
 
 #endif
 
