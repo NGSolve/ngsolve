@@ -35,6 +35,7 @@ void RunParallel ( void * (*fun)(void *), void * in)
   if (parthread)
     {
       meshingthread = std::thread(fun, in);
+      meshingthread.detach();
     }
   else
     fun (in);
