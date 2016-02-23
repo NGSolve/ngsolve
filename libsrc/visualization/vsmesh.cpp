@@ -860,12 +860,13 @@ namespace netgen
 
 	//  for (i = 1; i <= mesh->GetNSeg(); i++)
 
-	if (& mesh -> GetIdentifications() )
+	if (mesh -> HasIdentifications() )
 	  {
-            INDEX_2_HASHTABLE<int> & idpts =
-	      mesh->GetIdentifications().GetIdentifiedPoints();
-            if (&idpts)
+            if (mesh->GetIdentifications().HasIdentifiedPoints())
 	      {
+                INDEX_2_HASHTABLE<int> & idpts =
+                  mesh->GetIdentifications().GetIdentifiedPoints();
+                
 		for (int i = 1; i <= idpts.GetNBags(); i++)
                   for (int j = 1; j <= idpts.GetBagSize(i); j++)
 		    {

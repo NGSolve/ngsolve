@@ -407,6 +407,8 @@ namespace netgen
     ///
     double GetMinH (const Point3d & pmin, const Point3d & pmax);
     ///
+    bool HasLocalHFunction () { return lochfunc != nullptr; }
+    ///
     LocalH & LocalHFunction () { return * lochfunc; }
     ///
     bool LocalHFunctionGenerated(void) const { return (lochfunc != NULL); }
@@ -633,7 +635,8 @@ namespace netgen
     Identifications & GetIdentifications () { return *ident; }
     /// return periodic, close surface etc. identifications
     const Identifications & GetIdentifications () const { return *ident; }
-
+    ///
+    bool HasIdentifications() const { return ident != nullptr; }
 
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Point3d & pt) const;

@@ -1291,6 +1291,7 @@ namespace netgen
     bool Get (PointIndex pi1, PointIndex pi2, int identnr) const;
     bool GetSymmetric (PointIndex pi1, PointIndex pi2, int identnr) const;
 
+    bool HasIdentifiedPoints() const { return identifiedpoints != nullptr; } 
     ///
     INDEX_2_HASHTABLE<int> & GetIdentifiedPoints () 
     { 
