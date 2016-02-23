@@ -23,8 +23,12 @@ namespace ngstd
   TaskManager * task_manager = nullptr;
   bool TaskManager :: use_paje_trace = false;
   int TaskManager :: max_threads = std::thread::hardware_concurrency();
+#ifndef __clang__      
   thread_local int TaskManager :: thread_id;
-
+#else
+  __thread int TaskManager :: thread_id;
+#endif
+  
   static mutex copyex_mutex;
 
   int EnterTaskManager ()
