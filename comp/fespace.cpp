@@ -876,14 +876,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
           Array<int> dnums;
-#pragma omp for
-	  for (int i = 0; i < ma->GetNE(); i++)
+	  for (int i : r)
             GetDofNrs (i, dnums);
-	}
+	});
 	steps++;
 	time = WallTime()-starttime;
       }
@@ -922,17 +921,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
 
-#pragma omp for
-	  for (int i = 0; i < ma->GetNE(); i++)
+	  for (int i : r)
 	    {
 	      HeapReset hr(lh);
 	      GetFE (i, lh);
 	    }
-	}
+	});
         steps++;
         time = WallTime()-starttime;
       }
@@ -947,11 +945,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-#pragma omp parallel for
-        for (int i = 0; i < ma->GetNE(); i++)
+        ParallelFor( IntRange(ma->GetNE()), [&] (int i)
           {
 	    /* Ng_Element ngel = */ ma->GetElement(i);
-          }
+          });
         steps++;
         time = WallTime()-starttime;
       }
@@ -964,16 +961,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     steps = 0;
     do
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(ma->GetNE()), [&] ( IntRange r )
         {
 	  LocalHeap &clh = lh, lh = clh.Split();
-#pragma omp for
-          for (int i = 0; i < ma->GetNE(); i++)
+          for (int i : r)
             {
               HeapReset hr(lh);
               /* ElementTransformation & trafo = */ ma->GetTrafo(i, VOL, lh);
             }
-        }
+        });
         steps++;
         time = WallTime()-starttime;
       }
@@ -1185,17 +1181,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     Exception * ex = nullptr;
 
-#pragma omp parallel 
-    {
-      LocalHeap lh = clh.Split();
-      Array<int> temp_dnums;
+    for (FlatArray<int> els_of_col : element_coloring)
+      ParallelForRange( IntRange(els_of_col.Size()), [&] ( IntRange r )
+      {
+        LocalHeap lh = clh.Split();
+        Array<int> temp_dnums;
 
-      // lh.ClearValues();
-      
-      for (FlatArray<int> els_of_col : element_coloring)
+        // lh.ClearValues();
         
-#pragma omp for schedule(dynamic)
-        for (int i = 0; i < els_of_col.Size(); i++)
+        for (int i : r)
           {
             try
               {
@@ -1217,7 +1211,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	      { ; }
           }
       // cout << "lh, used size = " << lh.UsedSize() << endl;
-    }
+    });
     
     if (ex)
       {

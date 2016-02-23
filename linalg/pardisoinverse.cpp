@@ -141,7 +141,7 @@ namespace ngla
 
     params[0] = 1; // no pardiso defaults
     // params[2] = 8; // 1 processor (?)
-    params[2] = omp_get_max_threads(); 
+    params[2] = TaskManager::GetMaxThreads(); 
 
     params[1] = 0; // fill in 0..MDO, 2..metis
     params[3] = params[4] = params[5] = params[7] = params[8] = 

@@ -88,6 +88,13 @@ namespace std
     return sum;
   }
 
+  INLINE atomic<double> & operator-= (atomic<double> & sum, double val) {
+    auto current = sum.load();
+    while (!sum.compare_exchange_weak(current, current - val))
+      ;
+    return sum;
+  }
+
   template<typename T>
   INLINE atomic<T> & AsAtomic (T & d)
   {

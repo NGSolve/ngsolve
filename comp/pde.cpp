@@ -501,13 +501,11 @@ namespace ngcomp
     if (constants.Used ("heapsize"))
       heapsize = size_t(constants["heapsize"]);
     
-#ifdef _OPENMP
     if (constants.Used ("numthreads"))
-      omp_set_num_threads (int (constants["numthreads"]));
+      TaskManager::SetNumThreads (int (constants["numthreads"]));
     else
-      AddConstant ("numthreads", omp_get_max_threads());      
-    heapsize *= omp_get_max_threads();
-#endif
+      AddConstant ("numthreads", TaskManager::GetMaxThreads());      
+    heapsize *= TaskManager::GetMaxThreads();
     LocalHeap lh(heapsize, "PDE - main heap");
 
     // load+init lapack

@@ -2,11 +2,6 @@
 #define PAJE_INTERFACE_HPP_INCL__
 
 #include <limits>
-#ifdef _OPENMP
-#include <omp.h>
-#else
-INLINE double omp_get_wtime() { return WallTime(); }
-#endif
 #include <vector>
 
 namespace ngstd
@@ -98,7 +93,7 @@ namespace ngstd
 
       double GetTime()
         {
-          return omp_get_wtime() - start_time;
+          return WallTime() - start_time;
         }
 
     public:

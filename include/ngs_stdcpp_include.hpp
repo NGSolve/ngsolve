@@ -88,10 +88,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 #ifdef USE_NUMA
 #include <numa.h>
 #include <sched.h>

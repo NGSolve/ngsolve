@@ -339,10 +339,8 @@ public:
     ngs_comm = MPI_COMM_WORLD;
     NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
     
-#ifdef _OPENMP
     if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-      omp_set_num_threads (1);
-#endif
+      TaskManager::SetNumThreads (1);
   }
 
   ~MyMPI()

@@ -587,10 +587,8 @@ int NGS_LoadPy (ClientData clientData,
 
 void * SolveBVP(void *)
 {
-#ifdef _OPENMP
   if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-    omp_set_num_threads (1);
-#endif
+     TaskManager::SetNumThreads(1);
 
   try
     {
@@ -1228,23 +1226,20 @@ int NGSolve_Init (Tcl_Interp * interp)
   if (getenv ("NGSPROFILE"))
     NgProfiler::SetFileName (string("ngs.prof"));
   
-#ifdef _OPENMP
 #ifdef PARALLEL
   if (MyMPI_GetNTasks(MPI_COMM_WORLD) > 1)
-    omp_set_num_threads (1);
+    TaskManager::SetNumThreads (1);
 #endif
-  cout << "Running OpenMP - parallel using " << omp_get_max_threads() << " thread(s)" << endl;
-  // cout << "OpenMP Version " << _OPENMP << endl;
+  cout << "Running parallel using " << TaskManager::GetMaxThreads() << " thread(s)" << endl;
   cout << "(number of threads can be changed by setting OMP_NUM_THREADS)" << endl;
-#endif
   
 
 #ifdef VTRACE
   cout << "Vampirtrace - enabled" << endl;
-  if (MyMPI_GetNTasks(MPI_COMM_WORLD) == 1 && omp_get_num_threads() > 1)
+  if (MyMPI_GetNTasks(MPI_COMM_WORLD) == 1 && TaskManager::GetMaxThreads() > 1)
     {
-      cout << " ... thus setting num_omp_threads to 1" << endl;
-      omp_set_num_threads (1);
+      cout << " ... thus setting number of threads to 1" << endl;
+      TaskManager::SetNumThreads (1);
     }
 #endif
 
@@ -1441,10 +1436,6 @@ void NGSolve_Exit ()
 
 void * SolveBVP2(void *)
 {
-#ifdef _OPENMP
-  omp_set_num_threads (1);
-#endif
-
   if (pde && pde->IsGood())
     pde->Solve();
 
@@ -1494,9 +1485,7 @@ void Parallel_InitPython ()
 
 void NGS_ParallelRun (const string & message)
 {
-#ifdef _OPENMP
-  omp_set_num_threads (1);
-#endif
+  TaskManager::SetNumThreads (1);
 
   NGSOStream::SetGlobalActive (false);
 

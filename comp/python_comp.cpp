@@ -1701,7 +1701,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                             
                             if (!cf->IsComplex())
                               {
-                                double sum = 0;
+                                atomic<double> sum(0.0);
                                 Vector<> region_sum(ma->GetNRegions(vb));
                                 Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
@@ -1718,11 +1718,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      double hsum = 0;
                                      for (int i = 0; i < values.Height(); i++)
                                        hsum += mir[i].GetWeight() * values(i,0);
-#pragma omp atomic
                                      sum += hsum;
                                      double & rsum = region_sum(el.GetIndex());
-#pragma omp atomic
-				     rsum += hsum;
+				     AsAtomic(rsum) += hsum;
                                      if (element_wise)
                                        element_sum(el.Nr()) = hsum;
                                    });

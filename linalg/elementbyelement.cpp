@@ -124,15 +124,14 @@ namespace ngla
 
     if (disjointrows)
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(rowdnums.Size()), [&] ( IntRange r )
 	{    
 	  ArrayMem<SCAL, 100> mem1(maxs); 
 
 	  FlatVector<SCAL> vx = x.FV<SCAL> (); 
 	  FlatVector<SCAL> vy = y.FV<SCAL> (); 
 
-#pragma omp for
-	  for (int i = 0; i < rowdnums.Size(); i++) //sum over all elements
+	  for (int i : r)  //sum over all elements
 	    {
 	      FlatArray<int> rdi = rowdnums[i];
 	      FlatArray<int> cdi = coldnums[i];
@@ -146,7 +145,7 @@ namespace ngla
 
 	      timer.AddFlops (cdi.Size()*rdi.Size());
 	    }
-	}//end of parallel    
+	}); //end of parallel    
 	
       }
     else
@@ -217,8 +216,7 @@ namespace ngla
                   {
                       double &res = vy(rdi[j]);
                       double t = s*hv1(j);
-#pragma omp atomic
-                    res += t;
+                      AsAtomic(res) += t;
                   }
                   
                   timer.AddFlops (cdi.Size()*rdi.Size());
@@ -269,15 +267,14 @@ namespace ngla
     
     if (disjointcols)
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(coldnums.Size()), [&] ( IntRange r )
 	{
 	  ArrayMem<SCAL, 100> mem1(maxs);
 	  
 	  FlatVector<SCAL> vx = dynamic_cast<const S_BaseVector<SCAL> & >(x).FVScal();
 	  FlatVector<SCAL> vy = dynamic_cast<S_BaseVector<SCAL> & >(y).FVScal();
 
-#pragma omp  for    
-	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	  for (int i : r) //sum over all elements
 	    {
 	      FlatArray<int> rdi (rowdnums[i]);
 	      FlatArray<int> cdi (coldnums[i]);
@@ -290,7 +287,7 @@ namespace ngla
 
 	      timer.AddFlops (cdi.Size()*rdi.Size());
 	    }
-	}//end of parallel
+	});//end of parallel
       }
     else
       {
@@ -331,15 +328,14 @@ namespace ngla
     
     if (false) // disjointcols)
       {
-#pragma omp parallel
+        ParallelForRange( IntRange(coldnums.Size()), [&] ( IntRange r )
 	{
 	  ArrayMem<double, 100> mem1(maxs);
 	  
 	  FlatVector<> vx = dynamic_cast<const S_BaseVector<double> & >(x).FVScal();
 	  FlatVector<> vy = dynamic_cast<S_BaseVector<double> & >(y).FVScal();
 
-#pragma omp  for    
-	  for (int i = 0; i < coldnums.Size(); i++) //sum over all elements
+	  for (int i : r) //sum over all elements
 	    {
 	      FlatArray<int> rdi (rowdnums[i]);
 	      FlatArray<int> cdi (coldnums[i]);
@@ -352,7 +348,7 @@ namespace ngla
 
 	      timer.AddFlops (cdi.Size()*rdi.Size());
 	    }
-	}//end of parallel
+	});//end of parallel
       }
     else
       {
@@ -386,8 +382,7 @@ namespace ngla
                         {
                           double &res = vy(cdi[j]);
                           double t = s * hv2(j);
-#pragma omp atomic
-                          res += t;
+                          AsAtomic(res) += t;
                         }
                       
                       timer.AddFlops (cdi.Size()*rdi.Size());
