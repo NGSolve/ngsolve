@@ -101,11 +101,7 @@ else()
 
     ######################## Threading layer ########################
     if(MKL_MULTI_THREADED)
-        if(WIN32)
-            set(MKL_THREADING_LIBNAME mkl_intel_thread)
-        else(WIN32)
-            set(MKL_THREADING_LIBNAME mkl_gnu_thread)
-        endif(WIN32)
+        set(MKL_THREADING_LIBNAME mkl_intel_thread)
     else()
         set(MKL_THREADING_LIBNAME mkl_sequential)
     endif()

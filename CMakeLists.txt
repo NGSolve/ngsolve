@@ -580,12 +580,6 @@ message("
   Install directory:
 
     ${CMAKE_INSTALL_PREFIX}")
-if(USE_MKL)
-message("
-  Please set the following environment variables:
-
-    MKL_THREADING_LAYER=GNU")
-endif(USE_MKL)
 message("
 ------------------------------------------------------------------------
 ")
