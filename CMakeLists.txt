@@ -303,7 +303,7 @@ message(\${APP})
 file(GLOB libs ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib}/*.dylib ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib}/*.so)
 # set(libs ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib}/libTix8.4.3.dylib)
 message(\"\${libs}\")
-netgen_fixup_bundle( \${APP}/Contents/MacOS/netgen_main \"\${libs}\" ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib} )
+netgen_fixup_bundle( \${APP}/Contents/MacOS/netgen \"\${libs}\" ${CMAKE_INSTALL_PREFIX}/${ng_install_dir_lib} )
 execute_process(COMMAND ln -s /Applications ${INSTALL_DIR}/Applications)
 set (bundle_filename \$ENV{NETGEN_BUNDLE_NAME})
 if(NOT bundle_filename)
@@ -379,18 +379,18 @@ export DYLD_LIBRARY_PATH=$Netgen_MACOS:$DYLD_LIBRARY_PATH
 # export TCLLIBPATH=$Netgen_MACOS:$TCLLIBPATH
 export PYTHONPATH=$Netgen_BUNDLE/Contents/Resources/lib/python3.5/site-packages:$PYTHONPATH
 cd $Netgen_MACOS
-$Netgen_MACOS/netgen_main
+$Netgen_MACOS/netgen
 ")
     install(PROGRAMS ${mac_startup} DESTINATION ${ng_install_dir_bin})
 
     set(mac_ngsuite ${CMAKE_CURRENT_BINARY_DIR}/ngsuite.sh)
     file(WRITE ${mac_ngsuite} "\
 #!/bin/sh
-Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/Netgen//'`\"
+Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/Netgen1//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 open -a /Applications/Utilities/Terminal.app $Netgen_MACOS/startup.sh
 ")
-    install(PROGRAMS ${mac_ngsuite} DESTINATION ../MacOS RENAME Netgen)
+    install(PROGRAMS ${mac_ngsuite} DESTINATION ../MacOS RENAME Netgen1)
 
     set(mac_plist ${CMAKE_CURRENT_BINARY_DIR}/Info.plist)
     file(WRITE ${mac_plist} "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -400,7 +400,7 @@ open -a /Applications/Utilities/Terminal.app $Netgen_MACOS/startup.sh
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>Netgen</string>
+	<string>Netgen1</string>
 	<key>CFBundleIconFile</key>
 	<string>Netgen.icns</string>
         <key>NSHighResolutionCapable</key>

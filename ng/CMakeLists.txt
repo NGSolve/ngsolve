@@ -15,7 +15,7 @@ if(USE_GUI)
 
     install(TARGETS netgen    ${ng_install_dir})
     if(APPLE)
-        set_target_properties(netgen PROPERTIES OUTPUT_NAME netgen_main)
+        set_target_properties(netgen PROPERTIES OUTPUT_NAME netgen)
     endif(APPLE)
 
 endif(USE_GUI)
