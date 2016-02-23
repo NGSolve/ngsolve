@@ -1823,7 +1823,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              if (!has_other)
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
              else
-               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf);
+               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb);
              
              if (bp::extract<bp::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));

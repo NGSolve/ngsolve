@@ -1178,8 +1178,8 @@ namespace ngfem
   }
   
   SymbolicFacetBilinearFormIntegrator ::
-  SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf)
-    : cf(acf)
+  SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
+    : cf(acf), vb(avb)
   {
     if (cf->Dimension() != 1)
         throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
@@ -1224,7 +1224,8 @@ namespace ngfem
                    FlatMatrix<double> & elmat,
                    LocalHeap & lh) const
   {
-    cout << "calc facet matrix (DG)" << endl;
+    // cout << "calc facet matrix (DG)" << endl;
+    // cout << "nr1 = " << trafo1.GetElementNr() << ", nr2 = " << trafo2.GetElementNr() << ", facet1 = " << LocalFacetNr1 << endl;
     elmat = 0.0;
 
     if (LocalFacetNr2==-1) throw Exception ("SymbolicFacetBFI: LocalFacetNr2==-1");
@@ -1236,11 +1237,11 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
     IntegrationRule ir_facet(etfacet, 2*maxorder);
-    Facet2ElementTrafo transform1(eltype1); 
+    Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
     const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     
-    Facet2ElementTrafo transform2(eltype2); 
+    Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
@@ -1334,6 +1335,7 @@ namespace ngfem
             }
         }
 
+    // cout << "elmat = " << endl << elmat << endl;
 
     
     /*
@@ -1433,6 +1435,114 @@ namespace ngfem
     
   }
 
+
+
+  void SymbolicFacetBilinearFormIntegrator ::
+  CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
+                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                   const ElementTransformation & strafo,  
+                   FlatMatrix<double> & elmat,
+                   LocalHeap & lh) const
+  {
+    // cout << "calc boundary facet matrix (DG)" << endl;
+    elmat = 0.0;
+
+    int maxorder = fel1.Order();
+
+    auto eltype1 = trafo1.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices1); 
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
+    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+
+    for (int k1 : Range(trial_proxies))
+      for (int l1 : Range(test_proxies))
+        {
+          HeapReset hr(lh);
+          FlatMatrix<> val(mir1.Size(), 1,lh);
+          
+          auto proxy1 = trial_proxies[k1];
+          auto proxy2 = test_proxies[l1];
+          if (proxy1->IsOther() || proxy2->IsOther()) continue;
+
+          FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatVector<> measure(mir1.Size(), lh);
+          switch (trafo1.SpaceDim())
+            {
+            case 2:
+              {
+                Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
+                for (int i = 0; i < mir1.Size(); i++)
+                  {
+                    auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
+                    Mat<2> inv_jac = mip.GetJacobianInverse();
+                    double det = mip.GetMeasure();
+                    Vec<2> normal = det * Trans (inv_jac) * normal_ref;       
+                    double len = L2Norm (normal);    // that's the surface measure 
+                    normal /= len;                   // normal vector on physical element
+                    const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
+                    measure(i) = len;
+                  }
+                break;
+              }
+            default:
+              cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
+            }
+          
+          for (int k = 0; k < proxy1->Dimension(); k++)
+            for (int l = 0; l < proxy2->Dimension(); l++)
+              {
+                ud.trialfunction = proxy1;
+                ud.trial_comp = k;
+                ud.testfunction = proxy2;
+                ud.test_comp = l;
+                
+                cf -> Evaluate (mir1, val);
+                proxyvalues(STAR,l,k) = val.Col(0);
+              }
+
+          for (int i = 0; i < mir1.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
+
+          // IntRange trial_range = proxy1->IsOther() ? IntRange(fel1.GetNDof(), elmat.Width()) : IntRange(0, fel1.GetNDof());
+          // IntRange test_range  = proxy2->IsOther() ? IntRange(fel1.GetNDof(), elmat.Height()) : IntRange(0, fel1.GetNDof());
+
+          // auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+
+          enum { BS = 16 };
+          for (int i = 0; i < mir1.Size(); i+=BS)
+            {
+              int rest = min2(int(BS), mir1.Size()-i);
+              HeapReset hr(lh);
+              FlatMatrix<double,ColMajor> bdbmat1(rest*proxy2->Dimension(), elmat.Width(), lh);
+              FlatMatrix<double,ColMajor> bbmat2(rest*proxy2->Dimension(), elmat.Height(), lh);
+
+              for (int j = 0; j < rest; j++)
+                {
+                  int ii = i+j;
+                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                  proxy1->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat1, lh);
+                  proxy2->Evaluator()->CalcMatrix(fel1, mir1[ii], bmat2, lh);
+                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
+                  bbmat2.Rows(r2) = bmat2;
+                }
+
+              IntRange r1 = proxy1->Evaluator()->UsedDofs(fel1);
+              IntRange r2 = proxy2->Evaluator()->UsedDofs(fel1);
+              elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
+            }
+        }
+
+  }
+
+  
   
 
   
