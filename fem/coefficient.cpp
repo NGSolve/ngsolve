@@ -2287,11 +2287,20 @@ public:
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetName () const;
-    
-    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
-    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
-    { return Array<CoefficientFunction*>(); }
     */
+    
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+    {
+      cf_if->TraverseTree (func);
+      cf_then->TraverseTree (func);
+      cf_else->TraverseTree (func);
+      func(*this);
+    }
+    
+    virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+    {
+      return Array<CoefficientFunction*>( { cf_if.get(), cf_then.get(), cf_else.get() } );
+    }
   };
   
   extern

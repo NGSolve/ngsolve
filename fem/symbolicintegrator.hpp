@@ -294,10 +294,11 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
-
+    VorB vb;
   public:
-    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf);
+    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
 
+    virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
 
     virtual void
@@ -305,6 +306,13 @@ public:
                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                      const FiniteElement & volumefel2, int LocalFacetNr2,
                      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                     FlatMatrix<double> & elmat,
+                     LocalHeap & lh) const;
+
+    virtual void
+    CalcFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                     const ElementTransformation & seltrans,  
                      FlatMatrix<double> & elmat,
                      LocalHeap & lh) const;
   };
