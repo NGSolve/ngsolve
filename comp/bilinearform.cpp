@@ -690,6 +690,13 @@ namespace ngcomp
     static Timer timerb2 ("Matrix assembling bound - 2", 3);
     static Timer timerb3 ("Matrix assembling bound - 3", 3);
 
+    static mutex addelemfacbnd_mutex;
+    static mutex addelemfacin_mutex;
+    static mutex printelmat_mutex;
+    static mutex printmatasstatus2_mutex;
+    static mutex printmatspecel_mutex;
+    static mutex printmatspecel2_mutex;
+
     RegionTimer reg (mattimer);
 
     mattimer1.Start();
@@ -874,8 +881,8 @@ namespace ngcomp
                              // elementtimer.Stop();
 
                              if (printelmat)
-#pragma omp critical (printelmat)
                                {
+                                 lock_guard<mutex> guard(printelmat_mutex);
                                  testout->precision(8);
                                  (*testout) << "elnum = " << el.Nr() << endl;
                                  (*testout) << "eltype = " << fel.ElementType() << endl;
@@ -929,8 +936,8 @@ namespace ngcomp
                            idofs1[j] = dnums.Pos(idofs1[j]);
 
                          if (printelmat) 
-#pragma omp critical (printelmat)
                            {
+                             lock_guard<mutex> guard(printelmat_mutex);
                              *testout << "eliminate internal" << endl;
                              *testout << "idofs1 = " << idofs1 << endl;
                            }
@@ -957,8 +964,8 @@ namespace ngcomp
                                  odofs[k++] = j;
 
                              if (printelmat)
-#pragma omp critical (printelmat)
                                {
+                                 lock_guard<mutex> guard(printelmat_mutex);
                                  (*testout) << "idofs = " << endl << idofs << endl;
                                  (*testout) << "odofs = " << endl << odofs << endl;
                                }
@@ -1085,8 +1092,8 @@ namespace ngcomp
                            }
                        }
                      if (printelmat)
-#pragma omp critical (printelmat)
                        *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
+                     lock_guard<mutex> guard(printelmat_mutex);
 
 		     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
 
@@ -1246,8 +1253,8 @@ namespace ngcomp
                           timerb2.Stop();
 
                           if (printelmat)
-#pragma omp critical (printelmat)
                             {
+                              lock_guard<mutex> guard(printelmat_mutex);
                               testout->precision(8);
                               
                               (*testout) << "surface-elnum= " << i << endl;
@@ -1302,8 +1309,8 @@ namespace ngcomp
 #pragma omp for 
                   for (int i = 0; i < nse; i++)
                     {
-#pragma omp critical(printmatasstatus2)
                       {
+                        lock_guard<mutex> guard(printmatasstatus2_mutex);
                         cnt++;
                         gcnt++;
                         if (cnt % 10 == 0)
@@ -1396,8 +1403,8 @@ namespace ngcomp
                           //                    for(int k=0; k<elmat.Height(); k++)
                           //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                           //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
-#pragma omp critical(addelemfacbnd)
                           {
+                            lock_guard<mutex> guard(addelemfacbnd_mutex);
                             AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
                           }
                         }//end for (numintegrators)
@@ -1453,8 +1460,8 @@ namespace ngcomp
                       for (int k=0; k<fnums.Size(); k++)
                         if(i==fnums[k]) facnr2 = k;
                       
-#pragma omp critical(printmatasstatus2)
                       {
+                        lock_guard<mutex> guard(printmatasstatus2_mutex);
                         cnt++;
                         gcnt++;
                         if (cnt % 10 == 0)
@@ -1625,8 +1632,8 @@ namespace ngcomp
                           //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                           //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
 
-#pragma omp critical(addelemfacin)
                           {
+                            lock_guard<mutex> guard(addelemfacin_mutex);
                             AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), lh);
                           }
                         }
@@ -1658,8 +1665,8 @@ namespace ngcomp
 #pragma omp for 
               for (int i = 0; i < fespace->specialelements.Size(); i++)
                 {
-#pragma omp critical(printmatspecel)
                   {
+                    lock_guard<mutex> guard(printmatspecel_mutex);
                     gcnt++;
                     nspecel++;
                     if (i % 10 == 0)
@@ -1674,8 +1681,8 @@ namespace ngcomp
                   FlatMatrix<SCAL> elmat(dnums.Size(), lh);
                   el.Assemble (elmat, lh);
                   
-#pragma omp critical(printmatspecel2)
                   {
+                    lock_guard<mutex> guard(printmatspecel2_mutex);
                     for (int j = 0; j < dnums.Size(); j++)
                       if (dnums[j] != -1)
                         useddof[dnums[j]] = true;
@@ -2061,6 +2068,8 @@ namespace ngcomp
     static Timer timervol ("Assemble Linearization - volume");
     static Timer timerbound ("Assemble Linearization - boundary");
 
+    static mutex addelmatboundary1_mutex;
+
     RegionTimer reg (timer);
 
     if (this->mats.Size() < this->ma->GetNLevels())
@@ -2382,8 +2391,8 @@ namespace ngcomp
                       
                         
                      if (printelmat) 
-#pragma omp critical (addelmatboundary1)
                        {
+                         lock_guard<mutex> guard(addelmatboundary1_mutex);
                          testout->precision(8);
                          (*testout) << "surface-elnum= " << i << endl;
                          (*testout) << "eltype " << fel.ElementType() << endl;

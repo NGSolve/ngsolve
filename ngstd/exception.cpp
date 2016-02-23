@@ -14,11 +14,13 @@ namespace ngstd
     ;
   }
   */
+  static mutex printexception_mutex;
+
   Exception :: Exception (const string & s) 
     : what(s)
   { 
-#pragma omp critical(printexception)
     {
+      lock_guard<mutex> guard(printexception_mutex);
       // cout << "create ngstd::Exception, what = " << s << endl;
     }
   }
@@ -26,8 +28,8 @@ namespace ngstd
   Exception :: Exception (const char * s) 
     : what(s)
   { 
-#pragma omp critical(printexception)
     {
+      lock_guard<mutex> guard(printexception_mutex);
       // cout << "create ngstd::Exception, what = " << s << endl;
     }
   }

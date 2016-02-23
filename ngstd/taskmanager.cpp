@@ -25,6 +25,8 @@ namespace ngstd
   TaskManager * task_manager = nullptr;
   bool TaskManager :: use_paje_trace = false;
 
+  static mutex copyex_mutex;
+
   int EnterTaskManager ()
   {
     if (task_manager)
@@ -319,8 +321,8 @@ namespace ngstd
       }
     catch (Exception e)
       {
-#pragma omp critical(copyex)
         {
+          lock_guard<mutex> guard(copyex_mutex);
           delete ex;
           ex = new Exception (e);
           mynode_data.start_cnt = mytasks.Size();
@@ -408,8 +410,8 @@ namespace ngstd
           }
         catch (Exception e)
           {
-#pragma omp critical(copyex)
             {
+              lock_guard<mutex> guard(copyex_mutex);
               delete ex;
               ex = new Exception (e);
               mynode_data.start_cnt = mytasks.Size();

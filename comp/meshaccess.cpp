@@ -1522,11 +1522,12 @@ void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 
   void ProgressOutput :: Update (int nr)
   {
+    static mutex progressupdate_mutex;
     double time = WallTime();
     if (time > prevtime+0.05)
       {
-#pragma omp critical(progressupdate) 
 	{
+          lock_guard<mutex> guard(progressupdate_mutex);
 	  if (is_root)
 	    {
 	      cout << IM(3) << "\r" << task << " " << nr << "/" << total << flush;

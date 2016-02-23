@@ -1153,6 +1153,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 			LocalHeap & clh, 
 			const function<void(FESpace::Element,LocalHeap&)> & func)
   {
+    static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
     
     if (task_manager)
@@ -1206,8 +1207,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    
             catch (const Exception & e)
               {
-#pragma omp critical(copyex)
                 {
+                  lock_guard<mutex> guard(copyex_mutex);
                   if (!ex)
 		    ex = new Exception (e);
                 }

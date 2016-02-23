@@ -1696,6 +1696,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                              VorB vb, int order, 
                              bool region_wise, bool element_wise)
                           {
+                            static mutex addcomplex_mutex;
                             LocalHeap lh(1000000, "lh-Integrate");
                             
                             if (!cf->IsComplex())
@@ -1753,8 +1754,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      Complex hsum = 0;
                                      for (int i = 0; i < values.Height(); i++)
                                        hsum += mir[i].GetWeight() * values(i,0);
-#pragma omp critical(addcomplex)
                                      {
+                                       lock_guard<mutex> guard(addcomplex_mutex);
                                        sum += hsum;
                                        region_sum(el.GetIndex()) += hsum;
                                      }

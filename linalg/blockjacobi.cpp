@@ -11,6 +11,7 @@
 namespace ngla
 {
   
+  static mutex buildingblockupdate_mutex;
 
   template <typename Tarray>
   int BinSearch(const Tarray & v, int i) {
@@ -414,8 +415,8 @@ namespace ngla
         double time = WallTime();
 	if (time > prevtime+0.05)
 	  {
-#pragma omp critical(buildingblockupdate) 
 	    {
+              lock_guard<mutex> guard(buildingblockupdate_mutex);
 	      cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
 	      prevtime = time;
 	    }
@@ -903,8 +904,8 @@ namespace ngla
                         cnt++;
                         if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
                           {
-#pragma omp critical(buildingblockupdate) 
                             {
+                              lock_guard<mutex> guard(buildingblockupdate_mutex);
                               cout << IM(3) << "\rBuilding block " << cnt << "/" << blocktable.Size() << flush;
                               prevtime = clock();
                             }

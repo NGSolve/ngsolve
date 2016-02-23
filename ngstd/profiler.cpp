@@ -133,9 +133,10 @@ namespace ngstd
 
   int NgProfiler :: CreateTimer (const string & name)
   {
+    static mutex createtimer_mutex;
     int nr = -1;
-#pragma omp critical (createtimer)
     {
+      lock_guard<mutex> guard(createtimer_mutex);
       for (int i = SIZE-1; i > 0; i--)
 	if (!usedcounter[i])
 	  {
