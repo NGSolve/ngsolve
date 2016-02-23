@@ -1103,8 +1103,19 @@ void CalcLDL (SliceMatrix<T> mat)
       {
 	int last_same = i1;
 	while (last_same < n && blocknrs[last_same] == blocknrs[i1])
-	  last_same++;
+          {
+            last_same++;
 
+	    if (n > 2000 && (last_same) % 1000 == 999)
+	      {
+		if ((last_same) % 10000 == 9999)
+		  cout << IM(4) << "+" << flush;
+		else
+		  cout << IM(4) << "." << flush;
+	      }
+          }
+
+        
         timerb.Start();
 
 	// rows in same block ...
