@@ -828,6 +828,7 @@ void NGS_DLL_HEADER ExportNgfem() {
           );
 
 
+  bp::class_<IntegrationPoint>("IntegrationPoint", bp::no_init);
 
   bp::class_<IntegrationRule, boost::noncopyable>("IntegrationRule", bp::no_init)
     .def("__init__",  bp::make_constructor 
@@ -837,6 +838,12 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),
           (bp::arg("element type"), bp::arg("order"))))
+    .def("__getitem__", FunctionPointer([](IntegrationRule & ir, int nr)->IntegrationPoint
+                                        {
+                                          if (nr < 0 || nr >= ir.Size())
+                                            bp::exec("raise IndexError()\n");
+                                          return ir[nr];
+                                        }))
     .def("Integrate", FunctionPointer
          ([](IntegrationRule & ir, bp::object func) -> bp::object
           {
@@ -948,6 +955,13 @@ void NGS_DLL_HEADER ExportNgfem() {
              return &self(IntegrationPoint(x,y,z), global_alloc);
            }),
           (bp::args("self"), bp::args("x"), bp::args("y")=0, bp::args("z")=0),
+          bp::return_value_policy<bp::manage_new_object>())
+    .def ("__call__", FunctionPointer
+          ([] (ElementTransformation & self, IntegrationPoint & ip)
+           {
+             return &self(ip, global_alloc);
+           }),
+          (bp::args("self"), bp::args("ip")),
           bp::return_value_policy<bp::manage_new_object>())
     ;
 

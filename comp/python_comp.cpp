@@ -1806,6 +1806,10 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary, bp::object definedon)
            -> shared_ptr<BilinearFormIntegrator>
            {
+             bp::extract<Region> defon_region(definedon);
+             if (defon_region.check())
+               vb = VorB(defon_region());
+
              // check for DG terms
              bool has_other = false;
              cf->TraverseTree ([&has_other] (CoefficientFunction & cf)
@@ -1825,6 +1829,13 @@ void NGS_DLL_HEADER ExportNgcomp()
              
              if (bp::extract<bp::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
+
+             if (defon_region.check())
+               {
+                 cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
+                 bfi->SetDefinedOn(defon_region().Mask());
+               }
+             
              return bfi;
            }),
           (bp::args("self"), bp::args("VOL_or_BND")=VOL,
@@ -1835,7 +1846,6 @@ void NGS_DLL_HEADER ExportNgcomp()
           ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) -> shared_ptr<BilinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
-
              if (defon_region.check())
                vb = VorB(defon_region());
 
@@ -1843,7 +1853,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              
              if (defon_region.check())
                {
-                 cout << "defineon = " << defon_region().Mask() << endl;
+                 cout << IM(3) << "defineon = " << defon_region().Mask() << endl;
                  bfi->SetDefinedOn(defon_region().Mask());
                }
              
