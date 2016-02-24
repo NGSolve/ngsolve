@@ -1,20 +1,12 @@
 #define GL_GLEXT_PROTOTYPES
 
 
-#  if defined(TOGL_AGL) || defined(TOGL_AGL_CLASSIC)
+#  if defined(TOGL_AGL) || defined(TOGL_AGL_CLASSIC) || defined(TOGL_NSOPENGL)
 #    include <OpenGL/gl.h>
 #    include <OpenGL/glu.h>
 #  else
-#  if defined(TOGL_NSOPENGL)
-// ?????? which one is right ??????
-// #    include <OpenGL/OpenGL.h>
-// #    include <OpenGL.h>
-#    include <gl.h>
-#    include <glu.h>
-#  else
 #    include <GL/gl.h>
 #    include <GL/glu.h>
-#  endif
 #  endif
 
 
