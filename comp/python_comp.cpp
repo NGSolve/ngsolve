@@ -1040,12 +1040,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Save", FunctionPointer([](GF & self, string filename)
                                  {
-                                   ofstream out(filename);
+                                   ofstream out(filename, ios::binary);
                                    self.Save(out);
                                  }))
     .def("Load", FunctionPointer([](GF & self, string filename)
                                  {
-                                   ifstream in(filename);
+                                   ifstream in(filename, ios::binary);
                                    self.Load(in);
                                  }))
     
