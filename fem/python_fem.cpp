@@ -312,6 +312,11 @@ struct GenericLog {
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
 };
+struct GenericAbs {
+  template <typename T> double operator() (T x) const { return abs(x); } 
+  AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("abs(..) is not differentiable"); }
+  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("abs(..) is not differentiable"); }
+};
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
@@ -544,6 +549,7 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericExp>("exp");
   ExportStdMathFunction<GenericLog>("log");
   ExportStdMathFunction<GenericSqrt>("sqrt");
+  ExportStdMathFunction<GenericAbs>("abs");
   ExportStdMathFunction<GenericConj>("Conj");
   
   bp::def ("IfPos", FunctionPointer 
@@ -653,7 +659,7 @@ void ExportCoefficientFunction()
           {
             return UnaryOpCF (coef,
                               sp,
-                              [](Complex a) { return 0; });                             
+                              [](Complex a) { return a.real(); });                             
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Integrate()); }),
