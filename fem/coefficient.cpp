@@ -1924,8 +1924,6 @@ public:
                               FlatMatrix<> deriv,
                               FlatMatrix<> dderiv) const
   {
-    throw Exception ("mat-vec EvaluateDDeriv not implemented");
-
     Matrix<> va(mir.Size(), dims[0]*inner_dim);
     Matrix<> vb(mir.Size(), inner_dim);
     Matrix<> vda(mir.Size(), dims[0]*inner_dim);
