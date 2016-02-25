@@ -135,7 +135,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION bin COMPONENT ngsolve_devel )
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 
 #######################################################################
 # platform specific definitions and flags
@@ -403,11 +403,26 @@ endif()
 if(APPLE AND CMAKE_OSX_SYSROOT)
     set( ngscxx_string "${ngscxx_string} -I${CMAKE_OSX_SYSROOT}/usr/include" )
 endif()
+if(NOT APPLE)
 set(ngscxx_string "${ngscxx_string} -L${INSTALL_DIR}/lib $*" )
+else()
+set(ngscxx_string "${ngscxx_string} -I$Netgen_BUNDLE/Contents/Resources/include" )  
+set(ngscxx_string "${ngscxx_string} -L$Netgen_BUNDLE/Contents/MacOS $*" )
+endif()
 if(USE_MKL AND NOT MKL_STATIC)
     set( ngscxx_string "${ngscxx_string} ${MKL_LINK_FLAGS}" )
 endif()
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}\n" )
+if(APPLE)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "\
+#!/bin/sh
+Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngscxx//'`\"
+Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
+# echo \"$Netgen_BUNDLE/Contents/MacOS\"
+")
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string} -Qunused-arguments -undefined dynamic_lookup\n" )  
+else()
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}\n" )  
+ endif()
 
 #######################################################################
 # CTest
