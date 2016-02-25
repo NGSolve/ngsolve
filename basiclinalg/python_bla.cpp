@@ -470,12 +470,29 @@ void NGS_DLL_HEADER ExportNgbla() {
             (boost::python::arg("vals"))
            );
     bp::def("Vector",
-            FunctionPointer( [] (bp::tuple values) {
-                               Vector<> v(len(values));
-                               for (int i = 0; i < v.Size(); i++)
-                                 v(i) = bp::extract<double>(values[i])();
-                               return v;
-                             }),
+            FunctionPointer( [] (bp::tuple values) ->bp::object {
+                               bool is_double = true;
+                               for (int i = 0; i < len(values); i++)
+                                 is_double &= bp::extract<double>(values[i]).check();
+                               if (is_double)
+                                 {
+                                   Vector<> v(len(values));
+                                   for (int i = 0; i < v.Size(); i++)
+                                     v(i) = bp::extract<double>(values[i])();
+                                   return bp::object(v);
+                                 }
+                               bool is_complex = true;
+                               for (int i = 0; i < len(values); i++)
+                                 is_complex &= bp::extract<Complex>(values[i]).check();
+                               if (is_complex)
+                                 {
+                                   Vector<Complex> v(len(values));
+                                   for (int i = 0; i < v.Size(); i++)
+                                     v(i) = bp::extract<Complex>(values[i])();
+                                   return bp::object(v);
+                                 }
+                               throw Exception("cannot make a vector from tuple");
+              }),
             (boost::python::arg("vals"))
            );
 
@@ -558,6 +575,9 @@ void NGS_DLL_HEADER ExportNgbla() {
              FunctionPointer( [] (bp::object x, bp::object y) -> bp::object
                               { return x.attr("InnerProduct") (y); }));
 
+    bp::def ("Norm",
+             FunctionPointer( [] (bp::object x) -> bp::object
+                              { return x.attr("Norm") (); }));
 
 
     bp::def ("CheckPerformance",
