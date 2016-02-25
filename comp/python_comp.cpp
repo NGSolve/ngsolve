@@ -1730,7 +1730,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                 else if (element_wise)
                                   result = bp::object(element_sum);
                                 else
-                                  result = bp::object(sum);
+                                  result = bp::object(sum.load());
                                 return result;
                               }
                             else
