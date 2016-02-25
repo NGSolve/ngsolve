@@ -623,7 +623,15 @@ public:
                 OP alam, OPC alamc)
     : c1(ac1), lam(alam), lamc(alamc) { ; }
   
-  virtual bool IsComplex() const { return c1->IsComplex(); }
+  // virtual bool IsComplex() const { return c1->IsComplex(); }
+  virtual bool IsComplex() const
+  {
+    if (c1->IsComplex())
+      return typeid (lamc(Complex(0.0))) == typeid(Complex);
+      // typeid(function_traits<lam<Complex>>::return_type) == typeid(Complex);
+    return false;
+  }
+  
   virtual int Dimension() const { return c1->Dimension(); }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -1514,6 +1522,9 @@ public:
 
   extern
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
+
+  extern
+  shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef);
 
   extern
   shared_ptr<CoefficientFunction> IfPos (shared_ptr<CoefficientFunction> cf_if,

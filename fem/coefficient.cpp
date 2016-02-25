@@ -1403,6 +1403,179 @@ public:
 
 
 
+template <typename TIN>
+class NormCoefficientFunction : public CoefficientFunction
+{
+  shared_ptr<CoefficientFunction> c1;
+  int dim1;
+public:
+  NormCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
+    : c1(ac1)
+  {
+    dim1 = c1->Dimension();
+  }
+  
+  virtual bool IsComplex() const { return false; }
+  virtual int Dimension() const { return 1; }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
+  { return Array<CoefficientFunction*>({ c1.get() }); }  
+  
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const
+  {
+    VectorMem<10,TIN> v1(dim1);
+    c1->Evaluate (ip, v1);
+    result(0) = L2Norm(v1);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<Complex> result) const
+  {
+    Vec<1> res;
+    Evaluate (ip, res);
+    result(0) = res(0);
+  }
+
+
+  /*  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<> result) const
+  {
+#ifdef VLA
+    double hmem1[ir.Size()*dim1];
+    FlatMatrix<> temp1(ir.Size(), dim1, hmem1);
+    double hmem2[ir.Size()*dim1];
+    FlatMatrix<> temp2(ir.Size(), dim1, hmem2);
+#else
+    Matrix<> temp1(ir.Size(), dim1);
+    Matrix<> temp2(ir.Size(), dim1);
+#endif
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, temp2);
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
+                         FlatMatrix<double> result) const
+  {
+    FlatMatrix<> temp1 = *input[0];
+    FlatMatrix<> temp2 = *input[1];
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
+  }
+
+  
+
+  virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
+                             FlatMatrix<> result,
+                             FlatMatrix<> deriv) const
+  {
+    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(),dim1);
+    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
+    c1->EvaluateDeriv (mir, v1, dv1);
+    c2->EvaluateDeriv (mir, v2, dv2);
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+      }
+  }
+
+  virtual void EvaluateDDeriv(const BaseMappedIntegrationRule & mir,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv,
+                              FlatMatrix<> dderiv) const
+  {
+    Matrix<> v1(mir.Size(), dim1), v2(mir.Size(), dim1);
+    Matrix<> dv1(mir.Size(), dim1), dv2(mir.Size(), dim1);
+    Matrix<> ddv1(mir.Size(), dim1), ddv2(mir.Size(), dim1);
+    c1->EvaluateDDeriv (mir, v1, dv1, ddv1);
+    c2->EvaluateDDeriv (mir, v2, dv2, ddv2);
+
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
+          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
+      }
+
+  }
+
+
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+                              FlatArray<FlatMatrix<>*> input,
+                              FlatArray<FlatMatrix<>*> dinput,
+                              FlatMatrix<> result,
+                              FlatMatrix<> deriv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+      }
+  }
+
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+                               FlatArray<FlatMatrix<>*> input,
+                               FlatArray<FlatMatrix<>*> dinput,
+                               FlatArray<FlatMatrix<>*> ddinput,
+                               FlatMatrix<> result,
+                               FlatMatrix<> deriv,
+                               FlatMatrix<> dderiv) const
+  {
+    FlatMatrix<> v1 = *input[0], v2 = *input[1];
+    FlatMatrix<> dv1 = *dinput[0], dv2 = *dinput[1];
+    FlatMatrix<> ddv1 = *ddinput[0], ddv2 = *ddinput[1];
+    
+    for (int k = 0; k < mir.Size(); k++)
+      {
+        result(k,0) = InnerProduct (v1.Row(k), v2.Row(k));
+        deriv(k,0) = InnerProduct (v1.Row(k), dv2.Row(k))+InnerProduct(v2.Row(k),dv1.Row(k));
+        dderiv(k,0) = InnerProduct (v1.Row(k), ddv2.Row(k))+
+          2*InnerProduct(dv1.Row(k),dv2.Row(k))+InnerProduct(ddv1.Row(k),v2.Row(k));
+      }
+  }
+  */
+
+  
+  virtual bool ElementwiseConstant () const
+  { return c1->ElementwiseConstant(); }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
+  {
+    Vector<bool> v1(dim1);
+    c1->NonZeroPattern (ud, v1);
+    bool nz = false;
+    for (int i = 0; i < dim1; i++)
+      if (v1(i)) nz = true;
+    nonzero = nz;
+  }
+
+};
+
+
+
+  
+
 class MultMatMatCoefficientFunction : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1;
@@ -2151,6 +2324,14 @@ public:
     return make_shared<TransposeCoefficientFunction> (coef);
   }
 
+  shared_ptr<CoefficientFunction> NormCF (shared_ptr<CoefficientFunction> coef)
+  {
+    if (coef->IsComplex())
+      return make_shared<NormCoefficientFunction<Complex>> (coef);
+    else
+      return make_shared<NormCoefficientFunction<double>> (coef);
+  }
+  
   
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
