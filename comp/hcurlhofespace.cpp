@@ -109,7 +109,7 @@ namespace ngcomp
     uniform_order_face = int (flags.GetNumFlag ("orderface", -1));
     uniform_order_edge = int (flags.GetNumFlag ("orderedge", -1));
 
-    
+    wb_loedge = flags.GetDefineFlag("wb_loedge");
         
     if (flags.NumFlagDefined("smoothing")) 
       throw Exception ("Flag 'smoothing' for fespace is obsolete \n Please use flag 'blocktype' in preconditioner instead");
@@ -594,7 +594,8 @@ namespace ngcomp
 
 	IntRange range = GetEdgeDofs (edge);
 	ctofdof.Range (range) = INTERFACE_DOF;
-	if (range.Size() >= 2)
+	// if (range.Size() >= 2)
+        if (wb_loedge)
 	  ctofdof[range.First()] = WIREBASKET_DOF;
       }
       

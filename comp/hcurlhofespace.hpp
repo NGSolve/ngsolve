@@ -71,6 +71,7 @@ namespace ngcomp
     bool fast_pfem;
     bool discontinuous;
     bool type1;        // first family
+    bool wb_loedge;    // keep linear on edge as wb-dof
   public:
 
     HCurlHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
