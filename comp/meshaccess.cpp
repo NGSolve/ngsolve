@@ -537,7 +537,11 @@ namespace ngcomp
     // the connection to netgen global variables
     ngstd::testout = netgen::testout;
     ngstd::printmessage_importance = netgen::printmessage_importance;
-
+#ifdef PARALLEL
+    // best we can do at the moment to get py-mpi running
+    mesh_comm = MPI_COMM_WORLD;
+    ngs_comm =  MPI_COMM_WORLD;
+#endif
     mesh.SelectMesh();
     mesh.UpdateTopology();  // for netgen/ngsolve stand alone
     UpdateBuffers();
