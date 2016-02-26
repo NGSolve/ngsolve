@@ -566,7 +566,7 @@ proc fieldlinesdialog { } {
 
 	set f $w.nb.draw
 	
-	ttk::labelframe $f.general -text "General settings"
+	ttk::labelframe $f.general -text "General settings" -relief groove -borderwidth 3
 
 	
 	ttk::checkbutton $f.general.enable -text "Enable Fieldlines" \
@@ -1035,13 +1035,13 @@ proc visual_dialog { } {
         ttk::frame $w.upperfr ;# -relief groove -borderwidth 3 -height 10
         pack $w.upperfr -fill x;# -ipady 8
         
-        ttk::labelframe $w.upperfr.size -text "Grid"        
+        ttk::labelframe $w.upperfr.size -text "Grid" -relief groove -borderwidth 3
         ttk::entry $w.upperfr.size.ent -width 3 -textvariable visoptions.gridsize -validate focus -takefocus 0 -validatecommand "popupcheckredraw visual_dialog_pop2;my_validate %W 0 200 %P 0" \
             -invalidcommand "my_invalid %W;popupcheckredraw visual_dialog_pop2"
         ttk::scale $w.upperfr.size.sc -orient horizontal -length 100 -from 1 -to 200 -variable visoptions.gridsize\
             -command "roundscale $w.upperfr.size.sc 0;popupcheckredraw visual_dialog_pop2"
 
-        ttk::labelframe $w.upperfr.offsets -text "x / y offsets"
+        ttk::labelframe $w.upperfr.offsets -text "x / y offsets" -relief groove -borderwidth 3
         ttk::label $w.upperfr.offsets.xlab -text "x"
         ttk::label $w.upperfr.offsets.ylab -text "y"
         ttk::scale $w.upperfr.offsets.xoffset -orient horizontal -length 100 -from 0 -to 1 -variable visoptions.xoffset \
@@ -1183,7 +1183,7 @@ proc visual_dialog { } {
 # 	    -command { popupcheckredraw visual_dialog_pop7  }
 # #	    -command { puts "subdiv-vis"; Ng_Vis_Set parameters; puts "cal redraw"; redraw  }
 
-	ttk::labelframe $w.iso.subdiv -text "Subdivision"
+	ttk::labelframe $w.iso.subdiv -text "Subdivision" -relief groove -borderwidth 3
 	ttk::radiobutton $w.iso.subdiv.zero -text "0" -variable visoptions.subdivisions -value 0 \
 	    -command { 
 		#set visoptions.subdivisions  1; 
@@ -1256,7 +1256,7 @@ proc visual_dialog { } {
         grid anchor $w.redraw center
 
 
-        ttk::labelframe $w.lowerframe -text "Additional viewing options"
+        ttk::labelframe $w.lowerframe -text "Additional viewing options" -relief groove -borderwidth 3
         pack $w.lowerframe -fill x 
         set w $w.lowerframe 
 

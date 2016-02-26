@@ -37,6 +37,9 @@ proc meshingoptionsdialog { } {
         # ############################################################
         
         set f $w.nb.general
+        ttk::frame $f.background
+        pack $f.background -fill both 
+        set f $f.background
         ttk::labelframe $f.f2 -relief groove -borderwidth 3 -text "General meshing options"
         pack $f.f2  -pady 15 -fill x 
         set f $f.f2
@@ -49,21 +52,21 @@ proc meshingoptionsdialog { } {
 	set finelabs(5) "very fine" 
 	set finelabs(6) "user defined"
 
-	tixOptionMenu $f.fine -label "Mesh granularity : " \
+	#tixOptionMenu $f.fine -label "Mesh granularity : " \
 	    -options {
-		label.width  19
-		label.anchor e
-		menubutton.width 15
-	    } 
+	#	label.width  19
+	#	label.anchor e
+	#	menubutton.width 15
+	#    } 
 
-	foreach finev $finevals {
-	    $f.fine add command $finev -label $finelabs($finev)
-	}
-	$f.fine config -variable meshoptions.fineness
-	$f.fine config -command { setgranularity }
-	global meshoptions.fineness
-#	setgranularity ${meshoptions.fineness}
-#	pack $f.fine
+	#foreach finev $finevals {
+	#    $f.fine add command $finev -label $finelabs($finev)
+	#}
+	#$f.fine config -variable meshoptions.fineness
+	#$f.fine config -command { setgranularity }
+	#global meshoptions.fineness
+        #setgranularity ${meshoptions.fineness}
+        #pack $f.fine
 
         global meshoptions.fineness
         ttk::label  $f.fine2l -text "Mesh granularity: "
@@ -149,17 +152,17 @@ proc meshingoptionsdialog { } {
 	set msg(4) "Much"
 	set msg(5) "Most"
 	
-	tixOptionMenu $f.msg -label "Print Messages : " \
+	#tixOptionMenu $f.msg -label "Print Messages : " \
 	    -options {
-		label.width  19
-		label.anchor e
-		menubutton.width 15
-	    } 
+	#	label.width  19
+	#	label.anchor e
+	#	menubutton.width 15
+	#    } 
 
-        foreach step {0 1 2 3 4 5 } {
-            $f.msg add command $step -label $msg($step)
-	}
-	$f.msg config -variable options.printmsg 
+        #foreach step {0 1 2 3 4 5 } {
+        #    $f.msg add command $step -label $msg($step)
+	#}
+	#$f.msg config -variable options.printmsg 
 	# pack $f.msg
 
         
@@ -293,7 +296,7 @@ proc meshingoptionsdialog { } {
 
         set f $w.nb.meshsize
 
-	ttk::labelframe $f.msf -text "mesh-size file:"
+	ttk::labelframe $f.msf -text "mesh-size file:" -relief groove -borderwidth 3
 	pack $f.msf
 
  	# tixLabelEntry $f.msf.ent -label "mesh-size file: "  \
@@ -849,7 +852,7 @@ proc viewingoptionsdialog { } {
 
 	# general
 	set f $w.nb.general
-        ttk::labelframe $f.gvop -text "General viewing options"
+        ttk::labelframe $f.gvop -text "General viewing options" -relief groove -borderwidth 3
         pack $f.gvop -fill x -pady 15
         set f $f.gvop
 	ttk::checkbutton $f.backcol -text "White Background" \
@@ -946,7 +949,7 @@ proc viewingoptionsdialog { } {
         grid $f.fn.ent -sticky nw -padx 4 -row 1 -column 1
         grid anchor $f.fn center 
         
-	ttk::labelframe $f.advstl -text "Advanced STL options"
+	ttk::labelframe $f.advstl -text "Advanced STL options" -relief groove -borderwidth 3
         pack $f.advstl -fill x -pady 15
         #frame $f.mt
 	#pack $f.mt -fill x
@@ -1020,7 +1023,7 @@ proc viewingoptionsdialog { } {
 
 	# IGES/STEP
 	set f $w.nb.occ
-	ttk::labelframe $f.occframe -text "IGES/STEP options"
+	ttk::labelframe $f.occframe -text "IGES/STEP options" -relief groove -borderwidth 3
         pack $f.occframe -fill x -pady 15 -ipady 8
         #set f $f.occframe
 	ttk::checkbutton $f.occframe.occshowsurfaces -text "Show surfaces " \
@@ -1139,7 +1142,7 @@ proc viewingoptionsdialog { } {
 	grid $f.center.ent2 $f.center.lab2 -padx 4 -pady 4 -sticky nw
         grid anchor $f.center center
         
-        ttk::labelframe $f.meshframe -text "Mesh visualization options"
+        ttk::labelframe $f.meshframe -text "Mesh visualization options" -relief groove -borderwidth 3
         pack $f.meshframe -fill x -pady 15
         set f $f.meshframe
 	ttk::checkbutton $f.showcolor -text "Meshsize Visualization" \
@@ -1273,7 +1276,7 @@ proc viewingoptionsdialog { } {
         grid anchor $f center
 
         set f $w.nb.mesh
-	ttk::labelframe $f.fshrink -text "Element visualization"
+	ttk::labelframe $f.fshrink -text "Element visualization" -relief groove -borderwidth 3
 	ttk::label $f.fshrink.lab -text "Shrink elements"
 	#scale $f.fshrink.scale -orient horizontal -length 200 -from 0 -to 1.0001 \
 	    -resolution 0.01  -tickinterval 0.25 \
@@ -1398,7 +1401,7 @@ proc viewingoptionsdialog { } {
 	
 	pack $f.showedges $f.showpoints $f.showpointnrs $f.showtang $f.drawedgenrs -anchor w
         set f $w.nb.edges
-        ttk::labelframe $f.main1 -text "Center point"
+        ttk::labelframe $f.main1 -text "Center point" -relief groove -borderwidth 3
         pack $f.main1 -fill x -pady 15
         set f $f.main1
 	ttk::frame $f.center
@@ -1533,6 +1536,9 @@ proc clippingdialog { } {
 
     } {
 	toplevel $w
+        ttk::frame $w.background
+        pack $w.background -fill x -fill y 
+        set w $w.background
         ttk::labelframe $w.main -text "Visual clipping" -relief groove -borderwidth 3
         pack $w.main -fill x -pady 15
         set w $w.main
@@ -1576,9 +1582,6 @@ proc clippingdialog { } {
             -validate focus -validatecommand " clipplanecommand;my_validate %W [$w.scale5 cget -from] [$w.scale5 cget -to] %P 3" \
             -invalidcommand "my_invalid %W;clipplanecommand"
 
-        proc test {val} {
-                #tk_messageBox -message $val
-        }
         ttk::label $w.clipdomainlabel -text "Clip only domain"
         ttk::spinbox $w.clipdomainspinb -from 0 -to 500 -increment 1 -width 3 \
             -textvariable viewoptions.clipping.onlydomain -validate focus \
@@ -1617,7 +1620,7 @@ proc clippingdialog { } {
         grid anchor $w center
         #pack $w.lab2 $w.scale2 $w.lab3 $w.scale3 $w.lab4 $w.scale4 $w.lab5 $w.scale5 $w.clipdomain $w.donotclipdomain
 
-	set w .clipping_dlg.main
+	set w .clipping_dlg.background.main
 	ttk::checkbutton $w.cb1 -text "Enable clipping" \
 	    -variable viewoptions.clipping.enable \
 	    -command { Ng_SetVisParameters; redraw } 
@@ -1629,8 +1632,8 @@ proc clippingdialog { } {
 	ttk::frame $w.bu
 #	pack $w.bu -fill x
 	grid $w.bu;# -fill x -ipady 3
-
-	ttk::button $w.cancle -text "Done" -command "destroy $w"
+        
+	ttk::button $w.cancle -text "Done" -command "destroy .clipping_dlg"
 	grid $w.cancle -columnspan 3 -pady 16 
 	
 	set w .clipping_dlg
