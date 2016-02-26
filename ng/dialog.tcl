@@ -1574,6 +1574,16 @@ proc clippingdialog { } {
             -validate focus -validatecommand " clipplanecommand;my_validate %W [$w.scale4 cget -from] [$w.scale4 cget -to] %P 3" \
             -invalidcommand "my_invalid %W;clipplanecommand"
 
+        
+        proc my_Press {w x y} {
+            puts [$w identify $x $y]
+            set inc [expr {([$w get $x $y] <= [$w get]) ? -1 : 1}]
+            ttk::Repeatedly ttk::scale::Increment $w [expr 0.001*$inc]
+            
+        }
+        bind $w.scale4 <ButtonPress-1> { if { [string match *slider [%W identify %x %y]] == 0 } { my_Press %W %x %y;break } }
+        bind $w.scale4 <ButtonRelease-1> {ttk::scale::Release %W %x %y}
+            
 	ttk::label $w.lab5 -text "Additional\rDistance"
 	ttk::scale $w.scale5 -orient horizontal -length 300 -from -1 -to 1.001 \
             -variable  viewoptions.clipping.dist2 \
@@ -1582,6 +1592,9 @@ proc clippingdialog { } {
             -validate focus -validatecommand " clipplanecommand;my_validate %W [$w.scale5 cget -from] [$w.scale5 cget -to] %P 3" \
             -invalidcommand "my_invalid %W;clipplanecommand"
 
+        bind $w.scale5 <ButtonPress-1> { if { [string match *slider [%W identify %x %y]] == 0 } { my_Press %W %x %y;break } }
+        bind $w.scale5 <ButtonRelease-1> {ttk::scale::Release %W %x %y}
+        
         ttk::label $w.clipdomainlabel -text "Clip only domain"
         ttk::spinbox $w.clipdomainspinb -from 0 -to 500 -increment 1 -width 3 \
             -textvariable viewoptions.clipping.onlydomain -validate focus \
