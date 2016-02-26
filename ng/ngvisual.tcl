@@ -203,9 +203,9 @@ proc lineplotdialog { } {
 	
 	toplevel $w
 	
-	frame $w.filesettings -relief  groove -borderwidth 3
-	frame $w.filesettings.title
-	radiobutton $w.filesettings.title.choose -variable visoptions.lineplotsource \
+	ttk::frame $w.filesettings -relief  groove -borderwidth 3
+	ttk::frame $w.filesettings.title
+	ttk::radiobutton $w.filesettings.title.choose -variable visoptions.lineplotsource \
 	    -value file -text "Data from File"
 
 	pack $w.filesettings.title.choose -side left
@@ -550,23 +550,26 @@ proc fieldlinesdialog { } {
 	
 	toplevel $w
 
-	tixNoteBook $w.nb -ipadx 6 -ipady 6
+	#tixNoteBook $w.nb -ipadx 6 -ipady 6
 
-	$w.nb add draw -label "Draw"
-	$w.nb add settings -label "Settings"
+        pack [ttk::notebook $w.nb]  -fill both -side top -ipadx 6 -ipady 6
+        $w.nb add [ttk::frame $w.nb.draw] -text "Draw" -underline 0 
+        $w.nb add [ttk::frame $w.nb.settings] -text "Settings" -underline 0        
+        
+	#$w.nb add draw -label "Draw"
+	#$w.nb add settings -label "Settings"
 
-	pack $w.nb -expand yes -fill both -padx 5 -pady 5 -side top
+	#pack $w.nb -expand yes -fill both -padx 5 -pady 5 -side top
 
 
 	# Main Window
 
-	set f [$w.nb subwidget draw]
+	set f $w.nb.draw
 	
-
-	frame $f.general
+	ttk::labelframe $f.general -text "General settings"
 
 	
-	checkbutton $f.general.enable -text "Enable Fieldlines" \
+	ttk::checkbutton $f.general.enable -text "Enable Fieldlines" \
 	    -variable visoptions.drawfieldlines \
 	    -command { 
 		# set visoptions.redrawperiodic ${visoptions.drawfieldlines}
@@ -575,32 +578,37 @@ proc fieldlinesdialog { } {
 		Ng_Vis_Set parameters; 
 		redraw 
 	    }
-	tixControl $f.general.num -label "Num: " -integer true \
+        ttk::label $f.general.numl -text "num:"
+	ttk::spinbox $f.general.num -from 0 -to 100 -increment 1 \
+            -textvariable visoptions.numfieldlines -width 4
+        #tixControl $f.general.num -label "Num: " -integer true \
 	    -variable visoptions.numfieldlines \
 	    -command { Ng_Vis_Set parameters; redraw } \
 	    -options {
-		entry.width 6
-		label.width 12
-		label.anchor e
-	    }	
+	#	entry.width 6
+	#	label.width 12
+	#	label.anchor e
+	#    }	
 
 	
-	pack $f.general.enable $f.general.num -side left
+	grid $f.general.enable -sticky nw -padx 4 -pady 2
+        grid x $f.general.numl $f.general.num -rowspan 3 -sticky w -padx 4 -row 0 -pady 2
+        grid anchor $f.general center
 
-	pack $f.general
+	pack $f.general -pady 15 -fill x -ipady 3
 
-	label $f.labe0 -text " "
+	ttk::label $f.labe0 -text " "
 
 	pack $f.labe0
 
-	frame $f.general1
+	#ttk::frame $f.general1
 	
-	checkbutton $f.general1.randomstart -text "Field dependent density    " \
+	ttk::checkbutton $f.general.randomstart -text "Field dependent density    " \
 	    -variable visoptions.fieldlinesrandomstart \
 	    -command { Ng_Vis_Set parameters; redraw}
 
 	
-	checkbutton $f.general1.redrawperiodic -text "Animate periodic" \
+	ttk::checkbutton $f.general.redrawperiodic -text "Animate periodic" \
 	    -variable visoptions.redrawperiodic \
 	    -command { 
 		redrawperiodic
@@ -608,13 +616,14 @@ proc fieldlinesdialog { } {
 		redraw 
 	    }
 
-	pack $f.general1.randomstart $f.general1.redrawperiodic -side left
+	grid $f.general.randomstart -sticky nw -padx 4 -row 1
+        grid $f.general.redrawperiodic -sticky nw -padx 4 -row 2
 
-	pack $f.general1
+	#pack $f.general1
 
 
 
-	label $f.lab0 -text " "
+	ttk::label $f.lab0 -text " "
 
 	pack $f.lab0
 
@@ -644,13 +653,13 @@ proc fieldlinesdialog { } {
 	
 
 
-	label $f.lab00 -text " "
+	ttk::label $f.lab00 -text " "
 
 	pack $f.lab00
 
-	frame $f.phasesettings
+	ttk::frame $f.phasesettings
 
-	checkbutton $f.phasesettings.onephase -text "Fix Phase" -variable visoptions.fieldlinesonlyonephase
+	ttk::checkbutton $f.phasesettings.onephase -text "Fix Phase" -variable visoptions.fieldlinesonlyonephase
 	scale $f.phasesettings.phase -orient horizontal -length 300 -from 0 -to 360 \
 	    -label "phi" \
 	    -resolution 1 \
@@ -663,43 +672,43 @@ proc fieldlinesdialog { } {
 
 
 
-	label $f.lab1 -text " "
+	ttk::label $f.lab1 -text " "
 
 	pack $f.lab1
 
 
 	
-	frame $f.boxsettings -relief groove -borderwidth 3
-	frame $f.boxsettings.title
-	radiobutton $f.boxsettings.title.choose -variable visoptions.fieldlinesstartarea \
+	ttk::frame $f.boxsettings -relief groove -borderwidth 3
+	ttk::frame $f.boxsettings.title
+	ttk::radiobutton $f.boxsettings.title.choose -variable visoptions.fieldlinesstartarea \
 	    -value box -text "Startpoints in Box"
 
 	pack $f.boxsettings.title.choose -side left
 
 	pack $f.boxsettings.title
 
-	frame $f.boxsettings.points
+	ttk::frame $f.boxsettings.points
 
-	label $f.boxsettings.points.lab2 -text "Pmin";
-	entry $f.boxsettings.points.ent1x -width 8 -relief sunken \
+	ttk::label $f.boxsettings.points.lab2 -text "Pmin";
+	ttk::entry $f.boxsettings.points.ent1x -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap1x
-	entry $f.boxsettings.points.ent1y -width 8 -relief sunken \
+	ttk::entry $f.boxsettings.points.ent1y -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap1y
-	entry $f.boxsettings.points.ent1z -width 8 -relief sunken \
+	ttk::entry $f.boxsettings.points.ent1z -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap1z
-	label $f.boxsettings.points.lab3 -text "   Pmax";
-	entry $f.boxsettings.points.ent2x -width 8 -relief sunken \
+	ttk::label $f.boxsettings.points.lab3 -text "   Pmax";
+	ttk::entry $f.boxsettings.points.ent2x -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap2x
-	entry $f.boxsettings.points.ent2y -width 8 -relief sunken \
+	ttk::entry $f.boxsettings.points.ent2y -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap2y
-	entry $f.boxsettings.points.ent2z -width 8 -relief sunken \
+	ttk::entry $f.boxsettings.points.ent2z -width 8 \
 	    -textvariable visoptions.fieldlinesstartareap2z
 	
 	pack $f.boxsettings.points
 	pack $f.boxsettings.points.lab2 $f.boxsettings.points.ent1x $f.boxsettings.points.ent1y $f.boxsettings.points.ent1z -side left
 	pack $f.boxsettings.points.lab3 $f.boxsettings.points.ent2x $f.boxsettings.points.ent2y $f.boxsettings.points.ent2z -side left
 
-	button $f.boxsettings.settobb -text "Bounding Box" -command {
+	ttk::button $f.boxsettings.settobb -text "Bounding Box" -command {
 	    set bbox [Ng_MeshInfo bbox]
 	    set visoptions.fieldlinesstartareap1x [lindex $bbox 0]
 	    set visoptions.fieldlinesstartareap2x [lindex $bbox 1]
@@ -715,18 +724,18 @@ proc fieldlinesdialog { } {
 	pack $f.boxsettings -fill x -ipady 3
 
 
-	frame $f.facesettings -relief groove -borderwidth 3
-	frame $f.facesettings.title
-	radiobutton $f.facesettings.title.choose -variable visoptions.fieldlinesstartarea \
+	ttk::frame $f.facesettings -relief groove -borderwidth 3
+	ttk::frame $f.facesettings.title
+	ttk::radiobutton $f.facesettings.title.choose -variable visoptions.fieldlinesstartarea \
 	    -value face -text "Startpoints on Face"
 
 	pack $f.facesettings.title.choose -side left
 
 	pack $f.facesettings.title
 	
-	frame $f.facesettings.index
-	label $f.facesettings.index.lab -text "face index:"
-	label $f.facesettings.index.ent -text 1 -padx 4
+	ttk::frame $f.facesettings.index
+	ttk::label $f.facesettings.index.lab -text "face index:"
+	ttk::label $f.facesettings.index.ent -text 1;# -padx 4
 
 	pack $f.facesettings.index.lab $f.facesettings.index.ent -side left
 
@@ -737,18 +746,18 @@ proc fieldlinesdialog { } {
 
 	global visoptions.fieldlinesfilename
 
-	frame $f.filesettings -relief  groove -borderwidth 3
-	frame $f.filesettings.title
-	radiobutton $f.filesettings.title.choose -variable visoptions.fieldlinesstartarea \
+	ttk::frame $f.filesettings -relief  groove -borderwidth 3
+	ttk::frame $f.filesettings.title
+	ttk::radiobutton $f.filesettings.title.choose -variable visoptions.fieldlinesstartarea \
 	    -value file -text "Startpoints from File"
 
 	pack $f.filesettings.title.choose -side left
 
 	pack $f.filesettings.title
 
-	frame $f.filesettings.sfn
+	ttk::frame $f.filesettings.sfn
 
-	button $f.filesettings.sfn.bb -text "Browse" \
+	ttk::button $f.filesettings.sfn.bb -text "Browse" \
 	    -command {
 		set types {
 		    { "Netgen Fieldlines" {.nef} }
@@ -757,7 +766,7 @@ proc fieldlinesdialog { } {
 	    }
 
 	
-	entry $f.filesettings.sfn.fn -width 50 -relief sunken \
+	ttk::entry $f.filesettings.sfn.fn -width 50 \
 	    -textvariable visoptions.fieldlinesfilename
 
 	pack $f.filesettings.sfn.bb $f.filesettings.sfn.fn -side left
@@ -771,7 +780,7 @@ proc fieldlinesdialog { } {
 	
 	# Settings
 
-	set g [$w.nb subwidget settings]
+	set g $w.nb.settings
 
 	frame $g.linesettings -relief groove -borderwidth 3
 	label $g.linesettings.title -text "\nLine Settings\n"
@@ -842,10 +851,10 @@ proc fieldlinesdialog { } {
 	# buttons
 	
 
-	frame $w.bu
-	pack $w.bu 
+	ttk::frame $w.bu 
+	pack $w.bu -fill x -ipady 3
 
-	button $w.bu.calc -text "Build Fieldlines" -command { 
+	ttk::button $w.bu.calc -text "Build Fieldlines" -command { 
 	    if { ${visoptions.fieldlinesvecfunction} == "none" } {
 		bgerror "Please select the vector function first!"
 	    } {
@@ -856,7 +865,7 @@ proc fieldlinesdialog { } {
 	    }
 	}
 
-	button $w.bu.help -text "Help" -command {
+	ttk::button $w.bu.help -text "Help" -command {
 	    if {[winfo exists .fieldlines_help] == 1} {
 		wm withdraw .fieldlines_help
 		wm deiconify .fieldlines_help
@@ -865,7 +874,7 @@ proc fieldlinesdialog { } {
 		toplevel .fieldlines_help
 
 		tixScrolledText .fieldlines_help.ht -scrollbar y
-		set text [.fieldlines_help.ht subwidget text]
+		set text .fieldlines_help.ht.text
 
 		$text configure -setgrid true -wrap word 
 
@@ -935,8 +944,9 @@ proc fieldlinesdialog { } {
 
 	}
 
-	button $w.bu.cancel -text "Done" -command "destroy $w"
-	pack $w.bu.calc $w.bu.help $w.bu.cancel -side left -expand yes
+	ttk::button $w.bu.cancel -text "Done" -command "destroy $w"
+	grid $w.bu.calc $w.bu.help $w.bu.cancel -sticky nw -padx 4
+        grid anchor $w.bu center
 	
 	
 	wm withdraw $w
@@ -951,7 +961,7 @@ proc fieldlinesdialog { } {
     global visoptions.fieldlinesstartface
 
     
-    set f [$w.nb subwidget draw]
+    set f $w.nb.draw
     set visoptions.fieldlinesstartface [Ng_BCProp getactive]
     $f.facesettings.index.ent configure -text ${visoptions.fieldlinesstartface}
 
@@ -1003,11 +1013,10 @@ proc visual_dialog { } {
     } {
 
 	toplevel $w 
-
-
-	frame $w.grid -relief groove -borderwidth 3
+        
+	#ttk::frame $w.grid -relief groove -borderwidth 0
 	# change to: max gridsize 200
-	scale $w.grid.size -orient horizontal -length 100 -from 1 -to 200 \
+	#scale $w.grid.size -orient horizontal -length 100 -from 1 -to 200 \
 	    -label "Grid" \
 	    -resolution 1    \
 	    -variable  visoptions.gridsize \
@@ -1015,22 +1024,45 @@ proc visual_dialog { } {
         
 
 	# x- and y- offset
-	scale $w.grid.xoffset -orient horizontal -length 80 -from 0 -to 1 \
+	#scale $w.grid.xoffset -orient horizontal -length 80 -from 0 -to 1 \
 	    -label "x-Offset" \
 	    -resolution 0.05    \
 	    -variable  visoptions.xoffset \
 	    -command { popupcheckredraw visual_dialog_pop3 }
+        ttk::frame $w.main
+        pack $w.main -fill x 
+        set w $w.main
+        ttk::frame $w.upperfr ;# -relief groove -borderwidth 3 -height 10
+        pack $w.upperfr -fill x;# -ipady 8
+        
+        ttk::labelframe $w.upperfr.size -text "Grid"        
+        ttk::entry $w.upperfr.size.ent -width 3 -textvariable visoptions.gridsize -validate focus -takefocus 0 -validatecommand "popupcheckredraw visual_dialog_pop2;my_validate %W 0 200 %P 0" \
+            -invalidcommand "my_invalid %W;popupcheckredraw visual_dialog_pop2"
+        ttk::scale $w.upperfr.size.sc -orient horizontal -length 100 -from 1 -to 200 -variable visoptions.gridsize\
+            -command "roundscale $w.upperfr.size.sc 0;popupcheckredraw visual_dialog_pop2"
 
-	scale $w.grid.yoffset -orient horizontal -length 80 -from 0 -to 1 \
-	    -label "y-Offset" \
-	    -resolution 0.05    \
-	    -variable  visoptions.yoffset \
-	    -command { popupcheckredraw visual_dialog_pop4 }
-
+        ttk::labelframe $w.upperfr.offsets -text "x / y offsets"
+        ttk::label $w.upperfr.offsets.xlab -text "x"
+        ttk::label $w.upperfr.offsets.ylab -text "y"
+        ttk::scale $w.upperfr.offsets.xoffset -orient horizontal -length 100 -from 0 -to 1 -variable visoptions.xoffset \
+            -command "roundscale $w.upperfr.offsets.xoffset 2; popupcheckredraw visual_dialog_pop3"
+        ttk::scale $w.upperfr.offsets.yoffset -orient horizontal -length 100 -from 0 -to 1 -variable visoptions.yoffset \
+            -command "roundscale $w.upperfr.offsets.yoffset 2; popupcheckredraw visual_dialog_pop4"
+        ttk::entry $w.upperfr.offsets.entx -width 4 -textvariable visoptions.xoffset -validate focus -takefocus 0 \
+            -validatecommand "popupcheckredraw visual_dialog_pop3;my_validate %W 0 1 %P 2" \
+            -invalidcommand "my_invalid %W;popupcheckredraw visual_dialog_pop3"
+        ttk::entry $w.upperfr.offsets.enty -width 4 -textvariable visoptions.yoffset -validate focus -takefocus 0 \
+            -validatecommand "popupcheckredraw visual_dialog_pop4;my_validate %W 0 1 %P 2" \
+            -invalidcommand "my_invalid %W;popupcheckredraw visual_dialog_pop4"
 
 	# pack $w.showclipsolution 
-	pack $w.grid -fill x -ipady 3
-	pack $w.grid.size $w.grid.xoffset $w.grid.yoffset -side left -expand yes
+        
+        pack $w.upperfr.size.sc $w.upperfr.size.ent -padx 4  -pady 12 -side left
+        grid $w.upperfr.offsets.xoffset $w.upperfr.offsets.entx $w.upperfr.offsets.xlab -sticky nw -padx 4
+        grid $w.upperfr.offsets.yoffset $w.upperfr.offsets.enty $w.upperfr.offsets.ylab -sticky nw -padx 4
+	grid $w.upperfr.size $w.upperfr.offsets -sticky nw -pady 7 -padx 10
+        grid anchor $w.upperfr center
+	
 
 
 
@@ -1038,7 +1070,7 @@ proc visual_dialog { } {
 
 
 
-	ttk::frame $w.deform -relief groove -borderwidth 3
+	ttk::labelframe $w.deform -relief groove -borderwidth 3 -text "Deformation settings"
 	ttk::checkbutton $w.deform.cb -text "Deformation" \
 	    -variable visoptions.deformation \
 	    -command { Ng_Vis_Set parameters; redraw }
@@ -1062,62 +1094,86 @@ proc visual_dialog { } {
 	    -variable  visoptions.scaledeform2 \
 	    -command { popupcheckredraw visual_dialog_pop5 }
 
-	pack $w.deform -fill x -ipady 2
-	pack $w.deform.cb $w.deform.l  $w.deform.sc1 $w.deform.sc2 -side left -expand yes
-	
+	pack $w.deform -fill x -ipady 2 -pady 4 -ipady 3
+	grid $w.deform.cb $w.deform.l $w.deform.sc1 $w.deform.sc2 -sticky nw -padx 4;# -side left -expand yes -anchor center -padx 4
+	grid anchor $w.deform center
+        grid columnconfigure $w.deform 0 -pad 20
+        grid columnconfigure $w.deform 2 -pad 20
 
-	frame $w.as -relief groove -borderwidth 3
-	checkbutton $w.as.autoscale -text "Autoscale" \
+	ttk::labelframe $w.as -relief groove -borderwidth 3 -text "Scaling options"     
+	ttk::checkbutton $w.as.autoscale -text "Autoscale" \
 	    -variable visoptions.autoscale \
 	    -command { Ng_Vis_Set parameters; redraw }
 
-	tixControl $w.as.minval -label "Min-value: " -integer false \
+        ttk::label $w.as.lmin -text "Min-value"
+        ttk::spinbox $w.as.smin -textvariable visoptions.mminval -width 5 -validate focus \
+            -validatecommand "my_validatespinbox %W %P 10" \
+            -command "Ng_Vis_Set parameters; redraw;" \
+            -invalidcommand "my_invalidspinbox %W" -from -1e10 -to 1e10 -increment 0.001
+            
+        ttk::label $w.as.lmax -text "Max-value"
+        ttk::spinbox $w.as.smax -textvariable visoptions.mmaxval -width 5 -validate focus \
+            -validatecommand "Ng_Vis_Set parameters; redraw;my_validatespinbox %W %P 10" \
+            -command "Ng_Vis_Set parameters; redraw;" \
+            -invalidcommand "my_invalidspinbox %W;Ng_Vis_Set parameters; redraw" -from -1e10 -to 1e10 -increment 0.001
+            
+        #tixControl $w.as.minval -label "Min-value: " -integer false \
 	    -variable visoptions.mminval \
 	    -command { Ng_Vis_Set parametersrange; redraw } \
 	    -options {
-		entry.width 6
-		label.width 12
-		label.anchor e
-	    }	
-	tixControl $w.as.maxval -label "Max-value: " -integer false \
+	#	entry.width 6
+	#	label.width 12
+	#	label.anchor e
+	#    }	
+	#tixControl $w.as.maxval -label "Max-value: " -integer false \
 	    -variable visoptions.mmaxval \
 	    -command { Ng_Vis_Set parametersrange; redraw } \
 	    -options {
-		entry.width 6
-		label.width 12
-		label.anchor e
-	    }	
+	#	entry.width 6
+	#	label.width 12
+	#	label.anchor e
+	#    }	
 
-	pack $w.as -fill x -ipady 3
-	pack $w.as.autoscale $w.as.minval $w.as.maxval -side left
+	pack $w.as -fill x -pady 5 -ipady 3
+	grid $w.as.autoscale $w.as.lmin $w.as.smin $w.as.lmax $w.as.smax -sticky nw -padx 4
+        grid columnconfigure $w.as 0 -pad 20
+        grid columnconfigure $w.as 2 -pad 20
+        grid anchor $w.as center 
 
 
 
 
-	ttk::frame $w.iso -relief groove -borderwidth 3
-	pack $w.iso -fill x -ipady 3
+	ttk::frame $w.iso; #-relief groove -borderwidth 0
+	pack $w.iso -anchor center;# -ipady 3
 
-	ttk::frame $w.iso.cb
-	pack $w.iso.cb -side left
+	ttk::labelframe $w.iso.cb -relief groove -borderwidth 3 -text "Iso lines / surfaces"
+	pack $w.iso.cb -side left -pady 7 -fill y
 
 	ttk::checkbutton $w.iso.cb.isolines -text "Iso-lines" \
 	    -variable visoptions.isolines \
 	    -command { Ng_Vis_Set parameters; redraw }
-	pack $w.iso.cb.isolines -side top -anchor w
+	#pack $w.iso.cb.isolines -side top -anchor w
 
 	ttk::checkbutton $w.iso.cb.isosurf -text "Iso-Surface" \
 	    -variable visoptions.isosurf \
 	    -command { Ng_Vis_Set parameters; redraw }
-	pack $w.iso.cb.isosurf -side top -anchor w
+	#pack $w.iso.cb.isosurf -side top -anchor w
 
-
-	ttk::scale $w.iso.numiso -orient horizontal -length 100 -from 2 -to 50 \
+        ttk::label $w.iso.cb.numisol -text "amount"
+	ttk::scale $w.iso.cb.numiso -orient horizontal -length 100 -from 2 -to 50 \
 	    -variable  visoptions.numiso \
-	    -command { popupcheckredraw visual_dialog_pop6 }
+	    -command "roundscale $w.iso.cb.numiso 0;popupcheckredraw visual_dialog_pop6"
+        ttk::entry $w.iso.cb.entry -textvariable visoptions.numiso -width 3 \
+            -validate focus -validatecommand "popupcheckredraw visual_dialog_pop6;\
+            my_validate %W [$w.iso.cb.numiso cget -from] [$w.iso.cb.numiso cget -to] %P 0" \
+            -invalidcommand "my_invalid %W;popupcheckredraw visual_dialog_pop6"
 	    # -resolution 1    \
 	    # -label "" \
-
-	pack $w.iso.numiso -side left -anchor n
+        
+        grid $w.iso.cb.isolines $w.iso.cb.numisol $w.iso.cb.entry -sticky nw -padx 4
+        grid $w.iso.cb.isosurf  -sticky nw -padx 4
+        grid $w.iso.cb.numiso  -sticky nw -padx 4 -columnspan 2 -column 1 -row 1 
+	#pack $w.iso.cb.numisol $w.iso.cb.numiso  -anchor n
 
 
 # 	scale $w.iso.subdiv -orient horizontal -length 100 -from 0 -to 5 \
@@ -1127,7 +1183,7 @@ proc visual_dialog { } {
 # 	    -command { popupcheckredraw visual_dialog_pop7  }
 # #	    -command { puts "subdiv-vis"; Ng_Vis_Set parameters; puts "cal redraw"; redraw  }
 
-	ttk::frame $w.iso.subdiv 
+	ttk::labelframe $w.iso.subdiv -text "Subdivision"
 	ttk::radiobutton $w.iso.subdiv.zero -text "0" -variable visoptions.subdivisions -value 0 \
 	    -command { 
 		#set visoptions.subdivisions  1; 
@@ -1161,18 +1217,17 @@ proc visual_dialog { } {
 
  	ttk::label $w.iso.subdiv.text  -text "subdivision"
 
-	pack $w.iso.subdiv -side right -ipadx 10
-
+	pack $w.iso.subdiv -side right -fill y -padx 4 -pady 7 
 # ; Ng_SetNextTimeStamp
-	pack $w.iso.subdiv.text -side top
-	pack $w.iso.subdiv.zero $w.iso.numiso -side left
-	pack $w.iso.subdiv.one $w.iso.numiso -side left
-	pack $w.iso.subdiv.two $w.iso.numiso -side left
-	pack $w.iso.subdiv.three $w.iso.numiso -side left
-	pack $w.iso.subdiv.four $w.iso.numiso -side left
-	pack $w.iso.subdiv.five $w.iso.numiso -side left
-
-
+	#pack $w.iso.subdiv.text  -side top
+	#pack $w.iso.subdiv.zero  -side left
+	#pack $w.iso.subdiv.one   -side left
+	#pack $w.iso.subdiv.two   -side left
+	#pack $w.iso.subdiv.three -side left
+	#pack $w.iso.subdiv.four  -side left
+	#pack $w.iso.subdiv.five  -side left
+        grid $w.iso.subdiv.zero $w.iso.subdiv.one $w.iso.subdiv.two $w.iso.subdiv.three $w.iso.subdiv.four $w.iso.subdiv.five 
+        grid anchor $w.iso.subdiv center
 #	scale $w.iso.zpos -orient horizontal -length 100 -from 0 -to 1 \
 #	    -label "z-position" \
 #	    -resolution 0.01 \
@@ -1184,7 +1239,7 @@ proc visual_dialog { } {
 
 
 
-	ttk::frame $w.redraw -relief groove -borderwidth 3
+	ttk::labelframe $w.redraw -relief groove -borderwidth 3 -text "Auto-redraw"
 	ttk::checkbutton $w.redraw.auto -text "Auto-redraw after (sec)" \
 	    -variable visoptions.autoredraw 
 
@@ -1196,28 +1251,21 @@ proc visual_dialog { } {
 	# 	label.anchor w
 	#     }	
         ttk::spinbox $w.redraw.val -textvariable visoptions.autoredrawtime -from 0 -to 100 -width 3 
-	pack $w.redraw -fill x -ipady 3
-	pack $w.redraw.auto  $w.redraw.val -side left
+	pack $w.redraw -fill x -ipady 3 -pady 7
+	grid $w.redraw.auto  $w.redraw.val -sticky nw
+        grid anchor $w.redraw center
 
 
+        ttk::labelframe $w.lowerframe -text "Additional viewing options"
+        pack $w.lowerframe -fill x 
+        set w $w.lowerframe 
 
-	tixControl $w.redraw.simtime -label " Simulation Time (1e-6 s)" -integer false \
-	    -variable visoptions.simulationtime \
-	    -command { 
-		Ng_Vis_Set time ${visoptions.simulationtime}; 
-		catch {NGS_Set time ${visoptions.simulationtime};}
-		redraw } \
-	    -options {
-		entry.width 6
-		label.width 0
-		label.anchor w
-	    }	
-	# pack $w.redraw.simtime -side left
-
-        pack [ttk::frame $w.f] -fill x
-        pack [ttk::frame $w.f.f1] -expand yes
-        set f [ttk::frame $w.f.f1.clipsol] 
-        pack $f  -anchor e
+        #pack [frame $w.f] -fill x
+        #pack [ttk::frame $w.f1] -expand yes
+        ttk::frame $w.f1
+        
+        set f [ttk::frame $w.f1.clipsol] 
+        pack $f -anchor e
         menu $f.m
         ttk::menubutton $f.b -menu $f.m -width 12
         ttk::label $f.l -text "Clipping Plane Sol: "
@@ -1237,7 +1285,7 @@ proc visual_dialog { } {
 
         
         # pack [ttk::frame $w.f1.scalfun] -anchor e
-        set f [ttk::frame $w.f.f1.scalfun] 
+        set f [ttk::frame $w.f1.scalfun] 
         pack $f -anchor e
         menu $f.m
         ttk::menubutton $f.b -menu $f.m -width 12
@@ -1272,7 +1320,7 @@ proc visual_dialog { } {
 
 
 
-        set f [ttk::frame $w.f.f1.vecfun]
+        set f [ttk::frame $w.f1.vecfun]
         pack $f -anchor e
         menu $f.m
         ttk::menubutton $f.b -menu $f.m -width 12
@@ -1304,7 +1352,7 @@ proc visual_dialog { } {
         
 
 
-        set f [ttk::frame $w.f.f1.evaluate]
+        set f [ttk::frame $w.f1.evaluate]
         pack $f -anchor e
 
         menu $f.m
@@ -1326,112 +1374,21 @@ proc visual_dialog { } {
 
         
         
-
-        
-	tixOptionMenu $w.clipsol -label "Clipping Plane Sol: " \
-	    -options {
-		label.width  18
-		label.anchor e
-		menubutton.width 12
-	    }
-        
-	$w.clipsol add command none -label None
-	$w.clipsol add command scal -label "Scalar Function"
-	$w.clipsol add command vec -label "Vector Function"
-
-	$w.clipsol configure -variable visoptions.clipsolution
-	$w.clipsol configure -command { Ng_Vis_Set parameters; redraw }
-
-	# pack $w.clipsol
-
-
-
-	tixOptionMenu $w.scalfun -label "Scalar Function: " \
-	    -options {
-		label.width  18
-		label.anchor e
-		menubutton.width 12
-	    }
-
-	tixOptionMenu $w.vecfun -label "Vector Function: " \
-	    -options {
-		label.width  18
-		label.anchor e
-		menubutton.width 12
-	    }
-
-
-	$w.scalfun add command none -label None
-	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    set fname [Ng_Vis_Field getfieldname $i]
-	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    if { $fcomp == 1 } {
-		$w.scalfun add command $fname:1 -label $fname
-	    } {
-		for { set j 1 } { $j <= $fcomp } { incr j } {
-		    $w.scalfun add command $fname:$j -label "$fname ($j)"
-		}
-		$w.scalfun add command $fname:0 -label "func ($fname)"
-	    }
-	}
-
-	$w.vecfun add command none -label None 
-	for { set i 1 } { $i <= [Ng_Vis_Field getnfieldnames] } { incr i } {
-	    set fname [Ng_Vis_Field getfieldname $i]
-	    set fcomp [Ng_Vis_Field getfieldcomponents $i]
-	    set iscomplex [Ng_Vis_Field iscomplex $i]
-	    set sdim [Ng_Vis_Field getdimension]
-	    if { $iscomplex == 1 } { set fcomp [expr $fcomp / 2] }
-	    if { ($fcomp == $sdim) || ($fcomp == 3) } {
-		$w.vecfun add command $fname -label $fname
-	    } 
-	}
-
-	$w.scalfun configure -variable visoptions.scalfunction 
-	$w.scalfun configure -command { Ng_Vis_Set parameters; redraw }
-	$w.vecfun configure -variable visoptions.vecfunction
-	$w.vecfun configure -command { Ng_Vis_Set parameters; redraw }
-
-
-	tixOptionMenu $w.evaluate -label "Evaluate: " \
-	    -options {
-		label.width  18
-		label.anchor e
-		menubutton.width 12
-	    }	
-	$w.evaluate add command abs -label "|.|"
-	$w.evaluate add command abstens -label "|tensor|"
-	$w.evaluate add command mises -label "Mises"
-	$w.evaluate add command main  -label "Main"
-	$w.evaluate configure -variable visoptions.evaluate
-	$w.evaluate configure -command { 
-	    Ng_Vis_Set parameters; 
-	    redraw 
-	}
-
-	# pack $w.scalfun $w.vecfun $w.evaluate
-
-        pack [ttk::frame $w.multidim] -fill x
-        set f [ttk::frame $w.multidim.f]
-        pack $f 
+                
+        pack [ttk::frame $w.f1.multidim] -fill x
+        set f [ttk::frame $w.f1.multidim.f]
+        pack $f -anchor e
         ttk::label $f.l1 -text "multidim-component: "
         ttk::spinbox $f.sb1 -from 0 -to 1e99 -textvariable visoptions.multidimcomponent -width 3 \
             -command { Ng_Vis_Set parameters; redraw }
         pack $f.l1 $f.sb1 -side left
-            
 
+        ttk::frame $w.fcb
+        # the 2 main frames
+        grid $w.f1 $w.fcb -sticky nw -padx 7 -ipady 3
+        grid anchor $w center
         
-	tixControl $w.multidimcomp -label "multidim-component: " -integer true \
-	    -variable visoptions.multidimcomponent -min 0 \
-	    -command { Ng_Vis_Set parameters; redraw } \
-	    -options {
-		entry.width 6
-		label.width 18
-		label.anchor e
-	    }	
-	# pack $w.multidimcomp
-
-        pack [ttk::frame $w.fcb] -fill x
+        #pack $w.fcb 
         ttk::frame $w.fcb.cb
         pack $w.fcb.cb
         
@@ -1488,38 +1445,46 @@ proc visual_dialog { } {
 		redraw 
 	    }
 
-	pack $w.fcb.cb.showsurfsolution $w.fcb.cb.showcurves -anchor w
-	pack $w.fcb.cb.imaginary $w.fcb.cb.logscale $w.fcb.cb.texframe $w.fcb.cb.invcolor $w.fcb.cb.redrawperiodic -side top -anchor w
+	#pack $w.fcb.cb.showsurfsolution $w.fcb.cb.showcurves -anchor w
+	#pack $w.fcb.cb.imaginary $w.fcb.cb.logscale $w.fcb.cb.texframe $w.fcb.cb.invcolor $w.fcb.cb.redrawperiodic -side top -anchor w
+	#pack $w.fcb.cb.texframe.usetexture $w.fcb.cb.texframe.lintexture -side left -expand yes
+	grid $w.fcb.cb.showsurfsolution -sticky nw
+        grid $w.fcb.cb.showcurves -sticky nw
+	grid $w.fcb.cb.imaginary -sticky nw
+        grid $w.fcb.cb.logscale -sticky nw 
+        grid $w.fcb.cb.texframe -sticky nw
+        grid $w.fcb.cb.invcolor -sticky nw
+        grid $w.fcb.cb.redrawperiodic -sticky nw
 	pack $w.fcb.cb.texframe.usetexture $w.fcb.cb.texframe.lintexture -side left -expand yes
 	
 
 
-
-	frame $w.fcb.bu -relief groove -borderwidth 3
-	pack $w.fcb.bu  -pady 5
-
-	ttk::button $w.fcb.bu.showsol -text "Show Solution" -command { 
+        set w .visoptions_dlg.main
+	ttk::frame $w.bu;# -relief groove -borderwidth 3
+	pack $w.bu  -pady 5 -padx 4
+        
+	ttk::button $w.bu.showsol -text "Show Solution" -command { 
 	    set selectvisual solution
 	    Ng_SetVisParameters
 	    redraw
 	}
-	ttk::button $w.fcb.bu.clipping -text "Clipping" -command { 
+	ttk::button $w.bu.clipping -text "Clipping" -command { 
 	    clippingdialog; 
 	}
-	ttk::button $w.fcb.bu.fieldlines -text "Fieldlines" -command { 
+	ttk::button $w.bu.fieldlines -text "Fieldlines" -command { 
 	    fieldlinesdialog; 
 	}
 
-	ttk::button $w.fcb.bu.lineplot -text "2D Lineplot" -command {
+	ttk::button $w.bu.lineplot -text "2D Lineplot" -command {
 	    lineplotdialog;
 	}
 
-	ttk::button $w.fcb.bu.done -text "Close" -command { 
+	ttk::button $w.bu.done -text "Close" -command { 
 	    destroy .visoptions_dlg
 	}
 
-	pack $w.fcb.bu.showsol $w.fcb.bu.clipping $w.fcb.bu.fieldlines $w.fcb.bu.lineplot $w.fcb.bu.done -side left -expand yes 
-
+	pack $w.bu.showsol $w.bu.clipping $w.bu.fieldlines $w.bu.lineplot $w.bu.done -side left -expand yes 
+        set w .visoptions_dlg
 
 	wm withdraw $w
 	wm geom $w +100+100
