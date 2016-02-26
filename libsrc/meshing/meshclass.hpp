@@ -82,7 +82,7 @@ namespace netgen
     Array<EdgeDescriptor> edgedecoding;
 
     /// sub-domain materials 
-    Array<char*> materials;
+    Array<string*> materials;
 
     /// labels for boundary conditions
     Array<string*> bcnames;
@@ -573,9 +573,11 @@ namespace netgen
     { return edgedecoding.Append(fd) - 1; }
 
     ///
-    DLL_HEADER void SetMaterial (int domnr, const char * mat);
+    DLL_HEADER void SetMaterial (int domnr, const string & mat);
     ///
-    const char * GetMaterial (int domnr) const;
+    const string & GetMaterial (int domnr) const;
+    const string * GetMaterialPtr (int domnr) const // 1-based
+    { return domnr <= materials.Size() ? materials.Get(domnr) : nullptr; }
     
     DLL_HEADER void SetNBCNames ( int nbcn );
 
@@ -583,7 +585,7 @@ namespace netgen
 
     const string & GetBCName ( int bcnr ) const;
 
-    string * GetBCNamePtr ( int bcnr )
+    string * GetBCNamePtr (int bcnr) const
     { return bcnr < bcnames.Size() ? bcnames[bcnr] : nullptr; }
 
     ///

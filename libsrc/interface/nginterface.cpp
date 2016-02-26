@@ -399,16 +399,17 @@ void Ng_SetElementIndex(const int ei, const int index)
   mesh->VolumeElement(ei).SetIndex(index);
 }
 
-char * Ng_GetElementMaterial (int ei)
+const char * Ng_GetElementMaterial (int ei)
 {
   static char empty[] = "";
   if (mesh->GetDimension() == 3)
     {
       int ind = mesh->VolumeElement(ei).GetIndex();
       // cout << "ind = " << ind << endl;
-      const char * mat = mesh->GetMaterial (ind);
+      const string * mat = mesh->GetMaterialPtr (ind);
       if (mat)
-	return const_cast<char*> (mat);
+	// return const_cast<char*> (mat);
+        return mat->c_str();
       else 
 	return empty;
     }
@@ -417,24 +418,24 @@ char * Ng_GetElementMaterial (int ei)
     {
       int ind = mesh->SurfaceElement(ei).GetIndex();
       ind = mesh->GetFaceDescriptor(ind).BCProperty();
-      const char * mat = mesh->GetMaterial ( ind );
+      const string * mat = mesh->GetMaterialPtr ( ind );
       if (mat)
-	return const_cast<char*> (mat);
+	return mat->c_str();
       else
 	return empty;
     }
   return 0;
 }
 
-char * Ng_GetDomainMaterial (int dom)
+const char * Ng_GetDomainMaterial (int dom)
 {
   static char empty[] = "";
   // astrid
   if ( 1 ) // mesh->GetDimension() == 3)
     {
-      const char * mat = mesh->GetMaterial(dom);
+      const string * mat = mesh->GetMaterialPtr(dom);
       if (mat)
-	return const_cast<char*> (mat);
+	return mat->c_str();
       else 
 	return empty;      
     }

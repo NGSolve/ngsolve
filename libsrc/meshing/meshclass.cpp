@@ -63,15 +63,14 @@ namespace netgen
     delete hpelements;
 
     for (int i = 0; i < materials.Size(); i++)
-      delete [] materials[i];
-
+      delete materials[i];
     for(int i = 0; i < userdata_int.Size(); i++)
       delete userdata_int[i];
     for(int i = 0; i < userdata_double.Size(); i++)
       delete userdata_double[i];
 
     for (int i = 0; i < bcnames.Size(); i++ )
-      if ( bcnames[i] ) delete bcnames[i];
+      delete bcnames[i];
 
 #ifdef PARALLEL
     delete paralleltop;
@@ -587,7 +586,7 @@ namespace netgen
 
     int cntmat = 0;
     for (i = 1; i <= materials.Size(); i++)
-      if (materials.Get(i) && strlen (materials.Get(i)))
+      if (materials.Get(i) && materials.Get(i)->length())
         cntmat++;
 
     if (cntmat)
@@ -595,7 +594,7 @@ namespace netgen
         outfile << "materials" << endl;
         outfile << cntmat << endl;
         for (i = 1; i <= materials.Size(); i++)
-          if (materials.Get(i) && strlen (materials.Get(i)))
+          if (materials.Get(i) && materials.Get(i)->length())
             outfile << i << " " << materials.Get(i) << endl;
       }
 
@@ -5541,7 +5540,7 @@ namespace netgen
     SetNextMajorTimeStamp();
   }
 
-  void Mesh :: SetMaterial (int domnr, const char * mat)
+  void Mesh :: SetMaterial (int domnr, const string & mat)
   {
     if (domnr > materials.Size())
       {
@@ -5550,15 +5549,19 @@ namespace netgen
         for (int i = olds; i < domnr; i++)
           materials[i] = 0;
       }
+    /*
     materials.Elem(domnr) = new char[strlen(mat)+1];
     strcpy (materials.Elem(domnr), mat);
+    */
+    materials.Elem(domnr) = new string(mat);
   }
 
-  const char * Mesh :: GetMaterial (int domnr) const
+  const string & Mesh :: GetMaterial (int domnr) const
   {
     if (domnr <= materials.Size())
-      return materials.Get(domnr);
-    return 0;
+      return *materials.Get(domnr);
+    static string emptystring;
+    return emptystring;
   }
 
   void Mesh ::SetNBCNames ( int nbcn )

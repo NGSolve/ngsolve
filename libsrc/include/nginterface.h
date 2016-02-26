@@ -93,10 +93,10 @@ extern "C" {
   DLL_HEADER void Ng_SetElementIndex(const int ei, const int index);
 
   // Get Material of element ei
-  DLL_HEADER char * Ng_GetElementMaterial (int ei);
+  DLL_HEADER const char * Ng_GetElementMaterial (int ei);
 
   // Get Material of domain dom
-  DLL_HEADER char * Ng_GetDomainMaterial (int dom);
+  DLL_HEADER const char * Ng_GetDomainMaterial (int dom);
   
   // Get User Data
   DLL_HEADER int Ng_GetUserDataSize (char * id);

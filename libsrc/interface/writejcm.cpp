@@ -144,7 +144,7 @@ void WriteJCMFormat (const Mesh & mesh,
   int nDomains=mesh.GetNDomains();
   for (i=1; i<=nDomains; i++)
   {
-    if (mesh.GetMaterial(i))
+    if (mesh.GetMaterialPtr(i))
       outfile << "#" << mesh.GetMaterial(i) 
               << ": Material ID = " 
               << i << "\n";
