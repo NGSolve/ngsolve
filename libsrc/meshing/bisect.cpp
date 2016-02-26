@@ -4013,7 +4013,7 @@ namespace netgen
 				   const EdgePointGeomInfo & ap2,
 				   Point<3> & newp, EdgePointGeomInfo & newgi) const
   {
-    cout << "base class edge point between" << endl;
+    //cout << "base class edge point between" << endl;
     newp = p1+secpoint*(p2-p1);
   }
 

@@ -432,7 +432,10 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("Refine", FunctionPointer
           ([](Mesh & self)
            {
-             self.GetGeometry()->GetRefinement().Refine(self);
+             if (self.GetGeometry())
+               self.GetGeometry()->GetRefinement().Refine(self);
+             else
+               Refinement().Refine(self);
            }))
 
     .def ("BoundaryLayer", FunctionPointer 
