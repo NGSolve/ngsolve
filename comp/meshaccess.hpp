@@ -525,7 +525,7 @@ namespace ngcomp
     }
     
 
-    void SetDeformation (shared_ptr<GridFunction> def)
+    void SetDeformation (shared_ptr<GridFunction> def = nullptr)
     {
       deformation = def;
     }
