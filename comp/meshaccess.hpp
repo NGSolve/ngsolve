@@ -35,7 +35,7 @@ namespace ngcomp
     AOWrapper<decltype(vertices)> Vertices() const { return vertices; }
     AOWrapper<decltype(edges)> Edges() const { return edges; }
     AOWrapper<decltype(faces)> Faces() const { return faces; }
-    
+    const string * GetMaterial() const { return mat; }
     /*
       Converts element-type from Netgen to element-types of NGSolve.
       E.g. the Netgen-types NG_TRIG and NG_TRIG6 are merged to NGSolve type ET_TRIG.

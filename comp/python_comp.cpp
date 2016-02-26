@@ -234,6 +234,8 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ))
     .add_property("type", &Ngs_Element::GetType)
     .add_property("index", &Ngs_Element::GetIndex)
+    .add_property("mat", FunctionPointer([](Ngs_Element & el)
+                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; }))
     ;
 
   bp::class_<FESpace::Element,bp::bases<Ngs_Element>>("FESpaceElement", bp::no_init)
