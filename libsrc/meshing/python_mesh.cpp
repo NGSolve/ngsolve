@@ -326,7 +326,28 @@ DLL_HEADER void ExportNetgenMeshing()
             else
               infile = new ifstream (filename.c_str());
 	    // ifstream input(filename);
+#ifdef PARALLEL
+	    // int id;
+	    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+	    MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+	    if (id == 0)
+	      {
+		cout << "I am proc " << id << " load the mesh" << endl;
+		self.Load(*infile);	      
+		cout << "i distribute" << endl;
+		self.Distribute();
+		cout << "dist done" << endl;
+	      }
+	    else
+	      {
+		cout << "I am proc " << id << endl << " sendrec" << endl;
+		self.SendRecvMesh();
+		cout << "sendrec done" << endl;
+	      }
+#else
 	    self.Load(*infile);
+#endif
 	    for (int i = 0; i < geometryregister.Size(); i++)
 	      {
 		NetgenGeometry * hgeom = geometryregister[i]->LoadFromMeshFile (*infile);
