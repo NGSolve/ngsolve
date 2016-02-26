@@ -19,29 +19,83 @@ namespace netgen
 
 
     INDEX_2_HASHTABLE<PointIndex> between(mesh.GetNP() + 5);
-      
-    int oldne, oldns, oldnf;
 
+
+    // new version with consistent ordering across sub-domains
+
+    Array<INDEX_2> parents;
+    cout << "find edges" << endl;
+    for (SegmentIndex si = 0; si < mesh.GetNSeg(); si++)
+      {
+	const Segment & el = mesh[si];
+	INDEX_2 i2 = INDEX_2::Sort(el[0], el[1]);
+        if (!between.Used(i2))
+          {
+            between.Set (i2, 0);          
+            parents.Append(i2);
+          }
+      }
+    for (SurfaceElementIndex sei = 0; sei < mesh.GetNSE(); sei++)
+      {
+	const Element2d & el = mesh[sei];
+	switch (el.GetType())
+	  {
+	  case TRIG:
+	  case TRIG6:
+	    {
+	      static int betw[3][3] =
+		{ { 2, 3, 4 },
+		  { 1, 3, 5 },
+		  { 1, 2, 6 } };
+
+              for (int j = 0; j < 3; j++)
+                {
+                  INDEX_2 i2 = INDEX_2::Sort(el.PNum(betw[j][0]),el.PNum(betw[j][1]));
+                  if (!between.Used(i2))
+                    {
+                      between.Set (i2, 0);          
+                      parents.Append(i2);
+                    }
+                }
+              break;
+            }
+          default:
+            throw NgException ("currently refinement for quad-elements is not supported");
+          }
+      }
+    
+    Array<int> par_nr(parents.Size());
+    for (int i = 0; i < par_nr.Size(); i++)
+      par_nr[i] = i;
+    QuickSort (parents, par_nr);
+
+    for (int i = 0; i < parents.Size(); i++)
+      between.Set (parents[i], mesh.GetNV()+i+PointIndex::BASE);
+    
+    mesh.SetNP(mesh.GetNV() + parents.Size());
+    Array<bool, PointIndex::BASE> pointset(mesh.GetNP());
+    pointset = false;
+    
     // refine edges
-
     Array<EdgePointGeomInfo,PointIndex::BASE> epgi;
 
-    oldns = mesh.GetNSeg();
+    int oldns = mesh.GetNSeg();
     for (SegmentIndex si = 0; si < oldns; si++)
       {
 	const Segment & el = mesh.LineSegment(si);
 
 	INDEX_2 i2 = INDEX_2::Sort(el[0], el[1]);
-	PointIndex pinew;
+	PointIndex pinew = between.Get(i2);
 	EdgePointGeomInfo ngi;
 
-	if (between.Used(i2))
+	if (pointset[pinew])
 	  {
-	    pinew = between.Get(i2);
+	    // pinew = between.Get(i2);
 	    ngi = epgi[pinew]; 
 	  }
 	else
 	  {
+            pointset[pinew] = true;
 	    Point<3> pnew;
 	    PointBetween (mesh.Point (el[0]),
 			  mesh.Point (el[1]), 0.5,
@@ -49,9 +103,9 @@ namespace netgen
 			  el.epgeominfo[0], el.epgeominfo[1],
 			  pnew, ngi);
 
-	    pinew = mesh.AddPoint (pnew);
-	    between.Set (i2, pinew);
-
+	    // pinew = mesh.AddPoint (pnew);
+            mesh.Point(pinew) = pnew;
+	    // between.Set (i2, pinew);
 
 	    if (pinew >= epgi.Size()+PointIndex::BASE)
 	      epgi.SetSize (pinew+1-PointIndex::BASE);
@@ -68,6 +122,8 @@ namespace netgen
 	mesh.LineSegment(si) = ns1;
 	mesh.AddSegment (ns2);
       }
+    cout << "have segments" << endl;
+
 
     // refine surface elements
     Array<PointGeomInfo,PointIndex::BASE> surfgi (8*mesh.GetNP());
@@ -76,10 +132,9 @@ namespace netgen
       surfgi[i].trignum = -1;
 
 
-    oldnf = mesh.GetNSE();
+    int oldnf = mesh.GetNSE();
     for (SurfaceElementIndex sei = 0; sei < oldnf; sei++)
       {
-	int j, k;
 	const Element2d & el = mesh.SurfaceElement(sei);
 
 	switch (el.GetType())
@@ -95,13 +150,13 @@ namespace netgen
 		  { 1, 3, 5 },
 		  { 1, 2, 6 } };
 
-	      for (j = 1; j <= 3; j++)
+	      for (int j = 1; j <= 3; j++)
 		{
 		  pnums.Elem(j) = el.PNum(j);
 		  pgis.Elem(j) = el.GeomInfoPi(j);
 		}
 
-	      for (j = 0; j < 3; j++)
+	      for (int j = 0; j < 3; j++)
 		{
 		  PointIndex pi1 = pnums.Elem(betw[j][0]);
 		  PointIndex pi2 = pnums.Elem(betw[j][1]);
@@ -120,6 +175,14 @@ namespace netgen
 
 
 		  pgis.Elem(4+j) = pgi;
+                  PointIndex pinew = between.Get(i2); 
+                  pnums.Elem(4+j) = pinew;
+                  if (!pointset[pinew])
+                    {
+                      pointset[pinew] = true;
+                      mesh.Point(pinew) = pb;                      
+                    }
+                  /*
 		  if (between.Used(i2))
 		    pnums.Elem(4+j) = between.Get(i2);
 		  else
@@ -127,7 +190,7 @@ namespace netgen
 		      pnums.Elem(4+j) = mesh.AddPoint (pb);
 		      between.Set (i2, pnums.Get(4+j));
 		    }
-
+                  */
 		  if (surfgi.Size() < pnums.Elem(4+j))
 		    surfgi.SetSize (pnums.Elem(4+j));
 		  surfgi.Elem(pnums.Elem(4+j)) = pgis.Elem(4+j);
@@ -141,10 +204,10 @@ namespace netgen
 		  { 6, 4, 5 } };
 
 	      int ind = el.GetIndex();
-	      for (j = 0; j < 4; j++)
+	      for (int j = 0; j < 4; j++)
 		{
 		  Element2d nel(TRIG);
-		  for (k = 1; k <= 3; k++)
+		  for (int k = 1; k <= 3; k++)
 		    {
 		      nel.PNum(k) = pnums.Get(reftab[j][k-1]);
 		      nel.GeomInfoPi(k) = pgis.Get(reftab[j][k-1]);
@@ -172,13 +235,13 @@ namespace netgen
 		  { 1, 4, 8 },
 		  { 5, 7, 9 } };
 
-	      for (j = 1; j <= 4; j++)
+	      for (int j = 1; j <= 4; j++)
 		{
 		  pnums.Elem(j) = el.PNum(j);
 		  pgis.Elem(j) = el.GeomInfoPi(j);
 		}
 
-	      for (j = 0; j < 5; j++)
+	      for (int j = 0; j < 5; j++)
 		{
 		  int pi1 = pnums.Elem(betw[j][0]);
 		  int pi2 = pnums.Elem(betw[j][1]);
@@ -219,10 +282,10 @@ namespace netgen
 		  { 9, 6, 3, 7 } };
 
 	      int ind = el.GetIndex();
-	      for (j = 0; j < 4; j++)
+	      for (int j = 0; j < 4; j++)
 		{
 		  Element2d nel(QUAD);
-		  for (k = 1; k <= 4; k++)
+		  for (int k = 1; k <= 4; k++)
 		    {
 		      nel.PNum(k) = pnums.Get(reftab[j][k-1]);
 		      nel.GeomInfoPi(k) = pgis.Get(reftab[j][k-1]);
@@ -242,11 +305,9 @@ namespace netgen
       }
 
     // refine volume elements
-    oldne = mesh.GetNE();
+    int oldne = mesh.GetNE();
     for (ElementIndex ei = 0; ei < oldne; ei++)
       {
-	int j, k;
-
 	const Element & el = mesh.VolumeElement(ei);
 	switch (el.GetType())
 	  {
@@ -264,12 +325,12 @@ namespace netgen
 
 	     int elrev = el.flags.reverse;
 
-	     for (j = 1; j <= 4; j++)
-	     pnums.Elem(j) = el.PNum(j);
+	     for (int j = 1; j <= 4; j++)
+               pnums.Elem(j) = el.PNum(j);
 	     if (elrev)
 	     swap (pnums.Elem(3), pnums.Elem(4));
 
-	     for (j = 0; j < 6; j++)
+	     for (int j = 0; j < 6; j++)
 	     {
 	       INDEX_2 i2;
 	       i2.I1() = pnums.Get(betw[j][0]);
@@ -312,10 +373,10 @@ namespace netgen
 	   };
 
 	   int ind = el.GetIndex();
-	   for (j = 0; j < 8; j++)
+	   for (int j = 0; j < 8; j++)
 	   {
 	      Element nel;
-	      for (k = 1; k <= 4; k++)
+	      for (int k = 1; k <= 4; k++)
 	        nel.PNum(k) = pnums.Get(reftab[j][k-1]);
 	      nel.SetIndex(ind);
 	      nel.flags.reverse = reverse[j];
@@ -386,11 +447,11 @@ namespace netgen
 
 	     pnums = PointIndex(-1);
 
-	     for (j = 1; j <= 8; j++)
+	     for (int j = 1; j <= 8; j++)
                pnums.Elem(j) = el.PNum(j);
 
 
-	     for (j = 0; j < 13; j++)
+	     for (int j = 0; j < 13; j++)
 	     {
 	       INDEX_2 i2;
 	       i2.I1() = pnums.Get(betw[j][0]);
@@ -408,7 +469,7 @@ namespace netgen
 	       }
 	    }
 
-	    for (j = 0; j < 6; j++)
+	    for (int j = 0; j < 6; j++)
 	    {
 	       INDEX_2 i2a, i2b;
 	       i2a.I1() = pnums.Get(fbetw[2*j][0]);
@@ -444,10 +505,10 @@ namespace netgen
 
 
 	   int ind = el.GetIndex();
-	   for (j = 0; j < 8; j++)
+	   for (int j = 0; j < 8; j++)
 	   {
 	      Element nel(HEX);
-	      for (k = 1; k <= 8; k++)
+	      for (int k = 1; k <= 8; k++)
 	        nel.PNum(k) = pnums.Get(reftab[j][k-1]);
 	      nel.SetIndex(ind);
 
@@ -496,12 +557,12 @@ namespace netgen
 	     //int elrev = el.flags.reverse;
            pnums = PointIndex(-1);
            
-           for (j = 1; j <= 6; j++)
+           for (int j = 1; j <= 6; j++)
 	     pnums.Elem(j) = el.PNum(j);
 	    // if (elrev)
 	    // swap (pnums.Elem(3), pnums.Elem(4));
 
-	     for (j = 0; j < 9; j++)
+	     for (int j = 0; j < 9; j++)
 	     {
 	       INDEX_2 i2;
 	       i2.I1() = pnums.Get(betw[j][0]);
@@ -519,7 +580,7 @@ namespace netgen
 	       }
 	    }
 
-	    for (j = 0; j < 3; j++)
+	    for (int j = 0; j < 3; j++)
 	    {
 	       INDEX_2 i2a, i2b;
 	       i2a.I1() = pnums.Get(fbetw[2*j][0]);
@@ -556,10 +617,10 @@ namespace netgen
 
 
 	   int ind = el.GetIndex();
-	   for (j = 0; j < 8; j++)
+	   for (int j = 0; j < 8; j++)
 	   {
 	      Element nel(PRISM);
-	      for (k = 1; k <= 6; k++)
+	      for (int k = 1; k <= 6; k++)
 	        nel.PNum(k) = pnums.Get(reftab[j][k-1]);
 	      nel.SetIndex(ind);
 

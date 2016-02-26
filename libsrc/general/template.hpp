@@ -195,6 +195,14 @@ inline INDEX_2 Sort (const INDEX_2 & i2)
   return tmp;
 }
 
+inline bool operator< (const INDEX_2 ia, const INDEX_2 ib)
+{
+  if (ia[0] < ib[0]) return true;
+  if (ia[0] > ib[0]) return false;
+  if (ia[1] < ib[1]) return true;
+  return false;
+}
+  
 
 ///
 class INDEX_3
