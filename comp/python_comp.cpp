@@ -464,6 +464,9 @@ void NGS_DLL_HEADER ExportNgcomp()
           bp::return_value_policy<bp::manage_new_object>())
 
     .def("SetDeformation", &MeshAccess::SetDeformation)
+
+    .def("UnsetDeformation", FunctionPointer
+	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
     
     .def("GetMaterials", FunctionPointer
 	 ([](const MeshAccess & ma)
