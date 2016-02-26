@@ -57,23 +57,33 @@ void NGS_DLL_HEADER ExportNgla() {
       static
       bp::tuple getstate(bp::object obj)
       {
+        /*
         const BaseVector & vec = bp::extract<BaseVector const&>(obj)();
         bp::list data;
         for (int i : Range(vec))
           data.append (vec.FV<double>()(i));
+        */
+        auto vec = bp::extract<BaseVector const&>(obj)().FV<double>();
+        bp::list data;
+        for (int i : Range(vec))
+          data.append (vec(i));
         return bp::make_tuple (obj.attr("__dict__"), data);
       }
     
       static
       void setstate(bp::object obj, bp::tuple state)
       {
-        BaseVector & vec = bp::extract<BaseVector&>(obj)();
-
         bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
         d.update(state[0]);
         bp::list data = bp::extract<bp::list>(state[1]);
+        auto vec = bp::extract<BaseVector const&>(obj)().FV<double>();
+        for (int i : Range(vec))
+          vec(i) = bp::extract<double> (data[i]);
+        /*
+        BaseVector & vec = bp::extract<BaseVector&>(obj)();
         for (int i : Range(vec))
           vec.FV<double>()(i) = bp::extract<double> (data[i]);
+        */
       }
 
     static bool getstate_manages_dict() { return true; }
