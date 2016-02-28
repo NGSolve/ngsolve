@@ -292,21 +292,20 @@ namespace netgen
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
-	// INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
-	// es.Sort();
+	INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
+	es.Sort();
 
-	// gv2e.Set (es, edge);
+	gv2e.Set (es, edge);
 
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
 	    {
-              SetDistantEdgeNum(dest, edge);
-	      // send_edges.Add (dest-1, es[0]);
-	      // send_edges.Add (dest-1, es[1]);
+              // SetDistantEdgeNum(dest, edge);
+	      send_edges.Add (dest-1, es[0]);
+	      send_edges.Add (dest-1, es[1]);
 	    }
       }
 
-    /*
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
 
@@ -321,7 +320,6 @@ namespace netgen
 		SetDistantEdgeNum (sender, gv2e.Get(gv12));
 	    }
 	}
-    */
  
     NgProfiler::StopTimer (timere);
 
@@ -331,10 +329,10 @@ namespace netgen
     if (mesh.GetDimension() == 3)
       {
 	NgProfiler::StartTimer (timerf);
+	Array<int> verts;
 
 	// exchange faces
 	cnt_send = 0;
-	Array<int> verts;
 	for (int face = 1; face <= nfa; face++)
 	  {
 	    topology.GetFaceVertices (face, verts);
@@ -344,13 +342,14 @@ namespace netgen
 		  IsExchangeVert (dest, verts[2]))
 		cnt_send[dest-1]+=3;
 	  }
-    
+
 	TABLE<int> send_faces(cnt_send);
 	INDEX_3_HASHTABLE<int> gv2f(2*nfa);
 
 	for (int face = 1; face <= nfa; face++)
 	  {
 	    topology.GetFaceVertices (face, verts);
+
 	    INDEX_3 fs (GetGlobalPNum(verts[0]),
 			GetGlobalPNum(verts[1]),
 			GetGlobalPNum(verts[2]));
@@ -363,6 +362,7 @@ namespace netgen
 		  IsExchangeVert (dest, verts[1]) &&
 		  IsExchangeVert (dest, verts[2]))
 		{
+		  // SetDistantFaceNum (dest, face);
 		  send_faces.Add (dest-1, fs[0]);
 		  send_faces.Add (dest-1, fs[1]);
 		  send_faces.Add (dest-1, fs[2]);

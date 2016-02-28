@@ -375,6 +375,7 @@ namespace netgen
 	       i2.I2() = pnums.Get(betw[j][1]);
 	       i2.Sort();
 
+	       /*
 	       if (between.Used(i2))
 	          pnums.Elem(5+j) = between.Get(i2);
 	       else
@@ -384,6 +385,15 @@ namespace netgen
 			   mesh.Point(i2.I2())));
 		  between.Set (i2, pnums.Elem(5+j));
 	       }
+	       */
+	       PointIndex pinew = between.Get(i2);
+	       pnums.Elem(j+5) = pinew;
+	       if (!pointset[pinew])
+		 {
+		   pointset[pinew] = true;
+		   mesh.Point(pinew) = Center(mesh.Point(i2.I1()),
+					      mesh.Point(i2.I2()));
+		 }
 	    }
 
 	    static int reftab[8][4] =
