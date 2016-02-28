@@ -17,7 +17,13 @@ namespace netgen
     mesh.ComputeNVertices();
     mesh.SetNP(mesh.GetNV());
 
+    if (mesh.mlbetweennodes.Size() < mesh.GetNV())
+      {
+        mesh.mlbetweennodes.SetSize(mesh.GetNV());
+        mesh.mlbetweennodes = INDEX_2(PointIndex::BASE-1,PointIndex::BASE-1);
+      }
 
+    
     INDEX_2_HASHTABLE<PointIndex> between(mesh.GetNP() + 5);
 
 
@@ -70,7 +76,10 @@ namespace netgen
     QuickSort (parents, par_nr);
 
     for (int i = 0; i < parents.Size(); i++)
-      between.Set (parents[i], mesh.GetNV()+i+PointIndex::BASE);
+      {
+        between.Set (parents[i], mesh.GetNV()+i+PointIndex::BASE);
+        mesh.mlbetweennodes[mesh.GetNV()+i+PointIndex::BASE] = parents[i];
+      }
     
     mesh.SetNP(mesh.GetNV() + parents.Size());
     Array<bool, PointIndex::BASE> pointset(mesh.GetNP());
