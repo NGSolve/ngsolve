@@ -206,7 +206,7 @@ namespace netgen
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
     cout << "updatecoarsegrid called, is_updated = " << is_updated << endl;
-    if (is_updated) return;
+    // if (is_updated) return;
 
     Reset();
     static int timer = NgProfiler::CreateTimer ("UpdateCoarseGrid");
@@ -239,18 +239,19 @@ namespace netgen
 
     cout << "update refined vertices" << endl;
     // update new vertices after mesh-refinement
-    if (loc2distvert.Size() < mesh.mlbetweennodes.Size())
+    if (mesh.mlbetweennodes.Size() > 0)
       {
-        int oldnv = loc2distvert.Size();
+        // int oldnv = loc2distvert.Size();
         int newnv = mesh.mlbetweennodes.Size();
         loc2distvert.ChangeSize(mesh.mlbetweennodes.Size());
-        for (PointIndex pi = oldnv+PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+        for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
           {
             PointIndex v1 = mesh.mlbetweennodes[pi][0];
             PointIndex v2 = mesh.mlbetweennodes[pi][1];
-            for (int dest = 1; dest < ntasks; dest++)
-              if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-                SetDistantPNum(dest, pi);
+            if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+              for (int dest = 1; dest < ntasks; dest++)
+                if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+                  SetDistantPNum(dest, pi);
           }
       }
     cout << "update refined vertices done" << endl;
@@ -291,19 +292,21 @@ namespace netgen
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
-	INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
-	es.Sort();
+	// INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
+	// es.Sort();
 
-	gv2e.Set (es, edge);
+	// gv2e.Set (es, edge);
 
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
 	    {
-	      send_edges.Add (dest-1, es[0]);
-	      send_edges.Add (dest-1, es[1]);
+              SetDistantEdgeNum(dest, edge);
+	      // send_edges.Add (dest-1, es[0]);
+	      // send_edges.Add (dest-1, es[1]);
 	    }
       }
 
+    /*
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
 
@@ -318,7 +321,7 @@ namespace netgen
 		SetDistantEdgeNum (sender, gv2e.Get(gv12));
 	    }
 	}
-
+    */
  
     NgProfiler::StopTimer (timere);
 
