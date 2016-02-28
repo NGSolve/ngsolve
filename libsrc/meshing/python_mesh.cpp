@@ -333,17 +333,12 @@ DLL_HEADER void ExportNetgenMeshing()
 
 	    if (id == 0)
 	      {
-		cout << "I am proc " << id << " load the mesh" << endl;
 		self.Load(*infile);	      
-		cout << "i distribute" << endl;
 		self.Distribute();
-		cout << "dist done" << endl;
 	      }
 	    else
 	      {
-		cout << "I am proc " << id << endl << " sendrec" << endl;
 		self.SendRecvMesh();
-		cout << "sendrec done" << endl;
 	      }
 #else
 	    self.Load(*infile);

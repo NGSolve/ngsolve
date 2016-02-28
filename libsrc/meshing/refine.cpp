@@ -30,7 +30,6 @@ namespace netgen
     // new version with consistent ordering across sub-domains
 
     Array<INDEX_2> parents;
-    cout << "find edges" << endl;
     for (SegmentIndex si = 0; si < mesh.GetNSeg(); si++)
       {
 	const Segment & el = mesh[si];
@@ -74,7 +73,7 @@ namespace netgen
     for (int i = 0; i < par_nr.Size(); i++)
       par_nr[i] = i;
     QuickSort (parents, par_nr);
-
+    mesh.mlbetweennodes.SetSize(mesh.GetNV()+parents.Size());
     for (int i = 0; i < parents.Size(); i++)
       {
         between.Set (parents[i], mesh.GetNV()+i+PointIndex::BASE);
@@ -131,7 +130,6 @@ namespace netgen
 	mesh.LineSegment(si) = ns1;
 	mesh.AddSegment (ns2);
       }
-    cout << "have segments" << endl;
 
 
     // refine surface elements

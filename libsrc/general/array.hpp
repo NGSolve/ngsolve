@@ -715,7 +715,8 @@ namespace netgen
   template <class T, class S>
   void QuickSort (FlatArray<T> & data, FlatArray<S> & slave)
   {
-    QuickSortRec (data, slave, 0, data.Size()-1);
+    if (data.Size() > 1)
+      QuickSortRec (data, slave, 0, data.Size()-1);
   }
 
 

@@ -23,6 +23,7 @@ namespace netgen
 
   void ParallelMeshTopology :: Reset ()
   {
+    cout << "ParallelMeshTopology::Reset called" << endl;
     *testout << "ParallelMeshTopology::Reset" << endl;
     
     if ( ntasks == 1 ) return;
@@ -46,6 +47,7 @@ namespace netgen
 	SetNV(mesh.GetNV());
 	SetNE(mesh.GetNE());
       }
+    cout << "ParallelMeshTopology::Reset complete" << endl;
   }
 
 
@@ -112,6 +114,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateCoarseGridGlobal ()
   {
+    cout << "updatecoarsegridglobal called" << endl;
     if (id == 0)
       PrintMessage ( 3, "UPDATE GLOBAL COARSEGRID STARTS" );      
 
@@ -202,6 +205,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
+    cout << "updatecoarsegrid called, is_updated = " << is_updated << endl;
     if (is_updated) return;
 
     Reset();
@@ -235,15 +239,15 @@ namespace netgen
 
     cout << "update refined vertices" << endl;
     // update new vertices after mesh-refinement
-    if (loc2distvert.Size() < mesh.mlbetweennodes)
+    if (loc2distvert.Size() < mesh.mlbetweennodes.Size())
       {
         int oldnv = loc2distvert.Size();
         int newnv = mesh.mlbetweennodes.Size();
         loc2distvert.ChangeSize(mesh.mlbetweennodes.Size());
-        for (PointIndex pi = oldnv+PointIndex::BASE; nr < newnv+PointIndex::Base; nr++)
+        for (PointIndex pi = oldnv+PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
           {
-            PointIndex v1 = mesh.mlbetweennodex[pi][0];
-            PointIndex v2 = mesh.mlbetweennodex[pi][1];
+            PointIndex v1 = mesh.mlbetweennodes[pi][0];
+            PointIndex v2 = mesh.mlbetweennodes[pi][1];
             for (int dest = 1; dest < ntasks; dest++)
               if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
                 SetDistantPNum(dest, pi);
