@@ -287,8 +287,8 @@ namespace netgen
       }
     
     TABLE<int> send_edges(cnt_send);
+    /*
     INDEX_2_HASHTABLE<int> gv2e(2*ned);
-
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
@@ -304,6 +304,28 @@ namespace netgen
 	      send_edges.Add (dest-1, es[0]);
 	      send_edges.Add (dest-1, es[1]);
 	    }
+      }
+    */
+    Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
+    for (int dest = 1; dest < ntasks; dest++)
+      {
+        loc2exchange = -1;
+        cnt = 0;
+        for (PointIndex pi : mesh.Points().Range())
+          if (IsExchangeVert(dest, pi))
+            loc2exchange[pi] = cnt++;
+        
+        for (int edge = 1; edge <= ned; edge++)
+          {
+            topology.GetEdgeVertices (edge, v1, v2);
+            if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+              {
+                INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
+                es.Sort();
+                send_edges.Add (dest-1, es[0]);
+                send_edges.Add (dest-1, es[1]);
+              }
+          }
       }
 
     TABLE<int> recv_edges(ntasks-1);
