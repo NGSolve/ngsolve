@@ -68,6 +68,37 @@ namespace netgen
             throw NgException ("currently refinement for quad-elements is not supported");
           }
       }
+    for (ElementIndex ei = 0; ei < mesh.GetNE(); ei++)
+      {
+	const Element & el = mesh[ei];
+	switch (el.GetType())
+	  {
+	  case TET:
+	  case TET10:
+	    {
+	      static int betw[6][3] =
+                { { 1, 2, 5 },
+                  { 1, 3, 6 },
+                  { 1, 4, 7 },
+                  { 2, 3, 8 },
+                  { 2, 4, 9 },
+                  { 3, 4, 10 } };
+
+              for (int j = 0; j < 6; j++)
+                {
+                  INDEX_2 i2 = INDEX_2::Sort(el.PNum(betw[j][0]),el.PNum(betw[j][1]));
+                  if (!between.Used(i2))
+                    {
+                      between.Set (i2, 0);          
+                      parents.Append(i2);
+                    }
+                }
+              break;
+            }
+          default:
+            throw NgException ("currently refinement for non-tet elements is not supported");
+          }
+      }
     
     Array<int> par_nr(parents.Size());
     for (int i = 0; i < par_nr.Size(); i++)
