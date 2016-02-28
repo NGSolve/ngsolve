@@ -231,7 +231,27 @@ namespace netgen
 
     if (id == 0) return;
 
+    const MeshTopology & topology = mesh.GetTopology();
 
+    cout << "update refined vertices" << endl;
+    // update new vertices after mesh-refinement
+    if (loc2distvert.Size() < mesh.mlbetweennodes)
+      {
+        int oldnv = loc2distvert.Size();
+        int newnv = mesh.mlbetweennodes.Size();
+        loc2distvert.ChangeSize(mesh.mlbetweennodes.Size());
+        for (PointIndex pi = oldnv+PointIndex::BASE; nr < newnv+PointIndex::Base; nr++)
+          {
+            PointIndex v1 = mesh.mlbetweennodex[pi][0];
+            PointIndex v2 = mesh.mlbetweennodex[pi][1];
+            for (int dest = 1; dest < ntasks; dest++)
+              if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+                SetDistantPNum(dest, pi);
+          }
+      }
+    cout << "update refined vertices done" << endl;
+    
+    
 
     Array<int> sendarray, recvarray;
 
@@ -246,7 +266,6 @@ namespace netgen
     NgProfiler::StartTimer (timere);
 
 
-    const MeshTopology & topology = mesh.GetTopology();
     int nfa = topology . GetNFaces();
     int ned = topology . GetNEdges();
     
