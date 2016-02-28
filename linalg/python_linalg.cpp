@@ -325,10 +325,12 @@ void NGS_DLL_HEADER ExportNgla() {
 
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<double>>);
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
+    .def("GetSteps", &CGSolver<double>::GetSteps)
     ;
 
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<Complex>>);
   bp::class_<CGSolver<Complex>, shared_ptr<CGSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverC", bp::no_init)
+    .def("GetSteps", &CGSolver<Complex>::GetSteps)
     ;
 
   bp::def("CGSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
