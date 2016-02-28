@@ -5524,6 +5524,13 @@ namespace netgen
   {
     topology->Update();
     clusters->Update();
+#ifdef PARALLEL
+    if (paralleltop)
+      {
+        paralleltop->Reset();
+        paralleltop->UpdateCoarseGrid();
+      }
+#endif
   }
 
   void Mesh :: BuildCurvedElements  (const Refinement * ref, int aorder, bool arational)
