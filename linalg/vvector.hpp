@@ -26,7 +26,7 @@ namespace ngla
       this->entrysize = es * sizeof(TSCAL) / sizeof(double);
     }
 
-    S_BaseVectorPtr (int as, int aes) 
+    S_BaseVectorPtr (size_t as, int aes)
     {
       this->size = as;
       es = aes;
@@ -35,7 +35,7 @@ namespace ngla
       this->entrysize = es * sizeof(TSCAL) / sizeof(double);
     }
 
-    void SetSize (int as) 
+    void SetSize (size_t as)
     {
       if (ownmem) delete [] pdata;
       this->size = as;
@@ -43,7 +43,7 @@ namespace ngla
       ownmem = true;
     }
 
-    void AssignMemory (int as, void * adata)
+    void AssignMemory (size_t as, void * adata)
     {
       this->size = as; 
       this->pdata = static_cast<TSCAL*> (adata); 
@@ -62,7 +62,8 @@ namespace ngla
     NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const;
     NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const;
 
-    FlatVector<TSCAL> operator() (int i) const
+    template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
+    FlatVector<TSCAL> operator() (TIND i) const
     {
       return FlatVector<TSCAL> (es, pdata+i*es);
     }
@@ -177,7 +178,7 @@ namespace ngla
       return FlatVector<T> (this->size, this->pdata);
     }
 
-    T & operator() (int i) const
+    T & operator() (size_t i) const
     {
       return static_cast<T*> (static_cast<void*> (this->pdata))[i];
     }
