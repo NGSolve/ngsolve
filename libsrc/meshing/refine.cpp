@@ -15,6 +15,10 @@ namespace netgen
   {
     PrintMessage (3, "Refine mesh");
 
+    if (ntasks > 1 && id == 0)
+      return;
+
+
     // reduce 2nd order
     mesh.ComputeNVertices();
     mesh.SetNP(mesh.GetNV());
@@ -350,7 +354,7 @@ namespace netgen
       }
 
     PrintMessage (5, "have 2d elements");
-    
+    // cout << "id = " << id << ", ne = " << mesh.GetNE() << endl;
     // refine volume elements
     int oldne = mesh.GetNE();
     mesh.VolumeElements().SetAllocSize(8*oldne);
