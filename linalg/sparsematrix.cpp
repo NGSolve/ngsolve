@@ -227,13 +227,13 @@ namespace ngla
     TableCreator<int> creator(ndof);
 
 
-    ParallelFor (colelements.Size(), 
+    ParallelFor (Range(colelements.Size()), 
                  [&] (int i) { QuickSort (colelements[i]); });
     
 
     for ( ; !creator.Done(); creator++)
       {    
-        ParallelFor (rowelements.Size(),
+        ParallelFor (Range(rowelements.Size()),
                      [&] (int i)
                      {
                        for (auto e : rowelements[i])

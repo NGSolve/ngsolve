@@ -59,7 +59,7 @@ namespace ngstd
 
     task_manager->StartWorkers();
 
-    ParallelFor (100, [&] (int i) { ; });    // startup
+    ParallelFor (Range(100), [&] (int i) { ; });    // startup
     return task_manager->GetNumThreads();
   }
 

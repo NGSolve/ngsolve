@@ -17,7 +17,7 @@ namespace ngla
     bool ownmem;
     
   public:
-    S_BaseVectorPtr (int as, int aes, void * adata) throw()
+    S_BaseVectorPtr (size_t as, int aes, void * adata) throw()
     {
       this->size = as;
       es = aes;
@@ -59,8 +59,8 @@ namespace ngla
       return pdata; 
     }
     
-    NGS_DLL_HEADER virtual AutoVector Range (int begin, int end) const;
-    NGS_DLL_HEADER virtual AutoVector Range (IntRange range) const;
+    NGS_DLL_HEADER virtual AutoVector Range (size_t begin, size_t end) const;
+    NGS_DLL_HEADER virtual AutoVector Range (T_Range<size_t> range) const;
 
     FlatVector<TSCAL> operator() (int i) const
     {
@@ -112,7 +112,7 @@ namespace ngla
       : S_BaseVectorPtr<TSCAL> (0, ES, NULL)
     { ; }
 
-    explicit VFlatVector (int as, T * adata) throw()
+    explicit VFlatVector (size_t as, T * adata) throw()
       : S_BaseVectorPtr<TSCAL> (as, ES, (void*)adata)
     { ; }
 
@@ -145,7 +145,7 @@ namespace ngla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     enum { ES = sizeof(T) / sizeof(TSCAL) };
 
-    explicit VVector (int as)
+    explicit VVector (size_t as)
       : S_BaseVectorPtr<TSCAL> (as, ES) 
     { ; }
 

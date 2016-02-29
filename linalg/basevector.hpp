@@ -80,7 +80,7 @@ namespace ngla
   {
   protected:
     /// size of vector
-    int size;
+    size_t size;
     /// number of doubles per entry
     int entrysize;
     ///
@@ -190,7 +190,8 @@ namespace ngla
       return dynamic_cast<const S_BaseVector<SCAL>&> (*this);
     }
 
-    int Size() const throw () { return size; }
+    size_t Size() const throw () { return size; }
+    T_Range<size_t> Range() const { return T_Range<size_t> (0, size); }
     int EntrySize() const throw () { return entrysize; }
     virtual void * Memory () const throw () = 0;
 
@@ -248,8 +249,8 @@ namespace ngla
 
     virtual void SetRandom ();
 
-    virtual AutoVector Range (int begin, int end) const;
-    virtual AutoVector Range (IntRange range) const;
+    virtual AutoVector Range (size_t begin, size_t end) const;
+    virtual AutoVector Range (T_Range<size_t> range) const;
 
     virtual void GetIndirect (const FlatArray<int> & ind, 
 			      const FlatVector<double> & v) const = 0;
@@ -406,8 +407,8 @@ namespace ngla
     const BaseVector & operator* () const { return *vec; }
 
 
-    virtual AutoVector Range (int begin, int end) const { return vec->Range(begin,end); }
-    virtual AutoVector Range (IntRange range) const { return vec->Range(range); }
+    virtual AutoVector Range (size_t begin, size_t end) const { return vec->Range(begin,end); }
+    virtual AutoVector Range (T_Range<size_t> range) const { return vec->Range(range); }
 
 
     virtual void * Memory () const throw () 

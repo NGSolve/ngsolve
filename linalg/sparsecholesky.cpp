@@ -1820,7 +1820,7 @@ void CalcLDL (SliceMatrix<T> mat)
     for (int i = 0; i < n; i++)
       hy(order[i]) = fx(i);
     */
-    ParallelFor (height, [&] (int i)
+    ParallelFor (Range(height), [&] (int i)
                  {
                    if (order[i] != -1)
                      hy(order[i]) = fx(i);
@@ -1946,7 +1946,7 @@ void CalcLDL (SliceMatrix<T> mat)
 
     // solve with the diagonal
     const TM * hdiag = &diag[0];
-    ParallelFor (nused, [&] (int i)
+    ParallelFor (Range(nused), [&] (int i)
                  {
                    TVX tmp = hdiag[i] * hy[i];
                    hy[i] = tmp;
@@ -2022,7 +2022,7 @@ void CalcLDL (SliceMatrix<T> mat)
 	  if (inner->Test(i))
 	    fy(i) += s * hy(order[i]);
         */
-        ParallelFor (height, [&] (int i)
+        ParallelFor (Range(height), [&] (int i)
                      {
                        if (inner->Test(i))
                          fy(i) += s * hy(order[i]);
@@ -2038,7 +2038,7 @@ void CalcLDL (SliceMatrix<T> mat)
       {
 	// for (int i = 0; i < n; i++)
         // fy(i) += s * hy(order[i]);
-        ParallelFor (height, [&] (int i)
+        ParallelFor (Range(height), [&] (int i)
                      {
                        if (order[i] != -1)
                          fy(i) += s * hy(order[i]);

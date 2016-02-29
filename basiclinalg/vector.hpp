@@ -156,8 +156,19 @@ namespace ngbla
 	  data[i] += v.Spec()(i,0);
       return *this;
     }
-    
+
+
     /// constant element access
+    template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
+    INLINE TELEM & operator() (TIND i) const
+    {
+#ifdef CHECK_RANGE
+      CheckVecRange(size,i);
+#endif
+      return data[i]; 
+    }
+
+    /*
     INLINE TELEM & operator() (int i) const
     {
 #ifdef CHECK_RANGE
@@ -165,6 +176,11 @@ namespace ngbla
 #endif
       return data[i]; 
     }
+    /// 
+    INLINE TELEM & operator() (size_t i) const { return data[i]; }
+    INLINE TELEM & operator() (unsigned int i) const { return data[i]; }
+    INLINE TELEM & operator() (long int i) const { return data[i]; }
+    */
 
     INLINE RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
     { 
