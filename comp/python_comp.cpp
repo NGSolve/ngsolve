@@ -401,6 +401,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                  "the mesh")
     .def(bp::init<shared_ptr<netgen::Mesh>>())
     .def_pickle(MeshAccess_pickle_suite())
+    .def("__ngsid__", FunctionPointer( [] ( MeshAccess & self)
+        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     
 #ifndef PARALLEL
     .def("__init__", bp::make_constructor 
@@ -841,6 +843,8 @@ void NGS_DLL_HEADER ExportNgcomp()
          "construct compound-FESpace from list of component spaces"
          )
     .def_pickle(FESpace_pickle_suite())
+    .def("__ngsid__", FunctionPointer( [] ( FESpace & self)
+        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     .def("Update", FunctionPointer([](FESpace & self, int heapsize)
                                    { 
                                      LocalHeap lh (heapsize, "FESpace::Update-heap");
@@ -1027,6 +1031,8 @@ void NGS_DLL_HEADER ExportNgcomp()
          "creates a gridfunction in finite element space"
          )
     .def_pickle(GF_pickle_suite())    
+    .def("__ngsid__", FunctionPointer( [] ( GF & self)
+        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     .def("__str__", &ToString<GF>)
     .add_property("space", FunctionPointer([](bp::object self) -> bp::object
                                            {
