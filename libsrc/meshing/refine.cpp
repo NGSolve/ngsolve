@@ -13,6 +13,8 @@ namespace netgen
 
   void Refinement :: Refine (Mesh & mesh)
   {
+    PrintMessage (3, "Refine mesh");
+
     // reduce 2nd order
     mesh.ComputeNVertices();
     mesh.SetNP(mesh.GetNV());
@@ -99,6 +101,8 @@ namespace netgen
             throw NgException ("currently refinement for non-tet elements is not supported");
           }
       }
+
+    PrintMessage (5, "have points");
     
     Array<int> par_nr(parents.Size());
     for (int i = 0; i < par_nr.Size(); i++)
@@ -114,6 +118,8 @@ namespace netgen
     mesh.SetNP(mesh.GetNV() + parents.Size());
     Array<bool, PointIndex::BASE> pointset(mesh.GetNP());
     pointset = false;
+    
+    PrintMessage (5, "sorting complete");
     
     // refine edges
     Array<EdgePointGeomInfo,PointIndex::BASE> epgi;
@@ -162,7 +168,8 @@ namespace netgen
 	mesh.AddSegment (ns2);
       }
 
-
+    PrintMessage (5, "have 1d elements");
+    
     // refine surface elements
     Array<PointGeomInfo,PointIndex::BASE> surfgi (8*mesh.GetNP());
     for (int i = PointIndex::BASE;
@@ -342,8 +349,11 @@ namespace netgen
 	  }
       }
 
+    PrintMessage (5, "have 2d elements");
+    
     // refine volume elements
     int oldne = mesh.GetNE();
+    mesh.VolumeElements().SetAllocSize(8*oldne);
     for (ElementIndex ei = 0; ei < oldne; ei++)
       {
 	const Element & el = mesh.VolumeElement(ei);
@@ -717,8 +727,10 @@ namespace netgen
 
       }
 
+    PrintMessage (5, "have 3d elements");
     mesh.ComputeNVertices();
     mesh.RebuildSurfaceElementLists();
+    PrintMessage (5, "mesh updates complete");
     return;
 
     int cnttrials = 10;
