@@ -6,6 +6,7 @@ install(FILES
 
 install(FILES
         mixed.py hybrid_mixed.py hybrid_dg.py nonlin.py taskmanager.py
+        pickling.py
         DESTINATION share/ngsolve/py_tutorials/howto
         COMPONENT ngsolve_devel
        )

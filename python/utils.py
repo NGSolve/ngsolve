@@ -58,6 +58,39 @@ def div(func):
     return func.Deriv()
 
 
+import pickle
+
+def NgsPickler(*args, **kargs):
+    pickler = pickle.Pickler(*args, **kargs)
+    dumped_pids = []
+
+    def my_persistent_id(obj):
+        try:
+            pid = obj.__ngsid__()
+            if pid in dumped_pids:
+                return dumped_pids.index(pid)
+            else:
+                dumped_pids.append(pid)
+                return obj
+        except:
+            return None
+
+    pickler.persistent_id = my_persistent_id
+    return pickler
+
+def NgsUnpickler(*args, **kargs):
+    unpickler = pickle.Unpickler(*args, **kargs)
+    loaded_pids = []
+
+    def my_persistent_load(pid):
+        if hasattr(pid,'__ngsid__'):
+            loaded_pids.append(pid)
+            return pid
+        else:
+            return loaded_pids[pid]
+
+    unpickler.persistent_load = my_persistent_load
+    return unpickler
 
 
-__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'HCurl', 'HDiv', 'L2', 'grad', 'curl', 'div' ]
+__all__ = ['x', 'y', 'z', 'Laplace', 'Mass', 'Source', 'Neumann', 'H1', 'HCurl', 'HDiv', 'L2', 'grad', 'curl', 'div','NgsPickler', 'NgsUnpickler' ]

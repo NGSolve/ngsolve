@@ -105,6 +105,8 @@ void NGS_DLL_HEADER ExportNgla() {
           (bp::arg("size"), bp::arg("complex")=false)
           ))
     .def_pickle(BaseVector_pickle_suite())
+    .def("__ngsid__", FunctionPointer( [] ( BaseVector & self)
+        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
     
     .def("__str__", &ToString<BaseVector>)
     .add_property("size", &BaseVector::Size)
