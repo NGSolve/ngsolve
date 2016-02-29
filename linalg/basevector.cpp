@@ -63,11 +63,8 @@ namespace ngla
                        [&] (IntRange r) 
                        {
                          double mysum = ngbla::L2Norm2 (me.Range(r));
-                         // #pragma omp atomic
-                         // sum += mysum;
                          sum += mysum;
                        });
-
     return sqrt(sum);
   }
 
@@ -82,8 +79,8 @@ namespace ngla
     RegionTimer reg(t);
     t.AddFlops (me.Size());
 
-    ParallelFor ( me.Range(),
-                  [me,scal] (int i) { me(i) *= scal; });
+    ParallelFor ( Range(),
+                  [me,scal] (size_t i) { me(i) *= scal; });
 
     return *this;
   }
@@ -102,12 +99,38 @@ namespace ngla
     
     FlatVector<> fv = FVDouble();
     t.AddFlops (fv.Size());
-    
+    /*
     ParallelFor ( fv.Range(),
                   [fv,scal] (int i) { fv(i) = scal; });
+    */
+    ParallelFor ( Range(),
+                  [fv,scal] (size_t i) { fv(i) = scal; });
     
     return *this; 
   }
+
+#ifdef JUSTFORTESTING
+  void TestFunc1 (const BaseVector & bv, double scal )
+  {
+    FlatVector<> fv = bv.FVDouble();
+    /*
+    ParallelFor ( fv.Range(),
+                  [fv,scal] (int i) { fv(i) = scal; });
+    */
+    ParallelFor (bv.Range(),
+                 [fv,scal] (size_t i) { fv(i) = scal; });
+  }
+  void TestFunc2 (const BaseVector & bv, double scal )
+  {
+    FlatVector<> fv = bv.FVDouble();
+    /*
+    ParallelFor ( fv.Range(),
+                  [fv,scal] (int i) { fv(i) = scal; });
+    */
+    ParallelFor ( bv.Range(),
+                  [fv,scal] (int i) { fv(i) = scal; });
+  }
+#endif
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
@@ -129,8 +152,8 @@ namespace ngla
 
     t.AddFlops (me.Size());
 
-    ParallelFor ( me.Range(),
-                  [me,you,scal] (int i) { me(i) = scal * you(i); });
+    ParallelFor ( Range(),
+                  [me,you,scal] (size_t i) { me(i) = scal * you(i); });
     
     return *this;
   }
@@ -155,8 +178,8 @@ namespace ngla
     
     t.AddFlops (me.Size());
 
-    ParallelFor ( me.Range(),
-                  [me,you,scal] (int i) { me(i) += scal * you(i); });
+    ParallelFor ( Range(),
+                  [me,you,scal] (size_t i) { me(i) += scal * you(i); });
     
     return *this;
   }
@@ -184,12 +207,12 @@ namespace ngla
 
 
 
-  AutoVector BaseVector ::Range (int begin, int end) const
+  AutoVector BaseVector ::Range (size_t begin, size_t end) const
   {
     throw Exception ("BaseVector::Range const called");
   }
 
-  AutoVector BaseVector :: Range (IntRange range) const
+  AutoVector BaseVector :: Range (T_Range<size_t> range) const
   {
     throw Exception ("BaseVector::Range (IntRange) const called");
   }
@@ -644,13 +667,13 @@ namespace ngla
   }
 
   template <typename TSCAL>
-  AutoVector S_BaseVectorPtr<TSCAL> :: Range (int begin, int end) const
+  AutoVector S_BaseVectorPtr<TSCAL> :: Range (size_t begin, size_t end) const
   {
     return make_shared<S_BaseVectorPtr<TSCAL>> (end-begin, es, pdata+begin*es);
   }
   
   template <typename TSCAL>
-  AutoVector S_BaseVectorPtr<TSCAL> :: Range (IntRange range) const
+  AutoVector S_BaseVectorPtr<TSCAL> :: Range (T_Range<size_t> range) const
   {
     return make_shared<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
   }

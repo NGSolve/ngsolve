@@ -128,8 +128,8 @@ namespace ngstd
     return task_manager ? tpt*task_manager->GetNumThreads() : 1;
   }
 
-  template <typename TFUNC>
-  INLINE void ParallelFor (IntRange r, TFUNC f, 
+  template <typename TR, typename TFUNC>
+  INLINE void ParallelFor (T_Range<TR> r, TFUNC f, 
                            int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     if (task_manager)
@@ -148,8 +148,8 @@ namespace ngstd
   }
 
 
-  template <typename TFUNC>
-  INLINE void ParallelForRange (IntRange r, TFUNC f, 
+  template <typename TR, typename TFUNC>
+  INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
                                 int antasks = task_manager ? task_manager->GetNumThreads() : 0)
   {
     if (task_manager)

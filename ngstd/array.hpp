@@ -180,7 +180,7 @@ namespace ngstd
     INLINE ArrayRangeIterator (TSIZE ai) : ind(ai) { ; }
     INLINE ArrayRangeIterator operator++ (int) { return ind++; }
     INLINE ArrayRangeIterator operator++ () { return ++ind; }
-    INLINE ArrayRangeIterator operator*() const { return ind; }
+    INLINE TSIZE operator*() const { return ind; }
     INLINE TSIZE Index() { return ind; }
     INLINE operator TSIZE () const { return ind; }
     INLINE bool operator != (ArrayRangeIterator d2) { return ind != d2.ind; }
@@ -194,7 +194,9 @@ namespace ngstd
   public: 
     INLINE T_Range () { ; }
     INLINE T_Range (T n) : first(0), next(n) {;}
-    INLINE T_Range (T f, T n) : first(f), next(n) {;} 
+    INLINE T_Range (T f, T n) : first(f), next(n) {;}
+    template <typename T2>
+      INLINE T_Range(T_Range<T2> r2) : first(r2.First()), next(r2.Next()) { ; }
     INLINE T First() const { return first; }
     INLINE T Next() const { return next; }
     INLINE T Size() const { return next-first; }
