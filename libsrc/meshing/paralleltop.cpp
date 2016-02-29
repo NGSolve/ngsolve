@@ -256,75 +256,124 @@ namespace netgen
           }
 	*/
 
-
-	cnt_send = 0;
-	int v1, v2;
-	for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
-          {
-            PointIndex v1 = mesh.mlbetweennodes[pi][0];
-            PointIndex v2 = mesh.mlbetweennodes[pi][1];
-            if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
-              for (int dest = 1; dest < ntasks; dest++)
-		if (dest != id)
-		  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-		    cnt_send[dest-1]+=2;
-	  }
-	
-	TABLE<int> send_verts(cnt_send);
-	
-	Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
-	for (int dest = 1; dest < ntasks; dest++)
-	  if (dest != id)
+	bool changed = true;
+	while (changed)
 	  {
-	    loc2exchange = -1;
-	    int cnt = 0;
-	    for (PointIndex pi : mesh.Points().Range())
-	      if (IsExchangeVert(dest, pi))
-		loc2exchange[pi] = cnt++;
-        
+	    changed = false;
 
+	    // build exchange vertices
+	    cnt_send = 0;
+	    for (PointIndex pi : mesh.Points().Range())
+	      for (int dist : GetDistantPNums(pi-PointIndex::BASE))
+		cnt_send[dist-1]++;
+	    TABLE<int> dest2vert(cnt_send);    
+	    for (PointIndex pi : mesh.Points().Range())
+	      for (int dist : GetDistantPNums(pi-PointIndex::BASE))
+		dest2vert.Add (dist-1, pi);
+
+	    
 	    for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
 	      {
 		PointIndex v1 = mesh.mlbetweennodes[pi][0];
 		PointIndex v2 = mesh.mlbetweennodes[pi][1];
 		if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
-		  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-		    {
-		      send_verts.Add (dest-1, loc2exchange[v1]);
-		      send_verts.Add (dest-1, loc2exchange[v2]);
-		    }
+		  // for (int dest = 1; dest < ntasks; dest++)
+		  for (int dest : GetDistantPNums(v1-PointIndex::BASE))
+		    if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+		      cnt_send[dest-1]++;
 	      }
-	  }
-	
-	TABLE<int> recv_verts(ntasks-1);
-	MyMPI_ExchangeTable (send_verts, recv_verts, MPI_TAG_MESH+9, MPI_LocalComm);
-	
-	for (int dest = 1; dest < ntasks; dest++)
-	  if (dest != id)
-	  {
-	    loc2exchange = -1;
-	    int cnt = 0;
-	    for (PointIndex pi : mesh.Points().Range())
-	      if (IsExchangeVert(dest, pi))
-		loc2exchange[pi] = cnt++;
 	    
-	    FlatArray<int> recvarray = recv_verts[dest-1];
-	    for (int ii = 0; ii < recvarray.Size(); ii+=2)
+	    TABLE<int> dest2pair(cnt_send);
+	    // for (int dest = 1; dest < ntasks; dest++)
 	      for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
 		{
 		  PointIndex v1 = mesh.mlbetweennodes[pi][0];
 		  PointIndex v2 = mesh.mlbetweennodes[pi][1];
 		  if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+		    for (int dest : GetDistantPNums(v1-PointIndex::BASE))
+		      if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+			dest2pair.Add (dest-1, pi);
+		}
+
+	    cnt_send = 0;
+	    int v1, v2;
+	    for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+	      {
+		PointIndex v1 = mesh.mlbetweennodes[pi][0];
+		PointIndex v2 = mesh.mlbetweennodes[pi][1];
+		if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+		  for (int dest : GetDistantPNums(v1-PointIndex::BASE))
+		    if (IsExchangeVert(dest, v2))
+		      cnt_send[dest-1]+=2;
+	      }
+	    
+	    TABLE<int> send_verts(cnt_send);
+	    
+	    Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (dest != id)
+		{
+		  loc2exchange = -1;
+		  int cnt = 0;
+		  /*
+		  for (PointIndex pi : mesh.Points().Range())
+		    if (IsExchangeVert(dest, pi))
+		      loc2exchange[pi] = cnt++;
+		  */
+		  for (PointIndex pi : dest2vert[dest-1])
+		    loc2exchange[pi] = cnt++;
+		  
+		  // for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+		  for (PointIndex pi : dest2pair[dest-1])
 		    {
-		      INDEX_2 re(recvarray[ii], recvarray[ii+1]);
-		      INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
-		      if (es == re)
-			SetDistantPNum(dest, pi);
+		      PointIndex v1 = mesh.mlbetweennodes[pi][0];
+		      PointIndex v2 = mesh.mlbetweennodes[pi][1];
+		      if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+			if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+			  {
+			    send_verts.Add (dest-1, loc2exchange[v1]);
+			    send_verts.Add (dest-1, loc2exchange[v2]);
+			  }
 		    }
+		}
+	    
+	    TABLE<int> recv_verts(ntasks-1);
+	    MyMPI_ExchangeTable (send_verts, recv_verts, MPI_TAG_MESH+9, MPI_LocalComm);
+	    
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (dest != id)
+		{
+		  loc2exchange = -1;
+		  int cnt = 0;
+		  /*
+		  for (PointIndex pi : mesh.Points().Range())
+		    if (IsExchangeVert(dest, pi))
+		      loc2exchange[pi] = cnt++;
+		  */
+		  for (PointIndex pi : dest2vert[dest-1])
+		    loc2exchange[pi] = cnt++;
+		  
+		  FlatArray<int> recvarray = recv_verts[dest-1];
+		  for (int ii = 0; ii < recvarray.Size(); ii+=2)
+		    for (PointIndex pi : dest2pair[dest-1])
+		      // for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+		      {
+			PointIndex v1 = mesh.mlbetweennodes[pi][0];
+			PointIndex v2 = mesh.mlbetweennodes[pi][1];
+			if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+			  {
+			    INDEX_2 re(recvarray[ii], recvarray[ii+1]);
+			    INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
+			    if (es == re && !IsExchangeVert(dest, pi))
+			      {
+				SetDistantPNum(dest, pi);
+				changed = true;
+			      }
+			  }
+		      }
 		}
 	  }
       }
-
 
     Array<int> sendarray, recvarray;
     cout << "UpdateCoarseGrid - edges" << endl;
@@ -340,6 +389,15 @@ namespace netgen
     int nfa = topology . GetNFaces();
     int ned = topology . GetNEdges();
     
+    // build exchange vertices
+    cnt_send = 0;
+    for (PointIndex pi : mesh.Points().Range())
+      for (int dist : GetDistantPNums(pi-PointIndex::BASE))
+	cnt_send[dist-1]++;
+    TABLE<int> dest2vert(cnt_send);    
+    for (PointIndex pi : mesh.Points().Range())
+      for (int dist : GetDistantPNums(pi-PointIndex::BASE))
+	dest2vert.Add (dist-1, pi);
 
     // exchange edges
     cnt_send = 0;
@@ -349,39 +407,31 @@ namespace netgen
 	topology.GetEdgeVertices (edge, v1, v2);
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-	    cnt_send[dest-1]+=2;
+	    cnt_send[dest-1]+=1;
       }
     
+    TABLE<int> dest2edge(cnt_send);
+    for (int & v : cnt_send) v *= 2;
     TABLE<int> send_edges(cnt_send);
-    /*
-    INDEX_2_HASHTABLE<int> gv2e(2*ned);
+
     for (int edge = 1; edge <= ned; edge++)
       {
 	topology.GetEdgeVertices (edge, v1, v2);
-	INDEX_2 es(GetGlobalPNum(v1), GetGlobalPNum(v2));
-	es.Sort();
-
-	gv2e.Set (es, edge);
-
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
-	    {
-              // SetDistantEdgeNum(dest, edge);
-	      send_edges.Add (dest-1, es[0]);
-	      send_edges.Add (dest-1, es[1]);
-	    }
+	    dest2edge.Add (dest-1, edge);
       }
-    */
+
+
     Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
     for (int dest = 1; dest < ntasks; dest++)
       {
         loc2exchange = -1;
         int cnt = 0;
-        for (PointIndex pi : mesh.Points().Range())
-          if (IsExchangeVert(dest, pi))
-            loc2exchange[pi] = cnt++;
-        
-        for (int edge = 1; edge <= ned; edge++)
+        for (PointIndex pi : dest2vert[dest-1])
+	  loc2exchange[pi] = cnt++;
+
+	for (int edge : dest2edge[dest-1])
           {
             topology.GetEdgeVertices (edge, v1, v2);
             if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
@@ -392,33 +442,21 @@ namespace netgen
           }
       }
 
+    cout << "UpdateCoarseGrid - edges mpi-exchange" << endl;
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
-
-    /*
-      for (int sender = 1; sender < ntasks; sender ++)
-      if (id != sender)
-	{
-	  FlatArray<int> recvarray = recv_edges[sender-1];
-	  for (int ii = 0; ii < recvarray.Size(); ii+=2)
-	    { 
-	      INDEX_2 gv12 (recvarray[ii],recvarray[ii+1]);
-	      if (gv2e.Used (gv12))
-		SetDistantEdgeNum (sender, gv2e.Get(gv12));
-	    }
-	}
-    */
+    cout << "UpdateCoarseGrid - edges mpi-exchange done" << endl;
+    
     for (int dest = 1; dest < ntasks; dest++)
       {
         loc2exchange = -1;
         int cnt = 0;
-        for (PointIndex pi : mesh.Points().Range())
-          if (IsExchangeVert(dest, pi))
-            loc2exchange[pi] = cnt++;
+        for (PointIndex pi : dest2vert[dest-1])
+	  loc2exchange[pi] = cnt++;
         
 	FlatArray<int> recvarray = recv_edges[dest-1];
         for (int ii = 0; ii < recvarray.Size(); ii+=2)
-	  for (int edge = 1; edge <= ned; edge++)
+	  for (int edge : dest2edge[dest-1])
 	    {
 	      topology.GetEdgeVertices (edge, v1, v2);
 	      INDEX_2 re(recvarray[ii], recvarray[ii+1]);
@@ -427,7 +465,7 @@ namespace netgen
 		SetDistantEdgeNum(dest, edge);
 	    }
       }
- 
+
     NgProfiler::StopTimer (timere);
 
     // MPI_Barrier (MPI_LocalComm);
@@ -438,62 +476,7 @@ namespace netgen
 	NgProfiler::StartTimer (timerf);
 	Array<int> verts;
 
-	/*
 	// exchange faces
-	cnt_send = 0;
-	for (int face = 1; face <= nfa; face++)
-	  {
-	    topology.GetFaceVertices (face, verts);
-	    for (int dest = 1; dest < ntasks; dest++)
-	      if (IsExchangeVert (dest, verts[0]) && 
-		  IsExchangeVert (dest, verts[1]) &&
-		  IsExchangeVert (dest, verts[2]))
-		cnt_send[dest-1]+=3;
-	  }
-
-	TABLE<int> send_faces(cnt_send);
-	INDEX_3_HASHTABLE<int> gv2f(2*nfa);
-
-	for (int face = 1; face <= nfa; face++)
-	  {
-	    topology.GetFaceVertices (face, verts);
-
-	    INDEX_3 fs (GetGlobalPNum(verts[0]),
-			GetGlobalPNum(verts[1]),
-			GetGlobalPNum(verts[2]));
-	    fs.Sort();
-
-	    gv2f.Set (fs, face);
-
-	    for (int dest = 1; dest < ntasks; dest++)
-	      if (IsExchangeVert (dest, verts[0]) && 
-		  IsExchangeVert (dest, verts[1]) &&
-		  IsExchangeVert (dest, verts[2]))
-		{
-		  // SetDistantFaceNum (dest, face);
-		  send_faces.Add (dest-1, fs[0]);
-		  send_faces.Add (dest-1, fs[1]);
-		  send_faces.Add (dest-1, fs[2]);
-		}
-	  }
-	
-	TABLE<int> recv_faces(ntasks-1);
-	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+9, MPI_LocalComm);
-	
-	for (int sender = 1; sender < ntasks; sender ++)
-	  if (id != sender)
-	    {
-	      FlatArray<int> recvarray = recv_faces[sender-1];
-	      for (int ii = 0; ii < recvarray.Size(); ii+=3)
-		{ 
-		  INDEX_3 gv123 (recvarray[ii],recvarray[ii+1],recvarray[ii+2]);
-		  if (gv2f.Used (gv123))
-		    SetDistantFaceNum (sender, gv2f.Get(gv123));
-		}
-	    }
-	*/
-	// exchange faces
-
 	cnt_send = 0;
 	for (int face = 1; face <= nfa; face++)
 	  {
@@ -503,9 +486,22 @@ namespace netgen
 		if (IsExchangeVert (dest, verts[0]) && 
 		    IsExchangeVert (dest, verts[1]) &&
 		    IsExchangeVert (dest, verts[2]))
-		  cnt_send[dest-1]+=3;
+		  cnt_send[dest-1]++;
+	  }
+	
+	TABLE<int> dest2face(cnt_send);
+	for (int face = 1; face <= nfa; face++)
+	  {
+	    topology.GetFaceVertices (face, verts);
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (dest != id)
+		if (IsExchangeVert (dest, verts[0]) && 
+		    IsExchangeVert (dest, verts[1]) &&
+		    IsExchangeVert (dest, verts[2]))
+		  dest2face.Add(dest-1, face);
 	  }
 
+	for (int & c : cnt_send) c*=3;
 	TABLE<int> send_faces(cnt_send);
 	Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
 	for (int dest = 1; dest < ntasks; dest++)
@@ -514,10 +510,10 @@ namespace netgen
 	      loc2exchange = -1;
 	      int cnt = 0;
 	      for (PointIndex pi : mesh.Points().Range())
-	      if (IsExchangeVert(dest, pi))
-		loc2exchange[pi] = cnt++;
+		if (IsExchangeVert(dest, pi))
+		  loc2exchange[pi] = cnt++;
 	      
-	      for (int face = 1; face <= nfa; face++)
+	      for (int face : dest2face[dest-1])
 		{
 		  topology.GetFaceVertices (face, verts);
 		  if (IsExchangeVert (dest, verts[0]) && 
@@ -531,8 +527,10 @@ namespace netgen
 		}
 	    }
 	
+	cout << "UpdateCoarseGrid - faces mpi-exchange" << endl;
 	TABLE<int> recv_faces(ntasks-1);
 	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+9, MPI_LocalComm);
+	cout << "UpdateCoarseGrid - faces mpi-exchange done" << endl;
 	
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (dest != id)
@@ -545,7 +543,8 @@ namespace netgen
 	      
 	      FlatArray<int> recvarray = recv_faces[dest-1];
 	      for (int ii = 0; ii < recvarray.Size(); ii+=3)
-		for (int face = 1; face <= nfa; face++)
+		for (int face : dest2face[dest-1])
+		  // for (int face = 1; face <= nfa; face++)
 		  {
 		    topology.GetFaceVertices (face, verts);
 		    INDEX_3 re(recvarray[ii], recvarray[ii+1], recvarray[ii+2]);
