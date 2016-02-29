@@ -23,7 +23,6 @@ namespace netgen
 
   void ParallelMeshTopology :: Reset ()
   {
-    cout << "ParallelMeshTopology::Reset called" << endl;
     *testout << "ParallelMeshTopology::Reset" << endl;
     
     if ( ntasks == 1 ) return;
@@ -47,7 +46,6 @@ namespace netgen
 	SetNV(mesh.GetNV());
 	SetNE(mesh.GetNE());
       }
-    cout << "ParallelMeshTopology::Reset complete" << endl;
   }
 
 
@@ -205,7 +203,7 @@ namespace netgen
 
   void ParallelMeshTopology :: UpdateCoarseGrid ()
   {
-    cout << "updatecoarsegrid called, is_updated = " << is_updated << endl;
+    cout << "UpdateCoarseGrid" << endl;
     // if (is_updated) return;
 
     Reset();
@@ -237,13 +235,16 @@ namespace netgen
 
     const MeshTopology & topology = mesh.GetTopology();
 
-    cout << "update refined vertices" << endl;
+    Array<int> cnt_send(ntasks-1);
+
+
     // update new vertices after mesh-refinement
     if (mesh.mlbetweennodes.Size() > 0)
       {
-        // int oldnv = loc2distvert.Size();
+	cout << "UpdateCoarseGrid - vertices" << endl;
         int newnv = mesh.mlbetweennodes.Size();
         loc2distvert.ChangeSize(mesh.mlbetweennodes.Size());
+	/*
         for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
           {
             PointIndex v1 = mesh.mlbetweennodes[pi][0];
@@ -253,20 +254,85 @@ namespace netgen
                 if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
                   SetDistantPNum(dest, pi);
           }
+	*/
+
+
+	cnt_send = 0;
+	int v1, v2;
+	for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+          {
+            PointIndex v1 = mesh.mlbetweennodes[pi][0];
+            PointIndex v2 = mesh.mlbetweennodes[pi][1];
+            if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+              for (int dest = 1; dest < ntasks; dest++)
+		if (dest != id)
+		  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+		    cnt_send[dest-1]+=2;
+	  }
+	
+	TABLE<int> send_verts(cnt_send);
+	
+	Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (dest != id)
+	  {
+	    loc2exchange = -1;
+	    int cnt = 0;
+	    for (PointIndex pi : mesh.Points().Range())
+	      if (IsExchangeVert(dest, pi))
+		loc2exchange[pi] = cnt++;
+        
+
+	    for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+	      {
+		PointIndex v1 = mesh.mlbetweennodes[pi][0];
+		PointIndex v2 = mesh.mlbetweennodes[pi][1];
+		if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+		  if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
+		    {
+		      send_verts.Add (dest-1, loc2exchange[v1]);
+		      send_verts.Add (dest-1, loc2exchange[v2]);
+		    }
+	      }
+	  }
+	
+	TABLE<int> recv_verts(ntasks-1);
+	MyMPI_ExchangeTable (send_verts, recv_verts, MPI_TAG_MESH+9, MPI_LocalComm);
+	
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (dest != id)
+	  {
+	    loc2exchange = -1;
+	    int cnt = 0;
+	    for (PointIndex pi : mesh.Points().Range())
+	      if (IsExchangeVert(dest, pi))
+		loc2exchange[pi] = cnt++;
+	    
+	    FlatArray<int> recvarray = recv_verts[dest-1];
+	    for (int ii = 0; ii < recvarray.Size(); ii+=2)
+	      for (PointIndex pi = PointIndex::BASE; pi < newnv+PointIndex::BASE; pi++)
+		{
+		  PointIndex v1 = mesh.mlbetweennodes[pi][0];
+		  PointIndex v2 = mesh.mlbetweennodes[pi][1];
+		  if (mesh.mlbetweennodes[pi][0] != PointIndex::BASE-1)
+		    {
+		      INDEX_2 re(recvarray[ii], recvarray[ii+1]);
+		      INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
+		      if (es == re)
+			SetDistantPNum(dest, pi);
+		    }
+		}
+	  }
       }
-    cout << "update refined vertices done" << endl;
-    
-    
+
 
     Array<int> sendarray, recvarray;
-
+    cout << "UpdateCoarseGrid - edges" << endl;
 
     // static int timerv = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex vertices");
     static int timere = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex edges");
     static int timerf = NgProfiler::CreateTimer ("UpdateCoarseGrid - ex faces");
 
-
-    Array<int> cnt_send(ntasks-1);
 
     NgProfiler::StartTimer (timere);
 
@@ -310,7 +376,7 @@ namespace netgen
     for (int dest = 1; dest < ntasks; dest++)
       {
         loc2exchange = -1;
-        cnt = 0;
+        int cnt = 0;
         for (PointIndex pi : mesh.Points().Range())
           if (IsExchangeVert(dest, pi))
             loc2exchange[pi] = cnt++;
@@ -320,10 +386,8 @@ namespace netgen
             topology.GetEdgeVertices (edge, v1, v2);
             if (IsExchangeVert (dest, v1) && IsExchangeVert (dest, v2))
               {
-                INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
-                es.Sort();
-                send_edges.Add (dest-1, es[0]);
-                send_edges.Add (dest-1, es[1]);
+                send_edges.Add (dest-1, loc2exchange[v1]);
+                send_edges.Add (dest-1, loc2exchange[v2]);
               }
           }
       }
@@ -331,7 +395,8 @@ namespace netgen
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
 
-    for (int sender = 1; sender < ntasks; sender ++)
+    /*
+      for (int sender = 1; sender < ntasks; sender ++)
       if (id != sender)
 	{
 	  FlatArray<int> recvarray = recv_edges[sender-1];
@@ -342,17 +407,38 @@ namespace netgen
 		SetDistantEdgeNum (sender, gv2e.Get(gv12));
 	    }
 	}
+    */
+    for (int dest = 1; dest < ntasks; dest++)
+      {
+        loc2exchange = -1;
+        int cnt = 0;
+        for (PointIndex pi : mesh.Points().Range())
+          if (IsExchangeVert(dest, pi))
+            loc2exchange[pi] = cnt++;
+        
+	FlatArray<int> recvarray = recv_edges[dest-1];
+        for (int ii = 0; ii < recvarray.Size(); ii+=2)
+	  for (int edge = 1; edge <= ned; edge++)
+	    {
+	      topology.GetEdgeVertices (edge, v1, v2);
+	      INDEX_2 re(recvarray[ii], recvarray[ii+1]);
+	      INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
+	      if (es == re)
+		SetDistantEdgeNum(dest, edge);
+	    }
+      }
  
     NgProfiler::StopTimer (timere);
 
     // MPI_Barrier (MPI_LocalComm);
 
-
+    cout << "UpdateCoarseGrid - faces" << endl;
     if (mesh.GetDimension() == 3)
       {
 	NgProfiler::StartTimer (timerf);
 	Array<int> verts;
 
+	/*
 	// exchange faces
 	cnt_send = 0;
 	for (int face = 1; face <= nfa; face++)
@@ -405,7 +491,71 @@ namespace netgen
 		    SetDistantFaceNum (sender, gv2f.Get(gv123));
 		}
 	    }
+	*/
+	// exchange faces
 
+	cnt_send = 0;
+	for (int face = 1; face <= nfa; face++)
+	  {
+	    topology.GetFaceVertices (face, verts);
+	    for (int dest = 1; dest < ntasks; dest++)
+	      if (dest != id)
+		if (IsExchangeVert (dest, verts[0]) && 
+		    IsExchangeVert (dest, verts[1]) &&
+		    IsExchangeVert (dest, verts[2]))
+		  cnt_send[dest-1]+=3;
+	  }
+
+	TABLE<int> send_faces(cnt_send);
+	Array<int, PointIndex::BASE> loc2exchange(mesh.GetNV());
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (dest != id)
+	    {
+	      loc2exchange = -1;
+	      int cnt = 0;
+	      for (PointIndex pi : mesh.Points().Range())
+	      if (IsExchangeVert(dest, pi))
+		loc2exchange[pi] = cnt++;
+	      
+	      for (int face = 1; face <= nfa; face++)
+		{
+		  topology.GetFaceVertices (face, verts);
+		  if (IsExchangeVert (dest, verts[0]) && 
+		      IsExchangeVert (dest, verts[1]) &&
+		      IsExchangeVert (dest, verts[2]))
+		    {
+		      send_faces.Add (dest-1, loc2exchange[verts[0]]);
+		      send_faces.Add (dest-1, loc2exchange[verts[1]]);
+		      send_faces.Add (dest-1, loc2exchange[verts[2]]);
+		    }
+		}
+	    }
+	
+	TABLE<int> recv_faces(ntasks-1);
+	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+9, MPI_LocalComm);
+	
+	for (int dest = 1; dest < ntasks; dest++)
+	  if (dest != id)
+	    {
+	      loc2exchange = -1;
+	      int cnt = 0;
+	      for (PointIndex pi : mesh.Points().Range())
+		if (IsExchangeVert(dest, pi))
+		  loc2exchange[pi] = cnt++;
+	      
+	      FlatArray<int> recvarray = recv_faces[dest-1];
+	      for (int ii = 0; ii < recvarray.Size(); ii+=3)
+		for (int face = 1; face <= nfa; face++)
+		  {
+		    topology.GetFaceVertices (face, verts);
+		    INDEX_3 re(recvarray[ii], recvarray[ii+1], recvarray[ii+2]);
+		    INDEX_3 es(loc2exchange[verts[0]], loc2exchange[verts[1]], loc2exchange[verts[2]]);
+		    if (es == re)
+		      SetDistantFaceNum(dest, face);
+		  }
+	    }
+	
+	
 
 	/*
 	  Array<int,1> glob2loc;
@@ -475,6 +625,7 @@ namespace netgen
 	
 	NgProfiler::StopTimer (timerf);
       }
+    cout << "UpdateCoarseGrid - done" << endl;
     
     is_updated = true;
   }
