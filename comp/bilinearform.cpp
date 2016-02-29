@@ -1092,8 +1092,10 @@ namespace ngcomp
                            }
                        }
                      if (printelmat)
-                       *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
-                     lock_guard<mutex> guard(printelmat_mutex);
+                       {
+                         lock_guard<mutex> guard(printelmat_mutex);
+                         *testout<< "elem " << i << ", elmat = " << endl << sum_elmat << endl;
+                       }
 
 		     AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
 
