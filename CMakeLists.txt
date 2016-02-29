@@ -135,7 +135,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY
 
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include COMPONENT ngsolve_devel )
 install (FILES ngsolve.tcl DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 
 #######################################################################
 # platform specific definitions and flags
@@ -383,46 +382,52 @@ add_subdirectory(tests)
 #######################################################################
 # generate ngscxx compiler wrapper
 
+# compile flags and preprocessor definitions
 get_directory_property( ngscxx_defines COMPILE_DEFINITIONS )
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
-set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS}")
+set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
+
+foreach( d ${ngscxx_defines} )
+    set( ngscxx_flags "${ngscxx_flags} -D${d}" )
+endforeach()
+
+# include directories
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 
-set(ngscxx_string "${CMAKE_CXX_COMPILER} ${ngscxx_flags} -fPIC" )
-foreach( d ${ngscxx_defines} )
-    set( ngscxx_string "${ngscxx_string} -D${d}" )
-endforeach()
-
 foreach( d ${ngscxx_include_dirs} )
-    set( ngscxx_string "${ngscxx_string} -I${d}" )
+    set( ngscxx_includes "${ngscxx_includes} -I${d}" )
 endforeach()
 
-if(NOT APPLE)
-    set( ngscxx_string "${ngscxx_string} -Wl,--rpath=${INSTALL_DIR}/lib" )
+# linker flags
+if(USE_MKL)
+    set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
-if(APPLE AND CMAKE_OSX_SYSROOT)
-    set( ngscxx_string "${ngscxx_string} -I${CMAKE_OSX_SYSROOT}/usr/include" )
-endif()
-if(NOT APPLE)
-set(ngscxx_string "${ngscxx_string} -L${INSTALL_DIR}/lib $*" )
-else()
-set(ngscxx_string "${ngscxx_string} -I$Netgen_BUNDLE/Contents/Resources/include" )  
-set(ngscxx_string "${ngscxx_string} -L$Netgen_BUNDLE/Contents/MacOS $*" )
-endif()
-if(USE_MKL AND NOT MKL_STATIC)
-    set( ngscxx_string "${ngscxx_string} ${MKL_LINK_FLAGS}" )
-endif()
+
 if(APPLE)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "\
+    if(CMAKE_OSX_SYSROOT)
+        set( ngscxx_includes "-I${CMAKE_OSX_SYSROOT}/usr/include ${ngscxx_includes}" )
+    endif()
+    set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
+    set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
+    set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
+    set(ngscxx_header "\
 #!/bin/sh
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngscxx//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
-# echo \"$Netgen_BUNDLE/Contents/MacOS\"
 ")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string} -Qunused-arguments -undefined dynamic_lookup\n" )  
 else()
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_string}\n" )  
- endif()
+    set(ngsld_flags "${ngsld_flags} -L${INSTALL_DIR}/lib -Wl,--rpath=${INSTALL_DIR}/lib" )
+    set(ngscxx_header "#!/bin/sh")
+endif()
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
+${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngscxx_header}
+${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+
 
 #######################################################################
 # CTest
