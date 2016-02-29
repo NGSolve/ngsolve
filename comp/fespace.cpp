@@ -1346,7 +1346,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return paralleldofs != NULL; 
   }
 
-  int FESpace :: GetNDofGlobal() const 
+  size_t FESpace :: GetNDofGlobal() const 
   { 
     return paralleldofs ?
       paralleldofs -> GetNDofGlobal() : GetNDof(); 

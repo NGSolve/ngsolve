@@ -626,7 +626,7 @@ namespace ngcomp
     bool IsParallel() const;
 
     /// ndof over all mpi-partitions
-    int GetNDofGlobal() const;
+    size_t GetNDofGlobal() const;
 
     virtual int GetRelOrder() const
     { 
