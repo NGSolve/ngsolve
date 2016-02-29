@@ -2768,7 +2768,7 @@ namespace ngcomp
 
     if (!MixedSpaces())
       {
-        LocalHeap lh (2000000, "biform-energy");
+        LocalHeap lh (2000000, "biform-energy", true);
 
         bool hasbound = false;
         bool hasinner = false;
