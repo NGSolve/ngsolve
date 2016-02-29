@@ -2139,11 +2139,11 @@ int STLGeometry :: CheckGeometryOverlapping()
 
 
   {
-    Array<int> inters;
     mutex inters_mutex;
     
     ParallelFor( 1, GetNT()+1, [&] (int first, int next)
     {
+      Array<int> inters;
       for (int i=first; i<next; i++) {
 	const STLTriangle & tri = GetTriangle(i);
 	
