@@ -256,6 +256,7 @@ namespace ngfem
     ConstantCoefficientFunctionC (Complex aval);
     ///
     virtual ~ConstantCoefficientFunctionC ();
+    virtual bool IsComplex() const { return true; }
     ///
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
     {
