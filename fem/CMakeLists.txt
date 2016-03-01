@@ -1,5 +1,12 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(NGS_GOLD_DIR)
+    add_definitions(-DGOLD -DJS)
+    include_directories(BEFORE ${NGS_GOLD_DIR})
+endif(NGS_GOLD_DIR)
+
+
+
 add_library(ngfem ${NGS_LIB_TYPE}
         bdbequations.cpp maxwellintegrator.cpp
         hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp hcurlhofe.cpp

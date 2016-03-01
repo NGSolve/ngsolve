@@ -27,7 +27,6 @@ option( USE_MKL          "enable MKL")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
 option( USE_PARDISO      "enable pardiso sparse direct solver")
 option( USE_UMFPACK      "enable umfpack sparse direct solver")
-option( USE_GOLD         "enable gold")
 option( INTEL_MIC        "cross compile for intel xeon phi")
 option( USE_VTUNE        "include vtune pause/resume numproc")
 option( USE_NUMA         "compile with NUMA-aware code")
@@ -355,12 +354,6 @@ if(USE_VTUNE)
 endif(USE_VTUNE)
 
 
-#######################################################################
-if(USE_GOLD)
-    find_path(NGS_GOLD_DIR ngstd_gold.hpp)
-    add_definitions(-DGOLD -DJS)
-    include_directories(BEFORE ${NGS_GOLD_DIR})
-endif(USE_GOLD)
 
 
 #######################################################################
@@ -574,7 +567,6 @@ message("
     CUDA: .............. ${USE_CUDA}
     MUMPS: ............. ${USE_MUMPS}
     PARDISO: ........... ${USE_PARDISO}
-    GOLD: .............. ${USE_GOLD}
     INTEL_MIC: ......... ${INTEL_MIC}
     VTUNE: ............. ${USE_VTUNE}
     VAMPIRTRACE: ....... ${USE_VT}
