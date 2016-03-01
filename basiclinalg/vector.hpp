@@ -14,7 +14,7 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T> class FlatVector;
+  template <class T, class TIND = int> class FlatVector;
   template <class T> class Vector;
   template <class T> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
@@ -34,12 +34,12 @@ namespace ngbla
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double>
-  class FlatVector : public CMCPMatExpr<FlatVector<T> > 
+  template <typename T = double, typename TIND>
+  class FlatVector : public CMCPMatExpr<FlatVector<T,TIND> > 
   {
   protected:
     /// vector size
-    int size;
+    TIND size;
     // enum { dist = 1 };
     /// the data
     T * __restrict data;
@@ -57,6 +57,10 @@ namespace ngbla
     INLINE FlatVector (unsigned int as, T * adata) : size(as), data(adata)
     { ; }
 
+    ///
+    template <typename TIND2>
+    INLINE FlatVector (const FlatVector<T,TIND2> & fv2) : size(fv2.Size()), data(fv2.Data()) { ; }
+    
     /// set size and mem
     INLINE FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
     {  ; }
@@ -73,7 +77,7 @@ namespace ngbla
     { ; }
 
     /// allocate FlatVector on local heap
-    INLINE FlatVector (int as, LocalHeap & lh) 
+    INLINE FlatVector (TIND as, LocalHeap & lh) 
       : size(as), data(lh.Alloc<T> (as)) 
     { ; }
 
@@ -159,8 +163,8 @@ namespace ngbla
 
 
     /// constant element access
-    template<typename TIND, typename std::enable_if<std::is_integral<TIND>::value, int>::type = 0>
-    INLINE TELEM & operator() (TIND i) const
+    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
+    INLINE TELEM & operator() (TIND2 i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);
@@ -226,10 +230,10 @@ namespace ngbla
     
 
     /// vector size
-    INLINE int Size () const { return size; }
+    INLINE TIND Size () const { return size; }
 
     /// vector is matrix of height size
-    INLINE int Height () const { return size; }
+    INLINE TIND Height () const { return size; }
 
     /// vector is matrix of with 1
     INLINE int Width () const { return 1; }
@@ -268,12 +272,12 @@ namespace ngbla
 
 
 
-  template <int S, typename T>
-  class FlatVector<Vec<S, T> > : public CMCPMatExpr<FlatVector<Vec<S, T> > > 
+  template <int S, typename T, typename TIND>
+  class FlatVector<Vec<S, T>,TIND> : public CMCPMatExpr<FlatVector<Vec<S, T>,TIND> > 
   {
   protected:
     /// vector size
-    int size;
+    TIND size;
     /// the data
     T *  __restrict data;
   public:
@@ -286,7 +290,9 @@ namespace ngbla
     /// default constructor does nothing
     FlatVector () { ; }  
     /// copy pointer
-    FlatVector (const FlatVector & v2) : size(v2.size), data(v2.data) { ; }
+    // FlatVector (const FlatVector & v2) : size(v2.size), data(v2.data) { ; }
+    template <typename TIND2>
+    INLINE FlatVector (const FlatVector<Vec<S,T>,TIND2> & fv2) : size(fv2.Size()), data((T*)fv2.Data()) { ; }
     /// set size and mem
     FlatVector (unsigned int as, T * adata) : size(as), data(adata) { ; }
     
@@ -415,10 +421,10 @@ namespace ngbla
     { return FlatVector<Vec<S,T> > (range.Next()-range.First(), data+S*range.First()); }
 
     /// vector size
-    INLINE int Size () const { return size; }
+    INLINE TIND Size () const { return size; }
 
     /// vector is matrix of height size
-    INLINE int Height () const { return size; }
+    INLINE TIND Height () const { return size; }
 
     /// vector is matrix of with 1
     INLINE int Width () const { return 1; }
