@@ -195,8 +195,8 @@ namespace ngla
     int EntrySize() const throw () { return entrysize; }
     virtual void * Memory () const throw () = 0;
 
-    virtual FlatVector<double> FVDouble () const = 0;
-    virtual FlatVector<Complex> FVComplex () const = 0;
+    virtual FlatVector<double,size_t> FVDouble () const = 0;
+    virtual FlatVector<Complex,size_t> FVComplex () const = 0;
 
     template <typename SCAL = double>
     FlatSysVector<SCAL> SV () const
@@ -205,8 +205,8 @@ namespace ngla
     }
 
     template <typename T>
-    FlatVector<T> FV () const;
-
+      FlatVector<T,size_t> FV () const;
+    
     /*
     template <class TSCAL>
     TSCAL InnerProduct (const BaseVector & v2) const 
@@ -416,11 +416,11 @@ namespace ngla
       return vec->Memory();
     }
 
-    virtual FlatVector<double> FVDouble () const 
+    virtual FlatVector<double,size_t> FVDouble () const 
     {
       return vec->FVDouble();
     }
-    virtual FlatVector<Complex> FVComplex () const
+    virtual FlatVector<Complex,size_t> FVComplex () const
     {
       return vec->FVComplex();
     }
@@ -519,22 +519,22 @@ namespace ngla
 
 
   template <>
-  inline FlatVector<double> BaseVector::FV<double> () const
+  inline FlatVector<double,size_t> BaseVector::FV<double> () const
   {
     return FVDouble();
   }
 
   template <>
-  inline FlatVector<Complex> BaseVector::FV<Complex> () const
+  inline FlatVector<Complex,size_t> BaseVector::FV<Complex> () const
   {
     return FVComplex();
   }
 
   template <typename T>
-  inline FlatVector<T> BaseVector::FV () const
+  inline FlatVector<T,size_t> BaseVector::FV () const
   {
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    return FlatVector<T> (Size(), FV<TSCAL>().Addr(0));
+    return FlatVector<T,size_t> (Size(), FV<TSCAL>().Addr(0));
   }
 
 
@@ -566,13 +566,13 @@ namespace ngla
     virtual Complex InnerProductC (const BaseVector & v2) const;
 
 
-    virtual FlatVector<double> FVDouble () const;
-    virtual FlatVector<Complex> FVComplex () const;
+    virtual FlatVector<double,size_t> FVDouble () const;
+    virtual FlatVector<Complex,size_t> FVComplex () const;
 
-    virtual FlatVector<SCAL> FVScal () const
+    virtual FlatVector<SCAL,size_t> FVScal () const
     {
-      return FlatVector<SCAL> (size * entrysize * sizeof(double)/sizeof(SCAL), 
-			       Memory());
+      return FlatVector<SCAL,size_t> (size * entrysize * sizeof(double)/sizeof(SCAL), 
+                                      Memory());
     }
 
 

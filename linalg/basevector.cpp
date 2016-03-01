@@ -55,7 +55,7 @@ namespace ngla
 
     // return ngbla::L2Norm (FVDouble());
 
-    FlatVector<double> me = FVDouble();
+    auto me = FVDouble();
     t.AddFlops (me.Size());
     
     atomic<double> sum(0.0);
@@ -72,14 +72,14 @@ namespace ngla
   {
     if (scal == 1) return *this;
 
-    FlatVector<double> me = FVDouble();
+    auto me = FVDouble();
 
 
     static Timer t("BaseVector::Scale");
     RegionTimer reg(t);
     t.AddFlops (me.Size());
 
-    ParallelFor ( Range(),
+    ParallelFor ( me.Range(),
                   [me,scal] (size_t i) { me(i) *= scal; });
 
     return *this;
@@ -97,40 +97,14 @@ namespace ngla
     static Timer t("BaseVector::SetScalar");
     RegionTimer reg(t);
     
-    FlatVector<> fv = FVDouble();
+    auto fv = FVDouble();
     t.AddFlops (fv.Size());
-    /*
+
     ParallelFor ( fv.Range(),
                   [fv,scal] (int i) { fv(i) = scal; });
-    */
-    ParallelFor ( Range(),
-                  [fv,scal] (size_t i) { fv(i) = scal; });
     
     return *this; 
   }
-
-#ifdef JUSTFORTESTING
-  void TestFunc1 (const BaseVector & bv, double scal )
-  {
-    FlatVector<> fv = bv.FVDouble();
-    /*
-    ParallelFor ( fv.Range(),
-                  [fv,scal] (int i) { fv(i) = scal; });
-    */
-    ParallelFor (bv.Range(),
-                 [fv,scal] (size_t i) { fv(i) = scal; });
-  }
-  void TestFunc2 (const BaseVector & bv, double scal )
-  {
-    FlatVector<> fv = bv.FVDouble();
-    /*
-    ParallelFor ( fv.Range(),
-                  [fv,scal] (int i) { fv(i) = scal; });
-    */
-    ParallelFor ( bv.Range(),
-                  [fv,scal] (int i) { fv(i) = scal; });
-  }
-#endif
 
   BaseVector & BaseVector :: SetScalar (Complex scal)
   {
@@ -147,12 +121,12 @@ namespace ngla
       throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
 
 
-    FlatVector<double> me = FVDouble();
-    FlatVector<double> you = v.FVDouble();
+    auto me = FVDouble();
+    auto you = v.FVDouble();
 
     t.AddFlops (me.Size());
 
-    ParallelFor ( Range(),
+    ParallelFor ( me.Range(),
                   [me,you,scal] (size_t i) { me(i) = scal * you(i); });
     
     return *this;
@@ -173,12 +147,12 @@ namespace ngla
     static Timer t("BaseVector::Add");
     RegionTimer reg(t);
     
-    FlatVector<double> me = FVDouble();
-    FlatVector<double> you = v.FVDouble();
+    auto me = FVDouble();
+    auto you = v.FVDouble();
     
     t.AddFlops (me.Size());
 
-    ParallelFor ( Range(),
+    ParallelFor ( me.Range(),
                   [me,you,scal] (size_t i) { me(i) += scal * you(i); });
     
     return *this;
@@ -324,9 +298,9 @@ namespace ngla
 
 
   template<>
-  FlatVector<Complex> S_BaseVector<Complex> :: FVComplex () const
+  FlatVector<Complex,size_t> S_BaseVector<Complex> :: FVComplex () const
   {
-    FlatVector<Complex> fv = FVScal();
+    FlatVector<Complex,size_t> fv = FVScal();
     return FlatVector<Complex> (fv.Size() * sizeof(Complex)/sizeof(Complex),
                                 reinterpret_cast<Complex*> (&fv(0)));
   }
@@ -607,8 +581,8 @@ namespace ngla
     static Timer t("BaseVector::InnerProduct (taskhandler)");
     RegionTimer reg(t);
 
-    FlatVector<double> me = FVDouble();
-    FlatVector<double> you = v2.FVDouble();
+    auto me = FVDouble();
+    auto you = v2.FVDouble();
 	
     t.AddFlops (me.Size());
     atomic<double> scal(0);
@@ -628,13 +602,13 @@ namespace ngla
 
 
   template <class SCAL>
-  FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
+  FlatVector<double,size_t> S_BaseVector<SCAL> :: FVDouble () const 
   {
-    return FlatVector<double> (size * entrysize, Memory());
+    return FlatVector<double,size_t> (size * entrysize, Memory());
   }
 
   template <class SCAL>
-  FlatVector<Complex> S_BaseVector<SCAL> :: FVComplex () const
+  FlatVector<Complex,size_t> S_BaseVector<SCAL> :: FVComplex () const
   {
     throw Exception ("FVComplex called for real vector");
   }
@@ -642,11 +616,11 @@ namespace ngla
 
 
   template<>
-  FlatVector<double> S_BaseVector<Complex> :: FVDouble () const
+  FlatVector<double,size_t> S_BaseVector<Complex> :: FVDouble () const
   {
-    FlatVector<Complex> fv = FVScal();
-    return FlatVector<double> (fv.Size() * sizeof(Complex)/sizeof(double),
-                               reinterpret_cast<double*> (&fv(0)));
+    FlatVector<Complex,size_t> fv = FVScal();
+    return FlatVector<double,size_t> (fv.Size() * sizeof(Complex)/sizeof(double),
+                                      reinterpret_cast<double*> (&fv(0)));
   }
 
 

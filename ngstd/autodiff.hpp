@@ -76,6 +76,8 @@ public:
     return *this;
   }
 
+  AutoDiff & operator= (const AutoDiff & ad2) = default;
+  
   /// returns value
   INLINE SCAL Value() const throw() { return val; }
   
