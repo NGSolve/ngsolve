@@ -670,9 +670,9 @@ namespace ngfem
     }
     
     virtual void CalcElementVector (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatVector<double> & elvec,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatVector<double> elvec,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGFacet_DirichletBoundaryIntegrator::CalcElementVector - not implemented!");
     }
@@ -785,9 +785,9 @@ namespace ngfem
     }
     
     virtual void CalcElementVector (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatVector<double> & elvec,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatVector<double> elvec,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGFacet_NeumannBoundaryIntegrator::CalcElementVector - not implemented!");
     }
@@ -880,9 +880,9 @@ namespace ngfem
     }
     
     virtual void CalcElementVector (const FiniteElement & fel,
-                                        const ElementTransformation & eltrans, 
-                                        FlatVector<double> & elvec,
-                                        LocalHeap & lh) const
+                                    const ElementTransformation & eltrans, 
+                                    FlatVector<double> elvec,
+                                    LocalHeap & lh) const
     {
       throw Exception("DGFacet_ConvectionDirichletBoundaryIntegrator::CalcElementVector - not implemented!");
     }
