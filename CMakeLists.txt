@@ -297,6 +297,8 @@ if(USE_PARDISO)
   if(NOT PARDISO_LIB)
       message(FATAL_ERROR "Could NOT find Pardiso")
   endif(NOT PARDISO_LIB)
+  find_package(OpenMP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif(USE_PARDISO)
 
 #######################################################################
