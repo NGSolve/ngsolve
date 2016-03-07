@@ -446,25 +446,48 @@ namespace netgen
     TABLE<int> recv_edges(ntasks-1);
     MyMPI_ExchangeTable (send_edges, recv_edges, MPI_TAG_MESH+9, MPI_LocalComm);
     cout << "UpdateCoarseGrid - edges mpi-exchange done" << endl;
-    
+
+    /*
     for (int dest = 1; dest < ntasks; dest++)
       {
-        loc2exchange = -1;
-        int cnt = 0;
-        for (PointIndex pi : dest2vert[dest-1])
-	  loc2exchange[pi] = cnt++;
-        
+	auto ex2loc = dest2vert[dest-1];
 	FlatArray<int> recvarray = recv_edges[dest-1];
         for (int ii = 0; ii < recvarray.Size(); ii+=2)
 	  for (int edge : dest2edge[dest-1])
 	    {
 	      topology.GetEdgeVertices (edge, v1, v2);
-	      INDEX_2 re(recvarray[ii], recvarray[ii+1]);
-	      INDEX_2 es(loc2exchange[v1], loc2exchange[v2]);
+	      INDEX_2 re(ex2loc[recvarray[ii]], 
+			 ex2loc[recvarray[ii+1]]);
+	      INDEX_2 es(v1, v2);
 	      if (es == re)
 		SetDistantEdgeNum(dest, edge);
 	    }
       }
+    */
+
+    for (int dest = 1; dest < ntasks; dest++)
+      {
+	auto ex2loc = dest2vert[dest-1];
+	if (ex2loc.Size() == 0) continue;
+
+	INDEX_2_CLOSED_HASHTABLE<int> vert2edge(2*dest2edge[dest-1].Size()+10); 
+	for (int edge : dest2edge[dest-1])
+	  {
+	    topology.GetEdgeVertices (edge, v1, v2);
+	    vert2edge.Set(INDEX_2(v1,v2), edge);
+	  }
+
+	FlatArray<int> recvarray = recv_edges[dest-1];
+        for (int ii = 0; ii < recvarray.Size(); ii+=2)
+	  {
+	    INDEX_2 re(ex2loc[recvarray[ii]], 
+		       ex2loc[recvarray[ii+1]]);
+	    if (vert2edge.Used(re))
+	      SetDistantEdgeNum(dest, vert2edge.Get(re));
+	  }
+      }
+
+
 
     NgProfiler::StopTimer (timere);
 
@@ -507,11 +530,19 @@ namespace netgen
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (dest != id)
 	    {
+	      /*
 	      loc2exchange = -1;
 	      int cnt = 0;
 	      for (PointIndex pi : mesh.Points().Range())
 		if (IsExchangeVert(dest, pi))
 		  loc2exchange[pi] = cnt++;
+	      */
+	      if (dest2vert[dest-1].Size() == 0) continue;
+
+	      loc2exchange = -1;
+	      int cnt = 0;
+	      for (PointIndex pi : dest2vert[dest-1])
+		loc2exchange[pi] = cnt++;
 	      
 	      for (int face : dest2face[dest-1])
 		{
@@ -531,20 +562,19 @@ namespace netgen
 	TABLE<int> recv_faces(ntasks-1);
 	MyMPI_ExchangeTable (send_faces, recv_faces, MPI_TAG_MESH+9, MPI_LocalComm);
 	cout << "UpdateCoarseGrid - faces mpi-exchange done" << endl;
-	
+
+	/*
 	for (int dest = 1; dest < ntasks; dest++)
 	  if (dest != id)
 	    {
 	      loc2exchange = -1;
 	      int cnt = 0;
-	      for (PointIndex pi : mesh.Points().Range())
-		if (IsExchangeVert(dest, pi))
-		  loc2exchange[pi] = cnt++;
+	      for (PointIndex pi : dest2vert[dest-1])
+		loc2exchange[pi] = cnt++;
 	      
 	      FlatArray<int> recvarray = recv_faces[dest-1];
 	      for (int ii = 0; ii < recvarray.Size(); ii+=3)
 		for (int face : dest2face[dest-1])
-		  // for (int face = 1; face <= nfa; face++)
 		  {
 		    topology.GetFaceVertices (face, verts);
 		    INDEX_3 re(recvarray[ii], recvarray[ii+1], recvarray[ii+2]);
@@ -553,7 +583,35 @@ namespace netgen
 		      SetDistantFaceNum(dest, face);
 		  }
 	    }
+	*/
+
 	
+	for (int dest = 1; dest < ntasks; dest++)
+	  {
+	    auto ex2loc = dest2vert[dest-1];
+	    if (ex2loc.Size() == 0) continue;
+	    
+	    INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*dest2face[dest-1].Size()+10); 
+	    for (int face : dest2face[dest-1])
+	      {
+		topology.GetFaceVertices (face, verts);
+		vert2face.Set(INDEX_3(verts[0], verts[1], verts[2]), face);
+	      }
+	    
+	    FlatArray<int> recvarray = recv_faces[dest-1];
+	    for (int ii = 0; ii < recvarray.Size(); ii+=3)
+	      {
+		INDEX_3 re(ex2loc[recvarray[ii]], 
+			   ex2loc[recvarray[ii+1]],
+			   ex2loc[recvarray[ii+2]]);
+		if (vert2face.Used(re))
+		  SetDistantFaceNum(dest, vert2face.Get(re));
+	      }
+	  }
+	
+
+
+
 	
 
 	/*
