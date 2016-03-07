@@ -16,7 +16,6 @@
 
 #define USE_TOGL_STUB_PROCS
 #include "togl.h"
-// #include <GL/glext.h>
 #include <tkInt.h>   // don't need it on osx ???
 #include <limits.h>
 
@@ -50,6 +49,7 @@
 // for Vista -- not strictly needed because we don't use PFD_SUPPORT_GDI/BITMAP
 #    define PFD_SUPPORT_COMPOSITION 0x00008000
 #  endif
+#  include <GL/glext.h>
 #  include <objbase.h>
 #  include <GL/wglext.h>
 #  ifdef _MSC_VER
@@ -131,7 +131,7 @@
 #  error Unsupported platform, or confused platform defines...
 #endif
 
-#define NC3D "NVidia Consumer 3D Stereo"
+#define NC3D L"NVidia Consumer 3D Stereo"
 
 #ifndef STEREO_BUFFER_NONE
 /* From <X11/extensions/SGIStereo.h>, but we use this constants elsewhere */
@@ -250,7 +250,7 @@ static  LRESULT(CALLBACK *tkWinChildProc) (HWND hwnd, UINT message,
         WPARAM wParam, LPARAM lParam) = NULL;
 
 #  ifndef TK_WIN_CHILD_CLASS_NAME 
-#    define TK_WIN_CHILD_CLASS_NAME "TkChild"
+#    define TK_WIN_CHILD_CLASS_NAME L"TkChild"
 #  endif
 
 #endif /* TOGL_WGL */
