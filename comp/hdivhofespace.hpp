@@ -65,50 +65,52 @@ namespace ngcomp
 
     void UpdateCouplingDofArray();   
     
-    virtual string GetClassName () const
+    virtual string GetClassName () const override
     {
       return "HDivHighOrderFESpace";
     }
 
     ///
-    virtual void Update(LocalHeap & lh);
+    virtual void Update(LocalHeap & lh) override;
     ///
-    virtual int GetNDof () const throw();
+    virtual int GetNDof () const throw() override;
     ///
-    virtual int GetNDofLevel (int level) const;
+    virtual int GetNDofLevel (int level) const override;
     ///
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const;
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
+    ///
+    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const override;
     ///
     template <ELEMENT_TYPE ET>
-    const FiniteElement & T_GetFE (int elnr, bool onlyhdiv, LocalHeap & lh) const;
+      FiniteElement & T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const;
     ///
     virtual const FiniteElement & GetHODivFE (int elnr, LocalHeap & lh) const;
     ///
-    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const; // 2D: array =0.;
+    virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const override; // 2D: array =0.;
     ///
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
     ///
-    virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
+    virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
     ///
-    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+    virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
     ///
-    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const;
+    virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
     /// 
-    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const;
+    virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
     /// 
-    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const;
+    virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
     /// 
-    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const;
+    virtual void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
     /// 
-    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const;
+    virtual void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
     /// 
-    virtual void GetFacetDofNrs(int fanr, Array<int> & dnums) const 
+    virtual void GetFacetDofNrs(int fanr, Array<int> & dnums) const
     { 
       if (ma->GetDimension() == 2) GetEdgeDofNrs(fanr,dnums); 
       else if (ma->GetDimension() == 3) GetFaceDofNrs(fanr,dnums); 
     } 
     ///
-    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const; 
+    virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override; 
   
     /// 
     void GetFacetOrder (Array<INT<2> > & of, Array<bool> & ff) const 
@@ -132,8 +134,8 @@ namespace ngcomp
 
     const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
 
-    virtual bool VarOrder() const { return var_order; } 
-    virtual int GetRelOrder() const { return rel_order; } 
+    virtual bool VarOrder() const override { return var_order; } 
+    virtual int GetRelOrder() const override { return rel_order; } 
 
 
     IntRange GetFacetDofs (int nr) const

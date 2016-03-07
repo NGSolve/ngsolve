@@ -246,6 +246,71 @@ namespace ngcomp
     prol->Update();
   }
 
+  FiniteElement & L2HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    if (ei.IsVolume())
+      {
+        int elnr = ei.Nr();
+        Ngs_Element ngel = ma->GetElement(elnr);
+        ELEMENT_TYPE eltype = ngel.GetType();
+        
+        if (!DefinedOn (ma->GetElIndex (elnr)))
+          {
+            switch (eltype)
+              {
+              case ET_POINT:   return * new (alloc) ScalarDummyFE<ET_POINT> (); break;
+              case ET_SEGM:    return * new (alloc) ScalarDummyFE<ET_SEGM> (); break;
+              case ET_TRIG:    return * new (alloc) ScalarDummyFE<ET_TRIG> (); break;
+              case ET_QUAD:    return * new (alloc) ScalarDummyFE<ET_QUAD> (); break;
+              case ET_TET:     return * new (alloc) ScalarDummyFE<ET_TET> (); break;
+              case ET_PYRAMID: return * new (alloc) ScalarDummyFE<ET_PYRAMID> (); break;
+              case ET_PRISM:   return * new (alloc) ScalarDummyFE<ET_PRISM> (); break;
+              case ET_HEX:     return * new (alloc) ScalarDummyFE<ET_HEX> (); break;
+              }
+          }
+
+	if (ma->GetElType(elnr) == ET_TRIG) 
+	  {
+	    ArrayMem<int,3> vnums(3);
+	    ma->GetElVertices (elnr, vnums);
+	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
+	  }
+
+        switch (eltype)
+          {
+          case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
+
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, alloc);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, alloc);
+            
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, alloc);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, alloc);
+          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, alloc);
+          case ET_HEX:     return T_GetFE<ET_HEX> (elnr, alloc);
+            
+          default:
+            throw Exception ("illegal element in L2HoFeSpace::GetFE");
+          }
+      }
+    else
+      {
+        int elnr = ei.Nr();
+        switch (ma->GetSElType(elnr))
+          {
+          case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; 
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
+          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
+          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+            
+          default:
+            stringstream str;
+            str << "FESpace " << GetClassName() 
+                << ", undefined surface eltype " << ma->GetSElType(elnr) 
+                << ", order = " << order << endl;
+            throw Exception (str.str());
+          }
+      }
+  }
 
   const FiniteElement & L2HighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
@@ -302,7 +367,7 @@ namespace ngcomp
 
   
   template <ELEMENT_TYPE ET>
-  const FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, LocalHeap & lh) const
+  FiniteElement & L2HighOrderFESpace :: T_GetFE (int elnr, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
     L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
