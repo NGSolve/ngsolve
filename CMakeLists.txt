@@ -410,14 +410,20 @@ if(APPLE)
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngscxx//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
+    set(ngsld_header "\
+#!/bin/sh
+Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngsld//'`\"
+Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
+")
 else()
     set(ngsld_flags "${ngsld_flags} -L${INSTALL_DIR}/lib -Wl,--rpath=${INSTALL_DIR}/lib" )
     set(ngscxx_header "#!/bin/sh")
+    set(ngsld_header "#!/bin/sh")
 endif()
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
 ${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngscxx_header}
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
 ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
 
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
