@@ -1,5 +1,6 @@
 from ngsolve.fem import *
 from ngsolve.comp import *
+from ngsolve.comp import HCurlFunctionsWrap
 
 x = CoordCF(0)
 y = CoordCF(1)
@@ -32,9 +33,13 @@ def L2(mesh, **args):
     """ Create L2 finite element space. """
     return FESpace("l2ho", mesh, **args)
 
-def HCurl(mesh, **args):
-    """ Create H(curl) finite element space. """
-    return FESpace("hcurlho", mesh, **args)
+class HCurl(HCurlFunctionsWrap):
+    def __init__(self,mesh,**args):
+        FESpace.__init__(self,"hcurlho",mesh,**args)
+
+#def HCurl(mesh, **args):
+#    """ Create H(curl) finite element space. """
+#    return FESpace("hcurlho", mesh, **args)
 
 def HDiv(mesh, **args):
     """ Create H(div) finite element space. """
