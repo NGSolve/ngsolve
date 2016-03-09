@@ -2677,7 +2677,6 @@ namespace ngcomp
 	  fesh1->SetFaceOrder(i,value);
 	}
     }
-    //cout << "myupdate" << endl;
     fesh1->UpdateDofTables();
     fesh1->UpdateCouplingDofArray();
     return fesh1;
