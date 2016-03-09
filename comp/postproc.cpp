@@ -356,7 +356,9 @@ namespace ngcomp
       throw Exception ("no integrator available");
 
     int dimflux = diffop ? diffop->Dim() : bli->DimFlux(); 
-    
+    if (coef -> Dimension() != dimflux)
+      throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
+                      ", but coefficient-dim = " + ToString(coef->Dimension()));
     Array<int> cnti(fes.GetNDof());
     cnti = 0;
 
