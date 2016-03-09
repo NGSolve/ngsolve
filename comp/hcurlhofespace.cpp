@@ -2603,7 +2603,199 @@ namespace ngcomp
       return &ba;
       }*/
 
+  shared_ptr<H1HighOrderFESpace> HCurlHighOrderFESpace::CreateGradientSpace() const
+  {
+    Flags flags2(flags);
+    if(iscomplex)
+      flags2.SetFlag("complex");
+    flags2.SetFlag("order", order+1);
+    flags2.SetFlag("print");
+    if(uniform_order_inner>-1)
+      flags2.SetFlag("orderinner",uniform_order_inner+1);
+    if(uniform_order_face>-1)
+      flags2.SetFlag("orderface",uniform_order_face+1);
+    if(uniform_order_edge>-1)
+      flags2.SetFlag("orderedge",uniform_order_edge+1);
+    auto fesh1 = make_shared<H1HighOrderFESpace>(ma, flags2);
 
+    BitArray h1def(ma->GetNDomains());
+    if(definedon.Size() == 0)
+      h1def.Set();
+    else
+      h1def.Clear();
+    for(int i=0; i<definedon.Size(); i++)
+      if(definedon[i] > 0)
+	h1def.Set(i);
+    fesh1->SetDefinedOn(h1def);
+
+    BitArray h1defb(ma->GetNBoundaries());
+    if(definedonbound.Size() == 0)
+      h1defb.Set();
+    else
+      h1defb.Clear();
+    for(int i=0; i<definedonbound.Size(); i++)
+      if(definedonbound[i] > 0)
+	h1defb.Set(i);
+    fesh1->SetDefinedOnBoundary(h1defb);
+
+    int ne = ma -> GetNE();
+    int ned = ma->GetNEdges();
+    int nfa = 0;
+    int nse = ma->GetNSE();
+    if(ma->GetDimension()==3) nfa = ma->GetNFaces();
+
+    LocalHeap lh(100008, "HCurlHOFeSpace::CreateGradient");
+    fesh1->Update(lh);
+    fesh1->FinalizeUpdate(lh);
+
+    for(int i=0; i < ne; i++){
+      if(!gradientdomains[ma->GetElIndex(i)]){
+	fesh1->SetElementOrder(i, 1);
+	for(auto edge : ma->GetElement(i).Edges()) {
+	  fesh1->SetEdgeOrder(edge,1);
+	}
+	for(auto face : ma->GetElement(i).Faces()) {
+	  fesh1->SetFaceOrder(face,1);
+	}
+      }
+    }
+    Array<int> eledges;
+    int value;
+    for(int i=0; i<nse; i++) {
+      //cout << "SElIndex: " << ma->GetSElIndex(i) << endl;
+      if(!gradientboundaries[ma->GetSElIndex(i)]){
+	value = 1;
+      }
+      else{
+	value = order;
+      }
+	ma->GetSElEdges(i,eledges);
+	for(int j=0;j<eledges.Size();j++){
+	  fesh1->SetEdgeOrder(j,value);
+	}
+	if(ma->GetDimension()==3) {
+	  fesh1->SetFaceOrder(i,value);
+	}
+    }
+    //cout << "myupdate" << endl;
+    fesh1->UpdateDofTables();
+    fesh1->UpdateCouplingDofArray();
+    return fesh1;
+  }
+
+  shared_ptr<SparseMatrix<double>>
+  HCurlHighOrderFESpace::CreateGradient(const H1HighOrderFESpace & fesh1) const
+  {
+    int ne = ma->GetNE();
+    int ned = ma->GetNEdges();
+    int nfa = 0;
+    if(ma->GetDimension()==3) nfa = ma->GetNFaces();
+
+    Array<int> dnums_h1l;
+    Array<int> dnums_hcl;
+
+    Array<int> cnts(ndof);
+    cnts = 0;
+
+    for(int i=0; i<ned; i++)
+      {
+	if(fine_edge[i])
+	  {
+	    cnts[i] = 2;  // vertices-nedelec
+	    int l = first_edge_dof[i];
+            IntRange edofs = fesh1.GetEdgeDofs(i);
+	    for( int k = edofs.First(); k < edofs.Next(); k++, l++)
+	      cnts[l] = 1;
+	  }
+      }
+    
+    for(int i=0; i< nfa; i++)
+      {
+	if(fine_face[i])
+	  {
+	    int l= first_face_dof[i]; 
+            IntRange fdofs = fesh1.GetFaceDofs(i);
+	    for (int k = fdofs.First(); k < fdofs.Next(); k++, l++) 
+	      cnts[l] = 1;
+	  }
+      }
+    
+    for(int i=0; i<ne; i++)
+      {
+	int l= first_inner_dof[i]; 
+        IntRange edofs = fesh1.GetElementDofs(i);
+	for (int k = edofs.First(); k < edofs.Next(); k++, l++) 
+	  cnts[l] = 1; 
+      }
+  
+    //sparse matrix with above matrix graph cnts 
+    auto grad = make_shared<SparseMatrix<double>>(cnts, fesh1.GetNDof()); 
+    
+    // vertices - nedelec
+    // ho-edges
+    for (int i = 0; i < ned; i++) 
+      {
+	if(fine_edge[i])
+	  { 
+	    int p1,p2; 
+	    ma->GetEdgePNums(i,p1,p2); 
+
+	    grad->CreatePosition(i,p1); 
+	    grad->CreatePosition(i,p2); 
+
+	    if (p1 < p2) 
+	      {	      
+		(*grad)(i,p1) = -1.;
+		(*grad)(i,p2) = 1.; 
+	      }
+	    else
+	      {
+		(*grad)(i,p1) = 1.; 
+		(*grad)(i,p2) = -1.; 
+	      }
+	   
+	    int l = first_edge_dof[i]; 
+            
+            IntRange edofs = fesh1.GetEdgeDofs(i);
+
+	    for( int k = edofs.First(); k < edofs.Next(); k++, l++)
+	      {
+		grad->CreatePosition(l,k); 
+		(*grad)(l,k)=1.; 
+	      }
+	  }
+      }
+    
+    for(int i=0; i< nfa; i++) 
+      {
+	if(fine_face[i])
+	  {
+	    int l= first_face_dof[i]; 
+            IntRange fdofs = fesh1.GetFaceDofs(i);
+	    for (int k = fdofs.First(); k < fdofs.Next(); k++, l++) 
+	      {
+		grad->CreatePosition(l,k); 
+		(*grad)(l,k)=1.;
+	      }
+	  }
+      }
+
+    for(int i=0; i<ne; i++)
+      {
+	int l= first_inner_dof[i]; 
+        IntRange edofs = fesh1.GetElementDofs(i);
+	for (int k = edofs.First(); k < edofs.Next(); k++, l++) 
+	  {
+	    grad->CreatePosition(l,k); 
+	    (*grad)(l,k)=1.;
+	  }	
+      }
+    //(*testout) << " Global grad " << grad << endl; 
+
+    return grad;
+    
+  }
+  /*
   SparseMatrix<double> * 
   HCurlHighOrderFESpace :: CreateGradient() const
   {
@@ -2627,12 +2819,12 @@ namespace ngcomp
     flags2.SetFlag("order",order+1); 
     // flags2.SetFlag("variableorder"); 
     
-    /* 
+    
        if(var_order)
        flags2.SetFlag("relorder",rel_order+1); 
        else
        flags2.SetFlag("order",order+1); 
-    */ 
+    
 
     if(uniform_order_inner>-1)
       flags2.SetFlag("orderinner",uniform_order_inner+1); 
@@ -2789,7 +2981,7 @@ namespace ngcomp
     return &grad;
   }
 
-
+*/
 
 
 

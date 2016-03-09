@@ -960,7 +960,10 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>, bp::bases<FESpace>,boost::noncopyable>
     ("HCurlFunctionsWrap",bp::no_init)
     .def("CreateGradient", FunctionPointer([](HCurlHighOrderFESpace &self) {
-	  return shared_ptr<BaseMatrix>(self.CreateGradient());
+	  auto fesh1 = self.CreateGradientSpace();
+	  shared_ptr<BaseMatrix> grad = self.CreateGradient(*fesh1);
+	  shared_ptr<FESpace> fes = fesh1;
+	  return bp::make_tuple(grad, fes);
 	}))
     ;
   
