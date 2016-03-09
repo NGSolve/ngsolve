@@ -209,7 +209,7 @@ template <class T>
     /*
     operator Table<T> () 
     {
-      Table<int> tmp (std::move(*table));
+      Table<T> tmp (std::move(*table));
       delete table;
       table = NULL;
       return std::move(tmp);
@@ -217,7 +217,7 @@ template <class T>
     */
     Table<T> MoveTable() 
     {
-      Table<int> tmp (std::move(*table));
+      Table<T> tmp (std::move(*table));
       delete table;
       table = NULL;
       return std::move(tmp);
