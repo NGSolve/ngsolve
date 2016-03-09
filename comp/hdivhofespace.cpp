@@ -572,7 +572,7 @@ namespace ngcomp
 
 
   template <ELEMENT_TYPE ET>
-  const FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, LocalHeap & lh) const
+  FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
@@ -596,7 +596,104 @@ namespace ngcomp
     return *hofe;
   }
 
-
+  FiniteElement & HDivHighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    if (ei.IsVolume())
+      {
+        int elnr = ei.Nr();
+        Ngs_Element ngel = ma->GetElement(elnr);
+        ELEMENT_TYPE eltype = ngel.GetType();
+        
+        switch (eltype)
+          {
+            // case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, false, alloc);
+            
+          case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, false, alloc);
+          case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, false, alloc);
+            
+          case ET_TET:     return T_GetFE<ET_TET> (elnr, false, alloc);
+          case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, alloc);
+            // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, alloc);
+            // case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, alloc);
+            
+          default:
+            throw Exception ("illegal element in HDivHOFESpace::GetFE");
+          }
+      }
+    else
+      {
+        int selnr = ei.Nr();
+        FiniteElement * fe = 0;
+        
+        int porder; 
+        if (discont) porder = -1; 
+        else porder = order; 
+        
+        // if (highest_order_dc) porder--;
+        
+        switch (ma->GetSElType(selnr))
+          {
+          case ET_SEGM:
+            fe = new (alloc) HDivHighOrderNormalSegm<TrigExtensionMonomial> (porder); 
+            break;
+          case ET_TRIG: 
+            fe = new (alloc) HDivHighOrderNormalTrig<TrigExtensionMonomial> (porder); 
+            break; 
+          case ET_QUAD: 
+            fe = new (alloc) HDivHighOrderNormalQuad<TrigExtensionMonomial> (porder); 
+            break; 
+          default:
+            throw Exception (string("HDivHighOrderFESpace::GetSFE: unsupported element ")+
+                             ElementTopology::GetElementName(ma->GetSElType(selnr)));
+          }
+        
+        if (discont) return *fe; 
+        
+        ArrayMem<int,4> vnums;
+        ArrayMem<int, 4> ednums, order_ed;
+        INT<3> order_fa;
+        ma->GetSElVertices(selnr, vnums);
+        
+        if(ma->GetSElType(selnr) == ET_SEGM)
+          {
+            HDivHighOrderNormalFiniteElement<1> * hofe =
+              dynamic_cast<HDivHighOrderNormalFiniteElement<1>*> (fe);
+            
+            hofe -> SetVertexNumbers (vnums);
+            ma->GetSElEdges(selnr, ednums);
+            // int dec = (!boundary_facet[ednums[0]] && highest_order_dc) ? 1 : 0;
+            hofe -> SetOrderInner (order_facet[ednums[0]][0] /* -dec */);
+            hofe -> ComputeNDof();
+          }
+        else
+          {
+            HDivHighOrderNormalFiniteElement<2> * hofe =
+              dynamic_cast<HDivHighOrderNormalFiniteElement<2>*> (fe);
+            
+            hofe -> SetVertexNumbers (vnums);
+            
+#ifdef NEW_HDIVFE
+            INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
+                                     order_facet[ma->GetSElFace(selnr)][1],0);
+            if (highest_order_dc)
+              {
+                order_fa[0]--;
+                order_fa[1]--;
+                order_fa[2]--;
+              }
+            hofe -> SetOrderInner (order_fa);
+#else 
+            int order_fa = order_facet[ma->GetSElFace(selnr)][0];
+            // if (highest_order_dc) order_fa--;
+            hofe -> SetOrderInner (order_fa);
+#endif
+            hofe -> ComputeNDof();
+          }
+        
+        return *fe;
+      }
+  }
+  
   const FiniteElement & HDivHighOrderFESpace :: GetFE (int elnr, LocalHeap & lh) const
   {
     Ngs_Element ngel = ma->GetElement(elnr);

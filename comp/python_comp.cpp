@@ -290,7 +290,16 @@ void NGS_DLL_HEADER ExportNgcomp()
 				  {
                                     TaskManager::SetPajeTrace(size > 0);
                                     PajeTrace::SetMaxTracefileSize(size);
-                                  }));
+                                  }))
+    .add_property("numthreads",
+		  FunctionPointer([] (GlobalDummyVariables&)
+				  {
+                                    return TaskManager::GetMaxThreads ();
+                                  }),
+		  FunctionPointer([] (GlobalDummyVariables&, int numthreads)
+				  {
+                                    TaskManager::SetNumThreads (numthreads);
+                                  }))
     // &GlobalDummyVariables::SetTestoutFile)
     ;
 

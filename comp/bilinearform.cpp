@@ -1415,18 +1415,13 @@ namespace ngcomp
               }//end of hasskeletonbound
             if (hasskeletoninner)
               {
-                int dim = ma->GetDimension();
                 BitArray fine_facet(nf);
                 fine_facet.Clear();
                 Array<int> elfacets;
                 for (int i = 0; i < ne; ++i)
                   {
-                    if(dim==2)
-                      ma->GetElEdges(i,elfacets);
-                    else
-                      ma->GetElFaces(i,elfacets);
-                    for (int j=0;j<elfacets.Size();j++)
-                      fine_facet.Set(elfacets[j]);
+                    ma->GetElFacets(i, elfacets);
+                    for (auto f : elfacets) fine_facet.Set(f);
                   }
 
                 int cnt = 0;
@@ -1434,17 +1429,13 @@ namespace ngcomp
                 {
                   LocalHeap lh = clh.Split();
 
-                  // ElementTransformation eltrans1, eltrans2;
                   Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
                   for (int i : r)
                     {
                       if (!fine_facet.Test(i)) continue;
                       HeapReset hr(lh);
                       
-                      int el1 = -1;
-                      int el2 = -1;
-                      int facnr1 = -1;
-                      int facnr2 = -1;
+                      int el1 = -1, el2 = -1;
 
                       ma->GetFacetElements(i,elnums);
                       el1 = elnums[0];
@@ -1453,12 +1444,10 @@ namespace ngcomp
                       el2 = elnums[1];
 
                       ma->GetElFacets(el1,fnums);
-                      for (int k=0; k<fnums.Size(); k++)
-                        if(i==fnums[k]) facnr1 = k;
+                      int facnr1 = fnums.Pos(i);
 
                       ma->GetElFacets(el2,fnums);
-                      for (int k=0; k<fnums.Size(); k++)
-                        if(i==fnums[k]) facnr2 = k;
+                      int facnr2 = fnums.Pos(i);
                       
                       {
                         lock_guard<mutex> guard(printmatasstatus2_mutex);
@@ -1469,7 +1458,6 @@ namespace ngcomp
                         ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                       }
                       
-                  
                       const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                       const FiniteElement & fel2 = fespace->GetFE (el2, lh);
 
@@ -1480,8 +1468,8 @@ namespace ngcomp
                       fespace->GetDofNrs (el1, dnums1);
                       dnums=dnums1;
                       fespace->GetDofNrs (el2, dnums2);
-                      for (int d=0; d < dnums2.Size(); d++)
-                        dnums.Append(dnums2[d]);
+                      dnums.Append(dnums2);
+
                       ma->GetElVertices (el1, vnums1);
                       ma->GetElVertices (el2, vnums2);
                       if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
@@ -1501,10 +1489,14 @@ namespace ngcomp
                           if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                           if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
+                          /*
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
                               useddof[dnums[k]] = true;
-
+                          */
+                          for (auto d : dnums)
+                            if (d != -1) useddof[d] = true;
+                          
                           int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
@@ -1512,10 +1504,10 @@ namespace ngcomp
                             dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
 
                           if (fbfi)
-                          {
-                            fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                   fel2,facnr2,eltrans2,vnums2, elmat, lh);
-                          }
+                            {
+                              fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                     fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                            }
                           else
                           {
                             shared_ptr<CompoundBilinearFormIntegrator> cbfi = 
@@ -1551,10 +1543,9 @@ namespace ngcomp
                             elmat.Rows (range1).Cols(range2) = mat1.Rows(0,nd1).Cols(nd1,nd2);
                             elmat.Rows (range2).Cols(range1) = mat1.Rows(nd1,nd2).Cols(0,nd1);
                             elmat.Rows (range2).Cols(range2) = mat1.Rows(nd1,nd2).Cols(nd1,nd2);
-                            
                           }
                           
-                          *testout << "elmat : \n" << elmat << endl;
+                          // *testout << "elmat : \n" << elmat << endl;
 
                           fespace->TransformMat (el1, false, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
                           fespace->TransformMat (el2, false, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
@@ -1573,7 +1564,7 @@ namespace ngcomp
                               (*testout) << "element2-index = " << eltrans2.GetElementIndex() << endl;
                               (*testout) << "elmat = " << endl << elmat << endl;
                             }
-
+                          
                           Array<int> dnums;
                           dnums.SetSize(0);
                           dnums.Append(dnums1);
@@ -1589,26 +1580,23 @@ namespace ngcomp
                           Array<int> dnums_to_compressed(dnums.Size());
                           int compressed_dofs = 0;
                           for (int i = 0; i < dnums.Size(); ++i)
-                          {
-                            if (i==0 || (dnums[map[i]] != dnums[map[i-1]]))
                             {
-                              compressed_dnums.Append(dnums[map[i]]);
-                              dnums_to_compressed[map[i]] = compressed_dofs++;
+                              if (i==0 || (dnums[map[i]] != dnums[map[i-1]]))
+                                {
+                                  compressed_dnums.Append(dnums[map[i]]);
+                                  dnums_to_compressed[map[i]] = compressed_dofs++;
+                                }
+                              else
+                                {
+                                  dnums_to_compressed[map[i]] = dnums_to_compressed[map[i-1]];
+                                }
                             }
-                            else
-                            {
-                              dnums_to_compressed[map[i]] = dnums_to_compressed[map[i-1]];
-                            }
-                          }
                           
                           FlatMatrix<SCAL> compressed_elmat(compressed_dofs * fespace->GetDimension(), lh);
                           compressed_elmat = 0.0;
                           for (int i = 0; i < dnums.Size(); ++i)
                             for (int j = 0; j < dnums.Size(); ++j)
-                            {
                               compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
-                            }
-                          
                     
                           if (elmat_ev)
                             {
@@ -3809,62 +3797,7 @@ namespace ngcomp
 
 
 
-
-
-
-
-
-
-
-  class ApplyFineMatrix : public BaseMatrix
-  {
-    const BaseMatrix & finemat;
-    const ngmg::Prolongation & prol;
-    int level;
-    
-  public:
-    ApplyFineMatrix (const BaseMatrix & afinemat,
-                     const ngmg::Prolongation & aprol,
-                     int alevel);
-  
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual AutoVector CreateVector () const;
-  };
-
-  ApplyFineMatrix :: 
-  ApplyFineMatrix (const BaseMatrix & afinemat,
-                   const ngmg::Prolongation & aprol,
-                   int alevel)
-    : finemat(afinemat), prol(aprol), level(alevel)
-  {
-    ;
-  }
-
-  void ApplyFineMatrix :: 
-  Mult (const BaseVector & x, BaseVector & y) const
-  {
-    /*
-      BaseVector & fx = *finemat.CreateVector();
-      BaseVector & fy = *finemat.CreateVector();
-  
-      fx.SetScalar (0);
-      fx.AddPart (1, 1, x);
-      //  prol.ProlongateInline (level, fx);
-      finemat.Mult (fx, fy);
-      //  prol.RestrictInline (level, fy);
-      fy.GetPart (1, y);
-
-      delete &fx;
-      delete &fy;
-    */
-    cout << "Apply Matrix currently not implemented" << endl;
-  }
-
-  AutoVector ApplyFineMatrix :: CreateVector () const
-  {
-    cerr << "ApplyFineMatrix::CreateVector:  Need Help !!!" << endl;
-    return shared_ptr<BaseVector>();
-  }
+ 
 
 
   void BilinearForm :: GalerkinProjection ()

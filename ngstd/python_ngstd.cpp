@@ -322,6 +322,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
                            }))
           ;
 
+  bp::def("SetNumThreads", &TaskManager::SetNumThreads );
 
   // local TaskManager class to be used as context manager in Python
   class ParallelContextManager {

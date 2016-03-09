@@ -41,7 +41,7 @@ namespace ngstd
 
     task_manager = new TaskManager();
 
-    cout << IM(3) << "new task-based parallelization (C++11 threads)" << endl;
+    cout << IM(3) << "task-based parallelization (C++11 threads) using "<< task_manager->GetNumThreads() << " threads" << endl;
 
 #ifdef USE_NUMA
     numa_run_on_node (0);

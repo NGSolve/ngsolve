@@ -1026,8 +1026,8 @@ namespace ngcomp
       {
         IntegrationPoint rip;
         int elnr = ma->FindElementOfPoint 
-          (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
-           rip, true);  // buildtree not yet threadsafe
+          // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
+          (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
         const ElementTransformation & trafo2 = ma->GetTrafo(elnr, boundary, lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
@@ -1072,6 +1072,17 @@ namespace ngcomp
     ElementId ei(boundary ? BND : VOL, elnr);
 
     const FESpace & fes = *gf->GetFESpace();
+    shared_ptr<MeshAccess>  ma = fes.GetMeshAccess();
+    
+    if (!ip.GetTransformation().BelongsToMesh (ma.get()))
+      {
+        IntegrationPoint rip;
+        int elnr = ma->FindElementOfPoint 
+          // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
+          (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
+        const ElementTransformation & trafo2 = ma->GetTrafo(elnr, boundary, lh2);
+        return Evaluate (trafo2(rip, lh2), result);
+      }
 
     if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex(), boundary))
       { 
