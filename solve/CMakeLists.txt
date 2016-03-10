@@ -77,7 +77,7 @@ endif (USE_GUI)
 if(NOT WIN32)
     add_executable( ngs ngs.cpp)
     target_link_libraries(ngs solve nglib ${TCL_LIBRARY} ${PYTHON_LIBS} ${LAPACK_LIBRARIES})
-    install( TARGETS ngs DESTINATION bin COMPONENT ngsolve )
+    install( TARGETS ngs DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve )
 endif(NOT WIN32)
 
 install( FILES solve.hpp DESTINATION include  COMPONENT ngsolve_devel )
