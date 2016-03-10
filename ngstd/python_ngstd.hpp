@@ -4,7 +4,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#pragma-messages"
-
+#pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #include <boost/python.hpp>
 
 #pragma clang diagnostic pop

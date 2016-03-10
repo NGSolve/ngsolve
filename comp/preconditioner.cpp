@@ -213,7 +213,7 @@ namespace ngcomp
     ///
     shared_ptr<BilinearForm> bfa;
     ///
-    MGPreconditioner * low_order_preconditioner;
+    // MGPreconditioner * low_order_preconditioner;
     ///
     shared_ptr<Preconditioner> coarse_pre;
     ///

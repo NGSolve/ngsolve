@@ -962,7 +962,7 @@ namespace ngcomp
     if (bfi) return bfi->DimFlux();
     if (gf->GetFESpace()->GetEvaluator())
       return gf->GetFESpace()->GetEvaluator()->Dim();
-    cout << "type of space: " << typeid(*gf->GetFESpace()).name() << endl;
+
     throw Exception(string ("don't know my dimension, space is ") +
                     typeid(*gf->GetFESpace()).name());
   }
