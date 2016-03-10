@@ -934,20 +934,7 @@ namespace ngmg
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#ifdef XXX_OBSOLTE
   SmoothingPreconditioner :: 
   SmoothingPreconditioner (const Smoother & asmoother,
 			   int alevel)
@@ -972,6 +959,7 @@ namespace ngmg
     //    return smoother.CreateVector(level);
     return shared_ptr<BaseVector>();
   }
-
+#endif
+  
 
 }

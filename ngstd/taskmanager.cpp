@@ -10,13 +10,6 @@
 #include "taskmanager.hpp"
 #include "paje_interface.hpp"
 
-/*
-#ifdef USE_NUMA
-#include <numa.h>
-#include <sched.h>
-#endif
-*/
-
 
 namespace ngstd
 {

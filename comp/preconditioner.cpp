@@ -555,8 +555,9 @@ namespace ngcomp
   void MGPreconditioner::MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int olds = mu.Size();
-
-    if (&GetMatrix()) GetMatrix().MemoryUsage (mu);;
+    
+    // if (&GetMatrix())
+    GetMatrix().MemoryUsage (mu);;
 
     for (int i = olds; i < mu.Size(); i++)
       mu[i]->AddName (string(" mgpre ")); // +GetName());
