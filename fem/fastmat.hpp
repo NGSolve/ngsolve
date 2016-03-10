@@ -330,6 +330,7 @@ namespace ngfem {
 	      __m256i mask64;
 	      switch (M % 4) 
 		{
+                case 0: mask64 = _mm256_set_epi64x(0,0,0,0); break; // to make the compiler happy
 		case 1: mask64 = _mm256_set_epi64x(0,0,0,-1); break;
 		case 2: mask64 = _mm256_set_epi64x(0,0,-1,-1); break;
 		case 3: mask64 = _mm256_set_epi64x(0,-1,-1,-1); break;

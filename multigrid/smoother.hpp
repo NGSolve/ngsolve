@@ -218,7 +218,7 @@ namespace ngmg
 
 
 
-
+#ifdef XXX_OBSOLETE
   /**
      Matrix - vector multiplication by smoothing step.
   */
@@ -237,6 +237,7 @@ namespace ngmg
     ///
     virtual AutoVector CreateVector () const;
   };
+#endif
 
 }
 

@@ -957,7 +957,7 @@ int NGS_GetData (ClientData clientData,
 	  while(i<auxstring.size())
 	    {
               i = auxstring.find('\\',i);
-	      if(i>=0 && i<auxstring.size())
+	      if(i != string::npos && i<auxstring.size())
 		auxstring.replace(i,1,"\\\\");
 	      else
 		i = auxstring.size();
