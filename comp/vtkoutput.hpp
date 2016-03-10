@@ -60,8 +60,8 @@ namespace ngcomp
     
     void ResetArrays();
     
-    void FillReferenceData2D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_trigs);    
-    void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
+    void FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_trigs);    
+    // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
     void PrintPoints();
     void PrintCells();
     void PrintCellTypes();
