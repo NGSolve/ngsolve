@@ -1028,6 +1028,11 @@ namespace ngcomp
         int elnr = ma->FindElementOfPoint 
           // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
           (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
+         if (elnr == -1)
+          {
+            result = 0;
+            return;
+          }
         const ElementTransformation & trafo2 = ma->GetTrafo(elnr, boundary, lh2);
         return Evaluate (trafo2(rip, lh2), result);
       }
@@ -1077,11 +1082,15 @@ namespace ngcomp
     if (!ip.GetTransformation().BelongsToMesh (ma.get()))
       {
         IntegrationPoint rip;
-        int elnr = ma->FindElementOfPoint 
-          // (static_cast<const DimMappedIntegrationPoint<2>&> (ip).GetPoint(),
-          (ip.GetPoint(), rip, true);  // buildtree not yet threadsafe (maybe now ?)
+        int elnr = ma->FindElementOfPoint(ip.GetPoint(), rip, true); // buildtree not yet threadsafe (maybe now ?)
+        if (elnr == -1)
+          {
+            result = 0;
+            return;
+          }
         const ElementTransformation & trafo2 = ma->GetTrafo(elnr, boundary, lh2);
-        return Evaluate (trafo2(rip, lh2), result);
+        Evaluate (trafo2(rip, lh2), result);
+        return;
       }
 
     if (!fes.DefinedOn (ip.GetTransformation().GetElementIndex(), boundary))
