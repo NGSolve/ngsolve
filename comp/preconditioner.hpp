@@ -107,6 +107,7 @@ namespace ngcomp
 
     void Test () const;
     void Timing () const;
+    void ThrowPreconditionerNotReady() const;
   };
 
 
