@@ -15,10 +15,10 @@ SplineGeometry.GenerateMesh = geom2d_meshing_func
 
 unit_square = SplineGeometry()
 pnts = [ (0,0), (1,0), (1,1), (0,1) ]
-lines = [ (0,1,1), (1,2,2), (2,3,3), (3,0,4) ]
+lines = [ (0,1,1,"bottom"), (1,2,2,"right"), (2,3,3,"top"), (3,0,4,"left") ]
 pnums = [unit_square.AppendPoint(*p) for p in pnts]
-for l1,l2,bc in lines:
-    unit_square.Append( ["line", pnums[l1], pnums[l2]], bc=bc)
+for l1,l2,bc,bcname in lines:
+    unit_square.Append( ["line", pnums[l1], pnums[l2]], bc=bcname)
 
 
 def MakeRectangle (geo, p1, p2, bc=None, bcs=None, **args):
