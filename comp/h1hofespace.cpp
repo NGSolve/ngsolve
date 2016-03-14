@@ -441,7 +441,7 @@ namespace ngcomp
     for (auto i : Range(ne))
       {
 	first_element_dof[i] = hndof;
-	INT<3> p = order_inner[i];	
+	INT<3> p = order_inner[i];
 	switch (ma->GetElType(i))
 	  {
 	  case ET_TRIG:
@@ -479,7 +479,6 @@ namespace ngcomp
     first_element_dof[ne] = hndof;
     ndof = hndof;
    
-
     if (print)
       {
         (*testout) << "h1 first edge = " << first_edge_dof << endl;
@@ -541,7 +540,6 @@ namespace ngcomp
 
     if (archive.Input())
       UpdateDofTables();
-
     archive & rel_order & var_order & fixed_order & wb_loedge;
     archive & used_vertex & used_edge & used_face;
     archive & uniform_order_inner & uniform_order_face 
