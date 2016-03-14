@@ -152,6 +152,7 @@ namespace ngcomp
           evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
           flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
           break;
         }
       case 3:

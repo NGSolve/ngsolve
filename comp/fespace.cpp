@@ -1427,6 +1427,45 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	integrator = make_shared<BlockBilinearFormIntegrator> (integrator, dimension);
 	boundary_integrator = make_shared<BlockBilinearFormIntegrator> (boundary_integrator, dimension);  
       }
+
+
+    switch (ma->GetDimension())
+      {
+      case 1:
+        {
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+          break;
+        }
+      case 2:
+        {
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
+          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<2>>>();
+          break;
+        }
+      case 3:
+        {
+          evaluator = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+          flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+          boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+          boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+          break;
+        }
+      }
+    if (dimension > 1)
+      {
+	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
+	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
+	boundary_evaluator = 
+	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
+	boundary_flux_evaluator = 
+	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+      }
+
+    
   }
 
   NodalFESpace :: ~NodalFESpace ()
