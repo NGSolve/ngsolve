@@ -716,6 +716,15 @@ public:
       }
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> ainput,
+                         FlatMatrix<double> result) const
+  {
+    FlatMatrix<> input = *ainput[0];
+    for (int j = 0; j < result.Height()*result.Width(); j++)
+      result(j) = lam(input(j));
+  }
+
+  
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatArray<FlatMatrix<>*> ainput,
                               FlatArray<FlatMatrix<>*> adinput,
