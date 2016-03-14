@@ -566,6 +566,8 @@ namespace ngcomp
     virtual void FinalizeLevel (const BaseMatrix *)
     {
       pre -> Finalize();
+      if (test) Test();
+      timestamp = bfa->GetTimeStamp();      
     }
 
 
@@ -576,7 +578,8 @@ namespace ngcomp
 
     virtual void Update ()
     {
-      if (test) Test();
+      if (timestamp < bfa->GetTimeStamp())
+        throw Exception("A BDDC preconditioner must be defined before assembling");
     }  
 
     virtual const BaseMatrix & GetAMatrix() const
@@ -586,6 +589,8 @@ namespace ngcomp
 
     virtual const BaseMatrix & GetMatrix() const
     {
+      if (!pre)
+        ThrowPreconditionerNotReady();        
       return *pre;
     }
 

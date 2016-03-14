@@ -2,8 +2,13 @@
 #define PYTHON_NGSTD_HPP___
 #ifdef NGS_PYTHON
 
-
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #include <boost/python.hpp>
+
+#pragma clang diagnostic pop
+
 #include <ngstd.hpp>
 #include <thread>
 #include <iostream>

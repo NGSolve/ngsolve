@@ -196,7 +196,10 @@ namespace ngcomp
   }
 
 
-
+  void Preconditioner :: ThrowPreconditionerNotReady() const
+  {
+    throw Exception("Preconditioner not ready: either update manually, or use update from assembling");
+  }
 
 
 
@@ -213,7 +216,7 @@ namespace ngcomp
     ///
     shared_ptr<BilinearForm> bfa;
     ///
-    MGPreconditioner * low_order_preconditioner;
+    // MGPreconditioner * low_order_preconditioner;
     ///
     shared_ptr<Preconditioner> coarse_pre;
     ///
@@ -555,8 +558,9 @@ namespace ngcomp
   void MGPreconditioner::MemoryUsage (Array<MemoryUsageStruct*> & mu) const
   {
     int olds = mu.Size();
-
-    if (&GetMatrix()) GetMatrix().MemoryUsage (mu);;
+    
+    // if (&GetMatrix())
+    GetMatrix().MemoryUsage (mu);;
 
     for (int i = olds; i < mu.Size(); i++)
       mu[i]->AddName (string(" mgpre ")); // +GetName());
@@ -644,6 +648,10 @@ namespace ngcomp
     virtual void Update ()
     {
       // delete inverse;
+      if (GetTimeStamp() == bfa->GetTimeStamp()) return;
+      timestamp = bfa->GetTimeStamp();
+      
+      cout << IM(3) << "Update Direct Solver Preconditioner" << flush;
       
       try
 	{
@@ -666,6 +674,8 @@ namespace ngcomp
 
     virtual const BaseMatrix & GetMatrix() const
     {
+      if (!inverse)
+        ThrowPreconditionerNotReady();        
       return *inverse;
     }
 
@@ -713,15 +723,15 @@ namespace ngcomp
     LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
 			 const string aname = "localprecond");
     ///
-    virtual ~LocalPreconditioner();
+    virtual ~LocalPreconditioner() { ; }
     ///
     virtual bool IsComplex() const { return jacobi->IsComplex(); }
     
     ///
     virtual void FinalizeLevel (const BaseMatrix * mat) 
-    { 
-      cout << IM(1) << "Update Local Preconditioner" << flush;
-      
+    {
+      cout << IM(3) << "Update Local Preconditioner" << flush;
+      timestamp = bfa->GetTimeStamp();
       int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
       
       // if (MyMPI_GetNTasks() != 1) return;
@@ -771,13 +781,21 @@ namespace ngcomp
 
     virtual void Update ()
     {
+      if (GetTimeStamp() < bfa->GetTimeStamp())
+        FinalizeLevel (&bfa->GetMatrix());
       if (test) Test();
       if(locprectest) LocPrecTest(); 
     }
 
 
     ///
-    virtual const BaseMatrix & GetMatrix() const;
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      if (!jacobi)
+        ThrowPreconditionerNotReady();
+      return *jacobi;
+    }
+    
     ///
     virtual const BaseMatrix & GetAMatrix() const
     {
@@ -843,19 +861,7 @@ namespace ngcomp
   }
 
 
-
-
-  LocalPreconditioner :: ~LocalPreconditioner()
-  {
-    ; 
-  }
-
-  const ngla::BaseMatrix & LocalPreconditioner :: GetMatrix() const
-  {
-    return *jacobi;
-  }
-
- void LocalPreconditioner :: LocPrecTest () const
+  void LocalPreconditioner :: LocPrecTest () const
   {
     cout << "Compute eigenvalues" << endl;
     const BaseMatrix & amat = GetAMatrix();
