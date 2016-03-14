@@ -507,6 +507,9 @@ void NGS_DLL_HEADER ExportNgbla() {
         .def(bp::self-=bp::self)
         .def(bp::self*=double())
         .def(PyBufferProtocol<FMD, 2>())
+        .def("Inverse", FunctionPointer( [](FMD & self, FMD & inv) {
+	    CalcInverse(self,inv); return;
+	  }))
         ;
 
 
