@@ -1178,8 +1178,8 @@ namespace ngfem
   }
   
   SymbolicFacetBilinearFormIntegrator ::
-  SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb)
-    : cf(acf), vb(avb)
+  SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool eb)
+    : cf(acf), vb(avb), element_boundary(eb)
   {
     if (cf->Dimension() != 1)
         throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");

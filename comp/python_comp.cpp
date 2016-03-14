@@ -1823,7 +1823,8 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicBFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary, bp::object definedon)
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary,
+              bool skeleton, bp::object definedon)
            -> shared_ptr<BilinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
@@ -1838,14 +1839,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                                    if (dynamic_cast<ProxyFunction&> (cf).IsOther())
                                      has_other = true;
                                });
-             if (has_other && !element_boundary)
-               throw Exception("DG-facet terms need element_boundary=True");
+             if (has_other && !element_boundary && !skeleton)
+               throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
              
              shared_ptr<BilinearFormIntegrator> bfi;
              if (!has_other)
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
              else
-               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb);
+               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
              
              if (bp::extract<bp::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
@@ -1859,7 +1860,9 @@ void NGS_DLL_HEADER ExportNgcomp()
              return bfi;
            }),
           (bp::args("self"), bp::args("VOL_or_BND")=VOL,
-           bp::args("element_boundary")=false, bp::arg("definedon")=bp::object())
+           bp::args("element_boundary")=false,
+           bp::args("skeleton")=false,
+           bp::arg("definedon")=bp::object())
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
