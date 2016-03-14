@@ -65,6 +65,16 @@ namespace ngfem
     /// integrates on the boundary, or on the domain ?
     virtual bool BoundaryForm () const = 0;
 
+    class DGFormulation
+    {
+    public:
+      bool neighbor_testfunction = true; // trivially parallel if no neighbor testfunction
+      bool element_boundary = false;   // loop over edges, or loop over element-boundaries
+      DGFormulation(bool nbtest=true, bool eb=false)
+        : neighbor_testfunction(nbtest), element_boundary(eb) { ; }
+    };
+    virtual DGFormulation GetDGFormulation() const { return DGFormulation(); }
+      
     /// integrates just on the skeleton, standard is NO
     virtual bool SkeletonForm () const { return false; }  
 

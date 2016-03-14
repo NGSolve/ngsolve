@@ -308,12 +308,17 @@ public:
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
+    bool element_boundary;
+    bool neighbor_testfunction = true;
   public:
-    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
+    SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
     virtual bool BoundaryForm() const { return vb == BND; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
-
+    
+    virtual DGFormulation GetDGFormulation() const { return DGFormulation(neighbor_testfunction,
+                                                                          element_boundary); }
+    
     virtual void
     CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
