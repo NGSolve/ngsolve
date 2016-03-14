@@ -125,7 +125,7 @@ endmacro()
 
 if(WIN32)
     get_WIN32_WINNT(ver)
-    add_definitions(-D_WIN32_WINNT=${ver})
+    add_definitions(-D_WIN32_WINNT=${ver} -DWNT -DWNT_WINDOW)
     set(CMAKE_MFC_FLAG 0)
 #     add_definitions(-DNGINTERFACE_EXPORTS)
 #     add_definitions(-DNGLIB_EXPORTS)
@@ -246,9 +246,11 @@ endif (USE_MPI)
 if (USE_OCC)
     find_package(OpenCasCade REQUIRED)
     add_definitions(-DOCCGEOMETRY -D_OCC64)
-
-	add_definitions(-DHAVE_IOSTREAM -DHAVE_IOSTREAM_H -DHAVE_LIMITS -DHAVE_LIMITS_H -DHAVE_IOMANIP -DHAVE_IOMANIP_H)
     include_directories(${OCC_INCLUDE_DIR})
+    if(WIN32)
+        install( DIRECTORY "${OCC_LIBRARY_DIR}/../bin" DESTINATION . COMPONENT netgen )
+        install( FILES ${OCC_LIBRARIES_BIN} DESTINATION bin COMPONENT netgen )
+    endif(WIN32)
 endif (USE_OCC)
 
 #######################################################################

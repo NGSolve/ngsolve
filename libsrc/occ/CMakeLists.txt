@@ -4,7 +4,7 @@ add_library(occ ${NG_LIB_TYPE}
         occconstruction.cpp occgenmesh.cpp occgeom.cpp occmeshsurf.cpp
         )
 
-add_library(occvis ${NG_LIB_TYPE} occpkg.cpp vsocc.cpp)
+add_library(occvis ${NG_LIB_TYPE} vsocc.cpp)
 
 if(NOT WIN32)
     target_link_libraries( occ ${OCC_LIBRARIES} ${PYTHON_LIBS})

@@ -10,10 +10,14 @@
 #include <inctcl.hpp>
 #include <visual.hpp>
 
+#include <meshing.hpp>
 #include "../meshing/bcfunctions.hpp"
 
 #include "vsocc.hpp"
 
+// __declspec(dllimport) void AutoColourBcProps(Mesh & mesh, const char *bccolourfile);
+// __declspec(dllimport) void GetFaceColours(Mesh & mesh, Array<Vec3d> & face_colours);
+// __declspec(dllimport) bool ColourMatch(Vec3d col1, Vec3d col2, double eps = 2.5e-05);
 
 extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 
@@ -21,8 +25,8 @@ extern "C" int Ng_occ_Init (Tcl_Interp * interp);
 
 namespace netgen
 {
-  extern shared_ptr<NetgenGeometry> ng_geometry;
-  extern shared_ptr<Mesh> mesh;
+  extern DLL_HEADER shared_ptr<NetgenGeometry> ng_geometry;
+  extern DLL_HEADER shared_ptr<Mesh> mesh;
  
   char * err_needsoccgeometry = (char*) "This operation needs an OCC geometry";
   extern char * err_needsmesh;

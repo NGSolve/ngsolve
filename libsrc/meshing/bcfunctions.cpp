@@ -1,6 +1,7 @@
 
 #include <mystdlib.h>
 #include <meshing.hpp>
+#include "bcfunctions.hpp"
 
 
 namespace netgen
@@ -31,7 +32,7 @@ namespace netgen
        colours match is defined as "eps" and is currently 
        2.5e-5 (for square of distance)
    */
-   bool ColourMatch(Vec3d col1, Vec3d col2, double eps = DEFAULT_EPS)
+   bool ColourMatch(Vec3d col1, Vec3d col2, double eps)
    {
       if(eps <= 0.0) eps = DEFAULT_EPS;
       

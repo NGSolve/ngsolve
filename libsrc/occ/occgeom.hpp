@@ -247,7 +247,7 @@ namespace netgen
      virtual void Save (string filename) const;
 
 
-      void BuildFMap();
+      DLL_HEADER void BuildFMap();
 
       Box<3> GetBoundingBox()
       {  return boundingbox;}
@@ -276,7 +276,7 @@ namespace netgen
       }
 
       void CalcBoundingBox ();
-      void BuildVisualizationMesh (double deflection);
+      DLL_HEADER void BuildVisualizationMesh (double deflection);
 
       void RecursiveTopologyTree (const TopoDS_Shape & sh,
          stringstream & str,
@@ -284,17 +284,17 @@ namespace netgen
          bool free,
          const char * lname);
 
-      void GetTopologyTree (stringstream & str);
+      DLL_HEADER void GetTopologyTree (stringstream & str);
 
-      void PrintNrShapes ();
+      DLL_HEADER void PrintNrShapes ();
 
-      void CheckIrregularEntities (stringstream & str);
+      DLL_HEADER void CheckIrregularEntities (stringstream & str);
 
-      void SewFaces();
+      DLL_HEADER void SewFaces();
 
-      void MakeSolid();
+      DLL_HEADER void MakeSolid();
 
-      void HealGeometry();
+      DLL_HEADER void HealGeometry();
 
       // Philippose - 15/01/2009
       // Sets the maximum mesh size for a given face
@@ -381,16 +381,16 @@ namespace netgen
             vvispar[i-1].Lowlight();
       }
 
-      void GetUnmeshedFaceInfo (stringstream & str);
-      void GetNotDrawableFaces (stringstream & str);
-      bool ErrorInSurfaceMeshing ();
+      DLL_HEADER void GetUnmeshedFaceInfo (stringstream & str);
+      DLL_HEADER void GetNotDrawableFaces (stringstream & str);
+      DLL_HEADER bool ErrorInSurfaceMeshing ();
 
 //      void WriteOCC_STL(char * filename);
 
-     virtual int GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam, 
+     DLL_HEADER virtual int GenerateMesh (shared_ptr<Mesh> & mesh, MeshingParameters & mparam, 
          int perfstepsstart, int perfstepsend);
 
-      virtual const Refinement & GetRefinement () const;
+      DLL_HEADER virtual const Refinement & GetRefinement () const;
    };
 
 
@@ -431,11 +431,11 @@ namespace netgen
 
    void PrintContents (OCCGeometry * geom);
 
-   OCCGeometry * LoadOCC_IGES (const char * filename);
-   OCCGeometry * LoadOCC_STEP (const char * filename);
-   OCCGeometry * LoadOCC_BREP (const char * filename);
+   DLL_HEADER OCCGeometry * LoadOCC_IGES (const char * filename);
+   DLL_HEADER OCCGeometry * LoadOCC_STEP (const char * filename);
+   DLL_HEADER OCCGeometry * LoadOCC_BREP (const char * filename);
 
-   extern OCCParameters occparam;
+   DLL_HEADER extern OCCParameters occparam;
 
 
    // Philippose - 31.09.2009
