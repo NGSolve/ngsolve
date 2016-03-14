@@ -118,7 +118,10 @@ namespace ngcomp
     ///
     virtual Array<int> * CreateDirectSolverClusters (const Flags & precflags) const override;
     ///
-    SparseMatrix<double> * CreateGradient() const; 
+    shared_ptr<H1HighOrderFESpace> CreateGradientSpace() const;
+    shared_ptr<SparseMatrix<double>> CreateGradient() const {
+      return CreateGradient(*CreateGradientSpace()); }
+    shared_ptr<SparseMatrix<double>> CreateGradient(const H1HighOrderFESpace & fesh1) const;
  
     // int GetFirstEdgeDof(int e) const { return first_edge_dof[e]; }; 
     // int GetFirstFaceDof(int f) const { return first_face_dof[f]; }; 

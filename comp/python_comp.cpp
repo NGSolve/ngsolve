@@ -965,6 +965,16 @@ void NGS_DLL_HEADER ExportNgcomp()
              return self == other;
            }))
     ;
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<HCurlHighOrderFESpace>);
+  bp::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>, bp::bases<FESpace>,boost::noncopyable>
+    ("HCurlFunctionsWrap",bp::no_init)
+    .def("CreateGradient", FunctionPointer([](HCurlHighOrderFESpace &self) {
+	  auto fesh1 = self.CreateGradientSpace();
+	  shared_ptr<BaseMatrix> grad = self.CreateGradient(*fesh1);
+	  shared_ptr<FESpace> fes = fesh1;
+	  return bp::make_tuple(grad, fes);
+	}))
+    ;
   
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CompoundFESpace>);
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
