@@ -31,6 +31,9 @@ namespace ngcomp
     /// keep the object
     bool skipCleanUp; 
 
+    /// timestamp of ngs-objects
+    static long global_timestamp;
+    int timestamp = -1;
   public:
 
     /// 
@@ -57,6 +60,8 @@ namespace ngcomp
       return name; 
     }
 
+    int GetTimeStamp() const { return timestamp; } 
+    
     ///
     const shared_ptr<MeshAccess> & GetMeshAccess() const
     { 

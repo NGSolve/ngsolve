@@ -51,9 +51,10 @@ namespace ngcomp
   }
     
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
-  template <int D> 
-  void VTKOutput<D>::FillReferenceData2D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_trigs)
+  template<>
+  void VTKOutput<2>::FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<2+1>> & ref_trigs)
   {
+    enum { D = 2 };
     if (subdivision == 0)
     {
       ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
@@ -96,8 +97,8 @@ namespace ngcomp
 
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 3D
   template <int D> 
-    void VTKOutput<D>::FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets)
-      {
+  void VTKOutput<D>::FillReferenceData(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets)
+  {
     if (subdivision == 0)
     {
       ref_coords.Append(IntegrationPoint(0.0,0.0,0.0));
@@ -225,11 +226,13 @@ namespace ngcomp
 
     Array<IntegrationPoint> ref_vertices(0);
     Array<INT<D+1>> ref_tets(0);
-
+    /*
     if (D==3)
       FillReferenceData3D(ref_vertices,ref_tets);
     else
       FillReferenceData2D(ref_vertices,ref_tets);
+    */
+    FillReferenceData(ref_vertices,ref_tets);
       
     // header:
     *fileout << "# vtk DataFile Version 3.0" << endl;

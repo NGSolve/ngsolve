@@ -860,6 +860,8 @@ namespace ngcomp
 
     switch (int(ET_trait<ET>::DIM))
       {
+      case 1:
+        throw Exception("no 1D elements in H(curl)");
       case 2:
         {
           hofe -> SetOrderCell (order_inner[elnr]);   // old style

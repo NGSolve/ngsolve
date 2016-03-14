@@ -415,7 +415,14 @@ namespace ngstd
 #ifdef HAVE_CXA_DEMANGLE
             int status;
             char * realname = abi::__cxa_demangle(j.type->name(), 0, 0, &status);
-            string name = realname;
+            string name;
+            if (status == 0)
+              name = realname;
+            else
+              {
+                name = j.type->name();
+                realname = nullptr;
+              }
 #else
             string name = j.type->name();
 #endif

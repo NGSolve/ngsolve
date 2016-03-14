@@ -262,6 +262,11 @@ namespace ngfem
     {
       throw Exception("no real evaluate for ConstantCF-Complex");
     }
+    ///
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
+    { 
+      return val;
+    }
     
     virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const
     {

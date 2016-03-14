@@ -208,7 +208,6 @@ namespace ngfem
     // int pp = max2(p[0],p[1]); 
     
     ArrayMem<AutoDiff<2>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
-    AutoDiff<2> polprod;
 
     int fmax = 0;
     for (int j = 1; j < 4; j++)

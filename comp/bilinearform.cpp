@@ -699,6 +699,8 @@ namespace ngcomp
 
     RegionTimer reg (mattimer);
 
+    timestamp = ++global_timestamp;
+    
     mattimer1.Start();
     // check if integrators fit to space
     for (int i = 0; i < NumIntegrators(); i++)
@@ -2061,6 +2063,8 @@ namespace ngcomp
 
     if (this->mats.Size() < this->ma->GetNLevels())
       AllocateMatrix();
+
+    timestamp = ++global_timestamp;
 
     try
       {

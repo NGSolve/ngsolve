@@ -3,6 +3,8 @@
 
 namespace ngcomp {
 
+  long NGS_Object :: global_timestamp = 0;
+  
   NGS_Object :: ~NGS_Object () { ; }
 
   void NGS_Object :: DefineStringFlag(const char* s) //, const char* val) 
