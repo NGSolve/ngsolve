@@ -1295,6 +1295,26 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+#ifdef VLA
+    double hmem1[2*ir.Size()*DIM];
+    FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
+    double hmem2[2*ir.Size()*DIM];
+    FlatMatrix<Complex> temp2(ir.Size(), DIM, (Complex*)hmem2);
+#else
+    Matrix<Complex> temp1(ir.Size(), DIM);
+    Matrix<Complex> temp2(ir.Size(), DIM);
+#endif
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, temp2);
+    for (int i = 0; i < ir.Size(); i++)
+      result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
+  }
+
+
+
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
                          FlatMatrix<double> result) const
   {

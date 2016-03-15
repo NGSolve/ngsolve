@@ -104,8 +104,13 @@ namespace ngfem
     virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
 			  FlatVector<Complex> result) const
     {
+      VectorMem<10,double> dres(result.Size());
+      Evaluate(ip, dres);
+      result = dres;
+      /*
       Complex f = EvaluateComplex (ip);
       result(0) = f; 
+      */
     }
 
 
@@ -1102,6 +1107,20 @@ public:
     result.Col(0) = temp.Col(comp);
   }  
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+                         FlatMatrix<Complex> result) const
+  {
+    int dim1 = c1->Dimension();
+#ifdef VLA
+    double hmem[2*ir.Size()*dim1];
+    FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
+#else
+    Matrix<Complex> temp(ir.Size(), dim1);
+#endif
+    c1->Evaluate (ir, temp);
+    result.Col(0) = temp.Col(comp);
+  }  
+
   
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
@@ -1398,23 +1417,30 @@ public:
         result.Cols(base,base+dimi) = temp;
         base += dimi;
       }
-
-    /*
-    for (int i : Range(ci))
-      {
-#ifdef VLA
-        double hmem[ir.Size()*ci[i]->Dimension()];
-        FlatMatrix<> temp(ir.Size(), ci[i]->Dimension(), hmem);
-#else
-        Matrix<> temp(ir.Size(), ci[i]->Dimension());
-#endif
-        ci[i]->Evaluate(ir, temp);
-        result.Col(i) = temp.Col(0);
-      }
-    */
   }
 
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    int base = 0;
+    for (auto cf : ci)
+      {
+        int dimi = cf->Dimension();
+#ifdef VLA
+        double hmem[2*ir.Size()*dimi];
+        FlatMatrix<Complex> temp(ir.Size(), dimi, (Complex*)hmem);
+#else
+        Matrix<Complex> temp(ir.Size(), dimi);
+#endif
+        cf->Evaluate(ir, temp);
+        result.Cols(base,base+dimi) = temp;
+        base += dimi;
+      }
+  }
+
+
+  
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
