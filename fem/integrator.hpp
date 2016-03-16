@@ -629,6 +629,7 @@ namespace ngfem
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix for inner facets not implemented!");
     }
+    
     virtual void 
     CalcFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
 			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
@@ -637,6 +638,27 @@ namespace ngfem
 			 FlatMatrix<Complex> & elmat,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix<Complex> for inner facets not implemented!");
+    }
+    
+    virtual void
+      ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                        const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                        const FiniteElement & volumefel2, int LocalFacetNr2,
+                        const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                        FlatVector<double> elx, FlatVector<double> ely,
+                        LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for inner facets not implemented!");
+    }
+    virtual void
+      ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                        const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                        const FiniteElement & volumefel2, int LocalFacetNr2,
+                        const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                        FlatVector<Complex> elx, FlatVector<Complex> ely,
+                        LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for inner facets not implemented!");
     }
 
 
@@ -657,6 +679,24 @@ namespace ngfem
       throw Exception ("FacetBilinearFormIntegrator::CalcFacetMatrix<Complex> for boundary facets not implemented!");
     }
 
+    virtual void
+      ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                        const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                        const ElementTransformation & seltrans,  
+                        FlatVector<double> elx, FlatVector<double> ely,
+                        LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
+    }
+    virtual void
+      ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                        const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                        const ElementTransformation & seltrans,  
+                        FlatVector<Complex> elx, FlatVector<Complex> ely,
+                        LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
+    }
 
   };
 
