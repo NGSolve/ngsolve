@@ -2763,6 +2763,8 @@ namespace ngcomp
     static Timer timer ("Apply Matrix");
     static Timer timervol ("Apply Matrix - volume");
     static Timer timerbound ("Apply Matrix - boundary");
+    static Timer timerDG ("Apply Matrix - DG");
+    static Timer timerDGfacet ("Apply Matrix - DG boundary");
     RegionTimer reg (timer);
 
     static int lh_size = 5000000;
@@ -2847,8 +2849,222 @@ namespace ngcomp
                   }
 
                 if (hasskeletonbound||hasskeletoninner)
-                  throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
-                  
+                  {
+                    RegionTimer reg(timerDG);
+                    
+                    for (int j = 0; j < NumIntegrators(); j++)
+                      if (parts[j] -> SkeletonForm())
+                        {
+                          auto dgform = parts[j] -> GetDGFormulation();
+                          if (!dgform.element_boundary && !parts[j]->BoundaryForm())
+                            throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
+                        }
+
+                    // element-boundary formulation
+		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+                    mutex addelemfacbnd_mutex;                    
+                    ParallelForRange
+                      (IntRange(ma->GetNE()), [&] ( IntRange r )
+                       {
+                         LocalHeap lh = clh.Split();
+                         
+                         Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
+                         for (int el1 : r)
+                           {
+                             ma->GetElFacets(el1,fnums1);
+                             
+                             for (int facnr1 : Range(fnums1))
+                               {
+                                 HeapReset hr(lh);
+                                 
+                                 ma->GetFacetElements(fnums1[facnr1],elnums);
+                                 if (elnums.Size()<2)
+                                   {
+                                     RegionTimer regfacet(timerDGfacet);
+                                     
+                                     ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
+                                     int sel = elnums[0];
+                                     
+                                     const FiniteElement & fel = fespace->GetFE (el1, lh);
+                                     ma->GetElVertices (el1, vnums1);     
+                                     
+                                     ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
+                                     ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
+                      
+                                     fespace->GetDofNrs (el1, dnums);
+                                     if(fel.GetNDof() != dnums.Size())
+                                       {
+                                         cout << "Surface fel:GetNDof() = " << fel.GetNDof() << endl;
+                                         cout << "dnums.Size() = " << dnums.Size() << endl;
+                                         
+                                         (*testout) << "fel:GetNDof() = " << fel.GetNDof() << endl;
+                                         (*testout) << "dnums.Size() = " << dnums.Size() << endl;
+                                         (*testout) << "dnums = " << dnums << endl;
+                                         throw Exception ( "Inconsistent number of degrees of freedom " );
+                                       }
+                                     
+                                     for (int j = 0; j < NumIntegrators(); j++)
+                                       {
+                                         const BilinearFormIntegrator & bfi = *parts[j];
+                                         
+                                         if (bfi.BoundaryForm()) continue;
+                                         if (!bfi.SkeletonForm()) continue;
+                                         if (!bfi.GetDGFormulation().element_boundary) continue;
+
+                                         int elmat_size = dnums.Size()*fespace->GetDimension();
+                                         FlatMatrix<SCAL> elmat(elmat_size, lh);
+                                         
+                                         dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
+                                           CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elmat, lh);
+                                         
+                                         fespace->TransformMat (el1, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                                         FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
+                                         x.GetIndirect(dnums, elx);
+                                         ely = elmat * elx;
+                                         {
+                                           lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                           y.AddIndirect(dnums, ely);
+                                         }
+                                       } //end for (numintegrators)
+                                     continue;
+                                   } // end if boundary facet
+
+                                 
+                                 int el2 = elnums[0] + elnums[1] - el1;
+                                 
+                                 ma->GetElFacets(el2,fnums2);
+                                 int facnr2 = fnums2.Pos(fnums1[facnr1]);
+                                 
+                                 const FiniteElement & fel1 = fespace->GetFE (el1, lh);
+                                 const FiniteElement & fel2 = fespace->GetFE (el2, lh);
+                                 
+                                 ElementTransformation & eltrans1 = ma->GetTrafo (el1, false, lh);
+                                 ElementTransformation & eltrans2 = ma->GetTrafo (el2, false, lh);
+                                 
+                                 fespace->GetDofNrs (el1, dnums1);
+                                 dnums=dnums1;
+                                 fespace->GetDofNrs (el2, dnums2);
+                                 dnums.Append(dnums2);
+                                 
+                                 ma->GetElVertices (el1, vnums1);
+                                 ma->GetElVertices (el2, vnums2);
+                                 
+                                 if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
+                                   {
+                                     cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
+                                     cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
+                                     throw Exception ( "Inconsistent number of degrees of freedom " );
+                                   }
+                                 
+                                 for (int j = 0; j < NumIntegrators(); j++)
+                                   {
+                                     shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                    
+                                     if (!bfi->SkeletonForm()) continue;
+                                     if (bfi->BoundaryForm()) continue;
+                                     if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
+                                     if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
+
+                                     // int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
+                                     // FlatMatrix<SCAL> elmat(elmat_size, lh);
+                                     
+                                     shared_ptr<FacetBilinearFormIntegrator> fbfi = 
+                                       dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                     
+                                     /*
+                                     if (fbfi)
+                                       {
+                                         fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                                fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                                       }
+                                     */
+                                 
+                                     
+                                     // *testout << "elmat : \n" << elmat << endl;
+                                     /*
+                                     fespace->TransformMat (el1, false, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
+                                     fespace->TransformMat (el2, false, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
+                                     fespace->TransformMat (el1, false, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
+                                     fespace->TransformMat (el2, false, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
+                                     */
+                                     
+                                     if (printelmat)
+                                       {
+                                         testout->precision(8);
+                                         
+                                         (*testout) << "facet-elnum= " << fnums1[facnr1] << endl;
+                                         (*testout) << "integrator " << bfi->Name() << endl;
+                                         (*testout) << "dnums1 = " << endl << dnums1 << endl;
+                                         (*testout) << "dnums2 = " << endl << dnums2 << endl;
+                                         (*testout) << "element1-index = " << eltrans1.GetElementIndex() << endl;
+                                         (*testout) << "element2-index = " << eltrans2.GetElementIndex() << endl;
+                                         // (*testout) << "elmat = " << endl << elmat << endl;
+                                       }
+                                     
+                                     // Array<int> dnums;
+                                     dnums.SetSize(0);
+                                     dnums.Append(dnums1);
+                                     dnums.Append(dnums2);
+                                     
+                                     ArrayMem<int, 50> map(dnums.Size());
+                                     for (int i = 0; i < map.Size(); i++) map[i] = i;
+                                     QuickSortI (dnums, map);
+                                     
+                                     ArrayMem<int,50> compressed_dnums;
+                                     compressed_dnums.SetSize(0);
+                                     
+                                     ArrayMem<int,50> dnums_to_compressed(dnums.Size());
+                                     int compressed_dofs = 0;
+                                     for (int i = 0; i < dnums.Size(); ++i)
+                                       {
+                                         if (i==0 || (dnums[map[i]] != dnums[map[i-1]]))
+                                           {
+                                             compressed_dnums.Append(dnums[map[i]]);
+                                             dnums_to_compressed[map[i]] = compressed_dofs++;
+                                           }
+                                         else
+                                           {
+                                             dnums_to_compressed[map[i]] = dnums_to_compressed[map[i-1]];
+                                           }
+                                       }
+                                 
+                                     FlatVector<SCAL> compressed_elx(compressed_dnums.Size(), lh),
+                                       compressed_ely(compressed_dnums.Size(), lh);
+                                     FlatVector<SCAL> elx(dnums.Size(), lh),
+                                       ely(dnums.Size(), lh);
+                                     x.GetIndirect(compressed_dnums, compressed_elx);
+
+                                     for (int i = 0; i < dnums.Size(); i++)
+                                       elx(i) = compressed_elx(dnums_to_compressed[i]);
+
+                                     // ely = elmat * elx;
+                                     if (fbfi)
+                                       fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
+                                                               fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+                                     
+                                     
+                                     compressed_ely = 0;
+                                     for (int i = 0; i < dnums.Size(); i++)
+                                       compressed_ely(dnums_to_compressed[i]) += ely(i);
+                                     
+                                     // shared_ptr<FacetBilinearFormIntegrator> fbfi = 
+                                     // dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                     
+                                     
+                                     {
+                                       lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                       y.AddIndirect(compressed_dnums, compressed_ely);
+                                     }
+                                   }
+                               }
+                           }                             
+                       });
+                  }
+
+
+                
                 if (fespace->specialelements.Size())
                   {
                     LocalHeap lh(lh_size, "biform-AddMatrix (c)");

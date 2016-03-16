@@ -333,6 +333,21 @@ public:
                      const ElementTransformation & seltrans,  
                      FlatMatrix<double> & elmat,
                      LocalHeap & lh) const;
+
+    virtual void
+    ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
+                      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                      const FiniteElement & volumefel2, int LocalFacetNr2,
+                      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                      FlatVector<double> elx, FlatVector<double> ely,
+                      LocalHeap & lh) const;
+
+    virtual void
+    ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
+                      const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                      const ElementTransformation & seltrans,  
+                      FlatVector<double> elx, FlatVector<double> ely,
+                      LocalHeap & lh) const;
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator
