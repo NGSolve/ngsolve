@@ -935,15 +935,20 @@ namespace ngcomp
     
   void MeshAccess :: GetSElFacets (int selnr, Array<int> & fnums) const
   {
-    if (dim == 2) 
-      GetSElEdges(selnr, fnums);
-    else
+    switch (dim)
       {
-	fnums.SetSize(1);
-	fnums[0] = GetSElFace(selnr);
+      case 1:
+        GetSElVertices(selnr, fnums); break;
+      case 2:
+        GetSElEdges(selnr, fnums); break;
+      default:
+        {
+          fnums.SetSize(1);
+          fnums[0] = GetSElFace(selnr);
+        }
       }
   }
-
+  
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {
     switch (dim)
