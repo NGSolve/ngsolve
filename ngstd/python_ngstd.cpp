@@ -277,10 +277,17 @@ void NGS_DLL_HEADER  ExportNgstd() {
   bp::def("Timers", FunctionPointer
 	  ([]() 
 	   {
-	     bp::dict timers;
+	     bp::list timers;
 	     for (int i = 0; i < NgProfiler::SIZE; i++)
 	       if (!NgProfiler::names[i].empty())
-		 timers[NgProfiler::names[i]] = NgProfiler::GetTime(i);
+               {
+                 bp::dict timer;
+                 timer["name"] = NgProfiler::names[i];
+                 timer["time"] = NgProfiler::GetTime(i);
+                 timer["counts"] = NgProfiler::GetCounts(i);
+                 timer["flops"] = NgProfiler::GetFlops(i);
+                 timers.append(timer);
+               }
 	     return timers;
 	   }
 	   ));
