@@ -1583,7 +1583,9 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
 
-
+    .def("LoadSolution", &PDE::LoadSolution,
+         (bp::arg("filename"), bp::arg("ascii")=false)
+         )
 
     
     /*
