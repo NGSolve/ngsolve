@@ -612,7 +612,7 @@ namespace netgen
     return mesh->GetTopology().GetNFaces();
   }
 
-  template <> DLL_HEADER Ng_Node<0> Ngx_Mesh :: GetNode<0> (int vnr) const
+  template <> DLL_HEADER const Ng_Node<0> Ngx_Mesh :: GetNode<0> (int vnr) const
   {
     Ng_Node<0> node;
     vnr++;
@@ -646,14 +646,14 @@ namespace netgen
   }
 
   
-  template <> DLL_HEADER Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr) const
+  template <> DLL_HEADER const Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr) const
   {
     Ng_Node<1> node;
     node.vertices.ptr = mesh->GetTopology().GetEdgeVerticesPtr(nr);
     return node;
   }
 
-  template <> DLL_HEADER Ng_Node<2> Ngx_Mesh :: GetNode<2> (int nr) const
+  template <> DLL_HEADER const Ng_Node<2> Ngx_Mesh :: GetNode<2> (int nr) const
   {
     Ng_Node<2> node;
     node.vertices.ptr = mesh->GetTopology().GetFaceVerticesPtr(nr);

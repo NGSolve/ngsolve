@@ -240,7 +240,7 @@ namespace netgen
     
 
     template <int DIM>
-    Ng_Node<DIM> GetNode (int nr) const;
+    const Ng_Node<DIM> GetNode (int nr) const;
     
     
     template <int DIM>
