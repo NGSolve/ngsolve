@@ -242,11 +242,7 @@ namespace ngfem
       return val;
     }
     
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
-    {
-      values = val;
-    }
-    
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void PrintReport (ostream & ost) const;
   };
 
@@ -780,7 +776,8 @@ shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1,
   return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc));
 }
 
-
+  // extern int myglobalvar_eval;
+  
   template <typename OP, typename OPC, typename DERIV, typename DDERIV, typename NONZERO> 
 class cl_BinaryOpCF : public CoefficientFunction
 {
@@ -884,10 +881,15 @@ public:
                          FlatMatrix<double> result) const
   {
     FlatMatrix<> ra = *input[0], rb = *input[1];
-    
+
+    /*
     for (int k = 0; k < mir.Size(); k++)
       for (int i = 0; i < result.Width(); i++)
         result(k,i) = lam (ra(k,i), rb(k,i));
+    */
+    // myglobalvar_eval++;
+    for (int i = 0; i < result.Height()*result.Width(); i++)
+      result(i) = lam (ra(i), rb(i));
   }
     
   

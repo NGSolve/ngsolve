@@ -331,9 +331,6 @@ namespace ngcomp
 	      for (int k = 0; k < 3; k++)
 		mat(k,j) = pj(k);
 	    }
-          //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
-          //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
-          //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
         }
       
       else if ( (DIMR==2) && (DIMS==2) && (eltype == ET_TRIG) )
@@ -346,11 +343,22 @@ namespace ngcomp
 	      for (int k = 0; k < 2; k++)
 		mat(k,j) = pj(k);
 	    }
+        }
+
+      else if ( (DIMR==2) && (DIMS==1) && (eltype == ET_SEGM) )
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
+          p0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[1]));
+	  for (int j = 0; j < 1; j++)
+	    {
+	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      for (int k = 0; k < 2; k++)
+		mat(k,j) = pj(k);
+	    }
           //mat.Col(0) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[0])) - p0;
           //mat.Col(1) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[1])) - p0;
           //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
         }
-
 
       else
         {
@@ -765,13 +773,23 @@ namespace ngcomp
 
   void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
   {
-    elnums.SetSize(0);
-    ArrayMem<int,3> pnums;
-    ArrayMem<int,50> velems0, velems1; 
-    GetEdgePNums(enr, pnums);
-    GetVertexElements(pnums[0], velems0);
-    GetVertexElements(pnums[1], velems1);
-  
+    static Timer t("getedgeelements"); RegionTimer reg(t);    
+    elnums.SetSize0();
+    // ArrayMem<int,3> pnums;
+    int p0, p1;
+    // ArrayMem<int,50> velems0, velems1; 
+    GetEdgePNums(enr, p0, p1);
+    /*
+    GetVertexElements(p0, velems0);
+    GetVertexElements(p1, velems1);
+    */
+    auto velems0 = GetVertexElements(p0);
+    auto velems1 = GetVertexElements(p1);
+
+    for (auto el : velems0)
+      if (velems1.Contains(el))
+        elnums.Append(el);
+    /*
     // now compare
     for (int i=0; i<velems0.Size(); i++) 
       for (int j=0; j<velems1.Size(); j++) 
@@ -780,16 +798,19 @@ namespace ngcomp
 	    elnums.Append(velems0[i]);
 	    continue;
 	  }
+    */
   }
 
   void MeshAccess :: GetEdgeSurfaceElements (int enr, Array<int> & elnums) const
   {
-    elnums.SetSize(0);
-    ArrayMem<int,3> pnums;
+    static Timer t("getedgesurfelements"); RegionTimer reg(t);
+    elnums.SetSize0();
+    // ArrayMem<int,3> pnums;
+    int p0, p1;
     ArrayMem<int,50> velems0, velems1; 
-    GetEdgePNums(enr, pnums);
-    GetVertexSurfaceElements(pnums[0], velems0);
-    GetVertexSurfaceElements(pnums[1], velems1);
+    GetEdgePNums(enr, p0, p1);
+    GetVertexSurfaceElements(p0, velems0);
+    GetVertexSurfaceElements(p1, velems1);
   
     // now compare
     for (int i=0; i<velems0.Size(); i++) 
@@ -890,14 +911,19 @@ namespace ngcomp
   }
 
 
-
+  /*
   void MeshAccess :: GetEdgePNums (int enr, int & pn1, int & pn2) const
   {
-    int v2[2];
-    Ng_GetEdge_Vertices (enr+1, v2);
-    pn1 = v2[0]-1;
-    pn2 = v2[1]-1;
+    auto edge = mesh.GetNode<1>(enr);
+    pn1 = edge.vertices[0];
+    pn2 = edge.vertices[1];
+
+    // int v2[2];
+    // Ng_GetEdge_Vertices (enr+1, v2);
+    // pn1 = v2[0]-1;
+    // pn2 = v2[1]-1;
   }
+  */
 
   auto MeshAccess :: GetEdgePNums (int enr) const -> decltype(ArrayObject(INT<2>()))
   {
@@ -905,14 +931,7 @@ namespace ngcomp
     Ng_GetEdge_Vertices (enr+1, v2);
     return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
   }
-  /*
-  INT<2> MeshAccess :: GetEdgePNums (int enr) const
-  {
-    int v2[2];
-    Ng_GetEdge_Vertices (enr+1, v2);
-    return INT<2> (v2[0]-1, v2[1]-1);
-  }
-  */
+
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
@@ -1003,15 +1022,17 @@ namespace ngcomp
   {
     return (Ng_ShouldTerminate() != 0);
   }
-
-
+  
   void MeshAccess :: GetVertexElements (int vnr, Array<int> & elnrs) const
   {
+    elnrs = ArrayObject(mesh.GetNode<0> (vnr).elements);
+    /*
     int nel = Ng_GetNVertexElements (vnr+1);
     elnrs.SetSize (nel);
     Ng_GetVertexElements (vnr+1, &elnrs[0]);
     for (int j = 0; j < nel; j++)
       elnrs[j]--;
+    */
   }
 
 
@@ -1023,14 +1044,13 @@ namespace ngcomp
   
   template <int DIM>
   ElementTransformation & MeshAccess :: 
-  GetTrafoDim (int elnr, bool boundary, Allocator & lh) const
+  GetTrafoDim (int elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim");
 
     ElementTransformation * eltrans;
     
-    Ngs_Element el (mesh.GetElement<DIM> (elnr), 
-                    ElementId(boundary ? BND : VOL, elnr));
+    Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
 
     if (deformation)
 
@@ -1063,6 +1083,46 @@ namespace ngcomp
   }
 
 
+  template <int DIM>
+  ElementTransformation & MeshAccess :: 
+  GetSTrafoDim (int elnr, Allocator & lh) const
+  {
+    // static Timer t("MeshAccess::GetTrafoDim");
+
+    ElementTransformation * eltrans;
+    
+    Ngs_Element el(mesh.GetElement<DIM-1> (elnr), ElementId(BND, elnr));
+
+    if (deformation)
+
+      eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM> (this, el.GetType(), 
+                                                               ElementId(BND,elnr), el.GetIndex(),
+                                                               deformation.get(), 
+                                                               dynamic_cast<LocalHeap&> (lh)); 
+
+    else if ( el.is_curved )
+
+      eltrans = new (lh) Ng_ElementTransformation<DIM-1,DIM> (this, el.GetType(), 
+                                                              ElementId(BND,elnr), el.GetIndex()); 
+    
+    else
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM-1,DIM> (this, el.GetType(), 
+                                                                   ElementId(BND,elnr), el.GetIndex()); 
+
+    /*
+    eltrans->SetElementType (el.GetType());
+    int elind = el.GetIndex();
+    eltrans->SetElement (0, elnr, elind);
+    */
+
+    if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+      eltrans->SetHigherIntegrationOrder();
+    else
+      eltrans->UnSetHigherIntegrationOrder();
+
+    return *eltrans;
+  }
+
 
 
   ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
@@ -1074,9 +1134,9 @@ namespace ngcomp
       {
         switch (dim)
           {
-          case 1: return GetTrafoDim<1> (elnr, boundary, lh);
-          case 2: return GetTrafoDim<2> (elnr, boundary, lh);
-          case 3: return GetTrafoDim<3> (elnr, boundary, lh);
+          case 1: return GetTrafoDim<1> (elnr, lh);
+          case 2: return GetTrafoDim<2> (elnr, lh);
+          case 3: return GetTrafoDim<3> (elnr, lh);
 
           default:
             throw Exception ("MeshAccess::GetTrafo, illegal dimension");
@@ -1084,6 +1144,16 @@ namespace ngcomp
       }
     else
       {
+        switch (dim)
+          {
+          case 1: return GetSTrafoDim<1> (elnr, lh);
+          case 2: return GetSTrafoDim<2> (elnr, lh);
+          case 3: return GetSTrafoDim<3> (elnr, lh);
+
+          default:
+            throw Exception ("MeshAccess::GetSTrafo, illegal dimension");
+          }
+        /*
         ElementId ei(BND, elnr);
         int elind = GetSElIndex (elnr);
         ELEMENT_TYPE et = GetSElType(elnr);
@@ -1112,7 +1182,7 @@ namespace ngcomp
                 throw Exception ("MeshAccess::GetTrafo, illegal dimension");
               }
           }
-        
+        */
 	// eltrans->SetElementType (GetSElType(elnr));
 	// eltrans->SetElement (1, elnr, elind);
       }

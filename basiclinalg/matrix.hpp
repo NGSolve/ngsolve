@@ -48,7 +48,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    INLINE FlatMatrix () { ; }
+    INLINE FlatMatrix () = default; // { ; }
   
     /// set height, width, and mem
     INLINE FlatMatrix (int ah, int aw, T * adata) 
@@ -67,10 +67,11 @@ namespace ngbla
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
+    /*
     INLINE FlatMatrix (const FlatMatrix & m) throw () 
-      : h(m.h), w(m.w) , data(m.data)
-    { ; }
-  
+      : h(m.h), w(m.w) , data(m.data) { ; }
+    */
+    FlatMatrix (const FlatMatrix & m) = default;
     /// allocate and compute 
     template<typename TB>
     INLINE FlatMatrix (const LocalHeapExpr<TB> & m2) 

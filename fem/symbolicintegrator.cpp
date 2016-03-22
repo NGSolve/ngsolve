@@ -1452,8 +1452,10 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    static Timer t("SymbolicFacetBFI::Apply");
-    RegionTimer reg(t);
+    static Timer t("SymbolicFacetBFI::Apply", 2);
+    static Timer t1("SymbolicFacetBFI::Apply 1", 2);
+    static Timer t2("SymbolicFacetBFI::Apply 2", 2);
+    static Timer t3("SymbolicFacetBFI::Apply 3", 2);
     
     HeapReset hr(lh);
 
@@ -1503,6 +1505,121 @@ namespace ngfem
         else
           proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.remember[proxy], lh);
       }
+
+    // RegionTimer reg(t);
+    t.Start();
+
+    FlatMatrix<> val(ir_facet.Size(), 1,lh);
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        // t1.Start();
+        FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
+        
+        FlatVector<> measure(mir1.Size(), lh);
+        switch (trafo1.SpaceDim())
+          {
+          case 2:
+            {
+              Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
+              for (int i = 0; i < mir1.Size(); i++)
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
+                  Mat<2> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<2> normal = det * Trans (inv_jac) * normal_ref;       
+                  double len = L2Norm (normal);    // that's the surface measure 
+                  normal /= len;                   // normal vector on physical element
+                  const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
+                  measure(i) = len;
+                }
+                break;
+            }
+          default:
+            cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
+          }
+        
+        // t1.Stop();
+        // t2.Start();
+        
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (mir1, val);
+            proxyvalues.Col(k) = val.Col(0);
+          }
+
+        // t2.Stop();
+        // t3.Start();
+
+        for (int i = 0; i < mir1.Size(); i++)
+          proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
+
+        ely1 = 0.0;
+        IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+        if (proxy->IsOther()) 
+          proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
+        else
+          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
+        ely += ely1;
+
+        // t3.Stop();
+      }
+    t.Stop();
+  }
+
+  
+  void SymbolicFacetBilinearFormIntegrator ::
+  ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,
+                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
+                    const ElementTransformation & strafo,  
+                    FlatVector<double> elx, FlatVector<double> ely,
+                    LocalHeap & lh) const
+  {
+    static Timer t("SymbolicFacetBFI::ApplyFacetMatrix - boundary", 2);
+    
+    HeapReset hr(lh);
+
+    /*
+    Matrix<> elmat(elx.Size());
+    CalcFacetMatrix(fel1, LocalFacetNr, trafo1, ElVertices, strafo, elmat, lh);
+    ely = elmat * elx;
+    return;
+    */
+
+    ely = 0;
+    
+    FlatVector<> ely1(ely.Size(), lh);
+
+    int maxorder = fel1.Order();
+
+    auto eltype1 = trafo1.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices); 
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
+    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    
+    // evaluate proxy-values
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    ud.fel = &fel1;   // necessary to check remember-map
+    // ud.elx = &elx;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.remember[proxy] = Matrix<> (ir_facet.Size(), proxy->Dimension());
+        IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+        if (proxy->IsOther()) 
+          // proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.remember[proxy], lh);
+          ud.remember[proxy] = 0.0;
+        else
+          proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.remember[proxy], lh);
+      }
+
+    RegionTimer reg(t);
     
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
@@ -1516,7 +1633,7 @@ namespace ngfem
           {
           case 2:
             {
-              Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
+              Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr];
               for (int i = 0; i < mir1.Size(); i++)
                 {
                   auto & mip = static_cast<const MappedIntegrationPoint<2,2>&> (mir1[i]);
@@ -1549,22 +1666,12 @@ namespace ngfem
         ely1 = 0.0;
         IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
         if (proxy->IsOther()) 
-          proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
+          // proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
+          throw Exception ("ApplyFacetBoundary: other testfunction not allowed here");
         else
           proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
         ely += ely1;
       }
-  }
-
-  
-  void SymbolicFacetBilinearFormIntegrator ::
-  ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
-                    const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                    const ElementTransformation & seltrans,  
-                    FlatVector<double> elx, FlatVector<double> ely,
-                    LocalHeap & lh) const
-  {
-    ;
   }
   
   

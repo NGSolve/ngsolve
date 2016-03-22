@@ -602,7 +602,12 @@ namespace ngcomp
     /// returns vertex numbers of face
     void GetFacePNums (int fnr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
-    void GetEdgePNums (int enr, int & pn1, int & pn2) const;
+    void GetEdgePNums (int enr, int & pn1, int & pn2) const
+    {
+      auto edge = mesh.GetNode<1>(enr);
+      pn1 = edge.vertices[0];
+      pn2 = edge.vertices[1];
+    }
     /// returns vertex numbers of edge
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
@@ -734,7 +739,9 @@ namespace ngcomp
     }
 
     template <int DIM>
-    ngfem::ElementTransformation & GetTrafoDim (int elnr, bool boundary, Allocator & lh) const;
+    ngfem::ElementTransformation & GetTrafoDim (int elnr, Allocator & lh) const;
+    template <int DIM>
+    ngfem::ElementTransformation & GetSTrafoDim (int elnr, Allocator & lh) const;
 
 
     // (old style optimization)
@@ -785,7 +792,9 @@ namespace ngcomp
     virtual bool ShouldTerminate(void) const;
   
     ///// Added by Roman Stainko ....
-    void GetVertexElements( int vnr, Array<int>& elems) const;
+    void GetVertexElements (int vnr, Array<int>& elems) const;
+    auto GetVertexElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).elements))
+    { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
     void GetVertexSurfaceElements( int vnr, Array<int>& elems) const;
 
