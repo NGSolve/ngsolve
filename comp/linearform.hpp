@@ -212,7 +212,11 @@ namespace ngcomp
     virtual void AllocateVector () { cerr << "comp - allocate is illegal" << endl; }
     virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }
     virtual shared_ptr<BaseVector> GetVectorPtr() const
-    { throw Exception ("comp - GetVectorPtr is illegal"); }
+    {
+      auto fes = dynamic_pointer_cast<CompoundFESpace> (base_lf->GetFESpace());
+      return base_lf->GetVectorPtr()->Range(fes->GetRange(comp));
+      // throw Exception ("comp - GetVectorPtr is illegal");
+    }
     virtual BaseVector & GetVector () const 
     { throw Exception ("comp - GetVector is illegal"); }
   };
