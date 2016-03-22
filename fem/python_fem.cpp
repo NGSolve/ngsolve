@@ -989,7 +989,8 @@ void NGS_DLL_HEADER ExportNgfem() {
   bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](string name, int dim, bp::object py_coef, bp::object definedon, bool imag)
+         (FunctionPointer ([](string name, int dim, bp::object py_coef, bp::object definedon, bool imag,
+                              string filename)
                            {
                              Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
@@ -1006,7 +1007,12 @@ void NGS_DLL_HEADER ExportNgfem() {
                                  // cout << bp::extract<BitArray> (definedon)() << endl;
                                  bfi -> SetDefinedOn (bp::extract<BitArray> (definedon)());
                                }
-                             
+
+                             if (filename.length())
+                               {
+                                 cout << "set integrator filename: " << filename << endl;
+                                 bfi -> SetFileName (filename);
+                               }
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
 
@@ -1014,7 +1020,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=-1,bp::arg("coef"),
-           bp::arg("definedon")=bp::object(),bp::arg("imag")=false)))
+           bp::arg("definedon")=bp::object(),bp::arg("imag")=false, bp::arg("filename")="")))
     
     .def("__str__", &ToString<BilinearFormIntegrator>)
 
