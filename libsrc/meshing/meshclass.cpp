@@ -595,7 +595,7 @@ namespace netgen
         outfile << cntmat << endl;
         for (i = 1; i <= materials.Size(); i++)
           if (materials.Get(i) && materials.Get(i)->length())
-            outfile << i << " " << materials.Get(i) << endl;
+            outfile << i << " " << *materials.Get(i) << endl;
       }
 
 
