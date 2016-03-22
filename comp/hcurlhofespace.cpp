@@ -2641,7 +2641,7 @@ namespace ngcomp
     fesh1->SetDefinedOnBoundary(h1defb);
 
     int ne = ma -> GetNE();
-    int ned = ma->GetNEdges();
+    // int ned = ma->GetNEdges();
     int nfa = 0;
     int nse = ma->GetNSE();
     if(ma->GetDimension()==3) nfa = ma->GetNFaces();

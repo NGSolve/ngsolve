@@ -103,6 +103,12 @@ namespace ngfem
     ost << "ConstantCF, val = " << val << endl;
   }
 
+  void ConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
+                                                FlatMatrix<double> values) const
+  {
+    values = val;
+  }
+
   
   ///
   ConstantCoefficientFunctionC ::   
@@ -1282,9 +1288,9 @@ public:
   {
 #ifdef VLA
     double hmem1[ir.Size()*DIM];
-    FlatMatrix<> temp1(ir.Size(), DIM, hmem1);
+    FlatMatrixFixWidth<DIM> temp1(ir.Size(), hmem1);
     double hmem2[ir.Size()*DIM];
-    FlatMatrix<> temp2(ir.Size(), DIM, hmem2);
+    FlatMatrixFixWidth<DIM> temp2(ir.Size(), hmem2);
 #else
     Matrix<> temp1(ir.Size(), DIM);
     Matrix<> temp2(ir.Size(), DIM);
@@ -2391,28 +2397,43 @@ public:
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
+#ifdef VLA
+      double hmem1[ir.Size()];
+      FlatMatrix<> if_values(ir.Size(), 1, hmem1);
+      double hmem2[ir.Size()*values.Width()];
+      FlatMatrix<> then_values(ir.Size(), values.Width(), hmem2);
+      double hmem3[ir.Size()*values.Width()];
+      FlatMatrix<> else_values(ir.Size(), values.Width(), hmem3);
+#else
       Matrix<> if_values(ir.Size(), 1);
       Matrix<> then_values(ir.Size(), values.Width());
       Matrix<> else_values(ir.Size(), values.Width());
+#endif
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
-
+      /*
       for (int i = 0; i < ir.Size(); i++)
         if (if_values(i) > 0)
           values.Row(i) = then_values.Row(i);
         else
           values.Row(i) = else_values.Row(i);
+      */
+      for (int i = 0; i < ir.Size(); i++)
+        values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
 
-    /*
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
                            FlatMatrix<double> values) const
     {
-      ;
+      FlatMatrix<> if_values = *input[0];
+      FlatMatrix<> then_values = *input[1];
+      FlatMatrix<> else_values = *input[2];
+      for (int i = 0; i < if_values.Height(); i++)
+        values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
-    */
+
     virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }
     virtual int Dimension() const { return cf_then->Dimension(); }
 
@@ -2512,7 +2533,8 @@ public:
 
   
   // ///////////////////////////// Compiled CF /////////////////////////
-  
+// int myglobalvar;
+// int myglobalvar_eval;
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf;
@@ -2582,43 +2604,38 @@ public:
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
-      /*
-      Array<Matrix<>*> temp;
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          temp.Append (new Matrix<>(ir.Size(), dim[i]));
-          
-          Array<FlatMatrix<>*> in;
-          for (int j : inputs[i])
-            in.Append (temp[j]);
-          
-          steps[i] -> Evaluate (ir, in, *temp[i]);
-        }
+      // static Timer t1("CompiledCF::Evaluate 1");
+      // static Timer t2("CompiledCF::Evaluate 2");
+      // static Timer t3("CompiledCF::Evaluate 3");
 
-      values = *temp.Last();
-      for (int i = 0; i < steps.Size(); i++)
-        delete temp[i];
-      */
-      
+      // t1.Start();
       int totdim = 0;
       for (int d : dim) totdim += d;
       ArrayMem<double, 10000> hmem(ir.Size()*totdim);
       int mem_ptr = 0;
       ArrayMem<FlatMatrix<>,100> temp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 100> in;
+      ArrayMem<FlatMatrix<>*, 100> in(steps.Size());
+
       for (int i = 0; i < steps.Size(); i++)
         {
-          // timers[i]->Start();
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
+        }
+      // t1.Stop();
+      // t2.Start();
+      for (int i = 0; i < steps.Size(); i++)
+        {
+          // myglobalvar ++;
+          // timers[i]->Start();
+          auto inputi = inputs[i];
+          for (int nr : Range(inputi))
+            in[nr] = &temp[inputi[nr]];
 
-          in.SetSize(0);
-          for (int j : inputs[i])
-            in.Append (&temp[j]);
-          steps[i] -> Evaluate (ir, in, temp[i]);
+          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
           // timers[i]->Stop();
         }
       values = temp.Last();
+      // t2.Stop();
     }
 
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,

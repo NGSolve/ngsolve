@@ -336,6 +336,15 @@ struct GenericConj {
         throw Exception("illegal dim of normal vector");
       res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
     }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const 
+    {
+      if (ir[0].Dim() != D)
+        throw Exception("illegal dim of normal vector");
+      FlatMatrixFixWidth<D> resD(res);
+      for (int i = 0; i < ir.Size(); i++)
+        resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+    }
   };
 
   template <int D>
@@ -577,8 +586,11 @@ void ExportCoefficientFunction()
     virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                           FlatMatrix<> result) const
     {
+      result.Col(0) = ir.GetPoints().Col(dir);
+      /*
       for (int i = 0; i < ir.Size(); i++)
         result(i,0) = ir[i].GetPoint()(dir);
+      */
     }
   };
 

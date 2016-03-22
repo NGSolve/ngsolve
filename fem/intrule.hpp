@@ -979,7 +979,7 @@ namespace ngfem
       return move(mir);
     }
     */
-
+    virtual SliceMatrix<> GetPoints() const = 0;
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -1028,6 +1028,12 @@ namespace ngfem
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
     
+    virtual SliceMatrix<> GetPoints() const
+    {
+      return SliceMatrix<> (mips.Size(), DIM_SPACE,
+                            &mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
+                            const_cast<double*> (&mips[0].GetPoint()(0)));
+    }
   };
 
 

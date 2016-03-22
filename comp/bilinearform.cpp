@@ -2765,6 +2765,8 @@ namespace ngcomp
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
     static Timer timerDGfacet ("Apply Matrix - DG boundary");
+    static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1");
+    static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2");
     RegionTimer reg (timer);
 
     static int lh_size = 5000000;
@@ -2862,7 +2864,7 @@ namespace ngcomp
 
                     // element-boundary formulation
 		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-                    mutex addelemfacbnd_mutex;                    
+                    // mutex addelemfacbnd_mutex;                    
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -2878,19 +2880,22 @@ namespace ngcomp
                                  HeapReset hr(lh);
                                  
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
+                                 ma->GetFacetElements(fnums1[facnr1],elnums);                                 
                                  if (elnums.Size()<2)
                                    {
                                      RegionTimer regfacet(timerDGfacet);
-                                     
+                                     timerDGfacet1.Start();
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
                                      int sel = elnums[0];
-                                     
+
+                                     timerDGfacet1.Stop();
+                                     timerDGfacet2.Start();                                                           
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      ma->GetElVertices (el1, vnums1);     
-                                     
+
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
-                      
+
                                      fespace->GetDofNrs (el1, dnums);
                                      if(fel.GetNDof() != dnums.Size())
                                        {
@@ -2902,7 +2907,7 @@ namespace ngcomp
                                          (*testout) << "dnums = " << dnums << endl;
                                          throw Exception ( "Inconsistent number of degrees of freedom " );
                                        }
-                                     
+
                                      for (int j = 0; j < NumIntegrators(); j++)
                                        {
                                          const BilinearFormIntegrator & bfi = *parts[j];
@@ -2911,6 +2916,7 @@ namespace ngcomp
                                          if (!bfi.SkeletonForm()) continue;
                                          if (!bfi.GetDGFormulation().element_boundary) continue;
 
+                                         /*
                                          int elmat_size = dnums.Size()*fespace->GetDimension();
                                          FlatMatrix<SCAL> elmat(elmat_size, lh);
                                          
@@ -2918,14 +2924,21 @@ namespace ngcomp
                                            CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elmat, lh);
                                          
                                          fespace->TransformMat (el1, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
+                                         */
+
                                          FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
                                          x.GetIndirect(dnums, elx);
-                                         ely = elmat * elx;
+                                         // ely = elmat * elx;
+                                         dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                         
                                          {
-                                           lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                           // test.Other() not allowed ...
+                                           // lock_guard<mutex> guard(addelemfacbnd_mutex);
                                            y.AddIndirect(dnums, ely);
                                          }
                                        } //end for (numintegrators)
+                                     timerDGfacet2.Stop();                                     
                                      continue;
                                    } // end if boundary facet
 
@@ -2942,9 +2955,9 @@ namespace ngcomp
                                  ElementTransformation & eltrans2 = ma->GetTrafo (el2, false, lh);
                                  
                                  fespace->GetDofNrs (el1, dnums1);
-                                 dnums=dnums1;
+                                 // dnums=dnums1;
                                  fespace->GetDofNrs (el2, dnums2);
-                                 dnums.Append(dnums2);
+                                 // dnums.Append(dnums2);
                                  
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
@@ -3003,10 +3016,9 @@ namespace ngcomp
                                          // (*testout) << "elmat = " << endl << elmat << endl;
                                        }
                                      
-                                     // Array<int> dnums;
                                      dnums.SetSize(0);
                                      dnums.Append(dnums1);
-                                     dnums.Append(dnums2);
+                                     dnums.Append(dnums2);   
                                      
                                      ArrayMem<int, 50> map(dnums.Size());
                                      for (int i = 0; i < map.Size(); i++) map[i] = i;
@@ -3054,8 +3066,10 @@ namespace ngcomp
                                      
                                      
                                      {
-                                       lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                       y.AddIndirect(compressed_dnums, compressed_ely);
+                                       // don't need lock since we don't support other
+                                       // lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                       // y.AddIndirect(compressed_dnums, compressed_ely);
+                                       y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
                                      }
                                    }
                                }
