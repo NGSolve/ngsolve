@@ -539,19 +539,25 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .def("__call__", FunctionPointer
-         ([](MeshAccess & ma, double x, double y, double z) 
+         ([](MeshAccess & ma, double x, double y, double z, VorB vb) 
           {
             IntegrationPoint ip;
-            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            int elnr;
+            if (vb == VOL)
+              elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            else
+              elnr = ma.FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
+              
             if (elnr < 0) throw Exception ("point out of domain");
 
-            ElementTransformation & trafo = ma.GetTrafo(elnr, false, global_alloc);
+            ElementTransformation & trafo = ma.GetTrafo(ElementId(vb, elnr), global_alloc);
             BaseMappedIntegrationPoint & mip = trafo(ip, global_alloc);
             mip.SetOwnsTrafo(true);
             return &mip;
           } 
           ), 
-         (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0),
+         (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0,
+          bp::arg("VOL_or_BND") = VOL),
          bp::return_value_policy<bp::manage_new_object>()
          )
 
@@ -841,6 +847,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                                if (space->GetDimension() != dim)
                                  throw Exception("Compound space of spaces with different dimensions is not allowed");
                              flags.SetFlag ("dim", dim);
+                             
+                             bool is_complex = spaces[0]->IsComplex() || flags.GetDefineFlag("complex");
+                             for (auto space : spaces)
+                               if (space->IsComplex() != is_complex)
+                                 throw Exception("Compound space of spaces with complex and real spaces is not allowed");
+                             if (is_complex)
+                               flags.SetFlag ("complex");
+                             
                              auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
@@ -1491,7 +1505,10 @@ void NGS_DLL_HEADER ExportNgcomp()
          (FunctionPointer ([](shared_ptr<BilinearForm> bfa, const string & type, 
                               Flags flags)
                            { 
-                             return GetPreconditionerClasses().GetPreconditioner(type)->creatorbf(bfa, flags, "noname-pre");
+                             auto creator = GetPreconditionerClasses().GetPreconditioner(type);
+                             if (creator == nullptr)
+                               throw Exception(string("nothing known about preconditioner '") + type + "'");
+                             return creator->creatorbf(bfa, flags, "noname-pre");
                            }),
           bp::default_call_policies(),        // need it to use argumentso
           (bp::arg("bf"), bp::arg("type"), bp::arg("flags")=bp::dict())
