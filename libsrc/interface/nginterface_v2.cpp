@@ -612,6 +612,40 @@ namespace netgen
     return mesh->GetTopology().GetNFaces();
   }
 
+  template <> DLL_HEADER Ng_Node<0> Ngx_Mesh :: GetNode<0> (int vnr) const
+  {
+    Ng_Node<0> node;
+    vnr++;
+    switch (mesh->GetDimension())
+      {
+      case 3:
+        {
+          FlatArray<ElementIndex> ia = mesh->GetTopology().GetVertexElements(vnr);
+          node.elements.ne = ia.Size();
+          node.elements.ptr = (int*)&ia[0];
+          break;
+        }
+      case 2:
+        {
+          FlatArray<SurfaceElementIndex> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+          node.elements.ne = ia.Size();
+          node.elements.ptr = (int*)&ia[0];
+          break;
+        }
+      case 1:
+        {
+          FlatArray<SegmentIndex> ia = mesh->GetTopology().GetVertexSegments(vnr);
+          node.elements.ne = ia.Size();
+          node.elements.ptr = (int*)&ia[0];
+          break;
+        }
+      default:
+        ;
+      }
+    return node;
+  }
+
+  
   template <> DLL_HEADER Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr) const
   {
     Ng_Node<1> node;

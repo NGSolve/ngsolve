@@ -101,6 +101,27 @@ namespace netgen
   template <int DIM> class Ng_Node;
 
   template <>
+  class Ng_Node<0>
+  {
+    class Ng_Elements
+    {
+    public:
+      int ne;
+      const int * ptr;
+  
+      int Size() const { return ne; }
+      int operator[] (int i) const { return ptr[i]; }
+    };
+
+
+  public:
+    Ng_Elements elements;
+  };
+
+
+
+  
+  template <>
   class Ng_Node<1>
   {
     class Ng_Vertices

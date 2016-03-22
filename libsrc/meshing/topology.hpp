@@ -44,8 +44,8 @@ class MeshTopology
   Array<INDEX_2> surf2volelement;
   Array<int> face2surfel;
   TABLE<ElementIndex,PointIndex::BASE> *vert2element;
-  TABLE<int,PointIndex::BASE> *vert2surfelement;
-  TABLE<int,PointIndex::BASE> *vert2segment;
+  TABLE<SurfaceElementIndex,PointIndex::BASE> *vert2surfelement;
+  TABLE<SegmentIndex,PointIndex::BASE> *vert2segment;
   int timestamp;
 public:
   int GetNSurfedges() const {return surfedges.Size();}
@@ -135,14 +135,15 @@ public:
   void GetVertexElements (int vnr, Array<ElementIndex> & elements) const;
   FlatArray<ElementIndex> GetVertexElements (int vnr) const;
 
-  void GetVertexSurfaceElements( int vnr, Array<int>& elements ) const;
-  FlatArray<int> GetVertexSurfaceElements (int vnr) const;
+  void GetVertexSurfaceElements( int vnr, Array<SurfaceElementIndex>& elements ) const;
+  FlatArray<SurfaceElementIndex> GetVertexSurfaceElements (int vnr) const;
 
+  FlatArray<SegmentIndex> GetVertexSegments (int vnr) const;  
 
   
   int GetVerticesEdge ( int v1, int v2) const;
-  void GetSegmentVolumeElements ( int segnr, Array<int> & els ) const;
-  void GetSegmentSurfaceElements ( int segnr, Array<int> & els ) const;
+  void GetSegmentVolumeElements ( int segnr, Array<ElementIndex> & els ) const;
+  void GetSegmentSurfaceElements ( int segnr, Array<SurfaceElementIndex> & els ) const;
 };
 
 

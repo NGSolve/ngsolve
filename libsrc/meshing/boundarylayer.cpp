@@ -323,9 +323,9 @@ namespace netgen
                          // boundary layer list
                          if(!surfid.Contains(mesh[sej].si))
                            {
-                             int pnt_commelem = 0;
-                             Array<int> pnt1_elems;
-                             Array<int> pnt2_elems;
+                             SurfaceElementIndex pnt_commelem = 0;
+                             Array<SurfaceElementIndex> pnt1_elems;
+                             Array<SurfaceElementIndex> pnt2_elems;
                              
                             
                              meshtopo.GetVertexSurfaceElements(segpair_p1,pnt1_elems);

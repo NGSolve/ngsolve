@@ -1573,12 +1573,15 @@ int Ng_GetNVertexElements (int vnr)
     case 2:
       return mesh->GetTopology().GetVertexSurfaceElements(vnr).Size();
     case 1:
+      return mesh->GetTopology().GetVertexSegments(vnr).Size();
+      /*
       {
         int cnt = 0;
         for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
           if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) cnt++;
         return cnt;
       }
+      */
     default:
       cerr << "error: mesh->GetDimension() gives " 
            << mesh->GetDimension() << endl;
@@ -1598,17 +1601,22 @@ void Ng_GetVertexElements (int vnr, int * els)
       }
     case 2:
       {
-        FlatArray<int> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
-        for (int i = 0; i < ia.Size(); i++) els[i] = ia[i];
+        FlatArray<SurfaceElementIndex> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+        for (int i = 0; i < ia.Size(); i++) els[i] = ia[i]+1;
         break;
       }
     case 1:
       {
+        FlatArray<SegmentIndex> ia = mesh->GetTopology().GetVertexSegments(vnr);
+        for (int i = 0; i < ia.Size(); i++) els[i] = ia[i]+1;
+        break;
+        /*
         int cnt = 0;
         for (SegmentIndex i = 0; i < mesh->GetNSeg(); i++)
           if ( ((*mesh)[i][0] == vnr) || ((*mesh)[i][1] == vnr) ) 
             els[cnt++] = i+1;
         break;
+        */
       }
     }
 }
@@ -1894,11 +1902,11 @@ int Ng_GetVertex_SurfaceElements( int vnr, int* elems )
     case 3:
       {
         const MeshTopology& topology = mesh->GetTopology();
-        ArrayMem<int,4> indexArray;
+        ArrayMem<SurfaceElementIndex,4> indexArray;
         topology.GetVertexSurfaceElements( vnr, indexArray );
         
         for( int i=0; i<indexArray.Size(); i++ )
-          elems[i] = indexArray[i];
+          elems[i] = indexArray[i]+1;
         
         return indexArray.Size();
       }
@@ -1932,7 +1940,7 @@ int Ng_GetVertex_NSurfaceElements( int vnr )
     case 3:
       {
         const MeshTopology& topology = mesh->GetTopology();
-        ArrayMem<int,4> indexArray;
+        ArrayMem<SurfaceElementIndex,4> indexArray;
         topology.GetVertexSurfaceElements( vnr, indexArray );
         return indexArray.Size();
       }
