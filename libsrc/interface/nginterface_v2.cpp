@@ -525,9 +525,10 @@ namespace netgen
                               double * x,
                               double * dxdxi) const
   {
-    PointIndex pnum = mesh->pointelements[elnr].pnum;
+    PointIndex pnum = mesh->pointelements[elnr-1].pnum;
     if (x) x[0] = (*mesh)[pnum](0);
-    if (dxdxi) dxdxi[0] = 0;
+    // if (dxdxi) dxdxi[0] = 0;
+    // Jacobi-matrix is 1 x 0 !!!
   }
 
 
