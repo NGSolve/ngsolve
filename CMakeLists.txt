@@ -356,6 +356,16 @@ if(USE_VTUNE)
 endif(USE_VTUNE)
 
 
+#######################################################################
+if(NETGEN_SOURCE_DIR)
+    find_path(NETGEN_INTERNAL_INCLUDE_DIR nginterface_v2_impl.hpp PATHS ${NETGEN_SOURCE_DIR} ${NETGEN_SOURCE_DIR}/libsrc/include)
+    if (NOT NETGEN_INTERNAL_INCLUDE_DIR)
+      message(FATAL_ERROR "Could not find Netgen source directory")
+    endif()
+    add_definitions(-DHAVE_NETGEN_SOURCES)
+    include_directories(AFTER ${NETGEN_INTERNAL_INCLUDE_DIR})
+endif(NETGEN_SOURCE_DIR)
+
 
 
 #######################################################################
