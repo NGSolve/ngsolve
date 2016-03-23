@@ -440,6 +440,22 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"), bp::arg("reflevels")=2)
          )
+    
+    .def("PeriodicSurfaces", FunctionPointer
+         ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2)
+          {
+            Array<int> si1, si2;
+            s1->GetSolid()->GetSurfaceIndices (si1);
+            s2->GetSolid()->GetSurfaceIndices (si2);
+            cout << "identify surfaces " << si1[0] << " and " << si2[0] << endl;
+            self.AddIdentification 
+              (new PeriodicIdentification 
+               (self.GetNIdentifications()+1, self, 
+                self.GetSurface (si1[0]), self.GetSurface (si2[0])));
+          }),
+         (bp::arg("self"), bp::arg("solid1"), bp::arg("solid2"))
+         )
+    
     .def("GetTransparent", FunctionPointer
          ([] (CSGeometry & self, int tlonr)
           {
@@ -469,7 +485,13 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("tlonr"), bp::arg("visible"))
          )
-
+    .def("SetBoundingBox", FunctionPointer
+         ([] (CSGeometry & self, Point<3> pmin, Point<3> pmax)
+          {
+            self.SetBoundingBox(Box<3> (pmin, pmax));
+          }),
+         (bp::arg("self"), bp::arg("pmin"), bp::arg("pmax"))
+         )
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
 
