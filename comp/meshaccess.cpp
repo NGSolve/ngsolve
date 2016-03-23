@@ -1156,38 +1156,6 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetSTrafo, illegal dimension");
           }
-        /*
-        ElementId ei(BND, elnr);
-        int elind = GetSElIndex (elnr);
-        ELEMENT_TYPE et = GetSElType(elnr);
-
-        Ngs_Element el = GetElement (ElementId(BND, elnr));
-
-        if (el.is_curved) // Ng_IsSurfaceElementCurved (elnr+1))
-          {
-            switch (dim)
-              {
-              case 1: eltrans = new (lh) Ng_ElementTransformation<0,1> (this, et, ei, elind); break;
-              case 2: eltrans = new (lh) Ng_ElementTransformation<1,2> (this, et, ei, elind); break;
-              case 3: eltrans = new (lh) Ng_ElementTransformation<2,3> (this, et, ei, elind); break;
-              default:
-                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-              }
-          }
-        else
-          {
-            switch (dim)
-              {
-              case 1: eltrans = new (lh) Ng_ConstElementTransformation<0,1> (this, et, ei, elind); break;
-              case 2: eltrans = new (lh) Ng_ConstElementTransformation<1,2> (this, et, ei, elind); break;
-              case 3: eltrans = new (lh) Ng_ConstElementTransformation<2,3> (this, et, ei, elind); break;
-              default:
-                throw Exception ("MeshAccess::GetTrafo, illegal dimension");
-              }
-          }
-        */
-	// eltrans->SetElementType (GetSElType(elnr));
-	// eltrans->SetElement (1, elnr, elind);
       }
 
     return *eltrans;

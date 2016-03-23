@@ -133,7 +133,7 @@ namespace ngstd
     }
 
     /// allocates size bytes of memory from local heap
-    INLINE void * Alloc (size_t size) // throw (LocalHeapOverflow)
+    INLINE void * Alloc (size_t size) final // throw (LocalHeapOverflow)
     {
       char * oldp = p;
     
