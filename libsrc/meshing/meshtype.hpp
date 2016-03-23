@@ -937,9 +937,10 @@ namespace netgen
     // other face data
     /// surface colour (Default: R=0.0 ; G=1.0 ; B=0.0)
     Vec3d surfcolour;
-
+    
     ///
-    string * bcname;
+    static string default_bcname;
+    string * bcname = &default_bcname;
     /// root of linked list 
     SurfaceElementIndex firstelement;
   
@@ -968,7 +969,7 @@ namespace netgen
     // Philippose - 06/07/2009
     // Get Surface colour
     Vec3d SurfColour () const { return surfcolour; }
-    DLL_HEADER const string & GetBCName () const;
+    DLL_HEADER const string & GetBCName () const { return *bcname; }
     // string * BCNamePtr () { return bcname; }
     // const string * BCNamePtr () const  { return bcname; }
     void SetSurfNr (int sn) { surfnr = sn; }

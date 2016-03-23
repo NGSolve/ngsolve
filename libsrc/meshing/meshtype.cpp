@@ -2326,13 +2326,15 @@ namespace netgen
       tlosurf == seg.tlosurf+1;
   }
 
-
+  string FaceDescriptor :: default_bcname = "default";
+  /*
   const string & FaceDescriptor :: GetBCName () const
   {
     static string defaultstring = "default";
     if (bcname) return *bcname;
     return defaultstring;
   }
+  */
 
   /*
     void FaceDescriptor :: SetBCName (string * bcn)
