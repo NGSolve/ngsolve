@@ -621,18 +621,28 @@ void ExportCoefficientFunction()
 
     shared_ptr<CoefficientFunction> GetNormalVectorCF (int dim)
     { 
-      if (dim == 2)
-        return make_shared<NormalVectorCF<2>>(); 
-      else
-        return make_shared<NormalVectorCF<3>>(); 
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<NormalVectorCF<1>>(); 
+	case 2:
+	  return make_shared<NormalVectorCF<2>>(); 
+	default:
+	  return make_shared<NormalVectorCF<3>>(); 
+	}
     }
 
     shared_ptr<CoefficientFunction> GetTangentialVectorCF (int dim)
     { 
-      if (dim == 2)
-        return make_shared<TangentialVectorCF<2>>(); 
-      else
-        return make_shared<TangentialVectorCF<3>>(); 
+      switch(dim)
+	{
+	case 1:
+	  return make_shared<TangentialVectorCF<1>>(); 
+	case 2:
+	  return make_shared<TangentialVectorCF<2>>(); 
+	default:
+	  return make_shared<TangentialVectorCF<3>>(); 
+	}
     }
   };
 

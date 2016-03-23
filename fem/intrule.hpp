@@ -772,6 +772,11 @@ namespace ngfem
 
       switch (ElementTopology::GetFacetType(eltype, fnr))
 	{
+	case ET_POINT:
+	  {
+	    irvol[0] = Vec<3> (points (fnr) );
+	    break;
+	  }
 	case ET_SEGM:
 	  {
 	    FlatVec<3> p1 = points (edges[fnr][0]);
