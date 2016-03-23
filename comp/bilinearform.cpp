@@ -2862,9 +2862,19 @@ namespace ngcomp
                             throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                         }
 
+                    // do we need locks for neighbor - testfunctions ?
+                    bool neighbor_testfunction = false;
+                    for (int j = 0; j < NumIntegrators(); j++)
+                      if (parts[j] -> SkeletonForm())
+                        {
+                          auto dgform = parts[j] -> GetDGFormulation();
+                          if (dgform.neighbor_testfunction)
+                            neighbor_testfunction = true;
+                        }
+
                     // element-boundary formulation
 		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-                    // mutex addelemfacbnd_mutex;                    
+                    mutex addelemfacbnd_mutex;                    
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -2931,12 +2941,16 @@ namespace ngcomp
                                          // ely = elmat * elx;
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
-                                         
-                                         {
-                                           // test.Other() not allowed ...
-                                           // lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                           y.AddIndirect(dnums, ely);
-                                         }
+
+                                         if (neighbor_testfunction)
+                                           {
+                                             lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                             y.AddIndirect(dnums, ely);
+                                           }
+                                         else
+                                           {
+                                             y.AddIndirect(dnums, ely);
+                                           }
                                        } //end for (numintegrators)
                                      timerDGfacet2.Stop();                                     
                                      continue;
@@ -3056,21 +3070,21 @@ namespace ngcomp
                                        fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                                fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                                      
-                                     
-                                     compressed_ely = 0;
-                                     for (int i = 0; i < dnums.Size(); i++)
-                                       compressed_ely(dnums_to_compressed[i]) += ely(i);
-                                     
-                                     // shared_ptr<FacetBilinearFormIntegrator> fbfi = 
-                                     // dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
-                                     
-                                     
-                                     {
-                                       // don't need lock since we don't support other
-                                       // lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                       // y.AddIndirect(compressed_dnums, compressed_ely);
-                                       y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
-                                     }
+
+                                     if (neighbor_testfunction)
+                                       {
+                                         compressed_ely = 0;
+                                         for (int i = 0; i < dnums.Size(); i++)
+                                           compressed_ely(dnums_to_compressed[i]) += ely(i);
+                                         
+                                         lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                         y.AddIndirect(compressed_dnums, compressed_ely);
+                                       }
+                                     else
+                                       {
+                                         // don't need lock since we don't support other
+                                         y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
+                                       }
                                    }
                                }
                            }                             
