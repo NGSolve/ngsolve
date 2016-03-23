@@ -383,6 +383,10 @@ namespace ngfem
     //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
     // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
 
+    static double segm_normals [][1] = 
+    { { 1 },
+      { -1 } };
+    
     static double trig_normals [][2] = 
     { { 0, -1 },
     { -1, 0 },
@@ -431,6 +435,7 @@ namespace ngfem
     
     switch (et)
     {
+    case ET_SEGM: return FlatVector< Vec<D> > (2, segm_normals);
     case ET_TRIG: return FlatVector< Vec<D> > (3, trig_normals);
     case ET_QUAD: return FlatVector< Vec<D> > (4, quad_normals);
     case ET_TET:  return FlatVector< Vec<D> > (4, tet_normals);
