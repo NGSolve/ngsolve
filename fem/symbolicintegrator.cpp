@@ -1262,6 +1262,22 @@ namespace ngfem
           FlatVector<> measure(mir1.Size(), lh);
           switch (trafo1.SpaceDim())
             {
+	    case 1:
+              {
+                Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr1];
+                for (int i = 0; i < mir1.Size(); i++)
+                  {
+                    auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
+                    Mat<1> inv_jac = mip.GetJacobianInverse();
+                    double det = mip.GetMeasure();
+                    Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
+                    double len = L2Norm (normal);    // that's the surface measure 
+                    normal /= len;                   // normal vector on physical element
+                    const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
+                    measure(i) = len;
+                  }
+                break;
+              }
             case 2:
               {
                 Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
@@ -1376,6 +1392,22 @@ namespace ngfem
           FlatVector<> measure(mir1.Size(), lh);
           switch (trafo1.SpaceDim())
             {
+	    case 1:
+              {
+                Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr1];
+                for (int i = 0; i < mir1.Size(); i++)
+                  {
+                    auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
+                    Mat<1> inv_jac = mip.GetJacobianInverse();
+                    double det = mip.GetMeasure();
+                    Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
+                    double len = L2Norm (normal);    // that's the surface measure 
+                    normal /= len;                   // normal vector on physical element
+                    const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
+                    measure(i) = len;
+                  }
+                break;
+              }
             case 2:
               {
                 Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
@@ -1519,6 +1551,22 @@ namespace ngfem
         FlatVector<> measure(mir1.Size(), lh);
         switch (trafo1.SpaceDim())
           {
+	  case 1:
+            {
+              Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr1];
+              for (int i = 0; i < mir1.Size(); i++)
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
+                  Mat<1> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
+                  double len = L2Norm (normal);    // that's the surface measure 
+                  normal /= len;                   // normal vector on physical element
+                  const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
+                  measure(i) = len;
+                }
+	      break;
+            }
           case 2:
             {
               Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr1];
