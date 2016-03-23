@@ -319,7 +319,7 @@ namespace ngcomp
         Ngs_Element ngel = ma->GetElement(elnr);
         ELEMENT_TYPE eltype = ngel.GetType();
         
-        if (!DefinedOn (ma->GetElIndex (elnr)))
+        if (!DefinedOn (ngel.index))
           {
             switch (eltype)
               {
@@ -334,10 +334,11 @@ namespace ngcomp
               }
           }
 
-	if (ma->GetElType(elnr) == ET_TRIG) 
+        if (ngel.GetType() == ET_TRIG) 
 	  {
-	    ArrayMem<int,3> vnums(3);
-	    ma->GetElVertices (elnr, vnums);
+            int ia[3];
+            FlatArray<int> vnums(3, &ia[0]);
+            vnums = ngel.Vertices();
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
 	  }
 
@@ -371,11 +372,11 @@ namespace ngcomp
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL>(elnr);
     L2HighOrderFE<ET> * hofe =  new (lh) L2HighOrderFE<ET> ();
-    
+
     hofe -> SetVertexNumbers (ngel.vertices);
-    hofe -> SetOrder (order_inner[elnr]);
-    hofe -> ComputeNDof();
-    
+    hofe -> L2HighOrderFE<ET>::SetOrder (order_inner[elnr]);
+    hofe -> L2HighOrderFE<ET>::ComputeNDof();
+
     return *hofe;
   }
 

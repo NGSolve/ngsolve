@@ -510,7 +510,7 @@ namespace ngcomp
        returns element of compile-time fixed dimension
      */
     template <int DIM, VorB vb>
-    Ngs_Element GetElement (int elnr) const
+      inline Ngs_Element GetElement (int elnr) const
     {
       return Ngs_Element (mesh.GetElement<DIM> (elnr), ElementId(vb, elnr));
     }
