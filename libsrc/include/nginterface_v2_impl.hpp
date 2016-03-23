@@ -135,3 +135,82 @@ NGX_INLINE DLL_HEADER Ng_Element Ngx_Mesh :: GetElement<3> (int nr) const
   ret.is_curved = el.IsCurved();
   return ret;
 }
+
+
+
+
+
+
+
+
+
+
+template <> NGX_INLINE DLL_HEADER int Ngx_Mesh :: GetNNodes<1> ()
+{
+  return mesh->GetTopology().GetNEdges();
+}
+
+template <> NGX_INLINE DLL_HEADER int Ngx_Mesh :: GetNNodes<2> ()
+{
+  return mesh->GetTopology().GetNFaces();
+}
+
+template <> NGX_INLINE DLL_HEADER const Ng_Node<0> Ngx_Mesh :: GetNode<0> (int vnr) const
+{
+  Ng_Node<0> node;
+  vnr++;
+  switch (mesh->GetDimension())
+    {
+    case 3:
+      {
+        FlatArray<ElementIndex> ia = mesh->GetTopology().GetVertexElements(vnr);
+        node.elements.ne = ia.Size();
+        node.elements.ptr = (int*)&ia[0];
+        
+        FlatArray<SurfaceElementIndex> bia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+        node.bnd_elements.ne = bia.Size();
+        node.bnd_elements.ptr = (int*)&bia[0];
+        break;
+      }
+    case 2:
+      {
+        FlatArray<SurfaceElementIndex> ia = mesh->GetTopology().GetVertexSurfaceElements(vnr);
+        node.elements.ne = ia.Size();
+        node.elements.ptr = (int*)&ia[0];
+        
+        FlatArray<SegmentIndex> bia = mesh->GetTopology().GetVertexSegments(vnr);
+        node.bnd_elements.ne = bia.Size();
+        node.bnd_elements.ptr = (int*)&bia[0];
+        break;
+      }
+    case 1:
+      {
+        FlatArray<SegmentIndex> ia = mesh->GetTopology().GetVertexSegments(vnr);
+        node.elements.ne = ia.Size();
+        node.elements.ptr = (int*)&ia[0];
+        
+        node.bnd_elements.ne = 1;   // nothing useful ...
+        node.bnd_elements.ptr = nullptr;
+        break;
+      }
+    default:
+      ;
+    }
+  return node;
+}
+  
+template <> NGX_INLINE DLL_HEADER const Ng_Node<1> Ngx_Mesh :: GetNode<1> (int nr) const
+{
+  Ng_Node<1> node;
+  node.vertices.ptr = mesh->GetTopology().GetEdgeVerticesPtr(nr);
+  return node;
+}
+
+template <> NGX_INLINE DLL_HEADER const Ng_Node<2> Ngx_Mesh :: GetNode<2> (int nr) const
+{
+  Ng_Node<2> node;
+  node.vertices.ptr = mesh->GetTopology().GetFaceVerticesPtr(nr);
+  node.vertices.nv = (node.vertices.ptr[3] == 0) ? 3 : 4;
+  return node;
+}
+

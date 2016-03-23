@@ -116,6 +116,7 @@ namespace netgen
 
   public:
     Ng_Elements elements;
+    Ng_Elements bnd_elements;
   };
 
 

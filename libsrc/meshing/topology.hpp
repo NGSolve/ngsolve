@@ -133,13 +133,15 @@ public:
   int GetFace2SurfaceElement (int fnr) const { return face2surfel[fnr-1]; }
   
   void GetVertexElements (int vnr, Array<ElementIndex> & elements) const;
-  FlatArray<ElementIndex> GetVertexElements (int vnr) const;
+  FlatArray<ElementIndex> GetVertexElements (int vnr) const
+  { return (*vert2element)[vnr]; }
 
   void GetVertexSurfaceElements( int vnr, Array<SurfaceElementIndex>& elements ) const;
-  FlatArray<SurfaceElementIndex> GetVertexSurfaceElements (int vnr) const;
+  FlatArray<SurfaceElementIndex> GetVertexSurfaceElements (int vnr) const
+  { return (*vert2surfelement)[vnr]; }
 
-  FlatArray<SegmentIndex> GetVertexSegments (int vnr) const;  
-
+  FlatArray<SegmentIndex> GetVertexSegments (int vnr) const
+  { return (*vert2segment)[vnr]; }
   
   int GetVerticesEdge ( int v1, int v2) const;
   void GetSegmentVolumeElements ( int segnr, Array<ElementIndex> & els ) const;

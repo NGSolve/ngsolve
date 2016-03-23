@@ -1664,7 +1664,7 @@ namespace netgen
       }
   }
 
-
+  /*
   FlatArray<ElementIndex> MeshTopology :: GetVertexElements (int vnr) const
   {
     if (vert2element)
@@ -1685,7 +1685,7 @@ namespace netgen
       return (*vert2segment)[vnr];
     return FlatArray<SegmentIndex> (0,0);
   }
-
+  */
 
   void MeshTopology :: GetVertexSurfaceElements( int vnr, 
 						 Array<SurfaceElementIndex> & elements ) const
