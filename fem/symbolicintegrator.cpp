@@ -1260,6 +1260,12 @@ namespace ngfem
                 }
             }
         });
+
+    neighbor_testfunction = false;
+    for (auto proxy : test_proxies)
+      if (proxy->IsOther())
+        neighbor_testfunction = true;
+    
     cout << IM(3) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(3) << "num trial_proxies " << trial_proxies.Size() << endl;
     cout << IM(3) << "cumulated test_proxy dims  " << test_cum << endl;
@@ -1550,8 +1556,7 @@ namespace ngfem
                     fel2, LocalFacetNr2, trafo2, ElVertices2, elmat, lh);
     ely = elmat * elx;
     return;
-    */              
-
+    */
     
     ely = 0;
     
@@ -1739,6 +1744,22 @@ namespace ngfem
         FlatVector<> measure(mir1.Size(), lh);
         switch (trafo1.SpaceDim())
           {
+          case 1:
+            {
+              Vec<1> normal_ref = ElementTopology::GetNormals<1>(eltype1)[LocalFacetNr];
+              for (int i = 0; i < mir1.Size(); i++)
+                {
+                  auto & mip = static_cast<const MappedIntegrationPoint<1,1>&> (mir1[i]);
+                  Mat<1> inv_jac = mip.GetJacobianInverse();
+                  double det = mip.GetMeasure();
+                  Vec<1> normal = det * Trans (inv_jac) * normal_ref;       
+                  double len = L2Norm (normal);    // that's the surface measure 
+                  normal /= len;                   // normal vector on physical element
+                  const_cast<MappedIntegrationPoint<1,1>&> (mip).SetNV(normal);
+                  measure(i) = len;
+                }
+                break;
+            }
           case 2:
             {
               Vec<2> normal_ref = ElementTopology::GetNormals<2>(eltype1)[LocalFacetNr];
@@ -1773,9 +1794,10 @@ namespace ngfem
 
         ely1 = 0.0;
         IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-        if (proxy->IsOther()) 
-          // proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
-          throw Exception ("ApplyFacetBoundary: other testfunction not allowed here");
+        if (proxy->IsOther())
+          ;
+          // nothing to do ????
+          // throw Exception ("ApplyFacetBoundary: other testfunction not allowed here");
         else
           proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
         ely += ely1;
