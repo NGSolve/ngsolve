@@ -797,6 +797,8 @@ namespace ngcomp
     { return ArrayObject(mesh.GetNode<0> (vnr).elements); }
 
     void GetVertexSurfaceElements( int vnr, Array<int>& elems) const;
+    auto GetVertexSurfaceElements (int vnr) const -> decltype (ArrayObject(mesh.GetNode<0> (vnr).bnd_elements))
+    { return ArrayObject(mesh.GetNode<0> (vnr).bnd_elements); }
 
 
   private:
