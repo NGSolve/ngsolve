@@ -773,7 +773,7 @@ namespace ngcomp
 
   void MeshAccess :: GetEdgeElements (int enr, Array<int> & elnums) const
   {
-    static Timer t("getedgeelements"); RegionTimer reg(t);    
+    // static Timer t("getedgeelements"); RegionTimer reg(t);    
     elnums.SetSize0();
     // ArrayMem<int,3> pnums;
     int p0, p1;
@@ -803,15 +803,18 @@ namespace ngcomp
 
   void MeshAccess :: GetEdgeSurfaceElements (int enr, Array<int> & elnums) const
   {
-    static Timer t("getedgesurfelements"); RegionTimer reg(t);
+    // static Timer t("getedgesurfelements"); RegionTimer reg(t);
     elnums.SetSize0();
     // ArrayMem<int,3> pnums;
     int p0, p1;
-    ArrayMem<int,50> velems0, velems1; 
+    // ArrayMem<int,50> velems0, velems1; 
     GetEdgePNums(enr, p0, p1);
+    /*
     GetVertexSurfaceElements(p0, velems0);
     GetVertexSurfaceElements(p1, velems1);
-  
+    */
+    auto velems0 = GetVertexSurfaceElements(p0);
+    auto velems1 = GetVertexSurfaceElements(p1);
     // now compare
     for (int i=0; i<velems0.Size(); i++) 
       for (int j=0; j<velems1.Size(); j++) 
