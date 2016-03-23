@@ -2273,7 +2273,7 @@ namespace netgen
     // Initialise surface colour
     surfcolour = Vec3d(0.0,1.0,0.0);
     tlosurf = -1; 
-    bcname = 0;
+    // bcname = 0;
     firstelement = -1;
   }
 
@@ -2298,7 +2298,7 @@ namespace netgen
     tlosurf = tlosurfi; 
     bcprop = surfnri;
     domin_singular = domout_singular = 0.;
-    bcname = 0;
+    // bcname = 0;
     firstelement = -1;
   }
 
@@ -2313,7 +2313,7 @@ namespace netgen
     tlosurf = seg.tlosurf+1;
     bcprop = 0;
     domin_singular = domout_singular = 0.;
-    bcname = 0;
+    // bcname = 0;
     firstelement = -1;
   }
 
@@ -2336,13 +2336,13 @@ namespace netgen
   }
   */
 
-  /*
-    void FaceDescriptor :: SetBCName (string * bcn)
-    {
-    bcname = bcn;
-    }
-  */
-
+  void FaceDescriptor :: SetBCName (string * bcn)
+  {
+    if (bcn)
+      bcname = bcn;
+    else
+      bcn = &default_bcname;
+  }
 
   ostream & operator<<(ostream  & s, const FaceDescriptor & fd)
   {
