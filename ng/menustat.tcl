@@ -942,7 +942,7 @@ ttk::frame .statbar -relief flat
 # -bd 2
 pack .statbar -side bottom -fill x
 
-ttk::label .statbar.ptslabel -text "Points: "
+ttk::label .statbar.ptslabel -text "   Points: "
 ttk::label .statbar.ptsval -textvariable status_np
 ttk::label .statbar.elslabel -text "   Elements: "
 ttk::label .statbar.elsval -textvariable status_ne

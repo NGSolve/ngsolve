@@ -1602,7 +1602,7 @@ proc clippingdialog { } {
             -validatecommand "my_validatespinbox %W %P 0" \
             -invalidcommand "my_invalidspinbox %W"
 
-        ttk::label $w.donotclipdomainlabel -text "Clip only domain"
+        ttk::label $w.donotclipdomainlabel -text "Do not clip domain"
         ttk::spinbox $w.donotclipdomainspinb -from 0 -to 500 -increment 1 -width 3 \
             -textvariable viewoptions.clipping.notdomain -validate focus \
             -command "clipplanecommand" \
