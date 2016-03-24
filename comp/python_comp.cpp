@@ -1399,6 +1399,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
+    .def("SetLinearForm", &BilinearForm::SetLinearForm)
     .def("AssembleLinearization", FunctionPointer
 	 ([](BF & self, BaseVector & ulin, int heapsize)
 	  {
