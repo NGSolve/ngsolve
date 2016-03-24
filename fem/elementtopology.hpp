@@ -110,7 +110,16 @@ namespace ngfem
     return ost << (id.IsVolume() ? "VEl" : "BEl") << ' ' << id.Nr();
   }
 
-
+  template <VorB VB,int DIM>
+  class T_ElementId
+  {
+    int nr;
+  public:
+    T_ElementId (int anr) : nr(anr) { ; }
+    T_ElementId (ElementId ei) : nr(ei.Nr()) { ; }
+    operator ElementId() const { return ElementId(VB, nr); }
+    int Nr() const { return nr; } 
+  };
 
   
   /// Topology and coordinate information of master element:

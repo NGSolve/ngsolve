@@ -775,30 +775,29 @@ namespace ngcomp
   {
     // static Timer t("getedgeelements"); RegionTimer reg(t);    
     elnums.SetSize0();
-    // ArrayMem<int,3> pnums;
+
     int p0, p1;
-    // ArrayMem<int,50> velems0, velems1; 
     GetEdgePNums(enr, p0, p1);
-    /*
-    GetVertexElements(p0, velems0);
-    GetVertexElements(p1, velems1);
-    */
+
     auto velems0 = GetVertexElements(p0);
     auto velems1 = GetVertexElements(p1);
-
+    
+    /*
+    // n^2 intersection 
     for (auto el : velems0)
       if (velems1.Contains(el))
         elnums.Append(el);
-    /*
-    // now compare
-    for (int i=0; i<velems0.Size(); i++) 
-      for (int j=0; j<velems1.Size(); j++) 
-	if (velems0[i] == velems1[j]) 
-	  {
-	    elnums.Append(velems0[i]);
-	    continue;
-	  }
     */
+    
+    // intersect sorted arrays ...
+    int j = 0;
+    for (int i = 0; i < velems0.Size(); i++)
+      for ( ; j < velems1.Size(); j++)
+        {
+          if (velems0[i] < velems1[j]) break;
+          if (velems0[i] == velems1[j])
+            elnums.Append (velems0[i]);
+        }
   }
 
   void MeshAccess :: GetEdgeSurfaceElements (int enr, Array<int> & elnums) const
@@ -1126,10 +1125,15 @@ namespace ngcomp
     return *eltrans;
   }
 
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,1> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,2> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,3> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,1> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,2> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,3> ei, Allocator & lh) const;
+  
 
-
-  ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
-
+  ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
   {
     ElementTransformation * eltrans;
     

@@ -468,7 +468,7 @@ namespace ngcomp
                                      ElementId(boundary ? BND : VOL, elnr));
 	}
     }
-
+    
     INLINE Ngs_Element GetElement (ElementId ei) const
     {
       int hdim = dim;
@@ -483,6 +483,14 @@ namespace ngcomp
 	}
     }
 
+    template <VorB VB, int DIM>
+      INLINE Ngs_Element GetElement (T_ElementId<VB,DIM> ei) const
+    {
+      constexpr int HDIM = DIM - ((VB == BND) ? 1 : 0);
+      return Ngs_Element (mesh.GetElement<HDIM> (ei.Nr()), ei);
+    }
+
+    
     INLINE Ngs_Element operator[] (ElementId ei) const    
     {
       return GetElement (ei);
@@ -732,8 +740,8 @@ namespace ngcomp
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
     ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, Allocator & lh) const;
-    
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const
+
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const    
     {
       return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
     }
@@ -743,6 +751,15 @@ namespace ngcomp
     template <int DIM>
     ngfem::ElementTransformation & GetSTrafoDim (int elnr, Allocator & lh) const;
 
+    template <VorB VB,int DIM>
+      ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const
+    {
+      if (VB == VOL)
+        return GetTrafoDim<DIM> (ei.Nr(), lh);
+      else
+        return GetSTrafoDim<DIM> (ei.Nr(), lh);
+    }
+    
 
     // (old style optimization)
     void SetPointSearchStartElement(const int el) const;

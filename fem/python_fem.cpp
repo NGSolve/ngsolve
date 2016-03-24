@@ -156,7 +156,9 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (bp::object py_coef)
     }
   else
     tmp += MakeCoefficient(py_coef);
-  return move(tmp);
+
+  // return move(tmp);  // clang recommends not to move it ...
+  return tmp;
 }
 
 typedef CoefficientFunction CF;
