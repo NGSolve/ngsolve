@@ -2893,13 +2893,14 @@ namespace ngcomp
                              // RegionTimer reg1(timerDG1);
                              
                              ma->GetElFacets(el1,fnums1);
+                             // T_ElementId<VOL,2> ei1(el1);
+                             ElementId ei1(VOL, el1);
                              
                              for (int facnr1 : Range(fnums1))
                                {
                                  HeapReset hr(lh);
                                  
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
-                                 ma->GetFacetElements(fnums1[facnr1],elnums);                                 
                                  if (elnums.Size()<2)
                                    {
                                      RegionTimer regfacet(timerDGfacet);
@@ -2947,7 +2948,7 @@ namespace ngcomp
 
                                          FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
                                          x.GetIndirect(dnums, elx);
-                                         // ely = elmat * elx;
+
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
 
@@ -2969,12 +2970,14 @@ namespace ngcomp
 
                                  // RegionTimer reg2(timerDG2);
                                  int el2 = elnums[0] + elnums[1] - el1;
+                                 // T_ElementId<VOL,2> ei2(el2);
+                                 ElementId ei2(VOL, el2);
                                  
                                  ma->GetElFacets(el2,fnums2);
                                  int facnr2 = fnums2.Pos(fnums1[facnr1]);
 
-                                 ElementTransformation & eltrans1 = ma->GetTrafo (el1, false, lh);
-                                 ElementTransformation & eltrans2 = ma->GetTrafo (el2, false, lh);
+                                 ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+                                 ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
                                  
                                  const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                                  const FiniteElement & fel2 = fespace->GetFE (el2, lh);
