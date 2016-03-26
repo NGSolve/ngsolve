@@ -1557,7 +1557,8 @@ void NGS_DLL_HEADER ExportNgcomp()
   PyExportSymbolTable<shared_ptr<NumProc>> ();
   PyExportSymbolTable<double> ();
   PyExportSymbolTable<shared_ptr<double>> ();
-  
+
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<PDE>);  
   bp::class_<PDE,shared_ptr<PDE>> ("PDE", bp::init<>())
 
     // .def(bp::init<const string&>())
