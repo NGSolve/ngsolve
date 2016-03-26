@@ -1399,6 +1399,14 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", &BilinearForm::ApplyMatrix)
+    .def("ComputeInternal", FunctionPointer
+	 ([](BF & self, BaseVector & u, BaseVector & f, int heapsize)
+	  {
+	    LocalHeap lh (heapsize, "BilinearForm::ComputeInternal");
+	    self.ComputeInternal (u ,f ,lh );
+	  }),
+         (bp::arg("self")=NULL,bp::arg("u"),bp::arg("f"),bp::arg("heapsize")=1000000))
+
     .def("AssembleLinearization", FunctionPointer
 	 ([](BF & self, BaseVector & ulin, int heapsize)
 	  {
