@@ -1050,12 +1050,203 @@ namespace ngfem
       ost << ir[i] << endl;
     return ost;
   }
+  
+  // #define SpecificIntegrationPoint MappedIntegrationPoint
+  template <int DIMS, int DIMR, typename SCAL>   
+  using SpecificIntegrationPoint = MappedIntegrationPoint<DIMS,DIMR,SCAL>;
+}
 
+namespace ngstd
+{
+  template<>
+  class alignas(32) SIMD<ngfem::IntegrationPoint>
+  {
+    SIMD<double> x[3], weight;
+    
+  public:
+    static constexpr int Size() { return SIMD<double>::Size(); }
 
+    SIMD() = default;
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+    
+    template <typename Function>
+    SIMD (const Function & func)
+    {
+      ngfem::IntegrationPoint ip[Size()];
+      for (int i = 0; i < Size(); i++) ip[i] = func(i);
+      for (int j = 0; j < 3; j++)
+        x[j] = [&ip,j] (int i) { return ip[i](j); };
+      weight = [&ip] (int i) { return ip[i].Weight(); };
+    }
+    
+    const SIMD<double> & operator() (int i) const { return x[i]; }
+    SIMD<double> & operator() (int i) { return x[i]; }
+    SIMD<double> Weight() const { return weight; }
+    ngfem::IntegrationPoint operator[] (int i) const
+    { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
+  };
 
+  template <>
+  class alignas(32) SIMD<ngfem::BaseMappedIntegrationPoint>
+  {
+  protected:
+    SIMD<ngfem::IntegrationPoint> ip;
+    const ngfem::ElementTransformation * eltrans;
+    SIMD<double> measure;
+    bool owns_trafo = false;
+  public:
+    SIMD() = default;
+    SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
+          const ngfem::ElementTransformation & aeltrans)
+      : ip(aip), eltrans(&aeltrans) { ; }
+    ~SIMD();
+    const SIMD<ngfem::IntegrationPoint> & IP () const { return ip; }
+    const ngfem::ElementTransformation & GetTransformation () const { return *eltrans; }
+    // int GetIPNr() const { return ip.Nr(); }
 
-#define SpecificIntegrationPoint MappedIntegrationPoint 
+    SIMD<double> GetMeasure() const { return measure; }
+    SIMD<double> GetWeight() const { return measure * ip.Weight(); }
+  };
+    
+  template <int R>
+  class SIMD<ngfem::DimMappedIntegrationPoint<R>> : public SIMD<ngfem::BaseMappedIntegrationPoint>
+  {
+  protected:
+    ngbla::Vec<R,SIMD<double>> point, normalvec, tangentialvec;
+  public:
+    SIMD() = default;
+    SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
+          const ngfem::ElementTransformation & eltrans)
+      : SIMD<ngfem::BaseMappedIntegrationPoint> (aip, eltrans) { ; }
+    const ngbla::Vec<R,SIMD<double>> & GetPoint() const { return point; }
+    ngbla::Vec<R,SIMD<double>> & Point() { return point; }
+  };
 
+  template <int DIMS, int DIMR>
+  class alignas(32) SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>> : public SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>
+  {
+  protected:
+    using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::measure;
+    using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::normalvec;
+    using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::tangentialvec;
+    ngbla::Mat<DIMR,DIMS,SIMD<double>> dxdxi;
+    SIMD<double> det;
+  public:
+    SIMD () = default;
+    SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
+          const ngfem::ElementTransformation & aeltrans,
+          int /* dummy */)
+      : SIMD<ngfem::DimMappedIntegrationPoint<DIMR>> (aip, aeltrans)
+      { ; }
+    
+    const Mat<DIMR,DIMS,SIMD<double>> & GetJacobian() const { return dxdxi; }
+    Mat<DIMR,DIMS,SIMD<double>> & Jacobian() { return dxdxi; }
+    
+    INLINE void Compute ()
+    {
+      if (DIMS == DIMR)
+	{
+	  det = Det (dxdxi);
+	  normalvec = SIMD<double>(0.0);
+	  tangentialvec = SIMD<double>(0.0);
+	}
+      else
+	{
+	  if (DIMR == 3)
+	    {
+	      normalvec = Cross (Vec<3,SIMD<double>> (dxdxi.Col(0)),
+				 Vec<3,SIMD<double>> (dxdxi.Col(1)));
+	      det = L2Norm (normalvec);
+	      normalvec /= det;
+	    }
+	  else if (DIMR == 2)
+	    {
+	      det = sqrt ( sqr (dxdxi(0,0)) + sqr (dxdxi(1,0)));
+
+	      normalvec(0) = -dxdxi(1,0) / det;
+	      normalvec(1) = dxdxi(0,0) / det;
+	    }
+	  else
+	    {
+	      det = 1.0;
+	      normalvec = 1.0;
+	    }
+	  tangentialvec = SIMD<double>(0.0);
+	}
+      measure = fabs (det);
+    }
+  
+    SIMD<double> GetJacobiDet() const { return det; }
+    ///
+    // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
+    const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
+    { 
+      if (DIMS == DIMR)
+        return 1.0/det * Trans (Cof (dxdxi));
+      else
+        {
+	  Mat<DIMS,DIMS,SIMD<double>> ata, iata;
+	  ata = Trans (dxdxi) * dxdxi;
+	  iata = Inv (ata);
+	  return (iata * Trans (dxdxi));
+        }
+    }
+    
+  };
+}
+
+namespace ngfem
+{
+  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
+  {
+    int dimension = -1;
+  public:
+    SIMD_IntegrationRule () = default;
+    SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
+    
+    SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
+      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
+    
+  };
+
+  class NGS_DLL_HEADER SIMD_BaseMappedIntegrationRule 
+  { 
+  protected:
+    SIMD_IntegrationRule ir;
+    const ElementTransformation & eltrans;
+    char * baseip;
+    int incr;
+
+  public:
+    SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
+                                    const ElementTransformation & aeltrans)
+      : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
+    ~SIMD_BaseMappedIntegrationRule ()
+      { ir.NothingToDelete(); }
+
+    INLINE int Size() const { return ir.Size(); }
+    INLINE const SIMD_IntegrationRule & IR() const { return ir; }
+    INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
+
+    INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
+    { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
+  };
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  class NGS_DLL_HEADER SIMD_MappedIntegrationRule : public SIMD_BaseMappedIntegrationRule
+  {
+    FlatArray<SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>> mips;
+  public:
+    SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
+                                const ElementTransformation & aeltrans, 
+                                Allocator & lh);
+
+    SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
+    { 
+      return mips[i]; 
+    }    
+  };
 }
 
 

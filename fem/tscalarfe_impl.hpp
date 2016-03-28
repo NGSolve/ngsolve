@@ -84,6 +84,26 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> pt;
+        for (int j = 0; j < DIM; j++)
+          pt(j) = ir[i](j);
+        cout << "pt = " << pt << endl;
+        SIMD<double> sum = 0;
+        T_CalcShape (&pt(0), SBLambda ( [&](int i, SIMD<double> shape) { sum += coefs(i)*shape; } ));
+        cout << "sum = " << sum << endl;
+        values.Get(i) = sum.Data();
+      }
+  }
+    
+
+  
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)

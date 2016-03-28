@@ -511,6 +511,11 @@ namespace ngcomp
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    
 
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
@@ -523,6 +528,22 @@ namespace ngcomp
           mir[i].Compute();
         }
     }
+
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & bmir) const
+    {
+      SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      Vec<DIMR,SIMD<double>> simd_p0(p0);
+      Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
+      for (int i = 0; i < ir.Size(); i++)
+        {
+          const SIMD<IntegrationPoint> & ip = ir[i];
+          mir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&ip(0));
+          mir[i].Jacobian() = simd_mat;
+          mir[i].Compute();
+        }
+    }
+    
   };
   
 
