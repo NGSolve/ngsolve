@@ -787,6 +787,7 @@ class cl_BinaryOpCF : public CoefficientFunction
   DERIV lam_deriv;
   DDERIV lam_dderiv;
   NONZERO lam_nonzero;
+  int dim;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
@@ -794,10 +795,15 @@ public:
     : c1(ac1), c2(ac2), lam(alam), lamc(alamc),
       lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
       lam_nonzero(alam_nonzero)
-  { ; }
+  {
+    int dim1 = c1->Dimension();
+    int dim2 = c2->Dimension();
+    if (dim1 != dim2) throw Exception ("Dimensions don't match");
+    dim = dim1;
+  }
 
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
-  virtual int Dimension() const { return c1->Dimension(); }
+  virtual int Dimension() const { return dim; }
   virtual Array<int> Dimensions() const { return c1->Dimensions(); }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -830,10 +836,10 @@ public:
                         FlatVector<> result) const
   {
 #ifdef VLA
-    double hmem[Dimension()];
-    FlatVector<> temp(Dimension(), hmem);
+    double hmem[dim];
+    FlatVector<> temp(dim, hmem);
 #else
-    Vector<> temp(Dimension());
+    VectorMem<10> temp(dim);
 #endif
 
     c1->Evaluate (mip, result);
@@ -847,10 +853,10 @@ public:
                         FlatVector<Complex> result) const
   {
 #ifdef VLA
-    double hmem[2*Dimension()];
-    FlatVector<Complex> temp(Dimension(), (Complex*)(void*)hmem);
+    double hmem[2*dim];
+    FlatVector<Complex> temp(dim, (Complex*)(void*)hmem);
 #else
-    Vector<Complex> temp(Dimension());
+    Vector<Complex> temp(dim);
 #endif
 
     c1->Evaluate (mip, result);
@@ -865,10 +871,10 @@ public:
                         FlatMatrix<> result) const
   {
 #ifdef VLA
-    double hmem[ir.Size()*Dimension()];
-    FlatMatrix<> temp(ir.Size(), Dimension(), hmem);
+    double hmem[ir.Size()*dim];
+    FlatMatrix<> temp(ir.Size(), dim, hmem);
 #else
-    Matrix<> temp(ir.Size(), Dimension());
+    Matrix<> temp(ir.Size(), dim);
 #endif
 
     c1->Evaluate (ir, result);
@@ -1027,7 +1033,7 @@ public:
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
-    Vector<bool> v1(Dimension()), v2(Dimension());
+    Vector<bool> v1(dim), v2(dim);
     c1->NonZeroPattern(ud, v1);
     c2->NonZeroPattern(ud, v2);
     for (int i = 0; i < nonzero.Size(); i++)
