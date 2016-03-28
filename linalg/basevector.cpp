@@ -65,7 +65,7 @@ namespace ngla
                          double mysum = ngbla::L2Norm2 (me.Range(r));
                          sum += mysum;
                        });
-    return sqrt(sum);
+    return sqrt(double(sum));
   }
 
   BaseVector & BaseVector :: Scale (double scal)

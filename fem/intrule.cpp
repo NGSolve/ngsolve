@@ -719,11 +719,11 @@ namespace ngfem
 
   ostream & operator<< (ostream & ost, const DGIntegrationRule & ir)
   {
-    cout << "DG-IntegrationRule" << endl;
-    cout << "vol-ir: " << endl << (const IntegrationRule&)(ir);
+    ost << "DG-IntegrationRule" << endl;
+    ost << "vol-ir: " << endl << (const IntegrationRule&)(ir);
     for (int i = 0; i < ir.GetNFacets(); i++)
-      cout << "facet " << i << ": " << endl << ir.GetFacetIntegrationRule(i) << endl;
-    cout << "bound-vol-factor = " << ir.BoundaryVolumeFactor() << endl;
+      ost << "facet " << i << ": " << endl << ir.GetFacetIntegrationRule(i) << endl;
+    ost << "bound-vol-factor = " << ir.BoundaryVolumeFactor() << endl;
     return ost;
   }
 
@@ -2753,9 +2753,43 @@ namespace ngfem
 
 
 
+  SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
+    : Array<SIMD<IntegrationPoint>> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+  {
+    dimension = ir.Dim();
+    for (int i = 0; i < Size(); i++)
+      (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
+                                 return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
+  }
 
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
+                              const ElementTransformation & aeltrans, 
+                              Allocator & lh)
+    : SIMD_BaseMappedIntegrationRule (ir, aeltrans), mips(ir.Size(), lh)
+  {
+    baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+    incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
 
+    for (int i = 0; i < ir.Size(); i++)
+      new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
 
+    eltrans.CalcMultiPointJacobian (ir, *this);
+  }
+
+  template class SIMD_MappedIntegrationRule<0,0>;
+  template class SIMD_MappedIntegrationRule<0,1>;
+  template class SIMD_MappedIntegrationRule<1,1>;
+  template class SIMD_MappedIntegrationRule<2,2>;
+  template class SIMD_MappedIntegrationRule<3,3>;
+  template class SIMD_MappedIntegrationRule<1,2>;
+  template class SIMD_MappedIntegrationRule<2,3>;
+
+  template class SIMD_MappedIntegrationRule<0,2>;
+  template class SIMD_MappedIntegrationRule<0,3>;
+
+  
   int Integrator :: common_integration_order = -1;
 
   static IntegrationRules intrules;
@@ -2779,4 +2813,14 @@ namespace ngfem
   {
     return GetIntegrationRules ().SelectIntegrationRuleJacobi10 (order);
   }
+}
+
+
+namespace ngstd
+{
+  SIMD<ngfem::BaseMappedIntegrationPoint>::~SIMD<ngfem::BaseMappedIntegrationPoint>()
+  {
+    if (owns_trafo) delete eltrans; 
+  }
+  
 }

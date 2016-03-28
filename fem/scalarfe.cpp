@@ -190,6 +190,13 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
+  Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
+  {
+    cout << "Evaluate (simd) not implemented for class " << typeid(*this).name() << endl;
+  }
+
+  template<int D>
+  void ScalarFiniteElement<D> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
     VectorMem<100> shapes(coefs.Height());

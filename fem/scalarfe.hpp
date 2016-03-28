@@ -7,6 +7,8 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include "avector.hpp"
+
 namespace ngfem
 {
   
@@ -147,6 +149,7 @@ namespace ngfem
        Vector x provides coefficient vector.
      */
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceVector<> coefs, FlatVector<> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const;
     /**
        Each column a vector ...
      */
