@@ -818,6 +818,10 @@ namespace ngfem
 
       return irvol;
     }
+
+
+    class SIMD_IntegrationRule & operator() (int fnr, const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
+
   };
 
 
@@ -1062,7 +1066,7 @@ namespace ngstd
   class alignas(32) SIMD<ngfem::IntegrationPoint>
   {
     SIMD<double> x[3], weight;
-    
+    int facetnr;
   public:
     static constexpr int Size() { return SIMD<double>::Size(); }
 
@@ -1083,8 +1087,12 @@ namespace ngstd
     const SIMD<double> & operator() (int i) const { return x[i]; }
     SIMD<double> & operator() (int i) { return x[i]; }
     SIMD<double> Weight() const { return weight; }
+    SIMD<double> & Weight() { return weight; }
     ngfem::IntegrationPoint operator[] (int i) const
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
+
+    int FacetNr() const { return facetnr; }
+    int & FacetNr() { return facetnr; }
   };
 
   template <>
@@ -1198,18 +1206,38 @@ namespace ngstd
 
 namespace ngfem
 {
+  
   class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
   {
     int dimension = -1;
   public:
     SIMD_IntegrationRule () = default;
+    inline SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order);
+    SIMD_IntegrationRule (const IntegrationRule & ir);
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
+    SIMD_IntegrationRule (int nip, LocalHeap & lh);
+    ~SIMD_IntegrationRule ();
     
     SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
       : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
-    
+
+    int GetNIP() const { return Size()*SIMD<double>::Size(); }
   };
 
+  extern NGS_DLL_HEADER const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order);
+
+  inline SIMD_IntegrationRule :: SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order)
+  { 
+    const SIMD_IntegrationRule & ir = SIMD_SelectIntegrationRule (eltype, order);
+    size = ir.Size();
+    data = &ir[0];
+    mem_to_delete = NULL;
+    dimension = ElementTopology::GetSpaceDim(eltype);
+  }
+
+
+
+  
   class NGS_DLL_HEADER SIMD_BaseMappedIntegrationRule 
   { 
   protected:

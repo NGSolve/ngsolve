@@ -1538,7 +1538,7 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    // static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+    static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
     /*
     static Timer t("SymbolicFacetBFI::Apply", 2);
     static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);
@@ -1569,6 +1569,7 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
     IntegrationRule ir_facet(etfacet, 2*maxorder);
+    
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
     const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
@@ -1577,6 +1578,17 @@ namespace ngfem
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
+
+    SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+    
+    // Facet2ElementTrafo transform1(eltype1, ElVertices1); 
+    auto & simd_ir_facet_vol1 = transform1(LocalFacetNr1, simd_ir_facet, lh);
+    // auto & simd_mir1 = trafo1(simd_ir_facet_vol1, lh);
+    
+    // Facet2ElementTrafo transform2(eltype2, ElVertices2); 
+    auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
+    // auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
+    
     // ts1.Stop();
     // ts2.Start();
 
@@ -1597,7 +1609,12 @@ namespace ngfem
         if (proxy->IsOther()) 
           proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+          {
+            // proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+            AFlatVector<double> simd_vals(simd_ir_facet.GetNIP(), lh);
+            static_cast<const ScalarFiniteElement<2>&> (fel1).Evaluate(simd_ir_facet_vol1, elx.Range(trial_range), simd_vals);
+            ud.GetMemory(proxy) = simd_vals;
+          }
       }
 
     // ts2.Stop();
@@ -1605,6 +1622,8 @@ namespace ngfem
     // t.Start();
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
+    AFlatMatrix<double> aval(1, simd_ir_facet.GetNIP(),lh);
+
     for (auto proxy : test_proxies)
       {
         HeapReset hr(lh);
@@ -1658,6 +1677,7 @@ namespace ngfem
             ud.testfunction = proxy;
             ud.test_comp = k;
             cf -> Evaluate (mir1, val);
+            // cf -> Evaluate (simd_mir1, aval);
             proxyvalues.Col(k) = val.Col(0);
           }
 
