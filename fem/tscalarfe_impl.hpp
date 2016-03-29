@@ -91,10 +91,10 @@ namespace ngfem
         Vec<DIM,SIMD<double>> pt;
         for (int j = 0; j < DIM; j++)
           pt(j) = ir[i](j);
-        cout << "pt = " << pt << endl;
+
         SIMD<double> sum = 0;
         T_CalcShape (&pt(0), SBLambda ( [&](int i, SIMD<double> shape) { sum += coefs(i)*shape; } ));
-        cout << "sum = " << sum << endl;
+
         values.Get(i) = sum.Data();
       }
   }

@@ -60,6 +60,13 @@ namespace ngfem
       Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
   }
 
+  void CoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    throw Exception(string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
+  }
+
+  
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
@@ -2272,10 +2279,27 @@ public:
   
   // ///////////////////////////// operators  /////////////////////////
 
+  struct GenericPlus {
+    template <typename T> T operator() (T x, T y) const { return x+y; }
+  };
+  struct GenericMinus {
+    template <typename T> T operator() (T x, T y) const { return x-y; }
+  };
+  struct GenericMult {
+    template <typename T> T operator() (T x, T y) const { return x*y; }
+  };
+  struct GenericDiv {
+    template <typename T> T operator() (T x, T y) const { return x/y; }
+  };
+  GenericPlus gen_plus;
+  GenericMinus gen_minus;
+  GenericMult gen_mult;
+  GenericDiv gen_div;
+  
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a+b; },
+                       gen_plus, // [](double a, double b) { return a+b; },
                        [](Complex a, Complex b) { return a+b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2287,7 +2311,7 @@ public:
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a-b; },
+                       gen_minus, // [](double a, double b) { return a-b; },
                        [](Complex a, Complex b) { return a-b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2319,7 +2343,7 @@ public:
       return make_shared<MultScalVecCoefficientFunction> (c2, c1);
     
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a*b; },
+                       gen_mult, // [](double a, double b) { return a*b; },
                        [](Complex a, Complex b) { return a*b; },
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2360,7 +2384,7 @@ public:
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2,
-                       [](double a, double b) { return a/b; },
+                       gen_div, // [](double a, double b) { return a/b; },
                        [](Complex a, Complex b) { return a/b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
