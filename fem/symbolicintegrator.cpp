@@ -1728,7 +1728,7 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+    static Timer tall("SymbolicFacetBFI::Apply - all", 2); // RegionTimer rall(tall);
 
     static Timer t("SymbolicFacetBFI::Apply", 2);
     static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);

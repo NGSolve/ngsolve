@@ -3006,15 +3006,20 @@ namespace ngcomp
                                  
                                  for (int j = 0; j < NumIntegrators(); j++)
                                    {
-                                     shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     // shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     BilinearFormIntegrator * bfi = parts[j].get();
                     
                                      if (!bfi->SkeletonForm()) continue;
                                      if (bfi->BoundaryForm()) continue;
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
+                                     /*
                                      shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                                        dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                     */
+                                     FacetBilinearFormIntegrator * fbfi = 
+                                       dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
                                      
                                      // RegionTimer reg3(timerDG3);                                     
                                      
