@@ -11,7 +11,7 @@ mesh.Refine()
 
 order = 3
 fes1 = L2(mesh, order=order)
-fes2 = FESpace("facet", mesh, order=order, dirichlet=[1,2,3])
+fes2 = FacetFESpace(mesh, order=order, dirichlet=[1,2,3])
 
 fes = FESpace([fes1,fes2])
 
