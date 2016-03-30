@@ -1113,6 +1113,7 @@ namespace ngstd
     const ngfem::ElementTransformation & GetTransformation () const { return *eltrans; }
     // int GetIPNr() const { return ip.Nr(); }
 
+    void SetMeasure (SIMD<double> _measure) { measure = _measure; }
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
   };
@@ -1129,6 +1130,9 @@ namespace ngstd
       : SIMD<ngfem::BaseMappedIntegrationPoint> (aip, eltrans) { ; }
     const ngbla::Vec<R,SIMD<double>> & GetPoint() const { return point; }
     ngbla::Vec<R,SIMD<double>> & Point() { return point; }
+
+    INLINE const Vec<R,SIMD<double>> GetNV () const { return normalvec; }
+    INLINE void SetNV (Vec<R,SIMD<double>> vec) { normalvec = vec; }
   };
 
   template <int DIMS, int DIMR>
@@ -1256,7 +1260,7 @@ namespace ngfem
     INLINE int Size() const { return ir.Size(); }
     INLINE const SIMD_IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
-
+    virtual void ComputeNormalVectors (ELEMENT_TYPE et, int facetnr) = 0;
     INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
   };
@@ -1270,6 +1274,7 @@ namespace ngfem
                                 const ElementTransformation & aeltrans, 
                                 Allocator & lh);
 
+    virtual void ComputeNormalVectors (ELEMENT_TYPE et, int facetnr);
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
     { 
       return mips[i]; 

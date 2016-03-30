@@ -133,7 +133,31 @@ namespace ngfem
       }
   }
 
+  inline double HSum (SIMD<double> sd)
+  {
+    __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
+    return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
+  }
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  EvaluateTrans (const SIMD_IntegrationRule & ir, AFlatVector<double> values,
+                 SliceVector<> coefs) const
+  {
+    coefs = 0.0;
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> pt;
+        for (int j = 0; j < DIM; j++)
+          pt(j) = ir[i](j);
 
+        SIMD<double> val = values.Get(i);
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+      }
+  }
+    
+
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>

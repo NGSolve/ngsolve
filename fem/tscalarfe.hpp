@@ -60,7 +60,11 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
                                                   FlatVector<> vals, 
                                                   SliceVector<double> coefs) const;
-
+    
+    HD NGS_DLL_HEADER virtual void EvaluateTrans (const SIMD_IntegrationRule & ir,
+                                                  AFlatVector<double> values,
+                                                  SliceVector<> coefs) const;
+    
     HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
                                                      SliceVector<> x) const;
 
