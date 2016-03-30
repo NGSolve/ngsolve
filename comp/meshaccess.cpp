@@ -173,7 +173,7 @@ namespace ngcomp
   {
     const GridFunction * deform;
     // LocalHeap & lh;
-    const ScalarFiniteElement<DIMR> * fel;
+    const ScalarFiniteElement<DIMS> * fel;
     FlatVector<> elvec;
     FlatMatrix<> elvecs;
   public:
@@ -185,7 +185,7 @@ namespace ngcomp
         deform(adeform) // , lh(alh) 
     {
       // ElementId id(aboundary ? BND : VOL, aelnr);
-      fel = dynamic_cast<const ScalarFiniteElement<DIMR>*> (&deform->GetFESpace()->GetFE(ei, lh));
+      fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&deform->GetFESpace()->GetFE(ei, lh));
 
       Array<int> dnums;
       deform->GetFESpace()->GetDofNrs(ei, dnums);
@@ -242,7 +242,7 @@ namespace ngcomp
       Mat<DIMR,DIMS> tmp;
       Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
 
-      Mat<DIMR,DIMR> def;
+      Mat<DIMR,DIMS> def;
       for (int i = 0; i < DIMR; i++)
         def.Row(i) = fel->EvaluateGrad (ip, elvecs.Row(i));
       dxdxi = def + tmp;
