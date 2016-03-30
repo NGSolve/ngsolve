@@ -1399,7 +1399,7 @@ public:
                         FlatVector<> result) const
   {
     int base = 0;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
         cf->Evaluate(ip, result.Range(base,base+dimi));
@@ -1426,7 +1426,7 @@ public:
                         FlatMatrix<> result) const
   {
     int base = 0;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
 #ifdef VLA
@@ -1444,7 +1444,7 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int base = 0;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
         cf->Evaluate(ir, values.Rows(base,base+dimi));
