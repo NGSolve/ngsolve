@@ -2804,7 +2804,7 @@ namespace ngfem
           {
             int oldsize = ira->Size();
             ira->SetSize(order+1);
-            for (int i = 0; i < order+1; i++)
+            for (int i = oldsize; i < order+1; i++)
               (*ira) = nullptr;
           }
 
@@ -2871,6 +2871,24 @@ namespace ngfem
     eltrans.CalcMultiPointJacobian (ir, *this);
   }
 
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  ComputeNormalVectors (ELEMENT_TYPE et, int facetnr)
+  {   // 
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
+    for (int i = 0; i < Size(); i++)
+      {
+        auto & mip = mips[i];
+        Mat<DIM_ELEMENT,DIM_SPACE,SIMD<double>> inv_jac = mip.GetJacobianInverse();
+        SIMD<double> det = mip.GetMeasure();
+        Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
+        SIMD<double> len = L2Norm (normal);       // that's the surface measure
+        normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
+        mip.SetNV(normal);
+        mip.SetMeasure (len);
+      }
+  }
+  
   template class SIMD_MappedIntegrationRule<0,0>;
   template class SIMD_MappedIntegrationRule<0,1>;
   template class SIMD_MappedIntegrationRule<1,1>;

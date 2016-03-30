@@ -444,7 +444,7 @@ operator* (double s, const AVXExpr<TA> & a)
 class AFlatVectorD : public AVXExpr<AFlatVectorD>
 {
   int size, vsize;
-  __m256d * data;
+  __m256d * __restrict data;
 public:
   AFlatVectorD(int asize, LocalHeap & lh)
   {
@@ -452,6 +452,12 @@ public:
     vsize = (size+3) / 4;
     data = (__m256d*)lh.Alloc<double> (4*vsize);
   }
+
+  AFlatVectorD (int as, double * adata) : size(as), data((__m256d*)(void*)adata)
+  {
+    vsize = (size+3) / 4;    
+  }
+  
 
   enum { IS_LINEAR = true };
   int Size () const { return size; }
@@ -471,6 +477,13 @@ public:
 
   __m256d & Get(int i) const { return data[i]; }
 
+  INLINE const AFlatVectorD & operator= (const AFlatVectorD & v2) const
+  {
+    for (int i = 0; i < vsize; i++)
+      data[i] = v2.data[i];
+    return *this;
+  }
+  
   AFlatVectorD & operator= (double d)
   {
     for (int i = 0; i < vsize; i++)
@@ -513,22 +526,25 @@ public:
 
 class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
 {
-  int w, vw, h;
-  __m256d * data;
+  int w, h;
+  // static int vw;
+  __m256d * __restrict data;
 public:
+  AFlatMatrixD (const AFlatMatrixD &) = default;
   AFlatMatrixD(int ah, int aw, LocalHeap & lh)
   {
     h = ah;
     w = aw;
-    vw = (w+3)/4;
-    data = (__m256d*)lh.Alloc<double> (4*h*vw);
+    // vw = (w+3)/4;
+    int rw = (w+3)&(-4);
+    data = (__m256d*)lh.Alloc<double> (h*rw);
   }
 
   AFlatMatrixD(int ah, int aw, __m256d * adata)
   {
     h = ah;
     w = aw;
-    vw = (w+3)/4;
+    // vw = (w+3)/4;
     data = adata;
   }
 
@@ -537,7 +553,7 @@ public:
   int Size () const { return h*w; }
   int Height () const { return h; }
   int Width () const { return w; }
-  int VWidth() const { return vw; }
+  int VWidth() const { return (w+3)/4; }
   double & operator() (int i) const
   {
     return ((double*)data)[i]; 
@@ -545,16 +561,28 @@ public:
 
   double & operator() (int i, int j) const
   {
+    int vw = (w+3)/4;
     return ((double*)data)[4*i*vw+j]; 
   }
 
   __m256d & Get(int i) const { return data[i]; }
-  __m256d & Get(int i, int j) const { return data[i*vw+j]; }
+  __m256d & Get(int i, int j) const { int vw = (w+3)/4; return data[i*vw+j]; }
 
+  const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
+  {
+    int vw = (w+3)/4;
+    for (int i = 0; i < h*vw; i++)
+      data[i] = m2.data[i];
+    return *this;
+  }
+  
   AFlatMatrixD & operator= (double d)
   {
-    for (int i = 0; i < h*vw; i++)
+    auto vw = (unsigned(w)+3)/4;
+    int els = unsigned(h)*unsigned(vw);
+    for (int i = 0; i < els; i++)
       data[i] = _mm256_set1_pd(d);
+      // _mm256_store_pd((double*)&data[i], _mm256_set1_pd(d));
     return *this;
   }
 
@@ -568,23 +596,34 @@ public:
     return *this;
   }
 
+  AFlatMatrixD & operator*= (double d)
+  {
+    int vw = (w+3)/4;
+    for (int i = 0; i < h*vw; i++)
+      data[i] *= _mm256_set1_pd(d);
+    return *this;
+  }
+  
   operator SliceMatrix<double> () const
   {
+    int vw = (w+3)/4;
     return SliceMatrix<double> (h, w, 4*vw, (double*)data);
   }
    
   SliceVector<> Col (int c) const
   {
+    int vw = (w+3)/4;    
     return SliceVector<> (h, 4*vw, ((double*)data)+c);
   }
 
-  FlatVector<> Row (int r) const
+  AFlatVector<double> Row (int r) const
   {
-    return FlatVector<> (w, (double*)&Get(r,0));
+    return AFlatVector<double> (w, (double*)&Get(r,0));
   }
   
   AFlatMatrixD Rows(int begin, int end) const
   {
+    int vw = (w+3)/4;
     return AFlatMatrixD(end-begin, w, data+begin*vw);
   }
   AFlatMatrixD Rows(IntRange r) const
@@ -592,6 +631,7 @@ public:
 
   SliceMatrix<> Cols(int begin, int end) const
   {
+    int vw = (w+3)/4;
     return SliceMatrix<>(h, end-begin, 4*vw, ((double*)data)+begin);
   }
   SliceMatrix<> Cols(IntRange r) const

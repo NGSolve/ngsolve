@@ -788,6 +788,13 @@ public:
     values *= scal;
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         AFlatMatrix<double> values) const
+  {
+    c1->Evaluate (ir, values);
+    values *= scal;
+  }
+  
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> values) const
   {
@@ -1308,6 +1315,26 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    SIMD<double> hmem1[DIM*values.VWidth()];
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    SIMD<double> hmem2[DIM*values.VWidth()];
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+
+    for (int i = 0; i < values.VWidth(); i++)
+      {
+        SIMD<double> sum = 0.0;
+        for (int j = 0; j < DIM; j++)
+          sum += temp1.Get(j,i) * temp2.Get(j,i);
+        values.Get(i) = sum.Data();
+      }
+  }
+
+  
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
@@ -2396,6 +2423,13 @@ public:
 
   // ///////////////////////////// IfPos   ////////////////////////////////  
 
+  
+  inline SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  {
+    auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
+    return _mm256_blendv_pd(c.Data(), b.Data(), cp);
+  }
+
   class IfPosCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf_if;
@@ -2448,6 +2482,38 @@ public:
         values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
 
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      // static Timer t("IfPos::EvalSIMD"); RegionTimer reg(t);
+#ifdef VLA
+      SIMD<double> hmem1[ir.Size()];
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      SIMD<double> hmem2[ir.Size()*values.Height()];
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      SIMD<double> hmem3[ir.Size()*values.Height()];
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
+#else
+      Matrix<> if_values(1, ir.Size());
+      Matrix<> then_values(ir.Size(), values.Width());
+      Matrix<> else_values(ir.Size(), values.Width());
+#endif
+      
+      cf_if->Evaluate (ir, if_values);
+      cf_then->Evaluate (ir, then_values);
+      cf_else->Evaluate (ir, else_values);
+
+      /*
+      for (int k = 0; k < values.Height(); k++)
+        for (int i = 0; i < values.Width(); i++)
+          values(k,i) = (if_values(i) > 0) ? then_values(k,i) : else_values(k,i);
+      */
+      for (int k = 0; k < values.Height(); k++)
+        for (int i = 0; i < values.VWidth(); i++)
+          values.Get(k,i) = IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
+    }
+
+    
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
                            FlatMatrix<double> values) const
     {
