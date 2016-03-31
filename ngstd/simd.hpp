@@ -9,10 +9,46 @@
 
 #include <immintrin.h>
 
+#ifdef WIN32
+inline __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
+inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
+inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
+inline __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
+inline __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd(a,b); }
+inline __m128d operator* (double a, __m128d b) { return _mm_set1_pd(a)*b; }
+inline __m128d operator* (__m128d b, double a) { return _mm_set1_pd(a)*b; }
+
+inline __m128d operator+= (__m128d &a, __m128d b) { return a = a+b; }
+inline __m128d operator-= (__m128d &a, __m128d b) { return a = a-b; }
+inline __m128d operator*= (__m128d &a, __m128d b) { return a = a*b; }
+inline __m128d operator/= (__m128d &a, __m128d b) { return a = a/b; }
+
+inline __m256d operator- (__m256d a) { return _mm256_xor_pd(a, _mm256_set1_pd(-0.0)); }
+inline __m256d operator+ (__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
+inline __m256d operator- (__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
+inline __m256d operator* (__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
+inline __m256d operator/ (__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
+inline __m256d operator* (double a, __m256d b) { return _mm256_set1_pd(a)*b; }
+inline __m256d operator* (__m256d b, double a) { return _mm256_set1_pd(a)*b; }
+
+inline __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
+inline __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
+inline __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
+inline __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
+#endif
+
 namespace ngstd
 {
   template <typename T> class SIMD;
 
+  template <typename T>
+  struct has_call_operator
+  {
+      template <typename C> static std::true_type check( decltype( sizeof(&C::operator() )) ) { return std::true_type(); }
+      template <typename> static std::false_type check(...) { return std::false_type(); }
+      typedef decltype( check<T>(sizeof(char)) ) type;
+      static constexpr type value = type();
+  };
 
 #ifdef __AVX2__
   
@@ -30,13 +66,15 @@ namespace ngstd
     template <typename T>
     SIMD (const T & val)
     {
-      SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
     }
     
     template <typename T>
     SIMD & operator= (const T & val)
     {
-      SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
     
@@ -115,13 +153,15 @@ namespace ngstd
     template <typename T>
     SIMD (const T & val)
     {
-      SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
     }
     
     template <typename T>
     SIMD & operator= (const T & val)
     {
-      SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
     
