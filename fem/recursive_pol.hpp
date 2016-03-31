@@ -552,8 +552,8 @@ namespace ngfem
       */
 
 
-      S p1 = c * REC::P0(x);
-      S p2 = c * REC::P1(x,y);
+      S p1(c * REC::P0(x));
+      S p2(c * REC::P1(x,y));
 
       int i = 0;
       for ( ; i < n; i+=2)
@@ -582,7 +582,7 @@ namespace ngfem
     template <class S, class Sy, class Sc, class T>
     INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
     {
-      S p1 = c*REC::P1(x,y), p2 = c * REC::P0(x);
+      S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
       for (int i = 0; i <= n; i++)
         {
 	  values[i] = p2;
@@ -899,8 +899,8 @@ namespace ngfem
 
 
 
-      S p1 = c * static_cast<const REC&>(*this).P0(x);
-      S p2 = c * static_cast<const REC&>(*this).P1(x);
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      S p2(c * static_cast<const REC&>(*this).P1(x));
 
       int i = 0;
       for ( ; i < n; i+=2)

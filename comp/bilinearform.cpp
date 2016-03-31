@@ -2972,44 +2972,6 @@ namespace ngcomp
 
                                  // timerDG2.Start();
 
-                                 for (int k = 0; k < -10; k++)
-                                   {
-                                     int el2 = elnums[0] + elnums[1] - el1;
-                                     ElementId ei2(VOL, el2);
-                                     
-                                     ma->GetElFacets(el2,fnums2);
-                                     int facnr2 = fnums2.Pos(fnums1[facnr1]);
-                                     
-                                     ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
-                                     ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
-                                     
-                                     const FiniteElement & fel1 = fespace->GetFE (el1, lh);
-                                     const FiniteElement & fel2 = fespace->GetFE (el2, lh);
-                                     
-                                     fespace->GetDofNrs (el1, dnums1);
-                                     fespace->GetDofNrs (el2, dnums2);
-                                     
-                                     ma->GetElVertices (el1, vnums1);
-                                     ma->GetElVertices (el2, vnums2);
-                                     // timerDG2.Stop();                                 
-                                     
-                                     if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
-                                       {
-                                         cout << "facet, neighbouring fel(1): GetNDof() = " << fel1.GetNDof() << endl;
-                                         cout << "facet, neighbouring fel(2): GetNDof() = " << fel2.GetNDof() << endl;
-                                         cout << "facet, neighbouring fel(1): dnums.Size() = " << fel1.GetNDof() << endl;
-                                         cout << "facet, neighbouring fel(2): dnums.Size() = " << fel2.GetNDof() << endl;
-                                         throw Exception ( "Inconsistent number of degrees of freedom " );
-                                       }
-                                     
-                                     dnums.SetSize0();
-                                     dnums.Append(dnums1);
-                                     dnums.Append(dnums2);   
-                                     FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
-                                     x.GetIndirect(dnums, elx);
-                                   }
-                                 
-                                 
                                  // RegionTimer reg2(timerDG2);
                                  int el2 = elnums[0] + elnums[1] - el1;
                                  // T_ElementId<VOL,2> ei2(el2);
@@ -3066,7 +3028,6 @@ namespace ngcomp
                                      
                                      // RegionTimer reg3(timerDG3);                                     
 
-                                     for (int k = 0; k < 11; k++)
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                                      

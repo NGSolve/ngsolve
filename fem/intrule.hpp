@@ -1206,6 +1206,26 @@ namespace ngstd
         }
     }
 
+    INLINE operator Vec<DIMS, AutoDiff<DIMR,SIMD<double>>> () const
+    {
+      Vec<DIMS, AutoDiff<DIMR, SIMD<double>> > adp;
+
+      Mat<DIMS,DIMR,SIMD<double>> ijac = GetJacobianInverse();
+      for (int i = 0; i < DIMS; i++)
+        adp[i].Value() = this->IP()(i);
+      for (int i = 0; i < DIMS; i++)
+        for (int j = 0; j < DIMR; j++)
+          adp[i].DValue(j) = ijac(i,j);
+      /*
+      Mat<DIMS,DIMR,SIMD<double>> ijac = GetJacobianInverse();
+      for (int i = 0; i < DIMS; i++)
+        adp[i] = AutoDiff<DIMR,SIMD<double>> (this->IP()(i), &ijac(i,0));
+      */
+      return adp;
+    }
+
+
+    
     void Print (ostream & ost) const
     {
       cout << "Point = " << this->point << endl;

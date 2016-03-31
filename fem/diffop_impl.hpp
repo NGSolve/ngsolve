@@ -90,6 +90,19 @@ namespace ngfem
   }
 
 
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         SliceVector<double> x, 
+         AFlatMatrix<double> flux,
+         LocalHeap & lh) const
+  {
+    const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplySIMDIR (bfel, mir, x, flux, lh);
+  }
+
 
   
   template <typename DIFFOP>
@@ -144,6 +157,20 @@ namespace ngfem
     DIFFOP::ApplyTransIR (bfel, mir, flux, x, lh);
   }    
 
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            AFlatMatrix<double> flux,
+            SliceVector<double> x, 
+            LocalHeap & lh) const
+  {
+    const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+      static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::AddTransSIMDIR (bfel, mir, flux, x, lh);
+  }
+  
 #endif  
 }
 
