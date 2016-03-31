@@ -537,8 +537,12 @@ namespace ngcomp
       Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
       for (int i = 0; i < ir.Size(); i++)
         {
-          const SIMD<IntegrationPoint> & ip = ir[i];
-          mir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&ip(0));
+          // const SIMD<IntegrationPoint> & ip = ir[i];
+          // mir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&ip(0));
+          Vec<DIMS,SIMD<double>> xi;
+          for (int j = 0; j < DIMS; j++)
+            xi(j) = ir[i](j);
+          mir[i].Point() = simd_p0 + simd_mat * xi;
           mir[i].Jacobian() = simd_mat;
           mir[i].Compute();
         }
@@ -1069,7 +1073,7 @@ namespace ngcomp
   ElementTransformation & MeshAccess :: 
   GetTrafoDim (int elnr, Allocator & lh) const
   {
-    // static Timer t("MeshAccess::GetTrafoDim");
+    // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
 
     ElementTransformation * eltrans;
     

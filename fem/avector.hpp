@@ -16,7 +16,6 @@ template <typename T> struct FooAVectorType
 };
 
 
-#if defined(__AVX2__)
 class AFlatVectorD;
 class AFlatMatrixD;
 
@@ -29,7 +28,7 @@ template <> struct FooAMatrixType<double>
   typedef AFlatMatrixD type;
 };
 
-#endif
+
 
 
 template <typename T> 
@@ -1103,12 +1102,64 @@ void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
 
 
 
-#else
+#else // __AVX2__
 
 // template <typename T>
 // using AFlatMatrix = FlatMatrix<T>;
 
+class AFlatVectorD : public FlatVector<double>
+{
+public:
+  AFlatVectorD (int as, LocalHeap & lh)
+    : FlatVector<double> (as, lh) { ; }
+  AFlatVectorD (int as, double * p)
+    : FlatVector<double> (as, p) { ; }
+  
+  AFlatVectorD & operator= (const AFlatVectorD & v2)  
+  { FlatVector<double>::operator= (v2); return *this; }
+  AFlatVectorD & operator= (double d)
+  { FlatVector<double>::operator= (d); return *this; }
+  template<typename TB>
+  const AFlatVectorD & operator= (const Expr<TB> & v) const
+  { FlatVector<double>::operator= (v); return *this; }
+  
+  int VSize() const { return size; }
+  double & Get(int i) const { return (*this)[i]; }
+  double & Get(int i) { return (*this)[i]; }  
+};
 
-#endif
+class AFlatMatrixD : public FlatMatrix<double>
+{
+public:
+  AFlatMatrixD (int ah, int aw, LocalHeap & lh)
+    : FlatMatrix<double> (ah, aw, lh) { ; }
+  AFlatMatrixD (int ah, int aw, double * p)
+    : FlatMatrix<double> (ah, aw, p) { ; }
+
+
+  AFlatMatrixD & operator= (const AFlatMatrixD & m2)  
+  { FlatMatrix<double>::operator= (m2); return *this; }
+  
+  AFlatMatrixD & operator= (double d)
+  { FlatMatrix<double>::operator= (d); return *this; }
+
+  int VWidth() const { return Width(); }
+
+  double & Get(int i) const { return (*this)(i); }
+  double & Get(int i) { return (*this)(i); }  
+  double & Get(int i, int j) const { return (*this)(i,j); }
+  double & Get(int i, int j) { return (*this)(i,j); }  
+
+  AFlatVectorD Row(int i) const
+  { return AFlatVectorD(Width(), &(*this)(i,0)); } 
+  AFlatMatrixD Rows(int i, int j) const
+  { return AFlatMatrixD(j-i, Width(), &(*this)(i,0)); }
+  AFlatMatrixD Rows(IntRange r) const
+  { return Rows(r.begin(), r.end()); }
+};
+
+
+
+#endif // __AVX2__
 
 #endif // FILE_AVECTOR

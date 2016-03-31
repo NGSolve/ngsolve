@@ -2424,12 +2424,6 @@ public:
   // ///////////////////////////// IfPos   ////////////////////////////////  
 
   
-  inline SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
-  {
-    auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
-    return _mm256_blendv_pd(c.Data(), b.Data(), cp);
-  }
-
   class IfPosCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf_if;
@@ -2510,7 +2504,7 @@ public:
       */
       for (int k = 0; k < values.Height(); k++)
         for (int i = 0; i < values.VWidth(); i++)
-          values.Get(k,i) = IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
+          values.Get(k,i) = ngstd::IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
     }
 
     

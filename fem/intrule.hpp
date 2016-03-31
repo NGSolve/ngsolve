@@ -1102,13 +1102,13 @@ namespace ngstd
     SIMD<ngfem::IntegrationPoint> ip;
     const ngfem::ElementTransformation * eltrans;
     SIMD<double> measure;
-    bool owns_trafo = false;
+    // bool owns_trafo = false;
   public:
     SIMD() = default;
     SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
           const ngfem::ElementTransformation & aeltrans)
       : ip(aip), eltrans(&aeltrans) { ; }
-    ~SIMD();
+    // ~SIMD();
     const SIMD<ngfem::IntegrationPoint> & IP () const { return ip; }
     const ngfem::ElementTransformation & GetTransformation () const { return *eltrans; }
     // int GetIPNr() const { return ip.Nr(); }
@@ -1116,8 +1116,9 @@ namespace ngstd
     void SetMeasure (SIMD<double> _measure) { measure = _measure; }
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
+    // virtual void Print (ostream & ost) const = 0;
   };
-    
+
   template <int R>
   class SIMD<ngfem::DimMappedIntegrationPoint<R>> : public SIMD<ngfem::BaseMappedIntegrationPoint>
   {
@@ -1204,7 +1205,12 @@ namespace ngstd
 	  return (iata * Trans (dxdxi));
         }
     }
-    
+
+    void Print (ostream & ost) const
+    {
+      cout << "Point = " << this->point << endl;
+      cout << "Jacobian = " << dxdxi << endl;
+    }
   };
 }
 
