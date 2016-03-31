@@ -3022,7 +3022,7 @@ namespace ngcomp
                                        dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
                                      
                                      // RegionTimer reg3(timerDG3);                                     
-                                     
+
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                                      

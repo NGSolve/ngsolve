@@ -2884,6 +2884,7 @@ namespace ngfem
         Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
         SIMD<double> len = L2Norm (normal);       // that's the surface measure
         normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
+        // SIMD<double> len = 1.0;
         mip.SetNV(normal);
         mip.SetMeasure (len);
       }
@@ -2919,14 +2920,18 @@ namespace ngfem
         */
       case ET_SEGM:
         {
-          FlatVec<3> p1 = points (edges[fnr][0]);
-          FlatVec<3> p2 = points (edges[fnr][1]);
-          
+          Vec<2> p1 = points (edges[fnr][0]);
+          Vec<2> p2 = points (edges[fnr][1]);
+          Vec<2> delta = p1-p2;
           for (int i = 0; i < irfacet.Size(); i++)
-            for (int k = 0; k < 2; k++)
-              irvol[i](k) = p2(k) + (p1(k)-p2(k)) * irfacet[i](0);
-          // irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p1-p2));
-	    break;
+            {
+              auto ip = irfacet[i];
+              auto & ipvol = irvol[i];              
+              for (int k = 0; k < 2; k++)
+                ipvol(k) = p2(k) + delta(k) * ip(0);
+              ipvol(2) = 0.0;
+            }
+          break;
         }
         /*
           case ET_TRIG:
@@ -3000,12 +3005,13 @@ namespace ngfem
   
 }
 
-
+/*
 namespace ngstd
 {
   SIMD<ngfem::BaseMappedIntegrationPoint>::~SIMD<ngfem::BaseMappedIntegrationPoint>()
   {
-    if (owns_trafo) delete eltrans; 
+    // if (owns_trafo) delete eltrans; 
   }
   
 }
+*/

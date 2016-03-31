@@ -133,12 +133,6 @@ namespace ngfem
       }
   }
 
-  inline double HSum (SIMD<double> sd)
-  {
-    __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
-    return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
-  }
-  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateTrans (const SIMD_IntegrationRule & ir, AFlatVector<double> values,

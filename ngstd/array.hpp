@@ -606,7 +606,8 @@ namespace ngstd
     }
 
     /// Generate array in user data
-    INLINE Array(TSIZE asize, Allocator & lh)
+    template <typename ALLOCATOR>
+    INLINE Array(TSIZE asize, ALLOCATOR & lh)
       : FlatArray<T,TSIZE> (asize, lh)
     {
       allocsize = asize; 

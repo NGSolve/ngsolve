@@ -1564,8 +1564,10 @@ namespace ngfem
 
   }
 
-  // #define STDAPPYFACET
-#ifdef STDAPPYFACET
+
+  // enable simd-apply here
+#define STD_APPLY_FACET
+#ifdef STD_APPLY_FACET
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
@@ -1728,10 +1730,15 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    static Timer tall("SymbolicFacetBFI::Apply - all", 2); // RegionTimer rall(tall);
+    static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
 
     static Timer t("SymbolicFacetBFI::Apply", 2);
+    static Timer ts("SymbolicFacetBFI::Apply start", 2);
+    static Timer ts0("SymbolicFacetBFI::Apply start 0", 2);
     static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);
+    static Timer ts1a("SymbolicFacetBFI::Apply start facet2vol", 2);
+    static Timer ts1b("SymbolicFacetBFI::Apply start mir", 2);
+    static Timer ts1c("SymbolicFacetBFI::Apply start computenormals ", 2);
     static Timer ts2("SymbolicFacetBFI::Apply start 2", 2);
 
     static Timer t1("SymbolicFacetBFI::Apply 1", 2);
@@ -1739,7 +1746,7 @@ namespace ngfem
     static Timer t3("SymbolicFacetBFI::Apply 3", 2);
     
     HeapReset hr(lh);
-    // ts1.Start();
+
     /*
     Matrix<> elmat(elx.Size());
     CalcFacetMatrix(fel1, LocalFacetNr1, trafo1, ElVertices1,
@@ -1747,9 +1754,12 @@ namespace ngfem
     ely = elmat * elx;
     return;
     */
-    
+
+    // ts.Start();
+    // ts0.Start();    
+    // ts0.Stop();
+    // ts1.Start();    
     ely = 0;
-    
     FlatVector<> ely1(ely.Size(), lh);
 
     int maxorder = max2 (fel1.Order(), fel2.Order());
@@ -1758,25 +1768,27 @@ namespace ngfem
     auto eltype2 = trafo2.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
-    IntegrationRule ir_facet(etfacet, 2*maxorder);
-    
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
 
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
     SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
-    
+
+    // ts1a.Start();
     auto & simd_ir_facet_vol1 = transform1(LocalFacetNr1, simd_ir_facet, lh);
+    // ts1a.Stop();
+    // ts1b.Start();
     auto & simd_mir1 = trafo1(simd_ir_facet_vol1, lh);
+    // ts1b.Stop();
     
     auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
     auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
 
-    simd_mir1.ComputeNormalVectors(eltype1, LocalFacetNr1);
-    
-    
     // ts1.Stop();
     // ts2.Start();
-    
+    // ts1c.Start();
+    simd_mir1.ComputeNormalVectors(eltype1, LocalFacetNr1);
+    // ts1c.Stop();
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
@@ -1804,6 +1816,7 @@ namespace ngfem
       }
 
     // ts2.Stop();
+    // ts.Stop();
     // RegionTimer reg(t);
     // t.Start();
 
@@ -1814,9 +1827,8 @@ namespace ngfem
       {
         HeapReset hr(lh);
         // t1.Start();
-        FlatMatrix<> proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
-        AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
 
+        AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);        
         // t1.Stop();
         // t2.Start();
         
@@ -1834,7 +1846,7 @@ namespace ngfem
           {
             auto row = simd_proxyvalues.Row(i);
             for (int j = 0; j < row.VSize(); j++)
-              row.Get(j) *= simd_mir1[i].GetMeasure().Data() * simd_ir_facet[i].Weight().Data();
+              row.Get(j) *= simd_mir1[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
           }
         
         IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
