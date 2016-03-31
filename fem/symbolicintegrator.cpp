@@ -1566,7 +1566,7 @@ namespace ngfem
 
 
   // enable simd-apply here
-#define STD_APPLY_FACET
+  // #define STD_APPLY_FACET
 #ifdef STD_APPLY_FACET
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
@@ -1737,7 +1737,8 @@ namespace ngfem
     static Timer ts0("SymbolicFacetBFI::Apply start 0", 2);
     static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);
     static Timer ts1a("SymbolicFacetBFI::Apply start facet2vol", 2);
-    static Timer ts1b("SymbolicFacetBFI::Apply start mir", 2);
+    static Timer ts1b("SymbolicFacetBFI::Apply start mir1", 2);
+    static Timer ts1b2("SymbolicFacetBFI::Apply start mir2", 2);
     static Timer ts1c("SymbolicFacetBFI::Apply start computenormals ", 2);
     static Timer ts2("SymbolicFacetBFI::Apply start 2", 2);
 
@@ -1782,12 +1783,13 @@ namespace ngfem
     // ts1b.Stop();
     
     auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
+    // ts1b2.Start();    
     auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
-
+    // ts1b2.Stop();    
     // ts1.Stop();
     // ts2.Start();
     // ts1c.Start();
-    simd_mir1.ComputeNormalVectors(eltype1, LocalFacetNr1);
+    simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
     // ts1c.Stop();
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
