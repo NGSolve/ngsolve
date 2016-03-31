@@ -2765,6 +2765,8 @@ namespace ngcomp
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
     static Timer timerDGprep ("Apply Matrix - DG prep");
+    static Timer timerDGcompute ("Apply Matrix - DG compute");
+    static Timer timerDGcleanup ("Apply Matrix - DG cleanup");
     static Timer timerDG1 ("Apply Matrix - DG1");
     static Timer timerDG2 ("Apply Matrix - DG2");
     static Timer timerDG3 ("Apply Matrix - DG3");
@@ -2881,7 +2883,7 @@ namespace ngcomp
 		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     mutex addelemfacbnd_mutex;
                     timerDGprep.Stop();
-                    
+                    timerDGcompute.Start();
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -2891,7 +2893,7 @@ namespace ngcomp
                          for (int el1 : r)
                            {
                              // RegionTimer reg1(timerDG1);
-                             
+
                              ma->GetElFacets(el1,fnums1);
                              // T_ElementId<VOL,2> ei1(el1);
                              ElementId ei1(VOL, el1);
@@ -2899,11 +2901,12 @@ namespace ngcomp
                              for (int facnr1 : Range(fnums1))
                                {
                                  HeapReset hr(lh);
-                                 
+
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
+
                                  if (elnums.Size()<2)
                                    {
-                                     RegionTimer regfacet(timerDGfacet);
+                                     // RegionTimer regfacet(timerDGfacet);
                                      // timerDGfacet1.Start();
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
                                      int sel = elnums[0];
@@ -2962,7 +2965,8 @@ namespace ngcomp
                                              y.AddIndirect(dnums, ely);
                                            }
                                        } //end for (numintegrators)
-                                     // timerDGfacet2.Stop();                                     
+                                     // timerDGfacet2.Stop();
+
                                      continue;
                                    } // end if boundary facet
 
@@ -2975,13 +2979,13 @@ namespace ngcomp
                                  
                                  ma->GetElFacets(el2,fnums2);
                                  int facnr2 = fnums2.Pos(fnums1[facnr1]);
-
+                                 
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
-                                 
+
                                  const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                                  const FiniteElement & fel2 = fespace->GetFE (el2, lh);
-                                 
+
                                  fespace->GetDofNrs (el1, dnums1);
                                  fespace->GetDofNrs (el2, dnums2);
                                  
@@ -3003,21 +3007,27 @@ namespace ngcomp
                                  dnums.Append(dnums2);   
                                  FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
                                  x.GetIndirect(dnums, elx);
-                                 
+
+
                                  for (int j = 0; j < NumIntegrators(); j++)
                                    {
-                                     shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     // shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     BilinearFormIntegrator * bfi = parts[j].get();
                     
                                      if (!bfi->SkeletonForm()) continue;
                                      if (bfi->BoundaryForm()) continue;
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
+                                     /*
                                      shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                                        dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                     */
+                                     FacetBilinearFormIntegrator * fbfi = 
+                                       dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
                                      
                                      // RegionTimer reg3(timerDG3);                                     
-                                     
+
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                                      
@@ -3034,6 +3044,8 @@ namespace ngcomp
                                }
                            }                             
                        });
+                    timerDGcompute.Stop();
+                    RegionTimer regcleanup(timerDGcleanup);
                   }
 
 

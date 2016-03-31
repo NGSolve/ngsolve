@@ -16,6 +16,21 @@
 
 namespace ngfem
 {
+
+  SIMD_BaseMappedIntegrationRule & ElementTransformation :: operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+  {
+    throw Exception("ElementTransformation(SIMD_IR) not overloaded");
+  }
+
+  void ElementTransformation :: CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+                                                        SIMD_BaseMappedIntegrationRule & mir) const
+  {
+    cout << "CalcMultiPointJacobian - SIMD not overloaded for class " << typeid(ir).name() << endl;
+    throw Exception("CalcMultiPointJacobian (SIMD) not overloaded");
+  }
+  
+  
+  
   template <int DIMS, int DIMR>
   FE_ElementTransformation<DIMS, DIMR> :: FE_ElementTransformation ()
     : ElementTransformation(ET_POINT, false,-1,-1),  nvmat(0,0,0)
@@ -153,6 +168,44 @@ namespace ngfem
     for (int i = 0; i < ir.Size(); i++)
       mir[i].Compute();
   }
+
+  template <int DIMS, int DIMR>
+  void FE_ElementTransformation<DIMS, DIMR> :: 
+  CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+			  SIMD_BaseMappedIntegrationRule & bmir) const
+  {
+    SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
+      static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &>(bmir);
+    
+    constexpr int SIMD_SIZE = SIMD<IntegrationPoint>::Size();
+    Vector<> shapes(ir.Size()*SIMD_SIZE);
+    MatrixFixWidth<DIMS> grad(shapes.Size());
+
+    for (int j = 0; j < DIMR; j++)
+      {
+        // really slow for the moment ...
+        for (int k = 0; k < ir.Size(); k++)
+          {
+            auto simd_ip = ir[k];
+            for (int k2 = 0; k2 < SIMD_SIZE; k2++)
+              {
+                shapes(k*simd_ip.Size()+k2) = fel->Evaluate(simd_ip[k2], pointmat.Row(j));
+                grad.Row(k*simd_ip.Size()+k2) = fel->EvaluateGrad(simd_ip[k2], pointmat.Row(j));
+              }
+          }
+
+	for (int i = 0; i < ir.Size(); i++)
+	  {
+	    mir[i].Point()(j) = &shapes(i*SIMD_SIZE);
+            for (int k = 0; k < DIMS; k++)
+              mir[i].Jacobian()(j,k) = [&](int i2) { return grad(SIMD_SIZE*i+i2, k); };
+	  }
+      }
+
+    for (int i = 0; i < ir.Size(); i++)
+      mir[i].Compute();
+  }
+
   
   
   template class FE_ElementTransformation<1,1>;
