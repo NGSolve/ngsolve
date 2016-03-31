@@ -192,6 +192,8 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static string Name() { return "Id"; }
+
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
     

@@ -23,7 +23,7 @@ namespace ngfem
   {
   public:
 
-    static string Name() { return "noname"; }
+    static string Name() { return typeid(DiffOp<DOP>()).name(); }
   
     /**
        Computes the B-matrix. 
@@ -141,7 +141,7 @@ namespace ngfem
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
-    virtual string Name() const { return "noname"; }
+    virtual string Name() const { return typeid(*this).name(); }
     /// dimension of range
     NGS_DLL_HEADER virtual int Dim() const = 0;
     /// number of copies of finite element by BlockDifferentialOperator
