@@ -2889,7 +2889,7 @@ namespace ngcomp
                        {
                          LocalHeap lh = clh.Split();
                          
-                         Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
+                         Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                          for (int el1 : r)
                            {
                              // RegionTimer reg1(timerDG1);
@@ -2914,11 +2914,12 @@ namespace ngcomp
                                      // timerDGfacet1.Stop();
                                      // timerDGfacet2.Start();                                                           
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
+                                     Array<int> dnums(fel.GetNDof(), lh);
                                      ma->GetElVertices (el1, vnums1);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
-
+                                     
                                      fespace->GetDofNrs (el1, dnums);
                                      if(fel.GetNDof() != dnums.Size())
                                        {
@@ -2985,10 +2986,12 @@ namespace ngcomp
 
                                  const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                                  const FiniteElement & fel2 = fespace->GetFE (el2, lh);
-
+                                 
+                                 Array<int> dnums1(fel1.GetNDof(), lh);
+                                 Array<int> dnums2(fel2.GetNDof(), lh);
                                  fespace->GetDofNrs (el1, dnums1);
                                  fespace->GetDofNrs (el2, dnums2);
-                                 
+
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
                                  // timerDG2.Stop();                                 
@@ -3002,9 +3005,15 @@ namespace ngcomp
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
 
+                                 Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
+                                 /*
                                  dnums.SetSize0();
                                  dnums.Append(dnums1);
                                  dnums.Append(dnums2);   
+                                 */
+                                 dnums.Range(0, dnums1.Size()) = dnums1;
+                                 dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
+                                 
                                  FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
                                  x.GetIndirect(dnums, elx);
 
