@@ -759,6 +759,48 @@ namespace ngfem
       ipvol.FacetNr() = fnr;
     }
 
+    FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const;
+    {
+      ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
+      switch (facettype)
+	{
+	case ET_SEGM:
+	  {
+            FlatMatrix<> mat(2,1,lh);
+	    FlatVec<3> p1 = points (edges[fnr][0]);
+	    FlatVec<3> p2 = points (edges[fnr][1]);
+            mat.Col(0) = p1 - p2;
+            return mat;
+	    break;
+	  }
+	case ET_TRIG:
+	  {
+            FlatMatrix<> mat(3,2,lh);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
+            mat.Col(0) = p0 - p2;
+            mat.Col(1) = p1 - p2;
+            return mat;
+	    break;
+	  }
+	case ET_QUAD:
+	  {
+            FlatMatrix<> mat(3,2,lh);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+            mat.Col(0) = p1 - p0;
+            mat.Col(1) = p2 - p0;
+            return mat;
+	    break;
+	  }
+	default:
+	  throw Exception ("undefined facet type in Facet2ElementTrafo::GetJacobian(..)\n");
+	}
+    }
+
+    
     const IntegrationPoint operator()(int fnr, const IntegrationPoint &ip1d) const 
     {
       IntegrationPoint elpoint;
