@@ -996,7 +996,7 @@ namespace ngfem
       static 
 #endif
         const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-      Tx xi = 0, eta = 0;
+      Tx xi(0), eta(0);
       for (int j = 0; j < 2; j++)
         {
           int edir = vi[f[0]][j] - vi[f[1]][j];

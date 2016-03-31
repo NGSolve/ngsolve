@@ -180,6 +180,17 @@ namespace ngfem
         x += hx;
       }
   }
+
+  void DifferentialOperator ::
+  AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              AFlatMatrix<double> flux,
+              SliceVector<double> x, 
+              LocalHeap & lh) const
+  {
+    throw Exception ("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded");
+  }
+
   
 
   BlockDifferentialOperator :: ~BlockDifferentialOperator ()  { ; }
@@ -236,6 +247,18 @@ namespace ngfem
       }
   }
 
+
+  void BlockDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         SliceVector<double> x, 
+         AFlatMatrix<double> flux,
+         LocalHeap & lh) const
+  {
+    throw Exception ("BlockDiffOp::Apply (..SIMD..) not implemented");
+  }
+
+  
   void BlockDifferentialOperator ::
   ApplyTrans (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,

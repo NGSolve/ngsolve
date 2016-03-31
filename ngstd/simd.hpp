@@ -62,6 +62,11 @@ namespace ngstd
     SIMD () = default;
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
+
+    SIMD (double val)
+    {
+      data = _mm256_set1_pd(val);
+    }
     
     template <typename T>
     SIMD (const T & val)
