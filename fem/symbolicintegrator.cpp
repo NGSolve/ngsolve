@@ -19,6 +19,7 @@ namespace ngfem
     // map<const ProxyFunction*, FlatMatrix<double>> remember;
     FlatArray<const ProxyFunction*> remember_first;
     FlatArray<FlatMatrix<double>> remember_second;
+    FlatArray<AFlatMatrix<double>> remember_asecond;
   public:
     class ProxyFunction * testfunction = nullptr;
     int test_comp;
@@ -30,9 +31,9 @@ namespace ngfem
     LocalHeap * lh;
 
     ProxyUserData ()
-      : remember_first(0,nullptr), remember_second(0,nullptr) { ; }
+      : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
     ProxyUserData (int ntrial, LocalHeap & lh)
-      : remember_first(ntrial, lh), remember_second(ntrial, lh)
+      : remember_first(ntrial, lh), remember_second(ntrial, lh), remember_asecond(ntrial, lh)
     { remember_first = nullptr; }
     
     void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
@@ -48,7 +49,9 @@ namespace ngfem
           if (remember_first[i] == nullptr)
             {
               remember_first[i] = proxy;
-              remember_second[i].AssignMemory (h,w,lh);
+              // remember_second[i].AssignMemory (h,w,lh);
+              new (&remember_second[i]) FlatMatrix<> (h, w, lh);
+              new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
               return;
             }
         }
@@ -63,6 +66,10 @@ namespace ngfem
     {
       // return remember.find(proxy) -> second;
       return remember_second[remember_first.Pos(proxy)];
+    }
+    AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
+    {
+      return remember_asecond[remember_first.Pos(proxy)];
     }
   };
 
@@ -114,7 +121,10 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          {
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+            cout << "proxy, evaluate: " << result << endl;
+          }
         return;
       }
 
@@ -125,6 +135,33 @@ namespace ngfem
       result.Col(ud->trial_comp) = 1;
   }
 
+  void ProxyFunction ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+            AFlatMatrix<double> result) const
+  {
+    // static Timer t("ProxyFunction::EvalSIMD"); RegionTimer reg(t);
+    
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction without userdata");
+    
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          // result = Trans(ud->GetMemory (this));
+          result = ud->GetAMemory (this);
+        else
+          throw Exception ("ProxyFunction::Evaluate(simd) : need x-values");
+          // evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+        return;
+      }
+
+    result = 0;
+    if (ud->testfunction == this)
+      result.Row(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      result.Row(ud->trial_comp) = 1;
+  }
 
 
   
@@ -1097,7 +1134,9 @@ namespace ngfem
       }
 
 
-    
+#define SCALAR_APPLY
+#ifdef SCALAR_APPLY
+    {
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
@@ -1123,13 +1162,57 @@ namespace ngfem
             cf -> Evaluate (mir, val);
             proxyvalues.Col(k) = val.Col(0);
           }
-
+        
         for (int i = 0; i < mir.Size(); i++)
           proxyvalues.Row(i) *= mir[i].GetWeight();
-        
+
         proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
         ely += ely1;
       }
+    }
+#else // SCALAR_APPLY
+    {
+    HeapReset hr(lh);
+
+    SIMD_IntegrationRule simd_ir(trafo.GetElementType(), 2*fel.Order());
+    auto & simd_mir = trafo(simd_ir, lh);
+      
+
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+    ud.fel = &fel;
+    ud.elx = &elx;
+    ud.lh = &lh;
+
+    for (ProxyFunction * proxy : trial_proxies)
+      ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)
+        proxy->Evaluator()->Apply(fel, simd_mir, elx, ud.GetAMemory(proxy), lh);
+
+    ely = 0;
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir.GetNIP(), lh);
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));            
+          }
+
+        for (int i = 0; i < simd_proxyvalues.Height(); i++)
+          {
+            auto row = simd_proxyvalues.Row(i);
+            for (int j = 0; j < row.VSize(); j++)
+              row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
+          }
+
+        proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely, lh);
+      }
+    }
+#endif // SCALAR_APPLY
   }
 
 
@@ -1530,6 +1613,10 @@ namespace ngfem
 
   }
 
+
+  // enable simd-apply here
+#define STD_APPLY_FACET
+#ifdef STD_APPLY_FACET
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
@@ -1538,7 +1625,7 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
-    // static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+    static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
     /*
     static Timer t("SymbolicFacetBFI::Apply", 2);
     static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);
@@ -1569,6 +1656,7 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
 
     IntegrationRule ir_facet(etfacet, 2*maxorder);
+    
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
     const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
@@ -1576,6 +1664,7 @@ namespace ngfem
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
     const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+
 
     // ts1.Stop();
     // ts2.Start();
@@ -1589,7 +1678,6 @@ namespace ngfem
     ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
-      // ud.remember[proxy] = Matrix<> (ir_facet.Size(), proxy->Dimension());
 
     for (ProxyFunction * proxy : trial_proxies)
       {
@@ -1605,6 +1693,7 @@ namespace ngfem
     // t.Start();
 
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
+
     for (auto proxy : test_proxies)
       {
         HeapReset hr(lh);
@@ -1644,7 +1733,7 @@ namespace ngfem
                   const_cast<MappedIntegrationPoint<2,2>&> (mip).SetNV(normal);
                   measure(i) = len;
                 }
-                break;
+              break;
             }
           default:
             cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
@@ -1673,13 +1762,107 @@ namespace ngfem
           proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
         else
           proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
+        
         ely += ely1;
-
         // t3.Stop();
       }
     // t.Stop();
   }
 
+#else
+
+  void SymbolicFacetBilinearFormIntegrator ::
+  ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
+                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                    const FiniteElement & fel2, int LocalFacetNr2,
+                    const ElementTransformation & trafo2, FlatArray<int> & ElVertices2,
+                    FlatVector<double> elx, FlatVector<double> ely,
+                    LocalHeap & lh) const
+  {
+    // static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+    HeapReset hr(lh);
+
+    /*
+    Matrix<> elmat(elx.Size());
+    CalcFacetMatrix(fel1, LocalFacetNr1, trafo1, ElVertices1,
+                    fel2, LocalFacetNr2, trafo2, ElVertices2, elmat, lh);
+    ely = elmat * elx;
+    return;
+    */
+
+    ely = 0;
+
+    int maxorder = max2 (fel1.Order(), fel2.Order());
+
+    auto eltype1 = trafo1.GetElementType();
+    auto eltype2 = trafo2.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    Facet2ElementTrafo transform1(eltype1, ElVertices1); 
+    Facet2ElementTrafo transform2(eltype2, ElVertices2); 
+
+    SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+
+    auto & simd_ir_facet_vol1 = transform1(LocalFacetNr1, simd_ir_facet, lh);
+    auto & simd_mir1 = trafo1(simd_ir_facet_vol1, lh);
+    
+    auto & simd_ir_facet_vol2 = transform2(LocalFacetNr2, simd_ir_facet, lh);
+    auto & simd_mir2 = trafo2(simd_ir_facet_vol2, lh);
+
+    simd_mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr1);
+
+    // evaluate proxy-values
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    ud.fel = &fel1;   // necessary to check remember-map
+    // ud.elx = &elx;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+        if (proxy->IsOther())
+          proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy), lh);
+        else
+          proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy), lh);
+      }
+
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+
+        AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh);        
+        
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (simd_mir1, simd_proxyvalues.Rows(k,k+1));
+          }
+
+        for (int i = 0; i < simd_proxyvalues.Height(); i++)
+          {
+            auto row = simd_proxyvalues.Row(i);
+            for (int j = 0; j < row.VSize(); j++)
+              row.Get(j) *= simd_mir1[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
+          }
+        
+        IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+        if (proxy->IsOther())
+          proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range), lh);
+        else
+          proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range), lh);
+      }
+  }
+
+  
+#endif
+
+
+
+  
   
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,

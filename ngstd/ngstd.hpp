@@ -116,6 +116,7 @@ namespace ngstd
 #include "localheap.hpp"
 #include "profiler.hpp"
 
+#include "simd.hpp"
 #include "tuple.hpp"
 #include "array.hpp"
 #include "table.hpp"

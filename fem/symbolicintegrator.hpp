@@ -24,6 +24,7 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
   shared_ptr<ProxyFunction> deriv_proxy;
+  int dim;
 public:
   ProxyFunction (bool atestfunction, bool ais_complex,
                  shared_ptr<DifferentialOperator> aevaluator, 
@@ -37,15 +38,16 @@ public:
       trace_evaluator(atrace_evaluator), 
       trace_deriv_evaluator(atrace_deriv_evaluator)
   {
+    dim = evaluator->Dim();
     if (deriv_evaluator || trace_deriv_evaluator)
       deriv_proxy = make_shared<ProxyFunction> (testfunction, is_complex, deriv_evaluator, nullptr,
                                                 trace_deriv_evaluator, nullptr);
   }
 
   bool IsTestFunction () const { return testfunction; }
-  virtual int Dimension () const { return evaluator->Dim(); }
-  virtual Array<int> Dimensions() const;
-  virtual bool IsComplex () const { return is_complex; } 
+  virtual int Dimension () const final { return dim; } // { evaluator->Dim(); }
+  virtual Array<int> Dimensions() const final;
+  virtual bool IsComplex () const final { return is_complex; } 
   bool IsOther() const { return is_other; }
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
@@ -83,7 +85,9 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<> result) const;
 
-  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         AFlatMatrix<double> values) const;
+
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const;
@@ -163,6 +167,21 @@ public:
     diffop->Apply (fel[comp], mip, x.Range(r), flux, lh);
   }
 
+
+  virtual void
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         SliceVector<double> x, 
+         AFlatMatrix<double> flux,
+         LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->Apply (fel[comp], bmir, x.Range(r), flux, lh);
+  }
+
+
+  
   NGS_DLL_HEADER virtual void
   ApplyTrans (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,

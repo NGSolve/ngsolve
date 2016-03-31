@@ -451,7 +451,8 @@ namespace ngfem
     throw Exception (str.str());
   }
 
-   
+
+  template NGS_DLL_HEADER FlatVector< Vec<0> > ElementTopology::GetNormals<0> (ELEMENT_TYPE et);  
   template NGS_DLL_HEADER FlatVector< Vec<1> > ElementTopology::GetNormals<1> (ELEMENT_TYPE et);
   template NGS_DLL_HEADER FlatVector< Vec<2> > ElementTopology::GetNormals<2> (ELEMENT_TYPE et);
   template NGS_DLL_HEADER FlatVector< Vec<3> > ElementTopology::GetNormals<3> (ELEMENT_TYPE et);

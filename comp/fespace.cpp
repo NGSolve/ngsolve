@@ -387,7 +387,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (d != -1) dirichlet_dofs.Set (d);
 	}
 
-
     free_dofs.SetSize (GetNDof());
     free_dofs = dirichlet_dofs;
     free_dofs.Invert();
