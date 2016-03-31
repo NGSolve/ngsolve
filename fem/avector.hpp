@@ -126,7 +126,7 @@ void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
         {
           __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
                                          _mm256_loadu_pd(&b(j,0)),
-                                         (__m256d)mask);
+                                         _mm256_castsi256_pd(mask));
           double * arj = ar + j;
           double * arj4 = arj + 4*da;
           sum1 += _mm256_set1_pd(*arj) * rb;
@@ -165,7 +165,7 @@ void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
         {
           __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
                                          _mm256_loadu_pd(&b(j,0)),
-                                         (__m256d)mask);
+                                         _mm256_castsi256_pd(mask));
 
           double * arj = ar + j;
           sum1 += _mm256_set1_pd(*arj) * rb;
@@ -192,7 +192,7 @@ void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
         {
           __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
                                          _mm256_loadu_pd(&b(j,0)),
-                                         (__m256d)mask);
+                                         _mm256_castsi256_pd(mask));
           double * arj = ar + j;
           sum1 += _mm256_set1_pd(*arj) * rb;
           sum2 += _mm256_set1_pd(*(arj+da)) * rb;
@@ -347,7 +347,7 @@ void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
     MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
   for ( ; k < b.Width(); k += 4)
     {
-      int end = min(b.Width(), k+4);
+      int end = min2(b.Width(), k+4);
       MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
     }
 }
@@ -364,7 +364,8 @@ void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
 
 INLINE ostream & operator<< (ostream & ost, __m256d v4)
 {
-  ost << v4[0] << ", " << v4[1] << ", " << v4[2] << ", " << v4[3];
+  double * v = reinterpret_cast<double*>(&v4);
+  ost << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3];
   return ost;
 }
 
@@ -827,8 +828,8 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           for (int j2 = 0; j2 < c.Width()-j; j2++)
             {
-              c(i,j+j2) += s1[j2];
-              c(i+1,j+j2) += s2[j2];
+              c(i,j+j2) += ((double*)(&s1))[j2];
+              c(i+1,j+j2) += ((double*)(&s2))[j2];
             }
         }
     }
@@ -851,7 +852,7 @@ INLINE void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<do
           MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           for (int j2 = 0; j2 < c.Width()-j; j2++)
-            c(i,j+j2) += s1[j2];
+            c(i,j+j2) += ((double*)(&s1))[j2];
         }
     }
 }
@@ -920,7 +921,7 @@ INLINE void AddABtSymV1 (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatr
           MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
           for (int j2 = 0; j2 < c.Width()-j; j2++)
-            c(i,j+j2) += s1[j2];
+            c(i,j+j2) += ((double*)(&s1))[j2];
         }
     }
 }
