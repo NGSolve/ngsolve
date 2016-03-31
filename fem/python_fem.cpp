@@ -175,7 +175,7 @@ void ExportStdMathFunction(string name)
               if (bp::extract<SPCF>(x).check())
                 {
                   auto coef = bp::extract<SPCF>(x)();
-                  return bp::object(UnaryOpCF(coef, func, func));
+                  return bp::object(UnaryOpCF(coef, func, func, FUNC::Name()));
                 }
               bp::extract<double> ed(x);
               if (ed.check()) return bp::object(func(ed()));
@@ -298,24 +298,31 @@ INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
 
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
+  static string Name() { return "sin"; }
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
+  static string Name() { return "cos"; }
 };
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
+  static string Name() { return "tan"; }
 };
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
+  static string Name() { return "exp"; }
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
+  static string Name() { return "log"; }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
+  static string Name() { return "sqrt"; }
 };
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+  static string Name() { return "conj"; }
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
@@ -400,7 +407,9 @@ void ExportCoefficientFunction()
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
          )
-    .def("__str__", &ToString<CoefficientFunction>)
+//     .def("__str__", &ToString<CoefficientFunction>)
+    .def("__str__", FunctionPointer
+	 ([] (CoefficientFunction & self) { Array<int> vars(10); return self.GetString(vars,0); } ))
 
     .def("__call__", FunctionPointer
 	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
@@ -593,6 +602,14 @@ void ExportCoefficientFunction()
       for (int i = 0; i < ir.Size(); i++)
         result(i,0) = ir[i].GetPoint()(dir);
       */
+    }
+
+    virtual string GetString(FlatArray<int> inputs, int index) const {
+        auto v = Var(index);
+        if(dir==0) return v.Assign(Code("ip.GetPoint()(0)"));
+        if(dir==1) return v.Assign(Code("ip.GetPoint()(1)"));
+        if(dir==2) return v.Assign(Code("ip.GetPoint()(2)"));
+        return "undefined";
     }
   };
 

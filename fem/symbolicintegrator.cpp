@@ -77,6 +77,11 @@ namespace ngfem
       return Array<int> ({dim/blockdim, blockdim});
   }
   
+  string ProxyFunction ::
+  GetString(FlatArray<int> inputs, int index) const
+  {
+    return evaluator->Name() + string(testfunction? "(testfunction)" : "(trialfunction)") + "\n";
+  }
   
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationPoint & mip,

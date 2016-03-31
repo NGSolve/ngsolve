@@ -11,6 +11,48 @@
 
 namespace ngfem
 {
+  namespace
+    {
+      struct Code {
+          string code;
+          Code( string acode="" ) : code(acode){ }
+          string S() const { return code; }
+
+          string Op(char c) {
+              return code.size() ? string(" ") + c + ' ' : "";
+          }
+
+          Code operator +(Code other) { return Code(string("(") + S()+Op('+')+other.S() + ')'); }
+          Code operator -(Code other) { return Code(string("(") + S()+Op('-')+other.S() + ')'); }
+          Code operator *(Code other) { return Code(string("(") + S()+Op('*')+other.S() + ')'); }
+          Code operator /(Code other) { return Code(string("(") + S()+Op('/')+other.S() + ')'); }
+          void operator +=(Code other) { code = "(" + S()+Op('+')+other.S() + ')'; }
+          void operator -=(Code other) { code = "(" + S()+Op('-')+other.S() + ')'; }
+          void operator *=(Code other) { code = "(" + S()+Op('*')+other.S() + ')'; }
+          void operator /=(Code other) { code = "(" + S()+Op('/')+other.S() + ')'; }
+          void operator =(Code other) { code = other.code; };
+
+          Code Func(string s) { return Code( s + "(" + S() + ")" ); }
+          string Assign (Code other) { return string("auto ") + S()+" = "+other.S() + ";\n"; }
+      };
+
+      Code Var(double val) { return Code(ToString(val)); }
+
+      Code Var(Complex val) {
+          string res("Complex(");
+          res += ToString(val.real());
+          res += ",";
+          res += ToString(val.imag());
+          res += ")";
+          return res;
+      }
+
+      Code Var(int i, int j=0, int k=0) {
+          return Code("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+      }
+
+    }
+
 
   /** 
       coefficient functions
@@ -25,6 +67,7 @@ namespace ngfem
     ///
     virtual ~CoefficientFunction ();
 
+    virtual string GetString(FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
     ///
@@ -178,6 +221,23 @@ namespace ngfem
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
     { return Array<CoefficientFunction*>(); }
+  protected:
+    static string StringVariable(int i) { return "var_" + ToString(i); }
+    static string StringVariable(int i, int j) { return "var_" + ToString(i) + '_' + ToString(j); }
+    static string StringVariable(int i, int j, int k) { return "var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k); }
+    static string StringInput(int i) { return '{' + ToString(i) + '}'; }
+    static string StringComponent(string s, int i) {
+        return s + "[" + ToString(i) + "]";
+    }
+    static string StringVector(FlatArray<string> a) {
+        std::ostringstream strs;
+        strs << '[';
+        for (auto s : a)
+          strs << s << ',';
+        // remove last ','
+        strs.seekp(-1, std::ios_base::end);
+        strs << ']';
+    }
   };
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
@@ -244,6 +304,7 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void PrintReport (ostream & ost) const;
+    virtual string GetString(FlatArray<int> inputs, int index) const;
   };
 
 
@@ -280,6 +341,7 @@ namespace ngfem
     }
     
     virtual void PrintReport (ostream & ost) const;
+    virtual string GetString(FlatArray<int> inputs, int index) const;
   };
 
 
@@ -312,6 +374,8 @@ namespace ngfem
     }
 
     double operator[] (int i) const { return val[i]; }
+
+    virtual string GetString(FlatArray<int> inputs, int index) const;
   };
 
 
@@ -368,6 +432,8 @@ namespace ngfem
 			   FlatMatrix<double> values) const;
 
     virtual void PrintReport (ostream & ost) const;
+
+    virtual string GetString(FlatArray<int> inputs, int index) const;
   };
 
   ///
@@ -625,10 +691,11 @@ class cl_UnaryOpCF : public CoefficientFunction
   shared_ptr<CoefficientFunction> c1;
   OP lam;
   OPC lamc;
+  string name;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
-                OP alam, OPC alamc)
-    : c1(ac1), lam(alam), lamc(alamc) { ; }
+                OP alam, OPC alamc, string aname="undefined")
+    : c1(ac1), lam(alam), lamc(alamc), name(aname) { ; }
   
   // virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual bool IsComplex() const
@@ -640,6 +707,14 @@ public:
   }
   
   virtual int Dimension() const { return c1->Dimension(); }
+
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    string result;
+    for (int i : Range(Dimension()))
+      result += Var(index).Assign( Var(inputs[0]).Func(name) );
+    return result;
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -771,9 +846,9 @@ public:
 
 template <typename OP, typename OPC> 
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam, OPC lamc)
+                                          OP lam, OPC lamc, string name="undefined")
 {
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc));
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc, name));
 }
 
   // extern int myglobalvar_eval;
@@ -788,13 +863,15 @@ class cl_BinaryOpCF : public CoefficientFunction
   DDERIV lam_dderiv;
   NONZERO lam_nonzero;
   int dim;
+  char opname;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero)
+                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero, char aopname)
     : c1(ac1), c2(ac2), lam(alam), lamc(alamc),
       lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
-      lam_nonzero(alam_nonzero)
+      lam_nonzero(alam_nonzero),
+      opname(aopname)
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
@@ -802,6 +879,13 @@ public:
     dim = dim1;
   }
 
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    string result;
+    for (int i : Range(Dimension()))
+      result += Var(index,i).Assign( Var(inputs[0],i).S() + opname + Var(inputs[1],i).S() );
+    return result;
+  }
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return dim; }
   virtual Array<int> Dimensions() const { return c1->Dimensions(); }
@@ -1047,10 +1131,11 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
                                                   shared_ptr<CoefficientFunction> c2, 
                                                   OP lam, OPC lamc, DERIV lam_deriv,
                                                   DDERIV lam_dderiv,
-                                                  NONZERO lam_nonzero)
+                                                  NONZERO lam_nonzero,
+                                                  char opname)
 {
   return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO> 
-                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero));
+                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero, opname));
 }
 
 
@@ -1066,6 +1151,10 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    return Var(index).Assign( Var(inputs[0], comp ));
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1232,6 +1321,18 @@ public:
     return 0;
   }
 
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    std::ostringstream strs;
+    strs << '[';
+    for (auto i : Range(ci))
+      strs << '{' << i << '}' << ',';
+    // remove last ','
+    strs.seekp(-1, std::ios_base::end);
+    strs << ']';
+    return strs.str();
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
   {
     for (auto cf : ci)
@@ -1346,6 +1447,8 @@ public:
     return Array<int> (dims);
   }
   
+  virtual string GetString(FlatArray<int> inputs, int index) const;
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     for (auto cf : ci)

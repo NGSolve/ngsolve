@@ -21,6 +21,11 @@ namespace ngfem
   { ; }
 
 
+  string CoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+  {
+    return string("\"\"\"") + typeid(*this).name() + string("\"\"\"\n");
+  }
+
   void CoefficientFunction :: PrintReport (ostream & ost) const
   {
     // ost << "CoefficientFunction is " << typeid(*this).name() << endl;
@@ -109,6 +114,10 @@ namespace ngfem
     values = val;
   }
 
+  string ConstantCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+  {
+    return Var(index).Assign(Var(val));
+  }
   
   ///
   ConstantCoefficientFunctionC ::   
@@ -125,6 +134,10 @@ namespace ngfem
     ost << "ConstantCFC, val = " << val << endl;
   }
 
+  string ConstantCoefficientFunctionC :: GetString(FlatArray<int> inputs, int index) const
+  {
+    return Var(index).Assign(Var(val));
+  }
 
   
   DomainConstantCoefficientFunction :: 
@@ -183,6 +196,15 @@ namespace ngfem
     
     values = val[elind]; 
   }
+
+  string DomainConstantCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+    {
+      Array<string> a(val.Size());
+      string result;
+      for (auto i : Range(val))
+        result += Var(index,i).Assign(Var(val[i]));
+      return result;
+    }
 
 
   DomainConstantCoefficientFunction :: 
@@ -433,6 +455,10 @@ void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
     fun[i] -> Print(ost);
 }
 
+string DomainVariableCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+{
+  return string("not implemented");
+}
 
   /*
   template class DomainVariableCoefficientFunction<1>;
@@ -738,6 +764,14 @@ public:
     ost << ")";
   }
 
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    string result;
+    for (auto i : Range(Dimension()))
+      result += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
+    return result;
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -874,6 +908,13 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
   
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    string result;
+    for (auto i : Range(Dimension()))
+      result += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
+    return result;
+  }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -1068,6 +1109,13 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    Code result;
+    for (int i : Range(c1->Dimension()))
+      result = result + ( Var(inputs[0],i) + Var(inputs[1],i) );
+    return Var(index).Assign(result.S());
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1247,6 +1295,13 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual string GetString(FlatArray<int> inputs, int index) const
+  {
+    Code result;
+    for (int i : Range(c1->Dimension()))
+      result += Var(inputs[0],i) + Var(inputs[1],i);
+    return Var(index).Assign(result.S());
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1632,6 +1687,18 @@ public:
     c1->TraverseTree (func);
     c2->TraverseTree (func);
     func(*this);
+  }
+
+  virtual string GetString(FlatArray<int> inputs, int index) const {
+      string result;
+      for (int i : Range(dims[0]))
+        for (int j : Range(dims[1])) {
+          auto s = Var(index, i, j);
+          for (int k : Range(inner_dim))
+            s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
+          result += Var(index, i, j).Assign(s);
+        }
+      return result;
   }
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
@@ -2076,6 +2143,14 @@ public:
     func(*this);
   }
 
+  virtual string GetString(FlatArray<int> inputs, int index) const {
+      string result;
+      for (int i : Range(dims[0]))
+        for (int j : Range(dims[1]))
+          result += Var(index,i,j).Assign( Var(inputs[0],j,i) );
+      return result;
+  }
+
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() } ); }  
 
@@ -2280,7 +2355,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }
+                       [](bool a, bool b) { return a||b; }, '+'
                        );
   }
   
@@ -2292,7 +2367,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }
+                       [](bool a, bool b) { return a||b; }, '-'
                        );
   }
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -2324,7 +2399,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 1; ddbdb = 0; },
-                       [](bool a, bool b) { return a&&b; }
+                       [](bool a, bool b) { return a&&b; }, '*'
                        );
   }
 
@@ -2365,7 +2440,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
-                       [](bool a, bool b) { return a; }
+                       [](bool a, bool b) { return a; }, '/'
                        );
   }
 
@@ -2531,6 +2606,16 @@ public:
     return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
   }
 
+  string VectorialCoefficientFunction::GetString(FlatArray<int> inputs, int index) const
+  {
+    string result;
+    for (auto i : Range(ci))
+      {
+        for (auto j : Range(ci[i]->Dimension()))
+          result += Var(index,i,j).Assign( Var(inputs[i],j));
+      }
+    return result;
+  }
   
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
@@ -2578,6 +2663,13 @@ public:
          });
 
       cout << "inputs = " << endl << inputs << endl;
+
+      cout << "Compiled CF:" << endl;
+      for (auto i : Range(steps)) {
+//         cout << "==========================================" << endl;
+//         cout << typeid(*steps[i]).name() << endl << endl;
+        cout << steps[i]->GetString(inputs[i],i);
+      }
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2743,6 +2835,10 @@ public:
       dderiv = ddtemp.Last();
     }
     
+    virtual string GetString(FlatArray<int> inputs, int index) const
+    {
+      return cf->GetString(inputs, index);
+    }
   };
 
 

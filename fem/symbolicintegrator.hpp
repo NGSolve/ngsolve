@@ -47,6 +47,8 @@ public:
   virtual Array<int> Dimensions() const;
   virtual bool IsComplex () const { return is_complex; } 
   bool IsOther() const { return is_other; }
+
+  virtual string GetString(FlatArray<int> inputs, int index) const;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
