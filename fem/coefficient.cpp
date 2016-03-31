@@ -1317,10 +1317,17 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
+#ifdef VLA
     SIMD<double> hmem1[DIM*values.VWidth()];
     AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
     SIMD<double> hmem2[DIM*values.VWidth()];
     AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+#else
+    SIMD<double> hmem1[100];
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    SIMD<double> hmem2[100];
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+#endif
 
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
@@ -2488,9 +2495,15 @@ public:
       SIMD<double> hmem3[ir.Size()*values.Height()];
       AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
 #else
-      Matrix<> if_values(1, ir.Size());
-      Matrix<> then_values(ir.Size(), values.Width());
-      Matrix<> else_values(ir.Size(), values.Width());
+//       Matrix<double> if_values(1, ir.Size());
+//       Matrix<double> then_values(ir.Size(), values.Width());
+//       Matrix<double> else_values(ir.Size(), values.Width());
+      SIMD<double> hmem1[100];
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      SIMD<double> hmem2[100];
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      SIMD<double> hmem3[100];
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
 #endif
       
       cf_if->Evaluate (ir, if_values);
