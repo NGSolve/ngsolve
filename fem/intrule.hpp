@@ -1266,7 +1266,7 @@ namespace ngfem
     INLINE int Size() const { return ir.Size(); }
     INLINE const SIMD_IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
-    virtual void ComputeNormalVectors (ELEMENT_TYPE et, int facetnr) = 0;
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
     INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
   };
@@ -1280,7 +1280,7 @@ namespace ngfem
                                 const ElementTransformation & aeltrans, 
                                 Allocator & lh);
 
-    virtual void ComputeNormalVectors (ELEMENT_TYPE et, int facetnr);
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
     { 
       return mips[i]; 

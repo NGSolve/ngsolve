@@ -533,21 +533,19 @@ namespace ngcomp
 					 SIMD_BaseMappedIntegrationRule & bmir) const
     {
       SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      FlatArray<SIMD<MappedIntegrationPoint<DIMS,DIMR>>> hmir(mir.Size(), &mir[0]);
+      FlatArray<SIMD<IntegrationPoint>> hir (ir);
+      
       Vec<DIMR,SIMD<double>> simd_p0(p0);
       Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
-      for (int i = 0; i < ir.Size(); i++)
+      
+      for (int i = 0; i < hir.Size(); i++)
         {
-          // const SIMD<IntegrationPoint> & ip = ir[i];
-          // mir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&ip(0));
-          Vec<DIMS,SIMD<double>> xi;
-          for (int j = 0; j < DIMS; j++)
-            xi(j) = ir[i](j);
-          mir[i].Point() = simd_p0 + simd_mat * xi;
-          mir[i].Jacobian() = simd_mat;
-          mir[i].Compute();
+          hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
+          hmir[i].Jacobian() = simd_mat;
+          hmir[i].Compute();
         }
     }
-    
   };
   
 
@@ -1074,7 +1072,7 @@ namespace ngcomp
   GetTrafoDim (int elnr, Allocator & lh) const
   {
     // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
-
+    
     ElementTransformation * eltrans;
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));

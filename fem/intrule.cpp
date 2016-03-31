@@ -2873,12 +2873,13 @@ namespace ngfem
 
   template <int DIM_ELEMENT, int DIM_SPACE>
   void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
-  ComputeNormalVectors (ELEMENT_TYPE et, int facetnr)
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
   {   // 
     Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
-    for (int i = 0; i < Size(); i++)
+    auto hmips = mips;
+    for (int i = 0; i < hmips.Size(); i++)
       {
-        auto & mip = mips[i];
+        auto & mip = hmips[i];
         Mat<DIM_ELEMENT,DIM_SPACE,SIMD<double>> inv_jac = mip.GetJacobianInverse();
         SIMD<double> det = mip.GetMeasure();
         Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
@@ -2909,6 +2910,9 @@ namespace ngfem
   {
     SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
     
+    FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;
+    FlatArray<SIMD<IntegrationPoint>> hirvol = irvol;
+    
     switch (ElementTopology::GetFacetType(eltype, fnr))
       {
         /*
@@ -2923,10 +2927,10 @@ namespace ngfem
           Vec<2> p1 = points (edges[fnr][0]);
           Vec<2> p2 = points (edges[fnr][1]);
           Vec<2> delta = p1-p2;
-          for (int i = 0; i < irfacet.Size(); i++)
+          for (int i = 0; i < hirfacet.Size(); i++)
             {
-              auto ip = irfacet[i];
-              auto & ipvol = irvol[i];              
+              auto ip = hirfacet[i];
+              auto & ipvol = hirvol[i];              
               for (int k = 0; k < 2; k++)
                 ipvol(k) = p2(k) + delta(k) * ip(0);
               ipvol(2) = 0.0;
