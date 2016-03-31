@@ -759,26 +759,26 @@ namespace ngfem
       ipvol.FacetNr() = fnr;
     }
 
-    FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const
+    FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const;
     {
       ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
       switch (facettype)
 	{
 	case ET_SEGM:
 	  {
-            auto mat = *new (lh) Mat<2,1>();
-	    FlatVector<> p1 (2,& points (edges[fnr][0])(0));
-	    FlatVector<> p2 (2,& points (edges[fnr][1])(0));
+            FlatMatrix<> mat(2,1,lh);
+	    FlatVec<3> p1 = points (edges[fnr][0]);
+	    FlatVec<3> p2 = points (edges[fnr][1]);
             mat.Col(0) = p1 - p2;
             return mat;
 	    break;
 	  }
 	case ET_TRIG:
 	  {
-            auto mat = *new (lh) Mat<3,2>();
-	    FlatVector<> p0 (3,& points (faces[fnr][0])(0));
-	    FlatVector<> p1 (3,& points (faces[fnr][1])(0));
-	    FlatVector<> p2 (3,& points (faces[fnr][2])(0));
+            FlatMatrix<> mat(3,2,lh);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
             mat.Col(0) = p0 - p2;
             mat.Col(1) = p1 - p2;
             return mat;
@@ -786,10 +786,10 @@ namespace ngfem
 	  }
 	case ET_QUAD:
 	  {
-            auto mat = *new (lh) Mat<3,2>();
-	    FlatVector<> p0 (3,& points (faces[fnr][0])(0));
-	    FlatVector<> p1 (3,& points (faces[fnr][1])(0));
-	    FlatVector<> p2 (3,& points (faces[fnr][3])(0));
+            FlatMatrix<> mat(3,2,lh);
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
             mat.Col(0) = p1 - p0;
             mat.Col(1) = p2 - p0;
             return mat;
