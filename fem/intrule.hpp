@@ -759,7 +759,7 @@ namespace ngfem
       ipvol.FacetNr() = fnr;
     }
 
-    FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const;
+    FlatMatrix<> GetJacobian(int fnr, LocalHeap & lh) const
     {
       ELEMENT_TYPE facettype = ElementTopology::GetFacetType(eltype, fnr);
       switch (facettype)
