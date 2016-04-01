@@ -10,6 +10,7 @@
 
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
+#include <libloader.hpp>
 
 namespace ngfem
 {
@@ -764,8 +765,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (auto i : Range(Dimension()))
-      code.body += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
+    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+        code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
+    });
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -906,8 +908,9 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (auto i : Range(Dimension()))
-      code.body += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
+    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+        code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
+    });
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -1686,7 +1689,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
       for (int i : Range(dims[0]))
         for (int j : Range(dims[1])) {
-          auto s = Var(index, i, j);
+          CodeExpr s;
           for (int k : Range(inner_dim))
             s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
           code.body += Var(index, i, j).Assign(s);
@@ -2598,9 +2601,9 @@ public:
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (auto i : Range(ci))
-      for (auto j : Range(ci[i]->Dimension()))
-        code.body += Var(index,i,j).Assign( Var(inputs[i],j));
+    TraverseDimensions( dims, [&](int i, int j) {
+        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j) );
+    });
   }
   
   // ///////////////////////////// Compiled CF /////////////////////////
@@ -2608,12 +2611,15 @@ public:
 // int myglobalvar_eval;
   class CompiledCoefficientFunction : public CoefficientFunction
   {
+    typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
     Array<int> dim;
     Array<bool> is_complex;
     // Array<Timer*> timers;
+    Library library;
+    lib_function compiled_function;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : cf(acf)
@@ -2653,10 +2659,36 @@ public:
       cout << "Compiled CF:" << endl;
       Code code;
       for (auto i : Range(steps)) {
+          cout << "step " << i << endl;
+          cout << "function: " << typeid(*steps[i]).name() << endl;
           steps[i]->GenerateCode(code, inputs[i],i);
       }
-      cout << code.header << endl;
-      cout << code.body << endl;
+      // set results
+      int ii = 0;
+      TraverseDimensions( cf->Dimensions(), [&](int i, int j) {
+        code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
+        ii++;
+      });
+      ofstream s("code.cpp");
+      s << "#include<fem.hpp>" << endl;
+      s << "using namespace ngfem;" << endl;
+      s << "using namespace ngstd;" << endl;
+      s << "extern \"C\" {" << endl;
+      s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
+      s << "for ( auto i : Range(mir)) {" << endl;
+      s << "auto & ip = mir[i];" << endl;
+      s << code.header << endl;
+      s << code.body << endl;
+      s << "}\n}\n}" << endl;
+
+      cout << "compiling..." << endl;
+      system("ngscxx -c code.cpp -o code.o");
+      cout << "linking..." << endl;
+      system("ngsld -shared code.o -o libcode.so -lngstd -lngfem");
+      cout << "done" << endl;
+      library.Load("libcode.so");
+      compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2683,6 +2715,9 @@ public:
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
+      cout << "eval!";
+      compiled_function(ir,values);
+      return;
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
       // static Timer t3("CompiledCF::Evaluate 3");

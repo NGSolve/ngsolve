@@ -38,7 +38,17 @@ namespace ngfem
           void operator =(CodeExpr other) { code = other.code; };
 
           CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
-          string Assign (CodeExpr other) { return string("auto ") + S()+" = "+other.S() + ";\n"; }
+          string Assign (CodeExpr other, bool declare = true) {
+              string result;
+              if(declare)
+                result += "auto ";
+              result += S()+" = "+other.S() + ";\n";
+              return result;
+          }
+
+          string Declare(string type = "auto" ) { 
+              return type + " " + code + ";\n";
+          }
       };
 
       inline CodeExpr Var(double val) { return CodeExpr(ToString(val)); }
@@ -55,6 +65,28 @@ namespace ngfem
       inline CodeExpr Var(int i, int j=0, int k=0) {
           return CodeExpr("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
       }
+
+      template<typename TFunc>
+      void TraverseDimensions( FlatArray<int> dims, const TFunc &func)
+      {
+        switch(dims.Size()) {
+          case 0:
+            func(0,0);
+            break;
+          case 1:
+            for (int i : Range(max2(1, dims[0])))
+              func(i,0);
+            break;
+          case 2:
+            for (int i : Range(max2(1, dims[0])))
+              for (int j : Range(max2(1, dims[1])))
+                func(i,j);
+            break;
+          default:
+            throw Exception("TraverseDimensions: too many dimensions!");
+        }
+      }
+
 
 //     }
 
@@ -715,8 +747,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (int i : Range(Dimension()))
-      code.body += Var(index).Assign( Var(inputs[0]).Func(name) );
+    TraverseDimensions( Dimensions(), [&](int i, int j) {
+        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).Func(name) );
+        });
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -882,10 +915,12 @@ public:
     dim = dim1;
   }
 
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (int i : Range(Dimension()))
-      code.body += Var(index,i).Assign( Var(inputs[0],i).S() + opname + Var(inputs[1],i).S() );
+    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).S() + opname + Var(inputs[1],i,j).S() );
+    });
   }
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return dim; }
@@ -1154,7 +1189,16 @@ public:
   virtual int Dimension() const { return 1; }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.body += Var(index).Assign( Var(inputs[0], comp ));
+    auto dims = c1->Dimensions();
+    int i = 0;
+    int j = 0;
+    if(dims.Size()==1)
+      i = comp;
+    else {
+      i = comp/dims[0];
+      j = comp%dims[0];
+    }
+    code.body += Var(index).Assign( Var(inputs[0], i, j ));
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
