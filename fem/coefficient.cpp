@@ -957,6 +957,12 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    for (int i : Range(c2->Dimension()))
+      code.body += Var(index,i).Assign( Var(inputs[0]) * Var(inputs[1],i) );
+  }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -2715,8 +2721,8 @@ public:
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
-      cout << "eval!";
       compiled_function(ir,values);
+      cout << ".";
       return;
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
