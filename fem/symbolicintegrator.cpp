@@ -8,8 +8,6 @@
 */
 
 #include <fem.hpp>
-#include <map>
-#include "avector.hpp"
   
 namespace ngfem
 {
