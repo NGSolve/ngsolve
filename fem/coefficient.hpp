@@ -11,34 +11,39 @@
 
 namespace ngfem
 {
-  namespace
-    {
+//   namespace
+//     {
       struct Code {
+          string header;
+          string body;
+      };
+
+      struct CodeExpr {
           string code;
-          Code( string acode="" ) : code(acode){ }
+          CodeExpr( string acode="" ) : code(acode){ }
           string S() const { return code; }
 
           string Op(char c) {
               return code.size() ? string(" ") + c + ' ' : "";
           }
 
-          Code operator +(Code other) { return Code(string("(") + S()+Op('+')+other.S() + ')'); }
-          Code operator -(Code other) { return Code(string("(") + S()+Op('-')+other.S() + ')'); }
-          Code operator *(Code other) { return Code(string("(") + S()+Op('*')+other.S() + ')'); }
-          Code operator /(Code other) { return Code(string("(") + S()+Op('/')+other.S() + ')'); }
-          void operator +=(Code other) { code = "(" + S()+Op('+')+other.S() + ')'; }
-          void operator -=(Code other) { code = "(" + S()+Op('-')+other.S() + ')'; }
-          void operator *=(Code other) { code = "(" + S()+Op('*')+other.S() + ')'; }
-          void operator /=(Code other) { code = "(" + S()+Op('/')+other.S() + ')'; }
-          void operator =(Code other) { code = other.code; };
+          CodeExpr operator +(CodeExpr other) { return CodeExpr(string("(") + S()+Op('+')+other.S() + ')'); }
+          CodeExpr operator -(CodeExpr other) { return CodeExpr(string("(") + S()+Op('-')+other.S() + ')'); }
+          CodeExpr operator *(CodeExpr other) { return CodeExpr(string("(") + S()+Op('*')+other.S() + ')'); }
+          CodeExpr operator /(CodeExpr other) { return CodeExpr(string("(") + S()+Op('/')+other.S() + ')'); }
+          void operator +=(CodeExpr other) { code = "(" + S()+Op('+')+other.S() + ')'; }
+          void operator -=(CodeExpr other) { code = "(" + S()+Op('-')+other.S() + ')'; }
+          void operator *=(CodeExpr other) { code = "(" + S()+Op('*')+other.S() + ')'; }
+          void operator /=(CodeExpr other) { code = "(" + S()+Op('/')+other.S() + ')'; }
+          void operator =(CodeExpr other) { code = other.code; };
 
-          Code Func(string s) { return Code( s + "(" + S() + ")" ); }
-          string Assign (Code other) { return string("auto ") + S()+" = "+other.S() + ";\n"; }
+          CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
+          string Assign (CodeExpr other) { return string("auto ") + S()+" = "+other.S() + ";\n"; }
       };
 
-      Code Var(double val) { return Code(ToString(val)); }
+      inline CodeExpr Var(double val) { return CodeExpr(ToString(val)); }
 
-      Code Var(Complex val) {
+      inline CodeExpr Var(Complex val) {
           string res("Complex(");
           res += ToString(val.real());
           res += ",";
@@ -47,11 +52,11 @@ namespace ngfem
           return res;
       }
 
-      Code Var(int i, int j=0, int k=0) {
-          return Code("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
+      inline CodeExpr Var(int i, int j=0, int k=0) {
+          return CodeExpr("var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
       }
 
-    }
+//     }
 
 
   /** 
@@ -67,7 +72,7 @@ namespace ngfem
     ///
     virtual ~CoefficientFunction ();
 
-    virtual string GetString(FlatArray<int> inputs, int index) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
     ///
@@ -304,7 +309,7 @@ namespace ngfem
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void PrintReport (ostream & ost) const;
-    virtual string GetString(FlatArray<int> inputs, int index) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -341,7 +346,7 @@ namespace ngfem
     }
     
     virtual void PrintReport (ostream & ost) const;
-    virtual string GetString(FlatArray<int> inputs, int index) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -375,7 +380,7 @@ namespace ngfem
 
     double operator[] (int i) const { return val[i]; }
 
-    virtual string GetString(FlatArray<int> inputs, int index) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -433,7 +438,7 @@ namespace ngfem
 
     virtual void PrintReport (ostream & ost) const;
 
-    virtual string GetString(FlatArray<int> inputs, int index) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
   ///
@@ -708,12 +713,10 @@ public:
   
   virtual int Dimension() const { return c1->Dimension(); }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string result;
     for (int i : Range(Dimension()))
-      result += Var(index).Assign( Var(inputs[0]).Func(name) );
-    return result;
+      code.body += Var(index).Assign( Var(inputs[0]).Func(name) );
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -879,12 +882,10 @@ public:
     dim = dim1;
   }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string result;
     for (int i : Range(Dimension()))
-      result += Var(index,i).Assign( Var(inputs[0],i).S() + opname + Var(inputs[1],i).S() );
-    return result;
+      code.body += Var(index,i).Assign( Var(inputs[0],i).S() + opname + Var(inputs[1],i).S() );
   }
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return dim; }
@@ -1151,9 +1152,9 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return 1; }
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    return Var(index).Assign( Var(inputs[0], comp ));
+    code.body += Var(index).Assign( Var(inputs[0], comp ));
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -1321,16 +1322,9 @@ public:
     return 0;
   }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    std::ostringstream strs;
-    strs << '[';
-    for (auto i : Range(ci))
-      strs << '{' << i << '}' << ',';
-    // remove last ','
-    strs.seekp(-1, std::ios_base::end);
-    strs << ']';
-    return strs.str();
+    code.body += "// DomainWiseCoefficientFunction: not implemented\n;";
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
@@ -1447,7 +1441,7 @@ public:
     return Array<int> (dims);
   }
   
-  virtual string GetString(FlatArray<int> inputs, int index) const;
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
