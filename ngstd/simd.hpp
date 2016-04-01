@@ -10,31 +10,31 @@
 #include <immintrin.h>
 
 #ifdef WIN32
-inline __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
-inline __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
-inline __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
-inline __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
-inline __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd(a,b); }
-inline __m128d operator* (double a, __m128d b) { return _mm_set1_pd(a)*b; }
-inline __m128d operator* (__m128d b, double a) { return _mm_set1_pd(a)*b; }
+INLINE __m128d operator- (__m128d a) { return _mm_xor_pd(a, _mm_set1_pd(-0.0)); }
+INLINE __m128d operator+ (__m128d a, __m128d b) { return _mm_add_pd(a,b); }
+INLINE __m128d operator- (__m128d a, __m128d b) { return _mm_sub_pd(a,b); }
+INLINE __m128d operator* (__m128d a, __m128d b) { return _mm_mul_pd(a,b); }
+INLINE __m128d operator/ (__m128d a, __m128d b) { return _mm_div_pd(a,b); }
+INLINE __m128d operator* (double a, __m128d b) { return _mm_set1_pd(a)*b; }
+INLINE __m128d operator* (__m128d b, double a) { return _mm_set1_pd(a)*b; }
 
-inline __m128d operator+= (__m128d &a, __m128d b) { return a = a+b; }
-inline __m128d operator-= (__m128d &a, __m128d b) { return a = a-b; }
-inline __m128d operator*= (__m128d &a, __m128d b) { return a = a*b; }
-inline __m128d operator/= (__m128d &a, __m128d b) { return a = a/b; }
+INLINE __m128d operator+= (__m128d &a, __m128d b) { return a = a+b; }
+INLINE __m128d operator-= (__m128d &a, __m128d b) { return a = a-b; }
+INLINE __m128d operator*= (__m128d &a, __m128d b) { return a = a*b; }
+INLINE __m128d operator/= (__m128d &a, __m128d b) { return a = a/b; }
 
-inline __m256d operator- (__m256d a) { return _mm256_xor_pd(a, _mm256_set1_pd(-0.0)); }
-inline __m256d operator+ (__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
-inline __m256d operator- (__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
-inline __m256d operator* (__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
-inline __m256d operator/ (__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
-inline __m256d operator* (double a, __m256d b) { return _mm256_set1_pd(a)*b; }
-inline __m256d operator* (__m256d b, double a) { return _mm256_set1_pd(a)*b; }
+INLINE __m256d operator- (__m256d a) { return _mm256_xor_pd(a, _mm256_set1_pd(-0.0)); }
+INLINE __m256d operator+ (__m256d a, __m256d b) { return _mm256_add_pd(a,b); }
+INLINE __m256d operator- (__m256d a, __m256d b) { return _mm256_sub_pd(a,b); }
+INLINE __m256d operator* (__m256d a, __m256d b) { return _mm256_mul_pd(a,b); }
+INLINE __m256d operator/ (__m256d a, __m256d b) { return _mm256_div_pd(a,b); }
+INLINE __m256d operator* (double a, __m256d b) { return _mm256_set1_pd(a)*b; }
+INLINE __m256d operator* (__m256d b, double a) { return _mm256_set1_pd(a)*b; }
 
-inline __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
-inline __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
-inline __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
-inline __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
+INLINE __m256d operator+= (__m256d &a, __m256d b) { return a = a+b; }
+INLINE __m256d operator-= (__m256d &a, __m256d b) { return a = a-b; }
+INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
+INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
 #endif
 
 namespace ngstd
@@ -105,35 +105,35 @@ namespace ngstd
       data = _data;
     }
     
-    double operator[] (int i) const { return ((double*)(&data))[i]; }
-    __m256d Data() const { return data; }
-    __m256d & Data() { return data; }
+    INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE __m256d Data() const { return data; }
+    INLINE __m256d & Data() { return data; }
   };
   
   
-  inline SIMD<double> operator+ (SIMD<double> a, SIMD<double> b) { return a.Data()+b.Data(); }
-  inline SIMD<double> operator- (SIMD<double> a, SIMD<double> b) { return a.Data()-b.Data(); }
-  inline SIMD<double> operator- (SIMD<double> a) { return -a.Data(); }
-  inline SIMD<double> operator* (SIMD<double> a, SIMD<double> b) { return a.Data()*b.Data(); }
-  inline SIMD<double> operator/ (SIMD<double> a, SIMD<double> b) { return a.Data()/b.Data(); }
-  inline SIMD<double> operator* (double a, SIMD<double> b) { return SIMD<double>(a)*b; }
-  inline SIMD<double> operator* (SIMD<double> b, double a) { return SIMD<double>(a)*b; }
-  inline SIMD<double> operator+= (SIMD<double> & a, SIMD<double> b) { return a.Data()+=b.Data(); }
-  inline SIMD<double> operator-= (SIMD<double> & a, SIMD<double> b) { return a.Data()-=b.Data(); }
-  inline SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
-  inline SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
+  INLINE SIMD<double> operator+ (SIMD<double> a, SIMD<double> b) { return a.Data()+b.Data(); }
+  INLINE SIMD<double> operator- (SIMD<double> a, SIMD<double> b) { return a.Data()-b.Data(); }
+  INLINE SIMD<double> operator- (SIMD<double> a) { return -a.Data(); }
+  INLINE SIMD<double> operator* (SIMD<double> a, SIMD<double> b) { return a.Data()*b.Data(); }
+  INLINE SIMD<double> operator/ (SIMD<double> a, SIMD<double> b) { return a.Data()/b.Data(); }
+  INLINE SIMD<double> operator* (double a, SIMD<double> b) { return SIMD<double>(a)*b; }
+  INLINE SIMD<double> operator* (SIMD<double> b, double a) { return SIMD<double>(a)*b; }
+  INLINE SIMD<double> operator+= (SIMD<double> & a, SIMD<double> b) { return a.Data()+=b.Data(); }
+  INLINE SIMD<double> operator-= (SIMD<double> & a, SIMD<double> b) { return a.Data()-=b.Data(); }
+  INLINE SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
+  INLINE SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
-  inline SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
-  inline SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
-  inline SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
-  inline SIMD<double> Trans (SIMD<double> a) { return a; }
-  inline SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
+  INLINE SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
+  INLINE SIMD<double> Trans (SIMD<double> a) { return a; }
+  INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
     return _mm256_blendv_pd(c.Data(), b.Data(), cp);
   }
 
-  inline double HSum (SIMD<double> sd)
+  INLINE double HSum (SIMD<double> sd)
   {
     __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
     return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
@@ -193,28 +193,28 @@ namespace ngstd
   };
   
   
-  inline SIMD<double> operator+ (SIMD<double> a, SIMD<double> b) { return a.Data()+b.Data(); }
-  inline SIMD<double> operator- (SIMD<double> a, SIMD<double> b) { return a.Data()-b.Data(); }
-  inline SIMD<double> operator- (SIMD<double> a) { return -a.Data(); }
-  inline SIMD<double> operator* (SIMD<double> a, SIMD<double> b) { return a.Data()*b.Data(); }
-  inline SIMD<double> operator/ (SIMD<double> a, SIMD<double> b) { return a.Data()/b.Data(); }
-  inline SIMD<double> operator* (double a, SIMD<double> b) { return SIMD<double>(a)*b; }
-  inline SIMD<double> operator* (SIMD<double> b, double a) { return SIMD<double>(a)*b; }
-  inline SIMD<double> operator+= (SIMD<double> & a, SIMD<double> b) { return a.Data()+=b.Data(); }
-  inline SIMD<double> operator-= (SIMD<double> & a, SIMD<double> b) { return a.Data()-=b.Data(); }
-  inline SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
-  inline SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
+  INLINE SIMD<double> operator+ (SIMD<double> a, SIMD<double> b) { return a.Data()+b.Data(); }
+  INLINE SIMD<double> operator- (SIMD<double> a, SIMD<double> b) { return a.Data()-b.Data(); }
+  INLINE SIMD<double> operator- (SIMD<double> a) { return -a.Data(); }
+  INLINE SIMD<double> operator* (SIMD<double> a, SIMD<double> b) { return a.Data()*b.Data(); }
+  INLINE SIMD<double> operator/ (SIMD<double> a, SIMD<double> b) { return a.Data()/b.Data(); }
+  INLINE SIMD<double> operator* (double a, SIMD<double> b) { return SIMD<double>(a)*b; }
+  INLINE SIMD<double> operator* (SIMD<double> b, double a) { return SIMD<double>(a)*b; }
+  INLINE SIMD<double> operator+= (SIMD<double> & a, SIMD<double> b) { return a.Data()+=b.Data(); }
+  INLINE SIMD<double> operator-= (SIMD<double> & a, SIMD<double> b) { return a.Data()-=b.Data(); }
+  INLINE SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
+  INLINE SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
-  inline SIMD<double> sqrt (SIMD<double> a) { return std::sqrt(a.Data()); }
-  inline SIMD<double> fabs (SIMD<double> a) { return std::fabs(a.Data()); }
-  inline SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
-  inline SIMD<double> Trans (SIMD<double> a) { return a; }
-  inline SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  INLINE SIMD<double> sqrt (SIMD<double> a) { return std::sqrt(a.Data()); }
+  INLINE SIMD<double> fabs (SIMD<double> a) { return std::fabs(a.Data()); }
+  INLINE SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
+  INLINE SIMD<double> Trans (SIMD<double> a) { return a; }
+  INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     return (a.Data() > 0) ? b : c;
   }
 
-  inline double HSum (SIMD<double> sd)
+  INLINE double HSum (SIMD<double> sd)
   { return sd.Data(); }
 
 #endif
