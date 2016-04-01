@@ -21,9 +21,9 @@ namespace ngfem
   { ; }
 
 
-  string CoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+  void CoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    return string("\"\"\"") + typeid(*this).name() + string("\"\"\"\n");
+    code.header += string("// Missing implementation: ") + typeid(*this).name() + "\n";
   }
 
   void CoefficientFunction :: PrintReport (ostream & ost) const
@@ -114,9 +114,9 @@ namespace ngfem
     values = val;
   }
 
-  string ConstantCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+  void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    return Var(index).Assign(Var(val));
+    code.body += Var(index).Assign(Var(val));
   }
   
   ///
@@ -134,9 +134,9 @@ namespace ngfem
     ost << "ConstantCFC, val = " << val << endl;
   }
 
-  string ConstantCoefficientFunctionC :: GetString(FlatArray<int> inputs, int index) const
+  void ConstantCoefficientFunctionC :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    return Var(index).Assign(Var(val));
+    code.body += Var(index).Assign(Var(val));
   }
 
   
@@ -197,13 +197,11 @@ namespace ngfem
     values = val[elind]; 
   }
 
-  string DomainConstantCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+  void DomainConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
     {
       Array<string> a(val.Size());
-      string result;
       for (auto i : Range(val))
-        result += Var(index,i).Assign(Var(val[i]));
-      return result;
+        code.body += Var(index,i).Assign(Var(val[i]));
     }
 
 
@@ -455,9 +453,9 @@ void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
     fun[i] -> Print(ost);
 }
 
-string DomainVariableCoefficientFunction :: GetString(FlatArray<int> inputs, int index) const
+void DomainVariableCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
 {
-  return string("not implemented");
+  code.body += "// DomainVariableCoefficientFunction: not implemented";
 }
 
   /*
@@ -764,12 +762,10 @@ public:
     ost << ")";
   }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string result;
     for (auto i : Range(Dimension()))
-      result += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
-    return result;
+      code.body += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -908,12 +904,10 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
   
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string result;
     for (auto i : Range(Dimension()))
-      result += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
-    return result;
+      code.body += Var(index,i).Assign(Var(scal) * Var(inputs[0],i));
   }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
@@ -1109,12 +1103,12 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    Code result;
+    CodeExpr result;
     for (int i : Range(c1->Dimension()))
       result = result + ( Var(inputs[0],i) + Var(inputs[1],i) );
-    return Var(index).Assign(result.S());
+    code.body += Var(index).Assign(result.S());
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -1295,12 +1289,12 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
-  virtual string GetString(FlatArray<int> inputs, int index) const
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    Code result;
+    CodeExpr result;
     for (int i : Range(c1->Dimension()))
       result += Var(inputs[0],i) + Var(inputs[1],i);
-    return Var(index).Assign(result.S());
+    code.body += Var(index).Assign(result.S());
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -1689,16 +1683,14 @@ public:
     func(*this);
   }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const {
-      string result;
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
       for (int i : Range(dims[0]))
         for (int j : Range(dims[1])) {
           auto s = Var(index, i, j);
           for (int k : Range(inner_dim))
             s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
-          result += Var(index, i, j).Assign(s);
+          code.body += Var(index, i, j).Assign(s);
         }
-      return result;
   }
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
@@ -2143,12 +2135,10 @@ public:
     func(*this);
   }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const {
-      string result;
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
       for (int i : Range(dims[0]))
         for (int j : Range(dims[1]))
-          result += Var(index,i,j).Assign( Var(inputs[0],j,i) );
-      return result;
+          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
   }
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
@@ -2606,15 +2596,11 @@ public:
     return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
   }
 
-  string VectorialCoefficientFunction::GetString(FlatArray<int> inputs, int index) const
+  void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string result;
     for (auto i : Range(ci))
-      {
-        for (auto j : Range(ci[i]->Dimension()))
-          result += Var(index,i,j).Assign( Var(inputs[i],j));
-      }
-    return result;
+      for (auto j : Range(ci[i]->Dimension()))
+        code.body += Var(index,i,j).Assign( Var(inputs[i],j));
   }
   
   // ///////////////////////////// Compiled CF /////////////////////////
@@ -2665,11 +2651,12 @@ public:
       cout << "inputs = " << endl << inputs << endl;
 
       cout << "Compiled CF:" << endl;
+      Code code;
       for (auto i : Range(steps)) {
-//         cout << "==========================================" << endl;
-//         cout << typeid(*steps[i]).name() << endl << endl;
-        cout << steps[i]->GetString(inputs[i],i);
+          steps[i]->GenerateCode(code, inputs[i],i);
       }
+      cout << code.header << endl;
+      cout << code.body << endl;
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2835,9 +2822,9 @@ public:
       dderiv = ddtemp.Last();
     }
     
-    virtual string GetString(FlatArray<int> inputs, int index) const
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
     {
-      return cf->GetString(inputs, index);
+      return cf->GenerateCode(code, inputs, index);
     }
   };
 

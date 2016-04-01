@@ -407,9 +407,9 @@ void ExportCoefficientFunction()
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
          )
-//     .def("__str__", &ToString<CoefficientFunction>)
-    .def("__str__", FunctionPointer
-	 ([] (CoefficientFunction & self) { Array<int> vars(10); return self.GetString(vars,0); } ))
+    .def("__str__", &ToString<CoefficientFunction>)
+//     .def("__str__", FunctionPointer
+// 	 ([] (CoefficientFunction & self) { Array<int> vars(10); return self.GetString(vars,0); } ))
 
     .def("__call__", FunctionPointer
 	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
@@ -604,12 +604,11 @@ void ExportCoefficientFunction()
       */
     }
 
-    virtual string GetString(FlatArray<int> inputs, int index) const {
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
-        if(dir==0) return v.Assign(Code("ip.GetPoint()(0)"));
-        if(dir==1) return v.Assign(Code("ip.GetPoint()(1)"));
-        if(dir==2) return v.Assign(Code("ip.GetPoint()(2)"));
-        return "undefined";
+        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
+        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
+        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
     }
   };
 
