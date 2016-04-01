@@ -14,58 +14,6 @@
 namespace ngfem
 {
   
-  class ProxyUserData
-  {
-    // map<const ProxyFunction*, FlatMatrix<double>> remember;
-    FlatArray<const ProxyFunction*> remember_first;
-    FlatArray<FlatMatrix<double>> remember_second;
-  public:
-    class ProxyFunction * testfunction = nullptr;
-    int test_comp;
-    class ProxyFunction * trialfunction = nullptr;
-    int trial_comp;
-    
-    const FiniteElement * fel = nullptr;
-    const FlatVector<double> * elx;
-    LocalHeap * lh;
-
-    ProxyUserData ()
-      : remember_first(0,nullptr), remember_second(0,nullptr) { ; }
-    ProxyUserData (int ntrial, LocalHeap & lh)
-      : remember_first(ntrial, lh), remember_second(ntrial, lh)
-    { remember_first = nullptr; }
-    
-    void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
-    {
-      // remember[proxy] = Matrix<> (h, w);
-      /*
-      remember.emplace(piecewise_construct,
-                       forward_as_tuple(proxy),
-                       forward_as_tuple(h,w,lh));
-      */
-      for (int i = 0; i < remember_first.Size(); i++)
-        {
-          if (remember_first[i] == nullptr)
-            {
-              remember_first[i] = proxy;
-              remember_second[i].AssignMemory (h,w,lh);
-              return;
-            }
-        }
-      throw Exception ("no space for userdata - memory available");
-    }
-    bool HasMemory (const ProxyFunction * proxy) const
-    {
-      // return remember.count (proxy);
-      return remember_first.Contains(proxy);
-    }
-    FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
-    {
-      // return remember.find(proxy) -> second;
-      return remember_second[remember_first.Pos(proxy)];
-    }
-  };
-
   Array<int> ProxyFunction ::
   Dimensions() const
   {
@@ -77,10 +25,48 @@ namespace ngfem
       return Array<int> ({dim/blockdim, blockdim});
   }
   
-  string ProxyFunction ::
-  GetString(FlatArray<int> inputs, int index) const
+  void ProxyFunction ::
+  GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    return evaluator->Name() + string(testfunction? "(testfunction)" : "(trialfunction)") + "\n";
+    string ud = "tmp_" + ToString(index) +'_'+ ToString(0);
+    code.body += "\n";
+    code.body += string("// Proxyfunction: ") + evaluator->Name() + string(testfunction? "(testfunction)" : "(trialfunction)") + "\n";
+    code.body += "ProxyUserData * " +ud+ " = (ProxyUserData*)ip.GetTransformation().userdata;\n";
+    for (int i : Range(evaluator->Dim())) {
+        code.body += Var(index, i).Declare("typename std::remove_reference<decltype(" +ud+ "->GetMemory(nullptr)(0,0))>::type");
+        code.body += Var(index, i).Assign( Var(0.0), false );
+    }
+    string pthis("reinterpret_cast<ProxyFunction*>(" + ToString(this) + ")");
+    string nl = "\n";
+    if (!testfunction) {
+        code.body += "if(" +ud+ "->fel) {" + nl;
+        code.body += "\tif (" +ud+ "->HasMemory (" + pthis + ")) {" + nl;
+        for (int i : Range(evaluator->Dim()))
+            code.body += "\t\t" + Var(index).Assign( "" +ud+ "->GetMemory (" + pthis + ")(i, " + ToString(i) + " )", false );
+        code.body += "\t}\n";
+        code.body += "\telse\n\t\tthrow Exception(\"userdata has no memory!\");\n";
+        code.body += "}\n";
+        code.body += "else {\n";
+    }
+    if(testfunction) {
+        code.body += "\tif(" +ud+ "->testfunction == " + pthis + ") {\n";
+        for (int i : Range(evaluator->Dim())) {
+          code.body += "\t\tif("+ToString(i)+"=="+ud+"->test_comp)\n\t\t\t";
+          code.body += Var(index,i).Assign( Var(1.0), false );
+        }
+        code.body += "\t}\n";
+    }
+    else {
+        code.body += "\tif(" +ud+ "->trialfunction == " + pthis + ") {\n";
+        for (int i : Range(evaluator->Dim())) {
+          code.body += "\t\tif("+ToString(i)+"=="+ud+"->trial_comp)\n\t\t\t";
+          code.body += Var(index,i).Assign( Var(1.0), false );
+        }
+        code.body += "\t}\n";
+    }
+    if (!testfunction)
+      code.body += "}\n";
+    code.body += "\n";
   }
   
   void ProxyFunction ::

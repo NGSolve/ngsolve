@@ -11,7 +11,6 @@
 namespace ngfem
 {
 
-  
 
 class ProxyFunction : public CoefficientFunction
 {
@@ -48,7 +47,7 @@ public:
   virtual bool IsComplex () const { return is_complex; } 
   bool IsOther() const { return is_other; }
 
-  virtual string GetString(FlatArray<int> inputs, int index) const;
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -100,6 +99,59 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;  
 };
 
+class ProxyUserData
+{
+  // map<const ProxyFunction*, FlatMatrix<double>> remember;
+  FlatArray<const ProxyFunction*> remember_first;
+  FlatArray<FlatMatrix<double>> remember_second;
+public:
+  class ProxyFunction * testfunction = nullptr;
+  int test_comp;
+  class ProxyFunction * trialfunction = nullptr;
+  int trial_comp;
+  
+  const FiniteElement * fel = nullptr;
+  const FlatVector<double> * elx;
+  LocalHeap * lh;
+
+  ProxyUserData ()
+    : remember_first(0,nullptr), remember_second(0,nullptr) { ; }
+  ProxyUserData (int ntrial, LocalHeap & lh)
+    : remember_first(ntrial, lh), remember_second(ntrial, lh)
+  { remember_first = nullptr; }
+  
+  void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
+  {
+    // remember[proxy] = Matrix<> (h, w);
+    /*
+    remember.emplace(piecewise_construct,
+                     forward_as_tuple(proxy),
+                     forward_as_tuple(h,w,lh));
+    */
+    for (int i = 0; i < remember_first.Size(); i++)
+      {
+        if (remember_first[i] == nullptr)
+          {
+            remember_first[i] = proxy;
+            remember_second[i].AssignMemory (h,w,lh);
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+  bool HasMemory (const ProxyFunction * proxy) const
+  {
+    // return remember.count (proxy);
+    return remember_first.Contains(proxy);
+  }
+  FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
+  {
+    // return remember.find(proxy) -> second;
+    return remember_second[remember_first.Pos(proxy)];
+  }
+};
+
+  
 
 class CompoundDifferentialOperator : public DifferentialOperator
 {
