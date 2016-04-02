@@ -2758,18 +2758,12 @@ namespace ngcomp
   template <class SCAL>
   void S_BilinearForm<SCAL> :: AddMatrix1 (SCAL val,
                                            const BaseVector & x,
-                                           BaseVector & y) const
+                                           BaseVector & y, LocalHeap & clh) const
   {
     static Timer timer ("Apply Matrix");
     static Timer timervol ("Apply Matrix - volume");
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
-    static Timer timerDGprep ("Apply Matrix - DG prep");
-    static Timer timerDGcompute ("Apply Matrix - DG compute");
-    static Timer timerDGcleanup ("Apply Matrix - DG cleanup");
-    static Timer timerDG1 ("Apply Matrix - DG1");
-    static Timer timerDG2 ("Apply Matrix - DG2");
-    static Timer timerDG3 ("Apply Matrix - DG3");
     static Timer timerDGfacet ("Apply Matrix - DG boundary");
     static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1");
     static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2");
@@ -2803,19 +2797,20 @@ namespace ngcomp
           }
 
         bool done = false;
-        int atempt = 0;
+        // int atempt = 0;
 
+        /*
         while(!done && atempt < 3)
           {
             try
               {
-
+        */
                 int cnt = 0;
 
                 if (hasinner)
                   {
                     RegionTimer reg (timervol);
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
 
 		    IterateElements 
 		      (*fespace, VOL, clh, 
@@ -2838,7 +2833,7 @@ namespace ngcomp
                   {
                     RegionTimer reg (timerbound);
 
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     
 		    IterateElements 
 		      (*fespace, BND, clh, 
@@ -2860,7 +2855,6 @@ namespace ngcomp
                   {
                     RegionTimer reg(timerDG);
 
-                    timerDGprep.Start();
                     for (int j = 0; j < NumIntegrators(); j++)
                       if (parts[j] -> SkeletonForm())
                         {
@@ -2880,10 +2874,8 @@ namespace ngcomp
                         }
 
                     // element-boundary formulation
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     mutex addelemfacbnd_mutex;
-                    timerDGprep.Stop();
-                    timerDGcompute.Start();
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -2906,13 +2898,9 @@ namespace ngcomp
 
                                  if (elnums.Size()<2)
                                    {
-                                     // RegionTimer regfacet(timerDGfacet);
-                                     // timerDGfacet1.Start();
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
                                      int sel = elnums[0];
 
-                                     // timerDGfacet1.Stop();
-                                     // timerDGfacet2.Start();                                                           
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
                                      ma->GetElVertices (el1, vnums1);     
@@ -2966,12 +2954,9 @@ namespace ngcomp
                                              y.AddIndirect(dnums, ely);
                                            }
                                        } //end for (numintegrators)
-                                     // timerDGfacet2.Stop();
 
                                      continue;
                                    } // end if boundary facet
-
-                                 // timerDG2.Start();
 
                                  // RegionTimer reg2(timerDG2);
                                  int el2 = elnums[0] + elnums[1] - el1;
@@ -2994,7 +2979,6 @@ namespace ngcomp
 
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
-                                 // timerDG2.Stop();                                 
                                  
                                  if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
                                    {
@@ -3053,8 +3037,6 @@ namespace ngcomp
                                }
                            }                             
                        });
-                    timerDGcompute.Stop();
-                    RegionTimer regcleanup(timerDGcleanup);
                   }
 
 
@@ -3074,6 +3056,7 @@ namespace ngcomp
                       }
                   }
                 done = true;
+                /*
               }
             catch (LocalHeapOverflow lhex)
               {
@@ -3082,6 +3065,7 @@ namespace ngcomp
                 cerr << "Trying automatic heapsize increase to " << lh_size << endl;
               }
           }
+                */
       }
     else
       { 
@@ -4311,7 +4295,24 @@ namespace ngcomp
     v.Cumulate();
 
     prod = 0;
-    bf -> AddMatrix (1, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (1, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
 
     prod.SetParallelStatus (DISTRIBUTED);
   }
@@ -4322,7 +4323,26 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    bf -> AddMatrix (val, v, prod);
+    // bf -> AddMatrix (val, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (val, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
+    
   }
 
   void BilinearFormApplication :: 
@@ -4331,7 +4351,26 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    bf -> AddMatrix (val, v, prod);
+    // bf -> AddMatrix (val, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (val, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
+    
   }
 
   /*
