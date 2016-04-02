@@ -314,8 +314,8 @@ namespace ngcomp
     Vec<DIMR> p0;
     Mat<DIMR,DIMS> mat;
   public:
-    Ng_ConstElementTransformation (const MeshAccess * amesh,
-                                   ELEMENT_TYPE aet, ElementId ei, int elindex) 
+    INLINE Ng_ConstElementTransformation (const MeshAccess * amesh,
+                                          ELEMENT_TYPE aet, ElementId ei, int elindex) 
       : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
         mesh(amesh) 
     { 
@@ -336,10 +336,11 @@ namespace ngcomp
       else if ( (DIMR==2) && (DIMS==2) && (eltype == ET_TRIG) )
         {
           Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
-          p0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+          Vec<2> hp0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+          p0 = hp0;
 	  for (int j = 0; j < 2; j++)
 	    {
-	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - hp0;
 	      for (int k = 0; k < 2; k++)
 		mat(k,j) = pj(k);
 	    }
@@ -1159,7 +1160,7 @@ namespace ngcomp
   ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
   {
     ElementTransformation * eltrans;
-    
+
     if (!boundary)
       {
         switch (dim)
