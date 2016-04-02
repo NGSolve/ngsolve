@@ -111,6 +111,17 @@ namespace ngfem
     for (int i = 0; i < mir.Size(); i++)
       Apply (fel, mir[i], x, flux.Row(i), lh);
   }
+
+  void DifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         SliceVector<double> x, 
+         AFlatMatrix<double> flux,
+         LocalHeap & lh) const
+  {
+    throw Exception (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
+                     + typeid(*this).name());
+  }
   
   
   void DifferentialOperator ::
@@ -183,12 +194,13 @@ namespace ngfem
 
   void DifferentialOperator ::
   AddTrans (const FiniteElement & bfel,
-              const SIMD_BaseMappedIntegrationRule & bmir,
-              AFlatMatrix<double> flux,
-              SliceVector<double> x, 
-              LocalHeap & lh) const
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            AFlatMatrix<double> flux,
+            SliceVector<double> x, 
+            LocalHeap & lh) const
   {
-    throw Exception ("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded");
+    throw Exception (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
+                     + typeid(*this).name());
   }
 
   

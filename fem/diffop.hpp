@@ -233,7 +233,7 @@ namespace ngfem
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   SliceVector<double> x, 
 	   AFlatMatrix<double> flux,
-	   LocalHeap & lh) const = 0;
+	   LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,

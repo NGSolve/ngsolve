@@ -465,9 +465,18 @@ namespace ngcomp
     dnums.SetSize0();
     if (!DefinedOn (ma->GetElIndex (elnr))) return;
 
+    auto eldofs = GetElementDofs(elnr);
+    int size = eldofs.Size();
+    int base = all_dofs_together ? 0 : 1;
+    size += base;
+    dnums.SetSize(size);
+    if (!all_dofs_together) dnums[0] = elnr;
+    dnums.Range(base, size) = eldofs;
+    /*
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
     dnums += GetElementDofs(elnr);
+    */
   }
   
   void L2HighOrderFESpace :: 
