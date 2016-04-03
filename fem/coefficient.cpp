@@ -1116,7 +1116,7 @@ public:
   {
     CodeExpr result;
     for (int i : Range(c1->Dimension()))
-      result = result + ( Var(inputs[0],i) + Var(inputs[1],i) );
+      result = result + ( Var(inputs[0],i) * Var(inputs[1],i) );
     code.body += Var(index).Assign(result.S());
   }
 
@@ -1302,7 +1302,7 @@ public:
   {
     CodeExpr result;
     for (int i : Range(c1->Dimension()))
-      result += Var(inputs[0],i) + Var(inputs[1],i);
+      result += Var(inputs[0],i) * Var(inputs[1],i);
     code.body += Var(index).Assign(result.S());
   }
 
@@ -2721,8 +2721,15 @@ public:
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
+      static bool first_call = true;
+      if(first_call)
+      {
+        cout << "*************************************" << endl;
+        cout << "Calling compiled coefficient function" << endl;
+        cout << "*************************************" << endl;
+        first_call = false;
+      }
       compiled_function(ir,values);
-      cout << ".";
       return;
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
