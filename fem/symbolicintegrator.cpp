@@ -42,7 +42,7 @@ namespace ngfem
         code.body += "if(" +ud+ "->fel) {" + nl;
         code.body += "\tif (" +ud+ "->HasMemory (" + pthis + ")) {" + nl;
         for (int i : Range(evaluator->Dim()))
-            code.body += "\t\t" + Var(index).Assign( "" +ud+ "->GetMemory (" + pthis + ")(i, " + ToString(i) + " )", false );
+            code.body += "\t\t" + Var(index, i).Assign( "" +ud+ "->GetMemory (" + pthis + ")(i, " + ToString(i) + " )", false );
         code.body += "\t}\n";
         code.body += "\telse\n\t\tthrow Exception(\"userdata has no memory!\");\n";
         code.body += "}\n";
