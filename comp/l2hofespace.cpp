@@ -271,8 +271,9 @@ namespace ngcomp
 
 	if (ma->GetElType(elnr) == ET_TRIG) 
 	  {
-	    ArrayMem<int,3> vnums(3);
-	    ma->GetElVertices (elnr, vnums);
+            int ia[3];
+            FlatArray<int> vnums(3, &ia[0]);
+            vnums = ngel.Vertices();
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
 	  }
 
