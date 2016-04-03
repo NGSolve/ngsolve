@@ -86,11 +86,12 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
   {
-    for (int i = 0; i < ir.Size(); i++)
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
       {
         Vec<DIM,SIMD<double>> pt;
         for (int j = 0; j < DIM; j++)
-          pt(j) = ir[i](j);
+          pt(j) = hir[i](j);
 
         SIMD<double> sum = 0;
         T_CalcShape (&pt(0), SBLambda ( [&](int i, SIMD<double> shape) { sum += coefs(i)*shape; } ));
