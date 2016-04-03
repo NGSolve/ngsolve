@@ -3496,8 +3496,8 @@ namespace ngcomp
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
 
     x.GetIndirect (dnums, elvecx);
 
@@ -3527,7 +3527,7 @@ namespace ngcomp
 
             // elementtimer.Stop();
             
-            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
+            this->fespace->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
             y.AddIndirect (dnums, elvecy);  // coloring	      
