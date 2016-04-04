@@ -37,6 +37,8 @@ INLINE __m256d operator*= (__m256d &a, __m256d b) { return a = a*b; }
 INLINE __m256d operator/= (__m256d &a, __m256d b) { return a = a/b; }
 #endif
 
+
+
 namespace ngstd
 {
   template <typename T> class SIMD;

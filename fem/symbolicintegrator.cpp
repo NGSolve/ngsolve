@@ -1105,8 +1105,7 @@ namespace ngfem
       }
 
 
-#define SCALAR_APPLY
-#ifdef SCALAR_APPLY
+#ifndef USE_SIMD
     {
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -1141,7 +1140,7 @@ namespace ngfem
         ely += ely1;
       }
     }
-#else // SCALAR_APPLY
+#else // USE_SIMD
     {
     HeapReset hr(lh);
 
@@ -1183,7 +1182,7 @@ namespace ngfem
         proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely, lh);
       }
     }
-#endif // SCALAR_APPLY
+#endif // USE_SIMD
   }
 
 
@@ -1585,9 +1584,7 @@ namespace ngfem
   }
 
 
-  // enable simd-apply here
-#define STD_APPLY_FACET
-#ifdef STD_APPLY_FACET
+#ifdef USE_SIMD
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
@@ -1740,7 +1737,7 @@ namespace ngfem
     // t.Stop();
   }
 
-#else
+#else // USE_SIMD
 
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
@@ -1829,7 +1826,7 @@ namespace ngfem
   }
 
   
-#endif
+#endif // USE_SIMD
 
 
 

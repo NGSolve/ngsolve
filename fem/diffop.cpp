@@ -261,13 +261,31 @@ namespace ngfem
 
 
   void BlockDifferentialOperator ::
-  Apply (const FiniteElement & bfel,
-         const SIMD_BaseMappedIntegrationRule & bmir,
+  Apply (const FiniteElement & fel,
+         const SIMD_BaseMappedIntegrationRule & mir,
          SliceVector<double> x, 
          AFlatMatrix<double> flux,
          LocalHeap & lh) const
   {
-    throw Exception ("BlockDiffOp::Apply (..SIMD..) not implemented");
+    HeapReset hr(lh);
+    AFlatMatrix<double> hflux(diffop->Dim(), flux.Width(), lh);
+    
+    if (comp == -1)
+      {
+        for (int k = 0; k < dim; k++)
+          {
+            diffop->Apply(fel, mir, x.Slice(k, dim), hflux, lh);
+            for (int j = 0; j < hflux.Height(); j++)
+              flux.Row(k+j*dim) = hflux.Row(j);
+          }
+      }
+    else
+      {
+        diffop->Apply(fel, mir, x.Slice(comp, dim), hflux, lh);
+        // flux.Slice(comp,dim) = hflux;
+        for (int j = 0; j < hflux.Height(); j++)
+          flux.Row(comp+j*dim) = hflux.Row(j);
+      }
   }
 
   
@@ -329,7 +347,33 @@ namespace ngfem
       }
   }
 
-
+    
+  void BlockDifferentialOperator ::
+  AddTrans (const FiniteElement & fel,
+            const SIMD_BaseMappedIntegrationRule & mir,
+            AFlatMatrix<double> flux,
+            SliceVector<double> x, 
+            LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    AFlatMatrix<double> hflux(diffop->Dim(), flux.Width(), lh);
+    
+    if (comp == -1)
+      {
+        for (int k = 0; k < dim; k++)
+          {
+            for (int j = 0; j < hflux.Height(); j++)
+              hflux.Row(j) = flux.Row(k+j*dim);
+            diffop->AddTrans(fel, mir, hflux, x.Slice(k,dim), lh);
+          }
+      }
+    else
+      {
+        for (int j = 0; j < hflux.Height(); j++)        
+          hflux.Row(j) = flux.Row(comp+j*dim);
+        diffop->AddTrans(fel, mir, hflux, x.Slice(comp,dim),lh);
+      }
+  }
 
 
   
