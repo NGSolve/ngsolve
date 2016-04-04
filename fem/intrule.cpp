@@ -15,6 +15,7 @@ namespace ngfem
 {
   static mutex intruletpfacet_mutex;
   static mutex genintrule_mutex;
+  static mutex simd_genintrule_mutex;
 
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
@@ -719,11 +720,11 @@ namespace ngfem
 
   ostream & operator<< (ostream & ost, const DGIntegrationRule & ir)
   {
-    cout << "DG-IntegrationRule" << endl;
-    cout << "vol-ir: " << endl << (const IntegrationRule&)(ir);
+    ost << "DG-IntegrationRule" << endl;
+    ost << "vol-ir: " << endl << (const IntegrationRule&)(ir);
     for (int i = 0; i < ir.GetNFacets(); i++)
-      cout << "facet " << i << ": " << endl << ir.GetFacetIntegrationRule(i) << endl;
-    cout << "bound-vol-factor = " << ir.BoundaryVolumeFactor() << endl;
+      ost << "facet " << i << ": " << endl << ir.GetFacetIntegrationRule(i) << endl;
+    ost << "bound-vol-factor = " << ir.BoundaryVolumeFactor() << endl;
     return ost;
   }
 
@@ -1954,6 +1955,15 @@ namespace ngfem
     Array<IntegrationRule*> prismrules;
     Array<IntegrationRule*> pyramidrules;
     Array<IntegrationRule*> hexrules;
+
+    SIMD_IntegrationRule simd_pointrule;
+    Array<SIMD_IntegrationRule*> simd_segmentrules;
+    Array<SIMD_IntegrationRule*> simd_trigrules;
+    Array<SIMD_IntegrationRule*> simd_quadrules;
+    Array<SIMD_IntegrationRule*> simd_tetrules;
+    Array<SIMD_IntegrationRule*> simd_prismrules;
+    Array<SIMD_IntegrationRule*> simd_pyramidrules;
+    Array<SIMD_IntegrationRule*> simd_hexrules;
     
     Array<IntegrationRule*> jacobirules10;
     Array<IntegrationRule*> jacobirules20;
@@ -1968,6 +1978,7 @@ namespace ngfem
     const IntegrationRule & SelectIntegrationRuleJacobi10 (int order) const;
     ///
     const IntegrationRule & SelectIntegrationRuleJacobi20 (int order) const;
+    const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltyp, int order);
     ///
     const IntegrationRule & GenerateIntegrationRule (ELEMENT_TYPE eltyp, int order);
     const IntegrationRule & GenerateIntegrationRuleJacobi10 (int order);
@@ -2752,10 +2763,220 @@ namespace ngfem
   }
 
 
+  const SIMD_IntegrationRule & IntegrationRules :: SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
+  {
+    Array<SIMD_IntegrationRule*> * ira;
+
+    switch (eltype)
+      {
+      case ET_POINT:
+	return simd_pointrule;
+      case ET_SEGM:
+	ira = &simd_segmentrules; break;
+      case ET_TRIG:
+	ira = &simd_trigrules; break;
+      case ET_QUAD:
+	ira = &simd_quadrules; break;
+      case ET_TET:
+	ira = &simd_tetrules; break;
+      case ET_PYRAMID:
+	ira = &simd_pyramidrules; break;
+      case ET_PRISM:
+	ira = &simd_prismrules; break;
+      case ET_HEX:
+	ira = &simd_hexrules; break;
+      default:
+	{
+	  stringstream str;
+	  str << "no simd-integration rules for element " << int(eltype) << endl;
+	  throw Exception (str.str());
+	}
+      }
+
+    if (order < 0) 
+      { order = 0; }
+
+    if (order >= ira->Size() || (*ira)[order] == 0)
+      {
+        lock_guard<mutex> guard(simd_genintrule_mutex);
+
+        if (order >= ira->Size())
+          {
+            int oldsize = ira->Size();
+            ira->SetSize(order+1);
+            for (int i = oldsize; i < order+1; i++)
+              (*ira) = nullptr;
+          }
+
+        if ( (*ira)[order] == nullptr)
+          {
+            IntegrationRule ir(eltype, order);
+            (*ira) = new SIMD_IntegrationRule(ir);
+          }
+      }
+
+    return *((*ira)[order]);
+  }
+
+  SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir)
+    : Array<SIMD<IntegrationPoint>> (0, nullptr)
+  {
+    this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
+    
+    this -> mem_to_delete = (SIMD<IntegrationPoint>*)
+      _mm_malloc(this->size*sizeof(SIMD<IntegrationPoint>), SIMD<double>::Size()*sizeof(double));
+    this->data = this->mem_to_delete;
+    
+    dimension = ir.Dim();
+    for (int i = 0; i < Size(); i++)
+      (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
+                                 return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
+  }
+
+  SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
+    : Array<SIMD<IntegrationPoint>> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+  {
+    dimension = ir.Dim();
+    for (int i = 0; i < Size(); i++)
+      (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
+                                 return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
+  }
+
+  SIMD_IntegrationRule::SIMD_IntegrationRule (int nip, LocalHeap & lh)
+    : Array<SIMD<IntegrationPoint>> ( (nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+  {
+    ;
+  }
+  
+  SIMD_IntegrationRule::~SIMD_IntegrationRule()
+  {
+    if (mem_to_delete)
+      _mm_free(mem_to_delete);
+    mem_to_delete = nullptr;
+  }
+  
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  SIMD_MappedIntegrationRule (const SIMD_IntegrationRule & ir, 
+                              const ElementTransformation & aeltrans, 
+                              Allocator & lh)
+    : SIMD_BaseMappedIntegrationRule (ir, aeltrans), mips(ir.Size(), lh)
+  {
+    baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
+    incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
+
+    for (int i = 0; i < ir.Size(); i++)
+      new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
+
+    eltrans.CalcMultiPointJacobian (ir, *this);
+  }
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
+  {   // 
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
+    auto hmips = mips;
+    for (int i = 0; i < hmips.Size(); i++)
+      {
+        auto & mip = hmips[i];
+        Mat<DIM_ELEMENT,DIM_SPACE,SIMD<double>> inv_jac = mip.GetJacobianInverse();
+        SIMD<double> det = mip.GetMeasure();
+        Vec<DIM_SPACE,SIMD<double>> normal = det * Trans (inv_jac) * normal_ref;
+        SIMD<double> len = L2Norm (normal);       // that's the surface measure
+        normal *= SIMD<double>(1.0)/len;                           // normal vector on physical element
+        // SIMD<double> len = 1.0;
+        mip.SetNV(normal);
+        mip.SetMeasure (len);
+      }
+  }
+  
+  template class SIMD_MappedIntegrationRule<0,0>;
+  template class SIMD_MappedIntegrationRule<0,1>;
+  template class SIMD_MappedIntegrationRule<1,1>;
+  template class SIMD_MappedIntegrationRule<2,2>;
+  template class SIMD_MappedIntegrationRule<3,3>;
+  template class SIMD_MappedIntegrationRule<1,2>;
+  template class SIMD_MappedIntegrationRule<2,3>;
+
+  template class SIMD_MappedIntegrationRule<0,2>;
+  template class SIMD_MappedIntegrationRule<0,3>;
 
 
 
 
+
+  SIMD_IntegrationRule & Facet2ElementTrafo :: operator() (int fnr, const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
+  {
+    SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
+    
+    FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;
+    FlatArray<SIMD<IntegrationPoint>> hirvol = irvol;
+    
+    switch (ElementTopology::GetFacetType(eltype, fnr))
+      {
+        /*
+          case ET_POINT:
+          {
+          irvol[0] = Vec<3> (points (fnr) );
+          break;
+	  }
+        */
+      case ET_SEGM:
+        {
+          Vec<2> p1 = points (edges[fnr][0]);
+          Vec<2> p2 = points (edges[fnr][1]);
+          Vec<2> delta = p1-p2;
+          for (int i = 0; i < hirfacet.Size(); i++)
+            {
+              auto ip = hirfacet[i];
+              auto & ipvol = hirvol[i];              
+              for (int k = 0; k < 2; k++)
+                ipvol(k) = p2(k) + delta(k) * ip(0);
+              ipvol(2) = 0.0;
+            }
+          break;
+        }
+        /*
+          case ET_TRIG:
+	  {
+          FlatVec<3> p0 = points(faces[fnr][0]);
+          FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][2]);
+            
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+            irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p0-p2) + irfacet[i](1)*(p1-p2));
+	    break;
+            }
+	case ET_QUAD:
+	  {
+	    FlatVec<3> p0 = points(faces[fnr][0]);
+	    FlatVec<3> p1 = points(faces[fnr][1]);
+	    FlatVec<3> p2 = points(faces[fnr][3]);
+
+	    for (int i = 0; i < irfacet.GetNIP(); i++)
+	      irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+	    break;
+	  }
+          */
+      default:
+        throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
+      } 
+    
+    for (int i = 0; i < irfacet.Size(); i++)
+      {
+        irvol[i].FacetNr() = fnr;
+        irvol[i].Weight() = irfacet[i].Weight();
+      }
+    
+    return irvol;
+  }
+
+  
+
+
+
+  
   int Integrator :: common_integration_order = -1;
 
   static IntegrationRules intrules;
@@ -2779,4 +3000,22 @@ namespace ngfem
   {
     return GetIntegrationRules ().SelectIntegrationRuleJacobi10 (order);
   }
+
+  const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
+  {
+    return const_cast<IntegrationRules&>(GetIntegrationRules()).SIMD_SelectIntegrationRule (eltype, order);
+  }
+
+  
 }
+
+/*
+namespace ngstd
+{
+  SIMD<ngfem::BaseMappedIntegrationPoint>::~SIMD<ngfem::BaseMappedIntegrationPoint>()
+  {
+    // if (owns_trafo) delete eltrans; 
+  }
+  
+}
+*/

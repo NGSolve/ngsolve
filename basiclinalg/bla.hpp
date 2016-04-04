@@ -61,6 +61,7 @@ namespace ngstd
 #include "symmetricmatrix.hpp"
 #include "bandmatrix.hpp"
 #include "tensor.hpp"
+#include "avector.hpp"
 
 #include "cuda_bla.hpp"
 

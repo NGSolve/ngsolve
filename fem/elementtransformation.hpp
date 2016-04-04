@@ -80,6 +80,10 @@ namespace ngfem
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & mir) const = 0;
 
+    /// Calculate points and Jacobimatrices in all points of integrationrule
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & mir) const;
+    
     /// Calcs the normal vector in ip
     void CalcNormalVector (const IntegrationPoint & ip,
 			   FlatVector<> nv,
@@ -137,6 +141,9 @@ namespace ngfem
 
     /// return a mapped integration rule on localheap
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const = 0;
+
+    /// return a mapped integration rule on localheap
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const;
 
     virtual bool BelongsToMesh (const void * mesh) const { return true; }
     virtual const void * GetMesh () const { return NULL; }
@@ -221,6 +228,9 @@ namespace ngfem
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const;
 
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & mir) const;
+
     ///
     // const FlatMatrix<> & PointMatrix () const { return pointmat; }
     ///
@@ -269,6 +279,11 @@ namespace ngfem
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }
 
   };

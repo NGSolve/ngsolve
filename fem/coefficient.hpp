@@ -7,7 +7,6 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-// #include "avector.hpp"
 
 namespace ngfem
 {
@@ -117,7 +116,7 @@ namespace ngfem
     
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
-    // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
     // virtual void EvaluateSoA (const BaseMappedIntegrationRule & ir, AFlatMatrix<Complex> values) const;
@@ -345,6 +344,9 @@ namespace ngfem
     }
     
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    { values = val; }
+
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
@@ -799,6 +801,20 @@ public:
       result(j) = lamc(result(j));
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    c1->Evaluate (ir, values);
+    /*
+    for (int i = 0; i < values.Height()*values.VWidth(); i++)
+      values.Get(i) = lam (values.Get(i));
+    */
+    // not vectorized ...
+    for (int i = 0; i < values.Height(); i++)
+      for (int j = 0; j < values.Width(); j++)
+        values(i,j) = lam (values(i,j));
+    
+  }
+  
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const
@@ -1008,6 +1024,21 @@ public:
       result(i) = lam (result(i), temp(i));
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+#ifdef VLA
+    SIMD<double> hmem[values.Height()*values.VWidth()];
+#else
+    SIMD<double> hmem[100];
+#endif
+    AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0].Data());
+
+    c1->Evaluate (ir, values);
+    c2->Evaluate (ir, temp);
+    for (int i = 0; i < values.Height()*values.VWidth(); i++)
+      values.Get(i) = lam (values.Get(i), temp.Get(i));
+  }
+  
   virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
                          FlatMatrix<double> result) const
   {
@@ -1184,11 +1215,15 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 class ComponentCoefficientFunction : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1;
+  int dim1;
   int comp;
 public:
   ComponentCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                 int acomp)
-    : c1(ac1), comp(acomp) { ; }
+    : c1(ac1), comp(acomp)
+  {
+    dim1 = c1->Dimension();
+  }
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return 1; }
@@ -1241,7 +1276,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<> result) const
   {
-    int dim1 = c1->Dimension();
+    // int dim1 = c1->Dimension();
 #ifdef VLA
     double hmem[ir.Size()*dim1];
     FlatMatrix<> temp(ir.Size(), dim1, hmem);
@@ -1257,7 +1292,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> result) const
   {
-    int dim1 = c1->Dimension();
+    // int dim1 = c1->Dimension();
 #ifdef VLA
     double hmem[2*ir.Size()*dim1];
     FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
@@ -1267,6 +1302,15 @@ public:
     c1->Evaluate (ir, temp);
     result.Col(0) = temp.Col(comp);
   }  
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
+    AFlatMatrix<double> temp(ir.Size(), dim1, &hmem[0].Data());
+    
+    c1->Evaluate (ir, temp);
+    values.Row(0) = temp.Row(comp);
+  }
 
   
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
@@ -1457,14 +1501,22 @@ class VectorialCoefficientFunction : public CoefficientFunction
 {
   Array<shared_ptr<CoefficientFunction>> ci;
   Array<int> dims;  // tensor valued ...
+  Array<int> dimi;  // dimensions of components
   int dim;
 public:
   VectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : ci(aci)
+    : ci(aci), dimi(aci.Size())
   {
     dim = 0;
+    /*
     for (auto cf : ci)
       dim += cf->Dimension();
+    */
+    for (int i : Range(ci))
+      {
+        dimi[i] = ci[i]->Dimension();
+        dim += dimi[i];
+      }
     dims = Array<int> ( { dim } ); 
   }
 
@@ -1531,7 +1583,7 @@ public:
                         FlatVector<> result) const
   {
     int base = 0;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
         cf->Evaluate(ip, result.Range(base,base+dimi));
@@ -1558,7 +1610,7 @@ public:
                         FlatMatrix<> result) const
   {
     int base = 0;
-    for (auto cf : ci)
+    for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
 #ifdef VLA
@@ -1572,7 +1624,18 @@ public:
         base += dimi;
       }
   }
-
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    int base = 0;
+    // for (auto & cf : ci)
+    for (int i : Range(ci))
+      {
+        // int dimi = cf->Dimension();
+        ci[i]->Evaluate(ir, values.Rows(base,base+dimi[i]));
+        base += dimi[i];
+      }
+  }
 
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const

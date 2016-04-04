@@ -166,13 +166,13 @@ namespace ngstd
     if (status != length+1)
       {
         s = "";
-        delete hstr;
+        delete [] hstr;
         cout << "receive, status = " << status << endl;
         throw SocketException (GetLatestError());
       }
 
     s = hstr;
-    delete hstr;
+    delete [] hstr;
   }
 
 

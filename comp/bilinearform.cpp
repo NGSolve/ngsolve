@@ -2758,16 +2758,12 @@ namespace ngcomp
   template <class SCAL>
   void S_BilinearForm<SCAL> :: AddMatrix1 (SCAL val,
                                            const BaseVector & x,
-                                           BaseVector & y) const
+                                           BaseVector & y, LocalHeap & clh) const
   {
     static Timer timer ("Apply Matrix");
     static Timer timervol ("Apply Matrix - volume");
     static Timer timerbound ("Apply Matrix - boundary");
     static Timer timerDG ("Apply Matrix - DG");
-    static Timer timerDGprep ("Apply Matrix - DG prep");
-    static Timer timerDG1 ("Apply Matrix - DG1");
-    static Timer timerDG2 ("Apply Matrix - DG2");
-    static Timer timerDG3 ("Apply Matrix - DG3");
     static Timer timerDGfacet ("Apply Matrix - DG boundary");
     static Timer timerDGfacet1 ("Apply Matrix - DG boundary 1");
     static Timer timerDGfacet2 ("Apply Matrix - DG boundary 2");
@@ -2801,19 +2797,20 @@ namespace ngcomp
           }
 
         bool done = false;
-        int atempt = 0;
+        // int atempt = 0;
 
+        /*
         while(!done && atempt < 3)
           {
             try
               {
-
+        */
                 int cnt = 0;
 
                 if (hasinner)
                   {
                     RegionTimer reg (timervol);
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
 
 		    IterateElements 
 		      (*fespace, VOL, clh, 
@@ -2836,7 +2833,7 @@ namespace ngcomp
                   {
                     RegionTimer reg (timerbound);
 
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     
 		    IterateElements 
 		      (*fespace, BND, clh, 
@@ -2858,7 +2855,6 @@ namespace ngcomp
                   {
                     RegionTimer reg(timerDG);
 
-                    timerDGprep.Start();
                     for (int j = 0; j < NumIntegrators(); j++)
                       if (parts[j] -> SkeletonForm())
                         {
@@ -2878,20 +2874,18 @@ namespace ngcomp
                         }
 
                     // element-boundary formulation
-		    LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     mutex addelemfacbnd_mutex;
-                    timerDGprep.Stop();
-                    
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
                          LocalHeap lh = clh.Split();
                          
-                         Array<int> dnums, dnums1, dnums2, elnums, fnums1, fnums2, vnums1, vnums2;
+                         Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                          for (int el1 : r)
                            {
                              // RegionTimer reg1(timerDG1);
-                             
+
                              ma->GetElFacets(el1,fnums1);
                              // T_ElementId<VOL,2> ei1(el1);
                              ElementId ei1(VOL, el1);
@@ -2899,23 +2893,21 @@ namespace ngcomp
                              for (int facnr1 : Range(fnums1))
                                {
                                  HeapReset hr(lh);
-                                 
+
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
+
                                  if (elnums.Size()<2)
                                    {
-                                     RegionTimer regfacet(timerDGfacet);
-                                     // timerDGfacet1.Start();
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
                                      int sel = elnums[0];
 
-                                     // timerDGfacet1.Stop();
-                                     // timerDGfacet2.Start();                                                           
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
+                                     Array<int> dnums(fel.GetNDof(), lh);
                                      ma->GetElVertices (el1, vnums1);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
-
+                                     
                                      fespace->GetDofNrs (el1, dnums);
                                      if(fel.GetNDof() != dnums.Size())
                                        {
@@ -2962,11 +2954,9 @@ namespace ngcomp
                                              y.AddIndirect(dnums, ely);
                                            }
                                        } //end for (numintegrators)
-                                     // timerDGfacet2.Stop();                                     
+
                                      continue;
                                    } // end if boundary facet
-
-                                 // timerDG2.Start();
 
                                  // RegionTimer reg2(timerDG2);
                                  int el2 = elnums[0] + elnums[1] - el1;
@@ -2975,19 +2965,20 @@ namespace ngcomp
                                  
                                  ma->GetElFacets(el2,fnums2);
                                  int facnr2 = fnums2.Pos(fnums1[facnr1]);
-
+                                 
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
-                                 
+
                                  const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                                  const FiniteElement & fel2 = fespace->GetFE (el2, lh);
                                  
+                                 Array<int> dnums1(fel1.GetNDof(), lh);
+                                 Array<int> dnums2(fel2.GetNDof(), lh);
                                  fespace->GetDofNrs (el1, dnums1);
                                  fespace->GetDofNrs (el2, dnums2);
-                                 
+
                                  ma->GetElVertices (el1, vnums1);
                                  ma->GetElVertices (el2, vnums2);
-                                 // timerDG2.Stop();                                 
                                  
                                  if(fel1.GetNDof() != dnums1.Size() || ((elnums.Size()>1) && (fel2.GetNDof() != dnums2.Size() )))
                                    {
@@ -2998,26 +2989,38 @@ namespace ngcomp
                                      throw Exception ( "Inconsistent number of degrees of freedom " );
                                    }
 
+                                 Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
+                                 /*
                                  dnums.SetSize0();
                                  dnums.Append(dnums1);
                                  dnums.Append(dnums2);   
+                                 */
+                                 dnums.Range(0, dnums1.Size()) = dnums1;
+                                 dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
+                                 
                                  FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
                                  x.GetIndirect(dnums, elx);
-                                 
+
+
                                  for (int j = 0; j < NumIntegrators(); j++)
                                    {
-                                     shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     // shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                     BilinearFormIntegrator * bfi = parts[j].get();
                     
                                      if (!bfi->SkeletonForm()) continue;
                                      if (bfi->BoundaryForm()) continue;
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
+                                     /*
                                      shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                                        dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                     */
+                                     FacetBilinearFormIntegrator * fbfi = 
+                                       dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
                                      
                                      // RegionTimer reg3(timerDG3);                                     
-                                     
+
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
                                      
@@ -3053,6 +3056,7 @@ namespace ngcomp
                       }
                   }
                 done = true;
+                /*
               }
             catch (LocalHeapOverflow lhex)
               {
@@ -3061,6 +3065,7 @@ namespace ngcomp
                 cerr << "Trying automatic heapsize increase to " << lh_size << endl;
               }
           }
+                */
       }
     else
       { 
@@ -3491,8 +3496,8 @@ namespace ngcomp
                                                  const FiniteElement * fel,
                                                  const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
+    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
 
     x.GetIndirect (dnums, elvecx);
 
@@ -3522,7 +3527,7 @@ namespace ngcomp
 
             // elementtimer.Stop();
             
-            BilinearForm::GetFESpace()->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
+            this->fespace->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
         
             elvecy *= val;
             y.AddIndirect (dnums, elvecy);  // coloring	      
@@ -4290,7 +4295,24 @@ namespace ngcomp
     v.Cumulate();
 
     prod = 0;
-    bf -> AddMatrix (1, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (1, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
 
     prod.SetParallelStatus (DISTRIBUTED);
   }
@@ -4301,7 +4323,26 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    bf -> AddMatrix (val, v, prod);
+    // bf -> AddMatrix (val, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (val, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
+    
   }
 
   void BilinearFormApplication :: 
@@ -4310,7 +4351,26 @@ namespace ngcomp
     v.Cumulate();
     prod.Distribute();
 
-    bf -> AddMatrix (val, v, prod);
+    // bf -> AddMatrix (val, v, prod);
+
+    bool done = false;
+    static int lh_size = 10*1000*1000;
+    
+    while(!done && lh_size < 1000*1000*1000)
+      {
+        try
+          {
+            LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
+            bf -> AddMatrix (val, v, prod, lh);
+            done = true;
+          }            
+        catch (LocalHeapOverflow lhex)
+          {
+            lh_size *= 5;
+            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
+          }
+      }    
+    
   }
 
   /*
