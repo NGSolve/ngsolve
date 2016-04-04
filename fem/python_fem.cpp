@@ -362,6 +362,15 @@ struct GenericConj {
         for( int i : Range(D))
           code.body += Var(index,i).Assign(nv(i));
     }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      // static Timer t("NormalVec::EvalSIMD"); RegionTimer reg(t);            
+      auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      for (int i = 0; i < ir.Size(); i++)
+        for (int j = 0; j < D; j++)
+          values.Get(j,i) = ir22[i].GetNV()(j).Data();
+    }
+    
   };
 
   template <int D>
@@ -416,8 +425,6 @@ void ExportCoefficientFunction()
          "  a list of scalars and or CFs to define a domain-wise CF"
          )
     .def("__str__", &ToString<CoefficientFunction>)
-//     .def("__str__", FunctionPointer
-// 	 ([] (CoefficientFunction & self) { Array<int> vars(10); return self.GetString(vars,0); } ))
 
     .def("__call__", FunctionPointer
 	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
@@ -618,6 +625,14 @@ void ExportCoefficientFunction()
         if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
         if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
         if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      // static Timer t("CoordCF::EvalSIMD"); RegionTimer reg(t);      
+      auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      for (int i = 0; i < ir.Size(); i++)
+        values.Get(i) = ir22[i].Point()(dir).Data();
     }
   };
 

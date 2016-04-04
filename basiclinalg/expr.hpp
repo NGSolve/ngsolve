@@ -964,6 +964,14 @@ namespace ngbla
     return ScaleExpr<TA, AutoDiff<D,TAD> > (a.Spec(), b );
   }
 
+  template <typename TA>
+  INLINE ScaleExpr<TA, SIMD<double> >  
+  operator* (SIMD<double> b, const Expr<TA> & a)
+  {
+    return ScaleExpr<TA, SIMD<double>> (a.Spec(), b);
+  }
+  
+
 
 
 
@@ -1356,9 +1364,10 @@ namespace ngbla
 
 
   template <class TA>
-  inline double L2Norm2 (const Expr<TA> & v)
+  inline auto L2Norm2 (const Expr<TA> & v) -> decltype(L2Norm2(v.Spec()(0)))
   {
-    double sum = 0;
+    // double sum = 0;
+    decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
     if (TA::IS_LINEAR)
       for (int i = 0; i < v.Height()*v.Width(); i++)
 	sum += L2Norm2 (v.Spec()(i));  
@@ -1374,7 +1383,7 @@ namespace ngbla
      Calculates the Euclidean norm
   */
   template <class TA>
-  inline double L2Norm (const Expr<TA> & v)
+  inline auto L2Norm (const Expr<TA> & v) -> decltype(L2Norm2(v))
   {
     return sqrt (L2Norm2(v));
   }

@@ -12,6 +12,8 @@
 #include <../ngstd/evalfunc.hpp>
 #include <libloader.hpp>
 
+
+
 namespace ngfem
 {
   
@@ -66,6 +68,13 @@ namespace ngfem
       Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
   }
 
+  void CoefficientFunction ::   
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    throw Exception(string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
+  }
+
+  
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
@@ -813,6 +822,13 @@ public:
     values *= scal;
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         AFlatMatrix<double> values) const
+  {
+    c1->Evaluate (ir, values);
+    values *= scal;
+  }
+  
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                          FlatMatrix<Complex> values) const
   {
@@ -991,12 +1007,17 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
+    /*
 #ifdef VLA
     double hmem1[ir.Size()];
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
 #else
     Matrix<> temp1(ir.Size(), 1);
 #endif
+    */
+    STACK_ARRAY(double, hmem1, ir.Size());
+    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+    
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
     for (int i = 0; i < ir.Size(); i++)
@@ -1359,6 +1380,39 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    /*
+#ifdef VLA
+    SIMD<double> hmem1[DIM*values.VWidth()];
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    SIMD<double> hmem2[DIM*values.VWidth()];
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+#else
+    SIMD<double> hmem1[100];
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    SIMD<double> hmem2[100];
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+#endif
+    */
+    STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
+    STACK_ARRAY(SIMD<double>, hmem2, DIM*values.Width());
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+    
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+
+    for (int i = 0; i < values.VWidth(); i++)
+      {
+        SIMD<double> sum = 0.0;
+        for (int j = 0; j < DIM; j++)
+          sum += temp1.Get(j,i) * temp2.Get(j,i);
+        values.Get(i) = sum.Data();
+      }
+  }
+
+  
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
@@ -1990,7 +2044,23 @@ public:
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
         result.Row(i) = a * vb.Row(i);
       }
-  }  
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem1, (ir.IR().GetNIP()+8)*dims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmem2, (ir.IR().GetNIP()+8)*inner_dim);
+    AFlatMatrix<double> temp1(dims[0]*inner_dim, ir.IR().GetNIP(), &hmem1[0].Data());
+    AFlatMatrix<double> temp2(inner_dim, ir.IR().GetNIP(), &hmem2[0].Data());
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+    values = 0.0;
+    for (int i = 0; i < dims[0]; i++)
+      for (int j = 0; j < inner_dim; j++)
+        for (int k = 0; k < ir.Size(); k++)
+          values.Get(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
+  }
+  
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
@@ -2346,10 +2416,27 @@ public:
   
   // ///////////////////////////// operators  /////////////////////////
 
+  struct GenericPlus {
+    template <typename T> T operator() (T x, T y) const { return x+y; }
+  };
+  struct GenericMinus {
+    template <typename T> T operator() (T x, T y) const { return x-y; }
+  };
+  struct GenericMult {
+    template <typename T> T operator() (T x, T y) const { return x*y; }
+  };
+  struct GenericDiv {
+    template <typename T> T operator() (T x, T y) const { return x/y; }
+  };
+  GenericPlus gen_plus;
+  GenericMinus gen_minus;
+  GenericMult gen_mult;
+  GenericDiv gen_div;
+  
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a+b; },
+                       gen_plus, // [](double a, double b) { return a+b; },
                        [](Complex a, Complex b) { return a+b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2361,7 +2448,7 @@ public:
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a-b; },
+                       gen_minus, // [](double a, double b) { return a-b; },
                        [](Complex a, Complex b) { return a-b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2393,7 +2480,7 @@ public:
       return make_shared<MultScalVecCoefficientFunction> (c2, c1);
     
     return BinaryOpCF (c1, c2, 
-                       [](double a, double b) { return a*b; },
+                       gen_mult, // [](double a, double b) { return a*b; },
                        [](Complex a, Complex b) { return a*b; },
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2434,7 +2521,7 @@ public:
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
     return BinaryOpCF (c1, c2,
-                       [](double a, double b) { return a/b; },
+                       gen_div, // [](double a, double b) { return a/b; },
                        [](Complex a, Complex b) { return a/b; },
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
@@ -2446,6 +2533,7 @@ public:
 
   // ///////////////////////////// IfPos   ////////////////////////////////  
 
+  
   class IfPosCoefficientFunction : public CoefficientFunction
   {
     shared_ptr<CoefficientFunction> cf_if;
@@ -2498,6 +2586,44 @@ public:
         values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
 
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      // static Timer t("IfPos::EvalSIMD"); RegionTimer reg(t);
+#ifdef VLA
+      SIMD<double> hmem1[ir.Size()];
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      SIMD<double> hmem2[ir.Size()*values.Height()];
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      SIMD<double> hmem3[ir.Size()*values.Height()];
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
+#else
+//       Matrix<double> if_values(1, ir.Size());
+//       Matrix<double> then_values(ir.Size(), values.Width());
+//       Matrix<double> else_values(ir.Size(), values.Width());
+      SIMD<double> hmem1[100];
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      SIMD<double> hmem2[100];
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      SIMD<double> hmem3[100];
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
+#endif
+      
+      cf_if->Evaluate (ir, if_values);
+      cf_then->Evaluate (ir, then_values);
+      cf_else->Evaluate (ir, else_values);
+
+      /*
+      for (int k = 0; k < values.Height(); k++)
+        for (int i = 0; i < values.Width(); i++)
+          values(k,i) = (if_values(i) > 0) ? then_values(k,i) : else_values(k,i);
+      */
+      for (int k = 0; k < values.Height(); k++)
+        for (int i = 0; i < values.VWidth(); i++)
+          values.Get(k,i) = ngstd::IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
+    }
+
+    
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
                            FlatMatrix<double> values) const
     {

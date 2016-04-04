@@ -183,19 +183,19 @@ namespace ngcomp
 
     /// applies the matrix without assembling
     void ApplyMatrix (const BaseVector & x,
-		      BaseVector & y) const
+		      BaseVector & y, LocalHeap & lh) const
     {
       y = 0;
-      AddMatrix (1, x, y);
+      AddMatrix (1, x, y, lh);
     }
 
     /// y += val * Mat * x
     virtual void AddMatrix (double val, const BaseVector & x,
-			    BaseVector & y) const = 0;
+			    BaseVector & y, LocalHeap & lh) const = 0;
   
     /// y += val * Mat * x
     virtual void AddMatrix (Complex val, const BaseVector & x,
-			    BaseVector & y) const = 0;
+			    BaseVector & y, LocalHeap & lh) const = 0;
   
     /// y += val * lin.mat * x
     virtual void ApplyLinearizedMatrixAdd (double val,
@@ -423,19 +423,19 @@ namespace ngcomp
 
     ///
     void AddMatrix1 (SCAL val, const BaseVector & x,
-		     BaseVector & y) const;
+		     BaseVector & y, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
-			    BaseVector & y) const
+			    BaseVector & y, LocalHeap & lh) const
     {
-      AddMatrix1 (val, x, y);
+      AddMatrix1 (val, x, y, lh);
     }
 
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
-			    BaseVector & y) const
+			    BaseVector & y, LocalHeap & lh) const
     {
-      AddMatrix1 (ConvertTo<SCAL> (val), x, y);
+      AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
     }
 
 
@@ -701,11 +701,11 @@ namespace ngcomp
     { throw Exception ("comp-bf - AssembleLinearization is illegal"); }
 
     virtual void AddMatrix (double val, const BaseVector & x,
-			    BaseVector & y) const
+			    BaseVector & y, LocalHeap & lh) const
       { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
-			    BaseVector & y) const
+			    BaseVector & y, LocalHeap & lh) const
     { throw Exception ("comp-bf - AddMatrix is illegal"); }
 
     virtual void ApplyLinearizedMatrixAdd (double val,

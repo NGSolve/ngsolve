@@ -87,11 +87,14 @@ namespace ngcomp
           break;
         }
       }
-    if (dimension > 1)
+    if (dimension > 1) 
       {
 	evaluator = make_shared<BlockDifferentialOperator> (evaluator, dimension);
+	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
 	boundary_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
+	boundary_flux_evaluator = 
+	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
       }
 
 
@@ -271,8 +274,9 @@ namespace ngcomp
 
 	if (ma->GetElType(elnr) == ET_TRIG) 
 	  {
-	    ArrayMem<int,3> vnums(3);
-	    ma->GetElVertices (elnr, vnums);
+            int ia[3];
+            FlatArray<int> vnums(3, &ia[0]);
+            vnums = ngel.Vertices();
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
 	  }
 
@@ -465,9 +469,18 @@ namespace ngcomp
     dnums.SetSize0();
     if (!DefinedOn (ma->GetElIndex (elnr))) return;
 
+    auto eldofs = GetElementDofs(elnr);
+    int size = eldofs.Size();
+    int base = all_dofs_together ? 0 : 1;
+    size += base;
+    dnums.SetSize(size);
+    if (!all_dofs_together) dnums[0] = elnr;
+    dnums.Range(base, size) = eldofs;
+    /*
     if (!all_dofs_together)
       dnums.Append (elnr); // lowest_order 
     dnums += GetElementDofs(elnr);
+    */
   }
   
   void L2HighOrderFESpace :: 

@@ -314,8 +314,8 @@ namespace ngcomp
     Vec<DIMR> p0;
     Mat<DIMR,DIMS> mat;
   public:
-    Ng_ConstElementTransformation (const MeshAccess * amesh,
-                                   ELEMENT_TYPE aet, ElementId ei, int elindex) 
+    INLINE Ng_ConstElementTransformation (const MeshAccess * amesh,
+                                          ELEMENT_TYPE aet, ElementId ei, int elindex) 
       : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
         mesh(amesh) 
     { 
@@ -336,10 +336,11 @@ namespace ngcomp
       else if ( (DIMR==2) && (DIMS==2) && (eltype == ET_TRIG) )
         {
           Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
-          p0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+          Vec<2> hp0 = FlatVec<2, const double> (mesh->mesh.GetPoint (nel.Vertices()[2]));
+          p0 = hp0;
 	  for (int j = 0; j < 2; j++)
 	    {
-	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      Vec<2> pj = FlatVec<2, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - hp0;
 	      for (int k = 0; k < 2; k++)
 		mat(k,j) = pj(k);
 	    }
@@ -511,6 +512,11 @@ namespace ngcomp
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
     }    
 
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
+
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
     {
@@ -521,6 +527,24 @@ namespace ngcomp
           mir[i].Point() = p0 + mat * FlatVec<DIMS, const double> (&ip(0));
           mir[i].Jacobian() = mat;
           mir[i].Compute();
+        }
+    }
+
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & bmir) const
+    {
+      SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      FlatArray<SIMD<MappedIntegrationPoint<DIMS,DIMR>>> hmir(mir.Size(), &mir[0]);
+      FlatArray<SIMD<IntegrationPoint>> hir (ir);
+      
+      Vec<DIMR,SIMD<double>> simd_p0(p0);
+      Mat<DIMR,DIMS,SIMD<double>> simd_mat(mat);
+      
+      for (int i = 0; i < hir.Size(); i++)
+        {
+          hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
+          hmir[i].Jacobian() = simd_mat;
+          hmir[i].Compute();
         }
     }
   };
@@ -1048,8 +1072,8 @@ namespace ngcomp
   ElementTransformation & MeshAccess :: 
   GetTrafoDim (int elnr, Allocator & lh) const
   {
-    // static Timer t("MeshAccess::GetTrafoDim");
-
+    // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
+    
     ElementTransformation * eltrans;
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
@@ -1136,7 +1160,7 @@ namespace ngcomp
   ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
   {
     ElementTransformation * eltrans;
-    
+
     if (!boundary)
       {
         switch (dim)

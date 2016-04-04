@@ -112,6 +112,13 @@ namespace ngfem
       y = Cast(fel).GetDShape(mip.IP(),lh) * hv;
     }
 
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                AFlatMatrix<double> y, SliceVector<double> x, 
+                                LocalHeap & lh)
+    {
+      Cast(fel).AddGradTrans (mir, y, x);
+    }    
+    
   };
 
 
@@ -255,6 +262,13 @@ namespace ngfem
       Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
     }
 
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             SliceVector<double> x, AFlatMatrix<double> y,
+                             LocalHeap & lh)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+    }
+
 
 
     template <typename MIP, class TVX, class TVY>
@@ -285,6 +299,13 @@ namespace ngfem
     {
       DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);    
     }
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                AFlatMatrix<double> y, SliceVector<double> x, 
+                                LocalHeap & lh)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }    
   };
 
 

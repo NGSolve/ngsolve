@@ -84,6 +84,27 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
+  {
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> pt;
+        for (int j = 0; j < DIM; j++)
+          pt(j) = hir[i](j);
+
+        SIMD<double> sum = 0;
+        T_CalcShape (&pt(0), SBLambda ( [&](int i, SIMD<double> shape) { sum += coefs(i)*shape; } ));
+
+        values.Get(i) = sum.Data();
+      }
+  }
+    
+
+  
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const
   {
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -113,7 +134,24 @@ namespace ngfem
       }
   }
 
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddTrans (const SIMD_IntegrationRule & ir, AFlatVector<double> values,
+            SliceVector<> coefs) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM,SIMD<double>> pt;
+        for (int j = 0; j < DIM; j++)
+          pt(j) = ir[i](j);
 
+        SIMD<double> val = values.Get(i);
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
+      }
+  }
+    
+
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
@@ -176,7 +214,26 @@ namespace ngfem
       }
   }
 
-
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & bmir,
+                AFlatMatrix<double> values,
+                SliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                        {
+                                          SIMD<double> sum = 0.0;
+                                          for (int k = 0; k < DIM; k++)
+                                            sum += shape(k) * values.Get(k,i);
+                                          coefs(j) += HSum(sum);
+                                        }));
+      }
+  }
+  
   /*
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
