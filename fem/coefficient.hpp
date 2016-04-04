@@ -6,7 +6,7 @@
 /* Author: Joachim Schoeberl                                         */
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
-
+#include <map>
 
 namespace ngfem
 {
@@ -15,6 +15,20 @@ namespace ngfem
       struct Code {
           string header;
           string body;
+
+          static string Map( string code, std::map<string,string> variables ) {
+              for ( auto mapping : variables ) {
+                  string oldStr = '{'+mapping.first+'}';
+                  string newStr = mapping.second;
+                  size_t pos = 0;
+                  while((pos = code.find(oldStr, pos)) != std::string::npos){
+                      code.replace(pos, oldStr.length(), newStr);
+                      pos += newStr.length();
+
+                  }
+              }
+              return code;
+          }
       };
 
       struct CodeExpr {
@@ -38,6 +52,7 @@ namespace ngfem
 
           CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToString(i) + ')' ); }
           CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
+          CodeExpr Call(string s, string args="") { return CodeExpr( S()+'.'+ s + "(" + args + ")"); }
           string Assign (CodeExpr other, bool declare = true) {
               string result;
               if(declare)

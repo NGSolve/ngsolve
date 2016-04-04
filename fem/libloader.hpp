@@ -5,22 +5,60 @@
 #endif //WIN32
 
 #include <string>
+#include <ngstd.hpp>
 
 using std::string;
 
-#ifdef WIN32
 class Library
 {
-  HINSTANCE lib;
+  static int counter;
   string lib_name;
-public:
+
+#ifdef WIN32
+  HINSTANCE lib;
   void Load( string alib_name )
     {
       lib_name = alib_name;
       lib = LoadLibrary(lib_name.c_str());
       if (!lib) throw std::runtime_error(string("Could not load library ") + lib_name);
     }
+#else // WIN32
+  void *lib;
+  void Load( string alib_name )
+    {
+      lib_name = alib_name;
+      lib = dlopen(lib_name.c_str(), RTLD_NOW);
+      if(lib == nullptr) throw std::runtime_error(dlerror());
+    }
+#endif // WIN32
 
+
+public:
+  // Compile a given string and load the library
+  void Compile( string code ) {
+      static ngstd::Timer tcompile("CompiledCF::Compile");
+      static ngstd::Timer tlink("CompiledCF::Link");
+      string file_prefix = "code" + ToString(counter);
+      ofstream codefile(file_prefix+".cpp");
+      codefile << code;
+      codefile.close();
+      cout << "compiling..." << endl;
+      tcompile.Start();
+      string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
+      system(scompile.c_str());
+      tcompile.Stop();
+      cout << "linking..." << endl;
+      tlink.Start();
+      string slink = "ngsld -shared " + file_prefix + ".o -o " + file_prefix + ".so -lngstd -lngfem";
+      system(slink.c_str());
+      tlink.Stop();
+      cout << "done" << endl;
+      Load(file_prefix+".so");
+      counter++;
+  }
+
+
+#ifdef WIN32
   template <typename TFunc>
     TFunc GetFunction( string func_name )
       {
@@ -35,22 +73,7 @@ public:
       if(lib)
         FreeLibrary(lib);
     }
-};
-
 #else // WIN32
-class Library
-{
-  void *lib;
-  string lib_name;
-
-public:
-  void Load( string alib_name )
-    {
-      lib_name = alib_name;
-      lib = dlopen(lib_name.c_str(), RTLD_NOW);
-      if(lib == nullptr) throw std::runtime_error(dlerror());
-    }
-
   template <typename TFunc>
     TFunc GetFunction( string func_name )
       {
@@ -68,5 +91,5 @@ public:
           if(rc != 0) throw std::runtime_error(string("Failed to close ") + lib_name);
         }
     }
-};
 #endif // WIN32
+};
