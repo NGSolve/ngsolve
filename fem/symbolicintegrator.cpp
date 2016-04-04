@@ -1584,7 +1584,7 @@ namespace ngfem
   }
 
 
-#ifdef USE_SIMD
+#ifndef USE_SIMD
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
