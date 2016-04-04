@@ -1727,7 +1727,7 @@ public:
                                          shared_ptr<CoefficientFunction> cf_else);
   
   extern    
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
 }
 
 
