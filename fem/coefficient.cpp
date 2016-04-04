@@ -2773,8 +2773,6 @@ public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
       : cf(acf), compiled_function(nullptr)
     {
-      static Timer tcompile("CompiledCF::Compile");
-      static Timer tlink("CompiledCF::Link");
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
          {
@@ -2822,7 +2820,7 @@ public:
         code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
         ii++;
       });
-      ofstream s("code.cpp");
+      stringstream s;
       s << "#include<bla.hpp>" << endl;
       s << "#include<elementtopology.hpp>" << endl;
       s << "#include<intrule.hpp>" << endl;
@@ -2833,25 +2831,18 @@ public:
       s << "#include<coefficient.hpp>" << endl;
       s << "#include<integrator.hpp>" << endl;
       s << "#include<symbolicintegrator.hpp>" << endl;
-      s << "using namespace ngfem;" << endl;
+      s << "#include<comp.hpp>" << endl;
+      s << "using namespace ngcomp;" << endl;
       s << "extern \"C\" {" << endl;
       s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
+      s << code.header << endl;
       s << "for ( auto i : Range(mir)) {" << endl;
       s << "auto & ip = mir[i];" << endl;
-      s << code.header << endl;
       s << code.body << endl;
       s << "}\n}\n}" << endl;
 
-      cout << "compiling..." << endl;
-      tcompile.Start();
-      system("ngscxx -c -g0 code.cpp -o code.o");
-      tcompile.Stop();
-      cout << "linking..." << endl;
-      tlink.Start();
-      system("ngsld -shared code.o -o libcode.so -lngstd -lngfem");
-      tlink.Stop();
-      cout << "done" << endl;
-      library.Load("libcode.so");
+      library.Compile( s.str() );
+
       compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
       }
 
@@ -3054,3 +3045,5 @@ public:
 
  
 }
+
+int Library::counter = 0;
