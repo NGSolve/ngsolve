@@ -2625,7 +2625,7 @@ public:
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     TraverseDimensions( dims, [&](int i, int j) {
-        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j) );
+        code.body += Var(index,i,j).Assign( Var(inputs[i],j) );
     });
   }
   
