@@ -327,6 +327,12 @@ namespace ngfem
                 FlatVector<Complex> x, 
                 LocalHeap & lh) const;
 
+    virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              AFlatMatrix<double> flux,
+              SliceVector<double> x, 
+              LocalHeap & lh) const;    
   };
 
 

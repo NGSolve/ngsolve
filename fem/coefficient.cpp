@@ -11,6 +11,8 @@
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
 
+
+
 namespace ngfem
 {
   
@@ -961,12 +963,17 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
+    /*
 #ifdef VLA
     double hmem1[ir.Size()];
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
 #else
     Matrix<> temp1(ir.Size(), 1);
 #endif
+    */
+    STACK_ARRAY(double, hmem1, ir.Size());
+    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+    
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
     for (int i = 0; i < ir.Size(); i++)
@@ -1317,6 +1324,7 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
+    /*
 #ifdef VLA
     SIMD<double> hmem1[DIM*values.VWidth()];
     AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
@@ -1328,7 +1336,12 @@ public:
     SIMD<double> hmem2[100];
     AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
 #endif
-
+    */
+    STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
+    STACK_ARRAY(SIMD<double>, hmem2, DIM*values.Width());
+    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
+    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
+    
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
 
@@ -1963,7 +1976,23 @@ public:
         FlatMatrix<> a(dims[0], inner_dim, &va(i,0));
         result.Row(i) = a * vb.Row(i);
       }
-  }  
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem1, (ir.IR().GetNIP()+8)*dims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmem2, (ir.IR().GetNIP()+8)*inner_dim);
+    AFlatMatrix<double> temp1(dims[0]*inner_dim, ir.IR().GetNIP(), &hmem1[0].Data());
+    AFlatMatrix<double> temp2(inner_dim, ir.IR().GetNIP(), &hmem2[0].Data());
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, temp2);
+    values = 0.0;
+    for (int i = 0; i < dims[0]; i++)
+      for (int j = 0; j < inner_dim; j++)
+        for (int k = 0; k < ir.Size(); k++)
+          values.Get(i,k) += temp1.Get(i*inner_dim+j, k) * temp2.Get(j,k);
+  }
+  
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,

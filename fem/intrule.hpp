@@ -1105,7 +1105,7 @@ namespace ngfem
 namespace ngstd
 {
   template<>
-  class alignas(32) SIMD<ngfem::IntegrationPoint>
+  class SIMD<ngfem::IntegrationPoint>
   {
     SIMD<double> x[3], weight;
     int facetnr;
@@ -1138,7 +1138,7 @@ namespace ngstd
   };
 
   template <>
-  class alignas(32) SIMD<ngfem::BaseMappedIntegrationPoint>
+  class SIMD<ngfem::BaseMappedIntegrationPoint>
   {
   protected:
     SIMD<ngfem::IntegrationPoint> ip;
@@ -1179,7 +1179,7 @@ namespace ngstd
   };
 
   template <int DIMS, int DIMR>
-  class alignas(32) SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>> : public SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>
+  class SIMD<ngfem::MappedIntegrationPoint<DIMS,DIMR>> : public SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>
   {
   protected:
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::measure;
