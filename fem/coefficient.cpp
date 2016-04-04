@@ -2644,9 +2644,11 @@ public:
     Library library;
     lib_function compiled_function;
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
-      : cf(acf)
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
+      : cf(acf), compiled_function(nullptr)
     {
+      static Timer tcompile("CompiledCF::Compile");
+      static Timer tlink("CompiledCF::Link");
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
          {
@@ -2679,6 +2681,8 @@ public:
 
       cout << "inputs = " << endl << inputs << endl;
 
+      if(realcompile)
+      {
       cout << "Compiled CF:" << endl;
       Code code;
       for (auto i : Range(steps)) {
@@ -2705,12 +2709,17 @@ public:
       s << "}\n}\n}" << endl;
 
       cout << "compiling..." << endl;
-      system("ngscxx -c code.cpp -o code.o");
+      tcompile.Start();
+      system("ngscxx -c -g0 code.cpp -o code.o");
+      tcompile.Stop();
       cout << "linking..." << endl;
+      tlink.Start();
       system("ngsld -shared code.o -o libcode.so -lngstd -lngfem");
+      tlink.Stop();
       cout << "done" << endl;
       library.Load("libcode.so");
       compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+      }
 
     }
 
@@ -2739,15 +2748,23 @@ public:
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
       static bool first_call = true;
-      if(first_call)
+      static Timer t1("CompiledCF::Evaluate FastCompile");
+      static Timer t2("CompiledCF::Evaluate RealCompile");
+      if(compiled_function)
       {
-        cout << "*************************************" << endl;
-        cout << "Calling compiled coefficient function" << endl;
-        cout << "*************************************" << endl;
-        first_call = false;
+        if(first_call)
+          {
+            cout << "*************************************" << endl;
+            cout << "Calling compiled coefficient function" << endl;
+            cout << "*************************************" << endl;
+            first_call = false;
+          }
+        RegionTimer reg(t2);
+        compiled_function(ir,values);
+        return;
       }
-      compiled_function(ir,values);
-      return;
+
+      RegionTimer reg(t1);
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
       // static Timer t3("CompiledCF::Evaluate 3");
@@ -2895,9 +2912,9 @@ public:
 
 
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c)
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile)
   {
-    return make_shared<CompiledCoefficientFunction> (c);
+    return make_shared<CompiledCoefficientFunction> (c, realcompile);
   }
   
 

@@ -562,8 +562,9 @@ void ExportCoefficientFunction()
                    "transpose of matrix-valued CF")
 
     .def ("Compile", FunctionPointer
-          ([] (SPCF coef) -> SPCF
-           { return Compile (coef); }),
+          ([] (SPCF coef, bool realcompile) -> SPCF
+           { return Compile (coef, realcompile); }),
+          (bp::args("self"), bp::args("realcompile")=false),
           "compile list of individual steps, experimental improvement for deep trees")
     ;
 
