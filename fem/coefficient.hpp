@@ -37,6 +37,7 @@ namespace ngfem
           void operator /=(CodeExpr other) { code = "(" + S()+Op('/')+other.S() + ')'; }
           void operator =(CodeExpr other) { code = other.code; };
 
+          CodeExpr operator ()(int i) { return CodeExpr( S() + '(' + ToString(i) + ')' ); }
           CodeExpr Func(string s) { return CodeExpr( s + "(" + S() + ")" ); }
           string Assign (CodeExpr other, bool declare = true) {
               string result;
@@ -60,6 +61,10 @@ namespace ngfem
           res += ToString(val.imag());
           res += ")";
           return res;
+      }
+
+      inline CodeExpr Var(string name, int i, int j=0, int k=0) {
+          return CodeExpr(name + '_' + ToString(i) + '_' + ToString(j) + '_' + ToString(k));
       }
 
       inline CodeExpr Var(int i, int j=0, int k=0) {

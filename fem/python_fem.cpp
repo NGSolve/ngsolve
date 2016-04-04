@@ -354,6 +354,14 @@ struct GenericConj {
       for (int i = 0; i < ir.Size(); i++)
         resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        auto nv_expr = CodeExpr("static_cast<const DimMappedIntegrationPoint<"+ToString(D)+">&>(ip).GetNV()");
+        auto nv = Var("tmp", index);
+        code.body += nv.Assign(nv_expr);
+        for( int i : Range(D))
+          code.body += Var(index,i).Assign(nv(i));
+    }
   };
 
   template <int D>

@@ -2511,6 +2511,23 @@ public:
     virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }
     virtual int Dimension() const { return cf_then->Dimension(); }
 
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+    {
+      auto var_if = Var(inputs[0]);
+      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+          code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
+      });
+      code.body += "if (" + var_if.S() + ">0) {\n";
+      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+          code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
+      });
+      code.body += "} else {\n";
+      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+          code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
+      });
+      code.body += "}\n";
+    }
+
     virtual Array<int> Dimensions() const
     {
       return cf_then->Dimensions();
