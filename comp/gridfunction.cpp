@@ -976,6 +976,68 @@ namespace ngcomp
     return Array<int>( { d } );
   }
 
+  void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    string mycode = "                                                                            \n\
+      Matrix<>  {values}{mir.Size(), {dim}};                                                     \n\
+      {                                                                                          \n\
+      LocalHeapMem<100000> lh2(\"{values}\");                                                    \n\
+      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});                      \n\
+      const ElementTransformation &trafo = mir.GetTransformation();                              \n\
+      auto elnr = trafo.GetElementNr();                                                          \n\
+      const FESpace &fes = *gf.GetFESpace();                                                     \n\
+      auto boundary = trafo.Boundary();                                                          \n\
+      ElementId ei(boundary ? BND : VOL, elnr);                                                  \n\
+      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};                       \n\
+      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};           \n\
+      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};                         \n\
+      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {                            \n\
+          for (auto i : Range(mir.Size()))                                                       \n\
+            gf.Evaluate(mir[i], {values}.Row(i));                                                \n\
+      } else if(!fes.DefinedOn(trafo.GetElementIndex(),boundary)){                               \n\
+          {values} = 0.0;                                                                        \n\
+      } else {                                                                                   \n\
+          const FiniteElement & fel = fes.GetFE (ei, lh2);                                       \n\
+          int dim = fes.GetDimension();                                                          \n\
+                                                                                                 \n\
+          ArrayMem<int, 50> dnums;                                                               \n\
+          fes.GetDofNrs (ei, dnums);                                                             \n\
+                                                                                                 \n\
+          VectorMem<50> elu(dnums.Size()*dim);                                                   \n\
+                                                                                                 \n\
+          gf.GetElementVector ({comp}, dnums, elu);                                              \n\
+          fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);                                 \n\
+                                                                                                 \n\
+          if (diffop && !boundary)                                                               \n\
+            diffop->Apply (fel, mir, elu, {values}, lh2);                                        \n\
+          else if (trace_diffop && boundary)                                                     \n\
+            trace_diffop->Apply (fel, mir, elu, {values}, lh2);                                  \n\
+          else if (bfi)                                                                          \n\
+            bfi->CalcFlux (fel, mir, elu, {values}, true, lh2);                                  \n\
+          else if (fes.GetEvaluator(boundary))                                                   \n\
+            fes.GetEvaluator(boundary) -> Apply (fel, mir, elu, {values}, lh2);                  \n\
+          else if (fes.GetIntegrator(boundary))                                                  \n\
+            fes.GetIntegrator(boundary) ->CalcFlux (fel, mir, elu, {values}, false, lh2);        \n\
+          else                                                                                   \n\
+            throw Exception (\"don't know how I shall evaluate\");                               \n\
+      }                                                                                          \n\
+      }                                                                                          \n\
+    ";
+    std::map<string,string> variables;
+    auto values = Var("values", index);
+    variables["values"] = values.S();
+    variables["gf_ptr"] = ToString(gf.get());
+    variables["diffop_ptr"] = ToString(diffop.get());
+    variables["trace_diffop_ptr"] = ToString(trace_diffop.get());
+    variables["bfi_ptr"] = ToString(trace_diffop.get());
+    variables["comp"] = ToString(comp);
+    variables["dim"] = ToString(Dimension());
+    code.header += Code::Map(mycode, variables);
+
+    TraverseDimensions( Dimensions(), [&](int i, int j) {
+        code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
+    });
+  }
   
   bool GridFunctionCoefficientFunction::IsComplex() const
   { 
