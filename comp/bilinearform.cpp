@@ -2938,7 +2938,8 @@ namespace ngcomp
                                          fespace->TransformMat (el1, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                                          */
 
-                                         FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
+                                         FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
+                                           ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                          x.GetIndirect(dnums, elx);
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
@@ -2998,7 +2999,8 @@ namespace ngcomp
                                  dnums.Range(0, dnums1.Size()) = dnums1;
                                  dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
                                  
-                                 FlatVector<SCAL> elx(dnums.Size(), lh), ely(dnums.Size(), lh);
+                                 FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
+                                   ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                  x.GetIndirect(dnums, elx);
 
 
