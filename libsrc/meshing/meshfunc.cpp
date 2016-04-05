@@ -8,6 +8,7 @@ namespace netgen
   extern const char * prismrules2[];
   extern const char * pyramidrules[];
   extern const char * pyramidrules2[];
+  extern const char * hexrules[];
 
 
   // extern double teterrpow; 
@@ -94,8 +95,9 @@ namespace netgen
 	   }
 	 domain_bbox.Increase (0.01 * domain_bbox.Diam());
 	 
-	
-        for (int qstep = 1; qstep <= 3; qstep++)
+
+         for (int qstep = 1; qstep <= 3; qstep++)
+         // for (int qstep = 0; qstep <= 3; qstep++)  // for hex-filling
 	  {
 	    // cout << "openquads = " << mesh3d.HasOpenQuads() << endl;
 	    if (mesh3d.HasOpenQuads())
@@ -105,6 +107,10 @@ namespace netgen
 		const char ** rulep = NULL;
 		switch (qstep)
 		  {
+		  case 0:
+		    // rulefile = "/Users/joachim/gitlab/netgen/rules/hexa.rls";
+		    rulep = hexrules;
+		    break;
 		  case 1:
 		    rulefile += "/rules/prisms2.rls";
 		    rulep = prismrules2;

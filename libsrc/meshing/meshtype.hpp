@@ -679,6 +679,7 @@ namespace netgen
 	case PYRAMID: return 5;
 	case PRISM: 
 	case PRISM12: return 5;
+        case HEX: return 6;
 	default:
 #ifdef DEBUG
 	  PrintSysError ("element3d::GetNFaces not implemented for typ", typ)

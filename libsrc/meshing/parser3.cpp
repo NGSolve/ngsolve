@@ -530,6 +530,21 @@ void vnetrule :: LoadRule (istream & ist)
 		  ist >> elements.Last().PNum(6);
 		  ist >> ch;    // ','
 		}
+              
+	      if (ch == COMMASIGN)
+		{
+		  //		  elements.Last().SetNP(6);
+		  elements.Last().SetType(HEX);
+		  ist >> elements.Last().PNum(7);
+		  ist >> ch;    // ','
+		}
+	      if (ch == COMMASIGN)
+		{
+		  //		  elements.Last().SetNP(6);
+		  elements.Last().SetType(HEX);
+		  ist >> elements.Last().PNum(8);
+		  ist >> ch;    // ','
+		}
 
 	      /*
 	      orientations.Append (fourint());

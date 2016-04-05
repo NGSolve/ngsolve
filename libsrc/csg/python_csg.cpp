@@ -502,8 +502,15 @@ DLL_HEADER void ExportCSG()
              SetGlobalMesh (dummy);
              dummy->SetGeometry(geo);
 	     ng_geometry = geo;
-             geo->FindIdenticSurfaces(1e-8 * geo->MaxSize()); 
-             geo->GenerateMesh (dummy, param, 0, 6);
+             geo->FindIdenticSurfaces(1e-8 * geo->MaxSize());
+             try
+               {
+                 geo->GenerateMesh (dummy, param, 0, 6);
+               }
+             catch (NgException ex)
+               {
+                 cout << "Caught NgException: " << ex.What() << endl;
+               }
              return dummy;
            }))
     ;

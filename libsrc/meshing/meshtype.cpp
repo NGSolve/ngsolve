@@ -1165,7 +1165,7 @@ namespace netgen
         { 3, 2, 3, 5, 0 },
         { 3, 3, 4, 5, 0 },
         { 3, 4, 1, 5, 0 } };
-
+    
     static const int prismfaces[][5] =
       {
         { 3, 1, 3, 2, 0 },
@@ -1174,6 +1174,17 @@ namespace netgen
         { 4, 2, 3, 6, 5 },
         { 4, 3, 1, 4, 6 }
       };
+    
+    static const int hexfaces[][5] =
+      {
+        { 4, 4, 3, 2, 1 },
+        { 4, 3, 7, 6, 2 },
+        { 4, 7, 8, 5, 6 },
+        { 4, 8, 4, 1, 5 },
+        { 4, 1, 2, 6, 5 },
+        { 4, 3, 4, 8, 7 }
+      };
+    
 
     switch (np)
       {
@@ -1207,6 +1218,13 @@ namespace netgen
           face.SetType ( (i >= 3) ? QUAD : TRIG);
           for (int j = 1; j <= face.GetNP(); j++)
             face.PNum(j) = PNum(prismfaces[i-1][j]);
+          break;
+        }
+      case 8:
+        {
+          face.SetType(QUAD);
+          for (int j = 1; j <= 4; j++)
+            face.PNum(j) = PNum(hexfaces[i-1][j]);
           break;
         }
       }

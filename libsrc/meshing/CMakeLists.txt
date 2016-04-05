@@ -20,7 +20,7 @@ add_library(mesh ${NG_LIB_TYPE}
         smoothing2.cpp smoothing3.cpp specials.cpp tetrarls.cpp		    
         topology.cpp triarls.cpp validate.cpp bcfunctions.cpp   
         parallelmesh.cpp  paralleltop.cpp  paralleltop.hpp basegeom.cpp     
-        python_mesh.cpp
+        python_mesh.cpp hexarls.cpp
         ${mesh_object_libs}
         )
 

@@ -2590,6 +2590,40 @@ namespace netgen
 	  shapes[5] =    x *(1-y)*(z);
 	  shapes[6] =    x *   y *(z);
 	  shapes[7] = (1-x)*   y *(z);
+
+	  if (info.order == 1) return;
+	  
+	  double mu[8] = {
+            (1-x)+(1-y)+(1-z),
+            x    +(1-y)+(1-z),
+            x    +   y +(1-z),
+            (1-x)+   y +(1-z),
+            (1-x)+(1-y)+(z),
+            x    +(1-y)+(z),
+            x    +   y +(z),
+            (1-x)+   y +(z),
+          };
+	    
+	  int ii = 8;
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (HEX);
+	  
+	  for (int i = 0; i < 8; i++)
+	    {
+	      int eorder = edgeorder[info.edgenrs[i]];
+	      if (eorder >= 2)
+		{
+		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
+		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
+
+		  CalcEdgeShape (eorder, mu[vi1]-mu[vi2], &shapes(ii));
+		  double lame = shapes(vi1)+shapes(vi2);
+		  for (int j = 0; j < order-1; j++)
+		    shapes(ii+j) *= lame;
+		  ii += eorder-1;
+		}
+	    }
+
+          
 	  break;
 	}
 
