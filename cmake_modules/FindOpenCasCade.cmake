@@ -13,6 +13,8 @@ else(WIN32)
     find_path(OCC_INCLUDE_DIR Standard_Version.hxx
       /usr/include/opencascade
       /usr/local/include/opencascade
+      /usr/include/oce
+      /usr/local/include/oce
       /opt/opencascade/include
       /opt/opencascade/inc
     )
