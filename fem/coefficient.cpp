@@ -2750,8 +2750,16 @@ public:
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
+    int input = 0;
+    int ii = 0;
     TraverseDimensions( dims, [&](int i, int j) {
-        code.body += Var(index,i,j).Assign( Var(inputs[i],j) );
+        code.body += Var(index,i,j).Assign( Var(inputs[input],ii) );
+        ii++;
+        if(ii>=ci[input]->Dimension())
+        {
+            input++;
+            ii = 0;
+        }
     });
   }
   

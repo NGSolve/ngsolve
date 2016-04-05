@@ -30,17 +30,19 @@ namespace ngfem
     code.body += "\n";
     code.body += string("// Proxyfunction: ") + evaluator->Name() + string(testfunction? "(testfunction)" : "(trialfunction)") + "\n";
     code.body += "ProxyUserData * " +ud+ " = (ProxyUserData*)ip.GetTransformation().userdata;\n";
-    for (int i : Range(evaluator->Dim())) {
-        code.body += Var(index, i).Declare("typename std::remove_reference<decltype(" +ud+ "->GetMemory(nullptr)(0,0))>::type");
-        code.body += Var(index, i).Assign( Var(0.0), false );
-    }
+    TraverseDimensions( Dimensions(), [&](int i, int j) {
+        code.body += Var(index, i,j).Declare("typename std::remove_reference<decltype(" +ud+ "->GetMemory(nullptr)(0,0))>::type");
+        code.body += Var(index, i,j).Assign( Var(0.0), false );
+    });
     string pthis("reinterpret_cast<ProxyFunction*>(" + ToString(this) + ")");
     string nl = "\n";
     if (!testfunction) {
         code.body += "if(" +ud+ "->fel) {" + nl;
         code.body += "\tif (" +ud+ "->HasMemory (" + pthis + ")) {" + nl;
-        for (int i : Range(evaluator->Dim()))
-            code.body += "\t\t" + Var(index, i).Assign( "" +ud+ "->GetMemory (" + pthis + ")(i, " + ToString(i) + " )", false );
+        int ii=0;
+        TraverseDimensions( Dimensions(), [&](int i, int j) {
+            code.body += "\t\t" + Var(index, i,j).Assign( "" +ud+ "->GetMemory (" + pthis + ")(i, " + ToString(ii++) + " )", false );
+        });
         code.body += "\t}\n";
         code.body += "\telse\n\t\tthrow Exception(\"userdata has no memory!\");\n";
         code.body += "}\n";
@@ -48,18 +50,20 @@ namespace ngfem
     }
     if(testfunction) {
         code.body += "\tif(" +ud+ "->testfunction == " + pthis + ") {\n";
-        for (int i : Range(evaluator->Dim())) {
-          code.body += "\t\tif("+ToString(i)+"=="+ud+"->test_comp)\n\t\t\t";
-          code.body += Var(index,i).Assign( Var(1.0), false );
-        }
+        int ii=0;
+        TraverseDimensions( Dimensions(), [&](int i, int j) {
+          code.body += "\t\tif("+ToString(ii++)+"=="+ud+"->test_comp)\n\t\t\t";
+          code.body += Var(index,i,j).Assign( Var(1.0), false );
+        });
         code.body += "\t}\n";
     }
     else {
         code.body += "\tif(" +ud+ "->trialfunction == " + pthis + ") {\n";
-        for (int i : Range(evaluator->Dim())) {
-          code.body += "\t\tif("+ToString(i)+"=="+ud+"->trial_comp)\n\t\t\t";
-          code.body += Var(index,i).Assign( Var(1.0), false );
-        }
+        int ii=0;
+        TraverseDimensions( Dimensions(), [&](int i, int j) {
+          code.body += "\t\tif("+ToString(ii++)+"=="+ud+"->trial_comp)\n\t\t\t";
+          code.body += Var(index,i,j).Assign( Var(1.0), false );
+        });
         code.body += "\t}\n";
     }
     if (!testfunction)
