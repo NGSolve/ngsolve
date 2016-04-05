@@ -493,8 +493,8 @@ int AdFront3 :: GetLocals (int fstind,
 			   float relh,
 			   INDEX& facesplit)
 {
-  static int timer = NgProfiler::CreateTimer ("AdFront3::GetLocals");
-  NgProfiler::RegionTimer reg (timer);
+  // static int timer = NgProfiler::CreateTimer ("AdFront3::GetLocals");
+  // NgProfiler::RegionTimer reg (timer);
 
 
   if (hashon && faces.Size() < 500) { hashon=0; }
