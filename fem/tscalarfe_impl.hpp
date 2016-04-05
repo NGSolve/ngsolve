@@ -184,6 +184,26 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & bmir,
+                SliceVector<> coefs,
+                AFlatMatrix<double> values) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        Vec<DIM,SIMD<double>> sum(0.0);
+        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                        { sum += coefs(j) * shape; }));
+        for (int k = 0; k < DIM; k++)
+          values.Get(k,i) = sum(k).Data();
+      }
+  }
+
+
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, 
                      FlatMatrixFixWidth<DIM> vals, SliceVector<double> coefs) const
   {
