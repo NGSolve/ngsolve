@@ -1245,12 +1245,19 @@ BuildSurfaceElements (Array<Segment> & segs,
 		(mesh.GetIdentifications().Get (s2[0], s1[1], nr) && 
 		 mesh.GetIdentifications().Get (s2[1], s1[0], nr)))
 	      {
+		Vec<3> ns = surf->GetNormalVector (mesh[s1[0]]);
+
+                Vec<3> t1 = mesh[s1[1]] - mesh[s1[0]];
+                Vec<3> t2 = mesh[s2[1]] - mesh[s2[0]];
+                Vec<3> nst1 = Cross(t1, ns);
+                Vec<3> nst2 = Cross(t2, ns);
+                Vec<3> dvec = Center(mesh[s1[0]], mesh[s1[1]])-Center(mesh[s2[0]], mesh[s2[1]]);
+                if (nst1 * dvec < 0) continue;
+                
 		Element2d el(s1[0], s1[1], s2[0], s2[1]);
 
 		Vec<3> n = Cross (mesh[el[1]] - mesh[el[0]],
 				  mesh[el[3]] - mesh[el[0]]);
-
-		Vec<3> ns = surf->GetNormalVector (mesh[el[0]]);
 
 		if (n * ns < 0)
 		  {
