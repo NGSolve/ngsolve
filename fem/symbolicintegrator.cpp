@@ -2149,14 +2149,23 @@ namespace ngfem
                                    FlatVector<double> elx, 
                                    LocalHeap & lh) const
   {
-    ProxyUserData ud;
+    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+    ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
     ud.elx = &elx;
     ud.lh = &lh;
 
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
-    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        // ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
+        // proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
+        ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
+        proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
+      }
+
 
     FlatMatrix<> values(mir.Size(), 1, lh);
     cf -> Evaluate(mir, values);
