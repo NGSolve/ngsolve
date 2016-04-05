@@ -1,0 +1,88 @@
+rule "Hexa left-right-top"
+
+quality 1
+
+flags t;
+
+mappoints
+(0, 0, 0);
+(1, 0, 0) { 1 } ;
+(1, 1, 0) { 1 } ;
+(0, 1, 0) { 1 } ;
+(0, 0, 1) { 1 } ;
+(1, 0, 1) { 1 } ;
+(1, 1, 1) { 1 } ;
+(0, 1, 1) { 1 } ;
+
+mapfaces
+(4, 3, 2, 1) del;
+(3, 7, 6, 2) del;
+(7, 8, 5, 6) del;
+(8, 4, 1, 5) del;
+
+newpoints
+
+newfaces
+(5, 6, 2, 1);
+(7, 8, 4, 3);
+
+elements
+(4, 3, 2, 1, 8, 7, 6, 5);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P5 };
+{ 1 P3 };
+
+
+endrule
+
+
+
+
+
+rule "Hexa fill"
+
+quality 10
+
+flags t;
+
+mappoints
+(0, 0, 0);
+(1, 0, 0) { 1 } ;
+(1, 1, 0) { 1 } ;
+(0, 1, 0) { 1 } ;
+(0, 0, 1) { 1 } ;
+(1, 0, 1) { 1 } ;
+(1, 1, 1) { 1 } ;
+(0, 1, 1) { 1 } ;
+
+mapfaces
+(4, 3, 2, 1) del;
+(3, 7, 6, 2) del;
+(7, 8, 5, 6) del;
+(8, 4, 1, 5) del;
+(1, 2, 6, 5) del;
+(3, 4, 8, 7) del;
+
+newpoints
+
+newfaces
+
+elements
+(4, 3, 2, 1, 8, 7, 6, 5);
+
+freezone2
+{ 1 P1 };
+{ 1 P2 };
+{ 1 P5 };
+{ 1 P3 };
+
+
+endrule
+
+
+
+
+
