@@ -517,7 +517,6 @@ namespace ngstd
                 }
           }
         }
-      paje.WriteEvents();
 
       // Merge link event
       int nlinks = 0;
@@ -577,6 +576,7 @@ namespace ngstd
                 }
             }
         }
+      paje.WriteEvents();
     }
 }
 

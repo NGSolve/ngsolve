@@ -963,6 +963,7 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return c2->Dimension(); }
+  virtual Array<int> Dimensions() const { return c2->Dimensions(); }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
