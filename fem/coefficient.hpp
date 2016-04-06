@@ -61,8 +61,13 @@ namespace ngfem
               return result;
           }
 
-          string Declare(string type = "auto" ) { 
+          string Declare(string type = "auto") {
               return type + " " + code + ";\n";
+          }
+
+          template<typename TVal>
+          string Declare(string type, TVal value ) {
+              return type + " " + code + "("+ToString(value)+");\n";
           }
       };
 
@@ -277,23 +282,6 @@ namespace ngfem
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func);
     virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
     { return Array<CoefficientFunction*>(); }
-  protected:
-    static string StringVariable(int i) { return "var_" + ToString(i); }
-    static string StringVariable(int i, int j) { return "var_" + ToString(i) + '_' + ToString(j); }
-    static string StringVariable(int i, int j, int k) { return "var_" + ToString(i) + '_' + ToString(j) + '_' + ToString(k); }
-    static string StringInput(int i) { return '{' + ToString(i) + '}'; }
-    static string StringComponent(string s, int i) {
-        return s + "[" + ToString(i) + "]";
-    }
-    static string StringVector(FlatArray<string> a) {
-        std::ostringstream strs;
-        strs << '[';
-        for (auto s : a)
-          strs << s << ',';
-        // remove last ','
-        strs.seekp(-1, std::ios_base::end);
-        strs << ']';
-    }
   };
 
   inline ostream & operator<< (ostream & ost, const CoefficientFunction & cf)
