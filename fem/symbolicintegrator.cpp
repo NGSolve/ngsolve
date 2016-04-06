@@ -26,6 +26,12 @@ namespace ngfem
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
+    auto dims = Dimensions();
+
+    // transpose line-vector to a column
+    if(dims.Size()>1 && dims[0]==1)
+      Swap(dims[0], dims[1]);
+
     string header = "\n\
     FlatMatrix<double>  {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
@@ -38,25 +44,28 @@ namespace ngfem
       header+=
 "      if ({ud}->fel) {\n\
           if ({ud}->HasMemory ({this})) {\n\
-            FlatMatrix<double> result({ud}->GetMemory ({this}));\n\
-            {values}.AssignMemory(result.Height(), result.Width(), &result(0,0));\n\
+            auto x = {ud}->GetMemory ({this});\n\
+            {values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n\
           }\n\
           else\n\
             throw Exception(\"userdata has no memory!\");\n\
-          return;\n\
       }\n";
     }
     header += "}\n";
+
+    header += "typedef typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type {tres};\n";
+    {
+      int ii=0;
+      TraverseDimensions( dims, [&](int i, int j) {
+          header += Var("comp", index,i,j).Declare("double", 0.0);
+          header += "if({ud}->{comp_string}=="+ToString(ii++)+")\n";
+          header += Var("comp", index,i,j).Assign( Var(1.0), false );
+      });
+    }
     string body = "";
 
-    auto dims = Dimensions();
-
-    // transpose line-vector to a column
-    if(dims.Size()>1 && dims[0]==1)
-      Swap(dims[0], dims[1]);
-
     TraverseDimensions( dims, [&](int i, int j) {
-        body += Var(index, i,j).Declare("typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type");
+        body += Var(index, i,j).Declare("{tres}", 0.0);
         body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
     });
 
@@ -69,26 +78,23 @@ namespace ngfem
       body += "} else ";
     }
     body += "if({ud}->{func_string} == {this}) {\n";
-    body += "auto comp = {ud}->{comp_string};\n";
-    int ii=0;
     TraverseDimensions( dims, [&](int i, int j) {
-        body += "if(comp=="+ToString(ii++)+")\n";
-        body += Var(index,i,j).Assign( Var(1.0), false );
+        body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
     });
     body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";
     std::map<string,string> variables;
-    variables["ud"] = Var("ud", index).S();
+    variables["ud"] = "tmp_"+ToString(index)+"_0"; //Var("tmp", index).S();
     variables["this"] = "reinterpret_cast<ProxyFunction*>("+ToString(this)+")";
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
+    variables["tres"] = "TRes"+ToString(index);
 
     variables["values"] = Var("values", index).S();
     code.header += Code::Map(header, variables);
-//     variables["values"] = variables["ud"]+"->GetMemory ("+variables["this"]+ ")";
     code.body += Code::Map(body, variables);
   }
   
