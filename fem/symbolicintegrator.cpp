@@ -32,8 +32,11 @@ namespace ngfem
     {\n\
       if (!{ud})\n\
         throw Exception (\"cannot evaluate ProxyFunction without userdata\");\n\
-\n\
-      if ((!{testfunction}) && {ud}->fel) {\n\
+          ";
+
+    if(!testfunction) {
+      header+=
+"      if ({ud}->fel) {\n\
           if ({ud}->HasMemory ({this})) {\n\
             FlatMatrix<double> result({ud}->GetMemory ({this}));\n\
             {values}.AssignMemory(result.Height(), result.Width(), &result(0,0));\n\
@@ -41,9 +44,9 @@ namespace ngfem
           else\n\
             throw Exception(\"userdata has no memory!\");\n\
           return;\n\
-      }\n\
-    }\n\
-    ";
+      }\n";
+    }
+    header += "}\n";
     string body = "";
 
     auto dims = Dimensions();
@@ -54,16 +57,20 @@ namespace ngfem
 
     TraverseDimensions( dims, [&](int i, int j) {
         body += Var(index, i,j).Declare("typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type");
+        body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
     });
 
-    body += "if ((!{testfunction}) && {ud}->fel) {\n";
-    int ii=0;
-    TraverseDimensions( dims, [&](int i, int j) {
-        body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + " )", false );
-    });
-    body += "} else if({ud}->{func_string} == {this}) {\n";
+    if(!testfunction) {
+      body += "if ({ud}->fel) {\n";
+      int ii=0;
+      TraverseDimensions( dims, [&](int i, int j) {
+          body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + " )", false );
+      });
+      body += "} else ";
+    }
+    body += "if({ud}->{func_string} == {this}) {\n";
     body += "auto comp = {ud}->{comp_string};\n";
-    ii=0;
+    int ii=0;
     TraverseDimensions( dims, [&](int i, int j) {
         body += "if(comp=="+ToString(ii++)+")\n";
         body += Var(index,i,j).Assign( Var(1.0), false );
