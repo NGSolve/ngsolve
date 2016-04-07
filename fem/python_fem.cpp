@@ -296,6 +296,13 @@ INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
 
 
 
+struct GenericBSpline {
+  shared_ptr<BSpline> sp;
+  GenericBSpline( const BSpline &asp ) : sp(make_shared<BSpline>(asp)) {;}
+  GenericBSpline( shared_ptr<BSpline> asp ) : sp(asp) {;}
+  template <typename T> T operator() (T x) const { return (*sp)(x); }
+  Complex operator() (Complex x) const { return (*sp)(x.real()); }
+};
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
   static string Name() { return "sin"; }
@@ -707,11 +714,11 @@ void ExportCoefficientFunction()
   
   bp::scope().attr("specialcf") = bp::object(bp::ptr(&specialcf));
 
-  bp::class_<BSpline> ("BSpline", bp::no_init)
+  bp::class_<BSpline, shared_ptr<BSpline> > ("BSpline", bp::no_init)
    .def("__init__", bp::make_constructor 
         (FunctionPointer ([](int order, bp::list knots, bp::list vals)
                            {
-                             return new BSpline (order, 
+                             return make_shared<BSpline> (order,
                                                  makeCArray<double> (knots),
                                                  makeCArray<double> (vals));
                            })),
@@ -719,11 +726,9 @@ void ExportCoefficientFunction()
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
     .def("__call__", FunctionPointer
-         ([](const BSpline & sp, SPCF coef) -> SPCF 
+         ([](shared_ptr<BSpline> sp, SPCF coef) -> SPCF
           {
-            return UnaryOpCF (coef,
-                              sp,
-                              [](Complex a) { return a.real(); });                             
+            return UnaryOpCF (coef, GenericBSpline(sp), GenericBSpline(sp));
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Integrate()); }),

@@ -136,6 +136,12 @@ namespace ngstd
             tasks[thread_id][task_num].stop_time = GetTime();
         }
 
+      void SetTask(int thread_id, int task_num, int additional_value) {
+          if(!trace_threads && !trace_thread_counter) return;
+          if(task_num>=0)
+            tasks[thread_id][task_num].additional_value = additional_value;
+      }
+
       void StartJob(int job_id, const std::type_info & type)
         {
           if(!tracing_enabled) return;
