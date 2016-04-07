@@ -530,6 +530,7 @@ class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
   // static int vw;
   __m256d * __restrict data;
 public:
+  AFlatMatrixD () = default;
   AFlatMatrixD (const AFlatMatrixD &) = default;
   AFlatMatrixD(int ah, int aw, LocalHeap & lh)
   {
@@ -548,6 +549,12 @@ public:
     data = adata;
   }
 
+  void AssignMemory (int ah, int aw, __m256d * mem)
+  {
+    h = ah;
+    w = aw;
+    data = mem;
+  }
   
   enum { IS_LINEAR = false };
   int Size () const { return h*w; }

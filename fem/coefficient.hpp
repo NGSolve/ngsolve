@@ -15,6 +15,7 @@ namespace ngfem
       struct Code {
           string header;
           string body;
+          bool is_simd;
 
           static string Map( string code, std::map<string,string> variables ) {
               for ( auto mapping : variables ) {
