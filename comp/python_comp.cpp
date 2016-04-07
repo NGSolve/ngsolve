@@ -97,9 +97,13 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                          [&] (shared_ptr<ProxyFunction> proxy)
                                          {
                                            auto block_eval = make_shared<CompoundDifferentialOperator> (proxy->Evaluator(), i);
-                                           auto block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
+                                           shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
+                                           if (proxy->DerivEvaluator() != nullptr)
+                                             block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
                                            auto block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
-                                           auto block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
+                                           shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
+                                           if (proxy->TraceDerivEvaluator() != nullptr)
+                                             block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
                                            auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
                                            block_proxy = addblock(block_proxy);
                                            return block_proxy;
