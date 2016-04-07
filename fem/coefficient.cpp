@@ -960,7 +960,6 @@ public:
     result *= v1(0);
   }
 
-
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {

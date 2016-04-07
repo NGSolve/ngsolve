@@ -171,13 +171,12 @@ public:
   virtual void
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
-         SliceVector<double> x, 
-         AFlatMatrix<double> flux,
-         LocalHeap & lh) const
+         BareSliceVector<double> x, 
+         ABareMatrix<double> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
-    diffop->Apply (fel[comp], bmir, x.Range(r), flux, lh);
+    diffop->Apply (fel[comp], bmir, x.Range(r), flux);
   }
 
 
@@ -211,13 +210,12 @@ public:
   NGS_DLL_HEADER virtual void
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            AFlatMatrix<double> flux,
-            SliceVector<double> x, 
-            LocalHeap & lh) const
+            ABareMatrix<double> flux,
+            BareSliceVector<double> x) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
-    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r), lh);
+    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
 };
 
