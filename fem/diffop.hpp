@@ -81,8 +81,8 @@ namespace ngfem
     /// Computes B-matrix times element vector in many points
     template <typename FEL, class MIR, class TVX, class TVY>
     static void ApplySIMDIR (const FEL & fel, const MIR & mir,
-                             const TVX & x, TVY & y,
-                             LocalHeap & lh)
+                             const TVX & x, TVY & y)
+    // LocalHeap & lh)
     {
       throw Exception (string("apply simdir not implemented for diffop ") + typeid(DOP).name());
     }
@@ -134,8 +134,8 @@ namespace ngfem
     /// Computes Transpose (B-matrix) times point value    
     template <typename FEL, class MIR, class TVX, class TVY>
     static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
-                                  const TVX & x, TVY & y,
-                                  LocalHeap & lh)
+                                const TVX & x, TVY & y)
+    // LocalHeap & lh)
     {
       throw Exception (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
     }
@@ -231,9 +231,9 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
-	   SliceVector<double> x, 
-	   AFlatMatrix<double> flux,
-	   LocalHeap & lh) const;
+	   BareSliceVector<double> x, 
+	   ABareMatrix<double> flux) const;
+    // LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
@@ -266,9 +266,9 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              AFlatMatrix<double> flux,
-              SliceVector<double> x, 
-              LocalHeap & lh) const;
+              ABareMatrix<double> flux,
+              BareSliceVector<double> x) const;
+    // LocalHeap & lh) const;
   };
 
 
@@ -309,9 +309,9 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
-	   SliceVector<double> x, 
-	   AFlatMatrix<double> flux,
-	   LocalHeap & lh) const;
+	   BareSliceVector<double> x, 
+	   ABareMatrix<double> flux) const;
+    // LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
     ApplyTrans (const FiniteElement & fel,
@@ -330,9 +330,9 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              AFlatMatrix<double> flux,
-              SliceVector<double> x, 
-              LocalHeap & lh) const;    
+              ABareMatrix<double> flux,
+              BareSliceVector<double> x) const;
+    // LocalHeap & lh) const;    
   };
 
 
@@ -404,9 +404,9 @@ namespace ngfem
     virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
-	   SliceVector<double> x, 
-	   AFlatMatrix<double> flux,
-	   LocalHeap & lh) const;
+	   BareSliceVector<double> x, 
+	   ABareMatrix<double> flux) const;
+    // LocalHeap & lh) const;
 
     virtual void
     ApplyTrans (const FiniteElement & bfel,
@@ -439,9 +439,9 @@ namespace ngfem
     virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
-              AFlatMatrix<double> flux,
-              SliceVector<double> x, 
-              LocalHeap & lh) const;    
+              ABareMatrix<double> flux,
+              BareSliceVector<double> x) const;
+    // LocalHeap & lh) const;    
 #endif
   };
 

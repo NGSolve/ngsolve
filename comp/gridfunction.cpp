@@ -1217,14 +1217,14 @@ namespace ngcomp
     fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
     if (diffop && !boundary)
-      diffop->Apply (fel, ir, elu, values, lh2);
+      diffop->Apply (fel, ir, elu, values); // , lh2);
     else if (trace_diffop && boundary)
-      trace_diffop->Apply (fel, ir, elu, values, lh2);
+      trace_diffop->Apply (fel, ir, elu, values); // , lh2);
     else if (bfi)
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
       // bfi->CalcFlux (fel, ir, elu, values, true, lh2);
     else if (fes.GetEvaluator(boundary))
-      fes.GetEvaluator(boundary) -> Apply (fel, ir, elu, values, lh2);
+      fes.GetEvaluator(boundary) -> Apply (fel, ir, elu, values); // , lh2);
     else if (fes.GetIntegrator(boundary))
       throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
       // fes.GetIntegrator(boundary) ->CalcFlux (fel, ir, elu, values, false, lh2);
