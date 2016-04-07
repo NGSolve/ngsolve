@@ -2646,7 +2646,7 @@ public:
       });
       if(code.is_simd) {
         TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
-            code.body += "IfPos("+Var(index,i,j).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+");\n";
+            code.body += Var(index,i,j).Assign("IfPos("+Var(inputs[0]).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+")", false);
         });
       } else {
         code.body += "if (" + var_if.S() + ">0.0) {\n";
@@ -2822,23 +2822,23 @@ public:
 
       cout << "inputs = " << endl << inputs << endl;
 
-      stringstream s;
-      s << "#include<bla.hpp>" << endl;
-      s << "#include<elementtopology.hpp>" << endl;
-      s << "#include<intrule.hpp>" << endl;
-      s << "#include<finiteelement.hpp>" << endl;
-      s << "#include<scalarfe.hpp>" << endl;
-      s << "#include<elementtransformation.hpp>" << endl;
-      s << "#include<diffop.hpp>" << endl;
-      s << "#include<coefficient.hpp>" << endl;
-      s << "#include<integrator.hpp>" << endl;
-      s << "#include<symbolicintegrator.hpp>" << endl;
-      s << "#include<comp.hpp>" << endl;
-      s << "using namespace ngcomp;" << endl;
-      s << "extern \"C\" {" << endl;
-
       if(realcompile)
       {
+        stringstream s;
+        s << "#include<bla.hpp>" << endl;
+        s << "#include<elementtopology.hpp>" << endl;
+        s << "#include<intrule.hpp>" << endl;
+        s << "#include<finiteelement.hpp>" << endl;
+        s << "#include<scalarfe.hpp>" << endl;
+        s << "#include<elementtransformation.hpp>" << endl;
+        s << "#include<diffop.hpp>" << endl;
+        s << "#include<coefficient.hpp>" << endl;
+        s << "#include<integrator.hpp>" << endl;
+        s << "#include<symbolicintegrator.hpp>" << endl;
+        s << "#include<comp.hpp>" << endl;
+        s << "using namespace ngcomp;" << endl;
+        s << "extern \"C\" {" << endl;
+
         for (auto simd : {false,true}) {
             cout << "Compiled CF:" << endl;
             Code code;
@@ -2860,7 +2860,7 @@ public:
             });
             if(simd) {
               s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & bmir, AFlatMatrix<double> results ) {" << endl;
-              s << "  SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<SIMD_MappedIntegrationRule<2,2>*>(&mir);" << endl;  
+              s << "  const SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<const SIMD_MappedIntegrationRule<2,2>*>(&bmir);" << endl;
 
             }
             else
@@ -2872,11 +2872,11 @@ public:
             s << "}\n}" << endl << endl;
 
         }
+        s << "}" << endl;
+        library.Compile( s.str() );
+        compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+        compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
       }
-      s << "}" << endl;
-      library.Compile( s.str() );
-      compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-      compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2904,43 +2904,20 @@ public:
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             AFlatMatrix<double> result) const
     {
-      static bool first_call = true;
-      static Timer t2("CompiledCF::EvaluateSIMD RealCompile");
       if(compiled_function)
-      {
-        if(first_call)
-          {
-            cout << "******************************************" << endl;
-            cout << "Calling SIMD compiled coefficient function" << endl;
-            cout << "******************************************" << endl;
-            first_call = false;
-          }
-        RegionTimer reg(t2);
         compiled_function_simd(mir,result);
-        return;
-      }
+      else
+        cf->Evaluate(mir,result);
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
-      static bool first_call = true;
-      static Timer t1("CompiledCF::Evaluate FastCompile");
-      static Timer t2("CompiledCF::Evaluate RealCompile");
       if(compiled_function)
       {
-        if(first_call)
-          {
-            cout << "*************************************" << endl;
-            cout << "Calling compiled coefficient function" << endl;
-            cout << "*************************************" << endl;
-            first_call = false;
-          }
-        RegionTimer reg(t2);
         compiled_function(ir,values);
         return;
       }
 
-      RegionTimer reg(t1);
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
       // static Timer t3("CompiledCF::Evaluate 3");
