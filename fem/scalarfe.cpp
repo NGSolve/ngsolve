@@ -218,6 +218,15 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, SliceVector<> coefs, AFlatMatrix<double> values) const
+  {
+    cout << "EvaluateGrad (simd) not implemented for class " << typeid(*this).name() << endl;
+  }
+
+
+  
+  template<int D>
+  void ScalarFiniteElement<D> :: 
   EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, SliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);

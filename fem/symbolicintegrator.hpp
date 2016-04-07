@@ -259,6 +259,17 @@ public:
     diffop->ApplyTrans (fel[comp], mip, flux, x.Range(r), lh);
   }
 
+  NGS_DLL_HEADER virtual void
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            AFlatMatrix<double> flux,
+            SliceVector<double> x, 
+            LocalHeap & lh) const
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r), lh);
+  }
 };
 
 

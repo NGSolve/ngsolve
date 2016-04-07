@@ -72,6 +72,10 @@ namespace ngfem
                                                  SliceVector<double> coefs, 
                                                  FlatMatrixFixWidth<DIM> vals) const;
 
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
+                                                 SliceVector<> coefs,
+                                                 AFlatMatrix<double> values) const;
+
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
                                                       FlatMatrixFixWidth<DIM> vals, 
                                                       SliceVector<double> coefs) const;

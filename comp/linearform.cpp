@@ -238,7 +238,7 @@ namespace ngcomp
               (*fespace, VOL, clh, 
                [&] (FESpace::Element el, LocalHeap & lh)
                {
-                 RegionTimer reg2 (timer2);
+                 // RegionTimer reg2 (timer2);
                  progress.Update ();
 
                  const FiniteElement & fel = el.GetFE(); // fespace->GetFE(el, lh);

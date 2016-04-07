@@ -99,6 +99,12 @@ namespace ngfem
 	}
     }
 
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                SliceVector<double> x, AFlatMatrix<double> y, 
+                                LocalHeap & lh)
+    {
+      Cast(fel).EvaluateGrad (mir, x, y);
+    }    
 
     ///
     template <typename MIP, class TVX, class TVY>

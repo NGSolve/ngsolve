@@ -158,7 +158,7 @@ namespace ngfem
        Vector x provides coefficient vector.
      */
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const IntegrationRule & ir, SliceVector<> coefs, FlatMatrixFixWidth<D> values) const;
-    
+    HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, SliceVector<> coefs, AFlatMatrix<double> values) const;
 
     /**
        Evaluate function in points of integrationrule ir, transpose operation.

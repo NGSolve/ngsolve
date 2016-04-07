@@ -292,6 +292,13 @@ namespace ngstd
         {
           nr = trace->StartTask (athread_id, (int)timer, ID_TIMER, additional_value);
         }
+
+      /// set user defined value
+      void SetValue( int additional_value )
+      {
+        trace->SetTask( thread_id, nr, additional_value );
+      }
+
       /// stop trace
       ~RegionTracer ()
         {
