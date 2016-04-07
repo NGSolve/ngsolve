@@ -85,7 +85,7 @@ namespace ngfem
       int ii=0;
       TraverseDimensions( dims, [&](int i, int j) {
           if(code.is_simd)
-            body += Var(index, i,j).Assign( "{values}("+ToString(ii++) + ",i)", false );
+            body += Var(index, i,j).Assign( "{values}.Get("+ToString(ii++) + ",i)", false );
           else
             body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + ")", false );
       });
