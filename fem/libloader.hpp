@@ -42,11 +42,17 @@ public:
       ofstream codefile(file_prefix+".cpp");
       codefile << code;
       codefile.close();
+//       string edit_str = "vim " + file_prefix+".cpp";
+//       system(edit_str.c_str());
       cout << "compiling..." << endl;
       tcompile.Start();
       string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
       system(scompile.c_str());
       tcompile.Stop();
+//       scompile = "ngscxx -S -g0 " + file_prefix + ".cpp -o " + file_prefix + ".s";
+//       system(scompile.c_str());
+//       scompile = "./cl -S -g0 " + file_prefix + ".cpp -o " + file_prefix + "_clang.s";
+//       system(scompile.c_str());
       cout << "linking..." << endl;
       tlink.Start();
       string slink = "ngsld -shared " + file_prefix + ".o -o " + file_prefix + ".so -lngstd -lngfem";

@@ -33,7 +33,7 @@ namespace ngfem
       Swap(dims[0], dims[1]);
 
     string header = "\n\
-    FlatMatrix<double>  {values};\n\
+    {flatmatrix} {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
     {\n\
       if (!{ud})\n\
@@ -43,17 +43,28 @@ namespace ngfem
     if(!testfunction) {
       header+=
 "      if ({ud}->fel) {\n\
-          if ({ud}->HasMemory ({this})) {\n\
-            auto x = {ud}->GetMemory ({this});\n\
-            {values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n\
-          }\n\
+          if ({ud}->HasMemory ({this})) {\n";
+      if(code.is_simd) {
+        header += "auto x = {ud}->GetAMemory ({this});\n";
+        header += "{values}.AssignMemory(x.Height(), x.Width(), &x.Get(0,0));\n";
+      } else {
+        header += "auto x = {ud}->GetMemory ({this});\n";
+        header += "{values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n";
+      }
+      header+=
+"          }\n\
           else\n\
             throw Exception(\"userdata has no memory!\");\n\
       }\n";
     }
     header += "}\n";
-
-    header += "typedef typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type {tres};\n";
+    if(code.is_simd) {
+//       header += "typedef typename std::remove_reference<decltype({ud}->GetAMemory(nullptr).Get(0,0))>::type {tres};\n";
+      header += "typedef SIMD<double> {tres};\n";
+    } else {
+//       header += "typedef typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type {tres};\n";
+      header += "typedef double {tres};\n";
+    }
     {
       int ii=0;
       TraverseDimensions( dims, [&](int i, int j) {
@@ -73,7 +84,10 @@ namespace ngfem
       body += "if ({ud}->fel) {\n";
       int ii=0;
       TraverseDimensions( dims, [&](int i, int j) {
-          body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + " )", false );
+          if(code.is_simd)
+            body += Var(index, i,j).Assign( "{values}("+ToString(ii++) + ",i)", false );
+          else
+            body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + ")", false );
       });
       body += "} else ";
     }
@@ -92,6 +106,8 @@ namespace ngfem
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
     variables["tres"] = "TRes"+ToString(index);
+
+    variables["flatmatrix"] = code.is_simd ? "AFlatMatrix<double>" : "FlatMatrix<double>";
 
     variables["values"] = Var("values", index).S();
     code.header += Code::Map(header, variables);

@@ -2770,6 +2770,7 @@ public:
   class CompiledCoefficientFunction : public CoefficientFunction
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
+    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -2778,9 +2779,10 @@ public:
     // Array<Timer*> timers;
     Library library;
     lib_function compiled_function;
+    lib_function_simd compiled_function_simd;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
-      : cf(acf), compiled_function(nullptr)
+      : cf(acf), compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
@@ -2814,21 +2816,6 @@ public:
 
       cout << "inputs = " << endl << inputs << endl;
 
-      if(realcompile)
-      {
-      cout << "Compiled CF:" << endl;
-      Code code;
-      for (auto i : Range(steps)) {
-          cout << "step " << i << endl;
-          cout << "function: " << typeid(*steps[i]).name() << endl;
-          steps[i]->GenerateCode(code, inputs[i],i);
-      }
-      // set results
-      int ii = 0;
-      TraverseDimensions( cf->Dimensions(), [&](int i, int j) {
-        code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
-        ii++;
-      });
       stringstream s;
       s << "#include<bla.hpp>" << endl;
       s << "#include<elementtopology.hpp>" << endl;
@@ -2843,18 +2830,44 @@ public:
       s << "#include<comp.hpp>" << endl;
       s << "using namespace ngcomp;" << endl;
       s << "extern \"C\" {" << endl;
-      s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
-      s << code.header << endl;
-      s << "for ( auto i : Range(mir)) {" << endl;
-      s << "auto & ip = mir[i];" << endl;
-      s << code.body << endl;
-      s << "}\n}\n}" << endl;
 
-      library.Compile( s.str() );
+      if(realcompile)
+      {
+        for (auto simd : {false,true}) {
+            cout << "Compiled CF:" << endl;
+            Code code;
+            code.is_simd = simd;
+            for (auto i : Range(steps)) {
+                cout << "step " << i << endl;
+                cout << "function: " << typeid(*steps[i]).name() << endl;
+                steps[i]->GenerateCode(code, inputs[i],i);
+            }
 
-      compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+            // set results
+            int ii = 0;
+            TraverseDimensions( cf->Dimensions(), [&](int i, int j) {
+                 if(simd)
+                   code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ";\n";
+                 else
+                   code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
+                 ii++;
+            });
+            if(simd)
+              s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> results ) {" << endl;
+            else
+              s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
+            s << code.header << endl;
+            s << "for ( auto i : Range(mir)) {" << endl;
+            s << "auto & ip = mir[i];" << endl;
+            s << code.body << endl;
+            s << "}\n}" << endl << endl;
+
+        }
       }
-
+      s << "}" << endl;
+      library.Compile( s.str() );
+      compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+      compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2877,6 +2890,26 @@ public:
     {
       return cf -> Evaluate(ip);
       // throw Exception ("compiled mip evaluate not implemented");
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+            AFlatMatrix<double> result) const
+    {
+      static bool first_call = true;
+      static Timer t2("CompiledCF::EvaluateSIMD RealCompile");
+      if(compiled_function)
+      {
+        if(first_call)
+          {
+            cout << "******************************************" << endl;
+            cout << "Calling SIMD compiled coefficient function" << endl;
+            cout << "******************************************" << endl;
+            first_call = false;
+          }
+        RegionTimer reg(t2);
+        compiled_function_simd(mir,result);
+        return;
+      }
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
