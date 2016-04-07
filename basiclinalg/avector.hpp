@@ -37,7 +37,8 @@ template <typename T>
 using AFlatMatrix = typename FooAMatrixType<T>::type;
 
 
-
+template <typename T> class ABareVector;
+template <typename T> class ABareMatrix;
 
 
 template <typename TA, typename TB, typename TC>
@@ -700,6 +701,15 @@ INLINE void MyScal2x4 (int n,
                        __m256d * b1, __m256d * b2, __m256d * b3, __m256d * b4,
                        __m256d & s1, __m256d & s2)
 {
+  /*
+  __builtin_assume_aligned (a1, 32);
+  __builtin_assume_aligned (a2, 32);
+  __builtin_assume_aligned (b1, 32);
+  __builtin_assume_aligned (b2, 32);
+  __builtin_assume_aligned (b3, 32);
+  __builtin_assume_aligned (b4, 32);
+  */
+  
   __m256d sum11 = _mm256_setzero_pd();
   __m256d sum21 = _mm256_setzero_pd();
 
@@ -1103,6 +1113,51 @@ void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
 
 
 
+template <>
+class ABareVector<double>
+{
+  __m256d * __restrict data;
+public:
+  ABareVector(__m256d * _data) : data(_data) { ; }
+  ABareVector(AFlatVector<double> vec) : data(&vec.Get(0)) { ; } 
+  ABareVector(const ABareVector &) = default;
+
+  double & operator() (int i) const
+  {
+    return ((double*)data)[i]; 
+  }
+
+  double & operator() (int i, int j) const
+  {
+    return ((double*)data)[i]; 
+  }
+  __m256d & Get(int i) const { return data[i]; }
+};
+
+template <>
+class ABareMatrix<double>
+{
+  __m256d * __restrict data;
+  int dist;   // dist in simds
+public:
+  ABareMatrix(__m256d * _data, int _dist) : data(_data), dist(_dist) { ; }
+  ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+  ABareMatrix(const ABareMatrix &) = default;
+
+  double & operator() (int i, int j) const
+  {
+    return ((double*)data)[4*i*dist+j]; 
+  }
+  __m256d & Get(int i, int j) const { return data[i*dist+j]; }
+  ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
+  ABareMatrix<double> Rows(int first, int /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
+  ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
+  ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
+};
+
+
+
+
 #else // __AVX2__
 
 // template <typename T>
@@ -1158,6 +1213,59 @@ public:
   AFlatMatrixD Rows(IntRange r) const
   { return Rows(r.begin(), r.end()); }
 };
+
+
+
+
+
+
+
+template <>
+class ABareVector<double>
+{
+  double * __restrict data;
+public:
+  ABareVector(double * _data) : data(_data) { ; }
+  ABareVector(AFlatVector<double> vec) : data(&vec.Get(0)) { ; } 
+  ABareVector(const ABareVector &) = default;
+
+  double & operator() (int i) const
+  {
+    return ((double*)data)[i]; 
+  }
+
+  double & operator() (int i, int j) const
+  {
+    return ((double*)data)[i]; 
+  }
+  double & Get(int i) const { return data[i]; }
+};
+
+template <>
+class ABareMatrix<double>
+{
+  double * __restrict data;
+  int dist;   // dist in simds
+public:
+  ABareMatrix(double * _data, int _dist) : data(_data), dist(_dist) { ; }
+  ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
+  ABareMatrix(const ABareMatrix &) = default;
+
+  double & operator() (int i, int j) const
+  {
+    return ((double*)data)[i*dist+j]; 
+  }
+  double & Get(int i, int j) const { return data[i*dist+j]; }
+  ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
+  ABareMatrix<double> Rows(int first, int /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
+  ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
+  ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
+};
+
+
+
+
+
 
 
 
