@@ -2644,15 +2644,21 @@ public:
       TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
           code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
       });
-      code.body += "if (" + var_if.S() + ">0) {\n";
-      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
-          code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
-      });
-      code.body += "} else {\n";
-      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
-          code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
-      });
-      code.body += "}\n";
+      if(code.is_simd) {
+        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+            code.body += "IfPos("+Var(index,i,j).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+");\n";
+        });
+      } else {
+        code.body += "if (" + var_if.S() + ">0.0) {\n";
+        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+            code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
+        });
+        code.body += "} else {\n";
+        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+            code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
+        });
+        code.body += "}\n";
+      }
     }
 
     virtual Array<int> Dimensions() const
@@ -2847,13 +2853,16 @@ public:
             int ii = 0;
             TraverseDimensions( cf->Dimensions(), [&](int i, int j) {
                  if(simd)
-                   code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ";\n";
+                   code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ".Data();\n";
                  else
                    code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
                  ii++;
             });
-            if(simd)
-              s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> results ) {" << endl;
+            if(simd) {
+              s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & bmir, AFlatMatrix<double> results ) {" << endl;
+              s << "  SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<SIMD_MappedIntegrationRule<2,2>*>(&mir);" << endl;  
+
+            }
             else
               s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
             s << code.header << endl;

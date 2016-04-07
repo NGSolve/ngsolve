@@ -356,11 +356,12 @@ struct GenericConj {
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        string miptype;
         if(code.is_simd)
-          string miptype = "DimMappedIntegrationPoint<"+ToString(D)+">&";
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
         else
-          string miptype = 
-        auto nv_expr = CodeExpr("static_cast<const "+miptype+">(ip).GetNV()");
+          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+        auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
         auto nv = Var("tmp", index);
         code.body += nv.Assign(nv_expr);
         for( int i : Range(D))
@@ -626,15 +627,9 @@ void ExportCoefficientFunction()
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
         auto v = Var(index);
-        if(code.is_simd) {
-            if(dir==0) code.body += v.Assign(CodeExpr("ip.IP()(0)"));
-            if(dir==1) code.body += v.Assign(CodeExpr("ip.IP()(1)"));
-            if(dir==2) code.body += v.Assign(CodeExpr("ip.IP()(2)"));
-        } else {
-            if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
-            if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
-            if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
-        }
+        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
+        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
+        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
