@@ -67,6 +67,8 @@ conv += SymbolicLFI((velocity*grad(u.components[0])*vx))
 conv += SymbolicLFI((velocity*grad(u.components[1])*vy))
 
 
+Draw (absvelocity, mesh, "velocity")
+
 # implicit Euler/explicit Euler splitting method:
 t = 0
 while t < tend:
@@ -77,4 +79,4 @@ while t < tend:
     u.vec.data -= tau * inv * res    
 
     t = t + tau
-    Draw (absvelocity, mesh, "velocity")
+    Redraw()
