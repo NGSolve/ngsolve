@@ -147,19 +147,36 @@ namespace ngfem
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareMatrix<double> values,
             BareSliceVector<> coefs) const
   {
-    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-    for (int i = 0; i < mir.Size(); i++)
+    if (bmir.DimSpace() == DIM)
       {
-        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
-                                        {
-                                          SIMD<double> sum = 0.0;
-                                          for (int k = 0; k < DIM; k++)
-                                            sum += shape(k) * values.Get(k,i);
-                                          coefs(j) += HSum(sum);
-                                        }));
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
+                                            {
+                                              SIMD<double> sum = 0.0;
+                                              for (int k = 0; k < DIM; k++)
+                                                sum += shape(k) * values.Get(k,i);
+                                              coefs(j) += HSum(sum);
+                                            }));
+          }
       }
-    
+    else
+      {
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM+1,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM+1,SIMD<double>> shape)
+                                            {
+                                              SIMD<double> sum = 0.0;
+                                              for (int k = 0; k < DIM+1; k++)
+                                                sum += shape(k) * values.Get(k,i);
+                                              coefs(j) += HSum(sum);
+                                            }));
+          }
+      }
   }
 
   

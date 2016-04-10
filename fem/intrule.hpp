@@ -1326,7 +1326,7 @@ namespace ngfem
     const ElementTransformation & eltrans;
     char * baseip;
     int incr;
-
+    int dim_element, dim_space;
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1340,7 +1340,8 @@ namespace ngfem
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
     INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
-
+    INLINE int DimElement() const { return dim_element; }
+    INLINE int DimSpace() const { return dim_space; }
     virtual ABareMatrix<double> GetPoints() const = 0;        
   };
 
