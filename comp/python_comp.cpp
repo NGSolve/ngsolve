@@ -588,8 +588,6 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
   bp::class_<ProxyFunction, shared_ptr<ProxyFunction>, 
     bp::bases<CoefficientFunction>,
     boost::noncopyable> ("ProxyFunction", 
@@ -604,9 +602,16 @@ void NGS_DLL_HEADER ExportNgcomp()
           { return self.Trace(); }),
          "take canonical boundary trace")
     .def("Other", FunctionPointer
-         ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
-          { return self.Other(); }),
-         "take value from neighbour element (DG)")
+         ([](const ProxyFunction & self, bp::object bnd) -> shared_ptr<CoefficientFunction>
+          {
+            if (bp::extract<shared_ptr<CoefficientFunction>> (bnd).check())
+              return self.Other(bp::extract<shared_ptr<CoefficientFunction>> (bnd)());              
+            else
+              return self.Other(nullptr);
+          }),
+         "take value from neighbour element (DG)",
+          (bp::arg("self"), bp::arg("bnd") = bp::object())
+         )
     .add_property("derivname", FunctionPointer
                   ([](const ProxyFunction & self) -> string
                    {

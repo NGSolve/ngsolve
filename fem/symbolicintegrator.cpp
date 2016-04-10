@@ -1917,10 +1917,14 @@ namespace ngfem
         // ud.remember[proxy] = Matrix<> (ir_facet.Size(), proxy->Dimension());
         ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
         IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-        if (proxy->IsOther()) 
-          // proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.remember[proxy], lh);
-          // ud.remember[proxy] = 0.0;
-          ud.GetMemory(proxy) = 0.0;
+        if (proxy->IsOther())
+          {
+            auto & bv = proxy->BoundaryValues();
+            if (bv)
+              bv->Evaluate (mir1, ud.GetMemory(proxy));
+            else
+              ud.GetMemory(proxy) = 0.0;              
+          }
         else
           proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
       }
