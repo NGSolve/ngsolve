@@ -96,8 +96,8 @@ namespace netgen
 	 domain_bbox.Increase (0.01 * domain_bbox.Diam());
 	 
 
-         for (int qstep = 1; qstep <= 3; qstep++)
-         // for (int qstep = 0; qstep <= 3; qstep++)  // for hex-filling
+         // for (int qstep = 1; qstep <= 3; qstep++)
+         for (int qstep = 0; qstep <= 0; qstep++)  // for hex-filling
 	  {
 	    // cout << "openquads = " << mesh3d.HasOpenQuads() << endl;
 	    if (mesh3d.HasOpenQuads())
@@ -108,8 +108,8 @@ namespace netgen
 		switch (qstep)
 		  {
 		  case 0:
-		    // rulefile = "/Users/joachim/gitlab/netgen/rules/hexa.rls";
-		    rulep = hexrules;
+                    rulefile = "/Users/joachim/gitlab/netgen/rules/hexa.rls";
+		    // rulep = hexrules;
 		    break;
 		  case 1:
 		    rulefile += "/rules/prisms2.rls";
@@ -125,8 +125,8 @@ namespace netgen
 		    break;
 		  }
 		
-		//		Meshing3 meshing(rulefile);
-		Meshing3 meshing(rulep); 
+                Meshing3 meshing(rulefile);
+		// Meshing3 meshing(rulep); 
 		
 		MeshingParameters mpquad = mp;
 		

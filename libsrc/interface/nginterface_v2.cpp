@@ -535,10 +535,6 @@ namespace netgen
 
 
 
-
-
-
-
   
   
   template <> DLL_HEADER void Ngx_Mesh :: 
@@ -600,6 +596,110 @@ namespace netgen
 
 
 
+
+
+
+#ifdef __AVX2__
+#include <immintrin.h>
+  
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<1,1> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    cout << "multi-eltrafo simd called, 1,1,simd" << endl;
+  }
+
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<2,2> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    for (int i = 0; i < npts; i++)
+      {
+        double hxi[4][2];
+        double hx[4][2];
+        double hdxdxi[4][4];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 2; k++)
+            hxi[j][k] = ((double*)&(xi[k]))[j];
+        MultiElementTransformation<2,2> (elnr, 4, &hxi[0][0], 2, &hx[0][0], 2, &hdxdxi[0][0], 4);
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 2; k++)
+            ((double*)&(x[k]))[j] = hx[j][k];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 4; k++)
+            ((double*)&(dxdxi[k]))[j] = hdxdxi[j][k];
+        
+        xi += sxi;
+        x += sx;
+        dxdxi += sdxdxi;
+      }
+  }
+
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<3,3> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    for (int i = 0; i < npts; i++)
+      {
+        double hxi[4][3];
+        double hx[4][3];
+        double hdxdxi[4][9];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 3; k++)
+            hxi[j][k] = ((double*)&(xi[k]))[j];
+        MultiElementTransformation<3,3> (elnr, 4, &hxi[0][0], 3, &hx[0][0], 3, &hdxdxi[0][0], 9);
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 3; k++)
+            ((double*)&(x[k]))[j] = hx[j][k];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 9; k++)
+            ((double*)&(dxdxi[k]))[j] = hdxdxi[j][k];
+        
+        xi += sxi;
+        x += sx;
+        dxdxi += sdxdxi;
+      }
+  }
+
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<0,1> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    cout << "multi-eltrafo simd called, 0,1,simd" << endl;
+  }
+
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<1,2> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    cout << "multi-eltrafo simd called, 1,2,simd" << endl;
+  }
+
+  template<> DLL_HEADER void Ngx_Mesh :: 
+  MultiElementTransformation<2,3> (int elnr, int npts,
+                                   const __m256d * xi, size_t sxi,
+                                   __m256d * x, size_t sx,
+                                   __m256d * dxdxi, size_t sdxdxi) const
+  {
+    cout << "multi-eltrafo simd called, 2,3,simd" << endl;
+  }
+
+#endif
+  
+
+
+
+  
 
 
   template <>

@@ -233,11 +233,11 @@ namespace netgen
     /// sxi ... step xi
     /// x ..... DIM_SPACE global coordinates
     /// dxdxi...DIM_SPACE x DIM_EL Jacobian matrix (row major storage)
-    template <int DIM_EL, int DIM_SPACE> 
+    template <int DIM_EL, int DIM_SPACE, typename T> 
     void MultiElementTransformation (int elnr, int npts,
-                                     const double * xi, size_t sxi,
-                                     double * x, size_t sx,
-                                     double * dxdxi, size_t sdxdxi) const;
+                                     const T * xi, size_t sxi,
+                                     T * x, size_t sx,
+                                     T * dxdxi, size_t sdxdxi) const;
     
 
     template <int DIM>
