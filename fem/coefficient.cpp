@@ -2520,6 +2520,7 @@ public:
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       // static Timer t("IfPos::EvalSIMD"); RegionTimer reg(t);
+      /*
 #ifdef VLA
       SIMD<double> hmem1[ir.Size()];
       AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
@@ -2538,19 +2539,23 @@ public:
       SIMD<double> hmem3[100];
       AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
 #endif
+      */
+      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*values.Height());
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*values.Height());
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
 
-      /*
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.Width(); i++)
-          values(k,i) = (if_values(i) > 0) ? then_values(k,i) : else_values(k,i);
-      */
       for (int k = 0; k < values.Height(); k++)
         for (int i = 0; i < values.VWidth(); i++)
-          values.Get(k,i) = ngstd::IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
+          values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                          then_values.Get(k,i),
+                                          else_values.Get(k,i)).Data();
     }
 
     

@@ -901,11 +901,14 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
+    /*
 #ifdef VLA
     SIMD<double> hmem[values.Height()*values.VWidth()];
 #else
     SIMD<double> hmem[100];
 #endif
+    */
+    STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
     AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0].Data());
 
     c1->Evaluate (ir, values);
