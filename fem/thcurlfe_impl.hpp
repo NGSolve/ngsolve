@@ -6,12 +6,12 @@
 namespace ngfem
 {
 
-  template <int DIM>
-  class HCurl_Shape : public Vec<DIM>
+  template <int DIM, typename SCAL = double>
+  class HCurl_Shape : public Vec<DIM,SCAL>
   {
   public:
     template <typename T>
-    HCurl_Shape (T shape) : Vec<DIM>(shape.Value()) { ; }
+    HCurl_Shape (T shape) : Vec<DIM,SCAL>(shape.Value()) { ; }
   };
 
   template <int DIM>
@@ -126,6 +126,52 @@ namespace ngfem
     for (int i = 0; i < ir.Size(); i++)
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }
+
+  
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  {
+    cout << "thucrlfe - simd - evaluate not implemeted" << endl;
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  {
+    cout << "thucrlfe - simd - evaluatecurl not implemeted" << endl;    
+  }
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareMatrix<double> values,
+            BareSliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        T_CalcShape (&adp(0), SBLambda ([&] (int j, HCurl_Shape<DIM,SIMD<double>> shape)
+                                        {
+                                          SIMD<double> sum = 0.0;
+                                          for (int k = 0; k < DIM; k++)
+                                            sum += shape(k) * values.Get(k,i);
+                                          coefs(j) += HSum(sum);
+                                        }));
+      }
+    
+  }
+
+  
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+                BareSliceVector<> coefs) const
+  {
+    cout << "thucrlfe - simd - addcurltrans e not implemeted" << endl;    
+  }
+  
+  
 
 #endif
 }
