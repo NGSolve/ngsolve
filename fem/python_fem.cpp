@@ -615,9 +615,11 @@ void ExportCoefficientFunction()
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       // static Timer t("CoordCF::EvalSIMD"); RegionTimer reg(t);      
-      auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      // auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      auto points = ir.GetPoints();
       for (int i = 0; i < ir.Size(); i++)
-        values.Get(i) = ir22[i].Point()(dir).Data();
+        values.Get(i) = points.Get(i, dir);
+        // values.Get(i) = ir22[i].Point()(dir).Data();
     }
   };
 

@@ -3123,8 +3123,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     inline static int CalcTrigExt (int n, Sx x, Sy y, T && values)
     {
       Sy fy = (1-y)*(1-y);
-      Sx p3 = 0;
-      Sx p2 = -1;
+      Sx p3(0);
+      Sx p2(-1);
       Sx p1 = x;
 
       for (int j=2; j<=n; j++)
@@ -3188,8 +3188,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     template <class Sx, class T>
     inline static int Calc (int n, Sx x, T & values)
     {
-      Sx p3 = 0.0;
-      Sx p2 = -1.0;
+      Sx p3(0.0);
+      Sx p2(-1.0);
       Sx p1 = x;
 
       for (int j=2; j<=n; j++)
