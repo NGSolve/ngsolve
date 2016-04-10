@@ -342,6 +342,21 @@ namespace ngfem
       y = mshape2 * hx; 
       */
     }
+
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, ABareMatrix<double> y)
+    {
+      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+    }    
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                ABareMatrix<double> y, BareSliceVector<double> x)
+    {
+       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
+    }    
+    
+    
   };
 
 

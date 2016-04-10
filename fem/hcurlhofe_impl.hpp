@@ -127,7 +127,7 @@ namespace ngfem
     INT<2> e = GetEdgeSort (0, vnums);	  
     
     //Nedelec low order edge shape function 
-    shape[0] = uDv_minus_vDu<1> (lam[e[0]], lam[e[1]]);
+    shape[0] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
     int p = order_cell[0]; 
     //HO-Edge shapes (Gradient Fields)   
@@ -140,7 +140,7 @@ namespace ngfem
                           lam[e[0]]*lam[e[1]], adpol1);
         
         for(int j = 0; j < p; j++) 	      
-          shape[j+1] = Du<1> (adpol1[j]);
+          shape[j+1] = Du (adpol1[j]);
       }
   }
   
@@ -165,7 +165,7 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
 
 	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<2> (lam[e[0]], lam[e[1]]);
+        shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
 	int p = order_edge[i]; 
 	//HO-Edge shapes (Gradient Fields)   
@@ -179,7 +179,7 @@ namespace ngfem
                               // adpol1
                               SBLambda ([&](int nr, Tx val)
                                         {
-                                          shape[ii++] = Du<2> (val);
+                                          shape[ii++] = Du (val);
                                         }));
 	  }
       }   
@@ -203,7 +203,7 @@ namespace ngfem
                                      lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                      SBLambda ([&](int nr, Tx val)
                                                {
-                                                 shape[ii++] = Du<2> (val);
+                                                 shape[ii++] = Du (val);
                                                }));
             /*
             for (int j = 0; j < p-1; j++)
@@ -215,7 +215,7 @@ namespace ngfem
 	// other combination
 	for (int j = 0; j < p-1; j++)
 	  for (int k = 0; k < p-1-j; k++, ii++)
-            shape[ii] = uDv_minus_vDu<2> (adpol2[k], adpol1[j]);     
+            shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);     
 
         /*
         Tx x = lam[fav[0]];
@@ -238,7 +238,7 @@ namespace ngfem
 
 	// rec_pol * Nedelec0 
 	for (int j = 0; j < p-1; j++, ii++)
-          shape[ii] = wuDv_minus_wvDu<2> (lam[fav[1]], lam[fav[2]], adpol2[j]);
+          shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
         /*
         leg.EvalMult 
           (p-2, 2*x-1, x, 
@@ -277,7 +277,7 @@ namespace ngfem
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
 	// Nedelec0-shapes
-	shape[i] = uDv<2> (0.5 * lam_e, xi); 
+	shape[i] = uDv (0.5 * lam_e, xi); 
 
 	// High Order edges ... Gradient fields 
 	if(usegrad_edge[i])
@@ -318,7 +318,7 @@ namespace ngfem
                       LegendrePolynomial::EvalMult (p[1]-1, xi(1), val, 
                                                     SBLambda([&](int i2, Tx v2)
                                                              {
-                                                               shape[ii++] = Du<2> (v2);
+                                                               shape[ii++] = Du (v2);
                                                              }));
                     }));
       }
@@ -353,14 +353,14 @@ namespace ngfem
     //Rotation of Gradient fields 
     for (int k = 0; k < p[0]; k++)
       for (int j= 0; j < p[1]; j++)
-        shape[ii++] = uDv_minus_vDu<2> (pol_eta[j], pol_xi[k]);
+        shape[ii++] = uDv_minus_vDu (pol_eta[j], pol_xi[k]);
 
     //Missing ones 
     for(int j = 0; j< p[0]; j++)
-      shape[ii++] = uDv<2> (0.5*pol_xi[j], eta);
+      shape[ii++] = uDv (0.5*pol_xi[j], eta);
 
     for(int j = 0; j < p[1]; j++)
-      shape[ii++] = uDv<2> (0.5*pol_eta[j], xi); 
+      shape[ii++] = uDv (0.5*pol_eta[j], xi); 
   }
 
 
@@ -385,7 +385,7 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec low order edge shape function 
-        shape[i] = uDv_minus_vDu<3> (lam[e[0]], lam[e[1]]);
+        shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
 
 	//HO-Edge shape functions (Gradient Fields) 	
 	if (p > 0 && usegrad_edge[i]) 
@@ -397,7 +397,7 @@ namespace ngfem
 			      lam[e[0]]*lam[e[1]], 
                               SBLambda ([&](int i, Tx val)
                                         {
-                                          shape[ii++] = Du<3> (val);
+                                          shape[ii++] = Du (val);
                                         }));
 	  }
       }
@@ -424,18 +424,18 @@ namespace ngfem
                                              lam[fav[0]]*lam[fav[1]]*lam[fav[2]], 
                                              SBLambda ([&](int nr, Tx val)
                                                        {
-                                                         shape[ii++] = Du<3> (val);
+                                                         shape[ii++] = Du (val);
                                                        }));
             }
 
           // other combination
           for (int j = 0; j <= p-2; j++)
             for (int k = 0; k <= p-2-j; k++, ii++)
-              shape[ii] = uDv_minus_vDu<3> (adpol2[k], adpol1[j]);
+              shape[ii] = uDv_minus_vDu (adpol2[k], adpol1[j]);
           
           // type 3
           for (int j = 0; j <= p-2; j++, ii++)
-            shape[ii] = wuDv_minus_wvDu<3> (lam[fav[1]], lam[fav[2]], adpol2[j]);
+            shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpol2[j]);
         }
 
     
@@ -449,20 +449,20 @@ namespace ngfem
           for (int i = 0; i <= p-3; i++)
             for (int j = 0; j <= p-3-i; j++)
               for (int k = 0; k <= p-3-i-j; k++)
-                shape[ii++] = Du<3> (adpol1[i] * adpol2[j] * adpol3[k]);
+                shape[ii++] = Du (adpol1[i] * adpol2[j] * adpol3[k]);
         
         // other combinations
         for (int i = 0; i <= p-3; i++)
           for (int j = 0; j <= p-3-i; j++)
             for (int k = 0; k <= p-3-i-j; k++)
               { // not Sabine's original ...
-                shape[ii++] = uDv_minus_vDu<3> (adpol1[i], adpol2[j] * adpol3[k]);
-                shape[ii++] = uDv_minus_vDu<3> (adpol1[i] * adpol3[k], adpol2[j]);
+                shape[ii++] = uDv_minus_vDu (adpol1[i], adpol2[j] * adpol3[k]);
+                shape[ii++] = uDv_minus_vDu (adpol1[i] * adpol3[k], adpol2[j]);
               }
         
         for (int j= 0; j <= p-3; j++)
           for (int k = 0; k <= p-3-j; k++)
-            shape[ii++] = wuDv_minus_wvDu<3> (lam[0], lam[3], adpol2[j] * adpol3[k]);
+            shape[ii++] = wuDv_minus_wvDu (lam[0], lam[3], adpol2[j] * adpol3[k]);
       }
   }
 
@@ -497,7 +497,7 @@ namespace ngfem
         INT<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec0
-        shape[i] = wuDv_minus_wvDu<3> (lam[e[0]], lam[e[1]], muz[e[1]]);
+        shape[i] = wuDv_minus_wvDu (lam[e[0]], lam[e[1]], muz[e[1]]);
    
 	//high order \nabla (P_edge(x,y) * muz)
 	if (p > 0 && usegrad_edge[i])
@@ -516,7 +516,7 @@ namespace ngfem
             EdgeOrthoPol::
 	      EvalScaledMult (p-1, xi, eta, bub, adpolxy1);
 	    for(int j = 0; j <= p-1; j++)
-              shape[ii++] = Du<3> (adpolxy1[j]);
+              shape[ii++] = Du (adpolxy1[j]);
 	  }
       }
 
@@ -526,7 +526,7 @@ namespace ngfem
 	int p = order_edge[i]; 
         INT<2> e = GetEdgeSort (i, vnums);	  
 
-        shape[i] = wuDv_minus_wvDu<3> (muz[e[0]], muz[e[1]], lam[e[1]]);
+        shape[i] = wuDv_minus_wvDu (muz[e[0]], muz[e[1]], lam[e[1]]);
 	
 	//high order edges:  \nabla (T_ORTHOPOL^{p+1}(2z-1) * lam(x,y))
 	if(p > 0 && usegrad_edge[i])
@@ -542,7 +542,7 @@ namespace ngfem
 			muz[e[0]]*muz[e[1]]*lam[e[1]], adpolz);
 	    
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<3> (adpolz[j]);
+              shape[ii++] = Du (adpolz[j]);
 	  }
       }
 
@@ -565,7 +565,7 @@ namespace ngfem
                                        lam[fav[0]]*lam[fav[1]]*lam[fav[2]]*muz[fav[2]], 
                                        SBLambda ([&](int nr, Tx val)
                                                  {
-                                                   shape[ii++] = Du<3> (val);
+                                                   shape[ii++] = Du (val);
                                                  }));
             }
         }
@@ -587,11 +587,11 @@ namespace ngfem
 	// rotations of grad-fields => grad(uj)*vk*w -  uj*grad(vk)*w 
 	for (int j = 0; j <= p-2; j++)
 	  for (int k = 0; k <= p-2-j; k++)
-            shape[ii++] = wuDv_minus_wvDu<3> (adpolxy2[k], adpolxy1[j], muz[fav[2]]);
+            shape[ii++] = wuDv_minus_wvDu (adpolxy2[k], adpolxy1[j], muz[fav[2]]);
 
 	//  Ned0*adpolxy2[j]*muz 
 	for (int j = 0; j <= p-2; j++,ii++)
-          shape[ii] = wuDv_minus_wvDu<3> (lam[fav[1]], lam[fav[2]], adpolxy2[j]*muz[fav[2]]);
+          shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpolxy2[j]*muz[fav[2]]);
       }
     
 
@@ -621,7 +621,7 @@ namespace ngfem
               // Gradientfields nabla(polxy*polz) 
               for (int k = 0; k <= p[0]-1; k++)
                 for (int j = 0; j <= p[1]-1; j++)
-                  shape[ii++] = Du<3> (adpolxy1[k] * adpolz[j]);
+                  shape[ii++] = Du (adpolxy1[k] * adpolz[j]);
             }
         }
         
@@ -660,11 +660,11 @@ namespace ngfem
 	if (vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) 
 	  for (int k = 0; k <= p[0]-1; k++)
 	    for (int j = 0; j <= p[1]-1; j++)
-              shape[ii++] = uDv_minus_vDu<3> (adpolz[j], adpolxy1[k]);
+              shape[ii++] = uDv_minus_vDu (adpolz[j], adpolxy1[k]);
 	else
 	  for (int j = 0; j <= p[0]-1; j++)
 	    for (int k = 0; k <= p[1]-1; k++)
-              shape[ii++] = uDv_minus_vDu<3> (adpolxy1[k], adpolz[j]);
+              shape[ii++] = uDv_minus_vDu (adpolxy1[k], adpolz[j]);
 	
 	// Type 3 
 	// (ned0_trig)*polz, (ned0_quad)* polxy 
@@ -672,16 +672,16 @@ namespace ngfem
 	if(vnums[faces[i][ftrig]] > vnums[faces[i][fz]]) // p = (p_trig,p_z) 
 	  {
 	    for(int j=0;j<=p[0]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
+              shape[ii++] = wuDv_minus_wvDu (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
 	    for(int j=0;j<=p[1]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
+              shape[ii++] = wuDv_minus_wvDu (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
 	  }
 	else 
 	  {
 	    for(int j=0;j<=p[0]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
+              shape[ii++] = wuDv_minus_wvDu (lam[faces[i][ftrig]], lam[faces[i][fmax]], adpolz[j]);
 	    for(int j=0;j<=p[1]-1;j++) 
-              shape[ii++] = wuDv_minus_wvDu<3> (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
+              shape[ii++] = wuDv_minus_wvDu (muz[faces[i][fz]], muz[faces[i][fmax]], adpolxy1[j]);
 	  }
       }
     
@@ -699,7 +699,7 @@ namespace ngfem
             
             for (int i = 0; i < nf; i++)
               for (int k = 0; k <= p[2]-1; k++)
-                shape[ii++] = Du<3> (pol_trig[i] * adpolz[k]);
+                shape[ii++] = Du (pol_trig[i] * adpolz[k]);
           }
 
 
@@ -720,8 +720,8 @@ namespace ngfem
 	  for(int j=0;j<=order_cell[0]-2-i;j++)
 	    for(int k=0;k<=order_cell[2]-1;k++)
 	      {
-                shape[ii++] = wuDv_minus_wvDu<3> (adpolxy1[i],adpolxy2[j],adpolz[k]);
-                shape[ii++] = uDv_minus_vDu<3> (adpolxy1[i],adpolxy2[j]*adpolz[k]);
+                shape[ii++] = wuDv_minus_wvDu (adpolxy1[i],adpolxy2[j],adpolz[k]);
+                shape[ii++] = uDv_minus_vDu (adpolxy1[i],adpolxy2[j]*adpolz[k]);
 	      }
 
 	// Type 3 
@@ -730,11 +730,11 @@ namespace ngfem
 	// double ned_trig[2] = {y.Value(),-x.Value()};  
 	for(int j=0;j<=order_cell[0]-2;j++) 
 	  for (int k=0;k<=order_cell[2]-1;k++) 
-            shape[ii++] = wuDv_minus_wvDu<3> (x,y, adpolxy2[j]*adpolz[k]);
+            shape[ii++] = wuDv_minus_wvDu (x,y, adpolxy2[j]*adpolz[k]);
 
     	for(int i = 0; i <= order_cell[0]-2; i++) 
 	  for(int j = 0; j <= order_cell[0]-2-i; j++) 
-            shape[ii++] = wuDv_minus_wvDu<3> (z,1-z, adpolxy1[i]*adpolxy2[j]);
+            shape[ii++] = wuDv_minus_wvDu (z,1-z, adpolxy1[i]*adpolxy2[j]);
       }
   }
 
@@ -769,7 +769,7 @@ namespace ngfem
         Tx bub = 0.25 * lam_e * (1 - xi*xi);
 
 	// Nedelec0-shapes
-	shape[i] = uDv<3> (0.5 * lam_e, xi); 
+	shape[i] = uDv (0.5 * lam_e, xi); 
 
 	// High Order edges ... Gradient fields 
 	if(p > 0 && usegrad_edge[i])
@@ -780,7 +780,7 @@ namespace ngfem
 			xi, bub, pol_xi);
 
 	    for (int j = 0; j < p; j++)
-              shape[ii++] = Du<3> (pol_xi[j]);
+              shape[ii++] = Du (pol_xi[j]);
 	  }
       }
     
@@ -808,7 +808,7 @@ namespace ngfem
               // Gradientfields nabla(polxy*polz) 
               for (int k = 0; k <= p[0]-1; k++)
                 for (int j = 0; j <= p[1]-1; j++)
-                  shape[ii++] = Du<3> (pol_xi[k] * pol_eta[j]);
+                  shape[ii++] = Du (pol_xi[k] * pol_eta[j]);
             }
         }
 
@@ -846,14 +846,14 @@ namespace ngfem
 	//Rotation of Gradient fields 
 	for (int k = 0; k < p[0]; k++)
 	  for (int j= 0; j < p[1]; j++)
-            shape[ii++] = uDv_minus_vDu<3> (pol_eta[j], lam_f * pol_xi[k]);
+            shape[ii++] = uDv_minus_vDu (pol_eta[j], lam_f * pol_xi[k]);
 
 	// Missing ones 
 	for(int j = 0; j < p[0];j++) 
-          shape[ii++] = wuDv_minus_wvDu<3> (Tx(0.5), eta, pol_xi[j]*lam_f); 
+          shape[ii++] = wuDv_minus_wvDu (Tx(0.5), eta, pol_xi[j]*lam_f); 
 
 	for(int j = 0; j < p[1];j++) 
-          shape[ii++] = wuDv_minus_wvDu<3> (Tx(0.5), xi, pol_eta[j]*lam_f); 
+          shape[ii++] = wuDv_minus_wvDu (Tx(0.5), xi, pol_eta[j]*lam_f); 
       }
 
 
@@ -872,7 +872,7 @@ namespace ngfem
               {
                 Tx pxy = pol_xi[i] * pol_eta[j];
                 for (int k = 0; k < p[2]; k++)
-                  shape[ii++] = Du<3> (pxy * pol_zeta[k]);
+                  shape[ii++] = Du (pxy * pol_zeta[k]);
               }
         }
     }
@@ -897,21 +897,21 @@ namespace ngfem
       for(int j=0; j<order_cell[1]; j++) 
 	for(int k=0; k<order_cell[2]; k++)
 	  {
-            shape[ii++] = uDv_minus_vDu<3> (pol_xi[i] * pol_eta[j], pol_zeta[k]);
-            shape[ii++] = uDv_minus_vDu<3> (pol_xi[i], pol_eta[j] * pol_zeta[k]);
+            shape[ii++] = uDv_minus_vDu (pol_xi[i] * pol_eta[j], pol_zeta[k]);
+            shape[ii++] = uDv_minus_vDu (pol_xi[i], pol_eta[j] * pol_zeta[k]);
 	  } 
     
     for(int i = 0; i < order_cell[0]; i++) 
       for(int j = 0; j < order_cell[1]; j++)
-        shape[ii++] = wuDv_minus_wvDu<3> (z,1-z,pol_xi[i] * pol_eta[j]);
+        shape[ii++] = wuDv_minus_wvDu (z,1-z,pol_xi[i] * pol_eta[j]);
 
     for(int i = 0; i < order_cell[0]; i++) 
       for(int k = 0; k < order_cell[2]; k++)
-        shape[ii++] = wuDv_minus_wvDu<3> (y,1-y,pol_xi[i] * pol_zeta[k]);
+        shape[ii++] = wuDv_minus_wvDu (y,1-y,pol_xi[i] * pol_zeta[k]);
 
     for(int j = 0; j < order_cell[1]; j++)
       for(int k = 0; k < order_cell[2]; k++)
-        shape[ii++] = wuDv_minus_wvDu<3> (x,1-x,pol_eta[j] * pol_zeta[k]);
+        shape[ii++] = wuDv_minus_wvDu (x,1-x,pol_eta[j] * pol_zeta[k]);
   }
 
 
@@ -956,7 +956,7 @@ namespace ngfem
 	Tx xi  = sigma[e[1]] - sigma[e[0]];   
 	Tx lam_t = lambda[e[1]] + lambda[e[0]]; 
         
-        shape[i] = uDv<3> (0.5 * (1-z)*(1-z)*lam_t, xi);
+        shape[i] = uDv (0.5 * (1-z)*(1-z)*lam_t, xi);
 
 	if(p > 0 && usegrad_edge[i])
 	  {
@@ -967,7 +967,7 @@ namespace ngfem
 			      xi*(1-z), 1-z, bub,
                               SBLambda ([&](int i, Tx val)
                                         {
-                                          shape[ii++] = Du<3>(val);
+                                          shape[ii++] = Du(val);
                                         }));
 	  }
       }
@@ -978,7 +978,7 @@ namespace ngfem
         int p = order_edge[i];
         INT<2> e = GetEdgeSort (i, vnums);	  
 
-        shape[i] = uDv_minus_vDu<3> (lami[e[0]], lami[e[1]]);
+        shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
 
 	if (p > 0 && usegrad_edge[i])
 	  {
@@ -992,7 +992,7 @@ namespace ngfem
                               xi, lam_e, bub, 
                               SBLambda ([&](int i, Tx val)
                                         {
-                                          shape[ii++] = Du<3>(val);
+                                          shape[ii++] = Du(val);
                                         }));
 	  }
       }
@@ -1021,7 +1021,7 @@ namespace ngfem
                 EvalMult (p-2, bary[fav[0]], bary[fav[1]], bub, 
                           SBLambda ([&](int nr, Tx val)
                                     {
-                                      shape[ii++] = Du<3> (val);
+                                      shape[ii++] = Du (val);
                                     }));
             }
 
@@ -1040,11 +1040,11 @@ namespace ngfem
 	  // Type 2:  
 	  for(int j=0;j<= p-2; j++)
 	    for(int k=0;k<=p-2-j; k++)
-              shape[ii++] = uDv_minus_vDu<3> (pol_eta[k], pol_xi[j]);
+              shape[ii++] = uDv_minus_vDu (pol_eta[k], pol_xi[j]);
 
 	  // Type 3: Nedelec-based ones (Ned_0*v_j)
 	  for(int j=0;j<=p-2;j++)
-            shape[ii++] = wuDv_minus_wvDu<3> (bary[fav[1]], bary[fav[2]], pol_eta[j]);
+            shape[ii++] = wuDv_minus_wvDu (bary[fav[1]], bary[fav[2]], pol_eta[j]);
 	}
 
 
@@ -1073,7 +1073,7 @@ namespace ngfem
 
             for (int k = 0; k <= px-1; k++) 
               for (int j = 0; j <= py-1; j++, ii++) 
-                shape[ii] = Du<3> (pol_xi[k] * pol_eta[j]);
+                shape[ii] = Du (pol_xi[k] * pol_eta[j]);
           }
         
 	int fmax = 0;
@@ -1095,14 +1095,14 @@ namespace ngfem
 	// Type 2: 
 	for (int k = 0; k < px; k++) 
 	  for (int j = 0; j < py; j++) 
-            shape[ii++] = uDv_minus_vDu<3> (pol_eta[j], pol_xi[k]);
+            shape[ii++] = uDv_minus_vDu (pol_eta[j], pol_xi[k]);
 
 	// Type 3:
 	for (int k = 0; k < px; k++)
-          shape[ii++] = uDv<3> (0.5*pol_xi[k]*fac, eta);
+          shape[ii++] = uDv (0.5*pol_xi[k]*fac, eta);
 
 	for (int k = 0; k < py; k++)
-          shape[ii++] = uDv<3> (0.5*pol_eta[k] /* *fac */, xi); 
+          shape[ii++] = uDv (0.5*pol_eta[k] /* *fac */, xi); 
       }
 
     if (order_cell[0] >= 2)
@@ -1128,7 +1128,7 @@ namespace ngfem
               {
                 for(int i=0;i<=k;i++)
                   for(int j=0;j<=k;j++)
-                    shape[ii++] = Du<3> (pol_xi[i]*pol_eta[j]*pol_zeta[k]);
+                    shape[ii++] = Du (pol_xi[i]*pol_eta[j]*pol_zeta[k]);
               }
 	  }
 	
@@ -1138,17 +1138,17 @@ namespace ngfem
 	for(int k=0;k<= pp-2;k++)
 	  for(int i=0;i<=k;i++)
 	    for(int j=0;j<=k;j++,ii++)
-              shape[ii] = uDv<3> (pol_xi[i]*pol_zeta[k], pol_eta[j]);
+              shape[ii] = uDv (pol_xi[i]*pol_zeta[k], pol_eta[j]);
 
 	// Type 2b: shape = v_j w_k \nabla (xt) 
 	//          shape = u_i w_k \nabla (yt)
 	for(int k = 0;k<= pp-2;k++)
 	  for(int j=0;j<=k;j++) 
-            shape[ii++] = uDv<3> (pol_eta[j]*pol_zeta[k], xt);
+            shape[ii++] = uDv (pol_eta[j]*pol_zeta[k], xt);
 	
 	for(int  k = 0;k<= pp-2;k++)
 	  for (int i=0;i<=k;i++)
-            shape[ii++] = uDv<3> (pol_xi[i]*pol_zeta[k], yt);
+            shape[ii++] = uDv (pol_xi[i]*pol_zeta[k], yt);
 	
 	// 3rd component spans xi^i eta^j zeta^(k-1), i,j <= k
 	// pol_zeta starts linear in zeta 
@@ -1160,7 +1160,7 @@ namespace ngfem
 	for(int k=0;k<= pp-1;k++)
 	  for(int i=0;i<=k;i++)
 	    for(int j=0;j<=k;j++,ii++)
-              shape[ii] = uDv<3> (pol_eta[j] * pol_xi[i] * pol_zeta[k], z);
+              shape[ii] = uDv (pol_eta[j] * pol_xi[i] * pol_zeta[k], z);
       }
   }
   

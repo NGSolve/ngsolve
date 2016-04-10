@@ -138,7 +138,7 @@ namespace ngfem
           Tx xi  = sigma[ee]-sigma[es];
           Tx lam_e = lami[ee]+lami[es];  
           
-          shape[i] = uDv<2> (0.5 * lam_e, xi); 
+          shape[i] = uDv (0.5 * lam_e, xi); 
         }
     }
   };
@@ -241,7 +241,7 @@ namespace ngfem
       
       const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
       for (int i = 0; i < 3; i++)
-        shape[i] = uDv_minus_vDu<2> (lami[edges[i][0]], lami[edges[i][1]]);
+        shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
     }
   };
 
@@ -259,8 +259,8 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
       for (int i = 0; i < 3; i++)
         {
-          shape[i] = uDv_minus_vDu<2> (lami[edges[i][0]], lami[edges[i][1]]);
-          shape[i+3] = Du<2> (lami[edges[i][0]]*lami[edges[i][1]]);
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+3] = Du (lami[edges[i][0]]*lami[edges[i][1]]);
         }
     }
   };
@@ -282,16 +282,16 @@ namespace ngfem
           Tx lam1 = lami[edges[i][0]];
           Tx lam2 = lami[edges[i][1]];
 
-          shape[i] = uDv_minus_vDu<2> (lam1, lam2);
-          shape[i+3] = Du<2> (lam1*lam2);
-          shape[i+6] = Du<2> (lam1*lam2*(lam1-lam2));
+          shape[i] = uDv_minus_vDu (lam1, lam2);
+          shape[i+3] = Du (lam1*lam2);
+          shape[i+6] = Du (lam1*lam2*(lam1-lam2));
         }
 
       const FACE * faces = ElementTopology::GetFaces (ET_TRIG); 
       for (int k = 0; k < 3; k++)
         {
           int k1 = (k+1)%3, k2 = (k+2)%3;
-          shape[9+k] = uDv_minus_vDu<2> (lami[faces[0][k]],
+          shape[9+k] = uDv_minus_vDu (lami[faces[0][k]],
                                          lami[faces[0][k1]]*lami[faces[0][k2]]);
         }
 
@@ -412,7 +412,7 @@ namespace ngfem
 
       const EDGE * edges = ElementTopology::GetEdges (ET_TET);
       for (int i = 0; i < 6; i++)
-        shape[i] = uDv_minus_vDu<3> (lami[edges[i][0]], lami[edges[i][1]]);
+        shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
     }
   };
 
@@ -431,8 +431,8 @@ namespace ngfem
       const EDGE * edges = ElementTopology::GetEdges (ET_TET);
       for (int i = 0; i < 6; i++)
         {
-          shape[i] = uDv_minus_vDu<3> (lami[edges[i][0]], lami[edges[i][1]]);
-          shape[i+6] = Du<3> (lami[edges[i][0]]*lami[edges[i][1]]);
+          shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
+          shape[i+6] = Du (lami[edges[i][0]]*lami[edges[i][1]]);
         }
     }
   };
@@ -451,9 +451,9 @@ namespace ngfem
         {
           Tx lam1 = lami[edges[i][0]];
           Tx lam2 = lami[edges[i][1]];
-          shape[i] = uDv_minus_vDu<3> (lam1, lam2);
-          shape[i+6] = Du<3> (lam1*lam2);
-          shape[i+12] = Du<3> (lam1*lam2*(lam1-lam2));
+          shape[i] = uDv_minus_vDu (lam1, lam2);
+          shape[i+6] = Du (lam1*lam2);
+          shape[i+12] = Du (lam1*lam2*(lam1-lam2));
         }
 
       const FACE * faces = ElementTopology::GetFaces (ET_TET); 
@@ -461,7 +461,7 @@ namespace ngfem
         for (int k = 0; k < 3; k++)
           {
             int k1 = (k+1)%3, k2 = (k+2)%3;
-            shape[18+3*i+k] = uDv_minus_vDu<3> (lami[faces[i][k]],
+            shape[18+3*i+k] = uDv_minus_vDu (lami[faces[i][k]],
                                                 lami[faces[i][k1]]*lami[faces[i][k2]]);
           }
     }
@@ -659,14 +659,14 @@ namespace ngfem
       for (int i = 0; i < 6; i++)
         {
           int es = edges[i][0], ee = edges[i][1]; 
-          shape[i] = wuDv_minus_wvDu<3> (lami[es], lami[ee], muz[ee]);
+          shape[i] = wuDv_minus_wvDu (lami[es], lami[ee], muz[ee]);
         }
       
       //Vertical Edge Shapes
       for (int i = 6; i < 9; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
-          shape[i] = wuDv_minus_wvDu<3> (muz[es], muz[ee], lami[ee]);
+          shape[i] = wuDv_minus_wvDu (muz[es], muz[ee], lami[ee]);
         }
     }
   };
