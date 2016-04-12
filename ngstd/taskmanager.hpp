@@ -73,7 +73,6 @@ namespace ngstd
     ~TaskManager();
 
 
-    void StartWorkersWithCppThreads();
     void StartWorkers();
     void StopWorkers();
 
