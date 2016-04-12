@@ -55,6 +55,9 @@ namespace ngstd
     atomic<int> done;
     atomic<int> active_workers;
 
+    int sleep_usecs;
+    bool sleep;
+
     NodeData *nodedata[8];
 
     int num_nodes;
@@ -75,6 +78,13 @@ namespace ngstd
 
     void StartWorkers();
     void StopWorkers();
+
+    void SuspendWorkers(int asleep_usecs = 1000 )
+      {
+        sleep_usecs = asleep_usecs;
+        sleep = true;
+      }
+    void ResumeWorkers() { sleep = false; }
 
     static void SetNumThreads(int amax_threads);
     static int GetMaxThreads() { return max_threads; }
