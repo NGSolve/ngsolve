@@ -293,6 +293,31 @@ template <int D>
 INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
 { return sin(x) / cos(x); }
 
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D> res;
+  double a = std::atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  return res;
+}
+
+
+template <int D>
+INLINE AutoDiffDiff<D> atan (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double a = std::atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -2*x.Value()/((1+x.Value()*x.Value())*(1+x.Value()*x.Value())) * x.DValue(k) * x.DValue(l) + x.DDValue(k,l)/(1+x.Value()*x.Value());
+  return res;
+}
 
 
 
@@ -317,6 +342,9 @@ struct GenericExp {
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
+};
+struct GenericATan {
+  template <typename T> T operator() (T x) const { return atan(x); }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
@@ -572,6 +600,7 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericTan>("tan");
   ExportStdMathFunction<GenericExp>("exp");
   ExportStdMathFunction<GenericLog>("log");
+  ExportStdMathFunction<GenericATan>("atan");
   ExportStdMathFunction<GenericSqrt>("sqrt");
   ExportStdMathFunction<GenericConj>("Conj");
   
