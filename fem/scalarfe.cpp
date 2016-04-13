@@ -190,7 +190,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
   {
     cout << "Evaluate (simd) not implemented for class " << typeid(*this).name() << endl;
   }
@@ -218,7 +218,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, SliceVector<> coefs, AFlatMatrix<double> values) const
+  EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
   {
     cout << "EvaluateGrad (simd) not implemented for class " << typeid(*this).name() << endl;
   }
@@ -240,7 +240,7 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  AddTrans (const SIMD_IntegrationRule & ir, AFlatVector<double> values, SliceVector<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values, BareSliceVector<> coefs) const
   {
     cout << "EvaluateTrans (simd) not implemented for class " << typeid(*this).name() << endl;    
   }
@@ -272,8 +272,8 @@ namespace ngfem
 
   template<int D>
   void ScalarFiniteElement<D> :: 
-  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values,
-                SliceVector<> coefs) const
+  AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+                BareSliceVector<> coefs) const
   {
     throw Exception ("evaluategradtrans (simd) not overloaded");
   }

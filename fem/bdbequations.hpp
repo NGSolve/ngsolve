@@ -100,8 +100,7 @@ namespace ngfem
     }
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                SliceVector<double> x, AFlatMatrix<double> y, 
-                                LocalHeap & lh)
+                             BareSliceVector<double> x, ABareMatrix<double> y)
     {
       Cast(fel).EvaluateGrad (mir, x, y);
     }    
@@ -119,8 +118,7 @@ namespace ngfem
     }
 
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                AFlatMatrix<double> y, SliceVector<double> x, 
-                                LocalHeap & lh)
+                                ABareMatrix<double> y, BareSliceVector<double> x)
     {
       Cast(fel).AddGradTrans (mir, y, x);
     }    
@@ -269,8 +267,7 @@ namespace ngfem
     }
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                             SliceVector<double> x, AFlatMatrix<double> y,
-                             LocalHeap & lh)
+                             BareSliceVector<double> x, ABareMatrix<double> y)
     {
       Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
     }
@@ -307,8 +304,7 @@ namespace ngfem
     }
 
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                                AFlatMatrix<double> y, SliceVector<double> x, 
-                                LocalHeap & lh)
+                                ABareMatrix<double> y, BareSliceVector<double> x)
     {
       Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
     }    

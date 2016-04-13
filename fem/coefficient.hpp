@@ -1030,11 +1030,14 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
+    /*
 #ifdef VLA
     SIMD<double> hmem[values.Height()*values.VWidth()];
 #else
     SIMD<double> hmem[100];
 #endif
+    */
+    STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
     AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0].Data());
 
     c1->Evaluate (ir, values);
@@ -1310,7 +1313,7 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
-    AFlatMatrix<double> temp(ir.Size(), dim1, &hmem[0].Data());
+    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0].Data());
     
     c1->Evaluate (ir, temp);
     values.Row(0) = temp.Row(comp);

@@ -131,7 +131,12 @@ namespace ngcomp
     virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
     {
       return *new (lh) MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
-    }    
+    }
+
+    virtual SIMD_BaseMappedIntegrationRule & operator() (const SIMD_IntegrationRule & ir, Allocator & lh) const
+    {
+      return *new (lh) SIMD_MappedIntegrationRule<DIMS,DIMR> (ir, *this, lh);
+    }
 
     virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
 					 BaseMappedIntegrationRule & bmir) const
@@ -145,24 +150,42 @@ namespace ngcomp
       // static Timer t("eltrans::multipointjacobian"); RegionTimer reg(t);
       MappedIntegrationRule<DIMS,DIMR> & mir = 
 	static_cast<MappedIntegrationRule<DIMS,DIMR> &> (bmir);
-      mesh->mesh.MultiElementTransformation <DIMS,DIMR> (elnr, ir.Size(),
-                                                         &ir[0](0), 
-                                                         ir.Size()>1?
-                                                             &ir[1](0)-&ir[0](0)
-                                                           : 0,
-                                                         &mir[0].Point()(0), 
-                                                         mir.Size()>1?
-                                                             &mir[1].Point()(0)-&mir[0].Point()(0)
-                                                           : 0, 
-                                                         &mir[0].Jacobian()(0,0), 
-                                                         mir.Size()>1?
-                                                             &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0)
-                                                           : 0);
-    
+      
+      mesh->mesh.MultiElementTransformation <DIMS,DIMR>
+        (elnr, ir.Size(),
+         &ir[0](0), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
+         &mir[0].Point()(0), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
+         &mir[0].Jacobian()(0,0), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
+      
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
   }
-};
+
+
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & bmir) const
+    {
+      if (sizeof(IntegrationPoint) % 8 != 0)
+        {
+          cerr << "Integration must should have 8-byte alignment" << endl;
+          exit(1);
+        }
+
+      // static Timer t("eltrans::multipointjacobian"); RegionTimer reg(t);
+      SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
+	static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      
+      mesh->mesh.MultiElementTransformation <DIMS,DIMR>
+        (elnr, ir.Size(),
+         &ir[0](0).Data(), ir.Size()>1 ? &ir[1](0)-&ir[0](0) : 0,
+         &mir[0].Point()(0).Data(), ir.Size()>1 ? &mir[1].Point()(0)-&mir[0].Point()(0) : 0, 
+         &mir[0].Jacobian()(0,0).Data(), ir.Size()>1 ? &mir[1].Jacobian()(0,0)-&mir[0].Jacobian()(0,0) : 0);
+      
+      for (int i = 0; i < ir.Size(); i++)
+        mir[i].Compute();
+    }
+
+  };
   
 
 

@@ -1004,7 +1004,6 @@ public:
     result *= v1(0);
   }
 
-
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
@@ -1025,6 +1024,23 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem1, values.Width());
+    AFlatMatrix<double> temp1(1, values.Width(), &hmem1[0].Data());
+    
+    c1->Evaluate (ir, temp1);
+    c2->Evaluate (ir, values);
+
+    for (int j = 0; j < values.Height(); j++)
+      for (int i = 0; i < values.VWidth(); i++)
+        values.Get(j,i) *= temp1.Get(0,i);
+  }
+
+
+
+  
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result, FlatMatrix<> deriv) const
   {
@@ -1383,19 +1399,6 @@ public:
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
-    /*
-#ifdef VLA
-    SIMD<double> hmem1[DIM*values.VWidth()];
-    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
-    SIMD<double> hmem2[DIM*values.VWidth()];
-    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
-#else
-    SIMD<double> hmem1[100];
-    AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
-    SIMD<double> hmem2[100];
-    AFlatMatrix<double> temp2(DIM, values.Width(), &hmem2[0].Data());
-#endif
-    */
     STACK_ARRAY(SIMD<double>, hmem1, DIM*values.Width());
     STACK_ARRAY(SIMD<double>, hmem2, DIM*values.Width());
     AFlatMatrix<double> temp1(DIM, values.Width(), &hmem1[0].Data());
@@ -2591,6 +2594,7 @@ public:
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       // static Timer t("IfPos::EvalSIMD"); RegionTimer reg(t);
+      /*
 #ifdef VLA
       SIMD<double> hmem1[ir.Size()];
       AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
@@ -2609,19 +2613,23 @@ public:
       SIMD<double> hmem3[100];
       AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
 #endif
+      */
+      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
+      AFlatMatrix<double> if_values(1, values.Width(), &hmem1[0].Data());
+      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*values.Height());
+      AFlatMatrix<double> then_values(values.Height(), values.Width(), &hmem2[0].Data());
+      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*values.Height());
+      AFlatMatrix<double> else_values(values.Height(), values.Width(), &hmem3[0].Data());
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
 
-      /*
-      for (int k = 0; k < values.Height(); k++)
-        for (int i = 0; i < values.Width(); i++)
-          values(k,i) = (if_values(i) > 0) ? then_values(k,i) : else_values(k,i);
-      */
       for (int k = 0; k < values.Height(); k++)
         for (int i = 0; i < values.VWidth(); i++)
-          values.Get(k,i) = ngstd::IfPos (if_values.Get(i), then_values.Get(k,i), else_values.Get(k,i)).Data();
+          values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
+                                          then_values.Get(k,i),
+                                          else_values.Get(k,i)).Data();
     }
 
     

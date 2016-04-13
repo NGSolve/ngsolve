@@ -52,7 +52,8 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// default constructor does nothing
-    INLINE FlatVector () { ; }
+    FlatVector () = default;
+    ~FlatVector () = default;
     /// set size and mem
     INLINE FlatVector (unsigned int as, T * adata) : size(as), data(adata)
     { ; }
@@ -60,6 +61,7 @@ namespace ngbla
     ///
     template <typename TIND2>
     INLINE FlatVector (const FlatVector<T,TIND2> & fv2) : size(fv2.Size()), data(fv2.Data()) { ; }
+    FlatVector (const FlatVector &) = default;
     
     /// set size and mem
     INLINE FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
@@ -1350,16 +1352,33 @@ namespace ngbla
   };
 
 
+  
+  template <class T = double>
+  class BareSliceVector
+  {
+    T * __restrict data;
+    int dist;
+  public:
+    BareSliceVector(T * _data, int _dist) : data(_data), dist(_dist) { ; }
+    BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
+    BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
+    BareSliceVector(const BareSliceVector &) = default;
+    
+    double & operator() (int i) const { return data[i*dist];  }
+    BareSliceVector<> Range (int first, int next) const
+    {
+      return BareSliceVector<T> (data+first*dist, dist);
+    }
+    BareSliceVector<> Range (IntRange range) const
+    {
+      return Range(range.First(), range.Next());
+    }    
+    BareSliceVector<T> Slice (int first, int adist) const
+    {
+      return BareSliceVector<T> (data+first*dist, dist*adist);
+    }
 
-
-
-
-
-
-
-
-
-
+  };
 
 
 

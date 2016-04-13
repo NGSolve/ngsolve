@@ -23,6 +23,7 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> trace_evaluator;
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
   shared_ptr<ProxyFunction> deriv_proxy;
+  shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
   int dim;
 public:
   ProxyFunction (bool atestfunction, bool ais_complex,
@@ -63,12 +64,14 @@ public:
   {
     return make_shared<ProxyFunction> (testfunction, is_complex, trace_evaluator, trace_deriv_evaluator, nullptr, nullptr);
   }
-  shared_ptr<ProxyFunction> Other() const
+  shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
     auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator);
     other->is_other = true;
+    other->boundary_values = _boundary_values;
     return other;
   }
+  const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -222,13 +225,12 @@ public:
   virtual void
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
-         SliceVector<double> x, 
-         AFlatMatrix<double> flux,
-         LocalHeap & lh) const
+         BareSliceVector<double> x, 
+         ABareMatrix<double> flux) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
-    diffop->Apply (fel[comp], bmir, x.Range(r), flux, lh);
+    diffop->Apply (fel[comp], bmir, x.Range(r), flux);
   }
 
 
@@ -262,13 +264,12 @@ public:
   NGS_DLL_HEADER virtual void
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            AFlatMatrix<double> flux,
-            SliceVector<double> x, 
-            LocalHeap & lh) const
+            ABareMatrix<double> flux,
+            BareSliceVector<double> x) const
   {
     const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
     IntRange r = BlockDim() * fel.GetRange(comp);
-    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r), lh);
+    diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
 };
 

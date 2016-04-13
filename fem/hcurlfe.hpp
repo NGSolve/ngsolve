@@ -120,6 +120,19 @@ namespace ngfem
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
                         FlatVector<> coefs, FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> curl) const;
 
+
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+    { cout << "HCurlFE - simd eval not overloaded" << endl; }
+    HD NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+    { cout << "HCurlFE - simd evalcurl not overloaded" << endl; }      
+
+    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+                                             BareSliceVector<> coefs) const
+    { cout << "HCurlFE - simd addtrans not overloaded" << endl; }
+    HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+                                                 BareSliceVector<> coefs) const
+    { cout << "HCurlFE - simd addcurltrans not overloaded" << endl; }
+
   protected:
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
