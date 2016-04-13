@@ -115,9 +115,9 @@ namespace ngfem
   void DifferentialOperator ::
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
-         SliceVector<double> x, 
-         AFlatMatrix<double> flux,
-         LocalHeap & lh) const
+         BareSliceVector<double> x, 
+         ABareMatrix<double> flux) const
+  // LocalHeap & lh) const
   {
     throw Exception (string("DifferentialOperator :: Apply ( ... SIMD ... ) not overloaded for class ")
                      + typeid(*this).name());
@@ -195,9 +195,9 @@ namespace ngfem
   void DifferentialOperator ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            AFlatMatrix<double> flux,
-            SliceVector<double> x, 
-            LocalHeap & lh) const
+            ABareMatrix<double> flux,
+            BareSliceVector<double> x) const
+  // LocalHeap & lh) const
   {
     throw Exception (string("DifferentialOperator :: AddTrans ( ... SIMD ... ) not overloaded") +
                      + typeid(*this).name());
@@ -263,31 +263,17 @@ namespace ngfem
   void BlockDifferentialOperator ::
   Apply (const FiniteElement & fel,
          const SIMD_BaseMappedIntegrationRule & mir,
-         SliceVector<double> x, 
-         AFlatMatrix<double> flux,
-         LocalHeap & lh) const
+         BareSliceVector<double> x, 
+         ABareMatrix<double> flux) const
+  // LocalHeap & lh) const
   {
-    HeapReset hr(lh);
-    AFlatMatrix<double> hflux(diffop->Dim(), flux.Width(), lh);
-    
     if (comp == -1)
-      {
-        for (int k = 0; k < dim; k++)
-          {
-            diffop->Apply(fel, mir, x.Slice(k, dim), hflux, lh);
-            for (int j = 0; j < hflux.Height(); j++)
-              flux.Row(k+j*dim) = hflux.Row(j);
-          }
-      }
+      for (int k = 0; k < dim; k++)
+        diffop->Apply(fel, mir, x.Slice(k, dim), flux.RowSlice(k,dim));
     else
-      {
-        diffop->Apply(fel, mir, x.Slice(comp, dim), hflux, lh);
-        // flux.Slice(comp,dim) = hflux;
-        for (int j = 0; j < hflux.Height(); j++)
-          flux.Row(comp+j*dim) = hflux.Row(j);
-      }
+      diffop->Apply(fel, mir, x.Slice(comp, dim), flux.RowSlice(comp,dim));
   }
-
+  
   
   void BlockDifferentialOperator ::
   ApplyTrans (const FiniteElement & fel,
@@ -351,28 +337,15 @@ namespace ngfem
   void BlockDifferentialOperator ::
   AddTrans (const FiniteElement & fel,
             const SIMD_BaseMappedIntegrationRule & mir,
-            AFlatMatrix<double> flux,
-            SliceVector<double> x, 
-            LocalHeap & lh) const
+            ABareMatrix<double> flux,
+            BareSliceVector<double> x) const
+  // LocalHeap & lh) const
   {
-    HeapReset hr(lh);
-    AFlatMatrix<double> hflux(diffop->Dim(), flux.Width(), lh);
-    
     if (comp == -1)
-      {
-        for (int k = 0; k < dim; k++)
-          {
-            for (int j = 0; j < hflux.Height(); j++)
-              hflux.Row(j) = flux.Row(k+j*dim);
-            diffop->AddTrans(fel, mir, hflux, x.Slice(k,dim), lh);
-          }
-      }
+      for (int k = 0; k < dim; k++)
+        diffop->AddTrans(fel, mir, flux.RowSlice(k,dim), x.Slice(k,dim));
     else
-      {
-        for (int j = 0; j < hflux.Height(); j++)        
-          hflux.Row(j) = flux.Row(comp+j*dim);
-        diffop->AddTrans(fel, mir, hflux, x.Slice(comp,dim),lh);
-      }
+      diffop->AddTrans(fel, mir, flux.RowSlice(comp,dim), x.Slice(comp,dim));
   }
 
 

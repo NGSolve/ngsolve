@@ -112,6 +112,8 @@ namespace ngstd
 
       jobnr = 0;
       done = 0;
+      sleep = false;
+      sleep_usecs = 1000;
       active_workers = 0;
 
       static int cnt = 0;
@@ -283,11 +285,16 @@ namespace ngstd
       {
         if (jobnr == jobdone)
           {
+            if(sleep)
+              this_thread::sleep_for(chrono::microseconds(sleep_usecs));
+            else
+              {
 #ifdef WIN32
-            this_thread::yield();
+                this_thread::yield();
 #else  // WIN32
-            sched_yield();
+                sched_yield();
 #endif // WIN32
+              }
             continue;
           }
           

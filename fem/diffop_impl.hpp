@@ -94,13 +94,13 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & bmir,
-         SliceVector<double> x, 
-         AFlatMatrix<double> flux,
-         LocalHeap & lh) const
+         BareSliceVector<double> x, 
+         ABareMatrix<double> flux) const
+  // LocalHeap & lh) const
   {
-    const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-      static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-    DIFFOP::ApplySIMDIR (bfel, mir, x, flux, lh);
+    // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+    // static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::ApplySIMDIR (bfel, bmir, x, flux);
   }
 
 
@@ -162,13 +162,13 @@ namespace ngfem
   void T_DifferentialOperator<DIFFOP> ::
   AddTrans (const FiniteElement & bfel,
             const SIMD_BaseMappedIntegrationRule & bmir,
-            AFlatMatrix<double> flux,
-            SliceVector<double> x, 
-            LocalHeap & lh) const
+            ABareMatrix<double> flux,
+            BareSliceVector<double> x) const
+  // LocalHeap & lh) const
   {
-    const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
-      static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-    DIFFOP::AddTransSIMDIR (bfel, mir, flux, x, lh);
+    // const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & mir =
+    // static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+    DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);
   }
   
 #endif  

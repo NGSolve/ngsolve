@@ -176,7 +176,7 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetAMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
         return;
       }
 
@@ -359,7 +359,7 @@ namespace ngfem
               proxyvalues.Get(k,i) *= mir[i].GetWeight().Data();
           }
 
-        proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec, lh);
+        proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec); // , lh);
       }
   }  
 #endif
@@ -1236,7 +1236,7 @@ namespace ngfem
       ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
 
     for (ProxyFunction * proxy : trial_proxies)
-        proxy->Evaluator()->Apply(fel, simd_mir, elx, ud.GetAMemory(proxy), lh);
+      proxy->Evaluator()->Apply(fel, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
 
     ely = 0;
     for (auto proxy : test_proxies)
@@ -1257,7 +1257,7 @@ namespace ngfem
               row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
           }
 
-        proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely, lh);
+        proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely); // , lh);
       }
     }
 #endif // USE_SIMD
@@ -1872,9 +1872,9 @@ namespace ngfem
         trial_range = proxy->Evaluator()->BlockDim() * trial_range;
 
         if (proxy->IsOther())
-          proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy), lh);
+          proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
         else
-          proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy), lh);
+          proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
       }
 
     for (auto proxy : test_proxies)
@@ -1902,9 +1902,9 @@ namespace ngfem
         test_range = blockdim * test_range;
         
         if (proxy->IsOther())
-          proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range), lh);
+          proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range)); // , lh);
         else
-          proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range), lh);
+          proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range)); // , lh);
       }
   }
 
@@ -1958,10 +1958,14 @@ namespace ngfem
         // ud.remember[proxy] = Matrix<> (ir_facet.Size(), proxy->Dimension());
         ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
         IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-        if (proxy->IsOther()) 
-          // proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.remember[proxy], lh);
-          // ud.remember[proxy] = 0.0;
-          ud.GetMemory(proxy) = 0.0;
+        if (proxy->IsOther())
+          {
+            auto & bv = proxy->BoundaryValues();
+            if (bv)
+              bv->Evaluate (mir1, ud.GetMemory(proxy));
+            else
+              ud.GetMemory(proxy) = 0.0;              
+          }
         else
           proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
       }

@@ -84,17 +84,18 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  Evaluate (const SIMD_IntegrationRule & ir, SliceVector<> coefs, AFlatVector<double> values) const
+  Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
   {
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
       {
-        Vec<DIM,SIMD<double>> pt;
+        Vec<DIM,SIMD<double>> pt = hir[i];
+        /*
         for (int j = 0; j < DIM; j++)
           pt(j) = hir[i](j);
-
+        */
         SIMD<double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int i, SIMD<double> shape) { sum += coefs(i)*shape; } ));
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { sum += coefs(j)*shape; } ));
 
         values.Get(i) = sum.Data();
       }
@@ -136,15 +137,16 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  AddTrans (const SIMD_IntegrationRule & ir, AFlatVector<double> values,
-            SliceVector<> coefs) const
+  AddTrans (const SIMD_IntegrationRule & ir, ABareVector<double> values,
+            BareSliceVector<> coefs) const
   {
     for (int i = 0; i < ir.Size(); i++)
       {
-        Vec<DIM,SIMD<double>> pt;
+        Vec<DIM,SIMD<double>> pt = ir[i];
+        /*
         for (int j = 0; j < DIM; j++)
           pt(j) = ir[i](j);
-
+        */
         SIMD<double> val = values.Get(i);
         T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
       }
@@ -185,8 +187,8 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const SIMD_BaseMappedIntegrationRule & bmir,
-                SliceVector<> coefs,
-                AFlatMatrix<double> values) const
+                BareSliceVector<> coefs,
+                ABareMatrix<double> values) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)
@@ -237,8 +239,8 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddGradTrans (const SIMD_BaseMappedIntegrationRule & bmir,
-                AFlatMatrix<double> values,
-                SliceVector<> coefs) const
+                ABareMatrix<double> values,
+                BareSliceVector<> coefs) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)

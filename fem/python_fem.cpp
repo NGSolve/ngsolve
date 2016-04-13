@@ -293,6 +293,31 @@ template <int D>
 INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
 { return sin(x) / cos(x); }
 
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D> res;
+  double a = std::atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  return res;
+}
+
+
+template <int D>
+INLINE AutoDiffDiff<D> atan (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double a = std::atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -2*x.Value()/((1+x.Value()*x.Value())*(1+x.Value()*x.Value())) * x.DValue(k) * x.DValue(l) + x.DDValue(k,l)/(1+x.Value()*x.Value());
+  return res;
+}
 
 
 
@@ -322,6 +347,9 @@ struct GenericExp {
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
   static string Name() { return "log"; }
+};
+struct GenericATan {
+  template <typename T> T operator() (T x) const { return atan(x); }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
@@ -592,6 +620,7 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericTan>("tan");
   ExportStdMathFunction<GenericExp>("exp");
   ExportStdMathFunction<GenericLog>("log");
+  ExportStdMathFunction<GenericATan>("atan");
   ExportStdMathFunction<GenericSqrt>("sqrt");
   ExportStdMathFunction<GenericConj>("Conj");
   
@@ -642,9 +671,11 @@ void ExportCoefficientFunction()
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       // static Timer t("CoordCF::EvalSIMD"); RegionTimer reg(t);      
-      auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      // auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
+      auto points = ir.GetPoints();
       for (int i = 0; i < ir.Size(); i++)
-        values.Get(i) = ir22[i].Point()(dir).Data();
+        values.Get(i) = points.Get(i, dir);
+        // values.Get(i) = ir22[i].Point()(dir).Data();
     }
   };
 

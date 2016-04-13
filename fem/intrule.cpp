@@ -2862,6 +2862,8 @@ namespace ngfem
                               Allocator & lh)
     : SIMD_BaseMappedIntegrationRule (ir, aeltrans), mips(ir.Size(), lh)
   {
+    dim_element = DIM_ELEMENT;
+    dim_space = DIM_SPACE;
     baseip = (char*)(void*)(SIMD<BaseMappedIntegrationPoint>*)(&mips[0]);
     incr = sizeof (SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>);
 

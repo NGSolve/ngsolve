@@ -1125,6 +1125,15 @@ namespace ngstd
         x[j] = [&ip,j] (int i) { return ip[i](j); };
       weight = [&ip] (int i) { return ip[i].Weight(); };
     }
+
+    template <int DIM>
+    operator Vec<DIM,SIMD<double>>() const
+    {
+      Vec<DIM,SIMD<double>> hp;
+      for (int i = 0; i < DIM; i++)
+        hp(i) = x[i];
+      return hp;
+    }
     
     const SIMD<double> & operator() (int i) const { return x[i]; }
     SIMD<double> & operator() (int i) { return x[i]; }
@@ -1319,7 +1328,7 @@ namespace ngfem
     const ElementTransformation & eltrans;
     char * baseip;
     int incr;
-
+    int dim_element, dim_space;
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -1333,6 +1342,9 @@ namespace ngfem
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
     INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
+    INLINE int DimElement() const { return dim_element; }
+    INLINE int DimSpace() const { return dim_space; }
+    virtual ABareMatrix<double> GetPoints() const = 0;        
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -1348,7 +1360,12 @@ namespace ngfem
     SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> & operator[] (int i) const
     { 
       return mips[i]; 
-    }    
+    }
+    virtual ABareMatrix<double> GetPoints() const
+    {
+      return ABareMatrix<double> (&mips[0].Point()(0).Data(),
+                                  &mips[1].Point()(0).Data()-&mips[0].Point()(0).Data());
+    }
   };
 }
 

@@ -52,8 +52,8 @@ namespace ngfem
 					     FlatVector<double> vals) const;
 
     HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir,
-                                             SliceVector<> coefs,
-                                             AFlatVector<double> values) const;
+                                             BareSliceVector<> coefs,
+                                             ABareVector<double> values) const;
 
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, SliceMatrix<> values) const;
 
@@ -62,8 +62,8 @@ namespace ngfem
                                                   SliceVector<double> coefs) const;
     
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,
-                                             AFlatVector<double> values,
-                                             SliceVector<> coefs) const;
+                                             ABareVector<double> values,
+                                             BareSliceVector<> coefs) const;
     
     HD NGS_DLL_HEADER virtual Vec<DIM> EvaluateGrad (const IntegrationPoint & ip, 
                                                      SliceVector<> x) const;
@@ -73,8 +73,8 @@ namespace ngfem
                                                  FlatMatrixFixWidth<DIM> vals) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGrad (const SIMD_BaseMappedIntegrationRule & ir,
-                                                 SliceVector<> coefs,
-                                                 AFlatMatrix<double> values) const;
+                                                 BareSliceVector<> coefs,
+                                                 ABareMatrix<double> values) const;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
                                                       FlatMatrixFixWidth<DIM> vals, 
@@ -85,8 +85,8 @@ namespace ngfem
                                                       SliceMatrix<> coefs) const;
 
     HD NGS_DLL_HEADER virtual void AddGradTrans (const SIMD_BaseMappedIntegrationRule & ir,
-                                                 AFlatMatrix<double> values,
-                                                 SliceVector<> coefs) const;
+                                                 ABareMatrix<double> values,
+                                                 BareSliceVector<> coefs) const;
 
 /*    
     virtual void CalcDShape (const IntegrationPoint & ip, 
