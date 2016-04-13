@@ -1198,6 +1198,8 @@ namespace ngstd
     const Mat<DIMR,DIMS,SIMD<double>> & GetJacobian() const { return dxdxi; }
     Mat<DIMR,DIMS,SIMD<double>> & Jacobian() { return dxdxi; }
     
+    int Dim() const { return DIMR; }
+
     INLINE void Compute ()
     {
       if (DIMS == DIMR)
