@@ -664,6 +664,13 @@ void ExportCoefficientFunction()
     {
       return pow(ip.GetMeasure(), 1.0/ip.Dim());
     }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        if(code.is_simd)
+          code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
+        else
+          code.body += Var(index).Assign( CodeExpr("::pow(ip.GetMeasure(), 1.0/ip.Dim())"));
+    }
   };
 
 
