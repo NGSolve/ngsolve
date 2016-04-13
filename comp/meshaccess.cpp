@@ -1164,7 +1164,7 @@ namespace ngcomp
     eltrans->SetElement (0, elnr, elind);
     */
 
-    if(higher_integration_order.Size() == GetNE() && higher_integration_order[elnr])
+    if(higher_integration_order.Size() == GetNSE() && higher_integration_order[elnr])
       eltrans->SetHigherIntegrationOrder();
     else
       eltrans->UnSetHigherIntegrationOrder();
