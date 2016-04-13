@@ -54,7 +54,7 @@ install( FILES
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp
-        thcurlfe_impl.hpp symbolicintegrator.hpp
+        thcurlfe_impl.hpp symbolicintegrator.hpp code_generation.hpp
         DESTINATION include
         COMPONENT ngsolve_devel
        )

@@ -350,6 +350,7 @@ struct GenericLog {
 };
 struct GenericATan {
   template <typename T> T operator() (T x) const { return atan(x); }
+  static string Name() { return "atan"; }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
