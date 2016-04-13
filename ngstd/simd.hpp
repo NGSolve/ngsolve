@@ -135,6 +135,10 @@ namespace ngstd
     return _mm256_blendv_pd(c.Data(), b.Data(), cp);
   }
 
+  INLINE SIMD<double> pow (SIMD<double> a, double x) {
+      return SIMD<double>([&](int i)->double { return ::pow((double)a[i],x); } );
+  }
+
   INLINE double HSum (SIMD<double> sd)
   {
     __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));

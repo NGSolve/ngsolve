@@ -10,7 +10,6 @@
 
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
-#include <libloader.hpp>
 
 
 
@@ -2840,6 +2839,7 @@ public:
         s << "#include<scalarfe.hpp>" << endl;
         s << "#include<elementtransformation.hpp>" << endl;
         s << "#include<diffop.hpp>" << endl;
+        s << "#include<code_generation.hpp>" << endl;
         s << "#include<coefficient.hpp>" << endl;
         s << "#include<integrator.hpp>" << endl;
         s << "#include<symbolicintegrator.hpp>" << endl;
@@ -3079,7 +3079,7 @@ public:
   }
   
 
+  int Library::counter = 0;
  
 }
 
-int Library::counter = 0;
