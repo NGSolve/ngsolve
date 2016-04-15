@@ -432,7 +432,8 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
-    task_manager->SuspendWorkers(1000);
+    if(task_manager)
+      task_manager->SuspendWorkers(1000);
 
     if (compressed)
       {
@@ -461,7 +462,8 @@ namespace ngla
 			    static_cast<double *>((void*)fx.Data()), 
 			    static_cast<double *>((void*)fy.Data()), &error );
       }
-    task_manager->ResumeWorkers();
+    if(task_manager)
+      task_manager->ResumeWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
@@ -499,7 +501,8 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
-    task_manager->SuspendWorkers(1000);
+    if(task_manager)
+      task_manager->SuspendWorkers(1000);
 
     F77_FUNC(pardiso) ( const_cast<integer *>(pt), 
 			&maxfct, &mnum, const_cast<integer *>(&matrixtype),
@@ -509,7 +512,8 @@ namespace ngla
 			NULL, &nrhs, params, &msglevel, &tx(0,0), &ty(0,0),
 			&error );
 
-    task_manager->ResumeWorkers();
+    if(task_manager)
+      task_manager->ResumeWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
