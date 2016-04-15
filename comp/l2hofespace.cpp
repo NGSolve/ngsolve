@@ -529,6 +529,38 @@ namespace ngcomp
     GetDofNrs (elnr, dnums); 
   }
 
+  void L2HighOrderFESpace :: SolveM (CoefficientFunction & rho, BaseVector & vec,
+                                     LocalHeap & lh) const
+  {
+    static Timer t("SolveM"); RegionTimer reg(t);
+    
+    IterateElements (*this, VOL, lh,
+                     [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
+                     {
+                       const FiniteElement & fel = el.GetFE();
+                       Array<int> dnums(fel.GetNDof(), lh);
+                       GetDofNrs (el.Nr(), dnums);
+                       FlatVector<double> elx(fel.GetNDof(), lh);
+
+                       // FlatMatrix<> mass(fel.GetNDof(), lh);
+                       // integrator->CalcElementMatrix(fel, el.GetTrafo(), mass, lh);
+                       // cout << "mass = " << mass << endl;
+                       
+                       FlatVector<double> diag_mass(fel.GetNDof(), lh);
+                       
+                       vec.GetIndirect(dnums, elx);
+                       static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
+                       IntegrationRule ir(fel.ElementType(), 0);
+                       BaseMappedIntegrationRule & mir = el.GetTrafo()(ir, lh);
+                       // double invdet = 1.0/mir[0].GetMeasure();
+                       diag_mass *= mir[0].GetMeasure();
+                       // cout << "diag_mass = " << endl << diag_mass << endl;
+                       for (int i = 0; i < elx.Size(); i++)
+                         elx(i) /= diag_mass(i);
+                       vec.SetIndirect(dnums, elx);                       
+                     });
+  }
+  
 
 
 
