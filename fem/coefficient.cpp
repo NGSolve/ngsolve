@@ -2809,9 +2809,9 @@ public:
              }
          });
 
-      cout << "Compiled CF:" << endl;
+      cout << IM(3) << "Compiled CF:" << endl;
       for (auto cf : steps)
-        cout << typeid(*cf).name() << endl;
+        cout << IM(3) << typeid(*cf).name() << endl;
       
       inputs = DynamicTable<int> (steps.Size());
       
@@ -2827,7 +2827,7 @@ public:
              }
          });
 
-      cout << "inputs = " << endl << inputs << endl;
+      cout << IM(3) << "inputs = " << endl << inputs << endl;
 
       if(realcompile)
       {
@@ -2848,12 +2848,12 @@ public:
         s << "extern \"C\" {" << endl;
 
         for (auto simd : {false,true}) {
-            cout << "Compiled CF:" << endl;
+            cout << IM(3) << "Compiled CF:" << endl;
             Code code;
             code.is_simd = simd;
             for (auto i : Range(steps)) {
-                cout << "step " << i << endl;
-                cout << "function: " << typeid(*steps[i]).name() << endl;
+                cout << IM(3) << "step " << i << endl;
+                cout << IM(3) << "function: " << typeid(*steps[i]).name() << endl;
                 steps[i]->GenerateCode(code, inputs[i],i);
             }
 
@@ -2872,7 +2872,10 @@ public:
 
             }
             else
-              s << "void CompiledEvaluate(const BaseMappedIntegrationRule & mir, FlatMatrix<> results ) {" << endl;
+            {
+              s << "void CompiledEvaluate(const BaseMappedIntegrationRule & bmir, FlatMatrix<> results ) {" << endl;
+              s << "auto & mir = bmir;" << endl;
+            }
             s << code.header << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "auto & ip = mir[i];" << endl;
