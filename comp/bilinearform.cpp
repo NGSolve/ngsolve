@@ -2945,12 +2945,14 @@ namespace ngcomp
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
 
+                                         /*
                                          if (neighbor_testfunction)
                                            {
                                              lock_guard<mutex> guard(addelemfacbnd_mutex);
                                              y.AddIndirect(dnums, ely);
                                            }
                                          else
+                                         */
                                            {
                                              y.AddIndirect(dnums, ely);
                                            }
@@ -3014,18 +3016,13 @@ namespace ngcomp
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
-                                     /*
-                                     shared_ptr<FacetBilinearFormIntegrator> fbfi = 
-                                       dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
-                                     */
                                      FacetBilinearFormIntegrator * fbfi = 
                                        dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
-                                     
-                                     // RegionTimer reg3(timerDG3);                                     
 
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
-                                     
+
+                                     /*
                                      if (neighbor_testfunction)
                                        {
                                          lock_guard<mutex> guard(addelemfacbnd_mutex);
@@ -3034,6 +3031,19 @@ namespace ngcomp
                                      else
                                        {
                                          y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
+                                       }
+                                     */
+                                     y.AddIndirect(dnums1, ely.Range(0,dnums1.Size()));
+
+                                     if (fbfi->GetDGFormulation().neighbor_testfunction)
+                                       {
+                                         FlatVector<SCAL> swap_elx(elx.Size(), lh);
+                                         swap_elx.Range(0, dnums2.Size()) = elx.Range(dnums1.Size(), dnums.Size());
+                                         swap_elx.Range(dnums2.Size(), dnums.Size()) = elx.Range(0, dnums1.Size());
+                                         fbfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
+                                                                 fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
+
+                                         y.AddIndirect(dnums1, ely.Range(dnums2.Size(), dnums2.Size()));
                                        }
                                    }
                                }
