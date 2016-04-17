@@ -668,6 +668,10 @@ void ExportCoefficientFunction()
     {
       return pow(ip.GetMeasure(), 1.0/ip.Dim());
     }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      values =  pow(fabs (ir[0].GetJacobiDet()[0]), 1.0/ir.DimElement());
+    }
   };
 
 

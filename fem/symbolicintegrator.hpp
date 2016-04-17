@@ -67,6 +67,8 @@ public:
   {
     auto other = make_shared<ProxyFunction> (testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator);
     other->is_other = true;
+    if (other->deriv_proxy)
+      other->deriv_proxy->is_other = true;
     other->boundary_values = _boundary_values;
     return other;
   }

@@ -1153,6 +1153,7 @@ namespace ngstd
     SIMD<ngfem::IntegrationPoint> ip;
     const ngfem::ElementTransformation * eltrans;
     SIMD<double> measure;
+    SIMD<double> det;
     // bool owns_trafo = false;
   public:
     SIMD() = default;
@@ -1167,6 +1168,7 @@ namespace ngstd
     void SetMeasure (SIMD<double> _measure) { measure = _measure; }
     SIMD<double> GetMeasure() const { return measure; }
     SIMD<double> GetWeight() const { return measure * ip.Weight(); }
+    SIMD<double> GetJacobiDet() const { return det; }    
     // virtual void Print (ostream & ost) const = 0;
   };
 
@@ -1192,10 +1194,10 @@ namespace ngstd
   {
   protected:
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::measure;
+    using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::det;
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::normalvec;
     using SIMD<ngfem::DimMappedIntegrationPoint<DIMR>>::tangentialvec;
     ngbla::Mat<DIMR,DIMS,SIMD<double>> dxdxi;
-    SIMD<double> det;
   public:
     SIMD () = default;
     SIMD (const SIMD<ngfem::IntegrationPoint> & aip,
@@ -1241,7 +1243,7 @@ namespace ngstd
       measure = fabs (det);
     }
   
-    SIMD<double> GetJacobiDet() const { return det; }
+    // SIMD<double> GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
     const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
