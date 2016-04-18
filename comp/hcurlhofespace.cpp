@@ -2669,14 +2669,14 @@ namespace ngcomp
 	value = 1;
       }
       else{
-	value = order;
+	value = order+1;
       }
 	ma->GetSElEdges(i,eledges);
 	for(int j=0;j<eledges.Size();j++){
-	  fesh1->SetEdgeOrder(j,value);
+	  fesh1->SetEdgeOrder(eledges[j],value);
 	}
 	if(ma->GetDimension()==3) {
-	  fesh1->SetFaceOrder(i,value);
+	  fesh1->SetFaceOrder(ma->GetSElFace(i),value);
 	}
     }
     fesh1->UpdateDofTables();

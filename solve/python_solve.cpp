@@ -38,7 +38,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
 
     bp::def("SetVisualization", FunctionPointer
-            ([](bp::object deformation)
+            ([](bp::object deformation, bp::object min, bp::object max)
              {
                bool need_redraw = false;
                if (bp::extract<bool>(deformation).check())
@@ -48,10 +48,27 @@ void NGS_DLL_HEADER ExportNgsolve() {
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                    need_redraw = true;
                  }
+               if (bp::extract<double>(min))
+                 {
+                   Ng_TclCmd ("set ::visoptions.autoscale 0\n");
+                   Ng_TclCmd ("set ::visoptions.mminval "+ToString(bp::extract<double>(min)())+";\n");
+                   Ng_TclCmd ("Ng_Vis_Set parameters;\n");                                      
+                   need_redraw = true;
+                 }
+               if (bp::extract<double>(max))
+                 {
+                   Ng_TclCmd ("set ::visoptions.autoscale 0\n");
+                   Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(bp::extract<double>(max)())+";\n");
+                   Ng_TclCmd ("Ng_Vis_Set parameters;\n");                   
+                   need_redraw = true;
+                 }
                if (need_redraw)
                  Ng_Redraw(true);
              }),
-            (bp::arg("deformation")=bp::object())
+            (bp::arg("deformation")=bp::object(),
+             bp::arg("min")=bp::object(),
+             bp::arg("max")=bp::object()
+             )
             )
       ;
     

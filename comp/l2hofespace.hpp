@@ -96,14 +96,8 @@ namespace ngcomp
                        first_element_dof[nr+1]);
     }
 
-    /*
-    int GetFirstInnerDof(int elnr) const  
-    { return (first_element_dof[elnr]); }
-
-  
-    virtual int GetNElemDofs(int elnr) const 
-    { return(first_element_dof[elnr+1] - first_element_dof[elnr]+1); }
-    */
+    virtual void SolveM (CoefficientFunction & rho, BaseVector & vec,
+                         LocalHeap & lh) const;
   };
 
 

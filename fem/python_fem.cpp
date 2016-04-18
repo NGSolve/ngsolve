@@ -700,7 +700,7 @@ void ExportCoefficientFunction()
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       for(int i : Range(ir))
-        values.Get(i) = pow(ir[i].GetMeasure(), 1.0/2.0).Data();//TODO FIX!!!!  (DIM=2.0)
+        values =  pow(fabs (ir[0].GetJacobiDet()[0]), 1.0/ir.DimElement());
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {

@@ -618,7 +618,9 @@ namespace ngcomp
 
     const Array<SpecialElement*> & GetSpecialElements() const {return specialelements;}
 
-
+    virtual void SolveM(CoefficientFunction & rho, BaseVector & vec,
+                        LocalHeap & lh) const;
+      
     ParallelDofs & GetParallelDofs () const { return *paralleldofs; }
     virtual void UpdateParallelDofs ();
 

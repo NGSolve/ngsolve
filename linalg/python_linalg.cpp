@@ -239,8 +239,12 @@ void NGS_DLL_HEADER ExportNgla() {
                                             else
                                               return bp::object (InnerProduct (self, other));
                                           }))
-    .def("Norm", FunctionPointer ( [](BaseVector & self) { return self.L2Norm(); }));
-  ;       
+    .def("Norm", FunctionPointer ( [](BaseVector & self) { return self.L2Norm(); }))
+    .def("Range", FunctionPointer( [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
+                                   {
+                                     return self.Range(from,to);
+                                   }))
+    ;       
 
   // bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
   bp::def ("InnerProduct",
