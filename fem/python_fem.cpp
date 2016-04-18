@@ -697,11 +697,14 @@ void ExportCoefficientFunction()
       return pow(ip.GetMeasure(), 1.0/ip.Dim());
     }
 
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      for(int i : Range(ir))
+        values.Get(i) = pow(ir[i].GetMeasure(), 1.0/2.0).Data();//TODO FIX!!!!  (DIM=2.0)
+    }
+
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
-        if(code.is_simd)
-          code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
-        else
-          code.body += Var(index).Assign( CodeExpr("::pow(ip.GetMeasure(), 1.0/ip.Dim())"));
+      code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
     }
   };
 
