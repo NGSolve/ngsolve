@@ -604,6 +604,8 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Other", FunctionPointer
          ([](const ProxyFunction & self, bp::object bnd) -> shared_ptr<CoefficientFunction>
           {
+            if (bp::extract<double> (bnd).check())
+              return self.Other(make_shared<ConstantCoefficientFunction>(bp::extract<double> (bnd)()));              
             if (bp::extract<shared_ptr<CoefficientFunction>> (bnd).check())
               return self.Other(bp::extract<shared_ptr<CoefficientFunction>> (bnd)());              
             else
@@ -1012,7 +1014,10 @@ void NGS_DLL_HEADER ExportNgcomp()
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CompoundFESpace>);
   bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
     ("CompoundFESpace", bp::no_init)
+    .def("Range", &CompoundFESpace::GetRange)
     ;
+  bp::implicitly_convertible 
+    <shared_ptr<CompoundFESpace>, shared_ptr<FESpace> >(); 
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
