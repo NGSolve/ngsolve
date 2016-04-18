@@ -2502,9 +2502,20 @@ public:
     return make_shared<ScaleCoefficientFunctionC> (v1, c2); 
   }
 
-  shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
+  shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1,
+                                                shared_ptr<CoefficientFunction> c2)
   {
-    return make_shared<MultVecVecCoefficientFunction> (c1, c2);
+    switch (c1->Dimension())
+      {
+      case 2:
+        return make_shared<T_MultVecVecCoefficientFunction<2>> (c1, c2);
+      case 3:
+        return make_shared<T_MultVecVecCoefficientFunction<3>> (c1, c2);
+      default:
+        return make_shared<MultVecVecCoefficientFunction> (c1, c2);
+      }
+    
+    // return make_shared<MultVecVecCoefficientFunction> (c1, c2);
   }
 
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
