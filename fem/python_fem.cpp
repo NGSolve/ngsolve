@@ -700,11 +700,14 @@ void ExportCoefficientFunction()
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       for(int i : Range(ir))
-        values =  pow(fabs (ir[0].GetJacobiDet()[0]), 1.0/ir.DimElement());
+        values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
-      code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
+      if(code.is_simd)
+        code.body += Var(index).Assign( CodeExpr("pow(ip.GetJacobiDet(), 1.0/mir.DimElement())"));
+      else
+        code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
     }
   };
 
