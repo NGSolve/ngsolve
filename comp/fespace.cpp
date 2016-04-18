@@ -2230,15 +2230,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ArrayMem<int,500> hdnums;
-    dnums.SetSize(0);
+    dnums.SetSize0();
     for (int i = 0; i < spaces.Size(); i++)
       {
 	spaces[i]->GetDofNrs (elnr, hdnums);
+        int base = dnums.Size();
+        int base_cum = cummulative_nd[i];
+        dnums.SetSize(base+hdnums.Size());
 	for (int j = 0; j < hdnums.Size(); j++)
 	  if (hdnums[j] != -1)
-	    dnums.Append (hdnums[j]+cummulative_nd[i]);
+	    dnums[base+j] = hdnums[j]+base_cum;
 	  else
-	    dnums.Append (-1);
+	    dnums[base+j] = -1;
       }
   }
 
