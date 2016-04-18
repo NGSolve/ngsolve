@@ -1873,7 +1873,8 @@ namespace ngfem
 
 
   
-  
+#ifndef USE_SIMD
+
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
@@ -1914,7 +1915,7 @@ namespace ngfem
     ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
-        // ud.remember[proxy] = Matrix<> (ir_facet.Size(), proxy->Dimension());
+        /*
         ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
         IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
         if (proxy->IsOther())
@@ -1927,6 +1928,12 @@ namespace ngfem
           }
         else
           proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+        */
+        ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
+        if (proxy->IsOther() && proxy->BoundaryValues())
+          proxy->BoundaryValues()->Evaluate (mir1, ud.GetMemory(proxy));
+        else
+          proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetMemory(proxy), lh);
       }
 
     RegionTimer reg(t);
@@ -1990,17 +1997,84 @@ namespace ngfem
           proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
 
         ely1 = 0.0;
-        IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-        if (proxy->IsOther())
-          ;
-          // nothing to do ????
-          // throw Exception ("ApplyFacetBoundary: other testfunction not allowed here");
+        if (proxy->IsOther() && proxy->BoundaryValues())
+          ;  // nothing to do 
         else
-          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1, lh);
         ely += ely1;
       }
   }
   
+#else // USE_SIMD
+
+  void SymbolicFacetBilinearFormIntegrator ::
+  ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,
+                    const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
+                    const ElementTransformation & strafo,  
+                    FlatVector<double> elx, FlatVector<double> ely,
+                    LocalHeap & lh) const
+  {
+    static Timer t("SymbolicFacetBFI::ApplyFacetMatrix - boundary", 2);
+    
+    HeapReset hr(lh);
+
+    ely = 0;
+    
+    int maxorder = fel1.Order();
+
+    auto eltype1 = trafo1.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
+
+    SIMD_IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices); 
+    auto & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
+    auto & mir1 = trafo1(ir_facet_vol1, lh);
+    mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr);
+    
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    ud.fel = &fel1;   // necessary to check remember-map
+    // ud.elx = &elx;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+        ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+        if (proxy->IsOther() && proxy->BoundaryValues())
+          proxy->BoundaryValues()->Evaluate (mir1, ud.GetAMemory(proxy));
+        else
+          proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetAMemory(proxy));
+      }
+
+    RegionTimer reg(t);
+    
+
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        AFlatMatrix<double> proxyvalues(proxy->Dimension(), ir_facet.GetNIP(), lh);
+        
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (mir1, proxyvalues.Rows(k,k+1));            
+          }
+
+        for (int i = 0; i < proxyvalues.Height(); i++)
+          {
+            auto row = proxyvalues.Row(i);
+            for (int j = 0; j < row.VSize(); j++)
+              row.Get(j) *= mir1[j].GetMeasure().Data() * ir_facet[j].Weight().Data();
+          }
+
+        if (proxy->IsOther() && proxy->BoundaryValues())
+          ; // nothing to do 
+        else
+          proxy->Evaluator()->AddTrans(fel1, mir1, proxyvalues, ely);
+      }
+  }
+  
+#endif // USE_SIMD
   
 
   
