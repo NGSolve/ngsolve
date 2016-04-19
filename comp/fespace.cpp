@@ -2238,10 +2238,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
         int base_cum = cummulative_nd[i];
         dnums.SetSize(base+hdnums.Size());
 	for (int j = 0; j < hdnums.Size(); j++)
+          {
+            int val = hdnums[j];
+            if (val != -1) val += base_cum;
+            dnums[base+j] = val;
+          }
+          /*
 	  if (hdnums[j] != -1)
 	    dnums[base+j] = hdnums[j]+base_cum;
 	  else
 	    dnums[base+j] = -1;
+          */
       }
   }
 
