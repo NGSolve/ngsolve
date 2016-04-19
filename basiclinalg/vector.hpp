@@ -1362,6 +1362,8 @@ namespace ngbla
   public:
     BareSliceVector(T * _data, int _dist) : data(_data), dist(_dist) { ; }
     BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
+    template <int D>
+    BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
     BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
     
