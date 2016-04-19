@@ -957,6 +957,7 @@ namespace ngbla
   {
   public:
     INLINE Vec () { ; }
+    INLINE Vec (const Vec &d) { ; }
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
