@@ -48,14 +48,14 @@ void NGS_DLL_HEADER ExportNgsolve() {
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                    need_redraw = true;
                  }
-               if (bp::extract<double>(min))
+               if (bp::extract<double>(min).check())
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
                    Ng_TclCmd ("set ::visoptions.mminval "+ToString(bp::extract<double>(min)())+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                                      
                    need_redraw = true;
                  }
-               if (bp::extract<double>(max))
+               if (bp::extract<double>(max).check())
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
                    Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(bp::extract<double>(max)())+";\n");
