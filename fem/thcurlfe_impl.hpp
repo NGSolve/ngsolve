@@ -147,7 +147,7 @@ namespace ngfem
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareMatrix<double> values,
             BareSliceVector<> coefs) const
   {
-    if (bmir.DimSpace() == DIM)
+    if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
         for (int i = 0; i < mir.Size(); i++)
