@@ -153,6 +153,10 @@ namespace ngbla
     INLINE SCAL operator() (int i) const { return ad.DValue(i); }
     INLINE SCAL operator() (int i, int j) const { return ad.DValue(i); }
     INLINE AutoDiff<DIM,SCAL> Data() const { return ad; }
+
+    INLINE TIND Size () const { return DIM; }
+    INLINE TIND Height () const { return DIM; }
+    INLINE int Width () const { return 1; }
   };
 
 }
