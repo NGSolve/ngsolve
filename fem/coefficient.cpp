@@ -1000,15 +1000,10 @@ public:
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result, FlatMatrix<> deriv) const
   {
-#ifdef VLA
-    double hmem1[ir.Size()];
+    STACK_ARRAY(double, hmem1, ir.Size());
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-    double hmem2[ir.Size()];
+    STACK_ARRAY(double, hmem2, ir.Size());
     FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
-#else
-    Matrix<> temp1(ir.Size(), 1);
-    Matrix<> deriv1(ir.Size(), 1);
-#endif
     c1->EvaluateDeriv(ir, temp1, deriv1);
     c2->EvaluateDeriv(ir, result, deriv);
     for (int i = 0; i < ir.Size(); i++)
@@ -1023,18 +1018,13 @@ public:
   virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
                                FlatMatrix<> result, FlatMatrix<> deriv, FlatMatrix<> dderiv) const
   {
-#ifdef VLA
-    double hmem1[ir.Size()];
+    STACK_ARRAY(double, hmem1, ir.Size());
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-    double hmem2[ir.Size()];
+    STACK_ARRAY(double, hmem2, ir.Size());
     FlatMatrix<> deriv1(ir.Size(), 1, hmem2);
-    double hmem3[ir.Size()];
+    STACK_ARRAY(double, hmem3, ir.Size());
     FlatMatrix<> dderiv1(ir.Size(), 1, hmem3);
-#else
-    Matrix<> temp1(ir.Size(), 1);
-    Matrix<> deriv1(ir.Size(), 1);
-    Matrix<> dderiv1(ir.Size(), 1);
-#endif
+
     c1->EvaluateDDeriv(ir, temp1, deriv1, dderiv1);
     c2->EvaluateDDeriv(ir, result, deriv, dderiv);
     for (int i = 0; i < ir.Size(); i++)
@@ -1127,15 +1117,11 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const
   {
-#ifdef VLA
-    double hmem1[dim1];
+    STACK_ARRAY(double, hmem1, dim1);
     FlatVector<> v1(dim1, hmem1);
-    double hmem2[dim1];
+    STACK_ARRAY(double, hmem2, dim1);
     FlatVector<> v2(dim1, hmem2);
-#else
-    Vector<> v1(dim1);
-    Vector<> v2(dim1);
-#endif
+
     c1->Evaluate (ip, v1);
     c2->Evaluate (ip, v2);
     result(0) = InnerProduct (v1, v2);
@@ -1153,15 +1139,11 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
-#ifdef VLA
-    double hmem1[ir.Size()*dim1];
+    STACK_ARRAY(double, hmem1, ir.Size()*dim1);
     FlatMatrix<> temp1(ir.Size(), dim1, hmem1);
-    double hmem2[ir.Size()*dim1];
+    STACK_ARRAY(double, hmem2, ir.Size()*dim1);
     FlatMatrix<> temp2(ir.Size(), dim1, hmem2);
-#else
-    Matrix<> temp1(ir.Size(), dim1);
-    Matrix<> temp2(ir.Size(), dim1);
-#endif
+
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
     for (int i = 0; i < ir.Size(); i++)
@@ -1324,15 +1306,11 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
-#ifdef VLA
-    double hmem1[ir.Size()*DIM];
+    STACK_ARRAY(double, hmem1, ir.Size()*DIM);
     FlatMatrixFixWidth<DIM> temp1(ir.Size(), hmem1);
-    double hmem2[ir.Size()*DIM];
+    STACK_ARRAY(double, hmem2, ir.Size()*DIM);
     FlatMatrixFixWidth<DIM> temp2(ir.Size(), hmem2);
-#else
-    Matrix<> temp1(ir.Size(), DIM);
-    Matrix<> temp2(ir.Size(), DIM);
-#endif
+
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
     for (int i = 0; i < ir.Size(); i++)
@@ -1362,15 +1340,11 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
-#ifdef VLA
-    double hmem1[2*ir.Size()*DIM];
+    STACK_ARRAY(double, hmem1, 2*ir.Size()*DIM);
     FlatMatrix<Complex> temp1(ir.Size(), DIM, (Complex*)hmem1);
-    double hmem2[2*ir.Size()*DIM];
+    STACK_ARRAY(double, hmem2, 2*ir.Size()*DIM);
     FlatMatrix<Complex> temp2(ir.Size(), DIM, (Complex*)hmem2);
-#else
-    Matrix<Complex> temp1(ir.Size(), DIM);
-    Matrix<Complex> temp2(ir.Size(), DIM);
-#endif
+
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, temp2);
     for (int i = 0; i < ir.Size(); i++)
@@ -2500,18 +2474,12 @@ public:
     ///
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
-#ifdef VLA
-      double hmem1[ir.Size()];
+      STACK_ARRAY(double, hmem1, ir.Size());
       FlatMatrix<> if_values(ir.Size(), 1, hmem1);
-      double hmem2[ir.Size()*values.Width()];
+      STACK_ARRAY(double, hmem2, ir.Size()*values.Width());
       FlatMatrix<> then_values(ir.Size(), values.Width(), hmem2);
-      double hmem3[ir.Size()*values.Width()];
+      STACK_ARRAY(double, hmem3, ir.Size()*values.Width());
       FlatMatrix<> else_values(ir.Size(), values.Width(), hmem3);
-#else
-      Matrix<> if_values(ir.Size(), 1);
-      Matrix<> then_values(ir.Size(), values.Width());
-      Matrix<> else_values(ir.Size(), values.Width());
-#endif
       
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
