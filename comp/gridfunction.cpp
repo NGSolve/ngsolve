@@ -978,99 +978,99 @@ namespace ngcomp
 
   void GridFunctionCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    string mycode_simd = "                                                                       \n\
-      STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});                                        \n\
-      AFlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0].Data());                        \n\
-      {                                                                                          \n\
-      LocalHeapMem<100000> lh2(\"{values}\");                                                    \n\
-      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});                      \n\
-      const ElementTransformation &trafo = mir.GetTransformation();                              \n\
-      auto elnr = trafo.GetElementNr();                                                          \n\
-      const FESpace &fes = *gf.GetFESpace();                                                     \n\
-      auto boundary = trafo.Boundary();                                                          \n\
-      ElementId ei(boundary ? BND : VOL, elnr);                                                  \n\
-      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};                       \n\
-      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};           \n\
-      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};                         \n\
-      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {                            \n\
-          throw Exception (\"SIMD - evaluation not available for different meshes\");            \n\
-      } else if(!fes.DefinedOn(trafo.GetElementIndex(),boundary)){                               \n\
-          {values} = 0.0;                                                                        \n\
-      } else {                                                                                   \n\
-          const FiniteElement & fel = fes.GetFE (ei, lh2);                                       \n\
-          int dim = fes.GetDimension();                                                          \n\
-                                                                                                 \n\
-          ArrayMem<int, 50> dnums;                                                               \n\
-          fes.GetDofNrs (ei, dnums);                                                             \n\
-                                                                                                 \n\
-          VectorMem<50> elu(dnums.Size()*dim);                                                   \n\
-                                                                                                 \n\
-          gf.GetElementVector ({comp}, dnums, elu);                                              \n\
-          fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);                                 \n\
-                                                                                                 \n\
-          if (diffop && !boundary)                                                               \n\
-            diffop->Apply (fel, bmir, elu, {values});                                            \n\
-          else if (trace_diffop && boundary)                                                     \n\
-            trace_diffop->Apply (fel, bmir, elu, {values});                                      \n\
-          else if (bfi)                                                                          \n\
-            throw Exception (\"GridFunctionCoefficientFunction: SIMD evaluate not possible 1\"); \n\
-          // bfi->CalcFlux (fel, bmir, elu, values, true, lh2);                                  \n\
-          else if (fes.GetEvaluator(boundary))                                                   \n\
-            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}); // , lh2);           \n\
-          else if (fes.GetIntegrator(boundary))                                                  \n\
-            throw Exception (\"GridFunctionCoefficientFunction: SIMD evaluate not possible 2\"); \n\
-          // fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, values, false, lh2);          \n\
-          else                                                                                   \n\
-            throw Exception (\"GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate\"); \n\   
-      }                                                                                          \n\
-      }                                                                                          \n\
-    ";
-    string mycode = "                                                                            \n\
-      Matrix<>  {values}{mir.Size(), {dim}};                                                     \n\
-      {                                                                                          \n\
-      LocalHeapMem<100000> lh2(\"{values}\");                                                    \n\
-      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});                      \n\
-      const ElementTransformation &trafo = mir.GetTransformation();                              \n\
-      auto elnr = trafo.GetElementNr();                                                          \n\
-      const FESpace &fes = *gf.GetFESpace();                                                     \n\
-      auto boundary = trafo.Boundary();                                                          \n\
-      ElementId ei(boundary ? BND : VOL, elnr);                                                  \n\
-      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};                       \n\
-      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};           \n\
-      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};                         \n\
-      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {                            \n\
-          gf.Evaluate(mir, {values});                                                            \n\
-          //for (auto i : Range(mir.Size()))                                                       \n\
-          //  gf.Evaluate(mir[i], {values}.Row(i));                                                \n\
-      } else if(!fes.DefinedOn(trafo.GetElementIndex(),boundary)){                               \n\
-          {values} = 0.0;                                                                        \n\
-      } else {                                                                                   \n\
-          const FiniteElement & fel = fes.GetFE (ei, lh2);                                       \n\
-          int dim = fes.GetDimension();                                                          \n\
-                                                                                                 \n\
-          ArrayMem<int, 50> dnums;                                                               \n\
-          fes.GetDofNrs (ei, dnums);                                                             \n\
-                                                                                                 \n\
-          VectorMem<50> elu(dnums.Size()*dim);                                                   \n\
-                                                                                                 \n\
-          gf.GetElementVector ({comp}, dnums, elu);                                              \n\
-          fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);                                 \n\
-                                                                                                 \n\
-          if (diffop && !boundary)                                                               \n\
-            diffop->Apply (fel, bmir, elu, {values}, lh2);                                       \n\
-          else if (trace_diffop && boundary)                                                     \n\
-            trace_diffop->Apply (fel, bmir, elu, {values}, lh2);                                 \n\
-          else if (bfi)                                                                          \n\
-            bfi->CalcFlux (fel, bmir, elu, {values}, true, lh2);                                 \n\
-          else if (fes.GetEvaluator(boundary))                                                   \n\
-            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}, lh2);                 \n\
-          else if (fes.GetIntegrator(boundary))                                                  \n\
-            fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, {values}, false, lh2);       \n\
-          else                                                                                   \n\
-            throw Exception (\"don't know how I shall evaluate\");                               \n\
-      }                                                                                          \n\
-      }                                                                                          \n\
-    ";
+    string mycode_simd = R"CODE_( 
+      STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
+      AFlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0].Data());
+      {
+      LocalHeapMem<100000> lh2("{values}");
+      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
+      const ElementTransformation &trafo = mir.GetTransformation();
+      auto elnr = trafo.GetElementNr();
+      const FESpace &fes = *gf.GetFESpace();
+      auto boundary = trafo.Boundary();
+      ElementId ei(boundary ? BND : VOL, elnr);
+      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
+      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
+      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
+      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
+          throw Exception ("SIMD - evaluation not available for different meshes");
+      } else if(!fes.DefinedOn(trafo.GetElementIndex(),boundary)){
+          {values} = 0.0;
+      } else {
+          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          int dim = fes.GetDimension();
+
+          ArrayMem<int, 50> dnums;
+          fes.GetDofNrs (ei, dnums);
+
+          VectorMem<50> elu(dnums.Size()*dim);
+
+          gf.GetElementVector ({comp}, dnums, elu);
+          fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+          if (diffop && !boundary)
+            diffop->Apply (fel, bmir, elu, {values});
+          else if (trace_diffop && boundary)
+            trace_diffop->Apply (fel, bmir, elu, {values});
+          else if (bfi)
+            throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
+          // bfi->CalcFlux (fel, bmir, elu, values, true, lh2);
+          else if (fes.GetEvaluator(boundary))
+            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}); // , lh2);
+          else if (fes.GetIntegrator(boundary))
+            throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
+          // fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, values, false, lh2);
+          else
+            throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
+      }
+      }
+    )CODE_";
+    string mycode = R"CODE_( 
+      Matrix<>  {values}{mir.Size(), {dim}};
+      {
+      LocalHeapMem<100000> lh2(\"{values}\");
+      const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
+      const ElementTransformation &trafo = mir.GetTransformation();
+      auto elnr = trafo.GetElementNr();
+      const FESpace &fes = *gf.GetFESpace();
+      auto boundary = trafo.Boundary();
+      ElementId ei(boundary ? BND : VOL, elnr);
+      DifferentialOperator * diffop = (DifferentialOperator*){diffop_ptr};
+      DifferentialOperator * trace_diffop = (DifferentialOperator*){trace_diffop_ptr};
+      BilinearFormIntegrator * bfi = (BilinearFormIntegrator*){bfi_ptr};
+      if (!trafo.BelongsToMesh((void*)(fes.GetMeshAccess().get()))) {
+          gf.Evaluate(mir, {values});
+          //for (auto i : Range(mir.Size()))
+          //  gf.Evaluate(mir[i], {values}.Row(i));
+      } else if(!fes.DefinedOn(trafo.GetElementIndex(),boundary)){
+          {values} = 0.0;
+      } else {
+          const FiniteElement & fel = fes.GetFE (ei, lh2);
+          int dim = fes.GetDimension();
+
+          ArrayMem<int, 50> dnums;
+          fes.GetDofNrs (ei, dnums);
+
+          VectorMem<50> elu(dnums.Size()*dim);
+
+          gf.GetElementVector ({comp}, dnums, elu);
+          fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
+
+          if (diffop && !boundary)
+            diffop->Apply (fel, bmir, elu, {values}, lh2);
+          else if (trace_diffop && boundary)
+            trace_diffop->Apply (fel, bmir, elu, {values}, lh2);
+          else if (bfi)
+            bfi->CalcFlux (fel, bmir, elu, {values}, true, lh2);
+          else if (fes.GetEvaluator(boundary))
+            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}, lh2);
+          else if (fes.GetIntegrator(boundary))
+            fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, {values}, false, lh2);
+          else
+            throw Exception (\"don't know how I shall evaluate\");
+      }
+      }
+    )CODE_";
     std::map<string,string> variables;
     auto values = Var("values", index);
     variables["values"] = values.S();

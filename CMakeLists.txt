@@ -393,14 +393,22 @@ string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
 
 foreach( d ${ngscxx_defines} )
+  if(WIN32)
+    set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+  else()
     set( ngscxx_flags "${ngscxx_flags} -D${d}" )
+  endif()
 endforeach()
 
 # include directories
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
 
 foreach( d ${ngscxx_include_dirs} )
+  if(WIN32)
+    set( ngscxx_includes "${ngscxx_includes} /I${d}" )
+  else()
     set( ngscxx_includes "${ngscxx_includes} -I${d}" )
+  endif()
 endforeach()
 
 # linker flags
@@ -425,6 +433,7 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngsld//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
+elseif(WIN32)
 else()
     set(ngsld_flags "${ngsld_flags} -L${INSTALL_DIR}/lib -Wl,--rpath=${INSTALL_DIR}/lib" )
     set(ngscxx_header "#!/bin/sh")
