@@ -3061,6 +3061,95 @@ namespace netgen
 	  dshapes(7,1) = (1-x) * z;
 	  dshapes(7,2) = (1-x) * y;
 
+
+	  if (info.order == 1) return;          
+
+	  double shapes[8] = {
+            (1-x)*(1-y)*(1-z),
+               x *(1-y)*(1-z),
+               x *   y *(1-z),
+            (1-x)*   y *(1-z),
+            (1-x)*(1-y)*(z),
+               x *(1-y)*(z),
+               x *   y *(z),
+            (1-x)*   y *(z),
+	  };
+
+	  double mu[8] = {
+            (1-x)+(1-y)+(1-z),
+            x    +(1-y)+(1-z),
+            x    +   y +(1-z),
+            (1-x)+   y +(1-z),
+            (1-x)+(1-y)+(z),
+            x    +(1-y)+(z),
+            x    +   y +(z),
+            (1-x)+   y +(z)
+	  };
+
+	  double dmu[8][3] = {
+	    { -1, -1, -1 },
+	    { 1, -1, -1 },
+	    { 1, 1, -1 },
+	    { -1, 1, -1 },
+	    { -1, -1, 1 },
+	    { 1, -1, 1 },
+	    { 1, 1, 1 },
+	    { -1, 1, 1 }
+          };
+	    
+	  ArrayMem<double, 20> hshapes(order+1), hdshapes(order+1);
+
+	  int ii = 8;
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (HEX);
+	  
+	  for (int i = 0; i < 8; i++)
+	    {
+	      int eorder = edgeorder[info.edgenrs[i]];
+	      if (eorder >= 2)
+		{
+		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
+		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
+
+		  CalcEdgeShapeDx (eorder, mu[vi1]-mu[vi2], &hshapes[0], &hdshapes[0]);
+
+		  double lame = shapes[vi1]+shapes[vi2];
+		  double dlame[3] = {
+		    dshapes(vi1, 0) + dshapes(vi2, 0),
+		    dshapes(vi1, 1) + dshapes(vi2, 1),
+                    dshapes(vi1, 2) + dshapes(vi2, 2)
+                  };
+		    
+		  for (int j = 0; j < eorder-1; j++)
+		    for (int k = 0; k < 3; k++)
+		      dshapes(ii+j, k) = 
+			lame * hdshapes[j] * (dmu[vi1][k]-dmu[vi2][k])
+			+ dlame[k] * hshapes[j];
+
+		  ii += eorder-1;
+		}
+	    }
+
+	  /*	  
+	   *testout << "quad, dshape = " << endl << dshapes << endl;
+	   for (int i = 0; i < 2; i++)
+	   {
+	   Point<2> xil = xi, xir = xi;
+	   Vector shapesl(dshapes.Height()), shapesr(dshapes.Height());
+	   xil(i) -= 1e-6;
+	   xir(i) += 1e-6;
+	   CalcElementShapes (info, xil, shapesl);
+	   CalcElementShapes (info, xir, shapesr);
+	      
+	   for (int j = 0; j < dshapes.Height(); j++)
+	   dshapes(j,i) = 1.0 / 2e-6 * (shapesr(j)-shapesl(j));
+	   }
+	  
+	   *testout << "quad, num dshape = " << endl << dshapes << endl;
+	   */
+	  break;
+
+
+          
 	  break;
 	}
 
