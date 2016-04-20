@@ -233,10 +233,10 @@ Identifyable (const SpecialPoint & sp1, const SpecialPoint & sp2,
       double cl = fabs (v*n1);
       
 
-      val = 1 - cl*cl/(vl*vl);
-      val += (hsp1.v - hsp2.v).Length();
+      double val1 = 1 - cl*cl/(vl*vl);
+      double val2 = (hsp1.v - hsp2.v).Length();
     
-      if (val < 1e-6)
+      if (val1 < 1e-10 && val2 < 1e-6)
         return 1;
     }
 
