@@ -9,7 +9,7 @@ def pcg(mat, pre, rhs, maxits = 100):
     w = rhs.CreateVector()
     s = rhs.CreateVector()
 
-    u = 0.0 * rhs
+    u[:] = 0.0
     d.data = rhs - mat * u
     w.data = pre * d
     s.data = w
