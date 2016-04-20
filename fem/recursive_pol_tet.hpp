@@ -17,14 +17,10 @@ namespace ngfem
     template <typename Sx, typename Sy, typename Sz, typename T>
     static INLINE int Calc (int n, Sx x, Sy y, Sz z, T && values)
     {
-#ifdef VLA
-      Sx tmp[3*n+2];
+      STACK_ARRAY(Sx, tmp, 3*n+2);
       Sx * polx = &tmp[0];
       Sx * poly = &tmp[n+1];
       // Sx * polz = &tmp[2*n+2];
-#else
-      ArrayMem<Sx, 20> polx(n+1), poly(n+1), polz(n+1);
-#endif
 
       Sx bub = (1-x-y-z) * (1+x-y-z) * y * z ; 
 
