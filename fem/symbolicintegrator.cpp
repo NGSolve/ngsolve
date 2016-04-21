@@ -1687,6 +1687,7 @@ namespace ngfem
     for (ProxyFunction * proxy : trial_proxies)
       {
         IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+	trial_range = proxy->Evaluator()->BlockDim() * trial_range;
         if (proxy->IsOther()) 
           proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
         else
@@ -1763,6 +1764,7 @@ namespace ngfem
 
         ely1 = 0.0;
         IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+	test_range = proxy->Evaluator()->BlockDim()*test_range;
         if (proxy->IsOther()) 
           proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
         else

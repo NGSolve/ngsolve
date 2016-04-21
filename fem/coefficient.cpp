@@ -2484,15 +2484,15 @@ public:
       cf_if->Evaluate (ir, if_values);
       cf_then->Evaluate (ir, then_values);
       cf_else->Evaluate (ir, else_values);
-      /*
+      
       for (int i = 0; i < ir.Size(); i++)
         if (if_values(i) > 0)
           values.Row(i) = then_values.Row(i);
         else
           values.Row(i) = else_values.Row(i);
-      */
-      for (int i = 0; i < ir.Size(); i++)
-        values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
+      
+      // for (int i = 0; i < ir.Size(); i++)
+      //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
     }
 
 
