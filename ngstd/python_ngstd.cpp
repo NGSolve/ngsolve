@@ -29,12 +29,22 @@ void SetFlag(Flags &flags, const char * s, bp::object value)
   bp::extract<bp::list> vdl(value);
   if (vdl.check())
     {             
-      bp::extract<double> d0(vdl()[0]);
-      bp::extract<char *> s0(vdl()[0]);
-      if(d0.check())
-        flags.SetFlag(s, makeCArray<double>(value));
-      if (s0.check())
-        flags.SetFlag(s, makeCArray<string>(value));
+      if (bp::len(vdl) > 0)
+      {
+        bp::extract<double> d0(vdl()[0]);
+        bp::extract<char *> s0(vdl()[0]);
+        if(d0.check())
+          flags.SetFlag(s, makeCArray<double>(value));
+        if (s0.check())
+          flags.SetFlag(s, makeCArray<string>(value));
+      }
+      else
+      {
+        Array<string> dummystr;
+        Array<double> dummydbl;
+        flags.SetFlag(s,dummystr);
+        flags.SetFlag(s,dummydbl);
+      }
     }
 
   bp::extract<bp::tuple> vdt(value);
