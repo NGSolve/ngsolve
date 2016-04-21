@@ -540,8 +540,8 @@ namespace ngcomp
                        const FiniteElement & fel = el.GetFE();
                        Array<int> dnums(fel.GetNDof(), lh);
                        GetDofNrs (el.Nr(), dnums);
-                       FlatVector<double> elx(fel.GetNDof(), lh);
-
+                       FlatVector<double> elx(fel.GetNDof()*dimension, lh);
+		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
                        // FlatMatrix<> mass(fel.GetNDof(), lh);
                        // integrator->CalcElementMatrix(fel, el.GetTrafo(), mass, lh);
                        // cout << "mass = " << mass << endl;
@@ -555,8 +555,8 @@ namespace ngcomp
                        // double invdet = 1.0/mir[0].GetMeasure();
                        diag_mass *= mir[0].GetMeasure();
                        // cout << "diag_mass = " << endl << diag_mass << endl;
-                       for (int i = 0; i < elx.Size(); i++)
-                         elx(i) /= diag_mass(i);
+                       for (int i = 0; i < melx.Height(); i++)
+                         melx.Row(i) /= diag_mass(i);
                        vec.SetIndirect(dnums, elx);                       
                      });
   }
