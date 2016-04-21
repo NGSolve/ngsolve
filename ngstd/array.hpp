@@ -947,7 +947,7 @@ namespace ngstd
     if (hdata)
       {
         TSIZE mins = (nsize < size) ? nsize : size;
-#if __GNUG__ && __GNUC__ < 5
+#if defined(__GNUG__) && __GNUC__ < 5 && !defined(__clang__)
         for (TSIZE i = 0; i < mins; i++) data[i] = move(hdata[i]);
 #else
         if (std::is_trivially_copyable<T>::value)
