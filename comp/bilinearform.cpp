@@ -3495,21 +3495,23 @@ namespace ngcomp
 
 
 
-  template <class TM, class TV>
-  void T_BilinearForm<TM,TV>::ApplyElementMatrix(const BaseVector & x,
-                                                 BaseVector & y,
-                                                 const TSCAL & val,
-                                                 const Array<int> & dnums,
-                                                 const ElementTransformation & eltrans,
-                                                 const int elnum,
-                                                 const int type,
-                                                 int & cnt,
-                                                 LocalHeap & lh,
-                                                 const FiniteElement * fel,
-                                                 const SpecialElement * sel) const
+  // template <class TM, class TV>
+  // void T_BilinearForm<TM,TV>::
+  template <class SCAL>
+  void S_BilinearForm<SCAL> :: ApplyElementMatrix(const BaseVector & x,
+                                                  BaseVector & y,
+                                                  const SCAL & val,
+                                                  const Array<int> & dnums,
+                                                  const ElementTransformation & eltrans,
+                                                  const int elnum,
+                                                  const int type,
+                                                  int & cnt,
+                                                  LocalHeap & lh,
+                                                  const FiniteElement * fel,
+                                                  const SpecialElement * sel) const
   {
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
-    FlatVector<typename mat_traits<TV>::TSCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
+    FlatVector<SCAL> elvecx (dnums.Size() * this->fespace->GetDimension(), lh);
+    FlatVector<SCAL> elvecy (dnums.Size() * this->fespace->GetDimension(), lh);
 
     x.GetIndirect (dnums, elvecx);
 
@@ -3699,7 +3701,7 @@ namespace ngcomp
       }
   }
 
-
+#ifdef NONE
   template <class TM, class TV>
   void T_BilinearFormSymmetric<TM,TV>::ApplyElementMatrix(const BaseVector & x,
                                                           BaseVector & y,
@@ -3762,7 +3764,7 @@ namespace ngcomp
       }
                       
   }
-
+#endif
 
 
 
@@ -4096,6 +4098,15 @@ namespace ngcomp
         return make_shared<ElementByElement_BilinearForm<double>> (space, name, flags);
     }
 
+    if (flags.GetDefineFlag ("nonassemble"))
+      {
+        if ( space->IsComplex() )
+          return make_shared<S_BilinearFormNonAssemble<Complex>> (space, name, flags);
+        else 
+          return make_shared<S_BilinearFormNonAssemble<double>> (space, name, flags);
+      }
+
+    
     bool symmetric_storage = flags.GetDefineFlag ("symmetric") || flags.GetDefineFlag ("spd");
     if (flags.GetDefineFlag("nonsym") || flags.GetDefineFlag("nonsym_storage")) symmetric_storage = false;
     
@@ -4427,7 +4438,12 @@ namespace ngcomp
     bf->ApplyLinearizedMatrixAdd (val, *veclin, v, prod);
   }
 
-
+  template <class SCAL>
+  S_BilinearFormNonAssemble<SCAL> :: 
+  S_BilinearFormNonAssemble (shared_ptr<FESpace> afespace, const string & aname,
+                                 const Flags & flags)
+    : S_BilinearForm<SCAL> (afespace, aname, flags)
+  { ; }
 
 
   template <class SCAL>
