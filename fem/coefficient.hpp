@@ -875,12 +875,8 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
                         FlatVector<> result) const
   {
-#ifdef VLA
-    double hmem[dim];
+    STACK_ARRAY(double, hmem, dim);
     FlatVector<> temp(dim, hmem);
-#else
-    VectorMem<10> temp(dim);
-#endif
 
     c1->Evaluate (mip, result);
     c2->Evaluate (mip, temp);
@@ -892,12 +888,8 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
                         FlatVector<Complex> result) const
   {
-#ifdef VLA
-    double hmem[2*dim];
-    FlatVector<Complex> temp(dim, (Complex*)(void*)hmem);
-#else
-    Vector<Complex> temp(dim);
-#endif
+    STACK_ARRAY(double, hmem, 2*dim);
+    FlatVector<Complex> temp(dim, hmem);
 
     c1->Evaluate (mip, result);
     c2->Evaluate (mip, temp);
@@ -910,12 +902,8 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
-#ifdef VLA
-    double hmem[ir.Size()*dim];
+    STACK_ARRAY(double, hmem, ir.Size()*dim);
     FlatMatrix<> temp(ir.Size(), dim, hmem);
-#else
-    Matrix<> temp(ir.Size(), dim);
-#endif
 
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);
@@ -963,21 +951,14 @@ public:
                              FlatMatrix<> result, FlatMatrix<> deriv) const
   {
     int dim = result.Width();
-#ifdef VLA
-    double ha[mir.Size()*dim];
-    double hb[mir.Size()*dim];
+    STACK_ARRAY(double, ha, mir.Size()*dim);
+    STACK_ARRAY(double, hb, mir.Size()*dim);
     FlatMatrix<> ra(mir.Size(), dim, ha);
     FlatMatrix<> rb(mir.Size(), dim, hb);
-    double hda[mir.Size()*dim];
-    double hdb[mir.Size()*dim];
+    STACK_ARRAY(double, hda, mir.Size()*dim);
+    STACK_ARRAY(double, hdb, mir.Size()*dim);
     FlatMatrix<> da(mir.Size(), dim, hda);
     FlatMatrix<> db(mir.Size(), dim, hdb);
-#else
-    Matrix<> ra(mir.Size(), dim);
-    Matrix<> rb(mir.Size(), dim);
-    Matrix<> da(mir.Size(), dim);
-    Matrix<> db(mir.Size(), dim);
-#endif
 
     c1->EvaluateDeriv (mir, ra, da);
     c2->EvaluateDeriv (mir, rb, db);
@@ -998,27 +979,18 @@ public:
                               FlatMatrix<> dderiv) const
   {
     int dim = result.Width();
-#ifdef VLA
-    double ha[mir.Size()*dim];
-    double hb[mir.Size()*dim];
+    STACK_ARRAY(double, ha, mir.Size()*dim);
+    STACK_ARRAY(double, hb, mir.Size()*dim);
     FlatMatrix<> ra(mir.Size(), dim, ha);
     FlatMatrix<> rb(mir.Size(), dim, hb);
-    double hda[mir.Size()*dim];
-    double hdb[mir.Size()*dim];
+    STACK_ARRAY(double, hda, mir.Size()*dim);
+    STACK_ARRAY(double, hdb, mir.Size()*dim);
     FlatMatrix<> da(mir.Size(), dim, hda);
     FlatMatrix<> db(mir.Size(), dim, hdb);
-    double hdda[mir.Size()*dim];
-    double hddb[mir.Size()*dim];
+    STACK_ARRAY(double, hdda, mir.Size()*dim);
+    STACK_ARRAY(double, hddb, mir.Size()*dim);
     FlatMatrix<> dda(mir.Size(), dim, hdda);
     FlatMatrix<> ddb(mir.Size(), dim, hddb);
-#else
-    Matrix<> ra(mir.Size(), dim);
-    Matrix<> rb(mir.Size(), dim);
-    Matrix<> da(mir.Size(), dim);
-    Matrix<> db(mir.Size(), dim);
-    Matrix<> dda(mir.Size(), dim);
-    Matrix<> ddb(mir.Size(), dim);
-#endif
 
     c1->EvaluateDDeriv (mir, ra, da, dda);
     c2->EvaluateDDeriv (mir, rb, db, ddb);
@@ -1179,12 +1151,8 @@ public:
                          FlatMatrix<> result) const
   {
     // int dim1 = c1->Dimension();
-#ifdef VLA
-    double hmem[ir.Size()*dim1];
+    STACK_ARRAY(double, hmem, ir.Size()*dim1);
     FlatMatrix<> temp(ir.Size(), dim1, hmem);
-#else
-    Matrix<> temp(ir.Size(), dim1);
-#endif
     // Matrix<> m1(ir.Size(), c1->Dimension());
     
     c1->Evaluate (ir, temp);
@@ -1195,12 +1163,8 @@ public:
                          FlatMatrix<Complex> result) const
   {
     // int dim1 = c1->Dimension();
-#ifdef VLA
-    double hmem[2*ir.Size()*dim1];
+    STACK_ARRAY(double, hmem, 2*ir.Size()*dim1);
     FlatMatrix<Complex> temp(ir.Size(), dim1, (Complex*)hmem);
-#else
-    Matrix<Complex> temp(ir.Size(), dim1);
-#endif
     c1->Evaluate (ir, temp);
     result.Col(0) = temp.Col(comp);
   }  
@@ -1515,12 +1479,8 @@ public:
     for (auto & cf : ci)
       {
         int dimi = cf->Dimension();
-#ifdef VLA
-        double hmem[ir.Size()*dimi];
+        STACK_ARRAY(double, hmem, ir.Size()*dimi);
         FlatMatrix<> temp(ir.Size(), dimi, hmem);
-#else
-        Matrix<> temp(ir.Size(), dimi);
-#endif
         cf->Evaluate(ir, temp);
         result.Cols(base,base+dimi) = temp;
         base += dimi;
@@ -1546,12 +1506,8 @@ public:
     for (auto cf : ci)
       {
         int dimi = cf->Dimension();
-#ifdef VLA
-        double hmem[2*ir.Size()*dimi];
+        STACK_ARRAY(double, hmem, 2*ir.Size()*dimi);
         FlatMatrix<Complex> temp(ir.Size(), dimi, (Complex*)hmem);
-#else
-        Matrix<Complex> temp(ir.Size(), dimi);
-#endif
         cf->Evaluate(ir, temp);
         result.Cols(base,base+dimi) = temp;
         base += dimi;
