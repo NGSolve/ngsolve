@@ -16,6 +16,8 @@ static void InitSlice( const bp::slice &inds, int len, int &start, int &step, in
         int stop  = bp::extract<int>(indices[1]);
         step  = bp::extract<int>(indices[2]);
         n = (stop-start+step-1) / step;
+        if(step>1)
+            bp::exec("raise IndexError('slices with step>1 not supported')\n");
     }
     catch (bp::error_already_set const &) {
         cout << "Error in InitSlice(slice,...): " << endl;
@@ -160,74 +162,63 @@ void NGS_DLL_HEADER ExportNgla() {
            {
              if (ind < 0 || ind >= self.Size()) 
                bp::exec("raise IndexError()\n");
-             if( self.IsComplex() )
-               return bp::object(self.FVComplex()[ind]);
+             int entrysize = self.EntrySize();
+             if( self.IsComplex() ) entrysize/=2;
+             if(entrysize == 1)
+             {
+                 if( self.IsComplex() )
+                     return bp::object(self.FVDouble()[ind]);
+                 else
+                     return bp::object(self.FVComplex()[ind]);
+             }
              else
-               return bp::object(self.FVDouble()[ind]);
+             {
+                 // return FlatVector<T>
+                 if( self.IsComplex() )
+                   return bp::object(self.SV<Complex>()(ind));
+                 else
+                   return bp::object(self.SV<double>()(ind));
+             }
            } ))
     .def("__getitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds )
       {
           int start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
-
-          if( self.IsComplex() )
-            {
-              if( step == 1 )
-                return bp::object(self.FVComplex().Range(start, start+n));
-              else
-                return bp::object(self.FVComplex().Slice(start, step).Range(n));
-            }
-          else
-            {
-              if( step == 1 )
-                return bp::object(self.FVDouble().Range(start, start+n));
-              else
-                return bp::object(self.FVDouble().Slice(start, step).Range(n));
-            }
+          return shared_ptr<BaseVector>(self.Range(start, start+n));
       } ))
     .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, Complex z )
       {
-          self.FVComplex()[ind] = z;
+          self.Range(ind,ind+1) = z;
       } ))
     .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, double d )
       {
-          self.FVDouble()[ind] = d;
+          self.Range(ind,ind+1) = d;
       } ))
     .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, Complex z )
       {
           int start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
-          if( step == 1 )
-            self.FVComplex().Range(start,start+n) = z;
-          else
-            self.FVComplex().Slice(start,step).Range(n) = z;
+          self.Range(start,start+n) = z;
       } ))
     .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, double d )
       {
           int start, step, n;
           InitSlice( inds, self.Size(), start, step, n );
-          if( step == 1 )
-            self.FVDouble().Range(start,start+n) = d;
-          else
-            self.FVDouble().Slice(start,step).Range(n) = d;
+          self.Range(start,start+n) = d;
       } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, FlatVector<Complex> & v )
+    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, FlatVector<Complex> & v )
       {
-          int start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
-          if( step == 1 )
-            self.FVComplex().Range(start,start+n) = v;
+          if( self.IsComplex() )
+            self.SV<Complex>()(ind) = v;
           else
-            self.FVComplex().Slice(start,step).Range(n) = v;
+            bp::exec("raise IndexError('cannot assign complex values to real vector')\n");
       } ))
-    .def("__setitem__", FunctionPointer( [](BaseVector & self,  bp::slice inds, FlatVector<double> & v )
+    .def("__setitem__", FunctionPointer( [](BaseVector & self,  int ind, FlatVector<double> & v )
       {
-          int start, step, n;
-          InitSlice( inds, self.Size(), start, step, n );
-          if( step == 1 )
-            self.FVDouble().Range(start,start+n) = v;
+          if( self.IsComplex() )
+            self.SV<Complex>()(ind) = v;
           else
-            self.FVDouble().Slice(start,step).Range(n) = v;
+            self.SV<double>()(ind) = v;
       } ))
     .def(bp::self+=bp::self)
     .def(bp::self-=bp::self)

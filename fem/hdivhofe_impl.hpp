@@ -386,14 +386,10 @@ namespace ngfem
     int pp = max2(p,pc); 
     if ( pp >= 2 )
       {
-#ifdef VLA
-        Tx mem[3*order];
+        STACK_ARRAY(Tx, mem, 3*order);
         Tx * adpol1 = &mem[0];
         Tx * adpol2 = &mem[order];
         Tx * adpol3 = &mem[2*order];
-#else
-        ArrayMem<Tx,10> adpol1(order), adpol2(order), adpol3(order);
-#endif
 
         T_INNERSHAPES::CalcSplitted(pp+2, lami[0]-lami[3], lami[1], lami[2], adpol1, adpol2, adpol3 );
       

@@ -946,8 +946,15 @@ namespace ngstd
 
     if (hdata)
       {
-        TSIZE mins = (nsize < size) ? nsize : size; 
+        TSIZE mins = (nsize < size) ? nsize : size;
+#if defined(__GNUG__) && __GNUC__ < 5 && !defined(__clang__)
         for (TSIZE i = 0; i < mins; i++) data[i] = move(hdata[i]);
+#else
+        if (std::is_trivially_copyable<T>::value)
+          memcpy (data, hdata, sizeof(T)*mins);
+        else
+          for (TSIZE i = 0; i < mins; i++) data[i] = move(hdata[i]);
+#endif
         delete [] mem_to_delete;
       }
 

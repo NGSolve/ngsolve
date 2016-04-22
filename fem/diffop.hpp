@@ -284,7 +284,8 @@ namespace ngfem
       : diffop(adiffop), dim(adim), comp(acomp) { ; }
 
     virtual ~BlockDifferentialOperator ();
-
+    
+    virtual string Name() const { return diffop->Name(); }
     /// dimension of range
     virtual int Dim() const { return dim*diffop->Dim(); }
     virtual int BlockDim() const { return dim*diffop->BlockDim(); }
