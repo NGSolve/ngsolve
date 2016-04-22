@@ -1688,7 +1688,7 @@ public:
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
-    throw Exception ("TransposeCF:: scalar evaluate for matrix called");
+    throw Exception ("MultMatMatCF:: scalar evaluate for matrix called");
   }
 
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
@@ -1709,7 +1709,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const
   {
-    cout << "Transpose: complex not implemented" << endl;
+    cout << "MultMatMat: complex not implemented" << endl;
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
@@ -1727,7 +1727,29 @@ public:
         FlatMatrix<> c(dims[0], dims[1], &result(i,0));
         c = a*b;
       }
-  }  
+  }
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> values) const
+  {
+    STACK_ARRAY(SIMD<double>, hmem1, mir.IR().Size()*dims[0]*inner_dim);
+    STACK_ARRAY(SIMD<double>, hmem2, mir.IR().Size()*dims[1]*inner_dim);
+    AFlatMatrix<double> va(dims[0]*inner_dim, mir.IR().GetNIP(), &hmem1[0].Data());
+    AFlatMatrix<double> vb(dims[1]*inner_dim, mir.IR().GetNIP(), &hmem2[0].Data());
+    c1->Evaluate (mir, va);
+    c2->Evaluate (mir, vb);
+    values = 0.0;
+    
+    for (int j = 0; j < dims[0]; j++)
+      for (int k = 0; k < dims[1]; k++)
+        for (int l = 0; l < inner_dim; l++)
+          {
+            auto row_a = va.Row(j*inner_dim+l);
+            auto row_b = vb.Row(l*dims[1]+k);
+            auto row_c = values.Row(j*dims[1]+k);
+            for (int i = 0; i < mir.Size(); i++)
+              row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
+          }
+  }
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
@@ -1938,7 +1960,7 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const
   {
-    cout << "Transpose: complex not implemented" << endl;
+    cout << "MultMatMat: complex not implemented" << endl;
   }  
 
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
@@ -2183,6 +2205,24 @@ public:
       }
   }  
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+                         AFlatMatrix<double> result) const
+  {
+    c1->Evaluate (mir, result);
+    STACK_ARRAY(SIMD<double>, hmem, dims[0]*dims[1]);
+    AFlatMatrix<double> tmp (dims[0], dims[1]*SIMD<double>::Size(), &hmem[0].Data());
+
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        for (int j = 0; j < dims[0]; j++)
+          for (int k = 0; k < dims[1]; k++)
+            tmp.Get(j,k) = result.Get(k*dims[0]+j, i);
+        for (int j = 0; j < dims[0]; j++)
+          for (int k = 0; k < dims[1]; k++)
+            result.Get(j*dims[1]+k, i) = tmp.Get(j,k);
+      }
+  }  
+
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
@@ -2374,6 +2414,10 @@ public:
             return make_shared<T_MultVecVecCoefficientFunction<2>> (c1, c2);
           case 3:
             return make_shared<T_MultVecVecCoefficientFunction<3>> (c1, c2);
+          case 4:
+            return make_shared<T_MultVecVecCoefficientFunction<4>> (c1, c2);
+          case 5:
+            return make_shared<T_MultVecVecCoefficientFunction<5>> (c1, c2);
           default:
             return make_shared<MultVecVecCoefficientFunction> (c1, c2);
           }
@@ -2412,6 +2456,12 @@ public:
         return make_shared<T_MultVecVecCoefficientFunction<2>> (c1, c2);
       case 3:
         return make_shared<T_MultVecVecCoefficientFunction<3>> (c1, c2);
+      case 4:
+        return make_shared<T_MultVecVecCoefficientFunction<4>> (c1, c2);
+      case 5:
+        return make_shared<T_MultVecVecCoefficientFunction<5>> (c1, c2);
+      case 8:
+        return make_shared<T_MultVecVecCoefficientFunction<8>> (c1, c2);
       default:
         return make_shared<MultVecVecCoefficientFunction> (c1, c2);
       }
