@@ -1142,8 +1142,9 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     CodeExpr result;
-    for (int i : Range(c1->Dimension()))
-      result = result + ( Var(inputs[0],i) * Var(inputs[1],i) );
+    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+        result += Var(inputs[0],i,j) * Var(inputs[1],i,j);
+    });
     code.body += Var(index).Assign(result.S());
   }
 
@@ -1320,8 +1321,13 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     CodeExpr result;
-    for (int i : Range(c1->Dimension()))
-      result += Var(inputs[0],i) * Var(inputs[1],i);
+    cout << "***********************" << endl;
+    cout << c1->Dimensions() << endl;
+    cout << c2->Dimensions() << endl;
+
+    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+        result += Var(inputs[0],i,j) * Var(inputs[1],i,j);
+    });
     code.body += Var(index).Assign(result.S());
   }
 
@@ -2745,6 +2751,7 @@ public:
   {
     int input = 0;
     int ii = 0;
+    // TODO: fix indexing
     TraverseDimensions( dims, [&](int i, int j) {
         code.body += Var(index,i,j).Assign( Var(inputs[input],ii) );
         ii++;
