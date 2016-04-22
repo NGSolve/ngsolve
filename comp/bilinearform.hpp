@@ -497,8 +497,8 @@ namespace ngcomp
 				    int & cnt,
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
-				    const SpecialElement * sel = NULL) const
-    { cerr << "ApplyElementMatrix called for baseclass" << endl;}
+				    const SpecialElement * sel = NULL) const;
+    // { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
 				       const FlatVector<SCAL> & diag,
@@ -526,7 +526,19 @@ namespace ngcomp
       return *innermatrix; 
     }
 
-
+    /*
+    virtual void ApplyElementMatrix(const BaseVector & x,
+				    BaseVector & y,
+				    const SCAL & val,
+				    const Array<int> & dnums,
+				    const ElementTransformation & eltrans,
+				    const int elnum,
+				    const int type,
+				    int & cnt,
+				    LocalHeap & lh,
+				    const FiniteElement * fel,
+				    const SpecialElement * sel = NULL) const;
+    */
   };
 
 
@@ -568,18 +580,6 @@ namespace ngcomp
 				   ElementId id, 
 				   LocalHeap & lh);
 
-    virtual void ApplyElementMatrix(const BaseVector & x,
-				    BaseVector & y,
-				    const TSCAL & val,
-				    const Array<int> & dnums,
-				    const ElementTransformation & eltrans,
-				    const int elnum,
-				    const int type,
-				    int & cnt,
-				    LocalHeap & lh,
-				    const FiniteElement * fel,
-				    const SpecialElement * sel = NULL) const;
-
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
   };
 
@@ -615,6 +615,7 @@ namespace ngcomp
                                    FlatMatrix<TSCAL> elmat,
 				   ElementId id, 
 				   LocalHeap & lh);
+    /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,
 				    const TSCAL & val,
@@ -626,13 +627,57 @@ namespace ngcomp
 				    LocalHeap & lh,
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
-
+    */
     virtual bool SymmetricStorage() const { return true; }
 
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const;
   };
 
+
+
+  template <class TSCAL>
+  class NGS_DLL_HEADER S_BilinearFormNonAssemble : public S_BilinearForm<TSCAL>
+  {
+  public:
+    S_BilinearFormNonAssemble (shared_ptr<FESpace> afespace, const string & aname,
+                               const Flags & flags);
+    // virtual ~T_BilinearFormSymmetric ();
+
+    virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
+    virtual void CleanUpLevel() { ; } 
+
+    virtual shared_ptr<BaseVector> CreateVector() const
+    {
+      throw Exception ("CreateVector for non-assemble not available");
+    }
+    
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
+                                   FlatMatrix<TSCAL> elmat,
+				   ElementId id, 
+				   LocalHeap & lh)
+    {
+      throw Exception ("AddElementMatrix for non-assemble biform called");
+    }
+    /*
+    virtual void ApplyElementMatrix(const BaseVector & x,
+				    BaseVector & y,
+				    const TSCAL & val,
+				    const Array<int> & dnums,
+				    const ElementTransformation & eltrans,
+				    const int elnum,
+				    const int type,
+				    int & cnt,
+				    LocalHeap & lh,
+				    const FiniteElement * fel,
+				    const SpecialElement * sel = NULL) const;
+    */
+    virtual bool SymmetricStorage() const { return true; }
+
+    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const
+    { cout << "no eigensystem available" << endl; }
+  };
 
 
 
