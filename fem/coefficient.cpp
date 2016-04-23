@@ -1325,7 +1325,9 @@ public:
   {
     CodeExpr result;
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
-        result += Var(inputs[0],i,j) * Var(inputs[1],i,j);
+        int i2, j2;
+        GetIndex( c2->Dimensions(), ind, i2, j2 );
+        result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
     });
     code.body += Var(index).Assign(result.S());
   }
@@ -2814,6 +2816,7 @@ public:
         int i1, j1;
         GetIndex( cfi->Dimensions(), input_index, i1, j1 );
         code.body += Var(index,i,j).Assign( Var(inputs[input], i1, j1) );
+        input_index++;
         if (input_index == cfi->Dimension() )
         {
             input++;
