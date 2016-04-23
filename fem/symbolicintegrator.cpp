@@ -62,10 +62,9 @@ namespace ngfem
       header += "typedef double {tres};\n";
     }
     {
-      int ii=0;
       TraverseDimensions( dims, [&](int ind, int i, int j) {
           header += Var("comp", index,i,j).Declare("double", 0.0);
-          header += "if({ud}->{comp_string}=="+ToString(ii++)+")\n";
+          header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
           header += Var("comp", index,i,j).Assign( Var(1.0), false );
       });
     }
@@ -78,12 +77,11 @@ namespace ngfem
 
     if(!testfunction) {
       body += "if ({ud}->fel) {\n";
-      int ii=0;
       TraverseDimensions( dims, [&](int ind, int i, int j) {
           if(code.is_simd)
-            body += Var(index, i,j).Assign( "{values}.Get("+ToString(ii++) + ",i)", false );
+            body += Var(index, i,j).Assign( "{values}.Get("+ToString(ind) + ",i)", false );
           else
-            body += Var(index, i,j).Assign( "{values}(i,"+ToString(ii++) + ")", false );
+            body += Var(index, i,j).Assign( "{values}(i,"+ToString(ind) + ")", false );
       });
       body += "} else ";
     }

@@ -172,12 +172,13 @@ namespace ngfem
 
 
   public:
+    Library() : lib(nullptr) {}
     // Compile a given string and load the library
     void Compile( string code )
     {
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
-      string file_prefix = "code" + ToString(counter);
+      string file_prefix = "code" + ToString(counter++);
       ofstream codefile(file_prefix+".cpp");
       codefile << code;
       codefile.close();
@@ -193,7 +194,6 @@ namespace ngfem
       tlink.Stop();
       cout << IM(3) << "done" << endl;
       Load(file_prefix+".so");
-      counter++;
     }
 
 #ifdef WIN32
