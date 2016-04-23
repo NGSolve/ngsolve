@@ -112,19 +112,38 @@ namespace ngfem
     switch(dims.Size())
     {
       case 0:
-        func(0,0);
+        func(0,0,0);
         break;
       case 1:
         for (int i : Range(max2(1, dims[0])))
-          func(i,0);
+          func(i,i,0);
         break;
       case 2:
         for (int i : Range(max2(1, dims[0])))
           for (int j : Range(max2(1, dims[1])))
-            func(i,j);
+            func(i*dims[1]+j, i, j);
         break;
       default:
         throw Exception("TraverseDimensions: too many dimensions!");
+    }
+  }
+
+  static void GetIndex( FlatArray<int> dims, int i, int &iout, int &jout )
+  {
+    iout = jout = 0;
+    switch(dims.Size())
+    {
+      case 0:
+        break;
+      case 1:
+        iout = i;
+        break;
+      case 2:
+        iout = i/dims[1];
+        jout = i%dims[1];
+        break;
+      default:
+        throw Exception("GetIndex: too many dimensions!");
     }
   }
 

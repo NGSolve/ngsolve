@@ -653,7 +653,7 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( Dimensions(), [&](int i, int j) {
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).Func(name) );
         });
   }
@@ -838,8 +838,13 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
-        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).S() + opname + Var(inputs[1],i,j).S() );
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        int i2,j2;
+        GetIndex(c2->Dimensions(), ind, i2, j2);
+        code.body += Var(index,i,j).Assign(   Var(inputs[0],i,j).S()
+                                            + opname
+                                            + Var(inputs[1],i2,j2).S()
+                                          );
     });
   }
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
@@ -1104,14 +1109,8 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     auto dims = c1->Dimensions();
-    int i = 0;
-    int j = 0;
-    if(dims.Size()==1)
-      i = comp;
-    else {
-      i = comp/dims[0];
-      j = comp%dims[0];
-    }
+    int i,j;
+    GetIndex(dims, comp, i, j);
     code.body += Var(index).Assign( Var(inputs[0], i, j ));
   }
 

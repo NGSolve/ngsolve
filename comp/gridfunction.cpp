@@ -1087,7 +1087,7 @@ namespace ngcomp
     else
       code.header += Code::Map(mycode, variables);
 
-    TraverseDimensions( Dimensions(), [&](int i, int j) {
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
     });
   }
