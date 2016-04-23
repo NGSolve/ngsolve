@@ -18,7 +18,7 @@
 // 8 for multiharmonic
 
 #ifndef MAX_SYS_DIM
-#define MAX_SYS_DIM 3
+#define MAX_SYS_DIM 4
 #endif
 
 #ifndef MAX_CACHEBLOCKS

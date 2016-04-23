@@ -773,7 +773,7 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
     });
   }
@@ -923,7 +923,7 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
     });
   }
@@ -976,8 +976,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    for (int i : Range(c2->Dimension()))
-      code.body += Var(index,i).Assign( Var(inputs[0]) * Var(inputs[1],i) );
+    TraverseDimensions( c2->Dimensions(), [&](int ind, int i, int j) {
+      code.body += Var(index,i,j).Assign( Var(inputs[0]) * Var(inputs[1],i,j) );
+    });
   }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
@@ -1142,8 +1143,10 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     CodeExpr result;
-    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
-        result += Var(inputs[0],i,j) * Var(inputs[1],i,j);
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        int i2, j2;
+        GetIndex( c2->Dimensions(), ind, i2, j2 );
+        result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
     });
     code.body += Var(index).Assign(result.S());
   }
@@ -1321,11 +1324,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     CodeExpr result;
-    cout << "***********************" << endl;
-    cout << c1->Dimensions() << endl;
-    cout << c2->Dimensions() << endl;
-
-    TraverseDimensions( c1->Dimensions(), [&](int i, int j) {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         result += Var(inputs[0],i,j) * Var(inputs[1],i,j);
     });
     code.body += Var(index).Assign(result.S());
@@ -1977,6 +1976,15 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      auto dims = c1->Dimensions();
+      for (int i : Range(dims[0])) {
+        CodeExpr s;
+        for (int j : Range(dims[1]))
+            s += Var(inputs[0], i, j) * Var(inputs[1], j);
+	code.body += Var(index, i).Assign(s);
+      }
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -2633,20 +2641,20 @@ public:
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
     {
       auto var_if = Var(inputs[0]);
-      TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+      TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
           code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
       });
       if(code.is_simd) {
-        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign("IfPos("+Var(inputs[0]).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+")", false);
         });
       } else {
         code.body += "if (" + var_if.S() + ">0.0) {\n";
-        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
         });
         code.body += "} else {\n";
-        TraverseDimensions( cf_then->Dimensions(), [&](int i, int j) {
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
         });
         code.body += "}\n";
@@ -2750,15 +2758,16 @@ public:
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     int input = 0;
-    int ii = 0;
-    // TODO: fix indexing
-    TraverseDimensions( dims, [&](int i, int j) {
-        code.body += Var(index,i,j).Assign( Var(inputs[input],ii) );
-        ii++;
-        if(ii>=ci[input]->Dimension())
+    int input_index = 0;
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+	auto cfi = ci[input];
+        int i1, j1;
+        GetIndex( cfi->Dimensions(), input_index, i1, j1 );
+        code.body += Var(index,i,j).Assign( Var(inputs[input], i1, j1) );
+        if (input_index == cfi->Dimension() )
         {
             input++;
-            ii = 0;
+            input_index = 0;
         }
     });
   }
@@ -2834,7 +2843,7 @@ public:
 
             // set results
             int ii = 0;
-            TraverseDimensions( cf->Dimensions(), [&](int i, int j) {
+            TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
                  if(simd)
                    code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ".Data();\n";
                  else

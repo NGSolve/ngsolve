@@ -28,10 +28,6 @@ namespace ngfem
   {
     auto dims = Dimensions();
 
-    // transpose line-vector to a column
-    if(dims.Size()>1 && dims[0]==1)
-      Swap(dims[0], dims[1]);
-
     string header = "\n\
     {flatmatrix} {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
@@ -67,7 +63,7 @@ namespace ngfem
     }
     {
       int ii=0;
-      TraverseDimensions( dims, [&](int i, int j) {
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
           header += Var("comp", index,i,j).Declare("double", 0.0);
           header += "if({ud}->{comp_string}=="+ToString(ii++)+")\n";
           header += Var("comp", index,i,j).Assign( Var(1.0), false );
@@ -75,7 +71,7 @@ namespace ngfem
     }
     string body = "";
 
-    TraverseDimensions( dims, [&](int i, int j) {
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
         body += Var(index, i,j).Declare("{tres}", 0.0);
         body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
     });
@@ -83,7 +79,7 @@ namespace ngfem
     if(!testfunction) {
       body += "if ({ud}->fel) {\n";
       int ii=0;
-      TraverseDimensions( dims, [&](int i, int j) {
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
           if(code.is_simd)
             body += Var(index, i,j).Assign( "{values}.Get("+ToString(ii++) + ",i)", false );
           else
@@ -92,7 +88,7 @@ namespace ngfem
       body += "} else ";
     }
     body += "if({ud}->{func_string} == {this}) {\n";
-    TraverseDimensions( dims, [&](int i, int j) {
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
         body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
     });
     body += "}\n";
