@@ -2309,6 +2309,8 @@ namespace netgen {
                 glBitmap(8*char_w,  char_h,  0.0,  0.0,  w,  0.0,  char_bitmap);
                 glEndList();
             }
+
+            return list_base;
         }
     };
 
