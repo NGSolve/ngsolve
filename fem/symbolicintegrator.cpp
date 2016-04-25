@@ -8,7 +8,7 @@
 */
 
 #include <fem.hpp>
-  
+
 namespace ngfem
 {
   
@@ -1908,35 +1908,25 @@ namespace ngfem
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
     const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    auto & smir = strafo(ir_facet, lh);
     
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    const_cast<ElementTransformation&>(strafo).userdata = &ud;
     ud.fel = &fel1;   // necessary to check remember-map
     // ud.elx = &elx;
     ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
-      {
-        /*
-        ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
-        IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-        if (proxy->IsOther())
-          {
-            auto & bv = proxy->BoundaryValues();
-            if (bv)
-              bv->Evaluate (mir1, ud.GetMemory(proxy));
-            else
-              ud.GetMemory(proxy) = 0.0;              
-          }
-        else
-          proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
-        */
-        ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
-        if (proxy->IsOther() && proxy->BoundaryValues())
-          proxy->BoundaryValues()->Evaluate (mir1, ud.GetMemory(proxy));
-        else
-          proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetMemory(proxy), lh);
-      }
+      ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
+    
+    for (ProxyFunction * proxy : trial_proxies)
+      if (! (proxy->IsOther() && proxy->BoundaryValues()))
+        proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetMemory(proxy), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)    
+      if (proxy->IsOther() && proxy->BoundaryValues())
+        proxy->BoundaryValues()->Evaluate (smir, ud.GetMemory(proxy));
 
     RegionTimer reg(t);
     
@@ -2031,21 +2021,27 @@ namespace ngfem
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     auto & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
     auto & mir1 = trafo1(ir_facet_vol1, lh);
+    auto & smir = strafo(ir_facet, lh);
     mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr);
     
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    const_cast<ElementTransformation&>(strafo).userdata = &ud;
     ud.fel = &fel1;   // necessary to check remember-map
     // ud.elx = &elx;
     ud.lh = &lh;
+
+    
     for (ProxyFunction * proxy : trial_proxies)
-      {
-        ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
-        if (proxy->IsOther() && proxy->BoundaryValues())
-          proxy->BoundaryValues()->Evaluate (mir1, ud.GetAMemory(proxy));
-        else
-          proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetAMemory(proxy));
-      }
+      ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)
+      if (! (proxy->IsOther() && proxy->BoundaryValues()) )
+        proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetAMemory(proxy));
+
+    for (ProxyFunction * proxy : trial_proxies)
+      if (proxy->IsOther() && proxy->BoundaryValues())
+        proxy->BoundaryValues()->Evaluate (smir, ud.GetAMemory(proxy));
 
     RegionTimer reg(t);
     
