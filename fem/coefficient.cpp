@@ -963,14 +963,6 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<> result) const
   {
-    /*
-#ifdef VLA
-    double hmem1[ir.Size()];
-    FlatMatrix<> temp1(ir.Size(), 1, hmem1);
-#else
-    Matrix<> temp1(ir.Size(), 1);
-#endif
-    */
     STACK_ARRAY(double, hmem1, ir.Size());
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
     
@@ -1715,8 +1707,14 @@ public:
   virtual void Evaluate (const BaseMappedIntegrationRule & mir,
                          FlatMatrix<> result) const
   {
-    Matrix<> va(mir.Size(), dims[0]*inner_dim);
-    Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+    // Matrix<> va(mir.Size(), dims[0]*inner_dim);
+    // Matrix<> vb(mir.Size(), dims[1]*inner_dim);
+
+    STACK_ARRAY(double, mema, mir.Size()*dims[0]*inner_dim);
+    STACK_ARRAY(double, memb, mir.Size()*dims[1]*inner_dim);
+    FlatMatrix<> va(mir.Size(), dims[0]*inner_dim, mema);
+    FlatMatrix<> vb(mir.Size(), dims[1]*inner_dim, memb);
+
     c1->Evaluate (mir, va);
     c2->Evaluate (mir, vb);
 
@@ -2194,7 +2192,8 @@ public:
                          FlatMatrix<> result) const
   {
     c1->Evaluate (mir, result);
-    Matrix<> tmp (dims[0], dims[1]);
+    STACK_ARRAY(double, hmem, dims[0]*dims[1]);
+    FlatMatrix<> tmp (dims[0], dims[1], hmem);
 
     for (int i = 0; i < mir.Size(); i++)
       {
