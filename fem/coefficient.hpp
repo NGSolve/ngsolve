@@ -1278,6 +1278,26 @@ public:
   }
 
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    int matindex = ir.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ir, values);
+    else
+      values = 0.0;
+  }
+
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    int matindex = ir.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ir, values);
+    else
+      values = 0.0;
+  }
+
+
+  
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
