@@ -1179,16 +1179,22 @@ namespace ngfem
 
 #ifndef USE_SIMD
     {
-    ProxyUserData ud;
+    HeapReset hr(lh);
+    ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
     ud.elx = &elx;
     ud.lh = &lh;
 
-    HeapReset hr(lh);
     IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
-      
+
+    for (ProxyFunction * proxy : trial_proxies)
+      ud.AssignMemory (proxy, mir.Size(), proxy->Dimension(), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)
+      proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
+
     ely = 0;
     FlatVector<> ely1(ely.Size(), lh);
 
