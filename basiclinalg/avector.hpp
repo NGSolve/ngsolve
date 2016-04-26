@@ -531,6 +531,7 @@ class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
   // static int vw;
   __m256d * __restrict data;
 public:
+  AFlatMatrixD () = default;
   AFlatMatrixD (const AFlatMatrixD &) = default;
   AFlatMatrixD(int ah, int aw, LocalHeap & lh)
   {
