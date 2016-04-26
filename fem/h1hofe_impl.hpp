@@ -302,7 +302,7 @@ namespace ngfem
 	ArrayMem<Tx,20> pol_trig(nf);
 
 	DubinerBasis3::EvalMult (p[0]-3, x, y, x*y*(1-x-y),pol_trig);
-	LegendrePolynomial::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
+	EdgeOrthoPol::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
 
 	for (int i = 0; i < nf; i++)
 	  for (int k = 0; k < p[2]-1; k++)
@@ -425,7 +425,7 @@ namespace ngfem
 	  Tx lam_e = lambda[e[0]]+lambda[e[1]];
 	  Tx bub = 0.25 * lam_e * (1 - xi*xi)*(1-z)*(1-z);
 	  Tx ximz = xi*(1-z);
-	  LegendrePolynomial::
+	  EdgeOrthoPol::
 	    EvalScaledMult (p-2, ximz, 1-z, bub, shape+ii);
 	  ii += p-1;
 	}
@@ -441,7 +441,7 @@ namespace ngfem
 	  Tx lam_e = lambda3d[e[0]]+lambda3d[e[1]];
 	  Tx bub = 0.25 * (lam_e*lam_e-xi*xi);
 	  
-	  LegendrePolynomial::
+	  EdgeOrthoPol::
 	    EvalScaledMult (p-2, xi, lam_e, bub, shape+ii);
 	  ii += p-1;
 	}

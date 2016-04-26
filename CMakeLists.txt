@@ -397,7 +397,7 @@ foreach( d ${ngscxx_defines} )
 endforeach()
 
 # include directories
-set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
+set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
 
 foreach( d ${ngscxx_include_dirs} )
     set( ngscxx_includes "${ngscxx_includes} -I${d}" )
