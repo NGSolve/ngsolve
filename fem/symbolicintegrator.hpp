@@ -93,6 +93,10 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          AFlatMatrix<double> values) const;
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                         FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const;
+
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const;
