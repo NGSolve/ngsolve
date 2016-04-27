@@ -213,7 +213,7 @@ namespace ngcomp
     
 
   template <int D> 
-  void VTKOutput<D>::Do (LocalHeap & lh)
+  void VTKOutput<D>::Do (LocalHeap & lh, const BitArray * drawelems)
   {
     static int refinements = 0;
     ostringstream filenamefinal;
@@ -246,6 +246,9 @@ namespace ngcomp
     
     for ( int elnr : range)
     {
+      if (drawelems && !(drawelems->Test(elnr)))
+          continue;
+      
       HeapReset hr(lh);
 
       ElementTransformation & eltrans = ma->GetTrafo (elnr, 0, lh);
