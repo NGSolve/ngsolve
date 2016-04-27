@@ -1188,6 +1188,7 @@ public:
 class AFlatMatrixD : public FlatMatrix<double>
 {
 public:
+  AFlatMatrixD () = default;  
   AFlatMatrixD (int ah, int aw, LocalHeap & lh)
     : FlatMatrix<double> (ah, aw, lh) { ; }
   AFlatMatrixD (int ah, int aw, double * p)
