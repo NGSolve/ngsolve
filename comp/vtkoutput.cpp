@@ -215,12 +215,18 @@ namespace ngcomp
   template <int D> 
   void VTKOutput<D>::Do (LocalHeap & lh, const BitArray * drawelems)
   {
-    static int refinements = 0;
     ostringstream filenamefinal;
-    filenamefinal << filename << refinements << ".vtk";
+    filenamefinal << filename;
+    if (output_cnt > 0)
+      filenamefinal << "_" << output_cnt;
+    filenamefinal << ".vtk";
     fileout = make_shared<ofstream>(filenamefinal.str());
-    cout << " This is the Do-call on refinement level " << refinements << std::endl;
-    refinements++;
+    cout << " Writing VTK-Output";
+    if (output_cnt > 0)
+      cout << " ( " << output_cnt << " )";
+    cout << ":" << flush;
+    
+    output_cnt++;
 
     ResetArrays();
 
@@ -288,6 +294,7 @@ namespace ngcomp
     PrintCellTypes();
     PrintFieldData();
       
+    cout << " Done." << endl;
   }    
 
   NumProcVTKOutput::NumProcVTKOutput (shared_ptr<PDE> apde, const Flags & flags)
