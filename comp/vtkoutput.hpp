@@ -48,6 +48,8 @@ namespace ngcomp
     Array<Vec<D>> points;
     Array<INT<D+1>> cells;
 
+    int output_cnt = 0;
+    
     shared_ptr<ofstream> fileout;
     
   public:
