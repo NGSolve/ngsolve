@@ -166,7 +166,7 @@ void NGS_DLL_HEADER ExportNgla() {
              if( self.IsComplex() ) entrysize/=2;
              if(entrysize == 1)
              {
-                 if( self.IsComplex() )
+                 if( !self.IsComplex() )
                      return bp::object(self.FVDouble()[ind]);
                  else
                      return bp::object(self.FVComplex()[ind]);
