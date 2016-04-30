@@ -2551,6 +2551,14 @@ namespace netgen
           
 	  if (info.order == 1) return;
 
+          double sigma[4] =
+            {
+              sigma[0] = ( (1-z-x) + (1-z-y) ),
+              sigma[1] = (       x + (1-z-y) ),
+              sigma[2] = (       x +       y ),
+              sigma[3] = ( (1-z-x) +       y ),
+            };
+
 	  int ii = 5;
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PYRAMID);
 	  for (int i = 0; i < 4; i++)    // horizontal edges
@@ -2561,7 +2569,7 @@ namespace netgen
 		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
 
-		  CalcScaledEdgeShape (eorder, shapes[vi1]-shapes[vi2], shapes[vi1]+shapes[vi2], &shapes(ii));
+                  CalcScaledEdgeShape (eorder, sigma[vi1]-sigma[vi2], 1-z, &shapes(ii));
 		  double fac = (shapes[vi1]+shapes[vi2]) / (1-z);
 		  for (int j = 0; j < eorder-1; j++)
 		    shapes(ii+j) *= fac;
@@ -3003,13 +3011,65 @@ namespace netgen
 	  dshapes(4,0) = 0;
 	  dshapes(4,1) = 0;
 	  dshapes(4,2) = 1;
-	  /* old:
-	     vdshape[0] = Vec<3>( -(z1-y)/z1, -(z1-x)/z1, ((x+y+2*z-2)*z1+(z1-y)*(z1-x))/z2 );
-	     vdshape[1] = Vec<3>( (z1-y)/z1,  -x/z1,      (-x*z1+x*(z1-y))/z2 );
-	     vdshape[2] = Vec<3>( y/z1,       x/z1,       x*y/z2 );
-	     vdshape[3] = Vec<3>( -y/z1,      (z1-x)/z1,  (-y*z1+y*(z1-x))/z2 );
-	     vdshape[4] = Vec<3>( 0, 0, 1 );
-	  */
+
+	  if (info.order == 1) return;
+
+	  int ii = 5;
+	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (PYRAMID);
+	  if (z == 1.) z = 1-1e-10;
+          double shapes[5];
+	  shapes[0] = (1-z-x)*(1-z-y) / (1-z);
+	  shapes[1] = x*(1-z-y) / (1-z);
+	  shapes[2] = x*y / (1-z);
+	  shapes[3] = (1-z-x)*y / (1-z);
+	  shapes[4] = z;
+
+          double sigma[4] =
+            {
+              ( (1-z-x) + (1-z-y) ),
+              (       x + (1-z-y) ),
+              (       x +       y ),
+              ( (1-z-x) +       y ),
+            };
+          double dsigma[4][3] =
+            {
+              { -1, -1, -2 },
+              { 1, -1, -1 },
+              { 1, 1, 0 },
+              { -1, 1, -1 }
+            };
+          double dz[3] = { 0, 0, 1 };
+	  for (int i = 0; i < 4; i++)    // horizontal edges
+	    {
+	      int eorder = edgeorder[info.edgenrs[i]];
+	      if (eorder >= 2)
+		{
+		  int vi1 = (edges[i][0]-1), vi2 = (edges[i][1]-1);
+		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
+
+		  Vector shapei(eorder+1);
+		  CalcScaledEdgeShapeDxDt<3> (eorder, sigma[vi1]-sigma[vi2], 1-z, &dshapes(ii,0) );
+		  CalcScaledEdgeShape(eorder, sigma[vi1]-sigma[vi2], 1-z, &shapei(0) );
+		  double fac = (shapes[vi1]+shapes[vi2]) / (1-z);
+                  double dfac[3];
+                  for (int k = 0; k < 3; k++)
+                    dfac[k] = ( (dshapes(vi1,k)+dshapes(vi2,k)) * (1-z) -
+                                (shapes[vi1]+shapes[vi2]) *(-dshapes(4,k)) )
+                      / sqr(1-z);
+                      
+		  for (int j = 0; j < eorder-1; j++)
+                    {
+                      double ddx = dshapes(ii+j,0);
+                      double ddt = dshapes(ii+j,1);
+                      for (int k = 0; k < 3; k++)
+                        dshapes(ii+j,k) = fac * (ddx * (dsigma[vi1][k]-dsigma[vi2][k]) - ddt*dz[k])
+                          + dfac[k] * shapei(j);
+                    }
+
+		  ii += eorder-1;
+		}
+	    }
+          
 	  break;
 	}
 
