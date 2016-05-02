@@ -57,28 +57,6 @@ void MultMatDiagMat(TA a, TB b, TC c)
 
 
 
-/*
-template <typename TA, typename TB, typename TC>
-INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
-{
-  c += a * Trans(b) | Lapack;
-  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
-}
-*/
-
-/*
-template <typename T>
-INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
-*/
-
-/*
-template <typename TA, typename TB, typename TC>
-INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
-{
-  c += a * Trans(b) | Lapack;
-  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
-}
-*/
 
 
 
@@ -932,6 +910,24 @@ public:
 };
 
 
+template <typename TA, typename TB, typename TC>
+INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
+{
+  c += a * Trans(b) | Lapack;
+  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
+}
+
+/*
+template <typename T>
+INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
+*/
+
+template <typename TA, typename TB, typename TC>
+INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
+{
+  c += a * Trans(b) | Lapack;
+  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
+}
 
 
 
