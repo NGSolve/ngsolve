@@ -2048,6 +2048,19 @@ namespace ngfem
                        ToString(dim));
   }
 
+  void LinearFormIntegratorAnyDim ::  
+  CalcElementVector (const FiniteElement & bfel, 
+                     const ElementTransformation & eltrans, 
+                     FlatVector<Complex> elvec,
+                     LocalHeap & lh) const
+  {
+    int dim = eltrans.SpaceDim();
+    if (lfi[dim])
+      lfi[dim] -> CalcElementVector(bfel, eltrans, elvec, lh);
+    else
+      throw Exception (ToString("Integrator-Anydim not available for dimension ")+
+                       ToString(dim));
+  }
 
 
 
@@ -2167,7 +2180,14 @@ namespace ngfem
           if (name == lfis[i]->name)
             {
               int spacedim = lfis[i]->spacedim;
-              alfi[spacedim] = lfis[i] -> creator(coeffs);
+              try
+                {
+                  alfi[spacedim] = lfis[i] -> creator(coeffs);
+                }
+              catch (Exception e)
+                {
+                  // creates lfi only if dimension of coef-function fits
+                }
             }
         return make_shared<LinearFormIntegratorAnyDim> (alfi);
       }

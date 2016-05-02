@@ -1516,6 +1516,12 @@ namespace ngfem
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> elvec,
 		       LocalHeap & lh) const;
+
+    virtual void
+    CalcElementVector (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatVector<Complex> elvec,
+		       LocalHeap & lh) const;
   };
 
 

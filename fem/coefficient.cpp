@@ -57,9 +57,8 @@ namespace ngfem
   void CoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
   {
-    // cout << "evaluate - ir to ip, type = " << typeid(*this).name() << endl;
     for (int i = 0; i < ir.Size(); i++)
-      Evaluate (ir[i], values.Row(i)); // values(i, 0) = Evaluate (ir[i]);
+      Evaluate (ir[i], values.Row(i)); 
   }
 
   void CoefficientFunction ::   
@@ -912,7 +911,13 @@ public:
     c1->Evaluate (ip, result);
     result *= scal;
   }
-
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    c1->Evaluate (ir, result);
+    result *= scal;
+  }
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
     c1->NonZeroPattern (ud, nonzero);
@@ -1759,7 +1764,7 @@ public:
         c = a*b;
       }
   }
-  
+
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem1, mir.IR().Size()*dims[0]*inner_dim);
@@ -1769,16 +1774,18 @@ public:
     c1->Evaluate (mir, va);
     c2->Evaluate (mir, vb);
     values = 0.0;
-    
+
+    int d1 = dims[1];
     for (int j = 0; j < dims[0]; j++)
       for (int k = 0; k < dims[1]; k++)
         for (int l = 0; l < inner_dim; l++)
           {
             auto row_a = va.Row(j*inner_dim+l);
-            auto row_b = vb.Row(l*dims[1]+k);
-            auto row_c = values.Row(j*dims[1]+k);
+            auto row_b = vb.Row(l*d1+k);
+            auto row_c = values.Row(j*d1+k);
             for (int i = 0; i < mir.Size(); i++)
               row_c.Get(i) += row_a.Get(i) * row_b.Get(i);
+            // row_c = pw_mult (row_a, row_b);
           }
   }
 
@@ -2050,10 +2057,13 @@ public:
     auto in0 = *input[0];
     auto in1 = *input[1];
     values = 0.0;
-    for (int i = 0; i < dims[0]; i++)
-      for (int j = 0; j < inner_dim; j++)
-        for (int k = 0; k < mir.Size(); k++)
-          values.Get(i,k) += in0.Get(i*inner_dim+j, k) * in1.Get(j,k);
+    auto _inner_dim = inner_dim;
+    if (_inner_dim <= 0) return;
+    int ii = 0;
+    for (auto i : Range(dims[0]))
+      for (auto j : Range(_inner_dim))
+        // values.Row(i) += pw_mult (in0.Row(i*_inner_dim+j), in1.Row(j));
+        values.Row(i) += pw_mult (in0.Row(ii++), in1.Row(j));
   }
 
   
