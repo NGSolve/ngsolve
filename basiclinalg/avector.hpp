@@ -1247,6 +1247,11 @@ public:
   AFlatMatrixD & operator= (double d)
   { FlatMatrix<double>::operator= (d); return *this; }
 
+  template<typename TB>
+  INLINE const AFlatMatrixD & operator= (const Expr<TB> & v) const
+  { FlatMatrix<double>::operator= (v); return *this; }
+
+
   int VWidth() const { return Width(); }
 
   double & Get(int i) const { return (*this)(i); }
