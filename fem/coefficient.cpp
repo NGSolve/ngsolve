@@ -3020,14 +3020,6 @@ public:
       // throw Exception ("compiled mip evaluate not implemented");
     }
 
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
-            AFlatMatrix<double> result) const
-    {
-      if(compiled_function)
-        compiled_function_simd(mir,result);
-      else
-        cf->Evaluate(mir,result);
-    }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
@@ -3073,6 +3065,12 @@ public:
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
+      if(compiled_function_simd)
+      {
+        compiled_function_simd(ir, values);
+        return;
+      }
+
       int totdim = 0;
       for (int d : dim) totdim += d;
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
