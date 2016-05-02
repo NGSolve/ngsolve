@@ -29,7 +29,7 @@ namespace ngcomp
   class BaseVTKOutput
   {
   public:
-    virtual void Do (LocalHeap & lh) = 0;
+    virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0) = 0;
   };
   
   template <int D> 
@@ -48,6 +48,8 @@ namespace ngcomp
     Array<Vec<D>> points;
     Array<INT<D+1>> cells;
 
+    int output_cnt = 0;
+    
     shared_ptr<ofstream> fileout;
     
   public:
@@ -67,7 +69,7 @@ namespace ngcomp
     void PrintCellTypes();
     void PrintFieldData();    
 
-    virtual void Do (LocalHeap & lh);
+    virtual void Do (LocalHeap & lh, const BitArray * drawelems = 0);
   };
 
 

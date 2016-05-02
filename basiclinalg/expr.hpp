@@ -918,6 +918,38 @@ namespace ngbla
   }
 
 
+  /* *************************** PW_Mult_Expr **************************** */
+
+  template <class TA, class TB>
+  class PW_Mult_Expr : public Expr<PW_Mult_Expr<TA,TB> >
+  {
+    const TA & a;
+    const TB & b;
+  public:
+
+    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+
+    INLINE PW_Mult_Expr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+
+    INLINE auto operator() (int i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
+    INLINE auto operator() (int i, int j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
+
+    INLINE int Height() const { return a.Height(); }
+    INLINE int Width() const { return a.Width(); }
+
+    void Dump (ostream & ost) const
+    { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
+  };
+
+  template <typename TA, typename TB>
+  INLINE PW_Mult_Expr<TA, TB>
+  pw_mult (const Expr<TA> & a, const Expr<TB> & b)
+  {
+    return PW_Mult_Expr<TA, TB> (a.Spec(), b.Spec());
+  }
+
+
+
   /* *************************** ScaleExpr **************************** */
 
 

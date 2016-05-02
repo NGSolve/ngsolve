@@ -42,6 +42,12 @@ namespace ngfem
     {
       Evaluate (ir, values);
     }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    {
+      throw Exception (string("cf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
+      // Evaluate (ir, values);
+    }
 
     ///
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
@@ -245,7 +251,9 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     { values = val; }
-
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    { values = val; }
     virtual void PrintReport (ostream & ost) const;
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
@@ -691,6 +699,12 @@ public:
       result(j) = lam(result(j));
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> result) const
+  {
+    c1->Evaluate (ir, result);
+    for (int i = 0; i < result.Height()*result.Width(); i++)
+      result(i) = lam (result(i));
+  }
   
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
@@ -699,7 +713,15 @@ public:
     for (int j = 0; j < result.Size(); j++)
       result(j) = lamc(result(j));
   }
-
+  
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    c1->Evaluate (ir, result);
+    for (int i = 0; i < result.Height()*result.Width(); i++)
+      result(i) = lamc(result(i));
+  }
+  
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     c1->Evaluate (ir, values);
@@ -713,6 +735,15 @@ public:
         values(i,j) = lam (values(i,j));
     
   }
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    auto in0 = *input[0];
+    for (int i = 0; i < values.Height(); i++)
+      for (int j = 0; j < values.Width(); j++)
+        values(i,j) = lam (in0(i,j));
+  }
+  
   
   virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                               FlatMatrix<> result,
@@ -916,15 +947,20 @@ public:
       result(i) = lam (result(i), temp(i));
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    STACK_ARRAY(double, hmem, 2*ir.Size()*dim);
+    FlatMatrix<Complex> temp(ir.Size(), dim, reinterpret_cast<Complex*> (&hmem[0]));
+
+    c1->Evaluate (ir, result);
+    c2->Evaluate (ir, temp);
+    for (int i = 0; i < result.Height()*result.Width(); i++)
+      result(i) = lamc (result(i), temp(i));
+  }
+
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
-    /*
-#ifdef VLA
-    SIMD<double> hmem[values.Height()*values.VWidth()];
-#else
-    SIMD<double> hmem[100];
-#endif
-    */
     STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
     AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0].Data());
 
@@ -933,6 +969,16 @@ public:
     for (int i = 0; i < values.Height()*values.VWidth(); i++)
       values.Get(i) = lam (values.Get(i), temp.Get(i));
   }
+  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    auto in0 = *input[0];
+    auto in1 = *input[1];
+    for (int i = 0; i < values.Height()*values.VWidth(); i++)
+      values.Get(i) = lam (in0.Get(i), in1.Get(i));
+  }
+
   
   virtual void Evaluate (const BaseMappedIntegrationRule & mir, FlatArray<FlatMatrix<>*> input,
                          FlatMatrix<double> result) const
@@ -1177,6 +1223,13 @@ public:
     values.Row(0) = temp.Row(comp);
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    auto in0 = *input[0];    
+    values.Row(0) = in0.Row(comp);
+  }
+
   
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
@@ -1312,8 +1365,6 @@ public:
                         FlatVector<> result) const
   {
     result = 0;
-    // if (!&ip.GetTransformation()) return;
-
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ip, result);
@@ -1338,26 +1389,37 @@ public:
       values = 0.0;
   }
 
-
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    int matindex = ir.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      values = *input[matindex];
+    else
+      values = 0.0;
+  }
   
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const
   {
     result = 0;
-    // if (!&ip.GetTransformation()) return;
-
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ip, result);
   }
-
+  virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const
+  {
+    Vec<1,Complex> res;
+    Evaluate (ip, res);
+    return res(0);
+  }
+    
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
                              FlatMatrix<> deriv) const
   {
     result = 0;
     deriv = 0;
-    // if (!&mir.GetTransformation()) return;
 
     int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -1372,7 +1434,6 @@ public:
     result = 0;
     deriv = 0;
     dderiv = 0;
-    // if (!&mir.GetTransformation()) return;
 
     int matindex = mir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -1509,15 +1570,24 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int base = 0;
-    // for (auto & cf : ci)
     for (int i : Range(ci))
       {
-        // int dimi = cf->Dimension();
         ci[i]->Evaluate(ir, values.Rows(base,base+dimi[i]));
         base += dimi[i];
       }
   }
 
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    int base = 0;
+    for (int i : Range(ci))
+      {
+        values.Rows(base,base+dimi[i]) = *input[i];
+        base += dimi[i];
+      }
+  }
+  
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
