@@ -406,6 +406,40 @@ operator+ (const AVXExpr<TA> & a, const AVXExpr<TB> & b)
 }
 
 
+
+/* *************************** PW_Mult_Expr **************************** */
+
+template <class TA, class TB> 
+class AVXPW_Mult_Expr : public AVXExpr<AVXPW_Mult_Expr<TA,TB> >
+{
+  const TA & a;
+  const TB & b;
+public:
+
+  enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    
+  INLINE AVXPW_Mult_Expr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+
+  INLINE auto operator() (int i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
+  INLINE auto operator() (int i, int j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
+  __m256d Get(int i) const { return a.Get(i)*b.Get(i); } 
+
+  INLINE int Height() const { return a.Height(); }
+  INLINE int Width() const { return a.Width(); }
+
+  void Dump (ostream & ost) const
+  { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
+};
+
+template <typename TA, typename TB>
+INLINE AVXPW_Mult_Expr<TA, TB>
+pw_mult (const AVXExpr<TA> & a, const AVXExpr<TB> & b)
+{
+  return AVXPW_Mult_Expr<TA, TB> (a.Spec(), b.Spec());
+}
+
+
+
 /* *************************** ScaleExpr **************************** */
 
 template <class TA> 
@@ -444,25 +478,26 @@ operator* (double s, const AVXExpr<TA> & a)
 
 class AFlatVectorD : public AVXExpr<AFlatVectorD>
 {
-  int size, vsize;
+  int size; // , vsize;
+  unsigned vsize() const { return (unsigned(size)+3) / 4; }
   __m256d * __restrict data;
 public:
   AFlatVectorD(int asize, LocalHeap & lh)
   {
     size = asize;
-    vsize = (size+3) / 4;
-    data = (__m256d*)lh.Alloc<double> (4*vsize);
+    // vsize = (unsigned(size)+3) / 4;
+    data = (__m256d*)lh.Alloc<double> (4*vsize());
   }
 
   AFlatVectorD (int as, double * adata) : size(as), data((__m256d*)(void*)adata)
   {
-    vsize = (size+3) / 4;    
+    // vsize = (unsigned(size)+3) / 4;    
   }
   
 
   enum { IS_LINEAR = true };
   int Size () const { return size; }
-  int VSize () const { return vsize; }
+  int VSize () const { return vsize(); }
   int Height () const { return size; }
   int Width () const { return 1; }
   
@@ -480,14 +515,14 @@ public:
 
   INLINE const AFlatVectorD & operator= (const AFlatVectorD & v2) const
   {
-    for (int i = 0; i < vsize; i++)
+    for (int i = 0; i < vsize(); i++)
       data[i] = v2.data[i];
     return *this;
   }
   
   AFlatVectorD & operator= (double d)
   {
-    for (int i = 0; i < vsize; i++)
+    for (int i = 0; i < vsize(); i++)
       data[i] = _mm256_set1_pd(d);
     return *this;
   }
@@ -503,11 +538,10 @@ public:
   template<typename TB>
   INLINE const AFlatVectorD & operator= (const AVXExpr<TB> & v) const
   {
-    /*
-    for (int i = 0; i < vsize; i++)
+    for (int i = 0; i < vsize(); i++)
       data[i] = v.Spec().Get(i);
-    */
-
+    return *this;
+    /*
     int i = 0;
     for (; i < vsize-1; i+=2)
       {
@@ -520,7 +554,19 @@ public:
         i++;
       }
     return *this;
+    */
   }
+
+
+  template<typename TB>
+  INLINE const AFlatVectorD & operator+= (const AVXExpr<TB> & v) const
+  {
+    // for (int i = 0; i < vsize(); i++)
+    for (auto i : Range(vsize()))
+      data[i] += v.Spec().Get(i);
+    return *this;
+  }
+  
 };
 
 
@@ -555,7 +601,7 @@ public:
   int Size () const { return h*w; }
   int Height () const { return h; }
   int Width () const { return w; }
-  int VWidth() const { return (w+3)/4; }
+  unsigned int VWidth() const { return (unsigned(w)+3)/4; }
   double & operator() (int i) const
   {
     return ((double*)data)[i]; 
@@ -563,16 +609,16 @@ public:
 
   double & operator() (int i, int j) const
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); // (w+3)/4;
     return ((double*)data)[4*i*vw+j]; 
   }
 
   __m256d & Get(int i) const { return data[i]; }
-  __m256d & Get(int i, int j) const { int vw = (w+3)/4; return data[i*vw+j]; }
+  __m256d & Get(int i, int j) const { return data[i*VWidth()+j]; }
 
   const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); // (w+3)/4;
     for (int i = 0; i < h*vw; i++)
       data[i] = m2.data[i];
     return *this;
@@ -580,7 +626,7 @@ public:
   
   AFlatMatrixD & operator= (double d)
   {
-    auto vw = (unsigned(w)+3)/4;
+    auto vw = VWidth(); //  (unsigned(w)+3)/4;
     int els = unsigned(h)*unsigned(vw);
     for (int i = 0; i < els; i++)
       data[i] = _mm256_set1_pd(d);
@@ -600,7 +646,7 @@ public:
 
   AFlatMatrixD & operator*= (double d)
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); //  (w+3)/4;
     for (int i = 0; i < h*vw; i++)
       data[i] *= _mm256_set1_pd(d);
     return *this;
@@ -608,13 +654,13 @@ public:
   
   operator SliceMatrix<double> () const
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); // (w+3)/4;
     return SliceMatrix<double> (h, w, 4*vw, (double*)data);
   }
    
   SliceVector<> Col (int c) const
   {
-    int vw = (w+3)/4;    
+    int vw = VWidth(); // (w+3)/4;    
     return SliceVector<> (h, 4*vw, ((double*)data)+c);
   }
 
@@ -625,7 +671,7 @@ public:
   
   AFlatMatrixD Rows(int begin, int end) const
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); // (w+3)/4;
     return AFlatMatrixD(end-begin, w, data+begin*vw);
   }
   AFlatMatrixD Rows(IntRange r) const
@@ -633,7 +679,7 @@ public:
 
   SliceMatrix<> Cols(int begin, int end) const
   {
-    int vw = (w+3)/4;
+    int vw = VWidth(); // (w+3)/4;
     return SliceMatrix<>(h, end-begin, 4*vw, ((double*)data)+begin);
   }
   SliceMatrix<> Cols(IntRange r) const

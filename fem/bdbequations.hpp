@@ -867,8 +867,12 @@ namespace ngfem
       if (vectorial)
 	coefs[0] = acoeffs[0];
       else
-	for (int i = 0; i < N; i++)
-	  coefs[i] = acoeffs[i];
+        {
+          if (acoeffs.Size() != N)
+            throw Exception (string("need ")+ToString(N)+" components, but have "+ToString(acoeffs.Size()));
+          for (int i = 0; i < N; i++)
+            coefs[i] = acoeffs[i];
+        }
     }
   
     DVec (shared_ptr<CoefficientFunction> acoef)
