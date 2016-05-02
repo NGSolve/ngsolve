@@ -193,7 +193,7 @@ namespace ngfem
 
 
   /// Identity
-  template <int D, typename FEL = ScalarFiniteElement<D> >
+  template <int D, typename FEL = BaseScalarFiniteElement>
   class DiffOpId : public DiffOp<DiffOpId<D, FEL> >
   {
   public:
@@ -217,23 +217,23 @@ namespace ngfem
     }
 
     static void GenerateMatrix (const FiniteElement & fel, 
-				const MappedIntegrationPoint<D,D> & mip,
+				const BaseMappedIntegrationPoint & mip,
 				FlatMatrixFixHeight<1> & mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0)); // FlatVector<> (fel.GetNDof(), &mat(0,0)));
     }
 
     static void GenerateMatrix (const FiniteElement & fel, 
-				const MappedIntegrationPoint<D,D> & mip,
+				const BaseMappedIntegrationPoint & mip,
 				SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
 
-    using DiffOp<DiffOpId<D, FEL> > :: GenerateMatrixIR;
+    // using DiffOp<DiffOpId<D, FEL> > :: GenerateMatrixIR;
     template <typename MAT>
     static void GenerateMatrixIR (const FiniteElement & fel, 
-                                  const MappedIntegrationRule<3,3> & mir,
+                                  const BaseMappedIntegrationRule & mir,
                                   MAT & mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mir.IR(), Trans(mat));
@@ -256,7 +256,7 @@ namespace ngfem
     }
 
 
-    using DiffOp<DiffOpId<D, FEL> >::ApplyIR;
+    // using DiffOp<DiffOpId<D, FEL> >::ApplyIR;
 
     template <class MIR, class TMY>
     static void ApplyIR (const FiniteElement & fel, const MIR & mir,
@@ -266,6 +266,16 @@ namespace ngfem
       Cast(fel).Evaluate (mir.IR(), x, FlatVector<> (mir.Size(), &y(0,0)));
     }
 
+    template <class MIR>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+                         FlatVector<Complex> x, FlatMatrix<Complex> y,
+			 LocalHeap & lh)
+    {
+      Cast(fel).Evaluate (mir.IR(),
+                          SliceMatrix<double> (fel.GetNDof(), 2, 2, reinterpret_cast<double*> (&x(0))),
+                          SliceMatrix<double> (mir.Size(), 2, 2, reinterpret_cast<double*> (&y(0))));
+    }
+    
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, ABareMatrix<double> y)
     {
@@ -859,8 +869,12 @@ namespace ngfem
       if (vectorial)
 	coefs[0] = acoeffs[0];
       else
-	for (int i = 0; i < N; i++)
-	  coefs[i] = acoeffs[i];
+        {
+          if (acoeffs.Size() != N)
+            throw Exception (string("need ")+ToString(N)+" components, but have "+ToString(acoeffs.Size()));
+          for (int i = 0; i < N; i++)
+            coefs[i] = acoeffs[i];
+        }
     }
   
     DVec (shared_ptr<CoefficientFunction> acoef)

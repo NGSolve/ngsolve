@@ -2153,6 +2153,12 @@ void NGS_DLL_HEADER ExportNgcomp()
                                  self.Do(lh);
                                }),
          (bp::arg("self"),bp::arg("heapsize")=1000000))
+    .def("Do", FunctionPointer([](BaseVTKOutput & self, const BitArray * drawelems, int heapsize)
+                               { 
+                                 LocalHeap lh (heapsize, "VTKOutput-heap");
+                                 self.Do(lh, drawelems);
+                               }),
+         (bp::arg("self"),bp::arg("drawelems"),bp::arg("heapsize")=1000000))
     
     ;
 

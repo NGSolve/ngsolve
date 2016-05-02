@@ -1033,6 +1033,9 @@ namespace ngfem
 
     virtual bool BoundaryForm () const
     { return any_dim->BoundaryForm(); }
+    
+    virtual bool SkeletonForm () const
+    { return any_dim->SkeletonForm(); }
 
     virtual int DimFlux () const 
     { throw Exception("BFI AnyDim - DimFlux not available"); }
@@ -1512,6 +1515,12 @@ namespace ngfem
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> elvec,
+		       LocalHeap & lh) const;
+
+    virtual void
+    CalcElementVector (const FiniteElement & bfel, 
+		       const ElementTransformation & eltrans, 
+		       FlatVector<Complex> elvec,
 		       LocalHeap & lh) const;
   };
 

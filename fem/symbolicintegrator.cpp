@@ -133,8 +133,6 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationRule & mir,
             FlatMatrix<> result) const
   {
-    // static Timer t("ProxyFunction :: Evaluate", 2);
-    // RegionTimer reg(t);
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction without userdata");
@@ -159,8 +157,6 @@ namespace ngfem
   Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
             AFlatMatrix<double> result) const
   {
-    // static Timer t("ProxyFunction::EvalSIMD"); RegionTimer reg(t);
-    
     ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
     if (!ud) 
       throw Exception ("cannot evaluate ProxyFunction without userdata");
@@ -181,6 +177,13 @@ namespace ngfem
       result.Row(ud->trial_comp) = 1;
   }
 
+  void ProxyFunction ::
+  Evaluate (const SIMD_BaseMappedIntegrationRule & mir,
+            FlatArray<AFlatMatrix<double>*> input,
+            AFlatMatrix<double> result) const
+  {
+    Evaluate (mir, result);
+  }
 
   
   void ProxyFunction ::
@@ -1180,7 +1183,8 @@ namespace ngfem
 #ifndef USE_SIMD
     {
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), lh);
+
+    ProxyUserData ud(trial_proxies.Size(), lh);    
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
     ud.elx = &elx;
@@ -1190,11 +1194,11 @@ namespace ngfem
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
-      ud.AssignMemory (proxy, mir.Size(), proxy->Dimension(), lh);
+      ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
 
     for (ProxyFunction * proxy : trial_proxies)
       proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
-
+    
     ely = 0;
     FlatVector<> ely1(ely.Size(), lh);
 

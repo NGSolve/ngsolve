@@ -1519,9 +1519,8 @@ public:
       }
     catch (Exception & e)
       {
-        e.Append ("in CalcElementVector, type = ");
-	e.Append (typeid(*this).name());
-	e.Append ("\n");
+        e.Append (string ("in CalcElementVector <")+typeid(TSCAL).name()+
+                  ">, type = " + typeid(*this).name() + "\n");
 	throw;
       }
     catch (exception & e)
