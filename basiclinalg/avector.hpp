@@ -336,7 +336,7 @@ void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
 
 
 
-
+/*
 template <typename TA, typename TB, typename TC>
 INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
 {
@@ -349,7 +349,7 @@ INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
 {
   c += a * Trans(b) | Lapack; 
 }
-
+*/
 
 
 // aligned AVX vectors
