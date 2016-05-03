@@ -837,13 +837,9 @@ namespace netgen
         //      cout << "clipsolution = " << clipsolution << endl;
         if (vispar.clipping.enable && clipsolution == 2)      
           {
-            // lock->UnLock();
-            NgLock mlock (mesh->Mutex(), 0);
-            mlock.UnLock(); 
+            mesh->Mutex().unlock();
             mesh->BuildElementSearchTree();
-            mlock.Lock();
-
-            // lock->Lock();
+            mesh->Mutex().lock();
           }
 
       
