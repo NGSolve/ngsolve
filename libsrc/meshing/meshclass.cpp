@@ -5024,8 +5024,6 @@ namespace netgen
     static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
     NgProfiler::RegionTimer reg (timer);
 
-
-     /*
      sei.SetSize (0);
      for (SurfaceElementIndex i = 0; i < GetNSE(); i++)
      {
@@ -5035,7 +5033,6 @@ namespace netgen
            sei.Append (i);
         }
      }
-     */
 
      /* Philippose - 01/10/2009
      Commented out the following lines, and activated the originally 
@@ -5044,6 +5041,7 @@ namespace netgen
      */
 
      //      int size1 = sei.Size();
+     /*
      sei.SetSize(0);
 
      SurfaceElementIndex si = facedecoding[facenr-1].firstelement;
@@ -5057,6 +5055,7 @@ namespace netgen
 
         si = (*this)[si].next;
      }
+    */
      
      /*
      // *testout << "with list = " << endl << sei << endl;
