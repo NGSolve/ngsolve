@@ -502,6 +502,35 @@ using namespace ngbla;
 
   // n ... number of doubles
   INLINE
+  void MyScal2x2 (int n,
+                  double * pa1, double * pa2,
+                  Complex * _pb1, Complex * _pb2,
+                  __m256d & sum11, __m256d & sum21)
+  {
+    __m128d * pb1 = reinterpret_cast<__m128d*> (_pb1);
+    __m128d * pb2 = reinterpret_cast<__m128d*> (_pb2);
+    
+    sum11 = _mm256_setzero_pd();
+    sum21 = _mm256_setzero_pd();
+    
+    for (int i = 0; i < n; i++)
+      {
+        __m256d a1 = _mm256_broadcast_sd(pa1+i);
+        __m256d a2 = _mm256_broadcast_sd(pa2+i);
+
+        __m256d b1 = _mm256_broadcast_pd(pb1+i);
+        __m256d b2 = _mm256_broadcast_pd(pb2+i);
+        __m256d mb1 = _mm256_blend_pd(b1, b2, 12);
+
+        sum11 += a1 * mb1;
+        sum21 += a2 * mb1;
+      }
+  }
+
+
+
+  // n ... number of doubles
+  INLINE
   void MyScal1x4 (int n,
                   double * pa1,
                   Complex * _pb1, Complex * _pb2, Complex * _pb3, Complex * _pb4,
@@ -667,19 +696,19 @@ void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex>
                        s11, s21, s12, s22);
             s11 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i,j)));
             s21 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+1,j)));
-            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j)), s11);
-            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j)), s21);
             s12 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i,j+2)));
             s22 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+1,j+2)));
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j)), s11);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j)), s21);
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j+2)), s12);
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j+2)), s22);
           }
         for ( ; j < c.Width()-1; j += 2)
           {
-            __m256d s11, s21, s12, s22;
-            MyScal2x4 (a.Width(), &a(i,0), &a(i+1,0),
-                       &b(j,0), &b(j+1,0), &b(j+1,0), &b(j+1,0),
-                       s11, s21, s12, s22);
+            __m256d s11, s21;
+            MyScal2x2 (a.Width(), &a(i,0), &a(i+1,0),
+                       &b(j,0), &b(j+1,0),
+                       s11, s21);
             s11 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i,j)));
             s21 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+1,j)));
             _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j)), s11);

@@ -984,6 +984,18 @@ public:
       result.Row(i) *= temp1(i,0);
   }
 
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    STACK_ARRAY(double, hmem1, 2*ir.Size());
+    FlatMatrix<Complex> temp1(ir.Size(), 1, reinterpret_cast<Complex*> (&hmem1[0]));
+    
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, result);
+    for (int i = 0; i < ir.Size(); i++)
+      result.Row(i) *= temp1(i,0);
+  }
+
 
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
