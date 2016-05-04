@@ -835,6 +835,7 @@ class cl_BinaryOpCF : public CoefficientFunction
   DDERIV lam_dderiv;
   NONZERO lam_nonzero;
   int dim;
+  bool is_complex;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
@@ -847,9 +848,10 @@ public:
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
     dim = dim1;
+    is_complex = c1->IsComplex() || c2->IsComplex();
   }
 
-  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+  virtual bool IsComplex() const { return is_complex; } // c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return dim; }
   virtual Array<int> Dimensions() const { return c1->Dimensions(); }
   
@@ -921,6 +923,15 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
+    if (!is_complex)
+      {
+        STACK_ARRAY(double, hmem, ir.Size()*dim);
+        FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
+        Evaluate (ir, temp);
+        result = temp;
+      }
+
+        
     STACK_ARRAY(double, hmem, 2*ir.Size()*dim);
     FlatMatrix<Complex> temp(ir.Size(), dim, reinterpret_cast<Complex*> (&hmem[0]));
 
@@ -1330,6 +1341,15 @@ public:
 
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
+  {
+    int matindex = ir.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ir, values);
+    else
+      values = 0.0;
+  }
+
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
