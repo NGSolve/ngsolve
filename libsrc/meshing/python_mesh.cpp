@@ -454,6 +454,8 @@ DLL_HEADER void ExportNetgenMeshing()
                Refinement().Refine(self);
            }))
 
+    .def ("BuildSearchTree", &Mesh::BuildElementSearchTree)
+
     .def ("BoundaryLayer", FunctionPointer 
           ([](Mesh & self, int bc, bp::list thicknesses, int volnr, bp::list materials)
            {
