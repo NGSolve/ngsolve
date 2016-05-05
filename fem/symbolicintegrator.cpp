@@ -489,6 +489,7 @@ namespace ngfem
     // static Timer tstart("symboliBFI - CalcElementMatrix startup", 2);
     // static Timer tstart1("symboliBFI - CalcElementMatrix startup 1", 2);
     // static Timer tmain("symboliBFI - CalcElementMatrix main", 2);
+
     /*
     static Timer td("symboliBFI - CalcElementMatrix dmats", 2);
     static Timer tb("symboliBFI - CalcElementMatrix diffops", 2);
@@ -516,7 +517,7 @@ namespace ngfem
           }
       }
     
-    // RegionTimer reg(t);
+    RegionTimer reg(t);
 
     int trial_difforder = 99, test_difforder = 99;
     for (auto proxy : trial_proxies)
@@ -664,7 +665,7 @@ namespace ngfem
                           }
                         // tdb.AddFlops (proxy1->Dimension()*proxy2->Dimension()*bs*bbmat1.Height());
                       }
-                    // tdb.Stop();
+                    //  tdb.Stop();
                     
                     // tlapack.Start();
                     // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
@@ -709,7 +710,7 @@ namespace ngfem
       static Timer tb("symbolicBFI - CalcElementMatrix EB - bmats", 2);
       static Timer tmult("symbolicBFI - CalcElementMatrix EB - mult", 2);
       */
-      RegionTimer reg(t);
+      // RegionTimer reg(t);
 
       elmat = 0;
 
@@ -838,18 +839,21 @@ namespace ngfem
                     // tb.Stop();
 
                     // tdb.Start();
+
+                    auto part_bbmat1 = bbmat1.Rows(r1);
+                    auto part_bdbmat1 = bdbmat1.Rows(r1);
+                    auto part_bbmat2 = bbmat2.Rows(r2);
                     
                     for (int j = 0; j < bs; j++)
                       {
-                        int ii = i+j;
-                        IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
-                        IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                        MultMatMat (bbmat1.Cols(r1), proxyvalues(ii,STAR,STAR), bdbmat1.Cols(r2));
+                        IntRange rj1 = proxy1->Dimension() * IntRange(j,j+1);
+                        IntRange rj2 = proxy2->Dimension() * IntRange(j,j+1);
+                        MultMatMat (part_bbmat1.Cols(rj1), proxyvalues(i+j,STAR,STAR), part_bdbmat1.Cols(rj2));
                       }
                     // tdb.Stop();
                     
                     // tmult.Start();                    
-                    AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
+                    AddABt (part_bbmat2, part_bdbmat1, part_elmat);
                     // tmult.Stop();
                     // tmult.AddFlops (r2.Size() * r1.Size() * bbmat2.Width());
                   }                

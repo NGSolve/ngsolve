@@ -563,8 +563,8 @@ using namespace ngbla;
 
 
 void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-{
-  static Timer t("AddABtSym, double-complex"); RegionTimer reg(t);
+{  
+  // static Timer t("AddABtSym, double-complex"); RegionTimer reg(t);
   // c += a * Trans(b);
   // return;
   /*
@@ -676,15 +676,103 @@ void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Comp
 }
 
 
+
+
 void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
 {
+  /*
+  int ah = a.Height();
+  int bh = b.Height();
+  int w = a.Width();
+
+  if (bh > 128 && w > 128)
+    {
+      if (w > bh)
+        {
+          int w2 = w/2;
+          w2 &= -4;
+          AddABt (a.Cols(0, w2), b.Cols(0,w2), c);
+          AddABt (a.Cols(w2, w), b.Cols(w2, w), c);
+          return;
+        }
+      else
+        {
+          int h2 = bh/2;
+          h2 &= -4;
+          AddABt (a, b.Rows(0,h2), c.Cols(0,h2));
+          AddABt (a, b.Rows(h2, bh), c.Cols(h2, bh));
+          return;
+        }
+    }
+  */
+  /*
+  if (a.Height() > 128)
+    {
+      int h2 = a.Height()/2;
+      h2 &= -4;
+      AddABt (a.Rows(0,h2), b, c.Rows(0,h2));
+      AddABt (a.Rows(h2, a.Height()), b, c.Rows(h2, c.Height()));
+      return;
+    }
+  */
+  
   // c += a * Trans(b);
   // return;
   
     int i = 0;
 
     if (a.Width() <= 0) return;
-  
+
+
+
+    for ( ; i < c.Height()-3; i += 4)
+      {
+        int j = 0;
+        for ( ; j < c.Width()-3; j += 4)
+          {
+            __m256d s11, s21, s31, s41, s12, s22, s32, s42;
+            MyScal4x4 (a.Width(), &a(i,0), &a(i+1,0), &a(i+2,0), &a(i+3,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0),
+                       s11, s21, s31, s41, s12, s22, s32, s42);
+            s11 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i,j)));
+            s21 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+1,j)));
+            s31 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+2,j)));
+            s41 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+3,j)));
+            s12 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i,j+2)));
+            s22 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+1,j+2)));
+            s32 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+2,j+2)));
+            s42 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i+3,j+2)));
+            
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j)), s11);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j)), s21);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+2,j)), s31);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+3,j)), s41);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i,j+2)), s12);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+1,j+2)), s22);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+2,j+2)), s32);
+            _mm256_storeu_pd(reinterpret_cast<double*>(&c(i+3,j+2)), s42);
+          }
+        
+        for ( ; j < c.Width()-1; j += 2)
+          for (int i2 = i; i2 < i+4; i2 += 2)
+            {
+              __m256d s11, s21;
+              MyScal2x2 (a.Width(), &a(i2,0), &a(i2+1,0),
+                         &b(j,0), &b(j+1,0),
+                         s11, s21);
+              s11 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i2,j)));
+              s21 += _mm256_loadu_pd(reinterpret_cast<double*>(&c(i2+1,j)));
+              _mm256_storeu_pd(reinterpret_cast<double*>(&c(i2,j)), s11);
+              _mm256_storeu_pd(reinterpret_cast<double*>(&c(i2+1,j)), s21);
+            }
+
+        for (  ; j < c.Width(); j++)
+          for (int i2 = i; i2 < i+4; i2 ++)
+            c(i2,j) += InnerProduct(a.Row(i2), b.Row(j));
+      }
+
+
+    
     for ( ; i < c.Height()-1; i += 2)
       {
         int j = 0;
