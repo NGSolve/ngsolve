@@ -259,6 +259,7 @@ namespace netgen
     std::tuple<int,int*> GetDistantProcs (int nodetype, int locnum) const;
 #endif
 
+    shared_ptr<Mesh> GetMesh () const { return mesh; } 
     shared_ptr<Mesh> SelectMesh () const;
   };
 
