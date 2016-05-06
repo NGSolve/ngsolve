@@ -768,6 +768,9 @@ namespace netgen
        }
     }
 
+    outfile << endl << endl << "endmesh" << endl << endl;
+    if (geometry)
+      geometry -> SaveToMeshFile (outfile);
   }
 
 

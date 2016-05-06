@@ -305,9 +305,9 @@ namespace netgen
       outfile = new ofstream (filename.c_str());
 
     mesh -> Save (*outfile);
-    *outfile << endl << endl << "endmesh" << endl << endl;
+    // *outfile << endl << endl << "endmesh" << endl << endl;
 
-    if (ng_geometry)
+    if (ng_geometry && !mesh->GetGeometry())
       ng_geometry -> SaveToMeshFile (*outfile);
 
     delete outfile;
