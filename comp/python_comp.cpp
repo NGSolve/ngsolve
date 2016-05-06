@@ -469,6 +469,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
     .add_property ("ne",  static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
     .add_property ("dim", &MeshAccess::GetDimension, "mesh dimension")
+    .add_property ("ngmesh", &MeshAccess::GetNetgenMesh, "netgen mesh")
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
