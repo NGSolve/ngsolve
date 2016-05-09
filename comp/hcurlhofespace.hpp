@@ -112,6 +112,9 @@ namespace ngcomp
     ///
     void SetGradientBoundaries (const BitArray & abnds);
 
+    const BitArray & GetGradientDomains() const { return gradientdomains; }
+    const BitArray & GetGradientBoundaries() const { return gradientboundaries; }
+    
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override;
   
     //virtual BitArray * CreateIntermediatePlanes (int type = 0) const;
