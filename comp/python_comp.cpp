@@ -1248,14 +1248,16 @@ void NGS_DLL_HEADER ExportNgcomp()
         ([](GF & self, const BaseMappedIntegrationPoint & mip)
           {
             auto space = self.GetFESpace();
-            auto evaluator = space->GetEvaluator();
+
+            ElementId ei = mip.GetTransformation().GetElementId();
+            auto evaluator = space->GetEvaluator(ei.IsBoundary());
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
-            int elnr = mip.GetTransformation().GetElementNr();
-            const FiniteElement & fel = space->GetFE(elnr, lh);
+            // int elnr = mip.GetTransformation().GetElementNr();
+            const FiniteElement & fel = space->GetFE(ei, lh);
 
             Array<int> dnums(fel.GetNDof());
-            space->GetDofNrs(elnr, dnums);
+            space->GetDofNrs(ei, dnums);
 
             if (space->IsComplex())
               {
