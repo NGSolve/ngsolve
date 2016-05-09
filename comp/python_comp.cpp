@@ -5,7 +5,7 @@
 #include <comp.hpp>
 
 #ifdef PARALLEL
-#include </usr/lib/python3/dist-packages/mpi4py/include/mpi4py/mpi4py.h>
+#include <mpi4py/mpi4py.h>
 #endif
 
 #include <regex>
