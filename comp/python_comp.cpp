@@ -1213,7 +1213,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             IntegrationPoint ip;
-            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
 
             const FiniteElement & fel = space->GetFE(elnr, lh);
@@ -1289,7 +1289,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             cout << evaluator->Name() << endl;
             int dim = evaluator->Dim();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             Array<int> dnums;
             space.GetDofNrs(elnr, dnums);
             const FiniteElement & fel = space.GetFE(elnr, lh);
