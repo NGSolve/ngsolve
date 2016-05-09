@@ -4158,7 +4158,33 @@ namespace netgen
     }
   }
 
+  
+  int SolveLinearSystemLS (const Vec3d & col1,
+                           const Vec3d & col2,
+                           const Vec3d & rhs,
+                           Vec2d & sol)
+  {
+    double a11 = col1 * col1;
+    double a12 = col1 * col2;
+    double a22 = col2 * col2;
+    
+    double det = a11 * a22 - a12 * a12;
+    
+    if (det*det <= 1e-24 * a11 * a22)
+      {
+        sol = Vec2d (0, 0);
+        return 1;
+      }
+    
+    Vec2d aTrhs;
+    aTrhs.X() = col1*rhs;
+    aTrhs.Y() = col2*rhs;
 
+    sol.X() = ( a22 * aTrhs.X() - a12 * aTrhs.Y()) / det;
+    sol.Y() = (-a12 * aTrhs.X() + a11 * aTrhs.Y()) / det;
+    return 0;
+  }
+  
 
   bool Mesh :: PointContainedIn2DElement(const Point3d & p,
                                          double lami[3],
@@ -4175,12 +4201,13 @@ namespace netgen
     //SZ 
     if(SurfaceElement(element).GetType()==QUAD)
       {
+        // cout << "check quad element" << endl;
         const Element2d & el = SurfaceElement(element); 
 
         const Point3d & p1 = Point(el.PNum(1)); 
         const Point3d & p2 = Point(el.PNum(2));
         const Point3d & p3 = Point(el.PNum(3));
-        const Point3d & p4 = Point(el.PNum(4)); 
+        const Point3d & p4 = Point(el.PNum(4));
 
         // Coefficients of Bilinear Mapping from Ref-Elem to global Elem
         // X = a + b x + c y + d x y 
@@ -4198,13 +4225,21 @@ namespace netgen
         lami[2]=0.; 
         double eps = 1.E-12; 
 
-        if(fabs(d.X()) <= eps && fabs(d.Y())<= eps)
+        // if(fabs(d.X()) <= eps && fabs(d.Y())<= eps)
+        if (d.Length2() < sqr(eps))
           {
             //Solve Linear System
+
+            Vec2d sol;
+            SolveLinearSystemLS (b, c, p-a, sol);
+            lami[0] = sol.X();
+            lami[1] = sol.Y();
+            /*
             lami[0]=(c.Y()*(p.X()-a.X())-c.X()*(p.Y()-a.Y()))/
               (b.X()*c.Y() -b.Y()*c.X()); 
             lami[1]=(-b.Y()*(p.X()-a.X())+b.X()*(p.Y()-a.Y()))/
               (b.X()*c.Y() -b.Y()*c.X()); 
+            */
           } 
         else
           if(fabs(dxb) <= eps) 
@@ -4252,7 +4287,8 @@ namespace netgen
                 lami[1] = (-c1 - sqrt(rt))/2/c2;
                 lami[0] = (dxp - dxa -dxc*lami[1])/dxb;
               }
-
+        // cout << "lam0,1 = " << lami[0] << ", " << lami[1] << endl;
+        
         if( lami[0] <= 1.+eps  && lami[0] >= -eps && lami[1]<=1.+eps && lami[1]>=-eps)
           {
             if(consider3D)
@@ -4713,6 +4749,16 @@ namespace netgen
               }
           }
 
+        Array<int> faces2;
+        topology->GetElementFaces(velement,faces2);
+        /*
+        cout << "no matching surf element" << endl
+             << "p = " << p << endl
+             << "faces-orig = " << faces2 << endl
+             << "faces = " << faces << endl
+             << ", vol el = " << velement
+             << ", vlam = " << vlam[0] << "," << vlam[1] << "," << vlam[2] << endl;
+        */
       }
 
     return 0;
