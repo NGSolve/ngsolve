@@ -739,9 +739,18 @@ namespace netgen
     for (int i = 0; i < numind; i++) dummy[i] = indices[i]+1;
     
     double lam3[3];
-    Point<3> p2d(p[0], p[1], 0);
-    int ind = 
-      mesh->GetElementOfPoint(p2d, lam3, &dummy, build_searchtree);
+    int ind;
+
+    if (mesh->GetDimension() == 2)
+      {
+        Point<3> p2d(p[0], p[1], 0);
+        ind = mesh->GetElementOfPoint(p2d, lam3, &dummy, build_searchtree);
+      }
+    else
+      {
+        Point3d p3d(p[0], p[1], p[2]);
+        ind = mesh->GetSurfaceElementOfPoint(p3d, lam3, &dummy, build_searchtree);
+      }
     
     if (ind > 0)
       {
