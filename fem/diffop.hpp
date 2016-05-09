@@ -228,7 +228,7 @@ namespace ngfem
 	   FlatMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
@@ -263,7 +263,7 @@ namespace ngfem
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               ABareMatrix<double> flux,
