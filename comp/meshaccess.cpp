@@ -1406,28 +1406,23 @@ namespace ngcomp
     static Timer t("FindSurfaceElementOfPonit");
     RegionTimer reg(t);
     int elnr;
-    double lami[3];
+
     if(indices != NULL && indices->Size()>0)
       {
-	int * dummy = new int[indices->Size()];
-	for(int i=0; i<indices->Size(); i++) dummy[i] = (*indices)[i]+1;
-
-	elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree,dummy,indices->Size());
-
-	delete [] dummy;
+	// int * dummy = new int[indices->Size()];
+	// for(int i=0; i<indices->Size(); i++) dummy[i] = (*indices)[i]+1;
+	// elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree,dummy,indices->Size());
+	// delete [] dummy;
+        elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree,
+                                           &(*indices)[0],indices->Size());
       }
     else
       {  
-	elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree);
+	// elnr = Ng_FindSurfaceElementOfPoint (&point(0), lami, build_searchtree);
+        elnr = mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);        
       }
 
-    if (elnr == 0) return -1;
-
-    for (int k = 0; k < 3; k++)
-      ip(k) = lami[k];
-
-
-    return elnr-1;
+    return elnr;
   }
 
 
