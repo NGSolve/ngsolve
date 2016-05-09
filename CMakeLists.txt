@@ -110,10 +110,9 @@ add_definitions(-DHAVE_CONFIG_H)
 # platform specific definitions and flags
 macro(get_WIN32_WINNT version)
     if (WIN32 AND CMAKE_SYSTEM_VERSION)
-        set(ver ${CMAKE_SYSTEM_VERSION})
-        string(REPLACE "." "" ver ${ver})
-        string(REGEX REPLACE "([0-9])" "0\\1" ver ${ver})
-
+        if("${CMAKE_SYSTEM_VERSION}" MATCHES "^([0-9]+)\\.([0-9]+)")
+            math(EXPR ver "${CMAKE_MATCH_1}*100 + ${CMAKE_MATCH_2}")
+        endif()
         set(${version} "0x${ver}")
     endif()
 endmacro()

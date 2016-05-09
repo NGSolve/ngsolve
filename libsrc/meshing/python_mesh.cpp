@@ -6,6 +6,8 @@
 
 #include <mystdlib.h>
 #include "meshing.hpp"
+#include <csg.hpp>
+#include <geometry2d.hpp>
 
 
 using namespace netgen;
@@ -452,6 +454,18 @@ DLL_HEADER void ExportNetgenMeshing()
                self.GetGeometry()->GetRefinement().Refine(self);
              else
                Refinement().Refine(self);
+           }))
+
+    .def ("SetGeometry", FunctionPointer
+          ([](Mesh & self, shared_ptr<CSGeometry> geo)
+           {
+             self.SetGeometry(geo);
+           }))
+
+    .def ("SetGeometry", FunctionPointer
+          ([](Mesh & self, shared_ptr<SplineGeometry2d> geo)
+           {
+             self.SetGeometry(geo);
            }))
 
     .def ("BuildSearchTree", &Mesh::BuildElementSearchTree)
