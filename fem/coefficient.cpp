@@ -64,7 +64,7 @@ namespace ngfem
   void CoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
-    throw Exception(string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
+    throw ExceptionNOSIMD (string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
   }
 
   
@@ -2953,13 +2953,13 @@ public:
       ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
       int mem_ptr = 0;
       
-      Array<FlatMatrix<>> temp(steps.Size());
-      Array<FlatMatrix<>> dtemp(steps.Size());
+      ArrayMem<FlatMatrix<>,100> temp(steps.Size());
+      ArrayMem<FlatMatrix<>,100> dtemp(steps.Size());
       ArrayMem<FlatMatrix<>*, 20> in, din;
 
       for (int i = 0; i < steps.Size(); i++)
         {
-          //timers[i]->Start();
+          // timers[i]->Start();
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
           dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
@@ -2995,6 +2995,7 @@ public:
 
       for (int i = 0; i < steps.Size(); i++)
         {
+          // timers[i]->Start();          
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
           dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
@@ -3013,6 +3014,7 @@ public:
             ddin.Append (&ddtemp[j]);
 
           steps[i] -> EvaluateDDeriv (ir, in, din, ddin, temp[i], dtemp[i], ddtemp[i]);
+          // timers[i]->Stop();                    
         }
 
       values = temp.Last();

@@ -15,7 +15,12 @@ namespace ngfem
       coefficient functions
   */
 
-
+  class ExceptionNOSIMD : public Exception
+  {
+  public:
+    using Exception :: Exception;
+  };
+  
   class NGS_DLL_HEADER CoefficientFunction
   {
   public:
@@ -1629,9 +1634,9 @@ public:
     int base = 0;
     for (int i : Range(ci))
       {
-        int dimi = ci[i]->Dimension();
-        result.Cols(base, base+dimi) = *input[i];
-        base += dimi;
+        int d = dimi[i];
+        result.Cols(base, base+d) = *input[i];
+        base += d;
       }
   }
   
@@ -1644,11 +1649,21 @@ public:
     int base = 0;
     for (int i : Range(ci))
       {
+        int d = dimi[i];        
+        result.Cols(base,base+d) = *input[i];
+        deriv.Cols(base, base+d) = *dinput[i];        
+        base += d;
+      }
+
+    /*
+    for (int i : Range(ci))
+      {
         int dimi = ci[i]->Dimension();
         result.Cols(base, base+dimi) = *input[i];
         deriv.Cols(base, base+dimi) = *dinput[i];
         base += dimi;
       }
+    */
   }
 
   

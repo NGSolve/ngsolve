@@ -1250,7 +1250,8 @@ void NGS_DLL_HEADER ExportNgcomp()
             auto space = self.GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
-            auto evaluator = space->GetEvaluator(ei.IsBoundary());
+            // auto evaluator = space->GetEvaluator(ei.IsBoundary());
+            auto evaluator = space->GetEvaluator(VorB(ei));
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             // int elnr = mip.GetTransformation().GetElementNr();
@@ -1273,7 +1274,6 @@ void NGS_DLL_HEADER ExportNgcomp()
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
                 self.GetElementVector(dnums, elvec);
-
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
               }
