@@ -719,6 +719,8 @@ namespace ngfem
     virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
+    int GetDim() const { return dim; }
+    int GetComp() const { return comp; } 
 
     const BilinearFormIntegrator & Block () const { return *bfi; }
     shared_ptr<BilinearFormIntegrator> BlockPtr () const { return bfi; }
