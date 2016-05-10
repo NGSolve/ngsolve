@@ -4099,6 +4099,8 @@ namespace netgen
         UpdateTopology();
         timestamp = NextTimeStamp();
       }
+
+    RebuildSurfaceElementLists();
   }
 
   void Mesh :: BuildElementSearchTree ()
@@ -5069,7 +5071,6 @@ namespace netgen
   {
     static int timer = NgProfiler::CreateTimer ("GetSurfaceElementsOfFace");
     NgProfiler::RegionTimer reg (timer);
-
 
      /*
      sei.SetSize (0);
