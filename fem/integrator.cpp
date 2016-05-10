@@ -228,10 +228,13 @@ namespace ngfem
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    static int cnt = 0;
+    static atomic<int> cnt(0);
+    static mutex m;
     if (cnt < 3)
       {
-	cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+        lock_guard<mutex> guard(m);
+        if (cnt < 3) 
+          cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
 	if (cnt == 2) cout << "(further warnings supressed)" << endl;
 	cnt++;
       }
@@ -248,10 +251,13 @@ namespace ngfem
 		      void * precomputed,
 		      LocalHeap & lh) const
   {
-    static int cnt = 0;
+    static atomic<int> cnt(0);
+    static mutex m;
     if (cnt < 3)
       {
-	cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
+        lock_guard<mutex> guard(m);
+        if (cnt < 3)
+          cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
         if (cnt == 2) cout << "(further warnings supressed)" << endl;
 	cnt++;
       }
