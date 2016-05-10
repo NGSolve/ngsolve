@@ -1375,12 +1375,12 @@ namespace ngcomp
 
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
-                          shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                          const BilinearFormIntegrator & bfi = *parts[j];
               
-                          if (bfi->BoundaryForm()) continue;
-                          if (bfi->SkeletonForm()) continue;
+                          if (!bfi.BoundaryForm()) continue;
+                          if (!bfi.SkeletonForm()) continue;
 
-                          if (bfi->DefinedOn (ma->GetSElIndex(i) )) continue;                
+                          if (!bfi.DefinedOn (ma->GetSElIndex(i) )) continue;                
 
                           for (int k = 0; k < dnums.Size(); k++)
                             if (dnums[k] != -1)
@@ -1389,14 +1389,10 @@ namespace ngcomp
                           int elmat_size = dnums.Size()*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
-                          auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                          if (bfiad)
-                            bfi = bfiad->GetBFI(seltrans.SpaceDim());
-
                           // original version did not compile on MacOS V
-                          auto fbfi = 
-                            dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);  
-                          fbfi->CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
+                          const FacetBilinearFormIntegrator & fbfi = 
+                            dynamic_cast<const FacetBilinearFormIntegrator&>(bfi);  
+                          fbfi.CalcFacetMatrix (fel,facnr,eltrans,vnums, seltrans, elmat, lh);
                           
                           fespace->TransformMat (i, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
                     
@@ -1405,7 +1401,7 @@ namespace ngcomp
                               testout->precision(8);
                         
                               (*testout) << "surface-elnum= " << i << endl;
-                              (*testout) << "integrator " << bfi->Name() << endl;
+                              (*testout) << "integrator " << bfi.Name() << endl;
                               (*testout) << "dnums = " << endl << dnums << endl;
                               (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
                               (*testout) << "elmat = " << endl << elmat << endl;
@@ -1542,10 +1538,6 @@ namespace ngcomp
                           int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                           FlatMatrix<SCAL> elmat(elmat_size, lh);
 
-                          auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                          if (bfiad)
-                            bfi = bfiad->GetBFI(eltrans1.SpaceDim());
-                          
                           shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                             dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
 
@@ -1556,19 +1548,13 @@ namespace ngcomp
                             }
                           else
                           {
-                            auto cbfi = dynamic_pointer_cast<CompoundBilinearFormIntegrator>(bfi);
+                            shared_ptr<CompoundBilinearFormIntegrator> cbfi = 
+                              dynamic_pointer_cast<CompoundBilinearFormIntegrator>(bfi);
 
                             if (!cbfi)
                               throw Exception("neither compound nor facetbilinearformintegrator!");
-                            else
-                              bfi = cbfi->GetBFI();
-                            
-                            auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                            if (bfiad)
-                              bfi = bfiad->GetBFI(eltrans1.SpaceDim());
 
-                            
-                            fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                            fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator>(cbfi->GetBFI());
 
                             if (!fbfi)
                               throw Exception("not a FacetBFI inside CompoundBFI!");
@@ -1724,11 +1710,11 @@ namespace ngcomp
                                      
                                      for (int j = 0; j < NumIntegrators(); j++)
                                        {
-                                         shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                         const BilinearFormIntegrator & bfi = *parts[j];
                                          
-                                         if (bfi->BoundaryForm()) continue;
-                                         if (!bfi->SkeletonForm()) continue;
-                                         if (!bfi->GetDGFormulation().element_boundary) continue;
+                                         if (bfi.BoundaryForm()) continue;
+                                         if (!bfi.SkeletonForm()) continue;
+                                         if (!bfi.GetDGFormulation().element_boundary) continue;
 
                                          for (auto d : dnums)
                                            if (d != -1) useddof[d] = true;
@@ -1736,11 +1722,7 @@ namespace ngcomp
                                          int elmat_size = dnums.Size()*fespace->GetDimension();
                                          FlatMatrix<SCAL> elmat(elmat_size, lh);
                                          
-                                         auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                                         if (bfiad)
-                                           bfi = bfiad->GetBFI(seltrans.SpaceDim());
-
-                                         dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi)->
+                                         dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            CalcFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elmat, lh);
                                          
                                          fespace->TransformMat (el1, false, elmat, TRANSFORM_MAT_LEFT_RIGHT);
@@ -1750,7 +1732,7 @@ namespace ngcomp
                                              testout->precision(8);
                                              
                                              (*testout) << "surface-elnum= " << sel << endl;
-                                             (*testout) << "integrator " << bfi->Name() << endl;
+                                             (*testout) << "integrator " << bfi.Name() << endl;
                                              (*testout) << "dnums = " << endl << dnums << endl;
                                              (*testout) << "element-index = " << eltrans.GetElementIndex() << endl;
                                              (*testout) << "elmat = " << endl << elmat << endl;
@@ -1817,34 +1799,23 @@ namespace ngcomp
                                      int elmat_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
                                      FlatMatrix<SCAL> elmat(elmat_size, lh);
                                      
-                                     shared_ptr<BilinearFormIntegratorAnyDim> bfiad = 
-                                       dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                                     if (bfiad)
-                                       bfi = bfiad->GetBFI(eltrans1.SpaceDim());
-                                     
                                      shared_ptr<FacetBilinearFormIntegrator> fbfi = 
                                        dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
                                      
                                      if (fbfi)
-                                     {
-                                       fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
-                                                              fel2,facnr2,eltrans2,vnums2, elmat, lh);
-                                     }
+                                       {
+                                         fbfi->CalcFacetMatrix (fel1,facnr1,eltrans1,vnums1,
+                                                                fel2,facnr2,eltrans2,vnums2, elmat, lh);
+                                       }
                                      else
-                                     {
+                                       {
                                          shared_ptr<CompoundBilinearFormIntegrator> cbfi = 
                                            dynamic_pointer_cast<CompoundBilinearFormIntegrator>(bfi);
                                          
                                          if (!cbfi)
                                            throw Exception("neither compound nor facetbilinearformintegrator!");
-                                         else
-                                           bfi = cbfi->GetBFI();
-                            
-                                         auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                                         if (bfiad)
-                                           bfi = bfiad->GetBFI(eltrans1.SpaceDim());
                                          
-                                         fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi);
+                                         fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator>(cbfi->GetBFI());
                                          
                                          if (!fbfi)
                                            throw Exception("not a FacetBFI inside CompoundBFI!");
@@ -2973,11 +2944,11 @@ namespace ngcomp
 
                                      for (int j = 0; j < NumIntegrators(); j++)
                                        {
-                                         shared_ptr<BilinearFormIntegrator> bfi = parts[j];
+                                         const BilinearFormIntegrator & bfi = *parts[j];
                                          
-                                         if (bfi->BoundaryForm()) continue;
-                                         if (!bfi->SkeletonForm()) continue;
-                                         if (!bfi->GetDGFormulation().element_boundary) continue;
+                                         if (bfi.BoundaryForm()) continue;
+                                         if (!bfi.SkeletonForm()) continue;
+                                         if (!bfi.GetDGFormulation().element_boundary) continue;
 
                                          /*
                                          int elmat_size = dnums.Size()*fespace->GetDimension();
@@ -2993,11 +2964,7 @@ namespace ngcomp
                                            ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                          x.GetIndirect(dnums, elx);
 
-                                         auto bfiad = dynamic_pointer_cast<BilinearFormIntegratorAnyDim>(bfi);
-                                         if (bfiad)
-                                           bfi = bfiad->GetBFI(seltrans.SpaceDim());
-                                         
-                                         dynamic_pointer_cast<FacetBilinearFormIntegrator>(bfi)->
+                                         dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
                                            ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
 
                                          /*
@@ -3071,11 +3038,8 @@ namespace ngcomp
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
-                                     auto bfiad = dynamic_cast<BilinearFormIntegratorAnyDim *>(bfi);
-                                     if (bfiad)
-                                       bfi = bfiad->GetBFI(eltrans1.SpaceDim()).get();
-
-                                     auto fbfi = dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
+                                     FacetBilinearFormIntegrator * fbfi = 
+                                       dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
 
                                      fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
                                                              fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
