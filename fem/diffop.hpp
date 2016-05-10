@@ -84,7 +84,7 @@ namespace ngfem
                              const TVX & x, TVY & y)
     // LocalHeap & lh)
     {
-      throw Exception (string("apply simdir not implemented for diffop ") + typeid(DOP).name());
+      throw ExceptionNOSIMD (string("apply simdir not implemented for diffop ") + typeid(DOP).name());
     }
 
 
@@ -137,7 +137,7 @@ namespace ngfem
                                 const TVX & x, TVY & y)
     // LocalHeap & lh)
     {
-      throw Exception (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
+      throw ExceptionNOSIMD (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
     }
     
   };
