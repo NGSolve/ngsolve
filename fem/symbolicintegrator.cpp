@@ -56,19 +56,15 @@ namespace ngfem
     }
     header += "}\n";
     if(code.is_simd) {
-//       header += "typedef typename std::remove_reference<decltype({ud}->GetAMemory(nullptr).Get(0,0))>::type {tres};\n";
       header += "typedef SIMD<double> {tres};\n";
     } else {
-//       header += "typedef typename std::remove_reference<decltype({ud}->GetMemory(nullptr)(0,0))>::type {tres};\n";
       header += "typedef double {tres};\n";
     }
-    {
-      TraverseDimensions( dims, [&](int ind, int i, int j) {
-          header += Var("comp", index,i,j).Declare("double", 0.0);
-          header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
-          header += Var("comp", index,i,j).Assign( Var(1.0), false );
-      });
-    }
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+        header += Var("comp", index,i,j).Declare("double", 0.0);
+        header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
+        header += Var("comp", index,i,j).Assign( Var(1.0), false );
+    });
     string body = "";
 
     TraverseDimensions( dims, [&](int ind, int i, int j) {
@@ -95,7 +91,7 @@ namespace ngfem
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";
     std::map<string,string> variables;
-    variables["ud"] = "tmp_"+ToString(index)+"_0"; //Var("tmp", index).S();
+    variables["ud"] = "tmp_"+ToString(index)+"_0";
     variables["this"] = "reinterpret_cast<ProxyFunction*>("+ToString(this)+")";
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";

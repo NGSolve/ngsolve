@@ -8,7 +8,6 @@
    Abstract data type Table
 */
 
-
 #include <ngstd.hpp>
 
 namespace ngstd
