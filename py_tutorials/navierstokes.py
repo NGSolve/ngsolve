@@ -5,7 +5,7 @@ nu = 0.001
 
 # timestepping parameters
 tau = 0.001
-tend = 1
+tend = 10
 
 # mesh = Mesh("cylinder.vol")
 from netgen.geom2d import SplineGeometry
@@ -71,12 +71,13 @@ Draw (absvelocity, mesh, "velocity")
 
 # implicit Euler/explicit Euler splitting method:
 t = 0
-while t < tend:
-    print ("t=", t)
+with TaskManager():
+    while t < tend:
+        print ("t=", t)
 
-    conv.Assemble()           # calculate it
-    res.data = a.mat * u.vec + conv.vec
-    u.vec.data -= tau * inv * res    
+        conv.Assemble()           # calculate it
+        res.data = a.mat * u.vec + conv.vec
+        u.vec.data -= tau * inv * res    
 
-    t = t + tau
-    Redraw()
+        t = t + tau
+        Redraw()

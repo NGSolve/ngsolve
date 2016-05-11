@@ -1021,7 +1021,7 @@ namespace ngfem
 
     INLINE const BaseMappedIntegrationPoint & operator[] (int i) const
     { return *static_cast<const BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
-    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) = 0;
+    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const = 0;
     /*
     {
       BaseMappedIntegrationRule mir(ir.Range(first,next), eltrans);
@@ -1069,12 +1069,12 @@ namespace ngfem
       return mips[i]; 
     }
 
-    INLINE MappedIntegrationRule Range(int first, int next)
+    INLINE MappedIntegrationRule Range(int first, int next) const
     {
       return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }
 
-    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh)
+    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const
     {
       return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
     }

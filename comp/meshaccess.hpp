@@ -543,6 +543,10 @@ namespace ngcomp
     {
       return deformation;
     }
+
+    shared_ptr<netgen::Mesh> GetNetgenMesh () const
+    { return mesh.GetMesh(); }
+      
     
     /**
        returns node topology.

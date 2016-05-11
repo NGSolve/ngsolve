@@ -5,7 +5,7 @@
 #include <comp.hpp>
 
 #ifdef PARALLEL
-#include </usr/lib/python3/dist-packages/mpi4py/include/mpi4py/mpi4py.h>
+#include <mpi4py/mpi4py.h>
 #endif
 
 #include <regex>
@@ -469,6 +469,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property ("nv", &MeshAccess::GetNV, "number of vertices")
     .add_property ("ne",  static_cast<int(MeshAccess::*)()const> (&MeshAccess::GetNE), "number of volume elements")
     .add_property ("dim", &MeshAccess::GetDimension, "mesh dimension")
+    .add_property ("ngmesh", &MeshAccess::GetNetgenMesh, "netgen mesh")
     .def ("GetTrafo", 
           static_cast<ElementTransformation&(MeshAccess::*)(ElementId,Allocator&)const>
           (&MeshAccess::GetTrafo), 
@@ -1212,7 +1213,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
             IntegrationPoint ip;
-            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             if (elnr < 0) throw Exception ("point out of domain");
 
             const FiniteElement & fel = space->GetFE(elnr, lh);
@@ -1247,14 +1248,17 @@ void NGS_DLL_HEADER ExportNgcomp()
         ([](GF & self, const BaseMappedIntegrationPoint & mip)
           {
             auto space = self.GetFESpace();
-            auto evaluator = space->GetEvaluator();
+
+            ElementId ei = mip.GetTransformation().GetElementId();
+            // auto evaluator = space->GetEvaluator(ei.IsBoundary());
+            auto evaluator = space->GetEvaluator(VorB(ei));
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
-            int elnr = mip.GetTransformation().GetElementNr();
-            const FiniteElement & fel = space->GetFE(elnr, lh);
+            // int elnr = mip.GetTransformation().GetElementNr();
+            const FiniteElement & fel = space->GetFE(ei, lh);
 
             Array<int> dnums(fel.GetNDof());
-            space->GetDofNrs(elnr, dnums);
+            space->GetDofNrs(ei, dnums);
 
             if (space->IsComplex())
               {
@@ -1270,7 +1274,6 @@ void NGS_DLL_HEADER ExportNgcomp()
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
                 self.GetElementVector(dnums, elvec);
-
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
               }
@@ -1288,7 +1291,7 @@ void NGS_DLL_HEADER ExportNgcomp()
             cout << evaluator->Name() << endl;
             int dim = evaluator->Dim();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
-            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, false);
+            int elnr = space.GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             Array<int> dnums;
             space.GetDofNrs(elnr, dnums);
             const FiniteElement & fel = space.GetFE(elnr, lh);

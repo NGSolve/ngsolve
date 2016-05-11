@@ -15,7 +15,12 @@ namespace ngfem
       coefficient functions
   */
 
-
+  class ExceptionNOSIMD : public Exception
+  {
+  public:
+    using Exception :: Exception;
+  };
+  
   class NGS_DLL_HEADER CoefficientFunction
   {
   public:
@@ -851,6 +856,7 @@ class cl_BinaryOpCF : public CoefficientFunction
   NONZERO lam_nonzero;
   int dim;
   char opname;
+  bool is_complex;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
@@ -864,8 +870,8 @@ public:
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
     dim = dim1;
+    is_complex = c1->IsComplex() || c2->IsComplex();
   }
-
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -878,7 +884,8 @@ public:
                                           );
     });
   }
-  virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
+
+  virtual bool IsComplex() const { return is_complex; } // c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return dim; }
   virtual Array<int> Dimensions() const { return c1->Dimensions(); }
   
@@ -950,6 +957,15 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationRule & ir,
                         FlatMatrix<Complex> result) const
   {
+    if (!is_complex)
+      {
+        STACK_ARRAY(double, hmem, ir.Size()*dim);
+        FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
+        Evaluate (ir, temp);
+        result = temp;
+      }
+
+        
     STACK_ARRAY(double, hmem, 2*ir.Size()*dim);
     FlatMatrix<Complex> temp(ir.Size(), dim, reinterpret_cast<Complex*> (&hmem[0]));
 
@@ -1380,6 +1396,15 @@ public:
       values = 0.0;
   }
 
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
+  {
+    int matindex = ir.GetTransformation().GetElementIndex();
+    if (matindex < ci.Size() && ci[matindex])
+      ci[matindex] -> Evaluate (ir, values);
+    else
+      values = 0.0;
+  }
+
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     int matindex = ir.GetTransformation().GetElementIndex();
@@ -1653,9 +1678,9 @@ public:
     int base = 0;
     for (int i : Range(ci))
       {
-        int dimi = ci[i]->Dimension();
-        result.Cols(base, base+dimi) = *input[i];
-        base += dimi;
+        int d = dimi[i];
+        result.Cols(base, base+d) = *input[i];
+        base += d;
       }
   }
   
@@ -1668,11 +1693,21 @@ public:
     int base = 0;
     for (int i : Range(ci))
       {
+        int d = dimi[i];        
+        result.Cols(base,base+d) = *input[i];
+        deriv.Cols(base, base+d) = *dinput[i];        
+        base += d;
+      }
+
+    /*
+    for (int i : Range(ci))
+      {
         int dimi = ci[i]->Dimension();
         result.Cols(base, base+dimi) = *input[i];
         deriv.Cols(base, base+dimi) = *dinput[i];
         base += dimi;
       }
+    */
   }
 
   

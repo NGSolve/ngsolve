@@ -719,6 +719,8 @@ namespace ngfem
     virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
+    int GetDim() const { return dim; }
+    int GetComp() const { return comp; } 
 
     const BilinearFormIntegrator & Block () const { return *bfi; }
     shared_ptr<BilinearFormIntegrator> BlockPtr () const { return bfi; }
@@ -1033,9 +1035,6 @@ namespace ngfem
 
     virtual bool BoundaryForm () const
     { return any_dim->BoundaryForm(); }
-    
-    virtual bool SkeletonForm () const
-    { return any_dim->SkeletonForm(); }
 
     virtual int DimFlux () const 
     { throw Exception("BFI AnyDim - DimFlux not available"); }
