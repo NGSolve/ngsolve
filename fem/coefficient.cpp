@@ -3003,8 +3003,8 @@ public:
             });
             if(simd) {
               s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & bmir, AFlatMatrix<double> results ) {" << endl;
-              s << "  const SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<const SIMD_MappedIntegrationRule<2,2>*>(&bmir);" << endl;
-
+              // s << "  const SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<const SIMD_MappedIntegrationRule<2,2>*>(&bmir);" << endl;
+              s << "auto & mir = bmir;" << endl;              
             }
             else
             {
