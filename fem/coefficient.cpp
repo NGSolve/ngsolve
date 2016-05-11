@@ -1240,7 +1240,22 @@ public:
       result(i,0) = InnerProduct(temp1.Row(i), temp2.Row(i));
   }
 
-  
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                         AFlatMatrix<double> values) const
+  {
+    auto in0 = *input[0];
+    auto in1 = *input[1];
+    
+    for (int i = 0; i < values.VWidth(); i++)
+      {
+        SIMD<double> sum = 0.0;
+        for (int j = 0; j < dim1; j++)
+          sum += in0.Get(j,i) * in1.Get(j,i);
+        values.Get(i) = sum.Data();
+      }
+//     throw Exception (string("hihi\ncf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
+    // Evaluate (ir, values);
+  }
 
   virtual void EvaluateDeriv(const BaseMappedIntegrationRule & mir,
                              FlatMatrix<> result,
