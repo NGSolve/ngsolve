@@ -411,9 +411,9 @@ set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INC
 
 foreach( d ${ngscxx_include_dirs} )
   if(WIN32)
-    set( ngscxx_includes "${ngscxx_includes} -I\"${d}\"" )
+    set( ngscxx_includes "${ngscxx_includes} /I\"${d}\"" )
   else()
-    set( ngscxx_includes "${ngscxx_includes} /I${d}" )
+    set( ngscxx_includes "${ngscxx_includes} -I${d}" )
   endif()
 endforeach()
 
