@@ -397,14 +397,24 @@ string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" name)
 set(ngscxx_flags "${${name}} ${CMAKE_CXX_FLAGS} -fPIC")
 
 foreach( d ${ngscxx_defines} )
+  if(WIN32)
+    if(NOT ${d} STREQUAL "NGS_EXPORTS")
+      set( ngscxx_flags "${ngscxx_flags} /D${d}" )
+    endif()
+  else()
     set( ngscxx_flags "${ngscxx_flags} -D${d}" )
+  endif()
 endforeach()
 
 # include directories
 set(ngscxx_include_dirs ${INSTALL_DIR}/include ${TCL_INCLUDE_PATH} ${MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_DIR}/include ${PYTHON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR} ${NETGEN_INTERNAL_INCLUDE_DIR})
 
 foreach( d ${ngscxx_include_dirs} )
-    set( ngscxx_includes "${ngscxx_includes} -I${d}" )
+  if(WIN32)
+    set( ngscxx_includes "${ngscxx_includes} -I\"${d}\"" )
+  else()
+    set( ngscxx_includes "${ngscxx_includes} /I${d}" )
+  endif()
 endforeach()
 
 # linker flags
@@ -429,19 +439,32 @@ Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 Netgen_BUNDLE=\"`echo \"$0\" | sed -e 's/\\/Contents\\/MacOS\\/ngsld//'`\"
 Netgen_MACOS=\"$Netgen_BUNDLE/Contents/MacOS\"
 ")
+elseif(WIN32)
+  set(ngsld_flags "${ngsld_flags} /LIBPATH:${INSTALL_DIR}/lib nglib.lib libngsolve.lib" )
 else()
     set(ngsld_flags "${ngsld_flags} -L${INSTALL_DIR}/lib -Wl,--rpath=${INSTALL_DIR}/lib" )
     set(ngscxx_header "#!/bin/sh")
     set(ngsld_header "#!/bin/sh")
 endif()
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
-${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
-${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+if(WIN32)
+    get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
+    get_filename_component(VC_DIR ${VC_BIN_DIR}/../../ ABSOLUTE)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat 
+      "call \"${VC_DIR}/vcvarsall.bat\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
+      "call \"${VC_DIR}/vcvarsall.bat\" amd64\nlink /DLL %* ${ngsld_flags}\n")
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+else(WIN32)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngscxx "${ngscxx_header}
+        ${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*\n")
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/ngsld "${ngsld_header}
+        ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
+endif(WIN32)
 
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
-install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${ngs_install_dir_bin} COMPONENT ngsolve_devel )
 
 
 #######################################################################

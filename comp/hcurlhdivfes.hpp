@@ -240,11 +240,11 @@ public:
 			  
 
   template <class MAT>
-  void TransformMat (int elnr, bool boundary,
+  NGS_DLL_HEADER void TransformMat (int elnr, bool boundary,
 		     MAT & mat, TRANSFORM_TYPE tt) const;
 
   template <class VEC>
-  void TransformVec (int elnr, bool boundary,
+  NGS_DLL_HEADER void TransformVec (int elnr, bool boundary,
 		     VEC & vec, TRANSFORM_TYPE tt) const;
 
 

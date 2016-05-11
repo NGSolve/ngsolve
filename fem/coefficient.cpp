@@ -23,6 +23,11 @@ namespace ngfem
   { ; }
 
 
+  void CoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    code.header += string("// Missing implementation: ") + typeid(*this).name() + "\n";
+  }
+
   void CoefficientFunction :: PrintReport (ostream & ost) const
   {
     // ost << "CoefficientFunction is " << typeid(*this).name() << endl;
@@ -117,6 +122,10 @@ namespace ngfem
     values = val;
   }
 
+  void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    code.body += Var(index).Assign(Var(val));
+  }
   
   ///
   ConstantCoefficientFunctionC ::   
@@ -133,6 +142,10 @@ namespace ngfem
     ost << "ConstantCFC, val = " << val << endl;
   }
 
+  void ConstantCoefficientFunctionC :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    code.body += Var(index).Assign(Var(val));
+  }
 
   
   DomainConstantCoefficientFunction :: 
@@ -191,6 +204,13 @@ namespace ngfem
     
     values = val[elind]; 
   }
+
+  void DomainConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+    {
+      Array<string> a(val.Size());
+      for (auto i : Range(val))
+        code.body += Var(index,i).Assign(Var(val[i]));
+    }
 
 
   DomainConstantCoefficientFunction :: 
@@ -441,6 +461,10 @@ void DomainVariableCoefficientFunction :: PrintReport (ostream & ost) const
     fun[i] -> Print(ost);
 }
 
+void DomainVariableCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+{
+  code.body += "// DomainVariableCoefficientFunction: not implemented";
+}
 
   /*
   template class DomainVariableCoefficientFunction<1>;
@@ -746,6 +770,13 @@ public:
     ost << ")";
   }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
+    });
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     c1->TraverseTree (func);
@@ -896,6 +927,12 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get() }); }
   
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
+    });
+  }
 
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
@@ -948,6 +985,13 @@ public:
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    TraverseDimensions( c2->Dimensions(), [&](int ind, int i, int j) {
+      code.body += Var(index,i,j).Assign( Var(inputs[0]) * Var(inputs[1],i,j) );
+    });
+  }
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -1123,6 +1167,16 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    CodeExpr result;
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        int i2, j2;
+        GetIndex( c2->Dimensions(), ind, i2, j2 );
+        result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
+    });
+    code.body += Var(index).Assign(result.S());
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1294,6 +1348,16 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex() || c2->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    CodeExpr result;
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        int i2, j2;
+        GetIndex( c2->Dimensions(), ind, i2, j2 );
+        result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
+    });
+    code.body += Var(index).Assign(result.S());
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1708,6 +1772,16 @@ public:
     func(*this);
   }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      for (int i : Range(dims[0]))
+        for (int j : Range(dims[1])) {
+          CodeExpr s;
+          for (int k : Range(inner_dim))
+            s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
+          code.body += Var(index, i, j).Assign(s);
+        }
+  }
+
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }  
 
@@ -1996,6 +2070,15 @@ public:
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
   { return Array<CoefficientFunction*>({ c1.get(), c2.get() }); }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      auto dims = c1->Dimensions();
+      for (int i : Range(dims[0])) {
+        CodeExpr s;
+        for (int j : Range(dims[1]))
+            s += Var(inputs[0], i, j) * Var(inputs[1], j);
+	code.body += Var(index, i).Assign(s);
+      }
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -2221,6 +2304,12 @@ public:
   {
     c1->TraverseTree (func);
     func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      for (int i : Range(dims[0]))
+        for (int j : Range(dims[1]))
+          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
   }
 
   virtual Array<CoefficientFunction*> InputCoefficientFunctions() const
@@ -2475,7 +2564,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = 1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }
+                       [](bool a, bool b) { return a||b; }, '+'
                        );
   }
   
@@ -2487,7 +2576,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1; ddb = -1; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 0; ddbdb = 0; },
-                       [](bool a, bool b) { return a||b; }
+                       [](bool a, bool b) { return a||b; }, '-'
                        );
   }
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
@@ -2523,7 +2612,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = b; ddb = a; },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = 1; ddbdb = 0; },
-                       [](bool a, bool b) { return a&&b; }
+                       [](bool a, bool b) { return a&&b; }, '*'
                        );
   }
 
@@ -2581,7 +2670,7 @@ public:
                        [](double a, double b, double & dda, double & ddb) { dda = 1.0/b; ddb = -a/(b*b); },
                        [](double a, double b, double & ddada, double & ddadb, double & ddbdb) 
                        { ddada = 0; ddadb = -1.0/(b*b); ddbdb = 2*a/(b*b*b); },
-                       [](bool a, bool b) { return a; }
+                       [](bool a, bool b) { return a; }, '/'
                        );
   }
 
@@ -2684,6 +2773,29 @@ public:
     virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }
     virtual int Dimension() const { return cf_then->Dimension(); }
 
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+    {
+      auto var_if = Var(inputs[0]);
+      TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
+          code.body += Var(index,i,j).Declare("decltype("+Var(inputs[1]).S()+")");
+      });
+      if(code.is_simd) {
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign("IfPos("+Var(inputs[0]).S()+','+Var(inputs[1],i,j).S()+','+Var(inputs[2],i,j).S()+")", false);
+        });
+      } else {
+        code.body += "if (" + var_if.S() + ">0.0) {\n";
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
+        });
+        code.body += "} else {\n";
+        TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
+        });
+        code.body += "}\n";
+      }
+    }
+
     virtual Array<int> Dimensions() const
     {
       return cf_then->Dimensions();
@@ -2778,21 +2890,43 @@ public:
     return make_shared<IfPosCoefficientFunction> (cf_if, cf_then, cf_else);
   }
 
+  void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    int input = 0;
+    int input_index = 0;
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+	auto cfi = ci[input];
+        int i1, j1;
+        GetIndex( cfi->Dimensions(), input_index, i1, j1 );
+        code.body += Var(index,i,j).Assign( Var(inputs[input], i1, j1) );
+        input_index++;
+        if (input_index == cfi->Dimension() )
+        {
+            input++;
+            input_index = 0;
+        }
+    });
+  }
   
   // ///////////////////////////// Compiled CF /////////////////////////
 // int myglobalvar;
 // int myglobalvar_eval;
   class CompiledCoefficientFunction : public CoefficientFunction
   {
+    typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
+    typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
     Array<int> dim;
     Array<bool> is_complex;
     // Array<Timer*> timers;
+    Library library;
+    lib_function compiled_function;
+    lib_function_simd compiled_function_simd;
   public:
-    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
-      : cf(acf)
+    CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
+      : cf(acf), compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
@@ -2806,9 +2940,9 @@ public:
              }
          });
 
-      cout << "Compiled CF:" << endl;
+      cout << IM(3) << "Compiled CF:" << endl;
       for (auto cf : steps)
-        cout << typeid(*cf).name() << endl;
+        cout << IM(3) << typeid(*cf).name() << endl;
       
       inputs = DynamicTable<int> (steps.Size());
       
@@ -2824,7 +2958,56 @@ public:
              }
          });
 
-      cout << "inputs = " << endl << inputs << endl;
+      cout << IM(3) << "inputs = " << endl << inputs << endl;
+
+      if(realcompile)
+      {
+        stringstream s;
+        s << "#include<comp.hpp>" << endl;
+        s << "using namespace ngcomp;" << endl;
+        s << "extern \"C\" {" << endl;
+
+        for (auto simd : {false,true}) {
+            cout << IM(3) << "Compiled CF:" << endl;
+            Code code;
+            code.is_simd = simd;
+            for (auto i : Range(steps)) {
+                cout << IM(3) << "step " << i << endl;
+                cout << IM(3) << "function: " << typeid(*steps[i]).name() << endl;
+                steps[i]->GenerateCode(code, inputs[i],i);
+            }
+
+            // set results
+            int ii = 0;
+            TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
+                 if(simd)
+                   code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ".Data();\n";
+                 else
+                   code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
+                 ii++;
+            });
+            if(simd) {
+              s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & bmir, AFlatMatrix<double> results ) {" << endl;
+              s << "  const SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<const SIMD_MappedIntegrationRule<2,2>*>(&bmir);" << endl;
+
+            }
+            else
+            {
+              s << "void CompiledEvaluate(const BaseMappedIntegrationRule & bmir, FlatMatrix<> results ) {" << endl;
+              s << "auto & mir = bmir;" << endl;
+            }
+            s << code.header << endl;
+            s << "for ( auto i : Range(mir)) {" << endl;
+            s << "auto & ip = mir[i];" << endl;
+            s << code.body << endl;
+            s << "}\n}" << endl << endl;
+
+        }
+        s << "}" << endl;
+        library.Compile( s.str() );
+        compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
+        compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+      }
     }
 
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -2849,8 +3032,15 @@ public:
       // throw Exception ("compiled mip evaluate not implemented");
     }
 
+
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const
     {
+      if(compiled_function)
+      {
+        compiled_function(ir,values);
+        return;
+      }
+
       // static Timer t1("CompiledCF::Evaluate 1");
       // static Timer t2("CompiledCF::Evaluate 2");
       // static Timer t3("CompiledCF::Evaluate 3");
@@ -2887,6 +3077,12 @@ public:
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
+      if(compiled_function_simd)
+      {
+        compiled_function_simd(ir, values);
+        return;
+      }
+
       int totdim = 0;
       for (int d : dim) totdim += d;
       STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);      
@@ -3022,15 +3218,21 @@ public:
       dderiv = ddtemp.Last();
     }
     
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+    {
+      return cf->GenerateCode(code, inputs, index);
+    }
   };
 
 
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c)
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile)
   {
-    return make_shared<CompiledCoefficientFunction> (c);
+    return make_shared<CompiledCoefficientFunction> (c, realcompile);
   }
   
 
+  int Library::counter = 0;
  
 }
+

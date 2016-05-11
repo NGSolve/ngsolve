@@ -176,7 +176,7 @@ namespace ngfem
     ///
     INLINE double GetWeight() const { return measure * ip.Weight(); }
 
-    FlatVector<> GetPoint() const;
+    NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
     int Dim() const;
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
@@ -1209,6 +1209,8 @@ namespace ngstd
     const Mat<DIMR,DIMS,SIMD<double>> & GetJacobian() const { return dxdxi; }
     Mat<DIMR,DIMS,SIMD<double>> & Jacobian() { return dxdxi; }
     
+    int Dim() const { return DIMR; }
+
     INLINE void Compute ()
     {
       if (DIMS == DIMR)
@@ -1299,7 +1301,7 @@ namespace ngfem
     SIMD_IntegrationRule (const IntegrationRule & ir);
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
-    ~SIMD_IntegrationRule ();
+    NGS_DLL_HEADER ~SIMD_IntegrationRule ();
     
     SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
       : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }

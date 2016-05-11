@@ -23,7 +23,7 @@ namespace ngfem
   {
   public:
 
-    static string Name() { return "noname"; }
+    static string Name() { return typeid(DiffOp<DOP>()).name(); }
   
     /**
        Computes the B-matrix. 
@@ -160,7 +160,7 @@ namespace ngfem
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
-    virtual string Name() const { return "noname"; }
+    virtual string Name() const { return typeid(*this).name(); }
     /// dimension of range
     NGS_DLL_HEADER virtual int Dim() const = 0;
     /// number of copies of finite element by BlockDifferentialOperator
@@ -228,7 +228,7 @@ namespace ngfem
 	   FlatMatrix<Complex> flux,
 	   LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
 	   const SIMD_BaseMappedIntegrationRule & bmir,
 	   BareSliceVector<double> x, 
@@ -263,7 +263,7 @@ namespace ngfem
 		FlatVector<Complex> x, 
 		LocalHeap & lh) const;
 
-    virtual void
+    NGS_DLL_HEADER virtual void
     AddTrans (const FiniteElement & bfel,
               const SIMD_BaseMappedIntegrationRule & bmir,
               ABareMatrix<double> flux,

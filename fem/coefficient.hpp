@@ -29,6 +29,7 @@ namespace ngfem
     ///
     virtual ~CoefficientFunction ();
 
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
     ///
     virtual int NumRegions () { return INT_MAX; }
     ///
@@ -259,6 +260,7 @@ namespace ngfem
                            AFlatMatrix<double> values) const
     { values = val; }
     virtual void PrintReport (ostream & ost) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -295,6 +297,7 @@ namespace ngfem
     }
     
     virtual void PrintReport (ostream & ost) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -327,6 +330,8 @@ namespace ngfem
     }
 
     double operator[] (int i) const { return val[i]; }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
 
@@ -383,6 +388,8 @@ namespace ngfem
 			   FlatMatrix<double> values) const;
 
     virtual void PrintReport (ostream & ost) const;
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
 
   ///
@@ -640,10 +647,11 @@ class cl_UnaryOpCF : public CoefficientFunction
   shared_ptr<CoefficientFunction> c1;
   OP lam;
   OPC lamc;
+  string name;
 public:
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
-                OP alam, OPC alamc)
-    : c1(ac1), lam(alam), lamc(alamc) { ; }
+                OP alam, OPC alamc, string aname="undefined")
+    : c1(ac1), lam(alam), lamc(alamc), name(aname) { ; }
   
   // virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual bool IsComplex() const
@@ -655,6 +663,13 @@ public:
   }
   
   virtual int Dimension() const { return c1->Dimension(); }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+        code.body += Var(index,i,j).Assign( Var(inputs[0],i,j).Func(name) );
+        });
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -823,9 +838,9 @@ public:
 
 template <typename OP, typename OPC> 
 shared_ptr<CoefficientFunction> UnaryOpCF(shared_ptr<CoefficientFunction> c1, 
-                                          OP lam, OPC lamc)
+                                          OP lam, OPC lamc, string name="undefined")
 {
-  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc));
+  return shared_ptr<CoefficientFunction> (new cl_UnaryOpCF<OP,OPC> (c1, lam, lamc, name));
 }
 
   // extern int myglobalvar_eval;
@@ -840,20 +855,34 @@ class cl_BinaryOpCF : public CoefficientFunction
   DDERIV lam_dderiv;
   NONZERO lam_nonzero;
   int dim;
+  char opname;
   bool is_complex;
 public:
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
-                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero)
+                 OP alam, OPC alamc, DERIV alam_deriv, DDERIV alam_dderiv, NONZERO alam_nonzero, char aopname)
     : c1(ac1), c2(ac2), lam(alam), lamc(alamc),
       lam_deriv(alam_deriv), lam_dderiv(alam_dderiv),
-      lam_nonzero(alam_nonzero)
+      lam_nonzero(alam_nonzero),
+      opname(aopname)
   {
     int dim1 = c1->Dimension();
     int dim2 = c2->Dimension();
     if (dim1 != dim2) throw Exception ("Dimensions don't match");
     dim = dim1;
     is_complex = c1->IsComplex() || c2->IsComplex();
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
+        int i2,j2;
+        GetIndex(c2->Dimensions(), ind, i2, j2);
+        code.body += Var(index,i,j).Assign(   Var(inputs[0],i,j).S()
+                                            + opname
+                                            + Var(inputs[1],i2,j2).S()
+                                          );
+    });
   }
 
   virtual bool IsComplex() const { return is_complex; } // c1->IsComplex() || c2->IsComplex(); }
@@ -1115,10 +1144,11 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
                                                   shared_ptr<CoefficientFunction> c2, 
                                                   OP lam, OPC lamc, DERIV lam_deriv,
                                                   DDERIV lam_dderiv,
-                                                  NONZERO lam_nonzero)
+                                                  NONZERO lam_nonzero,
+                                                  char opname)
 {
   return shared_ptr<CoefficientFunction> (new cl_BinaryOpCF<OP,OPC,DERIV,DDERIV,NONZERO> 
-                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero));
+                                          (c1, c2, lam, lamc, lam_deriv, lam_dderiv, lam_nonzero, opname));
 }
 
 
@@ -1138,6 +1168,13 @@ public:
   
   virtual bool IsComplex() const { return c1->IsComplex(); }
   virtual int Dimension() const { return 1; }
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    auto dims = c1->Dimensions();
+    int i,j;
+    GetIndex(dims, comp, i, j);
+    code.body += Var(index).Assign( Var(inputs[0], i, j ));
+  }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
@@ -1312,6 +1349,11 @@ public:
     return 0;
   }
 
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    code.body += "// DomainWiseCoefficientFunction: not implemented\n;";
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)   
   {
     for (auto cf : ci)
@@ -1471,6 +1513,8 @@ public:
     return Array<int> (dims);
   }
   
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func)
   {
     for (auto cf : ci)
@@ -1728,7 +1772,7 @@ public:
                                          shared_ptr<CoefficientFunction> cf_else);
   
   extern    
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c);
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false);
 }
 
 

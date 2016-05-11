@@ -50,6 +50,8 @@ public:
   virtual Array<int> Dimensions() const final;
   virtual bool IsComplex () const final { return is_complex; } 
   bool IsOther() const { return is_other; }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -116,6 +118,56 @@ public:
   virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;  
 };
 
+class ProxyUserData
+{
+  FlatArray<const ProxyFunction*> remember_first;
+  FlatArray<FlatMatrix<double>> remember_second;
+  FlatArray<AFlatMatrix<double>> remember_asecond;
+public:
+  class ProxyFunction * testfunction = nullptr;
+  int test_comp;
+  class ProxyFunction * trialfunction = nullptr;
+  int trial_comp;
+  
+  const FiniteElement * fel = nullptr;
+  const FlatVector<double> * elx;
+  LocalHeap * lh;
+
+  ProxyUserData ()
+    : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
+  ProxyUserData (int ntrial, LocalHeap & lh)
+    : remember_first(ntrial, lh), remember_second(ntrial, lh), remember_asecond(ntrial, lh)
+  { remember_first = nullptr; }
+  
+  void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
+  {
+    for (int i = 0; i < remember_first.Size(); i++)
+      {
+        if (remember_first[i] == nullptr)
+          {
+            remember_first[i] = proxy;
+            new (&remember_second[i]) FlatMatrix<> (h, w, lh);
+            new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+  bool HasMemory (const ProxyFunction * proxy) const
+  {
+    return remember_first.Contains(proxy);
+  }
+  FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
+  {
+    return remember_second[remember_first.Pos(proxy)];
+  }
+  AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
+  {
+    return remember_asecond[remember_first.Pos(proxy)];
+  }
+};
+
+  
 
 class CompoundDifferentialOperator : public DifferentialOperator
 {
