@@ -253,6 +253,27 @@ namespace ngfem
     eltrans.CalcMultiPointJacobian (ir, *this);
   }
 
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
+  {
+    Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
+    auto hmips = mips;
+    for (int i = 0; i < hmips.Size(); i++)
+      {
+        auto & mip = hmips[i];
+        Mat<DIM_ELEMENT,DIM_SPACE> inv_jac = mip.GetJacobianInverse();
+        double det = fabs (mip.GetJacobiDet()); // GetMeasure();
+        Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
+        double len = L2Norm (normal);       // that's the surface measure
+        normal *= 1.0/len;                  // normal vector on physical element
+        mip.SetNV(normal);
+        mip.SetMeasure (len);
+      }
+  }
+
+
+  
   template class MappedIntegrationRule<0,0>;
   template class MappedIntegrationRule<0,1>;
   template class MappedIntegrationRule<1,1>;
