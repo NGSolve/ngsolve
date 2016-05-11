@@ -549,7 +549,15 @@ namespace ngcomp
                        FlatVector<double> diag_mass(fel.GetNDof(), lh);
                        
                        vec.GetIndirect(dnums, elx);
-                       static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
+                       switch (ma->GetDimension())
+                         {
+                         case 1:
+                           static_cast<const DGFiniteElement<1>&> (fel).GetDiagMassMatrix (diag_mass);
+                         case 2:
+                           static_cast<const DGFiniteElement<2>&> (fel).GetDiagMassMatrix (diag_mass);
+                         case 3:
+                           static_cast<const DGFiniteElement<3>&> (fel).GetDiagMassMatrix (diag_mass);
+                         }
                        IntegrationRule ir(fel.ElementType(), 0);
                        BaseMappedIntegrationRule & mir = el.GetTrafo()(ir, lh);
                        // double invdet = 1.0/mir[0].GetMeasure();
