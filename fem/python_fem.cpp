@@ -403,13 +403,12 @@ struct GenericConj {
         for( int i : Range(D))
           code.body += Var(index,i).Assign(nv(i));
     }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
-      // static Timer t("NormalVec::EvalSIMD"); RegionTimer reg(t);            
-      auto & ir22 = static_cast<const SIMD_MappedIntegrationRule<2,2>&> (ir);
       for (int i = 0; i < ir.Size(); i++)
         for (int j = 0; j < D; j++)
-          values.Get(j,i) = ir22[i].GetNV()(j).Data();
+          values.Get(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
