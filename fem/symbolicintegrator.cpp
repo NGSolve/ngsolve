@@ -13,55 +13,6 @@
 namespace ngfem
 {
   
-  class ProxyUserData
-  {
-    FlatArray<const ProxyFunction*> remember_first;
-    FlatArray<FlatMatrix<double>> remember_second;
-    FlatArray<AFlatMatrix<double>> remember_asecond;
-  public:
-    class ProxyFunction * testfunction = nullptr;
-    int test_comp;
-    class ProxyFunction * trialfunction = nullptr;
-    int trial_comp;
-    
-    const FiniteElement * fel = nullptr;
-    const FlatVector<double> * elx;
-    LocalHeap * lh;
-
-    ProxyUserData ()
-      : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr) { ; }
-    ProxyUserData (int ntrial, LocalHeap & lh)
-      : remember_first(ntrial, lh), remember_second(ntrial, lh), remember_asecond(ntrial, lh)
-    { remember_first = nullptr; }
-    
-    void AssignMemory (const ProxyFunction * proxy, int h, int w, LocalHeap & lh)
-    {
-      for (int i = 0; i < remember_first.Size(); i++)
-        {
-          if (remember_first[i] == nullptr)
-            {
-              remember_first[i] = proxy;
-              new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-              new (&remember_asecond[i]) AFlatMatrix<double> (w, h, lh);
-              return;
-            }
-        }
-      throw Exception ("no space for userdata - memory available");
-    }
-    bool HasMemory (const ProxyFunction * proxy) const
-    {
-      return remember_first.Contains(proxy);
-    }
-    FlatMatrix<> GetMemory (const ProxyFunction * proxy) const
-    {
-      return remember_second[remember_first.Pos(proxy)];
-    }
-    AFlatMatrix<double> GetAMemory (const ProxyFunction * proxy) const
-    {
-      return remember_asecond[remember_first.Pos(proxy)];
-    }
-  };
-
   Array<int> ProxyFunction ::
   Dimensions() const
   {
@@ -72,7 +23,87 @@ namespace ngfem
     else
       return Array<int> ({dim/blockdim, blockdim});
   }
-  
+
+  void ProxyFunction ::
+  GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    auto dims = Dimensions();
+
+    string header = "\n\
+    {flatmatrix} {values};\n\
+    ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
+    {\n\
+      if (!{ud})\n\
+        throw Exception (\"cannot evaluate ProxyFunction without userdata\");\n\
+          ";
+
+    if(!testfunction) {
+      header+=
+"      if ({ud}->fel) {\n\
+          if ({ud}->HasMemory ({this})) {\n";
+      if(code.is_simd) {
+        header += "auto x = {ud}->GetAMemory ({this});\n";
+        header += "{values}.AssignMemory(x.Height(), x.Width(), &x.Get(0,0));\n";
+      } else {
+        header += "auto x = {ud}->GetMemory ({this});\n";
+        header += "{values}.AssignMemory(x.Height(), x.Width(), &x(0,0));\n";
+      }
+      header+=
+"          }\n\
+          else\n\
+            throw Exception(\"userdata has no memory!\");\n\
+      }\n";
+    }
+    header += "}\n";
+    if(code.is_simd) {
+      header += "typedef SIMD<double> {tres};\n";
+    } else {
+      header += "typedef double {tres};\n";
+    }
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+        header += Var("comp", index,i,j).Declare("double", 0.0);
+        header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
+        header += Var("comp", index,i,j).Assign( Var(1.0), false );
+    });
+    string body = "";
+
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+        body += Var(index, i,j).Declare("{tres}", 0.0);
+        body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
+    });
+
+    if(!testfunction) {
+      body += "if ({ud}->fel) {\n";
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
+          if(code.is_simd)
+            body += Var(index, i,j).Assign( "{values}.Get("+ToString(ind) + ",i)", false );
+          else
+            body += Var(index, i,j).Assign( "{values}(i,"+ToString(ind) + ")", false );
+      });
+      body += "} else ";
+    }
+    body += "if({ud}->{func_string} == {this}) {\n";
+    TraverseDimensions( dims, [&](int ind, int i, int j) {
+        body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
+    });
+    body += "}\n";
+
+    string func_string = testfunction ? "testfunction" : "trialfunction";
+    string comp_string = testfunction ? "test_comp" : "trial_comp";
+    std::map<string,string> variables;
+    variables["ud"] = "tmp_"+ToString(index)+"_0";
+    variables["this"] = "reinterpret_cast<ProxyFunction*>("+ToString(this)+")";
+    variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
+    variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
+    variables["testfunction"] = ToString(testfunction);
+    variables["tres"] = "TRes"+ToString(index);
+
+    variables["flatmatrix"] = code.is_simd ? "AFlatMatrix<double>" : "FlatMatrix<double>";
+
+    variables["values"] = Var("values", index).S();
+    code.header += Code::Map(header, variables);
+    code.body += Code::Map(body, variables);
+  }
   
   void ProxyFunction ::
   Evaluate (const BaseMappedIntegrationPoint & mip,

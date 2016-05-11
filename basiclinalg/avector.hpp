@@ -587,6 +587,12 @@ public:
     data = adata;
   }
 
+  void AssignMemory (int ah, int aw, __m256d * mem)
+  {
+    h = ah;
+    w = aw;
+    data = mem;
+  }
   
   enum { IS_LINEAR = false };
   int Size () const { return h*w; }

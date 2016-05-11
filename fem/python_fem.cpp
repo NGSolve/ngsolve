@@ -175,7 +175,7 @@ void ExportStdMathFunction(string name)
               if (bp::extract<SPCF>(x).check())
                 {
                   auto coef = bp::extract<SPCF>(x)();
-                  return bp::object(UnaryOpCF(coef, func, func));
+                  return bp::object(UnaryOpCF(coef, func, func, FUNC::Name()));
                 }
               bp::extract<double> ed(x);
               if (ed.check()) return bp::object(func(ed()));
@@ -330,27 +330,35 @@ struct GenericBSpline {
 };
 struct GenericSin {
   template <typename T> T operator() (T x) const { return sin(x); }
+  static string Name() { return "sin"; }
 };
 struct GenericCos {
   template <typename T> T operator() (T x) const { return cos(x); }
+  static string Name() { return "cos"; }
 };
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
+  static string Name() { return "tan"; }
 };
 struct GenericExp {
   template <typename T> T operator() (T x) const { return exp(x); }
+  static string Name() { return "exp"; }
 };
 struct GenericLog {
   template <typename T> T operator() (T x) const { return log(x); }
+  static string Name() { return "log"; }
 };
 struct GenericATan {
   template <typename T> T operator() (T x) const { return atan(x); }
+  static string Name() { return "atan"; }
 };
 struct GenericSqrt {
   template <typename T> T operator() (T x) const { return sqrt(x); }
+  static string Name() { return "sqrt"; }
 };
 struct GenericConj {
   template <typename T> T operator() (T x) const { return Conj(x); } // from bla
+  static string Name() { return "conj"; }
   AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception ("Conj(..) is not complex differentiable"); }
 };
@@ -383,6 +391,18 @@ struct GenericConj {
         resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
 
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        string miptype;
+        if(code.is_simd)
+          miptype = "SIMD<DimMappedIntegrationPoint<"+ToString(D)+">>*";
+        else
+          miptype = "DimMappedIntegrationPoint<"+ToString(D)+">*";
+        auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
+        auto nv = Var("tmp", index);
+        code.body += nv.Assign(nv_expr);
+        for( int i : Range(D))
+          code.body += Var(index,i).Assign(nv(i));
+    }
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       // static Timer t("NormalVec::EvalSIMD"); RegionTimer reg(t);            
@@ -596,8 +616,9 @@ void ExportCoefficientFunction()
                    "transpose of matrix-valued CF")
 
     .def ("Compile", FunctionPointer
-          ([] (SPCF coef) -> SPCF
-           { return Compile (coef); }),
+          ([] (SPCF coef, bool realcompile) -> SPCF
+           { return Compile (coef, realcompile); }),
+          (bp::args("self"), bp::args("realcompile")=false),
           "compile list of individual steps, experimental improvement for deep trees")
     ;
 
@@ -647,6 +668,13 @@ void ExportCoefficientFunction()
       */
     }
 
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        auto v = Var(index);
+        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
+        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
+        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
+    }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
       auto points = ir.GetPoints();
@@ -677,9 +705,18 @@ void ExportCoefficientFunction()
     {
       return pow(ip.GetMeasure(), 1.0/ip.Dim());
     }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
-      values =  pow(fabs (ir[0].GetJacobiDet()[0]), 1.0/ir.DimElement());
+      for(int i : Range(ir))
+        values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
+    }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+      if(code.is_simd)
+        code.body += Var(index).Assign( CodeExpr("pow(ip.GetJacobiDet(), 1.0/mir.DimElement())"));
+      else
+        code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
     }
   };
 

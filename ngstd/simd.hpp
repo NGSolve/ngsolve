@@ -237,5 +237,17 @@ namespace ngstd
   }
 }
 
+INLINE ngstd::SIMD<double> exp (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return exp(a[i]); } );
+}
+
+INLINE ngstd::SIMD<double> log (ngstd::SIMD<double> a) {
+  return ngstd::SIMD<double>([&](int i)->double { return log(a[i]); } );
+}
+
+INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
+  return ngstd::SIMD<double>([&](int i)->double { return pow(a[i],x); } );
+}
+
 
 #endif

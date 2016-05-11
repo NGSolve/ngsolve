@@ -67,6 +67,7 @@ namespace ngfem
 
 
 #include "specialelement.hpp"
+#include "code_generation.hpp"
 #include "coefficient.hpp"
 
 #include "diffop.hpp"
