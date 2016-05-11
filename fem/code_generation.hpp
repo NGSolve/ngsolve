@@ -235,7 +235,7 @@ namespace ngfem
       if(lib)
       {
         int rc = dlclose(lib);
-        if(rc != 0) throw std::runtime_error(string("Failed to close ") + lib_name);
+        if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
       }
     }
 #endif // WIN32
