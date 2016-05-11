@@ -199,9 +199,9 @@ namespace ngfem
       tlink.Stop();
       cout << IM(3) << "done" << endl;
 #ifdef WIN32
-      Load(file_prefix+".so");
-#else
       Load(file_prefix+".dll");
+#else
+      Load(file_prefix+".so");
 #endif
     }
 
