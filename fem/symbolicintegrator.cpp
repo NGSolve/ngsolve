@@ -1304,7 +1304,6 @@ namespace ngfem
       }
 
 
-#ifdef USE_SIMD
     if (simd_evaluate)
       try
         {
@@ -1356,10 +1355,9 @@ namespace ngfem
           ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
           return;
         }
-#endif
 
-    {
-          // no simd
+    
+    // no simd
     HeapReset hr(lh);
 
     ProxyUserData ud(trial_proxies.Size(), lh);    
@@ -1399,10 +1397,6 @@ namespace ngfem
         proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
         ely += ely1;
       }
-    }
-
-
-    
   }
 
 
