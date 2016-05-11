@@ -6,9 +6,9 @@
 /* 
    Symbolic integrators
 */
-#undef USE_SIMD
 
 #include <fem.hpp>
+// #undef USE_SIMD
 
 namespace ngfem
 {
@@ -800,7 +800,6 @@ namespace ngfem
 
       for (int k = 0; k < nfacet; k++)
         {
-          *testout << "facet = " << k << endl;
           // tir.Start();
           HeapReset hr(lh);
           ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
@@ -1285,7 +1284,7 @@ namespace ngfem
         return;
       }
     */
-    
+
     if (element_boundary)
       {
         switch (trafo.SpaceDim())
@@ -1436,12 +1435,13 @@ namespace ngfem
           
         IntegrationRule ir_facet(etfacet, 2*fel.Order());
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-        const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+        BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
         
         // ProxyUserData ud;
         // const_cast<ElementTransformation&>(trafo).userdata = &ud;
+
+        /*
         FlatVector<> measure(mir.Size(), lh);
-        
         for (int i = 0; i < mir.Size(); i++)
           {
             double len;
@@ -1476,8 +1476,9 @@ namespace ngfem
               }
             measure(i) = len;
           }
+        */
         
-    
+        mir.ComputeNormalsAndMeasure (eltype, k);
     
         FlatVector<> ely1(ely.Size(), lh);
         FlatMatrix<> val(mir.Size(), 1,lh);
@@ -1494,7 +1495,8 @@ namespace ngfem
               }
             
             for (int i = 0; i < mir.Size(); i++)
-              proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
+              // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
+              proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
             
             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
             ely += ely1;
@@ -1568,11 +1570,11 @@ namespace ngfem
     IntegrationRule ir_facet(etfacet, 2*maxorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+    BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
@@ -1587,6 +1589,7 @@ namespace ngfem
           auto proxy2 = test_proxies[l1];
 
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          /*
           FlatVector<> measure(mir1.Size(), lh);
           switch (trafo1.SpaceDim())
             {
@@ -1625,6 +1628,9 @@ namespace ngfem
             default:
               cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
             }
+          */
+          cout << "use new function" << endl;
+          mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
@@ -1639,7 +1645,8 @@ namespace ngfem
               }
 
           for (int i = 0; i < mir1.Size(); i++)
-            proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
+            // proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
+            proxyvalues(i,STAR,STAR) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
 
           IntRange trial_range = proxy1->IsOther() ? IntRange(fel1.GetNDof(), elmat.Width()) : IntRange(0, fel1.GetNDof());
           IntRange test_range  = proxy2->IsOther() ? IntRange(fel1.GetNDof(), elmat.Height()) : IntRange(0, fel1.GetNDof());
@@ -1848,11 +1855,11 @@ namespace ngfem
     
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     
     Facet2ElementTrafo transform2(eltype2, ElVertices2); 
     IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+    BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
 
 
     // ts1.Stop();
@@ -1882,14 +1889,8 @@ namespace ngfem
     // RegionTimer reg(t);
     // t.Start();
 
-    FlatMatrix<> val(ir_facet.Size(), 1,lh);
 
-    for (auto proxy : test_proxies)
-      {
-        HeapReset hr(lh);
-        // t1.Start();
-        FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
-        
+    /*
         FlatVector<> measure(mir1.Size(), lh);
         switch (trafo1.SpaceDim())
           {
@@ -1928,6 +1929,19 @@ namespace ngfem
           default:
             cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
           }
+    */
+
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
+
+
+    
+    FlatMatrix<> val(ir_facet.Size(), 1,lh);
+
+    for (auto proxy : test_proxies)
+      {
+        HeapReset hr(lh);
+        // t1.Start();
+        FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
         
         // t1.Stop();
         // t2.Start();
@@ -1944,8 +1958,9 @@ namespace ngfem
         // t3.Start();
 
         for (int i = 0; i < mir1.Size(); i++)
-          proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
-
+          // proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
+          proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
+        
         ely1 = 0.0;
         IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
 	test_range = proxy->Evaluator()->BlockDim()*test_range;
@@ -2091,7 +2106,7 @@ namespace ngfem
     IntegrationRule ir_facet(etfacet, 2*maxorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
     auto & smir = strafo(ir_facet, lh);
     
     // evaluate proxy-values
@@ -2114,13 +2129,14 @@ namespace ngfem
 
     RegionTimer reg(t);
     
-
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr);
+    
     FlatMatrix<> val(ir_facet.Size(), 1,lh);
     for (auto proxy : test_proxies)
       {
         HeapReset hr(lh);
         FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
-        
+        /*
         FlatVector<> measure(mir1.Size(), lh);
         switch (trafo1.SpaceDim())
           {
@@ -2159,7 +2175,7 @@ namespace ngfem
           default:
             cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
           }
-        
+        */
         
         for (int k = 0; k < proxy->Dimension(); k++)
           {
@@ -2170,7 +2186,8 @@ namespace ngfem
           }
 
         for (int i = 0; i < mir1.Size(); i++)
-          proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
+          // proxyvalues.Row(i) *= measure(i) * ir_facet[i].Weight();
+          proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
 
         ely1 = 0.0;
         if (proxy->IsOther() && proxy->BoundaryValues())

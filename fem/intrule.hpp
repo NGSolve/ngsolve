@@ -173,6 +173,7 @@ namespace ngfem
     INLINE int GetIPNr() const { return ip.Nr(); }
     ///
     INLINE double GetMeasure() const { return measure; }
+    void SetMeasure (double _measure) { measure = _measure; }    
     ///
     INLINE double GetWeight() const { return measure * ip.Weight(); }
 
@@ -1031,6 +1032,7 @@ namespace ngfem
     }
     */
     virtual SliceMatrix<> GetPoints() const = 0;
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;        
   };
 
   template <int DIM_ELEMENT, int DIM_SPACE>
@@ -1085,6 +1087,7 @@ namespace ngfem
                             &mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);    
   };
 
 

@@ -703,7 +703,15 @@ void ExportCoefficientFunction()
     MeshSizeCF () { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
-      return pow(ip.GetMeasure(), 1.0/ip.Dim());
+      switch (ip.Dim())
+        {
+        case 1: return fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
+        case 2: return pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2);
+        case 3:
+        default:
+          return pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+        }
+      // return pow(ip.GetMeasure(), 1.0/(ip.Dim());
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
