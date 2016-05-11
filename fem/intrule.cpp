@@ -2960,17 +2960,29 @@ namespace ngfem
             }
           break;
         }
-        /*
-          case ET_TRIG:
-	  {
-          FlatVec<3> p0 = points(faces[fnr][0]);
-          FlatVec<3> p1 = points(faces[fnr][1]);
-	    FlatVec<3> p2 = points(faces[fnr][2]);
-            
-	    for (int i = 0; i < irfacet.GetNIP(); i++)
+
+      case ET_TRIG:
+        {
+          Vec<3> p0 = points(faces[fnr][0]);
+          Vec<3> p1 = points(faces[fnr][1]);
+          Vec<3> p2 = points(faces[fnr][2]);
+          Vec<3> delta1 = p0-p2;
+          Vec<3> delta2 = p1-p2;
+
+          /*
+          for (int i = 0; i < irfacet.GetNIP(); i++)
             irvol[i] = Vec<3> (p2 + irfacet[i](0) * (p0-p2) + irfacet[i](1)*(p1-p2));
-	    break;
+          */
+          for (int i = 0; i < hirfacet.Size(); i++)
+            {
+              auto ip = hirfacet[i];
+              auto & ipvol = hirvol[i];              
+              for (int k = 0; k < 3; k++)
+                ipvol(k) = p2(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
             }
+          break;
+        }
+        /*
 	case ET_QUAD:
 	  {
 	    FlatVec<3> p0 = points(faces[fnr][0]);
