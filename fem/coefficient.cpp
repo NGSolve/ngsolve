@@ -69,7 +69,7 @@ namespace ngfem
   void CoefficientFunction ::   
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
-    throw Exception(string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
+    throw ExceptionNOSIMD (string("CF :: simd-Evaluate not implemented for class ") + typeid(*this).name());
   }
 
   
@@ -1021,6 +1021,18 @@ public:
   {
     STACK_ARRAY(double, hmem1, ir.Size());
     FlatMatrix<> temp1(ir.Size(), 1, hmem1);
+    
+    c1->Evaluate(ir, temp1);
+    c2->Evaluate(ir, result);
+    for (int i = 0; i < ir.Size(); i++)
+      result.Row(i) *= temp1(i,0);
+  }
+
+  virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                        FlatMatrix<Complex> result) const
+  {
+    STACK_ARRAY(double, hmem1, 2*ir.Size());
+    FlatMatrix<Complex> temp1(ir.Size(), 1, reinterpret_cast<Complex*> (&hmem1[0]));
     
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
@@ -3137,13 +3149,13 @@ public:
       ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
       int mem_ptr = 0;
       
-      Array<FlatMatrix<>> temp(steps.Size());
-      Array<FlatMatrix<>> dtemp(steps.Size());
+      ArrayMem<FlatMatrix<>,100> temp(steps.Size());
+      ArrayMem<FlatMatrix<>,100> dtemp(steps.Size());
       ArrayMem<FlatMatrix<>*, 20> in, din;
 
       for (int i = 0; i < steps.Size(); i++)
         {
-          //timers[i]->Start();
+          // timers[i]->Start();
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
           dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
@@ -3179,6 +3191,7 @@ public:
 
       for (int i = 0; i < steps.Size(); i++)
         {
+          // timers[i]->Start();          
           temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
           mem_ptr += ir.Size()*dim[i];
           dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
@@ -3197,6 +3210,7 @@ public:
             ddin.Append (&ddtemp[j]);
 
           steps[i] -> EvaluateDDeriv (ir, in, din, ddin, temp[i], dtemp[i], ddtemp[i]);
+          // timers[i]->Stop();                    
         }
 
       values = temp.Last();
