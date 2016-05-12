@@ -2930,6 +2930,8 @@ public:
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
+    typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
+    typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -2939,6 +2941,8 @@ public:
     Library library;
     lib_function compiled_function;
     lib_function_simd compiled_function_simd;
+    lib_function_deriv compiled_function_deriv;
+    lib_function_simd_deriv compiled_function_simd_deriv;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
       : cf(acf), compiled_function(nullptr), compiled_function_simd(nullptr)
@@ -3041,6 +3045,8 @@ public:
         library.Compile( s.str() );
         compiled_function_simd = library.GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
+        compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+        compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
       }
     }
 
@@ -3148,6 +3154,11 @@ public:
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<double> values, FlatMatrix<double> deriv) const
     {
+      if(compiled_function_deriv)
+      {
+        compiled_function_deriv(ir, values, deriv);
+        return;
+      }
       /*
       Array<Matrix<>*> temp;
       Array<Matrix<>*> dtemp;
