@@ -1028,7 +1028,7 @@ namespace ngcomp
     string mycode = R"CODE_( 
       Matrix<>  {values}{mir.Size(), {dim}};
       {
-      LocalHeapMem<100000> lh2(\"{values}\");
+      LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
       const ElementTransformation &trafo = mir.GetTransformation();
       auto elnr = trafo.GetElementNr();
@@ -1067,7 +1067,7 @@ namespace ngcomp
           else if (fes.GetIntegrator(boundary))
             fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, {values}, false, lh2);
           else
-            throw Exception (\"don't know how I shall evaluate\");
+            throw Exception ("don't know how I shall evaluate");
       }
       }
     )CODE_";
