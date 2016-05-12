@@ -1298,6 +1298,7 @@ namespace ngfem
   class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
   {
     int dimension = -1;
+    const SIMD_IntegrationRule *irx = nullptr, *iry = nullptr, *irz = nullptr; // for tensor product IR
   public:
     SIMD_IntegrationRule () = default;
     inline SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order);
@@ -1310,6 +1311,13 @@ namespace ngfem
       : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
 
     int GetNIP() const { return Size()*SIMD<double>::Size(); }
+
+    const SIMD_IntegrationRule & GetIRX() const { return *irx; }
+    const SIMD_IntegrationRule & GetIRY() const { return *iry; }
+    const SIMD_IntegrationRule & GetIRZ() const { return *irz; }
+    void SetIRX(const SIMD_IntegrationRule * ir) { irx = ir; }
+    void SetIRY(const SIMD_IntegrationRule * ir) { iry = ir; }
+    void SetIRZ(const SIMD_IntegrationRule * ir) { irz = ir; }
   };
 
   extern NGS_DLL_HEADER const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order);

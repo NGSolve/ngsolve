@@ -2826,13 +2826,22 @@ namespace ngfem
             int oldsize = ira->Size();
             ira->SetSize(order+1);
             for (int i = oldsize; i < order+1; i++)
-              (*ira) = nullptr;
+              (*ira)[i] = nullptr;
           }
 
         if ( (*ira)[order] == nullptr)
           {
             IntegrationRule ir(eltype, order);
-            (*ira) = new SIMD_IntegrationRule(ir);
+            (*ira)[order] = new SIMD_IntegrationRule(ir);
+            switch (eltype)
+              {
+              case ET_QUAD:
+                {
+                  (*ira)[order]->SetIRX (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  (*ira)[order]->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  break;
+                }
+              }
           }
       }
 
