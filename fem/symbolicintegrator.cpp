@@ -55,20 +55,16 @@ namespace ngfem
       }\n";
     }
     header += "}\n";
-    if(code.is_simd) {
-      header += "typedef SIMD<double> {tres};\n";
-    } else {
-      header += "typedef double {tres};\n";
-    }
+
     TraverseDimensions( dims, [&](int ind, int i, int j) {
-        header += Var("comp", index,i,j).Declare("double", 0.0);
+        header += Var("comp", index,i,j).Declare("{scal_type}", 0.0);
         header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
-        header += Var("comp", index,i,j).Assign( Var(1.0), false );
+        header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0\n;";
     });
     string body = "";
 
     TraverseDimensions( dims, [&](int ind, int i, int j) {
-        body += Var(index, i,j).Declare("{tres}", 0.0);
+        body += Var(index, i,j).Declare("{scal_type}", 0.0);
         body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
     });
 
@@ -96,11 +92,19 @@ namespace ngfem
     variables["func_string"] = testfunction ? "testfunction" : "trialfunction";
     variables["comp_string"] = testfunction ? "test_comp" : "trial_comp";
     variables["testfunction"] = ToString(testfunction);
-    variables["tres"] = "TRes"+ToString(index);
 
     variables["flatmatrix"] = code.is_simd ? "AFlatMatrix<double>" : "FlatMatrix<double>";
 
     variables["values"] = Var("values", index).S();
+
+    variables["get_component"] = "";
+    if(code.deriv>=1)
+      variables["get_component"] = testfunction ? ".Value()" : ".DValue(0)";
+
+    string scal_type = "double";
+    if(code.is_simd) scal_type = "SIMD<" + scal_type + ">";
+    if(code.deriv==1) scal_type = "AutoDiff<1,"+scal_type+">";
+    variables["scal_type"] = scal_type;
     code.header += Code::Map(header, variables);
     code.body += Code::Map(body, variables);
   }

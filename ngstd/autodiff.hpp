@@ -388,7 +388,7 @@ INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
 template<int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
 {
-  double abs = std::fabs (x.Value());
+  double abs = fabs (x.Value());
   AutoDiff<D,SCAL> res( abs );
   if (abs != 0.0)
     for (int i = 0; i < D; i++)
@@ -399,11 +399,12 @@ INLINE AutoDiff<D,SCAL> fabs (const AutoDiff<D,SCAL> & x)
   return res;
 }
 
+using std::sqrt;
 template<int D, typename SCAL>
 INLINE AutoDiff<D,SCAL> sqrt (const AutoDiff<D,SCAL> & x)
 {
   AutoDiff<D,SCAL> res;
-  res.Value() = std::sqrt(x.Value());
+  res.Value() = sqrt(x.Value());
   for (int j = 0; j < D; j++)
     res.DValue(j) = 0.5 / res.Value() * x.DValue(j);
   return res;
@@ -414,11 +415,64 @@ template <int D, typename SCAL>
 AutoDiff<D,SCAL> log (AutoDiff<D,SCAL> x)
 {
   AutoDiff<D,SCAL> res;
-  res.Value() = std::log(x.Value());
+  res.Value() = log(x.Value());
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k) / x.Value();
   return res;
 }
+
+using std::exp;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> exp (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = exp(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * res.Value();
+  return res;
+}
+
+using std::sin;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> sin (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = sin(x.Value());
+  SCAL c = cos(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * c;
+  return res;
+}
+
+using std::cos;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> cos (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D,SCAL> res;
+  res.Value() = cos(x.Value());
+  SCAL ms = -sin(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * ms;
+  return res;
+}
+
+using std::tan;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> tan (AutoDiff<D,SCAL> x)
+{ return sin(x) / cos(x); }
+
+using std::atan;
+template <int D, typename SCAL>
+INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
+{
+  AutoDiff<D> res;
+  double a = atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  return res;
+}
+
 
 
 

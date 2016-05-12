@@ -403,6 +403,89 @@ inline AutoDiffDiff<D> sqrt (const AutoDiffDiff<D> & x)
   return res;
 }
 
+// df(u)/dx  = exp(x) * du/dx
+// d^2 f(u) / dx^2 = exp(x) * (du/dx)^2 + exp(x) * d^2u /dx^2
+template <int D>
+INLINE AutoDiffDiff<D> exp (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  res.Value() = std::exp(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * res.Value();
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = (x.DValue(k) * x.DValue(l)+x.DDValue(k,l)) * res.Value();
+  return res;
+}
+
+template <int D>
+INLINE AutoDiffDiff<D> log (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  res.Value() = std::log(x.Value());
+  double xinv = 1.0/x.Value();
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * xinv;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -xinv*xinv*x.DValue(k) * x.DValue(l) + xinv * x.DDValue(k,l);
+  return res;
+}
+
+
+
+template <int D>
+INLINE AutoDiffDiff<D> sin (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double s = std::sin(x.Value());
+  double c = std::cos(x.Value());
+  
+  res.Value() = s;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k) * c;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -s * x.DValue(k) * x.DValue(l) + c * x.DDValue(k,l);
+  return res;
+}
+
+
+template <int D>
+INLINE AutoDiffDiff<D> cos (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double s = std::sin(x.Value());
+  double c = std::cos(x.Value());
+  
+  res.Value() = c;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = -s * x.DValue(k);
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -c * x.DValue(k) * x.DValue(l) - s * x.DDValue(k,l);
+  return res;
+}
+
+template <int D>
+INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
+{ return sin(x) / cos(x); }
+
+
+template <int D>
+INLINE AutoDiffDiff<D> atan (AutoDiffDiff<D> x)
+{
+  AutoDiffDiff<D> res;
+  double a = std::atan(x.Value());
+  res.Value() = a;
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = -2*x.Value()/((1+x.Value()*x.Value())*(1+x.Value()*x.Value())) * x.DValue(k) * x.DValue(l) + x.DDValue(k,l)/(1+x.Value()*x.Value());
+  return res;
+}
+
 
 
 
