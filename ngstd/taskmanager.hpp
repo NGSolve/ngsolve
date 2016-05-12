@@ -156,7 +156,13 @@ namespace ngstd
       for (auto i : r) f(i);
   }
 
-
+  template <typename TFUNC>
+  INLINE void ParallelFor (int n, TFUNC f, 
+                           int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+  {
+    ParallelFor (IntRange (n), f, antasks);
+  }
+  
   template <typename TR, typename TFUNC>
   INLINE void ParallelForRange (T_Range<TR> r, TFUNC f, 
                                 int antasks = task_manager ? task_manager->GetNumThreads() : 0)
@@ -176,7 +182,12 @@ namespace ngstd
       f(r);
   }
 
-
+  template <typename TFUNC>
+  INLINE void ParallelForRange (int n, TFUNC f, 
+                                int antasks = task_manager ? task_manager->GetNumThreads() : 0)
+  {
+    ParallelForRange (IntRange(n), f, antasks);
+  }
 
   
   

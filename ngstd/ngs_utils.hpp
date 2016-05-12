@@ -73,6 +73,14 @@ namespace std
   }
 
 
+  // may be used as an index e.g. for FlatVector
+  template <int N>
+  struct is_integral<ngstd::IC<N>>
+  {
+    enum { value = 1 };
+  };
+
+
 
  /*
   INLINE void MyAtomicAdd(atomic<double> & sum, double val) {

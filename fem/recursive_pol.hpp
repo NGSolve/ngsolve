@@ -611,7 +611,7 @@ namespace ngfem
     INLINE static void EvalScaled (IC<N> n,
                                    S x, Sy y, T && values)
     {
-      S p1 = REC::P1(x,y), p2 = REC::P0(x);
+      S p1(REC::P1(x,y)), p2(REC::P0(x));
       Iterate<n+1> ( [&] (auto i)
         {
           // cout << "eval scaled, type(i) = " << typeid(i).name() << endl;
@@ -1593,7 +1593,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   template <class S, class Sc, class T>
   inline void JacobiPolynomialMult (int n, S x, double alpha, double beta, Sc c, T && values)
   {
-    S p1 = c, p2 = 0.0, p3;
+    S p1 = c, p2(0.0), p3;
 
     if (n >= 0) 
       p2 = values[0] = c;
@@ -1665,7 +1665,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       if (n >= 0) values[0] = 1.0;
     */
 
-    S p1 = c, p2 = 0.0, p3;
+    S p1 = c, p2(0.0), p3;
 
     if (n >= 0) 
       p2 = values[0] = c;
