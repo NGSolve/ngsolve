@@ -2982,10 +2982,14 @@ public:
         s << "using namespace ngcomp;" << endl;
         s << "extern \"C\" {" << endl;
 
+        string parameters[3] = {"results", "deriv", "dderiv"};
+
+        for (int deriv : Range(2))
         for (auto simd : {false,true}) {
             cout << IM(3) << "Compiled CF:" << endl;
             Code code;
             code.is_simd = simd;
+            code.deriv = deriv;
             for (auto i : Range(steps)) {
                 cout << IM(3) << "step " << i << endl;
                 cout << IM(3) << "function: " << typeid(*steps[i]).name() << endl;
@@ -2995,22 +2999,37 @@ public:
             // set results
             int ii = 0;
             TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
-                 if(simd)
-                   code.body += "results.Get(" + ToString(ii) + ",i) =" + Var(steps.Size()-1,i,j).code + ".Data();\n";
-                 else
-                   code.body += "results(i," + ToString(ii) + ") =" + Var(steps.Size()-1,i,j).code + ";\n";
+                 string sget = "(i," + ToString(ii) + ") =";
+                 if(simd) sget = ".Get(" + ToString(ii) + ",i) =";
+
+                 for (auto ideriv : Range(deriv+1))
+                 {
+                   code.body += parameters[ideriv] + sget + Var(steps.Size()-1,i,j).code;
+                   if(deriv>=1)
+                   {
+                     code.body += ".";
+                     if(ideriv==2) code.body += "D";
+                     if(ideriv>=1) code.body += "DValue(0)";
+                     else code.body += "Value()";
+                   }
+                   if(simd) code.body +=".Data()";
+                   code.body += ";\n";
+                 }
                  ii++;
             });
-            if(simd) {
-              s << "void CompiledEvaluateSIMD(const SIMD_BaseMappedIntegrationRule & bmir, AFlatMatrix<double> results ) {" << endl;
-              // s << "  const SIMD_MappedIntegrationRule<2,2> & mir = *static_cast<const SIMD_MappedIntegrationRule<2,2>*>(&bmir);" << endl;
-              s << "auto & mir = bmir;" << endl;              
-            }
-            else
-            {
-              s << "void CompiledEvaluate(const BaseMappedIntegrationRule & bmir, FlatMatrix<> results ) {" << endl;
-              s << "auto & mir = bmir;" << endl;
-            }
+
+            // Function name
+            s << "void CompiledEvaluate";
+            if(deriv==2) s << "D";
+            if(deriv>=1) s << "Deriv";
+            if(simd) s << "SIMD";
+
+            // Function parameters
+            string param_type = simd ? "AFlatMatrix<double> " : "FlatMatrix<> ";
+            s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
+            for(auto i : Range(deriv+1))
+              s << ", " << param_type << parameters[i];
+            s << " ) {" << endl;
             s << code.header << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "auto & ip = mir[i];" << endl;

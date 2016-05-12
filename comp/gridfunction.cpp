@@ -1009,17 +1009,17 @@ namespace ngcomp
           fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
           if (diffop && !boundary)
-            diffop->Apply (fel, bmir, elu, {values});
+            diffop->Apply (fel, mir, elu, {values});
           else if (trace_diffop && boundary)
-            trace_diffop->Apply (fel, bmir, elu, {values});
+            trace_diffop->Apply (fel, mir, elu, {values});
           else if (bfi)
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 1");
-          // bfi->CalcFlux (fel, bmir, elu, values, true, lh2);
+          // bfi->CalcFlux (fel, mir, elu, values, true, lh2);
           else if (fes.GetEvaluator(boundary))
-            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}); // , lh2);
+            fes.GetEvaluator(boundary) -> Apply (fel, mir, elu, {values}); // , lh2);
           else if (fes.GetIntegrator(boundary))
             throw Exception ("GridFunctionCoefficientFunction: SIMD evaluate not possible 2");
-          // fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, values, false, lh2);
+          // fes.GetIntegrator(boundary) ->CalcFlux (fel, mir, elu, values, false, lh2);
           else
             throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
       }
@@ -1057,15 +1057,15 @@ namespace ngcomp
           fes.TransformVec (elnr, boundary, elu, TRANSFORM_SOL);
 
           if (diffop && !boundary)
-            diffop->Apply (fel, bmir, elu, {values}, lh2);
+            diffop->Apply (fel, mir, elu, {values}, lh2);
           else if (trace_diffop && boundary)
-            trace_diffop->Apply (fel, bmir, elu, {values}, lh2);
+            trace_diffop->Apply (fel, mir, elu, {values}, lh2);
           else if (bfi)
-            bfi->CalcFlux (fel, bmir, elu, {values}, true, lh2);
+            bfi->CalcFlux (fel, mir, elu, {values}, true, lh2);
           else if (fes.GetEvaluator(boundary))
-            fes.GetEvaluator(boundary) -> Apply (fel, bmir, elu, {values}, lh2);
+            fes.GetEvaluator(boundary) -> Apply (fel, mir, elu, {values}, lh2);
           else if (fes.GetIntegrator(boundary))
-            fes.GetIntegrator(boundary) ->CalcFlux (fel, bmir, elu, {values}, false, lh2);
+            fes.GetIntegrator(boundary) ->CalcFlux (fel, mir, elu, {values}, false, lh2);
           else
             throw Exception ("don't know how I shall evaluate");
       }

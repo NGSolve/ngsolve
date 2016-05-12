@@ -22,6 +22,7 @@ namespace ngfem
     string header;
     string body;
     bool is_simd;
+    int deriv;
 
     static string Map( string code, std::map<string,string> variables ) {
       for ( auto mapping : variables ) {
