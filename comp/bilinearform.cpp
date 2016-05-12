@@ -3059,13 +3059,13 @@ namespace ngcomp
 
                                      if (fbfi->GetDGFormulation().neighbor_testfunction)
                                        {
+					 int dim = this->fespace->GetDimension();
                                          FlatVector<SCAL> swap_elx(elx.Size(), lh);
-                                         swap_elx.Range(0, dnums2.Size()) = elx.Range(dnums1.Size(), dnums.Size());
-                                         swap_elx.Range(dnums2.Size(), dnums.Size()) = elx.Range(0, dnums1.Size());
+                                         swap_elx.Range(0, dim*dnums2.Size()) = elx.Range(dim*dnums1.Size(), dim*dnums.Size());
+                                         swap_elx.Range(dim*dnums2.Size(), dim*dnums.Size()) = elx.Range(0, dim*dnums1.Size());
                                          fbfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
                                                                  fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
-
-                                         y.AddIndirect(dnums1, ely.Range(dnums2.Size(), dnums2.Size()));
+                                         y.AddIndirect(dnums1, ely.Range(dim*dnums1.Size(), dim*dnums.Size()));
                                        }
                                    }
                                }
