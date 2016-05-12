@@ -1883,9 +1883,8 @@ namespace ngfem
 
     for (ProxyFunction * proxy : trial_proxies)
       {
-        IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-	trial_range = proxy->Evaluator()->BlockDim() * trial_range;
-        if (proxy->IsOther()) 
+	IntRange trial_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+	if (proxy->IsOther()) 
           proxy->Evaluator()->Apply(fel2, mir2, elx.Range(trial_range), ud.GetMemory(proxy), lh);
         else
           proxy->Evaluator()->Apply(fel1, mir1, elx.Range(trial_range), ud.GetMemory(proxy), lh);
@@ -1968,10 +1967,9 @@ namespace ngfem
           proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight();
         
         ely1 = 0.0;
-        IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
-	test_range = proxy->Evaluator()->BlockDim()*test_range;
-        if (proxy->IsOther()) 
-          proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
+	IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+	if (proxy->IsOther())
+	  proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, ely1.Range(test_range), lh);
         else
           proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1.Range(test_range), lh);
         
