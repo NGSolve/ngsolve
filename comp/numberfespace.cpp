@@ -27,6 +27,26 @@ namespace ngcomp
     {
       mat(0,0) = 1;
     }
+
+    template <typename FEL, class MIR, class TVX, class TVY>
+    static void ApplySIMDIR (const FEL & fel, const MIR & mir,
+                             const TVX & x, TVY & y)
+    {
+      double sum = 0.0;
+      for (int i = 0; i < mir.IR().GetNIP(); i++)
+        sum += x(i);
+      y(0,0) = sum;
+    }
+
+    /// Computes Transpose (B-matrix) times point value    
+    template <typename FEL, class MIR, class TVX, class TVY>
+    static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
+                                const TVX & x, TVY & y)
+    {
+      for (int i = 0; i < mir.IR().GetNIP(); i++)
+        y(i) += x(0,0);
+    }
+    
   };
 
 

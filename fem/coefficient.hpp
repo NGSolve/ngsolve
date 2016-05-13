@@ -47,12 +47,26 @@ namespace ngfem
     {
       Evaluate (ir, values);
     }
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
                            AFlatMatrix<double> values) const
     {
-      throw Exception (string("cf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
-      // Evaluate (ir, values);
+      throw ExceptionNOSIMD (string("cf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
     }
+    
+    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+    {
+      throw ExceptionNOSIMD (string("cf::EvaluateDeriv(simd) not overloaded for ")+typeid(*this).name());
+    }
+
+    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
+                                 AFlatMatrix<double> dderiv) const
+    {
+      throw ExceptionNOSIMD (string("cf::EvaluateDDeriv(simd) not overloaded for ")+typeid(*this).name());
+    }
+
 
     ///
     virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const 
