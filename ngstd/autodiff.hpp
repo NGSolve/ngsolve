@@ -143,8 +143,9 @@ INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, const AutoDiff<D,
 }
 
 /// double plus AutoDiff
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator+ (double x, const AutoDiff<D,SCAL> & y) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator+ (SCAL2 x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x+y.Value();
@@ -154,8 +155,9 @@ INLINE AutoDiff<D,SCAL> operator+ (double x, const AutoDiff<D,SCAL> & y) throw()
 }
 
 /// AutoDiff plus double
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & y, double x) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator+ (const AutoDiff<D,SCAL> & y, SCAL2 x) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x+y.Value();
@@ -177,8 +179,9 @@ INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x) throw()
 }
 
 /// AutoDiff minus double
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, double y) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, SCAL2 y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x.Value()-y;
@@ -188,8 +191,9 @@ INLINE AutoDiff<D,SCAL> operator- (const AutoDiff<D,SCAL> & x, double y) throw()
 }
 
 ///
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator- (double x, const AutoDiff<D,SCAL> & y) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator- (SCAL2 x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x-y.Value();
@@ -200,8 +204,9 @@ INLINE AutoDiff<D,SCAL> operator- (double x, const AutoDiff<D,SCAL> & y) throw()
 
 
 /// double times AutoDiff
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator* (double x, const AutoDiff<D,SCAL> & y) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator* (SCAL2 x, const AutoDiff<D,SCAL> & y) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x*y.Value();
@@ -211,8 +216,10 @@ INLINE AutoDiff<D,SCAL> operator* (double x, const AutoDiff<D,SCAL> & y) throw()
 }
 
 /// AutoDiff times double
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & y, double x) throw()
+  template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+
+  INLINE AutoDiff<D,SCAL> operator* (const AutoDiff<D,SCAL> & y, SCAL2 x) throw()
 {
   AutoDiff<D,SCAL> res;
   res.Value() = x*y.Value();
@@ -475,6 +482,28 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 
 
 
+
+  template <int D, typename SCAL, typename TB, typename TC>
+  auto IfPos (AutoDiff<D,SCAL> a, TB b, TC c) -> decltype(IfPos (a.Value(), b, c))
+  {
+    return IfPos (a.Value(), b, c);
+  }
+
+  template <int D, typename SCAL>
+  INLINE AutoDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiff<D,SCAL> b, AutoDiff<D,SCAL> c)
+  {
+    AutoDiff<D,SCAL> res;
+    res.Value() = IfPos (a, b.Value(), c.Value());
+    for (int j = 0; j < D; j++)
+      res.DValue(j) = IfPos (a, b.DValue(j), c.DValue(j));
+    return res;
+  }
+
+  template <int D, typename SCAL, typename TC>
+  INLINE AutoDiff<D,SCAL> IfPos (SIMD<double> a, AutoDiff<D,SCAL> b, TC c)
+  {
+    return IfPos (a, b, AutoDiff<D,SCAL> (c));
+  }
 
 //@}
 
