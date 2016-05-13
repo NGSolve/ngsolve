@@ -32,10 +32,8 @@ namespace ngcomp
     static void ApplySIMDIR (const FEL & fel, const MIR & mir,
                              const TVX & x, TVY & y)
     {
-      double sum = 0.0;
       for (int i = 0; i < mir.IR().GetNIP(); i++)
-        sum += x(i);
-      y(0,0) = sum;
+        y(0,i) = x(0);
     }
 
     /// Computes Transpose (B-matrix) times point value    
@@ -43,8 +41,10 @@ namespace ngcomp
     static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
                                 const TVX & x, TVY & y)
     {
+      double sum = 0.0;
       for (int i = 0; i < mir.IR().GetNIP(); i++)
-        y(i) += x(0,0);
+        sum += x(0,i);
+      y(0) += sum;
     }
     
   };
