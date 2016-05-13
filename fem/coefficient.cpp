@@ -2957,6 +2957,8 @@ public:
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>);
     typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
+    typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
+    typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>, ngbla::FlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -2968,6 +2970,8 @@ public:
     lib_function_simd compiled_function_simd = nullptr;
     lib_function_deriv compiled_function_deriv = nullptr;
     lib_function_simd_deriv compiled_function_simd_deriv = nullptr;
+    lib_function_dderiv compiled_function_dderiv = nullptr;
+    lib_function_simd_dderiv compiled_function_simd_dderiv = nullptr;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
       : cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
@@ -3013,7 +3017,7 @@ public:
 
         string parameters[3] = {"results", "deriv", "dderiv"};
 
-        for (int deriv : Range(2))
+        for (int deriv : Range(3))
         for (auto simd : {false,true}) {
             cout << IM(3) << "Compiled CF:" << endl;
             Code code;
@@ -3072,6 +3076,8 @@ public:
         compiled_function = library.GetFunction<lib_function>("CompiledEvaluate");
         compiled_function_simd_deriv = library.GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
         compiled_function_deriv = library.GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+        compiled_function_simd_dderiv = library.GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+        compiled_function_dderiv = library.GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
       }
     }
 
