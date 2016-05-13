@@ -15,7 +15,7 @@ namespace ngfem
 {
   static mutex intruletpfacet_mutex;
   static mutex genintrule_mutex;
-  static mutex simd_genintrule_mutex;
+  static mutex simd_genintrule_mutex[40];
 
   ostream & operator<< (ostream & ost, const IntegrationPoint & ip)
   {
@@ -2819,7 +2819,7 @@ namespace ngfem
 
     if (order >= ira->Size() || (*ira)[order] == 0)
       {
-        lock_guard<mutex> guard(simd_genintrule_mutex);
+        lock_guard<mutex> guard(simd_genintrule_mutex[eltype]);
 
         if (order >= ira->Size())
           {
@@ -2832,16 +2832,26 @@ namespace ngfem
         if ( (*ira)[order] == nullptr)
           {
             IntegrationRule ir(eltype, order);
-            (*ira)[order] = new SIMD_IntegrationRule(ir);
+            auto tmp = new SIMD_IntegrationRule(ir);
             switch (eltype)
               {
               case ET_QUAD:
                 {
-                  (*ira)[order]->SetIRX (&SIMD_SelectIntegrationRule (ET_SEGM, order));
-                  (*ira)[order]->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  tmp->SetIRX (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  tmp->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
                   break;
                 }
+              case ET_TRIG:
+                {
+                  const IntegrationRule & irx = SelectIntegrationRuleJacobi10(order);
+                  tmp->SetIRX (new SIMD_IntegrationRule(irx));
+                  tmp->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  break;
+                }
+              default:
+                ;
               }
+            (*ira)[order] = tmp;
           }
       }
 
@@ -2851,6 +2861,7 @@ namespace ngfem
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir)
     : Array<SIMD<IntegrationPoint>> (0, nullptr)
   {
+    nip = ir.GetNIP();
     this->size = (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size();
     
     this -> mem_to_delete = (SIMD<IntegrationPoint>*)
@@ -2866,16 +2877,17 @@ namespace ngfem
   SIMD_IntegrationRule::SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh)
     : Array<SIMD<IntegrationPoint>> ( (ir.Size()+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
+    nip = ir.GetNIP();
     dimension = ir.Dim();
     for (int i = 0; i < Size(); i++)
       (*this)[i] = [&] (int j) { int nr = i*SIMD<IntegrationPoint>::Size()+j;
                                  return (nr < ir.Size()) ? ir[nr] : IntegrationPoint(0,0,0,0); };
   }
 
-  SIMD_IntegrationRule::SIMD_IntegrationRule (int nip, LocalHeap & lh)
-    : Array<SIMD<IntegrationPoint>> ( (nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
+  SIMD_IntegrationRule::SIMD_IntegrationRule (int _nip, LocalHeap & lh)
+    : Array<SIMD<IntegrationPoint>> ( (_nip+SIMD<IntegrationPoint>::Size()-1) / SIMD<IntegrationPoint>::Size(), lh)
   {
-    ;
+    nip = _nip;
   }
   
   SIMD_IntegrationRule::~SIMD_IntegrationRule()
@@ -2941,7 +2953,7 @@ namespace ngfem
   SIMD_IntegrationRule & Facet2ElementTrafo :: operator() (int fnr, const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
   {
     SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
-    
+
     FlatArray<SIMD<IntegrationPoint>> hirfacet = irfacet;
     FlatArray<SIMD<IntegrationPoint>> hirvol = irvol;
     

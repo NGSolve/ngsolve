@@ -1298,6 +1298,7 @@ namespace ngfem
   class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
   {
     int dimension = -1;
+    int nip = -47;
     const SIMD_IntegrationRule *irx = nullptr, *iry = nullptr, *irz = nullptr; // for tensor product IR
   public:
     SIMD_IntegrationRule () = default;
@@ -1310,8 +1311,10 @@ namespace ngfem
     SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
       : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
 
-    int GetNIP() const { return Size()*SIMD<double>::Size(); }
+    int GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
+    void SetNIP(int _nip) { nip = _nip; }
 
+    bool IsTP() const { return irx != nullptr; } 
     const SIMD_IntegrationRule & GetIRX() const { return *irx; }
     const SIMD_IntegrationRule & GetIRY() const { return *iry; }
     const SIMD_IntegrationRule & GetIRZ() const { return *irz; }
@@ -1329,6 +1332,10 @@ namespace ngfem
     data = &ir[0];
     mem_to_delete = NULL;
     dimension = ElementTopology::GetSpaceDim(eltype);
+    nip = ir.nip;
+    irx = ir.irx;
+    iry = ir.iry;
+    irz = ir.irz;
   }
 
 
@@ -1345,7 +1352,13 @@ namespace ngfem
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
-      : ir(air.Size(),&air[0]), eltrans(aeltrans) { ; }
+      : ir(air.Size(),&air[0]), eltrans(aeltrans)
+    {
+      ir.SetIRX(&air.GetIRX());
+      ir.SetIRY(&air.GetIRY());
+      ir.SetIRZ(&air.GetIRZ());
+      ir.SetNIP(air.GetNIP());
+    }
     ~SIMD_BaseMappedIntegrationRule ()
       { ir.NothingToDelete(); }
 
