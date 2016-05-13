@@ -90,7 +90,8 @@ namespace ngfem
     body += "if({ud}->{func_string} == {this}) {\n";
     TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
-        if(code.deriv==1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
+        if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
+        if(code.deriv==2) body += Var(index,i,j).Call("DDValue","0").Assign( Var("comp", index,i,j).Call("DDValue","0"), false );
     });
     body += "}\n";
 
@@ -108,12 +109,15 @@ namespace ngfem
     variables["values"] = Var("values", index).S();
 
     variables["get_component"] = "";
-    if(code.deriv>=1)
+    if(code.deriv==1)
       variables["get_component"] = testfunction ? ".Value()" : ".DValue(0)";
+    if(code.deriv==2)
+      variables["get_component"] = ".DValue(0)";
 
     string scal_type = "double";
     if(code.is_simd) scal_type = "SIMD<" + scal_type + ">";
     if(code.deriv==1) scal_type = "AutoDiff<1,"+scal_type+">";
+    if(code.deriv==2) scal_type = "AutoDiffDiff<1,"+scal_type+">";
     variables["scal_type"] = scal_type;
     code.header += Code::Map(header, variables);
     code.body += Code::Map(body, variables);
