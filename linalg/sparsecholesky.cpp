@@ -1904,6 +1904,7 @@ void CalcLDL (SliceMatrix<T> mat)
                                  for (auto i : range)
                                    {
                                      int size = range.end()-i-1;
+                                     if (size == 0) continue;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
 
                                      TVX hyi = hy(i);
@@ -1918,25 +1919,28 @@ void CalcLDL (SliceMatrix<T> mat)
 
                                {
                                  auto all_extdofs = BlockExtDofs (blocknr);
-                                 auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
-                                 auto extdofs = all_extdofs.Range(myr);
-
-                                 VectorMem<520,TVX> temp(extdofs.Size());
-                                 temp = 0;
-                                 
-                                 for (auto i : range)
+                                 if (all_extdofs.Size() != 0)
                                    {
-                                     size_t first = firstinrow[i] + range.end()-i-1;
-                                     
-                                     FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
-
-                                     TVX hyi = hy(i);
-                                     for (int j = 0; j < temp.Size(); j++)
-                                       temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
+                                     auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
+                                     auto extdofs = all_extdofs.Range(myr);
+ 
+                                     VectorMem<520,TVX> temp(extdofs.Size());
+                                     temp = 0;
+ 
+                                     for (auto i : range)
+                                     {
+                                         size_t first = firstinrow[i] + range.end()-i-1;
+ 
+                                         FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
+ 
+                                         TVX hyi = hy(i);
+                                         for (int j = 0; j < temp.Size(); j++)
+                                         temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
+                                     }
+ 
+                                     for (int j : Range(extdofs))
+                                     MyAtomicAdd (hy(extdofs[j]), -temp(j));
                                    }
-                                 
-                                 for (int j : Range(extdofs))
-                                   MyAtomicAdd (hy(extdofs[j]), -temp(j));
                                }
 
                            });
@@ -1975,6 +1979,7 @@ void CalcLDL (SliceMatrix<T> mat)
                                  for (int i = range.end()-1; i >= range.begin(); i--)
                                    {
                                      int size = range.end()-i-1;
+                                     if (size == 0) continue;
                                      FlatVector<TM> vlfact(size, &lfact[firstinrow[i]]);
                                      auto hyr = hy.Range(i+1, range.end());
 
@@ -1990,22 +1995,25 @@ void CalcLDL (SliceMatrix<T> mat)
 
                                {
                                  auto all_extdofs = BlockExtDofs (blocknr);
-                                 auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
-                                 auto extdofs = all_extdofs.Range(myr);
-                                 
-                                 VectorMem<520,TVX> temp(extdofs.Size());
-                                 for (int j : Range(extdofs))
-                                   temp(j) = hy(extdofs[j]);
-
-                                 for (auto i : range)
+                                 if (all_extdofs.Size() != 0)
                                    {
-                                     size_t first = firstinrow[i] + range.end()-i-1;
-                                     FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
-
-                                     TVX val(0.0);
+                                     auto myr = Range(all_extdofs).Split (task.bblock, task.nbblocks);
+                                     auto extdofs = all_extdofs.Range(myr);
+                                     
+                                     VectorMem<520,TVX> temp(extdofs.Size());
                                      for (int j : Range(extdofs))
-                                       val += ext_lfact(myr.begin()+j) * temp(j);
-                                     MyAtomicAdd (hy(i), -val);
+                                       temp(j) = hy(extdofs[j]);
+    
+                                     for (auto i : range)
+                                       {
+                                         size_t first = firstinrow[i] + range.end()-i-1;
+                                         FlatVector<TM> ext_lfact (all_extdofs.Size(), &lfact[first]);
+    
+                                         TVX val(0.0);
+                                         for (int j : Range(extdofs))
+                                           val += ext_lfact(myr.begin()+j) * temp(j);
+                                         MyAtomicAdd (hy(i), -val);
+                                       }
                                    }
                                }
                            });
