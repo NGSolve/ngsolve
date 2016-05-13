@@ -2816,15 +2816,40 @@ public:
       return cf_then->Dimensions();
     }
 
-    /*
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<> result,
+                                FlatMatrix<> values,
                                 FlatMatrix<> deriv) const
     {
-      Evaluate (ir, result);
-      deriv = 0;
+      STACK_ARRAY(double, hmem1, ir.Size());
+      FlatMatrix<> if_values(ir.Size(), 1, hmem1);
+      STACK_ARRAY(double, hmem2, ir.Size()*values.Width());
+      FlatMatrix<> then_values(ir.Size(), values.Width(), hmem2);
+      STACK_ARRAY(double, hmem3, ir.Size()*values.Width());
+      FlatMatrix<> else_values(ir.Size(), values.Width(), hmem3);
+      STACK_ARRAY(double, hmem4, ir.Size()*values.Width());
+      FlatMatrix<> then_deriv(ir.Size(), values.Width(), hmem4);
+      STACK_ARRAY(double, hmem5, ir.Size()*values.Width());
+      FlatMatrix<> else_deriv(ir.Size(), values.Width(), hmem5);
+
+      
+      cf_if->Evaluate (ir, if_values);
+      cf_then->EvaluateDeriv (ir, then_values, then_deriv);
+      cf_else->EvaluateDeriv (ir, else_values, else_deriv);
+      
+      for (int i = 0; i < ir.Size(); i++)
+        if (if_values(i) > 0)
+          {
+            values.Row(i) = then_values.Row(i);
+            deriv.Row(i) = then_deriv.Row(i);
+          }
+        else
+          {
+            values.Row(i) = else_values.Row(i);
+            deriv.Row(i) = else_deriv.Row(i);
+          }
     }
 
+    /*
     virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
                                 FlatMatrix<Complex> result,
                                 FlatMatrix<Complex> deriv) const
