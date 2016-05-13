@@ -2964,13 +2964,13 @@ public:
     Array<bool> is_complex;
     // Array<Timer*> timers;
     Library library;
-    lib_function compiled_function;
-    lib_function_simd compiled_function_simd;
-    lib_function_deriv compiled_function_deriv;
-    lib_function_simd_deriv compiled_function_simd_deriv;
+    lib_function compiled_function = nullptr;
+    lib_function_simd compiled_function_simd = nullptr;
+    lib_function_deriv compiled_function_deriv = nullptr;
+    lib_function_simd_deriv compiled_function_simd_deriv = nullptr;
   public:
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf, bool realcompile)
-      : cf(acf), compiled_function(nullptr), compiled_function_simd(nullptr)
+      : cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
