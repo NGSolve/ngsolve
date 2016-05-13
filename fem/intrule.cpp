@@ -43,6 +43,10 @@ namespace ngfem
     throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
   }
 
+  
+
+
+  
   FlatMatrix<> BaseMappedIntegrationPoint :: GetJacobian() const
   {
     if (!eltrans->Boundary())
@@ -3063,6 +3067,24 @@ namespace ngfem
   }
 
   
+}
+
+
+namespace ngstd
+{
+
+  FlatVector<SIMD<double>>
+  SIMD<ngfem::BaseMappedIntegrationPoint> :: GetPoint() const
+  {
+    switch (eltrans->SpaceDim())
+      {
+      case 1: return static_cast<const SIMD<ngfem::DimMappedIntegrationPoint<1>>&> (*this).GetPoint();
+      case 2: return static_cast<const SIMD<ngfem::DimMappedIntegrationPoint<2>>&> (*this).GetPoint();
+      case 3: return static_cast<const SIMD<ngfem::DimMappedIntegrationPoint<3>>&> (*this).GetPoint();
+      }
+    throw Exception("BaseMappedIntegrationPoint::GetPoint, illegal dimension");
+  }
+
 }
 
 /*
