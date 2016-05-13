@@ -470,6 +470,9 @@ namespace netgen
     */
     DLL_HEADER void Compress ();
 
+    /// first vertex has lowest index
+    void OrderElements(); 
+
     ///
 	DLL_HEADER void Save (ostream & outfile) const;
     ///

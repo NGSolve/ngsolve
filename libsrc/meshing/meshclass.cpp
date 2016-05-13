@@ -3245,6 +3245,24 @@ namespace netgen
     timestamp = NextTimeStamp();
   }
 
+  void Mesh :: OrderElements()
+  {
+    for (auto & el : surfelements)
+      {
+        if (el.GetType() == TRIG)
+          while (el[0] > el[1] || el[0] > el[2])
+            { // rotate element
+              auto hp = el[0];
+              el[0] = el[1];
+              el[1] = el[2];
+              el[2] = hp;
+              auto hgi = el.GeomInfoPi(1);
+              el.GeomInfoPi(1) = el.GeomInfoPi(2);
+              el.GeomInfoPi(2) = el.GeomInfoPi(3);
+              el.GeomInfoPi(3) = hgi;
+            }
+      }
+  }
 
   int Mesh :: CheckConsistentBoundary () const
   {

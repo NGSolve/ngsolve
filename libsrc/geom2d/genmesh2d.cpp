@@ -587,6 +587,7 @@ namespace netgen
     mp.optsteps2d = hsteps;
 
     mesh->Compress();
+    mesh->OrderElements();
     mesh -> SetNextMajorTimeStamp();
 
     mp.Render();
