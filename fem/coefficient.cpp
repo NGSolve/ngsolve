@@ -3297,14 +3297,14 @@ public:
         compiled_function_simd_deriv(ir, values, deriv);
         return;
       }
-      throw ExceptionNOSIMD ("CompiledCF :: EvaluateDeriv onyl available with codegeneration");      
+      throw ExceptionNOSIMD ("*************** CompiledCF :: EvaluateDeriv not available without codegeneration");      
     }
 
     virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
                                  AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                  AFlatMatrix<double> dderiv) const
     {
-      throw ExceptionNOSIMD ("CompiledCF :: EvaluateDDeriv coming soon");
+      throw ExceptionNOSIMD ("*************** CompiledCF :: EvaluateDDeriv coming soon");
     }
 
 

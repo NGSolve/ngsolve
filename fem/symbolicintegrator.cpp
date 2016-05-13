@@ -2353,7 +2353,7 @@ namespace ngfem
             ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
               {
-                ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
+                ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
                 proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetAMemory(proxy));
               }
     
