@@ -18,16 +18,15 @@ namespace ngstd
    D first derivatives, and D*D second derivatives. Algebraic operations are
    overloaded by using product-rule etc. etc.
 **/
-template <int D>
+template <int D, typename SCAL = double>
 class AutoDiffDiff
 {
-  double val;
-  double dval[D];
-  double ddval[D*D];
+  SCAL val;
+  SCAL dval[D];
+  SCAL ddval[D*D];
 public:
 
-  typedef AutoDiffDiff<D> TELEM;
-  typedef double TSCAL;
+  typedef AutoDiffDiff<D, SCAL> TELEM;
 
 
   /// elements are undefined
@@ -44,7 +43,7 @@ public:
   }
 
   /// initial object with constant value
-  AutoDiffDiff  (double aval) throw()
+  AutoDiffDiff  (SCAL aval) throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -54,7 +53,7 @@ public:
   }
 
   /// initial object with value and derivative
-  AutoDiffDiff  (const AutoDiff<D> & ad2) throw()
+  AutoDiffDiff  (const AutoDiff<D, SCAL> & ad2) throw()
   {
     val = ad2.Value();
     for (int i = 0; i < D; i++)
@@ -64,7 +63,7 @@ public:
   }
 
   /// init object with (val, e_diffindex)
-  AutoDiffDiff  (double aval, int diffindex)  throw()
+  AutoDiffDiff  (SCAL aval, int diffindex)  throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -75,7 +74,7 @@ public:
   }
 
   /// assign constant value
-  AutoDiffDiff & operator= (double aval) throw()
+  AutoDiffDiff & operator= (SCAL aval) throw()
   {
     val = aval;
     for (int i = 0; i < D; i++)
@@ -86,31 +85,31 @@ public:
   }
 
   /// returns value
-  double Value() const throw() { return val; }
+  SCAL Value() const throw() { return val; }
 
   /// returns partial derivative
-  double DValue (int i) const throw() { return dval[i]; }
+  SCAL DValue (int i) const throw() { return dval[i]; }
 
   /// returns partial derivative
-  double DDValue (int i) const throw() { return ddval[i]; }
+  SCAL DDValue (int i) const throw() { return ddval[i]; }
 
   /// returns partial derivative
-  double DDValue (int i, int j) const throw() { return ddval[i*D+j]; }
+  SCAL DDValue (int i, int j) const throw() { return ddval[i*D+j]; }
 
   /// access value
-  double & Value() throw() { return val; }
+  SCAL & Value() throw() { return val; }
 
   /// accesses partial derivative 
-  double & DValue (int i) throw() { return dval[i]; }
+  SCAL & DValue (int i) throw() { return dval[i]; }
 
   /// accesses partial derivative 
-  double & DDValue (int i) throw() { return ddval[i]; }
+  SCAL & DDValue (int i) throw() { return ddval[i]; }
 
   /// accesses partial derivative 
-  double & DDValue (int i, int j) throw() { return ddval[i*D+j]; }
+  SCAL & DDValue (int i, int j) throw() { return ddval[i*D+j]; }
 
   /// add autodiffdiff object
-  AutoDiffDiff<D> & operator+= (const AutoDiffDiff<D> & y) throw()
+  AutoDiffDiff<D, SCAL> & operator+= (const AutoDiffDiff<D, SCAL> & y) throw()
   {
     val += y.val;
     for (int i = 0; i < D; i++)
@@ -121,7 +120,7 @@ public:
   }
 
   /// subtract autodiffdiff object
-  AutoDiffDiff<D> & operator-= (const AutoDiffDiff<D> & y) throw()
+  AutoDiffDiff<D, SCAL> & operator-= (const AutoDiffDiff<D, SCAL> & y) throw()
   {
     val -= y.val;
     for (int i = 0; i < D; i++)
@@ -132,7 +131,7 @@ public:
   }
 
   /// multiply with autodiffdiff object
-  AutoDiffDiff<D> & operator*= (const AutoDiffDiff<D> & y) throw()
+  AutoDiffDiff<D, SCAL> & operator*= (const AutoDiffDiff<D, SCAL> & y) throw()
   {
     for (int i = 0; i < D*D; i++)
       ddval[i] = val * y.ddval[i] + y.val * ddval[i];
@@ -151,7 +150,7 @@ public:
   }
 
   /// multiply with scalar
-  AutoDiffDiff<D> & operator*= (const double & y) throw()
+  AutoDiffDiff<D, SCAL> & operator*= (const SCAL & y) throw()
   {
     for ( int i = 0; i < D*D; i++ )
       ddval[i] *= y;
@@ -162,9 +161,9 @@ public:
   }
 
   /// divide by scalar
-  AutoDiffDiff<D> & operator/= (const double & y) throw()
+  AutoDiffDiff<D, SCAL> & operator/= (const SCAL & y) throw()
   {
-    double iy = 1.0 / y;
+    SCAL iy = 1.0 / y;
     for ( int i = 0; i < D*D; i++ )
       ddval[i] *= iy;
     for (int i = 0; i < D; i++)
@@ -174,25 +173,25 @@ public:
   }
 
   /// same value
-  bool operator== (double val2) throw()
+  bool operator== (SCAL val2) throw()
   {
     return val == val2;
   }
 
   /// different values 
-  bool operator!= (double val2) throw()
+  bool operator!= (SCAL val2) throw()
   {
     return val != val2;
   }
 
   /// less 
-  bool operator< (double val2) throw()
+  bool operator< (SCAL val2) throw()
   {
     return val < val2;
   }
   
   /// greater
-  bool operator> (double val2) throw()
+  bool operator> (SCAL val2) throw()
   {
     return val > val2;
   }
@@ -202,8 +201,8 @@ public:
 //@{  AutoDiff helper functions.
 
 /// Prints AudoDiffDiff
-template<int D>
-inline ostream & operator<< (ostream & ost, const AutoDiffDiff<D> & x)
+template<int D, typename SCAL>
+inline ostream & operator<< (ostream & ost, const AutoDiffDiff<D, SCAL> & x)
 {
   ost << x.Value() << ", D = ";
   for (int i = 0; i < D; i++)
@@ -215,10 +214,10 @@ inline ostream & operator<< (ostream & ost, const AutoDiffDiff<D> & x)
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator+ (const AutoDiffDiff<D> & x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator+ (const AutoDiffDiff<D, SCAL> & x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value () = x.Value()+y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = x.DValue(i) + y.DValue(i);
@@ -229,10 +228,10 @@ inline AutoDiffDiff<D> operator+ (const AutoDiffDiff<D> & x, const AutoDiffDiff<
 
 
 /// 
-template<int D>
-inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator- (const AutoDiffDiff<D, SCAL> & x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x.Value()-y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = x.DValue(i) - y.DValue(i);
@@ -243,10 +242,11 @@ inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x, const AutoDiffDiff<
 
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator+ (double x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator+ (SCAL2 x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x+y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = y.DValue(i);
@@ -256,10 +256,11 @@ inline AutoDiffDiff<D> operator+ (double x, const AutoDiffDiff<D> & y) throw()
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator+ (const AutoDiffDiff<D> & y, double x) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator+ (const AutoDiffDiff<D, SCAL> & y, SCAL2 x) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x+y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = y.DValue(i);
@@ -270,10 +271,10 @@ inline AutoDiffDiff<D> operator+ (const AutoDiffDiff<D> & y, double x) throw()
 
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x) throw()
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator- (const AutoDiffDiff<D, SCAL> & x) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = -x.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = -x.DValue(i);
@@ -283,10 +284,11 @@ inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x) throw()
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x, double y) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator- (const AutoDiffDiff<D, SCAL> & x, SCAL2 y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x.Value()-y;
   for (int i = 0; i < D; i++)
     res.DValue(i) = x.DValue(i);
@@ -296,10 +298,11 @@ inline AutoDiffDiff<D> operator- (const AutoDiffDiff<D> & x, double y) throw()
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator- (double x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator- (SCAL2 x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x-y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = -y.DValue(i);
@@ -310,10 +313,11 @@ inline AutoDiffDiff<D> operator- (double x, const AutoDiffDiff<D> & y) throw()
 
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator* (double x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator* (SCAL2 x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x*y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = x*y.DValue(i);
@@ -323,10 +327,11 @@ inline AutoDiffDiff<D> operator* (double x, const AutoDiffDiff<D> & y) throw()
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator* (const AutoDiffDiff<D> & y, double x) throw()
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator* (const AutoDiffDiff<D, SCAL> & y, SCAL2 x) throw()
 {
-  AutoDiffDiff<D> res;
+  AutoDiffDiff<D, SCAL> res;
   res.Value() = x*y.Value();
   for (int i = 0; i < D; i++)
     res.DValue(i) = x*y.DValue(i);
@@ -336,12 +341,12 @@ inline AutoDiffDiff<D> operator* (const AutoDiffDiff<D> & y, double x) throw()
 }
 
 ///
-template<int D>
-inline AutoDiffDiff<D> operator* (const AutoDiffDiff<D> & x, const AutoDiffDiff<D> & y) throw()
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator* (const AutoDiffDiff<D, SCAL> & x, const AutoDiffDiff<D, SCAL> & y) throw()
 {
-  AutoDiffDiff<D> res;
-  double hx = x.Value();
-  double hy = y.Value();
+  AutoDiffDiff<D, SCAL> res;
+  SCAL hx = x.Value();
+  SCAL hy = y.Value();
 
   res.Value() = hx*hy;
   for (int i = 0; i < D; i++)
@@ -357,10 +362,10 @@ inline AutoDiffDiff<D> operator* (const AutoDiffDiff<D> & x, const AutoDiffDiff<
 
 
 
-template<int D>
-inline AutoDiffDiff<D> Inv (const AutoDiffDiff<D> & x)
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> Inv (const AutoDiffDiff<D, SCAL> & x)
 {
-  AutoDiffDiff<D> res(1.0 / x.Value());
+  AutoDiffDiff<D, SCAL> res(1.0 / x.Value());
   for (int i = 0; i < D; i++)
     res.DValue(i) = -x.DValue(i) / (x.Value() * x.Value());
   cout << "ADD::Inv not implemented" << endl;
@@ -368,30 +373,30 @@ inline AutoDiffDiff<D> Inv (const AutoDiffDiff<D> & x)
 }
 
 
-template<int D>
-inline AutoDiffDiff<D> operator/ (const AutoDiffDiff<D> & x, const AutoDiffDiff<D> & y)
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator/ (const AutoDiffDiff<D, SCAL> & x, const AutoDiffDiff<D, SCAL> & y)
 {
   return x * Inv (y);
 }
 
-template<int D>
-inline AutoDiffDiff<D> operator/ (const AutoDiffDiff<D> & x, double y)
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator/ (const AutoDiffDiff<D, SCAL> & x, double y)
 {
   return (1/y) * x;
 }
 
-template<int D>
-inline AutoDiffDiff<D> operator/ (double x, const AutoDiffDiff<D> & y)
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> operator/ (double x, const AutoDiffDiff<D, SCAL> & y)
 {
   return x * Inv(y);
 }
 
 
-template<int D>
-inline AutoDiffDiff<D> sqrt (const AutoDiffDiff<D> & x)
+template<int D, typename SCAL>
+inline AutoDiffDiff<D, SCAL> sqrt (const AutoDiffDiff<D, SCAL> & x)
 {
-  AutoDiffDiff<D> res;
-  res.Value() = std::sqrt(x.Value());
+  AutoDiffDiff<D, SCAL> res;
+  res.Value() = sqrt(x.Value());
   for (int j = 0; j < D; j++)
     res.DValue(j) = 0.5 / res.Value() * x.DValue(j);
 
@@ -405,11 +410,11 @@ inline AutoDiffDiff<D> sqrt (const AutoDiffDiff<D> & x)
 
 // df(u)/dx  = exp(x) * du/dx
 // d^2 f(u) / dx^2 = exp(x) * (du/dx)^2 + exp(x) * d^2u /dx^2
-template <int D>
-INLINE AutoDiffDiff<D> exp (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> exp (AutoDiffDiff<D, SCAL> x)
 {
-  AutoDiffDiff<D> res;
-  res.Value() = std::exp(x.Value());
+  AutoDiffDiff<D, SCAL> res;
+  res.Value() = exp(x.Value());
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k) * res.Value();
   for (int k = 0; k < D; k++)
@@ -418,12 +423,12 @@ INLINE AutoDiffDiff<D> exp (AutoDiffDiff<D> x)
   return res;
 }
 
-template <int D>
-INLINE AutoDiffDiff<D> log (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> log (AutoDiffDiff<D, SCAL> x)
 {
-  AutoDiffDiff<D> res;
-  res.Value() = std::log(x.Value());
-  double xinv = 1.0/x.Value();
+  AutoDiffDiff<D, SCAL> res;
+  res.Value() = log(x.Value());
+  SCAL xinv = 1.0/x.Value();
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k) * xinv;
   for (int k = 0; k < D; k++)
@@ -434,12 +439,12 @@ INLINE AutoDiffDiff<D> log (AutoDiffDiff<D> x)
 
 
 
-template <int D>
-INLINE AutoDiffDiff<D> sin (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> sin (AutoDiffDiff<D, SCAL> x)
 {
-  AutoDiffDiff<D> res;
-  double s = std::sin(x.Value());
-  double c = std::cos(x.Value());
+  AutoDiffDiff<D, SCAL> res;
+  SCAL s = sin(x.Value());
+  SCAL c = cos(x.Value());
   
   res.Value() = s;
   for (int k = 0; k < D; k++)
@@ -451,12 +456,12 @@ INLINE AutoDiffDiff<D> sin (AutoDiffDiff<D> x)
 }
 
 
-template <int D>
-INLINE AutoDiffDiff<D> cos (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> cos (AutoDiffDiff<D, SCAL> x)
 {
-  AutoDiffDiff<D> res;
-  double s = std::sin(x.Value());
-  double c = std::cos(x.Value());
+  AutoDiffDiff<D, SCAL> res;
+  SCAL s = sin(x.Value());
+  SCAL c = cos(x.Value());
   
   res.Value() = c;
   for (int k = 0; k < D; k++)
@@ -467,16 +472,16 @@ INLINE AutoDiffDiff<D> cos (AutoDiffDiff<D> x)
   return res;
 }
 
-template <int D>
-INLINE AutoDiffDiff<D> tan (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> tan (AutoDiffDiff<D, SCAL> x)
 { return sin(x) / cos(x); }
 
 
-template <int D>
-INLINE AutoDiffDiff<D> atan (AutoDiffDiff<D> x)
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> atan (AutoDiffDiff<D, SCAL> x)
 {
-  AutoDiffDiff<D> res;
-  double a = std::atan(x.Value());
+  AutoDiffDiff<D, SCAL> res;
+  SCAL a = atan(x.Value());
   res.Value() = a;
   for (int k = 0; k < D; k++)
     res.DValue(k) = x.DValue(k)/(1+x.Value()*x.Value()) ;
