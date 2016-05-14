@@ -2362,6 +2362,7 @@ namespace ngcomp
 		 double * values, int svalues)
   {
     // cout << "visualizecoef, GetMultiValue not implemented" << endl;
+
     for (int i = 0; i < npts; i++)
       GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
     return true;
@@ -2403,9 +2404,69 @@ namespace ngcomp
 		     const double * dxdxref, int sdxdxref,
 		     double * values, int svalues)
   {
-    // cout << "viscoef, getmultisurfval1" << endl;
+    static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue"); RegionTimer reg(t);
+    static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate");
+
+    if (cf -> IsComplex())
+      {
+        for (int i = 0; i < npts; i++)
+          GetSurfValue (selnr, facetnr, xref[i*sxref], xref[i*sxref+1], &values[i*svalues]);
+        return true;
+      }
+    
+    bool bound = (ma->GetDimension() == 3);
+    ElementId ei(bound ? BND : VOL, selnr);
+        
+    LocalHeapMem<100000> lh("viscf::getmultisurfvalue");
+    ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+
+    FlatMatrix<> mvalues1(npts, GetComponents(), lh);
+
+    IntegrationRule ir(npts, lh);
     for (int i = 0; i < npts; i++)
-      GetSurfValue (selnr, facetnr, xref[i*sxref], xref[i*sxref+1], &values[i*svalues]);
+      {
+        ir[i] = IntegrationPoint (xref[i*sxref], xref[i*sxref+1]);
+        ir[i].FacetNr() = facetnr;
+      }
+        
+    if (bound)
+      {
+        MappedIntegrationRule<2,3> mir(ir, eltrans, 1, lh);
+
+        for (int k = 0; k < npts; k++)
+          {
+            Mat<2,3> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,3>;
+            FlatVec<3> vx( (double*)x + k*sx);
+            mir[k] = MappedIntegrationPoint<2,3> (ir[k], eltrans, vx, mdxdxref);
+          }
+
+        RegionTimer r2(t2);
+        cf -> Evaluate (mir, mvalues1);
+      }
+    else
+      {
+        if (!ma->GetDeformation())
+          {
+            MappedIntegrationRule<2,2> mir(ir, eltrans, 1, lh);
+            
+            for (int k = 0; k < npts; k++)
+              {
+                Mat<2,2> & mdxdxref = *new((double*)(dxdxref+k*sdxdxref)) Mat<2,2>;
+                FlatVec<2> vx( (double*)x + k*sx);
+                mir[k] = MappedIntegrationPoint<2,2> (ir[k], eltrans, vx, mdxdxref);
+              }
+            RegionTimer r2(t2);            
+            cf -> Evaluate (mir, mvalues1);
+          }
+        else
+          {
+            MappedIntegrationRule<2,2> mir(ir, eltrans, lh);
+            cf -> Evaluate (mir, mvalues1);
+          }
+      }
+
+    SliceMatrix<> mvalues(npts, GetComponents(), svalues, values);
+    mvalues = mvalues1;
     return true;
   }
 
