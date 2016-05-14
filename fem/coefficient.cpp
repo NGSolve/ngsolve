@@ -124,7 +124,12 @@ namespace ngfem
 
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.body += Var(index).Assign(Var(val));
+    string type = "double";
+    if(code.is_simd) type = "SIMD<double>";
+    if(code.deriv==1) type = "AutoDiff<1,"+type+">";
+    if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
+    code.body += Var(index).Declare(type);
+    code.body += Var(index).Assign(Var(val), false);
   }
   
   ///
@@ -2958,7 +2963,7 @@ public:
     typedef void (*lib_function_deriv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
     typedef void (*lib_function_simd_deriv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>);
     typedef void (*lib_function_dderiv)(const ngfem::BaseMappedIntegrationRule &, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>, ngbla::FlatMatrix<double>);
-    typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>, ngbla::FlatMatrix<double>);
+    typedef void (*lib_function_simd_dderiv)(const ngfem::SIMD_BaseMappedIntegrationRule &, AFlatMatrix<double>, AFlatMatrix<double>, AFlatMatrix<double>);
     shared_ptr<CoefficientFunction> cf;
     Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
@@ -3255,6 +3260,11 @@ public:
                                  FlatMatrix<double> values, FlatMatrix<double> deriv,
                                  FlatMatrix<double> dderiv) const
     {
+      if(compiled_function_dderiv)
+      {
+        compiled_function_dderiv(ir, values, deriv, dderiv);
+        return;
+      }
       int totdim = 0;
       for (int d : dim) totdim += d;
       ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
@@ -3310,6 +3320,11 @@ public:
                                  AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                  AFlatMatrix<double> dderiv) const
     {
+      if(compiled_function_simd_dderiv)
+      {
+        compiled_function_simd_dderiv(ir, values, deriv, dderiv);
+        return;
+      }
       throw ExceptionNOSIMD ("*************** CompiledCF :: EvaluateDDeriv coming soon");
     }
 
