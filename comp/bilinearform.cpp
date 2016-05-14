@@ -3241,6 +3241,8 @@ namespace ngcomp
   template <class SCAL>
   double S_BilinearForm<SCAL> :: Energy (const BaseVector & x) const
   {
+    static Timer t("BilinearForm::Energy"); RegionTimer reg(t);
+    
     atomic<double> energy(0.0);
 
     if (!MixedSpaces())

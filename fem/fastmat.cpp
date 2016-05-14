@@ -1,5 +1,7 @@
 #define FILE_FASTMAT_CPP
 
+#include <fem.hpp>
+
 #include "fastmat.hpp"
 
 namespace ngfem
