@@ -3029,9 +3029,8 @@ public:
             code.is_simd = simd;
             code.deriv = deriv;
             for (auto i : Range(steps)) {
-                cout << IM(3) << "step " << i << endl;
-                cout << IM(3) << "function: " << typeid(*steps[i]).name() << endl;
-                steps[i]->GenerateCode(code, inputs[i],i);
+              cout << IM(3) << "step " << i << ": " << typeid(*steps[i]).name() << endl;
+              steps[i]->GenerateCode(code, inputs[i],i);
             }
 
             // set results

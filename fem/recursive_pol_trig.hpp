@@ -1,3 +1,6 @@
+#ifndef FILE_RECURSIVE_POL_TRIG
+#define FILE_RECURSIVE_POL_TRIG
+
 namespace ngfem
 {
 
@@ -482,3 +485,5 @@ namespace ngfem
 
 
 }
+
+#endif
