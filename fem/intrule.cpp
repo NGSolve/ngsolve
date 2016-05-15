@@ -2852,6 +2852,15 @@ namespace ngfem
                   tmp->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
                   break;
                 }
+              case ET_TET:
+                {
+                  const IntegrationRule & irx = SelectIntegrationRuleJacobi20(order);
+                  const IntegrationRule & iry = SelectIntegrationRuleJacobi10(order);
+                  tmp->SetIRX (new SIMD_IntegrationRule(irx));
+                  tmp->SetIRY (new SIMD_IntegrationRule(iry));                  
+                  tmp->SetIRZ (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  break;
+                }
               default:
                 ;
               }
