@@ -2432,6 +2432,10 @@ namespace ngfem
                   FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
                   int i = 0;
+                  IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
+                  IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
+                  SliceMatrix<> part_elmat = elmat.Rows(r2).Cols(r1);
+                  
                   enum { BS = 16 };
                   for ( ; i < ir.GetNIP(); i+=BS)
                     {
@@ -2459,7 +2463,7 @@ namespace ngfem
                       tbd.Stop();
                       
                       tmult.Start();
-                      AddABt (bbmat2, bdbmat1, elmat);
+                      AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
                       tmult.Stop();
                       tmult.AddFlops (double(elmat.Height())*elmat.Width()*bbmat2.Width());
                     }
