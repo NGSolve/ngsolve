@@ -980,7 +980,7 @@ namespace ngcomp
   {
     string mycode_simd = R"CODE_( 
       STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
-      AFlatMatrix<double>  {values}(mir.Size(), {dim}, &{hmem}[0].Data());
+      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0].Data());
       {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
@@ -1083,13 +1083,19 @@ namespace ngcomp
     variables["hmem"] = Var("hmem", index).S();
 
     if(code.is_simd)
-      code.header += Code::Map(mycode_simd, variables);
+      {
+        code.header += Code::Map(mycode_simd, variables);
+        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign(values.S()+".Get("+ToString(i)+",i)");
+          });
+      }
     else
-      code.header += Code::Map(mycode, variables);
-
-    TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
-        code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
-    });
+      {
+        code.header += Code::Map(mycode, variables);
+        TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
+            code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(i)+")");
+          });
+      }
   }
   
   bool GridFunctionCoefficientFunction::IsComplex() const
