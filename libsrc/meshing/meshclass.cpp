@@ -3262,6 +3262,35 @@ namespace netgen
               el.GeomInfoPi(3) = hgi;
             }
       }
+
+    for (auto & el : volelements)
+      if (el.GetType() == TET)
+        {
+          // lowest index first ...
+          int mini = 0;
+          for (int i = 1; i < 4; i++)
+            if (el[i] < el[mini]) mini = i;
+          if (mini != 0)
+            { // swap 0 with mini, and the other two ...
+              int i3 = -1, i4 = -1;
+              for (int i = 1; i < 4; i++)
+                if (i != mini)
+                  {
+                    i4 = i3;
+                    i3 = i;
+                  }
+              swap (el[0], el[mini]);
+              swap (el[i3], el[i4]);
+            }
+          
+          while (el[1] > el[2] || el[1] > el[3])
+            { // rotate element to move second index to second position
+              auto hp = el[1];
+              el[1] = el[2];
+              el[2] = el[3];
+              el[3] = hp;
+            }
+        }
   }
 
   int Mesh :: CheckConsistentBoundary () const

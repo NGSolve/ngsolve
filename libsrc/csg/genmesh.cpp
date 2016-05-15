@@ -843,6 +843,7 @@ namespace netgen
 #endif
       }
 
+    mesh -> OrderElements();
     return TCL_OK;
   }
 }
