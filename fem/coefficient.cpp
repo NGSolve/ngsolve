@@ -3034,14 +3034,20 @@ public:
             }
 
             // set results
+            string res_type = "double";
+            if(simd) res_type = "SIMD<" + res_type + ">";
+            if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
+            if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
             int ii = 0;
             TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
+                 code.body += Var(steps.Size(),i,j).Declare(res_type);
+                 code.body += Var(steps.Size(),i,j).Assign(Var(steps.Size()-1,i,j),false);
                  string sget = "(i," + ToString(ii) + ") =";
                  if(simd) sget = ".Get(" + ToString(ii) + ",i) =";
 
                  for (auto ideriv : Range(deriv+1))
                  {
-                   code.body += parameters[ideriv] + sget + Var(steps.Size()-1,i,j).code;
+                   code.body += parameters[ideriv] + sget + Var(steps.Size(),i,j).code;
                    if(deriv>=1)
                    {
                      code.body += ".";
