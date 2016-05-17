@@ -1247,11 +1247,7 @@ namespace ngla
 #endif
       }
     else
-    {
-      if (!this->IsSPD())
-        cout << IM(3) << "WARNING: SparseMatrix::InverseMatrix: Matrix is (potentially) not s.p.d.,\n         but SparseCholesky needs s.p.d. matrix" << endl;
       return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
-    }
     //#endif
   }
 
