@@ -86,6 +86,10 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
   {
+    static Timer t("ScalarFE::Evaluate");
+    RegionTimer reg(t);
+    t.AddFlops (ir.GetNIP()*ndof);
+    
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
       {

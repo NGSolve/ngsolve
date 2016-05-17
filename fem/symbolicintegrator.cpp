@@ -2065,6 +2065,7 @@ namespace ngfem
           proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
         else
           proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
+        tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
       }
     tapply.Stop();
     

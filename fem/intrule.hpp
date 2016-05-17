@@ -607,6 +607,7 @@ namespace ngfem
     const FACE * faces;
     EDGE hedges[4];
     FACE hfaces[6];
+    bool swapped = false; // new orientation with 2 tet-classes
   public:
     Facet2ElementTrafo(ELEMENT_TYPE aeltype) 
       : eltype(aeltype),
@@ -661,6 +662,7 @@ namespace ngfem
 	      if (vnums[hfaces[i][0]] > vnums[hfaces[i][1]]) swap (hfaces[i][0], hfaces[i][1]);
 	    }
 	  faces = &hfaces[0];
+          swapped = vnums[2] > vnums[3];
 	}
 
 
