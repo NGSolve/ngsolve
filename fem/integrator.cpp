@@ -62,12 +62,12 @@ namespace ngfem
     int maxval = 0;
     for (int val : regions) maxval = max2(maxval, val);
 
-    definedon.SetSize (maxval+1);
+    definedon.SetSize (maxval);
     definedon.Clear();
 
     for (int val : regions)
-      if (val >= 0)
-        definedon.Set (val);
+      if (val >= 1)
+        definedon.Set (val-1);
       else
         throw Exception ("SetDefinedOn called with negative index");
   }
