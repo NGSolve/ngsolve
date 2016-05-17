@@ -1972,8 +1972,9 @@ namespace ngfem
   */
   class NGS_DLL_HEADER IntegrationRules
   {
+  public:
     IntegrationRule pointrule;  // 0-dim IR
-    Array<IntegrationRule*> segmentrules;
+    Array<IntegrationRule*> segmentrules, segmentrules_inv;
     Array<IntegrationRule*> trigrules;
     Array<IntegrationRule*> quadrules;
     Array<IntegrationRule*> tetrules;
@@ -1982,7 +1983,7 @@ namespace ngfem
     Array<IntegrationRule*> hexrules;
 
     SIMD_IntegrationRule simd_pointrule;
-    Array<SIMD_IntegrationRule*> simd_segmentrules;
+    Array<SIMD_IntegrationRule*> simd_segmentrules, simd_segmentrules_inv;
     Array<SIMD_IntegrationRule*> simd_trigrules;
     Array<SIMD_IntegrationRule*> simd_quadrules;
     Array<SIMD_IntegrationRule*> simd_tetrules;
@@ -1992,7 +1993,11 @@ namespace ngfem
     
     Array<IntegrationRule*> jacobirules10;
     Array<IntegrationRule*> jacobirules20;
+
   public:
+    static IntegrationRule intrule0, intrule1;
+    static SIMD_IntegrationRule *simd_intrule0, *simd_intrule1;
+
     ///
     IntegrationRules ();
     ///
@@ -2010,12 +2015,25 @@ namespace ngfem
     const IntegrationRule & GenerateIntegrationRuleJacobi20 (int order);
   };
 
+  IntegrationRule IntegrationRules :: intrule0;
+  IntegrationRule IntegrationRules :: intrule1;
+  SIMD_IntegrationRule * IntegrationRules :: simd_intrule0;
+  SIMD_IntegrationRule * IntegrationRules :: simd_intrule1;
 
 
 
 
   IntegrationRules :: IntegrationRules ()
   {
+    // ************************************
+    // ** left/right points
+    // ************************************
+
+    intrule0.Append (IntegrationPoint (0,0,0,1));
+    intrule1.Append (IntegrationPoint (1,0,0,1));
+    simd_intrule0 = new SIMD_IntegrationRule (intrule0);
+    simd_intrule1 = new SIMD_IntegrationRule (intrule1);
+    
     // ************************************
     // ** Point integration rules
     // ************************************
@@ -2495,7 +2513,14 @@ namespace ngfem
 		      // ip.SetGlobNr (segmentpoints.Append (ip)-1);
 		    rule->AddIntegrationPoint (ip);
 		  }
-		segmentrules[order] = rule;	      
+		segmentrules[order] = rule;
+                
+                IntegrationRule * rule_inv = new IntegrationRule;
+                for (int j = rule->Size()-1; j >= 0; j--)
+                  rule_inv->AddIntegrationPoint ((*rule)[j]);
+                if (segmentrules_inv.Size() < order+1)
+                  segmentrules_inv.SetSize(order+1);
+                segmentrules_inv[order] = rule_inv;
 		break;
 	      }
 
@@ -2828,8 +2853,8 @@ namespace ngfem
         if (order >= ira->Size())
           {
             int oldsize = ira->Size();
-            ira->SetSize(order+1);
-            for (int i = oldsize; i < order+1; i++)
+            ira->SetSize(order+2);
+            for (int i = oldsize; i < order+2; i++)
               (*ira)[i] = nullptr;
           }
 
@@ -2839,6 +2864,16 @@ namespace ngfem
             auto tmp = new SIMD_IntegrationRule(ir);
             switch (eltype)
               {
+              case ET_SEGM:
+                {
+                  simd_segmentrules_inv.SetSize(order+1);
+                  simd_segmentrules_inv[order] = new SIMD_IntegrationRule(*segmentrules_inv[order]);
+                  if (order % 2 == 0)
+                    simd_segmentrules_inv[order+1] = simd_segmentrules_inv[order];
+                  else
+                    simd_segmentrules_inv[order-1] = simd_segmentrules_inv[order];
+                  break;
+                }
               case ET_QUAD:
                 {
                   tmp->SetIRX (&SIMD_SelectIntegrationRule (ET_SEGM, order));
@@ -2963,6 +2998,44 @@ namespace ngfem
 
 
 
+
+  
+  int Integrator :: common_integration_order = -1;
+
+  static IntegrationRules intrules;
+  const IntegrationRules & GetIntegrationRules ()
+  {
+    return intrules;
+  }
+
+
+  const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
+  {
+    return GetIntegrationRules ().SelectIntegrationRule (eltype, order);
+  }
+
+  const IntegrationRule & SelectIntegrationRuleJacobi20 (int order)
+  {
+    return GetIntegrationRules ().SelectIntegrationRuleJacobi20 (order);
+  }
+
+  const IntegrationRule & SelectIntegrationRuleJacobi10 (int order)
+  {
+    return GetIntegrationRules ().SelectIntegrationRuleJacobi10 (order);
+  }
+
+  const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
+  {
+    return const_cast<IntegrationRules&>(GetIntegrationRules()).SIMD_SelectIntegrationRule (eltype, order);
+  }
+
+
+
+
+
+
+
+
   SIMD_IntegrationRule & Facet2ElementTrafo :: operator() (int fnr, const SIMD_IntegrationRule & irfacet, LocalHeap & lh)
   {
     SIMD_IntegrationRule & irvol = *new (lh) SIMD_IntegrationRule (irfacet.GetNIP(), lh);
@@ -3037,44 +3110,68 @@ namespace ngfem
         irvol[i].FacetNr() = fnr;
         irvol[i].Weight() = irfacet[i].Weight();
       }
+
+
+    // tensor-product
+    switch (eltype)
+      {
+      case ET_TET:
+        {
+          switch (fnr)
+            {
+            case 0:
+              {
+                irvol.SetIRX (intrules.simd_intrule0);
+                irvol.SetIRY (&irfacet.GetIRX());
+                if (!swapped)
+                  irvol.SetIRZ (&irfacet.GetIRY());
+                else
+                  {
+                    int order = 2*irfacet.GetIRY().GetNIP()-1;
+                    irvol.SetIRZ (intrules.simd_segmentrules_inv[order]);
+                  }
+                break;
+              }
+            case 1:
+              {
+                irvol.SetIRX (&irfacet.GetIRX());
+                irvol.SetIRY (intrules.simd_intrule0);
+                if (!swapped)
+                  irvol.SetIRZ (&irfacet.GetIRY());
+                else
+                  {
+                    int order = 2*irfacet.GetIRY().GetNIP()-1;
+                    irvol.SetIRZ (intrules.simd_segmentrules_inv[order]);
+                  }
+                break;
+              }
+            case 2:
+              {
+                irvol.SetIRX (&irfacet.GetIRX());
+                irvol.SetIRY (&irfacet.GetIRY());
+                irvol.SetIRZ (intrules.simd_intrule0);
+                break;
+              }
+            case 3:
+              {
+                irvol.SetIRX (&irfacet.GetIRX());
+                irvol.SetIRY (&irfacet.GetIRY());
+                irvol.SetIRZ (intrules.simd_intrule1);
+                break;
+              }
+            default:
+              ;
+            }
+          break;
+        }
+      default:
+        ;
+      }
     
     return irvol;
   }
 
   
-
-
-
-  
-  int Integrator :: common_integration_order = -1;
-
-  static IntegrationRules intrules;
-  const IntegrationRules & GetIntegrationRules ()
-  {
-    return intrules;
-  }
-
-
-  const IntegrationRule & SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
-  {
-    return GetIntegrationRules ().SelectIntegrationRule (eltype, order);
-  }
-
-  const IntegrationRule & SelectIntegrationRuleJacobi20 (int order)
-  {
-    return GetIntegrationRules ().SelectIntegrationRuleJacobi20 (order);
-  }
-
-  const IntegrationRule & SelectIntegrationRuleJacobi10 (int order)
-  {
-    return GetIntegrationRules ().SelectIntegrationRuleJacobi10 (order);
-  }
-
-  const SIMD_IntegrationRule & SIMD_SelectIntegrationRule (ELEMENT_TYPE eltype, int order)
-  {
-    return const_cast<IntegrationRules&>(GetIntegrationRules()).SIMD_SelectIntegrationRule (eltype, order);
-  }
-
   
 }
 
