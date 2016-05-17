@@ -306,10 +306,6 @@ void NGS_DLL_HEADER ExportNgla() {
                                             {
                                               return GetInverseName( m.GetInverseType());
                                             }))
-    .def("SetInverseType", FunctionPointer( [](BM & m, string inverse)
-                                            {
-                                              m.SetInverseType(inverse);
-                                            }))
 
     .def("Inverse", FunctionPointer( [](BM &m, BitArray * freedofs, string inverse)
                                      ->shared_ptr<BaseMatrix>
