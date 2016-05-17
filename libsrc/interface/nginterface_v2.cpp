@@ -682,7 +682,27 @@ namespace netgen
                                    __m256d * x, size_t sx,
                                    __m256d * dxdxi, size_t sdxdxi) const
   {
-    cout << "multi-eltrafo simd called, 1,2,simd" << endl;
+    for (int i = 0; i < npts; i++)
+      {
+        double hxi[4][1];
+        double hx[4][2];
+        double hdxdxi[4][4];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 1; k++)
+            hxi[j][k] = ((double*)&(xi[k]))[j];
+        MultiElementTransformation<1,2> (elnr, 4, &hxi[0][0], 1, &hx[0][0], 2, &hdxdxi[0][0], 4);
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 2; k++)
+            ((double*)&(x[k]))[j] = hx[j][k];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 4; k++)
+            ((double*)&(dxdxi[k]))[j] = hdxdxi[j][k];
+        
+        xi += sxi;
+        x += sx;
+        dxdxi += sdxdxi;
+      }
+    
   }
 
   template<> DLL_HEADER void Ngx_Mesh :: 
