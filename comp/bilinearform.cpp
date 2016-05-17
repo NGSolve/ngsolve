@@ -4516,4 +4516,5 @@ namespace ngcomp
   template class ElementByElement_BilinearForm<Complex>;
 
   template class T_BilinearForm<double,double>;
+  template class T_BilinearFormSymmetric<double,double>;
 }
