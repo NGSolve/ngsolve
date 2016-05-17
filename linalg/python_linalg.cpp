@@ -27,8 +27,6 @@ static void InitSlice( const bp::slice &inds, int len, int &start, int &step, in
 }
 
 
-
-
 void NGS_DLL_HEADER ExportNgla() {
     std::string nested_name = "la";
     if( bp::scope() )
@@ -303,6 +301,15 @@ void NGS_DLL_HEADER ExportNgla() {
     .def("__iadd__", FunctionPointer( [] (BM &m, BM &m2) { 
         m.AsVector()+=m2.AsVector();
     }))
+
+    .def("GetInverseType", FunctionPointer( [](BM & m)
+                                            {
+                                              return GetInverseName( m.GetInverseType());
+                                            }))
+    .def("SetInverseType", FunctionPointer( [](BM & m, string inverse)
+                                            {
+                                              m.SetInverseType(inverse);
+                                            }))
 
     .def("Inverse", FunctionPointer( [](BM &m, BitArray * freedofs, string inverse)
                                      ->shared_ptr<BaseMatrix>
