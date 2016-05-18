@@ -591,7 +591,18 @@ void ExportCoefficientFunction()
       if(code.is_simd)
         code.body += Var(index).Assign( CodeExpr("pow(ip.GetJacobiDet(), 1.0/mir.DimElement())"));
       else
-        code.body += Var(index).Assign( CodeExpr("pow(ip.GetMeasure(), 1.0/ip.Dim())"));
+      {
+        code.body += Var(index).Declare( "double" );
+        code.body += R"CODE_(
+        {
+          double tmp_res = 0.0;
+          switch (ip.Dim()) {
+            case 1:  tmp_res =      fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet()); break;
+            case 2:  tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet()), 1.0/2); break;
+            default: tmp_res = pow (fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet()), 1.0/3);
+        }
+        )CODE_" + Var(index).S() + " = tmp_res;\n}\n;";
+      }
     }
   };
 
