@@ -275,15 +275,17 @@ INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, const AutoDiff<D,
 }
 
 /// AutoDiff div double
-template<int D, typename SCAL>
-INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, double y)
+template<int D, typename SCAL, typename SCAL2,
+         typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, SCAL2 y)
 {
   return (1/y) * x;
 }
 
   /// double div AutoDiff
-  template<int D, typename SCAL>
-  INLINE AutoDiff<D,SCAL> operator/ (double x, const AutoDiff<D,SCAL> & y)
+template<int D, typename SCAL, typename SCAL2,
+         typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+  INLINE AutoDiff<D,SCAL> operator/ (SCAL2 x, const AutoDiff<D,SCAL> & y)
   {
     return x * Inv(y);
   }

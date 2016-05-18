@@ -379,14 +379,16 @@ inline AutoDiffDiff<D, SCAL> operator/ (const AutoDiffDiff<D, SCAL> & x, const A
   return x * Inv (y);
 }
 
-template<int D, typename SCAL>
-inline AutoDiffDiff<D, SCAL> operator/ (const AutoDiffDiff<D, SCAL> & x, double y)
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator/ (const AutoDiffDiff<D, SCAL> & x, SCAL2 y)
 {
   return (1/y) * x;
 }
 
-template<int D, typename SCAL>
-inline AutoDiffDiff<D, SCAL> operator/ (double x, const AutoDiffDiff<D, SCAL> & y)
+template<int D, typename SCAL, typename SCAL2,
+           typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
+inline AutoDiffDiff<D, SCAL> operator/ (SCAL2 x, const AutoDiffDiff<D, SCAL> & y)
 {
   return x * Inv(y);
 }
