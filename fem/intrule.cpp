@@ -2866,7 +2866,8 @@ namespace ngfem
               {
               case ET_SEGM:
                 {
-                  simd_segmentrules_inv.SetSize(order+1);
+                  if (simd_segmentrules_inv.Size() < order+2)
+                    simd_segmentrules_inv.SetSize(order+2);
                   simd_segmentrules_inv[order] = new SIMD_IntegrationRule(*segmentrules_inv[order]);
                   if (order % 2 == 0)
                     simd_segmentrules_inv[order+1] = simd_segmentrules_inv[order];
