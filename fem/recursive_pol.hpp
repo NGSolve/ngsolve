@@ -514,7 +514,7 @@ namespace ngfem
     template <class S, class Sc, class T>
     INLINE static void EvalMult1Assign (int n, S x, Sc c, T && values)
     {
-      S p1 = c*REC::P1(x), p2 = c * REC::P0(x);
+      S p1 = c*REC::P1(x), p2(c * REC::P0(x));
       for (int i = 0; i <= n; i++)
         {
 	  values[i] = p2;
