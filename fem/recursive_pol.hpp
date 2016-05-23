@@ -84,7 +84,7 @@ namespace ngfem
   };
 
   template <typename FUNC, typename FUNC2> 
-  INLINE const Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
+  INLINE Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
   {
     return Class_SBLambdaDuo<FUNC,FUNC2> (f, f2);
   }
@@ -924,8 +924,8 @@ namespace ngfem
         values[i] = EvalNextMult (i, x, c, p1, p2);
       */
 
-      S p1 = c * static_cast<const REC&>(*this).P1(x), 
-        p2 = c * static_cast<const REC&>(*this).P0(x);
+      S p1(c * static_cast<const REC&>(*this).P1(x)), 
+        p2(c * static_cast<const REC&>(*this).P0(x));
       for (int i = 0; i <= n; i++)
         {
 	  values[i] = p2;
@@ -933,7 +933,25 @@ namespace ngfem
         }
 
     }
+    
+    template <class S, class Sc, class T1, class T2>
+    INLINE void EvalMult (int n, S x, Sc c, Class_SBLambdaDuo<T1,T2> && values) const
+    {
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      S p2(c * static_cast<const REC&>(*this).P1(x));
 
+      int i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values (i, p1, i+1, p2);
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+	  EvalNextTicTac2 (i+3, x, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+    }
+
+      
     template <class S, class Sy, class T>
     INLINE void EvalScaled (int n, S x, Sy y, T && values) const
     {

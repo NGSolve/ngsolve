@@ -1113,7 +1113,7 @@ namespace ngstd
   class SIMD<ngfem::IntegrationPoint>
   {
     SIMD<double> x[3], weight;
-    int facetnr;
+    int facetnr = -1;
   public:
     static constexpr int Size() { return SIMD<double>::Size(); }
 

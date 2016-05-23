@@ -1262,7 +1262,9 @@ namespace ngbla
 
 
     /// access element
-    INLINE TELEM & operator() (int i) 
+    template<typename IND,
+             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
+    INLINE TELEM & operator() (IND i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1315,6 +1317,7 @@ namespace ngbla
       return data[i*dist]; 
     }
 
+    
     INLINE SliceVector<T> operator+(int i) const { return SliceVector<T> (s-i, dist, data+i*dist); }
 
 
@@ -1366,7 +1369,8 @@ namespace ngbla
     BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
     BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
-    
+
+    int Dist () const { return dist; } 
     double & operator() (int i) const { return data[i*dist];  }
     BareSliceVector<> Range (int first, int next) const
     {
