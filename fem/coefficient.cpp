@@ -212,9 +212,15 @@ namespace ngfem
 
   void DomainConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
     {
-      Array<string> a(val.Size());
+      code.header += "double tmp_" + ToString(index) + "["+ToString(val.Size())+"] = {";
       for (auto i : Range(val))
-        code.body += Var(index,i).Assign(Var(val[i]));
+      {
+        code.header += ToString(val[i]);
+        if(i<val.Size()-1)
+          code.header += ", ";
+      }
+      code.header += "};\n";
+      code.header += Var(index).Assign("tmp_"+ToString(index) + "[mir.GetTransformation().GetElementIndex()]");
     }
 
 
