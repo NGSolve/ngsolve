@@ -303,7 +303,6 @@ namespace ngfem
 
   /* *********************** Triangle  **********************/
 
-
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TRIG> ::
   T_CalcShape (Tx x[], TFA & shape) const
@@ -318,7 +317,6 @@ namespace ngfem
     DubinerBasis3::Eval (p, x[0], x[1], shape);
 #endif
   }
-
 
   /* *********************** Quad  **********************/
 
