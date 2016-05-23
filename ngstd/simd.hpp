@@ -251,6 +251,95 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   return ngstd::SIMD<double>([&](int i)->double { return pow(a[i],x); } );
 }
 
+
+
+  template <int D, typename T>
+  class MultiSIMD
+  {
+    SIMD<T> head;
+    MultiSIMD<D-1,T> tail;
+  public:
+    MultiSIMD () = default;
+    MultiSIMD (const MultiSIMD & ) = default;
+    MultiSIMD (T v) : head(v), tail(v) { ; } 
+    MultiSIMD (SIMD<T> _head, MultiSIMD<D-1,T> _tail)
+      : head(_head), tail(_tail) { ; }
+    SIMD<T> Head() const { return head; }
+    MultiSIMD<D-1,T> Tail() const { return tail; }
+    SIMD<T> & Head() { return head; }
+    MultiSIMD<D-1,T> & Tail() { return tail; }
+
+    template <int NR>
+    SIMD<T> Get() const { return NR==0 ? head : tail.template Get<NR-1>(); }
+    template <int NR>
+    SIMD<T> & Get() { return NR==0 ? head : tail.template Get<NR-1>(); }
+  };
+
+  template <typename T>
+  class MultiSIMD<2,T>
+  {
+    SIMD<T> v0, v1;
+  public:
+    MultiSIMD () = default;
+    MultiSIMD (const MultiSIMD & ) = default;
+    MultiSIMD (T v) : v0(v), v1(v) { ; } 
+    MultiSIMD (SIMD<T> _v0, SIMD<T> _v1) : v0(_v0), v1(_v1) { ; }
+    
+    SIMD<T> Head() const { return v0; }
+    SIMD<T> Tail() const { return v1; }
+    SIMD<T> & Head() { return v0; }
+    SIMD<T> & Tail() { return v1; } 
+
+    template <int NR>
+    SIMD<T> Get() const { return NR==0 ? v0 : v1; }
+    template <int NR>
+    SIMD<T> & Get() { return NR==0 ? v0 : v1; }
+  };
+
+  template <int D> INLINE MultiSIMD<D,double> operator+ (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a.Head()+b.Head(), a.Tail()+b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator+ (double a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a+b.Head(), a+b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator+ (MultiSIMD<D,double> b, double a)
+  { return MultiSIMD<D,double> (a+b.Head(), a+b.Tail()); }
+  
+  template <int D> INLINE MultiSIMD<D,double> operator- (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a.Head()-b.Head(), a.Tail()-b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator- (double a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a-b.Head(), a-b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator- (MultiSIMD<D,double> b, double a)
+  { return MultiSIMD<D,double> (b.Head()-a, b.Tail()-a); }
+  template <int D> INLINE MultiSIMD<D,double> operator- (MultiSIMD<D,double> a)
+  { return MultiSIMD<D,double> (-a.Head(), -a.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator* (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a.Head()*b.Head(), a.Tail()*b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator/ (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> (a.Head()/b.Head(), a.Tail()/b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator* (double a, MultiSIMD<D,double> b)
+  { return MultiSIMD<D,double> ( a*b.Head(), a*b.Tail()); }
+  template <int D> INLINE MultiSIMD<D,double> operator* (MultiSIMD<D,double> b, double a)
+  { return MultiSIMD<D,double> ( a*b.Head(), a*b.Tail()); }  
+
+  template <int D> INLINE MultiSIMD<D,double> & operator+= (MultiSIMD<D,double> & a, MultiSIMD<D,double> b) 
+  { a.Head()+=b.Head(); a.Tail()+=b.Tail(); return a; }
+  template <int D> INLINE MultiSIMD<D,double> operator-= (MultiSIMD<D,double> & a, double b)
+  { a.Head()-=b; a.Tail()-=b; return a; }
+  template <int D> INLINE MultiSIMD<D,double> operator-= (MultiSIMD<D,double> & a, MultiSIMD<D,double> b)
+  { a.Head()-=b.Head(); a.Tail()-=b.Tail(); return a; }
+  template <int D> INLINE MultiSIMD<D,double> & operator*= (MultiSIMD<D,double> & a, MultiSIMD<D,double> b)
+  { a.Head()*=b.Head(); a.Tail()*=b.Tail(); return a; }
+  template <int D> INLINE MultiSIMD<D,double> & operator*= (MultiSIMD<D,double> & a, double b)
+  { a.Head()*=b; a.Tail()*=b; return a; }
+  // INLINE MultiSIMD<double> operator/= (MultiSIMD<double> & a, MultiSIMD<double> b) { return a.Data()/=b.Data(); }
+
+
+  template <int D, typename T>
+  ostream & operator<< (ostream & ost, MultiSIMD<D,T> multi)
+  {
+    ost << multi.Head() << " " << multi.Tail();
+    return ost;
+  }
+
 }
 
 #endif
