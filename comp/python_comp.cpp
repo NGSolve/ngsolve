@@ -1914,7 +1914,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                throw Exception("DG-facet terms need either skeleton=True or element_boundary=True");
              
              shared_ptr<BilinearFormIntegrator> bfi;
-             if (!has_other)
+             if (!has_other && !skeleton)
                bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
              else
                bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);

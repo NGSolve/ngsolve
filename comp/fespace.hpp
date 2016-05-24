@@ -157,6 +157,7 @@ namespace ngcomp
 
     Table<int> element_coloring; 
     Table<int> selement_coloring;
+    Table<int> facet_coloring;  // elements on facet in own colors (DG)
     Array<COUPLING_TYPE> ctofdof;
 
     ParallelDofs * paralleldofs; // = NULL;
@@ -192,6 +193,9 @@ namespace ngcomp
     const Table<int> & ElementColoring(VorB vb = VOL) const 
     { return (vb == VOL) ? element_coloring : selement_coloring; }
 
+    const Table<int> & FacetColoring() const
+    { return facet_coloring; }
+    
     /// print report to stream
     virtual void PrintReport (ostream & ost) const;
 
