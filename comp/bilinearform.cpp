@@ -2877,12 +2877,14 @@ namespace ngcomp
                   {
                     RegionTimer reg(timerDG);
 
+                    bool needs_facet_loop = false;
                     for (int j = 0; j < NumIntegrators(); j++)
                       if (parts[j] -> SkeletonForm())
                         {
                           auto dgform = parts[j] -> GetDGFormulation();
                           if (!dgform.element_boundary && !parts[j]->BoundaryForm())
-                            throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
+                            needs_facet_loop = true;
+                            // throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                         }
 
                     // do we need locks for neighbor - testfunctions ?
@@ -2895,9 +2897,123 @@ namespace ngcomp
                             neighbor_testfunction = true;
                         }
 
+                    
+                    // facet-loop
+                    if (needs_facet_loop)
+                      for (auto colfacets : fespace->FacetColoring())
+                        ParallelForRange
+                          (colfacets.Size(), [&] (IntRange r)
+                           {
+                             LocalHeap lh = clh.Split();
+                             Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+
+                             for (int i : r)
+                               {
+                                 HeapReset hr(lh);
+                                 int facet = colfacets[i];
+                                 ma->GetFacetElements (facet, elnums);
+                                 int el1 = elnums[0];
+                                 ma->GetElFacets(el1,fnums1);
+                                 int facnr1 = fnums1.Pos(facet);
+                                 
+                                 ElementId ei1(VOL, el1);
+
+                                 if (elnums.Size()<2)
+                                   {
+                                     ma->GetFacetSurfaceElements (facet, elnums);
+                                     int sel = elnums[0];
+
+                                     const FiniteElement & fel = fespace->GetFE (el1, lh);
+                                     Array<int> dnums(fel.GetNDof(), lh);
+                                     ma->GetElVertices (el1, vnums1);     
+
+                                     ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
+                                     ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
+                                     
+                                     fespace->GetDofNrs (el1, dnums);
+
+                                     for (int j = 0; j < NumIntegrators(); j++)
+                                       {
+                                         const BilinearFormIntegrator & bfi = *parts[j];
+
+                                         if (!bfi.BoundaryForm()) continue;  
+                                         if (!bfi.SkeletonForm()) continue;
+                                         if (bfi.GetDGFormulation().element_boundary) continue;
+
+                                         FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
+                                           ely(dnums.Size()*this->fespace->GetDimension(), lh);
+                                         x.GetIndirect(dnums, elx);
+
+                                         dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                         y.AddIndirect(dnums, ely);
+                                       } //end for (numintegrators)
+
+                                     continue;
+                                   } // end if boundary facet
+
+
+                                 int el2 = elnums[1];
+                                 ElementId ei2(VOL, el2);
+                                 
+                                 ma->GetElFacets(el2,fnums2);
+                                 int facnr2 = fnums2.Pos(facet);
+                                 
+                                 ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+                                 ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
+
+                                 const FiniteElement & fel1 = fespace->GetFE (el1, lh);
+                                 const FiniteElement & fel2 = fespace->GetFE (el2, lh);
+                                 
+                                 Array<int> dnums1(fel1.GetNDof(), lh);
+                                 Array<int> dnums2(fel2.GetNDof(), lh);
+                                 fespace->GetDofNrs (el1, dnums1);
+                                 fespace->GetDofNrs (el2, dnums2);
+
+                                 ma->GetElVertices (el1, vnums1);
+                                 ma->GetElVertices (el2, vnums2);
+
+                                 Array<int> dnums(fel1.GetNDof()+fel2.GetNDof(), lh);
+                                 dnums.Range(0, dnums1.Size()) = dnums1;
+                                 dnums.Range(dnums1.Size(), dnums.Size()) = dnums2;
+                                 
+                                 FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
+                                   ely(dnums.Size()*this->fespace->GetDimension(), lh);
+                                 x.GetIndirect(dnums, elx);
+
+                                 for (int j = 0; j < NumIntegrators(); j++)
+                                   {
+                                     BilinearFormIntegrator * bfi = parts[j].get();
+                    
+                                     if (!bfi->SkeletonForm()) continue;
+                                     if (bfi->BoundaryForm()) continue;
+                                     if (bfi->GetDGFormulation().element_boundary) continue;                                     
+                                     if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
+                                     if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
+
+                                     FacetBilinearFormIntegrator * fbfi = 
+                                       dynamic_cast<FacetBilinearFormIntegrator*>(bfi);
+
+                                     fbfi->ApplyFacetMatrix (fel1, facnr1, eltrans1, vnums1,
+                                                             fel2, facnr2, eltrans2, vnums2, elx, ely, lh);
+
+                                     y.AddIndirect(dnums, ely);
+                                   }
+                               }
+                           });
+
+
+
+
+
+                    
+
+                    
+
                     // element-boundary formulation
 		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
                     mutex addelemfacbnd_mutex;
+
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -2949,7 +3065,6 @@ namespace ngcomp
                                          if (bfi.BoundaryForm()) continue;
                                          if (!bfi.SkeletonForm()) continue;
                                          if (!bfi.GetDGFormulation().element_boundary) continue;
-
                                          /*
                                          int elmat_size = dnums.Size()*fespace->GetDimension();
                                          FlatMatrix<SCAL> elmat(elmat_size, lh);
@@ -3035,6 +3150,7 @@ namespace ngcomp
                     
                                      if (!bfi->SkeletonForm()) continue;
                                      if (bfi->BoundaryForm()) continue;
+                                     if (!bfi->GetDGFormulation().element_boundary) continue;                                     
                                      if (!bfi->DefinedOn (ma->GetElIndex (el1))) continue; //TODO: treat as surface element
                                      if (!bfi->DefinedOn (ma->GetElIndex (el2))) continue; //TODO    
 
