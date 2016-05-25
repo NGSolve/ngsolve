@@ -46,7 +46,7 @@ struct PyBufferProtocol : public boost::python::def_visitor<PyBufferProtocol<T, 
                   if (DIM==1)
                     return frombuffer(self);
                   if (DIM==2)
-                    return frombuffer(self).attr("reshape")(fv.Width(),fv.Height());
+                    return frombuffer(self).attr("reshape")(fv.Height(),fv.Width());
                 } catch (bp::error_already_set const &) {
                   PyErr_Print();
                 }
