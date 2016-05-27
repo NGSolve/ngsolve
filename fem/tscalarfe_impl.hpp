@@ -253,15 +253,22 @@ namespace ngfem
                 BareSliceVector<> coefs,
                 ABareMatrix<double> values) const
   {
-    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-    for (int i = 0; i < mir.Size(); i++)
+    if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
-        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-        Vec<DIM,SIMD<double>> sum(0.0);
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                        { sum += coefs(j) * shape; }));
-        for (int k = 0; k < DIM; k++)
-          values.Get(k,i) = sum(k).Data();
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            Vec<DIM,SIMD<double>> sum(0.0);
+            T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                            { sum += coefs(j) * shape; }));
+            for (int k = 0; k < DIM; k++)
+              values.Get(k,i) = sum(k).Data();
+          }
+      }
+    else
+      {
+        cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
       }
   }
 
@@ -305,17 +312,24 @@ namespace ngfem
                 ABareMatrix<double> values,
                 BareSliceVector<> coefs) const
   {
-    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-    for (int i = 0; i < mir.Size(); i++)
+    if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
-        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                        {
-                                          SIMD<double> sum = 0.0;
-                                          for (int k = 0; k < DIM; k++)
-                                            sum += shape(k) * values.Get(k,i);
-                                          coefs(j) += HSum(sum);
-                                        }));
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (int i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                            {
+                                              SIMD<double> sum = 0.0;
+                                              for (int k = 0; k < DIM; k++)
+                                                sum += shape(k) * values.Get(k,i);
+                                              coefs(j) += HSum(sum);
+                                            }));
+          }
+      }
+    else
+      {
+        cout << "AddGradTrans called for boudnary (not implemented)" << endl;
       }
   }
   

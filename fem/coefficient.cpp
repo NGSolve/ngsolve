@@ -2665,8 +2665,12 @@ public:
         return make_shared<T_MultVecVecCoefficientFunction<4>> (c1, c2);
       case 5:
         return make_shared<T_MultVecVecCoefficientFunction<5>> (c1, c2);
+      case 6:
+        return make_shared<T_MultVecVecCoefficientFunction<6>> (c1, c2);
       case 8:
         return make_shared<T_MultVecVecCoefficientFunction<8>> (c1, c2);
+      case 9:
+        return make_shared<T_MultVecVecCoefficientFunction<9>> (c1, c2);
       default:
         return make_shared<MultVecVecCoefficientFunction> (c1, c2);
       }

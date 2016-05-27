@@ -271,8 +271,17 @@ namespace ngfem
         Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
         double len = L2Norm (normal);       // that's the surface measure
         normal *= 1.0/len;                  // normal vector on physical element
-        mip.SetNV(normal);
         mip.SetMeasure (len);
+
+        if (DIM_ELEMENT == DIM_SPACE)
+          {
+            mip.SetNV(normal);
+          }
+        else
+          {
+            Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
+            mip.SetTV(tang);
+          }
       }
   }
 

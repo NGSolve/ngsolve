@@ -307,6 +307,8 @@ namespace ngfem
   SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb)
     : cf(acf), vb(avb)
   {
+    simd_evaluate = true;
+    
     if (cf->Dimension() != 1)
       throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
     cf->TraverseTree
@@ -399,7 +401,8 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << e.What() << endl;
+            cout << e.What() << endl
+                 << "switching back to standard evaluation" << endl;
             simd_evaluate = false;
             T_CalcElementVector (fel, trafo, elvec, lh);
           }
@@ -471,6 +474,8 @@ namespace ngfem
                                   bool aelement_boundary)
     : cf(acf), vb(avb), element_boundary(aelement_boundary)
   {
+    simd_evaluate = true;
+    
     if (cf->Dimension() != 1)
         throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
@@ -1444,12 +1449,18 @@ namespace ngfem
                           void * precomputed,
                           LocalHeap & lh) const
   {
-    ProxyUserData ud;
+    /*
+    ProxyUserData ud(trial_proxies.Size(), lh);    
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
     ud.elx = &elx;
     ud.lh = &lh;
 
+    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    BaseMappedIntegrationRule & mir = trafo(ir, lh);
+    cout << "ir.GetNIP() = " << ir.GetNIP() << endl;
+    */
+    
     ely = 0;
     
     auto eltype = trafo.GetElementType();
@@ -1465,10 +1476,19 @@ namespace ngfem
         IntegrationRule ir_facet(etfacet, 2*fel.Order());
         IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
         BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
-        
-        // ProxyUserData ud;
-        // const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
+        ProxyUserData ud(trial_proxies.Size(), lh);    
+        const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        ud.fel = &fel;
+        ud.elx = &elx;
+        ud.lh = &lh;
+    
+        for (ProxyFunction * proxy : trial_proxies)
+          ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
+        
+        for (ProxyFunction * proxy : trial_proxies)
+          proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
+        
         /*
         FlatVector<> measure(mir.Size(), lh);
         for (int i = 0; i < mir.Size(); i++)
@@ -1506,9 +1526,8 @@ namespace ngfem
             measure(i) = len;
           }
         */
-        
         mir.ComputeNormalsAndMeasure (eltype, k);
-    
+        
         FlatVector<> ely1(ely.Size(), lh);
         FlatMatrix<> val(mir.Size(), 1,lh);
         for (auto proxy : test_proxies)
@@ -2319,6 +2338,8 @@ namespace ngfem
                                     VorB avb)
     : cf(acf), vb(avb)
   {
+    simd_evaluate = false;
+    
     if (cf->Dimension() != 1)
       throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
     
@@ -2717,7 +2738,7 @@ namespace ngfem
             ta.Stop();
             
             ely = 0;
-            AFlatMatrix<double> val(1, ir.GetNIP(), lh); // , deriv(1, ir.GetNIP(), lh);
+            AFlatMatrix<double> val(1, ir.GetNIP(), lh);
             for (auto proxy : trial_proxies)
               {
                 HeapReset hr(lh);
@@ -2728,7 +2749,6 @@ namespace ngfem
                     ud.trialfunction = proxy;
                     ud.trial_comp = k;
                     cf -> EvaluateDeriv (mir, val, proxyvalues.Rows(k,k+1));
-                    // proxyvalues.Row(k) = deriv.Row(0);
                   }
 
                 for (int i = 0; i < proxyvalues.Height(); i++)
