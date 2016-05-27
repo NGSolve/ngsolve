@@ -711,7 +711,26 @@ namespace netgen
                                    __m256d * x, size_t sx,
                                    __m256d * dxdxi, size_t sdxdxi) const
   {
-    cout << "multi-eltrafo simd called, 2,3,simd" << endl;
+    for (int i = 0; i < npts; i++)
+      {
+        double hxi[4][2];
+        double hx[4][3];
+        double hdxdxi[4][6];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 2; k++)
+            hxi[j][k] = ((double*)&(xi[k]))[j];
+        MultiElementTransformation<2,3> (elnr, 4, &hxi[0][0], 2, &hx[0][0], 3, &hdxdxi[0][0], 6);
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 3; k++)
+            ((double*)&(x[k]))[j] = hx[j][k];
+        for (int j = 0; j < 4; j++)
+          for (int k = 0; k < 6; k++)
+            ((double*)&(dxdxi[k]))[j] = hdxdxi[j][k];
+        
+        xi += sxi;
+        x += sx;
+        dxdxi += sdxdxi;
+      }
   }
 
 #endif
