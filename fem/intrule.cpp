@@ -2906,6 +2906,13 @@ namespace ngfem
                   tmp->SetIRZ (&SIMD_SelectIntegrationRule (ET_SEGM, order));
                   break;
                 }
+              case ET_HEX:
+                {
+                  tmp->SetIRX (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  tmp->SetIRY (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  tmp->SetIRZ (&SIMD_SelectIntegrationRule (ET_SEGM, order));
+                  break;
+                }
               default:
                 ;
               }
@@ -3099,18 +3106,27 @@ namespace ngfem
             }
           break;
         }
-        /*
+
 	case ET_QUAD:
 	  {
 	    FlatVec<3> p0 = points(faces[fnr][0]);
 	    FlatVec<3> p1 = points(faces[fnr][1]);
 	    FlatVec<3> p2 = points(faces[fnr][3]);
+            Vec<3> delta1 = p1-p0;
+            Vec<3> delta2 = p2-p0;
 
-	    for (int i = 0; i < irfacet.GetNIP(); i++)
-	      irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+	    // for (int i = 0; i < irfacet.GetNIP(); i++)
+            // irvol[i] = Vec<3> (p0 + irfacet[i](0) * (p1-p0) + irfacet[i](1)*(p2-p0));
+            for (int i = 0; i < hirfacet.Size(); i++)
+              {
+                auto ip = hirfacet[i];
+                auto & ipvol = hirvol[i];              
+                for (int k = 0; k < 3; k++)
+                  ipvol(k) = p0(k) + delta1(k) * ip(0) + delta2(k) * ip(1);
+              }
 	    break;
 	  }
-          */
+
       default:
         throw Exception ("undefined facet type in SIMD_Facet2ElementTrafo()\n");
       } 

@@ -2897,7 +2897,9 @@ namespace ngcomp
                             neighbor_testfunction = true;
                         }
 
-                    
+                    if (needs_facet_loop && !fespace->UsesDGCoupling())
+                      throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
+
                     // facet-loop
                     if (needs_facet_loop)
                       for (auto colfacets : fespace->FacetColoring())
@@ -3182,6 +3184,7 @@ namespace ngcomp
                                          fbfi->ApplyFacetMatrix (fel2, facnr2, eltrans2, vnums2,
                                                                  fel1, facnr1, eltrans1, vnums1, swap_elx, ely, lh);
                                          y.AddIndirect(dnums1, ely.Range(dim*dnums1.Size(), dim*dnums.Size()));
+
                                        }
                                    }
                                }

@@ -167,6 +167,16 @@ namespace ngfem
           mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
   }
 
+  template <> inline void L2HighOrderFE<ET_HEX> ::
+  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+    for (int ix = 0, ii = 0; ix <= order; ix++)
+      for (int iy = 0; iy <= order; iy++)
+        for (int iz = 0; iz <= order; iz++, ii++)
+          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * iy + 1) * (2 * iz + 1));
+  }
+
+
 }
 
 #else

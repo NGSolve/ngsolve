@@ -595,7 +595,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             basecol += 8*sizeof(unsigned int); // 32;
           }
         while (found < cnt);
-        cout << "facet-colors: " << col << endl;
+        // cout << "facet-colors: " << col << endl;
         Array<int> cntcol(maxcolor+1);
         cntcol = 0;
 
@@ -607,7 +607,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	cntcol = 0;
         for (auto f : Range(nf))          
           facet_coloring[col[f]][cntcol[col[f]]++] = f;
-        cout << "facet_coloring: " << facet_coloring << endl;
+        // cout << "facet_coloring: " << facet_coloring << endl;
         if (print)
           *testout << "needed " << maxcolor+1 << " colors for facet-coloring" << endl;
       }
