@@ -1366,6 +1366,7 @@ namespace ngfem
           for (auto proxy : test_proxies)
             {
               HeapReset hr(lh);
+              tcoef.Start();
               AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir.GetNIP(), lh);
               for (int k = 0; k < proxy->Dimension(); k++)
                 {
@@ -1380,7 +1381,7 @@ namespace ngfem
                   for (int j = 0; j < row.VSize(); j++)
                     row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir[j].Weight().Data();
                 }
-
+              tcoef.Stop();
               tapplyt.Start();
               proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely); // , lh);
               tapplyt.Stop();
