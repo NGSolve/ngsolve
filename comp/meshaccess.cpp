@@ -1108,7 +1108,7 @@ namespace ngcomp
                                                              deformation.get(), 
                                                              dynamic_cast<LocalHeap&> (lh)); 
 
-    else if ( el.is_curved )
+    else if ( false && el.is_curved )
 
       eltrans = new (lh) Ng_ElementTransformation<DIM,DIM> (this, el.GetType(), 
                                                             ElementId(VOL,elnr), el.GetIndex()); 

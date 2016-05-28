@@ -989,7 +989,7 @@ void NGS_DLL_HEADER ExportNgcomp()
         ( [] (const FESpace & self,
               shared_ptr<CoefficientFunction> rho, shared_ptr<BaseVector> vec)
           {
-            LocalHeap lh(100000, "solveM - lh");
+            LocalHeap lh(100000, "solveM - lh", true);
             self.SolveM(*rho, *vec, lh);
           }),
         (bp::args("self"), 
