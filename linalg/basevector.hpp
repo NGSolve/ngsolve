@@ -252,10 +252,10 @@ namespace ngla
     virtual AutoVector Range (size_t begin, size_t end) const;
     virtual AutoVector Range (T_Range<size_t> range) const;
 
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<double> & v) const = 0;
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<Complex> & v) const = 0;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<double> v) const = 0;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<Complex> v) const = 0;
     void SetIndirect (FlatArray<int> ind, FlatVector<double> v);
     void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v);
     void AddIndirect (FlatArray<int> ind, FlatVector<double> v);
@@ -493,13 +493,13 @@ namespace ngla
     }
 
 
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<double> & v) const
+    virtual void GetIndirect (FlatArray<int> ind, 
+			      FlatVector<double> v) const
     {
       vec -> GetIndirect (ind, v);
     }
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<Complex> & v) const
+    virtual void GetIndirect (FlatArray<int> ind, 
+			      FlatVector<Complex> v) const
     {
       vec -> GetIndirect (ind, v);
     }
@@ -576,10 +576,10 @@ namespace ngla
     }
 
 
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<double> & v) const;
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<Complex> & v) const;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<double> v) const;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<Complex> v) const;
 
   };
 

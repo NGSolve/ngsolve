@@ -328,19 +328,36 @@ namespace ngla
 
 
   template<>
-  void S_BaseVector<double> :: GetIndirect (const FlatArray<int> & ind, 
-					    const FlatVector<double> & v) const 
+  void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
+                                            FlatVector<double> v) const 
   {
     if (EntrySize() == 1)
       {
         FlatVector<double> lsv(Size(), &FVDouble()(0));
-        FlatVector<double> sv = v;
-        
-        for (int i = 0; i < ind.Size(); i++)
-          if (ind[i] != -1)
-            sv(i) = lsv(ind[i]);
-          else
-            sv(i) = 0;
+        for (auto i : ind.Range())
+          {
+            int index = ind[i];
+            v(i) = (index != -1) ? lsv(index) : 0;
+          }
+        /*
+        int i = 0;
+        double temp[8];
+        for ( ; i + 7 < ind.Size(); i+=8)
+          {
+            for (int i2 = 0; i2 < 8; i2++)
+              {
+                int index = ind[i+i2];
+                temp[i2] = (index != -1) ? lsv(index) : 0;
+              }
+            for (int i2 = 0; i2 < 8; i2++)
+              v(i+i2) = temp[i2];
+          }
+        for ( ; i < ind.Size(); i++)
+          {
+            int index = ind[i];
+            v(i) = (index != -1) ? lsv(index) : 0;
+          }
+        */
       }
     else
       {
@@ -356,8 +373,8 @@ namespace ngla
   }
   
   template<>
-  void S_BaseVector<double> :: GetIndirect (const FlatArray<int> & ind, 
-					    const FlatVector<Complex> & v) const 
+  void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
+					    FlatVector<Complex> v) const 
   { 
     FlatSysVector<double> lsv(Size(), EntrySize(), &FVDouble()(0));
     FlatSysVector<Complex> sv(ind.Size(), EntrySize(), &v(0));
@@ -388,15 +405,15 @@ namespace ngla
   
 
   template<>
-  void S_BaseVector<Complex> :: GetIndirect (const FlatArray<int> & ind, 
-					     const FlatVector<double> & v) const 
+  void S_BaseVector<Complex> :: GetIndirect (FlatArray<int> ind, 
+                                             FlatVector<double> v) const 
   { 
     throw Exception ("BaseVector<Complex>::GetIndirect<double> called");
   }
   
   template<>
-  void S_BaseVector<Complex> :: GetIndirect (const FlatArray<int> & ind, 
-					     const FlatVector<Complex> & v) const 
+  void S_BaseVector<Complex> :: GetIndirect (FlatArray<int> ind, 
+                                             FlatVector<Complex> v) const 
   { 
     FlatVector<Complex> fv = FVComplex();
     int es = EntrySize() / 2;
