@@ -1443,7 +1443,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("AssembleLinearization", FunctionPointer
 	 ([](BF & self, BaseVector & ulin, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap");
+	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
 	    self.AssembleLinearization (ulin, lh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
