@@ -1339,6 +1339,17 @@ void NGS_DLL_HEADER ExportNgcomp()
               }
           }
           ), (bp::arg("self"), bp::arg("x") = 0.0, bp::arg("y") = 0.0, bp::arg("z") = 0.0))
+
+
+    .def("CF", FunctionPointer
+         ([](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop) -> shared_ptr<CoefficientFunction>
+          {
+            if (!diffop->Boundary())
+              return make_shared<GridFunctionCoefficientFunction> (self, diffop);
+            else
+              return make_shared<GridFunctionCoefficientFunction> (self, nullptr, diffop);              
+          }))
+    
     ;
 
   bp::implicitly_convertible 
