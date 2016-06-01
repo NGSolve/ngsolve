@@ -25,6 +25,8 @@ class ProxyFunction : public CoefficientFunction
   shared_ptr<DifferentialOperator> trace_deriv_evaluator;
   shared_ptr<ProxyFunction> deriv_proxy;
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
+
+  SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
   int dim;
 public:
   ProxyFunction (bool atestfunction, bool ais_complex,
@@ -76,6 +78,31 @@ public:
   }
   const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
 
+  void SetAdditionalEvaluator (string name, shared_ptr<DifferentialOperator> diffop)
+  {
+    additional_diffops.Set (name, diffop);
+  }
+  
+  shared_ptr<DifferentialOperator> GetAdditionalEvaluator (string name) const
+  {
+    if (additional_diffops.Used(name))
+      return additional_diffops[name];
+    return shared_ptr<DifferentialOperator>();
+  }
+
+  SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
+  {
+    return additional_diffops;
+  }
+
+  shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
+  {
+    if (additional_diffops.Used(name))    
+      return make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+    return shared_ptr<ProxyFunction>();
+  }
+
+  
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
   {
     // Vector<> tmp(Dimension());

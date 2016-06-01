@@ -184,6 +184,12 @@ namespace ngfem
   void  VectorFacetVolumeFiniteElement<D>::
   CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
   {
+    int fnr = ip.FacetNr();
+    if (fnr >= 0)
+      {
+        CalcShape (ip, fnr, shape);
+        return;
+      }
     cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
   }
 

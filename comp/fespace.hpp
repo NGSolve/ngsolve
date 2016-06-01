@@ -597,6 +597,9 @@ namespace ngcomp
         return flux_evaluator;
     }
 
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
+    { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
+
     /// returns function-evaluator
     shared_ptr<BilinearFormIntegrator> GetIntegrator (bool vb = VOL) const
     { 

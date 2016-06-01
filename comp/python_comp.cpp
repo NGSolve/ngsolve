@@ -105,6 +105,12 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
                                            auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
+
+                                           SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
+                                           for (int j = 0; j < add.Size(); j++)
+                                             block_proxy->SetAdditionalEvaluator(add.GetName(j),
+                                                                                 make_shared<CompoundDifferentialOperator> (add[j], i));
+                                           
                                            block_proxy = addblock(block_proxy);
                                            return block_proxy;
                                          }));
@@ -112,6 +118,7 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
       return l;
     }
 
+  /*
   shared_ptr<CoefficientFunction> proxy =
     addblock(make_shared<ProxyFunction> (testfunction, fes.IsComplex(),
                                          fes.GetEvaluator(),
@@ -119,6 +126,17 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                          fes.GetEvaluator(BND),
                                          fes.GetFluxEvaluator(BND)
                                          ));
+  */
+  auto proxy = make_shared<ProxyFunction>  (testfunction, fes.IsComplex(),
+                                            fes.GetEvaluator(),
+                                            fes.GetFluxEvaluator(),
+                                            fes.GetEvaluator(BND),
+                                            fes.GetFluxEvaluator(BND));
+  auto add_diffops = fes.GetAdditionalEvaluators();
+  for (int i = 0; i < add_diffops.Size(); i++)
+    proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
+
+  proxy = addblock(proxy);
   return bp::object(proxy);
 }
 
@@ -588,7 +606,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ProxyFunction>);
   bp::class_<ProxyFunction, shared_ptr<ProxyFunction>, 
     bp::bases<CoefficientFunction>,
     boost::noncopyable> ("ProxyFunction", 
@@ -621,6 +639,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                      if (!self.Deriv()) return "";
                      return self.DerivEvaluator()->Name();
                    }))
+    .def("Operator", FunctionPointer
+         ([] (const ProxyFunction & self, string name) -> bp::object // shared_ptr<CoefficientFunction>
+          {
+            auto op = self.GetAdditionalProxy(name);
+            if (op)
+              return bp::object(op);
+            return bp::object(); //  shared_ptr<CoefficientFunction>();
+          }))
     ;
 
   bp::implicitly_convertible 
@@ -1197,6 +1223,20 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                                  self->GetFESpace()->GetFluxEvaluator(BND));
           }))
 
+    .def("Operator", FunctionPointer
+         ([](shared_ptr<GF> self, string name) -> bp::object // shared_ptr<CoefficientFunction>
+          {
+            if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
+              {
+                auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
+                cout << "diffop is " << typeid(*diffop).name() << endl;
+                shared_ptr<CoefficientFunction> coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                return bp::object(coef);
+              }
+            return bp::object(); //  shared_ptr<CoefficientFunction>();
+          }))
+
+    
     .add_property("derivname", FunctionPointer
                   ([](shared_ptr<GF> self) -> string
                    {

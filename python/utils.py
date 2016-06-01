@@ -52,9 +52,14 @@ def FacetFESpace(mesh, **args):
 
 
 def grad(func):
-    if func.derivname != "grad":
-        raise Exception("cannot form grad")
-    return func.Deriv()
+    if func.derivname == "grad":
+        return func.Deriv()
+    add = func.Operator("grad")
+    if add:
+        return add        
+    #     if func.derivname != "grad":
+    raise Exception("cannot form grad")
+    # return func.Deriv()
 
 def curl(func):
     if func.derivname != "curl":

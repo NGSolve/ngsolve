@@ -76,7 +76,17 @@ namespace ngcomp
       }
 
 
-    evaluator = NULL;
+    if (ma->GetDimension() == 2)
+      {
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<2>>>();
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<2>>>();
+      }
+    else
+      {
+        boundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBoundaryEdge<3>>>();
+        evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
+      }
+
     static ConstantCoefficientFunction one(1);
     // Array<CoefficientFunction*> coeffs(1);
     // coeffs[0] = &one;
