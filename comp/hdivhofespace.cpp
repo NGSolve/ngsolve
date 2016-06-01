@@ -1333,6 +1333,135 @@ namespace ngcomp
 
   }
 
+
+/** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
+    template<int D, int BMATDIM>
+    void CalcDShapeOfHDivFE(const HDivFiniteElement<D>& fel_u, const MappedIntegrationPoint<D,D>& sip, SliceMatrix<> bmatu, LocalHeap& lh){
+      HeapReset hr(lh);
+      // bmatu = 0;
+      // evaluate dshape by numerical diff
+      //fel_u, eltrans, sip, returnval, lh
+      int nd_u = fel_u.GetNDof();
+      const IntegrationPoint& ip = sip.IP();//volume_ir[i];
+      const ElementTransformation & eltrans = sip.GetTransformation();
+      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
+      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
+      
+      double eps = 1e-7;
+      for (int j = 0; j < D; j++)   // d / dxj
+	{
+	  IntegrationPoint ipl(ip);
+	  ipl(j) -= eps;
+	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+
+	  IntegrationPoint ipr(ip);
+	  ipr(j) += eps;
+	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+
+	  fel_u.CalcMappedShape (sipl, shape_ul);
+	  fel_u.CalcMappedShape (sipr, shape_ur);
+
+	  dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
+	  /*
+	  for (int k = 0; k < nd_u; k++)
+	    for (int l = 0; l < D; l++)
+	      bmatu(k, j*D+l) = dshape_u_ref(k,l);
+	  */
+	  for (int l = 0; l < D; l++)
+	    bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
+	}
+      
+      for (int j = 0; j < D; j++)
+	{
+	  for (int k = 0; k < nd_u; k++)
+	    for (int l = 0; l < D; l++)
+	      dshape_u_ref(k,l) = bmatu(k, l*D+j);
+	  
+	  dshape_u = dshape_u_ref * sip.GetJacobianInverse();
+
+	  for (int k = 0; k < nd_u; k++)
+	    for (int l = 0; l < D; l++)
+	      bmatu(k, l*D+j) = dshape_u(k,l);
+	}
+    }
+  
+
+  /// Gradient operator for HDiv
+  template <int D, typename FEL = HDivFiniteElement<D> >
+  class DiffOpGradientHdiv : public DiffOp<DiffOpGradientHdiv<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+  enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 1 };
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT>
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename SIP>
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, Trans(mat), lh);
+    }
+    
+    template <typename AFEL>
+    static void GenerateMatrix (const AFEL & fel, 
+                                const MappedIntegrationPoint<D,D> & sip,
+                                FlatMatrixFixHeight<D> & mat, LocalHeap & lh)
+    {
+      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(), &mat(0,0));
+      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
+    }
+    
+    ///
+    template <typename AFEL, typename SIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const SIP & sip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      // typedef typename TVX::TSCAL TSCAL;
+      
+      FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
+      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
+      y = Trans(hm)*x;
+    }
+    
+  };
+
+
+  SymbolTable<shared_ptr<DifferentialOperator>>
+  HDivHighOrderFESpace :: GetAdditionalEvaluators () const
+  {
+    SymbolTable<shared_ptr<DifferentialOperator>> additional;
+    switch (ma->GetDimension())
+      {
+      case 1:
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<1>>> ()); break;
+      case 2:
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<2>>> ()); break;
+      case 3:
+        additional.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHdiv<3>>> ()); break;
+      default:
+        ;
+      }
+    return additional;
+  }
+  
+  
+
+  
   void HDivHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
     dnums.SetSize0(); 

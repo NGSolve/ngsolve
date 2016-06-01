@@ -165,6 +165,8 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
 					 SIMD_BaseMappedIntegrationRule & bmir) const
     {
+      // static Timer t("eltrafo - nonconst, calcmultipoint"); RegionTimer reg(t);
+      // t.AddFlops (ir.GetNIP());
       if (sizeof(IntegrationPoint) % 8 != 0)
         {
           cerr << "Integration must should have 8-byte alignment" << endl;
@@ -556,6 +558,9 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
 					 SIMD_BaseMappedIntegrationRule & bmir) const
     {
+      static Timer t("eltrafo - const, calcmultipoint"); RegionTimer reg(t);
+      t.AddFlops (ir.GetNIP());
+
       SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       FlatArray<SIMD<MappedIntegrationPoint<DIMS,DIMR>>> hmir(mir.Size(), &mir[0]);
       FlatArray<SIMD<IntegrationPoint>> hir (ir);
@@ -567,8 +572,12 @@ namespace ngcomp
         {
           hmir[i].Point() = simd_p0 + simd_mat * FlatVec<DIMS, const SIMD<double>> (&hir[i](0));
           hmir[i].Jacobian() = simd_mat;
-          hmir[i].Compute();
         }
+
+      static Timer tcompute("eltrafo - const, compute");
+      RegionTimer r2(tcompute);
+      for (int i = 0; i < hir.Size(); i++)
+        hmir[i].Compute();
     }
   };
   

@@ -1979,7 +1979,7 @@ namespace ngfem
       A global class maintaining integration rules. If a rule of specific
       order is requested for the first time, than the rule is generated.
   */
-  class NGS_DLL_HEADER IntegrationRules
+  class IntegrationRules
   {
   public:
     IntegrationRule pointrule;  // 0-dim IR
@@ -3062,13 +3062,13 @@ namespace ngfem
     
     switch (ElementTopology::GetFacetType(eltype, fnr))
       {
-        /*
-          case ET_POINT:
-          {
-          irvol[0] = Vec<3> (points (fnr) );
+      case ET_POINT:
+        {
+          irvol[0](0) = points (fnr)[0];
+          irvol[0](1) = 0.0;
+          irvol[0](2) = 0.0;
           break;
-	  }
-        */
+        }
       case ET_SEGM:
         {
           Vec<2> p1 = points (edges[fnr][0]);
@@ -3228,6 +3228,9 @@ namespace ngfem
                     irvol.SetIRZ (ir1d); break;
                   }
               }
+            irvol.SetIRX(nullptr);
+            irvol.SetIRY(nullptr);
+            irvol.SetIRZ(nullptr);
           }
         }
       default:

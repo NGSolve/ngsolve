@@ -4440,6 +4440,11 @@ namespace ngcomp
           }
       }
 
+    if (!bf)
+      throw Exception (string ("Could not create BilinearForm, space-dimension is ")+
+                       ToString (space->GetDimension()) +
+                       "\neither define MAX_SYS_DIM with higher value and recompile,"
+                       "\nor set flag 'nonassemble'");
     return shared_ptr<BilinearForm> (bf);
   }
 
