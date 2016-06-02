@@ -1400,7 +1400,8 @@ namespace ngcomp
     enum { DIFFORDER = 1 };
     
     ///
-    template <typename AFEL, typename SIP, typename MAT>
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -1409,9 +1410,13 @@ namespace ngcomp
            << ", mat = " << typeid(mat).name() << endl;
     }
     
-    template <typename AFEL, typename SIP>
+    // template <typename AFEL, typename SIP>
+    // static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+    // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                MAT mat, LocalHeap & lh)
     {
       CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, Trans(mat), lh);
     }
