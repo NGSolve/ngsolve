@@ -745,6 +745,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return ctofdof[dof];
   }
 
+  void FESpace :: SetDofCouplingType (int dof, COUPLING_TYPE ct) const
+  {
+    if (dof >= ctofdof.Size()) throw Exception("FESpace::SetDofCouplingType out of range");
+    ctofdof[dof] = ct;
+  }
+  
+  
   /// get coupling types of dofs
   void  FESpace :: GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & ctypes) const
   { 
@@ -912,7 +919,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "dim   = " << dimension << endl
 	<< "dgjmps= " << dgjumps << endl
 	<< "complex = " << iscomplex << endl;
-
+    ost << "definedon = " << definedon << endl;
+    ost << "definedon boundary = " << definedonbound << endl;
     if (!free_dofs.Size()) return;
 
     ost << "ndof = " << GetNDof() << endl;

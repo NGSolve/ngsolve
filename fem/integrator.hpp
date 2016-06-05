@@ -91,6 +91,9 @@ namespace ngfem
     void SetDefinedOn (const BitArray & adefinedon);
 
     /// defined only on some subdomains
+    const BitArray & GetDefinedOn () const { return definedon; } 
+
+    /// defined only on some subdomains (0-based)
     void SetDefinedOn (const Array<int> & regions);
 
     bool DefinedOnSubdomainsOnly() const

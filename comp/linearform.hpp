@@ -61,6 +61,11 @@ namespace ngcomp
       return parts[i]; 
     }
 
+    const Array<shared_ptr<LinearFormIntegrator>> & Integrators() const
+    {
+      return parts;
+    }
+
     ///
     int NumIntegrators () const
     {
