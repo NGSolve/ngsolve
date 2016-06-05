@@ -839,6 +839,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                              bp::extract<bp::list> definedon_list(definedon);
                              if (definedon_list.check())
                                flags.SetFlag ("definedon", makeCArray<double> (definedon));
+                             bp::extract<Region> definedon_reg(definedon);
+                             if (definedon_reg.check() && definedon_reg().IsVolume())
+                               {
+                                 Array<double> defonlist;
+                                 for (int i = 0; i < definedon_reg().Mask().Size(); i++)
+                                   if (definedon_reg().Mask().Test(i))
+                                     defonlist.Append(i+1);
+                                 flags.SetFlag ("definedon", defonlist);
+                               }
+                             
                              
                              auto fes = CreateFESpace (type, ma, flags); 
                              LocalHeap lh (1000000, "FESpace::Update-heap");
@@ -964,6 +974,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("CouplingType", &FESpace::GetDofCouplingType,
          (bp::arg("self"),bp::arg("dofnr"))
          )
+    .def("SetCouplingType", &FESpace::SetDofCouplingType)
 
     /*
     .def ("GetFE", 
@@ -1529,6 +1540,8 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
+  PyExportArray<shared_ptr<LinearFormIntegrator>> ();
+
   typedef LinearForm LF;
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<LF>);
   bp::class_<LF, shared_ptr<LF>, boost::noncopyable>("LinearForm", bp::no_init)
@@ -1556,6 +1569,9 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"), bp::arg("integrator")))
 
     .def(bp::self+=shared_ptr<LinearFormIntegrator>())
+
+    .add_property("integrators", FunctionPointer
+                  ([](LF & self) { return bp::object (self.Integrators());} ))
 
     .def("Assemble", FunctionPointer
          ([](LF & self, int heapsize)

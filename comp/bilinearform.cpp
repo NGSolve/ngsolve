@@ -153,14 +153,23 @@ namespace ngcomp
 
     auto blockbfi = dynamic_pointer_cast<BlockBilinearFormIntegrator> (bfi);
     if (blockbfi)
-      return make_shared<BlockBilinearFormIntegrator> (FixDimension(blockbfi->BlockPtr(), dim), 
-                                                       blockbfi->GetDim(), blockbfi->GetComp());
+      {
+        auto newblockbfi =
+          make_shared<BlockBilinearFormIntegrator> (FixDimension(blockbfi->BlockPtr(), dim), 
+                                                    blockbfi->GetDim(), blockbfi->GetComp());
+        newblockbfi -> SetDefinedOn (blockbfi->GetDefinedOn());
+        return newblockbfi;
+      }
 
     auto compbfi = dynamic_pointer_cast<CompoundBilinearFormIntegrator> (bfi);
     if (compbfi)
-      return make_shared<CompoundBilinearFormIntegrator> (FixDimension(compbfi->GetBFI(), dim),
-                                                          compbfi->GetComponent());
-    
+      {
+        auto newbfi = make_shared<CompoundBilinearFormIntegrator> (FixDimension(compbfi->GetBFI(), dim),
+                                                                   compbfi->GetComponent());
+        newbfi -> SetDefinedOn (compbfi->GetDefinedOn());
+        return newbfi;
+      }
+
     return bfi;
   }
   
@@ -704,13 +713,13 @@ namespace ngcomp
     static Timer mattimer_vol("Matrix assembling vol");
     static Timer mattimer_bound("Matrix assembling bound");
 
-    static Timer timer1 ("Matrix assembling - 1", 3);
-    static Timer timer2 ("Matrix assembling - 2", 3);
-    static Timer timer3 ("Matrix assembling - 3", 3);
+    static Timer timer1 ("Matrix assembling - 1", 2);
+    static Timer timer2 ("Matrix assembling - 2", 2);
+    static Timer timer3 ("Matrix assembling - 3", 2);
 
-    static Timer timerb1 ("Matrix assembling bound - 1", 3);
-    static Timer timerb2 ("Matrix assembling bound - 2", 3);
-    static Timer timerb3 ("Matrix assembling bound - 3", 3);
+    static Timer timerb1 ("Matrix assembling bound - 1", 2);
+    static Timer timerb2 ("Matrix assembling bound - 2", 2);
+    static Timer timerb3 ("Matrix assembling bound - 3", 2);
 
     static mutex addelemfacbnd_mutex;
     static mutex addelemfacin_mutex;
@@ -891,7 +900,7 @@ namespace ngcomp
                          try
                            {
                              static Timer elementtimer ("Element matrix integration", 2);
-                             // elementtimer.Start();
+                             elementtimer.Start();
                              if (!diagonal)
                                bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
                              else
@@ -902,7 +911,7 @@ namespace ngcomp
                                  elmat.Diag() = diag;
                                }
 
-                             // elementtimer.Stop();
+                             elementtimer.Stop();
 
                              if (printelmat)
                                {
@@ -4219,7 +4228,9 @@ namespace ngcomp
   {
     cout << "adding a block-bfi integrator" << endl;
     auto block_bfi = make_shared<CompoundBilinearFormIntegrator> (bfi, comp);
+    block_bfi->SetDefinedOn (bfi->GetDefinedOn());
     base_blf -> AddIntegrator (block_bfi);
+    cout << "comp is defined on : " << block_bfi->GetDefinedOn() << endl;
     return *this;
   }
 

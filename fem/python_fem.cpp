@@ -1001,14 +1001,15 @@ void NGS_DLL_HEADER ExportNgfem() {
                                             << "' in " << dim << " dimension" << endl;
 
                              if (bp::extract<bp::list> (definedon).check())
-                               bfi -> SetDefinedOn (makeCArray<int> (definedon));
-
-                             if (bp::extract<BitArray> (definedon).check())
                                {
-                                 // cout << "defon with bitarray: " << flush;
-                                 // cout << bp::extract<BitArray> (definedon)() << endl;
-                                 bfi -> SetDefinedOn (bp::extract<BitArray> (definedon)());
+                                 Array<int> defon = makeCArray<int> (definedon);
+                                 for (int & d : defon) d--;
+                                 bfi -> SetDefinedOn (defon); 
                                }
+                             else if (bp::extract<BitArray> (definedon).check())
+                               bfi -> SetDefinedOn (bp::extract<BitArray> (definedon)());
+                             else if (definedon != bp::object())
+                               throw Exception (string ("cannot handle definedon of type <todo>"));
 
                              if (filename.length())
                                {
@@ -1027,7 +1028,11 @@ void NGS_DLL_HEADER ExportNgfem() {
     .def("__str__", &ToString<BilinearFormIntegrator>)
 
     .def("Evaluator", &BilinearFormIntegrator::GetEvaluator)
-    .def("DefinedOn", &Integrator::DefinedOn)
+    // .def("DefinedOn", &Integrator::DefinedOn)
+    .def("GetDefinedOn", FunctionPointer
+         ( [] (const BilinearFormIntegrator &self) -> const BitArray &{ return self.GetDefinedOn(); } ),
+         bp::return_value_policy<bp::reference_existing_object>())
+    
 
     /*
     .def("CalcElementMatrix", 
@@ -1141,6 +1146,7 @@ void NGS_DLL_HEADER ExportNgfem() {
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
          )
 
+    /*
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, bp::list coefs_list,
                               bp::object definedon, bool imag, const Flags & flags)
@@ -1165,8 +1171,15 @@ void NGS_DLL_HEADER ExportNgfem() {
            bp::arg("coef"),bp::arg("definedon")=bp::object(), 
            bp::arg("imag")=false, bp::arg("flags")=bp::dict()))
         )
+    */
 
-    .def("DefinedOn", &Integrator::DefinedOn)
+    .def("__str__", &ToString<LinearFormIntegrator>)
+    
+    // .def("GetDefinedOn", &Integrator::GetDefinedOn)
+    .def("GetDefinedOn", FunctionPointer
+         ( [] (const LinearFormIntegrator &self) -> const BitArray &{ return self.GetDefinedOn(); } ),
+         bp::return_value_policy<bp::reference_existing_object>())
+
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
