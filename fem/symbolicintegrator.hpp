@@ -359,7 +359,7 @@ public:
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ? 
     bool elementwise_constant;
-    mutable bool simd_evaluate = true;
+    mutable bool simd_evaluate;
     
   public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
@@ -434,7 +434,8 @@ public:
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
-    bool neighbor_testfunction = true;
+    bool neighbor_testfunction;
+    mutable bool simd_evaluate;
   public:
     SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 
@@ -480,7 +481,7 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
-    mutable bool simd_evaluate = true;
+    mutable bool simd_evaluate;
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);

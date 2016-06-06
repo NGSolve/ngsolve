@@ -109,6 +109,20 @@ public:
     hv *= (1.0/mip.GetJacobiDet());
     y = Cast(fel).GetShape(mip.IP(),lh) * hv;
   }
+
+  
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, ABareMatrix<double> y)
+  {
+    Cast(fel).Evaluate (mir, x, y);
+  }    
+  
+  static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                              ABareMatrix<double> y, BareSliceVector<double> x)
+  {
+    Cast(fel).AddTrans (mir, y, x);
+  }    
+  
 };
 
 

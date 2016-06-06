@@ -2411,6 +2411,22 @@ namespace ngcomp
 		     const double * dxdxref, int sdxdxref,
 		     double * values, int svalues)
   {
+    if (npts > 100)
+      {
+        bool isdefined = false;
+        for (int i = 0; i < npts; i += 100)
+          {
+            int npi = min2 (100, npts-i);
+            isdefined = GetMultiSurfValue (selnr, facetnr, npi, 
+                                           xref+i*sxref, sxref, x+i*sx, sx, dxdxref+i*sdxdxref, sdxdxref,
+                                           values+i*svalues, svalues);
+          }
+        return isdefined;
+      }
+
+
+
+    
     static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue"); RegionTimer reg(t);
     static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate");
 
