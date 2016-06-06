@@ -1402,8 +1402,8 @@ namespace ngcomp
     ///
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                MAT & mat, LocalHeap & lh)
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1413,14 +1413,14 @@ namespace ngcomp
     // template <typename AFEL, typename SIP>
     // static void GenerateMatrix (const AFEL & fel, const SIP & sip,
     // SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
-    template <typename AFEL, typename SIP, typename MAT,
+    template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                MAT mat, LocalHeap & lh)
+                                                  static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                                                              MAT mat, LocalHeap & lh)
     {
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, Trans(mat), lh);
+      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh);
     }
-    
+    /*
     template <typename AFEL>
     static void GenerateMatrix (const AFEL & fel, 
                                 const MappedIntegrationPoint<D,D> & sip,
@@ -1429,18 +1429,120 @@ namespace ngcomp
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(), &mat(0,0));
       CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
     }
-    
+    */
     ///
-    template <typename AFEL, typename SIP, class TVX, class TVY>
-    static void Apply (const AFEL & fel, const SIP & sip,
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
                        const TVX & x, TVY & y,
                        LocalHeap & lh) 
     {
       // typedef typename TVX::TSCAL TSCAL;
-      
+      HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
-      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), sip, hm, lh);
+      CalcDShapeOfHDivFE<D,D*D>(static_cast<const FEL&>(fel), mip, hm, lh);
       y = Trans(hm)*x;
+    }
+
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			    const TVX & x, TVY & y,
+			    LocalHeap & lh) 
+    {
+      typedef typename TVX::TSCAL TSCALX;      
+      // typedef typename TVY::TSCAL TSCAL;
+      // typedef typename MIP::TSCAL TSCAL;
+
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D*D> bmatu(fel.GetNDof(),lh);
+      
+      auto & fel_u = static_cast<const FEL&>(fel);
+      int nd_u = fel.GetNDof();
+      const IntegrationPoint& ip = mip.IP();
+      const ElementTransformation & eltrans = mip.GetTransformation();
+      FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);
+      FlatMatrixFixWidth<D> dshape_u(nd_u, lh);
+      
+      double eps = 1e-7;
+
+      FlatMatrix<TSCALX> hx(D,D,&x(0));
+      Mat<D,D,TSCALX> tx = mip.GetJacobianInverse() * hx;
+
+      y = 0;
+      for (int j = 0; j < D; j++)   // d / dxj
+	{
+	  IntegrationPoint ipl(ip);
+	  ipl(j) -= eps;
+	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+
+	  IntegrationPoint ipr(ip);
+	  ipr(j) += eps;
+	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+
+	  fel_u.CalcMappedShape (sipl, shape_ul);
+	  fel_u.CalcMappedShape (sipr, shape_ur);
+	  dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
+          y += dshape_u_ref * tx.Row(j);
+	}
+    }
+
+    
+    template <typename AFEL, class MIR, class TVX, class TVY>
+    static void AddTransSIMDIR (const AFEL & fel, const MIR & bmir,
+                                const TVX & x, TVY & y)
+    {
+      int size = (bmir.Size()+1)*2000;
+      STACK_ARRAY(char, data, size);
+      LocalHeap lh(data, size);
+      double eps = 1e-7;
+
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+      auto & ir = mir.IR();
+      const ElementTransformation & trafo = mir.GetTransformation();
+      auto & fel_u = static_cast<const FEL&>(fel);
+      AFlatMatrix<double> hx(D, mir.IR().GetNIP(), lh);
+      
+      for (int j = 0; j < D; j++)
+        {
+          // hx = (F^-1 * x).Row(j)
+          for (int k = 0; k < mir.Size(); k++)
+            {
+              auto jacinv = mir[k].GetJacobianInverse();
+              for (int l = 0; l < D; l++)
+                {
+                  SIMD<double> sum = 0;
+                  for (int m = 0; m < D; m++)
+                    sum += jacinv(j,m) * x.Get(m*D+l, k);
+                  hx.Get(l,k) = (-(0.5/eps) * sum).Data();
+                }
+            }
+
+          {
+            HeapReset hr(lh);
+            SIMD_IntegrationRule irl(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irl.Size(); k++)
+              {
+                irl[k] = ir[k];
+                irl[k](j) -= eps;
+              }
+            SIMD_MappedIntegrationRule<D,D> mirl(irl, trafo, lh);
+            fel_u.AddTrans (mirl, hx, y);
+          }
+          {
+            HeapReset hr(lh);
+            hx *= -1;
+            SIMD_IntegrationRule irr(mir.IR().GetNIP(), lh);
+            for (int k = 0; k < irr.Size(); k++)
+              {
+                irr[k] = ir[k];              
+                irr[k](j) += eps;
+              }
+            SIMD_MappedIntegrationRule<D,D> mirr(irr, trafo, lh);
+            fel_u.AddTrans (mirr, hx, y);
+          }
+        }
     }
     
   };

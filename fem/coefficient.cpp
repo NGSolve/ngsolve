@@ -1782,7 +1782,9 @@ public:
     if (dims_c1.Size() != 2 || dims_c2.Size() != 2)
       throw Exception("Mult of non-matrices called");
     if (dims_c1[1] != dims_c2[0])
-      throw Exception("Matrix dimensions don't fit");
+      throw Exception(string("Matrix dimensions don't fit: m1 is ") +
+                      ToString(dims_c1[0]) + " x " + ToString(dims_c1[1]) +
+                      ", m2 is " + ToString(dims_c2[0]) + " x " + ToString(dims_c2[1]) );
     dims = { dims_c1[0], dims_c2[1] };
     inner_dim = dims_c1[1];
   }
@@ -2077,7 +2079,8 @@ public:
     if (dims_c1.Size() != 2 || dims_c2.Size() != 1)
       throw Exception("Not a mat-vec multiplication");
     if (dims_c1[1] != dims_c2[0])
-      throw Exception("Matrix dimensions don't fit");
+      throw Exception(string ("Matrix dimensions don't fit: mat is ") +
+                      ToString(dims_c1[0]) + " x " + ToString(dims_c1[1]) + ", vec is " + ToString(dims_c2[0]));
     dims = Array<int> ({ dims_c1[0] });
     inner_dim = dims_c1[1];
   }

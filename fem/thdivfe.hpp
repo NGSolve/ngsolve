@@ -176,7 +176,7 @@ namespace ngfem
       data[1] *= uv.w.Value();
     }
     
-    INLINE operator Vec<2,SCAL> () { return data; }
+    INLINE operator Vec<2,SCAL> () const { return data; }
   };
 
 
@@ -248,7 +248,7 @@ namespace ngfem
         data[i] = hv.DValue(i);
     }
 
-    INLINE operator Vec<3,SCAL> () { return data; }
+    INLINE operator Vec<3,SCAL> () const { return data; }
   };
 
 
@@ -468,6 +468,12 @@ namespace ngfem
     virtual void EvaluateTrans (const IntegrationRule & ir, 
                                 FlatMatrixFixWidth<DIM> vals,
                                 FlatVector<double> coefs) const;
+
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
+                           BareSliceVector<> coefs) const;
+    
 #endif
   };
 

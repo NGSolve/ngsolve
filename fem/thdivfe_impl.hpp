@@ -97,5 +97,49 @@ namespace ngfem
                                          }));
       }
   }
+
+
+
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET> :: 
+  Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, ABareMatrix<double> values) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        Vec<DIM,SIMD<double>> sum(0.0);
+        static_cast<const FEL*> (this) ->         
+          T_CalcShape (&adp(0), SBLambda ([&] (int j, THDiv2Shape<DIM,SIMD<double>> shape)
+                                          {
+                                            Vec<DIM,SIMD<double>> vshape = shape;
+                                            sum += coefs(j) * vshape;
+                                          }));
+        for (int k = 0; k < DIM; k++)
+          values.Get(k,i) = sum(k).Data();
+      }
+  }
+
+  template <class FEL, ELEMENT_TYPE ET>
+  void T_HDivFiniteElement<FEL,ET> :: 
+  AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, ABareMatrix<double> values,
+                           BareSliceVector<> coefs) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    for (int i = 0; i < mir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+        static_cast<const FEL*> (this) -> 
+          T_CalcShape (&adp(0), SBLambda ([&] (int j, THDiv2Shape<DIM,SIMD<double>> shape)
+                                          {
+                                            Vec<DIM,SIMD<double>> vshape = shape;                                            
+                                            SIMD<double> sum = 0.0;
+                                            for (int k = 0; k < DIM; k++)
+                                              sum += values.Get(k,i) * vshape(k);
+                                            coefs(j) += HSum(sum);
+                                          }));
+      }
+  }
+  
 #endif
 }
