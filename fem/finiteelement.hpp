@@ -105,7 +105,20 @@ namespace ngfem
     virtual void Print (ostream & ost) const;
   };
 
+  // a pair of 2 elements
+  class MixedFiniteElement : public FiniteElement
+  {
+    const FiniteElement & fe_trial;
+    const FiniteElement & fe_test;
+  public:
+    MixedFiniteElement (const FiniteElement & _fe_trial, const FiniteElement & _fe_test)
+      : fe_trial(_fe_trial), fe_test(_fe_test) { ; } 
+    virtual ~MixedFiniteElement() = default;
 
+    const FiniteElement & FETrial() const { return fe_trial; } 
+    const FiniteElement & FETest() const { return fe_test; }
+    virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
+  };
 
 
   /**
