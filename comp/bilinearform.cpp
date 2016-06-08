@@ -3257,8 +3257,49 @@ namespace ngcomp
                 */
       }
     else
-      { 
-        cout << "apply not implemented for mixed" << endl;
+      {
+        static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
+
+        IterateElements 
+          (*fespace, VOL, clh, 
+           [&] (ElementId ei, LocalHeap & lh)
+           
+           {
+             if (!fespace->DefinedOn (ei)) return;
+             if (!fespace2->DefinedOn (ei)) return;
+             const FiniteElement & fel1 = fespace->GetFE (ei, lh);
+             const FiniteElement & fel2 = fespace2->GetFE (ei, lh);
+             ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
+             
+             Array<int> dnums1 (fel1.GetNDof(), lh);
+             fespace->GetDofNrs (ei, dnums1);
+             Array<int> dnums2 (fel2.GetNDof(), lh);
+             fespace2->GetDofNrs (ei, dnums2);
+             
+             FlatVector<SCAL> elvecx (dnums1.Size() * fespace->GetDimension(), lh);
+             FlatVector<SCAL> elvecy (dnums2.Size() * fespace2->GetDimension(), lh);
+
+             x.GetIndirect (dnums1, elvecx);
+             this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
+
+             for (int j = 0; j < this->NumIntegrators(); j++)
+               {
+                 BilinearFormIntegrator & bfi = *this->parts[j];
+                 if (bfi.SkeletonForm()) continue;
+                 if (bfi.BoundaryForm()) continue;
+                 if (!bfi.DefinedOn (this->ma->GetElIndex (ei))) continue;
+
+                 MixedFiniteElement fel(fel1, fel2);
+                 bfi.ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
+            
+                 this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+        
+                 elvecy *= val;
+                 y.AddIndirect (dnums2, elvecy);  // coloring	      
+               }
+           });
+        
+        // cout << "apply not implemented for mixed" << endl;
       }
   }
 
@@ -4582,6 +4623,23 @@ namespace ngcomp
     
   }
 
+
+  shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
+                                               shared_ptr<FESpace> space2,
+                                               const string & name,
+                                               const Flags & flags)
+  {
+    if (flags.GetDefineFlag ("nonassemble"))
+      {
+        if ( space->IsComplex() )
+          return make_shared<S_BilinearFormNonAssemble<Complex>> (space, space2, name, flags);
+        else 
+          return make_shared<S_BilinearFormNonAssemble<double>> (space, space2, name, flags);
+      }
+
+    throw Exception ("cannot craeate mixes-space without nonassemble - flag");
+  }
+  
   /*
     void BilinearFormApplication :: 
     MultTransAdd (double val, const BaseVector & v, BaseVector & prod) const 
@@ -4631,6 +4689,12 @@ namespace ngcomp
     : S_BilinearForm<SCAL> (afespace, aname, flags)
   { ; }
 
+  template <class SCAL>
+  S_BilinearFormNonAssemble<SCAL> :: 
+  S_BilinearFormNonAssemble (shared_ptr<FESpace> afespace, shared_ptr<FESpace> afespace2,
+                             const string & aname, const Flags & flags)
+    : S_BilinearForm<SCAL> (afespace, afespace2, aname, flags)
+  { ; }
 
   template <class SCAL>
   ElementByElement_BilinearForm<SCAL> :: 

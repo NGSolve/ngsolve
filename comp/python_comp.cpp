@@ -1008,6 +1008,28 @@ void NGS_DLL_HEADER ExportNgcomp()
          (bp::arg("self"), 
           bp::arg("coupling")=false))
 
+    .def("Range", FunctionPointer
+         ( [] (const FESpace & self, int comp) -> bp::slice
+           {
+             auto compspace = dynamic_cast<const CompoundFESpace *> (&self);
+             if (!compspace)
+               bp::exec("'Range' is available only for product spaces");
+             IntRange r = compspace->GetRange(comp);
+             return bp::slice(r.First(), r.Next());
+           }))
+
+    .add_property("components", FunctionPointer
+                  ([](FESpace & self)-> bp::tuple
+                   { 
+                     auto compspace = dynamic_cast<CompoundFESpace *> (&self);
+                     if (!compspace)
+                       bp::exec("'components' is available only for product spaces");
+                     bp::list vecs;
+                     for (int i = 0; i < compspace -> GetNSpaces(); i++) 
+                       vecs.append( (*compspace)[i] );
+                     return bp::tuple(vecs);
+                   }),
+                  "list of gridfunctions for compound gridfunction")
 
     .def("TrialFunction", FunctionPointer
          ( [] (const FESpace & self) 
@@ -1415,7 +1437,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BF>);
   bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name,
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, 
                               bool symmetric, bp::dict bpflags)
                            {
                              Flags flags = bp::extract<Flags> (bpflags)();
@@ -1423,7 +1445,23 @@ void NGS_DLL_HEADER ExportNgcomp()
                              return CreateBilinearForm (fespace, name, flags);
                            }),
           bp::default_call_policies(),        // need it to use arguments
-          (bp::arg("space"), bp::arg("name")="bfa", 
+          (bp::arg("space"),
+           bp::arg("name")="bfa", 
+           bp::arg("symmetric") = false,
+           bp::arg("flags") = bp::dict())))
+    
+    .def("__init__", bp::make_constructor
+         (FunctionPointer ([](shared_ptr<FESpace> fespace, shared_ptr<FESpace> fespace2,
+                              string name, bool symmetric, bp::dict bpflags)
+                           {
+                             Flags flags = bp::extract<Flags> (bpflags)();
+                             if (symmetric) flags.SetFlag("symmetric");
+                             return CreateBilinearForm (fespace, fespace2, name, flags);
+                           }),
+          bp::default_call_policies(),        // need it to use arguments
+          (bp::arg("space"),
+           bp::arg("space2"),
+           bp::arg("name")="bfa", 
            bp::arg("symmetric") = false,
            bp::arg("flags") = bp::dict())))
 

@@ -642,6 +642,8 @@ namespace ngcomp
   public:
     S_BilinearFormNonAssemble (shared_ptr<FESpace> afespace, const string & aname,
                                const Flags & flags);
+    S_BilinearFormNonAssemble (shared_ptr<FESpace> afespace, shared_ptr<FESpace> afespace2,
+                               const string & aname, const Flags & flags);
     // virtual ~T_BilinearFormSymmetric ();
 
     virtual void AllocateMatrix () { cout << "S_BilinearFormNonAssemble :: Allocate: nothing to do" << endl; }
@@ -806,6 +808,11 @@ namespace ngcomp
      -symmetric   ... assembles a symmetric matrix
    */
   extern NGS_DLL_HEADER shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
+                                                                     const string & name,
+                                                                     const Flags & flags);
+
+  extern NGS_DLL_HEADER shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
+                                                                     shared_ptr<FESpace> space2,
                                                                      const string & name,
                                                                      const Flags & flags);
 

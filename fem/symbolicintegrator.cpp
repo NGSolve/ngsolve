@@ -1345,11 +1345,14 @@ namespace ngfem
           static Timer tcoef("SymbolicBFI::Apply - coef", 2);
           static Timer tapplyt("SymbolicBFI::Apply - apply-trans", 2); 
 
+          const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+          const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+          const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
           
           HeapReset hr(lh);
           tstart.Start();
           tir.Start();
-          SIMD_IntegrationRule simd_ir(trafo.GetElementType(), 2*fel.Order());
+          SIMD_IntegrationRule simd_ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
           tir.Stop();
           tmir.Start();
           auto & simd_mir = trafo(simd_ir, lh);
@@ -1366,7 +1369,7 @@ namespace ngfem
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           
           for (ProxyFunction * proxy : trial_proxies)
-            proxy->Evaluator()->Apply(fel, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
+            proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); // , lh);
           tapply.Stop();
           
           ely = 0;
@@ -1390,7 +1393,7 @@ namespace ngfem
                 }
               tcoef.Stop();
               tapplyt.Start();
-              proxy->Evaluator()->AddTrans(fel, simd_mir, simd_proxyvalues, ely); // , lh);
+              proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); // , lh);
               tapplyt.Stop();
             }
           return;
