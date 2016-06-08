@@ -8,7 +8,6 @@
 */
 
 #include <fem.hpp>
-#undef USE_SIMD
 
 namespace ngfem
 {
