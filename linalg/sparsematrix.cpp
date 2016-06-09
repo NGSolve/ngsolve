@@ -1832,8 +1832,12 @@ namespace ngla
 	      for (int kk : prol.GetRowIndices(i))
 		for (int ll : prol.GetRowIndices(col))
 		  {
+                    /*
 		    if (kk >= ll) swap (kk,ll);
 		    e2v.Append (INT<2> (kk,ll));
+                    */
+                    INT<2> i2 = (kk<ll) ? INT<2>(kk,ll) : INT<2>(ll,kk);
+                    e2v.Append (i2);
 		  }
 	    }
 
