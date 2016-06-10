@@ -113,6 +113,17 @@ namespace ngfem
       cout << "HDivFE::AddTrans (simd) not overloaded" << endl;
     }
       
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const
+    {
+      cout << "HDivFE::EvaluateDiv (simd) not overloaded" << endl;
+    }
+    
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareVector<double> values,
+                              BareSliceVector<> coefs) const
+    {
+      cout << "HDivFE::AddDivTrans (simd) not overloaded" << endl;
+    }
+      
     
     virtual void GetFacetDofs(int i, Array<int> & dnums) const;
     // { cout  << " GetFacetDofs for nothing " << endl; dnums.SetSize(0);}; 

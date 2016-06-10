@@ -192,8 +192,24 @@ namespace ngfem
       }
     
     values = val[elind];
-    if (val[elind] < 1e-50 && val[elind] > 0) cout << "very small" << endl;
   }
+
+  
+  void DomainConstantCoefficientFunction :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+  {
+    int elind = ir[0].GetTransformation().GetElementIndex();
+    
+    if (elind < 0 || elind >= val.Size())
+      {
+	ostringstream ost;
+	ost << "DomainConstantCoefficientFunction: Element index "
+	    << elind << " out of range 0 - " << val.Size()-1 << endl;
+	throw Exception (ost.str());
+      }
+    
+    values = val[elind];
+  }
+  
 
   void DomainConstantCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const
   {

@@ -11,10 +11,10 @@ namespace ngfem
 {
 
 
-  template <int D>
-  inline double Dot (const AutoDiff<D> & u, const AutoDiff<D> & v)
+  template <int D, typename SCAL>
+  inline SCAL Dot (const AutoDiff<D,SCAL> & u, const AutoDiff<D,SCAL> & v)
   {
-    double sum = 0;
+    SCAL sum = 0;
     for (int i = 0; i < D; i++)
       sum += u.DValue(i) * v.DValue(i);
     return sum;
@@ -310,7 +310,7 @@ namespace ngfem
     
     INLINE THDiv2DivShape (Class_uDv<2,SCAL> uv)
     {
-      AutoDiff<1> hd = Cross (uv.u, uv.v);
+      AutoDiff<1,SCAL> hd = Cross (uv.u, uv.v);
       data = -hd.DValue(0);
     }
 
@@ -322,7 +322,7 @@ namespace ngfem
 
     INLINE THDiv2DivShape (const Class_wuDv_minus_wvDu<2,SCAL> & uv) 
     { 
-      AutoDiff<1> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
+      AutoDiff<1,SCAL> hd = Cross (uv.u*uv.w, uv.v) + Cross(uv.u, uv.v*uv.w);
       data = -hd.DValue(0);
     }
     
@@ -473,6 +473,12 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const;
     virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
                            BareSliceVector<> coefs) const;
+
+    virtual void EvaluateDiv (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareVector<double> values) const;
+    
+    virtual void AddDivTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareVector<double> values,
+                              BareSliceVector<> coefs) const;
+    
     
 #endif
   };

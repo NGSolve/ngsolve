@@ -1149,6 +1149,15 @@ namespace ngstd
 
     int FacetNr() const { return facetnr; }
     int & FacetNr() { return facetnr; }
+
+    template <int DIM> 
+    INLINE operator Vec<DIM, AutoDiff<DIM,SIMD<double>>> () const
+    {
+      Vec<DIM, AutoDiff<DIM,SIMD<double>> > adp;
+      for (int i = 0; i < DIM; i++)
+        adp[i] = AutoDiff<DIM,SIMD<double>> (x[i], i);
+      return adp;
+    }
   };
 
   template <>

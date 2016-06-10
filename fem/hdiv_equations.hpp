@@ -141,6 +141,9 @@ public:
 
   static string Name() { return "div"; }
 
+  static const FEL & Cast (const FiniteElement & fel) 
+  { return static_cast<const FEL&> (fel); }
+  
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
@@ -182,6 +185,22 @@ public:
     hv *= (1.0/mip.GetJacobiDet());
     y = static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh) * hv;
   }
+
+
+  
+  static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                           BareSliceVector<double> x, ABareMatrix<double> y)
+  {
+    Cast(fel).EvaluateDiv (mir, x, y.Row(0));
+  }    
+  
+  static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                              ABareMatrix<double> y, BareSliceVector<double> x)
+  {
+    Cast(fel).AddDivTrans (mir, y.Row(0), x);
+  }    
+  
+  
 };
 
 

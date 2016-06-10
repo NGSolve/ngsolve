@@ -337,7 +337,8 @@ namespace ngfem
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<Complex> values) const;
 
-
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
+    
     virtual double EvaluateConst () const
     {
       return val[0];
