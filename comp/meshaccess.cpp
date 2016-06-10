@@ -324,7 +324,36 @@ namespace ngcomp
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
       */
-  }
+    }
+    
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & bmir) const
+    {
+      SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
+	static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
+      
+      Ng_ElementTransformation<DIMS,DIMR>::CalcMultiPointJacobian (ir, bmir);
+
+      LocalHeapMem<100000> lh("tmp");
+      AFlatVector<double> def(ir.GetNIP(), lh);
+      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
+      for (int i = 0; i < DIMR; i++)
+        {
+          fel->Evaluate (ir, elvecs.Row(i), def);
+          fel->EvaluateGrad (ir, elvecs.Row(i), grad);
+          
+          for (int k = 0; k < ir.Size(); k++)
+            {
+              mir[k].Point()(i) += def.Get(k);
+              for (int j = 0; j < DIMS; j++)
+                mir[k].Jacobian()(i,j) += grad.Get(j,k);
+            }
+        }
+      
+      for (int i = 0; i < ir.Size(); i++)
+        mir[i].Compute();
+    }
+
 
   };
 

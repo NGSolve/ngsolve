@@ -190,7 +190,11 @@ namespace ngfem
         CalcShape (ip, fnr, shape);
         return;
       }
-    cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
+    shape = 0.0;
+    static int cnt = 0;
+    cnt++;
+    if (cnt < 3)
+      cerr << "VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled" << endl;
   }
 
 

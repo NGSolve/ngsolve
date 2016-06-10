@@ -272,6 +272,23 @@ namespace ngfem
       }
   }
 
+  
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  EvaluateGrad (const SIMD_IntegrationRule & ir,
+                BareSliceVector<> coefs,
+                ABareMatrix<double> values) const
+  {
+    for (int i = 0; i < ir.Size(); i++)
+      {
+        Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = ir[i];
+        Vec<DIM,SIMD<double>> sum(0.0);
+        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                        { sum += coefs(j) * shape; }));
+        for (int k = 0; k < DIM; k++)
+          values.Get(k,i) = sum(k).Data();
+      }
+  }
 
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
