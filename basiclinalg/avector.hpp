@@ -31,9 +31,9 @@ template <> struct FooAMatrixType<double>
 
 
 
-template <typename T> 
+template <typename T = double> 
 using AFlatVector = typename FooAVectorType<T>::type;
-template <typename T> 
+template <typename T = double> 
 using AFlatMatrix = typename FooAMatrixType<T>::type;
 
 
@@ -564,7 +564,7 @@ public:
 
 class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
 {
-  int w, h;
+  int h, w;
   // static int vw;
   __m256d * __restrict data;
 public:
@@ -579,13 +579,11 @@ public:
     data = (__m256d*)lh.Alloc<double> (h*rw);
   }
 
-  AFlatMatrixD(int ah, int aw, __m256d * adata)
-  {
-    h = ah;
-    w = aw;
-    // vw = (w+3)/4;
-    data = adata;
-  }
+  AFlatMatrixD(int ah, int aw, double * adata)
+    : h(ah), w(aw), data((__m256d*)(void*)adata) { ; } 
+
+  AFlatMatrixD(int ah, int aw, __m256d * mem)
+    : h(ah), w(aw), data(mem) { ; } 
 
   void AssignMemory (int ah, int aw, __m256d * mem)
   {
@@ -938,10 +936,6 @@ INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
   c += a * Trans(b) | Lapack;
   // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
 }
-
-
-
-
 
 
 #endif // __AVX2__
