@@ -14,8 +14,6 @@
 
 namespace ngcomp
 {
-
-  
   
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
@@ -193,11 +191,10 @@ namespace ngcomp
 
 
 
-  template <int DIMS, int DIMR>
-  class ALE_ElementTransformation : public Ng_ElementTransformation<DIMS,DIMR>
+  template <int DIMS, int DIMR, typename BASE>
+  class ALE_ElementTransformation : public BASE // Ng_ElementTransformation<DIMS,DIMR>
   {
     const GridFunction * deform;
-    // LocalHeap & lh;
     const ScalarFiniteElement<DIMS> * fel;
     FlatVector<> elvec;
     FlatMatrix<> elvecs;
@@ -206,13 +203,12 @@ namespace ngcomp
                                ELEMENT_TYPE aet, ElementId ei, int elindex,
                                const GridFunction * adeform,
                                LocalHeap & lh)
-      : Ng_ElementTransformation<DIMS,DIMR> (amesh, aet, ei, elindex), 
-        deform(adeform) // , lh(alh) 
+      : BASE(amesh, aet, ei, elindex), 
+        deform(adeform) 
     {
-      // ElementId id(aboundary ? BND : VOL, aelnr);
       fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&deform->GetFESpace()->GetFE(ei, lh));
 
-      Array<int> dnums;
+      Array<int> dnums(fel->GetNDof(), lh);
       deform->GetFESpace()->GetDofNrs(ei, dnums);
 
       elvec.AssignMemory(DIMR*dnums.Size(), lh);
@@ -265,7 +261,7 @@ namespace ngcomp
       */
 
       Mat<DIMR,DIMS> tmp;
-      Ng_ElementTransformation<DIMS,DIMR>::CalcJacobian (ip, tmp);
+      BASE::CalcJacobian (ip, tmp);
 
       Mat<DIMR,DIMS> def;
       for (int i = 0; i < DIMR; i++)
@@ -277,7 +273,7 @@ namespace ngcomp
 			    FlatVector<> point) const
     {
       Vec<DIMR> tmp;
-      Ng_ElementTransformation<DIMS,DIMR>::CalcPoint (ip, tmp);
+      BASE::CalcPoint (ip, tmp);
 
       Vec<DIMR> def;
       for (int i = 0; i < DIMR; i++)
@@ -332,15 +328,19 @@ namespace ngcomp
       SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
 	static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       
-      Ng_ElementTransformation<DIMS,DIMR>::CalcMultiPointJacobian (ir, bmir);
+      BASE::CalcMultiPointJacobian (ir, bmir);
 
-      LocalHeapMem<100000> lh("tmp");
-      AFlatVector<double> def(ir.GetNIP(), lh);
-      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
+      // LocalHeapMem<100000> lh("tmp");
+      // AFlatVector<double> def(ir.GetNIP(), lh);
+      // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
+      STACK_ARRAY(double, mem, 4* (ir.GetNIP()+8));
+      AFlatVector<double> def(ir.GetNIP(), &mem[0]);
+      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), &mem[ir.GetNIP()]);
+
       for (int i = 0; i < DIMR; i++)
         {
-          fel->Evaluate (ir, elvecs.Row(i), def);
-          fel->EvaluateGrad (ir, elvecs.Row(i), grad);
+          fel->Evaluate (ir, elvec.Slice(i,DIMR), def);
+          fel->EvaluateGrad (ir, elvec.Slice(i,DIMR), grad);
           
           for (int k = 0; k < ir.Size(); k++)
             {
@@ -1140,11 +1140,24 @@ namespace ngcomp
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
 
     if (deformation)
+      {
+        if (el.is_curved)
+          eltrans = new (lh)
+            ALE_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
+            (this, el.GetType(), 
+             ElementId(VOL,elnr), el.GetIndex(),
+             deformation.get(), 
+             dynamic_cast<LocalHeap&> (lh));
 
-      eltrans = new (lh) ALE_ElementTransformation<DIM,DIM> (this, el.GetType(), 
-                                                             ElementId(VOL,elnr), el.GetIndex(),
-                                                             deformation.get(), 
-                                                             dynamic_cast<LocalHeap&> (lh)); 
+        else
+
+          eltrans = new (lh)
+            ALE_ElementTransformation<DIM, DIM, Ng_ConstElementTransformation<DIM,DIM>>
+            (this, el.GetType(), 
+             ElementId(VOL,elnr), el.GetIndex(),
+             deformation.get(), 
+             dynamic_cast<LocalHeap&> (lh));
+      }
 
     else if ( el.is_curved )
 
@@ -1182,11 +1195,12 @@ namespace ngcomp
 
     if (deformation)
 
-      eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM> (this, el.GetType(), 
-                                                               ElementId(BND,elnr), el.GetIndex(),
-                                                               deformation.get(), 
-                                                               dynamic_cast<LocalHeap&> (lh)); 
-
+      eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM, Ng_ElementTransformation<DIM-1,DIM>>
+        (this, el.GetType(), 
+         ElementId(BND,elnr), el.GetIndex(),
+         deformation.get(), 
+         dynamic_cast<LocalHeap&> (lh)); 
+    
     else if ( el.is_curved )
 
       eltrans = new (lh) Ng_ElementTransformation<DIM-1,DIM> (this, el.GetType(), 
