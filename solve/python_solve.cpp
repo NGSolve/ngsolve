@@ -97,6 +97,7 @@ void NGS_DLL_HEADER ExportNgsolve() {
     
     bp::def ("Draw", FunctionPointer
              ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+                 int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
               {
                 ma->SelectMesh();
@@ -128,11 +129,21 @@ void NGS_DLL_HEADER ExportNgsolve() {
                 else
                   if (cf->Dimension() == 3 || cf->Dimension() == ma->GetDimension())
                     Ng_TclCmd (string("set ::visoptions.vecfunction ")+name+";\n");
+
+                Ng_TclCmd (string("set ::visoptions.subdivisions ")+ToString(sd)+";\n");
+		Ng_TclCmd ("set ::visoptions.autoscale "+ToString(autoscale)+";\n");
+		if(!autoscale){
+		  Ng_TclCmd ("set ::visoptions.mminval "+ToString(min)+";\n");
+		  Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(max)+";\n");
+		}
                 Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                 Ng_TclCmd ("set ::selectvisual solution;\n");
 
               }),
-             (bp::arg("cf"),bp::arg("mesh"),bp::arg("name"),bp::arg("draw_vol")=true,bp::arg("draw_surf")=true)
+             (bp::arg("cf"),bp::arg("mesh"),bp::arg("name"),
+              bp::arg("sd")=2,bp::arg("autoscale")=true,
+	      bp::arg("min")=0.0,bp::arg("max")=1.0,
+              bp::arg("draw_vol")=true,bp::arg("draw_surf")=true)
              );
 
 
