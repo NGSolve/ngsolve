@@ -27,7 +27,7 @@ vx,vy,q = X.TestFunction()
 div_u = grad(ux)[0]+grad(uy)[1]
 div_v = grad(vx)[0]+grad(vy)[1]
 
-stokes = nu*grad(ux)*grad(vx)+nu*grad(uy)*grad(vy)+div_u*q+div_v*p - 1e-6*p*q
+stokes = nu*grad(ux)*grad(vx)+nu*grad(uy)*grad(vy)+div_u*q+div_v*p - 1e-10*p*q
 a = BilinearForm(X)
 a += SymbolicBFI(stokes)
 a.Assemble()
@@ -36,20 +36,19 @@ a.Assemble()
 f = LinearForm(X)   
 f.Assemble()
 
-
-u = GridFunction(X)
+# gridfunction for the solution
+gfu = GridFunction(X)
 
 # parabolic inflow at bc=1:
 uin = 1.5*4*y*(0.41-y)/(0.41*0.41)
-u.components[0].Set(uin, definedon=mesh.Boundaries("inlet"))
-
+gfu.components[0].Set(uin, definedon=mesh.Boundaries("inlet"))
 
 # solve Stokes problem for initial conditions:
 inv_stokes = a.mat.Inverse(X.FreeDofs())
 
 res = f.vec.CreateVector()
-res.data = f.vec - a.mat*u.vec
-u.vec.data += inv_stokes * res
+res.data = f.vec - a.mat*gfu.vec
+gfu.vec.data += inv_stokes * res
 
 
 # matrix for implicit Euler 
@@ -58,16 +57,13 @@ mstar += SymbolicBFI(ux*vx+uy*vy + tau*stokes)
 mstar.Assemble()
 inv = mstar.mat.Inverse(X.FreeDofs(), inverse="sparsecholesky")
 
-velocity = CoefficientFunction (u.components[0:2])
-absvelocity = sqrt(velocity*velocity)
-
 # the non-linear term 
-conv = LinearForm(X)
-conv += SymbolicLFI((velocity*grad(u.components[0])*vx))
-conv += SymbolicLFI((velocity*grad(u.components[1])*vy))
+conv = BilinearForm(X, flags = { "nonassemble" : True })
+conv += SymbolicBFI( CoefficientFunction( (ux,uy) ) * (grad(ux)*vx+grad(uy)*vy) )
 
-
-Draw (absvelocity, mesh, "velocity")
+# for visualization
+velocity = CoefficientFunction (gfu.components[0:2])
+Draw (Norm(velocity), mesh, "velocity", sd=3)
 
 # implicit Euler/explicit Euler splitting method:
 t = 0
@@ -75,9 +71,9 @@ with TaskManager():
     while t < tend:
         print ("t=", t)
 
-        conv.Assemble()           # calculate it
-        res.data = a.mat * u.vec + conv.vec
-        u.vec.data -= tau * inv * res    
+        conv.Apply (gfu.vec, res)
+        res.data += a.mat*gfu.vec
+        gfu.vec.data -= tau * inv * res    
 
         t = t + tau
         Redraw()
