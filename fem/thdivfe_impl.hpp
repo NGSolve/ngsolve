@@ -155,7 +155,8 @@ namespace ngfem
         static_cast<const FEL*> (this) ->         
           T_CalcShape (&adp(0), SBLambda ([&] (int j, THDiv2DivShape<DIM,SIMD<double>> divshape)
                                           {
-                                            SIMD<double> simdshape = divshape;
+                                            // SIMD<double> simdshape = divshape;
+                                            SIMD<double> simdshape = divshape.Get();
                                             sum += coefs(j) * simdshape;
                                           }));
         values.Get(i) = sum.Data();
