@@ -327,6 +327,7 @@ namespace ngfem
     }
     
     INLINE operator SCAL () const { return data; }
+    INLINE SCAL Get() const { return data; }
   };
 
 
@@ -366,6 +367,7 @@ namespace ngfem
     }
 
     INLINE operator SCAL () const { return data; }
+    INLINE SCAL Get() const { return data; }    
   };
 
 
