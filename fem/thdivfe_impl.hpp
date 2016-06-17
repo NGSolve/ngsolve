@@ -181,7 +181,7 @@ namespace ngfem
                                             for (int k = 0; k < DIM; k++)
                                               sum += values.Get(k,i) * vshape(k);
                                             */
-                                            SIMD<double> simdshape = divshape;                                            
+                                            SIMD<double> simdshape = divshape.Get();
                                             coefs(j) += HSum(simdshape*values.Get(i));
                                           }));
       }
