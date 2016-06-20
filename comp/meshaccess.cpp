@@ -333,9 +333,10 @@ namespace ngcomp
       // LocalHeapMem<100000> lh("tmp");
       // AFlatVector<double> def(ir.GetNIP(), lh);
       // AFlatMatrix<double> grad(DIMS, ir.GetNIP(), lh);
-      STACK_ARRAY(double, mem, 4* (ir.GetNIP()+8));
-      AFlatVector<double> def(ir.GetNIP(), &mem[0]);
-      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), &mem[ir.GetNIP()]);
+      STACK_ARRAY(SIMD<double>, mem0, (ir.GetNIP()+8)/SIMD<double>::Size());
+      AFlatVector<double> def(ir.GetNIP(), (double*)&mem0[0]);
+      STACK_ARRAY(SIMD<double>, mem1, (3*ir.GetNIP()+8)/SIMD<double>::Size());
+      AFlatMatrix<double> grad(DIMS, ir.GetNIP(), (double*)&mem1[0]);
 
       for (int i = 0; i < DIMR; i++)
         {
