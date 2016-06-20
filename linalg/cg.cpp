@@ -73,7 +73,7 @@ namespace ngla
  
   AutoVector KrylovSpaceSolver :: CreateVector () const
   {
-    return shared_ptr<BaseVector>(); // return a->CreateVector();
+    return a->CreateVector();
   }
 
 
