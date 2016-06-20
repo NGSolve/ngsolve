@@ -233,6 +233,10 @@ void NGS_DLL_HEADER ExportNgla() {
                                    {
                                      return self.Range(from,to);
                                    }))
+    .def("FV", FunctionPointer( [] (BaseVector & self) -> FlatVector<double,int>
+                                {
+                                  return self.FVDouble();
+                                }))
     ;       
 
   // bp::def("InnerProduct", FunctionPointer([](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); }))
