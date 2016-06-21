@@ -279,7 +279,7 @@ template<int D, typename SCAL, typename SCAL2,
          typename std::enable_if<std::is_convertible<SCAL2,SCAL>::value, int>::type = 0>
 INLINE AutoDiff<D,SCAL> operator/ (const AutoDiff<D,SCAL> & x, SCAL2 y)
 {
-  return (1/y) * x;
+  return (1.0/y) * x;
 }
 
   /// double div AutoDiff
