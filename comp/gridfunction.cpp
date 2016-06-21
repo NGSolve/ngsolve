@@ -1498,7 +1498,7 @@ namespace ngcomp
   GetValue (int elnr, 
             const double xref[], const double x[], const double dxdxref[],
             double * values) 
-  { 
+  {
     // static Timer t("visgf::GetValue2");
     // RegionTimer reg(t);
     
@@ -2104,6 +2104,8 @@ namespace ngcomp
   void VisualizeGridFunction<SCAL> :: 
   Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages, int component)
   {
+    try
+      {
     // cout << "VisGF::Analyze" << endl;
     int ndomains = 0;
 
@@ -2124,6 +2126,11 @@ namespace ngcomp
 	else
 	  averages[i] /= volumes[i];
       }
+      }
+    catch (Exception e)
+      {
+        cerr << "Caught exception in VisualizeGF::Analyze: " << e.What() << endl;
+      }
   }
   
 
@@ -2131,6 +2138,8 @@ namespace ngcomp
   void VisualizeGridFunction<SCAL> :: 
   Analyze(Array<double> & minima, Array<double> & maxima, Array<double> & averages_times_volumes, Array<double> & volumes, int component)
   {
+    try
+      {
     // cout << "VisGF::Analyze2" << endl;
     const FESpace & fes = *gf->GetFESpace();
 
@@ -2306,6 +2315,11 @@ namespace ngcomp
       }
 
     delete [] val;
+      }
+    catch (Exception e)
+      {
+        cerr << "Caught exception in VisualizeGF::Analyze2: " << e.What() << endl;
+      }
   }
 
 
@@ -2332,6 +2346,8 @@ namespace ngcomp
 						 double lam1, double lam2, double lam3,
 						 double * values) 
   {
+    try
+      {
     // cout << "viscoef, getval1" << endl;
     LocalHeapMem<100000> lh("viscf::GetValue");
     IntegrationPoint ip(lam1, lam2, lam3);
@@ -2341,7 +2357,17 @@ namespace ngcomp
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
       cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
-    return true; 
+    return true;
+
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+      
+    
   }
   
   bool VisualizeCoefficientFunction :: 
@@ -2349,6 +2375,8 @@ namespace ngcomp
 	    const double xref[], const double x[], const double dxdxref[],
 	    double * values) 
   {
+    try
+      {
     // cout << "viscoef, getval2" << endl;
     LocalHeapMem<100000> lh("viscf::GetValue xref");
     IntegrationPoint ip(xref[0],xref[1],xref[2]);
@@ -2358,7 +2386,17 @@ namespace ngcomp
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
       cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));      
-    return true; 
+    return true;
+
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+      
+    
   }
 
   bool VisualizeCoefficientFunction :: 
@@ -2368,11 +2406,23 @@ namespace ngcomp
 		 const double * dxdxref, int sdxdxref,
 		 double * values, int svalues)
   {
+    try
+      {
     // cout << "visualizecoef, GetMultiValue not implemented" << endl;
 
     for (int i = 0; i < npts; i++)
       GetValue (elnr, xref+i*sxref, x+i*sx, dxdxref+i*sdxdxref, values+i*svalues);
     return true;
+
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetMultiValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+      
+    
   }
   
   bool VisualizeCoefficientFunction ::  
@@ -2380,6 +2430,8 @@ namespace ngcomp
 		double lam1, double lam2, 
 		double * values) 
   {
+    try
+      {
     // cout << "viscoef, getsurfval1" << endl;
     LocalHeapMem<100000> lh("viscf::GetSurfValue");
     IntegrationPoint ip(lam1, lam2);
@@ -2393,7 +2445,15 @@ namespace ngcomp
     else
       cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
 
-    return true; 
+    return true;
+
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetSurfValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
   }
 
   bool VisualizeCoefficientFunction ::  GetSurfValue (int selnr, int facetnr, 
@@ -2424,8 +2484,9 @@ namespace ngcomp
         return isdefined;
       }
 
-
-
+    try
+      {
+    
     
     static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue"); RegionTimer reg(t);
     static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate");
@@ -2491,6 +2552,16 @@ namespace ngcomp
     SliceMatrix<> mvalues(npts, GetComponents(), svalues, values);
     mvalues = mvalues1;
     return true;
+
+      }
+    catch (Exception & e)
+      {
+        cout << "VisualizeCoefficientFunction::GetMultiSurfValue caught exception: " << endl
+             << e.What();
+        return 0;
+      }
+      
+    
   }
 
 
