@@ -59,12 +59,19 @@ namespace ngfem
   bool apply_deriv_alpha = 0;
 
 
-
+  template <>
+  MappedIntegrationPoint<1,1,Complex> :: 
+  MappedIntegrationPoint (const IntegrationPoint & aip,
+                          const ElementTransformation & aeltrans)
+    : DimMappedIntegrationPoint<1,Complex> (aip, aeltrans)
+  {
+    throw Exception ("1D mapped-ip<complex> missing");
+  }
   
   template <>
   MappedIntegrationPoint<2,2,Complex> :: 
   MappedIntegrationPoint (const IntegrationPoint & aip,
-			    const ElementTransformation & aeltrans)
+                          const ElementTransformation & aeltrans)
   // LocalHeap & lh)
     : DimMappedIntegrationPoint<2,Complex> (aip, aeltrans)
   {
@@ -284,7 +291,8 @@ namespace ngfem
   }
 
 
-  // SZ moved to intrule.cpp 
+  // SZ moved to intrule.cpp
+  template class MappedIntegrationPoint<1,1,Complex>;  
   template class MappedIntegrationPoint<2,2,Complex>;
   template class MappedIntegrationPoint<3,3,Complex>;
 

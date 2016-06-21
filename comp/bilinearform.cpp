@@ -3714,9 +3714,6 @@ namespace ngcomp
   }
 
 
-
-  // template <class TM, class TV>
-  // void T_BilinearForm<TM,TV>::
   template <class SCAL>
   void S_BilinearForm<SCAL> :: ApplyElementMatrix(const BaseVector & x,
                                                   BaseVector & y,
@@ -3747,24 +3744,17 @@ namespace ngcomp
             if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;
             if (type == 1 && !bfi.DefinedOn (this->ma->GetSElIndex (elnum))) continue;
-            
-            
-            // static Timer elementtimer ("Element matrix application");
-            // elementtimer.Start();
 
             if (this->precompute)
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
             else
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-	    // elvecy = 0.0;
 
-            // elementtimer.Stop();
-            
             this->fespace->TransformVec (elnum, (type == 1), elvecy, TRANSFORM_RHS);
-        
+
             elvecy *= val;
-            y.AddIndirect (dnums, elvecy);  // coloring	      
+            y.AddIndirect (dnums, elvecy);  // coloring	    
           }
       }
     else if (type == 2)

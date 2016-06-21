@@ -24,6 +24,10 @@ namespace ngfem
     HD NGS_DLL_HEADER 
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceVector<> shape) const = 0;
+
+    HD NGS_DLL_HEADER 
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                            SliceVector<Complex> shape) const;
     
     /// compute dshape, matrix: ndof x spacedim
     HD NGS_DLL_HEADER 

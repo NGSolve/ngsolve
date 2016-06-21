@@ -154,6 +154,8 @@ namespace ngfem
     const ElementTransformation * eltrans;
     ///
     bool owns_trafo = false;
+    ///
+    bool is_complex;
     /// fabs(det)
     double measure; 
   public:
@@ -180,27 +182,46 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
     int Dim() const;
+    bool IsComplex() const { return is_complex; }
     void SetOwnsTrafo (bool aowns_trafo = true) { owns_trafo = aowns_trafo; }
   };
 
+  template <typename SCAL = double>
+  class ScalMappedIntegrationPoint : public BaseMappedIntegrationPoint
+  {
+  protected:
+    SCAL det;
+  public:
+    using BaseMappedIntegrationPoint :: BaseMappedIntegrationPoint;
+    ScalMappedIntegrationPoint() { is_complex = false; }
+    ///
+    INLINE SCAL GetJacobiDet() const { return det; }
+  };
+  
+  template<> INLINE ScalMappedIntegrationPoint<Complex> :: ScalMappedIntegrationPoint()
+  { is_complex = true; }
 
+  
   template <int R, typename SCAL = double>
-  class DimMappedIntegrationPoint : public BaseMappedIntegrationPoint
+  class DimMappedIntegrationPoint : public ScalMappedIntegrationPoint<SCAL>
   {
   protected:
     ///
     Vec<R,SCAL> point;
     Vec<R,SCAL> normalvec;
     Vec<R,SCAL> tangentialvec;  // for independent integrator
- 
+    using ScalMappedIntegrationPoint<SCAL>::det;
   public:
     ///
+    using ScalMappedIntegrationPoint<SCAL>::ScalMappedIntegrationPoint;
+    /*
     INLINE DimMappedIntegrationPoint () = default;
     ///
     INLINE DimMappedIntegrationPoint (const IntegrationPoint & aip,
 				 const ElementTransformation & aeltrans)
       : BaseMappedIntegrationPoint (aip, aeltrans)
     { ; }
+    */
     ///
     INLINE const Vec<R,SCAL> & GetPoint () const { return point; }
     INLINE Vec<R,SCAL> & Point () { return point; }
@@ -225,11 +246,10 @@ namespace ngfem
   private:
     /// Jacobi matrix
     Mat<DIMR,DIMS,SCAL> dxdxi;
-    /// (pseudo)inverse of Jacobi matrix
-    SCAL det;
     /// for boundary points
     using DimMappedIntegrationPoint<DIMR,SCAL>::normalvec;
     using DimMappedIntegrationPoint<DIMR,SCAL>::tangentialvec;
+    using DimMappedIntegrationPoint<DIMR,SCAL>::det;    
   public:
     typedef SCAL TSCAL;
     ///
@@ -293,8 +313,6 @@ namespace ngfem
     ///
     INLINE const Mat<DIMR,DIMS,SCAL> & GetJacobian() const { return dxdxi; }
     INLINE Mat<DIMR,DIMS,SCAL> & Jacobian() { return dxdxi; }
-    ///
-    INLINE SCAL GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
     INLINE const Mat<DIMS,DIMR,SCAL> GetJacobianInverse() const 
@@ -1009,7 +1027,7 @@ namespace ngfem
     const ElementTransformation & eltrans;
     char * baseip;
     int incr;
-
+    
   public:
     INLINE BaseMappedIntegrationRule (const IntegrationRule & air,
                                       const ElementTransformation & aeltrans)
@@ -1034,13 +1052,14 @@ namespace ngfem
     }
     */
     virtual SliceMatrix<> GetPoints() const = 0;
-    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;        
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
+    virtual bool IsComplex() const = 0;
   };
 
-  template <int DIM_ELEMENT, int DIM_SPACE>
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL = double>
   class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
   {
-    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > mips;
+    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL> > mips;
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & aeltrans, 
@@ -1053,12 +1072,12 @@ namespace ngfem
       : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-      incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>);
+      incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
     }
 
     INLINE MappedIntegrationRule (const IntegrationRule & air, 
                                   const ElementTransformation & aeltrans, 
-                                  FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> > amips)
+                                  FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> > amips)
       : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
     {
       baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
@@ -1089,13 +1108,73 @@ namespace ngfem
                             &mips[1].GetPoint()(0) - &mips[0].GetPoint()(0),
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
-    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);    
+
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
+    virtual bool IsComplex() const { return false; } 
   };
 
-
-
   template <int DIM_ELEMENT, int DIM_SPACE>
-  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> & ir)
+  class NGS_DLL_HEADER MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> : public BaseMappedIntegrationRule
+  {
+    using SCAL = Complex;
+    FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, Complex> > mips;
+  public:
+    MappedIntegrationRule (const IntegrationRule & ir, 
+			   const ElementTransformation & aeltrans, 
+			   Allocator & lh);
+
+    INLINE MappedIntegrationRule (const IntegrationRule & ir, 
+                                  const ElementTransformation & eltrans, 
+                                  int dummy,
+                                  Allocator & lh)
+      : BaseMappedIntegrationRule (ir, eltrans), mips(ir.Size(), lh)
+    {
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL>);
+    }
+
+    INLINE MappedIntegrationRule (const IntegrationRule & air, 
+                                  const ElementTransformation & aeltrans, 
+                                  FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> > amips)
+      : BaseMappedIntegrationRule (air, aeltrans), mips(amips)
+    {
+      baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+      if (mips.Size() > 1)
+        incr = (char*)(void*)(&mips[1]) - (char*)(void*)(&mips[0]);
+      else
+        incr = 0;
+    }
+    
+    INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE,SCAL> & operator[] (int i) const
+    { 
+      return mips[i]; 
+    }
+
+    INLINE MappedIntegrationRule Range(int first, int next) const
+    {
+      return MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
+    }
+
+    virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const
+    {
+      return *new (lh) MappedIntegrationRule (ir.Range(first,next), eltrans, mips.Range(first,next));
+    }
+    
+    virtual SliceMatrix<> GetPoints() const
+    {
+      throw Exception("don't have real points for complex ir");
+    }
+
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
+    virtual bool IsComplex() const { return true; }     
+  };
+
+  
+
+  
+  
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
+  inline ostream & operator<< (ostream & ost, const MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> & ir)
   {
     for (int i = 0; i < ir.Size(); i++)
       ost << ir[i] << endl;

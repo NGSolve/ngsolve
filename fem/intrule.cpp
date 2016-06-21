@@ -212,6 +212,9 @@ namespace ngfem
   
   template class MappedIntegrationPoint<0,2>;
   template class MappedIntegrationPoint<0,3>;
+
+
+ 
   /*
   IntegrationRule :: IntegrationRule (ELEMENT_TYPE eltype, int order)
   { 
@@ -241,24 +244,24 @@ namespace ngfem
   }
 
 
-  template <int DIM_ELEMENT, int DIM_SPACE>
-  MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
+  MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
   MappedIntegrationRule (const IntegrationRule & ir, 
 			 const ElementTransformation & aeltrans, 
 			 Allocator & lh)
     : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
   {
     baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
-    incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>);
+    incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>);
 
     for (int i = 0; i < ir.GetNIP(); i++)
-      new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> (ir[i], eltrans, -1);
+      new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL> (ir[i], eltrans, -1);
 
     eltrans.CalcMultiPointJacobian (ir, *this);
   }
 
-  template <int DIM_ELEMENT, int DIM_SPACE>
-  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> :: 
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
+  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
   ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
   {
     Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
@@ -266,7 +269,7 @@ namespace ngfem
     for (int i = 0; i < hmips.Size(); i++)
       {
         auto & mip = hmips[i];
-        Mat<DIM_ELEMENT,DIM_SPACE> inv_jac = mip.GetJacobianInverse();
+        Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
         double det = fabs (mip.GetJacobiDet()); // GetMeasure();
         Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
         double len = L2Norm (normal);       // that's the surface measure
@@ -285,18 +288,41 @@ namespace ngfem
       }
   }
 
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> :: 
+  MappedIntegrationRule (const IntegrationRule & ir, 
+			 const ElementTransformation & aeltrans, 
+			 Allocator & lh)
+    : BaseMappedIntegrationRule (ir, aeltrans), mips(ir.GetNIP(), lh)
+  {
+    baseip = (char*)(void*)(BaseMappedIntegrationPoint*)(&mips[0]);
+    incr = sizeof (MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>);
 
+    for (int i = 0; i < ir.GetNIP(); i++)
+      new (&mips[i]) MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, Complex> (ir[i], eltrans, -1);
+    eltrans.CalcMultiPointJacobian (ir, *this);
+  }
+
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> :: 
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
+  {
+    throw Exception ("ComputeNormalsAndMeasure not available for complex IR");
+  }
   
   template class MappedIntegrationRule<0,0>;
   template class MappedIntegrationRule<0,1>;
+  template class MappedIntegrationRule<0,2>;
+  template class MappedIntegrationRule<0,3>;
   template class MappedIntegrationRule<1,1>;
   template class MappedIntegrationRule<2,2>;
   template class MappedIntegrationRule<3,3>;
   template class MappedIntegrationRule<1,2>;
   template class MappedIntegrationRule<2,3>;
 
-  template class MappedIntegrationRule<0,2>;
-  template class MappedIntegrationRule<0,3>;
+  template class MappedIntegrationRule<1,1, Complex>;
+  template class MappedIntegrationRule<2,2, Complex>;
+  template class MappedIntegrationRule<3,3, Complex>;
 
 
   
