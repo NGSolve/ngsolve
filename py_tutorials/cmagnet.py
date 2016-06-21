@@ -49,9 +49,8 @@ c = Preconditioner(a, type="bddc")
 # c = Preconditioner(a, type="multigrid", flags = { "smoother" : "block" } )
 a.Assemble()
 
-coil_domains = [ i for i,mat in enumerate(mesh.GetMaterials()) if mat == "coil" ]
 f = LinearForm(V)
-f += SymbolicLFI(CoefficientFunction((y,-x,0)) * v, definedon=coil_domains)
+f += SymbolicLFI(CoefficientFunction((y,-x,0)) * v, definedon=mesh.Materials("coil"))
 f.Assemble()
 
 u = GridFunction(V)

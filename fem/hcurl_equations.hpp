@@ -419,7 +419,7 @@ public:
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    Vec<3> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+    auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
     mat = scaled_nv * Trans(Cast(fel).GetCurlShape (mip.IP(), lh));
   }
 

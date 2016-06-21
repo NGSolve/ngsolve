@@ -34,7 +34,7 @@ namespace ngfem
     bool higher_integration_order;
     /// is the element curved ?
     bool iscurved = false;
-
+    bool is_complex = false;
   public:
     ///
     // ElementTransformation () { higher_integration_order = false; } 
@@ -133,6 +133,8 @@ namespace ngfem
       return iscurved;
     }
 
+    bool IsComplex() const { return is_complex; }
+    
     virtual void GetSort (FlatArray<int> sort) const
     { ; }
 

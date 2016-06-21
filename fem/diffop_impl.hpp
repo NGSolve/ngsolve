@@ -25,6 +25,30 @@ namespace ngfem
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
+              const BaseMappedIntegrationPoint & bmip,
+              SliceMatrix<Complex,ColMajor> mat, 
+              LocalHeap & lh) const
+  {
+    if (bmip.IsComplex())
+      {
+        const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> & mip =
+          static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex>&> (bmip);
+        DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+      }
+    else
+      {
+        throw Exception ("cannot do complex matrix for real mip");
+        /*
+        const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+          static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
+        DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+        */
+      }
+  }
+
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationRule & bmir,
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const

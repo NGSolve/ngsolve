@@ -192,7 +192,7 @@ namespace ngcomp
 
 
   template <int DIMS, int DIMR, typename BASE>
-  class ALE_ElementTransformation : public BASE // Ng_ElementTransformation<DIMS,DIMR>
+  class ALE_ElementTransformation : public BASE
   {
     const GridFunction * deform;
     const ScalarFiniteElement<DIMS> * fel;
@@ -359,6 +359,130 @@ namespace ngcomp
   };
 
 
+
+  
+
+  template <int DIMS, int DIMR, typename BASE>
+  class RadialPML_ElementTransformation : public BASE
+  {
+    Complex alpha;
+    double rad;
+  public:
+    RadialPML_ElementTransformation (const MeshAccess * amesh, 
+                                     ELEMENT_TYPE aet, ElementId ei, int elindex,
+                                     Complex _alpha, double _rad)
+      : BASE(amesh, aet, ei, elindex), alpha(_alpha), rad(_rad)
+    {
+      this->is_complex = true;
+    }
+
+    virtual ~RadialPML_ElementTransformation() { ; }
+
+    virtual void CalcJacobian (const IntegrationPoint & ip,
+			       FlatMatrix<> dxdxi) const
+    {
+      BASE::CalcJacobian(ip,dxdxi);
+    }
+    
+    virtual void CalcPoint (const IntegrationPoint & ip,
+			    FlatVector<> point) const
+    {
+      BASE::CalcPoint(ip,point);
+    }
+
+    virtual void CalcPointJacobian (const IntegrationPoint & ip,
+				    FlatVector<> point, FlatMatrix<> dxdxi) const
+    {
+      CalcJacobian (ip, dxdxi);
+      CalcPoint (ip, point);
+    }
+
+    void MapPoint (Vec<DIMR> & hpoint, Vec<DIMR,Complex> & point,
+                   Mat<DIMS,DIMR> & hjac, Mat<DIMS,DIMR,Complex> & jac) const
+    {
+      double abs_x = L2Norm (hpoint);
+      if (abs_x <= rad)  
+        {
+          point = hpoint;
+          jac = hjac;
+        }
+      else
+        {
+          Complex g = 1.+alpha*(1.0-rad/abs_x);
+          point = g * hpoint;
+          // SZ: sollte da nicht abs_x * abs_x anstelle  abs_x*abs_x * abs_x stehen? 
+          // JS: das hat schon so gestimmt
+          Mat<DIMR,DIMR,Complex> trans =
+            g * Id<DIMR>() + (rad*alpha/(abs_x*abs_x*abs_x)) * (hpoint * Trans(hpoint));
+          jac = trans * hjac;
+        }
+    }
+
+    virtual BaseMappedIntegrationPoint & operator() (const IntegrationPoint & ip, Allocator & lh) const
+    {
+      auto & mip = *new (lh) MappedIntegrationPoint<DIMS,DIMR,Complex> (ip, *this, -47);
+      MappedIntegrationPoint<DIMS,DIMR> hip(ip, *this);
+      
+      Vec<DIMR> hpoint(hip.Point());
+      Vec<DIMR,Complex> point;
+      
+      Mat<DIMS,DIMR> hjac(hip.Jacobian());
+      Mat<DIMS,DIMR,Complex> jac;
+          
+      MapPoint (hpoint, point, hjac, jac);
+                    
+      mip.Point() = point; 
+      mip.Jacobian() = jac;
+      mip.Compute();          
+      return mip;
+    }
+
+    virtual BaseMappedIntegrationRule & operator() (const IntegrationRule & ir, Allocator & lh) const
+    {
+      auto & mir = *new (lh) MappedIntegrationRule<DIMS,DIMR,Complex> (ir, *this, lh);
+      return mir;
+    }
+
+    virtual void CalcMultiPointJacobian (const IntegrationRule & ir,
+					 BaseMappedIntegrationRule & bmir) const
+    {
+      if (!bmir.IsComplex())
+        {
+          BASE::CalcMultiPointJacobian (ir, bmir);
+          return;
+        }
+
+      LocalHeapMem<1000000> lh("testwise");
+      MappedIntegrationRule<DIMS,DIMR> mir_real(ir, *this, lh);
+
+      auto & mir_complex = dynamic_cast<MappedIntegrationRule<DIMS,DIMR,Complex>&> (bmir);
+
+      for (int i = 0; i < ir.Size(); i++)
+        {
+          Vec<DIMR> hpoint(mir_real[i].Point());
+          Vec<DIMR,Complex> point;
+          
+          Mat<DIMS,DIMR> hjac(mir_real[i].Jacobian());
+          Mat<DIMS,DIMR,Complex> jac;
+          
+          MapPoint (hpoint, point, hjac, jac);
+                    
+          mir_complex[i].Point() = point; 
+          mir_complex[i].Jacobian() = jac;
+          mir_complex[i].Compute();          
+        }
+    }
+    
+    virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
+					 SIMD_BaseMappedIntegrationRule & bmir) const
+    {
+      throw ExceptionNOSIMD ("pml - trafo cannot calc simd_rule");
+    }
+  };
+
+
+
+  
 
 
   
@@ -1139,8 +1263,16 @@ namespace ngcomp
     ElementTransformation * eltrans;
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
-
-    if (deformation)
+    
+    if (el.GetIndex() == pml_domain)
+      {
+        eltrans = new (lh)
+          RadialPML_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
+          (this, el.GetType(), 
+           ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
+      }
+    
+    else if (deformation)
       {
         if (el.is_curved)
           eltrans = new (lh)

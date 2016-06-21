@@ -116,6 +116,17 @@ namespace ngfem
   }
   */
 
+  void BaseScalarFiniteElement ::
+  CalcShape (const IntegrationPoint & ip, 
+             SliceVector<Complex> shape) const
+  {
+    CalcShape (ip, SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))));
+    auto imag_part = SliceVector<double> (shape.Size(), 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
+    imag_part = 0.0;
+  }
+
+
+  
   void BaseScalarFiniteElement :: 
   CalcShape (const IntegrationRule & ir, 
 	     SliceMatrix<> shape) const

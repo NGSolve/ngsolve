@@ -194,6 +194,23 @@ namespace ngcomp
 
     /// for ALE
     shared_ptr<GridFunction> deformation;  
+
+    /// PML parameters
+    Complex pml_alpha;
+    double pml_r;
+    double pml_x;
+
+    double pml_xmin[3];
+    double pml_xmax[3]; 
+
+  /*
+    rect_pml = 0 .... circular pml with radius pml_r
+    rect_pml = 1 .... square pml on square (-pml_x, pml_x)^d
+    rect_pml = 2 .... rectangular pml on (pml_xmin, pml_xmax) x (pml_ymin, pml_ymax) x (pml_zmin, pml_zmax)
+  */
+    int rect_pml = -1;
+    int pml_domain = -1;
+    
     
     ///
     MPI_Comm mesh_comm;
@@ -544,6 +561,15 @@ namespace ngcomp
       return deformation;
     }
 
+
+    void SetRadialPML (double _r, Complex _alpha, int _domnr)
+    {
+      pml_r = _r;
+      pml_alpha = _alpha;
+      pml_domain = _domnr;
+    }
+
+    
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
       

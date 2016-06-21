@@ -369,6 +369,12 @@ namespace ngfem
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
+		const BaseMappedIntegrationPoint & bmip,
+		SliceMatrix<Complex,ColMajor> mat, 
+		LocalHeap & lh) const;
+
+    virtual void
+    CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
 		SliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;

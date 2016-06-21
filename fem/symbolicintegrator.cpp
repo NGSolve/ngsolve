@@ -577,7 +577,7 @@ namespace ngfem
                      FlatMatrix<Complex> elmat,
                      LocalHeap & lh) const
   {
-    if (fel.ComplexShapes())
+    if (fel.ComplexShapes() || trafo.IsComplex())
       T_CalcElementMatrix<Complex,Complex> (fel, trafo, elmat, lh);
     else
       T_CalcElementMatrix<Complex,double> (fel, trafo, elmat, lh);
@@ -715,13 +715,25 @@ namespace ngfem
             
                 // td.Stop();
 
-                if (!is_diagonal)
-                  for (int i = 0; i < mir.Size(); i++)
-                    proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+                if (!mir.IsComplex())
+                  {
+                    if (!is_diagonal)
+                      for (int i = 0; i < mir.Size(); i++)
+                        proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+                    else
+                      for (int i = 0; i < mir.Size(); i++)
+                        diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *= mir[i].GetWeight();
+                  }
                 else
-                  for (int i = 0; i < mir.Size(); i++)
-                    diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *= mir[i].GetWeight();
-                  
+                  { // pml
+                    if (!is_diagonal)
+                      for (int i = 0; i < mir.Size(); i++)
+                        proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+                    else
+                      for (int i = 0; i < mir.Size(); i++)
+                        diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *=
+                          static_cast<const ScalMappedIntegrationPoint<SCAL>&> (mir[i]).GetJacobiDet()*ir[i].Weight();
+                  }
                 IntRange r1 = proxy1->Evaluator()->UsedDofs(fel);
                 IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
                 SliceMatrix<SCAL> part_elmat = elmat.Rows(r2).Cols(r1);

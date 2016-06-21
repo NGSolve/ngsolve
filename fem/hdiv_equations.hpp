@@ -262,7 +262,8 @@ public:
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT & mat, LocalHeap & lh)
   {
-    Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+    // Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
+    auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
     mat = scaled_nv * Trans(Cast(fel).GetShape (mip.IP(), lh));
     /*
     mat =  (1.0/mip.GetJacobiDet())*

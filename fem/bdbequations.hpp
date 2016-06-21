@@ -1089,7 +1089,8 @@ namespace ngfem
 				MAT & mat, LocalHeap & lh)
     {
       FlatVector<> shape = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh);
-      Vec<D> nv = mip.GetNV();
+      // Vec<D> nv = mip.GetNV();
+      auto nv = mip.GetNV();
       //Vec<D> p = mip.GetPoint();
       for (int j = 0; j < shape.Size(); j++)
 	for (int i = 0; i < D; i++)
