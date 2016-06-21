@@ -672,7 +672,8 @@ void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Compl
 
 void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
 {
-  cout << "AddABTsym complex - complex not implemented" << endl;
+  c += a * Trans(b) | Lapack;
+  // cout << "AddABTsym complex - complex not implemented" << endl;
 }
 
 
