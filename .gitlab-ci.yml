@@ -79,7 +79,7 @@ stages:
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
     - cmake --build . --target INSTALL --config Release
 
-.build_netgen_win32:
+build_netgen_win32:
   <<: *win32
   <<: *tbuild_netgen_win
   cache:
@@ -88,7 +88,7 @@ stages:
       - src/
     key: "netgen_win32"
 
-.build_netgen_win64:
+build_netgen_win64:
   <<: *win64
   <<: *tbuild_netgen_win
   cache:
@@ -137,7 +137,7 @@ build_ubuntu_1604:
       - src/
     key: "netgen_win32"
 
-.test_netgen_win64:
+test_netgen_win64:
   <<: *win64
   <<: *ttest_netgen_win
   cache:
