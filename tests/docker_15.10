@@ -1,0 +1,4 @@
+FROM ubuntu:15.10
+MAINTAINER Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>
+RUN apt-get update && apt-get -y install python3 libpython3-dev libxmu-dev libboost-python-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev ccache
+ADD . /root/src/netgen
