@@ -1,20 +1,21 @@
 stages:
   - build
   - test
-  - deploy
   - cleanup
 
-.windows_32: &win32
+############################################
+# System templates
+############################################
+
+# Windows
+.template_windows_32: &win32
   tags:
     - windows
     - x86
   before_script:
     - "echo off"
-    - "set"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
-      #   - 'call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\vcvars32.bat"'
     - set EXT_LIBS=C:\external_libs\x86
-      #- set CMAKE_GENERATOR=NMake Makefiles
     - set CMAKE_GENERATOR=Visual Studio 14 2015
     - set INSTALL_DIR=C:/install32
     - set NETGENDIR=C:\install32\bin
@@ -22,17 +23,14 @@ stages:
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include 
 
-.windows_64: &win64
+.template_windows_64: &win64
   tags:
     - windows
     - x64
   before_script:
     - "echo off"
-    - "set"
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
-      #  - 'call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"'
     - set EXT_LIBS=C:\external_libs\x64
-      #- set CMAKE_GENERATOR=NMake Makefiles
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
     - set INSTALL_DIR=C:/install64
     - set NETGENDIR=C:\install64\bin
@@ -40,6 +38,30 @@ stages:
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5/libs/python35.lib
 
+# Linux
+.template_ubuntu: &ubuntu
+  tags:
+    - linux
+  before_script:
+    - pwd
+    - ls
+    - docker info
+
+.template_ubuntu_1510: &ubuntu_1510
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "15.10"
+
+.template_ubuntu_1604: &ubuntu_1604
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "16.04"
+
+############################################
+# Build stage
+############################################
+
+# Windows
 .template_build_win: &build_win
   stage: build
   script:
@@ -58,12 +80,6 @@ stages:
         -DCMAKE_CXX_FLAGS_RELEASE="/W0"
     - cmake --build . --target INSTALL --config Release
 
-.template_test_win: &test_win
-  stage: test
-  script:
-    - cd build
-    - ctest -C Release -V
-
 build_win32:
   <<: *win32
   <<: *build_win
@@ -79,6 +95,42 @@ build_win64:
     paths:
       - build/
     key: "ngsolve_win64"
+
+# Linux
+.template_build_linux: &build_linux
+  stage: build
+  script:
+    - docker build -t ngsolve:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
+    - rm -f ngsolve_$UBUNTU_VERSION.id
+    - >-
+      docker run
+      --cidfile ngsolve_$UBUNTU_VERSION.id
+      -e MKLROOT=/opt/intel/mkl
+      -e NETGENDIR=/opt/netgen/bin
+      -e CCACHE_DIR=/ccache
+      -v /opt/intel:/opt/intel
+      -v /mnt/ccache:/ccache ngsolve:$UBUNTU_VERSION
+      bash /root/src/ngsolve/tests/build.sh
+    - docker commit `cat ngsolve_$UBUNTU_VERSION.id` ngsolve_installed:$UBUNTU_VERSION
+
+build_ubuntu_1510:
+  <<: *ubuntu_1510
+  <<: *build_linux
+
+build_ubuntu_1604:
+  <<: *ubuntu_1604
+  <<: *build_linux
+
+############################################
+# Test stage
+############################################
+
+# Windows
+.template_test_win: &test_win
+  stage: test
+  script:
+    - cd build
+    - ctest -C Release -V
 
 # skip since we have no machine with 32 bits
 .test_win32:
@@ -97,24 +149,31 @@ test_win64:
       - build/
     key: "ngsolve_win64"
 
-build_ubuntu_1604:
-  stage: build
-  tags:
-    - linux
-  before_script:
-    - docker info
+# Linux
+.template_test_linux: &test_linux
+  stage: test
   script:
-    - rm -f ngsolve_16.04.id
-    - docker run -v /opt/intel:/opt/intel --cidfile ngsolve_16.04.id -e CCACHE_DIR=/ccache -v /mnt/ccache:/ccache netgen_installed:16.04 bash /root/build_ngsolve.sh
-    - docker commit `cat ngsolve_16.04.id` ngsolve_installed:16.04
+    - >-
+      docker run
+      -e NETGENDIR=/opt/netgen/bin
+      -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages
+      -e MKLROOT=/opt/intel/mkl
+      -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
+      -v /opt/intel:/opt/intel
+      ngsolve_installed:$UBUNTU_VERSION
+      bash -c 'cd /root/build/ngsolve && make test ARGS="-V"'
+
+test_ubuntu_1510:
+  <<: *ubuntu_1510
+  <<: *test_linux
 
 test_ubuntu_1604:
-  stage: test
-  tags:
-    - linux
-  script:
-    - docker run -v /opt/intel:/opt/intel -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 ngsolve_installed:16.04 bash -c 'source /etc/profile.d/netgen_profile.sh && cd /root/build/ngsolve && make test ARGS="-V"'
+  <<: *ubuntu_1604
+  <<: *test_linux
 
+############################################
+# Cleanup stage
+############################################
 
 linux_cleanup:
   stage: cleanup
