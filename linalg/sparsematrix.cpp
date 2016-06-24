@@ -132,9 +132,10 @@ namespace ngla
   template <typename FUNC>
   INLINE void MergeArrays (FlatArray<int*> ptrs,
                            FlatArray<int> sizes,
-                           FlatArray<int> minvals,
+                           // FlatArray<int> minvals,
                            FUNC f)
   {
+    STACK_ARRAY(int, minvals, sizes.Size());
     int nactive = 0;
     for (auto i : sizes.Range())
       if (sizes[i]) 
@@ -148,7 +149,7 @@ namespace ngla
     while (nactive)
       {
         int minval = minvals[0];
-        for (int i = 1; i < minvals.Size(); i++)
+        for (int i = 1; i < sizes.Size(); i++)
           minval = min2(minval, minvals[i]);
 
         
@@ -295,11 +296,11 @@ namespace ngla
                      int cnti = 0;
                      if (loop == 1)
                        {
-                         MergeArrays(ptrs, sizes, tmp, [&] (int col) { cnti++; } );
+                         MergeArrays(ptrs, sizes /* , tmp */, [&] (int col) { cnti++; } );
                          cnt[i] = cnti;
                        }
                      else
-                       MergeArrays(ptrs, sizes, tmp, [&] (int col) 
+                       MergeArrays(ptrs, sizes /* , tmp */, [&] (int col) 
                                    {
                                      colnr[firsti[i]+cnti] = col;
                                      cnti++; 
@@ -1656,6 +1657,181 @@ namespace ngla
 
 
 
+  SparseMatrix<double,double> * 
+  TransposeMatrix (const SparseMatrix<double, double> & mat)
+  {
+    Array<int> cnt(mat.Width());
+    cnt = 0;
+    for (int i = 0; i < mat.Height(); i++)
+      for (int c : mat.GetRowIndices(i))
+        cnt[c] ++;
+
+    SparseMatrix<double,double> * trans = new SparseMatrix<double>(cnt);
+    cnt = 0;
+    for (int i = 0; i < mat.Height(); i++)
+      for (int ci : Range(mat.GetRowIndices(i)))
+        {
+          int c = mat.GetRowIndices(i)[ci];
+          trans -> GetRowIndices(c)[cnt[c]] = i;
+          trans -> GetRowValues(c)[cnt[c]] = mat.GetRowValues(i)[ci];
+          cnt[c] ++;
+        }
+    return trans;
+  }
+
+  SparseMatrix<double,double> * 
+  MakeFullMatrix (const SparseMatrix<double, double> & mat)
+  {
+    Array<int> cnt(mat.Width());
+    cnt = 0;
+    for (int i = 0; i < mat.Height(); i++)
+      for (int c : mat.GetRowIndices(i))
+        {
+          cnt[i]++;
+          if (c < i) cnt[c]++;
+        }
+
+    SparseMatrix<double,double> * full = new SparseMatrix<double>(cnt);
+    cnt = 0;
+
+    for (int i = 0; i < mat.Height(); i++)
+      for (int ci : Range(mat.GetRowIndices(i)))
+        {
+          full -> GetRowIndices(i)[cnt[i]] = mat.GetRowIndices(i)[ci];
+          full -> GetRowValues(i)[cnt[i]] = mat.GetRowValues(i)[ci];
+          cnt[i] ++;
+        }
+    for (int i = 0; i < mat.Height(); i++)
+      for (int ci : Range(mat.GetRowIndices(i)))
+        {
+          int c = mat.GetRowIndices(i)[ci];
+          if (c == i) continue;
+          full -> GetRowIndices(c)[cnt[c]] = i;
+          full -> GetRowValues(c)[cnt[c]] = mat.GetRowValues(i)[ci];
+          cnt[c] ++;
+        }
+    return full;    
+  }
+
+  SparseMatrixSymmetric<double,double> * 
+  GetSymmetricMatrix (SparseMatrix<double, double> & mat)
+  {
+    Array<int> cnt(mat.Width());
+    cnt = 0;
+    for (int i = 0; i < mat.Height(); i++)
+      for (int c : mat.GetRowIndices(i))
+        if (c <= i)
+          cnt[i]++;
+
+    auto * full = new SparseMatrixSymmetric<double>(cnt);
+    cnt = 0;
+
+    for (int i = 0; i < mat.Height(); i++)
+      for (int ci : Range(mat.GetRowIndices(i)))
+        {
+          full -> GetRowIndices(i)[cnt[i]] = mat.GetRowIndices(i)[ci];
+          full -> GetRowValues(i)[cnt[i]] = mat.GetRowValues(i)[ci];
+          cnt[i] ++;
+        }
+
+    return full;    
+  }
+  
+
+  SparseMatrix<double,double> * 
+  MatMult (const SparseMatrix<double, double> & mata, const SparseMatrix<double, double> & matb)
+  {
+    static Timer t ("sparse matrix multiplication");
+    static Timer t1a ("sparse matrix multiplication - setup a");
+    static Timer t1b ("sparse matrix multiplication - setup b");
+    static Timer t2 ("sparse matrix multiplication - mult"); 
+    RegionTimer reg(t);
+
+    t1a.Start();
+    
+    // find graph of product
+    Array<int> cnt(mata.Height());
+    cnt = 0;
+
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<int*> ptrs;
+         Array<int> sizes;
+         for (int i : r)
+           {
+             auto mata_ci = mata.GetRowIndices(i);
+             ptrs.SetSize(mata_ci.Size());
+             sizes.SetSize(mata_ci.Size());
+             for (int j : Range(mata_ci))
+               {
+                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
+               }
+             int cnti = 0;
+             MergeArrays(ptrs, sizes, [&] (int col) { cnti++; } );
+             cnt[i] = cnti;
+           }
+       },
+       TasksPerThread(10));
+       
+    t1a.Stop();
+    t1b.Start();
+    SparseMatrix<double,double> * prod = new SparseMatrix<double>(cnt);
+    prod->AsVector() = 0.0;
+
+    // fill col-indices
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<int*> ptrs;
+         Array<int> sizes;
+         for (int i : r)
+           {
+             auto mata_ci = mata.GetRowIndices(i);
+             ptrs.SetSize(mata_ci.Size());
+             sizes.SetSize(mata_ci.Size());
+             for (int j : Range(mata_ci))
+               {
+                 ptrs[j] = &matb.GetRowIndices(mata_ci[j])[0];
+                 sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
+               }
+             int cnti = 0;
+             MergeArrays(ptrs, sizes, [&] (int col)
+                         {
+                           prod->GetRowIndices(i)[cnti] = col;
+                           cnti++;
+                         } );
+           }
+       },
+       TasksPerThread(10));
+    
+         
+    t1b.Stop();
+    t2.Start();
+    
+    ParallelFor
+      (mata.Height(), [&] (int i)
+       {
+        auto mata_ci = mata.GetRowIndices(i);
+        for (int j : Range(mata_ci))
+          {
+            auto vala = mata.GetRowValues(i)[j];
+            int rowb = mata.GetRowIndices(i)[j];
+
+            auto matb_ci = matb.GetRowIndices(rowb);
+            auto matb_vals = matb.GetRowValues(rowb);
+            for (int k = 0; k < matb_ci.Size(); k++)
+              (*prod)(i,matb_ci[k]) += vala * matb_vals[k];
+          }
+       },
+       TasksPerThread(10));
+    
+    t2.Stop();
+    return prod;
+  }
+  
+  
 
   template <class TM, class TV>
   BaseSparseMatrix * 
@@ -1805,6 +1981,26 @@ namespace ngla
                                                     BaseSparseMatrix* acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
+    RegionTimer reg(t);
+    // new version
+    auto prolT = TransposeMatrix(prol);
+    auto full = MakeFullMatrix(*this);
+
+    auto prod1 = MatMult(*full, prol);
+    auto prod = MatMult(*prolT, *prod1);
+    
+    auto prodhalf = GetSymmetricMatrix (*prod);
+    
+    delete prod;
+    delete prod1;
+    delete full;
+    delete prolT;
+    return prodhalf;
+
+      
+#ifdef OLD    
+    
+    static Timer t ("sparsematrix - restrict");
     static Timer tbuild ("sparsematrix - restrict, build matrix");
     static Timer tbuild1 ("sparsematrix - restrict, build matrix1");
     static Timer tbuild2 ("sparsematrix - restrict, build matrix2");
@@ -1947,6 +2143,8 @@ namespace ngla
           }
       }
     return cmat;
+#endif
+    
   }
 
 
