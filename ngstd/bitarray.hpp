@@ -23,11 +23,15 @@ class BitArray
 
   /// the data
   unsigned char * data;
+  ///
+  bool owns_data = true;
 public:
   /// empty array
   NGS_DLL_HEADER BitArray ();
   /// array of asize bits
   NGS_DLL_HEADER BitArray (int asize);
+  /// array of asize bits
+  NGS_DLL_HEADER BitArray (int asize, LocalHeap & lh);
   ///
   NGS_DLL_HEADER BitArray (const BitArray & ba2);
 

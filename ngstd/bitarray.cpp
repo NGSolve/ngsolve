@@ -12,8 +12,6 @@
 
 namespace ngstd
 {
-  using namespace ngstd;
-
   BitArray :: BitArray ()
   {
     size = 0;
@@ -27,6 +25,13 @@ namespace ngstd
     SetSize (asize);
   }
 
+  BitArray :: BitArray (int asize, LocalHeap & lh)
+  {
+    size = asize;
+    data = new (lh) unsigned char [Addr (size)+1];
+    owns_data = false;
+  }
+  
   BitArray :: BitArray (const BitArray & ba2)
   {
     size = 0;
@@ -36,13 +41,14 @@ namespace ngstd
 
   BitArray :: ~BitArray ()
   {
-    delete [] data;
+    if (owns_data)
+      delete [] data;
   }
 
   void BitArray :: SetSize (int asize)
   {
     if (size == asize) return;
-    if (data) delete [] data;
+    if (owns_data) delete [] data;
 
     size = asize;
     data = new unsigned char [Addr (size)+1];
