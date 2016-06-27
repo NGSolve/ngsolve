@@ -126,7 +126,7 @@ namespace std
 #ifdef VLA
 #define STACK_ARRAY(TYPE,VAR,SIZE) TYPE VAR[SIZE]
 #else
-#define STACK_ARRAY(TYPE,VAR,SIZE) TYPE * VAR = (TYPE*)aligned_alloca(SIZE*sizeof(VAR), alignof(TYPE))
+#define STACK_ARRAY(TYPE,VAR,SIZE) TYPE * VAR = (TYPE*)aligned_alloca((SIZE)*sizeof(TYPE), alignof(TYPE))
 #endif
 
 
