@@ -3101,6 +3101,7 @@ namespace ngcomp
                     mutex addelemfacbnd_mutex;
 
                     if (needs_element_boundary_loop)
+                      /*
                     ParallelForRange
                       (IntRange(ma->GetNE()), [&] ( IntRange r )
                        {
@@ -3109,11 +3110,19 @@ namespace ngcomp
                          Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                          for (int el1 : r)
                            {
+                      */
+		    IterateElements 
+		      (*fespace, VOL, clh, 
+		       [&] (ElementId ei1, LocalHeap & lh)
+                       {
+                         {
+                           int el1 = ei1.Nr();
+                           Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);                         
                              // RegionTimer reg1(timerDG1);
 
-                             ma->GetElFacets(el1,fnums1);
+                           ma->GetElFacets(el1,fnums1);
                              // T_ElementId<VOL,2> ei1(el1);
-                             ElementId ei1(VOL, el1);
+                             // ElementId ei1(VOL, el1);
                              
                              for (int facnr1 : Range(fnums1))
                                {
