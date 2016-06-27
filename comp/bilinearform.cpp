@@ -185,7 +185,24 @@ namespace ngcomp
     if (symmetric && !bfi->IsSymmetric())
       throw Exception (string ("Adding non-symmetric integrator to symmetric bilinear-form\n")+
                        string ("bfi is ")+bfi->Name());
+
     parts.Append (bfi);
+
+    if (bfi -> BoundaryForm())
+      {
+        if (bfi -> SkeletonForm())
+          boundary_skeleton_parts.Append(bfi);
+        else
+          boundary_parts.Append(bfi);
+      }
+    else
+      {
+        if (bfi -> SkeletonForm())
+          volume_skeleton_parts.Append(bfi);
+        else
+          volume_parts.Append(bfi);
+      }
+    
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());
 
@@ -785,6 +802,11 @@ namespace ngcomp
 	    mat.SetZero();
 	    mattimerclear.Stop();
 
+            bool hasbound = boundary_parts.Size();
+            bool hasinner = volume_parts.Size();
+            bool hasskeletonbound = boundary_skeleton_parts.Size();
+            bool hasskeletoninner = volume_skeleton_parts.Size();
+            /*
             bool hasbound = false;
             bool hasinner = false;
             bool hasskeletonbound = false;
@@ -803,7 +825,7 @@ namespace ngcomp
                   else
                     hasinner = true;
               }
-
+            */
             if (print)
               {
                 *testout << " BILINEARFORM TEST:" << endl;
@@ -887,6 +909,7 @@ namespace ngcomp
                      timer1.Stop();
                      timer2.Start();
 
+                     /*
                      for (int j = 0; j < NumIntegrators(); j++)
                        {
                          HeapReset hr (lh);
@@ -894,9 +917,14 @@ namespace ngcomp
                       
                          if (!bfi.VolumeForm()) continue;
                          if (!bfi.DefinedOn (el.GetIndex())) continue;
-                      
+                     */
+                     for (auto & bfip : volume_parts)
+                       {
+                         const BilinearFormIntegrator & bfi = *bfip;
+                         if (!bfi.DefinedOn (el.GetIndex())) continue;                        
+                         
                          FlatMatrix<SCAL> elmat(elmat_size, lh);
-
+                         
                          try
                            {
                              static Timer elementtimer ("Element matrix integration", 2);
@@ -1184,13 +1212,20 @@ namespace ngcomp
                   
                     FlatVector<SCAL> sum_diag(dnums.Size()*fespace->GetDimension(), clh);
                     sum_diag = 0;
+
+                    /*
                     for (int j = 0; j < NumIntegrators(); j++)
                       {
                         const BilinearFormIntegrator & bfi = *parts[j];
                         if (bfi.SkeletonForm()) continue;
                         if (bfi.BoundaryForm()) continue;
                         if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
-                      
+                    */
+                    for (auto & bfip : volume_parts)
+                      {
+                        const BilinearFormIntegrator & bfi = *bfip;
+                        if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
+                        
                         FlatVector<double> diag;
                         try
                           {
@@ -1272,6 +1307,7 @@ namespace ngcomp
                       for (int d : dnums)
                         if (d != -1) useddof[d] = true;
 
+                        /*
                       for (int j = 0; j < NumIntegrators(); j++)
                         {
                           const BilinearFormIntegrator & bfi = *parts[j];
@@ -1279,7 +1315,13 @@ namespace ngcomp
                           if (!bfi.BoundaryForm()) continue;
                           if (bfi.SkeletonForm()) continue;
                           if (!bfi.DefinedOn (ma->GetSElIndex (i))) continue;                
-                          
+                        */
+                      
+                      for (auto & bfip : boundary_parts)
+                        {
+                          const BilinearFormIntegrator & bfi = *bfip;
+                          if (!bfi.DefinedOn (ei.GetIndex())) continue;
+                        
                           timerb2.Start();
 
                           bfi.CalcElementMatrix (fel, eltrans, elmat, lh);
@@ -2814,7 +2856,13 @@ namespace ngcomp
 
       {
         // int ne = ma->GetNE();
-      
+
+        bool hasbound = boundary_parts.Size();
+        bool hasinner = volume_parts.Size();
+        bool hasskeletonbound = boundary_skeleton_parts.Size();
+        bool hasskeletoninner = volume_skeleton_parts.Size();
+
+        /*
         bool hasbound = false;
         bool hasinner = false;
         bool hasskeletonbound = false;
@@ -2834,6 +2882,7 @@ namespace ngcomp
               else
                 hasinner = true;
           }
+        */      
 
         bool done = false;
         // int atempt = 0;
@@ -3744,7 +3793,7 @@ namespace ngcomp
             if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
             if (type == 1 && !bfi.BoundaryForm()) continue;
             if (type == 1 && !bfi.DefinedOn (this->ma->GetSElIndex (elnum))) continue;
-
+            
             if (this->precompute)
               bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 
                                       this->precomputed_data[elnum*this->NumIntegrators()+j], lh);
