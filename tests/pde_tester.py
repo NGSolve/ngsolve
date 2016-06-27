@@ -1,3 +1,4 @@
+from netgen import *
 from ngsolve import *
 from sys import argv
 
