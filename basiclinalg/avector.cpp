@@ -846,7 +846,8 @@ void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex>
 
 void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
 {
-  cout << "addabt complex-complex not implemented" << endl;
+  c += a * Trans(b) | Lapack;  
+  // cout << "addabt complex-complex not implemented" << endl;
 }
 
 
