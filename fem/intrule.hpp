@@ -1040,8 +1040,9 @@ namespace ngfem
     INLINE const IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
 
-    INLINE const BaseMappedIntegrationPoint & operator[] (int i) const
-    { return *static_cast<const BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
+    INLINE BaseMappedIntegrationPoint & operator[] (int i) const
+    { return *static_cast<BaseMappedIntegrationPoint*> ((void*)(baseip+i*incr)); }
+
     virtual BaseMappedIntegrationRule & Range(int first, int next, LocalHeap & lh) const = 0;
     /*
     {
@@ -1089,7 +1090,8 @@ namespace ngfem
     
     INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (int i) const
     { 
-      return mips[i]; 
+      // return mips[i];
+      return static_cast<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> &> (BaseMappedIntegrationRule::operator[] (i));
     }
 
     INLINE MappedIntegrationRule Range(int first, int next) const
