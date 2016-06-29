@@ -169,7 +169,7 @@ linux_cleanup:
     - linux
   script:
     # remove intermediate and old docker images and containers
-    - docker rm `docker ps --no-trunc -aq`
+    - docker rm -f `docker ps --no-trunc -aq`
     - docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
   when: always
 
