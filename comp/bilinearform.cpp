@@ -3319,7 +3319,7 @@ namespace ngcomp
         static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
 
         IterateElements 
-          (*fespace, VOL, clh, 
+          (*fespace2, VOL, clh, 
            [&] (ElementId ei, LocalHeap & lh)
            
            {
