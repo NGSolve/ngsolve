@@ -75,12 +75,22 @@ namespace ngstd
     }
 
     /// sort integers
-    INLINE void Sort ()
+    INLINE INT & Sort () & 
     {
       for (int k = 0; k < N; k++)
 	for (int l = k+1; l < N; l++)
 	  if (i[k] > i[l]) 
 	    Swap (i[k], i[l]);
+      return *this;
+    }
+
+    INLINE INT Sort () &&
+    {
+      for (int k = 0; k < N; k++)
+	for (int l = k+1; l < N; l++)
+	  if (i[k] > i[l]) 
+	    Swap (i[k], i[l]);
+      return *this;
     }
 
     /// access
@@ -117,18 +127,27 @@ namespace ngstd
 
   /// sort 2 integers
   template <>
-  INLINE void INT<2>::Sort ()
+  INLINE INT<2> & INT<2>::Sort () & 
   {
     if (i[0] > i[1]) Swap (i[0], i[1]);
+    return *this;
+  }
+
+  template <>
+  INLINE INT<2> INT<2>::Sort () &&
+  {
+    if (i[0] > i[1]) Swap (i[0], i[1]);
+    return *this;
   }
 
   /// sort 3 integers
   template <>
-  INLINE void INT<3>::Sort ()
+  INLINE INT<3> INT<3>::Sort () &&
   {
     if (i[0] > i[1]) Swap (i[0], i[1]);
     if (i[1] > i[2]) Swap (i[1], i[2]);
     if (i[0] > i[1]) Swap (i[0], i[1]);
+    return *this;
   }
 
   /// Print integers
@@ -514,6 +533,12 @@ namespace ngstd
     {
       acont = cont[pos];
     }
+
+    pair<T_HASH,T> GetBoth (int pos) const
+    {
+      return pair<T_HASH,T> (hash[pos], cont[pos]);
+    }
+
 
     void SetSize (int asize)
     {
