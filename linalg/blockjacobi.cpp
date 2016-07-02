@@ -13,6 +13,7 @@ namespace ngla
   
   static mutex buildingblockupdate_mutex;
 
+  /*
   template <typename Tarray>
   int BinSearch(const Tarray & v, int i) {
     int n = v.Size();
@@ -30,7 +31,7 @@ namespace ngla
     }
     return first;
 }
-
+  */
 
 
   BaseBlockJacobiPrecond :: 
@@ -399,11 +400,6 @@ namespace ngla
 
 
     atomic<int> cnt(0);
-    /*
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < blocktable.Size(); i++)
-      {
-    */
     
     ParallelFor 
       (Range(blocktable), [&] (int i)
@@ -429,9 +425,6 @@ namespace ngla
 	    return; // continue;
 	  }
 	
-	// Matrix<TM> blockmat(bs);
-	// invdiag[i] = new Matrix<TM> (bs);
-
         FlatMatrix<TM> & blockmat = invdiag[i];
         
 	for (int j = 0; j < bs; j++)
@@ -1126,15 +1119,14 @@ namespace ngla
         for (int c = 0; c < block_coloring.Size(); c++)
           ParallelFor (color_balance[c], [&] (int bi)
                        {
-                         SmoothBlock (block_coloring[c][bi], fx, /* fb, */ fy);
+                         SmoothBlock (block_coloring[c][bi], fx, fy);
                        });
     
     else
-    
+      
       for (int k = 1; k <= steps; k++)
         for (int i = 0; i < blocktable.Size(); i++)
-          SmoothBlock (i, fx, /* fb, */ fy);
-
+          SmoothBlock (i, fx, fy);
   }
 
   
@@ -1155,7 +1147,7 @@ namespace ngla
       for (int c = 0; c < block_coloring.Size(); c++)
         ParallelFor (color_balance[c], [&] (int bi)
                      {
-                       SmoothBlock (block_coloring[c][bi], fx, /* fb, */ fy);
+                       SmoothBlock (block_coloring[c][bi], fx, fy);
                      });
     
     else
@@ -1224,7 +1216,6 @@ namespace ngla
     if (task_manager)
       
       for (int c = block_coloring.Size()-1; c >= 0; c--)
-
         ParallelFor (color_balance[c], [&] (int bi)
                      {
                        SmoothBlock (block_coloring[c][bi], fx, /* fb, */ fy);
