@@ -178,13 +178,15 @@ namespace ngstd
   /// hash value of 2 int
   INLINE int HashValue (const INT<2> & ind, int size) 
   {
-    return (113*ind[0]+ind[1]) % size;
+    INT<2,long> lind = ind;
+    return (113*lind[0]+lind[1]) % size;
   }
 
   /// hash value of 3 int
   INLINE int HashValue (const INT<3> & ind, int size) 
   {
-    return (113*ind[0]+59*ind[1]+ind[2]) % size;
+    INT<2,long> lind = ind;
+    return (113*lind[0]+59*lind[1]+lind[2]) % size;
   }
 
 
