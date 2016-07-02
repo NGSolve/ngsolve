@@ -1,13 +1,11 @@
  /**************************************************************************/
-/* File:   blockjacobi.cpp                                                */
-/* Author: Joachim Schoeberl                                              */
-/* Date:   14. Aug. 2002                                                  */
-/**************************************************************************/
+/* File:   jacobi.cpp                                                      */
+/* Author: Joachim Schoeberl                                               */
+/* Date:   14. Aug. 2002                                                   */
+/***************************************************************************/
 
 
 #include <la.hpp>
-// #include <parallelngs.hpp>
-
 
 namespace ngla
 {
@@ -83,9 +81,7 @@ namespace ngla
     timer.AddFlops (mat.NZE());
 
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-    // dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
-    // dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
     for (int i = 0; i < height; i++)
       if (!this->inner || this->inner->Test(i))
@@ -106,9 +102,7 @@ namespace ngla
     timer.AddFlops (mat.NZE());
 
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
-      // dynamic_cast<T_BaseVector<TV_ROW> &> (x).FV();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
-      //dynamic_cast<const T_BaseVector<TV_ROW> &> (b).FV();
 
     for (int i = height-1; i >= 0; i--)
       if (!this->inner || this->inner->Test(i))
@@ -149,9 +143,7 @@ namespace ngla
     NgProfiler::RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
-    // dynamic_cast<T_BaseVector<TVX> &> (x).FV();
     const FlatVector<TVX> fb = b.FV<TVX> ();
-    // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
