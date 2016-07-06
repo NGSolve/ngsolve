@@ -1046,13 +1046,13 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("SolveM", FunctionPointer
         ( [] (const FESpace & self,
-              shared_ptr<CoefficientFunction> rho, shared_ptr<BaseVector> vec)
+              shared_ptr<CoefficientFunction> rho, shared_ptr<BaseVector> vec, int heapsize)
           {
-            LocalHeap lh(100000, "solveM - lh", true);
+            LocalHeap lh(heapsize, "solveM - lh", true);
             self.SolveM(*rho, *vec, lh);
           }),
         (bp::args("self"), 
-         bp::args("rho"), bp::args("vec")))
+         bp::args("rho"), bp::args("vec"), bp::args("heapsize")=1000000))
         
     .def("__eq__", FunctionPointer
          ( [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
