@@ -34,7 +34,8 @@ namespace ngfem
     enum { DIFFORDER = 1 };
   
     static string Name() { return "grad"; }
-
+    static constexpr bool SUPPORT_PML = true;
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
 
@@ -204,7 +205,8 @@ namespace ngfem
     enum { DIFFORDER = 0 };
 
     static string Name() { return "Id"; }
-
+    static constexpr bool SUPPORT_PML = true;
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
     

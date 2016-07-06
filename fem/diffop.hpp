@@ -24,6 +24,7 @@ namespace ngfem
   public:
 
     static string Name() { return typeid(DiffOp<DOP>()).name(); }
+    static constexpr bool SUPPORT_PML = false;
   
     /**
        Computes the B-matrix. 
