@@ -22,6 +22,34 @@ namespace ngfem
     DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
   }
 
+
+  template <bool ENABLE_PML>
+  class GenerateMatrix_PMLWrapper
+  {
+  public:
+    template <typename DIFFOP, typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+                                       MAT & mat, LocalHeap & lh)
+    {
+      DIFFOP::GenerateMatrix (fel, mip, mat, lh);        
+    }
+  };
+
+  template <> class GenerateMatrix_PMLWrapper<false>
+  {
+  public:
+    template <typename DIFFOP, typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("PML not supported for diffop ")+DIFFOP::Name() +
+                      "\nit might be enough to set SUPPORT_PML to true in the diffop");
+    }
+  };
+  
+    
+  
+  
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,
@@ -33,16 +61,12 @@ namespace ngfem
       {
         const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex> & mip =
           static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE,Complex>&> (bmip);
-        DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+        // DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+        GenerateMatrix_PMLWrapper<DIFFOP::SUPPORT_PML>::template GenerateMatrix<DIFFOP> (bfel, mip, mat, lh);
       }
     else
       {
         throw Exception ("cannot do complex matrix for real mip");
-        /*
-        const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
-          static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-        DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
-        */
       }
   }
 
