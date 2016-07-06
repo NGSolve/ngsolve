@@ -306,14 +306,14 @@ namespace netgen
     return m;
   }
 
-
-  inline Mat<3,3> operator* (const Mat<3,3> & a, const Mat<3,3> & b)
+  template <typename T>
+  inline Mat<3,3,T> operator* (const Mat<3,3,T> & a, const Mat<3,3,T> & b)
   {
-    Mat<3,3> m;
+    Mat<3,3,T> m;
     for (int i = 0; i < 3; i++)
       for (int j = 0; j < 3; j++)
 	{
-	  double sum = 0;
+	  T sum = T(0);
 	  for (int k = 0; k < 3; k++)
 	    sum += a(i,k) * b(k, j);
 	  m(i,j) = sum; 

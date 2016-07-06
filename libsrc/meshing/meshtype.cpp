@@ -1965,9 +1965,9 @@ namespace netgen
       }
   }
 
-
+  template <typename T>
   void Element :: 
-  GetDShapeNew (const Point<3> & p, MatrixFixWidth<3> & dshape) const
+  GetDShapeNew (const Point<3,T> & p, MatrixFixWidth<3,T> & dshape) const
   {
     switch (typ)
       {

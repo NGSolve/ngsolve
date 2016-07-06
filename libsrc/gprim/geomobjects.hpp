@@ -12,31 +12,31 @@ namespace netgen
 {
 
 
-  template <int D> class Vec;
-  template <int D> class Point;
+  template <int D, typename T = double> class Vec;
+  template <int D, typename T = double> class Point;
 
 
-  template <int D>
+  template <int D, typename T>
   class Point
   {
 
   protected:
-    double x[D];
+    T x[D];
 
   public:
     Point () { ; }
-    Point (double ax) { for (int i = 0; i < D; i++) x[i] = ax; }
-    Point (double ax, double ay) 
+    Point (T ax) { for (int i = 0; i < D; i++) x[i] = ax; }
+    Point (T ax, T ay) 
     { 
       // static_assert(D==2, "Point<D> constructor with 2 args called");
       x[0] = ax; x[1] = ay; 
     }
-    Point (double ax, double ay, double az) 
+    Point (T ax, T ay, T az) 
     {
       // static_assert(D==3, "Point<D> constructor with 3 args called");
       x[0] = ax; x[1] = ay; x[2] = az; 
     }
-    Point (double ax, double ay, double az, double au)
+    Point (T ax, T ay, T az, T au)
     { x[0] = ax; x[1] = ay; x[2] = az; x[3] = au;}
 
     Point (const Point<D> & p2)
@@ -52,39 +52,39 @@ namespace netgen
       return *this;
     }
 
-    Point & operator= (double val)
+    Point & operator= (T val)
     {
       for (int i = 0; i < D; i++) x[i] = val;
       return *this;
     }
 
-    double & operator() (int i) { return x[i]; }
-    const double & operator() (int i) const { return x[i]; }
+    T & operator() (int i) { return x[i]; }
+    const T & operator() (int i) const { return x[i]; }
 
-    operator const double* () const { return x; }
+    operator const T* () const { return x; }
   };
 
-  template <int D>
+  template <int D, typename T>
   class Vec
   {
 
   protected:
-    double x[D];
+    T x[D];
 
   public:
     Vec () { ; } // for (int i = 0; i < D; i++) x[i] = 0; }
-    Vec (double ax) { for (int i = 0; i < D; i++) x[i] = ax; }
-    Vec (double ax, double ay) 
+    Vec (T ax) { for (int i = 0; i < D; i++) x[i] = ax; }
+    Vec (T ax, T ay) 
     { 
       // static_assert(D==2, "Vec<D> constructor with 2 args called");
       x[0] = ax; x[1] = ay; 
     }
-    Vec (double ax, double ay, double az)
+    Vec (T ax, T ay, T az)
     { 
       // static_assert(D==3, "Vec<D> constructor with 3 args called");
       x[0] = ax; x[1] = ay; x[2] = az; 
     }
-    Vec (double ax, double ay, double az, double au)
+    Vec (T ax, T ay, T az, T au)
     { x[0] = ax; x[1] = ay; x[2] = az; x[3] = au; }
 
     Vec (const Vec<D> & p2)
@@ -104,28 +104,28 @@ namespace netgen
       return *this;
     }
 
-    Vec & operator= (double s)
+    Vec & operator= (T s)
     {
       for (int i = 0; i < D; i++) x[i] = s;
       return *this;
     }
 
-    double & operator() (int i) { return x[i]; }
-    const double & operator() (int i) const { return x[i]; }
+    T & operator() (int i) { return x[i]; }
+    const T & operator() (int i) const { return x[i]; }
 
-    operator const double* () const { return x; }
+    operator const T* () const { return x; }
 
-    double Length () const
+    T Length () const
     {
-      double l = 0;
+      T l = 0;
       for (int i = 0; i < D; i++)
 	l += x[i] * x[i];
       return sqrt (l);
     }
 
-    double Length2 () const
+    T Length2 () const
     {
-      double l = 0;
+      T l = 0;
       for (int i = 0; i < D; i++)
 	l += x[i] * x[i];
       return l;
@@ -133,7 +133,7 @@ namespace netgen
 
     const Vec<D> & Normalize ()
     {
-      double l = Length();
+      T l = Length();
       if (l != 0)
 	for (int i = 0; i < D; i++)
 	  x[i] /= l;
@@ -147,19 +147,19 @@ namespace netgen
 
 
 
-  template <int H, int W=H>
+  template <int H, int W=H, typename T = double>
   class Mat
   {
 
   protected:
-    double x[H*W];
+    T x[H*W];
 
   public:
     Mat () { ; }
     Mat (const Mat & b)
     { for (int i = 0; i < H*W; i++) x[i] = b.x[i]; }
   
-    Mat & operator= (double s)
+    Mat & operator= (T s)
     {
       for (int i = 0; i < H*W; i++) x[i] = s;
       return *this;
@@ -171,30 +171,30 @@ namespace netgen
       return *this;
     }
 
-    double & operator() (int i, int j) { return x[i*W+j]; }
-    const double & operator() (int i, int j) const { return x[i*W+j]; }
-    double & operator() (int i) { return x[i]; }
-    const double & operator() (int i) const { return x[i]; }
+    T & operator() (int i, int j) { return x[i*W+j]; }
+    const T & operator() (int i, int j) const { return x[i*W+j]; }
+    T & operator() (int i) { return x[i]; }
+    const T & operator() (int i) const { return x[i]; }
 
-    Vec<H> Col (int i) const
+    Vec<H,T> Col (int i) const
     {
-      Vec<H> hv; 
+      Vec<H,T> hv; 
       for (int j = 0; j < H; j++)
 	hv(j) = x[j*W+i];
       return hv; 
     }
 
-    Vec<W> Row (int i) const
+    Vec<W,T> Row (int i) const
     {
-      Vec<W> hv; 
+      Vec<W,T> hv; 
       for (int j = 0; j < W; j++)
 	hv(j) = x[i*W+j];
       return hv; 
     }
 
-    void Solve (const Vec<H> & rhs, Vec<W> & sol) const
+    void Solve (const Vec<H,T> & rhs, Vec<W,T> & sol) const
     {
-      Mat<W,H> inv;
+      Mat<W,H,T> inv;
       CalcInverse (*this, inv);
       sol = inv * rhs;
     }

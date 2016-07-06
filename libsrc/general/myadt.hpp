@@ -46,4 +46,7 @@
 #include "gzstream.h"
 #include "archive_base.hpp"
 
+#include "mysimd.hpp"
+
+
 #endif

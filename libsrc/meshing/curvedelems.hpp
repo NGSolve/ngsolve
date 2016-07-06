@@ -141,10 +141,11 @@ public:
 					    Array< Point<3> > * x,
 					    Array< Mat<3,3> > * dxdxi);
 
+  template <typename T>
   void CalcMultiPointElementTransformation (ElementIndex elnr, int n,
-                                            const double * xi, size_t sxi,
-                                            double * x, size_t sx,
-                                            double * dxdxi, size_t sdxdxi);
+                                            const T * xi, size_t sxi,
+                                            T * x, size_t sx,
+                                            T * dxdxi, size_t sdxdxi);
 
 
 
@@ -196,10 +197,11 @@ private:
     Vec<3> hcoefs[10]; // enough for second order tets
   };
 
-
-  void CalcElementShapes (ElementInfo & info, const Point<3> & xi, Vector & shapes) const;
+  template <typename T>
+  void CalcElementShapes (ElementInfo & info, Point<3,T> xi, TFlatVector<T> shapes) const;
   void GetCoefficients (ElementInfo & info, Vec<3> * coefs) const;
-  void CalcElementDShapes (ElementInfo & info, const Point<3> & xi, MatrixFixWidth<3> & dshapes) const;
+  template <typename T>  
+  void CalcElementDShapes (ElementInfo & info, const Point<3,T> xi, MatrixFixWidth<3,T> dshapes) const;
 
   
   class SurfaceElementInfo

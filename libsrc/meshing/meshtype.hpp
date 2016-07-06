@@ -125,7 +125,6 @@ namespace netgen
     PointIndex operator-- (int) { PointIndex hi(*this); i--; return hi; }
     PointIndex operator++ () { i++; return *this; }
     PointIndex operator-- () { i--; return *this; }
-
 #ifdef BASE0
     enum { BASE = 0 };
 #else
@@ -718,9 +717,12 @@ namespace netgen
 
     void GetShape (const Point<3> & p, class Vector & shape) const;
     void GetShapeNew (const Point<3> & p, class FlatVector & shape) const;
+    template <typename T>
+    void GetShapeNew (const Point<3,T> & p, TFlatVector<T> shape) const;    
     /// matrix 2 * np
     void GetDShape (const Point<3> & p, class DenseMatrix & dshape) const;
-    void GetDShapeNew (const Point<3> & p, class MatrixFixWidth<3> & dshape) const;
+    template <typename T>
+    void GetDShapeNew (const Point<3,T> & p, class MatrixFixWidth<3,T> & dshape) const;
     /// matrix 3 * np
     void GetPointMatrix (const T_POINTS & points,
 			 class DenseMatrix & pmat) const; 
