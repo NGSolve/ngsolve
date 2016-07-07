@@ -1,0 +1,175 @@
+stages:
+  - build
+  - test
+  - cleanup
+
+############################################
+# System templates
+############################################
+
+# Windows
+.template_windows_32: &win32
+  tags:
+    - windows
+    - x86
+  before_script:
+    - "echo off"
+    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
+    - set EXT_LIBS=C:\external_libs\x86
+    - set CMAKE_GENERATOR=Visual Studio 14 2015
+    - set INSTALL_DIR=C:/install32
+    - set NETGENDIR=C:\install32\bin
+    - set PYTHONPATH=C:\install32\lib\site-packages
+    - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
+    - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include
+
+.template_windows_64: &win64
+  tags:
+    - windows
+    - x64
+  before_script:
+    - "echo off"
+    - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
+    - set EXT_LIBS=C:\external_libs\x64
+    - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
+    - set INSTALL_DIR=C:/install64
+    - set NETGENDIR=C:\install64\bin
+    - set PYTHONPATH=C:\install64\lib\site-packages
+    - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
+    - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5/libs/python35.lib
+
+# Linux
+.template_ubuntu: &ubuntu
+  tags:
+    - linux
+  before_script:
+    - pwd
+    - ls
+    - docker info
+
+.template_ubuntu_1510: &ubuntu_1510
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "15.10"
+
+.template_ubuntu_1604: &ubuntu_1604
+  <<: *ubuntu
+  variables:
+    UBUNTU_VERSION: "16.04"
+
+############################################
+# Build stage
+############################################
+
+# Windows
+.template_build_win: &tbuild_netgen_win
+  stage: build
+  script:
+    - if not exist build MKDIR build
+    - cd build
+    - DEL CMakeCache.txt
+    - RD /S /Q CMakeFiles
+    - >-
+        cmake ..\
+        -DADDITIONAL_PATHS="%EXT_LIBS%\ext_libs;%EXT_LIBS%\occ"
+        %PYTHON_CONFIG%
+        -G"%CMAKE_GENERATOR%"
+        -DINSTALL_DIR="%INSTALL_DIR%"
+        -DUSE_OCC=ON
+        -DCMAKE_CXX_FLAGS_RELEASE="/W0"
+    - cmake --build . --target INSTALL --config Release
+
+build_netgen_win32:
+  <<: *win32
+  <<: *tbuild_netgen_win
+  cache:
+    paths:
+      - build/
+      - src/
+    key: "netgen_win32"
+
+build_netgen_win64:
+  <<: *win64
+  <<: *tbuild_netgen_win
+  cache:
+    paths:
+      - build/
+      - src/
+    key: "netgen_win64"
+
+# Linux
+.template_build_linux: &build_linux
+  stage: build
+  script:
+    - docker build -t netgen:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
+    - rm -f netgen_$UBUNTU_VERSION.id
+    - docker run --cidfile netgen_$UBUNTU_VERSION.id -e CCACHE_DIR=/ccache -v /mnt/ccache:/ccache netgen:$UBUNTU_VERSION bash /root/src/netgen/tests/build.sh
+    - docker commit `cat netgen_$UBUNTU_VERSION.id` netgen_installed:$UBUNTU_VERSION
+    - rm netgen_$UBUNTU_VERSION.id
+
+build_ubuntu_1510:
+  <<: *ubuntu_1510
+  <<: *build_linux
+
+build_ubuntu_1604:
+  <<: *ubuntu_1604
+  <<: *build_linux
+
+
+############################################
+# Test stage
+############################################
+
+# Windows
+.template_test_win: &ttest_netgen_win
+  stage: test
+  script:
+    - cd build
+    - ctest -C Release -V
+
+# skip since we have no machine with 32 bits
+.test_netgen_win32:
+  <<: *win32
+  <<: *ttest_netgen_win
+  cache:
+    paths:
+      - build/
+      - src/
+    key: "netgen_win32"
+
+test_netgen_win64:
+  <<: *win64
+  <<: *ttest_netgen_win
+  cache:
+    paths:
+      - build/
+      - src/
+    key: "netgen_win64"
+
+# Linux
+.template_test_linux: &test_linux
+  stage: test
+  script:
+    - docker run netgen_installed:$UBUNTU_VERSION bash -c 'cd /root/build/netgen && make test ARGS="-V"'
+
+test_ubuntu_1510:
+  <<: *ubuntu_1510
+  <<: *test_linux
+test_ubuntu_1604:
+  <<: *ubuntu_1604
+  <<: *test_linux
+
+############################################
+# Cleanup stage
+############################################
+
+linux_cleanup:
+  stage: cleanup
+  tags:
+    - linux
+  script:
+    # remove intermediate and old docker images and containers
+    - docker rm -f `docker ps --no-trunc -aq`
+    - docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
+  when: always
+
