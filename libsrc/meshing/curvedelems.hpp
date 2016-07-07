@@ -203,6 +203,8 @@ private:
   template <typename T>  
   void CalcElementDShapes (ElementInfo & info, const Point<3,T> xi, MatrixFixWidth<3,T> dshapes) const;
 
+  template <typename T>
+  bool EvaluateMapping (ElementInfo & info, const Point<3,T> xi, Point<3,T> & x, Mat<3,3,T> & jac) const;  
   
   class SurfaceElementInfo
   {

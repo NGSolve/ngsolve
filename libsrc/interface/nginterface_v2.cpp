@@ -650,7 +650,6 @@ namespace netgen
        reinterpret_cast<const SIMD<double>*> (xi), sxi,
        reinterpret_cast<SIMD<double>*> (x), sx,
        reinterpret_cast<SIMD<double>*> (dxdxi), sdxdxi);
-    
     /*
     for (int i = 0; i < npts; i++)
       {

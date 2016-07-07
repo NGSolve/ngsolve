@@ -348,8 +348,8 @@ namespace netgen
 
 
 
-  template <int D>
-  inline ostream & operator<< (ostream & ost, const Vec<D> & a)
+  template <int D, typename T>
+  inline ostream & operator<< (ostream & ost, const Vec<D,T> & a)
   {
     ost << "(";
     for (int i = 0; i < D-1; i++)
@@ -358,8 +358,8 @@ namespace netgen
     return ost;
   }
 
-  template <int D>
-  inline ostream & operator<< (ostream & ost, const Point<D> & a)
+  template <int D, typename T>
+  inline ostream & operator<< (ostream & ost, const Point<D,T> & a)
   {
     ost << "(";
     for (int i = 0; i < D-1; i++)
@@ -375,8 +375,8 @@ namespace netgen
     return ost;
   }
 
-  template <int H, int W>
-  inline ostream & operator<< (ostream & ost, const Mat<H,W> & m)
+  template <int H, int W, typename T>
+  inline ostream & operator<< (ostream & ost, const Mat<H,W,T> & m)
   {
     ost << "(";
     for (int i = 0; i < H; i++)
