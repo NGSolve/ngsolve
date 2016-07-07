@@ -1850,8 +1850,8 @@ namespace netgen
   }
 
 
-
-  void Element :: GetShapeNew (const Point<3> & p, FlatVector & shape) const
+  template <typename T>
+  void Element :: GetShapeNew (const Point<3,T> & p, TFlatVector<T> shape) const
   {
     /*
       if (shape.Size() < GetNP())
@@ -1874,10 +1874,10 @@ namespace netgen
 
       case TET10:
         {
-          double lam1 = p(0);
-          double lam2 = p(1);
-          double lam3 = p(2);
-          double lam4 = 1-p(0)-p(1)-p(2);
+          T lam1 = p(0);
+          T lam2 = p(1);
+          T lam3 = p(2);
+          T lam4 = 1-p(0)-p(1)-p(2);
 	
           shape(0) = 2 * lam1 * (lam1-0.5);
           shape(1) = 2 * lam2 * (lam2-0.5);
@@ -1897,11 +1897,12 @@ namespace netgen
 
       case PYRAMID:
         {
-          double noz = 1-p(2);
-          if (noz == 0.0) noz = 1e-10;
+          T noz = 1-p(2);
+          // if (noz == 0.0) noz = 1e-10;
+          noz += T(1e-12);
 
-          double xi  = p(0) / noz;
-          double eta = p(1) / noz;
+          T xi  = p(0) / noz;
+          T eta = p(1) / noz;
           shape(0) = (1-xi)*(1-eta) * (noz);
           shape(1) = (  xi)*(1-eta) * (noz);
           shape(2) = (  xi)*(  eta) * (noz);
@@ -2026,6 +2027,8 @@ namespace netgen
         }
       }
   }
+  template void Element :: GetShapeNew (const Point<3,double> & p, TFlatVector<double> shape) const;
+  template void Element :: GetShapeNew (const Point<3,SIMD<double>> & p, TFlatVector<SIMD<double>> shape) const;
   
   template void Element::GetDShapeNew<double> (const Point<3> &, MatrixFixWidth<3> &) const;
   template void Element::GetDShapeNew<SIMD<double>> (const Point<3,SIMD<double>> &, MatrixFixWidth<3,SIMD<double>> &) const;

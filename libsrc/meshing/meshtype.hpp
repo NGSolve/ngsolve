@@ -716,7 +716,7 @@ namespace netgen
 			    class DenseMatrix & trans) const;
 
     void GetShape (const Point<3> & p, class Vector & shape) const;
-    void GetShapeNew (const Point<3> & p, class FlatVector & shape) const;
+    // void GetShapeNew (const Point<3> & p, class FlatVector & shape) const;
     template <typename T>
     void GetShapeNew (const Point<3,T> & p, TFlatVector<T> shape) const;    
     /// matrix 2 * np

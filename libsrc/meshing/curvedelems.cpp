@@ -2313,7 +2313,7 @@ namespace netgen
 	double lami[8];
 	FlatVector vlami(8, lami);
 	vlami = 0;
-	mesh[elnr].GetShapeNew (xi, vlami);
+	mesh[elnr].GetShapeNew<double> (xi, vlami);
 
 	Mat<3,3> trans, dxdxic;
 	if (dxdxi)
