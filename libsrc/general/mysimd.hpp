@@ -219,6 +219,9 @@ namespace netgen
   inline SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
   inline SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
+  using std::sqrt;
+  using std::fabs;
+  
   inline SIMD<double> sqrt (SIMD<double> a) { return std::sqrt(a.Data()); }
   inline SIMD<double> fabs (SIMD<double> a) { return std::fabs(a.Data()); }
   inline SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
