@@ -168,13 +168,19 @@ namespace netgen
     SIMD () = default;
     SIMD (const SIMD &) = default;
     SIMD & operator= (const SIMD &) = default;
-    
+
+    SIMD (double val)
+      : data(val) { ; } 
+
+    /*
     template <typename T>
     SIMD (const T & val)
     {
 //       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
       SIMD_function(val, has_call_operator<T>::value);
     }
+    */
+
     
     template <typename T>
     SIMD & operator= (const T & val)
