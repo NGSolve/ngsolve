@@ -1973,7 +1973,7 @@ namespace netgen
       {
       case TET:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1;
           dshape(1,1) = 1;
           dshape(2,2) = 1;
@@ -1984,7 +1984,7 @@ namespace netgen
         }
       case PRISM:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1-p(2);
           dshape(0,2) = -p(0);
           dshape(1,1) = 1-p(2);
@@ -2007,22 +2007,29 @@ namespace netgen
         {
           int np = GetNP();
           double eps = 1e-6;
-          Vector shaper(np), shapel(np);
+          ArrayMem<T,100> mem(2*np);
+          TFlatVector<T> shaper(np, &mem[0]);
+          TFlatVector<T> shapel(np, &mem[np]);
+          // Vector shaper(np), shapel(np);
 	
-          for (int i = 1; i <= 3; i++)
+          for (int i = 0; i < 3; i++)
             {
-              Point3d pr(p), pl(p);
-              pr.X(i) += eps;
-              pl.X(i) -= eps;
+              Point<3,T> pr(p), pl(p);
+              pr(i) += eps;
+              pl(i) -= eps;
 	    
               GetShapeNew (pr, shaper);
               GetShapeNew (pl, shapel);
               for (int j = 0; j < np; j++)
-                dshape(j, i-1) = (shaper(j) - shapel(j)) / (2 * eps);
+                dshape(j, i) = (shaper(j) - shapel(j)) / (2 * eps);
             }
         }
       }
   }
+  
+  template void Element::GetDShapeNew<double> (const Point<3> &, MatrixFixWidth<3> &) const;
+  template void Element::GetDShapeNew<SIMD<double>> (const Point<3,SIMD<double>> &, MatrixFixWidth<3,SIMD<double>> &) const;
+
 
   void Element :: 
   GetPointMatrix (const T_POINTS & points,
