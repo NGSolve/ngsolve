@@ -559,6 +559,15 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag)
 
+    .def("GetParentElement", &MeshAccess::GetParentElement)
+    .def("GetParentVertices", FunctionPointer
+         ([](MeshAccess & ma, int vnum)
+          {
+            Array<int> parents(2);
+            ma.GetParentNodes (vnum, &parents[0]);
+            return bp::tuple(parents);
+          }))
+    
     .def("Curve", FunctionPointer
          ([](MeshAccess & ma, int order)
           {
