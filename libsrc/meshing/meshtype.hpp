@@ -618,7 +618,7 @@ namespace netgen
 	  return 8;
         default: // not a 3D element
 #ifdef DEBUG
-          PrintSysError ("Element3d::GetNV not implemented for typ ", typ)
+          PrintSysError ("Element3d::GetNV not implemented for typ ", typ);
 #endif
             return -1;
         }
