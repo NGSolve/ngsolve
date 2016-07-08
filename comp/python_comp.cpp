@@ -550,6 +550,13 @@ void NGS_DLL_HEADER ExportNgcomp()
             ma.UpdateBuffers();
           }))
 
+    .def("RefineHP", FunctionPointer
+         ([](MeshAccess & ma, int levels)
+          {
+            Ng_HPRefinement(levels);
+            ma.UpdateBuffers();
+          }))
+
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag)
 
     .def("Curve", FunctionPointer
