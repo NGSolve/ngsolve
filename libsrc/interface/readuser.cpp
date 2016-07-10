@@ -11,10 +11,10 @@
 #include <csg.hpp>
 #include <meshing.hpp>
 
-namespace netgen
-{
 #include "writeuser.hpp"
 
+namespace netgen
+{
   void ReadFile (Mesh & mesh,
                  const string & hfilename)
   {

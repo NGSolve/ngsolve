@@ -8,9 +8,10 @@
 #include "nginterface_v2.hpp"
 // #include <visual.hpp>
 
+#include "writeuser.hpp"
+
 namespace netgen
 {
-#include "writeuser.hpp"
   extern shared_ptr<Mesh> mesh;
 }
 

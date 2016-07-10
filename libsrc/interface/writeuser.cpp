@@ -10,10 +10,11 @@
 #include <geometry2d.hpp>
 #include <meshing.hpp>
 
-namespace netgen
-{
 #include "writeuser.hpp"
 
+
+namespace netgen
+{
   extern MeshingParameters mparam;
 
 

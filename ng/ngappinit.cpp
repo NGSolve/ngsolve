@@ -29,11 +29,10 @@ namespace netgen
 #endif
 
 
+#include "../libsrc/interface/writeuser.hpp"
 
 namespace netgen
 {
-#include "../libsrc/interface/writeuser.hpp"
-  //extern string ngdir;
   Flags parameters;
 }
  

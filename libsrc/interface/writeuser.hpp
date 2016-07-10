@@ -7,6 +7,7 @@
 /* Date:    10. Dec. 97                                                   */
 /**************************************************************************/
 
+namespace netgen {
 
 DLL_HEADER extern
 void WriteFile (int typ,
@@ -161,6 +162,8 @@ extern bool DLL_HEADER WriteUserFormat (const string & format,
                              const Mesh & mesh,
                              const NetgenGeometry & geom,
                              const string & filename);
+
+}
 
 #endif
 

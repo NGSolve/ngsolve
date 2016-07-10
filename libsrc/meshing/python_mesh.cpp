@@ -8,6 +8,7 @@
 #include "meshing.hpp"
 #include <csg.hpp>
 #include <geometry2d.hpp>
+#include <../interface/writeuser.hpp>
 
 
 using namespace netgen;
@@ -357,7 +358,22 @@ DLL_HEADER void ExportNetgenMeshing()
 	  }))
     // static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
-
+    .def("Export", FunctionPointer
+         ([] (Mesh & self, string filename, string format)
+          {
+            if (WriteUserFormat (format, self, *self.GetGeometry(), filename))
+              {
+                string err = string ("nothing known about format")+format;
+                Array<const char*> names, extensions;
+                RegisterUserFormats (names, extensions);
+                err += "\navailable formats are:\n";
+                for (auto name : names)
+                  err += string("'") + name + "'\n";
+                throw NgException (err);
+              }
+          }),
+         (bp::arg("self"), bp::arg("filename"), bp::arg("format")))
+    
     .add_property("dim", &Mesh::GetDimension, &Mesh::SetDimension)
 
     .def("Elements3D", 
