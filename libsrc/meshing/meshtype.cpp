@@ -587,15 +587,15 @@ namespace netgen
   }
 
 
-
+  template <typename T>
   void Element2d :: 
-  GetDShapeNew (const Point<2> & p, MatrixFixWidth<2> & dshape) const
+  GetDShapeNew (const Point<2,T> & p, MatrixFixWidth<2,T> & dshape) const
   {
     switch (typ)
       {
       case TRIG:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1;
           dshape(1,1) = 1;
           dshape(2,0) = -1;
@@ -2027,6 +2027,11 @@ namespace netgen
         }
       }
   }
+
+  template void Element2d::GetDShapeNew<double> (const Point<2> &, MatrixFixWidth<2> &) const;
+  template void Element2d::GetDShapeNew<SIMD<double>> (const Point<2,SIMD<double>> &, MatrixFixWidth<2,SIMD<double>> &) const;
+
+
   template void Element :: GetShapeNew (const Point<3,double> & p, TFlatVector<double> shape) const;
   template void Element :: GetShapeNew (const Point<3,SIMD<double>> & p, TFlatVector<SIMD<double>> shape) const;
   

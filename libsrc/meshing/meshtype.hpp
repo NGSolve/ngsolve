@@ -447,9 +447,13 @@ namespace netgen
 
     void GetShape (const Point2d & p, class Vector & shape) const;
     void GetShapeNew (const Point<2> & p, class FlatVector & shape) const;
+    template <typename T>
+    void GetShapeNew (const Point<2,T> & p, TFlatVector<T> shape) const;    
     /// matrix 2 * np
     void GetDShape (const Point2d & p, class DenseMatrix & dshape) const;
-    void GetDShapeNew (const Point<2> & p, class MatrixFixWidth<2> & dshape) const;
+    template <typename T>
+    void GetDShapeNew (const Point<2,T> & p, class MatrixFixWidth<2,T> & dshape) const;
+    
     /// matrix 2 * np
     void GetPointMatrix (const Array<Point2d> & points,
 			 class DenseMatrix & pmat) const; 
