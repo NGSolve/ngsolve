@@ -300,6 +300,32 @@ namespace netgen
 	  values[i+1] = p1;
 	}
     }
+
+    template <class S, class FUNC>
+    void EvaluateScaledLambda (int n, S x, S y, FUNC func)
+    {
+      S p1(1.0), p2(0.0), p3;
+      
+      if (n >= 0)
+        {
+          p2 = 1.0;
+          func(0, p2);
+        }
+      if (n >= 1)
+        {
+          p1 = a[0]*y+b[0]*x;
+          func(1, p1);
+        }
+      
+      for (int i = 1; i < n; i++)
+	{
+	  p3 = p2; p2=p1;
+	  p1 = (a[i]*y+b[i]*x)*p2-c[i]*y*y*p3;
+	  func(i+1, p1);
+	}
+    }
+
+
   };
 
   class JacobiRecPol : public RecPol
@@ -455,17 +481,32 @@ namespace netgen
   {
     if (n < 3) return;
 
-    Tx hx[50], hy[50];
-    ScaledJacobiPolynomial (n-3, x, t-y, 2, 2, hx);
+    // Tx hx[50], hy[50];
+    // ScaledJacobiPolynomial (n-3, x, t-y, 2, 2, hx);
 
+    /*
+    jacpols2[2]->EvaluateScaled (n-3, x, t-y, hx);
     int ii = 0;
     Tx bub = (t+x-y)*y*(t-x-y);
     for (int ix = 0; ix <= n-3; ix++)
       {
-        jacpols2[2*ix+5] -> EvaluateScaled (n-3, 2*y-1, t, hy);        
-        for (int iy = 0; iy <= n-3-ix; iy++)
-          func(ii++, bub * hx[ix]*hy[iy]);
+        jacpols2[2*ix+5] -> EvaluateScaledLambda (n-3-ix, 2*y-1, t, [&](int i, Ty valy)
+                                                  {
+                                                    func(ii++, bub*hx[ix]*valy);
+                                                  });
       }
+    */
+    int ii = 0;
+    Tx bub = (t+x-y)*y*(t-x-y);
+    jacpols2[2]->EvaluateScaledLambda
+      (n-3, x, t-y,
+       [&](int ix, Tx valx)
+       {
+         jacpols2[2*ix+5] -> EvaluateScaledLambda (n-3-ix, 2*y-1, t, [&](int iy, Ty valy)
+                                                   {
+                                                     func(ii++, bub*valx*valy);
+                                                   });
+       });
   }
 
   
@@ -3338,7 +3379,7 @@ namespace netgen
     */
   }
 
-
+  // extern int mappingvar;
   template <typename T>
   bool CurvedElements ::
   EvaluateMapping (ElementInfo & info, Point<3,T> xi, Point<3,T> & mx, Mat<3,3,T> & jac) const
@@ -3434,7 +3475,7 @@ namespace netgen
             }
 
 	  if (info.order == 1) break;
-	  
+
 	  AutoDiff<3,T> mu[8] = {
             (1-x)+(1-y)+(1-z),
             x    +(1-y)+(1-z),
@@ -3445,7 +3486,6 @@ namespace netgen
             x    +   y +(z),
             (1-x)+   y +(z),
           };
-	    
 	  int ii = 8;
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (HEX);
 	  
@@ -3458,12 +3498,6 @@ namespace netgen
 		  int vi1 = edges[i][0]-1, vi2 = edges[i][1]-1;
 		  if (el[vi1] > el[vi2]) swap (vi1, vi2);
 
-                  /*
-		  CalcEdgeShape (eorder, mu[vi1]-mu[vi2], &shapes(ii));
-		  T lame = shapes(vi1)+shapes(vi2);
-		  for (int j = 0; j < order-1; j++)
-		    shapes(ii+j) *= lame;
-                  */
                   AutoDiff<3,T> lame = lami[vi1]+lami[vi2];
 		  CalcEdgeShapeLambda (eorder, mu[vi1]-mu[vi2], 
                                        [&](int i, AutoDiff<3,T> shape)
@@ -3475,7 +3509,6 @@ namespace netgen
                   
 		}
 	    }
-
           
           break;
         }
@@ -4031,7 +4064,7 @@ namespace netgen
   }
 
 
-
+  // extern int multipointtrafovar;
   template <typename T>
   void  CurvedElements :: 
   CalcMultiPointElementTransformation (ElementIndex elnr, int n,
@@ -4039,6 +4072,7 @@ namespace netgen
 				       T * x, size_t sx,
 				       T * dxdxi, size_t sdxdxi)
   {
+    // multipointtrafovar++;
     static int timer = NgProfiler::CreateTimer ("calcmultipointelementtrafo");
     static int timer1 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 1");
     static int timer2 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 2");
@@ -4156,7 +4190,7 @@ namespace netgen
     // NgProfiler::StopTimer (timer2);
     // NgProfiler::StartTimer (timer3);
 
-    /*
+
     bool ok = true;
     for (int i = 0; i < n; i++)
       {
@@ -4175,7 +4209,6 @@ namespace netgen
               dxdxi[i*sdxdxi+3*j+k] = _dxdxi(j,k);
       }
     if (ok) return;
-    */
 
     ArrayMem<Vec<3>,100> coefs(info.ndof);
     ArrayMem<T,500> shapes_mem(info.ndof);
