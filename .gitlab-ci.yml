@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - deploy
   - cleanup
 
 ############################################
@@ -160,6 +161,10 @@ test_ubuntu_1604:
   <<: *test_linux
 
 ############################################
+# Deploy stage
+############################################
+
+############################################
 # Cleanup stage
 ############################################
 
@@ -172,4 +177,5 @@ linux_cleanup:
     - docker rm -f `docker ps --no-trunc -aq`
     - docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
   when: always
+  allow_failure: true
 
