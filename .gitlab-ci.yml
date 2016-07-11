@@ -18,9 +18,9 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
     - set EXT_LIBS=C:\external_libs\x86
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set INSTALL_DIR=C:/install32
-    - set NETGENDIR=C:\install32\bin
-    - set PYTHONPATH=C:\install32\lib\site-packages
+    - set INSTALL_DIR=C:/install32_%CI_BUILD_REF_NAME%
+    - set NETGENDIR=C:\install32_%CI_BUILD_REF_NAME%\bin
+    - set PYTHONPATH=C:\install32_%CI_BUILD_REF_NAME%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include
 
@@ -33,9 +33,9 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
     - set EXT_LIBS=C:\external_libs\x64
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
-    - set INSTALL_DIR=C:/install64
-    - set NETGENDIR=C:\install64\bin
-    - set PYTHONPATH=C:\install64\lib\site-packages
+    - set INSTALL_DIR=C:/install64_%CI_BUILD_REF_NAME%
+    - set NETGENDIR=C:\install64_%CI_BUILD_REF_NAME%\bin
+    - set PYTHONPATH=C:\install64_%CI_BUILD_REF_NAME%\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5/libs/python35.lib
 
@@ -87,7 +87,7 @@ build_netgen_win32:
     paths:
       - build/
       - src/
-    key: "netgen_win32"
+    key: "netgen_win32_${CI_BUILD_REF_NAME}"
 
 build_netgen_win64:
   <<: *win64
@@ -96,17 +96,17 @@ build_netgen_win64:
     paths:
       - build/
       - src/
-    key: "netgen_win64"
+    key: "netgen_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_build_linux: &build_linux
   stage: build
   script:
-    - docker build -t netgen:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
-    - rm -f netgen_$UBUNTU_VERSION.id
-    - docker run --cidfile netgen_$UBUNTU_VERSION.id -e CCACHE_DIR=/ccache -v /mnt/ccache:/ccache netgen:$UBUNTU_VERSION bash /root/src/netgen/tests/build.sh
-    - docker commit `cat netgen_$UBUNTU_VERSION.id` netgen_installed:$UBUNTU_VERSION
-    - rm netgen_$UBUNTU_VERSION.id
+    - docker build -t netgen_${CI_BUILD_REF_NAME}:${UBUNTU_VERSION} -f tests/docker_${UBUNTU_VERSION} .
+    - rm -f netgen_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
+    - docker run --cidfile netgen_${CI_BUILD_REF_NAME}_${UBUNTU_VERSION}.id -e CCACHE_DIR=/ccache -v /mnt/ccache:/ccache netgen_${CI_BUILD_REF_NAME}:${UBUNTU_VERSION} bash /root/src/netgen/tests/build.sh
+    - docker commit `cat netgen_${CI_BUILD_REF_NAME}_${UBUNTU_VERSION}.id` netgen_${CI_BUILD_REF_NAME}_installed:${UBUNTU_VERSION}
+    - rm netgen_${CI_BUILD_REF_NAME}_${UBUNTU_VERSION}.id
 
 build_ubuntu_1510:
   <<: *ubuntu_1510
@@ -151,7 +151,7 @@ test_netgen_win64:
 .template_test_linux: &test_linux
   stage: test
   script:
-    - docker run netgen_installed:$UBUNTU_VERSION bash -c 'cd /root/build/netgen && make test ARGS="-V"'
+    - docker run netgen_${CI_BUILD_REF_NAME}_installed:${UBUNTU_VERSION} bash -c 'cd /root/build/netgen && make test ARGS="-V"'
 
 test_ubuntu_1510:
   <<: *ubuntu_1510
