@@ -541,6 +541,30 @@ namespace netgen
       }
   }
 
+  template <typename T>
+  void Element2d :: GetShapeNew (const Point<2,T> & p, TFlatVector<T> shape) const
+  {
+    switch (typ)
+      {
+      case TRIG:
+        {
+          shape(0) = p(0);
+          shape(1) = p(1);
+          shape(2) = 1-p(0)-p(1);
+          break;
+        }
+
+      case QUAD:
+        {
+          shape(0) = (1-p(0))*(1-p(1));
+          shape(1) =    p(0) *(1-p(1));
+          shape(2) =    p(0) *   p(1) ;
+          shape(3) = (1-p(0))*   p(1) ;
+          break;
+        }
+      }
+  }
+
 
 
 
@@ -2027,6 +2051,9 @@ namespace netgen
         }
       }
   }
+
+  template void Element2d :: GetShapeNew (const Point<2,double> & p, TFlatVector<double> shape) const;
+  template void Element2d :: GetShapeNew (const Point<2,SIMD<double>> & p, TFlatVector<SIMD<double>> shape) const;
 
   template void Element2d::GetDShapeNew<double> (const Point<2> &, MatrixFixWidth<2> &) const;
   template void Element2d::GetDShapeNew<SIMD<double>> (const Point<2,SIMD<double>> &, MatrixFixWidth<2,SIMD<double>> &) const;
