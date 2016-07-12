@@ -1918,18 +1918,46 @@ void NGS_DLL_HEADER ExportNgcomp()
                                 Vector<> element_sum(element_wise ? ma->GetNE(vb) : 0);
                                 region_sum = 0;
                                 element_sum = 0;
+
+                                bool use_simd = true;
                                 
                                 ma->IterateElements
                                   (vb, lh, [&] (Ngs_Element el, LocalHeap & lh)
                                    {
                                      auto & trafo = ma->GetTrafo (el, lh);
-                                     IntegrationRule ir(trafo.GetElementType(), order);
-                                     BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                                     FlatMatrix<> values(ir.Size(), 1, lh);
-                                     cf -> Evaluate (mir, values);
-                                     double hsum = 0;
-                                     for (int i = 0; i < values.Height(); i++)
-                                       hsum += mir[i].GetWeight() * values(i,0);
+                                     double hsum = 0.0;
+                                     bool this_simd = use_simd;
+                                     
+                                     if (this_simd)
+                                       {
+                                         try
+                                           {
+                                             SIMD_IntegrationRule ir(trafo.GetElementType(), order);
+                                             auto & mir = trafo(ir, lh);
+                                             AFlatMatrix<> values(1, ir.GetNIP(), lh);
+                                             cf -> Evaluate (mir, values);
+                                             SIMD<double> vsum = 0;
+                                             for (int i = 0; i < values.VWidth(); i++)
+                                               vsum += mir[i].GetWeight() * values.Get(0,i);
+                                             hsum = HSum(vsum);
+                                           }
+                                         catch (ExceptionNOSIMD e)
+                                           {
+                                             this_simd = false;
+                                             use_simd = false;
+                                             hsum = 0.0;
+                                           }
+                                       }
+                                     if (!this_simd)
+                                       {
+                                         IntegrationRule ir(trafo.GetElementType(), order);
+                                         BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                                         FlatMatrix<> values(ir.Size(), 1, lh);
+                                         cf -> Evaluate (mir, values);
+                                         for (int i = 0; i < values.Height(); i++)
+                                           hsum += mir[i].GetWeight() * values(i,0);
+                                       }
+
                                      sum += hsum;
                                      double & rsum = region_sum(el.GetIndex());
 				     AsAtomic(rsum) += hsum;
