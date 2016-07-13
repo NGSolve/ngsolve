@@ -8,6 +8,50 @@
 /* *************************************************************************/
 
 
+
+
+template <typename T>
+class TFlatVector
+{
+protected:
+  int s;
+  T * data;
+public:
+  TFlatVector () { ; }
+  TFlatVector (int as, T * adata)
+  { s = as; data = adata; }
+    
+  int Size () const
+  { return s; }
+
+  TFlatVector & operator= (const TFlatVector & v) 
+  { memcpy (data, v.data, s*sizeof(T)); return *this; }
+
+  TFlatVector & operator= (T scal) 
+  {
+    for (int i = 0; i < s; i++) data[i] = scal; 
+    return *this;
+  }
+
+  T & operator[] (int i) { return data[i]; }
+  const T & operator[] (int i) const { return data[i]; }
+  T & operator() (int i) { return data[i]; }
+  const T & operator() (int i) const { return data[i]; }
+
+  // double & Elem (int i) { return data[i-1]; }
+  // const double & Get (int i) const { return data[i-1]; }
+  // void Set (int i, double val) { data[i-1] = val; }
+
+  TFlatVector & operator*= (T scal)
+  {
+    for (int i = 0; i < s; i++) data[i] *= scal;
+    return *this;
+  }
+};
+
+
+
+
 class FlatVector
 {
 protected:
@@ -75,8 +119,10 @@ public:
     return sqrt (sum);
   }
 
+  operator TFlatVector<double> () const { return TFlatVector<double> (s, data); } 
   friend double operator* (const FlatVector & v1, const FlatVector & v2);
 };
+
 
 
 
@@ -113,6 +159,7 @@ public:
       }
   }
 
+  operator TFlatVector<double> () const { return TFlatVector<double> (s, data); } 
 };
 
 template <int S>

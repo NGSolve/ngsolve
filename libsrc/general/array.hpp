@@ -416,9 +416,9 @@ namespace netgen
     using Array<T>::data;
     using Array<T>::ownmem;
 
-    // T mem[S];     // Intel C++ calls dummy constructor
+    T mem[S];     // Intel C++ calls dummy constructor
     // char mem[S*sizeof(T)];
-    double mem[(S*sizeof(T)+7) / 8];
+    // double mem[(S*sizeof(T)+7) / 8];
   public:
     /// Generate array of logical and physical size asize
     explicit ArrayMem(int asize = 0)

@@ -618,6 +618,12 @@ namespace netgen
                                    __m256d * x, size_t sx,
                                    __m256d * dxdxi, size_t sdxdxi) const
   {
+    mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<2>
+      (elnr, npts,
+       reinterpret_cast<const SIMD<double>*> (xi), sxi,
+       reinterpret_cast<SIMD<double>*> (x), sx,
+       reinterpret_cast<SIMD<double>*> (dxdxi), sdxdxi);
+    /*
     for (int i = 0; i < npts; i++)
       {
         double hxi[4][2];
@@ -638,6 +644,7 @@ namespace netgen
         x += sx;
         dxdxi += sdxdxi;
       }
+    */
   }
 
   template<> DLL_HEADER void Ngx_Mesh :: 
@@ -646,6 +653,12 @@ namespace netgen
                                    __m256d * x, size_t sx,
                                    __m256d * dxdxi, size_t sdxdxi) const
   {
+    mesh->GetCurvedElements().CalcMultiPointElementTransformation
+      (elnr, npts,
+       reinterpret_cast<const SIMD<double>*> (xi), sxi,
+       reinterpret_cast<SIMD<double>*> (x), sx,
+       reinterpret_cast<SIMD<double>*> (dxdxi), sdxdxi);
+    /*
     for (int i = 0; i < npts; i++)
       {
         double hxi[4][3];
@@ -666,6 +679,7 @@ namespace netgen
         x += sx;
         dxdxi += sdxdxi;
       }
+    */
   }
 
   template<> DLL_HEADER void Ngx_Mesh :: 
@@ -712,6 +726,12 @@ namespace netgen
                                    __m256d * x, size_t sx,
                                    __m256d * dxdxi, size_t sdxdxi) const
   {
+    mesh->GetCurvedElements().CalcMultiPointSurfaceTransformation<3>
+      (elnr, npts,
+       reinterpret_cast<const SIMD<double>*> (xi), sxi,
+       reinterpret_cast<SIMD<double>*> (x), sx,
+       reinterpret_cast<SIMD<double>*> (dxdxi), sdxdxi);
+    /*
     for (int i = 0; i < npts; i++)
       {
         double hxi[4][2];
@@ -732,6 +752,7 @@ namespace netgen
         x += sx;
         dxdxi += sdxdxi;
       }
+    */
   }
 
 #endif
