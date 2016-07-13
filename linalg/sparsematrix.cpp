@@ -1660,22 +1660,30 @@ namespace ngla
   SparseMatrix<double,double> * 
   TransposeMatrix (const SparseMatrix<double, double> & mat)
   {
+    static Timer t1("TransposeMatrix 1");
+    static Timer t2("TransposeMatrix 2");
+
+    t1.Start();
     Array<int> cnt(mat.Width());
     cnt = 0;
-    for (int i = 0; i < mat.Height(); i++)
-      for (int c : mat.GetRowIndices(i))
-        cnt[c] ++;
-
+    ParallelFor (mat.Height(), [&] (int i)
+                 {
+                   for (int c : mat.GetRowIndices(i))
+                     AsAtomic (cnt[c]) ++;
+                 });
+    t1.Stop();
+    t2.Start();
     SparseMatrix<double,double> * trans = new SparseMatrix<double>(cnt);
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
         {
           int c = mat.GetRowIndices(i)[ci];
-          trans -> GetRowIndices(c)[cnt[c]] = i;
-          trans -> GetRowValues(c)[cnt[c]] = mat.GetRowValues(i)[ci];
-          cnt[c] ++;
+          int pos = cnt[c]++;
+          trans -> GetRowIndices(c)[pos] = i;
+          trans -> GetRowValues(c)[pos] = mat.GetRowValues(i)[ci];
         }
+    t2.Stop();
     return trans;
   }
 
@@ -1685,22 +1693,26 @@ namespace ngla
     Array<int> cnt(mat.Width());
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
-      for (int c : mat.GetRowIndices(i))
-        {
-          cnt[i]++;
+      {
+        cnt[i] += mat.GetRowIndices(i).Size();
+        for (int c : mat.GetRowIndices(i))
           if (c < i) cnt[c]++;
-        }
-
+      }
+    
     SparseMatrix<double,double> * full = new SparseMatrix<double>(cnt);
     cnt = 0;
 
-    for (int i = 0; i < mat.Height(); i++)
-      for (int ci : Range(mat.GetRowIndices(i)))
-        {
-          full -> GetRowIndices(i)[cnt[i]] = mat.GetRowIndices(i)[ci];
-          full -> GetRowValues(i)[cnt[i]] = mat.GetRowValues(i)[ci];
-          cnt[i] ++;
-        }
+    //for (int i = 0; i < mat.Height(); i++)
+    ParallelFor (mat.Height(), [&] (int i)
+                 {
+                   for (int ci : Range(mat.GetRowIndices(i)))
+                     {
+                       full -> GetRowIndices(i)[cnt[i]] = mat.GetRowIndices(i)[ci];
+                       full -> GetRowValues(i)[cnt[i]] = mat.GetRowValues(i)[ci];
+                       cnt[i] ++;
+                     }
+                 });
+    
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
         {
