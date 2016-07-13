@@ -183,3 +183,4 @@ linux_cleanup:
     # remove old docker images
     docker images --no-trunc -aqf "dangling=true" | xargs docker rmi -f
   when: always
+  allow_failure: true
