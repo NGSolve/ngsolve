@@ -259,7 +259,7 @@ namespace ngcomp
           {
             first_facet_dof[i] = ndof;
             ndof += order_facet[i][0];
-	    if (highest_order_dc) ndof--;
+	    if (highest_order_dc && order_facet[i][0] > 0) ndof--;
           }
         first_facet_dof[nfa] = ndof;
 
@@ -287,7 +287,7 @@ namespace ngcomp
         for (int i=0; i< nfa; i++)
           {
             int p = order_facet[i][0];
-	    if (highest_order_dc) p--;
+	    if (highest_order_dc  && order_facet[i][0] > 0) p--;
             ma->GetFacePNums(i,pnums);
 
             switch(pnums.Size())
