@@ -39,9 +39,9 @@ namespace netgen
   { return MPI_DOUBLE; }
 
   
-  template <int S> class Vec;
+  template <int S, typename T> class Vec;
   template <> 
-  inline MPI_Datatype MyGetMPIType<Vec<3> > ()
+  inline MPI_Datatype MyGetMPIType<Vec<3, double> > ()
   {
     static MPI_Datatype MPI_T = 0;
     if (!MPI_T)
