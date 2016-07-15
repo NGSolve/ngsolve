@@ -155,7 +155,7 @@ namespace ngstd
   inline ostream & operator<<(ostream  & s, const INT<N,T> & i2)
   {
     for (int j = 0; j < N; j++)
-      s << i2[j] << " ";
+      s << (int) i2[j] << " ";
     return s;
   }
 
