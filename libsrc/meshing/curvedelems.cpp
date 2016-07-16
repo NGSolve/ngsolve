@@ -2200,7 +2200,8 @@ namespace netgen
               for (int k = 0; k < DIM_SPACE; k++)
                 mapped_x[k] += p(k) * lami[j];
             }
-
+          if (info.order == 1) break;
+          
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TRIG);
 	  for (int i = 0; i < 3; i++)
 	    {
@@ -3468,6 +3469,7 @@ namespace netgen
               for (int k = 0; k < 3; k++)
                 mapped_x[k] += p(k) * lami[j];
             }
+          if (info.order == 1) break;
 
 	  const ELEMENT_EDGE * edges = MeshTopology::GetEdges1 (TET);
 	  for (int i = 0; i < 6; i++)
