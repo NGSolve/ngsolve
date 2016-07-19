@@ -1346,32 +1346,48 @@ namespace ngcomp
       const ElementTransformation & eltrans = sip.GetTransformation();
       FlatMatrixFixWidth<D> shape_ul(nd_u, lh);
       FlatMatrixFixWidth<D> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<D> shape_urr(nd_u, lh);
       FlatMatrixFixWidth<D> dshape_u_ref(nd_u, lh);//(shape_ur); ///saves "reserved lh-memory"
       FlatMatrixFixWidth<D> dshape_u(nd_u, lh);//(shape_ul);///saves "reserved lh-memory"
-      
-      double eps = 1e-7;
+
+      double eps = 1e-4;
       for (int j = 0; j < D; j++)   // d / dxj
-	{
-	  IntegrationPoint ipl(ip);
-	  ipl(j) -= eps;
-	  MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
+      {
+        IntegrationPoint ipl(ip);
+        ipl(j) -= eps;
+        MappedIntegrationPoint<D,D> sipl(ipl, eltrans);
 
-	  IntegrationPoint ipr(ip);
-	  ipr(j) += eps;
-	  MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
+        IntegrationPoint ipr(ip);
+        ipr(j) += eps;
+        MappedIntegrationPoint<D,D> sipr(ipr, eltrans);
 
-	  fel_u.CalcMappedShape (sipl, shape_ul);
-	  fel_u.CalcMappedShape (sipr, shape_ur);
+        IntegrationPoint ipll(ip);
+        ipll(j) -= 2*eps;
+        MappedIntegrationPoint<D,D> sipll(ipll, eltrans);
 
-	  dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
-	  /*
+        IntegrationPoint iprr(ip);
+        iprr(j) += 2*eps;
+        MappedIntegrationPoint<D,D> siprr(iprr, eltrans);
+
+        fel_u.CalcMappedShape (sipl, shape_ul);
+        fel_u.CalcMappedShape (sipr, shape_ur);
+        fel_u.CalcMappedShape (sipll, shape_ull);
+        fel_u.CalcMappedShape (siprr, shape_urr);
+
+        dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+
+        // dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
+        // dshape_u_ref = (1.0/(4*eps)) * (shape_urr-shape_ull);
+
+        /*
 	  for (int k = 0; k < nd_u; k++)
-	    for (int l = 0; l < D; l++)
-	      bmatu(k, j*D+l) = dshape_u_ref(k,l);
-	  */
-	  for (int l = 0; l < D; l++)
-	    bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
-	}
+          for (int l = 0; l < D; l++)
+          bmatu(k, j*D+l) = dshape_u_ref(k,l);
+        */
+        for (int l = 0; l < D; l++)
+          bmatu.Col(j*D+l) = dshape_u_ref.Col(l);
+      }
       
       for (int j = 0; j < D; j++)
 	{
