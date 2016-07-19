@@ -540,6 +540,18 @@ namespace ngcomp
           //mat.Col(2) = FlatVec<3, const double> (mesh -> GetPoint (nel.Vertices()[2])) - p0;
         }
 
+      else if ( (DIMR==1) && (DIMS==1) && (eltype == ET_SEGM) )
+        {
+          Ngs_Element nel = mesh -> GetElement<DIMS,VOL> (elnr);
+          p0 = FlatVec<1, const double> (mesh->mesh.GetPoint (nel.Vertices()[1]));
+	  for (int j = 0; j < 1; j++)
+	    {
+	      Vec<1> pj = FlatVec<1, const double>(mesh->mesh.GetPoint(nel.Vertices()[j])) - p0;
+	      for (int k = 0; k < 1; k++)
+		mat(k,j) = pj(k);
+	    }
+        }
+
       else
         {
           Vec<DIMS> pref = 0.0;
