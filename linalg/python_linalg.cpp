@@ -290,7 +290,33 @@ void NGS_DLL_HEADER ExportNgla() {
                                        bp::list pyvals (vals);
                                        return bp::make_tuple (pyri, pyci, pyvals);
                                      }
-				   throw Exception ("COO needs real-valued sparse matrix");
+				   
+				   SparseMatrix<Complex> * spc
+				     = dynamic_cast<SparseMatrix<Complex>*> (&m);
+				   if (spc)
+				     {
+					 Array<int> ri, ci;
+					 Array<double> vals_real;
+					 Array<double> vals_imag;
+					 Array<Complex> vals;
+					 for (int i = 0; i < spc->Height(); i++)
+					   {
+					     FlatArray<int> ind = spc->GetRowIndices(i);
+					     FlatVector<Complex> rv = spc->GetRowValues(i);
+					     for (int j = 0; j < ind.Size(); j++)
+					       {
+						 ri.Append (i);
+						 ci.Append (ind[j]);
+						 vals.Append (rv[j]);
+					       }
+					   }
+					 bp::list pyri (ri);
+					 bp::list pyci (ci);
+					 bp::list pyvals(vals);
+					 return bp::make_tuple (pyri, pyci, pyvals);
+				     }
+				   
+				   throw Exception ("COO needs real or complex-valued sparse matrix");
                                  }))
 
     .def("Mult",        FunctionPointer( [](BM &m, BV &x, BV &y, double s) { m.Mult (x,y); y *= s; }) )
