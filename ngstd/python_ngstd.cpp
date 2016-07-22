@@ -161,7 +161,26 @@ void NGS_DLL_HEADER  ExportNgstd() {
                              return tmp;
                            })))
     ;
+
+  bp::class_<FlatArray<std::complex<double>> >("FlatArrayC")
+    .def(PyDefVector<FlatArray<std::complex<double>>, std::complex<double>>()) 
+    .def(PyDefToString<FlatArray<std::complex<double>> >())
+    .def(bp::init<int, std::complex<double> *>())
+    ;
   
+  bp::class_<Array<std::complex<double>>, bp::bases<FlatArray<std::complex<double>> > >("ArrayC")
+    .def(bp::init<int>())
+    .def("__init__", bp::make_constructor 
+         (FunctionPointer ([](bp::list const & x)
+                           {
+                             int s = bp::len(x);
+                             auto tmp = make_shared<Array<std::complex<double>>> (s);
+                             for (int i = 0; i < s; i++)
+                               (*tmp)[i] = bp::extract<std::complex<double>> (x[i]); 
+                             return tmp;
+                           })))
+    ;
+
   bp::class_<ngstd::LocalHeap, boost::noncopyable> 
     ("LocalHeap", 
      bp::init<size_t,const char*>
