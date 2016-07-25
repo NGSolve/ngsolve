@@ -85,6 +85,7 @@ def NgsPickler(*args, **kargs):
                 return dumped_pids.index(pid)
             else:
                 dumped_pids.append(pid)
+                obj.__persistent_id__ = dumped_pids.index(pid)
                 return obj
         except:
             return None
@@ -94,11 +95,12 @@ def NgsPickler(*args, **kargs):
 
 def NgsUnpickler(*args, **kargs):
     unpickler = pickle.Unpickler(*args, **kargs)
-    loaded_pids = []
+    loaded_pids = {}
 
     def my_persistent_load(pid):
         if hasattr(pid,'__ngsid__'):
-            loaded_pids.append(pid)
+            loaded_pids[pid.__persistent_id__] = pid
+            del pid.__persistent_id__
             return pid
         else:
             return loaded_pids[pid]
