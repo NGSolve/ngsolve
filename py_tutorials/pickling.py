@@ -11,10 +11,16 @@ data = [u.vec, u.vec, u.vec]
 import pickle
 # store same vector three times
 pickler = pickle.Pickler(open ("1.dat", "wb"))
-pickler.dump ([data])
+pickler.dump (data)
 del pickler
 
 # NgsPickler recognizes redundancies -> smaller files
 pickler = NgsPickler(open ("2.dat", "wb"))
-pickler.dump ([data])
+pickler.dump (data)
 del pickler
+
+# Use NgsUnpickler to load data again
+unpickler = NgsUnpickler(open ("2.dat", "rb"))
+loaded_data = unpickler.load()
+del unpickler
+print(loaded_data)
