@@ -336,7 +336,6 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getinitargs(const MeshAccess & ma)
     {
-      cout << "MA::GetInitArgs of object at " << &ma << endl;
       return bp::make_tuple(); 
     }
 
@@ -382,9 +381,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     bp::tuple getinitargs(bp::object obj)
     {
       auto & fes = bp::extract<FESpace const&>(obj)();
-      cout << "FESpace::GetInitArgs" << endl;
-      bp::object m = obj.attr("__dict__")["mesh"];
-      // bp::object m (fes.GetMeshAccess());
+      bp::object m (fes.GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
       flags["dim"] = fes.GetDimension();
       return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
@@ -883,7 +880,6 @@ void NGS_DLL_HEADER ExportNgcomp()
                           {
                             shared_ptr<MeshAccess> ma = bp::extract<shared_ptr<MeshAccess>>(bp_ma)();
                             auto ret = self.attr("__dummy_init__")(ma, type, bp_flags, order, is_complex, dirichlet, definedon, dim);
-                            self.attr("__dict__")["mesh"] = bp_ma;
                             self.attr("__dict__")["flags"] = bp_flags;
                             return ret;   
                            }),
