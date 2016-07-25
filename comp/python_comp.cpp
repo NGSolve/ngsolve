@@ -386,6 +386,7 @@ void NGS_DLL_HEADER ExportNgcomp()
       bp::object m = obj.attr("__dict__")["mesh"];
       // bp::object m (fes.GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
+      flags["dim"] = fes.GetDimension();
       return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
     }
 
