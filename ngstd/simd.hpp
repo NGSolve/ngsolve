@@ -264,6 +264,9 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
     MultiSIMD (T v) : head(v), tail(v) { ; } 
     MultiSIMD (SIMD<T> _head, MultiSIMD<D-1,T> _tail)
       : head(_head), tail(_tail) { ; }
+    template <typename ... ARGS>
+    MultiSIMD (SIMD<T> _v0, SIMD<T> _v1, ARGS ... args)
+      : head(_v0), tail(_v1, args...) { ; }
     SIMD<T> Head() const { return head; }
     MultiSIMD<D-1,T> Tail() const { return tail; }
     SIMD<T> & Head() { return head; }
@@ -340,6 +343,10 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
     return ost;
   }
 
+  INLINE SIMD<double> HVSum (SIMD<double> a) { return a; }
+  template <int D>
+  INLINE SIMD<double> HVSum (MultiSIMD<D,double> a) { return a.Head() + HVSum(a.Tail()); }
+  template <int D> INLINE double HSum (MultiSIMD<D,double> a) { return HSum(HVSum(a)); }
 }
 
 #endif
