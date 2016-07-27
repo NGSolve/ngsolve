@@ -398,9 +398,9 @@ public:
     { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
 
 
-    virtual void AddElementMatrix(const FlatArray<int> & dnums1, 
-				  const FlatArray<int> & dnums2, 
-				  const FlatMatrix<TSCAL> & elmat);
+    virtual void AddElementMatrix(FlatArray<int> dnums1, 
+                                  FlatArray<int> dnums2, 
+                                  FlatMatrix<TSCAL> elmat);
 
     virtual BaseVector & AsVector() 
     {
@@ -588,11 +588,11 @@ public:
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL;
-    virtual void AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat);
+    virtual void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat);
 
-    virtual void AddElementMatrix(const FlatArray<int> & dnums1, 
-				  const FlatArray<int> & dnums2, 
-				  const FlatMatrix<TSCAL> & elmat)
+    virtual void AddElementMatrix(FlatArray<int> dnums1, 
+				  FlatArray<int> dnums2, 
+				  FlatMatrix<TSCAL> elmat)
     {
       AddElementMatrix (dnums1, elmat);
     }
