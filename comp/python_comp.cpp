@@ -232,7 +232,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("__hash__" , &ElementId::Nr)
     ;
   
-  bp::def("BndElementId", FunctionPointer([] (int nr) { return ElementId(BND,nr); })) ;
+  bp::def("BndElementId", FunctionPointer([] (int nr) { return ElementId(BND,nr); }),
+          (bp::arg("nr")),
+          "creates an element-id for a boundary element")
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -251,22 +254,30 @@ void NGS_DLL_HEADER ExportNgcomp()
   //////////////////////////////////////////////////////////////////////////////////////////
 
   bp::class_<Ngs_Element,bp::bases<ElementId>>("Ngs_Element", bp::no_init)
-    .add_property("vertices", FunctionPointer([](Ngs_Element &el) {return bp::tuple(Array<int>(el.Vertices()));} ))
-    .add_property("edges", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Edges()));} ))
-    .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ))
-    .add_property("type", &Ngs_Element::GetType)
-    .add_property("index", &Ngs_Element::GetIndex)
+    .add_property("vertices", FunctionPointer([](Ngs_Element &el) {return bp::tuple(Array<int>(el.Vertices()));} ),
+                  "list of global vertex numbers")
+    .add_property("edges", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Edges()));} ),
+                  "list of global edge numbers")
+    .add_property("faces", FunctionPointer([](Ngs_Element &el) { return bp::tuple(Array<int>(el.Faces()));} ),
+                  "list of global face numbers")
+    .add_property("type", &Ngs_Element::GetType, "geometric shape of element")
+    .add_property("index", &Ngs_Element::GetIndex, "material or boundary condition index")
     .add_property("mat", FunctionPointer([](Ngs_Element & el)
-                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; }))
+                                         { return el.GetMaterial() ? *el.GetMaterial() : ""; }),
+                  "material or boundary condition label")
     ;
 
   bp::class_<FESpace::Element,bp::bases<Ngs_Element>>("FESpaceElement", bp::no_init)
-    .add_property("dofs", FunctionPointer([](FESpace::Element & el) 
-        {
-          Array<int> tmp (el.GetDofs());
-          return bp::tuple(tmp);
-          // return bp::tuple(Array<int>(el.GetDofs()));} ))
-        }))
+    .add_property("dofs",
+                  FunctionPointer
+                  ([](FESpace::Element & el) 
+                   {
+                     Array<int> tmp (el.GetDofs());
+                     return bp::tuple(tmp);
+                     // return bp::tuple(Array<int>(el.GetDofs()));} ))
+                   }),
+                  "degrees of freedom of element"
+                  )
 
     .def("GetLH", FunctionPointer([](FESpace::Element & el) -> LocalHeap & 
                                   {
@@ -279,14 +290,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                                   {
                                     return el.GetFE();
                                   }),
-         bp::return_value_policy<bp::reference_existing_object>()
+         bp::return_value_policy<bp::reference_existing_object>(),
+         "the finite element containing shape functions"
          )
 
     .def("GetTrafo", FunctionPointer([](FESpace::Element & el) -> const ElementTransformation & 
                                      {
                                        return el.GetTrafo();
                                      }),
-         bp::return_value_policy<bp::reference_existing_object>()
+         bp::return_value_policy<bp::reference_existing_object>(),
+         "the transformation from reference element to physical element"
          )
 
     ;
@@ -409,7 +422,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  bp::class_<Region> ("Region", bp::no_init)
+  bp::class_<Region> ("Region", "a subset of volume or boundary elements", bp::no_init)
     .def(bp::init<shared_ptr<MeshAccess>,VorB,string>())
     .def("Mask", FunctionPointer([](Region & reg)->BitArray { return reg.Mask(); }))
     .def(bp::self + bp::self)
@@ -519,8 +532,8 @@ void NGS_DLL_HEADER ExportNgcomp()
 	  {
             return new Region (ma, VOL, pattern);
 	  }),
-         // (bp::arg("self"), bp::arg("pattern")),
-         // "checks whether domain materials match regex pattern, retuns volume region",
+         (bp::arg("self"), bp::arg("pattern")),
+         "returns mesh-region matching the given regex pattern",
          bp::return_value_policy<bp::manage_new_object>()
          )
     
@@ -531,13 +544,18 @@ void NGS_DLL_HEADER ExportNgcomp()
 	    for (int i : materials.Range())
 	      materials[i] = ma.GetBCNumBCName(i);
 	    return bp::list(materials);
-	  }))
+	  }),
+         (bp::arg("self")),
+         "returns list of boundary conditions"
+         )
 
     .def("Boundaries", FunctionPointer
 	 ([](shared_ptr<MeshAccess> ma, string pattern)
 	  {
             return new Region (ma, BND, pattern);
 	  }),
+         (bp::arg("self"), bp::arg("pattern")),
+         "returns boundary mesh-region matching the given regex pattern",
          bp::return_value_policy<bp::manage_new_object>()
          )
 
@@ -546,7 +564,8 @@ void NGS_DLL_HEADER ExportNgcomp()
           {
             Ng_Refine(NG_REFINE_H);
             ma.UpdateBuffers();
-          }))
+          }),
+         "local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP", FunctionPointer
          ([](MeshAccess & ma, int levels)
@@ -555,7 +574,8 @@ void NGS_DLL_HEADER ExportNgcomp()
             ma.UpdateBuffers();
           }))
 
-    .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag)
+    .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
+         "set refinementflag for mesh-refinement")
 
     .def("GetParentElement", &MeshAccess::GetParentElement)
     .def("GetParentVertices", FunctionPointer
@@ -952,6 +972,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                   "proxy to set order for individual nodes")
     .add_property("globalorder", FunctionPointer([] (FESpace & self) { return self.GetOrder(); }),
                   "query global order of space")    
+    .add_property("type", FunctionPointer([] (FESpace & self) { return self.type; }),
+                  "type of finite element space")    
 
     .def("Elements", 
          FunctionPointer([](FESpace & self, VorB vb, int heapsize) 
