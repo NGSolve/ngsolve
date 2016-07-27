@@ -1283,32 +1283,36 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
     static Array< Vec<4> > coefs;
     static int maxnp, maxalpha;
-#endif
+#else
     int alpha;
+#endif
 
     Vec<4> * coefsal;
   public:
-    INLINE JacobiPolynomialAlpha (int a) : alpha(a) 
+    INLINE JacobiPolynomialAlpha (int a) 
     { 
       // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
-      coefsal = &coefs[alpha*maxnp];
+      coefsal = &coefs[a*maxnp];
 #else
+      alpha = a;
       // coefsal = &jacobialpha_coefs[alpha*(jacobialpha_maxn+1)];      
 #endif
     }
 
     template <class S, class T>
     INLINE JacobiPolynomialAlpha (int n, S x, int a, T && values)
-      : alpha(a)
     { 
       // offset = alpha*(maxn+1);
 #ifndef __CUDA_ARCH__
-      coefsal = &coefs[alpha*maxnp];
+      coefsal = &coefs[a*maxnp];
+#else
+      alpha(a);
 #endif
       Eval (n, x, values);
     }
 
+    void IncAlpha2 () { coefsal += 2*maxnp; }
     static void Calc (int n, int maxalpha);
 
     template <class S>
@@ -2338,15 +2342,17 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     {
       LegendrePolynomial leg;
       int ii = 0;
+      JacobiPolynomialAlpha jac(1);      
       leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
             SBLambda ([&] (int i, S val) LAMBDA_INLINE 
                    {
-                     JacobiPolynomialAlpha jac(1+2*i);
+                     // JacobiPolynomialAlpha jac(1+2*i);
                      jac.EvalMult1Assign (n-i, 2*x-1, val, 
 				   SBLambda([&](int j, S v2) 
 					    {
 					      values[ii++] = v2;
 					    }));
+                     jac.IncAlpha2();
                    }));
     }
 
