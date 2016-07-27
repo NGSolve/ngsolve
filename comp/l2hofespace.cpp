@@ -257,7 +257,8 @@ namespace ngcomp
         Ngs_Element ngel = ma->GetElement(elnr);
         ELEMENT_TYPE eltype = ngel.GetType();
         
-        if (!DefinedOn (ma->GetElIndex (elnr)))
+        // if (!DefinedOn (ma->GetElIndex (elnr)))
+        if (!DefinedOn (ngel))
           {
             switch (eltype)
               {
@@ -272,12 +273,16 @@ namespace ngcomp
               }
           }
 
-	if (ma->GetElType(elnr) == ET_TRIG) 
+	if (eltype == ET_TRIG) 
 	  {
+            /*
             int ia[3];
             FlatArray<int> vnums(3, &ia[0]);
             vnums = ngel.Vertices();
-	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
+            */
+            // INT<3> vnums = ngel.Vertices();
+	    // return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, alloc);
+            return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
 	  }
 
         switch (eltype)
