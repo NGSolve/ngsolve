@@ -724,8 +724,8 @@ namespace ngcomp
     virtual void CalcMultiPointJacobian (const SIMD_IntegrationRule & ir,
 					 SIMD_BaseMappedIntegrationRule & bmir) const
     {
-      static Timer t("eltrafo - const, calcmultipoint"); RegionTimer reg(t);
-      t.AddFlops (ir.GetNIP());
+      // static Timer t("eltrafo - const, calcmultipoint"); RegionTimer reg(t);
+      // t.AddFlops (ir.GetNIP());
 
       SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &> (bmir);
       FlatArray<SIMD<MappedIntegrationPoint<DIMS,DIMR>>> hmir(mir.Size(), &mir[0]);
@@ -740,8 +740,8 @@ namespace ngcomp
           hmir[i].Jacobian() = simd_mat;
         }
 
-      static Timer tcompute("eltrafo - const, compute");
-      RegionTimer r2(tcompute);
+      // static Timer tcompute("eltrafo - const, compute");
+      // RegionTimer r2(tcompute);
       for (int i = 0; i < hir.Size(); i++)
         hmir[i].Compute();
     }
