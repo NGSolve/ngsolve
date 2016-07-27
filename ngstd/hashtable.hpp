@@ -57,6 +57,14 @@ namespace ngstd
             i[j] = in2[j];
         }
     }
+
+    template <typename T2>
+    INLINE INT (const BaseArrayObject<T2> & ao)
+    {
+      for (int j = 0; j < N; j++)
+        i[j] = ao.Spec()[j];
+    }
+    
     INLINE int Size() const { return N; }
     /// all ints equal ?
     INLINE bool operator== (const INT & in2) const
@@ -108,6 +116,8 @@ namespace ngstd
 	i[j] = value;
     }
     */
+
+    operator FlatArray<T> () { return FlatArray<T> (N, &i[0]); } 
 
     INLINE INT<N,T> & operator= (T value)
     {
