@@ -863,8 +863,8 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixTM<TM> ::
-  AddElementMatrix(const FlatArray<int> & dnums1, const FlatArray<int> & dnums2, 
-		   const FlatMatrix<TSCAL> & elmat1)
+  AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
+                   FlatMatrix<TSCAL> elmat1)
   {
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
@@ -1509,24 +1509,27 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixSymmetricTM<TM> ::
-  AddElementMatrix(const FlatArray<int> & dnums, const FlatMatrix<TSCAL> & elmat1)
+  AddElementMatrix(FlatArray<int> dnums, FlatMatrix<TSCAL> elmat1)
   {
     static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
     RegionTimer reg (timer);
 
-    ArrayMem<int, 50> map(dnums.Size());
-    for (int i = 0; i < map.Size(); i++) map[i] = i;
+    // ArrayMem<int, 50> map(dnums.Size());
+    STACK_ARRAY(int, hmap, dnums.Size());
+    FlatArray<int> map(dnums.Size(), hmap);
+    for (int i = 0; i < dnums.Size(); i++) map[i] = i;
     QuickSortI (dnums, map);
 
     Scalar2ElemMatrix<TM, TSCAL> elmat (elmat1);
 
     int first_used = 0;
     while (first_used < dnums.Size() && dnums[map[first_used]] == -1) first_used++;
-    
+
     for (int i1 = first_used; i1 < dnums.Size(); i1++)
       {
 	FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
 	FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
+        auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
 
 	for (int j1 = first_used, k = 0; j1 <= i1; j1++, k++)
 	  {
@@ -1536,8 +1539,23 @@ namespace ngla
 		if (k >= rowind.Size())
 		  throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");
 	      }
-	    rowvals(k) += elmat(map[i1], map[j1]);
+            // rowvals(k) += elmat(map[i1], map[j1]);
+            rowvals(k) += elmat_row(0, map[j1]);
 	  }
+
+        /*
+        int j1 = first_used;
+        for (int k = 0; k < rowind.Size(); k++)
+          {
+            if (rowind[k] == dnums[map[j1]])
+              {
+                rowvals(k) += elmat_row(0, map[j1]);                
+                j1++;
+              }
+          }
+        if (j1 <= i1)
+          throw Exception ("SparseMatrixSymmetricTM::AddElementMatrix: illegal dnums");          
+        */
       }
   }
   
