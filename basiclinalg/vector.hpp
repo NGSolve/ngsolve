@@ -1370,8 +1370,9 @@ namespace ngbla
     BareSliceVector(FlatVector<T> vec) : data(&vec(0)), dist(1) { ; } 
     BareSliceVector(const BareSliceVector &) = default;
 
-    int Dist () const { return dist; } 
-    double & operator() (int i) const { return data[i*dist];  }
+    int Dist () const { return dist; }
+    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
+    double & operator() (TIND2 i) const { return data[i*dist];  }
     BareSliceVector<> Range (int first, int next) const
     {
       return BareSliceVector<T> (data+first*dist, dist);
