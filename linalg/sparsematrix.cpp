@@ -2001,6 +2001,22 @@ namespace ngla
 
 
 
+  template <> BaseSparseMatrix * 
+  SparseMatrix<double,double> :: Restrict (const SparseMatrixTM<double> & prol,
+                                           BaseSparseMatrix* acmat ) const
+  {
+    static Timer t ("sparsematrix - restrict");
+    RegionTimer reg(t);
+    // new version
+    auto prolT = TransposeMatrix(prol);
+
+    auto prod1 = MatMult(*this, prol);
+    auto prod = MatMult(*prolT, *prod1);
+    
+    delete prod1;
+    delete prolT;
+    return prod;
+  }
 
 
 
@@ -2010,7 +2026,7 @@ namespace ngla
   SparseMatrixSymmetric<double,double> :: Restrict (const SparseMatrixTM<double> & prol,
                                                     BaseSparseMatrix* acmat ) const
   {
-    static Timer t ("sparsematrix - restrict");
+    static Timer t ("sparsematrixsymmetric - restrict");
     RegionTimer reg(t);
     // new version
     auto prolT = TransposeMatrix(prol);
