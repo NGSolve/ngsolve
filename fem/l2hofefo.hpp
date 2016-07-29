@@ -340,13 +340,15 @@ namespace ngfem
         });
 #else
       int ii = 0;
+      JacobiPolynomialAlpha jac(1);
       LegendrePolynomial::EvalScaled 
         (IC<ORDER>(), 
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
-                     JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (integral_constant<int,ORDER-i>(), 2*x-1, val, 
+                     // JacobiPolynomialFix<1+2*i,0> jac;
+                     jac.IncAlpha2();
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
                                    SBLambda([&](auto j, Tx v2) 
                                             {
                                               shape[ii++] = v2;
