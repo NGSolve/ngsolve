@@ -1617,8 +1617,8 @@ void CalcLDL (SliceMatrix<T> mat)
   }
 
 
-
-  // a simple lock-free queue
+  /*
+  // a simple lock-free queue (but we don't need it)
   template <typename T>
   class MyQueue
   {
@@ -1647,7 +1647,7 @@ void CalcLDL (SliceMatrix<T> mat)
           if (rcnt >= data.Size()) return false;
           
           int oldval = 1;
-          if (ok[rcnt].compare_exchange_weak (oldval, 0))
+          if (ok[int(rcnt)].compare_exchange_weak (oldval, 0))
             {
               int mypos = rcnt;
               rcnt++;
@@ -1657,7 +1657,7 @@ void CalcLDL (SliceMatrix<T> mat)
         }
     }
   };
-
+  */
 
 
   
