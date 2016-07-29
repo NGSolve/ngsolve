@@ -594,6 +594,18 @@ namespace ngfem
     }
 
 
+    template <int N, class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
+    {
+      S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
+      Iterate<N> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    EvalScaledNext2 (i+2, x, y, p1, p2);
+                  });
+    }  
+
+    
     template <typename TI, class S, class Sy, class T>
     INLINE static void EvalScaled1Assign (TI n, S x, Sy y, T && values)
     {
