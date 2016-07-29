@@ -204,7 +204,8 @@ namespace ngbla
     }
 
     /// constant element access
-    INLINE TELEM & operator[] (int i) const
+    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
+    INLINE TELEM & operator[] (TIND2 i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(size,i);

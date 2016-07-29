@@ -256,8 +256,8 @@ public:
     FlatArray<int> BlockExtDofs (int bnr) const
     {
       auto range = BlockDofs (bnr);
-      auto base = firstinrow_ri[range.begin()] + range.Size()-1;
-      auto ext_size =  firstinrow[range.begin()+1]-firstinrow[range.begin()] - range.Size()+1;
+      auto base = firstinrow_ri[range.First()] + range.Size()-1;
+      auto ext_size =  firstinrow[range.First()+1]-firstinrow[range.First()] - range.Size()+1;
       return rowindex2.Range(base, base+ext_size);
     }
   };

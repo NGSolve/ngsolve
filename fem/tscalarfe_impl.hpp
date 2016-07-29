@@ -99,7 +99,6 @@ namespace ngfem
         values.Get(i) = sum.Data();
       }
     */
-
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=2)
@@ -110,7 +109,12 @@ namespace ngfem
         for (int i = 0; i < DIM; i++)
           pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
         MultiSIMD<2,double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape)
+                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
+        
         values.Get(i) = sum.template Get<0>().Data();
         if (i+1 < hir.Size())
           values.Get(i+1) = sum.template Get<1>().Data();          
@@ -131,14 +135,20 @@ namespace ngfem
             pt(i).template Get<2> () = pt3(i);
           }
         MultiSIMD<3,double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { sum += coefs(j)*shape; } ));
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { sum += coefs(j)*shape; } ));
+
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape)
+                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
+
         values.Get(i) = sum.template Get<0>().Data();
         if (i+1 < hir.Size())
           values.Get(i+1) = sum.template Get<1>().Data();          
         if (i+2 < hir.Size())
           values.Get(i+2) = sum.template Get<2>().Data();          
       }
-    
+
     /*
       // 3 pnts with extra treatment of left-over
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
@@ -178,6 +188,7 @@ namespace ngfem
           values.Get(i+1) = sum.template Get<1>().Data();          
       }
     */
+
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=4)
@@ -195,7 +206,14 @@ namespace ngfem
             pt(i).template Get<3> () = pt4(i);
           }
         MultiSIMD<4,double> sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<4,double> shape) { sum += coefs(j)*shape; } ));
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<4,double> shape) { sum += coefs(j)*shape; } ));
+
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<4,double> shape)
+                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
+
+        
         values.Get(i) = sum.template Get<0>().Data();
         if (i+1 < hir.Size())
           values.Get(i+1) = sum.template Get<1>().Data();          
@@ -281,7 +299,14 @@ namespace ngfem
         MultiSIMD<3,double> val (values.Get(i),
                                  i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0),
                                  i+2 < hir.Size() ? values.Get(i+2) : SIMD<double> (0.0));
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { coefs(j) += HSum(val*shape); } ));
+
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { coefs(j) += HSum(val*shape); } ));
+
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape)
+                                        { *pcoefs += HSum(val*shape); pcoefs += dist; } ));
+        
       }
 
   }

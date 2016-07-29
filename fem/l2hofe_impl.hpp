@@ -310,7 +310,7 @@ namespace ngfem
 #ifndef __CUDA_ARCH__
     Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     INT<4> f = GetFaceSort (0, vnums);
-    int p = order_inner[0];
+    size_t p = order_inner[0];
     DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
 #else
     int p = order_inner[0];

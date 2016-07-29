@@ -498,7 +498,8 @@ namespace ngla
     int * hrowindex2 = rowindex2.Addr(0);
     TM * hlfact = lfact.Addr(0);
     
-    enum { BS = 4 };
+    // enum { BS = 4 };
+    constexpr int BS=4;
 
     Array<TM> sum(BS*maxrow);
 

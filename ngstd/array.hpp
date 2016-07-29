@@ -435,7 +435,8 @@ namespace ngstd
 
 
     /// Access array. range check by macro CHECK_RANGE
-    INLINE T & operator[] (TSIZE i) const
+    template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>    
+    INLINE T & operator[] (TIND2 i) const
     {
 
 #ifdef CHECK_RANGE

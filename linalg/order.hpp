@@ -114,6 +114,7 @@ namespace ngla
     bool Flag () const { return clmaster->flag; }
     
     operator int() const { return vnr; }
+    int Nr() const { return vnr; }
   };
   
 

@@ -243,7 +243,7 @@ namespace ngla
       CliqueEl * p3 = newp;
       do
         {
-          vertices[*p3].SetFlag (1);
+          vertices[p3->Nr()].SetFlag (1);
           p3 = p3->next;
         }
       while (p3 != newp);
@@ -256,7 +256,7 @@ namespace ngla
       CliqueEl * p3 = newp;
       do
         {
-          for (CliqueEl * p1 = cliques[*p3]; p1; p1 = p1->nextcl)
+          for (CliqueEl * p1 = cliques[p3->Nr()]; p1; p1 = p1->nextcl)
             {
               if (p1->clmaster != p1) continue;
 
@@ -267,7 +267,7 @@ namespace ngla
                   CliqueEl * p2 = p1;
                   do
                     {
-                      if (!vertices[*p2].Flag())
+                      if (!vertices[p2->Nr()].Flag())
                         {
                           dominated = 0;
                           break;
@@ -315,13 +315,13 @@ namespace ngla
       do
         {
           // p3->next is first remaining clique:
-          p3->nextcl = cliques[*p3];
+          p3->nextcl = cliques[p3->Nr()];
           while (p3->nextcl && p3->nextcl->eliminate)
             p3->nextcl = p3->nextcl->nextcl;
 
           
           CliqueEl hcel(-1);
-          hcel.nextcl = cliques[*p3];
+          hcel.nextcl = cliques[p3->Nr()];
           CliqueEl * p1 = &hcel;
 	  
           while (p1)
@@ -331,14 +331,14 @@ namespace ngla
                   CliqueEl * hp = p1->nextcl;
                   p1->nextcl = p1->nextcl->nextcl;
                   ball.Free (hp);
-                  vertices[*p3].numcliques--;
+                  vertices[p3->Nr()].numcliques--;
                 }
               p1 = p1->nextcl;
             }
           
-          cliques[*p3] = p3;
+          cliques[p3->Nr()] = p3;
           p3 = p3->next;
-          vertices[*p3].numcliques++;
+          vertices[p3->Nr()].numcliques++;
         }
       while (p3 != newp);
     }
@@ -395,7 +395,7 @@ namespace ngla
                   { 
                     bool samecl = true;
 
-                    for (CliqueEl * p1 = cliques[*p4]; p1; p1 = p1->nextcl)
+                    for (CliqueEl * p1 = cliques[p4->Nr()]; p1; p1 = p1->nextcl)
                       if (!p1->Flag()) 
                         {
                           samecl = false;
