@@ -137,7 +137,7 @@ struct PyVecAccess : public boost::python::def_visitor<PyVecAccess<T, TNEW> > {
                 int n = bp::len(ind);
                 TNEW res(n);
                 for (int i=0; i<n; i++) {
-                    res[i] = v[ bp::extract<int>(ind[i]) ];
+                  res[i] = v[ bp::extract<int>(ind[i])() ];
                 }
                 return res;
             } ) );

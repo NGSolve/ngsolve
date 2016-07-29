@@ -243,7 +243,9 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          // S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          // S pnew = FMA(REC::C(i), p2, REC::A(i) * x * p1);  // bad
+          S pnew = FMA(REC::A(i) * x, p1, REC::C(i) * p2);  // good
           p2 = p1;
           p1 = pnew;
         }
@@ -256,6 +258,7 @@ namespace ngfem
       return p1;
     }
 
+#ifdef OLD
     template <class S>
     INLINE static S EvalNext (int i, S x, S & p1, S & p2)
     {
@@ -287,8 +290,7 @@ namespace ngfem
       return p1;
       */
     }
-
-
+#endif
 
 
 
@@ -316,9 +318,9 @@ namespace ngfem
           }
         }
     }
-
-    template <class S>
-    INLINE static S EvalNextTicTac2 (int i, S x, S & p1, S & p2)
+    
+    template <typename TI, class S>
+    INLINE static S EvalNextTicTac2 (TI i, S x, S & p1, S & p2)
     {
       if (REC::ZERO_B)
 	{
@@ -334,8 +336,8 @@ namespace ngfem
 	}
     }
 
-    template <class S, class Sy>
-    INLINE static S EvalScaledNextTicTac2 (int i, S x, Sy y, S & p1, S & p2)
+    template <typename TI, class S, class Sy>
+    INLINE static S EvalScaledNextTicTac2 (TI i, S x, Sy y, S & p1, S & p2)
     {
       p1 = (y*y) * REC::C(i) * p1;
       if (REC::ZERO_B)
@@ -345,6 +347,7 @@ namespace ngfem
       return p1;
     }
 
+    /*
     template <class S, class Sc>
     INLINE static S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2)
     {
@@ -355,7 +358,7 @@ namespace ngfem
         default: return EvalNextTicTac2 (i, x, p1, p2);
         }
     }
-
+    */
 
     template <class S, class Sy>
     INLINE static void EvalScaledNext (int i, S x, Sy y, S & p1, S & p2)
@@ -431,15 +434,15 @@ namespace ngfem
 
   public:
 
-    template <class S, class T>
-    INLINE static void Eval (int n, S x, T && values) 
+    template <typename TI, class S, class T>
+    INLINE static void Eval (TI n, S x, T && values) 
     {
       // if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
-    template <class S, class Sc, class T>
-    INLINE static void EvalMult (int n, S x, Sc c, T && values) 
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult (TI n, S x, Sc c, T && values) 
     {
       /*
       S p1, p2;
@@ -465,6 +468,51 @@ namespace ngfem
       S p1(c * REC::P0(x));
       S p2 = c * REC::P1(x);
 
+      TI i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values[i] = p1;
+          values[i+1] = p2;
+          
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+	  EvalNextTicTac2 (i+3, x, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+    }
+
+
+    template <typename TI, class S, class Sc, class T1, class T2>
+    INLINE static void EvalMult (TI n, S x, Sc c, const Class_SBLambdaDuo<T1,T2> & values) 
+    {
+      S p1, p2;
+
+      if (n < 0) return;
+
+      values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
+      if (n < 1) return;
+
+      values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
+      if (n < 2) return;
+
+      TI i = 2;
+      for ( ; i < n; i+=2)
+	{	
+	  S v1  = EvalNextTicTac2 (i, x, p1, p2);
+	  S v2 = EvalNextTicTac2 (i+1, x, p2, p1);
+	  values (i, v1, i+1, v2);
+	}
+      if (i <= n)
+        values[i] = EvalNextTicTac2 (i, x, p1, p2);
+    }
+
+
+    template <int N, class S, class Sc, class T>
+    INLINE static void EvalMult (IC<N> n, S x, Sc c, T && values) 
+    {
+      S p1(c * REC::P0(x));
+      S p2 = c * REC::P1(x);
+
       int i = 0;
       for ( ; i < n; i+=2)
 	{	
@@ -479,43 +527,17 @@ namespace ngfem
     }
 
 
-    template <class S, class Sc, class T1, class T2>
-    INLINE static void EvalMult (int n, S x, Sc c, const Class_SBLambdaDuo<T1,T2> & values) 
-    {
-      S p1, p2;
-
-      if (n < 0) return;
-
-      values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
-      if (n < 1) return;
-
-      values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
-      if (n < 2) return;
-
-      int i = 2;
-      for ( ; i < n; i+=2)
-	{	
-	  S v1  = EvalNextTicTac2 (i, x, p1, p2);
-	  S v2 = EvalNextTicTac2 (i+1, x, p2, p1);
-	  values (i, v1, i+1, v2);
-	}
-      if (i <= n)
-        values[i] = EvalNextTicTac2 (i, x, p1, p2);
-    }
-
-
-
-    template <class S, class T>
-    INLINE static void Eval1Assign (int n, S x, T && values)
+    template <typename TI, class S, class T>
+    INLINE static void Eval1Assign (TI n, S x, T && values)
     {
       EvalMult1Assign (n, x, 1.0, values);
     }
 
-    template <class S, class Sc, class T>
-    INLINE static void EvalMult1Assign (int n, S x, Sc c, T && values)
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult1Assign (TI n, S x, Sc c, T && values)
     {
       S p1 = c*REC::P1(x), p2(c * REC::P0(x));
-      for (int i = 0; i <= n; i++)
+      for (TI i = 0; i <= n; i++)
         {
 	  values[i] = p2;
           EvalNext2 (i+2, x, p1, p2);
@@ -524,15 +546,15 @@ namespace ngfem
 
 
 
-    template <class S, class Sy, class T>
-    INLINE static void EvalScaled (int n, S x, Sy y, T && values)
+    template <typename TI, class S, class Sy, class T>
+    INLINE static void EvalScaled (TI n, S x, Sy y, T && values)
     {
       if (n < 0) return;
       EvalScaledMult (n, x, y, 1.0, values);
     }
 
-    template <class S, class Sy, class Sc, class T>
-    INLINE static void EvalScaledMult (int n, S x, Sy y, Sc c, T && values)
+    template <typename TI, class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult (TI n, S x, Sy y, Sc c, T && values)
     {
       /*
       S p1, p2;
@@ -555,7 +577,7 @@ namespace ngfem
       S p1(c * REC::P0(x));
       S p2(c * REC::P1(x,y));
 
-      int i = 0;
+      TI i = 0;
       for ( ; i < n; i+=2)
 	{	
           values[i] = p1;
@@ -572,18 +594,18 @@ namespace ngfem
     }
 
 
-    template <class S, class Sy, class T>
-    INLINE static void EvalScaled1Assign (int n, S x, Sy y, T && values)
+    template <typename TI, class S, class Sy, class T>
+    INLINE static void EvalScaled1Assign (TI n, S x, Sy y, T && values)
     {
       // if (n  < 0) return;
       EvalScaledMult1Assign (n, x, y, 1.0, values);
     }
 
-    template <class S, class Sy, class Sc, class T>
-    INLINE static void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values)
+    template <typename TI, class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
-      for (int i = 0; i <= n; i++)
+      for (TI i = 0; i <= n; i++)
         {
 	  values[i] = p2;
           EvalScaledNext2 (i+2, x, y, p1, p2);
@@ -664,7 +686,8 @@ namespace ngfem
   {
   public:
 
-    INLINE void ABC (int i, double & a, double & b, double & c) const   
+    template <typename TI>
+    INLINE void ABC (TI i, double & a, double & b, double & c) const   
     {
       a = static_cast<const REC&>(*this).A(i);
       b = static_cast<const REC&>(*this).B(i);
@@ -675,8 +698,8 @@ namespace ngfem
 
     INLINE const REC & Cast() const { return static_cast<const REC &> (*this); }
 
-    template <class S>
-    INLINE S EvalNext2 (int i, S x, S & p1, S & p2) const
+    template <typename TI, class S>
+    INLINE S EvalNext2 (TI i, S x, S & p1, S & p2) const
     {
       if (REC::ZERO_B)
 	{
@@ -687,7 +710,14 @@ namespace ngfem
 	}
       else
 	{
-	  S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
+          // S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
+          // S pnew = FMA(Cast().C(i), p2, (Cast().A(i) * x + Cast().B(i)) * p1); // bad
+          S pnew = FMA(Cast().A(i) * x + Cast().B(i), p1, Cast().C(i) * p2);  // good          
+          /*
+          S axpb = (Cast().A(i) * x + Cast().B(i));
+          S hv = Cast().C(i)*p2;
+          S pnew = hv + axpb * p1;
+          */
 	  p2 = p1;
 	  p1 = pnew;
 	  return p1;
@@ -695,7 +725,7 @@ namespace ngfem
     }
 
 
-
+    /*
     template <class S>
     INLINE S EvalNext (int i, S x, S & p1, S & p2) const
     {
@@ -722,6 +752,8 @@ namespace ngfem
           }
         }
     }
+    */
+
 
     template <class S, class Sc>
     INLINE S EvalNextMult (int i, S x, Sc c, S & p1, S & p2)
@@ -742,8 +774,8 @@ namespace ngfem
     }
 
 
-    template <class S>
-    INLINE S EvalNextTicTac2 (int i, S x, S & p1, S & p2) const
+    template <typename TI, class S>
+    INLINE S EvalNextTicTac2 (TI i, S x, S & p1, S & p2) const
     {
       double a,b,c;
       static_cast<const REC&> (*this).ABC (i, a, b, c);
@@ -755,13 +787,22 @@ namespace ngfem
 	}
       else
 	{
+          /*
 	  p1 *= c;
 	  p1 += (a * x + b) * p2;
+          */
+          /*
+          S axpb = (a * x + b);
+          S hv = c*p1;
+          // p1 = hv + axpb * p2;
+          p1 = FMA(axpb, p2, hv);
+          */
+          p1 = FMA(a*x+b, p2, c*p1);          
 	  return p1;
 	}
     }
 
-
+    /*
     template <class S>
     INLINE S EvalNextTicTac (int i, S x, S & p1, S & p2) const
     {
@@ -789,8 +830,9 @@ namespace ngfem
           }
         }
     }
+    */
 
-
+    /*
     template <class S, class Sc>
     INLINE S EvalNextMultTicTac (int i, S x, Sc c, S & p1, S & p2) const
     {
@@ -801,10 +843,10 @@ namespace ngfem
         default: return EvalNextTicTac2 (i, x, p1, p2);
         }
     }
+    */
 
-
-    template <class S, class Sy>
-    INLINE S EvalScaledNext2 (int i, S x, Sy y, S & p1, S & p2) const
+    template <typename TI, class S, class Sy>
+    INLINE S EvalScaledNext2 (TI i, S x, Sy y, S & p1, S & p2) const
     {
       if (REC::ZERO_B)
         {
@@ -823,6 +865,7 @@ namespace ngfem
       return p1;
     }
 
+    /*
     // new
     template <class S, class Sy, class Tc>
     INLINE S EvalScaledMultNext (int i, S x, Sy y, Tc c, S & p1, S & p2) const
@@ -853,27 +896,27 @@ namespace ngfem
           }
         }
     }
-
+    */
 
 
   public:
 
-    template <class S, class T>
-    INLINE void Eval (int n, S x, T && values) const
+    template <typename TI, class S, class T>
+    INLINE void Eval (TI n, S x, T && values) const
     {
       if (n < 0) return;
       EvalMult (n, x, 1.0, values);
     }
 
-    template <class S, class T>
-    INLINE void Eval1Assign (int n, S x, T && values) const
+    template <typename TI, class S, class T>
+    INLINE void Eval1Assign (TI n, S x, T && values) const
     {
-      if (n < 0) return;
+      // if (n < 0) return;
       EvalMult1Assign (n, x, 1.0, values);
     }
 
-    template <class S, class Sc, class T>
-    INLINE void EvalMult (int n, S x, Sc c, T && values) const
+    template <typename TI, class S, class Sc, class T>
+    INLINE void EvalMult (TI n, S x, Sc c, T && values) const
     {
       /*
       S p1, p2;
@@ -898,25 +941,69 @@ namespace ngfem
       */
 
 
+      // leading !!!!
+      // if (n < 0) return;
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      values[0] = p1;
+      if (n < 1) return;
 
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+      values[1] = p2;
+
+      for (int i = 2; i <= n; i+=2)
+	{	
+	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
+          if (i == n) break;
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+
+      /*
+      // if (n < 0) return;
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      values[0] = p1;
+      if (n < 1) return;
+
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+      values[1] = p2;
+      // if (n < 2) return;
+
+      for (int i = 2; i <= n; i++)
+        values[i] = EvalNext2 (i, x, p2, p1);
+      */
+      
+      /*
       S p1(c * static_cast<const REC&>(*this).P0(x));
       S p2(c * static_cast<const REC&>(*this).P1(x));
-
-      int i = 0;
+      TI i = 0;
       for ( ; i < n; i+=2)
 	{	
           values[i] = p1;
-          values[i+1] = p2;
-          
 	  EvalNextTicTac2 (i+2, x, p1, p2);
-	  EvalNextTicTac2 (i+3, x, p2, p1);
+          values[i+1] = p2;
+          EvalNextTicTac2 (i+3, x, p2, p1);
 	}
       if (i == n)
         values[n] = p1;
+      */
+
+      
+      /*
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+      TI i = 0;
+      for ( ; i <= n; i+=2)
+	{	
+          values[i] = p1;
+          if (i == n) break;
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+          values[i+1] = p2;
+          EvalNextTicTac2 (i+3, x, p2, p1);
+	}
+      */
     }
 
-    template <class S, class Sc, class T>
-    INLINE void EvalMult1Assign (int n, S x, Sc c, T && values) const
+    template <typename TI, class S, class Sc, class T>
+    INLINE void EvalMult1Assign (TI n, S x, Sc c, T && values) const
     {
       /*
       S p1(0.0), p2(0.0); // initialize for surpressing warning
@@ -926,7 +1013,7 @@ namespace ngfem
 
       S p1(c * static_cast<const REC&>(*this).P1(x)), 
         p2(c * static_cast<const REC&>(*this).P0(x));
-      for (int i = 0; i <= n; i++)
+      for (TI i = 0; i <= n; i++)
         {
 	  values[i] = p2;
           EvalNext2 (i+2, x, p1, p2);
@@ -934,13 +1021,13 @@ namespace ngfem
 
     }
     
-    template <class S, class Sc, class T1, class T2>
-    INLINE void EvalMult (int n, S x, Sc c, Class_SBLambdaDuo<T1,T2> && values) const
+    template <typename TI, class S, class Sc, class T1, class T2>
+    INLINE void EvalMult (TI n, S x, Sc c, Class_SBLambdaDuo<T1,T2> && values) const
     {
       S p1(c * static_cast<const REC&>(*this).P0(x));
       S p2(c * static_cast<const REC&>(*this).P1(x));
 
-      int i = 0;
+      TI i = 0;
       for ( ; i < n; i+=2)
 	{	
           values (i, p1, i+1, p2);
@@ -952,8 +1039,8 @@ namespace ngfem
     }
 
       
-    template <class S, class Sy, class T>
-    INLINE void EvalScaled (int n, S x, Sy y, T && values) const
+    template <typename TI, class S, class Sy, class T>
+    INLINE void EvalScaled (TI n, S x, Sy y, T && values) const
     {
       EvalScaledMult (n, x, y, 1.0, values);
     }
@@ -964,8 +1051,8 @@ namespace ngfem
       return static_cast<const REC&>(*this).P1(x);
     }
 
-    template <class S, class Sy, class Sc, class T>
-    INLINE void EvalScaledMult (int n, S x, Sy y, Sc c, T && values) const
+    template <typename TI, class S, class Sy, class Sc, class T>
+    INLINE void EvalScaledMult (TI n, S x, Sy y, Sc c, T && values) const
     {
       S p1, p2;
 
@@ -976,12 +1063,12 @@ namespace ngfem
 
       values[1] = p1 = c * static_cast<const REC&>(*this).P1(x,y);
 
-      for (int i = 2; i <= n; i++)
+      for (TI i = 2; i <= n; i++)
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
     }
 
-    template <class S, class Sy, class Sc, class T>
-    INLINE void EvalScaledMult1Assign (int n, S x, Sy y, Sc c, T && values) const
+    template <typename TI, class S, class Sy, class Sc, class T>
+    INLINE void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values) const
     {
       /*
       S p1(0.0), p2(0.0);
@@ -992,7 +1079,7 @@ namespace ngfem
 
       S p1 = c*static_cast<const REC&>(*this).P1(x,y), 
         p2 = c * static_cast<const REC&>(*this).P0(x);
-      for (int i = 0; i <= n; i++)
+      for (TI i = 0; i <= n; i++)
         {
 	  values[i] = p2;
           EvalScaledNext2 (i+2, x, y, p1, p2);
@@ -1030,7 +1117,7 @@ namespace ngfem
     static INLINE S P1(S x)  { return x; }
     template <class S, class Sy>
     static INLINE S P1(S x, Sy y)  { return P1(x); }
-    
+
     static INLINE double A (int i) { return 2.0-1.0/i; }
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return 1.0/i-1.0; }
@@ -1073,9 +1160,12 @@ namespace ngfem
     static INLINE double CalcC (int i) { return 1.0/i-1.0; }
 
 #ifndef __CUDA_ARCH__
-    static INLINE double A (int i) { return coefs[i][0]; } 
-    static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return coefs[i][1]; } 
+    template <typename TI>
+      static INLINE double A (TI i) { return coefs[i][0]; } 
+    template <typename TI>
+      static INLINE double B (TI i) { return 0; }
+    template <typename TI>    
+      static INLINE double C (TI i) { return coefs[i][1]; } 
 #else
     static INLINE double A (int i) { return legendre_coefs[i][0]; } 
     static INLINE double B (int i) { return 0; }
@@ -1338,16 +1428,20 @@ namespace ngfem
 
 
 #ifndef __CUDA_ARCH__
-    INLINE double A (int i) const { return coefsal[i][0]; } 
-    INLINE double B (int i) const { return coefsal[i][1]; } 
-    INLINE double C (int i) const { return coefsal[i][2]; } 
+    template <typename TI>
+    INLINE double A (TI i) const { return coefsal[i][0]; } 
+    template <typename TI>
+    INLINE double B (TI i) const { return coefsal[i][1]; } 
+    template <typename TI>
+    INLINE double C (TI i) const { return coefsal[i][2]; } 
 #else
     INLINE double A (int i) const { return jacobialpha_coefs[alpha][i][0]; } 
     INLINE double B (int i) const { return jacobialpha_coefs[alpha][i][1]; } 
     INLINE double C (int i) const { return jacobialpha_coefs[alpha][i][2]; } 
 #endif
 
-    INLINE void ABC (int i, double & a, double & b, double & c) const   
+    template <typename TI>
+    INLINE void ABC (TI i, double & a, double & b, double & c) const   
     {
       a = A(i);
       b = B(i);
@@ -2317,8 +2411,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   class DubinerBasis3
   {
   public:
-    template <class S, class T>
-    INLINE static void Eval (int n, S x, S y, T && values)
+    template <typename TI, class S, class T>
+    INLINE static void Eval (TI n, S x, S y, T && values)
     {
       EvalMult (n, x, y, 1, values);
       /*
@@ -2337,21 +2431,21 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
       */
     }
 
-    template <class S, class Sc, class T>
-    INLINE static void EvalMult (int n, S x, S y, Sc c, T && values)
+    template <typename TI, class S, class Sc, class T>
+    INLINE static void EvalMult (TI n, S x, S y, Sc c, T && values)
     {
       LegendrePolynomial leg;
-      int ii = 0;
+      TI ii = 0;
       JacobiPolynomialAlpha jac(1);      
       leg.EvalScaledMult1Assign (n, y-(1-x-y), 1-x, c,
-            SBLambda ([&] (int i, S val) LAMBDA_INLINE 
+            SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialAlpha jac(1+2*i);
-                     jac.EvalMult1Assign (n-i, 2*x-1, val, 
-				   SBLambda([&](int j, S v2) 
-					    {
-					      values[ii++] = v2;
-					    }));
+                     jac.EvalMult (n-i, 2*x-1, val, 
+                                   SBLambda([&](int j, S v2) 
+                                            {
+                                              values[ii++] = v2;
+                                            }));
                      jac.IncAlpha2();
                    }));
     }
