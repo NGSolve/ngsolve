@@ -347,6 +347,33 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   template <int D>
   INLINE SIMD<double> HVSum (MultiSIMD<D,double> a) { return a.Head() + HVSum(a.Tail()); }
   template <int D> INLINE double HSum (MultiSIMD<D,double> a) { return HSum(HVSum(a)); }
+
+
+
+
+
+
+  template <typename T>
+  // a*b+c
+  T FMA(T a, T b, T c)
+  {
+    return a*b+c;
+  }
+
+#ifdef __AVX2__
+  INLINE SIMD<double> FMA (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
+  }
+#endif
+    
+  template <int D>
+  INLINE MultiSIMD<D,double> FMA(MultiSIMD<D,double> a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
+  {
+    return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
+  }
+
+  
 }
 
 #endif
