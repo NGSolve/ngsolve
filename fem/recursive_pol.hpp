@@ -598,7 +598,7 @@ namespace ngfem
     INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
-      Iterate<N> ([&] (auto i)
+      Iterate<N+1> ([&] (auto i)
                   {
                     values[i] = p2;
                     EvalScaledNext2 (i+2, x, y, p1, p2);
@@ -1014,6 +1014,23 @@ namespace ngfem
       */
     }
 
+    template <int N, class S, class Sc, class T>
+    INLINE void EvalMult (IC<N> n, S x, Sc c, T && values) const
+    {
+      // S p1(c*REC::P1(x)), p2(c * REC::P0(x));
+
+      S p2(c * static_cast<const REC&>(*this).P0(x));
+      S p1(c * static_cast<const REC&>(*this).P1(x));
+      
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    this->EvalNext2 (i+2, x, p1, p2);
+                  });
+    }  
+
+
+    
     template <typename TI, class S, class Sc, class T>
     INLINE void EvalMult1Assign (TI n, S x, Sc c, T && values) const
     {
@@ -1388,7 +1405,7 @@ namespace ngfem
 #else
     int alpha;
 #endif
-
+    size_t n2;
     Vec<4> * coefsal;
   public:
     INLINE JacobiPolynomialAlpha (int a) 
@@ -1396,6 +1413,7 @@ namespace ngfem
       // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
       coefsal = &coefs[a*maxnp];
+      n2 = 2*maxnp;
 #else
       alpha = a;
       // coefsal = &jacobialpha_coefs[alpha*(jacobialpha_maxn+1)];      
@@ -1411,10 +1429,11 @@ namespace ngfem
 #else
       alpha(a);
 #endif
+      n2 = 2*maxnp;
       Eval (n, x, values);
     }
 
-    void IncAlpha2 () { coefsal += 2*maxnp; }
+    void IncAlpha2 () { coefsal += n2; }
     static void Calc (int n, int maxalpha);
 
     template <class S>
