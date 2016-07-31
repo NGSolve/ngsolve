@@ -243,7 +243,7 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          // S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          // S pnew = REC::A(i) * x * p1 + REC::C(i) * p2; // maybe ?
           // S pnew = FMA(REC::C(i), p2, REC::A(i) * x * p1);  // bad
           S pnew = FMA(REC::A(i) * x, p1, REC::C(i) * p2);  // good
           p2 = p1;
@@ -324,9 +324,13 @@ namespace ngfem
     {
       if (REC::ZERO_B)
 	{
+          /*
 	  p1 *= REC::C(i);
 	  p1 += REC::A(i) * x * p2;
 	  return p1;
+          */
+          p1 = FMA (REC::A(i)*x, p2, REC::C(i)*p1);
+          return p1;
 	}
       else
 	{
@@ -724,7 +728,7 @@ namespace ngfem
 	{
           // S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
           // S pnew = FMA(Cast().C(i), p2, (Cast().A(i) * x + Cast().B(i)) * p1); // bad
-          S pnew = FMA(Cast().A(i) * x + Cast().B(i), p1, Cast().C(i) * p2);  // good          
+          S pnew = FMA( FMA( S(Cast().A(i)), x, S(Cast().B(i))), p1, Cast().C(i) * p2);  // good          
           /*
           S axpb = (Cast().A(i) * x + Cast().B(i));
           S hv = Cast().C(i)*p2;
@@ -809,7 +813,7 @@ namespace ngfem
           // p1 = hv + axpb * p2;
           p1 = FMA(axpb, p2, hv);
           */
-          p1 = FMA(a*x+b, p2, c*p1);          
+          p1 = FMA(FMA(S(a),x,S(b)), p2, c*p1);
 	  return p1;
 	}
     }
@@ -863,14 +867,14 @@ namespace ngfem
       if (REC::ZERO_B)
         {
           S pnew = Cast().A(i) * x * p1 + Cast().C(i) * (y*y)*p2;
-          pnew *= 1.0 / Cast().D(i);
+          // pnew *= 1.0 / Cast().D(i);
           p2 = p1;
           p1 = pnew;
         }
       else
         {
           S pnew = (Cast().A(i) * x + Cast().B(i) * y) * p1 + Cast().C(i) * (y*y)*p2;
-          pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+          // pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
           p2 = p1;
           p1 = pnew;
         }
@@ -1096,6 +1100,17 @@ namespace ngfem
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
     }
 
+    template <int N, class S, class Sy, class Sc, class T>
+    INLINE void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values) const
+    {
+      S p1(c*Cast().P1(x,y)), p2(c * Cast().P0(x));
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    this->EvalScaledNext2 (i+2, x, y, p1, p2);
+                  });
+    }  
+    
     template <typename TI, class S, class Sy, class Sc, class T>
     INLINE void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values) const
     {
@@ -1175,6 +1190,7 @@ namespace ngfem
     }
 
     static void Calc (int n);
+    static FlatArray<Vec<2>> GetCoefs() { return coefs; }
 
     template <class S>
     static INLINE double P0(S x)  { return 1.0; }
@@ -1213,7 +1229,28 @@ namespace ngfem
   };
 
 
+  class LegendrePolynomialNonStatic : public RecursivePolynomialNonStatic<LegendrePolynomialNonStatic>
+  {
+    FlatArray<Vec<2>> coefs;
+  public:
+    LegendrePolynomialNonStatic ()
+      : coefs(LegendrePolynomial::GetCoefs()) { ; }
 
+    template <class S>
+    INLINE double P0(S x) const { return 1.0; }
+    template <class S>
+    INLINE S P1(S x) const { return x; }
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const { return P1(x); }
+    
+    template <typename TI>
+    INLINE double A (TI i) const { return coefs[i][0]; } 
+    template <typename TI>
+    INLINE double B (TI i) const { return 0; }
+    template <typename TI>    
+    INLINE double C (TI i) const { return coefs[i][1]; } 
+  };
+  
 
 #ifdef __CUDACC__    
   extern __device__ Vec<2> * intlegnobubble_coefs;
