@@ -319,6 +319,9 @@ namespace ngfem
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
+
+      // Tx x = hx[0];
+      // Tx y = hx[1];
       
       // #if (defined __ICC || defined _MSC_VER || __cplusplus <= 201103L)
 #ifdef MY_PRECPP14

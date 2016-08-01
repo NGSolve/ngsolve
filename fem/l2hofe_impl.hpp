@@ -312,6 +312,11 @@ namespace ngfem
     INT<4> f = GetFaceSort (0, vnums);
     size_t p = order_inner[0];
     DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
+
+    /*
+    size_t p = order_inner[0];
+    DubinerBasis3::Eval (p, x[0], x[1], shape);
+    */
 #else
     int p = order_inner[0];
     DubinerBasis3::Eval (p, x[0], x[1], shape);
@@ -398,22 +403,27 @@ namespace ngfem
     int ii = 0;
     int order = this->order;
     LegendrePolynomial leg;
+    JacobiPolynomialAlpha jac1(1);    
     leg.EvalScaled1Assign 
       (order, lamis[2]-lamis[3], lamis[2]+lamis[3],
        SBLambda ([&](int k, Tx polz) LAMBDA_INLINE
                  {
-                   JacobiPolynomialAlpha jac(2*k+1);
-                   jac.EvalScaledMult1Assign
+                   // JacobiPolynomialAlpha jac(2*k+1);
+                   jac1.IncAlpha2();
+                   JacobiPolynomialAlpha jac2(2*k+2);
+ 
+                   jac1.EvalScaledMult1Assign
                      (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
-                                  JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                  jac.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
-                                               SBLambda([&](int j, Tx val)
-                                                        {
-                                                          shape[ii] = val; 
-                                                          ii++;
-                                                        }));
+                                  // JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                  jac2.IncAlpha2();
+                                  jac2.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
+                                                       SBLambda([&](int j, Tx val)
+                                                                {
+                                                                  shape[ii] = val; 
+                                                                  ii++;
+                                                                }));
                                   
                                 }));
                  }));
