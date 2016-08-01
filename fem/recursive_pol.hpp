@@ -398,7 +398,8 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          // S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          S pnew = FMA( REC::A(i)*x, p1, REC::C(i)*(y*y)*p2);
           p2 = p1;
           p1 = pnew;
         }
@@ -621,10 +622,15 @@ namespace ngfem
     INLINE static void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
-      for (TI i = 0; i <= n; i++)
+      if (n < 0) return;
+      // for (TI i = 0; i <= n; i++)
+      TI i = 0;
+      while (true)
         {
 	  values[i] = p2;
+          if (i == n) break;
           EvalScaledNext2 (i+2, x, y, p1, p2);
+          i++;
         }
     }
 
@@ -807,12 +813,6 @@ namespace ngfem
 	  p1 *= c;
 	  p1 += (a * x + b) * p2;
           */
-          /*
-          S axpb = (a * x + b);
-          S hv = c*p1;
-          // p1 = hv + axpb * p2;
-          p1 = FMA(axpb, p2, hv);
-          */
           p1 = FMA(FMA(S(a),x,S(b)), p2, c*p1);
 	  return p1;
 	}
@@ -956,7 +956,7 @@ namespace ngfem
 	}
       */
 
-
+      /*
       // leading !!!!
       // if (n < 0) return;
       S p1(c * static_cast<const REC&>(*this).P0(x));
@@ -972,7 +972,31 @@ namespace ngfem
           if (i == n) break;
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
 	}
+      */
 
+
+      // if (n < 0) return;
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      values[0] = p1;
+      if (n < 1) return;
+
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+      values[1] = p2;
+
+      TI i = 2;
+      if ( (n&1) == 0)
+        {
+          values[i] = EvalNext2 (i, x, p2, p1);
+          i++;
+        }
+      for ( ; i < n; i+=2)
+	{	
+	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+
+
+      
       /*
       // if (n < 0) return;
       S p1(c * static_cast<const REC&>(*this).P0(x));

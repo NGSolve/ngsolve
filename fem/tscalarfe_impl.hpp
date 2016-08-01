@@ -136,8 +136,11 @@ namespace ngfem
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
         T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape)
-                                        { sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
-                                          pcoefs += dist; } ));
+                                        {
+                                          // sum += *pcoefs * shape;
+                                          sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
+                                          pcoefs += dist; }
+                                        ));
         
         values.Get(i) = sum.template Get<0>().Data();
         values.Get(i+1) = sum.template Get<1>().Data();          
@@ -155,9 +158,6 @@ namespace ngfem
         
         values.Get(i) = sum.Data();
       }
-    
-
-
 
     
     /*
@@ -191,7 +191,7 @@ namespace ngfem
     */
 
     /*
-      // 3 pnts with extra treatment of left-over
+    // 3 pnts with extra treatment of left-over
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     int i = 0;
     for ( ; i < hir.Size()-2; i+=3)
@@ -230,6 +230,8 @@ namespace ngfem
           values.Get(i+1) = sum.template Get<1>().Data();          
       }
     */
+
+    
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=4)
