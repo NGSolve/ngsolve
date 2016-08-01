@@ -99,6 +99,7 @@ namespace ngfem
         values.Get(i) = sum.Data();
       }
     */
+
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=2)
@@ -121,6 +122,45 @@ namespace ngfem
       }
     */
 
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    int i = 0;
+    for (int i = 0; i < hir.Size()-1; i+=2)
+      {
+        Vec<DIM,SIMD<double>> pt1 = hir[i];
+        Vec<DIM,SIMD<double>> pt2 = hir[i+1];
+        Vec<DIM,MultiSIMD<2,double>> pt;
+        for (int i = 0; i < DIM; i++)
+          pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
+        MultiSIMD<2,double> sum = 0;
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape)
+                                        { sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
+                                          pcoefs += dist; } ));
+        
+        values.Get(i) = sum.template Get<0>().Data();
+        values.Get(i+1) = sum.template Get<1>().Data();          
+      }
+
+    if (i < hir.Size())
+      {
+        Vec<DIM,SIMD<double>> pt = hir[i];
+        SIMD<double> sum = 0;
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape)
+                                        { sum += (*pcoefs)*shape; pcoefs += dist; } ));
+        
+        values.Get(i) = sum.Data();
+      }
+    
+
+
+
+    
+    /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=3)
       {
@@ -148,6 +188,7 @@ namespace ngfem
         if (i+2 < hir.Size())
           values.Get(i+2) = sum.template Get<2>().Data();          
       }
+    */
 
     /*
       // 3 pnts with extra treatment of left-over
@@ -171,6 +212,7 @@ namespace ngfem
         values.Get(i+1) = sum.template Get<1>().Data();          
         values.Get(i+2) = sum.template Get<2>().Data();          
       }
+
     if (i < hir.Size())
       {
         Vec<DIM,SIMD<double>> pt1 = hir[i];
@@ -188,7 +230,6 @@ namespace ngfem
           values.Get(i+1) = sum.template Get<1>().Data();          
       }
     */
-
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=4)
