@@ -32,7 +32,7 @@ namespace ngfem
   public:
     T x;
     TIP (T _x) : x(_x) { ; }
-    explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
+    // explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
     // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
     // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
     template <typename T1, typename T2>
