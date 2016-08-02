@@ -146,7 +146,7 @@ namespace ngfem
     INLINE NGS_DLL_HEADER ScalarDummyFE() { ; }
     HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
     template<typename Tx, typename TFA>  
-    INLINE static void T_CalcShape (TIP<Dim(ET),Tx> ip, TFA & shape) 
+    INLINE static void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) 
     { ; }
   };
 }
