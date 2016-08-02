@@ -1314,10 +1314,10 @@ namespace ngstd
       return adp;
     }
 
-    INLINE operator ngfem::TIP<0,SIMD<double>> () const { return ngfem::TIP<0,SIMD<double>>(); }
-    INLINE operator ngfem::TIP<1,SIMD<double>> () const { return ngfem::TIP<1,SIMD<double>>(x[0]); }
-    INLINE operator ngfem::TIP<2,SIMD<double>> () const { return ngfem::TIP<2,SIMD<double>>(x[0], x[1]); }
-    INLINE operator ngfem::TIP<3,SIMD<double>> () const { return ngfem::TIP<3,SIMD<double>>(x[0], x[1], x[2]); } 
+    INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
+    INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
+    INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
+    INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
     
   };
 
