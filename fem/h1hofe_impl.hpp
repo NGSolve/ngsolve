@@ -35,7 +35,7 @@ namespace ngfem
 
   public:
     template<typename Tx, typename TFA>  
-      INLINE void T_CalcShape (TIP<Dim(ET),Tx> ip, TFA & shape) const;
+      INLINE void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) const;
   };
   
 
