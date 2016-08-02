@@ -284,9 +284,9 @@ namespace ngfem
     enum { NDOF = (ORDER+1) };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
     {
-      Tx lam[2] = { hx[0], 1-hx[0] };
+      Tx lam[2] = { ip.x, 1-ip.x };
       INT<2> e = this -> GetEdgeSort (0, vnums);
       // LegendrePolynomial_Old::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
       LegendrePolynomial::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
@@ -309,6 +309,7 @@ namespace ngfem
 
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
+    /*
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
     {
@@ -359,6 +360,40 @@ namespace ngfem
                    }));
 #endif
     }
+    */
+
+
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
+      INT<4> f = this -> GetFaceSort (0, vnums);
+
+      Tx x = lam[f[0]];
+      Tx y = lam[f[1]];
+      /*
+      Tx x = ip.x;
+      Tx y = ip.y;
+      */
+      int ii = 0;
+      JacobiPolynomialAlpha jac(1);
+      LegendrePolynomial::EvalScaled 
+        (IC<ORDER>(), 
+         y-(1-x-y), 1-x,
+         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
+                   {
+                     // JacobiPolynomialFix<1+2*i,0> jac;
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
+                                   SBLambda([&](auto j, Tx v2) 
+                                            {
+                                              shape[ii++] = v2;
+                                            }));
+                     jac.IncAlpha2();
+                   }));
+    }
+
+
   };
 
 
