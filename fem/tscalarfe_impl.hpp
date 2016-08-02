@@ -307,10 +307,10 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM> pt = ir[i].Point();
-
+        // Vec<DIM> pt = ir[i].Point();
+        TIP<DIM,double> tip(ir[i]);
         values.Row(i) = 0.0;
-        T_CalcShape (TIP<DIM,double> (pt),
+        T_CalcShape (tip,
                      SBLambda ( [&](int j, double shape) 
                                 { 
                                   // sum += coefs(i)*shape; 
@@ -327,8 +327,9 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM> pt = ir[i].Point();
-        T_CalcShape (TIP<DIM,double> (pt),
+        // Vec<DIM> pt = ir[i].Point();
+        TIP<DIM,double> tip(ir[i]);
+        T_CalcShape (tip,
                      SBLambda ( [&](int j, double shape) 
                                 { coefs(j) += vals(i)*shape; } ));
       }
@@ -351,12 +352,18 @@ namespace ngfem
 
     for (int i = 0; i < hir.Size(); i+=2)
       {
+        /*
         Vec<DIM,SIMD<double>> pt1 = hir[i];
         Vec<DIM,SIMD<double>> pt2 = hir[(i+1 < hir.Size()) ? i+1 : i];
         
         Vec<DIM,MultiSIMD<2,double>> pt;
         for (int i = 0; i < DIM; i++)
           pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
+        */
+        TIP<DIM,SIMD<double>> tip1 = hir[i];
+        TIP<DIM,SIMD<double>> tip2 = hir[(i+1 < hir.Size()) ? i+1 : i];
+        TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
+
         MultiSIMD<2,double> val (values.Get(i),
                                  i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0));
 
@@ -364,7 +371,7 @@ namespace ngfem
 
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
-        T_CalcShape (TIP<DIM,MultiSIMD<2,double>> (pt),
+        T_CalcShape (tip, // TIP<DIM,MultiSIMD<2,double>> (pt),
                      SBLambda ( [&](int j, MultiSIMD<2,double> shape)
                                 { *pcoefs += HSum(val*shape); pcoefs += dist; } ));
       }
@@ -402,9 +409,10 @@ namespace ngfem
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
   {
-    Vec<DIM, AutoDiff<DIM>> adp = ip;
+    // Vec<DIM, AutoDiff<DIM>> adp = ip;
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
     AutoDiff<DIM> sum = 0.0;
-    T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+    T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                  SBLambda ( [&](int i, AutoDiff<DIM> val) 
                             { 
                               sum += coefs(i) * val;
@@ -419,10 +427,10 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
-
+        // Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
+        TIP<DIM,AutoDiff<DIM>> tip = ir[i];
         Vec<DIM> sum = 0.0;
-        T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+        T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
                      SBLambda ([&] (int j, AD2Vec<DIM> shape)
                                { sum += coefs(j) * shape; }));
         vals.Row(i) = sum;

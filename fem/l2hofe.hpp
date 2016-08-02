@@ -75,6 +75,8 @@ namespace ngfem
 #endif
 
   public:
+    // int loclam[2] = { 0, 1 };
+    
     INLINE L2HighOrderFE () { ; }
     INLINE L2HighOrderFE (int aorder)
     {
