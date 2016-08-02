@@ -201,12 +201,9 @@ namespace ngfem
     INLINE operator TIP<1,AutoDiff<1>> () const
     { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0)); }
     INLINE operator TIP<2,AutoDiff<2>> () const
-    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0),
-                                AutoDiff<2> (pi[1],1)); }
+    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0), AutoDiff<2> (pi[1],1)); }
     INLINE operator TIP<3,AutoDiff<3>> () const
-    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0),
-                                AutoDiff<3> (pi[1],1),
-                                AutoDiff<3> (pi[2],2)); } 
+    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0), AutoDiff<3> (pi[1],1), AutoDiff<3> (pi[2],2)); } 
 
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);

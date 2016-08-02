@@ -623,7 +623,7 @@ namespace ngfem
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
       if (n < 0) return;
-      // for (TI i = 0; i <= n; i++)
+
       TI i = 0;
       while (true)
         {
@@ -632,6 +632,19 @@ namespace ngfem
           EvalScaledNext2 (i+2, x, y, p1, p2);
           i++;
         }
+
+      /*
+      TI i = 0;
+      goto lab1;
+      while (i <= n)
+        {
+          EvalScaledNext2 (i+1, x, y, p1, p2);
+        lab1:
+	  values[i] = p2;
+          i++;
+        }
+      */
+      
     }
 
 
