@@ -343,11 +343,20 @@ namespace ngfem
     template <typename TI, class S, class Sy>
     INLINE static S EvalScaledNextTicTac2 (TI i, S x, Sy y, S & p1, S & p2)
     {
-      p1 = (y*y) * REC::C(i) * p1;
+      // p1 = (y*y) * REC::C(i) * p1;
       if (REC::ZERO_B)
-        p1 += REC::A(i) * x * p2;
+        {
+          // p1 = (y*y) * REC::C(i) * p1;
+          // p1 += REC::A(i) * x * p2;
+          double a = REC::A(i);
+          double c = REC::C(i);
+          p1 = FMA(a*x, p2, c*(y*y)*p1);
+        }
       else
-        p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+        {
+          p1 = (y*y) * REC::C(i) * p1;
+          p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+        }
       return p1;
     }
 
