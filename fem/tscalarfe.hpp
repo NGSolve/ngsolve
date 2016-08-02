@@ -10,7 +10,7 @@
 namespace ngfem
 {
 
-
+  
   /**
      Base-element for template polymorphism.
      Barton and Nackman Trick for elements with non-static CalcShape method
@@ -108,11 +108,19 @@ namespace ngfem
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
     
   protected:
+    /*
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx x[], TFA & shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (x, shape);
     }
+    */
+    
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+    {
+      static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
+    }    
   };
 
 
@@ -138,7 +146,7 @@ namespace ngfem
     INLINE NGS_DLL_HEADER ScalarDummyFE() { ; }
     HD NGS_DLL_HEADER virtual ~ScalarDummyFE() { ; }
     template<typename Tx, typename TFA>  
-    INLINE static void T_CalcShape (Tx x[1], TFA & shape) 
+    INLINE static void T_CalcShape (TIP<Dim(ET),Tx> ip, TFA & shape) 
     { ; }
   };
 }

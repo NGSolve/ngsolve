@@ -10,6 +10,68 @@
 namespace ngfem
 {
 
+
+
+
+  template <int DIM, typename T>
+  class TIP
+  {
+  public:
+    // T x; // dummy
+    TIP () { ; }
+    explicit TIP (Vec<0,T> v) { ; }
+    // TIP (const IntegrationPoint & ip) { ; } 
+    // TIP (const SIMD<IntegrationPoint> & ip) { ; }
+    template <typename T1, typename T2>    
+    TIP (TIP<DIM,T1> ip1, TIP<DIM,T2> ip2) { ; } 
+  };
+  
+  template <typename T>
+  class TIP<1,T>
+  {
+  public:
+    T x;
+    TIP (T _x) : x(_x) { ; }
+    explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
+    // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
+    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
+    template <typename T1, typename T2>
+    TIP (TIP<1,T1> ip1, TIP<1,T2> ip2)
+      : x(ip1.x, ip2.x) { ; } 
+  };
+
+  template <typename T>
+  class TIP<2,T>
+  {
+  public:
+    T x, y;
+    
+    TIP (T _x, T _y) : x(_x), y(_y) { ; }
+    explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
+    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)) { ; } 
+    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)) { ; } 
+    template <typename T1, typename T2>
+    TIP (TIP<2,T1> ip1, TIP<2,T2> ip2)
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y) { ; } 
+  };
+  template <typename T>
+  class TIP<3,T>
+  {
+  public:
+    T x, y, z;
+    TIP (T _x, T _y, T _z) : x(_x), y(_y), z(_z) { ; }
+    explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
+    // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }     
+    // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }
+    template <typename T1, typename T2>    
+    TIP (TIP<3,T1> ip1, TIP<3,T2> ip2)
+      : x(ip1.x, ip2.x), y(ip1.y, ip2.y), z(ip1.z, ip2.z) { ; } 
+  };
+
+
+
+
+  
   /// An integration point 
   class /* alignas(8) */ IntegrationPoint
   {
@@ -129,7 +191,22 @@ namespace ngfem
       return adp;
     }
     
+    INLINE operator TIP<0,double> () const { return TIP<0,double>(); }
+    INLINE operator TIP<1,double> () const { return TIP<1,double>(pi[0]); }
+    INLINE operator TIP<2,double> () const { return TIP<2,double>(pi[0], pi[1]); }
+    INLINE operator TIP<3,double> () const { return TIP<3,double>(pi[0], pi[1], pi[2]); } 
 
+    INLINE operator TIP<0,AutoDiff<0>> () const
+    { return TIP<0,AutoDiff<0>>(); } 
+    INLINE operator TIP<1,AutoDiff<1>> () const
+    { return TIP<1,AutoDiff<1>>(AutoDiff<1> (pi[0],0)); }
+    INLINE operator TIP<2,AutoDiff<2>> () const
+    { return TIP<2,AutoDiff<2>>(AutoDiff<2> (pi[0],0),
+                                AutoDiff<2> (pi[1],1)); }
+    INLINE operator TIP<3,AutoDiff<3>> () const
+    { return TIP<3,AutoDiff<3>>(AutoDiff<3> (pi[0],0),
+                                AutoDiff<3> (pi[1],1),
+                                AutoDiff<3> (pi[2],2)); } 
 
     ///
     friend NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationPoint & ip);
@@ -1239,6 +1316,12 @@ namespace ngstd
         adp[i] = AutoDiff<DIM,SIMD<double>> (x[i], i);
       return adp;
     }
+
+    INLINE operator ngfem::TIP<0,SIMD<double>> () const { return ngfem::TIP<0,SIMD<double>>(); }
+    INLINE operator ngfem::TIP<1,SIMD<double>> () const { return ngfem::TIP<1,SIMD<double>>(x[0]); }
+    INLINE operator ngfem::TIP<2,SIMD<double>> () const { return ngfem::TIP<2,SIMD<double>>(x[0], x[1]); }
+    INLINE operator ngfem::TIP<3,SIMD<double>> () const { return ngfem::TIP<3,SIMD<double>>(x[0], x[1], x[2]); } 
+    
   };
 
   template <>

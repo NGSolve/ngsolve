@@ -1457,12 +1457,18 @@ namespace ngfem
   extern __device__ int jacobialpha_maxn;
 #endif
 
+  
   class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>
   {
   public:
 #ifndef __CUDA_ARCH__
+    /*
     static Array< Vec<4> > coefs;
-    static int maxnp, maxalpha;
+    static int maxnp;
+    */
+    static constexpr int maxnp = 128;
+    static constexpr int maxalpha = 128;
+    static Vec<4> coefs[maxnp*maxalpha];
 #else
     int alpha;
 #endif
@@ -1503,16 +1509,16 @@ namespace ngfem
     INLINE S P1(S x) const 
     { 
 #ifndef __CUDA_ARCH__
-      return coefsal[1][0]*x+coefsal[1][1]; 
+      return FMA (S(coefsal[1][0]),x,S(coefsal[1][1])); 
 #else
-      return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1];
+      return FMA (S(jacobialpha_coefs[alpha][1][0]), x, jacobialpha_coefs[alpha][1][1]);
 #endif
     }
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
 #ifndef __CUDA_ARCH__
-      return coefsal[1][0]*x+coefsal[1][1]*y; 
+      return FMA(S(coefsal[1][0]),x,coefsal[1][1]*y);
 #else
       return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1]*y;
 #endif
@@ -1622,7 +1628,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   public:
     static Array< Vec<4> > coefs;
     int alpha;
-    static int maxn, maxalpha;
+    static int maxn;
     Vec<4> * coefsal;
 
   public:
