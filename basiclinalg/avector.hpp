@@ -47,6 +47,8 @@ void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
   c = a * b;
 }
 
+
+// c = a * Diag (d)
 template <typename TA, typename TB, typename TC>
 void MultMatDiagMat(TA a, TB b, TC c)
 {
@@ -64,277 +66,7 @@ void MultMatDiagMat(TA a, TB b, TC c)
 
 #if defined(__AVX2__)
 
-// mat-mat product
-
-// b.Width <= 4
-INLINE
-void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-{
-  __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
-                                    _mm256_set_epi64x(3, 2, 1, 0));
-
-  /*
-  __m256i mask;
-  switch (b.Width())
-    {
-    case 1:
-      mask = _mm256_set_epi64x(0,0,0,-1); break;
-    case 2:
-      mask = _mm256_set_epi64x(0,0,-1,-1); break;
-    case 3:
-      mask = _mm256_set_epi64x(0,-1,-1,-1); break;
-    case 4:
-      mask = _mm256_set_epi64x(-1,-1,-1,-1); break;
-    }
-  */
-  unsigned int da = a.Dist();
-  int wa = a.Width();
-  int r = 0;
-  double * bpc = &c(0,0);
-  unsigned int dc = c.Dist();
-  double * ar = &a(0,0);
-  for ( ; r < a.Height()-7; r+=8)
-    {
-      __m256d sum1 = _mm256_setzero_pd();
-      __m256d sum2 = _mm256_setzero_pd();
-      __m256d sum3 = _mm256_setzero_pd();
-      __m256d sum4 = _mm256_setzero_pd();
-      __m256d sum5 = _mm256_setzero_pd();
-      __m256d sum6 = _mm256_setzero_pd();
-      __m256d sum7 = _mm256_setzero_pd();
-      __m256d sum8 = _mm256_setzero_pd();
-
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
-                                         _mm256_loadu_pd(&b(j,0)),
-                                         _mm256_castsi256_pd(mask));
-          double * arj = ar + j;
-          double * arj4 = arj + 4*da;
-          sum1 += _mm256_set1_pd(*arj) * rb;
-          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
-          sum3 += _mm256_set1_pd(*(arj+2*da)) * rb;
-          sum4 += _mm256_set1_pd(*(arj+3*da)) * rb;
-          sum5 += _mm256_set1_pd(*(arj4)) * rb;
-          sum6 += _mm256_set1_pd(*(arj4+da)) * rb;
-          sum7 += _mm256_set1_pd(*(arj4+2*da)) * rb;
-          sum8 += _mm256_set1_pd(*(arj4+3*da)) * rb;
-        }
-
-      _mm256_maskstore_pd(bpc, mask, sum1);
-      _mm256_maskstore_pd(bpc+dc, mask, sum2);
-      bpc += 2*dc;
-      _mm256_maskstore_pd(bpc, mask, sum3);
-      _mm256_maskstore_pd(bpc+dc, mask, sum4);
-      bpc += 2*dc;
-      _mm256_maskstore_pd(bpc, mask, sum5);
-      _mm256_maskstore_pd(bpc+dc, mask, sum6);
-      bpc += 2*dc;
-      _mm256_maskstore_pd(bpc, mask, sum7);
-      _mm256_maskstore_pd(bpc+dc, mask, sum8);
-      bpc += 2*dc;
-      ar += 8*da;
-    }
-
-  if (r < a.Height()-3)
-    {
-      __m256d sum1 = _mm256_setzero_pd();
-      __m256d sum2 = _mm256_setzero_pd();
-      __m256d sum3 = _mm256_setzero_pd();
-      __m256d sum4 = _mm256_setzero_pd();
-      
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
-                                         _mm256_loadu_pd(&b(j,0)),
-                                         _mm256_castsi256_pd(mask));
-
-          double * arj = ar + j;
-          sum1 += _mm256_set1_pd(*arj) * rb;
-          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
-          sum3 += _mm256_set1_pd(*(arj+2*da)) * rb;
-          sum4 += _mm256_set1_pd(*(arj+3*da)) * rb;
-        }
-
-      _mm256_maskstore_pd(bpc, mask, sum1);
-      _mm256_maskstore_pd(bpc+dc, mask, sum2);
-      bpc += 2*dc;
-      _mm256_maskstore_pd(bpc, mask, sum3);
-      _mm256_maskstore_pd(bpc+dc, mask, sum4);
-      bpc += 2*dc;
-      r += 4;
-      ar += 4*da;
-    }
-  if (r < a.Height()-1)
-    {
-      __m256d sum1 = _mm256_setzero_pd();
-      __m256d sum2 = _mm256_setzero_pd();
-      
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
-                                         _mm256_loadu_pd(&b(j,0)),
-                                         _mm256_castsi256_pd(mask));
-          double * arj = ar + j;
-          sum1 += _mm256_set1_pd(*arj) * rb;
-          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
-        }
-
-      _mm256_maskstore_pd(bpc + 0*dc, mask, sum1);
-      _mm256_maskstore_pd(bpc + 1*dc, mask, sum2);
-      bpc += 2*dc;
-      r += 2;
-      ar += 2*da;
-    }
-
-  if (r < a.Height())
-    {
-      __m256d sum = _mm256_setzero_pd();
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb =  _mm256_loadu_pd(&b(j,0));
-          double * arj = ar + j;
-          sum += _mm256_set1_pd(*arj) * rb;
-
-        }
-
-      _mm256_maskstore_pd(bpc + 0*dc, mask, sum);
-    }
-}
-
-// b.Width() = 8
-INLINE
-void MultMatMat8(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-{
-  unsigned int da = a.Dist();
-  int wa = a.Width();
-  int r = 0;
-  double * bpc = &c(0,0);
-  unsigned int dc = c.Dist();
-  double * ar = &a(0,0);
-  for ( ; r < a.Height()-3; r+=4)
-    {
-      __m256d sum11 = _mm256_setzero_pd();
-      __m256d sum21 = _mm256_setzero_pd();
-      __m256d sum31 = _mm256_setzero_pd();
-      __m256d sum41 = _mm256_setzero_pd();
-      __m256d sum12 = _mm256_setzero_pd();
-      __m256d sum22 = _mm256_setzero_pd();
-      __m256d sum32 = _mm256_setzero_pd();
-      __m256d sum42 = _mm256_setzero_pd();
-
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
-          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
-
-          double * arj = ar + j;
-
-          __m256d a1 = _mm256_set1_pd(*arj);
-          __m256d a2 = _mm256_set1_pd(*(arj+da));
-          __m256d a3 = _mm256_set1_pd(*(arj+2*da));
-          __m256d a4 = _mm256_set1_pd(*(arj+3*da));
-
-          sum11 += a1 * rb1;
-          sum21 += a2 * rb1;
-          sum31 += a3 * rb1;
-          sum41 += a4 * rb1;
-          sum12 += a1 * rb2;
-          sum22 += a2 * rb2;
-          sum32 += a3 * rb2;
-          sum42 += a4 * rb2;
-        }
-
-      _mm256_storeu_pd(bpc, sum11);
-      _mm256_storeu_pd(bpc+4, sum12);
-      bpc += dc;
-      _mm256_storeu_pd(bpc, sum21);
-      _mm256_storeu_pd(bpc+4, sum22);
-      bpc += dc;
-      _mm256_storeu_pd(bpc, sum31);
-      _mm256_storeu_pd(bpc+4, sum32);
-      bpc += dc;
-      _mm256_storeu_pd(bpc, sum41);
-      _mm256_storeu_pd(bpc+4, sum42);
-      bpc += dc;
-      ar += 4*da;
-    }
-
-  for ( ; r < a.Height()-1; r+=2)
-    {
-      __m256d sum11 = _mm256_setzero_pd();
-      __m256d sum21 = _mm256_setzero_pd();
-      __m256d sum12 = _mm256_setzero_pd();
-      __m256d sum22 = _mm256_setzero_pd();
-
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
-          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
-
-          double * arj = ar + j;
-
-          __m256d a1 = _mm256_set1_pd(*arj);
-          __m256d a2 = _mm256_set1_pd(*(arj+da));
-
-          sum11 += a1 * rb1;
-          sum21 += a2 * rb1;
-          sum12 += a1 * rb2;
-          sum22 += a2 * rb2;
-        }
-
-      _mm256_storeu_pd(bpc, sum11);
-      _mm256_storeu_pd(bpc+4, sum12);
-      bpc += dc;
-      _mm256_storeu_pd(bpc, sum21);
-      _mm256_storeu_pd(bpc+4, sum22);
-      bpc += dc;
-      ar += 2*da;
-    }
-
-  for ( ; r < a.Height(); r++)
-    {
-      __m256d sum11 = _mm256_setzero_pd();
-      __m256d sum12 = _mm256_setzero_pd();
-
-      for (int j = 0; j < wa; j++)
-        {
-          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
-          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
-
-          double * arj = ar + j;
-
-          __m256d a1 = _mm256_set1_pd(*arj);
-          sum11 += a1 * rb1;
-          sum12 += a1 * rb2;
-        }
-
-      _mm256_storeu_pd(bpc, sum11);
-      _mm256_storeu_pd(bpc+4, sum12);
-      bpc += dc;
-      ar += da;
-    }
-}
-
-
-
-
-
-// c = a * b
-static
-void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
-{
-  int k = 0;
-  for ( ; k < b.Width()-7; k += 8)
-    MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
-  for ( ; k < b.Width(); k += 4)
-    {
-      int end = min2(b.Width(), k+4);
-      MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
-    }
-}
-
-
+extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
 /*
 template <typename TA, typename TB, typename TC>
@@ -413,7 +145,7 @@ public:
 
   INLINE auto operator() (int i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
   INLINE auto operator() (int i, int j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
-  __m256d Get(int i) const { return a.Get(i)*b.Get(i); } 
+  SIMD<double> Get(int i) const { return a.Get(i)*b.Get(i); } 
 
   INLINE int Height() const { return a.Height(); }
   INLINE int Width() const { return a.Width(); }
@@ -437,13 +169,15 @@ template <class TA>
 class AVXScaleExpr : public AVXExpr<AVXScaleExpr<TA> >
 {
   double s1;
-  __m256d s;
+  // __m256d s;
+  SIMD<double> s;
   const TA & a;
 public:
 
   enum { IS_LINEAR = TA::IS_LINEAR };
     
-  INLINE AVXScaleExpr (double as, const TA & aa) : s1(as), s(_mm256_set1_pd(as)), a(aa) { ; }
+  // INLINE AVXScaleExpr (double as, const TA & aa) : s1(as), s(_mm256_set1_pd(as)), a(aa) { ; }
+  INLINE AVXScaleExpr (double as, const TA & aa) : s1(as), s(as), a(aa) { ; }
 
   INLINE auto operator() (int i) const -> decltype(s1*a(i)) { return s1*a(i); }
   INLINE auto operator() (int i, int j) const -> decltype(s1*a(i,j)) { return s1*a(i,j); }
@@ -469,22 +203,25 @@ operator* (double s, const AVXExpr<TA> & a)
 
 class AFlatVectorD : public AVXExpr<AFlatVectorD>
 {
-  int size; // , vsize;
-  unsigned vsize() const { return (unsigned(size)+3) / 4; }
-  __m256d * __restrict data;
+  int size; 
+  // unsigned vsize() const { return (unsigned(size)+3) / 4; }
+  // __m256d * __restrict data;
+  unsigned vsize() const { return (unsigned(size)+SIMD<double>::Size()-1) / SIMD<double>::Size(); }
+  SIMD<double> * __restrict data;  
 public:
   AFlatVectorD(int asize, LocalHeap & lh)
   {
     size = asize;
-    // vsize = (unsigned(size)+3) / 4;
-    data = (__m256d*)lh.Alloc<double> (4*vsize());
+    // data = (__m256d*)lh.Alloc<double> (4*vsize());
+    data = lh.Alloc<SIMD<double>> (vsize());
   }
 
-  AFlatVectorD (int as, double * adata) : size(as), data((__m256d*)(void*)adata)
+  AFlatVectorD (int as, double * adata)
+  // : size(as), data((__m256d*)(void*)adata)
+    : size(as), data((SIMD<double>*)(void*)adata)
   {
-    // vsize = (unsigned(size)+3) / 4;    
+    ;
   }
-  
 
   enum { IS_LINEAR = true };
   int Size () const { return size; }
@@ -502,7 +239,8 @@ public:
     return ((double*)data)[i]; 
   }
 
-  __m256d & Get(int i) const { return data[i]; }
+  // __m256d & Get(int i) const { return data[i]; }
+  SIMD<double> & Get(int i) const { return data[i]; }
 
   INLINE const AFlatVectorD & operator= (const AFlatVectorD & v2) const
   {
@@ -514,7 +252,8 @@ public:
   AFlatVectorD & operator= (double d)
   {
     for (int i = 0; i < vsize(); i++)
-      data[i] = _mm256_set1_pd(d);
+      // data[i] = _mm256_set1_pd(d);
+      data[i] = SIMD<double> (d);
     return *this;
   }
 
@@ -532,32 +271,15 @@ public:
     for (int i = 0; i < vsize(); i++)
       data[i] = v.Spec().Get(i);
     return *this;
-    /*
-    int i = 0;
-    for (; i < vsize-1; i+=2)
-      {
-        data[i] = v.Spec().Get(i);
-        data[i+1] = v.Spec().Get(i+1);
-      }
-    if (i < vsize)
-      {
-        data[i] = v.Spec().Get(i);
-        i++;
-      }
-    return *this;
-    */
   }
-
 
   template<typename TB>
   INLINE const AFlatVectorD & operator+= (const AVXExpr<TB> & v) const
   {
-    // for (int i = 0; i < vsize(); i++)
     for (auto i : Range(vsize()))
       data[i] += v.Spec().Get(i);
     return *this;
   }
-  
 };
 
 
@@ -566,7 +288,7 @@ class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
 {
   int h, w;
   // static int vw;
-  __m256d * __restrict data;
+  SIMD<double> * __restrict data;
 public:
   AFlatMatrixD () = default;
   AFlatMatrixD (const AFlatMatrixD &) = default;
@@ -574,18 +296,18 @@ public:
   {
     h = ah;
     w = aw;
-    // vw = (w+3)/4;
-    int rw = (w+3)&(-4);
-    data = (__m256d*)lh.Alloc<double> (h*rw);
+    int rw = (w+SIMD<double>::Size()-1)&(-SIMD<double>::Size());
+    // data = (__m256d*)lh.Alloc<double> (h*rw);
+    data = lh.Alloc<SIMD<double>> (h*rw);
   }
 
   AFlatMatrixD(int ah, int aw, double * adata)
-    : h(ah), w(aw), data((__m256d*)(void*)adata) { ; } 
+    : h(ah), w(aw), data((SIMD<double>*)(void*)adata) { ; } 
 
-  AFlatMatrixD(int ah, int aw, __m256d * mem)
+  AFlatMatrixD(int ah, int aw, SIMD<double> * mem)
     : h(ah), w(aw), data(mem) { ; } 
 
-  void AssignMemory (int ah, int aw, __m256d * mem)
+  void AssignMemory (int ah, int aw, SIMD<double> * mem)
   {
     h = ah;
     w = aw;
@@ -596,7 +318,8 @@ public:
   int Size () const { return h*w; }
   int Height () const { return h; }
   int Width () const { return w; }
-  unsigned int VWidth() const { return (unsigned(w)+3)/4; }
+  // unsigned int VWidth() const { return (unsigned(w)+3)/4; }
+  unsigned int VWidth() const { return (unsigned(w)+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
   double & operator() (int i) const
   {
     return ((double*)data)[i]; 
@@ -608,8 +331,8 @@ public:
     return ((double*)data)[4*i*vw+j]; 
   }
 
-  __m256d & Get(int i) const { return data[i]; }
-  __m256d & Get(int i, int j) const { return data[i*VWidth()+j]; }
+  SIMD<double> & Get(int i) const { return data[i]; }
+  SIMD<double> & Get(int i, int j) const { return data[i*VWidth()+j]; }
 
   const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
   {
@@ -624,7 +347,8 @@ public:
     auto vw = VWidth(); //  (unsigned(w)+3)/4;
     int els = unsigned(h)*unsigned(vw);
     for (int i = 0; i < els; i++)
-      data[i] = _mm256_set1_pd(d);
+      // data[i] = _mm256_set1_pd(d);
+      data[i] = SIMD<double>(d);
       // _mm256_store_pd((double*)&data[i], _mm256_set1_pd(d));
     return *this;
   }
@@ -643,7 +367,8 @@ public:
   {
     int vw = VWidth(); //  (w+3)/4;
     for (int i = 0; i < h*vw; i++)
-      data[i] *= _mm256_set1_pd(d);
+      // data[i] *= _mm256_set1_pd(d);
+      data[i] *= SIMD<double>(d);
     return *this;
   }
   
@@ -726,48 +451,18 @@ extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatri
 extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
 
+extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
-
-// c = a * Diag (d)
-static 
-void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
-{
-  /*
-  for (int i = 0; i < diag.Size(); i++)
-    c.Col(i) = diag(i) * a.Col(i);
-  */
-  int rest = 4*diag.VSize() - diag.Size();
-  int loops = diag.VSize();
-  if (rest) loops--;
-  
-  for (int i = 0; i < c.Height(); i++)
-    for (int j = 0; j < loops; j++)
-      c.Get(i,j) = a.Get(i,j) * diag.Get(j);
-
-  if (rest)
-    {
-      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(4-rest),
-                                        _mm256_set_epi64x(3, 2, 1, 0));
-
-      __m256d md = _mm256_maskload_pd((double*)&diag.Get(loops), mask);
-
-      for (int i = 0; i < c.Height(); i++)
-        {
-          __m256d ma = _mm256_maskload_pd((double*)&a.Get(i,loops), mask);
-          __m256d prod = md * ma;
-          _mm256_maskstore_pd((double*)&c.Get(i,loops), mask, prod);
-        }
-    }
-}
 
 
 
 template <>
 class ABareVector<double>
 {
-  __m256d * __restrict data;
+  // __m256d * __restrict data;
+  SIMD<double> * __restrict data;
 public:
-  ABareVector(__m256d * _data) : data(_data) { ; }
+  ABareVector(SIMD<double> * _data) : data(_data) { ; }
   ABareVector(AFlatVector<double> vec) : data(&vec.Get(0)) { ; } 
   ABareVector(const ABareVector &) = default;
 
@@ -780,24 +475,24 @@ public:
   {
     return ((double*)data)[i]; 
   }
-  __m256d & Get(int i) const { return data[i]; }
+  SIMD<double> & Get(int i) const { return data[i]; }
 };
 
 template <>
 class ABareMatrix<double>
 {
-  __m256d * __restrict data;
+  SIMD<double> * __restrict data;
   int dist;   // dist in simds
 public:
-  ABareMatrix(__m256d * _data, int _dist) : data(_data), dist(_dist) { ; }
+  ABareMatrix(SIMD<double> * _data, int _dist) : data(_data), dist(_dist) { ; }
   ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
   ABareMatrix(const ABareMatrix &) = default;
 
   double & operator() (int i, int j) const
   {
-    return ((double*)data)[4*i*dist+j]; 
+    return ((double*)data)[SIMD<double>::Size()*i*dist+j]; 
   }
-  __m256d & Get(int i, int j) const { return data[i*dist+j]; }
+  SIMD<double> & Get(int i, int j) const { return data[i*dist+j]; }
   ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
   ABareMatrix<double> Rows(int first, int /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
   ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 

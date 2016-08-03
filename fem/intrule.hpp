@@ -32,7 +32,7 @@ namespace ngfem
   public:
     T x;
     TIP (T _x) : x(_x) { ; }
-    // explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
+    explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
     // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
     // TIP (const SIMD<IntegrationPoint> & ip) : x(ip(0)) { ; }
     template <typename T1, typename T2>
@@ -1314,13 +1314,24 @@ namespace ngstd
       return adp;
     }
 
+    template <int D>
+    INLINE ngfem::TIP<D,SIMD<double>> TIp() const;
     INLINE operator ngfem::TIP<0,ngstd::SIMD<double>> () const { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
     INLINE operator ngfem::TIP<1,ngstd::SIMD<double>> () const { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
     INLINE operator ngfem::TIP<2,ngstd::SIMD<double>> () const { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
     INLINE operator ngfem::TIP<3,ngstd::SIMD<double>> () const { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); } 
-    
   };
 
+  template <> INLINE ngfem::TIP<0,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<0>() const
+  { return ngfem::TIP<0,ngstd::SIMD<double>>(); }
+  template <> INLINE ngfem::TIP<1,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<1>() const
+  { return ngfem::TIP<1,ngstd::SIMD<double>>(x[0]); }
+  template <> INLINE ngfem::TIP<2,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<2>() const
+  { return ngfem::TIP<2,ngstd::SIMD<double>>(x[0], x[1]); }
+  template <> INLINE ngfem::TIP<3,SIMD<double>> SIMD<ngfem::IntegrationPoint> :: TIp<3>() const
+  { return ngfem::TIP<3,ngstd::SIMD<double>>(x[0], x[1], x[2]); }
+
+  
   template <>
   class SIMD<ngfem::BaseMappedIntegrationPoint>
   {
@@ -1562,8 +1573,8 @@ namespace ngfem
     }
     virtual ABareMatrix<double> GetPoints() const
     {
-      return ABareMatrix<double> (&mips[0].Point()(0).Data(),
-                                  &mips[1].Point()(0).Data()-&mips[0].Point()(0).Data());
+      return ABareMatrix<double> (&mips[0].Point()(0),
+                                  &mips[1].Point()(0)-&mips[0].Point()(0));
     }
   };
 }

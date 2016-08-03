@@ -159,8 +159,8 @@ namespace ngfem
         */
         MultiSIMD<2,double> sum = 0;
         // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
-        TIP<DIM,SIMD<double>> tip1 = hir[i];
-        TIP<DIM,SIMD<double>> tip2 = hir[i+1];
+        TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
+        TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
         
         double * pcoefs = &coefs(0);
@@ -360,8 +360,8 @@ namespace ngfem
         for (int i = 0; i < DIM; i++)
           pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
         */
-        TIP<DIM,SIMD<double>> tip1 = hir[i];
-        TIP<DIM,SIMD<double>> tip2 = hir[(i+1 < hir.Size()) ? i+1 : i];
+        TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
+        TIP<DIM,SIMD<double>> tip2 = hir[(i+1 < hir.Size()) ? i+1 : i].TIp<DIM>();
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
 
         MultiSIMD<2,double> val (values.Get(i),

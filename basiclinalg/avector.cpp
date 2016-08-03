@@ -9,6 +9,7 @@ using namespace ngbla;
 
 
   // n ... number of SIMDs
+/*
   INLINE void MyScal1x4 (int n, 
                          __m256d * a1,
                          __m256d * b1, __m256d * b2, __m256d * b3, __m256d * b4,
@@ -29,8 +30,28 @@ using namespace ngbla;
   
     s1 = HAdd (sum11, sum12, sum13, sum14);
   }
+*/
+  INLINE void MyScal1x4 (int n, 
+                         SIMD<double> * a1,
+                         SIMD<double> * b1, SIMD<double> * b2, SIMD<double> * b3, SIMD<double> * b4,
+                         SIMD<double> & s1)
+  {
+    SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
 
-  // n ... number of SIMDs  
+    for (int i = 0; i < n; i++)
+      {
+        sum11 += a1[i] * b1[i];
+        sum12 += a1[i] * b2[i];
+        sum13 += a1[i] * b3[i];
+        sum14 += a1[i] * b4[i];
+      }
+  
+    s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
+  }
+
+
+  // n ... number of SIMDs
+/*
   INLINE void MyScal2x4 (int n, 
                          __m256d * a1, __m256d * a2,
                          __m256d * b1, __m256d * b2, __m256d * b3, __m256d * b4,
@@ -62,6 +83,30 @@ using namespace ngbla;
   
     s1 = HAdd (sum11, sum12, sum13, sum14);
     s2 = HAdd (sum21, sum22, sum23, sum24);
+  }
+*/
+  INLINE void MyScal2x4 (int n, 
+                         SIMD<double> * a1, SIMD<double> * a2,
+                         SIMD<double> * b1, SIMD<double> * b2, SIMD<double> * b3, SIMD<double> * b4,
+                         SIMD<double> & s1, SIMD<double> & s2)
+  {
+    SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
+    SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
+
+    for (int i = 0; i < n; i++)
+      {
+        sum11 += a1[i] * b1[i];
+        sum21 += a2[i] * b1[i];
+        sum12 += a1[i] * b2[i];
+        sum22 += a2[i] * b2[i];
+        sum13 += a1[i] * b3[i];
+        sum23 += a2[i] * b3[i];
+        sum14 += a1[i] * b4[i];
+        sum24 += a2[i] * b4[i];
+      }
+  
+    s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
+    s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
   }
 
 
@@ -153,17 +198,17 @@ using namespace ngbla;
         int j = 0;
         for ( ; j < c.Width()-3; j += 4)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             s1 += _mm256_loadu_pd(&c(i,j));
             s2 += _mm256_loadu_pd(&c(i+1,j));
-            _mm256_storeu_pd(&c(i,j), s1);
-            _mm256_storeu_pd(&c(i+1,j), s2);
+            _mm256_storeu_pd(&c(i,j), s1.Data());
+            _mm256_storeu_pd(&c(i+1,j), s2.Data());
           }
         if (j < c.Width())
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             for (int j2 = 0; j2 < c.Width()-j; j2++)
@@ -180,15 +225,15 @@ using namespace ngbla;
         int j = 0;
         for ( ; j < c.Width()-3; j += 4)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             s1 += _mm256_loadu_pd(&c(i,j));
-            _mm256_storeu_pd(&c(i,j), s1);
+            _mm256_storeu_pd(&c(i,j), s1.Data());
           }
         if (j < c.Width())
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             for (int j2 = 0; j2 < c.Width()-j; j2++)
@@ -222,21 +267,21 @@ using namespace ngbla;
         int j = 0;
         for ( ; j < i; j += 4)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             s1 += _mm256_loadu_pd(&c(i,j));
             s2 += _mm256_loadu_pd(&c(i+1,j));
-            _mm256_storeu_pd(&c(i,j), s1);
-            _mm256_storeu_pd(&c(i+1,j), s2);
+            _mm256_storeu_pd(&c(i,j), s1.Data());
+            _mm256_storeu_pd(&c(i+1,j), s2.Data());
           }
         if (j <= i)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
-            __m128d s1l = _mm256_extractf128_pd(s1, 0);
-            __m128d s2l = _mm256_extractf128_pd(s2, 0);
+            __m128d s1l = _mm256_extractf128_pd(s1.Data(), 0);
+            __m128d s2l = _mm256_extractf128_pd(s2.Data(), 0);
             s1l += _mm_loadu_pd(&c(i,j));
             s2l += _mm_loadu_pd(&c(i+1,j));
             _mm_storeu_pd(&c(i,j), s1l);
@@ -249,15 +294,15 @@ using namespace ngbla;
         int j = 0;
         for ( ; j < c.Width()-3; j += 4)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             s1 += _mm256_loadu_pd(&c(i,j));
-            _mm256_storeu_pd(&c(i,j), s1);
+            _mm256_storeu_pd(&c(i,j), s1.Data());
           }
         if (j < c.Width())
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
             for (int j2 = 0; j2 < c.Width()-j; j2++)
@@ -373,27 +418,27 @@ using namespace ngbla;
 
         if (i < c.Height()-1)
           {
-            __m256d s1, s2;
+            SIMD<double> s1, s2;
             MyScal2x4 (a.VWidth(), &a.Get(i,0), &a.Get(i+1,0),
                        &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1, s2);
 
             s1 += _mm256_loadu_pd(pc);
-            _mm256_storeu_pd(pc, s1);
+            _mm256_storeu_pd(pc, s1.Data());
             pc += c.Dist();
             s2 += _mm256_loadu_pd(pc);
-            _mm256_storeu_pd(pc, s2);
+            _mm256_storeu_pd(pc, s2.Data());
             pc += c.Dist();
             i += 2;
           }
 
       if (i < c.Height())
         {
-          __m256d s1;
+          SIMD<double> s1;
           MyScal1x4 (a.VWidth(), &a.Get(i,0),
                      &b.Get(j,0), &b.Get(j+1,0), &b.Get(j+2,0), &b.Get(j+3,0), s1);
 
           s1 += _mm256_loadu_pd(pc);
-          _mm256_storeu_pd(pc, s1);
+          _mm256_storeu_pd(pc, s1.Data());
         }
       }
 
@@ -849,6 +894,313 @@ void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex
   c += a * Trans(b) | Lapack;  
   // cout << "addabt complex-complex not implemented" << endl;
 }
+
+
+
+
+
+// mat-mat product
+
+// b.Width <= 4
+INLINE
+void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+{
+  __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
+                                    _mm256_set_epi64x(3, 2, 1, 0));
+
+  /*
+  __m256i mask;
+  switch (b.Width())
+    {
+    case 1:
+      mask = _mm256_set_epi64x(0,0,0,-1); break;
+    case 2:
+      mask = _mm256_set_epi64x(0,0,-1,-1); break;
+    case 3:
+      mask = _mm256_set_epi64x(0,-1,-1,-1); break;
+    case 4:
+      mask = _mm256_set_epi64x(-1,-1,-1,-1); break;
+    }
+  */
+  unsigned int da = a.Dist();
+  int wa = a.Width();
+  int r = 0;
+  double * bpc = &c(0,0);
+  unsigned int dc = c.Dist();
+  double * ar = &a(0,0);
+  for ( ; r < a.Height()-7; r+=8)
+    {
+      __m256d sum1 = _mm256_setzero_pd();
+      __m256d sum2 = _mm256_setzero_pd();
+      __m256d sum3 = _mm256_setzero_pd();
+      __m256d sum4 = _mm256_setzero_pd();
+      __m256d sum5 = _mm256_setzero_pd();
+      __m256d sum6 = _mm256_setzero_pd();
+      __m256d sum7 = _mm256_setzero_pd();
+      __m256d sum8 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
+                                         _mm256_loadu_pd(&b(j,0)),
+                                         _mm256_castsi256_pd(mask));
+          double * arj = ar + j;
+          double * arj4 = arj + 4*da;
+          sum1 += _mm256_set1_pd(*arj) * rb;
+          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
+          sum3 += _mm256_set1_pd(*(arj+2*da)) * rb;
+          sum4 += _mm256_set1_pd(*(arj+3*da)) * rb;
+          sum5 += _mm256_set1_pd(*(arj4)) * rb;
+          sum6 += _mm256_set1_pd(*(arj4+da)) * rb;
+          sum7 += _mm256_set1_pd(*(arj4+2*da)) * rb;
+          sum8 += _mm256_set1_pd(*(arj4+3*da)) * rb;
+        }
+
+      _mm256_maskstore_pd(bpc, mask, sum1);
+      _mm256_maskstore_pd(bpc+dc, mask, sum2);
+      bpc += 2*dc;
+      _mm256_maskstore_pd(bpc, mask, sum3);
+      _mm256_maskstore_pd(bpc+dc, mask, sum4);
+      bpc += 2*dc;
+      _mm256_maskstore_pd(bpc, mask, sum5);
+      _mm256_maskstore_pd(bpc+dc, mask, sum6);
+      bpc += 2*dc;
+      _mm256_maskstore_pd(bpc, mask, sum7);
+      _mm256_maskstore_pd(bpc+dc, mask, sum8);
+      bpc += 2*dc;
+      ar += 8*da;
+    }
+
+  if (r < a.Height()-3)
+    {
+      __m256d sum1 = _mm256_setzero_pd();
+      __m256d sum2 = _mm256_setzero_pd();
+      __m256d sum3 = _mm256_setzero_pd();
+      __m256d sum4 = _mm256_setzero_pd();
+      
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
+                                         _mm256_loadu_pd(&b(j,0)),
+                                         _mm256_castsi256_pd(mask));
+
+          double * arj = ar + j;
+          sum1 += _mm256_set1_pd(*arj) * rb;
+          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
+          sum3 += _mm256_set1_pd(*(arj+2*da)) * rb;
+          sum4 += _mm256_set1_pd(*(arj+3*da)) * rb;
+        }
+
+      _mm256_maskstore_pd(bpc, mask, sum1);
+      _mm256_maskstore_pd(bpc+dc, mask, sum2);
+      bpc += 2*dc;
+      _mm256_maskstore_pd(bpc, mask, sum3);
+      _mm256_maskstore_pd(bpc+dc, mask, sum4);
+      bpc += 2*dc;
+      r += 4;
+      ar += 4*da;
+    }
+  if (r < a.Height()-1)
+    {
+      __m256d sum1 = _mm256_setzero_pd();
+      __m256d sum2 = _mm256_setzero_pd();
+      
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb =  _mm256_blendv_pd(_mm256_setzero_pd(),
+                                         _mm256_loadu_pd(&b(j,0)),
+                                         _mm256_castsi256_pd(mask));
+          double * arj = ar + j;
+          sum1 += _mm256_set1_pd(*arj) * rb;
+          sum2 += _mm256_set1_pd(*(arj+da)) * rb;
+        }
+
+      _mm256_maskstore_pd(bpc + 0*dc, mask, sum1);
+      _mm256_maskstore_pd(bpc + 1*dc, mask, sum2);
+      bpc += 2*dc;
+      r += 2;
+      ar += 2*da;
+    }
+
+  if (r < a.Height())
+    {
+      __m256d sum = _mm256_setzero_pd();
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb =  _mm256_loadu_pd(&b(j,0));
+          double * arj = ar + j;
+          sum += _mm256_set1_pd(*arj) * rb;
+
+        }
+
+      _mm256_maskstore_pd(bpc + 0*dc, mask, sum);
+    }
+}
+
+// b.Width() = 8
+INLINE
+void MultMatMat8(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+{
+  unsigned int da = a.Dist();
+  int wa = a.Width();
+  int r = 0;
+  double * bpc = &c(0,0);
+  unsigned int dc = c.Dist();
+  double * ar = &a(0,0);
+  for ( ; r < a.Height()-3; r+=4)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum21 = _mm256_setzero_pd();
+      __m256d sum31 = _mm256_setzero_pd();
+      __m256d sum41 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+      __m256d sum22 = _mm256_setzero_pd();
+      __m256d sum32 = _mm256_setzero_pd();
+      __m256d sum42 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          __m256d a2 = _mm256_set1_pd(*(arj+da));
+          __m256d a3 = _mm256_set1_pd(*(arj+2*da));
+          __m256d a4 = _mm256_set1_pd(*(arj+3*da));
+
+          sum11 += a1 * rb1;
+          sum21 += a2 * rb1;
+          sum31 += a3 * rb1;
+          sum41 += a4 * rb1;
+          sum12 += a1 * rb2;
+          sum22 += a2 * rb2;
+          sum32 += a3 * rb2;
+          sum42 += a4 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum21);
+      _mm256_storeu_pd(bpc+4, sum22);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum31);
+      _mm256_storeu_pd(bpc+4, sum32);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum41);
+      _mm256_storeu_pd(bpc+4, sum42);
+      bpc += dc;
+      ar += 4*da;
+    }
+
+  for ( ; r < a.Height()-1; r+=2)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum21 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+      __m256d sum22 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          __m256d a2 = _mm256_set1_pd(*(arj+da));
+
+          sum11 += a1 * rb1;
+          sum21 += a2 * rb1;
+          sum12 += a1 * rb2;
+          sum22 += a2 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      _mm256_storeu_pd(bpc, sum21);
+      _mm256_storeu_pd(bpc+4, sum22);
+      bpc += dc;
+      ar += 2*da;
+    }
+
+  for ( ; r < a.Height(); r++)
+    {
+      __m256d sum11 = _mm256_setzero_pd();
+      __m256d sum12 = _mm256_setzero_pd();
+
+      for (int j = 0; j < wa; j++)
+        {
+          __m256d rb1 = _mm256_loadu_pd(&b(j,0));
+          __m256d rb2 = _mm256_loadu_pd(&b(j,4));
+
+          double * arj = ar + j;
+
+          __m256d a1 = _mm256_set1_pd(*arj);
+          sum11 += a1 * rb1;
+          sum12 += a1 * rb2;
+        }
+
+      _mm256_storeu_pd(bpc, sum11);
+      _mm256_storeu_pd(bpc+4, sum12);
+      bpc += dc;
+      ar += da;
+    }
+}
+
+
+
+
+
+// c = a * b
+void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
+{
+  int k = 0;
+  for ( ; k < b.Width()-7; k += 8)
+    MultMatMat8(a, b.Cols(k,k+8), c.Cols(k,k+8));
+  for ( ; k < b.Width(); k += 4)
+    {
+      int end = min2(b.Width(), k+4);
+      MultMatMat4(a, b.Cols(k,end), c.Cols(k,end));
+    }
+}
+
+
+
+// c = a * Diag (d)
+void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
+{
+  /*
+  for (int i = 0; i < diag.Size(); i++)
+    c.Col(i) = diag(i) * a.Col(i);
+  */
+  int rest = 4*diag.VSize() - diag.Size();
+  int loops = diag.VSize();
+  if (rest) loops--;
+  
+  for (int i = 0; i < c.Height(); i++)
+    for (int j = 0; j < loops; j++)
+      c.Get(i,j) = a.Get(i,j) * diag.Get(j);
+
+  if (rest)
+    {
+      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(4-rest),
+                                        _mm256_set_epi64x(3, 2, 1, 0));
+
+      __m256d md = _mm256_maskload_pd((double*)&diag.Get(loops), mask);
+
+      for (int i = 0; i < c.Height(); i++)
+        {
+          __m256d ma = _mm256_maskload_pd((double*)&a.Get(i,loops), mask);
+          __m256d prod = md * ma;
+          _mm256_maskstore_pd((double*)&c.Get(i,loops), mask, prod);
+        }
+    }
+}
+
 
 
 
