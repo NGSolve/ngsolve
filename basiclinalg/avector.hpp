@@ -602,6 +602,7 @@ class ABareMatrix<double>
   int dist;   // dist in simds
 public:
   ABareMatrix(double * _data, int _dist) : data(_data), dist(_dist) { ; }
+  ABareMatrix(SIMD<double> * _data, int _dist) : data(&_data->Data()), dist(_dist) { ; }
   ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
   ABareMatrix(const ABareMatrix &) = default;
 
