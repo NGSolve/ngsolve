@@ -296,9 +296,9 @@ public:
   {
     h = ah;
     w = aw;
-    int rw = (w+SIMD<double>::Size()-1)&(-SIMD<double>::Size());
+    // int rw = (w+SIMD<double>::Size()-1)&(-SIMD<double>::Size());
     // data = (__m256d*)lh.Alloc<double> (h*rw);
-    data = lh.Alloc<SIMD<double>> (h*rw);
+    data = lh.Alloc<SIMD<double>> (h* ((unsigned(w)+SIMD<double>::Size()-1)/SIMD<double>::Size()));
   }
 
   AFlatMatrixD(int ah, int aw, double * adata)
