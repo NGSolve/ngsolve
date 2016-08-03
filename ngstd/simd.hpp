@@ -53,6 +53,74 @@ namespace ngstd
   };
 
 #ifdef __AVX2__
+
+#ifdef __AVX512F__
+  template<>
+  class alignas(64) SIMD<double>
+  {
+    __m512d data;
+    
+  public:
+    static constexpr int Size() { return 8; }
+    SIMD () = default;
+    SIMD (const SIMD &) = default;
+    SIMD & operator= (const SIMD &) = default;
+
+    SIMD (double val)
+    {
+      data = _mm512_set1_pd(val);
+    }
+    
+    template <typename T>
+    SIMD (const T & val)
+    {
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
+    }
+    
+    template <typename T>
+    SIMD & operator= (const T & val)
+    {
+//       SIMD_function(val, std::is_convertible<T, std::function<double(int)>>());
+      SIMD_function(val, has_call_operator<T>::value);
+      return *this;
+    }
+    
+    template <typename Function>
+    void SIMD_function (const Function & func, std::true_type)
+    {
+      /*
+      data = _mm512_set_pd(func(7), func(6), func(5), func(4),
+                           func(3), func(2), func(1), func(0));
+      */
+      data = (__m512){ func(7), func(6), func(5), func(4),
+                       func(3), func(2), func(1), func(0));
+                       
+      
+    }
+    
+    // not a function
+    void SIMD_function (double const * p, std::false_type)
+    {
+      data = _mm512_loadu_pd(p);
+    }
+    
+    void SIMD_function (double val, std::false_type)
+    {
+      data = _mm512_set1_pd(val);
+    }
+    
+    void SIMD_function (__m512d _data, std::false_type)
+    {
+      data = _data;
+    }
+    
+    INLINE double operator[] (int i) const { return ((double*)(&data))[i]; }
+    INLINE __m512d Data() const { return data; }
+    INLINE __m512d & Data() { return data; }
+  };
+ 
+#else
   
   template<>
   class alignas(32) SIMD<double>
@@ -111,6 +179,8 @@ namespace ngstd
     INLINE __m256d Data() const { return data; }
     INLINE __m256d & Data() { return data; }
   };
+#endif
+
   
   
   INLINE SIMD<double> operator+ (SIMD<double> a, SIMD<double> b) { return a.Data()+b.Data(); }
@@ -125,10 +195,31 @@ namespace ngstd
   INLINE SIMD<double> operator*= (SIMD<double> & a, SIMD<double> b) { return a.Data()*=b.Data(); }
   INLINE SIMD<double> operator/= (SIMD<double> & a, SIMD<double> b) { return a.Data()/=b.Data(); }
 
-  INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
-  INLINE SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> L2Norm2 (SIMD<double> a) { return a.Data()*a.Data(); }
   INLINE SIMD<double> Trans (SIMD<double> a) { return a; }
+
+#ifdef __AVX512F__
+  INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm512_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> fabs (SIMD<double> a) { return _mm512_max_pd(a.Data(), -a.Data()); }
+  INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  {
+    /*
+    auto cp = _mm512_cmp_pd (a.Data(), _mm512_setzero_pd(), _CMP_GT_OS);
+    return _mm512_blendv_pd(c.Data(), b.Data(), cp);
+    */
+    throw Exception ("IfPos missing for AVX512");
+  }
+
+  INLINE double HSum (SIMD<double> sd)
+  {
+    throw Exception ("HSum missing for AVX512");    
+    // __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
+    // return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
+  }
+
+#else
+  INLINE SIMD<double> sqrt (SIMD<double> a) { return _mm256_sqrt_pd(a.Data()); }
+  INLINE SIMD<double> fabs (SIMD<double> a) { return _mm256_max_pd(a.Data(), -a.Data()); }
   INLINE SIMD<double> IfPos (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     auto cp = _mm256_cmp_pd (a.Data(), _mm256_setzero_pd(), _CMP_GT_OS);
@@ -140,7 +231,7 @@ namespace ngstd
     __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
     return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
   }
-  
+#endif  
   
 
 
@@ -360,13 +451,20 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
     return a*b+c;
   }
 
+#ifdef __AVX512F__
+  INLINE SIMD<double> FMA (SIMD<double> a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm512_fmadd_pd (a.Data(), b.Data(), c.Data());
+  }
+#else
 #ifdef __AVX2__
   INLINE SIMD<double> FMA (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
   }
 #endif
-    
+#endif
+  
   template <int D>
   INLINE MultiSIMD<D,double> FMA(MultiSIMD<D,double> a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
   {
