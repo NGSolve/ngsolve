@@ -9,7 +9,6 @@ template <typename T> struct FooAMatrixType
   typedef FlatMatrix<T> type;
 };
 
-
 template <typename T> struct FooAVectorType
 {
   typedef FlatVector<T> type;
@@ -48,59 +47,31 @@ void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
 }
 
 
-// c = a * Diag (d)
+// c = a * Diag (diag)
 template <typename TA, typename TB, typename TC>
-void MultMatDiagMat(TA a, TB b, TC c)
+void MultMatDiagMat(TA a, TB diag, TC c)
 {
   for (int i = 0; i < a.Width(); i++)
-    c.Col(i) = b(i) * a.Col(i);
+    c.Col(i) = diag(i) * a.Col(i);
 }
 
 
 
-
-
-
-
-
-
-#if defined(__AVX2__)
-
-extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
-
-/*
-template <typename TA, typename TB, typename TC>
-INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
-{
-  c += a * Trans(b) | Lapack;
-  // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
-}
 
 template <typename T>
-INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
-{
-  c += a * Trans(b) | Lapack; 
-}
-*/
+class SIMDExpr : public Expr<T> { };
 
 
-// aligned AVX vectors
 
-INLINE ostream & operator<< (ostream & ost, __m256d v4)
-{
-  double * v = reinterpret_cast<double*>(&v4);
-  ost << v[0] << ", " << v[1] << ", " << v[2] << ", " << v[3];
-  return ost;
-}
 
-template <typename T>
-class AVXExpr : public Expr<T> { };
+
+
 
 
 /* *************************** SumExpr **************************** */
 
 template <class TA, class TB> 
-class AVXSumExpr : public AVXExpr<AVXSumExpr<TA,TB> >
+class AVXSumExpr : public SIMDExpr<AVXSumExpr<TA,TB> >
 {
   const TA & a;
   const TB & b;
@@ -110,9 +81,9 @@ public:
     
   INLINE AVXSumExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-  INLINE auto operator() (int i) const -> decltype(a(i)+b(i)) { return a(i)+b(i); }
-  INLINE auto operator() (int i, int j) const -> decltype(a(i,j)+b(i,j)) { return a(i,j)+b(i,j); }
-  __m256d Get(int i) const { return a.Get(i)+b.Get(i); } 
+  INLINE auto operator() (int i) const { return a(i)+b(i); }
+  INLINE auto operator() (int i, int j) const { return a(i,j)+b(i,j); }
+  INLINE auto Get(int i) const { return a.Get(i)+b.Get(i); } 
 
   INLINE int Height() const { return a.Height(); }
   INLINE int Width() const { return a.Width(); }
@@ -123,7 +94,7 @@ public:
 
 template <typename TA, typename TB>
 INLINE AVXSumExpr<TA, TB>
-operator+ (const AVXExpr<TA> & a, const AVXExpr<TB> & b)
+operator+ (const SIMDExpr<TA> & a, const SIMDExpr<TB> & b)
 {
   return AVXSumExpr<TA, TB> (a.Spec(), b.Spec());
 }
@@ -133,7 +104,7 @@ operator+ (const AVXExpr<TA> & a, const AVXExpr<TB> & b)
 /* *************************** PW_Mult_Expr **************************** */
 
 template <class TA, class TB> 
-class AVXPW_Mult_Expr : public AVXExpr<AVXPW_Mult_Expr<TA,TB> >
+class AVXPW_Mult_Expr : public SIMDExpr<AVXPW_Mult_Expr<TA,TB> >
 {
   const TA & a;
   const TB & b;
@@ -143,9 +114,9 @@ public:
     
   INLINE AVXPW_Mult_Expr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
 
-  INLINE auto operator() (int i) const -> decltype(a(i)*b(i)) { return a(i)*b(i); }
-  INLINE auto operator() (int i, int j) const -> decltype(a(i,j)*b(i,j)) { return a(i,j)*b(i,j); }
-  SIMD<double> Get(int i) const { return a.Get(i)*b.Get(i); } 
+  INLINE auto operator() (int i) const { return a(i)*b(i); }
+  INLINE auto operator() (int i, int j) const { return a(i,j)*b(i,j); }
+  auto Get(int i) const { return a.Get(i)*b.Get(i); } 
 
   INLINE int Height() const { return a.Height(); }
   INLINE int Width() const { return a.Width(); }
@@ -156,32 +127,29 @@ public:
 
 template <typename TA, typename TB>
 INLINE AVXPW_Mult_Expr<TA, TB>
-pw_mult (const AVXExpr<TA> & a, const AVXExpr<TB> & b)
+pw_mult (const SIMDExpr<TA> & a, const SIMDExpr<TB> & b)
 {
   return AVXPW_Mult_Expr<TA, TB> (a.Spec(), b.Spec());
 }
 
 
-
 /* *************************** ScaleExpr **************************** */
 
 template <class TA> 
-class AVXScaleExpr : public AVXExpr<AVXScaleExpr<TA> >
+class AVXScaleExpr : public SIMDExpr<AVXScaleExpr<TA> >
 {
   double s1;
-  // __m256d s;
   SIMD<double> s;
   const TA & a;
 public:
 
   enum { IS_LINEAR = TA::IS_LINEAR };
-    
-  // INLINE AVXScaleExpr (double as, const TA & aa) : s1(as), s(_mm256_set1_pd(as)), a(aa) { ; }
+
   INLINE AVXScaleExpr (double as, const TA & aa) : s1(as), s(as), a(aa) { ; }
 
-  INLINE auto operator() (int i) const -> decltype(s1*a(i)) { return s1*a(i); }
-  INLINE auto operator() (int i, int j) const -> decltype(s1*a(i,j)) { return s1*a(i,j); }
-  __m256d Get(int i) const { return s * a.Get(i); }
+  INLINE auto operator() (int i) const  { return s1*a(i); }
+  INLINE auto operator() (int i, int j) const  { return s1*a(i,j); }
+  INLINE auto Get(int i) const { return s * a.Get(i); }
 
   INLINE int Height() const { return a.Height(); }
   INLINE int Width() const { return a.Width(); }
@@ -192,7 +160,7 @@ public:
 
 template <typename TA>
 INLINE AVXScaleExpr<TA>
-operator* (double s, const AVXExpr<TA> & a)
+operator* (double s, const SIMDExpr<TA> & a)
 {
   return AVXScaleExpr<TA> (s, a.Spec());
 }
@@ -200,8 +168,7 @@ operator* (double s, const AVXExpr<TA> & a)
 
 
 
-
-class AFlatVectorD : public AVXExpr<AFlatVectorD>
+class AFlatVectorD : public SIMDExpr<AFlatVectorD>
 {
   int size; 
   // unsigned vsize() const { return (unsigned(size)+3) / 4; }
@@ -212,16 +179,12 @@ public:
   AFlatVectorD(int asize, LocalHeap & lh)
   {
     size = asize;
-    // data = (__m256d*)lh.Alloc<double> (4*vsize());
     data = lh.Alloc<SIMD<double>> (vsize());
   }
 
   AFlatVectorD (int as, double * adata)
-  // : size(as), data((__m256d*)(void*)adata)
     : size(as), data((SIMD<double>*)(void*)adata)
-  {
-    ;
-  }
+  { ; }
 
   enum { IS_LINEAR = true };
   int Size () const { return size; }
@@ -239,7 +202,6 @@ public:
     return ((double*)data)[i]; 
   }
 
-  // __m256d & Get(int i) const { return data[i]; }
   SIMD<double> & Get(int i) const { return data[i]; }
 
   INLINE const AFlatVectorD & operator= (const AFlatVectorD & v2) const
@@ -252,7 +214,6 @@ public:
   AFlatVectorD & operator= (double d)
   {
     for (int i = 0; i < vsize(); i++)
-      // data[i] = _mm256_set1_pd(d);
       data[i] = SIMD<double> (d);
     return *this;
   }
@@ -266,7 +227,7 @@ public:
   }
 
   template<typename TB>
-  INLINE const AFlatVectorD & operator= (const AVXExpr<TB> & v) const
+  INLINE const AFlatVectorD & operator= (const SIMDExpr<TB> & v) const
   {
     for (int i = 0; i < vsize(); i++)
       data[i] = v.Spec().Get(i);
@@ -274,7 +235,7 @@ public:
   }
 
   template<typename TB>
-  INLINE const AFlatVectorD & operator+= (const AVXExpr<TB> & v) const
+  INLINE const AFlatVectorD & operator+= (const SIMDExpr<TB> & v) const
   {
     for (auto i : Range(vsize()))
       data[i] += v.Spec().Get(i);
@@ -284,10 +245,9 @@ public:
 
 
 
-class AFlatMatrixD : public AVXExpr<AFlatMatrixD>
+class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
 {
   int h, w;
-  // static int vw;
   SIMD<double> * __restrict data;
 public:
   AFlatMatrixD () = default;
@@ -328,7 +288,7 @@ public:
   double & operator() (int i, int j) const
   {
     int vw = VWidth(); // (w+3)/4;
-    return ((double*)data)[4*i*vw+j]; 
+    return ((double*)data)[SIMD<double>::Size()*i*vw+j]; 
   }
 
   SIMD<double> & Get(int i) const { return data[i]; }
@@ -347,9 +307,7 @@ public:
     auto vw = VWidth(); //  (unsigned(w)+3)/4;
     int els = unsigned(h)*unsigned(vw);
     for (int i = 0; i < els; i++)
-      // data[i] = _mm256_set1_pd(d);
       data[i] = SIMD<double>(d);
-      // _mm256_store_pd((double*)&data[i], _mm256_set1_pd(d));
     return *this;
   }
 
@@ -367,7 +325,6 @@ public:
   {
     int vw = VWidth(); //  (w+3)/4;
     for (int i = 0; i < h*vw; i++)
-      // data[i] *= _mm256_set1_pd(d);
       data[i] *= SIMD<double>(d);
     return *this;
   }
@@ -375,13 +332,13 @@ public:
   operator SliceMatrix<double> () const
   {
     int vw = VWidth(); // (w+3)/4;
-    return SliceMatrix<double> (h, w, 4*vw, (double*)data);
+    return SliceMatrix<double> (h, w, SIMD<double>::Size()*vw, (double*)data);
   }
    
   SliceVector<> Col (int c) const
   {
     int vw = VWidth(); // (w+3)/4;    
-    return SliceVector<> (h, 4*vw, ((double*)data)+c);
+    return SliceVector<> (h, SIMD<double>::Size()*vw, ((double*)data)+c);
   }
 
   AFlatVector<double> Row (int r) const
@@ -400,7 +357,7 @@ public:
   SliceMatrix<> Cols(int begin, int end) const
   {
     int vw = VWidth(); // (w+3)/4;
-    return SliceMatrix<>(h, end-begin, 4*vw, ((double*)data)+begin);
+    return SliceMatrix<>(h, end-begin, SIMD<double>::Size()*vw, ((double*)data)+begin);
   }
   SliceMatrix<> Cols(IntRange r) const
   { return Cols(r.begin(), r.end()); }
@@ -421,37 +378,9 @@ INLINE void AddABt (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
 
 INLINE SliceMatrix<double,ColMajor> Trans (const AFlatMatrixD & mat)
 {
-  return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), 4*mat.VWidth(), &mat(0,0));
+  return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), SIMD<double>::Size()*mat.VWidth(), &mat(0,0));
 }
 
-
-
-INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
-{
-  __m256d hsum1 = _mm256_hadd_pd (v1, v2);
-  __m256d hsum2 = _mm256_hadd_pd (v3, v4);
-  
-  __m256d hsum = 
-    _mm256_add_pd (_mm256_insertf128_pd (hsum1, 
-                                         _mm256_extractf128_pd (hsum2, 0), 1),
-                   _mm256_insertf128_pd (hsum2, 
-                                         _mm256_extractf128_pd (hsum1, 1), 0));
-  return hsum;
-}
-
-
-
-
-extern void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c);
-extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-
-extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c);
-extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-
-
-extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
 
 
@@ -459,7 +388,6 @@ extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 template <>
 class ABareVector<double>
 {
-  // __m256d * __restrict data;
   SIMD<double> * __restrict data;
 public:
   ABareVector(SIMD<double> * _data) : data(_data) { ; }
@@ -501,12 +429,33 @@ public:
 
 
 
+#if defined(__AVX2__)
+
+
+extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
+
+extern void AddABt (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c);
+extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+
+extern void AddABtSym (AFlatMatrix<double> a, AFlatMatrix<double> b, SliceMatrix<double> c);
+extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+
+
+extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
+
+
+
 
 #else // __AVX2__
 
 // template <typename T>
 // using AFlatMatrix = FlatMatrix<T>;
 
+
+
+/*
 class AFlatVectorD : public FlatVector<double>
 {
 public:
@@ -571,9 +520,6 @@ public:
 
 
 
-
-
-
 template <>
 class ABareVector<double>
 {
@@ -616,6 +562,8 @@ public:
   ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
   ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
 };
+*/
+
 
 
 template <typename TA, typename TB, typename TC>
