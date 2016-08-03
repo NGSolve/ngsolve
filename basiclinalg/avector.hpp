@@ -558,7 +558,7 @@ public:
   }
   double & Get(int i, int j) const { return data[i*dist+j]; }
   ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
-  ABareMatrix<double> Rows(int first, int /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
+  ABareMatrix<double> Rows(int first, int next) const { return ABareMatrix<double> (data+first*dist, dist); }
   ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
   ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
 };
