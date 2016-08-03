@@ -4,6 +4,23 @@ using namespace ngbla;
 
 #if defined(__AVX2__)
 
+
+INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
+{
+  __m256d hsum1 = _mm256_hadd_pd (v1, v2);
+  __m256d hsum2 = _mm256_hadd_pd (v3, v4);
+  
+  __m256d hsum = 
+    _mm256_add_pd (_mm256_insertf128_pd (hsum1, 
+                                         _mm256_extractf128_pd (hsum2, 0), 1),
+                   _mm256_insertf128_pd (hsum2, 
+                                         _mm256_extractf128_pd (hsum1, 1), 0));
+  return hsum;
+}
+
+
+
+
 // namespace ngbla
 // {
 
