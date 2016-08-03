@@ -1247,7 +1247,7 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
-    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0]);
+    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), (SIMD<double>*)&hmem[0]);
     
     c1->Evaluate (ir, temp);
     values.Row(0) = temp.Row(comp);
