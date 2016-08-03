@@ -514,6 +514,8 @@ public:
     : FlatVector<double> (as, lh) { ; }
   AFlatVectorD (int as, double * p)
     : FlatVector<double> (as, p) { ; }
+  AFlatVectorD (int as, SIMD<double> * p)
+    : FlatVector<double> (as, &p->Data()) { ; }
   
   AFlatVectorD & operator= (const AFlatVectorD & v2)  
   { FlatVector<double>::operator= (v2); return *this; }
@@ -536,6 +538,8 @@ public:
     : FlatMatrix<double> (ah, aw, lh) { ; }
   AFlatMatrixD (int ah, int aw, double * p)
     : FlatMatrix<double> (ah, aw, p) { ; }
+  AFlatMatrixD (int ah, int aw, SIMD<double> * p)
+    : FlatMatrix<double> (ah, aw, &p->Data()) { ; }
 
 
   AFlatMatrixD & operator= (const AFlatMatrixD & m2)  
