@@ -179,7 +179,7 @@ namespace ngfem
 
     if (i < hir.Size())
       {
-        TIP<DIM,SIMD<double>> pt = hir[i];
+        TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
         SIMD<double> sum = 0;
         // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
         double * pcoefs = &coefs(0);
