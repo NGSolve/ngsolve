@@ -1278,7 +1278,7 @@ public:
         SIMD<double> sum = 0.0;
         for (int j = 0; j < dim1; j++)
           sum += in0.Get(j,i) * in1.Get(j,i);
-        values.Get(i) = sum.Data();
+        values.Get(i) = sum; // .Data();
       }
 //     throw Exception (string("hihi\ncf::Evaluate(simd, input->output) not overloaded for ")+typeid(*this).name());
     // Evaluate (ir, values);
@@ -1465,7 +1465,7 @@ public:
         SIMD<double> sum = 0.0;
         for (int j = 0; j < DIM; j++)
           sum += temp1.Get(j,i) * temp2.Get(j,i);
-        values.Get(i) = sum.Data();
+        values.Get(i) = sum; // .Data();
       }
   }
 
@@ -1480,7 +1480,7 @@ public:
         SIMD<double> sum = 0.0;
         for (int j = 0; j < DIM; j++)
           sum += in0.Get(j,i) * in1.Get(j,i);
-        values.Get(i) = sum.Data();
+        values.Get(i) = sum; // .Data();
       }
   }
 
@@ -2791,7 +2791,7 @@ public:
         for (int i = 0; i < values.VWidth(); i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
-                                          else_values.Get(k,i)).Data();
+                                          else_values.Get(k,i)); // .Data();
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
@@ -2805,7 +2805,7 @@ public:
         for (int i = 0; i < values.VWidth(); i++)
           values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
                                           then_values.Get(k,i),
-                                          else_values.Get(k,i)).Data();
+                                          else_values.Get(k,i)); // .Data();
     }
 
     

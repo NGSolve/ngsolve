@@ -40,22 +40,6 @@ template <typename T> class ABareVector;
 template <typename T> class ABareMatrix;
 
 
-template <typename TA, typename TB, typename TC>
-void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
-{
-  c = a * b;
-}
-
-
-// c = a * Diag (diag)
-template <typename TA, typename TB, typename TC>
-void MultMatDiagMat(TA a, TB diag, TC c)
-{
-  for (int i = 0; i < a.Width(); i++)
-    c.Col(i) = diag(i) * a.Col(i);
-}
-
-
 
 
 template <typename T>
@@ -429,6 +413,28 @@ public:
 
 
 
+
+
+
+
+
+
+
+template <typename TA, typename TB, typename TC>
+void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
+{
+  c = a * b;
+}
+
+// c = a * Diag (diag)
+template <typename TA, typename TB, typename TC>
+void MultMatDiagMat(TA a, TB diag, TC c)
+{
+  for (int i = 0; i < a.Width(); i++)
+    c.Col(i) = diag(i) * a.Col(i);
+}
+
+
 #if defined(__AVX2__)
 
 
@@ -444,8 +450,6 @@ extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatr
 
 
 extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
-
-
 
 
 #else // __AVX2__
@@ -572,11 +576,6 @@ INLINE void AddABt (const TA & a, const TB & b, SliceMatrix<TC> c)
   c += a * Trans(b) | Lapack;
   // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
 }
-
-/*
-template <typename T>
-INLINE void AddABtSym (AFlatMatrix<T> a, AFlatMatrix<T> b, SliceMatrix<T> c)
-*/
 
 template <typename TA, typename TB, typename TC>
 INLINE void AddABtSym (const TA & a, const TB & b, SliceMatrix<TC> c)
