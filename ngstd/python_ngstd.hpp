@@ -3,7 +3,7 @@
 #ifdef NGS_PYTHON
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-W#pragma-messages"
+// #pragma clang diagnostic ignored "-W#pragma-messages"
 #pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #include <boost/python.hpp>
 
@@ -14,7 +14,7 @@
 #include <iostream>
 
 
-#if BOOST_VERSION >= 106000
+#if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
   // Boost Python 1.60 does not automatically register shared_ptr<T> with T
   #define REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(type) bp::register_ptr_to_python<type>();
 #else
