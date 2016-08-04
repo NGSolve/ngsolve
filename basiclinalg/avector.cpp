@@ -19,8 +19,6 @@ INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
 }
 
 
-
-
 // namespace ngbla
 // {
 
