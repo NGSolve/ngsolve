@@ -9,7 +9,7 @@ endif(NGS_GOLD_DIR)
 
 add_library(ngfem ${NGS_LIB_TYPE}
         bdbequations.cpp maxwellintegrator.cpp
-        hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp hcurlhofe.cpp
+        hdiv_equations.cpp h1hofe.cpp h1lofe.cpp l2hofe.cpp  l2hofe_trig.cpp l2hofe_segm.cpp hcurlhofe.cpp
         hcurlfe.cpp vectorfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp
         coefficient.cpp integrator.cpp specialelement.cpp elementtopology.cpp
         intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp
