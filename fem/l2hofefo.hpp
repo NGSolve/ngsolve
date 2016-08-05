@@ -370,11 +370,14 @@ namespace ngfem
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
+                     /*
                                    SBLambda([&](auto j, Tx v2) 
                                             {
                                               shape[ii++] = v2;
                                             }));
+                     */
+                     ii += IC<ORDER-i+1>();
                      jac.IncAlpha2();
                    }));
     }

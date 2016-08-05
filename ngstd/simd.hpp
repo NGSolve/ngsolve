@@ -231,6 +231,13 @@ namespace ngstd
     __m128d hv = _mm_add_pd (_mm256_extractf128_pd(sd.Data(),0), _mm256_extractf128_pd(sd.Data(),1));
     return _mm_cvtsd_f64 (_mm_hadd_pd (hv, hv));
   }
+
+  INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2)
+  {
+    __m256d hv = _mm256_hadd_pd(sd1.Data(), sd2.Data());
+    __m128d hv2 = _mm_add_pd (_mm256_extractf128_pd(hv,0), _mm256_extractf128_pd(hv,1));
+    return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
+  }
 #endif  
   
 
@@ -309,7 +316,8 @@ namespace ngstd
 
   INLINE double HSum (SIMD<double> sd)
   { return sd.Data(); }
-
+  INLINE auto HSum (SIMD<double> sd1, SIMD<double> sd2)
+  { return make_tuple(sd1.Data(), sd2.Data()); }
 #endif
 
 
@@ -437,8 +445,10 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   INLINE SIMD<double> HVSum (SIMD<double> a) { return a; }
   template <int D>
   INLINE SIMD<double> HVSum (MultiSIMD<D,double> a) { return a.Head() + HVSum(a.Tail()); }
-  template <int D> INLINE double HSum (MultiSIMD<D,double> a) { return HSum(HVSum(a)); }
 
+  template <int D> INLINE double HSum (MultiSIMD<D,double> a) { return HSum(HVSum(a)); }
+  template <int D> INLINE auto HSum (MultiSIMD<D,double> a, MultiSIMD<D,double> b)
+  { return HSum(HVSum(a), HVSum(b)); }
 
 
 
