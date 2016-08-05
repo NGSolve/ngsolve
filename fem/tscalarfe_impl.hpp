@@ -367,13 +367,30 @@ namespace ngfem
         MultiSIMD<2,double> val (values.Get(i),
                                  i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0));
 
-        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape) { coefs(j) += HSum(val*shape); } ));
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { coefs(j) += HSum(val*shape); } ));
 
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
-        T_CalcShape (tip, // TIP<DIM,MultiSIMD<2,double>> (pt),
-                     SBLambda ( [&](int j, MultiSIMD<2,double> shape)
-                                { *pcoefs += HSum(val*shape); pcoefs += dist; } ));
+        /*
+        T_CalcShape (tip, 
+                     SBLambda
+                     ([&](int j, MultiSIMD<2,double> shape)
+                      { *pcoefs += HSum(val*shape); pcoefs += dist; }
+                      ));
+        */
+        T_CalcShape (tip, 
+                     SBLambdaDuo
+                     ([&](int j, MultiSIMD<2,double> shape)
+                      {
+                        *pcoefs += HSum(val*shape); pcoefs += dist;
+                      },
+                      [&](int j, MultiSIMD<2,double> shape, int j2, MultiSIMD<2,double> shape2)
+                      {
+                        auto v2 = HSum(val*shape, val*shape2);
+                        *pcoefs += get<0>(v2); pcoefs += dist;
+                        *pcoefs += get<1>(v2); pcoefs += dist;
+                      }
+                      ));        
       }
 
     

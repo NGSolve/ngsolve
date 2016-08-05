@@ -84,7 +84,7 @@ namespace ngfem
   };
 
   template <typename FUNC, typename FUNC2> 
-  INLINE Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
+  INLINE const Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
   {
     return Class_SBLambdaDuo<FUNC,FUNC2> (f, f2);
   }
@@ -499,16 +499,21 @@ namespace ngfem
     template <typename TI, class S, class Sc, class T1, class T2>
     INLINE static void EvalMult (TI n, S x, Sc c, const Class_SBLambdaDuo<T1,T2> & values) 
     {
+      /*
       S p1, p2;
-
       if (n < 0) return;
-
       values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
       if (n < 1) return;
-
       values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
+      */
+      
+      S p1(c * REC::P0(x));
+      S p2 = c * REC::P1(x);
 
+      if (n < 0) return;
+      if (n == 0) { values [0] = p1; return; }
+      values (0, p1, 1, p2);
       TI i = 2;
       for ( ; i < n; i+=2)
 	{	
@@ -1077,7 +1082,25 @@ namespace ngfem
                     values[i] = p2;
                     this->EvalNext2 (i+2, x, p1, p2);
                   });
-    }  
+    }
+
+    template <int N, class S, class Sc, class T1, class T2>
+    INLINE void EvalMult (IC<N> n, S x, Sc c, Class_SBLambdaDuo<T1,T2> && values) const
+    {
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+
+      size_t i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values (i, p1, i+1, p2);
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+	  EvalNextTicTac2 (i+3, x, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+    }
+    
 
 
     
@@ -2561,11 +2584,16 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
             SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialAlpha jac(1+2*i);
+
+                     /*
                      jac.EvalMult (n-i, 2*x-1, val, 
                                    SBLambda([&](int j, S v2) 
                                             {
                                               values[ii++] = v2;
                                             }));
+                     */
+                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
+                     ii += n-i+1;
                      jac.IncAlpha2();
                    }));
     }
