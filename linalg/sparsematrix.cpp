@@ -1807,7 +1807,7 @@ namespace ngla
        
     t1a.Stop();
     t1b.Start();
-    SparseMatrix<double,double> * prod = new SparseMatrix<double>(cnt);
+    SparseMatrix<double,double> * prod = new SparseMatrix<double>(cnt, matb.Width());
     prod->AsVector() = 0.0;
 
     // fill col-indices
