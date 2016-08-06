@@ -106,13 +106,18 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__str__", &ToString<MeshPoint>)
     .def("__repr__", &ToString<MeshPoint>)
     .add_property("p", FunctionPointer([](const MeshPoint & self)
-                                       {
-                                         bp::list l;
-                                         l.append ( self[0] );
-                                         l.append ( self[1] );
-                                         l.append ( self[2] );
-                                         return bp::tuple(l);
+                                        {
+                                          bp::list l;
+                                          l.append ( self[0] );
+                                          l.append ( self[1] );
+                                          l.append ( self[2] );
+                                          return bp::tuple(l);
                                        }))
+    .def("__getitem__", FunctionPointer([](const MeshPoint & self, int index) {
+	  if(index<0 || index>2)
+	    bp::exec("raise IndexError()\n");
+	  return self[index];
+	}))
     ;
   
   bp::class_<Element>("Element3D")
