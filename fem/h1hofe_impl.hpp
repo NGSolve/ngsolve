@@ -35,7 +35,7 @@ namespace ngfem
 
   public:
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
+      INLINE void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape) const;
   };
   
 
@@ -43,7 +43,7 @@ namespace ngfem
   /* *********************** Point  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (Tx x[], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_POINT> :: T_CalcShape (TIP<0,Tx> ip, TFA & shape) const
   {
     shape[0] = 1.0;
   }
@@ -53,9 +53,9 @@ namespace ngfem
   /* *********************** Segment  **********************/  
 
   template <> template<typename Tx, typename TFA>  
-  void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (Tx x[], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_SEGM> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
   {
-    Tx lam[2] = { x[0], 1-x[0] };
+    Tx lam[2] = { ip.x, 1-ip.x };
     
     shape[0] = lam[0];
     shape[1] = lam[1];
@@ -73,9 +73,9 @@ namespace ngfem
   /* *********************** Triangle  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  void H1HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (Tx x[], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_TRIG> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
     for (int i = 0; i < 3; i++) shape[i] = lam[i];
 
@@ -107,9 +107,10 @@ namespace ngfem
   /* *********************** Quadrilateral  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void H1HighOrderFE_Shape<ET_QUAD> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
+    Tx x = ip.x, y = ip.y;
+    Tx hx[2] = { x, y };
     Tx lam[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
     
     // vertex shapes
@@ -162,9 +163,9 @@ namespace ngfem
   /* *********************** Tetrahedron  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  INLINE void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (Tx x[], TFA & shape) const
+  INLINE void H1HighOrderFE_Shape<ET_TET> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lam[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 
     // vertex shapes
     for (int i = 0; i < 4; i++) shape[i] = lam[i];
@@ -208,9 +209,9 @@ namespace ngfem
   /* *********************** Prism  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  void  H1HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_PRISM> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
 
@@ -317,9 +318,9 @@ namespace ngfem
   /* *********************** Hex  **********************/
 
   template<> template<typename Tx, typename TFA>  
-  void  H1HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   { 
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     Tx lam[8]={(1-x)*(1-y)*(1-z),x*(1-y)*(1-z),x*y*(1-z),(1-x)*y*(1-z),
 		(1-x)*(1-y)*z,x*(1-y)*z,x*y*z,(1-x)*y*z}; 
@@ -389,9 +390,9 @@ namespace ngfem
   /* ******************************** Pyramid  ************************************ */
 
   template<> template<typename Tx, typename TFA>  
-  void  H1HighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void  H1HighOrderFE_Shape<ET_PYRAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z;
 
     // if (z == 1.) z -= 1e-10;
     z *= (1-1e-10);
