@@ -128,9 +128,8 @@ namespace ngla
   */
 
 
-
   template <typename FUNC>
-  INLINE void MergeArrays (FlatArray<int*> ptrs,
+  INLINE void MergeArrays1 (FlatArray<int*> ptrs,
                            FlatArray<int> sizes,
                            // FlatArray<int> minvals,
                            FUNC f)
@@ -169,11 +168,145 @@ namespace ngla
                 minvals[i] = *ptrs[i];
             }
       }
-}  
+  }  
 
 
 
 
+
+  template <typename FUNC>
+  INLINE void MergeArrays (FlatArray<int*> ptrs,
+                           FlatArray<int> sizes,
+                           FUNC f)
+  {
+    if (ptrs.Size() <= 16)
+      {
+        MergeArrays1 (ptrs, sizes, f);
+        return;
+      }
+    // static Timer tall("merge arrays"); RegionTimer reg(tall);
+    
+    struct valsrc { int val, src; };
+    struct trange { int idx, val;  };
+    
+    STACK_ARRAY(valsrc, minvals, sizes.Size());
+    int nactive = 0;
+    STACK_ARRAY(trange, ranges, sizes.Size()+1);
+    int nrange = 0;
+    
+    int nhash = 256; // power of 2
+    int hashes[nhash];
+
+    for (int i = 0; i < nhash; i++)
+      hashes[i] = -1;
+  
+    // take first value from every array ...
+    for (auto i : sizes.Range())
+      while (sizes[i]) 
+        {
+          auto val = *ptrs[i];
+          sizes[i]--;
+          ptrs[i]++;
+          if (hashes[val&(nhash-1)] == val) continue;
+          minvals[nactive].val = val;
+          hashes[val&(nhash-1)] = val;
+          minvals[nactive].src = i;
+          nactive++;
+          break;
+        }
+    // cout << "starting values " << endl << minvals << endl;
+
+    // presort minvals:
+    // values from ranges[i] up are all smaller or equal rangevals[i]
+    // minvals[j] <= rangevals[i]  <==> j >= ranges[i]   \forall i >= 0
+
+    while (nactive > 0)
+      {
+        // partial quicksort
+        int lower = 0;
+        if (nrange > 0) lower = ranges[nrange-1].idx;
+
+        // cout << "start quicksort in range [" << lower << ", " << nactive-1 << "]" << endl;
+        while (true)
+          {          
+            int firstval = minvals[lower].val;
+            int otherval = firstval;
+
+            for (int i = lower+1; i < nactive; i++)
+              {
+                if (minvals[i].val != firstval)
+                  {
+                    otherval = minvals[i].val;
+                    break;
+                  }
+              }
+
+            if (firstval == otherval)
+              { // all values in last range are the same -> presorting commplete
+                if (nrange == 0)
+                  {
+                    ranges[0].idx = 0;
+                    ranges[0].val = firstval;
+                    nrange = 1;
+                  }
+                break;
+              }
+
+            int midval = (firstval+otherval)/2;
+            // midval is not the largest value, so we find a new separation ...
+            int l = lower, r = nactive-1;
+            while (l <= r)
+              {
+                while (minvals[l].val > midval) l++;
+                while (minvals[r].val <= midval) r--;
+                if (l < r)
+                  Swap (minvals[l++], minvals[r--]);
+              }
+          
+            // elements from l up are <= midval
+            ranges[nrange].idx = l;
+            ranges[nrange].val = midval;
+            nrange++;
+          
+            lower = l;
+          }
+
+        nrange--;
+        int last = ranges[nrange].idx; 
+        f(minvals[last].val);
+      
+        // insert new values
+        FlatArray<valsrc> tmp(nactive-last, &minvals[last]);
+        nactive = last;
+
+        for (valsrc vs : tmp)
+          while (sizes[vs.src])
+            {
+              vs.val = *ptrs[vs.src];
+              sizes[vs.src]--;
+              ptrs[vs.src]++;
+
+              // take next value if already in queue
+              if (hashes[vs.val&(nhash-1)] == vs.val) continue;
+
+              int prevpos = nactive;
+              for (int i = nrange-1; i >= 0; i--)
+                {
+                  if (vs.val <= ranges[i].val)
+                    break;
+                  int pos = ranges[i].idx;
+                  minvals[prevpos] = minvals[pos];
+                  prevpos = pos;
+                  ranges[i].idx++;
+                }
+
+              minvals[prevpos] = vs;
+              hashes[vs.val&(nhash-1)] = vs.val;            
+              nactive++;
+              break;
+            }
+      }
+  }
 
 
 
@@ -217,7 +350,6 @@ namespace ngla
       ([&]() 
        {
     */
-
 
     static Timer timer("MatrixGraph");
     RegionTimer reg (timer);
