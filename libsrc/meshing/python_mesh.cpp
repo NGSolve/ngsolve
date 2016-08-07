@@ -140,6 +140,7 @@ DLL_HEADER void ExportNetgenMeshing()
                                  tmp->SetIndex(index);
                                  return tmp;
                                }
+                             throw NgException ("cannot create element");                             
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("index")=1,bp::arg("vertices"))),

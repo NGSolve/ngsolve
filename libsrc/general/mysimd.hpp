@@ -52,7 +52,7 @@ namespace netgen
       static constexpr type value = type();
   };
 
-#ifdef __AVX2__
+#ifdef __AVX__
 
   template<>
   class alignas(32) SIMD<double>
