@@ -198,7 +198,7 @@ namespace ngla
     ArrayMem<valsrc,1024> minvals(sizes.Size());
     ArrayMem<trange,1024> ranges(sizes.Size()+1);
     
-    int nhash = 256; // power of 2
+    constexpr int nhash = 1024; // power of 2
     int hashes[nhash];
 
     for (int i = 0; i < nhash; i++)
