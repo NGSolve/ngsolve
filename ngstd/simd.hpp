@@ -52,7 +52,7 @@ namespace ngstd
       static constexpr type value = type();
   };
 
-#ifdef __AVX2__
+#ifdef __AVX__
 
 #ifdef __AVX512F__
   template<>
