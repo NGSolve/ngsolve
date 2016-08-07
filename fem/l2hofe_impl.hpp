@@ -270,6 +270,12 @@ namespace ngfem
   public:
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const
+    {
+      throw Exception (string("TIP not implemented, fe = ")+typeid(*this).name());
+    }
   };
 
 
@@ -292,9 +298,9 @@ namespace ngfem
 
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_SEGM> ::
-  T_CalcShape (Tx x[], TFA & shape) const
+  T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
   {
-    Tx lam[2] = { x[0], 1-x[0] };
+    Tx lam[2] = { ip.x, 1-ip.x };
     INT<2> e = GetEdgeSort (0, vnums);
     LegendrePolynomial (order, lam[e[1]]-lam[e[0]], shape);
   }
@@ -303,6 +309,7 @@ namespace ngfem
 
   /* *********************** Triangle  **********************/
 
+  /*
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TRIG> ::
   T_CalcShape (Tx x[], TFA & shape) const
@@ -317,7 +324,32 @@ namespace ngfem
     DubinerBasis3::Eval (p, x[0], x[1], shape);
 #endif
   }
+  */
 
+
+  template<> template<typename Tx, typename TFA>  
+  void L2HighOrderFE_Shape<ET_TRIG> ::
+  T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
+  {
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
+    INT<4> f = GetFaceSort (0, vnums);
+    size_t p = order_inner[0];
+    DubinerBasis3::Eval (p, lam[f[0]], lam[f[1]], shape);
+
+    /*
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
+    size_t p = order_inner[0];
+    DubinerBasis3::Eval (p, lam[loclam[0]], lam[loclam[1]], shape);
+    */
+    /*
+    size_t p = order_inner[0];
+    DubinerBasis3::Eval (p, ip.x, ip.y, shape);    
+    */
+  }
+
+
+
+  
   /* *********************** Quad  **********************/
 
   template<> template<typename Tx, typename TFA>  
@@ -398,22 +430,27 @@ namespace ngfem
     int ii = 0;
     int order = this->order;
     LegendrePolynomial leg;
+    JacobiPolynomialAlpha jac1(1);    
     leg.EvalScaled1Assign 
       (order, lamis[2]-lamis[3], lamis[2]+lamis[3],
        SBLambda ([&](int k, Tx polz) LAMBDA_INLINE
                  {
-                   JacobiPolynomialAlpha jac(2*k+1);
-                   jac.EvalScaledMult1Assign
+                   // JacobiPolynomialAlpha jac(2*k+1);
+                   jac1.IncAlpha2();
+                   JacobiPolynomialAlpha jac2(2*k+2);
+ 
+                   jac1.EvalScaledMult1Assign
                      (order-k, lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
                       SBLambda ([&] (int j, Tx polsy) LAMBDA_INLINE
                                 {
-                                  JacobiPolynomialAlpha jac(2*(j+k)+2);
-                                  jac.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
-                                               SBLambda([&](int j, Tx val)
-                                                        {
-                                                          shape[ii] = val; 
-                                                          ii++;
-                                                        }));
+                                  // JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                  jac2.IncAlpha2();
+                                  jac2.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
+                                                       SBLambda([&](int j, Tx val)
+                                                                {
+                                                                  shape[ii] = val; 
+                                                                  ii++;
+                                                                }));
                                   
                                 }));
                  }));

@@ -64,16 +64,19 @@ namespace ngfem
 
 
 
-  int JacobiPolynomialAlpha :: maxnp;
-  int JacobiPolynomialAlpha :: maxalpha;
-  Array< Vec<4> > JacobiPolynomialAlpha :: coefs;
+  // int JacobiPolynomialAlpha :: maxnp;
+  // int JacobiPolynomialAlpha :: maxalpha;
+  // Array< Vec<4> > JacobiPolynomialAlpha :: coefs;
+  Vec<4> JacobiPolynomialAlpha :: coefs[maxnp*maxalpha];
 
 
   void JacobiPolynomialAlpha :: Calc (int n, int alpha)
   {
+
+    /*
     if (coefs.Size() < (n+1)*(alpha+1))
       {
-        coefs.SetSize ( /* 3* */ (n+1)*(alpha+1));
+        coefs.SetSize ((n+1)*(alpha+1));
 
         for (int a = 0; a <= alpha; a++)
           {
@@ -91,14 +94,32 @@ namespace ngfem
           }
 
         maxnp = n+1;
-        maxalpha = alpha;
       }
+    */
+
+
+    // compile-time fixed alpha and maxnp
+    for (int a = 0; a < alpha; a++)
+      {
+        for (int i = 1; i < maxnp; i++)
+          {
+            coefs[a*maxnp+i][0] = CalcA (i, a, 0);
+            coefs[a*maxnp+i][1] = CalcB (i, a, 0);
+            coefs[a*maxnp+i][2] = CalcC (i, a, 0);
+          }
+        // ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+        double al = a, be = 0;
+        coefs[a*maxnp+1][0] = 0.5 * (al+be+2);
+        coefs[a*maxnp+1][1] = 0.5 * (2*(al+1)-(al+be+2));
+        coefs[a*maxnp+1][2] = 0.0;
+      }
+
   }
 
 
 
   int IntegratedJacobiPolynomialAlpha :: maxn;
-  int IntegratedJacobiPolynomialAlpha :: maxalpha;
+  // int IntegratedJacobiPolynomialAlpha :: maxalpha;
   Array< Vec<4> > IntegratedJacobiPolynomialAlpha :: coefs;
 
 
@@ -124,7 +145,6 @@ namespace ngfem
           }
 
         maxn = n;
-        maxalpha = alpha;
       }
   }
 

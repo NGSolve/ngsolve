@@ -138,20 +138,24 @@ namespace ngfem
      High order finite elements for L2 of fixed order
   */
 
-
-  template <ELEMENT_TYPE ET, int ORDER> class L2HighOrderFEFO_Shapes;
+  class GenericOrientation;
+  template <int V1, int V2, int V3> class FixedOrientation;
+  
+  template <ELEMENT_TYPE ET, int ORDER, typename ORIENTATION = GenericOrientation>
+  class L2HighOrderFEFO_Shapes;
 
 
 
   template <ELEMENT_TYPE ET, int ORDER,
-            typename BASE = L2HighOrderFE<ET, L2HighOrderFEFO_Shapes<ET,ORDER> > >
+            typename ORIENTATION = GenericOrientation,
+            typename BASE = L2HighOrderFE<ET, L2HighOrderFEFO_Shapes<ET,ORDER,ORIENTATION> > >
 
   class L2HighOrderFEFO : public BASE
   {
   protected:
     // using typename BASE::T_IMPL;
     using typename BASE::T_SHAPES;
-    typedef L2HighOrderFEFO_Shapes<ET,ORDER> SHAPES;
+    typedef L2HighOrderFEFO_Shapes<ET,ORDER,ORIENTATION> SHAPES;
 
 
     enum { DIM = ET_trait<ET>::DIM };
@@ -284,9 +288,9 @@ namespace ngfem
     enum { NDOF = (ORDER+1) };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
     {
-      Tx lam[2] = { hx[0], 1-hx[0] };
+      Tx lam[2] = { ip.x, 1-ip.x };
       INT<2> e = this -> GetEdgeSort (0, vnums);
       // LegendrePolynomial_Old::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
       LegendrePolynomial::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
@@ -300,61 +304,85 @@ namespace ngfem
      High order triangular finite element
   */
   template <int ORDER>
-  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER> : public L2HighOrderFEFO<ET_TRIG, ORDER>
+  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER, GenericOrientation>
+    : public L2HighOrderFEFO<ET_TRIG, ORDER, GenericOrientation>
   {
     using L2HighOrderFEFO<ET_TRIG, ORDER>::ndof;
     using L2HighOrderFEFO<ET_TRIG, ORDER>::vnums; 
 
   public:
-
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+      Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
       INT<4> f = this -> GetFaceSort (0, vnums);
-      // DubinerBasis3::Eval (ORDER, lam[f[0]], lam[f[1]], shape);
-
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
-      
-#if (defined __ICC || defined _MSC_VER || __cplusplus <= 201103L)
-      // pre c++14, Intel and MSVC fail here...
-      LegendrePolynomial_CalcCoefficient leg;
-      // LegendrePolynomial leg;
-      Tx p1, p2, p3, p4;
 
       int ii = 0;
-      IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
-        {
-          if (iy == 0)
-	    leg.EvalScaledNext (ix, y-(1-x-y), 1-x, p1, p2);
-
-	  // JacobiPolynomialAlpha jac(1+2*ix);
-	  JacobiPolynomialNew jac(1+2*ix, 0);
-          shape[ii] = jac.EvalNextMult (iy, 2*x-1, p1, p3, p4);
-          ii++;
-        });
-#else
-      int ii = 0;
+      JacobiPolynomialAlpha jac(1);
       LegendrePolynomial::EvalScaled 
         (IC<ORDER>(), 
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
-                     JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (integral_constant<int,ORDER-i>(), 2*x-1, val, 
+                     // JacobiPolynomialFix<1+2*i,0> jac;
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
                                    SBLambda([&](auto j, Tx v2) 
                                             {
                                               shape[ii++] = v2;
                                             }));
+                     jac.IncAlpha2();
                    }));
-#endif
     }
   };
 
+
+  template <int ORDER, int V1, int V2, int V3>
+  class L2HighOrderFEFO_Shapes<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
+    : public L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
+  {
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::ndof;
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums; 
+
+  public:
+    enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    {
+      Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
+
+      INT<3> hvnums(V1,V2,V3);
+      INT<4> f = this -> GetFaceSort (0, hvnums);
+
+      Tx x = lam[f[0]];
+      Tx y = lam[f[1]];
+
+      int ii = 0;
+      JacobiPolynomialAlpha jac(1);
+      LegendrePolynomial::EvalScaled 
+        (IC<ORDER>(), 
+         y-(1-x-y), 1-x,
+         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
+                   {
+                     // JacobiPolynomialFix<1+2*i,0> jac;
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
+                     /*
+                                   SBLambda([&](auto j, Tx v2) 
+                                            {
+                                              shape[ii++] = v2;
+                                            }));
+                     */
+                     ii += IC<ORDER-i+1>();
+                     jac.IncAlpha2();
+                   }));
+    }
+  };
+  
 
 
 #ifdef FILE_L2HOFEFO_CPP
@@ -364,10 +392,10 @@ namespace ngfem
 #define L2HOFEFO_EXTERN extern
 #endif
 
+  /*
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,0>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,1>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,2>, ET_TRIG, DGFiniteElement<2>>;
-  /*
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,3>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,4>, ET_TRIG, DGFiniteElement<2>>;
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,5>, ET_TRIG, DGFiniteElement<2>>;
@@ -376,11 +404,10 @@ namespace ngfem
   L2HOFEFO_EXTERN template class T_ScalarFiniteElement< L2HighOrderFEFO_Shapes<ET_TRIG,8>, ET_TRIG, DGFiniteElement<2>>;
   */
   
-
+  /*
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,0>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,1>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,2>>;
-  /*
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,3>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,4>>;
   L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,5>>;
@@ -391,10 +418,10 @@ namespace ngfem
   // L2HOFEFO_EXTERN template class L2HighOrderFE<ET_TRIG, L2HighOrderFEFO_Shapes<ET_TRIG,10>>;
   */
 
+  /*
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,0>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,1>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,2>;
-  /*
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,3>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,4>;
   L2HOFEFO_EXTERN template class L2HighOrderFEFO<ET_TRIG,5>;

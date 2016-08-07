@@ -75,6 +75,8 @@ namespace ngfem
 #endif
 
   public:
+    // int loclam[2] = { 0, 1 };
+    
     INLINE L2HighOrderFE () { ; }
     INLINE L2HighOrderFE (int aorder)
     {
@@ -189,8 +191,8 @@ namespace ngfem
 namespace ngfem
 {
   L2HOFE_EXTERN template class L2HighOrderFE<ET_POINT>;
-  L2HOFE_EXTERN template class L2HighOrderFE<ET_SEGM>;
-  L2HOFE_EXTERN template class L2HighOrderFE<ET_TRIG>;
+  extern template class L2HighOrderFE<ET_SEGM>;
+  extern template class L2HighOrderFE<ET_TRIG>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_QUAD>;
 
   L2HOFE_EXTERN template class L2HighOrderFE<ET_TET>;
@@ -199,8 +201,8 @@ namespace ngfem
   L2HOFE_EXTERN template class L2HighOrderFE<ET_HEX>;
 
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_POINT>, ET_POINT, DGFiniteElement<0> >;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
-  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_SEGM>, ET_SEGM, DGFiniteElement<1> >;
+  extern template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TRIG>, ET_TRIG, DGFiniteElement<2> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_QUAD>, ET_QUAD, DGFiniteElement<2> >;
 
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_TET>, ET_TET, DGFiniteElement<3> >;
