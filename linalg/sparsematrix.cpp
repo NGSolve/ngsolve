@@ -189,10 +189,14 @@ namespace ngla
     struct valsrc { int val, src; };
     struct trange { int idx, val;  };
     
-    STACK_ARRAY(valsrc, minvals, sizes.Size());
     int nactive = 0;
-    STACK_ARRAY(trange, ranges, sizes.Size()+1);
     int nrange = 0;
+    /*
+    STACK_ARRAY(valsrc, minvals, sizes.Size());
+    STACK_ARRAY(trange, ranges, sizes.Size()+1);
+    */
+    ArrayMem<valsrc,1024> minvals(sizes.Size());
+    ArrayMem<trange,1024> ranges(sizes.Size()+1);
     
     int nhash = 256; // power of 2
     int hashes[nhash];
