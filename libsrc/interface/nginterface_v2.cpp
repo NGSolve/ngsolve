@@ -600,7 +600,7 @@ namespace netgen
 
 
 
-#ifdef __AVX2__
+#ifdef __AVX__
 #include <immintrin.h>
   
   template<> DLL_HEADER void Ngx_Mesh :: 
