@@ -2,7 +2,28 @@
 using namespace ngbla;
 
 
+#if defined(__AVX__)
+
+
+
 #if defined(__AVX2__)
+INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+{
+  return _mm256_cmpgt_epi64 (a,b);
+}
+#else
+INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
+{
+  __m128i rlo = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 0),
+				_mm256_extractf128_si256(b, 0));
+  __m128i rhi = _mm_cmpgt_epi64(_mm256_extractf128_si256(a, 1),
+				_mm256_extractf128_si256(b, 1));
+  return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
+}
+#endif
+
+
+
 
 
 INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
@@ -186,8 +207,8 @@ INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
     if (a.Width() != 4*a.VWidth())
       {
         int r = 4*a.VWidth()-a.Width();
-        __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                          _mm256_set_epi64x(0,1,2,3));
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+					    _mm256_set_epi64x(0,1,2,3));
         /*
           __m256i mask;
           switch (r)
@@ -266,8 +287,8 @@ INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
     if (a.Width() != 4*a.VWidth())
       {
         int r = 4*a.VWidth()-a.Width();
-        __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                          _mm256_set_epi64x(0,1,2,3));
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+					    _mm256_set_epi64x(0,1,2,3));
 
         __m256d zero = _mm256_setzero_pd();
         for (int i = 0; i < a.Height(); i++)
@@ -394,8 +415,8 @@ INLINE __m256d HAdd (__m256d v1, __m256d v2, __m256d v3, __m256d v4)
     if (a.Width() != 4*a.VWidth())
       {
         int r = 4*a.VWidth()-a.Width();
-        __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
-                                          _mm256_set_epi64x(0,1,2,3));
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(r),
+					    _mm256_set_epi64x(0,1,2,3));
 
         __m256d zero = _mm256_setzero_pd();
         for (int i = 0; i < a.Height(); i++)
@@ -921,8 +942,8 @@ void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex
 INLINE
 void MultMatMat4(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
 {
-  __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
-                                    _mm256_set_epi64x(3, 2, 1, 0));
+  __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(b.Width()),
+				      _mm256_set_epi64x(3, 2, 1, 0));
 
   /*
   __m256i mask;
@@ -1203,8 +1224,8 @@ void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c)
 
   if (rest)
     {
-      __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x(4-rest),
-                                        _mm256_set_epi64x(3, 2, 1, 0));
+      __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(4-rest),
+					  _mm256_set_epi64x(3, 2, 1, 0));
 
       __m256d md = _mm256_maskload_pd((double*)&diag.Get(loops), mask);
 

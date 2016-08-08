@@ -435,7 +435,7 @@ void MultMatDiagMat(TA a, TB diag, TC c)
 }
 
 
-#if defined(__AVX2__)
+#if defined(__AVX__)
 
 
 extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
