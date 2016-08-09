@@ -268,14 +268,16 @@ namespace ngfem
     using L2HighOrderFE<ET>::GetFaceSort;
     using L2HighOrderFE<ET>::GetEdgeSort;
   public:
-    template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
+    // template<typename Tx, typename TFA>  
+    // INLINE void T_CalcShape (Tx hx[], TFA & shape) const;
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (TIP<ET_trait<ET>::DIM,Tx> ip, TFA & shape) const;
+    /*
     {
       throw Exception (string("TIP not implemented, fe = ")+typeid(*this).name());
     }
+    */
   };
 
 
@@ -354,9 +356,9 @@ namespace ngfem
 
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_QUAD> ::
-  T_CalcShape (Tx hx[], TFA & shape) const
+  T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1];
+    Tx x = ip.x, y = ip.y;
     Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
     
     INT<4> f = GetFaceSort (0, vnums);  
@@ -384,9 +386,9 @@ namespace ngfem
 
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_TET> ::
-  T_CalcShape (Tx x[], TFA & shape) const
+  T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };
+    Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
     unsigned char sort[4] = { 0, 1, 2, 3 };
     
     if (vnums[sort[0]] > vnums[sort[1]]) Swap (sort[0], sort[1]);
@@ -467,9 +469,9 @@ namespace ngfem
 
   template<> template<typename Tx, typename TFA>  
   void  L2HighOrderFE_Shape<ET_PRISM> ::
-  T_CalcShape (Tx hx[], TFA & shape) const
+  T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lami[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lami[3] = { ip.x, ip.y, 1-ip.x-ip.y }; // hx[0], hx[1], 1-hx[0]-hx[1] };
 
     int sort[3];
     for (int i = 0; i < 3; i++) sort[i] = i;
@@ -484,7 +486,7 @@ namespace ngfem
 
     Tx x = lamis[0];
     // Tx y = lamis[1];
-    Tx z = hx[2];
+    Tx z = ip.z; // hx[2];
 
     int p=order_inner[0];
     int q=order_inner[1];
@@ -518,11 +520,11 @@ namespace ngfem
 
   template<> template<typename Tx, typename TFA>  
   void L2HighOrderFE_Shape<ET_PYRAMID> :: 
-  T_CalcShape (Tx hx[], TFA & shape) const
+  T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
-    Tx z = hx[2];
+    Tx x = ip.x;
+    Tx y = ip.y;
+    Tx z = ip.z;
 
     // if (z == 1) z -= 1e-8;
     z *= (1-1e-8);
@@ -559,9 +561,9 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void L2HighOrderFE_Shape<ET_HEX> :: T_CalcShape (Tx hx[], TFA & shape) const
+  void L2HighOrderFE_Shape<ET_HEX> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx x = hx[0], y = hx[1], z = hx[2];
+    Tx x = ip.x, y = ip.y, z = ip.z; 
     
     // no orientation necessary
     int p=order_inner[0];
