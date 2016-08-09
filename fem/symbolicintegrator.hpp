@@ -101,8 +101,13 @@ public:
 
   shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
   {
-    if (additional_diffops.Used(name))    
-      return make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+    if (additional_diffops.Used(name))
+    {
+      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+      if (is_other)
+        adddiffop->is_other = true;
+      return adddiffop;
+    }
     return shared_ptr<ProxyFunction>();
   }
 
