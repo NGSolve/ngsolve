@@ -21,7 +21,7 @@ namespace ngfem
     DGFiniteElement<2> * hofe = 0;
 
     // now we orient trigs such that the first vertex is the lowest
-    if (vnums[0] < vnums[1])
+    if (vnums[0] < vnums[1] && vnums[0] < vnums[2] )
       {
         if (vnums[1] < vnums[2])
           {
