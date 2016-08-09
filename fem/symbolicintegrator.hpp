@@ -74,6 +74,10 @@ public:
     if (other->deriv_proxy)
       other->deriv_proxy->is_other = true;
     other->boundary_values = _boundary_values;
+
+    for (int i = 0; i < additional_diffops.Size(); i++)
+      other->SetAdditionalEvaluator (additional_diffops.GetName(i), additional_diffops[i]);
+    
     return other;
   }
   const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
