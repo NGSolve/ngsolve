@@ -3757,7 +3757,8 @@ namespace netgen
 	// Mat<3,2> dxdxic;
 	if (dxdxi)
 	  {
-	    MatrixFixWidth<2,T> dlami(4);
+            T mem_dlami[8]; // avoid alignment problems if T is SIMD
+	    MatrixFixWidth<2,T> dlami(4, mem_dlami);
 	    dlami = T(0.0);
 
 	    for (int pi = 0; pi < npts; pi++)
