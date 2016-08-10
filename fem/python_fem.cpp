@@ -671,13 +671,9 @@ void ExportCoefficientFunction()
             return UnaryOpCF (coef, GenericBSpline(sp), GenericBSpline(sp));
           }))
     .def("Integrate", 
-         FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Integrate()); }),
-         bp::return_value_policy<bp::manage_new_object>()
-         )
+         FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))
     .def("Differentiate", 
-         FunctionPointer([](const BSpline & sp) { return new BSpline(sp.Differentiate()); }),
-         bp::return_value_policy<bp::manage_new_object>()
-         )
+         FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }))
     ;
 }
 
