@@ -31,7 +31,7 @@ namespace ngfem
     }
 
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx x[1], TFA & shape);
+    static INLINE void T_CalcShape (TIP<ngfem::Dim(ET),Tx> ip, TFA & shape);
   };
   
   /*
@@ -47,7 +47,7 @@ namespace ngfem
   */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_POINT,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_POINT,0> :: T_CalcShape (TIP<0,Tx> ip, TFA & shape) 
   {
     shape[0] = 1.0;
   }
@@ -66,7 +66,7 @@ namespace ngfem
   }; 
   */
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_SEGM,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_SEGM,0> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
   {
     shape[0] = 1.0;
   }
@@ -88,10 +88,10 @@ namespace ngfem
   */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_SEGM,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_SEGM,1> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
   {
-    shape[0] = hx[0];
-    shape[1] = 1-hx[0];
+    shape[0] = ip.x;
+    shape[1] = 1-ip.x;
   }
   using FE_Segm1 = ScalarFE<ET_SEGM,1>;
 
@@ -113,9 +113,9 @@ namespace ngfem
   }; 
   */
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_SEGM,2> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_SEGM,2> :: T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
   {
-    Tx x = hx[0];
+    Tx x = ip.x;
     shape[0] = 2*x*x - x;
     shape[1] = 2*x*x - 3*x + 1;  
     shape[2] = 4 * x * (1-x);
@@ -128,9 +128,9 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
+      Tx x = ip.x;
 
       shape[0] = x;
       shape[1] = 1-x;
@@ -144,10 +144,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx x[1], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
       shape[0] = 1;
-      shape[1] = 2*x[0]-1;
+      shape[1] = 2*ip.x-1;
     }
   }; 
 
@@ -156,9 +156,9 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
+      Tx x = ip.x;
 
       shape[0] = 1;
       shape[1] = 2*x-1;
@@ -171,7 +171,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -182,9 +182,9 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
+      Tx x = ip.x;
       Tx lam2 = 1-x;
 
       shape[0] = x;
@@ -201,9 +201,9 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[1], TFA & shape) 
+      static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
+      Tx x = ip.x;
       // Tx lam2 = 1-x;
 
       // very primitive ...
@@ -244,7 +244,7 @@ namespace ngfem
   */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TRIG,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_TRIG,0> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
     shape[0] = 1.0;
   }
@@ -266,10 +266,10 @@ namespace ngfem
   }; 
   */
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TRIG,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_TRIG,1> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
+    Tx x = ip.x;
+    Tx y = ip.y;
 
     shape[0] = x;
     shape[1] = y;      
@@ -300,10 +300,10 @@ namespace ngfem
   */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TRIG,2> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_TRIG,2> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
-      Tx x = hx[0];
-      Tx y = hx[1];
+      Tx x = ip.x;
+      Tx y = ip.y;
       Tx lam3 = 1-x-y;
     
       shape[0] = x * (2*x-1);
@@ -321,10 +321,10 @@ namespace ngfem
   public:
     FE_Trig2HB() { ndof = 6; order = 2;}
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx hx[2], TFA & shape) const
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
+      Tx x = ip.x;
+      Tx y = ip.y;
       Tx lam3 = 1-x-y;
     
       shape[0] = x;
@@ -343,10 +343,10 @@ namespace ngfem
   public:
     FE_NcTrig1() { ndof = 3; order = 1;}
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
+      Tx x = ip.x;
+      Tx y = ip.y;
       Tx lam3 = 1-x-y;
     
       shape[0] = 1-2*y;
@@ -361,7 +361,7 @@ namespace ngfem
   /* ***************************** Quad *************************************** */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_QUAD,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_QUAD,0> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
     shape[0] = 1.0;
   }
@@ -397,10 +397,10 @@ namespace ngfem
   */
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_QUAD,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_QUAD,1> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
+    Tx x = ip.x;
+    Tx y = ip.y;
     
     shape[0] = (1-x) * (1-y);
     shape[1] =    x  * (1-y);
@@ -414,10 +414,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
+      Tx x = ip.x;
+      Tx y = ip.y;
 
       Vec<3,Tx> px, py;
       px(0) = (1-x) * (1-2*x);
@@ -439,10 +439,10 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
+      Tx x = ip.x;
+      Tx y = ip.y;
 
       shape[0] = (1-x)*(1-2*x) * (1-y);
       shape[1] = x*(2*x-1) * (1-y);
@@ -471,17 +471,17 @@ namespace ngfem
   };
   */
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TET,0> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_TET,0> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
   {
     shape[0] = 1.0;
   }
 
   template<> template<typename Tx, typename TFA>  
-  void ScalarFE<ET_TET,1> :: T_CalcShape (Tx hx[], TFA & shape) 
+  void ScalarFE<ET_TET,1> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
   {
-    Tx x = hx[0];
-    Tx y = hx[1];
-    Tx z = hx[2];
+    Tx x = ip.x;
+    Tx y = ip.y;
+    Tx z = ip.z;
     
     shape[0] = x;
     shape[1] = y;
@@ -513,11 +513,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       Tx lam4 = 1 - x - y - z;
     
       shape[0] = 2 * x * x - x;  
@@ -541,11 +541,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       Tx lam4 = 1 - x - y - z;
 
       shape[0] = x;
@@ -568,11 +568,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[2], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       Tx lam4 = 1-x-y-z;
     
       shape[0] = 1-2*x;
@@ -590,7 +590,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
       shape[0] = Tx(1);
     }
@@ -601,11 +601,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       
       shape[0] = x * (1-z);
       shape[1] = y * (1-z);
@@ -622,11 +622,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       
 
       shape[0] = x * (1-z);
@@ -659,11 +659,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       
       Tx lam3 = 1-x-y;
       
@@ -689,11 +689,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
       
       shape[0] = x * (1-z);
       shape[1] = y * (1-z);
@@ -725,7 +725,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
       shape[0] = Tx(1);
     }
@@ -736,11 +736,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
 
       shape[0] = (1-x) * (1-y) * (1-z);
       shape[1] =    x  * (1-y) * (1-z);
@@ -764,7 +764,7 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
       shape[0] = 1;
     }
@@ -776,11 +776,11 @@ namespace ngfem
   {
   public:
     template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (Tx hx[3], TFA & shape) 
+    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
     {
-      Tx x = hx[0];
-      Tx y = hx[1];
-      Tx z = hx[2];
+      Tx x = ip.x;
+      Tx y = ip.y;
+      Tx z = ip.z;
 
       // if (z == 1) z -= 1e-10;
       z -= 1e-10;

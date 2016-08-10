@@ -1,3 +1,3 @@
-FROM netgen_installed:15.10
+FROM netgen_master_installed:15.10
 MAINTAINER Matthias Hochsteger <matthias.hochsteger@tuwien.ac.at>
 ADD . /root/src/ngsolve

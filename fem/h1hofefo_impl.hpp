@@ -42,9 +42,9 @@ namespace ngfem
 
 
   template <int ORDER>   template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TRIG, ORDER> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void H1HighOrderFEFO<ET_TRIG, ORDER> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
     for (int i = 0; i < 3; i++) shape[i] = lam[i];
 
@@ -70,9 +70,9 @@ namespace ngfem
   }
 
   template <>   template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TRIG, 2> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void H1HighOrderFEFO<ET_TRIG, 2> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
     for (int i = 0; i < 3; i++) shape[i] = lam[i];
     
     int ii = 3;
@@ -85,9 +85,9 @@ namespace ngfem
   }
 
   template <> template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TRIG, 1> :: T_CalcShape (Tx hx[2], TFA & shape) const
+  void H1HighOrderFEFO<ET_TRIG, 1> :: T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
   {
-    Tx lam[3] = { hx[0], hx[1], 1-hx[0]-hx[1] };
+    Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
     for (int i = 0; i < 3; i++) shape[i] = lam[i];
   }
 
@@ -99,9 +99,9 @@ namespace ngfem
 
   
   template <int ORDER>   template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TET, ORDER> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void H1HighOrderFEFO<ET_TET, ORDER> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 
     for (int i = 0; i < 4; i++) shape[i] = lam[i];
 
@@ -136,9 +136,10 @@ namespace ngfem
 
 
   template <> template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TET, 2> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void H1HighOrderFEFO<ET_TET, 2> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+    // Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };    
 
     for (int i = 0; i < 4; i++) shape[i] = lam[i];
 
@@ -154,9 +155,10 @@ namespace ngfem
 
 
   template <>   template<typename Tx, typename TFA>  
-  void H1HighOrderFEFO<ET_TET, 3> :: T_CalcShape (Tx hx[3], TFA & shape) const
+  void H1HighOrderFEFO<ET_TET, 3> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
+    Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };    
+    // Tx lam[4] = { hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };    
 
     for (int i = 0; i < 4; i++) shape[i] = lam[i];
 

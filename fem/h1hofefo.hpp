@@ -50,7 +50,7 @@ namespace ngfem
     }
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx x[2], TFA & shape) const; 
+    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const; 
   };
 
 
@@ -87,7 +87,7 @@ namespace ngfem
     }
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (Tx x[3], TFA & shape) const; 
+    INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const; 
   };
 
 

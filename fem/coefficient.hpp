@@ -353,7 +353,7 @@ namespace ngfem
 
 
   ///
-                                                           // template <int DIM>
+  // template <int DIM>
   class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
   {
     Array<shared_ptr<EvalFunction>> fun;
@@ -655,7 +655,7 @@ namespace ngfem
 
 
   // *************************** CoefficientFunction Algebra ********************************
-
+#ifndef __AVX512F__
 template <typename OP, typename OPC> 
 class cl_UnaryOpCF : public CoefficientFunction
 {
@@ -993,7 +993,7 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, values.Height()*values.VWidth());
-    AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0].Data());
+    AFlatMatrix<double> temp(values.Height(), values.Width(), &hmem[0]);
 
     c1->Evaluate (ir, values);
     c2->Evaluate (ir, temp);
@@ -1167,7 +1167,6 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 }
 
 
-
 class ComponentCoefficientFunction : public CoefficientFunction
 {
   shared_ptr<CoefficientFunction> c1;
@@ -1248,7 +1247,7 @@ public:
   virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
   {
     STACK_ARRAY(SIMD<double>, hmem, ir.Size()*dim1);
-    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0].Data());
+    AFlatMatrix<double> temp(dim1, ir.IR().GetNIP(), &hmem[0]);
     
     c1->Evaluate (ir, temp);
     values.Row(0) = temp.Row(comp);
@@ -1748,6 +1747,7 @@ public:
   
 };
 
+#endif
 
 
 

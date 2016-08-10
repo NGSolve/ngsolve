@@ -84,7 +84,7 @@ namespace ngfem
   };
 
   template <typename FUNC, typename FUNC2> 
-  INLINE Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
+  INLINE const Class_SBLambdaDuo<FUNC, FUNC2> SBLambdaDuo (FUNC f, FUNC2 f2)
   {
     return Class_SBLambdaDuo<FUNC,FUNC2> (f, f2);
   }
@@ -243,7 +243,7 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          // S pnew = REC::A(i) * x * p1 + REC::C(i) * p2;
+          // S pnew = REC::A(i) * x * p1 + REC::C(i) * p2; // maybe ?
           // S pnew = FMA(REC::C(i), p2, REC::A(i) * x * p1);  // bad
           S pnew = FMA(REC::A(i) * x, p1, REC::C(i) * p2);  // good
           p2 = p1;
@@ -324,9 +324,13 @@ namespace ngfem
     {
       if (REC::ZERO_B)
 	{
+          /*
 	  p1 *= REC::C(i);
 	  p1 += REC::A(i) * x * p2;
 	  return p1;
+          */
+          p1 = FMA (REC::A(i)*x, p2, REC::C(i)*p1);
+          return p1;
 	}
       else
 	{
@@ -339,11 +343,20 @@ namespace ngfem
     template <typename TI, class S, class Sy>
     INLINE static S EvalScaledNextTicTac2 (TI i, S x, Sy y, S & p1, S & p2)
     {
-      p1 = (y*y) * REC::C(i) * p1;
+      // p1 = (y*y) * REC::C(i) * p1;
       if (REC::ZERO_B)
-        p1 += REC::A(i) * x * p2;
+        {
+          // p1 = (y*y) * REC::C(i) * p1;
+          // p1 += REC::A(i) * x * p2;
+          double a = REC::A(i);
+          double c = REC::C(i);
+          p1 = FMA(a*x, p2, c*(y*y)*p1);
+        }
       else
-        p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+        {
+          p1 = (y*y) * REC::C(i) * p1;
+          p1 += (REC::A(i) * x + REC::B(i) * y) * p2;
+        }
       return p1;
     }
 
@@ -394,7 +407,8 @@ namespace ngfem
     {
       if (REC::ZERO_B)
         {
-          S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          // S pnew = REC::A(i) * x * p1 + REC::C(i) * (y*y)*p2;
+          S pnew = FMA( REC::A(i)*x, p1, REC::C(i)*(y*y)*p2);
           p2 = p1;
           p1 = pnew;
         }
@@ -485,16 +499,21 @@ namespace ngfem
     template <typename TI, class S, class Sc, class T1, class T2>
     INLINE static void EvalMult (TI n, S x, Sc c, const Class_SBLambdaDuo<T1,T2> & values) 
     {
+      /*
       S p1, p2;
-
       if (n < 0) return;
-
       values[0] = EvalNextMultTicTac(0, x, c, p1, p2);
       if (n < 1) return;
-
       values[1] = EvalNextMultTicTac(1, x, c, p2, p1);
       if (n < 2) return;
+      */
+      
+      S p1(c * REC::P0(x));
+      S p2 = c * REC::P1(x);
 
+      if (n < 0) return;
+      if (n == 0) { values [0] = p1; return; }
+      values (0, p1, 1, p2);
       TI i = 2;
       for ( ; i < n; i+=2)
 	{	
@@ -594,6 +613,18 @@ namespace ngfem
     }
 
 
+    template <int N, class S, class Sy, class Sc, class T>
+    INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
+    {
+      S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    EvalScaledNext2 (i+2, x, y, p1, p2);
+                  });
+    }  
+
+    
     template <typename TI, class S, class Sy, class T>
     INLINE static void EvalScaled1Assign (TI n, S x, Sy y, T && values)
     {
@@ -605,11 +636,29 @@ namespace ngfem
     INLINE static void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
-      for (TI i = 0; i <= n; i++)
+      if (n < 0) return;
+
+      TI i = 0;
+      while (true)
         {
 	  values[i] = p2;
+          if (i == n) break;
           EvalScaledNext2 (i+2, x, y, p1, p2);
+          i++;
         }
+
+      /*
+      TI i = 0;
+      goto lab1;
+      while (i <= n)
+        {
+          EvalScaledNext2 (i+1, x, y, p1, p2);
+        lab1:
+	  values[i] = p2;
+          i++;
+        }
+      */
+      
     }
 
 
@@ -712,7 +761,7 @@ namespace ngfem
 	{
           // S pnew = (Cast().A(i) * x + Cast().B(i)) * p1 + Cast().C(i)*p2;
           // S pnew = FMA(Cast().C(i), p2, (Cast().A(i) * x + Cast().B(i)) * p1); // bad
-          S pnew = FMA(Cast().A(i) * x + Cast().B(i), p1, Cast().C(i) * p2);  // good          
+          S pnew = FMA( FMA( S(Cast().A(i)), x, S(Cast().B(i))), p1, Cast().C(i) * p2);  // good          
           /*
           S axpb = (Cast().A(i) * x + Cast().B(i));
           S hv = Cast().C(i)*p2;
@@ -791,13 +840,7 @@ namespace ngfem
 	  p1 *= c;
 	  p1 += (a * x + b) * p2;
           */
-          /*
-          S axpb = (a * x + b);
-          S hv = c*p1;
-          // p1 = hv + axpb * p2;
-          p1 = FMA(axpb, p2, hv);
-          */
-          p1 = FMA(a*x+b, p2, c*p1);          
+          p1 = FMA(FMA(S(a),x,S(b)), p2, c*p1);
 	  return p1;
 	}
     }
@@ -851,14 +894,14 @@ namespace ngfem
       if (REC::ZERO_B)
         {
           S pnew = Cast().A(i) * x * p1 + Cast().C(i) * (y*y)*p2;
-          pnew *= 1.0 / Cast().D(i);
+          // pnew *= 1.0 / Cast().D(i);
           p2 = p1;
           p1 = pnew;
         }
       else
         {
           S pnew = (Cast().A(i) * x + Cast().B(i) * y) * p1 + Cast().C(i) * (y*y)*p2;
-          pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
+          // pnew *= 1.0 / static_cast<const REC&>(*this).D(i);
           p2 = p1;
           p1 = pnew;
         }
@@ -940,7 +983,7 @@ namespace ngfem
 	}
       */
 
-
+      /*
       // leading !!!!
       // if (n < 0) return;
       S p1(c * static_cast<const REC&>(*this).P0(x));
@@ -956,7 +999,31 @@ namespace ngfem
           if (i == n) break;
 	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
 	}
+      */
 
+
+      // if (n < 0) return;
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      values[0] = p1;
+      if (n < 1) return;
+
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+      values[1] = p2;
+
+      TI i = 2;
+      if ( (n&1) == 0)
+        {
+          values[i] = EvalNext2 (i, x, p2, p1);
+          i++;
+        }
+      for ( ; i < n; i+=2)
+	{	
+	  values[i] = EvalNextTicTac2 (i, x, p1, p2);
+	  values[i+1] = EvalNextTicTac2 (i+1, x, p2, p1);
+	}
+
+
+      
       /*
       // if (n < 0) return;
       S p1(c * static_cast<const REC&>(*this).P0(x));
@@ -1002,6 +1069,41 @@ namespace ngfem
       */
     }
 
+    template <int N, class S, class Sc, class T>
+    INLINE void EvalMult (IC<N> n, S x, Sc c, T && values) const
+    {
+      // S p1(c*REC::P1(x)), p2(c * REC::P0(x));
+
+      S p2(c * static_cast<const REC&>(*this).P0(x));
+      S p1(c * static_cast<const REC&>(*this).P1(x));
+      
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    this->EvalNext2 (i+2, x, p1, p2);
+                  });
+    }
+
+    template <int N, class S, class Sc, class T1, class T2>
+    INLINE void EvalMult (IC<N> n, S x, Sc c, Class_SBLambdaDuo<T1,T2> && values) const
+    {
+      S p1(c * static_cast<const REC&>(*this).P0(x));
+      S p2(c * static_cast<const REC&>(*this).P1(x));
+
+      size_t i = 0;
+      for ( ; i < n; i+=2)
+	{	
+          values (i, p1, i+1, p2);
+	  EvalNextTicTac2 (i+2, x, p1, p2);
+	  EvalNextTicTac2 (i+3, x, p2, p1);
+	}
+      if (i == n)
+        values[n] = p1;
+    }
+    
+
+
+    
     template <typename TI, class S, class Sc, class T>
     INLINE void EvalMult1Assign (TI n, S x, Sc c, T && values) const
     {
@@ -1067,6 +1169,17 @@ namespace ngfem
         values[i] = EvalScaledNext2 (i, x, y, p1, p2);
     }
 
+    template <int N, class S, class Sy, class Sc, class T>
+    INLINE void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values) const
+    {
+      S p1(c*Cast().P1(x,y)), p2(c * Cast().P0(x));
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    this->EvalScaledNext2 (i+2, x, y, p1, p2);
+                  });
+    }  
+    
     template <typename TI, class S, class Sy, class Sc, class T>
     INLINE void EvalScaledMult1Assign (TI n, S x, Sy y, Sc c, T && values) const
     {
@@ -1146,6 +1259,7 @@ namespace ngfem
     }
 
     static void Calc (int n);
+    static FlatArray<Vec<2>> GetCoefs() { return coefs; }
 
     template <class S>
     static INLINE double P0(S x)  { return 1.0; }
@@ -1184,7 +1298,28 @@ namespace ngfem
   };
 
 
+  class LegendrePolynomialNonStatic : public RecursivePolynomialNonStatic<LegendrePolynomialNonStatic>
+  {
+    FlatArray<Vec<2>> coefs;
+  public:
+    LegendrePolynomialNonStatic ()
+      : coefs(LegendrePolynomial::GetCoefs()) { ; }
 
+    template <class S>
+    INLINE double P0(S x) const { return 1.0; }
+    template <class S>
+    INLINE S P1(S x) const { return x; }
+    template <class S, class Sy>
+    INLINE S P1(S x, Sy y) const { return P1(x); }
+    
+    template <typename TI>
+    INLINE double A (TI i) const { return coefs[i][0]; } 
+    template <typename TI>
+    INLINE double B (TI i) const { return 0; }
+    template <typename TI>    
+    INLINE double C (TI i) const { return coefs[i][1]; } 
+  };
+  
 
 #ifdef __CUDACC__    
   extern __device__ Vec<2> * intlegnobubble_coefs;
@@ -1367,16 +1502,22 @@ namespace ngfem
   extern __device__ int jacobialpha_maxn;
 #endif
 
+  
   class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>
   {
   public:
 #ifndef __CUDA_ARCH__
+    /*
     static Array< Vec<4> > coefs;
-    static int maxnp, maxalpha;
+    static int maxnp;
+    */
+    static constexpr int maxnp = 128;
+    static constexpr int maxalpha = 128;
+    static Vec<4> coefs[maxnp*maxalpha];
 #else
     int alpha;
 #endif
-
+    size_t n2;
     Vec<4> * coefsal;
   public:
     INLINE JacobiPolynomialAlpha (int a) 
@@ -1384,6 +1525,7 @@ namespace ngfem
       // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
       coefsal = &coefs[a*maxnp];
+      n2 = 2*maxnp;
 #else
       alpha = a;
       // coefsal = &jacobialpha_coefs[alpha*(jacobialpha_maxn+1)];      
@@ -1399,10 +1541,11 @@ namespace ngfem
 #else
       alpha(a);
 #endif
+      n2 = 2*maxnp;
       Eval (n, x, values);
     }
 
-    void IncAlpha2 () { coefsal += 2*maxnp; }
+    void IncAlpha2 () { coefsal += n2; }
     static void Calc (int n, int maxalpha);
 
     template <class S>
@@ -1411,16 +1554,16 @@ namespace ngfem
     INLINE S P1(S x) const 
     { 
 #ifndef __CUDA_ARCH__
-      return coefsal[1][0]*x+coefsal[1][1]; 
+      return FMA (S(coefsal[1][0]),x,S(coefsal[1][1])); 
 #else
-      return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1];
+      return FMA (S(jacobialpha_coefs[alpha][1][0]), x, jacobialpha_coefs[alpha][1][1]);
 #endif
     }
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
 #ifndef __CUDA_ARCH__
-      return coefsal[1][0]*x+coefsal[1][1]*y; 
+      return FMA(S(coefsal[1][0]),x,coefsal[1][1]*y);
 #else
       return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1]*y;
 #endif
@@ -1530,7 +1673,7 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
   public:
     static Array< Vec<4> > coefs;
     int alpha;
-    static int maxn, maxalpha;
+    static int maxn;
     Vec<4> * coefsal;
 
   public:
@@ -2441,11 +2584,16 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
             SBLambda ([&] (TI i, S val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialAlpha jac(1+2*i);
+
+                     /*
                      jac.EvalMult (n-i, 2*x-1, val, 
                                    SBLambda([&](int j, S v2) 
                                             {
                                               values[ii++] = v2;
                                             }));
+                     */
+                     jac.EvalMult (n-i, 2*x-1, val, values+ii);
+                     ii += n-i+1;
                      jac.IncAlpha2();
                    }));
     }
