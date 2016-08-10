@@ -74,6 +74,10 @@ public:
     if (other->deriv_proxy)
       other->deriv_proxy->is_other = true;
     other->boundary_values = _boundary_values;
+
+    for (int i = 0; i < additional_diffops.Size(); i++)
+      other->SetAdditionalEvaluator (additional_diffops.GetName(i), additional_diffops[i]);
+    
     return other;
   }
   const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
@@ -97,8 +101,13 @@ public:
 
   shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const
   {
-    if (additional_diffops.Used(name))    
-      return make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+    if (additional_diffops.Used(name))
+    {
+      auto adddiffop = make_shared<ProxyFunction> (testfunction, is_complex, additional_diffops[name], nullptr, nullptr, nullptr);
+      if (is_other)
+        adddiffop->is_other = true;
+      return adddiffop;
+    }
     return shared_ptr<ProxyFunction>();
   }
 
