@@ -28,8 +28,12 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcShape (const IntegrationPoint & ip, SliceVector<> shape) const
   {
+    /*
     Vec<DIM> pt = ip.Point();
-    T_CalcShape (&pt(0), shape);
+    T_CalcShape (TIP<DIM,double> (ip), shape);
+    */
+    TIP<DIM,double> pt = ip;
+    T_CalcShape (pt, shape);    
   }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
@@ -37,9 +41,11 @@ namespace ngfem
   CalcDShape (const IntegrationPoint & ip, 
               SliceMatrix<> dshape) const
   {
-    Vec<DIM, AutoDiff<DIM> > adp = ip; 
-    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
-                                    { shape.StoreGradient (&dshape(i,0)) ; }));
+    // Vec<DIM, AutoDiff<DIM> > adp = ip;
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
+    T_CalcShape (tip, // TIP<DIM,AutoDiff<DIM>> (ip),
+                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                           { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 
 #ifndef FASTCOMPILE
@@ -50,8 +56,12 @@ namespace ngfem
   {
     for (int i = 0; i < ir.Size(); i++)
       {
+        /*
 	Vec<DIM> pt = ir[i].Point();
-	T_CalcShape (&pt(0), shape.Col(i));
+	T_CalcShape (TIP<DIM,double> (pt), shape.Col(i));
+        */
+        // TIP<DIM,double> pt = ir[i];
+	T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
       }
   }
 
@@ -60,10 +70,10 @@ namespace ngfem
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
   {
-    Vec<DIM> pt = ip.Point();
+    // Vec<DIM> pt = ip.Point();
 
     double sum = 0;
-    T_CalcShape (&pt(0), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
+    T_CalcShape (TIP<DIM,double> (ip), SBLambda ( [&](int i, double val) { sum += x(i)*val; } ));
     return sum;
   }  
 
@@ -74,10 +84,11 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM> pt = ir[i].Point();
-
+        // Vec<DIM> pt = ir[i].Point();
+        TIP<DIM,double> ip = ir[i];
         double sum = 0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int i, double shape) { sum += coefs(i)*shape; } ));
+        // T_CalcShape (TIP<DIM,double> (ir[i]), SBLambda ( [&](int i, double shape) { sum += coefs(i)*shape; } ));
+        T_CalcShape (ip, SBLambda ( [&](int j, double shape) { sum += coefs(j)*shape; } ));
         vals(i) = sum;
       }
   }
@@ -99,6 +110,19 @@ namespace ngfem
         values.Get(i) = sum.Data();
       }
     */
+
+    /*
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    for (int i = 0; i < hir.Size(); i++)
+      {
+        TIP<DIM,SIMD<double>> pt = hir[i];
+        SIMD<double> sum = 0;
+        static_cast<const FEL*> (this) -> 
+          T_CalcShape (pt, SBLambda ( [&](int j, SIMD<double> shape) { sum += coefs(j)*shape; } ));
+        values.Get(i) = sum.Data();
+      }
+    */
+
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=2)
@@ -121,6 +145,52 @@ namespace ngfem
       }
     */
 
+
+    FlatArray<SIMD<IntegrationPoint>> hir = ir;
+    int i = 0;
+    for ( ; i < hir.Size()-1; i+=2)
+      {
+        /*
+        Vec<DIM,SIMD<double>> pt1 = hir[i];
+        Vec<DIM,SIMD<double>> pt2 = hir[i+1];
+        Vec<DIM,MultiSIMD<2,double>> pt;
+        for (int i = 0; i < DIM; i++)
+          pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
+        */
+        MultiSIMD<2,double> sum = 0;
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
+        TIP<DIM,SIMD<double>> tip2 = hir[i+1].TIp<DIM>();
+        TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
+        
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (tip, // TIP<DIM,MultiSIMD<2,double>> (pt),
+                     SBLambda ( [&](int j, MultiSIMD<2,double> shape)
+                                {
+                                  // sum += *pcoefs * shape;
+                                  sum = FMA(MultiSIMD<2,double>(*pcoefs), shape, sum);
+                                  pcoefs += dist; }
+                                ));
+        
+        values.Get(i) = sum.template Get<0>().Data();
+        values.Get(i+1) = sum.template Get<1>().Data();          
+      }
+
+    if (i < hir.Size())
+      {
+        TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
+        SIMD<double> sum = 0;
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { sum += coefs(j)*shape; } ));
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        T_CalcShape (pt, // TIP<DIM,SIMD<double>> (hir[i]), 
+                     SBLambda ( [&](int j, SIMD<double> shape)
+                                { sum += (*pcoefs)*shape; pcoefs += dist; } ));
+        values.Get(i) = sum.Data();
+      }
+    
+    /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=3)
       {
@@ -148,9 +218,10 @@ namespace ngfem
         if (i+2 < hir.Size())
           values.Get(i+2) = sum.template Get<2>().Data();          
       }
+    */
 
     /*
-      // 3 pnts with extra treatment of left-over
+    // 3 pnts with extra treatment of left-over
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     int i = 0;
     for ( ; i < hir.Size()-2; i+=3)
@@ -171,6 +242,7 @@ namespace ngfem
         values.Get(i+1) = sum.template Get<1>().Data();          
         values.Get(i+2) = sum.template Get<2>().Data();          
       }
+
     if (i < hir.Size())
       {
         Vec<DIM,SIMD<double>> pt1 = hir[i];
@@ -189,6 +261,7 @@ namespace ngfem
       }
     */
 
+    
     /*
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i+=4)
@@ -234,15 +307,16 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM> pt = ir[i].Point();
-
+        // Vec<DIM> pt = ir[i].Point();
+        TIP<DIM,double> tip(ir[i]);
         values.Row(i) = 0.0;
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, double shape) 
-                                        { 
-                                          // sum += coefs(i)*shape; 
-                                          values.Row(i) += shape * coefs.Row(j); 
-                                        } 
-                                        ));
+        T_CalcShape (tip,
+                     SBLambda ( [&](int j, double shape) 
+                                { 
+                                  // sum += coefs(i)*shape; 
+                                  values.Row(i) += shape * coefs.Row(j); 
+                                } 
+                                ));
       }
   }
 
@@ -253,9 +327,11 @@ namespace ngfem
     coefs = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM> pt = ir[i].Point();
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, double shape) 
-                                        { coefs(j) += vals(i)*shape; } ));
+        // Vec<DIM> pt = ir[i].Point();
+        TIP<DIM,double> tip(ir[i]);
+        T_CalcShape (tip,
+                     SBLambda ( [&](int j, double shape) 
+                                { coefs(j) += vals(i)*shape; } ));
       }
   }
 
@@ -273,26 +349,58 @@ namespace ngfem
         T_CalcShape (&pt(0), SBLambda ( [&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); } ));
       }
     */
-    /*
+
     for (int i = 0; i < hir.Size(); i+=2)
       {
+        /*
         Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
+        Vec<DIM,SIMD<double>> pt2 = hir[(i+1 < hir.Size()) ? i+1 : i];
+        
         Vec<DIM,MultiSIMD<2,double>> pt;
         for (int i = 0; i < DIM; i++)
           pt(i) = MultiSIMD<2,double> (pt1(i), pt2(i));
-        MultiSIMD<2,double> val;
-        val.template Get<0>() = values.Get(i);
-        val.template Get<1>() = (i+1 < hir.Size()) ? values.Get(i+1) : SIMD<double> (0.0);        
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { coefs(j) += HSum(val*shape); } ));
-      }
-    */
+        */
+        TIP<DIM,SIMD<double>> tip1 = hir[i].TIp<DIM>();
+        TIP<DIM,SIMD<double>> tip2 = hir[(i+1 < hir.Size()) ? i+1 : i].TIp<DIM>();
+        TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
 
+        MultiSIMD<2,double> val (values.Get(i),
+                                 i+1 < hir.Size() ? values.Get(i+1) : SIMD<double> (0.0));
+
+        // T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<2,double> shape) { coefs(j) += HSum(val*shape); } ));
+
+        double * pcoefs = &coefs(0);
+        size_t dist = coefs.Dist();
+        /*
+        T_CalcShape (tip, 
+                     SBLambda
+                     ([&](int j, MultiSIMD<2,double> shape)
+                      { *pcoefs += HSum(val*shape); pcoefs += dist; }
+                      ));
+        */
+        T_CalcShape (tip, 
+                     SBLambdaDuo
+                     ([&](int j, MultiSIMD<2,double> shape)
+                      {
+                        *pcoefs += HSum(val*shape); pcoefs += dist;
+                      },
+                      [&](int j, MultiSIMD<2,double> shape, int j2, MultiSIMD<2,double> shape2)
+                      {
+                        auto v2 = HSum(val*shape, val*shape2);
+                        *pcoefs += get<0>(v2); pcoefs += dist;
+                        *pcoefs += get<1>(v2); pcoefs += dist;
+                      }
+                      ));        
+      }
+
+    
+    /*
     for (int i = 0; i < hir.Size(); i+=3)
       {
         Vec<DIM,SIMD<double>> pt1 = hir[i];
-        Vec<DIM,SIMD<double>> pt2 = (i+1 < hir.Size()) ? hir[i+1] : hir[i];
-        Vec<DIM,SIMD<double>> pt3 = (i+2 < hir.Size()) ? hir[i+2] : hir[i];
+        Vec<DIM,SIMD<double>> pt2 = hir[(i+1 < hir.Size()) ? i+1 : i];
+        Vec<DIM,SIMD<double>> pt3 = hir[(i+2 < hir.Size()) ? i+2 : i];
+        
         Vec<DIM,MultiSIMD<3,double>> pt;
         for (int i = 0; i < DIM; i++)
           pt(i) = MultiSIMD<3,double> (pt1(i), pt2(i), pt3(i));          
@@ -304,11 +412,12 @@ namespace ngfem
 
         double * pcoefs = &coefs(0);
         size_t dist = coefs.Dist();
-        T_CalcShape (&pt(0), SBLambda ( [&](int j, MultiSIMD<3,double> shape)
-                                        { *pcoefs += HSum(val*shape); pcoefs += dist; } ));
+        T_CalcShape (TIP<DIM,MultiSIMD<3,double>> (pt),
+                     SBLambda ( [&](int j, MultiSIMD<3,double> shape)
+                                { *pcoefs += HSum(val*shape); pcoefs += dist; } ));
         
       }
-
+    */
   }
     
 
@@ -317,12 +426,14 @@ namespace ngfem
   auto T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGrad (const IntegrationPoint & ip, SliceVector<double> coefs) const -> Vec<DIM>
   {
-    Vec<DIM, AutoDiff<DIM>> adp = ip;
+    // Vec<DIM, AutoDiff<DIM>> adp = ip;
+    TIP<DIM,AutoDiff<DIM>> tip = ip;
     AutoDiff<DIM> sum = 0.0;
-    T_CalcShape (&adp(0), SBLambda ( [&](int i, AutoDiff<DIM> val) 
-                                     { 
-                                       sum += coefs(i) * val;
-                                     }));
+    T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
+                 SBLambda ( [&](int i, AutoDiff<DIM> val) 
+                            { 
+                              sum += coefs(i) * val;
+                            }));
     return AD2Vec<DIM> (sum);
   }
 
@@ -333,11 +444,12 @@ namespace ngfem
   {
     for (int i = 0; i < ir.GetNIP(); i++)
       {
-        Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
-
+        // Vec<DIM, AutoDiff<DIM>> adp = ir[i]; 
+        TIP<DIM,AutoDiff<DIM>> tip = ir[i];
         Vec<DIM> sum = 0.0;
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
-                                        { sum += coefs(j) * shape; }));
+        T_CalcShape (tip, // TIP<DIM, AutoDiff<DIM>> (adp),
+                     SBLambda ([&] (int j, AD2Vec<DIM> shape)
+                               { sum += coefs(j) * shape; }));
         vals.Row(i) = sum;
       }
   }
@@ -356,8 +468,9 @@ namespace ngfem
           {
             Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
             Vec<DIM,SIMD<double>> sum(0.0);
-            T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                            { sum += coefs(j) * shape; }));
+            T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
+                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                   { sum += coefs(j) * shape; }));
             for (int k = 0; k < DIM; k++)
               values.Get(k,i) = sum(k).Data();
           }
@@ -379,8 +492,9 @@ namespace ngfem
       {
         Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = ir[i];
         Vec<DIM,SIMD<double>> sum(0.0);
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                        { sum += coefs(j) * shape; }));
+        T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>> (adp),
+                     SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                               { sum += coefs(j) * shape; }));
         for (int k = 0; k < DIM; k++)
           values.Get(k,i) = sum(k).Data();
       }
@@ -396,8 +510,9 @@ namespace ngfem
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
-                                        { coefs(j) += InnerProduct (vals.Row(i), shape); }));
+        T_CalcShape (TIP<DIM,AutoDiff<DIM>> (adp),
+                     SBLambda ([&] (int j, AD2Vec<DIM> shape)
+                               { coefs(j) += InnerProduct (vals.Row(i), shape); }));
       }
   }
   
@@ -410,12 +525,13 @@ namespace ngfem
     for (int i = 0; i < ir.GetNIP(); i++)
       {
         Vec<DIM, AutoDiff<DIM>> adp = ir[i];  
-        T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM> shape)
-                                        { 
-                                          Vec<DIM> grad = shape;
+        T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+                     SBLambda ([&] (int j, AD2Vec<DIM> shape)
+                               { 
+                                 Vec<DIM> grad = shape;
                                           FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
                                           coefs.Row(j) += mvals * grad;
-                                        }));
+                               }));
       }
   }
 
@@ -431,13 +547,14 @@ namespace ngfem
         for (int i = 0; i < mir.Size(); i++)
           {
             Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
-            T_CalcShape (&adp(0), SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                            {
-                                              SIMD<double> sum = 0.0;
-                                              for (int k = 0; k < DIM; k++)
-                                                sum += shape(k) * values.Get(k,i);
-                                              coefs(j) += HSum(sum);
-                                            }));
+            T_CalcShape (TIP<DIM, AutoDiff<DIM,SIMD<double> >> (adp),
+                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                                   {
+                                     SIMD<double> sum = 0.0;
+                                     for (int k = 0; k < DIM; k++)
+                                       sum += shape(k) * values.Get(k,i);
+                                     coefs(j) += HSum(sum);
+                                   }));
           }
       }
     else
@@ -498,8 +615,9 @@ namespace ngfem
   {
     Vec<DIM, AutoDiff<DIM>> adp = mip;
 
-    T_CalcShape (&adp(0), SBLambda ([&] (int i, AutoDiff<DIM> shape)
-                                    { shape.StoreGradient (&dshape(i,0)) ; }));
+    T_CalcShape (TIP<DIM, AutoDiff<DIM>> (adp),
+                 SBLambda ([&] (int i, AutoDiff<DIM> shape)
+                           { shape.StoreGradient (&dshape(i,0)) ; }));
   }
 
 
