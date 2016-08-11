@@ -126,6 +126,14 @@ DLL_HEADER void ExportNetgenMeshing()
                                  tmp->SetIndex(index);
                                  return tmp;
                                }
+                             if (bp::len(vertices) == 6)
+                               {
+                                 Element * tmp = new Element(PRISM);
+                                 for (int i = 0; i < 6; i++)
+                                   (*tmp)[i] = bp::extract<PointIndex>(vertices[i]);
+                                 tmp->SetIndex(index);
+                                 return tmp;
+                               }
                              if (bp::len(vertices) == 8)
                                {
                                  Element * tmp = new Element(HEX);
