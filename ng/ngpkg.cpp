@@ -36,12 +36,12 @@ extern bool nodisplay;
 #include <nginterface.h>
 
 
+#include "../libsrc/interface/writeuser.hpp"
 
 namespace netgen
 {
   DLL_HEADER extern MeshingParameters mparam;
   DLL_HEADER extern void ImportSolution2(const char * filename);
-#include "../libsrc/interface/writeuser.hpp"
 #include "demoview.hpp"
 }
 

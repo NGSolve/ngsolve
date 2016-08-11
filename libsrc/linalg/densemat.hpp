@@ -152,8 +152,119 @@ extern ostream & operator<< (ostream & ost, const DenseMatrix & m);
 
 
 
-template <int WIDTH>
+template <int WIDTH, typename T = double>
 class MatrixFixWidth
+{
+protected:
+  int height;
+  T * __restrict data;
+  bool ownmem;
+public:
+  ///
+  MatrixFixWidth () 
+  { height = 0; data = 0; ownmem = false; }
+  ///
+  MatrixFixWidth (int h)
+  { height = h; data = new T[WIDTH*height]; ownmem = true; }
+  /// 
+  MatrixFixWidth (int h, T * adata)
+  { height = h; data = adata; ownmem = false; }
+  ///
+  MatrixFixWidth (const MatrixFixWidth & m2)
+    : height(m2.height), data(m2.data), ownmem(false)
+  { ; } 
+  ///
+  ~MatrixFixWidth ()
+  { if (ownmem) delete [] data; }
+
+  void SetSize (int h)
+  {
+    if (h != height)
+      {
+	if (ownmem) delete data;
+	height = h;
+	data = new T[WIDTH*height]; 
+	ownmem = true;
+      }
+  }
+
+  ///
+  int Height() const { return height; }
+
+  ///
+  int Width() const { return WIDTH; }
+  MatrixFixWidth & operator= (const MatrixFixWidth & m2)
+  {
+    for (int i = 0; i < height*WIDTH; i++)
+      data[i] = m2.data[i];
+  }
+  ///
+  MatrixFixWidth & operator= (T v)
+  {
+    for (int i = 0; i < height*WIDTH; i++)
+      data[i] = v; 
+    return *this;
+  }
+
+  /*  
+  ///
+  void Mult (const FlatVector & v, FlatVector & prod) const
+  {
+    T sum;
+    const T * mp, * sp;
+    T * dp;
+
+    mp = data;
+    dp = &prod[0];
+    for (int i = 0; i < height; i++)
+      {
+	sum = 0;
+	sp = &v[0];
+	
+	for (int j = 0; j < WIDTH; j++)
+	  {
+	    sum += *mp * *sp;
+	    mp++;
+	    sp++;
+	  }
+	    
+	*dp = sum;
+	dp++;
+      }
+  }
+  */
+
+  T & operator() (int i, int j)
+  { return data[i*WIDTH+j]; }
+
+  const T & operator() (int i, int j) const
+  { return data[i*WIDTH+j]; }
+
+
+  MatrixFixWidth & operator*= (T v)
+  {
+    if (data)
+      for (int i = 0; i < height*WIDTH; i++)
+        data[i] *= v;
+    return *this;
+  }
+
+
+
+  const T & Get(int i, int j) const { return data[(i-1)*WIDTH+j-1]; }
+  ///
+  const T & Get(int i) const { return data[i-1]; }
+  ///
+  void Set(int i, int j, T v) { data[(i-1)*WIDTH+j-1] = v; }
+  ///
+  T & Elem(int i, int j) { return data[(i-1)*WIDTH+j-1]; }
+  ///
+  const T & ConstElem(int i, int j) const { return data[(i-1)*WIDTH+j-1]; }
+};
+
+
+template <int WIDTH>
+class MatrixFixWidth<WIDTH,double>
 {
 protected:
   int height;
@@ -259,6 +370,9 @@ public:
   ///
   const double & ConstElem(int i, int j) const { return data[(i-1)*WIDTH+j-1]; }
 };
+
+
+
 
 
 template <int WIDTH>

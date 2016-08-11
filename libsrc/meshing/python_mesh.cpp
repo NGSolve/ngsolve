@@ -8,6 +8,7 @@
 #include "meshing.hpp"
 #include <csg.hpp>
 #include <geometry2d.hpp>
+#include <../interface/writeuser.hpp>
 
 
 using namespace netgen;
@@ -105,13 +106,18 @@ DLL_HEADER void ExportNetgenMeshing()
     .def("__str__", &ToString<MeshPoint>)
     .def("__repr__", &ToString<MeshPoint>)
     .add_property("p", FunctionPointer([](const MeshPoint & self)
-                                       {
-                                         bp::list l;
-                                         l.append ( self[0] );
-                                         l.append ( self[1] );
-                                         l.append ( self[2] );
-                                         return bp::tuple(l);
+                                        {
+                                          bp::list l;
+                                          l.append ( self[0] );
+                                          l.append ( self[1] );
+                                          l.append ( self[2] );
+                                          return bp::tuple(l);
                                        }))
+    .def("__getitem__", FunctionPointer([](const MeshPoint & self, int index) {
+	  if(index<0 || index>2)
+	    bp::exec("raise IndexError()\n");
+	  return self[index];
+	}))
     ;
   
   bp::class_<Element>("Element3D")
@@ -142,6 +148,7 @@ DLL_HEADER void ExportNetgenMeshing()
                                  tmp->SetIndex(index);
                                  return tmp;
                                }
+                             throw NgException ("cannot create element");                             
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("index")=1,bp::arg("vertices"))),
@@ -305,8 +312,7 @@ DLL_HEADER void ExportNetgenMeshing()
   ExportArray<FaceDescriptor>();
   ;
   
-  
-#if BOOST_VERSION >= 106000
+#if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)  
   bp::register_ptr_to_python<shared_ptr<Mesh>>();
 #endif
   bp::class_<Mesh,shared_ptr<Mesh>,boost::noncopyable>("Mesh", bp::no_init)
@@ -365,7 +371,22 @@ DLL_HEADER void ExportNetgenMeshing()
 	  }))
     // static_cast<void(Mesh::*)(const string & name)>(&Mesh::Load))
     .def("Save", static_cast<void(Mesh::*)(const string & name)const>(&Mesh::Save))
-
+    .def("Export", FunctionPointer
+         ([] (Mesh & self, string filename, string format)
+          {
+            if (WriteUserFormat (format, self, *self.GetGeometry(), filename))
+              {
+                string err = string ("nothing known about format")+format;
+                Array<const char*> names, extensions;
+                RegisterUserFormats (names, extensions);
+                err += "\navailable formats are:\n";
+                for (auto name : names)
+                  err += string("'") + name + "'\n";
+                throw NgException (err);
+              }
+          }),
+         (bp::arg("self"), bp::arg("filename"), bp::arg("format")))
+    
     .add_property("dim", &Mesh::GetDimension, &Mesh::SetDimension)
 
     .def("Elements3D", 

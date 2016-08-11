@@ -44,12 +44,10 @@ void RunParallel ( void * (*fun)(void *), void * in)
 
 
 
-
+#include "writeuser.hpp"
 
 namespace netgen
 {
-#include "writeuser.hpp"
-
   extern shared_ptr<Mesh> mesh;
   extern shared_ptr<NetgenGeometry> ng_geometry;
 

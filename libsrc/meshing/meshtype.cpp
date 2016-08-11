@@ -541,6 +541,30 @@ namespace netgen
       }
   }
 
+  template <typename T>
+  void Element2d :: GetShapeNew (const Point<2,T> & p, TFlatVector<T> shape) const
+  {
+    switch (typ)
+      {
+      case TRIG:
+        {
+          shape(0) = p(0);
+          shape(1) = p(1);
+          shape(2) = 1-p(0)-p(1);
+          break;
+        }
+
+      case QUAD:
+        {
+          shape(0) = (1-p(0))*(1-p(1));
+          shape(1) =    p(0) *(1-p(1));
+          shape(2) =    p(0) *   p(1) ;
+          shape(3) = (1-p(0))*   p(1) ;
+          break;
+        }
+      }
+  }
+
 
 
 
@@ -587,15 +611,15 @@ namespace netgen
   }
 
 
-
+  template <typename T>
   void Element2d :: 
-  GetDShapeNew (const Point<2> & p, MatrixFixWidth<2> & dshape) const
+  GetDShapeNew (const Point<2,T> & p, MatrixFixWidth<2,T> & dshape) const
   {
     switch (typ)
       {
       case TRIG:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1;
           dshape(1,1) = 1;
           dshape(2,0) = -1;
@@ -1850,8 +1874,8 @@ namespace netgen
   }
 
 
-
-  void Element :: GetShapeNew (const Point<3> & p, FlatVector & shape) const
+  template <typename T>
+  void Element :: GetShapeNew (const Point<3,T> & p, TFlatVector<T> shape) const
   {
     /*
       if (shape.Size() < GetNP())
@@ -1874,10 +1898,10 @@ namespace netgen
 
       case TET10:
         {
-          double lam1 = p(0);
-          double lam2 = p(1);
-          double lam3 = p(2);
-          double lam4 = 1-p(0)-p(1)-p(2);
+          T lam1 = p(0);
+          T lam2 = p(1);
+          T lam3 = p(2);
+          T lam4 = 1-p(0)-p(1)-p(2);
 	
           shape(0) = 2 * lam1 * (lam1-0.5);
           shape(1) = 2 * lam2 * (lam2-0.5);
@@ -1897,11 +1921,12 @@ namespace netgen
 
       case PYRAMID:
         {
-          double noz = 1-p(2);
-          if (noz == 0.0) noz = 1e-10;
+          T noz = 1-p(2);
+          // if (noz == 0.0) noz = 1e-10;
+          noz += T(1e-12);
 
-          double xi  = p(0) / noz;
-          double eta = p(1) / noz;
+          T xi  = p(0) / noz;
+          T eta = p(1) / noz;
           shape(0) = (1-xi)*(1-eta) * (noz);
           shape(1) = (  xi)*(1-eta) * (noz);
           shape(2) = (  xi)*(  eta) * (noz);
@@ -1965,15 +1990,15 @@ namespace netgen
       }
   }
 
-
+  template <typename T>
   void Element :: 
-  GetDShapeNew (const Point<3> & p, MatrixFixWidth<3> & dshape) const
+  GetDShapeNew (const Point<3,T> & p, MatrixFixWidth<3,T> & dshape) const
   {
     switch (typ)
       {
       case TET:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1;
           dshape(1,1) = 1;
           dshape(2,2) = 1;
@@ -1984,7 +2009,7 @@ namespace netgen
         }
       case PRISM:
         {
-          dshape = 0;
+          dshape = T(0.0);
           dshape(0,0) = 1-p(2);
           dshape(0,2) = -p(0);
           dshape(1,1) = 1-p(2);
@@ -2007,22 +2032,39 @@ namespace netgen
         {
           int np = GetNP();
           double eps = 1e-6;
-          Vector shaper(np), shapel(np);
+          ArrayMem<T,100> mem(2*np);
+          TFlatVector<T> shaper(np, &mem[0]);
+          TFlatVector<T> shapel(np, &mem[np]);
+          // Vector shaper(np), shapel(np);
 	
-          for (int i = 1; i <= 3; i++)
+          for (int i = 0; i < 3; i++)
             {
-              Point3d pr(p), pl(p);
-              pr.X(i) += eps;
-              pl.X(i) -= eps;
+              Point<3,T> pr(p), pl(p);
+              pr(i) += eps;
+              pl(i) -= eps;
 	    
               GetShapeNew (pr, shaper);
               GetShapeNew (pl, shapel);
               for (int j = 0; j < np; j++)
-                dshape(j, i-1) = (shaper(j) - shapel(j)) / (2 * eps);
+                dshape(j, i) = (shaper(j) - shapel(j)) / (2 * eps);
             }
         }
       }
   }
+
+  template void Element2d :: GetShapeNew (const Point<2,double> & p, TFlatVector<double> shape) const;
+  template void Element2d :: GetShapeNew (const Point<2,SIMD<double>> & p, TFlatVector<SIMD<double>> shape) const;
+
+  template void Element2d::GetDShapeNew<double> (const Point<2> &, MatrixFixWidth<2> &) const;
+  template void Element2d::GetDShapeNew<SIMD<double>> (const Point<2,SIMD<double>> &, MatrixFixWidth<2,SIMD<double>> &) const;
+
+
+  template void Element :: GetShapeNew (const Point<3,double> & p, TFlatVector<double> shape) const;
+  template void Element :: GetShapeNew (const Point<3,SIMD<double>> & p, TFlatVector<SIMD<double>> shape) const;
+  
+  template void Element::GetDShapeNew<double> (const Point<3> &, MatrixFixWidth<3> &) const;
+  template void Element::GetDShapeNew<SIMD<double>> (const Point<3,SIMD<double>> &, MatrixFixWidth<3,SIMD<double>> &) const;
+
 
   void Element :: 
   GetPointMatrix (const T_POINTS & points,

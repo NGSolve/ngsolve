@@ -12,11 +12,11 @@
 #include <meshing.hpp>
 #include <sys/stat.h>
 
+#include "writeuser.hpp"
+
 
 namespace netgen
 {
-#include "writeuser.hpp"
-
   extern MeshingParameters mparam;
 
 

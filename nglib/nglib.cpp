@@ -1228,7 +1228,6 @@ namespace netgen
 
 
 
-
   //void Render() { ; }
 
 } // End of namespace netgen
@@ -1246,4 +1245,11 @@ void Ng_SetSolutionData (Ng_SolutionData * soldata)
 }
 void Ng_InitSolutionData (Ng_SolutionData * soldata) { ; }
 */
+
+// Force linking libinterface to libnglib
+#include <../interface/writeuser.hpp>
+void MyDummyToForceLinkingLibInterface(Mesh &mesh, NetgenGeometry &geom)
+{
+  netgen::WriteUserFormat("", mesh, geom, "");
+}
 

@@ -29,14 +29,13 @@
 
 
 #include <meshing.hpp>
-
+#include "../interface/writeuser.hpp"
 
 void (*NGS_ParallelRun) (const string & message) = NULL;
 
 
 namespace netgen
 {
-#include "../interface/writeuser.hpp"
   extern string ngdir;
 
 #ifdef OPENGL

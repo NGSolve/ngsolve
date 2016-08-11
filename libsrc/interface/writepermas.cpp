@@ -13,10 +13,10 @@
 #include <string>
 
 using namespace std;
+#include "writeuser.hpp"
 
 namespace netgen
 {
-#include "writeuser.hpp"
     // Forward declarations (don't know, where to define them, sorry)
     int addComponent(string &strComp, string &strSitu, ofstream &out);
 

@@ -247,13 +247,14 @@ namespace netgen
     }
   */
 
-  inline Mat<2,2> operator* (const Mat<2,2> & a, const Mat<2,2> & b)
+  template <typename T>
+  inline Mat<2,2,T> operator* (const Mat<2,2,T> & a, const Mat<2,2,T> & b)
   {
-    Mat<2,2> m;
+    Mat<2,2,T> m;
     for (int i = 0; i < 2; i++)
       for (int j = 0; j < 2; j++)
 	{
-	  double sum = 0;
+          T sum(0);
 	  for (int k = 0; k < 2; k++)
 	    sum += a(i,k) * b(k, j);
 	  m(i,j) = sum; 
@@ -275,14 +276,14 @@ namespace netgen
     return m;
   }
 
-
-  inline Mat<3,2> operator* (const Mat<3,2> & a, const Mat<2,2> & b)
+  template <typename T>
+  inline Mat<3,2,T> operator* (const Mat<3,2,T> & a, const Mat<2,2,T> & b)
   {
-    Mat<3,2> m;
+    Mat<3,2,T> m;
     for (int i = 0; i < 3; i++)
       for (int j = 0; j < 2; j++)
 	{
-	  double sum = 0;
+	  T sum(0.0);
 	  for (int k = 0; k < 2; k++)
 	    sum += a(i,k) * b(k, j);
 	  m(i,j) = sum; 
@@ -306,14 +307,14 @@ namespace netgen
     return m;
   }
 
-
-  inline Mat<3,3> operator* (const Mat<3,3> & a, const Mat<3,3> & b)
+  template <typename T>
+  inline Mat<3,3,T> operator* (const Mat<3,3,T> & a, const Mat<3,3,T> & b)
   {
-    Mat<3,3> m;
+    Mat<3,3,T> m;
     for (int i = 0; i < 3; i++)
       for (int j = 0; j < 3; j++)
 	{
-	  double sum = 0;
+	  T sum = T(0);
 	  for (int k = 0; k < 3; k++)
 	    sum += a(i,k) * b(k, j);
 	  m(i,j) = sum; 
@@ -348,8 +349,8 @@ namespace netgen
 
 
 
-  template <int D>
-  inline ostream & operator<< (ostream & ost, const Vec<D> & a)
+  template <int D, typename T>
+  inline ostream & operator<< (ostream & ost, const Vec<D,T> & a)
   {
     ost << "(";
     for (int i = 0; i < D-1; i++)
@@ -358,8 +359,8 @@ namespace netgen
     return ost;
   }
 
-  template <int D>
-  inline ostream & operator<< (ostream & ost, const Point<D> & a)
+  template <int D, typename T>
+  inline ostream & operator<< (ostream & ost, const Point<D,T> & a)
   {
     ost << "(";
     for (int i = 0; i < D-1; i++)
@@ -375,8 +376,8 @@ namespace netgen
     return ost;
   }
 
-  template <int H, int W>
-  inline ostream & operator<< (ostream & ost, const Mat<H,W> & m)
+  template <int H, int W, typename T>
+  inline ostream & operator<< (ostream & ost, const Mat<H,W,T> & m)
   {
     ost << "(";
     for (int i = 0; i < H; i++)

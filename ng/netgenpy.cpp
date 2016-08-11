@@ -25,3 +25,12 @@ BOOST_PYTHON_MODULE(libngpy)
     ExportGeom2d();
 }
 
+// Force linking libnglib to libnetgenpy
+namespace netgen
+{
+   void MyBeep (int i);
+   void MyDummyToForceLinkingNGLib()
+   {
+       MyBeep(0);
+   }
+}
