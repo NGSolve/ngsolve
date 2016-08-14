@@ -1811,8 +1811,8 @@ namespace ngla
 
 
 
-  SparseMatrix<double,double> * 
-  TransposeMatrix (const SparseMatrix<double, double> & mat)
+  SparseMatrixTM<double> *
+  TransposeMatrix (const SparseMatrixTM<double> & mat)
   {
     static Timer t1("TransposeMatrix 1");
     static Timer t2("TransposeMatrix 2");
@@ -1827,7 +1827,7 @@ namespace ngla
                  });
     t1.Stop();
     t2.Start();
-    SparseMatrix<double,double> * trans = new SparseMatrix<double>(cnt);
+    SparseMatrixTM<double> * trans = new SparseMatrix<double>(cnt);
     cnt = 0;
     for (int i = 0; i < mat.Height(); i++)
       for (int ci : Range(mat.GetRowIndices(i)))
@@ -1841,7 +1841,7 @@ namespace ngla
     return trans;
   }
 
-  SparseMatrix<double,double> * 
+  SparseMatrix<double,double> *
   MakeFullMatrix (const SparseMatrix<double, double> & mat)
   {
     Array<int> cnt(mat.Width());
@@ -1879,8 +1879,8 @@ namespace ngla
     return full;    
   }
 
-  SparseMatrixSymmetric<double,double> * 
-  GetSymmetricMatrix (SparseMatrix<double, double> & mat)
+  SparseMatrixSymmetric<double,double> *
+  GetSymmetricMatrix (SparseMatrixTM<double> & mat)
   {
     Array<int> cnt(mat.Width());
     cnt = 0;
@@ -1902,10 +1902,11 @@ namespace ngla
 
     return full;    
   }
-  
 
-  SparseMatrix<double,double> * 
-  MatMult (const SparseMatrix<double, double> & mata, const SparseMatrix<double, double> & matb)
+
+  template <typename TM_Res, typename TM1, typename TM2>
+  SparseMatrixTM<TM_Res> *
+  MatMult (const SparseMatrixTM<TM1> & mata, const SparseMatrixTM<TM2> & matb)
   {
     static Timer t ("sparse matrix multiplication");
     static Timer t1a ("sparse matrix multiplication - setup a");
@@ -1914,7 +1915,7 @@ namespace ngla
     RegionTimer reg(t);
 
     t1a.Start();
-    
+
     // find graph of product
     Array<int> cnt(mata.Height());
     cnt = 0;
@@ -1940,10 +1941,10 @@ namespace ngla
            }
        },
        TasksPerThread(10));
-       
+
     t1a.Stop();
     t1b.Start();
-    SparseMatrix<double,double> * prod = new SparseMatrix<double>(cnt, matb.Width());
+    SparseMatrixTM<TM_Res> * prod = new SparseMatrix<TM_Res>(cnt, matb.Width());
     prod->AsVector() = 0.0;
 
     // fill col-indices
@@ -1971,11 +1972,11 @@ namespace ngla
            }
        },
        TasksPerThread(10));
-    
-         
+
+
     t1b.Stop();
     t2.Start();
-    
+
     ParallelFor
       (mata.Height(), [&] (int i)
        {
@@ -1992,12 +1993,12 @@ namespace ngla
           }
        },
        TasksPerThread(10));
-    
+
     t2.Stop();
     return prod;
   }
-  
-  
+
+
 
   template <class TM, class TV>
   BaseSparseMatrix * 
@@ -2137,18 +2138,35 @@ namespace ngla
 
 
 
-  template <> BaseSparseMatrix * 
-  SparseMatrix<double,double> :: Restrict (const SparseMatrixTM<double> & prol,
-                                           BaseSparseMatrix* acmat ) const
+  template <> BaseSparseMatrix *
+  SparseMatrix<double> :: Restrict (const SparseMatrixTM<double> & prol,
+                                    BaseSparseMatrix* acmat ) const
+  {
+    static Timer t ("sparsematrix - restrict");
+    RegionTimer reg(t);
+
+    auto prolT = TransposeMatrix(prol);
+
+    auto prod1 = MatMult<double, double, double>(*this, prol);
+    auto prod = MatMult<double, double, double>(*prolT, *prod1);
+
+    delete prod1;
+    delete prolT;
+    return prod;
+  }
+
+  template <> BaseSparseMatrix *
+  SparseMatrix<std::complex<double>> :: Restrict (const SparseMatrixTM<double> & prol,
+                                                  BaseSparseMatrix* acmat ) const
   {
     static Timer t ("sparsematrix - restrict");
     RegionTimer reg(t);
     // new version
     auto prolT = TransposeMatrix(prol);
 
-    auto prod1 = MatMult(*this, prol);
-    auto prod = MatMult(*prolT, *prod1);
-    
+    auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol);
+    auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1);
+
     delete prod1;
     delete prolT;
     return prod;
@@ -2158,7 +2176,7 @@ namespace ngla
 
 
 
-  template <> BaseSparseMatrix * 
+  template <> BaseSparseMatrix *
   SparseMatrixSymmetric<double,double> :: Restrict (const SparseMatrixTM<double> & prol,
                                                     BaseSparseMatrix* acmat ) const
   {
@@ -2168,20 +2186,20 @@ namespace ngla
     auto prolT = TransposeMatrix(prol);
     auto full = MakeFullMatrix(*this);
 
-    auto prod1 = MatMult(*full, prol);
-    auto prod = MatMult(*prolT, *prod1);
-    
+    auto prod1 = MatMult<double, double, double>(*full, prol);
+    auto prod = MatMult<double, double, double>(*prolT, *prod1);
+
     auto prodhalf = GetSymmetricMatrix (*prod);
-    
+
     delete prod;
     delete prod1;
     delete full;
     delete prolT;
     return prodhalf;
 
-      
-#ifdef OLD    
-    
+
+#ifdef OLD
+
     static Timer t ("sparsematrix - restrict");
     static Timer tbuild ("sparsematrix - restrict, build matrix");
     static Timer tbuild1 ("sparsematrix - restrict, build matrix1");
@@ -2326,7 +2344,7 @@ namespace ngla
       }
     return cmat;
 #endif
-    
+
   }
 
 
