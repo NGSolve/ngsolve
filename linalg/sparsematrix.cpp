@@ -1981,6 +1981,20 @@ namespace ngla
       (mata.Height(), [&] (int i)
        {
         auto mata_ci = mata.GetRowIndices(i);
+        auto matc_ci = prod->GetRowIndices(i);
+        auto matc_vals = prod->GetRowValues(i);
+
+        constexpr unsigned int nhash = 1024; // power of 2, fits well onto stack and cash ..
+        struct thash { int idx; int pos; };
+        thash hash[nhash];
+        for (int k = 0; k < matc_ci.Size(); k++)
+          {
+            unsigned hashval = unsigned(matc_ci[k]) % nhash;
+            hash[hashval].pos = k;
+            hash[hashval].idx = matc_ci[k];
+          }
+        
+        
         for (int j : Range(mata_ci))
           {
             auto vala = mata.GetRowValues(i)[j];
@@ -1989,7 +2003,18 @@ namespace ngla
             auto matb_ci = matb.GetRowIndices(rowb);
             auto matb_vals = matb.GetRowValues(rowb);
             for (int k = 0; k < matb_ci.Size(); k++)
-              (*prod)(i,matb_ci[k]) += vala * matb_vals[k];
+              {
+                auto colb = matb_ci[k];
+                unsigned hashval = unsigned(colb) % nhash;
+                if (hash[hashval].idx == colb)
+                  { // lucky fast branch
+                    matc_vals[hash[hashval].pos] += vala * matb_vals[k]; 
+                  }
+                else
+                  { // do the binary search
+                    (*prod)(i,colb) += vala * matb_vals[k];
+                  }
+              }
           }
        },
        TasksPerThread(10));
