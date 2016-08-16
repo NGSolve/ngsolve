@@ -1976,46 +1976,63 @@ namespace ngla
 
     t1b.Stop();
     t2.Start();
-
-    ParallelFor
-      (mata.Height(), [&] (int i)
+    
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
        {
-        auto mata_ci = mata.GetRowIndices(i);
-        auto matc_ci = prod->GetRowIndices(i);
-        auto matc_vals = prod->GetRowValues(i);
+         struct thash { int idx; int pos; };
 
-        constexpr unsigned int nhash = 1024; // power of 2, fits well onto stack and cash ..
-        struct thash { int idx; int pos; };
-        thash hash[nhash];
-        for (int k = 0; k < matc_ci.Size(); k++)
-          {
-            unsigned hashval = unsigned(matc_ci[k]) % nhash;
-            hash[hashval].pos = k;
-            hash[hashval].idx = matc_ci[k];
-          }
-        
-        
-        for (int j : Range(mata_ci))
-          {
-            auto vala = mata.GetRowValues(i)[j];
-            int rowb = mata.GetRowIndices(i)[j];
+         size_t maxci = 0;
+         for (auto i : r)
+           maxci = max2(maxci, size_t (prod->GetRowIndices(i).Size()));
 
-            auto matb_ci = matb.GetRowIndices(rowb);
-            auto matb_vals = matb.GetRowValues(rowb);
-            for (int k = 0; k < matb_ci.Size(); k++)
-              {
-                auto colb = matb_ci[k];
-                unsigned hashval = unsigned(colb) % nhash;
-                if (hash[hashval].idx == colb)
-                  { // lucky fast branch
-                    matc_vals[hash[hashval].pos] += vala * matb_vals[k]; 
-                  }
-                else
-                  { // do the binary search
-                    (*prod)(i,colb) += vala * matb_vals[k];
-                  }
-              }
-          }
+         size_t nhash = 2048;
+         while (nhash < 2*maxci) nhash *= 2;
+         ArrayMem<thash,2048> hash(nhash);
+         size_t nhashm1 = nhash-1;
+
+         /*
+         // constexpr unsigned int nhash = 1024; // power of 2, fits well onto stack and cash ..
+         // constexpr unsigned int nhash = 16384;
+         size_t nhash = 16384;
+         thash hash[nhash];
+         */
+         
+         for (auto i : r)
+           {
+             auto mata_ci = mata.GetRowIndices(i);
+             auto matc_ci = prod->GetRowIndices(i);
+             auto matc_vals = prod->GetRowValues(i);
+             
+             for (int k = 0; k < matc_ci.Size(); k++)
+               {
+                 size_t hashval = size_t(matc_ci[k]) & nhashm1; // % nhash;
+                 hash[hashval].pos = k;
+                 hash[hashval].idx = matc_ci[k];
+               }
+             
+             for (int j : Range(mata_ci))
+               {
+                 auto vala = mata.GetRowValues(i)[j];
+                 int rowb = mata.GetRowIndices(i)[j];
+                 
+                 auto matb_ci = matb.GetRowIndices(rowb);
+                 auto matb_vals = matb.GetRowValues(rowb);
+                 for (int k = 0; k < matb_ci.Size(); k++)
+                   {
+                     auto colb = matb_ci[k];
+                     unsigned hashval = unsigned(colb) & nhashm1; // % nhash;
+                     if (hash[hashval].idx == colb)
+                       { // lucky fast branch
+                        matc_vals[hash[hashval].pos] += vala * matb_vals[k]; 
+                       }
+                     else
+                      { // do the binary search
+                        (*prod)(i,colb) += vala * matb_vals[k];
+                      }
+                   }
+               }
+           }
        },
        TasksPerThread(10));
 
