@@ -220,6 +220,11 @@ namespace ngbla
     {
       return SliceMatrix<T> (h, w, w, data);
     }
+
+    auto AsVector() const
+    {
+      return FlatVector<T> (h*w, data);
+    }
   };
 
 
