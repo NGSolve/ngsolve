@@ -162,15 +162,19 @@ namespace ngla
       if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	SetOrig (i, i, id);
     */
-    
+
     if (!inner && !cluster)
-      for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
-	  {
-	    int col = a.GetRowIndices(i)[j];
-	    if (col <= i)
-	      SetOrig (i, col, a.GetRowValues(i)[j]);
-	  }
+      // for (int i = 0; i < n; i++)
+      ParallelFor 
+        (Range(n), [&](int i)
+         {
+           for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+             {
+               int col = a.GetRowIndices(i)[j];
+               if (col <= i)
+                 SetOrig (i, col, a.GetRowValues(i)[j]);
+             }
+         });
     
     else if (inner)
       // for (int i = 0; i < n; i++)
