@@ -262,12 +262,23 @@ namespace ngbla
     typedef double TV_ROW;
     enum { HEIGHT = 1 };
     enum { WIDTH = 1 };
+
+    class Iterator
+    {
+      FlatVector vec;
+      TIND ind;
+    public:
+      INLINE Iterator (FlatVector avec, TIND ai) : vec(avec), ind(ai) { ; }
+      INLINE Iterator operator++ (int) { return Iterator(vec, ind++); }
+      INLINE Iterator operator++ () { return Iterator(vec, ++ind); }
+      INLINE TELEM operator*() const { return vec[ind]; }
+      INLINE TELEM & operator*() { return vec[ind]; }
+      INLINE bool operator != (Iterator d2) { return ind != d2.ind; }
+    };
+    
+    Iterator begin() const { return Iterator (*this, 0); }
+    Iterator end() const { return Iterator (*this, size); }
   };
-
-
-
-
-
 
 
 
