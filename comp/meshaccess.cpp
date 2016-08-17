@@ -1623,6 +1623,31 @@ namespace ngcomp
   }
 
 
+  void NGSolveTaskManager (function<void(int,int)> func)
+  {
+    cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
+    if (!task_manager)
+      func(0,1);
+    else
+      task_manager->CreateJob
+        ([&](TaskInfo & info)
+         {
+           func(info.task_nr, info.ntasks);
+         });
+  }
+
+  
+  void MeshAccess :: Refine ()
+  {
+    static Timer t("MeshAccess::Refine"); RegionTimer reg(t);
+    mesh.Refine(NG_REFINE_H, &NGSolveTaskManager);
+    UpdateBuffers();
+  }
+
+
+  
+
+
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
