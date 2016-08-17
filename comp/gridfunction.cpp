@@ -2488,8 +2488,8 @@ namespace ngcomp
       {
     
     
-    static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue"); RegionTimer reg(t);
-    static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate");
+    static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
+    static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
 
     if (cf -> IsComplex())
       {
