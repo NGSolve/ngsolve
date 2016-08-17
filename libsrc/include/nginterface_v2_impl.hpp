@@ -189,8 +189,9 @@ template <> NGX_INLINE DLL_HEADER const Ng_Node<0> Ngx_Mesh :: GetNode<0> (int v
         node.elements.ne = ia.Size();
         node.elements.ptr = (int*)&ia[0];
         
-        node.bnd_elements.ne = 1;   // nothing useful ...
-        node.bnd_elements.ptr = nullptr;
+        FlatArray<int> bia = mesh->GetTopology().GetVertexPointElements(vnr);
+        node.bnd_elements.ne = bia.Size();
+        node.bnd_elements.ptr = (int*)&bia[0];
         break;
       }
     default:
