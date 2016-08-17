@@ -64,7 +64,7 @@ public:
   bool HasFaces () const
   { return buildfaces; }
 
-  void Update();
+  void Update(TaskManager tm = &DummyTaskManager);
 
 
   int GetNEdges () const { return edge2vert.Size(); }

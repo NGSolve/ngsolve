@@ -755,20 +755,29 @@ inline ostream & operator<< (ostream & ost, const INDEX_2_CLOSED_HASHTABLE<T> & 
 
 
 
-
+  inline size_t RoundUp2 (size_t i)
+  {
+    size_t res = 1;
+    while (res < i) res *= 2; // hope it will never be too large 
+    return res; 
+  }
 
 class BASE_INDEX_3_CLOSED_HASHTABLE
 {
 protected:
-  // MoveableArray<INDEX_3> hash;
   Array<INDEX_3> hash;
   int invalid;
+  size_t mask;
 
 protected: 
-  BASE_INDEX_3_CLOSED_HASHTABLE (int size)
-    : hash(size)
+  BASE_INDEX_3_CLOSED_HASHTABLE (size_t size)
+    : hash(RoundUp2(size))
   {
-    // hash.SetName ("i3-hashtable, hash");
+    // cout << "orig size = " << size
+    // << ", roundup size = " << hash.Size();
+    size = hash.Size();
+    mask = size-1;
+    // cout << "mask = " << mask << endl;
     invalid = -1;
     for (int i = 0; i < size; i++)
       hash[i].I1() = invalid;
@@ -797,7 +806,8 @@ public:
 
   int HashValue (const INDEX_3 & ind) const
   {
-    return (ind.I1() + 15 * ind.I2() + 41 * ind.I3()) % hash.Size();
+    // return (ind.I1() + 15 * ind.I2() + 41 * ind.I3()) % hash.Size();
+    return (ind.I1() + 15 * ind.I2() + 41 * ind.I3()) & mask;
   }
   
   int Position (const INDEX_3 & ind) const
@@ -807,7 +817,8 @@ public:
       {
 	if (hash[i] == ind) return i;
 	if (hash[i].I1() == invalid) return -1;
-        i = (i+1) % hash.Size();
+        // i = (i+1) % hash.Size();
+        i = (i+1) & mask;
       }
   }
 
@@ -819,7 +830,8 @@ public:
       {
 	if (hash[i] == ind) return c;
 	if (hash[i].I1() == invalid) return c;
-        i = (i+1) % hash.Size();
+        // i = (i+1) % hash.Size();
+        i = (i+1) & mask;
         c++;
       }
   }
@@ -844,6 +856,13 @@ public:
     return PositionCreate2 (ind, apos);    
   }
 
+  void DeleteData()
+  {
+    size_t size = hash.Size();
+    for (size_t i = 0; i < size; i++)
+      hash[i].I1() = invalid;
+  }
+
 protected:
   bool PositionCreate2 (const INDEX_3 & ind, int & apos);
   void BaseSetSize (int asize);
@@ -859,7 +878,7 @@ class INDEX_3_CLOSED_HASHTABLE : public BASE_INDEX_3_CLOSED_HASHTABLE
 
 public:
   INDEX_3_CLOSED_HASHTABLE (int size)
-    : BASE_INDEX_3_CLOSED_HASHTABLE(size), cont(size)
+    : BASE_INDEX_3_CLOSED_HASHTABLE(size), cont(RoundUp2(size))
   {
     ; //cont.SetName ("i3-hashtable, contents");
   }
@@ -912,7 +931,7 @@ public:
    void SetSize (int size)
   {
     BaseSetSize(size);
-    cont.SetSize(size);
+    cont.SetSize(hash.Size());
   }
 
   void PrintMemInfo (ostream & ost) const

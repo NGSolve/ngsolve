@@ -5617,9 +5617,9 @@ namespace netgen
     return 1;
   }
 
-  void Mesh :: UpdateTopology()
+  void Mesh :: UpdateTopology (TaskManager tm)
   {
-    topology->Update();
+    topology->Update(tm);
     clusters->Update();
 #ifdef PARALLEL
     if (paralleltop)

@@ -846,6 +846,31 @@ namespace netgen
     return ind-1;
   }
 
+  
+  void Ngx_Mesh :: Refine (NG_REFINEMENT_TYPE reftype,
+                           void (*task_manager)(function<void(int,int)>))
+  {
+    NgLock meshlock (mesh->MajorMutex(), 1);
+    
+    BisectionOptions biopt;
+    biopt.usemarkedelements = 1;
+    biopt.refine_p = 0;
+    biopt.refine_hp = 0;
+    if (reftype == NG_REFINE_P)
+      biopt.refine_p = 1;
+    if (reftype == NG_REFINE_HP)
+      biopt.refine_hp = 1;
+    biopt.task_manager = task_manager;
+    
+    const Refinement & ref = mesh->GetGeometry()->GetRefinement();
+    ref.Bisect (*mesh, biopt);
+    
+    mesh -> UpdateTopology(task_manager);
+    mesh -> GetCurvedElements().SetIsHighOrder (false);
+  }
+
+
+  
 
 #ifdef PARALLEL
   

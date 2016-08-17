@@ -3948,7 +3948,7 @@ namespace netgen
       delete idmaps[i];
     idmaps.DeleteAll();
 
-    mesh.UpdateTopology();
+    mesh.UpdateTopology(opt.task_manager);
 
 
 

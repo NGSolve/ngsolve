@@ -670,7 +670,7 @@ namespace netgen
     const MeshTopology & GetTopology () const
     { return *topology; }
 
-    DLL_HEADER void UpdateTopology();
+    DLL_HEADER void UpdateTopology (TaskManager tm = &DummyTaskManager);
   
     class CurvedElements & GetCurvedElements () const
     { return *curvedelems; }

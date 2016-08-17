@@ -12,6 +12,7 @@ public:
   int usemarkedelements;
   bool refine_hp;
   bool refine_p;
+  TaskManager task_manager = &DummyTaskManager;
   DLL_HEADER BisectionOptions ();
 };
 

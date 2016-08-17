@@ -71,6 +71,7 @@ public:
 
 #endif
 
+
 // Simple ParallelFor function to replace OpenMP
 template<typename TFunc>
 void ParallelFor( int first, int next, const TFunc & f )
@@ -92,6 +93,42 @@ void ParallelFor( int first, int next, const TFunc & f )
   delete [] threads;
 }
 
+
+
+  typedef void (*TaskManager)(function<void(int,int)>);
+
+  inline void DummyTaskManager (function<void(int,int)> func)
+  {
+    func(0,2);
+    func(1,2);
+  }
+  
+  template <typename FUNC>
+  inline void ParallelFor (TaskManager tm, size_t n, FUNC func)
+  {
+    (*tm) ([n,func] (size_t nr, size_t nums)
+           {
+             size_t begin = nr*n / nums;
+             size_t end = (nr+1)*n / nums;
+
+             for (size_t i = begin; i < end; i++)
+               func(i);
+           });
+  }
+  
+  template <typename FUNC>
+  inline void ParallelForRange (TaskManager tm, size_t n, FUNC func)
+  {
+    (*tm) ([n,func] (size_t nr, size_t nums)
+           {
+             size_t begin = nr*n / nums;
+             size_t end = (nr+1)*n / nums;
+             func(begin, end);
+           });
+  }
+                    
+
+  
 }
 
 #endif

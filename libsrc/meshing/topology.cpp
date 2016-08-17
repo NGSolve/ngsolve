@@ -3,8 +3,12 @@
 
 namespace netgen
 {
+
+
+
+  
   template <class T>
-  void QuickSortRec (FlatArray<T> & data,
+  void QuickSortRec (FlatArray<T> data,
 		     int left, int right)
   {
     int i = left;
@@ -28,7 +32,7 @@ namespace netgen
   }
 
   template <class T>
-  void QuickSort (FlatArray<T> & data)
+  void QuickSort (FlatArray<T> data)
   {
     if (data.Size() > 1)
       QuickSortRec (data, 0, data.Size()-1);
@@ -58,7 +62,227 @@ namespace netgen
     delete vert2pointelement;
   }
 
-  void MeshTopology :: Update()
+
+  template <typename FUNC>
+  void LoopOverFaces (const Mesh & mesh, MeshTopology & top, PointIndex v,
+                      FUNC func)
+  {
+    for (ElementIndex elnr : top.GetVertexElements(v))
+      {
+        const Element & el = mesh[elnr];
+	
+        int nelfaces = MeshTopology::GetNFaces (el.GetType());
+        const ELEMENT_FACE * elfaces = MeshTopology::GetFaces0 (el.GetType());
+	
+        for (int j = 0; j < nelfaces; j++)
+          if (elfaces[j][3] < 0)
+            
+            { // triangle
+              INDEX_4 face(el[elfaces[j][0]], el[elfaces[j][1]], 
+                           el[elfaces[j][2]], 0);
+              
+              int facedir = 0;
+              if (face.I1() > face.I2())
+                { swap (face.I1(), face.I2()); facedir += 1; }
+              if (face.I2() > face.I3())
+                { swap (face.I2(), face.I3()); facedir += 2; }
+              if (face.I1() > face.I2())
+                { swap (face.I1(), face.I2()); facedir += 4; }
+              
+              if (face.I1() != v) continue;
+
+              func (face, elnr, j, true, facedir);
+            }
+        /*
+              if (pass == 1)
+                {
+                  if (!vert2face.Used (face))
+                    {
+                      nfa++;
+                      vert2face.Set (face, nfa);
+                      INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
+                      face2vert.Append (hface);
+                    }
+                }
+              else
+                {
+                  int facenum = vert2face.Get(face);
+                  faces[elnr][j].fnr = facenum-1;
+                  faces[elnr][j].forient = facedir;
+                }
+        */
+          else
+            {
+              // quad
+              int facenum;
+              INDEX_4 face4(el[elfaces[j][0]], el[elfaces[j][1]],
+                            el[elfaces[j][2]], el[elfaces[j][3]]);
+              
+              int facedir = 0;
+              if (min2 (face4.I1(), face4.I2()) > 
+                  min2 (face4.I4(), face4.I3())) 
+                {  // z - flip
+                  facedir += 1; 
+                  swap (face4.I1(), face4.I4());
+                  swap (face4.I2(), face4.I3());
+                }
+              if (min2 (face4.I1(), face4.I4()) >
+                  min2 (face4.I2(), face4.I3())) 
+                {  // x - flip
+                  facedir += 2; 
+                  swap (face4.I1(), face4.I2());
+                  swap (face4.I3(), face4.I4());
+                }
+              if (face4.I2() > face4.I4())
+                {  // diagonal flip
+                  facedir += 4; 
+                  swap (face4.I2(), face4.I4());
+                }
+              
+              func(face4, elnr, j, true, facedir);
+                /*
+              INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
+              
+              if (face.I1() != v) continue;
+              
+              if (vert2face.Used (face))
+                {
+                  facenum = vert2face.Get(face);
+                }
+              else
+                {
+                  if (pass == 2) cout << "hier in pass 2" << endl;
+                  nfa++;
+                  vert2face.Set (face, nfa);
+                  facenum = nfa;
+                  
+                  INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
+                  face2vert.Append (hface);
+                }
+              
+              faces[elnr][j].fnr = facenum-1;
+                          faces[elnr][j].forient = facedir;
+			}
+                */
+                }
+        
+        for (SurfaceElementIndex elnr : top.GetVertexSurfaceElements(v))          
+          {
+            const Element2d & el = mesh.SurfaceElement (elnr);
+            
+            const ELEMENT_FACE * elfaces = MeshTopology::GetFaces1 (el.GetType());
+		
+            if (elfaces[0][3] == 0)
+              
+              { // triangle
+                
+                int facenum;
+                int facedir;
+		
+                INDEX_4 face(el.PNum(elfaces[0][0]),
+                             el.PNum(elfaces[0][1]),
+                             el.PNum(elfaces[0][2]),0);
+                
+                facedir = 0;
+                if (face.I1() > face.I2())
+                  {
+                    swap (face.I1(), face.I2());
+                    facedir += 1;
+                  }
+                if (face.I2() > face.I3())
+                  {
+                    swap (face.I2(), face.I3());
+                    facedir += 2;
+                  }
+                if (face.I1() > face.I2())
+                  {
+                    swap (face.I1(), face.I2());
+                    facedir += 4;
+                  }
+                
+                if (face.I1() != v) continue;
+
+                func(face, elnr, 0, false, facedir);
+                /*
+                if (vert2face.Used (face))
+                  facenum = vert2face.Get(face);
+                else
+                  {
+                    nfa++;
+                    vert2face.Set (face, nfa);
+                    facenum = nfa;
+                    
+                    INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
+                    face2vert.Append (hface);
+                  }
+                
+                surffaces[elnr].fnr = facenum-1;
+                surffaces[elnr].forient = facedir;
+                */
+              }
+            
+            else
+              
+              {
+                // quad
+                int facenum;
+                int facedir;
+		
+                INDEX_4 face4(el.PNum(elfaces[0][0]),
+                              el.PNum(elfaces[0][1]),
+                              el.PNum(elfaces[0][2]),
+                              el.PNum(elfaces[0][3]));
+                
+                facedir = 0;
+                if (min2 (face4.I1(), face4.I2()) > 
+                    min2 (face4.I4(), face4.I3())) 
+                  {  // z - orientation
+                    facedir += 1; 
+                    swap (face4.I1(), face4.I4());
+                    swap (face4.I2(), face4.I3());
+                  }
+                if (min2 (face4.I1(), face4.I4()) >
+                    min2 (face4.I2(), face4.I3())) 
+                  {  // x - orientation
+                    facedir += 2; 
+                    swap (face4.I1(), face4.I2());
+                    swap (face4.I3(), face4.I4());
+                  }
+                if (face4.I2() > face4.I4())
+                  { 
+                    facedir += 4; 
+                    swap (face4.I2(), face4.I4());
+                  }
+
+                func(face4, elnr, 0, false, facedir);
+                /*
+                INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
+                if (face.I1() != v) continue;
+		
+                if (vert2face.Used (face))
+                  facenum = vert2face.Get(face);
+                else
+                  {
+                    nfa++;
+                    vert2face.Set (face, nfa);
+                    facenum = nfa;
+                    
+                    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
+                    face2vert.Append (hface);
+                  }
+                
+                  surffaces[elnr].fnr = facenum-1;
+                  surffaces[elnr].forient = facedir;
+                  }
+                */
+              }
+            
+          }
+      }
+  }
+  
+  
+  void MeshTopology :: Update(TaskManager tm)
   {
     static int timer = NgProfiler::CreateTimer ("topology");
     NgProfiler::RegionTimer reg (timer);
@@ -75,7 +299,6 @@ namespace netgen
     int nseg = mesh.GetNSeg();
     int np = mesh.GetNP();
     int nv = mesh.GetNV(); 
-    int nfa = 0;
     int ned = edge2vert.Size();
 
     if (id == 0)
@@ -388,6 +611,7 @@ namespace netgen
 	static int timer2 = NgProfiler::CreateTimer ("topology::buildfaces");
 	static int timer2a = NgProfiler::CreateTimer ("topology::buildfacesa");
 	static int timer2b = NgProfiler::CreateTimer ("topology::buildfacesb");
+        static int timer2b1 = NgProfiler::CreateTimer ("topology::buildfacesb1");
 	static int timer2c = NgProfiler::CreateTimer ("topology::buildfacesc");
 	NgProfiler::RegionTimer reg2 (timer2);
 
@@ -399,7 +623,6 @@ namespace netgen
 	faces.SetSize(ne);
 	surffaces.SetSize(nse);
 	
-	int oldnfa = face2vert.Size();
 
 	cnt = 0;
 	for (int i = 0; i < face2vert.Size(); i++)
@@ -428,332 +651,127 @@ namespace netgen
         NgProfiler::StopTimer (timer2a);
         NgProfiler::StartTimer (timer2b);
 
-        /*
-	for (int pass = 1; pass <= 2; pass++)
-	  {
-            cout << "pass = " << pass << endl;
-	    nfa = oldnfa;
-	    for (int v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
-	      {
-		int first_fa = nfa;
+        INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10);         
 
-		INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
-		
-		for (int j = 0; j < vert2oldface[v].Size(); j++)
-		  {
-		    int fnr = vert2oldface[v][j];
-		    INDEX_3 face (face2vert[fnr].I1(),
-				  face2vert[fnr].I2(),
-				  face2vert[fnr].I3());
-		    vert2face.Set (face, fnr+1);
-		  }
+	int oldnfa = face2vert.Size();
 
-
-		if (pass == 2)
-                  {
-                    // *testout << "pass 2, nfa = " << nfa << "; face2vert.Size() = " << face2vert.Size() << endl;
-                    for (int j = nfa; j < face2vert.Size(); j++)
-                      {
-                        if (face2vert[j][0] == v)
-                          {
-                            INDEX_3 face (face2vert[j].I1(),
-                                          face2vert[j].I2(),
-                                          face2vert[j].I3());
-                            vert2face.Set (face, j+1);
-                            nfa++;
-                          }
-                        else
-                          break;
-                      }
-                  }
-
-		// cout << "inherited faces: " << endl << vert2face << endl;
-
-
-		for (int j = 0; j < (*vert2element)[v].Size(); j++)
-		  {
-                    // NgProfiler::RegionTimer reg3 (timer2d);
-
-		    ElementIndex elnr = (*vert2element)[v][j];
-		    const Element & el = mesh[elnr];
-	  
-		    int nelfaces = GetNFaces (el.GetType());
-		    const ELEMENT_FACE * elfaces = GetFaces0 (el.GetType());
-	  
-		    for (int j = 0; j < nelfaces; j++)
-		      if (elfaces[j][3] < 0)
-                        
-			{ // triangle
-			  int facenum, facedir;
-			  INDEX_3 face(el[elfaces[j][0]], el[elfaces[j][1]], 
-                                       el[elfaces[j][2]]);
-                          
-			  facedir = 0;
-			  if (face.I1() > face.I2())
-			    { swap (face.I1(), face.I2()); facedir += 1; }
-			  if (face.I2() > face.I3())
-			    { swap (face.I2(), face.I3()); facedir += 2; }
-			  if (face.I1() > face.I2())
-			    { swap (face.I1(), face.I2()); facedir += 4; }
-		      
-			  if (face.I1() != v) continue;
-                          
-			  if (vert2face.Used (face))
-			    facenum = vert2face.Get(face);
-			  else
-			    {
-                              if (pass == 2) cout << "hier in pass 2" << endl;
-			      nfa++;
-			      vert2face.Set (face, nfa);
-			      facenum = nfa;
-			  
-			      INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
-			      face2vert.Append (hface);
-			    }
-			  faces[elnr][j] = 8*(facenum-1)+facedir+1;
-			}
-                    
-		      else
-		    
-			{
-			  // quad
-			  int facenum, facedir;
-			  INDEX_4Q face4(el[elfaces[j][0]], el[elfaces[j][1]],
-					 el[elfaces[j][2]], el[elfaces[j][3]]);
-		      
-			  facedir = 0;
-			  if (min2 (face4.I1(), face4.I2()) > 
-			      min2 (face4.I4(), face4.I3())) 
-			    {  // z - flip
-			      facedir += 1; 
-			      swap (face4.I1(), face4.I4());
-			      swap (face4.I2(), face4.I3());
-			    }
-			  if (min2 (face4.I1(), face4.I4()) >
-			      min2 (face4.I2(), face4.I3())) 
-			    {  // x - flip
-			      facedir += 2; 
-			      swap (face4.I1(), face4.I2());
-			      swap (face4.I3(), face4.I4());
-			    }
-			  if (face4.I2() > face4.I4())
-			    {  // diagonal flip
-			      facedir += 4; 
-			      swap (face4.I2(), face4.I4());
-			    }
-
-		
-			  INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-
-			  if (face.I1() != v) continue;
-		      
-			  if (vert2face.Used (face))
-			    {
-			      facenum = vert2face.Get(face);
-			    }
-			  else
-			    {
-                              if (pass == 2) cout << "hier in pass 2" << endl;
-			      nfa++;
-			      vert2face.Set (face, nfa);
-			      facenum = nfa;
-			  
-			      INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
-			      face2vert.Append (hface);
-			    }
-		      
-			  faces[elnr][j] = 8*(facenum-1)+facedir+1;
-			}
-		  }
-
-		for (int j = 0; j < (*vert2surfelement)[v].Size(); j++)
-		  {
-		    int elnr = (*vert2surfelement)[v][j];
-		    // cout << "surfelnr = " << elnr << endl;
-		    const Element2d & el = mesh.SurfaceElement (elnr);
-		
-		    const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
-		
-		    if (elfaces[0][3] == 0)
-	    
-		      { // triangle
-	      
-			int facenum;
-			int facedir;
-		    
-			INDEX_3 face(el.PNum(elfaces[0][0]),
-				     el.PNum(elfaces[0][1]),
-				     el.PNum(elfaces[0][2]));
-		    
-			// cout << "face = " << face << endl;
-
-			facedir = 0;
-			if (face.I1() > face.I2())
-			  {
-			    swap (face.I1(), face.I2());
-			    facedir += 1;
-			  }
-			if (face.I2() > face.I3())
-			  {
-			    swap (face.I2(), face.I3());
-			    facedir += 2;
-			  }
-			if (face.I1() > face.I2())
-			  {
-			    swap (face.I1(), face.I2());
-			    facedir += 4;
-			  }
-		    
-			if (face.I1() != v) continue;
-		    
-			if (vert2face.Used (face))
-			  facenum = vert2face.Get(face);
-			else
-			  {
-			    nfa++;
-			    vert2face.Set (face, nfa);
-			    facenum = nfa;
-			
-			    INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
-			    face2vert.Append (hface);
-			  }
-
-			surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
-		      }
-	  
-		    else
-	    
-		      {
-			// quad
-			int facenum;
-			int facedir;
-		    
-			INDEX_4Q face4(el.PNum(elfaces[0][0]),
-				       el.PNum(elfaces[0][1]),
-				       el.PNum(elfaces[0][2]),
-				       el.PNum(elfaces[0][3]));
-		    
-			facedir = 0;
-			if (min2 (face4.I1(), face4.I2()) > 
-			    min2 (face4.I4(), face4.I3())) 
-			  {  // z - orientation
-			    facedir += 1; 
-			    swap (face4.I1(), face4.I4());
-			    swap (face4.I2(), face4.I3());
-			  }
-			if (min2 (face4.I1(), face4.I4()) >
-			    min2 (face4.I2(), face4.I3())) 
-			  {  // x - orientation
-			    facedir += 2; 
-			    swap (face4.I1(), face4.I2());
-			    swap (face4.I3(), face4.I4());
-			  }
-			if (face4.I2() > face4.I4())
-			  { 
-			    facedir += 4; 
-			    swap (face4.I2(), face4.I4());
-			  }
-		    
-			INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-			if (face.I1() != v) continue;
-		    
-			if (vert2face.Used (face))
-			  facenum = vert2face.Get(face);
-			else
-			  {
-			    nfa++;
-			    vert2face.Set (face, nfa);
-			    facenum = nfa;
-			
-			    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I3());
-			    face2vert.Append (hface);
-			  }
-		    
-			surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
-		      }
-		  }
-
-		// sort faces
-		// *testout << "faces = " << face2vert << endl;
-		if (pass == 1)
-		  {
-                    // *testout << "pass1, sort from " << first_fa << " to " << nfa << endl;
-		    for (int i = first_fa; i < nfa; i++)
-		      for (int j = first_fa+1; j < nfa; j++)
-			if (face2vert[j] < face2vert[j-1])
-			  Swap (face2vert[j-1], face2vert[j]);
-		  }
-		// *testout << "faces, sorted = " << face2vert << endl;
-	      }
-
-
-	    face2vert.SetAllocSize (nfa);            
-	  }
-        */
-
-        /*
-          // timing tests
-	static int timer_touch = NgProfiler::CreateTimer ("topology::buildfaces - touch els");
-	static int timer_touch2 = NgProfiler::CreateTimer ("topology::buildfaces - touch els vert");
-
-        NgProfiler::StartTimer (timer_touch);
-
-        int sum = 0;
-        for (ElementIndex ei = 0; ei < mesh.GetNE(); ei++)
-          {		    
-            const Element & el = mesh[ei];
-            for (int j = 0; j < el.GetNP(); j++)
-              sum += el[j];
-          }
-
-        NgProfiler::StopTimer (timer_touch);
-
-        NgProfiler::StartTimer (timer_touch2);
-
-        for (int v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
-          {
-            INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
-            
-            for (int pass = 1; pass <= 2; pass++)
-              for (int j = 0; j < (*vert2element)[v].Size(); j++)
+        // count faces associated with vertices
+        cnt = 0;
+        // for (auto v : mesh.Points().Range())
+        NgProfiler::StartTimer (timer2b1);
+        ParallelForRange
+          (tm, mesh.Points().Size(),
+            [&] (size_t begin, size_t end)
+            {
+              INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
+              for (PointIndex v = begin+PointIndex::BASE;
+                   v < end+PointIndex::BASE; v++)
                 {
-                  // NgProfiler::RegionTimer reg3 (timer2d);
+                  vert2face.DeleteData();
                   
-                  ElementIndex elnr = (*vert2element)[v][j];
-                  const Element & el = mesh[elnr];
-
-
-                  int nelfaces = GetNFaces (el.GetType());
-                  const ELEMENT_FACE * elfaces = GetFaces0 (TET);
-	  
-                  for (int j = 0; j < 4; j++)
-                    { // triangle
-                      INDEX_3 face(el[elfaces[j][0]], el[elfaces[j][1]], 
-                                   el[elfaces[j][2]]);
-                      
-                      int facedir = 0;
-                      if (face.I1() > face.I2())
-                        { swap (face.I1(), face.I2()); facedir += 1; }
-                      if (face.I2() > face.I3())
-                        { swap (face.I2(), face.I3()); facedir += 2; }
-                      if (face.I1() > face.I2())
-                        { swap (face.I1(), face.I2()); facedir += 4; }
-                      
-                      sum += face.I1();
-                      sum += face.I1() < face.I2();
+                  for (int j = 0; j < vert2oldface[v].Size(); j++)
+                    {
+                      int fnr = vert2oldface[v][j];
+                      INDEX_3 face (face2vert[fnr].I1(),
+                                    face2vert[fnr].I2(),
+                                face2vert[fnr].I3());
+                      vert2face.Set (face, 33);  // something
                     }
+                  int cnti = 0;
+                  LoopOverFaces (mesh, *this, v,
+                                 [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
+                                 {
+                                   INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
+                                   if (!vert2face.Used (face))
+                                     {
+                                       cnti++;
+                                       vert2face.Set (face, 33); // something
+                                     }
+                                 });
+                  cnt[v] = cnti;
                 }
-          }
+              cout << "myrange = " << begin << " - " << end << endl;
+            } );
+        NgProfiler::StopTimer (timer2b1);
         
-        NgProfiler::StopTimer (timer_touch2);
-        *testout << "sum" << sum << endl;
-        */
+        // accumulate number of faces
+        int nfa = oldnfa;
+        for (auto v : mesh.Points().Range())
+          {
+            auto hv = cnt[v];
+            cnt[v] = nfa;
+            nfa += hv;
+          }
+        face2vert.SetSize(nfa);
+        
+        for (auto v : mesh.Points().Range())
+          {
+            int first_fa = cnt[v];
+            int nfa = first_fa;
+            vert2face.DeleteData();
+            
+            for (int j = 0; j < vert2oldface[v].Size(); j++)
+              {
+                int fnr = vert2oldface[v][j];
+                INDEX_3 face (face2vert[fnr].I1(),
+                              face2vert[fnr].I2(),
+                              face2vert[fnr].I3());
+                vert2face.Set (face, fnr);
+              }
+            
+            LoopOverFaces (mesh, *this, v,
+                           [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
+                           {
+                             INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
+                             if (!vert2face.Used (face))
+                               {
+                                 face2vert[nfa] = i4;
+                                 vert2face.Set (face, nfa);
+                                 nfa++;
+                               }
+                           });
 
 
-
-        nfa = oldnfa;
+            QuickSort (face2vert.Range(first_fa, nfa));
+            
+            for (int j = first_fa; j < nfa; j++)
+              {
+                if (face2vert[j][0] == v)
+                  {
+                    INDEX_3 face (face2vert[j].I1(),
+                                  face2vert[j].I2(),
+                                  face2vert[j].I3());
+                    vert2face.Set (face, j);
+                  }
+                else
+                  break;
+              }
+            
+        
+            LoopOverFaces (mesh, *this, v,
+                           [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
+                           {
+                             INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
+                             int facenum = vert2face.Get(face);
+                             if (volume)
+                               {
+                                 faces[elnr][j].fnr = facenum;
+                                 faces[elnr][j].forient = facedir;
+                               }
+                             else
+                               {
+                                 surffaces[elnr].fnr = facenum;
+                                 surffaces[elnr].forient = facedir;
+                               }
+                           });
+          }
+          
+          /*
+	int oldnfa = face2vert.Size();
+        int nfa = oldnfa;
         INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
-        for (int v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
+
+        for (auto v : mesh.Points().Range())
           {
             int first_fa = nfa;
 
@@ -771,23 +789,6 @@ namespace netgen
 
             for (int pass = 1; pass <= 2; pass++)
 	      {
-
-		if (pass == 2)
-                  {
-                    for (int j = first_fa; j < face2vert.Size(); j++)
-                      {
-                        if (face2vert[j][0] == v)
-                          {
-                            INDEX_3 face (face2vert[j].I1(),
-                                          face2vert[j].I2(),
-                                          face2vert[j].I3());
-                            vert2face.Set (face, j+1);
-                          }
-                        else
-                          break;
-                      }
-                  }
-
 
                 for (ElementIndex elnr : (*vert2element)[v])
 		  {
@@ -826,7 +827,6 @@ namespace netgen
                           else
                             {
                               int facenum = vert2face.Get(face);
-                              // faces[elnr][j] = 8*(facenum-1)+facedir+1;
                               faces[elnr][j].fnr = facenum-1;
                               faces[elnr][j].forient = facedir;
                             }
@@ -881,7 +881,6 @@ namespace netgen
 			      face2vert.Append (hface);
 			    }
 		      
-			  // faces[elnr][j] = 8*(facenum-1)+facedir+1;
                           faces[elnr][j].fnr = facenum-1;
                           faces[elnr][j].forient = facedir;
 			}
@@ -890,7 +889,6 @@ namespace netgen
 		for (int j = 0; j < (*vert2surfelement)[v].Size(); j++)
 		  {
 		    SurfaceElementIndex elnr = (*vert2surfelement)[v][j];
-		    // cout << "surfelnr = " << elnr << endl;
 		    const Element2d & el = mesh.SurfaceElement (elnr);
 		
 		    const ELEMENT_FACE * elfaces = GetFaces1 (el.GetType());
@@ -906,8 +904,6 @@ namespace netgen
 				     el.PNum(elfaces[0][1]),
 				     el.PNum(elfaces[0][2]));
 		    
-			// cout << "face = " << face << endl;
-
 			facedir = 0;
 			if (face.I1() > face.I2())
 			  {
@@ -939,7 +935,6 @@ namespace netgen
 			    face2vert.Append (hface);
 			  }
 
-			// surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
                         surffaces[elnr].fnr = facenum-1;
                         surffaces[elnr].forient = facedir;
 		      }
@@ -988,11 +983,10 @@ namespace netgen
 			    vert2face.Set (face, nfa);
 			    facenum = nfa;
 			
-			    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I3());
+			    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
 			    face2vert.Append (hface);
 			  }
-		    
-			// surffaces.Elem(elnr) = 8*(facenum-1)+facedir+1;
+
                         surffaces[elnr].fnr = facenum-1;
                         surffaces[elnr].forient = facedir;
 		      }
@@ -1001,28 +995,31 @@ namespace netgen
 		// sort faces
 		if (pass == 1)
 		  {
-                    for (int i = 0; i < nfa-first_fa; i++)
-		      for (int j = first_fa+1; j < nfa-i; j++)
-			if (face2vert[j] < face2vert[j-1])
-			  Swap (face2vert[j-1], face2vert[j]);
+                    QuickSort (face2vert.Range(first_fa, nfa));
+
+                    for (int j = first_fa; j < face2vert.Size(); j++)
+                      {
+                        if (face2vert[j][0] == v)
+                          {
+                            INDEX_3 face (face2vert[j].I1(),
+                                          face2vert[j].I2(),
+                                          face2vert[j].I3());
+                            vert2face.Set (face, j+1);
+                          }
+                        else
+                          break;
+                      }
 		  }
 	      }
 	  }
-
+*/
 
         face2vert.SetAllocSize (nfa);            
 
-
-
-
-
 	// *testout << "face2vert = " << endl << face2vert << endl;
-
-
 
         NgProfiler::StopTimer (timer2b);
         NgProfiler::StartTimer (timer2c);
-
 
 
 

@@ -290,6 +290,9 @@ namespace netgen
   void BASE_INDEX_3_CLOSED_HASHTABLE ::
   BaseSetSize (int size)
   {
+    size = RoundUp2 (size);
+    mask = size-1;
+    
     hash.SetSize(size);
     for (int i = 0; i < size; i++)
       hash[i].I1() = invalid;

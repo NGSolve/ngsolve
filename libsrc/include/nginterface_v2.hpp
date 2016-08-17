@@ -179,6 +179,10 @@ namespace netgen
 
   class Mesh;
 
+
+  inline void DummyTaskManager2 (function<void(int,int)> func)
+  { func(0,1); }
+  
   class DLL_HEADER Ngx_Mesh
   {
   private:
@@ -246,6 +250,11 @@ namespace netgen
     
     template <int DIM>
     int GetNNodes ();
+
+
+    void Refine (NG_REFINEMENT_TYPE reftype,
+                 void (*taskmanager)(function<void(int,int)>) = &DummyTaskManager2);
+
 
     // Find element of point, returns local coordinates
     template <int DIM>
