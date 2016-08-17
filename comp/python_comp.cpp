@@ -562,8 +562,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Refine", FunctionPointer
          ([](MeshAccess & ma)
           {
-            Ng_Refine(NG_REFINE_H);
-            ma.UpdateBuffers();
+            ma.Refine();
           }),
          "local mesh refinement based on marked elements, uses element-bisection algorithm")
 

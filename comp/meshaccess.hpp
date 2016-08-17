@@ -549,8 +549,8 @@ namespace ngcomp
       else
         Ng_SetSurfaceRefinementFlag (id.Nr()+1, ref);
     }
-    
 
+    void Refine ();
     void SetDeformation (shared_ptr<GridFunction> def = nullptr)
     {
       deformation = def;
