@@ -55,6 +55,7 @@ namespace netgen
     delete vert2element;
     delete vert2surfelement;
     delete vert2segment;
+    delete vert2pointelement;
   }
 
   void MeshTopology :: Update()
@@ -90,6 +91,7 @@ namespace netgen
     delete vert2element;
     delete vert2surfelement;
     delete vert2segment;
+    delete vert2pointelement;
   
     Array<int,PointIndex::BASE> cnt(nv);
     Array<int> vnums;
@@ -150,6 +152,22 @@ namespace netgen
 	vert2segment->AddSave (seg[1], si);
       }
 
+
+    cnt = 0;
+    for (int pi = 0; pi < mesh.pointelements.Size(); pi++)
+      {
+	const Element0d & pointel = mesh.pointelements[pi];
+	cnt[pointel.pnum]++;
+      }
+ 
+    vert2pointelement = new TABLE<int,PointIndex::BASE> (cnt);
+    for (int pi = 0; pi < mesh.pointelements.Size(); pi++)
+      {
+	const Element0d & pointel = mesh.pointelements[pi];        
+	vert2pointelement->AddSave (pointel.pnum, pi);
+      }
+
+    
     if (buildedges)
       {
 	static int timer1 = NgProfiler::CreateTimer ("topology::buildedges");
@@ -734,11 +752,12 @@ namespace netgen
 
 
         nfa = oldnfa;
+        INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
         for (int v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
           {
             int first_fa = nfa;
 
-            INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
+            vert2face.DeleteData();
             
             for (int j = 0; j < vert2oldface[v].Size(); j++)
               {
@@ -770,12 +789,8 @@ namespace netgen
                   }
 
 
-
-		for (int j = 0; j < (*vert2element)[v].Size(); j++)
+                for (ElementIndex elnr : (*vert2element)[v])
 		  {
-                    // NgProfiler::RegionTimer reg3 (timer2d);
-
-		    ElementIndex elnr = (*vert2element)[v][j];
 		    const Element & el = mesh[elnr];
 	  
 		    int nelfaces = GetNFaces (el.GetType());

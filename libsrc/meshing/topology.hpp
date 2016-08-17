@@ -46,6 +46,7 @@ class MeshTopology
   TABLE<ElementIndex,PointIndex::BASE> *vert2element;
   TABLE<SurfaceElementIndex,PointIndex::BASE> *vert2surfelement;
   TABLE<SegmentIndex,PointIndex::BASE> *vert2segment;
+  TABLE<int,PointIndex::BASE> *vert2pointelement = nullptr;
   int timestamp;
 public:
   int GetNSurfedges() const {return surfedges.Size();}
@@ -142,6 +143,9 @@ public:
 
   FlatArray<SegmentIndex> GetVertexSegments (int vnr) const
   { return (*vert2segment)[vnr]; }
+
+  FlatArray<int> GetVertexPointElements (int vnr) const
+  { return (*vert2pointelement)[vnr]; }
   
   int GetVerticesEdge ( int v1, int v2) const;
   void GetSegmentVolumeElements ( int segnr, Array<ElementIndex> & els ) const;
