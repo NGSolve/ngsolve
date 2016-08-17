@@ -163,8 +163,8 @@ namespace netgen
     vert2pointelement = new TABLE<int,PointIndex::BASE> (cnt);
     for (int pi = 0; pi < mesh.pointelements.Size(); pi++)
       {
-	const Element0d & pointel = mesh.pointelements[pi];        
-	vert2pointelement->AddSave (pointel.pnum, pi);
+	const Element0d & pointel = mesh.pointelements[pi];
+	vert2pointelement->AddSave (pointel.pnum, pi+1);
       }
 
     
