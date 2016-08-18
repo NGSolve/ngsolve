@@ -282,7 +282,7 @@ namespace netgen
   }
   
   
-  void MeshTopology :: Update(TaskManager tm)
+  void MeshTopology :: Update (TaskManager tm)
   {
     static int timer = NgProfiler::CreateTimer ("topology");
     NgProfiler::RegionTimer reg (timer);
@@ -546,10 +546,6 @@ namespace netgen
 		    if (edge.I1() != i) continue;
                     
 		    int edgenum = edgenr[edge.I2()];
-                    /*
-		    if (edgedir) edgenum *= -1;
-		    edges[elnr][k] = edgenum;
-                    */
                     edges[elnr][k].nr = edgenum-1;
                     edges[elnr][k].orient = edgedir;
 		  }
@@ -573,8 +569,6 @@ namespace netgen
 		    if (edge.I1() != i) continue;
 
 		    int edgenum = edgenr[edge.I2()];
-		    // if (edgedir) edgenum *= -1;
-		    // surfedges.Elem(elnr)[k] = edgenum;
                     surfedges[elnr][k].nr = edgenum-1;
                     surfedges[elnr][k].orient = edgedir;
 		  }
@@ -593,10 +587,6 @@ namespace netgen
 		if (edge.I1() != i) continue;
 
 		int edgenum = edgenr[edge.I2()];
-                /*
-		if (edgedir) edgenum *= -1;
-		segedges.Elem(elnr) = edgenum;
-                */
                 segedges[elnr].nr = edgenum-1;
                 segedges[elnr].orient = edgedir;
 	      }
@@ -690,7 +680,6 @@ namespace netgen
                                  });
                   cnt[v] = cnti;
                 }
-              cout << "myrange = " << begin << " - " << end << endl;
             } );
         NgProfiler::StopTimer (timer2b1);
         
@@ -704,70 +693,78 @@ namespace netgen
           }
         face2vert.SetSize(nfa);
         
-        for (auto v : mesh.Points().Range())
-          {
-            int first_fa = cnt[v];
-            int nfa = first_fa;
-            vert2face.DeleteData();
-            
-            for (int j = 0; j < vert2oldface[v].Size(); j++)
-              {
-                int fnr = vert2oldface[v][j];
-                INDEX_3 face (face2vert[fnr].I1(),
-                              face2vert[fnr].I2(),
-                              face2vert[fnr].I3());
-                vert2face.Set (face, fnr);
-              }
-            
-            LoopOverFaces (mesh, *this, v,
-                           [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
-                           {
-                             INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
-                             if (!vert2face.Used (face))
-                               {
-                                 face2vert[nfa] = i4;
-                                 vert2face.Set (face, nfa);
-                                 nfa++;
-                               }
-                           });
+        // for (auto v : mesh.Points().Range())
 
-
-            QuickSort (face2vert.Range(first_fa, nfa));
-            
-            for (int j = first_fa; j < nfa; j++)
-              {
-                if (face2vert[j][0] == v)
-                  {
-                    INDEX_3 face (face2vert[j].I1(),
-                                  face2vert[j].I2(),
-                                  face2vert[j].I3());
-                    vert2face.Set (face, j);
-                  }
-                else
-                  break;
-              }
-            
-        
-            LoopOverFaces (mesh, *this, v,
-                           [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
-                           {
-                             INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
-                             int facenum = vert2face.Get(face);
-                             if (volume)
-                               {
-                                 faces[elnr][j].fnr = facenum;
-                                 faces[elnr][j].forient = facedir;
-                               }
-                             else
-                               {
-                                 surffaces[elnr].fnr = facenum;
-                                 surffaces[elnr].forient = facedir;
-                               }
-                           });
-          }
-          
-          /*
-	int oldnfa = face2vert.Size();
+        ParallelForRange
+          (tm, mesh.Points().Size(),
+            [&] (size_t begin, size_t end)
+            {
+              INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
+              for (PointIndex v = begin+PointIndex::BASE;
+                   v < end+PointIndex::BASE; v++)
+                {
+                  int first_fa = cnt[v];
+                  int nfa = first_fa;
+                  vert2face.DeleteData();
+                  
+                  for (int j = 0; j < vert2oldface[v].Size(); j++)
+                    {
+                      int fnr = vert2oldface[v][j];
+                      INDEX_3 face (face2vert[fnr].I1(),
+                                    face2vert[fnr].I2(),
+                                    face2vert[fnr].I3());
+                      vert2face.Set (face, fnr);
+                    }
+                  
+                  LoopOverFaces (mesh, *this, v,
+                                 [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
+                                 {
+                                   INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
+                                   if (!vert2face.Used (face))
+                                     {
+                                       face2vert[nfa] = i4;
+                                       vert2face.Set (face, nfa);
+                                       nfa++;
+                                     }
+                                 });
+                  
+                  
+                  QuickSort (face2vert.Range(first_fa, nfa));
+                  
+                  for (int j = first_fa; j < nfa; j++)
+                    {
+                      if (face2vert[j][0] == v)
+                        {
+                          INDEX_3 face (face2vert[j].I1(),
+                                        face2vert[j].I2(),
+                                        face2vert[j].I3());
+                          vert2face.Set (face, j);
+                        }
+                      else
+                        break;
+                    }
+                  
+                  
+                  LoopOverFaces (mesh, *this, v,
+                                 [&] (INDEX_4 i4, int elnr, int j, bool volume, int facedir)
+                                 {
+                                   INDEX_3 face(i4.I1(), i4.I2(), i4.I3());
+                                   int facenum = vert2face.Get(face);
+                                   if (volume)
+                                     {
+                                       faces[elnr][j].fnr = facenum;
+                                       faces[elnr][j].forient = facedir;
+                                     }
+                                   else
+                                     {
+                                       surffaces[elnr].fnr = facenum;
+                                       surffaces[elnr].forient = facedir;
+                                     }
+                                 });
+                }
+            });
+              /*
+                int oldnfa = face2vert.Size();
         int nfa = oldnfa;
         INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
 
