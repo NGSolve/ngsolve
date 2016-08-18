@@ -139,11 +139,12 @@ namespace netgen
                   swap (face4.I2(), face4.I4());
                 }
               
+              if (face4.I1() != v) continue;
+              
               func(face4, elnr, j, true, facedir);
                 /*
               INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
               
-              if (face.I1() != v) continue;
               
               if (vert2face.Used (face))
                 {
@@ -256,10 +257,10 @@ namespace netgen
                 swap (face4.I2(), face4.I4());
               }
             
+            if (face4.I1() != v) continue;
             func(face4, elnr, 0, false, facedir);
             /*
               INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-              if (face.I1() != v) continue;
 		
               if (vert2face.Used (face))
               facenum = vert2face.Get(face);
@@ -638,7 +639,6 @@ namespace netgen
 
 
 
-
         NgProfiler::StopTimer (timer2a);
         NgProfiler::StartTimer (timer2b);
 
@@ -764,8 +764,9 @@ namespace netgen
                                  });
                 }
             });
-              /*
-                int oldnfa = face2vert.Size();
+        
+          /*
+          int oldnfa = face2vert.Size();
         int nfa = oldnfa;
         INDEX_3_CLOSED_HASHTABLE<int> vert2face(2*max_face_on_vertex+10); 
 
@@ -1010,9 +1011,8 @@ namespace netgen
 		  }
 	      }
 	  }
-*/
-
         face2vert.SetAllocSize (nfa);            
+          */
 
 	// *testout << "face2vert = " << endl << face2vert << endl;
 
