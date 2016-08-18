@@ -1633,7 +1633,7 @@ namespace ngcomp
         ([&](TaskInfo & info)
          {
            func(info.task_nr, info.ntasks);
-         });
+         }, TasksPerThread(4));
   }
 
   
