@@ -165,119 +165,120 @@ namespace netgen
 			}
                 */
                 }
+      }
+
+    
+    for (SurfaceElementIndex elnr : top.GetVertexSurfaceElements(v))          
+      {
+        const Element2d & el = mesh.SurfaceElement (elnr);
         
-        for (SurfaceElementIndex elnr : top.GetVertexSurfaceElements(v))          
-          {
-            const Element2d & el = mesh.SurfaceElement (elnr);
+        const ELEMENT_FACE * elfaces = MeshTopology::GetFaces1 (el.GetType());
+	
+        if (elfaces[0][3] == 0)
+          
+          { // triangle
             
-            const ELEMENT_FACE * elfaces = MeshTopology::GetFaces1 (el.GetType());
-		
-            if (elfaces[0][3] == 0)
-              
-              { // triangle
-                
-                int facenum;
-                int facedir;
-		
-                INDEX_4 face(el.PNum(elfaces[0][0]),
-                             el.PNum(elfaces[0][1]),
-                             el.PNum(elfaces[0][2]),0);
-                
-                facedir = 0;
-                if (face.I1() > face.I2())
-                  {
-                    swap (face.I1(), face.I2());
-                    facedir += 1;
-                  }
-                if (face.I2() > face.I3())
-                  {
-                    swap (face.I2(), face.I3());
-                    facedir += 2;
-                  }
-                if (face.I1() > face.I2())
-                  {
-                    swap (face.I1(), face.I2());
-                    facedir += 4;
-                  }
-                
-                if (face.I1() != v) continue;
-
-                func(face, elnr, 0, false, facedir);
-                /*
-                if (vert2face.Used (face))
-                  facenum = vert2face.Get(face);
-                else
-                  {
-                    nfa++;
-                    vert2face.Set (face, nfa);
-                    facenum = nfa;
-                    
-                    INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
-                    face2vert.Append (hface);
-                  }
-                
-                surffaces[elnr].fnr = facenum-1;
-                surffaces[elnr].forient = facedir;
-                */
-              }
+            int facenum;
+            int facedir;
             
-            else
-              
+            INDEX_4 face(el.PNum(elfaces[0][0]),
+                         el.PNum(elfaces[0][1]),
+                         el.PNum(elfaces[0][2]),0);
+            
+            facedir = 0;
+            if (face.I1() > face.I2())
               {
-                // quad
-                int facenum;
-                int facedir;
-		
-                INDEX_4 face4(el.PNum(elfaces[0][0]),
-                              el.PNum(elfaces[0][1]),
-                              el.PNum(elfaces[0][2]),
-                              el.PNum(elfaces[0][3]));
-                
-                facedir = 0;
-                if (min2 (face4.I1(), face4.I2()) > 
-                    min2 (face4.I4(), face4.I3())) 
-                  {  // z - orientation
-                    facedir += 1; 
-                    swap (face4.I1(), face4.I4());
-                    swap (face4.I2(), face4.I3());
-                  }
-                if (min2 (face4.I1(), face4.I4()) >
-                    min2 (face4.I2(), face4.I3())) 
-                  {  // x - orientation
-                    facedir += 2; 
-                    swap (face4.I1(), face4.I2());
-                    swap (face4.I3(), face4.I4());
-                  }
-                if (face4.I2() > face4.I4())
-                  { 
-                    facedir += 4; 
-                    swap (face4.I2(), face4.I4());
-                  }
-
-                func(face4, elnr, 0, false, facedir);
-                /*
-                INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
-                if (face.I1() != v) continue;
-		
-                if (vert2face.Used (face))
-                  facenum = vert2face.Get(face);
-                else
-                  {
-                    nfa++;
-                    vert2face.Set (face, nfa);
-                    facenum = nfa;
-                    
-                    INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
-                    face2vert.Append (hface);
-                  }
-                
-                  surffaces[elnr].fnr = facenum-1;
-                  surffaces[elnr].forient = facedir;
-                  }
-                */
+                swap (face.I1(), face.I2());
+                facedir += 1;
+              }
+            if (face.I2() > face.I3())
+              {
+                swap (face.I2(), face.I3());
+                facedir += 2;
+              }
+            if (face.I1() > face.I2())
+              {
+                swap (face.I1(), face.I2());
+                facedir += 4;
               }
             
+            if (face.I1() != v) continue;
+            
+            func(face, elnr, 0, false, facedir);
+            /*
+              if (vert2face.Used (face))
+              facenum = vert2face.Get(face);
+              else
+              {
+              nfa++;
+              vert2face.Set (face, nfa);
+              facenum = nfa;
+              
+              INDEX_4 hface(face.I1(),face.I2(),face.I3(),0);
+              face2vert.Append (hface);
+              }
+                
+              surffaces[elnr].fnr = facenum-1;
+              surffaces[elnr].forient = facedir;
+            */
           }
+        
+        else
+          
+          {
+            // quad
+            int facenum;
+            int facedir;
+            
+            INDEX_4 face4(el.PNum(elfaces[0][0]),
+                          el.PNum(elfaces[0][1]),
+                          el.PNum(elfaces[0][2]),
+                          el.PNum(elfaces[0][3]));
+            
+            facedir = 0;
+            if (min2 (face4.I1(), face4.I2()) > 
+                min2 (face4.I4(), face4.I3())) 
+              {  // z - orientation
+                facedir += 1; 
+                swap (face4.I1(), face4.I4());
+                swap (face4.I2(), face4.I3());
+              }
+            if (min2 (face4.I1(), face4.I4()) >
+                min2 (face4.I2(), face4.I3())) 
+              {  // x - orientation
+                facedir += 2; 
+                swap (face4.I1(), face4.I2());
+                swap (face4.I3(), face4.I4());
+              }
+            if (face4.I2() > face4.I4())
+              { 
+                facedir += 4; 
+                swap (face4.I2(), face4.I4());
+              }
+            
+            func(face4, elnr, 0, false, facedir);
+            /*
+              INDEX_3 face(face4.I1(), face4.I2(), face4.I3());
+              if (face.I1() != v) continue;
+		
+              if (vert2face.Used (face))
+              facenum = vert2face.Get(face);
+              else
+              {
+              nfa++;
+              vert2face.Set (face, nfa);
+              facenum = nfa;
+                    
+              INDEX_4 hface(face4.I1(),face4.I2(),face4.I3(),face4.I4());
+              face2vert.Append (hface);
+              }
+                
+              surffaces[elnr].fnr = facenum-1;
+              surffaces[elnr].forient = facedir;
+              }
+            */
+          }
+            
       }
   }
   
@@ -1019,8 +1020,6 @@ namespace netgen
         NgProfiler::StartTimer (timer2c);
 
 
-
-	
 	face2surfel.SetSize (nfa);
 	face2surfel = 0;
 	for (int i = 1; i <= nse; i++)
