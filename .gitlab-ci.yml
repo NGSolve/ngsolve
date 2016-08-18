@@ -17,9 +17,9 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\vcvars32.bat"'
     - set EXT_LIBS=C:\external_libs\x86
     - set CMAKE_GENERATOR=Visual Studio 14 2015
-    - set INSTALL_DIR=C:/install32
-    - set NETGENDIR=C:\install32\bin
-    - set PYTHONPATH=C:\install32\lib\site-packages
+    - set INSTALL_DIR=C:/install32_master
+    - set NETGENDIR=C:\install32_master\bin
+    - set PYTHONPATH=C:\install32_master\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5_32/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5_32/libs/python35.lib -DPYTHON_INCLUDE_DIR=C:/Python3.5_32/include -DPYTHON_INCLUDE_DIR2=C:/Python3.5_32/include 
 
@@ -32,9 +32,9 @@ stages:
     - 'call "%VS140COMNTOOLS%\..\..\VC\bin\amd64\vcvars64.bat"'
     - set EXT_LIBS=C:\external_libs\x64
     - set CMAKE_GENERATOR=Visual Studio 14 2015 Win64
-    - set INSTALL_DIR=C:/install64
-    - set NETGENDIR=C:\install64\bin
-    - set PYTHONPATH=C:\install64\lib\site-packages
+    - set INSTALL_DIR=C:/install64_master
+    - set NETGENDIR=C:\install64_master\bin
+    - set PYTHONPATH=C:\install64_master\lib\site-packages
     - set PYTHON_LIB=C:/Python3.5/libs/python35.lib
     - set PYTHON_CONFIG=-DPYTHON_LIBRARY=C:/Python3.5/libs/python35.lib
 
@@ -86,7 +86,7 @@ build_win32:
   cache:
     paths:
       - build/
-    key: "ngsolve_win32"
+    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
 build_win64:
   <<: *win64
@@ -94,7 +94,7 @@ build_win64:
   cache:
     paths:
       - build/
-    key: "ngsolve_win64"
+    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_build_linux: &build_linux
@@ -139,7 +139,7 @@ build_ubuntu_1604:
   cache:
     paths:
       - build/
-    key: "ngsolve_win32"
+    key: "ngsolve_win32_${CI_BUILD_REF_NAME}"
 
 test_win64:
   <<: *win64
@@ -147,7 +147,7 @@ test_win64:
   cache:
     paths:
       - build/
-    key: "ngsolve_win64"
+    key: "ngsolve_win64_${CI_BUILD_REF_NAME}"
 
 # Linux
 .template_test_linux: &test_linux
