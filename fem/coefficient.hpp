@@ -14,12 +14,6 @@ namespace ngfem
   /** 
       coefficient functions
   */
-
-  class ExceptionNOSIMD : public Exception
-  {
-  public:
-    using Exception :: Exception;
-  };
   
   class NGS_DLL_HEADER CoefficientFunction
   {
