@@ -132,14 +132,14 @@ namespace ngfem
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
   {
-    cout << "thucrlfe - simd - evaluate not implemeted" << endl;
+    throw ExceptionNOSIMD ("thcurlfe - simd - evaluate not implemeted");
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, ABareMatrix<double> values) const
   {
-    cout << "thucrlfe - simd - evaluatecurl not implemeted" << endl;    
+    throw ExceptionNOSIMD ("thcurlfe - simd - evaluate curl not implemeted");    
   }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
@@ -186,7 +186,7 @@ namespace ngfem
   AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, ABareMatrix<double> values,
                 BareSliceVector<> coefs) const
   {
-    cout << "thucrlfe - simd - addcurltrans e not implemeted" << endl;    
+    throw ExceptionNOSIMD ("thcurlfe - simd - add curl trans not implemeted");        
   }
   
   
