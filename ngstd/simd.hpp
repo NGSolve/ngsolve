@@ -481,6 +481,13 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
     return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
   }
 
+
+
+ class ExceptionNOSIMD : public Exception
+  {
+  public:
+    using Exception :: Exception;
+  };
   
 }
 
