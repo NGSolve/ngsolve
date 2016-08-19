@@ -152,6 +152,39 @@ namespace ngfem
     code.body += Var(index).Assign(Var(val));
   }
 
+
+  ///
+  ParameterCoefficientFunction ::   
+  ParameterCoefficientFunction (double aval) 
+    : val(aval) 
+  { ; }
+
+  ParameterCoefficientFunction ::
+  ~ParameterCoefficientFunction ()
+  { ; }
+
+  void ParameterCoefficientFunction :: PrintReport (ostream & ost) const
+  {
+    ost << "ParameterCF, val = " << val << endl;
+  }
+
+  void ParameterCoefficientFunction :: Evaluate (const BaseMappedIntegrationRule & ir,
+                                                FlatMatrix<double> values) const
+  {
+    values = val;
+  }
+
+  void ParameterCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
+  {
+    string type = "double";
+    if(code.is_simd) type = "SIMD<double>";
+    if(code.deriv==1) type = "AutoDiff<1,"+type+">";
+    if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
+    code.body += Var(index).Declare(type);
+    code.body += Var(index).Assign(Var(val), false);
+  }
+
+  
   
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
