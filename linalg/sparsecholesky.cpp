@@ -887,9 +887,9 @@ namespace ngla
 
 
   template <typename T>
-  INLINE void SubABt (SliceMatrix<T> a,
-                      SliceMatrix<T> b,
-                      SliceMatrix<T> c)
+  INLINE void MySubABt (SliceMatrix<T> a,
+                        SliceMatrix<T> b,
+                        SliceMatrix<T> c)
   {
     static Timer timer1("SparseCholesky::Factor gemm 1", 2);
     static Timer timer2("SparseCholesky::Factor gemm 2", 2);
@@ -907,7 +907,8 @@ namespace ngla
         if (c.Height() < 128 && c.Width() < 128)
           {
             timer2.Start();
-            c -= a * Trans(b) | Lapack;
+            // c -= a * Trans(b) | Lapack;
+            ngbla::SubABt(a,b,c);
             timer2.Stop();
             timer2.AddFlops(c.Height()*c.Width()*a.Width());
           }
@@ -923,7 +924,8 @@ namespace ngla
                              int bc = ti.task_nr / nr;
                              auto rowr = Range(c.Height()).Split (br, nr);
                              auto colr = Range(c.Width()).Split (bc, nc);
-                             c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
+                             // c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
+                             ngbla::SubABt(a.Rows(rowr),b.Rows(colr), c.Rows(rowr).Cols(colr));
                            }, nr*nc);
             timer3.AddFlops(c.Height()*c.Width()*a.Width());
             timer3.Stop();
@@ -952,7 +954,7 @@ void CalcLDL_SolveL (SliceMatrix<T> L, SliceMatrix<T> B)
       
       CalcLDL_SolveL(L1, B1);
       // B2 -= B1 * Trans(L21) | Lapack;
-      SubABt (B1, L21, B2);
+      MySubABt (B1, L21, B2);
       CalcLDL_SolveL(L2, B2);
       return;
     }
@@ -974,7 +976,7 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
       IntRange r1(0,n/2), r2(n/2,n);
       CalcLDL_A2(L1, B.Rows(r1), A2.Rows(r1).Cols(r1));
       // A2.Rows(r2).Cols(r1) -= B.Rows(r2) * Trans(B.Rows(r1)) | Lapack;
-      SubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
+      MySubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
       CalcLDL_A2(L1, B.Rows(r2), A2.Rows(r2).Cols(r2));
       return;
     }
