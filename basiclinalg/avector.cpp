@@ -654,11 +654,11 @@ namespace ngbla
   */
 
 
-
-template <int R>
-INLINE auto MyScal6x4 (size_t n,
-                       double * pa1, double * pa2, double * pa3, double * pa4, double * pa5, double * pa6,
-                       double * pb1, double * pb2, double * pb3, double * pb4)
+  
+  template <int R>
+  INLINE auto MyScal6x4 (size_t n,
+                         double * pa1, double * pa2, double * pa3, double * pa4, double * pa5, double * pa6,
+                         double * pb1, double * pb2, double * pb3, double * pb4)
   {
     __m256d sum11 = _mm256_setzero_pd();
     __m256d sum21 = _mm256_setzero_pd();
@@ -816,18 +816,18 @@ INLINE auto MyScal6x4 (size_t n,
         for ( ; j+4 <= widthc; j += 4, pb += 4*distb)
           {
             auto scal = MyScal6x4<R> (full_vwidtha2, pa1, dista, pb, distb);
-            auto s1 =
-            auto s2 = 
+            auto s1 = func (_mm256_loadu_pd(pc1+j), get<0>(scal).Data());
+            auto s2 = func (_mm256_loadu_pd(pc2+j), get<1>(scal).Data());
             auto s3 = func (_mm256_loadu_pd(pc3+j), get<2>(scal).Data());
             auto s4 = func (_mm256_loadu_pd(pc4+j), get<3>(scal).Data());
             auto s5 = func (_mm256_loadu_pd(pc5+j), get<4>(scal).Data());
             auto s6 = func (_mm256_loadu_pd(pc6+j), get<5>(scal).Data());
-            _mm256_storeu_pd(pc1+j, func (_mm256_loadu_pd(pc1+j), get<0>(scal).Data()));
-            _mm256_storeu_pd(pc2+j, func (_mm256_loadu_pd(pc2+j), get<1>(scal).Data()));
-            _mm256_storeu_pd(pc3+j, 
-            _mm256_storeu_pd(pc4+j, 
-            _mm256_storeu_pd(pc5+j, 
-            _mm256_storeu_pd(pc6+j, 
+            _mm256_storeu_pd(pc1+j, s1);
+            _mm256_storeu_pd(pc2+j, s2);
+            _mm256_storeu_pd(pc3+j, s3);
+            _mm256_storeu_pd(pc4+j, s4);
+            _mm256_storeu_pd(pc5+j, s5);
+            _mm256_storeu_pd(pc6+j, s6);
           }
 
         if (j < widthc)
