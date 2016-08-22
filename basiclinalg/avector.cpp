@@ -31,15 +31,10 @@ namespace ngbla
   {
     __m256d hsum1 = _mm256_hadd_pd (v1, v2);
     __m256d hsum2 = _mm256_hadd_pd (v3, v4);
-  
-    __m256d hsum = 
-      _mm256_add_pd (_mm256_insertf128_pd (hsum1, 
-                                           _mm256_extractf128_pd (hsum2, 0), 1),
-                     _mm256_insertf128_pd (hsum2, 
-                                           _mm256_extractf128_pd (hsum1, 1), 0));
+    __m256d hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
+                                  _mm256_blend_pd (hsum1, hsum2, 12));
     return hsum;
   }
-
 
 
   // namespace ngbla
@@ -277,6 +272,192 @@ namespace ngbla
     SIMD<double> s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
     return make_tuple(s1,s2);
   }
+
+
+  INLINE constexpr __m256 RestMask (int R)
+  {
+    switch (R)
+      {
+      case 0: return _mm256_set_epi64x(0,0,0,0); 
+      case 1: return _mm256_set_epi64x(0,0,0,-1); 
+      case 2: return _mm256_set_epi64x(0,0,-1,-1); 
+      case 3: return _mm256_set_epi64x(0,-1,-1,-1); 
+      default: ;
+      }
+    __assume(false);
+    return _mm256_set_epi64x(0,0,0,0); 
+  }
+
+
+template <int R = 0>
+INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
+                       double * pb1, double * pb2, double * pb3, double * pb4)
+{
+    SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
+    SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
+    SIMD<double> sum31(0.0), sum32(0.0), sum33(0.0), sum34(0.0);
+    
+    size_t n4 = 4*n;
+#pragma nounroll    
+    for (size_t i = 0; i < n4; i+=4)
+      {
+        __m256d a1 = _mm256_loadu_pd(pa1+i);
+        __m256d a2 = _mm256_loadu_pd(pa2+i);
+        __m256d a3 = _mm256_loadu_pd(pa3+i);
+        
+        __m256d b1 = _mm256_loadu_pd(pb1+i);
+        sum11 += a1 * b1;
+        sum21 += a2 * b1;
+        sum31 += a3 * b1;
+        __m256d b2 = _mm256_loadu_pd(pb2+i);
+        sum12 += a1 * b2;
+        sum22 += a2 * b2;
+        sum32 += a3 * b2;
+        __m256d b3 = _mm256_loadu_pd(pb3+i);
+        sum13 += a1 * b3;
+        sum23 += a2 * b3;
+        sum33 += a3 * b3;
+        __m256d b4 = _mm256_loadu_pd(pb4+i);
+        sum14 += a1 * b4;
+        sum24 += a2 * b4;
+        sum34 += a3 * b4;
+      }
+
+  if (R > 0)
+    {
+      __m256d a1 = _mm256_maskload_pd (pa1+n4, RestMask(R));
+      __m256d a2 = _mm256_maskload_pd (pa2+n4, RestMask(R));
+      __m256d a3 = _mm256_maskload_pd (pa3+n4, RestMask(R));
+
+      __m256d b1 = _mm256_maskload_pd (pb1+n4, RestMask(R));
+      sum11 += a1 * b1;
+      sum21 += a2 * b1;
+      sum31 += a3 * b1;
+
+      __m256d b2 = _mm256_maskload_pd (pb2+n4, RestMask(R));
+      sum12 += a1 * b2;
+      sum22 += a2 * b2;
+      sum32 += a3 * b2;
+
+      __m256d b3 = _mm256_maskload_pd (pb3+n4, RestMask(R));
+      sum13 += a1 * b3;
+      sum23 += a2 * b3;
+      sum33 += a3 * b3;
+      
+      __m256d b4 = _mm256_maskload_pd (pb4+n4, RestMask(R));
+      sum14 += a1 * b4;
+      sum24 += a2 * b4;
+      sum34 += a3 * b4;
+    }
+    
+    SIMD<double> s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
+    SIMD<double> s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
+    SIMD<double> s3 = HAdd (sum31.Data(), sum32.Data(), sum33.Data(), sum34.Data());
+    return make_tuple(s1,s2,s3);
+  }
+
+#ifndef __GNUC__
+  template <int R = 0>
+  INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
+  {
+    return MyScal3x4<R> (n, pa, pa+da, pa+2*da, pb, pb+db, pb+2*db, pb+3*db);
+  }
+#else
+  template <int R = 0>
+  INLINE auto MyScal3x4 (size_t n, double * pa, size_t da, double * pb, size_t db)
+  {
+    SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
+    SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
+    SIMD<double> sum31(0.0), sum32(0.0), sum33(0.0), sum34(0.0);
+    
+    size_t n4 = 4*n;
+#pragma nounroll    
+    for (size_t i = 0; i < n4; i+=4)
+      {
+        /*
+          __m256d a1 = _mm256_loadu_pd(pa);
+          __m256d a2 = _mm256_loadu_pd(pa+da);
+          __m256d a3 = _mm256_loadu_pd(pa+2*da);
+        */
+        __m256d a1, a2, a3;
+        asm ("vmovupd (%[pa]), %[a1]\n\t"
+             "vmovupd (%[pa],%[da]), %[a2]\n\t"
+             "vmovupd (%[pa],%[da],2), %[a3]\n\t"
+             "add $32,%[pa]"
+             : [a1] "=&x" (a1), [a2] "=&x" (a2), [a3] "=&x" (a3),
+               [pa] "+r" (pa)
+             : [da] "r" (8*da) 
+             );
+        
+        //__m256d b1 = _mm256_loadu_pd(pb);
+        __m256d b1, b2, b3, b4;
+        asm ("vmovupd (%[pb]), %[b1]"
+             : [b1] "=&x" (b1) : [pb] "r" (pb), [db] "r" (8*db) );
+        
+        sum11 += a1 * b1;
+        sum21 += a2 * b1;
+        sum31 += a3 * b1;
+        
+        // __m256d b2 = _mm256_loadu_pd(pb+db);
+        asm ("vmovupd (%[pb],%[db]), %[b2]"
+             : [b2] "=&x" (b2) : [pb] "r" (pb), [db] "r" (8*db) );      
+        
+        sum12 += a1 * b2;
+        sum22 += a2 * b2;
+        sum32 += a3 * b2;
+        // __m256d b3 = _mm256_loadu_pd(pb+2*db);
+        asm ("vmovupd (%[pb],%[db],2), %[b3]"
+             : [b3] "=&x" (b3) : [pb] "r" (pb), [db] "r" (8*db) );      
+        
+        sum13 += a1 * b3;
+        sum23 += a2 * b3;
+        sum33 += a3 * b3;
+        // __m256d b4 = _mm256_loadu_pd(pb+3*db);
+        asm ("vmovupd (%[pb],%[db3],8), %[b4]\n\t"
+             "add $32,%[pb]"
+             : [b4] "=&x" (b4), [pb] "+r" (pb) : [db3] "r" (3*db) );      
+        
+        sum14 += a1 * b4;
+        sum24 += a2 * b4;
+        sum34 += a3 * b4;
+        // pa += 4;
+        // pb += 4;
+      }
+    
+    if (R > 0)
+    {
+      __m256d a1 = _mm256_maskload_pd (pa, RestMask(R));
+      __m256d a2 = _mm256_maskload_pd (pa+da, RestMask(R));
+      __m256d a3 = _mm256_maskload_pd (pa+2*da, RestMask(R));
+
+      __m256d b1 = _mm256_maskload_pd (pb, RestMask(R));
+      sum11 += a1 * b1;
+      sum21 += a2 * b1;
+      sum31 += a3 * b1;
+
+      __m256d b2 = _mm256_maskload_pd (pb+db, RestMask(R));
+      sum12 += a1 * b2;
+      sum22 += a2 * b2;
+      sum32 += a3 * b2;
+
+      __m256d b3 = _mm256_maskload_pd (pb+2*db, RestMask(R));
+      sum13 += a1 * b3;
+      sum23 += a2 * b3;
+      sum33 += a3 * b3;
+      
+      __m256d b4 = _mm256_maskload_pd (pb+3*db, RestMask(R));
+      sum14 += a1 * b4;
+      sum24 += a2 * b4;
+      sum34 += a3 * b4;
+    }
+    
+    SIMD<double> s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
+    SIMD<double> s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
+    SIMD<double> s3 = HAdd (sum31.Data(), sum32.Data(), sum33.Data(), sum34.Data());
+    return make_tuple(s1,s2,s3);
+  }
+#endif
+  
 
   /*
     template <int R = 0>
@@ -794,6 +975,7 @@ namespace ngbla
     double * pa = &a(0);
     size_t i = 0;
 
+    /*
     for ( ; i+6 <= heightc; i += 6)
       {
         double * pc1 = pc;
@@ -853,7 +1035,59 @@ namespace ngbla
             _mm256_maskstore_pd (pc6+j, mask_widthc, s6);            
           }
       }
+    */
 
+    for ( ; i+3 <= heightc; i += 3)
+      {
+        double * pc1 = pc;
+        double * pc2 = pc1 + distc;
+        double * pc3 = pc2 + distc;
+        pc = pc3 + distc;
+        double * pa1 = pa;
+        double * pa2 = pa1 + dista;
+        double * pa3 = pa2 + dista;
+        pa = pa3 + dista;
+
+        double * pb = &b(0);
+        size_t j = 0;
+        for ( ; j+4 <= widthc; j += 4)
+          {
+            double * pb1 = pb;
+            double * pb2 = pb + distb;
+            double * pb3 = pb + 2*distb;
+            double * pb4 = pb + 3*distb;
+            pb = pb + 4*distb;
+            
+            // auto scal = MyScal3x4<R> (full_vwidtha, pa1, pa2, pa3, pb1, pb2, pb3, pb4);
+            auto scal = MyScal3x4<R> (full_vwidtha, pa1, dista, pb1, distb);
+            auto s1 = func (_mm256_loadu_pd(pc1+j), get<0>(scal).Data());
+            auto s2 = func (_mm256_loadu_pd(pc2+j), get<1>(scal).Data());
+            auto s3 = func (_mm256_loadu_pd(pc3+j), get<2>(scal).Data());
+            
+            _mm256_storeu_pd(pc1+j, s1);
+            _mm256_storeu_pd(pc2+j, s2);
+            _mm256_storeu_pd(pc3+j, s3);
+          }
+        if (j < widthc)
+          {
+            double * pb1 = pb;
+            double * pb2 = (j+1 < widthc) ? pb+distb : pb;
+            double * pb3 = (j+2 < widthc) ? pb+2*distb : pb;
+            double * pb4 = (j+3 < widthc) ? pb+3*distb : pb;
+            
+            auto scal = MyScal3x4<R> (full_vwidtha, pa1, pa2, pa3, pb1, pb2, pb3, pb4);
+            auto s1 = func (_mm256_maskload_pd(pc1+j, mask_widthc), get<0>(scal).Data());
+            auto s2 = func (_mm256_maskload_pd(pc2+j, mask_widthc), get<1>(scal).Data());
+            auto s3 = func (_mm256_maskload_pd(pc3+j, mask_widthc), get<2>(scal).Data());
+            _mm256_maskstore_pd (pc1+j, mask_widthc, s1);
+            _mm256_maskstore_pd (pc2+j, mask_widthc, s2);
+            _mm256_maskstore_pd (pc3+j, mask_widthc, s3);
+          }
+      }
+
+
+
+    
     for ( ; i+2 <= heightc; i += 2)
       {
         double * pc1 = pc;
@@ -910,7 +1144,6 @@ namespace ngbla
             pb = pb + 4*distb;
             
             SIMD<double> scal = MyScal1x4<R> (full_vwidtha, pa, pb1, pb2, pb3, pb4);
-            // s1 += _mm256_loadu_pd(pc+j);
             auto s1 = func (_mm256_loadu_pd(pc+j), scal.Data());
             _mm256_storeu_pd(pc+j, s1);
           }
@@ -922,44 +1155,73 @@ namespace ngbla
             double * pb4 = (j+3 < widthc) ? pb+3*distb : pb;
 
             SIMD<double> scal = MyScal1x4<R> (full_vwidtha, pa, pb1, pb2, pb3, pb4);
-            // s1 += _mm256_maskload_pd (pc+j, mask_widthc);
-            auto s1 = func (_mm256_maskload_pd(pc+j, mask_widthc), scal.Data());            
+            auto s1 = func (_mm256_maskload_pd(pc+j, mask_widthc), scal.Data());
             _mm256_maskstore_pd (pc+j, mask_widthc, s1);
           }
       }
   }
   
- 
 
+  template <int R, typename FUNC>
+  void AddABt_Rest1 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+                     FUNC func)
+  {
+    constexpr size_t bs = 32;  // height b
+    size_t hb = b.Height();
+    size_t i = 0;
+    for ( ; i+bs <= hb; i += bs)
+      AddABt_Rest<R> (a, b.Rows(i,i+bs), c.Cols(i,i+bs), func);
+    if (i < hb)
+      AddABt_Rest<R> (a, b.Rows(i,hb), c.Cols(i,hb), func);      
+  }
+
+  template <int R, typename FUNC>
+  void AddABt_Rest2 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+                     FUNC func)
+  {
+    constexpr size_t bs = 96;  // height a
+    size_t ha = a.Height();
+    size_t i = 0;
+    for ( ; i+bs <= ha; i += bs)
+      AddABt_Rest1<R> (a.Rows(i,i+bs), b, c.Rows(i,i+bs), func);
+    if (i < ha)
+      AddABt_Rest1<R> (a.Rows(i,ha), b, c.Rows(i,ha), func);      
+  }
+
+  
+  template <typename FUNC>
+  void AddABt2 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c,
+                FUNC func)
+  {
+    constexpr size_t bs = 256; // inner-product loop
+    size_t wa = a.Width();
+    size_t i = 0;
+    for ( ; i+bs <= wa; i += bs)
+      AddABt_Rest2<0> (a.Cols(i, i+bs), b.Cols(i,i+bs), c, func);
+    if (i == a.Width()) return;
+    
+    switch (wa & 3)
+      {
+      case 0: AddABt_Rest2<0>(a.Cols(i,wa), b.Cols(i,wa), c, func); break;
+      case 1: AddABt_Rest2<1>(a.Cols(i,wa), b.Cols(i,wa), c, func); break;
+      case 2: AddABt_Rest2<2>(a.Cols(i,wa), b.Cols(i,wa), c, func); break;
+      case 3: AddABt_Rest2<3>(a.Cols(i,wa), b.Cols(i,wa), c, func); break;
+      }
+  }
+  
   void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     // c += a * Trans(b);
     // return;
-    if (a.Width() == 0) return;
-    switch (a.Width() & 3)
-      {
-      case 0: AddABt_Rest<0>(a,b,c, [] (auto c, auto ab) { return c+ab; } ); break;
-      case 1: AddABt_Rest<1>(a,b,c, [] (auto c, auto ab) { return c+ab; } ); break;
-      case 2: AddABt_Rest<2>(a,b,c, [] (auto c, auto ab) { return c+ab; } ); break;
-      case 3: AddABt_Rest<3>(a,b,c, [] (auto c, auto ab) { return c+ab; } ); break;
-      }
+    AddABt2 (a, b, c, [] (auto c, auto ab) { return c+ab; });
   }
 
   void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     // c -= a * Trans(b);
     // return;
-
-    if (a.Width() == 0) return;
-    switch (a.Width() & 3)
-      {
-      case 0: AddABt_Rest<0>(a,b,c, [] (auto c, auto ab) { return c-ab; } ); return;
-      case 1: AddABt_Rest<1>(a,b,c, [] (auto c, auto ab) { return c-ab; } ); return;
-      case 2: AddABt_Rest<2>(a,b,c, [] (auto c, auto ab) { return c-ab; } ); return;
-      case 3: AddABt_Rest<3>(a,b,c, [] (auto c, auto ab) { return c-ab; } ); return;
-      }
+    AddABt2 (a, b, c, [] (auto c, auto ab) { return c-ab; });
   }
-
 
 
 
