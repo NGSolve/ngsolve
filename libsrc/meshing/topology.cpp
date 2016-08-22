@@ -357,7 +357,6 @@ namespace netgen
     int nseg = mesh.GetNSeg();
     int np = mesh.GetNP();
     int nv = mesh.GetNV(); 
-    int ned = edge2vert.Size();
 
     if (id == 0)
       PrintMessage (3, "Update mesh topology");
@@ -474,7 +473,7 @@ namespace netgen
 	  cnt[edge2vert[i][0]]++;
 	TABLE<int,PointIndex::BASE> vert2edge (cnt);
 	for (int i = 0; i < edge2vert.Size(); i++)
-	  vert2edge.AddSave (edge2vert[i][0], i+1);
+	  vert2edge.AddSave (edge2vert[i][0], i);
 
 	// ensure all coarse grid and intermediate level edges
 	cnt = 0;
@@ -490,9 +489,7 @@ namespace netgen
 	    if (parents[0] > PointIndex::BASE) vert2vertcoarse.AddSave (parents[0], parents[1]);
 	  }
 
-	Array<int,PointIndex::BASE> edgenr(nv);
 
-	ned = edge2vert.Size();
 
 	int max_edge_on_vertex = 0;
 	for (int i = PointIndex::BASE; i < nv+PointIndex::BASE; i++)
@@ -503,74 +500,130 @@ namespace netgen
 	  }
 
         
-        INDEX_CLOSED_HASHTABLE<int> v2eht(2*max_edge_on_vertex+10);
-	Array<int> vertex2;
+        // count edges associated with vertices
+        cnt = 0;
 
-	for (PointIndex v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
-	  {
-            v2eht.DeleteData();            
-	    vertex2.SetSize (0);
+        ParallelForRange
+          (tm, mesh.Points().Size(),
+           [&] (size_t begin, size_t end)
+           {
+             INDEX_CLOSED_HASHTABLE<int> v2eht(2*max_edge_on_vertex+10); 
+             for (PointIndex v = begin+PointIndex::BASE;
+                  v < end+PointIndex::BASE; v++)
+               {
+                 v2eht.DeleteData();
+                 for (int ednr : vert2edge[v])
+                   {
+                     int v2 = edge2vert[ednr][1];
+                     v2eht.Set (v2, ednr);
+                   }
 
-	    for (int j = 0; j < vert2edge[v].Size(); j++)
-	      {
-		int ednr = vert2edge[v][j];
-		int i2 = edge2vert.Get(ednr)[1];
-                v2eht.Set (i2, v); 
-		edgenr[i2] = ednr;
-	      }
+                 int cnti = 0;
 
-	    for (int j = 0; j < vert2vertcoarse[v].Size(); j++)    
-	      {
-		int v2 = vert2vertcoarse[v][j];
-                if (!v2eht.Used(v2))
-		  {
-                    v2eht.Set (v2, v);                     
-		    vertex2.Append (v2);
-		  }
-	      }
+                 for (int v2 : vert2vertcoarse[v])
+                   if (!v2eht.Used(v2))
+                     {
+                       cnti++;
+                       v2eht.Set (v2, 33);   // some value
+                     }
+                 
+                 LoopOverEdges (mesh, *this, v,
+                                [&] (INDEX_2 edge, int elnr, int loc_edge, int element_dim, int edgedir)
+                                {
+                                  if (!v2eht.Used (edge.I2()))
+                                    {
+                                      cnti++;
+                                      v2eht.Set (edge.I2(), 33); // something
+                                    }
+                                });
+                 cnt[v] = cnti;
+               }
+           } );
 
-            LoopOverEdges (mesh, *this, v,
-                           [&](INDEX_2 edge, int elnr, int loc_edge, int element_dim, int edgedir)
-                           {
-                             if (!v2eht.Used(edge.I2()))
-                               {
-                                 vertex2.Append (edge.I2());
-                                 v2eht.Set (edge.I2(), v); 
-                               }
-                           });
+        // accumulate number of edges
+        int ned = edge2vert.Size();
+        for (auto v : mesh.Points().Range())
+          {
+            auto hv = cnt[v];
+            cnt[v] = ned;
+            ned += hv;
+          }
+        edge2vert.SetSize(ned);
 
-	    QuickSort (vertex2);
-            
-	    for (int j = 0; j < vertex2.Size(); j++)
-	      {
-		edgenr[vertex2[j]] = ++ned;
-		edge2vert.Append (INDEX_2 (v, vertex2[j]));
-	      }
 
-            LoopOverEdges (mesh, *this, v,
-                           [&](INDEX_2 edge, int elnr, int loc_edge, int element_dim, int edgedir)
-                           {
-                             int edgenum = edgenr[edge.I2()];
-                             switch (element_dim)
-                               {
-                               case 3:
-                                 edges[elnr][loc_edge].nr = edgenum-1;
-                                 edges[elnr][loc_edge].orient = edgedir;
-                                 break;
-                               case 2:
-                                 surfedges[elnr][loc_edge].nr = edgenum-1;
-                                 surfedges[elnr][loc_edge].orient = edgedir;
-                                 break;
-                               case 1:
-                                 segedges[elnr].nr = edgenum-1;
-                                 segedges[elnr].orient = edgedir;
-                                 break;
-                               }
-                           });
+        // INDEX_CLOSED_HASHTABLE<int> v2eht(2*max_edge_on_vertex+10);
+	// Array<int> vertex2;
+	// for (PointIndex v = PointIndex::BASE; v < nv+PointIndex::BASE; v++)
 
-	  }
+        ParallelForRange
+          (tm, mesh.Points().Size(),
+           [&] (size_t begin, size_t end)
+           {
+             INDEX_CLOSED_HASHTABLE<int> v2eht(2*max_edge_on_vertex+10);
+             Array<int> vertex2;
+             for (PointIndex v = begin+PointIndex::BASE;
+                  v < end+PointIndex::BASE; v++)
+               {
+                 int ned = cnt[v];
+                 v2eht.DeleteData();            
+                 vertex2.SetSize (0);
+                 
+                 for (int ednr : vert2edge[v])
+                   {
+                     int v2 = edge2vert[ednr][1];
+                     v2eht.Set (v2, ednr);
+                   }
+                 
+                 for (int v2 : vert2vertcoarse[v])
+                   if (!v2eht.Used(v2))
+                     {
+                       v2eht.Set (v2, 33);   // some value
+                       vertex2.Append (v2);
+                     }
+                 
+                 LoopOverEdges (mesh, *this, v,
+                                [&](INDEX_2 edge, int elnr, int loc_edge, int element_dim, int edgedir)
+                                {
+                                  if (!v2eht.Used(edge.I2()))
+                                    {
+                                      vertex2.Append (edge.I2());
+                                      v2eht.Set (edge.I2(), 33); 
+                                    }
+                                });
+                 
+                 QuickSort (vertex2);
+                 
+                 for (int j = 0; j < vertex2.Size(); j++)
+                   {
+                     v2eht.Set (vertex2[j], ned);
+                     edge2vert[ned] = INDEX_2 (v, vertex2[j]);
+                     ned++;
+                   }
+                 
+                 LoopOverEdges (mesh, *this, v,
+                                [&](INDEX_2 edge, int elnr, int loc_edge, int element_dim, int edgedir)
+                                {
+                                  int edgenum = v2eht.Get(edge.I2());
+                                  switch (element_dim)
+                                    {
+                                    case 3:
+                                      edges[elnr][loc_edge].nr = edgenum;
+                                      edges[elnr][loc_edge].orient = edgedir;
+                                      break;
+                                    case 2:
+                                      surfedges[elnr][loc_edge].nr = edgenum;
+                                      surfedges[elnr][loc_edge].orient = edgedir;
+                                      break;
+                                    case 1:
+                                      segedges[elnr].nr = edgenum;
+                                      segedges[elnr].orient = edgedir;
+                                      break;
+                                    }
+                                });
+               }
+           } );
       }
-
+    
 
 
     // generate faces
