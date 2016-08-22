@@ -274,7 +274,7 @@ namespace ngbla
   }
 
 
-  INLINE constexpr __m256i RestMask (int R)
+  INLINE __m256i RestMask (int R)
   {
     switch (R)
       {
