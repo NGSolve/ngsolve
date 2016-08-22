@@ -136,7 +136,11 @@
 
 #ifndef __assume
 #ifdef __GNUC__
+#ifdef __clang__
+#define __assume(cond) __builtin_assume(cond)
+#else
 #define __assume(cond) if (!(cond)) __builtin_unreachable(); else;
+#endif
 #else
 #define __assume(cond)
 #endif
