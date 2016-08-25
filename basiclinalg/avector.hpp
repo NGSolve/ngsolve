@@ -421,6 +421,11 @@ namespace ngbla
 
 
 
+  template <typename TA, typename TB>
+  void TransposeMatrix(SliceMatrix<TA> a, SliceMatrix<TB> b)
+  {
+    b = Trans(a);
+  }
 
   template <typename TA, typename TB, typename TC>
   void MultMatMat(SliceMatrix<TA> a, SliceMatrix<TB> b, SliceMatrix<TC> c)
@@ -439,7 +444,7 @@ namespace ngbla
 
 #if defined(__AVX__)
 
-
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
   extern void MultMatMat(SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c);
 
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
@@ -455,7 +460,7 @@ namespace ngbla
   extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
 
-#else // __AVX2__
+#else // __AVX__
 
   // template <typename T>
   // using AFlatMatrix = FlatMatrix<T>;
@@ -588,7 +593,7 @@ namespace ngbla
   }
 
 
-#endif // __AVX2__
+#endif // __AVX__
 
   template <typename TA, typename TB, typename TC>
   INLINE void SubABt (const TA & a, const TB & b, SliceMatrix<TC> c)

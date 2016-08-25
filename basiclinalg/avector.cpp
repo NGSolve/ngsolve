@@ -37,6 +37,115 @@ namespace ngbla
   }
 
 
+  INLINE auto Transpose (__m256d a, __m256d b, __m256d c, __m256d d)
+  {
+    __m256d loab = _mm256_unpacklo_pd (a, b);
+    __m256d hiab = _mm256_unpackhi_pd (a, b);
+    __m256d locd = _mm256_unpacklo_pd (c, d);
+    __m256d hicd = _mm256_unpackhi_pd (c, d);
+
+    __m256d r0 = _mm256_permute2f128_pd(loab, locd, 32);
+    __m256d r1 = _mm256_permute2f128_pd(hiab, hicd, 32);
+    __m256d r2 = _mm256_permute2f128_pd(loab, locd, 49);
+    __m256d r3 = _mm256_permute2f128_pd(hiab, hicd, 49);
+    return make_tuple(r0, r1, r2, r3);
+  }
+
+  // b = Trans(a)
+  void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
+  {
+    static Timer t1("avx - transpose big");
+    static Timer t2("avx - transpose small");
+
+    size_t h = a.Height();
+    size_t w = a.Width();
+    bool big = (h > 16) && (w > 16);
+    if (big) t1.Start(); else t2.Start();
+
+    
+    size_t dista = a.Dist();
+    size_t distb = b.Dist();
+
+    __m256i mask_width = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                              _mm256_set_epi64x(3, 2, 1, 0));
+    __m256i mask_height = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(h&3),
+                                               _mm256_set_epi64x(3, 2, 1, 0));
+  
+    size_t i = 0;
+    double * pa1 = &a(0,0);
+    double * pb1 = &b(0,0);
+    for ( ; i+4 <= w; i+=4)
+      {
+        size_t j = 0;
+        double * pa = pa1;
+        double * pb = pb1;
+        for ( ; j+4 <= h; j+=4)
+          {
+            __m256d a1 = _mm256_loadu_pd(pa);
+            __m256d a2 = _mm256_loadu_pd(pa+dista);
+            __m256d a3 = _mm256_loadu_pd(pa+2*dista);
+            __m256d a4 = _mm256_loadu_pd(pa+3*dista);
+
+            auto trans = Transpose(a1, a2, a3, a4);
+          
+            _mm256_storeu_pd(pb        , get<0> (trans));
+            _mm256_storeu_pd(pb+distb  , get<1> (trans));
+            _mm256_storeu_pd(pb+2*distb, get<2> (trans));
+            _mm256_storeu_pd(pb+3*distb, get<3> (trans));
+            pb += 4;
+            pa += 4*dista;
+          }
+
+        __m256d a1 = _mm256_loadu_pd(pa);
+        __m256d a2 = _mm256_loadu_pd(pa+((j+1<h) ? dista : 0));
+        __m256d a3 = _mm256_loadu_pd(pa+((j+2<h) ? 2*dista : 0));
+        __m256d a4 = _mm256_loadu_pd(pa+((j+3<h) ? 3*dista : 0));
+      
+        auto trans = Transpose(a1, a2, a3, a4);
+      
+        _mm256_maskstore_pd(pb        , mask_height, get<0> (trans));
+        _mm256_maskstore_pd(pb+distb  , mask_height, get<1> (trans));
+        _mm256_maskstore_pd(pb+2*distb, mask_height, get<2> (trans));
+        _mm256_maskstore_pd(pb+3*distb, mask_height, get<3> (trans));
+      
+        pa1 += 4;
+        pb1 += 4*distb;
+      }
+    if (big) t1.Stop(); else t2.Stop();
+    for ( ; i < w; i++)
+      {
+        size_t j = 0;
+        double * pa = pa1;
+        double * pb = pb1;
+        for ( ; j+4 <= h; j+=4)
+          {
+            __m256d valb = _mm256_set_pd(pa[3*dista], pa[2*dista], pa[dista], pa[0]);
+            _mm256_storeu_pd(pb, valb);
+            pb += 4;
+            pa += 4*dista;
+          }
+        __m256d valb = _mm256_set_pd(pa[(j+3<h) ? 3*dista : 0],
+                                     pa[(j+2<h) ? 2*dista : 0],
+                                     pa[(j+1<h) ? dista : 0],
+                                     pa[0]);
+        _mm256_maskstore_pd(pb, mask_height, valb);
+        pa1 += 1;
+        pb1 += distb;
+      }
+  }
+
+
+
+
+
+  
+
+
+
+
+
+
+  
   // namespace ngbla
   // {
 
@@ -1053,9 +1162,9 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
         for ( ; j+4 <= widthc; j += 4)
           {
             double * pb1 = pb;
-            double * pb2 = pb + distb;
-            double * pb3 = pb + 2*distb;
-            double * pb4 = pb + 3*distb;
+            // double * pb2 = pb + distb;
+            // double * pb3 = pb + 2*distb;
+            // double * pb4 = pb + 3*distb;
             pb = pb + 4*distb;
             
             // auto scal = MyScal3x4<R> (full_vwidtha, pa1, pa2, pa3, pb1, pb2, pb3, pb4);
