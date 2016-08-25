@@ -1979,7 +1979,11 @@ namespace ngla
     return prod;
   }
 
-
+  SparseMatrixTM<double> *
+  MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb)
+  {
+    return MatMult<double, double, double>(mata, matb);
+  }
 
   template <class TM, class TV>
   BaseSparseMatrix * 
