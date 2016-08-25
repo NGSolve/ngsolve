@@ -567,11 +567,14 @@ void NGS_DLL_HEADER ExportNgcomp()
          "local mesh refinement based on marked elements, uses element-bisection algorithm")
 
     .def("RefineHP", FunctionPointer
-         ([](MeshAccess & ma, int levels)
+         ([](MeshAccess & ma, int levels, double factor)
           {
-            Ng_HPRefinement(levels);
+            Ng_HPRefinement(levels, factor);
             ma.UpdateBuffers();
-          }))
+          }),
+         (bp::arg("self"), bp::arg("levels"), bp::arg("factor")=0.125),
+         "geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points"
+         )
 
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
          "set refinementflag for mesh-refinement")
