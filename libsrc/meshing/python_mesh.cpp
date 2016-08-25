@@ -300,6 +300,14 @@ DLL_HEADER void ExportNetgenMeshing()
     .add_property("domout", &FaceDescriptor::DomainOut, &FaceDescriptor::SetDomainOut)
     .add_property("bc", &FaceDescriptor::BCProperty, &FaceDescriptor::SetBCProperty)
     .add_property("bcname", FunctionPointer ([](FaceDescriptor & self) -> string { return self.GetBCName(); }))
+    .def("SetSurfaceColor", FunctionPointer ([](FaceDescriptor & self, bp::list color )
+          {
+            Vec3d c;
+            c.X() = bp::extract<double>(color[0])();
+            c.Y() = bp::extract<double>(color[1])();
+            c.Z() = bp::extract<double>(color[2])();
+            self.SetSurfColour(c);
+          }))
     ;
 
   
