@@ -485,6 +485,12 @@ namespace netgen
 }
 
 
+namespace netgen
+{
+  extern VisualScene *vs;
+  extern shared_ptr<Mesh> mesh;
+  extern shared_ptr<NetgenGeometry> ng_geometry;
+}
 
 
 #ifdef NG_PYTHON
@@ -521,6 +527,21 @@ DLL_HEADER void ExportCSGVis()
 	{
 		vsgeom.MouseMove(oldx, oldy, newx, newy, mode);
 	}));
+        bp::def("SetGeometryObject", FunctionPointer
+            ([](shared_ptr<CSGeometry> geo)
+             {
+
+             geo->FindIdenticSurfaces(1e-6);
+             geo->CalcTriangleApproximation(0.01, 20);
+             ng_geometry = geo;
+             mesh.reset();
+             auto avs = new VisualSceneGeometry();
+
+             avs->SetGeometry(geo.get());
+             vs = avs;
+             vs->SetBackGroundColor(1);
+
+             }));
 }
 BOOST_PYTHON_MODULE(libcsgvis) 
 {
