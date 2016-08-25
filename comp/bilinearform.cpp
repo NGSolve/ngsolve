@@ -2986,6 +2986,7 @@ namespace ngcomp
                                  HeapReset hr(lh);
                                  int facet = colfacets[i];
                                  ma->GetFacetElements (facet, elnums);
+                                 if (elnums.Size() == 0) continue; // coarse facets
                                  int el1 = elnums[0];
                                  ma->GetElFacets(el1,fnums1);
                                  int facnr1 = fnums1.Pos(facet);
