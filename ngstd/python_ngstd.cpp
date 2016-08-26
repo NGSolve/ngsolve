@@ -11,6 +11,8 @@ PythonEnvironment pyenv;
 
 using std::ostringstream;
 
+MSVC2015_UPDATE3_GET_PTR_FIX(Archive)
+MSVC2015_UPDATE3_GET_PTR_FIX(LocalHeap)
 
 void SetFlag(Flags &flags, const char * s, bp::object value) 
 {
