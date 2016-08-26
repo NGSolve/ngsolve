@@ -315,7 +315,7 @@ void NGS_DLL_HEADER  ExportNgstd() {
                  timer["time"] = NgProfiler::GetTime(i);
                  timer["counts"] = NgProfiler::GetCounts(i);
                  timer["flops"] = NgProfiler::GetFlops(i);
-                 timer["Gflop/s"] = NgProfiler::GetFlops(i)/NgProfiler::GetTime(i);
+                 timer["Gflop/s"] = NgProfiler::GetFlops(i)/NgProfiler::GetTime(i)*1e-9;
                  timers.append(timer);
                }
 	     return timers;

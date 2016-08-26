@@ -321,7 +321,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     */
     .add_property("pajetrace",
 		  &GlobalDummyVariables::GetTestoutFile,
-		  FunctionPointer([] (GlobalDummyVariables&, int size)
+		  FunctionPointer([] (GlobalDummyVariables&, size_t size)
 				  {
                                     TaskManager::SetPajeTrace(size > 0);
                                     PajeTrace::SetMaxTracefileSize(size);

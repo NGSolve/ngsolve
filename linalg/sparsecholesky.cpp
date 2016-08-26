@@ -342,7 +342,8 @@ namespace ngla
     for (int i = 1; i < blocknrs.Size(); i++)
       {
         if (blocknrs[i] < blocknrs[i-1]) blocknrs[i] = blocknrs[i-1];
-        if (blocknrs[i] <= i-256) blocknrs[i] = i;
+        // limit blocksize (to 256) for better granularity in solve-phase
+        // if (blocknrs[i] <= i-256) blocknrs[i] = i;
       }
 
 
@@ -958,12 +959,36 @@ void CalcLDL_SolveL (SliceMatrix<T> L, SliceMatrix<T> B)
       CalcLDL_SolveL(L2, B2);
       return;
     }
-
+  
+  static Timer t("LDL - Solve L work", 2);
+  t.Start();
+  /*
   for (int i = 0; i < L.Height(); i++)
     for (int j = i+1; j < L.Height(); j++)
       for (int k = 0; k < B.Height(); k++)
         B(k,j) -= L(j,i) * B(k,i);
-      // B.Col(j) -= L(j,i) * B.Col(i);
+  // B.Col(j) -= L(j,i) * B.Col(i);
+  */
+  /*
+  for (int k = 0; k < B.Height(); k++)
+    for (int i = 0; i < L.Height(); i++)
+      for (int j = i+1; j < L.Height(); j++)
+        B(k,j) -= L(j,i) * B(k,i);
+  */
+  auto solve_row = [&] (int k)
+    {
+      auto Brow = B.Row(k);
+      for (int i = 0; i < L.Height(); i++)
+        for (int j = i+1; j < L.Height(); j++)
+          Brow(j) -= L(j,i) * Brow(i);
+    };
+  if (B.Height() < 1000)
+    for (int k = 0; k < B.Height(); k++)
+      solve_row(k);
+  else
+    ParallelFor (B.Height(), solve_row);
+
+  t.Stop();
 }
 
 // calc new A-block
@@ -981,6 +1006,15 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
       return;
     }
 
+  static Timer t("AddA2 - work", 2);
+  t.Start();
+
+  /*
+  T invd[B.Width()];
+  for (int k = 0; k < B.Width(); k++)
+    CalcInverse(L1(k,k), invd[k]);
+  */
+
   for (int i = 0; i < A2.Height(); i++)
     {
       for (int j = 0; j < i; j++)
@@ -989,6 +1023,18 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
           for (int k = 0; k < B.Width(); k++)
             sum += B(i,k) * Trans(B(j,k));
           A2(i,j) -= sum;
+          /*
+          T sum1(0.0), sum2(0.0);
+          int k = 0;
+          for ( ; k+1 < B.Width(); k+=2)
+            {
+              sum1 += B(i,k) * Trans(B(j,k));
+              sum2 += B(i,k+1) * Trans(B(j,k+1));
+            }
+          for ( ; k < B.Width(); k++)
+            sum1 += B(i,k) * Trans(B(j,k));
+          A2(i,j) -= sum1+sum2;
+          */
         }
       T sum(0.0);
       for (int k = 0; k < B.Width(); k++)
@@ -996,11 +1042,13 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
           T invd;
           CalcInverse(L1(k,k), invd);
           T bik = B(i,k);
-          B(i,k) = bik * invd;
-          sum += B(i,k) * Trans(bik);
+          T bik_inv = bik * invd;  // invd[k]
+          B(i,k) = bik_inv;
+          sum += bik_inv * Trans(bik);
         }
       A2(i,i) -= sum;
     }
+  t.Stop();
 }
 
 
@@ -1084,14 +1132,20 @@ void CalcLDL (SliceMatrix<T> mat)
       }
 
     static Timer factor_timer("SparseCholesky::Factor SPD");
-    static Timer factor_dense1("SparseCholesky::Factor SPD - setup dense cholesky", 2);
-    static Timer factor_dense("SparseCholesky::Factor SPD - dense cholesky", 2);
+    static Timer factor_dense1("SparseCholesky::Factor SPD - setup dense cholesky");
+    static Timer factor_dense1big("SparseCholesky::Factor SPD - setup dense cholesky set0 - big", 2);
+    static Timer factor_dense1small("SparseCholesky::Factor SPD - setup dense cholesky set0 - small", 2);
+
+    static Timer factor_dense1a("SparseCholesky::Factor SPD - setup dense cholesky a", 2);
+    static Timer factor_dense1b("SparseCholesky::Factor SPD - setup dense cholesky b", 2);
+    static Timer factor_dense1c("SparseCholesky::Factor SPD - setup dense cholesky c (avx)", 2);
+    static Timer factor_dense("SparseCholesky::Factor SPD - dense cholesky");
 
     static Timer timerb("SparseCholesky::Factor - B", 2);
-    static Timer timerc("SparseCholesky::Factor - C", 2);
-    static Timer timercla("SparseCholesky::Factor - C(lapack)", 2);
-    static Timer timerc1("SparseCholesky::Factor - C1", 2);
-    static Timer timerc2("SparseCholesky::Factor - C2", 2);
+    static Timer timerc("SparseCholesky::Factor - merge in rows");
+    static Timer timercla("SparseCholesky::Factor - merge(lapack)", 2);
+    static Timer timerc1("SparseCholesky::Factor - merge1", 2);
+    static Timer timerc2("SparseCholesky::Factor - merge2", 2);
 
     RegionTimer reg (factor_timer);
     
@@ -1130,24 +1184,58 @@ void CalcLDL (SliceMatrix<T> mat)
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
         factor_dense1.Start();
-
         Matrix<TM> tmp(nk, nk);
+
+        bool big = nk > 1000;
+        if (big)
+          {
+            factor_dense1big.Start();
+            factor_dense1big.AddFlops(nk*nk);
+
+            ParallelForRange (nk, [&](IntRange r)
+                              {
+                                tmp.Rows(r) = TM(0.0);
+                              });
+
+            factor_dense1big.Stop();
+          }
+        else
+          {
+            factor_dense1small.Start();
+            factor_dense1small.AddFlops(nk*nk);
+
+            tmp = TM(0.0);
+
+            factor_dense1small.Stop();
+          }
+
+        factor_dense1a.Start();
 	for (int j = 0; j < mi; j++)
 	  {
             tmp(j,j) = diag[i1+j];
             tmp.Row(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
+
+        factor_dense1a.Stop();        
+	factor_dense1b.Start();
         for (int j = 0; j < mi; j++)
           for (int i = 0; i < j; i++)
             tmp(j,i) = Trans(tmp(i,j));
-        for (int j = mi; j < nk; j++)
-          {
-            for (int i = 0; i < mi; i++)
-              tmp(j,i) = Trans(tmp(i,j));
-            for (int i = mi; i <= j; i++)
-              tmp(j,i) = TM(0.0);
-          }
+        factor_dense1b.Stop();    
+        factor_dense1b.AddFlops (mi*(mi+1)/2);
+	factor_dense1c.Start();
         
+        // it's faster !?!?!
+        for (int j = mi; j < nk; j++)
+	  for (int i = 0; i < mi; i++)
+	    tmp(j,i) = Trans(tmp(i,j));
+        /*
+        TransposeMatrix (tmp.Rows(0,mi).Cols(mi,nk),
+                         tmp.Rows(mi,nk).Cols(0,mi));
+        */
+        factor_dense1c.Stop();        
+        factor_dense1c.AddFlops (mi*(nk-mi));
+
         factor_dense1.Stop();
         
         SliceMatrix<TM> A11 = tmp.Rows(0,mi).Cols(0,mi);
@@ -1173,18 +1261,24 @@ void CalcLDL (SliceMatrix<T> mat)
         */
 
 
-	for (int j = 0; j < mi; j++)
-	  {
-            // diag[i1+j] = a(j,j);
+	// for (int j = 0; j < mi; j++)
+
+        auto write_back_row = [&](int j)
+          {
             TM inv;
             CalcInverse (A11(j,j), inv);
-            diag[i1+j] = inv;  // 1.0 / A11(j,j);
+            diag[i1+j] = inv; 
             
-            // FlatVector<>(nk-j-1, hlfact+hfirstinrow[i1+j]) = a.Row(j).Range(j+1,nk);
             for (int k = j+1; k < nk; k++)
               tmp(k,j) = A11(j,j) * tmp(k,j);
             FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
-          }
+          };
+
+        if (mi < 10)
+          for (int j = 0; j < mi; j++)
+            write_back_row(j);
+        else
+          ParallelFor (mi, write_back_row);
 
         timerb.Stop();
         timerc.Start();
@@ -1210,64 +1304,39 @@ void CalcLDL (SliceMatrix<T> mat)
                  A22(i,j) = Trans(A22(j,i));
              });
         
-        
-        // SliceMatrix<TM> btb = A22;
         timercla.Stop();
         timerc1.Start();
 
-        if (mi < 100)
+        auto merge_row = [&] (int j)
           {
-            for (int j = 0; j < mi; j++)
-              {
-                FlatVector<TM> sum = A22.Row(j);
+            FlatVector<TM> sum = A22.Row(j);
             
-                // merge together
-                size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-                size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
-                
-                for (int k = j+1; k < mi; k++)
+            // merge together
+            size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
+            size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
+            
+            for (int k = j+1; k < mi; k++)
+              {
+                int kk = hrowindex2[firsti_ri+k];
+                while (hrowindex2[firstj_ri] != kk)
                   {
-                    int kk = hrowindex2[firsti_ri+k];
-                    while (hrowindex2[firstj_ri] != kk)
-                      {
-                        firstj++;
-                        firstj_ri++;
-                      }
-                    
-                    lfact[firstj] += sum[k];
                     firstj++;
                     firstj_ri++;
                   }
+                
+                lfact[firstj] += sum[k];
+                firstj++;
+                firstj_ri++;
               }
-          }
+          };
 
+        if (mi < 100)
+          for (int j = 0; j < mi; j++)
+            merge_row(j);
         else
+          ParallelFor (Range(mi), merge_row);
+          
 
-          // for (int j = 0; j < mi; j++)
-          ParallelFor 
-            (Range(mi), [&] (int j)
-             {
-               FlatVector<TM> sum = A22.Row(j);
-              
-              // merge together
-               size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
-               size_t firstj_ri = hfirstinrow_ri[hrowindex2[firsti_ri+j]];
-              
-               for (int k = j+1; k < mi; k++)
-                 {
-                  int kk = hrowindex2[firsti_ri+k];
-                  while (hrowindex2[firstj_ri] != kk)
-                    {
-                      firstj++;
-                      firstj_ri++;
-                    }
-                  
-                  lfact[firstj] += sum[k];
-                  firstj++;
-                  firstj_ri++;
-                }
-             });
-        
         timerc1.Stop();
 
         timerc2.Start();

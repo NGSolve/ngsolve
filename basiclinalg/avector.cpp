@@ -52,16 +52,10 @@ namespace ngbla
   }
 
   // b = Trans(a)
-  void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
+  void TransposeMatrix2 (SliceMatrix<> a, SliceMatrix<> b)
   {
-    static Timer t1("avx - transpose big");
-    static Timer t2("avx - transpose small");
-
     size_t h = a.Height();
     size_t w = a.Width();
-    bool big = (h > 16) && (w > 16);
-    if (big) t1.Start(); else t2.Start();
-
     
     size_t dista = a.Dist();
     size_t distb = b.Dist();
@@ -111,7 +105,7 @@ namespace ngbla
         pa1 += 4;
         pb1 += 4*distb;
       }
-    if (big) t1.Stop(); else t2.Stop();
+
     for ( ; i < w; i++)
       {
         size_t j = 0;
@@ -137,7 +131,25 @@ namespace ngbla
 
 
 
+  void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
+  {
+    static Timer t1("avx - transpose big");
+    static Timer t2("avx - transpose small");
 
+    size_t h = a.Height();
+    size_t w = a.Width();
+
+    bool big = (h > 16) && (w > 16);
+    if (big) t1.Start(); else t2.Start();
+
+    size_t i = 0;
+    constexpr size_t bs = 64;
+    for ( ; i+bs<=h; i+=bs)
+      TransposeMatrix2(a.Rows(i,i+bs), b.Cols(i,i+bs));
+    TransposeMatrix2(a.Rows(i,h), b.Cols(i,h));    
+
+    if (big) t1.Stop(); else t2.Stop();    
+  }
   
 
 
