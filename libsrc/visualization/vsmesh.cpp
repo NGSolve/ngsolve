@@ -3533,6 +3533,10 @@ namespace netgen
 #include <../general/ngpython.hpp>
 namespace bp = boost::python;
 
+#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
+namespace boost { template<> const volatile netgen::VisualSceneMesh* get_pointer(const volatile netgen::VisualSceneMesh* p) { return p; } }
+#endif
+
 DLL_HEADER void ExportMeshVis()
 {
   using namespace netgen;

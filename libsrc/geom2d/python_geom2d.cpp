@@ -9,11 +9,14 @@
 using namespace netgen;
 namespace bp = boost::python;
 
+#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
+namespace boost { template<> const volatile SplineGeometry2d* get_pointer(const volatile SplineGeometry2d* p) { return p; } }
+#endif
+
 namespace netgen
 {
   extern std::shared_ptr<NetgenGeometry> ng_geometry;
 }
-
 
 DLL_HEADER void ExportGeom2d() 
 {
