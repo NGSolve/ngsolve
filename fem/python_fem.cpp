@@ -570,6 +570,20 @@ void ExportCoefficientFunction()
     MeshSizeCF () { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
+      if (ip.IP().FacetNr() != -1) // on a boundary facet of the element
+        {
+          double det = 1;
+          switch (ip.Dim())
+            {
+            case 1: det = fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
+            case 2: det = fabs (static_cast<const MappedIntegrationPoint<2,2>&> (ip).GetJacobiDet());
+            case 3: det = fabs (static_cast<const MappedIntegrationPoint<3,3>&> (ip).GetJacobiDet());
+            default:
+              throw Exception("Illegal dimension in MeshSizeCF");
+            }
+          return det/ip.GetMeasure();
+        }
+      
       switch (ip.Dim())
         {
         case 1: return fabs (static_cast<const MappedIntegrationPoint<1,1>&> (ip).GetJacobiDet());
@@ -583,8 +597,12 @@ void ExportCoefficientFunction()
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
     {
-      for(int i : Range(ir))
-        values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
+      if (ir[0].IP().FacetNr() != -1)
+        for(int i : Range(ir))
+          values.Get(i) =  fabs (ir[i].GetJacobiDet()) / ir[i].GetMeasure();
+      else
+        for(int i : Range(ir))
+          values.Get(i) =  pow(fabs (ir[i].GetJacobiDet()), 1.0/ir.DimElement()).Data();
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
