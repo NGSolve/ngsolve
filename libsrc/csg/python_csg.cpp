@@ -13,6 +13,10 @@ namespace netgen
 
 inline void NOOP_Deleter(void *) { ; }
 
+#if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
+namespace boost { template<> const volatile CSGeometry* get_pointer(const volatile CSGeometry* p) { return p; } }
+#endif
+
 
 // a shadow solid tree using shared pointers.
 
