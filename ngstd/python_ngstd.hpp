@@ -23,6 +23,8 @@
 
 #if defined(_MSC_FULL_VER) && _MSC_FULL_VER == 190024213
 #define MSVC2015_UPDATE3_GET_PTR_FIX(type) namespace boost { template<> const volatile type * get_pointer(const volatile type * p) { return p; } }
+#else
+#define MSVC2015_UPDATE3_GET_PTR_FIX(type)
 #endif
 namespace bp = boost::python;
 
