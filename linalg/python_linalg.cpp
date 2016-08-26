@@ -4,6 +4,11 @@
 #include <la.hpp>
 using namespace ngla;
 
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseMatrix)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::BaseVector)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<class std::complex<double> >)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::CGSolver<double>)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngla::QMRSolver<double>)
 
 static void InitSlice( const bp::slice &inds, int len, int &start, int &step, int &n ) {
     bp::object indices = inds.attr("indices")(len);
