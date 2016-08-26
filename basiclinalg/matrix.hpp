@@ -157,12 +157,14 @@ namespace ngbla
     }
 
     /// access operator
-    INLINE TELEM & operator() (int i, int j) const
+    template<typename IND,
+             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>    
+    INLINE TELEM & operator() (IND i, IND j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
 #endif
-      return data[i*size_t(w)+j]; 
+      return data[i*IND(w)+j];
     }
 
     /// the height
@@ -1385,16 +1387,20 @@ namespace ngbla
     }
 
     /// access operator
-    INLINE TELEM & operator() (int i, int j) const
+    template<typename IND,
+             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
+      INLINE TELEM & operator() (IND i, IND j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
 #endif
-      return data[i*dist+j]; 
+      return data[i*IND(dist)+j]; 
     }
 
     /// access operator, linear access
-    INLINE TELEM & operator() (int i) const
+    template<typename IND,
+             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
+    INLINE TELEM & operator() (IND i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
