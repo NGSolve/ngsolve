@@ -266,6 +266,7 @@ struct PyDefBracketOperator : public boost::python::def_visitor<PyDefBracketOper
 
   static void RaiseIndexError() {
     // PythonEnvironment::getInstance().exec("raise IndexError()\n");
+    bp::exec("raise IndexError()\n");
     cerr << "python Index error" << endl;
   }
 
