@@ -887,10 +887,10 @@ namespace ngla
 
 
 
-  template <typename T>
-  INLINE void MySubABt (SliceMatrix<T> a,
-                        SliceMatrix<T> b,
-                        SliceMatrix<T> c)
+  template <typename T, ORDERING ORD>
+  INLINE void MySubABt (SliceMatrix<T,ORD> a,
+                        SliceMatrix<T,ORD> b,
+                        SliceMatrix<T,ORD> c)
   {
     static Timer timer1("SparseCholesky::Factor gemm 1", 2);
     static Timer timer2("SparseCholesky::Factor gemm 2", 2);
@@ -898,10 +898,10 @@ namespace ngla
             
     if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
       {
-        timer1.Start();
+        // timer1.Start();
         c -= a * Trans(b);
-        timer1.Stop();
-        timer1.AddFlops(c.Height()*c.Width()*a.Width());
+        // timer1.Stop();
+        // timer1.AddFlops(c.Height()*c.Width()*a.Width());
       }
     else
       {
@@ -940,18 +940,19 @@ namespace ngla
  */ 
 
 // Solve for B1:   B1 D1 L1^t = B
-template <typename T>
-void CalcLDL_SolveL (SliceMatrix<T> L, SliceMatrix<T> B)
+  template <typename T, ORDERING ORD>
+  void CalcLDL_SolveL (SliceMatrix<T,ORD> L, SliceMatrix<T,ORD> B)
 {
   int n = L.Height();
-  if (n >= 8)
+  if (n == 1) return;
+  if (n >= 2)
     {
       IntRange r1(0,n/2), r2(n/2,n);
-      SliceMatrix<T> L1 = L.Rows(r1).Cols(r1);
-      SliceMatrix<T> L21 = L.Rows(r2).Cols(r1);
-      SliceMatrix<T> L2 = L.Rows(r2).Cols(r2);
-      SliceMatrix<T> B1 = B.Cols(r1);
-      SliceMatrix<T> B2 = B.Cols(r2);
+      auto L1 = L.Rows(r1).Cols(r1);
+      auto L21 = L.Rows(r2).Cols(r1);
+      auto L2 = L.Rows(r2).Cols(r2);
+      auto B1 = B.Cols(r1);
+      auto B2 = B.Cols(r2);
       
       CalcLDL_SolveL(L1, B1);
       // B2 -= B1 * Trans(L21) | Lapack;
@@ -992,11 +993,11 @@ void CalcLDL_SolveL (SliceMatrix<T> L, SliceMatrix<T> B)
 }
 
 // calc new A-block
-template <typename T>
-void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
+  template <typename T, ORDERING ORD>
+  void CalcLDL_A2 (SliceMatrix<T,ORD> L1, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
 {
   int n = B.Height();
-  if (n >= 8)
+  if (n >= 2)
     {
       IntRange r1(0,n/2), r2(n/2,n);
       CalcLDL_A2(L1, B.Rows(r1), A2.Rows(r1).Cols(r1));
@@ -1006,8 +1007,8 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
       return;
     }
 
-  static Timer t("AddA2 - work", 2);
-  t.Start();
+  // static Timer t("AddA2 - work", 2);
+  // t.Start();
 
   /*
   T invd[B.Width()];
@@ -1048,23 +1049,23 @@ void CalcLDL_A2 (SliceMatrix<T> L1, SliceMatrix<T> B, SliceMatrix<T> A2)
         }
       A2(i,i) -= sum;
     }
-  t.Stop();
+  // t.Stop();
 }
 
 
 
 // Calc A = L D L^t
-template <typename T>
-void CalcLDL (SliceMatrix<T> mat)
-{
+  template <typename T, ORDERING ORD>
+  void CalcLDL (SliceMatrix<T,ORD> mat)
+  {
   int n = mat.Height();
 
-  if (n >= 8)
+  if (n >= 2)
     {
       int n1 = n/2;
-      SliceMatrix<T> L1 = mat.Rows(0,n1).Cols(0,n1);
-      SliceMatrix<T> L2 = mat.Rows(n1,n).Cols(n1,n);
-      SliceMatrix<T> B = mat.Rows(n1,n).Cols(0,n1);
+      auto L1 = mat.Rows(0,n1).Cols(0,n1);
+      auto L2 = mat.Rows(n1,n).Cols(n1,n);
+      auto B = mat.Rows(n1,n).Cols(0,n1);
       CalcLDL (L1);
       CalcLDL_SolveL (L1,B);
       CalcLDL_A2 (L1,B,L2);
@@ -1184,7 +1185,7 @@ void CalcLDL (SliceMatrix<T> mat)
         int nk = hfirstinrow[i1+1] - hfirstinrow[i1] + 1;
         
         factor_dense1.Start();
-        Matrix<TM> tmp(nk, nk);
+        Matrix<TM,ColMajor> tmp(nk, nk);
 
         bool big = nk > 1000;
         if (big)
@@ -1194,7 +1195,7 @@ void CalcLDL (SliceMatrix<T> mat)
 
             ParallelForRange (nk, [&](IntRange r)
                               {
-                                tmp.Rows(r) = TM(0.0);
+                                tmp.Cols(r) = TM(0.0);
                               });
 
             factor_dense1big.Stop();
@@ -1213,22 +1214,26 @@ void CalcLDL (SliceMatrix<T> mat)
 	for (int j = 0; j < mi; j++)
 	  {
             tmp(j,j) = diag[i1+j];
-            tmp.Row(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
+            tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
 
         factor_dense1a.Stop();        
+        /*
 	factor_dense1b.Start();
         for (int j = 0; j < mi; j++)
           for (int i = 0; i < j; i++)
             tmp(j,i) = Trans(tmp(i,j));
         factor_dense1b.Stop();    
         factor_dense1b.AddFlops (mi*(mi+1)/2);
-	factor_dense1c.Start();
+        */
         
+	factor_dense1c.Start();
+        /*
         // it's faster !?!?!
         for (int j = mi; j < nk; j++)
 	  for (int i = 0; i < mi; i++)
 	    tmp(j,i) = Trans(tmp(i,j));
+        */
         /*
         TransposeMatrix (tmp.Rows(0,mi).Cols(mi,nk),
                          tmp.Rows(mi,nk).Cols(0,mi));
@@ -1238,9 +1243,9 @@ void CalcLDL (SliceMatrix<T> mat)
 
         factor_dense1.Stop();
         
-        SliceMatrix<TM> A11 = tmp.Rows(0,mi).Cols(0,mi);
-        SliceMatrix<TM> B   = tmp.Rows(mi,nk).Cols(0,mi);
-        SliceMatrix<TM> A22 = tmp.Rows(mi,nk).Cols(mi,nk);
+        auto A11 = tmp.Rows(0,mi).Cols(0,mi);
+        auto B   = tmp.Rows(mi,nk).Cols(0,mi);
+        auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
         factor_dense.Start();
         CalcLDL (A11);
         CalcLDL_SolveL (A11,B);
@@ -1290,6 +1295,7 @@ void CalcLDL (SliceMatrix<T> mat)
 	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
+        /*
         timercla.Start();
 
         if (mi < 100)
@@ -1305,11 +1311,12 @@ void CalcLDL (SliceMatrix<T> mat)
              });
         
         timercla.Stop();
+        */
         timerc1.Start();
 
         auto merge_row = [&] (int j)
           {
-            FlatVector<TM> sum = A22.Row(j);
+            auto sum = A22.Col(j);
             
             // merge together
             size_t firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
