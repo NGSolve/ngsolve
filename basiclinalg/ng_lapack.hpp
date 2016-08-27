@@ -411,8 +411,17 @@ namespace ngbla
       }
     // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
   }
-  
 
+  template <typename TA, typename TB, typename ALPHA, typename BETA, typename TC>
+  inline void LapackMultAdd (TA a, 
+                             TB b, 
+                             ALPHA alpha,
+                             SliceMatrix<TC,ColMajor> c,
+                             BETA beta)
+  {
+    LapackMultAdd (Trans(b), Trans(a), alpha, Trans(c), beta);
+  }
+  
 
   /*
 
