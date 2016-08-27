@@ -456,7 +456,12 @@ namespace ngbla
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
   extern void SubABt (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
-
+  extern void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
+  inline void SubABt (SliceMatrix<double,ColMajor> a, SliceMatrix<double,ColMajor> b, SliceMatrix<double,ColMajor> c)
+  {
+    SubAtB (Trans(b), Trans(a), Trans(c));
+  }
+    
   extern void MultMatDiagMat(AFlatMatrixD a, AFlatVectorD diag, AFlatMatrixD c);
 
 
@@ -595,8 +600,8 @@ namespace ngbla
 
 #endif // __AVX__
 
-  template <typename TA, typename TB, typename TC>
-  INLINE void SubABt (const TA & a, const TB & b, SliceMatrix<TC> c)
+  template <typename TA, typename TB, typename TC, ORDERING ORD>
+  INLINE void SubABt (const TA & a, const TB & b, SliceMatrix<TC,ORD> c)
   {
     c -= a * Trans(b) | Lapack;
     // LapackMultAdd (a, Trans(b), 1.0, c, 1.0);
