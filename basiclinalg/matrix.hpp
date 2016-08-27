@@ -449,19 +449,19 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// default constructor
-    Matrix () : FlatMatrix<T> (0, 0) { ; }
+    Matrix () : FlatMatrix<T,ORD> (0, 0) { ; }
 
     /// allocate matrix of size ah * ah
-    Matrix (int ah) : FlatMatrix<T> (ah, new T[size_t(ah)*size_t(ah)]) { ; }
+    Matrix (int ah) : FlatMatrix<T,ORD> (ah, new T[size_t(ah)*size_t(ah)]) { ; }
     
     /// allocate matrix of size ah * aw
-    Matrix (int ah, int aw) : FlatMatrix<T> (ah, aw, new T[size_t(ah)*size_t(aw)]) { ; }
+    Matrix (int ah, int aw) : FlatMatrix<T,ORD> (ah, aw, new T[size_t(ah)*size_t(aw)]) { ; }
 
     /// allocate and copy matrix  
     Matrix (const Matrix & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
-      FlatMatrix<T>::operator= (m2);
+      FlatMatrix<T,ORD>::operator= (m2);
     }
 
     /// allocate and compute 
@@ -469,11 +469,11 @@ namespace ngbla
     Matrix (const Expr<TB> & m2) 
       : FlatMatrix<T> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2);
+      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
     }
 
     Matrix (initializer_list<initializer_list<T>> llist) 
-      : FlatMatrix<T> (0,0,nullptr)
+      : FlatMatrix<T,ORD> (0,0,nullptr)
     {
       int h = llist.size();
       int w = 0;
@@ -523,7 +523,7 @@ namespace ngbla
     Matrix & operator= (const Expr<TB> & m) 
     { 
       SetSize (m.Height(), m.Width());
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m);
+      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m);
       return *this;
     }
 
@@ -531,7 +531,7 @@ namespace ngbla
     /// fill matrix with scalar
     Matrix & operator= (TSCAL s) 
     {
-      FlatMatrix<T>::operator= (s);
+      FlatMatrix<T,ORD>::operator= (s);
       return *this;
     }
 
@@ -539,7 +539,7 @@ namespace ngbla
     /// fill matrix with scalar
     Matrix & operator= (const Matrix & m2) 
     {
-      FlatMatrix<T>::operator= (m2);
+      FlatMatrix<T,ORD>::operator= (m2);
       return *this;
     }
 
