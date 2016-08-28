@@ -60,8 +60,10 @@ namespace ngbla
     size_t dista = a.Dist();
     size_t distb = b.Dist();
 
+    /*
     __m256i mask_width = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
                                               _mm256_set_epi64x(3, 2, 1, 0));
+    */
     __m256i mask_height = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(h&3),
                                                _mm256_set_epi64x(3, 2, 1, 0));
   
@@ -1086,7 +1088,7 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
 
     size_t dista = a.Dist();
     size_t full_vwidtha = size_t(a.Width()) / 4;
-    size_t full_vwidtha2 = size_t(a.Width()) / 2;
+    // size_t full_vwidtha2 = size_t(a.Width()) / 2;
     size_t distb = b.Dist(); 
 
     __m256i mask_widthc = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(widthc&3),
@@ -2072,7 +2074,9 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
         __m256d a1 = _mm256_set1_pd(*pa);
         __m256d a2 = _mm256_set1_pd(pa[1]);
         __m256d a3 = _mm256_set1_pd(pa[2]);
-        _mm_prefetch (pa+5,  _MM_HINT_T0);        
+        // _mm_prefetch (pa+da,  _MM_HINT_T0);
+        // _mm_prefetch (pa+da,  _MM_HINT_T0);
+        // _mm_prefetch (pa+da+2,  _MM_HINT_T0);        
         
         __m256d b1 = _mm256_loadu_pd(pb);
         sum11 -= a1 * b1;
@@ -2261,18 +2265,18 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
                               double * pc, size_t dc)
   {
     size_t i = 0;
-    constexpr auto hint = _MM_HINT_T0;
+    constexpr auto hint = _MM_HINT_T1;
     for ( ; i+3 <= wa; i+= 3, pa += 3, pc += 3*dc)
       {
         _mm_prefetch (pc+3*dc, hint);
-        _mm_prefetch (pc+3*dc+64, hint);
-        _mm_prefetch (pc+3*dc+128, hint);
+        _mm_prefetch (pc+3*dc+8, hint);
+        _mm_prefetch (pc+3*dc+16, hint);
         _mm_prefetch (pc+4*dc, hint);
-        _mm_prefetch (pc+4*dc+64, hint);
-        _mm_prefetch (pc+4*dc+128, hint);
+        _mm_prefetch (pc+4*dc+8, hint);
+        _mm_prefetch (pc+4*dc+16, hint);
         _mm_prefetch (pc+5*dc, hint);
-        _mm_prefetch (pc+5*dc+64, hint);
-        _mm_prefetch (pc+5*dc+128, hint);
+        _mm_prefetch (pc+5*dc+8, hint);
+        _mm_prefetch (pc+5*dc+16, hint);
         MyScal3x16Trans (ninner, pa, da, pb, db, pc, dc);
       }
     for ( ; i < wa; i+= 1, pa += 1, pc += dc)
@@ -2316,7 +2320,21 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
     double * pb = &b(0,0);
     double * pc = &c(0,0);
     for ( ; j+16 <= wb; j+=16, pb += 16, pc += 16)
-      MyScalx16Trans (ninner, wa, pa, da, pb, db, pc, dc);
+      {
+        /*
+        constexpr auto hint = _MM_HINT_T1;
+        _mm_prefetch (pc+0*dc, hint);
+        _mm_prefetch (pc+0*dc+8, hint);
+        _mm_prefetch (pc+0*dc+16, hint);
+        _mm_prefetch (pc+1*dc, hint);
+        _mm_prefetch (pc+1*dc+8, hint);
+        _mm_prefetch (pc+1*dc+16, hint);
+        _mm_prefetch (pc+2*dc, hint);
+        _mm_prefetch (pc+2*dc+8, hint);
+        _mm_prefetch (pc+2*dc+16, hint);
+        */
+        MyScalx16Trans (ninner, wa, pa, da, pb, db, pc, dc);
+      }
     for ( ; j+4 <= wb; j+=4, pb += 4, pc += 4)
       MyScalx4Trans (ninner, wa, pa, da, pb, db, pc, dc);
     if (j < wb)
@@ -2340,6 +2358,30 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   
   void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    /*
+    if (a.Height() < 16)
+      {
+        c -= Trans(a)*b;
+        return;
+      }
+    if (c.Height() < 16)
+      {
+        c -= Trans(a)*b;
+        return;
+      }
+    if (c.Width() < 16)
+      {
+        c -= Trans(a)*b;
+        return;
+      }
+    */
+    // static Timer tsub("avector::SubAtb - lapack");
+    // RegionTimer reg(tsub);
+    // tsub.AddFlops (size_t(a.Height()) * c.Height() * c.Width());
+    
+    // c -= Trans(a)*b | Lapack;
+    // return;
+    // cout << c.Height() << " x " << c.Width() << " x " << a.Height() << " = " << size_t(c.Height())*c.Width()*a.Height() << endl;
     constexpr size_t bs = 32;
     size_t ha = a.Height();
     size_t i = 0;
@@ -2348,8 +2390,6 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
     if (i < ha)
       SubAtB2 (a.Rows(i,ha), b.Rows(i,ha), c);    
   }
-
-
 
   /*
   void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)

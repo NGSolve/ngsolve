@@ -192,11 +192,13 @@ namespace ngfem
       string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
       string slink = "ngsld -shared " + file_prefix + ".o -o " + file_prefix + ".so -lngstd -lngfem";
 #endif
-      system(scompile.c_str());
+      int err = system(scompile.c_str());
+      if (err) throw Exception ("problem calling compiler");
       tcompile.Stop();
       cout << IM(3) << "linking..." << endl;
       tlink.Start();
-      system(slink.c_str());
+      err = system(slink.c_str());
+      if (err) throw Exception ("problem calling linker");      
       tlink.Stop();
       cout << IM(3) << "done" << endl;
 #ifdef WIN32
