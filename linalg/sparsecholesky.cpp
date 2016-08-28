@@ -896,7 +896,9 @@ namespace ngla
     static Timer timer2("SparseCholesky::Factor gemm 2", 2);
     static Timer timer3("SparseCholesky::Factor gemm 3", 2);
             
-    if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
+    if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
+    // if (c.Height() < 10 || c.Width() < 10 || a.Width() < 10)
+    // if (false)
       {
         // timer1.Start();
         c -= a * Trans(b);
@@ -906,6 +908,7 @@ namespace ngla
     else
       {
         if (c.Height() < 128 && c.Width() < 128)
+          // if (true)
           {
             timer2.Start();
             // c -= a * Trans(b) | Lapack;
@@ -942,116 +945,108 @@ namespace ngla
 // Solve for B1:   B1 D1 L1^t = B
   template <typename T, ORDERING ORD>
   void CalcLDL_SolveL (SliceMatrix<T,ORD> L, SliceMatrix<T,ORD> B)
-{
-  int n = L.Height();
-  if (n == 1) return;
-  if (n >= 2)
-    {
-      IntRange r1(0,n/2), r2(n/2,n);
-      auto L1 = L.Rows(r1).Cols(r1);
-      auto L21 = L.Rows(r2).Cols(r1);
-      auto L2 = L.Rows(r2).Cols(r2);
-      auto B1 = B.Cols(r1);
-      auto B2 = B.Cols(r2);
-      
-      CalcLDL_SolveL(L1, B1);
-      // B2 -= B1 * Trans(L21) | Lapack;
-      MySubABt (B1, L21, B2);
-      CalcLDL_SolveL(L2, B2);
-      return;
-    }
-  
-  static Timer t("LDL - Solve L work", 2);
-  t.Start();
-  /*
-  for (int i = 0; i < L.Height(); i++)
-    for (int j = i+1; j < L.Height(); j++)
-      for (int k = 0; k < B.Height(); k++)
-        B(k,j) -= L(j,i) * B(k,i);
-  // B.Col(j) -= L(j,i) * B.Col(i);
-  */
-  /*
-  for (int k = 0; k < B.Height(); k++)
-    for (int i = 0; i < L.Height(); i++)
-      for (int j = i+1; j < L.Height(); j++)
-        B(k,j) -= L(j,i) * B(k,i);
-  */
-  auto solve_row = [&] (int k)
-    {
-      auto Brow = B.Row(k);
+  {
+    int n = L.Height();
+    if (n == 1) return;
+    if (n >= 2)
+      {
+        IntRange r1(0,n/2), r2(n/2,n);
+        auto L1 = L.Rows(r1).Cols(r1);
+        auto L21 = L.Rows(r2).Cols(r1);
+        auto L2 = L.Rows(r2).Cols(r2);
+        auto B1 = B.Cols(r1);
+        auto B2 = B.Cols(r2);
+        
+        CalcLDL_SolveL(L1, B1);
+        // B2 -= B1 * Trans(L21) | Lapack;
+        MySubABt (B1, L21, B2);
+        CalcLDL_SolveL(L2, B2);
+        return;
+      }
+    
+    static Timer t("LDL - Solve L work", 2);
+    t.Start();
+    /*
       for (int i = 0; i < L.Height(); i++)
-        for (int j = i+1; j < L.Height(); j++)
-          Brow(j) -= L(j,i) * Brow(i);
-    };
-  if (B.Height() < 1000)
-    for (int k = 0; k < B.Height(); k++)
-      solve_row(k);
-  else
-    ParallelFor (B.Height(), solve_row);
-
-  t.Stop();
-}
-
-// calc new A-block
+      for (int j = i+1; j < L.Height(); j++)
+      for (int k = 0; k < B.Height(); k++)
+      B(k,j) -= L(j,i) * B(k,i);
+      // B.Col(j) -= L(j,i) * B.Col(i);
+      */
+    /*
+      for (int k = 0; k < B.Height(); k++)
+      for (int i = 0; i < L.Height(); i++)
+      for (int j = i+1; j < L.Height(); j++)
+      B(k,j) -= L(j,i) * B(k,i);
+    */
+    auto solve_row = [&] (int k)
+      {
+        auto Brow = B.Row(k);
+        for (int i = 0; i < L.Height(); i++)
+          for (int j = i+1; j < L.Height(); j++)
+            Brow(j) -= L(j,i) * Brow(i);
+      };
+    if (B.Height() < 1000)
+      for (int k = 0; k < B.Height(); k++)
+        solve_row(k);
+    else
+      ParallelFor (B.Height(), solve_row);
+    
+    t.Stop();
+  }
+  
+  // calc new A22-block
   template <typename T, ORDERING ORD>
-  void CalcLDL_A2 (SliceMatrix<T,ORD> L1, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
-{
-  int n = B.Height();
-  if (n >= 2)
-    {
-      IntRange r1(0,n/2), r2(n/2,n);
-      CalcLDL_A2(L1, B.Rows(r1), A2.Rows(r1).Cols(r1));
-      // A2.Rows(r2).Cols(r1) -= B.Rows(r2) * Trans(B.Rows(r1)) | Lapack;
-      MySubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
-      CalcLDL_A2(L1, B.Rows(r2), A2.Rows(r2).Cols(r2));
-      return;
-    }
+  void CalcLDL_A2 (SliceVector<T> diag, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
+  {
+    int n = B.Height();
+    int w = B.Width();
 
-  // static Timer t("AddA2 - work", 2);
-  // t.Start();
+    if (w > 256 && w > n)
+      {
+        IntRange r1(0,w/2), r2(w/2,w);
+        CalcLDL_A2 (diag.Range(r1), B.Cols(r1), A2);
+        CalcLDL_A2 (diag.Range(r2), B.Cols(r2), A2);
+        return;
+      }
 
-  /*
-  T invd[B.Width()];
-  for (int k = 0; k < B.Width(); k++)
-    CalcInverse(L1(k,k), invd[k]);
-  */
-
-  for (int i = 0; i < A2.Height(); i++)
-    {
-      for (int j = 0; j < i; j++)
-        {
-          T sum(0.0);
-          for (int k = 0; k < B.Width(); k++)
-            sum += B(i,k) * Trans(B(j,k));
-          A2(i,j) -= sum;
-          /*
-          T sum1(0.0), sum2(0.0);
-          int k = 0;
-          for ( ; k+1 < B.Width(); k+=2)
-            {
-              sum1 += B(i,k) * Trans(B(j,k));
-              sum2 += B(i,k+1) * Trans(B(j,k+1));
-            }
-          for ( ; k < B.Width(); k++)
-            sum1 += B(i,k) * Trans(B(j,k));
-          A2(i,j) -= sum1+sum2;
-          */
-        }
-      T sum(0.0);
-      for (int k = 0; k < B.Width(); k++)
-        {
-          T invd;
-          CalcInverse(L1(k,k), invd);
-          T bik = B(i,k);
-          T bik_inv = bik * invd;  // invd[k]
-          B(i,k) = bik_inv;
-          sum += bik_inv * Trans(bik);
-        }
-      A2(i,i) -= sum;
-    }
-  // t.Stop();
-}
-
+    if (n >= 2)
+      {
+        IntRange r1(0,n/2), r2(n/2,n);
+        CalcLDL_A2(diag, B.Rows(r1), A2.Rows(r1).Cols(r1));
+        // A2.Rows(r2).Cols(r1) -= B.Rows(r2) * Trans(B.Rows(r1)) | Lapack;
+        MySubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
+        CalcLDL_A2(diag, B.Rows(r2), A2.Rows(r2).Cols(r2));
+        return;
+      }
+    
+    // static Timer t("AddA2 - work", 2);
+    // t.Start();
+    
+    for (int i = 0; i < A2.Height(); i++)
+      {
+        for (int j = 0; j < i; j++)
+          {
+            T sum(0.0);
+            for (int k = 0; k < B.Width(); k++)
+              sum += B(i,k) * Trans(B(j,k));
+            A2(i,j) -= sum;
+          }
+        T sum(0.0);
+        for (int k = 0; k < B.Width(); k++)
+          {
+            T invd;
+            CalcInverse(diag(k), invd);
+            T bik = B(i,k);
+            T bik_inv = bik * invd; 
+            B(i,k) = bik_inv;
+            sum += bik_inv * Trans(bik);
+          }
+        A2(i,i) -= sum;
+      }
+    // t.Stop();
+  }
+  
 
 
 // Calc A = L D L^t
@@ -1068,7 +1063,7 @@ namespace ngla
       auto B = mat.Rows(n1,n).Cols(0,n1);
       CalcLDL (L1);
       CalcLDL_SolveL (L1,B);
-      CalcLDL_A2 (L1,B,L2);
+      CalcLDL_A2 (L1.Diag(),B,L2);
       CalcLDL (L2);
       return;
     }
@@ -1248,8 +1243,11 @@ namespace ngla
         auto A22 = tmp.Rows(mi,nk).Cols(mi,nk);
         factor_dense.Start();
         CalcLDL (A11);
-        CalcLDL_SolveL (A11,B);
-        CalcLDL_A2 (A11,B,A22);
+        if (mi < nk)
+          {
+            CalcLDL_SolveL (A11,B);
+            CalcLDL_A2 (A11.Diag(),B,A22);
+          }
         factor_dense.Stop();          
         /*
           // the original version
@@ -1750,10 +1748,8 @@ namespace ngla
   void RunParallelDependency (const Table<int> & dag, TFUNC func)
   {
     Array<atomic<int>> cnt_dep(dag.Size());
-    // Array<int> cnt_dep(dag.Size());
 
     for (auto & d : cnt_dep) 
-      // d = 0;
       d.store (0, memory_order_relaxed);
 
     static Timer t_cntdep("count dep");
@@ -1762,7 +1758,6 @@ namespace ngla
                  [&] (int i)
                  {
                    for (int j : dag[i])
-                     //#pragma omp atomic
                      cnt_dep[j]++;
                  });
     t_cntdep.Stop();    
@@ -1798,14 +1793,8 @@ namespace ngla
         return;
       }
 
-
-
     atomic<int> cnt_final(0);
     SharedLoop sl(Range(ready));
-
-    Array< Vec<3> > timings(task_manager -> GetNumThreads());
-    // double starttime = omp_get_wtime();
-
 
     task_manager -> CreateJob 
       ([&] (const TaskInfo & ti)
@@ -1834,45 +1823,9 @@ namespace ngla
                {
                  if (--cnt_dep[j] == 0)
                    queue.enqueue (ptoken, j);
-
-                 /*
-                 int ncnt;
-#pragma omp atomic capture
-                 ncnt = --cnt_dep[j];
-                 if (ncnt == 0)
-                   queue.enqueue (ptoken, j);                   
-                 */
                }
            }
        });
-
-
-    /*
-      // my own simple parall
-    MyQueue<int> queue(dag.Size());
-
-    for (int i : ready)
-      queue.Push(i);
-    
-    task_manager -> CreateJob 
-      ([&] (const TaskInfo & ti)
-       {
-         while (1)
-           {
-             int nr;
-             if (!queue.Pop(nr)) break;
-             
-             func(nr);
-
-             for (int j : dag[nr])
-               {
-                 if (--cnt_dep[j] == 0)
-                   queue.Push (j);
-               }
-           }
-        ptqend[ti.task_nr] = omp_get_wtime();         
-        });
-    */
   }
 
 

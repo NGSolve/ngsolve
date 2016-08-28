@@ -1427,6 +1427,11 @@ namespace ngbla
       return FlatVector<T> (w, &data[i*size_t(dist)]);
     }
 
+    INLINE const FlatVector<T> Diag (int i) const
+    {
+      return SliceVector<T> (h, dist+1, data);
+    }
+
     INLINE const SliceVector<T> Col (int i) const
     {
       return SliceVector<T> (h, dist, &data[i]);
@@ -1531,6 +1536,10 @@ namespace ngbla
       return SliceVector<T> (w, dist, &data[i]);
     }
 
+    const SliceVector<T> Diag () const
+    {
+      return SliceVector<T> (w, dist+1, data);
+    }
 
 
     const SliceMatrix Rows (int first, int next) const
