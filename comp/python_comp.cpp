@@ -2044,15 +2044,21 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   bp::def("SymbolicLFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) 
+          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary,
+              bool skeleton,
+              bp::object definedon) 
            -> shared_ptr<LinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
-             
-             auto lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb);
 
+             shared_ptr<LinearFormIntegrator> lfi;
+             if (!skeleton)
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+             else
+               lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
+             
              if (bp::extract<bp::list> (definedon).check())
                lfi -> SetDefinedOn (makeCArray<int> (definedon));
              if (defon_region.check())
@@ -2060,7 +2066,11 @@ void NGS_DLL_HEADER ExportNgcomp()
 
              return lfi;
            }),
-          (bp::args("self"), bp::args("VOL_or_BND")=VOL, bp::arg("definedon")=bp::object())
+          (bp::args("self"),
+           bp::args("VOL_or_BND")=VOL,
+           bp::args("element_boundary")=false,
+           bp::args("skeleton")=false,           
+           bp::arg("definedon")=bp::object())
           );
 
   bp::def("SymbolicBFI", FunctionPointer

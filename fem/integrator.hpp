@@ -1289,7 +1289,7 @@ namespace ngfem
   {
     public:
       
-    FacetLinearFormIntegrator(const Array<shared_ptr<CoefficientFunction>> & coeffs) 
+    FacetLinearFormIntegrator( /* const Array<shared_ptr<CoefficientFunction>> & coeffs */) 
       : LinearFormIntegrator() { ; }
 
     ~FacetLinearFormIntegrator() { ; }
@@ -1313,7 +1313,7 @@ namespace ngfem
     CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
-			 FlatVector<double> & elvec,
+			 FlatVector<double> elvec,
 			 LocalHeap & lh) const{ 
       throw Exception ("FacetLinearFormIntegrator::CalcFacetVector not implemented!");
     }
@@ -1322,7 +1322,7 @@ namespace ngfem
     CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
-			 FlatVector<Complex> & elvec,
+			 FlatVector<Complex> elvec,
 			 LocalHeap & lh) const { 
       throw Exception ("FacetLinearFormIntegrator::CalcFacetVector<complex> not implemented!");
     }

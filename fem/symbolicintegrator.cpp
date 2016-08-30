@@ -303,8 +303,9 @@ namespace ngfem
 
 
   SymbolicLinearFormIntegrator ::
-  SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb)
-    : cf(acf), vb(avb)
+  SymbolicLinearFormIntegrator(shared_ptr<CoefficientFunction> acf, VorB avb,
+                               bool aelement_boundary)
+    : cf(acf), vb(avb), element_boundary(aelement_boundary)
   {
     simd_evaluate = true;
     
@@ -369,6 +370,53 @@ namespace ngfem
                        FlatVector<double> elvec,
                        LocalHeap & lh) const
   {
+    if (element_boundary)
+      { // not yet simded
+        elvec = 0;
+    
+        auto eltype = trafo.GetElementType();
+        int nfacet = ElementTopology::GetNFacets(eltype);
+        
+        Facet2ElementTrafo transform(eltype); 
+        
+        for (int k = 0; k < nfacet; k++)
+          {
+            HeapReset hr(lh);
+            ngfem::ELEMENT_TYPE etfacet = ElementTopology::GetFacetType (eltype, k);
+            
+            IntegrationRule ir_facet(etfacet, 2*fel.Order());
+            IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+            BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+            
+            ProxyUserData ud;
+            const_cast<ElementTransformation&>(trafo).userdata = &ud;
+
+            mir.ComputeNormalsAndMeasure (eltype, k);
+            
+            FlatVector<> elvec1(elvec.Size(), lh);
+            FlatMatrix<> val(mir.Size(), 1,lh);
+            for (auto proxy : proxies)
+              {
+                HeapReset hr(lh);
+                FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
+                for (int k = 0; k < proxy->Dimension(); k++)
+                  {
+                    ud.testfunction = proxy;
+                    ud.test_comp = k;
+                    cf -> Evaluate (mir, val);
+                    proxyvalues.Col(k) = val.Col(0);
+                  }
+                
+                for (int i = 0; i < mir.Size(); i++)
+                  // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
+                  proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
+                
+                proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
+                elvec += elvec1;
+              }
+          }
+        return;
+      }
     if (simd_evaluate)
       {
         try
@@ -1573,6 +1621,92 @@ namespace ngfem
           }
       }
   }
+
+
+  SymbolicFacetLinearFormIntegrator ::
+  SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb /* , bool eb */)
+    : cf(acf), vb(avb) // , element_boundary(eb)
+  {
+    if (cf->Dimension() != 1)
+      throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
+    test_cum.Append(0);    
+    cf->TraverseTree
+      ( [&] (CoefficientFunction & nodecf)
+        {
+          auto proxy = dynamic_cast<ProxyFunction*> (&nodecf);
+          if (proxy) 
+            if (proxy->IsTestFunction())
+              if (!proxies.Contains(proxy))
+                {
+                  proxies.Append (proxy);
+                  test_cum.Append(test_cum.Last()+proxy->Dimension());
+                }
+        });
+  }
+
+
+  void SymbolicFacetLinearFormIntegrator ::
+  CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr,
+                   const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
+                   const ElementTransformation & strafo,  
+                   FlatVector<double> elvec,
+                   LocalHeap & lh) const
+  {
+    static Timer t("SymbolicFacetLFI::CalcFacetVector - boundary", 2);
+    HeapReset hr(lh);
+
+
+    elvec = 0;
+    
+    FlatVector<> elvec1(elvec.Size(), lh);
+
+    int maxorder = fel1.Order();
+
+    auto eltype1 = trafo1.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices); 
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    auto & smir = strafo(ir_facet, lh);
+    
+    // evaluate proxy-values
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+    const_cast<ElementTransformation&>(strafo).userdata = &ud;
+
+    RegionTimer reg(t);
+    
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr);
+    
+    FlatMatrix<> val(ir_facet.Size(), 1,lh);
+    for (auto proxy : proxies)
+      {
+        HeapReset hr(lh);
+        FlatMatrix<> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
+        
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            // cf -> Evaluate (mir1, val);
+            cf -> Evaluate (smir, val);
+            proxyvalues.Col(k) = val.Col(0);
+          }
+
+        for (int i = 0; i < mir1.Size(); i++)
+          proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight(); // use also smir here ? 
+
+        elvec1 = 0.0;
+        proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, elvec1, lh);
+        elvec += elvec1;
+      }
+  }
+
+
+
+  
   
   SymbolicFacetBilinearFormIntegrator ::
   SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool eb)

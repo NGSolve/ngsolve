@@ -352,9 +352,11 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     VorB vb;
+    bool element_boundary;
     mutable bool simd_evaluate = true;
   public:
-    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
+    SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
+                                  bool aelement_boundary);
 
     virtual bool BoundaryForm() const { return vb==BND; }
     virtual string Name () const { return string ("Symbolic LFI"); }
@@ -457,6 +459,30 @@ public:
 
   };
 
+
+
+  class SymbolicFacetLinearFormIntegrator : public FacetLinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> cf;
+    Array<ProxyFunction*> proxies;
+    Array<int> test_cum;    // cumulated dimension of proxies
+    VorB vb;                // only BND supported by now
+    // bool element_boundary;  /// not needed (by now ???)
+  public:
+    SymbolicFacetLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb);
+
+    virtual bool BoundaryForm() const { return vb == BND; }
+
+    virtual void
+    CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
+                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                     const ElementTransformation & seltrans,
+                     FlatVector<double> elvec,
+                     LocalHeap & lh) const;
+  };
+
+
+  
 
   class SymbolicFacetBilinearFormIntegrator : public FacetBilinearFormIntegrator
   {

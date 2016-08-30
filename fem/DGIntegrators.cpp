@@ -652,7 +652,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> coef_dir;
   public:
     DGFacet_DirichletBoundaryIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-        : FacetLinearFormIntegrator(coeffs)
+      : FacetLinearFormIntegrator( /* coeffs */)
     { 
       coef_lam  = coeffs[0];
       coef_dir  = coeffs[1];
@@ -680,7 +680,7 @@ namespace ngfem
     virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
-                         FlatVector<double> & elvec, LocalHeap & lh) const
+                         FlatVector<double> elvec, LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGFacet_DirichletBoundaryIntegrator");
       NgProfiler::RegionTimer reg (timer);
@@ -769,7 +769,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> coef_lam;
   public:
     DGFacet_NeumannBoundaryIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetLinearFormIntegrator(coeffs)
+      : FacetLinearFormIntegrator( /* coeffs */ )
     { 
       coef_lam  = coeffs[0];
     }
@@ -795,7 +795,7 @@ namespace ngfem
     virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
-                         FlatVector<double> & elvec, LocalHeap & lh) const
+                         FlatVector<double> elvec, LocalHeap & lh) const
     {
       static int timer = NgProfiler::CreateTimer ("DGFacet_NeumannBoundaryIntegrator");
 
@@ -861,7 +861,7 @@ namespace ngfem
     Array<shared_ptr<CoefficientFunction> > coef_b;
   public:
     DGFacet_ConvectionDirichletBoundaryIntegrator (const Array<shared_ptr<CoefficientFunction>> & coeffs) 
-      : FacetLinearFormIntegrator(coeffs)
+      : FacetLinearFormIntegrator( /* coeffs */)
     { 
       coef_b.SetSize(D);
       for (int i=0; i<D; i++)
@@ -890,7 +890,7 @@ namespace ngfem
     virtual void CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
 			 const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
 			 const ElementTransformation & seltrans,
-                         FlatVector<double> & elvec, LocalHeap & lh) const
+                         FlatVector<double> elvec, LocalHeap & lh) const
     {
        static int timer = NgProfiler::CreateTimer ("DGFacet_ConvectionDirichletBoundaryIntegrator");
       NgProfiler::RegionTimer reg (timer);
