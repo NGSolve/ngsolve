@@ -3574,6 +3574,10 @@ DLL_HEADER void ExportMeshVis()
       ([] (int facenr) {
        vsmesh.SetSelectedFace(facenr);
        }));
+  bp::def("GetGlobalMesh", FunctionPointer
+      ([] () {
+       return vsmesh.GetMesh();
+       }));
 }
 BOOST_PYTHON_MODULE(libvisual)
 {
