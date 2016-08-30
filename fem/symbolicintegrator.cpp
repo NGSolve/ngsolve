@@ -899,8 +899,9 @@ namespace ngfem
           
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
-          FlatVector<> measure(mir.Size(), lh);
-          
+
+          /*
+            FlatVector<> measure(mir.Size(), lh);
           for (int i = 0; i < mir.Size(); i++)
             {
               double len;
@@ -935,6 +936,8 @@ namespace ngfem
                 }
               measure(i) = len;
             }
+          */
+          mir.ComputeNormalsAndMeasure(eltype, k);
           // tir.Stop();
 
           
@@ -961,7 +964,8 @@ namespace ngfem
                       
                       cf->Evaluate (mir, val);
                       for (int i = 0; i < mir.Size(); i++)
-                        val(i) *= ir_facet[i].Weight() * measure(i);
+                        // val(i) *= ir_facet[i].Weight() * measure(i);
+                        val(i) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
 
                       proxyvalues(STAR,k,l) = val.Col(0);
                     }
