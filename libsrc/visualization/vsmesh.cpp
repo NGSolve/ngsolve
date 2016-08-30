@@ -3570,6 +3570,10 @@ DLL_HEADER void ExportMeshVis()
            {
              vsmesh.MouseMove(oldx, oldy, newx, newy, mode);
            }));
+  bp::def("SelectFace", FunctionPointer
+      ([] (int facenr) {
+       vsmesh.SetSelectedFace(facenr);
+       }));
 }
 BOOST_PYTHON_MODULE(libvisual)
 {
