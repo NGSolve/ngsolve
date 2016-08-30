@@ -2436,6 +2436,9 @@ namespace ngbla
                      double * ps, size_t dists,
                      double * pd, size_t distd)
   {
+    __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                        _mm256_set_epi64x(3,2,1,0));
+    
     for (size_t i = 0; i < h; i++, pd += distd)
       {
         double * psnext = ps+dists;
@@ -2462,8 +2465,10 @@ namespace ngbla
           }
         for ( ; j +4 <= w; j+=4)
           _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
-        for ( ; j < w; j++)
-          pd[j] = ps[j];
+        _mm256_maskstore_pd (pd+j, mask, _mm256_maskload_pd(ps+j, mask));
+        
+        // for ( ; j < w; j++)
+        // pd[j] = ps[j];
         // _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
       
         ps = psnext;
@@ -2475,6 +2480,9 @@ namespace ngbla
                       double * ps, size_t dists,
                       double * pd, size_t distd)
   {
+    __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                        _mm256_set_epi64x(3,2,1,0));
+    
     for (size_t i = 0; i < h; i++, pd += distd)
       {
         double * psnext = ps+dists;
@@ -2499,8 +2507,9 @@ namespace ngbla
           }
         for ( ; j +4 <= w; j+=4)
           _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
-        for ( ; j < w; j++)
-          pd[j] = ps[j];
+        _mm256_maskstore_pd (pd+j, mask, _mm256_maskload_pd(ps+j, mask));        
+        // for ( ; j < w; j++)
+        // pd[j] = ps[j];
         ps = psnext;
       }
   }
