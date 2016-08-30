@@ -61,8 +61,8 @@ namespace ngbla
     size_t distb = b.Dist();
 
     /*
-    __m256i mask_width = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
-                                              _mm256_set_epi64x(3, 2, 1, 0));
+      __m256i mask_width = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+      _mm256_set_epi64x(3, 2, 1, 0));
     */
     __m256i mask_height = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(h&3),
                                                _mm256_set_epi64x(3, 2, 1, 0));
@@ -412,10 +412,10 @@ namespace ngbla
   }
 
 
-template <int R = 0>
-INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
-                       double * pb1, double * pb2, double * pb3, double * pb4)
-{
+  template <int R = 0>
+  INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
+                         double * pb1, double * pb2, double * pb3, double * pb4)
+  {
     SIMD<double> sum11(0.0), sum12(0.0), sum13(0.0), sum14(0.0);
     SIMD<double> sum21(0.0), sum22(0.0), sum23(0.0), sum24(0.0);
     SIMD<double> sum31(0.0), sum32(0.0), sum33(0.0), sum34(0.0);
@@ -446,32 +446,32 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
         sum34 += a3 * b4;
       }
 
-  if (R > 0)
-    {
-      __m256d a1 = _mm256_maskload_pd (pa1+n4, RestMask(R));
-      __m256d a2 = _mm256_maskload_pd (pa2+n4, RestMask(R));
-      __m256d a3 = _mm256_maskload_pd (pa3+n4, RestMask(R));
+    if (R > 0)
+      {
+        __m256d a1 = _mm256_maskload_pd (pa1+n4, RestMask(R));
+        __m256d a2 = _mm256_maskload_pd (pa2+n4, RestMask(R));
+        __m256d a3 = _mm256_maskload_pd (pa3+n4, RestMask(R));
 
-      __m256d b1 = _mm256_maskload_pd (pb1+n4, RestMask(R));
-      sum11 += a1 * b1;
-      sum21 += a2 * b1;
-      sum31 += a3 * b1;
+        __m256d b1 = _mm256_maskload_pd (pb1+n4, RestMask(R));
+        sum11 += a1 * b1;
+        sum21 += a2 * b1;
+        sum31 += a3 * b1;
 
-      __m256d b2 = _mm256_maskload_pd (pb2+n4, RestMask(R));
-      sum12 += a1 * b2;
-      sum22 += a2 * b2;
-      sum32 += a3 * b2;
+        __m256d b2 = _mm256_maskload_pd (pb2+n4, RestMask(R));
+        sum12 += a1 * b2;
+        sum22 += a2 * b2;
+        sum32 += a3 * b2;
 
-      __m256d b3 = _mm256_maskload_pd (pb3+n4, RestMask(R));
-      sum13 += a1 * b3;
-      sum23 += a2 * b3;
-      sum33 += a3 * b3;
+        __m256d b3 = _mm256_maskload_pd (pb3+n4, RestMask(R));
+        sum13 += a1 * b3;
+        sum23 += a2 * b3;
+        sum33 += a3 * b3;
       
-      __m256d b4 = _mm256_maskload_pd (pb4+n4, RestMask(R));
-      sum14 += a1 * b4;
-      sum24 += a2 * b4;
-      sum34 += a3 * b4;
-    }
+        __m256d b4 = _mm256_maskload_pd (pb4+n4, RestMask(R));
+        sum14 += a1 * b4;
+        sum24 += a2 * b4;
+        sum34 += a3 * b4;
+      }
     
     SIMD<double> s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
     SIMD<double> s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
@@ -548,31 +548,31 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
       }
     
     if (R > 0)
-    {
-      __m256d a1 = _mm256_maskload_pd (pa, RestMask(R));
-      __m256d a2 = _mm256_maskload_pd (pa+da, RestMask(R));
-      __m256d a3 = _mm256_maskload_pd (pa+2*da, RestMask(R));
+      {
+        __m256d a1 = _mm256_maskload_pd (pa, RestMask(R));
+        __m256d a2 = _mm256_maskload_pd (pa+da, RestMask(R));
+        __m256d a3 = _mm256_maskload_pd (pa+2*da, RestMask(R));
 
-      __m256d b1 = _mm256_maskload_pd (pb, RestMask(R));
-      sum11 += a1 * b1;
-      sum21 += a2 * b1;
-      sum31 += a3 * b1;
+        __m256d b1 = _mm256_maskload_pd (pb, RestMask(R));
+        sum11 += a1 * b1;
+        sum21 += a2 * b1;
+        sum31 += a3 * b1;
 
-      __m256d b2 = _mm256_maskload_pd (pb+db, RestMask(R));
-      sum12 += a1 * b2;
-      sum22 += a2 * b2;
-      sum32 += a3 * b2;
+        __m256d b2 = _mm256_maskload_pd (pb+db, RestMask(R));
+        sum12 += a1 * b2;
+        sum22 += a2 * b2;
+        sum32 += a3 * b2;
 
-      __m256d b3 = _mm256_maskload_pd (pb+2*db, RestMask(R));
-      sum13 += a1 * b3;
-      sum23 += a2 * b3;
-      sum33 += a3 * b3;
+        __m256d b3 = _mm256_maskload_pd (pb+2*db, RestMask(R));
+        sum13 += a1 * b3;
+        sum23 += a2 * b3;
+        sum33 += a3 * b3;
       
-      __m256d b4 = _mm256_maskload_pd (pb+3*db, RestMask(R));
-      sum14 += a1 * b4;
-      sum24 += a2 * b4;
-      sum34 += a3 * b4;
-    }
+        __m256d b4 = _mm256_maskload_pd (pb+3*db, RestMask(R));
+        sum14 += a1 * b4;
+        sum24 += a2 * b4;
+        sum34 += a3 * b4;
+      }
     
     SIMD<double> s1 = HAdd (sum11.Data(), sum12.Data(), sum13.Data(), sum14.Data());
     SIMD<double> s2 = HAdd (sum21.Data(), sum22.Data(), sum23.Data(), sum24.Data());
@@ -1099,64 +1099,64 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
     size_t i = 0;
 
     /*
-    for ( ; i+6 <= heightc; i += 6)
+      for ( ; i+6 <= heightc; i += 6)
       {
-        double * pc1 = pc;
-        double * pc2 = pc + distc;
-        double * pc3 = pc + 2*distc;
-        double * pc4 = pc + 3*distc;
-        double * pc5 = pc + 4*distc;
-        double * pc6 = pc + 5*distc;
-        pc = pc + 6*distc;
-        double * pa1 = pa;
-        double * pa2 = pa+dista;
-        double * pa3 = pa+2*dista;
-        double * pa4 = pa+3*dista;
-        double * pa5 = pa+4*dista;
-        double * pa6 = pa+5*dista;
-        pa = pa + 6*dista;
+      double * pc1 = pc;
+      double * pc2 = pc + distc;
+      double * pc3 = pc + 2*distc;
+      double * pc4 = pc + 3*distc;
+      double * pc5 = pc + 4*distc;
+      double * pc6 = pc + 5*distc;
+      pc = pc + 6*distc;
+      double * pa1 = pa;
+      double * pa2 = pa+dista;
+      double * pa3 = pa+2*dista;
+      double * pa4 = pa+3*dista;
+      double * pa5 = pa+4*dista;
+      double * pa6 = pa+5*dista;
+      pa = pa + 6*dista;
 
-        double * pb = &b(0);
-        size_t j = 0;
-        for ( ; j+4 <= widthc; j += 4, pb += 4*distb)
-          {
-            auto scal = MyScal6x4<R> (full_vwidtha2, pa1, dista, pb, distb);
-            auto s1 = func (_mm256_loadu_pd(pc1+j), get<0>(scal).Data());
-            auto s2 = func (_mm256_loadu_pd(pc2+j), get<1>(scal).Data());
-            auto s3 = func (_mm256_loadu_pd(pc3+j), get<2>(scal).Data());
-            auto s4 = func (_mm256_loadu_pd(pc4+j), get<3>(scal).Data());
-            auto s5 = func (_mm256_loadu_pd(pc5+j), get<4>(scal).Data());
-            auto s6 = func (_mm256_loadu_pd(pc6+j), get<5>(scal).Data());
-            _mm256_storeu_pd(pc1+j, s1);
-            _mm256_storeu_pd(pc2+j, s2);
-            _mm256_storeu_pd(pc3+j, s3);
-            _mm256_storeu_pd(pc4+j, s4);
-            _mm256_storeu_pd(pc5+j, s5);
-            _mm256_storeu_pd(pc6+j, s6);
-          }
+      double * pb = &b(0);
+      size_t j = 0;
+      for ( ; j+4 <= widthc; j += 4, pb += 4*distb)
+      {
+      auto scal = MyScal6x4<R> (full_vwidtha2, pa1, dista, pb, distb);
+      auto s1 = func (_mm256_loadu_pd(pc1+j), get<0>(scal).Data());
+      auto s2 = func (_mm256_loadu_pd(pc2+j), get<1>(scal).Data());
+      auto s3 = func (_mm256_loadu_pd(pc3+j), get<2>(scal).Data());
+      auto s4 = func (_mm256_loadu_pd(pc4+j), get<3>(scal).Data());
+      auto s5 = func (_mm256_loadu_pd(pc5+j), get<4>(scal).Data());
+      auto s6 = func (_mm256_loadu_pd(pc6+j), get<5>(scal).Data());
+      _mm256_storeu_pd(pc1+j, s1);
+      _mm256_storeu_pd(pc2+j, s2);
+      _mm256_storeu_pd(pc3+j, s3);
+      _mm256_storeu_pd(pc4+j, s4);
+      _mm256_storeu_pd(pc5+j, s5);
+      _mm256_storeu_pd(pc6+j, s6);
+      }
 
-        if (j < widthc)
-          {
-            double * pb1 = pb;
-            double * pb2 = (j+1 < widthc) ? pb+distb : pb;
-            double * pb3 = (j+2 < widthc) ? pb+2*distb : pb;
-            double * pb4 = (j+3 < widthc) ? pb+3*distb : pb;
+      if (j < widthc)
+      {
+      double * pb1 = pb;
+      double * pb2 = (j+1 < widthc) ? pb+distb : pb;
+      double * pb3 = (j+2 < widthc) ? pb+2*distb : pb;
+      double * pb4 = (j+3 < widthc) ? pb+3*distb : pb;
             
-            auto scal = MyScal6x4<R> (full_vwidtha2, pa1, pa2, pa3, pa4, pa5, pa6, pb1, pb2, pb3, pb4);
+      auto scal = MyScal6x4<R> (full_vwidtha2, pa1, pa2, pa3, pa4, pa5, pa6, pb1, pb2, pb3, pb4);
 
-            auto s1 = func (_mm256_maskload_pd(pc1+j, mask_widthc), get<0>(scal).Data());
-            auto s2 = func (_mm256_maskload_pd(pc2+j, mask_widthc), get<1>(scal).Data());
-            auto s3 = func (_mm256_maskload_pd(pc3+j, mask_widthc), get<2>(scal).Data());
-            auto s4 = func (_mm256_maskload_pd(pc4+j, mask_widthc), get<3>(scal).Data());
-            auto s5 = func (_mm256_maskload_pd(pc5+j, mask_widthc), get<4>(scal).Data());
-            auto s6 = func (_mm256_maskload_pd(pc6+j, mask_widthc), get<5>(scal).Data());            
-            _mm256_maskstore_pd (pc1+j, mask_widthc, s1);
-            _mm256_maskstore_pd (pc2+j, mask_widthc, s2);
-            _mm256_maskstore_pd (pc3+j, mask_widthc, s3);
-            _mm256_maskstore_pd (pc4+j, mask_widthc, s4);
-            _mm256_maskstore_pd (pc5+j, mask_widthc, s5);
-            _mm256_maskstore_pd (pc6+j, mask_widthc, s6);            
-          }
+      auto s1 = func (_mm256_maskload_pd(pc1+j, mask_widthc), get<0>(scal).Data());
+      auto s2 = func (_mm256_maskload_pd(pc2+j, mask_widthc), get<1>(scal).Data());
+      auto s3 = func (_mm256_maskload_pd(pc3+j, mask_widthc), get<2>(scal).Data());
+      auto s4 = func (_mm256_maskload_pd(pc4+j, mask_widthc), get<3>(scal).Data());
+      auto s5 = func (_mm256_maskload_pd(pc5+j, mask_widthc), get<4>(scal).Data());
+      auto s6 = func (_mm256_maskload_pd(pc6+j, mask_widthc), get<5>(scal).Data());            
+      _mm256_maskstore_pd (pc1+j, mask_widthc, s1);
+      _mm256_maskstore_pd (pc2+j, mask_widthc, s2);
+      _mm256_maskstore_pd (pc3+j, mask_widthc, s3);
+      _mm256_maskstore_pd (pc4+j, mask_widthc, s4);
+      _mm256_maskstore_pd (pc5+j, mask_widthc, s5);
+      _mm256_maskstore_pd (pc6+j, mask_widthc, s6);            
+      }
       }
     */
 
@@ -2012,61 +2012,59 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
 
   // micro-kernels for A^t B
   // pa+i * pb+j   ->  C 3x16
-  INLINE void MyScal3x16Trans (size_t ninner,
-                               double * pa, size_t da,
-                               double * pb, size_t db,
-                               double * pc, size_t dc)
+  void MyScal3x16Trans (size_t ninner,
+                        double * pa, size_t da,
+                        double * pb, size_t db,
+                        double * pc, size_t dc)
   {
     __assume (ninner > 0);
-
 #ifndef __GNUC__    
     double * hpc = pc;
-    SIMD<double> sum11 = _mm256_loadu_pd(pc);
-    SIMD<double> sum12 = _mm256_loadu_pd(pc+4);
-    SIMD<double> sum13 = _mm256_loadu_pd(pc+8);
-    SIMD<double> sum14 = _mm256_loadu_pd(pc+12);
+    __m256d sum11 = _mm256_loadu_pd(pc);
+    __m256d sum12 = _mm256_loadu_pd(pc+4);
+    __m256d sum13 = _mm256_loadu_pd(pc+8);
+    __m256d sum14 = _mm256_loadu_pd(pc+12);
     pc += dc;
-    SIMD<double> sum21 = _mm256_loadu_pd(pc);
-    SIMD<double> sum22 = _mm256_loadu_pd(pc+4);
-    SIMD<double> sum23 = _mm256_loadu_pd(pc+8);
-    SIMD<double> sum24 = _mm256_loadu_pd(pc+12);
+    __m256d sum21 = _mm256_loadu_pd(pc);
+    __m256d sum22 = _mm256_loadu_pd(pc+4);
+    __m256d sum23 = _mm256_loadu_pd(pc+8);
+    __m256d sum24 = _mm256_loadu_pd(pc+12);
     pc += dc;
-    SIMD<double> sum31 = _mm256_loadu_pd(pc);
-    SIMD<double> sum32 = _mm256_loadu_pd(pc+4);
-    SIMD<double> sum33 = _mm256_loadu_pd(pc+8);
-    SIMD<double> sum34 = _mm256_loadu_pd(pc+12);
+    __m256d sum31 = _mm256_loadu_pd(pc);
+    __m256d sum32 = _mm256_loadu_pd(pc+4);
+    __m256d sum33 = _mm256_loadu_pd(pc+8);
+    __m256d sum34 = _mm256_loadu_pd(pc+12);
     pc += dc;
     pc = hpc;
 #else
-  __m256d sum11, sum12, sum13, sum14;
-  __m256d sum21, sum22, sum23, sum24;
-  __m256d sum31, sum32, sum33, sum34;
+    __m256d sum11, sum12, sum13, sum14;
+    __m256d sum21, sum22, sum23, sum24;
+    __m256d sum31, sum32, sum33, sum34;
 
-  asm (
-       "vmovupd (%[pc]), %[sum11]\n\t"
-       "vmovupd 32(%[pc]), %[sum12]\n\t"
-       "vmovupd 64(%[pc]), %[sum13]\n\t"
-       "vmovupd 96(%[pc]), %[sum14]\n\t"
+    asm (
+         "vmovupd (%[pc]), %[sum11]\n\t"
+         "vmovupd 32(%[pc]), %[sum12]\n\t"
+         "vmovupd 64(%[pc]), %[sum13]\n\t"
+         "vmovupd 96(%[pc]), %[sum14]\n\t"
 
-       "vmovupd (%[pc],%[dc8]), %[sum21]\n\t"
-       "vmovupd 32(%[pc],%[dc8]), %[sum22]\n\t"
-       "vmovupd 64(%[pc],%[dc8]), %[sum23]\n\t"
-       "vmovupd 96(%[pc],%[dc8]), %[sum24]\n\t"
+         "vmovupd (%[pc],%[dc8]), %[sum21]\n\t"
+         "vmovupd 32(%[pc],%[dc8]), %[sum22]\n\t"
+         "vmovupd 64(%[pc],%[dc8]), %[sum23]\n\t"
+         "vmovupd 96(%[pc],%[dc8]), %[sum24]\n\t"
 
-       "vmovupd (%[pc],%[dc8],2), %[sum31]\n\t"
-       "vmovupd 32(%[pc],%[dc8],2), %[sum32]\n\t"
-       "vmovupd 64(%[pc],%[dc8],2), %[sum33]\n\t"
-       "vmovupd 96(%[pc],%[dc8],2), %[sum34]\n\t"
+         "vmovupd (%[pc],%[dc8],2), %[sum31]\n\t"
+         "vmovupd 32(%[pc],%[dc8],2), %[sum32]\n\t"
+         "vmovupd 64(%[pc],%[dc8],2), %[sum33]\n\t"
+         "vmovupd 96(%[pc],%[dc8],2), %[sum34]\n\t"
 
-       :
-       [sum11] "+x" (sum11), [sum21] "+x" (sum21), [sum31] "+x" (sum31),
-       [sum12] "+x" (sum12), [sum22] "+x" (sum22), [sum32] "+x" (sum32),
-       [sum13] "+x" (sum13), [sum23] "+x" (sum23), [sum33] "+x" (sum33),
-       [sum14] "+x" (sum14), [sum24] "+x" (sum24), [sum34] "+x" (sum34)
-       : [pc] "r" (pc), [dc8]  "r" (8*dc)
-       );
+         :
+         [sum11] "+x" (sum11), [sum21] "+x" (sum21), [sum31] "+x" (sum31),
+         [sum12] "+x" (sum12), [sum22] "+x" (sum22), [sum32] "+x" (sum32),
+         [sum13] "+x" (sum13), [sum23] "+x" (sum23), [sum33] "+x" (sum33),
+         [sum14] "+x" (sum14), [sum24] "+x" (sum24), [sum34] "+x" (sum34)
+         : [pc] "r" (pc), [dc8]  "r" (8*dc)
+         );
 #endif
-
   
 #pragma nounroll    
     for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
@@ -2076,7 +2074,10 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
         __m256d a3 = _mm256_set1_pd(pa[2]);
         // _mm_prefetch (pa+da,  _MM_HINT_T0);
         // _mm_prefetch (pa+da,  _MM_HINT_T0);
-        // _mm_prefetch (pa+da+2,  _MM_HINT_T0);        
+        // _mm_prefetch (pa+da+2,  _MM_HINT_T0);
+        
+        // _mm_prefetch (pb+31,  _MM_HINT_T1);
+        // _mm_prefetch (pb+23,  _MM_HINT_T1);
         
         __m256d b1 = _mm256_loadu_pd(pb);
         sum11 -= a1 * b1;
@@ -2117,9 +2118,9 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
   
   INLINE void MyScal3x4Trans (size_t ninner,
-                       double * pa, size_t da,
-                       double * pb, size_t db,
-                       double * pc, size_t dc)
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc)
   {
     __assume (ninner > 0);        
     double * hpc = pc;
@@ -2153,10 +2154,10 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
   
   INLINE void MyScal3x4Trans (size_t ninner,
-                       double * pa, size_t da,
-                       double * pb, size_t db,
-                       double * pc, size_t dc,
-                       __m256i mask)
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc,
+                              __m256i mask)
   {
     __assume (ninner > 0);    
     double * hpc = pc;
@@ -2190,9 +2191,9 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
 
   INLINE void MyScal1x16Trans (size_t ninner,
-                       double * pa, size_t da,
-                       double * pb, size_t db,
-                       double * pc, size_t dc)
+                               double * pa, size_t da,
+                               double * pb, size_t db,
+                               double * pc, size_t dc)
   {
     __assume (ninner > 0);    
     SIMD<double> sum11 = _mm256_loadu_pd(pc);
@@ -2224,9 +2225,9 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
   
   INLINE void MyScal1x4Trans (size_t ninner,
-                       double * pa, size_t da,
-                       double * pb, size_t db,
-                       double * pc, size_t dc)
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc)
   {
     __assume (ninner > 0);    
     SIMD<double> sum11 = _mm256_loadu_pd(pc);
@@ -2241,10 +2242,10 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
   
   INLINE void MyScal1x4Trans (size_t ninner,
-                       double * pa, size_t da,
-                       double * pb, size_t db,
-                       double * pc, size_t dc,
-                       __m256i mask)
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc,
+                              __m256i mask)
   {
     SIMD<double> sum11 = _mm256_maskload_pd(pc, mask);
     __assume (ninner > 0);
@@ -2322,16 +2323,16 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
     for ( ; j+16 <= wb; j+=16, pb += 16, pc += 16)
       {
         /*
-        constexpr auto hint = _MM_HINT_T1;
-        _mm_prefetch (pc+0*dc, hint);
-        _mm_prefetch (pc+0*dc+8, hint);
-        _mm_prefetch (pc+0*dc+16, hint);
-        _mm_prefetch (pc+1*dc, hint);
-        _mm_prefetch (pc+1*dc+8, hint);
-        _mm_prefetch (pc+1*dc+16, hint);
-        _mm_prefetch (pc+2*dc, hint);
-        _mm_prefetch (pc+2*dc+8, hint);
-        _mm_prefetch (pc+2*dc+16, hint);
+          constexpr auto hint = _MM_HINT_T1;
+          _mm_prefetch (pc+0*dc, hint);
+          _mm_prefetch (pc+0*dc+8, hint);
+          _mm_prefetch (pc+0*dc+16, hint);
+          _mm_prefetch (pc+1*dc, hint);
+          _mm_prefetch (pc+1*dc+8, hint);
+          _mm_prefetch (pc+1*dc+16, hint);
+          _mm_prefetch (pc+2*dc, hint);
+          _mm_prefetch (pc+2*dc+8, hint);
+          _mm_prefetch (pc+2*dc+16, hint);
         */
         MyScalx16Trans (ninner, wa, pa, da, pb, db, pc, dc);
       }
@@ -2356,23 +2357,23 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
       SubAtB1 (a.Cols(i,wa), b, c.Rows(i,wa));    
   }
   
-  void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  void SubAtBVersion3x16 (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
     /*
-    if (a.Height() < 16)
+      if (a.Height() < 16)
       {
-        c -= Trans(a)*b;
-        return;
+      c -= Trans(a)*b;
+      return;
       }
-    if (c.Height() < 16)
+      if (c.Height() < 16)
       {
-        c -= Trans(a)*b;
-        return;
+      c -= Trans(a)*b;
+      return;
       }
-    if (c.Width() < 16)
+      if (c.Width() < 16)
       {
-        c -= Trans(a)*b;
-        return;
+      c -= Trans(a)*b;
+      return;
       }
     */
     // static Timer tsub("avector::SubAtb - lapack");
@@ -2392,21 +2393,727 @@ INLINE auto MyScal3x4 (size_t n, double * pa1, double * pa2, double * pa3,
   }
 
   /*
-  void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
-  {
+    void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+    {
     Matrix<> hc = c;
     SubAtB1 (a, b, hc);
     c -= Trans(a) * b | Lapack;
     double err = L2Norm(hc-c);
     if (err > 1e-5)
-      {
-        cout << "c-hc: " << endl << c-hc << endl;
-        exit(1);
-      }
+    {
+    cout << "c-hc: " << endl << c-hc << endl;
+    exit(1);
+    }
     // cout << "err = " << L2Norm(hc-c) << endl;
-  }
+    }
   */
 
+
+
+  // ////////////////////////// begin SubAtB  Version 4x12 ///////////////  
+
+  
+  constexpr size_t NA = 128;
+  constexpr size_t NB = 96;
+  constexpr size_t NK = 128;
+  
+  extern
+  void CopyMatrix (SliceMatrix<> source,
+                   SliceMatrix<> dest);
+
+
+  // prefetch a row-major matrix
+  void PreFetchMatrix (size_t h, size_t w, size_t dist, double * p)
+  {
+#pragma nounroll  
+    for (size_t i = 0; i < h; i++, p += dist)
+      for (size_t j = 0; j < w+8; j+=8) // cache line of 64 B i.e. 8 doubles
+        _mm_prefetch (p+j, _MM_HINT_T1);      
+  }
+
+  // copy matrix (width is multiple of 4)
+  void CopyMatrixIn (size_t h, size_t w,
+                     double * ps, size_t dists,
+                     double * pd, size_t distd)
+  {
+    for (size_t i = 0; i < h; i++, pd += distd)
+      {
+        double * psnext = ps+dists;
+        /*
+          for (size_t j = 0; j+4 <= w; j+=4)
+          {
+          _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+          _mm_prefetch (psnext+j,  _MM_HINT_T1);
+          }
+        */
+        size_t j = 0;
+        for ( ; j + 16 <= w; j+=16)
+          {
+            auto val1 = _mm256_loadu_pd(ps+j);
+            auto val2 = _mm256_loadu_pd(ps+j+4);
+            auto val3 = _mm256_loadu_pd(ps+j+8);
+            auto val4 = _mm256_loadu_pd(ps+j+12);
+            _mm256_storeu_pd (pd+j, val1);
+            _mm256_storeu_pd (pd+j+4, val2);
+            _mm256_storeu_pd (pd+j+8, val3);
+            _mm256_storeu_pd (pd+j+12, val4);
+            _mm_prefetch (psnext+j,  _MM_HINT_T1);
+            _mm_prefetch (psnext+j+8,  _MM_HINT_T1);          
+          }
+        for ( ; j +4 <= w; j+=4)
+          _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+        for ( ; j < w; j++)
+          pd[j] = ps[j];
+        // _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+      
+        ps = psnext;
+      }
+  }
+
+  // copy matrix (width is multiple of 4)
+  void CopyMatrixOut (size_t h, size_t w,
+                      double * ps, size_t dists,
+                      double * pd, size_t distd)
+  {
+    for (size_t i = 0; i < h; i++, pd += distd)
+      {
+        double * psnext = ps+dists;
+        size_t j = 0;
+        for ( ; j + 16 <= w; j+=16)
+          {
+            auto val1 = _mm256_loadu_pd(ps+j);
+            auto val2 = _mm256_loadu_pd(ps+j+4);
+            auto val3 = _mm256_loadu_pd(ps+j+8);
+            auto val4 = _mm256_loadu_pd(ps+j+12);
+
+            _mm256_storeu_pd (pd+j, val1);
+            _mm256_storeu_pd (pd+j+4, val2);
+            _mm256_storeu_pd (pd+j+8, val3);
+            _mm256_storeu_pd (pd+j+12, val4);
+            /*
+              _mm256_stream_pd (pd+j, val1);
+              _mm256_stream_pd (pd+j+4, val1);
+              _mm256_stream_pd (pd+j+8, val1);
+              _mm256_stream_pd (pd+j+12, val1);
+            */
+          }
+        for ( ; j +4 <= w; j+=4)
+          _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+        for ( ; j < w; j++)
+          pd[j] = ps[j];
+        ps = psnext;
+      }
+  }
+
+
+
+
+
+  void CopyMatrix (SliceMatrix<> source,
+                   SliceMatrix<> dest)
+  {
+    CopyMatrixIn (source.Height(), source.Width(),
+                  &source(0,0), source.Dist(),
+                  &dest(0,0), dest.Dist());
+  }
+
+
+  // micro-kernels for A^t B
+  // pa+i * pb+j   ->  C 4x12
+  void KernelScal4x12Trans (size_t ninner,
+                            double * pa, size_t da,
+                            double * pb, size_t db,
+                            double * pc, size_t dc)
+  {
+    __assume (ninner > 0);
+#ifndef __GNUC__    
+    double * hpc = pc;
+    __m256d sum11 = _mm256_loadu_pd(pc);
+    __m256d sum12 = _mm256_loadu_pd(pc+4);
+    __m256d sum13 = _mm256_loadu_pd(pc+8);
+    pc += dc;
+    __m256d sum21 = _mm256_loadu_pd(pc);
+    __m256d sum22 = _mm256_loadu_pd(pc+4);
+    __m256d sum23 = _mm256_loadu_pd(pc+8);
+    pc += dc;
+    __m256d sum31 = _mm256_loadu_pd(pc);
+    __m256d sum32 = _mm256_loadu_pd(pc+4);
+    __m256d sum33 = _mm256_loadu_pd(pc+8);
+    pc += dc;
+    __m256d sum41 = _mm256_loadu_pd(pc);
+    __m256d sum42 = _mm256_loadu_pd(pc+4);
+    __m256d sum43 = _mm256_loadu_pd(pc+8);
+    pc = hpc;
+#else
+    __m256d sum11, sum12, sum13;
+    __m256d sum21, sum22, sum23;
+    __m256d sum31, sum32, sum33;
+    __m256d sum41, sum42, sum43;
+
+    asm (
+         "vmovupd (%[pc]), %[sum11]\n\t"
+         "vmovupd 32(%[pc]), %[sum12]\n\t"
+         "vmovupd 64(%[pc]), %[sum13]\n\t"
+
+         "vmovupd (%[pc],%[dc8]), %[sum21]\n\t"
+         "vmovupd 32(%[pc],%[dc8]), %[sum22]\n\t"
+         "vmovupd 64(%[pc],%[dc8]), %[sum23]\n\t"
+
+         "vmovupd (%[pc],%[dc8],2), %[sum31]\n\t"
+         "vmovupd 32(%[pc],%[dc8],2), %[sum32]\n\t"
+         "vmovupd 64(%[pc],%[dc8],2), %[sum33]\n\t"
+
+         "vmovupd (%[pc],%[dc3],8), %[sum41]\n\t"
+         "vmovupd 32(%[pc],%[dc3],8), %[sum42]\n\t"
+         "vmovupd 64(%[pc],%[dc3],8), %[sum43]\n\t"
+         :
+         [sum11] "+x" (sum11), [sum21] "+x" (sum21), [sum31] "+x" (sum31), [sum41] "+x" (sum41),
+         [sum12] "+x" (sum12), [sum22] "+x" (sum22), [sum32] "+x" (sum32), [sum42] "+x" (sum42),
+         [sum13] "+x" (sum13), [sum23] "+x" (sum23), [sum33] "+x" (sum33), [sum43] "+x" (sum43)
+         : [pc] "r" (pc), [dc8]  "r" (8*dc), [dc3] "r" (3*dc)
+         );
+#endif
+  
+#pragma nounroll
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d b1 = _mm256_loadu_pd(pb);
+        __m256d b2 = _mm256_loadu_pd(pb+4);
+        __m256d b3 = _mm256_loadu_pd(pb+8);
+
+        // _mm_prefetch (pb+db,  _MM_HINT_T1);
+        // _mm_prefetch (pb+db+8,  _MM_HINT_T1);
+        // _mm_prefetch (pb+db+15,  _MM_HINT_T1);
+        // _mm_prefetch (pa+8,  _MM_HINT_T0);
+        // _mm_prefetch (pb+2*db,  _MM_HINT_T0);
+        // _mm_prefetch (pb+2*db+8,  _MM_HINT_T0);
+        // _mm_prefetch (pb+2*db+15,  _MM_HINT_T0);      
+        _mm_prefetch (pb+15,  _MM_HINT_T0);
+        _mm_prefetch (pb+23,  _MM_HINT_T0);
+
+        // _mm_prefetch (pb,  _MM_HINT_T1);
+        // _mm_prefetch (pb+8,  _MM_HINT_T1);
+        // _mm_prefetch (pb+16,  _MM_HINT_T1);
+        // _mm_prefetch (pa+7,  _MM_HINT_T0);
+        // _mm_prefetch (pa+da,  _MM_HINT_T0);
+        // _mm_prefetch (pa+da+2,  _MM_HINT_T0);
+        // _mm_prefetch (pb+db+16,  _MM_HINT_T0);
+        // _mm_prefetch (pb+db+11,  _MM_HINT_T1);
+
+        __m256d a1 = _mm256_set1_pd(*pa);
+        sum11 -= a1 * b1;
+        sum12 -= a1 * b2;
+        sum13 -= a1 * b3;
+        
+        __m256d a2 = _mm256_set1_pd(pa[1]);
+        sum21 -= a2 * b1;
+        sum22 -= a2 * b2;
+        sum23 -= a2 * b3;
+        
+        __m256d a3 = _mm256_set1_pd(pa[2]);
+        sum31 -= a3 * b1;
+        sum32 -= a3 * b2;
+        sum33 -= a3 * b3;
+        
+        __m256d a4 = _mm256_set1_pd(pa[3]);
+        sum41 -= a4 * b1;
+        sum42 -= a4 * b2;
+        sum43 -= a4 * b3;
+      }
+
+    _mm256_storeu_pd (pc, sum11);
+    _mm256_storeu_pd (pc+4, sum12);
+    _mm256_storeu_pd (pc+8, sum13);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum21);
+    _mm256_storeu_pd (pc+4, sum22);
+    _mm256_storeu_pd (pc+8, sum23);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum31);
+    _mm256_storeu_pd (pc+4, sum32);
+    _mm256_storeu_pd (pc+8, sum33);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum41);
+    _mm256_storeu_pd (pc+4, sum42);
+    _mm256_storeu_pd (pc+8, sum43);
+  }
+
+  void KernelScal1x12Trans (size_t ninner,
+                            double * pa, size_t da,
+                            double * pb, size_t db,
+                            double * pc, size_t dc)
+  {
+    __assume (ninner > 0);
+#ifndef __GNUC__    
+    __m256d sum11 = _mm256_loadu_pd(pc);
+    __m256d sum12 = _mm256_loadu_pd(pc+4);
+    __m256d sum13 = _mm256_loadu_pd(pc+8);
+#else
+    __m256d sum11, sum12, sum13;
+
+    asm (
+         "vmovupd (%[pc]), %[sum11]\n\t"
+         "vmovupd 32(%[pc]), %[sum12]\n\t"
+         "vmovupd 64(%[pc]), %[sum13]\n\t"
+         :
+         [sum11] "+x" (sum11),
+         [sum12] "+x" (sum12),
+         [sum13] "+x" (sum13)
+         : [pc] "r" (pc)
+         );
+#endif
+  
+#pragma nounroll
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d b1 = _mm256_loadu_pd(pb);
+        __m256d b2 = _mm256_loadu_pd(pb+4);
+        __m256d b3 = _mm256_loadu_pd(pb+8);
+
+        __m256d a1 = _mm256_set1_pd(*pa);
+        sum11 -= a1 * b1;
+        sum12 -= a1 * b2;
+        sum13 -= a1 * b3;
+      }
+
+    _mm256_storeu_pd (pc, sum11);
+    _mm256_storeu_pd (pc+4, sum12);
+    _mm256_storeu_pd (pc+8, sum13);
+  }
+
+
+
+  void KernelScal4x4Trans (size_t ninner,
+                           double * pa, size_t da,
+                           double * pb, size_t db,
+                           double * pc, size_t dc)
+  {
+    __assume (ninner > 0);
+#ifndef __GNUC__
+    double * hpc = pc;    
+    __m256d sum11 = _mm256_loadu_pd(pc);
+    pc += dc;
+    __m256d sum21 = _mm256_loadu_pd(pc);
+    pc += dc;
+    __m256d sum32 = _mm256_loadu_pd(pc);
+    pc += dc;
+    __m256d sum41 = _mm256_loadu_pd(pc);
+    pc = hpc;
+#else
+    __m256d sum11;
+    __m256d sum21;
+    __m256d sum31;
+    __m256d sum41;
+
+    asm (
+         "vmovupd (%[pc]), %[sum11]\n\t"
+         "vmovupd (%[pc],%[dc8]), %[sum21]\n\t"
+         "vmovupd (%[pc],%[dc8],2), %[sum31]\n\t"
+         "vmovupd (%[pc],%[dc3],8), %[sum41]"
+         : [sum11] "+x" (sum11), [sum21] "+x" (sum21), [sum31] "+x" (sum31), [sum41] "+x" (sum41)
+         : [pc] "r" (pc), [dc8]  "r" (8*dc), [dc3] "r" (3*dc)
+         );
+#endif
+  
+#pragma nounroll
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d b1 = _mm256_loadu_pd(pb);
+
+        __m256d a1 = _mm256_set1_pd(*pa);
+        sum11 -= a1 * b1;
+        __m256d a2 = _mm256_set1_pd(pa[1]);
+        sum21 -= a2 * b1;
+        __m256d a3 = _mm256_set1_pd(pa[2]);
+        sum31 -= a3 * b1;
+        __m256d a4 = _mm256_set1_pd(pa[3]);
+        sum41 -= a4 * b1;
+      }
+
+    _mm256_storeu_pd (pc, sum11);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum21);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum31);
+    pc += dc;
+    _mm256_storeu_pd (pc, sum41);
+    pc += dc;
+  }
+
+  INLINE void KernelScal4x4Trans (size_t ninner,
+                                  double * pa, size_t da,
+                                  double * pb, size_t db,
+                                  double * pc, size_t dc,
+                                  __m256i mask)
+  {
+    __assume (ninner > 0);    
+    double * hpc = pc;
+    SIMD<double> sum11 = _mm256_maskload_pd(pc, mask);
+    pc += dc;
+    SIMD<double> sum21 = _mm256_maskload_pd(pc, mask);
+    pc += dc;
+    SIMD<double> sum31 = _mm256_maskload_pd(pc, mask);
+    pc += dc;
+    SIMD<double> sum41 = _mm256_maskload_pd(pc, mask);
+    pc += dc;
+    pc = hpc;
+    
+#pragma nounroll    
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d a1 = _mm256_set1_pd(*pa);
+        __m256d a2 = _mm256_set1_pd(pa[1]);
+        __m256d a3 = _mm256_set1_pd(pa[2]);
+        __m256d a4 = _mm256_set1_pd(pa[3]);
+        
+        __m256d b1 = _mm256_maskload_pd(pb, mask);
+        sum11 -= a1 * b1;
+        sum21 -= a2 * b1;
+        sum31 -= a3 * b1;
+        sum41 -= a4 * b1;        
+      }
+
+    _mm256_maskstore_pd (pc, mask, sum11.Data());
+    pc += dc;
+    _mm256_maskstore_pd (pc, mask, sum21.Data());
+    pc += dc;
+    _mm256_maskstore_pd (pc, mask, sum31.Data());
+    pc += dc;
+    _mm256_maskstore_pd (pc, mask, sum41.Data());
+    pc += dc;
+  }
+
+
+
+
+  void KernelScal1x4Trans (size_t ninner,
+                           double * pa, size_t da,
+                           double * pb, size_t db,
+                           double * pc, size_t dc)
+  {
+    __assume (ninner > 0);
+    __m256d sum11 = _mm256_loadu_pd(pc);
+  
+#pragma nounroll
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d b1 = _mm256_loadu_pd(pb);
+        __m256d a1 = _mm256_set1_pd(*pa);
+        sum11 -= a1 * b1;
+      }
+
+    _mm256_storeu_pd (pc, sum11);
+  }
+
+  INLINE void KernelScal1x4Trans (size_t ninner,
+                                  double * pa, size_t da,
+                                  double * pb, size_t db,
+                                  double * pc, size_t dc,
+                                  __m256i mask)
+  {
+    SIMD<double> sum11 = _mm256_maskload_pd(pc, mask);
+    __assume (ninner > 0);
+#pragma nounroll    
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        __m256d a1 = _mm256_set1_pd(*pa);
+        __m256d b1 = _mm256_maskload_pd(pb, mask);
+        sum11 -= a1 * b1;
+      }
+    _mm256_maskstore_pd (pc, mask, sum11.Data());
+  }
+
+
+
+  INLINE void KernelScal4x12TransN (
+                                    double * pa, size_t da,
+                                    double * pb, size_t db,
+                                    double * pc, size_t dc,
+                                    size_t ninner, size_t nb
+                                    )
+  {
+    size_t j = 0;
+    for ( ; j+12 <= nb; j+=12, pb += 12, pc += 12)
+      {
+        /*
+        // prefetching ????
+        _mm_prefetch (pc+15, _MM_HINT_T1);
+        _mm_prefetch (pc+23, _MM_HINT_T1);      
+        _mm_prefetch (pc+dc+15, _MM_HINT_T1);
+        _mm_prefetch (pc+dc+23, _MM_HINT_T1);      
+        _mm_prefetch (pc+2*dc+15, _MM_HINT_T1);
+        _mm_prefetch (pc+2*dc+23, _MM_HINT_T1);      
+        */
+        KernelScal4x12Trans (ninner, pa, da, pb, db, pc, dc);
+      }
+    for ( ; j+4 <= nb; j+=4, pb += 4, pc += 4)
+      KernelScal4x4Trans (ninner, pa, da, pb, db, pc, dc);
+    if (j < nb)
+      {
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nb-j),
+                                            _mm256_set_epi64x(3,2,1,0));
+        KernelScal4x4Trans (ninner, pa, da, pb, db, pc, dc, mask);
+      }
+  }
+
+  void KernelScal1x12TransN (
+                             double * pa, size_t da,
+                             double * pb, size_t db,
+                             double * pc, size_t dc,
+                             size_t ninner, size_t nb
+                             )
+  {
+    size_t j = 0;
+    for ( ; j+12 <= nb; j+=12, pb += 12, pc += 12)
+      KernelScal1x12Trans (ninner, pa, da, pb, db, pc, dc);
+    for ( ; j+4 <= nb; j+=4, pb += 4, pc += 4)
+      KernelScal1x4Trans (ninner, pa, da, pb, db, pc, dc);
+    if (j < nb)
+      {
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nb-j),
+                                            _mm256_set_epi64x(3,2,1,0));
+        KernelScal1x4Trans (ninner, pa, da, pb, db, pc, dc, mask);
+      }
+  }
+
+
+  // ninner is now small (16) such that kernel runs at peek performance ...
+  INLINE void KernelScal4x12TransNM (
+                                     double * pa, size_t da,
+                                     double * pb, size_t db,
+                                     double * pc, size_t dc,
+                                     size_t ninner, size_t na, size_t nb
+                                     )
+  {
+    // PreFetchMatrix (ninner, na, da, pa);
+    // PreFetchMatrix (ninner, nb, db, pb);
+    size_t i = 0;
+    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4)
+      KernelScal4x12TransN (pa, da, pb, db, pc, dc, ninner, nb);
+    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)
+      KernelScal1x12TransN (pa, da, pb, db, pc, dc, ninner, nb);
+
+    /*
+      alignas (64) double tempa[ninner*na+4];
+      alignas (64) double tempb[ninner*nb+4];
+      CopyMatrix (ninner, na, pa, da, &tempa[0], na);
+      CopyMatrix (ninner, nb, pb, db, &tempb[0], nb);
+      size_t i = 0;
+      for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4)
+      KernelScal4x12TransN (&tempa[0], na, &tempb[0], nb, pc, dc, ninner, nb);
+      for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)
+      KernelScal1x12TransN (&tempa[0], na, &tempb[0], nb, pc, dc, ninner, nb);
+    */
+  }
+
+
+
+  // block-block mult (all matrices have fixed size)
+  INLINE void BlockScal4x12Trans_BB_inline (
+                                            double * pa, size_t da,
+                                            double * pb, size_t db,
+                                            double * pc, size_t dc,
+                                            size_t na, size_t nb, size_t k
+                                            )
+  {
+    /*
+    // PreFetchMatrix (na, nb, dc, pc);  
+    constexpr size_t bs = 16;
+    size_t i = 0;
+    for ( ; i+bs <= k; i+=bs, pa+=bs*da, pb+=bs*db)
+    KernelScal4x12TransNM (pa, da, pb, db, pc, dc, bs, na, nb);
+    if (i < k)
+    KernelScal4x12TransNM (pa, da, pb, db, pc, dc, k-i, na, nb);
+    */
+
+    alignas(64) double tempc[NA*NB];
+    CopyMatrixIn (na, nb, pc, dc, &tempc[0], NB);
+    constexpr size_t bs = 16;
+    size_t i = 0;
+    for ( ; i+bs <= k; i+=bs, pa+=bs*da, pb+=bs*db)
+      KernelScal4x12TransNM (pa, da, pb, db, &tempc[0], NB, bs, na, nb);
+    if (i < k)
+      KernelScal4x12TransNM (pa, da, pb, db, &tempc[0], NB, k-i, na, nb);
+    CopyMatrixOut (na, nb, &tempc[0], NB, pc, dc);
+  }
+
+  void BlockScal4x12Trans_BB (
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc,
+                              size_t na, size_t nb, size_t k
+                              )
+  {
+    BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, na, nb, k);
+  }
+
+
+  template <int NA, int NB, int K>
+  void TBlockScal4x12Trans_BB (
+                               double * pa, size_t da,
+                               double * pb, size_t db,
+                               double * pc, size_t dc
+                               )
+  {
+    BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, NA, NB, K);
+  }
+
+  template <> void TBlockScal4x12Trans_BB<64,48,64> (double * pa, size_t da,
+                                                     double * pb, size_t db,
+                                                     double * pc, size_t dc);
+
+  void StdBlock  (
+                  double * pa, size_t da,
+                  double * pb, size_t db,
+                  double * pc, size_t dc
+                  )
+  {
+    constexpr size_t NA = 128;
+    constexpr size_t NB = 96;
+    constexpr size_t K = 128;
+    BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, NA, NB, K);
+  }
+
+
+
+
+
+
+  // good: A is already fixed (128 x 128)
+  void MySubAtB_BP (size_t na, size_t nb, size_t k,
+                    double * pa, size_t da,
+                    double * pb, size_t db,
+                    double * pc, size_t dc)
+  {
+    SliceMatrix<> a(k, na, da, pa);
+    SliceMatrix<> b(k, nb, db, pb);
+    SliceMatrix<> c(na, nb, dc, pc);
+    // c -= Trans(a)*b;
+    // return;
+
+    /*
+      size_t i = 0;
+      constexpr size_t bs = NB;
+      for ( ; i+bs <= nb; i += bs, pb += bs, pc += bs)
+      BlockScal4x12Trans_BB (pa, da, pb, db, pc, dc, na, bs, k);
+      if (i < nb)
+      BlockScal4x12Trans_BB (pa, da, pb, db, pc, dc, na, nb-i, k);    
+    */
+  
+    alignas (64) double mema[NA*NK];
+    CopyMatrixIn (k, na, pa, da, &mema[0], NA);
+    // SliceMatrix<> aloc(k,na, NA, &mema[0]);
+    // aloc = a;
+  
+    size_t i = 0;
+    constexpr size_t bs = NB;
+    for ( ; i+bs <= nb; i += bs, pb += bs, pc += bs)
+      BlockScal4x12Trans_BB (mema, NA, pb, db, pc, dc, na, bs, k);
+    if (i < nb)
+      BlockScal4x12Trans_BB (mema, NA, pb, db, pc, dc, na, nb-i, k);  
+  }
+
+  template <size_t na, size_t k>
+  void MySubAtB_BP (size_t nb, 
+                    double * pa, size_t da,
+                    double * pb, size_t db,
+                    double * pc, size_t dc)
+  {
+    /*
+      SliceMatrix<> a(k, na, da, pa);
+      SliceMatrix<> b(k, nb, db, pb);
+      SliceMatrix<> c(na, nb, dc, pc);
+      c -= Trans(a)*b;
+      return;
+    */
+    /*
+      size_t i = 0;
+      constexpr size_t bs = NB;
+      for ( ; i+bs <= nb; i += bs, pb += bs, pc += bs)
+      BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, na, bs,k);
+      if (i < nb)
+      BlockScal4x12Trans_BB (pa, da, pb, db, pc, dc, na, nb-i, k);    
+    */
+    alignas (64) double mema[na*k];
+    CopyMatrixIn (k, na, pa, da, &mema[0], na);
+
+    size_t i = 0;
+    constexpr size_t bs = NB;
+    for ( ; i+bs <= nb; i += bs, pb += bs, pc += bs)
+      BlockScal4x12Trans_BB_inline (mema, na, pb, db, pc, dc, na, bs,k);
+    if (i < nb)
+      BlockScal4x12Trans_BB_inline (mema, na, pb, db, pc, dc, na, nb-i, k);    
+  }
+
+
+  void MySubAtB_PM (size_t na, size_t nb, size_t k,
+                    double * pa, size_t da,
+                    double * pb, size_t db,
+                    double * pc, size_t dc)
+  {
+    size_t i = 0;
+    constexpr size_t bs = NK;
+    for ( ; i+bs <= k; i += bs, pa += bs*da, pb += bs*db)
+      MySubAtB_BP (na, nb, bs, pa, da, pb, db, pc, dc);
+    if (i < k)
+      MySubAtB_BP (na, nb, k-i, pa, da, pb, db, pc, dc);    
+  }
+
+  template <size_t na>
+  void MySubAtB_PM (size_t nb, size_t k,
+                    double * pa, size_t da,
+                    double * pb, size_t db,
+                    double * pc, size_t dc)
+  {
+    /*
+      SliceMatrix<> a(k, na, da, pa);
+      SliceMatrix<> b(k, nb, db, pb);
+      SliceMatrix<> c(na, nb, dc, pc);
+      c -= Trans(a)*b;
+      return;
+    */
+    size_t i = 0;
+    constexpr size_t bs = NK;
+    for ( ; i+bs <= k; i += bs, pa += bs*da, pb += bs*db)
+      MySubAtB_BP<na,bs> (nb, pa, da, pb, db, pc, dc);
+    if (i < k)
+      MySubAtB_BP (na, nb, k-i, pa, da, pb, db, pc, dc);    
+  }
+
+
+  // A ... k x na,  B ... k x nb,   C ... na x nb
+  void SubAtB_MM (size_t na, size_t nb, size_t k,
+                  double * pa, size_t da,
+                  double * pb, size_t db,
+                  double * pc, size_t dc)
+  {
+    size_t i = 0;
+    constexpr size_t bs = NA;
+    for ( ; i+bs < na; i += bs, pa += bs, pc += bs*dc)
+      MySubAtB_PM<bs> (nb, k, pa, da, pb, db, pc, dc);
+    // MySubAtB2 (bs, nb, k, pa, da, pb, db, pc, dc);
+    if (i < na)
+      MySubAtB_PM (na-i, nb, k, pa, da, pb, db, pc, dc);
+  }
+  
+  void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    SubAtB_MM (a.Width(), b.Width(), a.Height(),
+               &a(0,0), a.Dist(), &b(0,0), b.Dist(), &c(0,0), c.Dist());
+  }
+
+
+
+
+
+  // ////////////////////////// end SubAtB  Version 4x12 ///////////////
+
+
+
+
+  
+
+  
   
   // mat-mat product
 
