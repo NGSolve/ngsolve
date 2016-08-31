@@ -6,7 +6,6 @@ namespace ngstd
 {
 
 #if defined(__AVX__)
-
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
@@ -22,8 +21,7 @@ namespace ngstd
     return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
   }
 #endif
-
-
+#endif
 
   
   template <>
@@ -38,7 +36,7 @@ namespace ngstd
     SIMD<double> imag() const { return im; }
 
     
-#ifdef __AVX__    
+#ifdefined (__AVX__)
     void Load (Complex * p)
     {
       __m256d c1 = _mm256_loadu_pd((double*)p);
@@ -112,7 +110,7 @@ namespace ngbla
 {
 
 
-
+#ifdefined (__AVX__)
 
 
 
@@ -2506,7 +2504,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-#ifdef __AVX__
+#ifdefined (__AVX__)
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, size_t dist, double * p)
