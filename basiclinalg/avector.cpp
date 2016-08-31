@@ -36,7 +36,7 @@ namespace ngstd
     SIMD<double> imag() const { return im; }
 
     
-#ifdefined (__AVX__)
+#if defined (__AVX__)
     void Load (Complex * p)
     {
       __m256d c1 = _mm256_loadu_pd((double*)p);
@@ -110,7 +110,7 @@ namespace ngbla
 {
 
 
-#ifdefined (__AVX__)
+#if defined (__AVX__)
 
 
 
@@ -2504,7 +2504,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-#ifdefined (__AVX__)
+#if defined (__AVX__)
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, size_t dist, double * p)
