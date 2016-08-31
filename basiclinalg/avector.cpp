@@ -2515,6 +2515,50 @@ namespace ngbla
   }
 
 
+  void CopyMatrixInScaleRows (size_t h, size_t w,
+                              double * ps, size_t dists,
+                              double * pd, size_t distd,
+                              double * pscale, size_t distscale)
+  {
+    __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                        _mm256_set_epi64x(3,2,1,0));
+    
+    for (size_t i = 0; i < h; i++, pd += distd, pscale += distscale)
+      {
+        double * psnext = ps+dists;
+        __m256d scale = _mm256_set1_pd(*pscale);
+        /*
+          for (size_t j = 0; j+4 <= w; j+=4)
+          {
+          _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+          _mm_prefetch (psnext+j,  _MM_HINT_T1);
+          }
+        */
+        size_t j = 0;
+        for ( ; j + 16 <= w; j+=16)
+          {
+            auto val1 = scale * _mm256_loadu_pd(ps+j);
+            auto val2 = scale * _mm256_loadu_pd(ps+j+4);
+            auto val3 = scale * _mm256_loadu_pd(ps+j+8);
+            auto val4 = scale * _mm256_loadu_pd(ps+j+12);
+            _mm256_storeu_pd (pd+j, val1);
+            _mm256_storeu_pd (pd+j+4, val2);
+            _mm256_storeu_pd (pd+j+8, val3);
+            _mm256_storeu_pd (pd+j+12, val4);
+            _mm_prefetch (psnext+j,  _MM_HINT_T1);
+            _mm_prefetch (psnext+j+8,  _MM_HINT_T1);          
+          }
+        for ( ; j +4 <= w; j+=4)
+          _mm256_storeu_pd(pd+j, scale * _mm256_loadu_pd(ps+j));
+        _mm256_maskstore_pd (pd+j, mask, scale * _mm256_maskload_pd(ps+j, mask));
+        
+        // for ( ; j < w; j++)
+        // pd[j] = ps[j];
+        // _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
+      
+        ps = psnext;
+      }
+  }
 
 
 
@@ -3107,12 +3151,99 @@ namespace ngbla
   
   void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    // c -= Trans(a) * b | Lapack;
+    // return;
     SubAtB_MM (a.Width(), b.Width(), a.Height(),
                &a(0,0), a.Dist(), &b(0,0), b.Dist(), &c(0,0), c.Dist());
   }
 
 
 
+  
+ void MySubAtDB_BP (SliceMatrix<double> a,
+                    SliceVector<double> diag,
+                    SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    alignas (64) double mema[NA*NK];
+    size_t na = a.Width();
+    size_t nb = b.Width();
+    size_t k = a.Height();
+    
+    CopyMatrixInScaleRows (k, na,
+                           &a(0,0), a.Dist(), &mema[0], NA,
+                           &diag(0), diag.Dist());
+
+    size_t i = 0;
+    constexpr size_t bs = NB;
+    for ( ; i+bs <= nb; i += bs) // , pb += bs, pc += bs)
+      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
+    if (i < nb)
+      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+  }
+
+  // a is of size NK x NA
+  void MySubAtDB_BP_Std (SliceMatrix<double> a,
+                         SliceVector<double> diag,
+                         SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    alignas (64) double mema[NA*NK];
+    constexpr size_t na = NA; // a.Width();
+    size_t nb = b.Width();
+    constexpr size_t k = NK; // a.Height();
+    
+    CopyMatrixInScaleRows (k, na,
+                           &a(0,0), a.Dist(), &mema[0], NA,
+                           &diag(0), diag.Dist());
+
+    size_t i = 0;
+    constexpr size_t bs = NB;
+    for ( ; i+bs <= nb; i += bs) // , pb += bs, pc += bs)
+      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
+    if (i < nb)
+      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+  }
+
+  
+  void MySubAtDB_PM (SliceMatrix<double> a,
+                     SliceVector<double> diag,
+                     SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    size_t k = a.Height();
+    size_t i = 0;
+    constexpr size_t bs = NK;
+    for ( ; i+bs <= k; i += bs) 
+      MySubAtDB_BP (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
+    if (i < k)
+      MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
+  }
+  
+  void MySubAtDB_PM_Std (SliceMatrix<double> a,
+                         SliceVector<double> diag,
+                         SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    size_t k = a.Height();
+    size_t i = 0;
+    constexpr size_t bs = NK;
+    for ( ; i+bs <= k; i += bs) 
+      MySubAtDB_BP_Std (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
+    if (i < k)
+      MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
+  }
+
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    size_t na = a.Width();
+    size_t i = 0;
+    constexpr size_t bs = NA;
+    for ( ; i+bs < na; i += bs)
+      MySubAtDB_PM_Std (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
+    if (i < na)
+      MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
+  }
+
+  
 
 
   // ////////////////////////// end SubAtB  Version 4x12 ///////////////

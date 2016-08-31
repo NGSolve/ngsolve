@@ -16,8 +16,26 @@ typedef moodycamel::ProducerToken TPToken;
 typedef moodycamel::ConsumerToken TCToken; 
  
 
+namespace ngbla
+{
+  extern 
+  void SubAtDB (SliceMatrix<double> a,
+                SliceVector<double> diag,
+                SliceMatrix<double> b, SliceMatrix<double> c);
 
-
+  void SubADBt (SliceMatrix<double,ColMajor> a,
+                SliceVector<double> diag,
+                SliceMatrix<double,ColMajor> b, SliceMatrix<double,ColMajor> c)
+  {
+    SubAtDB (Trans(b), diag, Trans(a), Trans(c));
+  }
+  
+  void SubADBt (SliceMatrix<Complex,ColMajor> a, SliceVector<Complex> diag,
+                SliceMatrix<Complex,ColMajor> b, SliceMatrix<Complex,ColMajor> c)
+  {
+    cerr << "SubADBt - complex missing" << endl;
+  }
+}
 
 namespace ngla
 {
@@ -896,8 +914,8 @@ namespace ngla
     static Timer timer2("SparseCholesky::Factor gemm 2", 2);
     static Timer timer3("SparseCholesky::Factor gemm 3", 2);
             
-    if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
-    // if (c.Height() < 10 || c.Width() < 10 || a.Width() < 10)
+    // if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
+    if (c.Height() < 10 || c.Width() < 10 || a.Width() < 10)
     // if (false)
       {
         // timer1.Start();
@@ -942,12 +960,84 @@ namespace ngla
   B   C       =  B1 L2      0  D2            L2^t
  */ 
 
+  /*
+  template <typename T, ORDERING ORD>
+  void MySubADBt (SliceMatrix<T,ORD> A,
+                  SliceVector<T> diag,
+                  SliceMatrix<T,ORD> B,
+                  SliceMatrix<T,ORD> C)
+  {
+    Matrix<T,ORD> hB(B.Height(), B.Width());
+    for (int i = 0; i < hB.Width(); i++)
+      hB.Col(i) = diag(i) * B.Col(i);
+    C -= A * Trans(hB);
+  }
+  */
+
+  
+  template <typename T, ORDERING ORD>
+  INLINE void MySubADBt (SliceMatrix<T,ORD> a,
+                         SliceVector<T> diag,
+                         SliceMatrix<T,ORD> b,
+                         SliceMatrix<T,ORD> c)
+  {
+    static Timer timer1("SparseCholesky::Factor gemm 1", 2);
+    static Timer timer2("SparseCholesky::Factor gemm 2", 2);
+    static Timer timer3("SparseCholesky::Factor gemm 3", 2);
+            
+    // if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
+    if (c.Height() < 10 && c.Width() < 10 && a.Width() < 10)
+    // if (false)
+      {
+        // timer1.Start();
+        T hmem[100];
+        FlatMatrix<T,ORD> hb(b.Height(), b.Width(), &hmem[0]);
+        for (int i = 0; i < hb.Width(); i++)
+          hb.Col(i) = diag(i) * b.Col(i);
+        c -= a * Trans(hb);
+        // timer1.Stop();
+        // timer1.AddFlops(c.Height()*c.Width()*a.Width());
+      }
+    else
+      {
+        if ( (c.Height() < 128 && c.Width() < 128) ||
+             (size_t(c.Height())*c.Width()*a.Width() < 10000) )
+          // if (true)
+          {
+            timer2.Start();
+            ngbla::SubADBt(a,diag,b,c);
+            timer2.Stop();
+            timer2.AddFlops(c.Height()*c.Width()*a.Width());
+          }
+        else
+          {
+            timer3.Start();
+            int nr = c.Height()/128+1;
+            int nc = c.Width()/128+1;
+            task_manager -> CreateJob
+                         ( [&] (const TaskInfo & ti)
+                           {
+                             int br = ti.task_nr % nr;
+                             int bc = ti.task_nr / nr;
+                             auto rowr = Range(c.Height()).Split (br, nr);
+                             auto colr = Range(c.Width()).Split (bc, nc);
+                             // c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
+                             ngbla::SubADBt(a.Rows(rowr),diag, b.Rows(colr), c.Rows(rowr).Cols(colr));
+                           }, nr*nc);
+            timer3.AddFlops(c.Height()*c.Width()*a.Width());
+            timer3.Stop();
+          }
+      }
+  }
+
+  
 // Solve for B1:   B1 D1 L1^t = B
   template <typename T, ORDERING ORD>
   void CalcLDL_SolveL (SliceMatrix<T,ORD> L, SliceMatrix<T,ORD> B)
   {
     int n = L.Height();
     if (n == 1) return;
+
     if (n >= 2)
       {
         IntRange r1(0,n/2), r2(n/2,n);
@@ -959,7 +1049,7 @@ namespace ngla
         
         CalcLDL_SolveL(L1, B1);
         // B2 -= B1 * Trans(L21) | Lapack;
-        MySubABt (B1, L21, B2);
+        MySubADBt (B1, L1.Diag(), L21, B2);
         CalcLDL_SolveL(L2, B2);
         return;
       }
@@ -999,6 +1089,9 @@ namespace ngla
   template <typename T, ORDERING ORD>
   void CalcLDL_A2 (SliceVector<T> diag, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
   {
+    MySubADBt (B, diag, B, A2);
+    return;
+    
     int n = B.Height();
     int w = B.Width();
 
@@ -1053,39 +1146,47 @@ namespace ngla
   template <typename T, ORDERING ORD>
   void CalcLDL (SliceMatrix<T,ORD> mat)
   {
-  int n = mat.Height();
+    int n = mat.Height();
+    
+    if (n >= 2)
+      {
+        int n1 = n/2;
+        auto L1 = mat.Rows(0,n1).Cols(0,n1);
+        auto L2 = mat.Rows(n1,n).Cols(n1,n);
+        auto B = mat.Rows(n1,n).Cols(0,n1);
+        CalcLDL (L1);
+        CalcLDL_SolveL (L1,B);
+        CalcLDL_A2 (L1.Diag(),B,L2);
+        // for (int i = 0; i < B.Width(); i++)
+        // B.Col(i) *= 1.0/L1.Diag()(i);
+        CalcLDL (L2);
+        return;
+      }
 
-  if (n >= 2)
-    {
-      int n1 = n/2;
-      auto L1 = mat.Rows(0,n1).Cols(0,n1);
-      auto L2 = mat.Rows(n1,n).Cols(n1,n);
-      auto B = mat.Rows(n1,n).Cols(0,n1);
-      CalcLDL (L1);
-      CalcLDL_SolveL (L1,B);
-      CalcLDL_A2 (L1.Diag(),B,L2);
-      CalcLDL (L2);
-      return;
-    }
+    if (n == 1)
+      {
+        auto hm = mat(0,0);
+        CalcInverse (hm, mat(0,0));
+        return;
+      }
+    
+    for (int i = 0; i < n; i++)
+      {
+        T dii = mat(i,i);
+        T inv_dii;
+        CalcInverse (dii, inv_dii);
+        for (int j = i+1; j < n; j++)
+          {
+            T hji = mat(j,i);
+            T hjiD = hji * inv_dii;
+            mat(j,i) = hjiD;
+            for (int k = i+1; k <= j; k++)
+              mat(j,k) -= hji * Trans(mat(k,i));
+          }
+      }
+  }
+
   
-  
-  for (int i = 0; i < n; i++)
-    {
-      T dii = mat(i,i);
-      T inv_dii;
-      CalcInverse (dii, inv_dii);
-      for (int j = i+1; j < n; j++)
-        {
-          T hji = mat(j,i);
-          T hjiD = hji * inv_dii;
-          mat(j,i) = hjiD;
-          for (int k = i+1; k <= j; k++)
-            mat(j,k) -= hji * Trans(mat(k,i));
-        }
-    }
-}
-
-
 
   
   /*
@@ -1247,6 +1348,8 @@ namespace ngla
           {
             CalcLDL_SolveL (A11,B);
             CalcLDL_A2 (A11.Diag(),B,A22);
+            // for (int i = 0; i < B.Width(); i++)
+            // B.Col(i) *= 1.0 / A11.Diag()(i);
           }
         factor_dense.Stop();          
         /*
@@ -1268,12 +1371,16 @@ namespace ngla
 
         auto write_back_row = [&](int j)
           {
+            /*
             TM inv;
             CalcInverse (A11(j,j), inv);
             diag[i1+j] = inv; 
+            */
+            diag[i1+j] = A11(j,j);
             
-            for (int k = j+1; k < nk; k++)
-              tmp(k,j) = A11(j,j) * tmp(k,j);
+            // for (int k = j+1; k < nk; k++)
+            // for (int k = j+1; k < mi; k++)
+            // tmp(k,j) = A11(j,j) * tmp(k,j);
             FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
           };
 
