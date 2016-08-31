@@ -496,6 +496,15 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("pmin"), bp::arg("pmax"))
          )
+    .def("Draw", FunctionPointer
+         ([] (shared_ptr<CSGeometry> self)
+          {
+             self->FindIdenticSurfaces(1e-6);
+             self->CalcTriangleApproximation(0.01, 20);
+             ng_geometry = self;
+          }),
+         (bp::arg("self"))
+         )
     .add_property ("ntlo", &CSGeometry::GetNTopLevelObjects)
     ;
 
