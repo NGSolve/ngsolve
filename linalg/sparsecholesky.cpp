@@ -1007,24 +1007,31 @@ namespace ngla
             timer2.Start();
             ngbla::SubADBt(a,diag,b,c);
             timer2.Stop();
-            timer2.AddFlops(c.Height()*c.Width()*a.Width());
+            timer2.AddFlops(size_t(c.Height())*c.Width()*a.Width());
           }
         else
           {
             timer3.Start();
-            int nr = c.Height()/128+1;
-            int nc = c.Width()/128+1;
+            // int nr = c.Height()/128+1;
+            // int nc = c.Width()/128+1;
+            constexpr int BH = 96;
+            constexpr int BW = 128;
+            int nr = (c.Height()+BH-1) / BH;
+            int nc = (c.Width()+BW-1) / BW;
             task_manager -> CreateJob
                          ( [&] (const TaskInfo & ti)
                            {
                              int br = ti.task_nr % nr;
                              int bc = ti.task_nr / nr;
-                             auto rowr = Range(c.Height()).Split (br, nr);
-                             auto colr = Range(c.Width()).Split (bc, nc);
+                             // auto rowr = Range(c.Height()).Split (br, nr);
+                             // auto colr = Range(c.Width()).Split (bc, nc);
+                             auto rowr = Range(BH*br, min(BH*(br+1), c.Height()));
+                             auto colr = Range(BW*bc, min(BW*(bc+1), c.Width()));
+                             
                              // c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
                              ngbla::SubADBt(a.Rows(rowr),diag, b.Rows(colr), c.Rows(rowr).Cols(colr));
                            }, nr*nc);
-            timer3.AddFlops(c.Height()*c.Width()*a.Width());
+            timer3.AddFlops(size_t(c.Height())*c.Width()*a.Width());
             timer3.Stop();
           }
       }

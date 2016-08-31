@@ -3164,6 +3164,7 @@ namespace ngbla
                     SliceVector<double> diag,
                     SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    // static Timer t("MySubAtDB - variable size"); RegionTimer reg(t);
     alignas (64) double mema[NA*NK];
     size_t na = a.Width();
     size_t nb = b.Width();
@@ -3186,10 +3187,12 @@ namespace ngbla
                          SliceVector<double> diag,
                          SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    static Timer t("MySubAtDB - std size"); RegionTimer reg(t);
     alignas (64) double mema[NA*NK];
     constexpr size_t na = NA; // a.Width();
     size_t nb = b.Width();
     constexpr size_t k = NK; // a.Height();
+    t.AddFlops (NA*NK*nb);
     
     CopyMatrixInScaleRows (k, na,
                            &a(0,0), a.Dist(), &mema[0], NA,
@@ -3221,6 +3224,7 @@ namespace ngbla
                          SliceVector<double> diag,
                          SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    // cout << "std panel" << endl;
     size_t k = a.Height();
     size_t i = 0;
     constexpr size_t bs = NK;
@@ -3234,10 +3238,11 @@ namespace ngbla
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
   {
+    // cout << "aw = " << a.Width() << ", bw = " << b.Width() << " ah = " << a.Height() << endl;
     size_t na = a.Width();
     size_t i = 0;
     constexpr size_t bs = NA;
-    for ( ; i+bs < na; i += bs)
+    for ( ; i+bs <= na; i += bs)
       MySubAtDB_PM_Std (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
     if (i < na)
       MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
