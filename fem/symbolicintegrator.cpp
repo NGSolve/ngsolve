@@ -1473,21 +1473,24 @@ namespace ngfem
     
     // no simd
     HeapReset hr(lh);
-
+    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
+    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
+    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
+ 
     ProxyUserData ud(trial_proxies.Size(), lh);    
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
     ud.fel = &fel;
     ud.elx = &elx;
     ud.lh = &lh;
 
-    IntegrationRule ir(trafo.GetElementType(), 2*fel.Order());
+    IntegrationRule ir(trafo.GetElementType(), fel_trial.Order()+fel_test.Order());
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
 
     for (ProxyFunction * proxy : trial_proxies)
-      proxy->Evaluator()->Apply(fel, mir, elx, ud.GetMemory(proxy), lh);
+      proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetMemory(proxy), lh);
     
     ely = 0;
     FlatVector<> ely1(ely.Size(), lh);
@@ -1508,7 +1511,7 @@ namespace ngfem
         for (int i = 0; i < mir.Size(); i++)
           proxyvalues.Row(i) *= mir[i].GetWeight();
 
-        proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, ely1, lh);
+        proxy->Evaluator()->ApplyTrans(fel_test, mir, proxyvalues, ely1, lh);
         ely += ely1;
       }
   }
