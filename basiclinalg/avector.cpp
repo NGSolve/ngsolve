@@ -1,5 +1,54 @@
 #include <bla.hpp>
 
+
+
+#ifdef __AVX__
+namespace ngstd
+{
+  template <>
+  class SIMD<Complex>
+  {
+    SIMD<double> re, im;
+  public:
+    SIMD () = default;
+    SIMD (SIMD<double> _r, SIMD<double> _i) : re(_r), im(_i) { ; }
+    SIMD (Complex c) : re(c.real()), im(c.imag()) { ; } 
+    SIMD<double> real() const { return re; }
+    SIMD<double> imag() const { return im; }
+    void Load (Complex * p)
+    {
+      __m256d c1 = _mm256_loadu_pd((double*)p);
+      __m256d c2 = _mm256_loadu_pd((double*)(p+2));
+      re = _mm256_unpacklo_pd(c1,c2);
+      im = _mm256_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p) const
+    {
+      _mm256_storeu_pd ((double*)p, _mm256_unpacklo_pd(re.Data(),im.Data()));
+      _mm256_storeu_pd ((double*)(p+2), _mm256_unpackhi_pd(re.Data(),im.Data()));
+    }
+  };
+    
+  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
+  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
+  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
+    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
+                            a.real()*b.imag()+a.imag()*b.real()); }
+  
+  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
+  {
+    ost << c.real() << ", " << c.imag();
+    return ost;
+  }
+}
+#endif
+  
+
+
+
+
 namespace ngbla
 {
 
@@ -3158,13 +3207,11 @@ namespace ngbla
   }
 
 
-
   
- void MySubAtDB_BP (SliceMatrix<double> a,
-                    SliceVector<double> diag,
-                    SliceMatrix<double> b, SliceMatrix<double> c)
+  void MySubAtDB_BP (SliceMatrix<double> a,
+                     SliceVector<double> diag,
+                     SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    // static Timer t("MySubAtDB - variable size"); RegionTimer reg(t);
     alignas (64) double mema[NA*NK];
     size_t na = a.Width();
     size_t nb = b.Width();
@@ -3176,36 +3223,11 @@ namespace ngbla
 
     size_t i = 0;
     constexpr size_t bs = NB;
-    for ( ; i+bs <= nb; i += bs) // , pb += bs, pc += bs)
+    for ( ; i+bs <= nb; i += bs)
       BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
     if (i < nb)
       BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
   }
-
-  // a is of size NK x NA
-  void MySubAtDB_BP_Std (SliceMatrix<double> a,
-                         SliceVector<double> diag,
-                         SliceMatrix<double> b, SliceMatrix<double> c)
-  {
-    static Timer t("MySubAtDB - std size"); RegionTimer reg(t);
-    alignas (64) double mema[NA*NK];
-    constexpr size_t na = NA; // a.Width();
-    size_t nb = b.Width();
-    constexpr size_t k = NK; // a.Height();
-    t.AddFlops (NA*NK*nb);
-    
-    CopyMatrixInScaleRows (k, na,
-                           &a(0,0), a.Dist(), &mema[0], NA,
-                           &diag(0), diag.Dist());
-
-    size_t i = 0;
-    constexpr size_t bs = NB;
-    for ( ; i+bs <= nb; i += bs) // , pb += bs, pc += bs)
-      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
-    if (i < nb)
-      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
-  }
-
   
   void MySubAtDB_PM (SliceMatrix<double> a,
                      SliceVector<double> diag,
@@ -3220,30 +3242,15 @@ namespace ngbla
       MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
   }
   
-  void MySubAtDB_PM_Std (SliceMatrix<double> a,
-                         SliceVector<double> diag,
-                         SliceMatrix<double> b, SliceMatrix<double> c)
-  {
-    // cout << "std panel" << endl;
-    size_t k = a.Height();
-    size_t i = 0;
-    constexpr size_t bs = NK;
-    for ( ; i+bs <= k; i += bs) 
-      MySubAtDB_BP_Std (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
-    if (i < k)
-      MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
-  }
-
   void SubAtDB (SliceMatrix<double> a,
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    // cout << "aw = " << a.Width() << ", bw = " << b.Width() << " ah = " << a.Height() << endl;
     size_t na = a.Width();
     size_t i = 0;
     constexpr size_t bs = NA;
     for ( ; i+bs <= na; i += bs)
-      MySubAtDB_PM_Std (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
+      MySubAtDB_PM (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
     if (i < na)
       MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
   }
@@ -3567,4 +3574,192 @@ namespace ngbla
   // }
 
 #endif
+
+
+
+
+
+
+
+  // Complex ADB^t
+  
+  
+  void CopyMatrixInScaleRows (size_t h, size_t w,
+                              Complex * ps, size_t dists,
+                              Complex * pd, size_t distd,
+                              Complex * pscale, size_t distscale)
+  {
+    static Timer t("CopyMatrixInScale-complex"); RegionTimer reg(t);    
+    for (size_t i = 0; i < h; i++, ps += dists, pd += distd, pscale += distscale)
+      {
+        Complex scale = *pscale;
+        for (size_t j = 0; j < w; j++)
+          pd[j] = scale * ps[j];
+      }
+  }  
+
+
+#ifdef __AVX__
+
+  
+  void KernelScal4x4Trans (Complex * pa, size_t da,
+                           Complex * pb, size_t db,
+                           Complex * pc, size_t dc,
+                           size_t ninner)
+  {
+    SIMD<Complex> sum1, sum2, sum3, sum4;
+    sum1.Load (pc);
+    sum2.Load (pc+dc);
+    sum3.Load (pc+2*dc);
+    sum4.Load (pc+3*dc);
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        SIMD<Complex> b1;
+        b1.Load(pb);
+        sum1 = sum1 - SIMD<Complex> (pa[0]) * b1;
+        sum2 = sum2 - SIMD<Complex> (pa[1]) * b1;
+        sum3 = sum3 - SIMD<Complex> (pa[2]) * b1;
+        sum4 = sum4 - SIMD<Complex> (pa[3]) * b1;
+      }
+    sum1.Store(pc);
+    sum2.Store(pc+dc);
+    sum3.Store(pc+2*dc);
+    sum4.Store(pc+3*dc);
+  }
+  
+  void KernelScal1x4Trans (Complex * pa, size_t da,
+                           Complex * pb, size_t db,
+                           Complex * pc, size_t dc,
+                           size_t ninner)
+  {
+    SIMD<Complex> sum1;
+    sum1.Load (pc);
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        SIMD<Complex> b1;
+        b1.Load(pb);
+        sum1 = sum1 - SIMD<Complex> (*pa) * b1;
+      }
+    sum1.Store(pc);
+  }
+  
+  void BlockScal4x12Trans_BB (
+                              Complex * pa, size_t da,
+                              Complex * pb, size_t db,
+                              Complex * pc, size_t dc,
+                              size_t na, size_t nb, size_t ninner
+                              )
+  {
+    /*
+    SliceMatrix<Complex> a(ninner, na, da, pa);
+    SliceMatrix<Complex> b(ninner, nb, db, pb);
+    SliceMatrix<Complex> c(na, nb, dc, pc);
+    c -= Trans(a) * b; //  | Lapack;
+    */
+
+    size_t i = 0;
+    for ( ; i+4 <= na; i+=4, pa += 4, pc += 4*dc)
+      {
+        size_t j = 0;
+        for ( ; j+8 <= nb; j+=4)
+          KernelScal4x4Trans (pa, da, pb+j, db, pc+j, dc, ninner);
+        for ( ; j < nb; j++)
+          {
+            Complex tmpc[4] = { pc[j], pc[dc+j], pc[2*dc+j], pc[3*dc+j] };
+            KernelScal1x4Trans (pb+j, db, pa, da, tmpc, 1, ninner);
+            pc[j] = tmpc[0];
+            pc[dc+j] = tmpc[1];
+            pc[2*dc+j] = tmpc[2];
+            pc[3*dc+j] = tmpc[3];
+          }
+      }
+    for ( ; i < na; i++, pa ++, pc += dc)
+      {
+        size_t j = 0;
+        for ( ; j+4 <= nb; j+=4)
+          KernelScal1x4Trans (pa, da, pb+j, db, pc+j, dc, ninner);
+        for ( ; j < nb; j++)
+          {
+            Complex sum = pc[j];
+            for (size_t k = 0; k < ninner; k++)
+              sum -= pa[k*da] * pb[k*db+j];
+            pc[j] = sum;
+          }
+      }
+  }
+
+#else
+  void BlockScal4x12Trans_BB (
+                              Complex * pa, size_t da,
+                              Complex * pb, size_t db,
+                              Complex * pc, size_t dc,
+                              size_t na, size_t nb, size_t ninner
+                              )
+  {
+    /*
+    SliceMatrix<Complex> a(ninner, na, da, pa);
+    SliceMatrix<Complex> b(ninner, nb, db, pb);
+    SliceMatrix<Complex> c(na, nb, dc, pc);
+    c -= Trans(a) * b; //  | Lapack;
+    */
+
+    for (size_t i = 0; i < na; i++)
+      for (size_t j = 0; j < nb; j++)
+        {
+          Complex sum = pc[i*dc+j];
+          for (size_t k = 0; k < ninner; k++)
+            sum -= pa[k*da+i] * pb[k*db+j];
+          pc[i*dc+j] = sum;
+        }
+  }
+#endif
+  
+  void MySubAtDB_BP (SliceMatrix<Complex> a,
+                     SliceVector<Complex> diag,
+                     SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    // alignas (64) Complex mema[NA*NK];   // slow !!!
+    alignas (64) double mema[2*NA*NK];
+    size_t na = a.Width();
+    size_t nb = b.Width();
+    size_t k = a.Height();
+    
+    CopyMatrixInScaleRows (k, na,
+                           &a(0,0), a.Dist(), (Complex*)&mema[0], NA,
+                           &diag(0), diag.Dist());
+
+    size_t i = 0;
+    constexpr size_t bs = NB;
+    for ( ; i+bs <= nb; i += bs)
+      BlockScal4x12Trans_BB ((Complex*)mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
+    if (i < nb)
+      BlockScal4x12Trans_BB ((Complex*)mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+  }
+  
+  void MySubAtDB_PM (SliceMatrix<Complex> a,
+                     SliceVector<Complex> diag,
+                     SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    size_t k = a.Height();
+    size_t i = 0;
+    constexpr size_t bs = NK;
+    for ( ; i+bs <= k; i += bs) 
+      MySubAtDB_BP (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
+    if (i < k)
+      MySubAtDB_BP (a.Rows(i,k), diag.Range(i,k), b.Rows(i,k), c);      
+  }
+  
+  void SubAtDB (SliceMatrix<Complex> a,
+                SliceVector<Complex> diag,
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  {
+    size_t na = a.Width();
+    size_t i = 0;
+    constexpr size_t bs = NA;
+    for ( ; i+bs <= na; i += bs)
+      MySubAtDB_PM (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
+    if (i < na)
+      MySubAtDB_PM (a.Cols(i,na), diag, b, c.Rows(i,na));
+  }
+  
 }

@@ -23,18 +23,19 @@ namespace ngbla
                 SliceVector<double> diag,
                 SliceMatrix<double> b, SliceMatrix<double> c);
 
-  void SubADBt (SliceMatrix<double,ColMajor> a,
-                SliceVector<double> diag,
-                SliceMatrix<double,ColMajor> b, SliceMatrix<double,ColMajor> c)
+  extern 
+  void SubAtDB (SliceMatrix<Complex> a,
+                SliceVector<Complex> diag,
+                SliceMatrix<Complex> b, SliceMatrix<Complex> c);
+
+  template <typename T>
+  void SubADBt (SliceMatrix<T,ColMajor> a,
+                SliceVector<T> diag,
+                SliceMatrix<T,ColMajor> b, SliceMatrix<T,ColMajor> c)
   {
     SubAtDB (Trans(b), diag, Trans(a), Trans(c));
   }
   
-  void SubADBt (SliceMatrix<Complex,ColMajor> a, SliceVector<Complex> diag,
-                SliceMatrix<Complex,ColMajor> b, SliceMatrix<Complex,ColMajor> c)
-  {
-    cerr << "SubADBt - complex missing" << endl;
-  }
 }
 
 namespace ngla
@@ -1055,7 +1056,7 @@ namespace ngla
         auto B2 = B.Cols(r2);
         
         CalcLDL_SolveL(L1, B1);
-        // B2 -= B1 * Trans(L21) | Lapack;
+        // B2 -= B1 * diag(L1) * Trans(L21) 
         MySubADBt (B1, L1.Diag(), L21, B2);
         CalcLDL_SolveL(L2, B2);
         return;
