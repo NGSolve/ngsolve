@@ -135,14 +135,14 @@ namespace ngbla
 
   void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
   {
-    static Timer t1("avx - transpose big");
-    static Timer t2("avx - transpose small");
+    // static Timer t1("avx - transpose big");
+    // static Timer t2("avx - transpose small");
 
     size_t h = a.Height();
     size_t w = a.Width();
 
     bool big = (h > 16) && (w > 16);
-    if (big) t1.Start(); else t2.Start();
+    // if (big) t1.Start(); else t2.Start();
 
     size_t i = 0;
     constexpr size_t bs = 64;
@@ -150,7 +150,7 @@ namespace ngbla
       TransposeMatrix2(a.Rows(i,i+bs), b.Cols(i,i+bs));
     TransposeMatrix2(a.Rows(i,h), b.Cols(i,h));    
 
-    if (big) t1.Stop(); else t2.Stop();    
+    // if (big) t1.Stop(); else t2.Stop();    
   }
   
 
@@ -3187,12 +3187,12 @@ namespace ngbla
                          SliceVector<double> diag,
                          SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    static Timer t("MySubAtDB - std size"); RegionTimer reg(t);
+    // static Timer t("MySubAtDB - std size"); RegionTimer reg(t);
     alignas (64) double mema[NA*NK];
     constexpr size_t na = NA; // a.Width();
     size_t nb = b.Width();
     constexpr size_t k = NK; // a.Height();
-    t.AddFlops (NA*NK*nb);
+    // t.AddFlops (NA*NK*nb);
     
     CopyMatrixInScaleRows (k, na,
                            &a(0,0), a.Dist(), &mema[0], NA,
