@@ -2,59 +2,10 @@
 
 
 
-#ifdef __AVX__
 namespace ngstd
-{
-  template <>
-  class SIMD<Complex>
-  {
-    SIMD<double> re, im;
-  public:
-    SIMD () = default;
-    SIMD (SIMD<double> _r, SIMD<double> _i) : re(_r), im(_i) { ; }
-    SIMD (Complex c) : re(c.real()), im(c.imag()) { ; } 
-    SIMD<double> real() const { return re; }
-    SIMD<double> imag() const { return im; }
-    void Load (Complex * p)
-    {
-      __m256d c1 = _mm256_loadu_pd((double*)p);
-      __m256d c2 = _mm256_loadu_pd((double*)(p+2));
-      re = _mm256_unpacklo_pd(c1,c2);
-      im = _mm256_unpackhi_pd(c1,c2);
-    }
-    void Store (Complex * p) const
-    {
-      _mm256_storeu_pd ((double*)p, _mm256_unpacklo_pd(re.Data(),im.Data()));
-      _mm256_storeu_pd ((double*)(p+2), _mm256_unpackhi_pd(re.Data(),im.Data()));
-    }
-  };
-    
-  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
-  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
-  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
-    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
-                            a.real()*b.imag()+a.imag()*b.real()); }
-  
-  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
-  {
-    ost << c.real() << ", " << c.imag();
-    return ost;
-  }
-}
-#endif
-  
-
-
-
-
-namespace ngbla
 {
 
 #if defined(__AVX__)
-
-
 
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
@@ -71,6 +22,95 @@ namespace ngbla
     return _mm256_insertf128_si256 (_mm256_castsi128_si256(rlo), rhi, 1);
   }
 #endif
+
+
+
+  
+  template <>
+  class SIMD<Complex>
+  {
+    SIMD<double> re, im;
+  public:
+    SIMD () = default;
+    SIMD (SIMD<double> _r, SIMD<double> _i) : re(_r), im(_i) { ; }
+    SIMD (Complex c) : re(c.real()), im(c.imag()) { ; } 
+    SIMD<double> real() const { return re; }
+    SIMD<double> imag() const { return im; }
+
+    
+#ifdef __AVX__    
+    void Load (Complex * p)
+    {
+      __m256d c1 = _mm256_loadu_pd((double*)p);
+      __m256d c2 = _mm256_loadu_pd((double*)(p+2));
+      re = _mm256_unpacklo_pd(c1,c2);
+      im = _mm256_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p) const
+    {
+      _mm256_storeu_pd ((double*)p, _mm256_unpacklo_pd(re.Data(),im.Data()));
+      _mm256_storeu_pd ((double*)(p+2), _mm256_unpackhi_pd(re.Data(),im.Data()));
+    }
+
+    void Load (Complex * p, size_t mask)
+    {
+      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(1, 1, 0, 0));
+      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(3, 3, 2, 2));
+      
+      __m256d c1 = _mm256_maskload_pd((double*)p, mask1);
+      __m256d c2 = _mm256_maskload_pd((double*)(p+2), mask2);
+      re = _mm256_unpacklo_pd(c1,c2);
+      im = _mm256_unpackhi_pd(c1,c2);
+    }
+    void Store (Complex * p, size_t mask) const
+    {
+      __m256i mask1 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(1, 1, 0, 0));
+      __m256i mask2 = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(mask&3),
+                                           _mm256_set_epi64x(3, 3, 2, 2));
+
+      _mm256_maskstore_pd ((double*)p, mask1, _mm256_unpacklo_pd(re.Data(),im.Data()));
+      _mm256_maskstore_pd ((double*)(p+2), mask2, _mm256_unpackhi_pd(re.Data(),im.Data()));
+    }
+#else
+    void Load (Complex * p)
+    {
+      Complex c = *p;
+      re = c.real();
+      im = c.imag();
+    }
+    void Store (Complex * p) const
+    {
+      *p = Complex(re.Data(), im.Data());
+    }
+#endif
+    
+  };
+    
+  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
+  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
+  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
+  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
+    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
+                            a.real()*b.imag()+a.imag()*b.real()); }
+  
+  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
+  {
+    ost << c.real() << ", " << c.imag();
+    return ost;
+  }
+}
+  
+
+
+
+
+namespace ngbla
+{
+
 
 
 
@@ -2456,7 +2496,7 @@ namespace ngbla
     // cout << "err = " << L2Norm(hc-c) << endl;
     }
   */
-
+#endif
 
 
   // ////////////////////////// begin SubAtB  Version 4x12 ///////////////  
@@ -2466,10 +2506,7 @@ namespace ngbla
   constexpr size_t NB = 96;
   constexpr size_t NK = 128;
   
-  extern
-  void CopyMatrix (SliceMatrix<> source,
-                   SliceMatrix<> dest);
-
+#ifdef __AVX__
 
   // prefetch a row-major matrix
   void PreFetchMatrix (size_t h, size_t w, size_t dist, double * p)
@@ -3228,6 +3265,24 @@ namespace ngbla
     if (i < nb)
       BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
   }
+#else
+
+  void MySubAtDB_BP (SliceMatrix<double> a,
+                     SliceVector<double> diag,
+                     SliceMatrix<double> b, SliceMatrix<double> c)
+  {
+    alignas (64) double mema[NA*NK];
+    FlatMatrix<> loca(a.Height(), a.Width(), mema);
+
+    for (size_t i = 0; i < loca.Height(); i++)
+      loca.Row(i) = diag(i)*a.Row(i);
+
+    c -= Trans(loca) * b;
+  }
+  
+#endif
+
+  
   
   void MySubAtDB_PM (SliceMatrix<double> a,
                      SliceVector<double> diag,
@@ -3264,7 +3319,7 @@ namespace ngbla
 
 
   
-
+#ifdef __AVX__
   
   
   // mat-mat product
@@ -3581,26 +3636,69 @@ namespace ngbla
 
 
 
-  // Complex ADB^t
+  // ************************************** Complex ADB^t *********************
   
+#ifndef __AVX__
   
   void CopyMatrixInScaleRows (size_t h, size_t w,
                               Complex * ps, size_t dists,
                               Complex * pd, size_t distd,
                               Complex * pscale, size_t distscale)
   {
-    static Timer t("CopyMatrixInScale-complex"); RegionTimer reg(t);    
     for (size_t i = 0; i < h; i++, ps += dists, pd += distd, pscale += distscale)
       {
         Complex scale = *pscale;
         for (size_t j = 0; j < w; j++)
           pd[j] = scale * ps[j];
       }
+  }
+  
+#else
+  
+  void CopyMatrixInScaleRows (size_t h, size_t w,
+                              Complex * ps, size_t dists,
+                              Complex * pd, size_t distd,
+                              Complex * pscale, size_t distscale)
+  {
+    for (size_t i = 0; i < h; i++, ps += dists, pd += distd, pscale += distscale)
+      {
+        SIMD<Complex> scale (*pscale);
+        size_t j = 0;
+        for ( ; j+16 <= w; j+=16)
+          {
+            SIMD<Complex> val1, val2, val3, val4;
+            val1.Load(ps+j);
+            val2.Load(ps+j+4);
+            val3.Load(ps+j+8);
+            val4.Load(ps+j+12);
+            val1 = val1 * scale;
+            val2 = val2 * scale;
+            val3 = val3 * scale;
+            val4 = val4 * scale;
+            val1.Store(pd+j);
+            val2.Store(pd+j+4);
+            val3.Store(pd+j+8);
+            val4.Store(pd+j+12);
+          }
+        for ( ; j+4 <= w; j+=4)
+          {
+            SIMD<Complex> val;
+            val.Load(ps+j);
+            val = val * scale;
+            val.Store(pd+j);
+          }
+        SIMD<Complex> val;
+        val.Load(ps+j, w-j);
+        val = val * scale;
+        val.Store(pd+j, w-j);
+      }
   }  
+#endif
 
+
+  
 
 #ifdef __AVX__
-
   
   void KernelScal4x4Trans (Complex * pa, size_t da,
                            Complex * pb, size_t db,
@@ -3643,20 +3741,29 @@ namespace ngbla
     sum1.Store(pc);
   }
   
-  void BlockScal4x12Trans_BB (
-                              Complex * pa, size_t da,
-                              Complex * pb, size_t db,
-                              Complex * pc, size_t dc,
-                              size_t na, size_t nb, size_t ninner
-                              )
+  void KernelScal1x4Trans (Complex * pa, size_t da,
+                           Complex * pb, size_t db,
+                           Complex * pc, size_t dc,
+                           size_t ninner, int mask)
   {
-    /*
-    SliceMatrix<Complex> a(ninner, na, da, pa);
-    SliceMatrix<Complex> b(ninner, nb, db, pb);
-    SliceMatrix<Complex> c(na, nb, dc, pc);
-    c -= Trans(a) * b; //  | Lapack;
-    */
-
+    SIMD<Complex> sum1;
+    sum1.Load (pc, mask);
+    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+      {
+        SIMD<Complex> b1;
+        b1.Load(pb, mask);
+        sum1 = sum1 - SIMD<Complex> (*pa) * b1;
+      }
+    sum1.Store(pc, mask);
+  }
+  
+  void MySubAtDB_BB (
+                      Complex * pa, size_t da,
+                      Complex * pb, size_t db,
+                      Complex * pc, size_t dc,
+                      size_t na, size_t nb, size_t ninner
+                      )
+  {
     size_t i = 0;
     for ( ; i+4 <= na; i+=4, pa += 4, pc += 4*dc)
       {
@@ -3678,23 +3785,19 @@ namespace ngbla
         size_t j = 0;
         for ( ; j+4 <= nb; j+=4)
           KernelScal1x4Trans (pa, da, pb+j, db, pc+j, dc, ninner);
-        for ( ; j < nb; j++)
-          {
-            Complex sum = pc[j];
-            for (size_t k = 0; k < ninner; k++)
-              sum -= pa[k*da] * pb[k*db+j];
-            pc[j] = sum;
-          }
+        if (j < nb)
+          KernelScal1x4Trans (pa, da, pb+j, db, pc+j, dc, ninner, nb-j);
       }
   }
 
 #else
-  void BlockScal4x12Trans_BB (
-                              Complex * pa, size_t da,
-                              Complex * pb, size_t db,
-                              Complex * pc, size_t dc,
-                              size_t na, size_t nb, size_t ninner
-                              )
+
+  void MySubAtDB_BB (
+                     Complex * pa, size_t da,
+                     Complex * pb, size_t db,
+                     Complex * pc, size_t dc,
+                     size_t na, size_t nb, size_t ninner
+                     )
   {
     /*
     SliceMatrix<Complex> a(ninner, na, da, pa);
@@ -3713,27 +3816,31 @@ namespace ngbla
         }
   }
 #endif
+
+  constexpr size_t CNA = 32;
+  constexpr size_t CNB = 32;
+  constexpr size_t CNK = 32;
   
   void MySubAtDB_BP (SliceMatrix<Complex> a,
                      SliceVector<Complex> diag,
                      SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
-    // alignas (64) Complex mema[NA*NK];   // slow !!!
-    alignas (64) double mema[2*NA*NK];
+    // alignas (64) Complex mema[CNA*CNK];   // slow !!!
+    alignas (64) double mema[2*CNA*CNK];
     size_t na = a.Width();
     size_t nb = b.Width();
     size_t k = a.Height();
     
     CopyMatrixInScaleRows (k, na,
-                           &a(0,0), a.Dist(), (Complex*)&mema[0], NA,
+                           &a(0,0), a.Dist(), (Complex*)&mema[0], CNA,
                            &diag(0), diag.Dist());
 
     size_t i = 0;
-    constexpr size_t bs = NB;
+    constexpr size_t bs = CNB;
     for ( ; i+bs <= nb; i += bs)
-      BlockScal4x12Trans_BB ((Complex*)mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
+      MySubAtDB_BB ((Complex*)mema, CNA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
     if (i < nb)
-      BlockScal4x12Trans_BB ((Complex*)mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+      MySubAtDB_BB ((Complex*)mema, CNA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
   }
   
   void MySubAtDB_PM (SliceMatrix<Complex> a,
@@ -3742,7 +3849,7 @@ namespace ngbla
   {
     size_t k = a.Height();
     size_t i = 0;
-    constexpr size_t bs = NK;
+    constexpr size_t bs = CNK;
     for ( ; i+bs <= k; i += bs) 
       MySubAtDB_BP (a.Rows(i,i+bs), diag.Range(i,i+bs), b.Rows(i,i+bs), c);
     if (i < k)
@@ -3755,7 +3862,7 @@ namespace ngbla
   {
     size_t na = a.Width();
     size_t i = 0;
-    constexpr size_t bs = NA;
+    constexpr size_t bs = CNA;
     for ( ; i+bs <= na; i += bs)
       MySubAtDB_PM (a.Cols(i,i+bs), diag, b, c.Rows(i,i+bs));
     if (i < na)
