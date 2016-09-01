@@ -357,21 +357,33 @@ namespace ngla
     firstinrow[nused] = cnt;
     firstinrow_ri[nused] = cnt_master;
 
+    
+    for (int i = 1; i < blocknrs.Size(); i++)
+      if (blocknrs[i] < blocknrs[i-1])
+        throw Exception ("blocknrs are unordered !!");
 
+    /*
     for (int i = 1; i < blocknrs.Size(); i++)
       {
         if (blocknrs[i] < blocknrs[i-1]) blocknrs[i] = blocknrs[i-1];
         // limit blocksize (to 256) for better granularity in solve-phase
-        // if (blocknrs[i] <= i-256) blocknrs[i] = i;
+        if (blocknrs[i] <= i-256) blocknrs[i] = i;
       }
 
-
     // cout << "finding block-dependeny ... " << endl;
-
     for (int i = 0; i < nused; i++)
       if(blocknrs[i] == i) blocks.Append(i);
     blocks.Append(nused);
+    */
+    
+    blocks.Append(0);
+    for (int i = 1; i < nused; i++)
+      if (blocknrs[i] == i || i >= blocknrs.Last()+256)
+        blocks.Append (i);
+    blocks.Append(nused);
 
+
+    
     // find block dependency
     Array<int> block_of_dof(nused);
     for (int i = 0; i < blocks.Size()-1; i++)
@@ -980,7 +992,8 @@ namespace ngla
   INLINE void MySubADBt (SliceMatrix<T,ORD> a,
                          SliceVector<T> diag,
                          SliceMatrix<T,ORD> b,
-                         SliceMatrix<T,ORD> c)
+                         SliceMatrix<T,ORD> c,
+                         bool symmetric)
   {
     static Timer timer1("SparseCholesky::Factor gemm 1", 2);
     static Timer timer2("SparseCholesky::Factor gemm 2", 2);
@@ -1028,6 +1041,9 @@ namespace ngla
                              // auto colr = Range(c.Width()).Split (bc, nc);
                              auto rowr = Range(BH*br, min(BH*(br+1), c.Height()));
                              auto colr = Range(BW*bc, min(BW*(bc+1), c.Width()));
+                             if (symmetric)
+                               if (rowr.Next() <= colr.First())
+                                 return; // need only lower half
                              
                              // c.Rows(rowr).Cols(colr) -= a.Rows(rowr) * Trans(b.Rows(colr)) | Lapack;
                              ngbla::SubADBt(a.Rows(rowr),diag, b.Rows(colr), c.Rows(rowr).Cols(colr));
@@ -1056,8 +1072,7 @@ namespace ngla
         auto B2 = B.Cols(r2);
         
         CalcLDL_SolveL(L1, B1);
-        // B2 -= B1 * diag(L1) * Trans(L21) 
-        MySubADBt (B1, L1.Diag(), L21, B2);
+        MySubADBt (B1, L1.Diag(), L21, B2, false);
         CalcLDL_SolveL(L2, B2);
         return;
       }
@@ -1097,58 +1112,10 @@ namespace ngla
   template <typename T, ORDERING ORD>
   void CalcLDL_A2 (SliceVector<T> diag, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
   {
-    MySubADBt (B, diag, B, A2);
+    MySubADBt (B, diag, B, A2, true);
     return;
-    
-    int n = B.Height();
-    int w = B.Width();
-
-    if (w > 256 && w > n)
-      {
-        IntRange r1(0,w/2), r2(w/2,w);
-        CalcLDL_A2 (diag.Range(r1), B.Cols(r1), A2);
-        CalcLDL_A2 (diag.Range(r2), B.Cols(r2), A2);
-        return;
-      }
-
-    if (n >= 2)
-      {
-        IntRange r1(0,n/2), r2(n/2,n);
-        CalcLDL_A2(diag, B.Rows(r1), A2.Rows(r1).Cols(r1));
-        // A2.Rows(r2).Cols(r1) -= B.Rows(r2) * Trans(B.Rows(r1)) | Lapack;
-        MySubABt(B.Rows(r2), B.Rows(r1), A2.Rows(r2).Cols(r1));
-        CalcLDL_A2(diag, B.Rows(r2), A2.Rows(r2).Cols(r2));
-        return;
-      }
-    
-    // static Timer t("AddA2 - work", 2);
-    // t.Start();
-    
-    for (int i = 0; i < A2.Height(); i++)
-      {
-        for (int j = 0; j < i; j++)
-          {
-            T sum(0.0);
-            for (int k = 0; k < B.Width(); k++)
-              sum += B(i,k) * Trans(B(j,k));
-            A2(i,j) -= sum;
-          }
-        T sum(0.0);
-        for (int k = 0; k < B.Width(); k++)
-          {
-            T invd;
-            CalcInverse(diag(k), invd);
-            T bik = B(i,k);
-            T bik_inv = bik * invd; 
-            B(i,k) = bik_inv;
-            sum += bik_inv * Trans(bik);
-          }
-        A2(i,i) -= sum;
-      }
-    // t.Stop();
   }
   
-
 
 // Calc A = L D L^t
   template <typename T, ORDERING ORD>
@@ -1165,8 +1132,6 @@ namespace ngla
         CalcLDL (L1);
         CalcLDL_SolveL (L1,B);
         CalcLDL_A2 (L1.Diag(),B,L2);
-        // for (int i = 0; i < B.Width(); i++)
-        // B.Col(i) *= 1.0/L1.Diag()(i);
         CalcLDL (L2);
         return;
       }
@@ -1238,12 +1203,6 @@ namespace ngla
 
     static Timer factor_timer("SparseCholesky::Factor SPD");
     static Timer factor_dense1("SparseCholesky::Factor SPD - setup dense cholesky");
-    static Timer factor_dense1big("SparseCholesky::Factor SPD - setup dense cholesky set0 - big", 2);
-    static Timer factor_dense1small("SparseCholesky::Factor SPD - setup dense cholesky set0 - small", 2);
-
-    static Timer factor_dense1a("SparseCholesky::Factor SPD - setup dense cholesky a", 2);
-    static Timer factor_dense1b("SparseCholesky::Factor SPD - setup dense cholesky b", 2);
-    static Timer factor_dense1c("SparseCholesky::Factor SPD - setup dense cholesky c (avx)", 2);
     static Timer factor_dense("SparseCholesky::Factor SPD - dense cholesky");
 
     static Timer timerb("SparseCholesky::Factor - B", 2);
@@ -1294,56 +1253,21 @@ namespace ngla
         bool big = nk > 1000;
         if (big)
           {
-            factor_dense1big.Start();
-            factor_dense1big.AddFlops(nk*nk);
-
             ParallelForRange (nk, [&](IntRange r)
                               {
                                 tmp.Cols(r) = TM(0.0);
                               });
-
-            factor_dense1big.Stop();
           }
         else
           {
-            factor_dense1small.Start();
-            factor_dense1small.AddFlops(nk*nk);
-
             tmp = TM(0.0);
-
-            factor_dense1small.Stop();
           }
 
-        factor_dense1a.Start();
 	for (int j = 0; j < mi; j++)
 	  {
             tmp(j,j) = diag[i1+j];
             tmp.Col(j).Range(j+1,nk) = FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]);
           }
-
-        factor_dense1a.Stop();        
-        /*
-	factor_dense1b.Start();
-        for (int j = 0; j < mi; j++)
-          for (int i = 0; i < j; i++)
-            tmp(j,i) = Trans(tmp(i,j));
-        factor_dense1b.Stop();    
-        factor_dense1b.AddFlops (mi*(mi+1)/2);
-        */
-        
-	factor_dense1c.Start();
-        /*
-        // it's faster !?!?!
-        for (int j = mi; j < nk; j++)
-	  for (int i = 0; i < mi; i++)
-	    tmp(j,i) = Trans(tmp(i,j));
-        */
-        /*
-        TransposeMatrix (tmp.Rows(0,mi).Cols(mi,nk),
-                         tmp.Rows(mi,nk).Cols(0,mi));
-        */
-        factor_dense1c.Stop();        
-        factor_dense1c.AddFlops (mi*(nk-mi));
 
         factor_dense1.Stop();
         
@@ -1356,39 +1280,13 @@ namespace ngla
           {
             CalcLDL_SolveL (A11,B);
             CalcLDL_A2 (A11.Diag(),B,A22);
-            // for (int i = 0; i < B.Width(); i++)
-            // B.Col(i) *= 1.0 / A11.Diag()(i);
           }
         factor_dense.Stop();          
-        /*
-          // the original version
-        for (int j = 0; j < mi; j++)
-          {
-            for (int k = 0; k < j; k++)
-              {
-                double q = -a(k,k)*a(k,j);
-                for (int l = j; l < nk; l++)
-                  a(j,l) += q * a(k,l);
-              }
-            a(j,j) = 1.0 / a(j,j);
-          }
-        */
 
-
-	// for (int j = 0; j < mi; j++)
-
+        
         auto write_back_row = [&](int j)
           {
-            /*
-            TM inv;
-            CalcInverse (A11(j,j), inv);
-            diag[i1+j] = inv; 
-            */
             diag[i1+j] = A11(j,j);
-            
-            // for (int k = j+1; k < nk; k++)
-            // for (int k = j+1; k < mi; k++)
-            // tmp(k,j) = A11(j,j) * tmp(k,j);
             FlatVector<TM>(nk-j-1, hlfact+hfirstinrow[i1+j]) = tmp.Col(j).Range(j+1,nk);
           };
 
@@ -1408,23 +1306,6 @@ namespace ngla
 	size_t lasti = hfirstinrow[i1+1]-1;
 	mi = lasti-firsti+1;
 
-        /*
-        timercla.Start();
-
-        if (mi < 100)
-          for (int i = 0; i < A22.Height(); i++)
-            for (int j = i+1; j < A22.Width(); j++)
-              A22(i,j) = Trans(A22(j,i));
-        else
-          ParallelFor 
-            (Range(mi), [&] (int i)
-             {
-               for (int j = i+1; j < A22.Width(); j++)
-                 A22(i,j) = Trans(A22(j,i));
-             });
-        
-        timercla.Stop();
-        */
         timerc1.Start();
 
         auto merge_row = [&] (int j)
@@ -1484,7 +1365,6 @@ namespace ngla
 	size_t last = hfirstinrow[i+1];
 
 	for ( ; j < last; j++)
-          // lfact[j] *= ai;
           lfact[j] = lfact[j] * ai;
       }
 
