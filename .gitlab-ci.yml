@@ -100,18 +100,18 @@ build_win64:
 .template_build_linux: &build_linux
   stage: build
   script:
-    - docker build -t ngsolve:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
-    - rm -f ngsolve_$UBUNTU_VERSION.id
+    - docker build -t ngsolve_${CI_BUILD_REF_NAME}:$UBUNTU_VERSION -f tests/docker_$UBUNTU_VERSION .
+    - rm -f ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
     - >-
       docker run
-      --cidfile ngsolve_$UBUNTU_VERSION.id
+      --cidfile ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id
       -e MKLROOT=/opt/intel/mkl
       -e NETGENDIR=/opt/netgen/bin
       -e CCACHE_DIR=/ccache
       -v /opt/intel:/opt/intel
-      -v /mnt/ccache:/ccache ngsolve:$UBUNTU_VERSION
+      -v /mnt/ccache:/ccache ngsolve_${CI_BUILD_REF_NAME}:$UBUNTU_VERSION
       bash /root/src/ngsolve/tests/build.sh
-    - docker commit `cat ngsolve_$UBUNTU_VERSION.id` ngsolve_installed:$UBUNTU_VERSION
+    - docker commit `cat ngsolve_${CI_BUILD_REF_NAME}_$UBUNTU_VERSION.id` ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
 
 build_ubuntu_1510:
   <<: *ubuntu_1510
@@ -160,7 +160,7 @@ test_win64:
       -e MKLROOT=/opt/intel/mkl
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64
       -v /opt/intel:/opt/intel
-      ngsolve_installed:$UBUNTU_VERSION
+      ngsolve_${CI_BUILD_REF_NAME}_installed:$UBUNTU_VERSION
       bash -c 'cd /root/build/ngsolve && make test ARGS="-V"'
 
 test_ubuntu_1510:
