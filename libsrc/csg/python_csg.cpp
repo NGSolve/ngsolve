@@ -214,6 +214,26 @@ DLL_HEADER void ExportCSG()
            ([] (double x, double y) { return Vec<2>(x,y); }));
 
 
+  bp::class_<SplineGeometry<2>> ("SplineCurve2d")
+    .def ("AddPoint", FunctionPointer
+          ([] (SplineGeometry<2> & self, double x, double y)
+           {
+             self.geompoints.Append (GeomPoint<2> (Point<2> (x,y)));
+             return self.geompoints.Size()-1;
+           }))
+    .def ("AddSegment", FunctionPointer
+          ([] (SplineGeometry<2> & self, int i1, int i2)
+           {
+             self.splines.Append (new LineSeg<2> (self.geompoints[i1], self.geompoints[i2]));
+           }))
+    .def ("AddSegment", FunctionPointer
+          ([] (SplineGeometry<2> & self, int i1, int i2, int i3)
+           {
+             self.splines.Append (new SplineSeg3<2> (self.geompoints[i1], self.geompoints[i2], self.geompoints[i3]));
+           }))
+    ;
+
+  
 #if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
   bp::register_ptr_to_python<shared_ptr<SPSolid>>();
 #endif
@@ -274,6 +294,13 @@ DLL_HEADER void ExportCSG()
                                          {
                                            OrthoBrick * brick = new OrthoBrick (p1,p2);
                                            Solid * sol = new Solid (brick);
+                                           return make_shared<SPSolid> (sol);
+                                         }));
+  bp::def ("Revolution", FunctionPointer([](Point<3> p1, Point<3> p2,
+                                            const SplineGeometry<2> & spline)
+                                         {
+                                           Revolution * rev = new Revolution (p1, p2, spline);
+                                           Solid * sol = new Solid(rev);
                                            return make_shared<SPSolid> (sol);
                                          }));
   
