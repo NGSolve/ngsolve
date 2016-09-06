@@ -4,6 +4,8 @@
 using namespace ngsolve;
 
 
+typedef GridFunction GF;
+typedef PyWrapperDerived<GF, CoefficientFunction> PyGF;
 
 extern void ExportBVP();
 extern void ExportDrawFlux();
@@ -73,10 +75,10 @@ void NGS_DLL_HEADER ExportNgsolve() {
       ;
     
     bp::def ("Draw", FunctionPointer
-             ([](shared_ptr<GridFunction> gf, int sd, bool autoscale, double min, double max) 
+             ([](PyGF gf, int sd, bool autoscale, double min, double max)
               {
                 gf->GetMeshAccess()->SelectMesh();
-                Visualize (gf, gf->GetName());
+                Visualize (gf.Get(), gf->GetName());
                 if (gf->Dimension() == 1)
                   Ng_TclCmd (string("set ::visoptions.scalfunction ")+gf->GetName()+":1;\n");
                 else
@@ -96,20 +98,20 @@ void NGS_DLL_HEADER ExportNgsolve() {
 
     
     bp::def ("Draw", FunctionPointer
-             ([](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+             ([](PyWrapper<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                  int sd, bool autoscale, double min, double max,
                  bool draw_vol, bool draw_surf) 
               {
                 ma->SelectMesh();
-                netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf);
+                netgen::SolutionData * vis = new VisualizeCoefficientFunction (ma, cf.Get());
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
   
                 soldata.name = (char*)name.c_str();
                 soldata.data = 0;
-                soldata.components = cf -> Dimension();
+                soldata.components = cf.Get() -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
-                soldata.iscomplex = cf -> IsComplex();
+                soldata.iscomplex = cf.Get() -> IsComplex();
                 soldata.draw_surface = draw_surf;
                 soldata.draw_volume  = draw_vol; 
                 /* 

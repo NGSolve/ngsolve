@@ -137,7 +137,36 @@ private:
 
 
 
+template <typename T>
+class PyWrapper {
+protected:
+  shared_ptr<T> ptr;
+public:
+  PyWrapper() {;}
+  // templated constructor to allow initialization with shared_ptr to derived class object
+  template <typename TPtr>
+  PyWrapper(shared_ptr<TPtr> aptr) : ptr(aptr) {}
+  const shared_ptr<T> Get() const { return ptr; }
+  shared_ptr<T> Get() { return ptr; }
+  T* operator ->() { return ptr.get(); }
+  const T* operator ->() const { return ptr.get(); }
+  virtual ~PyWrapper() { }
+};
 
+
+template <typename T, typename BASE>
+class PyWrapperDerived : public PyWrapper<BASE>
+{
+  using PyWrapper<BASE>::ptr;
+public:
+  PyWrapperDerived() {;}
+  PyWrapperDerived(shared_ptr<T> aptr) : PyWrapper<BASE>(aptr) {;}
+  const shared_ptr<T> Get() const { return dynamic_pointer_cast<T>(ptr); }
+  shared_ptr<T> Get() { return dynamic_pointer_cast<T>(ptr); }
+  T* operator ->() { return Get().get(); }
+  const T* operator ->() const { return Get().get(); }
+  virtual ~PyWrapperDerived() {}
+};
 
 
 
@@ -571,6 +600,15 @@ Array<T> makeCArray(const bp::object & obj)
   Array<T> C_vdL(bp::len(obj));   
   for (int i = 0; i < bp::len(obj); i++)    
     C_vdL[i] = bp::extract<T>(obj[i]);        
+  return std::move(C_vdL);
+}
+
+template<typename T>
+Array<decltype(std::declval<T>().Get())> makeCArrayUnpackWrapper(const bp::object & obj)
+{
+  Array<decltype(std::declval<T>().Get())> C_vdL(bp::len(obj));
+  for (int i = 0; i < bp::len(obj); i++)
+    C_vdL[i] = bp::extract<T>(obj[i])().Get();
   return std::move(C_vdL);
 }
 
