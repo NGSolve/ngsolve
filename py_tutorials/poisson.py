@@ -34,8 +34,5 @@ Draw (u)
 Draw (-u.Deriv(), mesh, "Flux")
 
 exact = 16*x*(1-x)*y*(1-y)
-aaa = u-exact
-bbb = aaa*aaa
-# print ("L2-error:", sqrt (Integrate ( (u-exact)*(u-exact), mesh)))
-print ("L2-error:", sqrt (Integrate ( bbb, mesh)))
+print ("L2-error:", sqrt (Integrate ( (u-exact)*(u-exact), mesh)))
 
