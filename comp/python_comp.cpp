@@ -14,6 +14,8 @@ using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
 
+typedef GridFunction GF;
+typedef PyWrapperDerived<GF, CoefficientFunction> PyGF;
 
 template <typename T>
 struct PythonTupleFromFlatArray {
@@ -82,6 +84,7 @@ public:
   }
 };
 
+typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 bp::object MakeProxyFunction2 (const FESpace & fes,
                               bool testfunction,
                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
@@ -137,7 +140,7 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);
 
   proxy = addblock(proxy);
-  return bp::object(proxy);
+  return bp::object(PyProxyFunction(proxy));
 }
 
 bp::object MakeProxyFunction (const FESpace & fes,
@@ -642,51 +645,48 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ProxyFunction>);
-  bp::class_<ProxyFunction, shared_ptr<ProxyFunction>, 
-    bp::bases<CoefficientFunction>,
-    boost::noncopyable> ("ProxyFunction", 
+  typedef PyWrapper<CoefficientFunction> PyCF;
+
+  bp::class_<PyProxyFunction, bp::bases<PyCF> > ("ProxyFunction",
                          // bp::init<FESpace*,bool, shared_ptr<DifferentialOperator>, shared_ptr<DifferentialOperator>>()
                          bp::no_init)
     .def("Deriv", FunctionPointer
-         ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
-          { return self.Deriv(); }),
+         ([](const PyProxyFunction self) -> PyCF
+          { return PyCF(self->Deriv()); }),
          "take canonical derivative (grad, curl, div)")
     .def("Trace", FunctionPointer
-         ([](const ProxyFunction & self) -> shared_ptr<CoefficientFunction>
-          { return self.Trace(); }),
+         ([](const PyProxyFunction self) -> PyCF
+          { return PyCF(self->Trace()); }),
          "take canonical boundary trace")
     .def("Other", FunctionPointer
-         ([](const ProxyFunction & self, bp::object bnd) -> shared_ptr<CoefficientFunction>
+         ([](const PyProxyFunction self, bp::object bnd) -> PyCF
           {
             if (bp::extract<double> (bnd).check())
-              return self.Other(make_shared<ConstantCoefficientFunction>(bp::extract<double> (bnd)()));              
-            if (bp::extract<shared_ptr<CoefficientFunction>> (bnd).check())
-              return self.Other(bp::extract<shared_ptr<CoefficientFunction>> (bnd)());              
+              return PyCF(self->Other(make_shared<ConstantCoefficientFunction>(bp::extract<double> (bnd)())));
+            if (bp::extract<PyCF> (bnd).check())
+              return PyCF(self->Other(bp::extract<PyCF> (bnd)().Get()));
             else
-              return self.Other(nullptr);
+              return PyCF(self->Other(nullptr));
           }),
          "take value from neighbour element (DG)",
           (bp::arg("self"), bp::arg("bnd") = bp::object())
          )
     .add_property("derivname", FunctionPointer
-                  ([](const ProxyFunction & self) -> string
+                  ([](const PyProxyFunction self) -> string
                    {
-                     if (!self.Deriv()) return "";
-                     return self.DerivEvaluator()->Name();
+                     if (!self->Deriv()) return "";
+                     return self->DerivEvaluator()->Name();
                    }))
     .def("Operator", FunctionPointer
-         ([] (const ProxyFunction & self, string name) -> bp::object // shared_ptr<CoefficientFunction>
+         ([] (const PyProxyFunction self, string name) -> bp::object // shared_ptr<CoefficientFunction>
           {
-            auto op = self.GetAdditionalProxy(name);
+            auto op = self->GetAdditionalProxy(name);
             if (op)
               return bp::object(op);
             return bp::object(); //  shared_ptr<CoefficientFunction>();
           }))
     ;
 
-  bp::implicitly_convertible 
-    <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >(); 
 
 
 
@@ -832,8 +832,8 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<FESpace>);
-  bp::class_<FESpace, shared_ptr<FESpace>, boost::noncopyable>("FESpace",  "a finite element space", bp::no_init)
+  typedef PyWrapper<FESpace> PyFES;
+  bp::class_<PyFES>("FESpace",  "a finite element space", bp::no_init)
 
 
     .def("__dummy_init__", bp::make_constructor 
@@ -890,7 +890,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
-                             return fes;
+                             return new PyFES(fes);
                              })
           ))
 
@@ -918,11 +918,11 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::list lspaces, bp::dict bpflags)->shared_ptr<FESpace>
+         (FunctionPointer ([](bp::list lspaces, bp::dict bpflags)
                            {
                              Flags flags = bp::extract<Flags> (bpflags)();
 
-                             auto spaces = makeCArray<shared_ptr<FESpace>> (lspaces);
+                             auto spaces = makeCArrayUnpackWrapper<PyWrapper<FESpace>> (lspaces);
                              if (spaces.Size() == 0)
                                throw Exception("Compound space must have at least one space");
                              int dim = spaces[0]->GetDimension();
@@ -938,56 +938,56 @@ void NGS_DLL_HEADER ExportNgcomp()
                              if (is_complex)
                                flags.SetFlag ("complex");
                              
-                             auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+                             shared_ptr<FESpace> fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                              LocalHeap lh (1000000, "FESpace::Update-heap");
                              fes->Update(lh);
                              fes->FinalizeUpdate(lh);
-                             return fes;
+                             return new PyFES(fes);
                            }),
           bp::default_call_policies(),       
           (bp::arg("spaces"), bp::arg("flags") = bp::dict())),
          "construct compound-FESpace from list of component spaces"
          )
     .def_pickle(FESpace_pickle_suite())
-    .def("__ngsid__", FunctionPointer( [] ( FESpace & self)
-        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
-    .def("Update", FunctionPointer([](FESpace & self, int heapsize)
+    .def("__ngsid__", FunctionPointer( [] ( PyFES & self)
+        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
+    .def("Update", FunctionPointer([](PyFES & self, int heapsize)
                                    { 
                                      LocalHeap lh (heapsize, "FESpace::Update-heap");
-                                     self.Update(lh);
-                                     self.FinalizeUpdate(lh);
+                                     self->Update(lh);
+                                     self->FinalizeUpdate(lh);
                                    }),
          (bp::arg("self"),bp::arg("heapsize")=1000000),
          "update space after mesh-refinement")
 
-    .add_property ("ndof", FunctionPointer([](FESpace & self) { return self.GetNDof(); }), 
+    .add_property ("ndof", FunctionPointer([](PyFES & self) { return self->GetNDof(); }), 
                    "number of degrees of freedom")
 
-    .add_property ("ndofglobal", FunctionPointer([](FESpace & self) { return self.GetNDofGlobal(); }), 
+    .add_property ("ndofglobal", FunctionPointer([](PyFES & self) { return self->GetNDofGlobal(); }), 
                    "global number of dofs on MPI-distributed mesh")
     .def("__str__", &ToString<FESpace>)
 
     // .add_property("mesh", FunctionPointer ([](FESpace & self) -> shared_ptr<MeshAccess>
     // { return self.GetMeshAccess(); }))
 
-    .add_property("order", FunctionPointer([] (FESpace & self) { return OrderProxy(self); }),
+    .add_property("order", FunctionPointer([] (PyFES & self) { return OrderProxy(*self.Get()); }),
                   "proxy to set order for individual nodes")
-    .add_property("globalorder", FunctionPointer([] (FESpace & self) { return self.GetOrder(); }),
+    .add_property("globalorder", FunctionPointer([] (PyFES & self) { return self->GetOrder(); }),
                   "query global order of space")    
-    .add_property("type", FunctionPointer([] (FESpace & self) { return self.type; }),
+    .add_property("type", FunctionPointer([] (PyFES & self) { return self->type; }),
                   "type of finite element space")    
 
     .def("Elements", 
-         FunctionPointer([](FESpace & self, VorB vb, int heapsize) 
+         FunctionPointer([](PyFES & self, VorB vb, int heapsize) 
                          {
-                           return make_shared<FESpace::ElementRange> (self.Elements(vb, heapsize));
+                           return make_shared<FESpace::ElementRange> (self->Elements(vb, heapsize));
                          }),
          (bp::arg("self"),bp::arg("VOL_or_BND")=VOL,bp::arg("heapsize")=10000))
 
     .def("Elements", 
-         FunctionPointer([](FESpace & self, VorB vb, LocalHeap & lh) 
+         FunctionPointer([](PyFES & self, VorB vb, LocalHeap & lh) 
                          {
-                           return make_shared<FESpace::ElementRange> (self.Elements(vb, lh));
+                           return make_shared<FESpace::ElementRange> (self->Elements(vb, lh));
                          }),
          (bp::arg("self"), bp::arg("VOL_or_BND")=VOL, bp::arg("heap")))
 
@@ -1002,9 +1002,9 @@ void NGS_DLL_HEADER ExportNgcomp()
           bp::arg("heap")=LocalHeap(0), bp::arg("heapsize")=10000))
     */
 
-    .def("GetDofNrs", FunctionPointer([](FESpace & self, ElementId ei) 
+    .def("GetDofNrs", FunctionPointer([](PyFES & self, ElementId ei) 
                                    {
-                                     Array<int> tmp; self.GetDofNrs(ei,tmp); 
+                                     Array<int> tmp; self->GetDofNrs(ei,tmp); 
                                      return bp::tuple (tmp); 
                                    }))
 
@@ -1019,11 +1019,11 @@ void NGS_DLL_HEADER ExportNgcomp()
           (&FESpace::GetFE), 
           bp::return_value_policy<bp::reference_existing_object>())
     */
-    .def ("GetFE", FunctionPointer([](FESpace & self, ElementId ei) -> bp::object
+    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei) -> bp::object
                                    {
                                      Allocator alloc;
 
-                                     auto fe = shared_ptr<FiniteElement> (&self.GetFE(ei, alloc));
+                                     auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, alloc));
 
                                      auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
                                      if (scalfe) return bp::object(scalfe);
@@ -1032,21 +1032,21 @@ void NGS_DLL_HEADER ExportNgcomp()
 
                                    }))
     
-    .def ("GetFE", FunctionPointer([](FESpace & self, ElementId ei, LocalHeap & lh)
+    .def ("GetFE", FunctionPointer([](PyFES & self, ElementId ei, LocalHeap & lh)
                                    {
-                                     return &self.GetFE(ei, lh);
+                                     return &self->GetFE(ei, lh);
                                    }),
           bp::return_value_policy<bp::reference_existing_object>())
 
 
     .def("FreeDofs", FunctionPointer
-         ( [] (const FESpace &self, bool coupling) -> const BitArray &{ return *self.GetFreeDofs(coupling); } ),
+         ( [] (const PyFES &self, bool coupling) -> const BitArray &{ return *self->GetFreeDofs(coupling); } ),
          bp::return_value_policy<bp::reference_existing_object>(),
          (bp::arg("self"), 
           bp::arg("coupling")=false))
 
     .def("Range", FunctionPointer
-         ( [] (const FESpace & self, int comp) -> bp::slice
+         ( [] (const PyFES & self, int comp) -> bp::slice
            {
              auto compspace = dynamic_cast<const CompoundFESpace *> (&self);
              if (!compspace)
@@ -1056,7 +1056,7 @@ void NGS_DLL_HEADER ExportNgcomp()
            }))
 
     .add_property("components", FunctionPointer
-                  ([](FESpace & self)-> bp::tuple
+                  ([](PyFES & self)-> bp::tuple
                    { 
                      auto compspace = dynamic_cast<CompoundFESpace *> (&self);
                      if (!compspace)
@@ -1069,36 +1069,36 @@ void NGS_DLL_HEADER ExportNgcomp()
                   "list of gridfunctions for compound gridfunction")
 
     .def("TrialFunction", FunctionPointer
-         ( [] (const FESpace & self) 
+         ( [] (const PyFES & self) 
            {
-             return MakeProxyFunction (self, false);
+             return MakeProxyFunction (*self.Get(), false);
            }),
          (bp::args("self")))
     .def("TestFunction", FunctionPointer
-         ( [] (const FESpace & self) 
+         ( [] (const PyFES & self) 
            {
-             return MakeProxyFunction (self, true);
+             return MakeProxyFunction (*self.Get(), true);
            }),
          (bp::args("self")))
 
     .def("SolveM", FunctionPointer
-        ( [] (const FESpace & self,
-              shared_ptr<CoefficientFunction> rho, shared_ptr<BaseVector> vec, int heapsize)
+        ( [] (const PyFES & self,
+              PyCF rho, shared_ptr<BaseVector> vec, int heapsize)
           {
             LocalHeap lh(heapsize, "solveM - lh", true);
-            self.SolveM(*rho, *vec, lh);
+            self->SolveM(*rho.Get(), *vec, lh);
           }),
         (bp::args("self"), 
          bp::args("rho"), bp::args("vec"), bp::args("heapsize")=1000000))
         
     .def("__eq__", FunctionPointer
-         ( [] (shared_ptr<FESpace> self, shared_ptr<FESpace> other)
+         ( [] (PyFES self, PyFES other)
            {
-             return self == other;
+             return self.Get() == other.Get();
            }))
     ;
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<HCurlHighOrderFESpace>);
-  bp::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>, bp::bases<FESpace>,boost::noncopyable>
+  bp::class_<HCurlHighOrderFESpace, shared_ptr<HCurlHighOrderFESpace>, bp::bases<PyFES>,boost::noncopyable>
     ("HCurlFunctionsWrap",bp::no_init)
     .def("CreateGradient", FunctionPointer([](HCurlHighOrderFESpace &self) {
 	  auto fesh1 = self.CreateGradientSpace();
@@ -1109,23 +1109,20 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
   
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CompoundFESpace>);
-  bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<FESpace>, boost::noncopyable>
+  bp::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, bp::bases<PyFES>, boost::noncopyable>
     ("CompoundFESpace", bp::no_init)
     .def("Range", &CompoundFESpace::GetRange)
     ;
-  bp::implicitly_convertible 
-    <shared_ptr<CompoundFESpace>, shared_ptr<FESpace> >(); 
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
-  typedef GridFunction GF;
 
   struct GF_pickle_suite : bp::pickle_suite
   {
     static
     bp::tuple getinitargs(bp::object obj)
     {
-      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      auto gf = bp::extract<PyGF>(obj)().Get();
       bp::object space = obj.attr("__dict__")["space"];
       return bp::make_tuple(space, gf->GetName());
     }
@@ -1133,7 +1130,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getstate(bp::object obj)
     {
-      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      auto gf = bp::extract<PyGF>(obj)().Get();
       bp::object bp_vec(gf->GetVectorPtr());
       return bp::make_tuple (obj.attr("__dict__"), bp_vec);
     }
@@ -1141,7 +1138,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     void setstate(bp::object obj, bp::tuple state)
     {
-      auto gf = bp::extract<shared_ptr<GF>>(obj)();
+      auto gf = bp::extract<PyGF>(obj)().Get();
       bp::dict d = bp::extract<bp::dict>(obj.attr("__dict__"))();
       d.update(state[0]);
       gf->GetVector() = *bp::extract<shared_ptr<BaseVector>> (state[1])();
@@ -1153,8 +1150,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GF>);
-  bp::class_<GF, shared_ptr<GF>, bp::bases<CoefficientFunction>, boost::noncopyable>
+  bp::class_<PyGF, bp::bases<PyCF>>
     ("GridFunction",  "a field approximated in some finite element space", bp::no_init)
 
 
@@ -1163,19 +1159,19 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("__init__",
          FunctionPointer ([](bp::object self, bp::object bp_fespace, string name, bp::object multidim)
                           {
-                            auto fespace = bp::extract<shared_ptr<FESpace>>(bp_fespace)();
+                            auto fespace = bp::extract<PyFES>(bp_fespace)();
 
                             auto ret = 
                               bp::make_constructor
-                              (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, bp::object multidim)
+                              (FunctionPointer ([](PyFES fespace, string name, bp::object multidim)
                               {
                                 Flags flags;
                                 flags.SetFlag ("novisual");
                                 if (bp::extract<int>(multidim).check())
                                   flags.SetFlag ("multidim", bp::extract<int>(multidim)());
-                                auto gf = CreateGridFunction (fespace, name, flags);
+                                auto gf = CreateGridFunction (fespace.Get(), name, flags);
                                 gf->Update();
-                                return gf;
+                                return new PyGF(gf);
                               }))(self, fespace, name, multidim);
                             
                             self.attr("__dict__")["space"] = bp_fespace;
@@ -1185,8 +1181,8 @@ void NGS_DLL_HEADER ExportNgcomp()
          "creates a gridfunction in finite element space"
          )
     .def_pickle(GF_pickle_suite())    
-    .def("__ngsid__", FunctionPointer( [] ( GF & self)
-        { return reinterpret_cast<std::uintptr_t>(&self); } ) )
+    .def("__ngsid__", FunctionPointer( [] ( PyGF self)
+        { return reinterpret_cast<std::uintptr_t>(self.Get().get()); } ) )
     .def("__str__", &ToString<GF>)
     .add_property("space", FunctionPointer([](bp::object self) -> bp::object
                                            {
@@ -1196,26 +1192,26 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                return d.get("space");
 
                                              // if not, make a new python space object from C++ space
-                                             return bp::object(bp::extract<GF&>(self)().GetFESpace());
+                                             return bp::object(bp::extract<PyGF>(self)()->GetFESpace());
                                            }),
                   "the finite element space")
     // .add_property ("space", &GF::GetFESpace, "the finite element spaces")
-    .def("Update", FunctionPointer ([](GF & self) { self.Update(); }),
+    .def("Update", FunctionPointer ([](PyGF self) { self->Update(); }),
          "update vector size to finite element space dimension after mesh refinement")
     
-    .def("Save", FunctionPointer([](GF & self, string filename)
+    .def("Save", FunctionPointer([](PyGF self, string filename)
                                  {
                                    ofstream out(filename, ios::binary);
-                                   self.Save(out);
+                                   self->Save(out);
                                  }))
-    .def("Load", FunctionPointer([](GF & self, string filename)
+    .def("Load", FunctionPointer([](PyGF self, string filename)
                                  {
                                    ifstream in(filename, ios::binary);
-                                   self.Load(in);
+                                   self->Load(in);
                                  }))
     
     .def("Set", FunctionPointer
-         ([](GF & self, shared_ptr<CoefficientFunction> cf, 
+         ([](PyGF self, PyCF cf,
              bool boundary, bp::object definedon, int heapsize, bp::object heap)
           {
             Region * reg = nullptr;
@@ -1226,17 +1222,17 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 LocalHeap & lh = bp::extract<LocalHeap&> (heap)();
                 if (reg)
-                  SetValues (cf, self, *reg, NULL, lh);
+                  SetValues (cf.Get(), *self.Get(), *reg, NULL, lh);
                 else
-                  SetValues (cf, self, boundary, NULL, lh);                
+                  SetValues (cf.Get(), *self.Get(), boundary, NULL, lh);
                 return;
               }
 
             LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
-              SetValues (cf, self, *reg, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), *reg, NULL, lh);
             else
-              SetValues (cf, self, boundary, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), boundary, NULL, lh);
           }),
           bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"),bp::arg("coefficient"),
@@ -1248,25 +1244,25 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .add_property("components", FunctionPointer
-                  ([](GF & self)-> bp::tuple
+                  ([](PyGF self)-> bp::tuple
                    { 
                      bp::list vecs;
-                     for (int i = 0; i < self.GetNComponents(); i++) 
-                       vecs.append(self.GetComponent(i));
+                     for (int i = 0; i < self->GetNComponents(); i++)
+                       vecs.append(PyGF(self->GetComponent(i)));
                      return bp::tuple(vecs);
                    }),
                   "list of gridfunctions for compound gridfunction")
 
     .add_property("vec",
-                  FunctionPointer([](GF & self) { return self.GetVectorPtr(); }),
+                  FunctionPointer([](PyGF self) { return self->GetVectorPtr(); }),
                   "coefficient vector")
 
     .add_property("vecs", FunctionPointer
-                  ([](GF & self)-> bp::list 
+                  ([](PyGF self)-> bp::list
                    { 
                      bp::list vecs;
-                     for (int i = 0; i < self.GetMultiDim(); i++) 
-                       vecs.append(self.GetVectorPtr(i));
+                     for (int i = 0; i < self->GetMultiDim(); i++)
+                       vecs.append(self->GetVectorPtr(i));
                      return vecs;
                    }),
                   "list of coefficient vectors for multi-dim gridfunction")
@@ -1286,21 +1282,21 @@ void NGS_DLL_HEADER ExportNgcomp()
           }))
     */
     .def("Deriv", FunctionPointer
-         ([](shared_ptr<GF> self) -> shared_ptr<CoefficientFunction>
+         ([](PyGF self) -> PyCF
           {
-            return make_shared<GridFunctionCoefficientFunction> (self,
+            return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(),
                                                                  self->GetFESpace()->GetFluxEvaluator(),
-                                                                 self->GetFESpace()->GetFluxEvaluator(BND));
+                                                                 self->GetFESpace()->GetFluxEvaluator(BND)));
           }))
 
     .def("Operator", FunctionPointer
-         ([](shared_ptr<GF> self, string name) -> bp::object // shared_ptr<CoefficientFunction>
+         ([](PyGF self, string name) -> bp::object // shared_ptr<CoefficientFunction>
           {
             if (self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               {
                 auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
                 cout << "diffop is " << typeid(*diffop).name() << endl;
-                shared_ptr<CoefficientFunction> coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+                PyCF coef(make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop));
                 return bp::object(coef);
               }
             return bp::object(); //  shared_ptr<CoefficientFunction>();
@@ -1308,7 +1304,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
     
     .add_property("derivname", FunctionPointer
-                  ([](shared_ptr<GF> self) -> string
+                  ([](PyGF self) -> string
                    {
                      auto deriv = self->GetFESpace()->GetFluxEvaluator();
                      if (!deriv) return "";
@@ -1316,9 +1312,9 @@ void NGS_DLL_HEADER ExportNgcomp()
                    }))
 
     .def("__call__", FunctionPointer
-         ([](GF & self, double x, double y, double z)
+         ([](PyGF self, double x, double y, double z)
           {
-            auto space = self.GetFESpace();
+            auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
             LocalHeap lh(10000, "ngcomp::GridFunction::Eval");
 
@@ -1336,7 +1332,7 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 Vector<Complex> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<Complex> values(evaluator->Dim());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
 
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
@@ -1345,7 +1341,7 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
 
                 evaluator->Apply(fel, trafo(ip, lh), elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
@@ -1355,9 +1351,9 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
    .def("__call__", FunctionPointer
-        ([](GF & self, const BaseMappedIntegrationPoint & mip)
+        ([](PyGF self, const BaseMappedIntegrationPoint & mip)
           {
-            auto space = self.GetFESpace();
+            auto space = self->GetFESpace();
 
             ElementId ei = mip.GetTransformation().GetElementId();
             // auto evaluator = space->GetEvaluator(ei.IsBoundary());
@@ -1374,7 +1370,7 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 Vector<Complex> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<Complex> values(evaluator->Dim());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
 
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
@@ -1383,7 +1379,7 @@ void NGS_DLL_HEADER ExportNgcomp()
               {
                 Vector<> elvec(fel.GetNDof()*space->GetDimension());
                 Vector<> values(evaluator->Dim());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
                 evaluator->Apply(fel, mip, elvec, values, lh);
                 return (values.Size() > 1) ? bp::object(values) : bp::object(values(0));
               }
@@ -1392,9 +1388,9 @@ void NGS_DLL_HEADER ExportNgcomp()
     
 
     .def("D", FunctionPointer
-         ([](GF & self, const double &x, const double &y, const double &z)
+         ([](PyGF self, const double &x, const double &y, const double &z)
           {
-            const FESpace & space = *self.GetFESpace();
+            const FESpace & space = *self->GetFESpace();
             IntegrationPoint ip;
             int dim_mesh = space.GetMeshAccess()->GetDimension();
             auto evaluator = space.GetFluxEvaluator();
@@ -1410,7 +1406,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                 Vector<Complex> elvec;
                 Vector<Complex> values(dim);
                 elvec.SetSize(fel.GetNDof());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
                     MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
@@ -1431,7 +1427,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                 Vector<> elvec;
                 Vector<> values(dim);
                 elvec.SetSize(fel.GetNDof());
-                self.GetElementVector(dnums, elvec);
+                self->GetElementVector(dnums, elvec);
                 if (dim_mesh == 2)
                   {
                     MappedIntegrationPoint<2, 2> mip(ip, space.GetMeshAccess()->GetTrafo(elnr, false, lh));
@@ -1452,18 +1448,16 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .def("CF", FunctionPointer
-         ([](shared_ptr<GF> self, shared_ptr<DifferentialOperator> diffop) -> shared_ptr<CoefficientFunction>
+         ([](PyGF self, shared_ptr<DifferentialOperator> diffop) -> PyCF
           {
             if (!diffop->Boundary())
-              return make_shared<GridFunctionCoefficientFunction> (self, diffop);
+              return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), diffop));
             else
-              return make_shared<GridFunctionCoefficientFunction> (self, nullptr, diffop);              
+              return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(), nullptr, diffop));
           }))
     
     ;
 
-  bp::implicitly_convertible 
-    <shared_ptr<GridFunction>, shared_ptr<CoefficientFunction> >(); 
 
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -1471,15 +1465,15 @@ void NGS_DLL_HEADER ExportNgcomp()
   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
   typedef BilinearForm BF;
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BF>);
-  bp::class_<BF, shared_ptr<BF>, boost::noncopyable>("BilinearForm", bp::no_init)
+  typedef PyWrapper<BilinearForm> PyBF;
+  bp::class_<PyBF>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, 
+         (FunctionPointer ([](PyFES fespace, string name, 
                               bool symmetric, bp::dict bpflags)
                            {
                              Flags flags = bp::extract<Flags> (bpflags)();
                              if (symmetric) flags.SetFlag("symmetric");
-                             return CreateBilinearForm (fespace, name, flags);
+                             return new PyBF(CreateBilinearForm (fespace.Get(), name, flags));
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"),
@@ -1488,12 +1482,12 @@ void NGS_DLL_HEADER ExportNgcomp()
            bp::arg("flags") = bp::dict())))
     
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, shared_ptr<FESpace> fespace2,
+         (FunctionPointer ([](PyFES fespace, PyFES fespace2,
                               string name, bool symmetric, bp::dict bpflags)
                            {
                              Flags flags = bp::extract<Flags> (bpflags)();
                              if (symmetric) flags.SetFlag("symmetric");
-                             return CreateBilinearForm (fespace, fespace2, name, flags);
+                             return new PyBF(CreateBilinearForm (fespace.Get(), fespace2.Get(), name, flags));
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"),
@@ -1502,35 +1496,36 @@ void NGS_DLL_HEADER ExportNgcomp()
            bp::arg("symmetric") = false,
            bp::arg("flags") = bp::dict())))
 
-    .def("__str__", &ToString<BF>)
+    .def("__str__", FunctionPointer( []( PyBF & self ) { return ToString<BilinearForm>(*self.Get()); } ))
 
-    .def("Add", FunctionPointer ([](BF & self, shared_ptr<BilinearFormIntegrator> bfi) -> BF&
-                                 { self.AddIntegrator (bfi); return self; }),
+    .def("Add", FunctionPointer ([](PyBF & self, PyWrapper<BilinearFormIntegrator> bfi) -> PyBF&
+                                 { self->AddIntegrator (bfi.Get()); return self; }),
          bp::return_value_policy<bp::reference_existing_object>(),
          "add integrator to bilinear-form")
     
-    .def(bp::self+=shared_ptr<BilinearFormIntegrator>())
+    .def("__iadd__",FunctionPointer
+                  ([](PyBF self, PyWrapper<BilinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
 
     .add_property("integrators", FunctionPointer
-                  ([](BF & self) { return bp::object (self.Integrators());} ))
+                  ([](PyBF & self) { return bp::object (self->Integrators());} ))
     
-    .def("Assemble", FunctionPointer([](BF & self, int heapsize, bool reallocate)
+    .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
                                        LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-                                       self.ReAssemble(lh,reallocate);
+                                       self->ReAssemble(lh,reallocate);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
     // .add_property("mat", static_cast<shared_ptr<BaseMatrix>(BilinearForm::*)()const> (&BilinearForm::GetMatrixPtr))
-    .add_property("mat", FunctionPointer([](BF & self)
+    .add_property("mat", FunctionPointer([](PyBF & self)
                                          {
-                                           auto mat = self.GetMatrixPtr();
+                                           auto mat = self->GetMatrixPtr();
                                            if (!mat)
                                              bp::exec("raise RuntimeError('matrix not ready - assemble bilinearform first')\n");
                                            return mat;
                                          }))
 
-    .def("__getitem__", FunctionPointer( [](BF & self, bp::tuple t)
+    .def("__getitem__", FunctionPointer( [](PyBF & self, bp::tuple t)
                                          {
                                            int ind1 = bp::extract<int>(t[0])();
                                            int ind2 = bp::extract<int>(t[1])();
@@ -1539,75 +1534,75 @@ void NGS_DLL_HEADER ExportNgcomp()
     
 
     .add_property("components", FunctionPointer
-                  ([](BF & self)-> bp::list 
+                  ([](PyBF & self)-> bp::list
                    { 
                      bp::list bfs;
-                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self.GetFESpace());
+                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self->GetFESpace());
                      if (!fes)
                        bp::exec("raise RuntimeError('not a compound-fespace')\n");
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(&self, i, ncomp)));
+                       bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.Get().get(), i, ncomp)));
                      return bfs;
                    }),
                   "list of components for bilinearforms on compound-space")
 
     .def("__call__", FunctionPointer
-         ([](BF & self, const GridFunction & u, const GridFunction & v)
+         ([](PyBF & self, const GridFunction & u, const GridFunction & v)
           {
-            auto au = self.GetMatrix().CreateVector();
-            au = self.GetMatrix() * u.GetVector();
+            auto au = self->GetMatrix().CreateVector();
+            au = self->GetMatrix() * u.GetVector();
             return InnerProduct (au, v.GetVector());
           }))
 
     .def("Energy", &BilinearForm::Energy)
     .def("Apply", FunctionPointer
-	 ([](BF & self, BaseVector & x, BaseVector & y, int heapsize)
+	 ([](PyBF & self, BaseVector & x, BaseVector & y, int heapsize)
 	  {
 	    static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
-	    self.ApplyMatrix (x, y, lh );
+	    self->ApplyMatrix (x, y, lh );
 	  }),
          (bp::arg("self")=NULL,bp::arg("x"),bp::arg("y"),bp::arg("heapsize")=1000000))
     .def("ComputeInternal", FunctionPointer
-	 ([](BF & self, BaseVector & u, BaseVector & f, int heapsize)
+	 ([](PyBF & self, BaseVector & u, BaseVector & f, int heapsize)
 	  {
 	    LocalHeap lh (heapsize, "BilinearForm::ComputeInternal");
-	    self.ComputeInternal (u ,f ,lh );
+	    self->ComputeInternal (u ,f ,lh );
 	  }),
          (bp::arg("self")=NULL,bp::arg("u"),bp::arg("f"),bp::arg("heapsize")=1000000))
 
     .def("AssembleLinearization", FunctionPointer
-	 ([](BF & self, BaseVector & ulin, int heapsize)
+	 ([](PyBF & self, BaseVector & ulin, int heapsize)
 	  {
 	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-	    self.AssembleLinearization (ulin, lh);
+	    self->AssembleLinearization (ulin, lh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
 
     .def("Flux", FunctionPointer
-         ([](BF & self, shared_ptr<GridFunction> gf) -> shared_ptr<CoefficientFunction>
+         ([](PyBF & self, shared_ptr<GridFunction> gf) -> PyCF
           {
-            return make_shared<GridFunctionCoefficientFunction> (gf, self.GetIntegrator(0));
+            return PyCF(make_shared<GridFunctionCoefficientFunction> (gf, self->GetIntegrator(0)));
           }))
     .add_property("harmonic_extension", FunctionPointer
-                  ([](BF & self)
+                  ([](PyBF & self)
                    {
-                     return shared_ptr<BaseMatrix> (&self.GetHarmonicExtension(),
+                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtension(),
                                                     &NOOP_Deleter);
                    })
                   )
     .add_property("harmonic_extension_trans", FunctionPointer
-                  ([](BF & self)
+                  ([](PyBF & self)
                    {
-                     return shared_ptr<BaseMatrix> (&self.GetHarmonicExtensionTrans(),
+                     return shared_ptr<BaseMatrix> (&self->GetHarmonicExtensionTrans(),
                                                     &NOOP_Deleter);
                    })
                   )
     .add_property("inner_solve", FunctionPointer
-                  ([](BF & self)
+                  ([](PyBF & self)
                    {
-                     return shared_ptr<BaseMatrix> (&self.GetInnerSolve(),
+                     return shared_ptr<BaseMatrix> (&self->GetInnerSolve(),
                                                     &NOOP_Deleter);
                    })
                   )
@@ -1618,63 +1613,65 @@ void NGS_DLL_HEADER ExportNgcomp()
   PyExportArray<shared_ptr<LinearFormIntegrator>> ();
 
   typedef LinearForm LF;
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<LF>);
-  bp::class_<LF, shared_ptr<LF>, boost::noncopyable>("LinearForm", bp::no_init)
+  typedef PyWrapper<LinearForm> PyLF;
+  bp::class_<PyLF>("LinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](shared_ptr<FESpace> fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
+         (FunctionPointer ([](PyFES fespace, string name, Flags flags) // -> shared_ptr<LinearForm>
                            {
-                             auto f = CreateLinearForm (fespace, name, flags);
+                             auto f = CreateLinearForm (fespace.Get(), name, flags);
                              f->AllocateVector();
-                             return f;
+                             return new PyLF(f);
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (bp::arg("space"), bp::arg("name")="lff", bp::arg("flags") = bp::dict()))
          )
-    .def("__str__", &ToString<LF>)
+    .def("__str__", FunctionPointer( []( PyLF & self ) { return ToString<LinearForm>(*self.Get()); } ))
 
-    .add_property("vec", &LinearForm::GetVectorPtr)
+    .add_property("vec", FunctionPointer([] (PyLF self) { return self->GetVectorPtr();}))
 
     .def("Add", FunctionPointer
-         ([](LF & self, shared_ptr<LinearFormIntegrator> lfi) -> LF&
+         ([](PyLF self, PyWrapper<LinearFormIntegrator> lfi)
           { 
-            self.AddIntegrator (lfi); 
+            self->AddIntegrator (lfi.Get());
             return self; 
           }),
-         bp::return_value_policy<bp::reference_existing_object>(),
+         bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"), bp::arg("integrator")))
 
-    .def(bp::self+=shared_ptr<LinearFormIntegrator>())
+    .def("__iadd__",FunctionPointer
+                  ([](PyLF self, PyWrapper<LinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
+
 
     .add_property("integrators", FunctionPointer
-                  ([](LF & self) { return bp::object (self.Integrators());} ))
+                  ([](PyLF self) { return bp::object (self->Integrators());} ))
 
     .def("Assemble", FunctionPointer
-         ([](LF & self, int heapsize)
+         ([](PyLF self, int heapsize)
           { 
             LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
-            self.Assemble(lh);
+            self->Assemble(lh);
           }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 
     .add_property("components", FunctionPointer
-                  ([](LF & self)-> bp::list 
+                  ([](PyLF self)-> bp::list
                    { 
                      bp::list lfs;
-                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self.GetFESpace());
+                     auto fes = dynamic_pointer_cast<CompoundFESpace> (self->GetFESpace());
                      if (!fes)
                        bp::exec("raise RuntimeError('not a compound-fespace')\n");
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(&self, i, ncomp)));
+                       lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(self.Get().get(), i, ncomp)));
                      return lfs;
                    }),
                   "list of components for linearforms on compound-space")
     
     .def("__call__", FunctionPointer
-         ([](LF & self, const GridFunction & v)
+         ([](PyLF & self, const GridFunction & v)
           {
-            return InnerProduct (self.GetVector(), v.GetVector());
+            return InnerProduct (self->GetVector(), v.GetVector());
           }))
 
     ;
@@ -1685,13 +1682,13 @@ void NGS_DLL_HEADER ExportNgcomp()
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<PRE>);
   bp::class_<PRE, shared_ptr<PRE>, boost::noncopyable>("Preconditioner", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](shared_ptr<BilinearForm> bfa, const string & type, 
+         (FunctionPointer ([](PyWrapper<BilinearForm> bfa, const string & type,
                               Flags flags)
                            { 
                              auto creator = GetPreconditionerClasses().GetPreconditioner(type);
                              if (creator == nullptr)
                                throw Exception(string("nothing known about preconditioner '") + type + "'");
-                             return creator->creatorbf(bfa, flags, "noname-pre");
+                             return creator->creatorbf(bfa.Get(), flags, "noname-pre");
                            }),
           bp::default_call_policies(),        // need it to use argumentso
           (bp::arg("bf"), bp::arg("type"), bp::arg("flags")=bp::dict())
@@ -1731,11 +1728,11 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  PyExportSymbolTable<shared_ptr<FESpace>> ();
-  PyExportSymbolTable<shared_ptr<CoefficientFunction>> ();
-  PyExportSymbolTable<shared_ptr<GridFunction>> ();
-  PyExportSymbolTable<shared_ptr<BilinearForm>> ();
-  PyExportSymbolTable<shared_ptr<LinearForm>> ();
+  PyExportSymbolTable<PyFES> ();
+  PyExportSymbolTable<PyCF> ();
+  PyExportSymbolTable<PyGF> ();
+  PyExportSymbolTable<PyBF> ();
+  PyExportSymbolTable<PyLF> ();
   PyExportSymbolTable<shared_ptr<Preconditioner>> ();
   PyExportSymbolTable<shared_ptr<NumProc>> ();
   PyExportSymbolTable<double> ();
@@ -1817,24 +1814,24 @@ void NGS_DLL_HEADER ExportNgcomp()
                                   self.AddConstant (name, val);
                                 }))
 
-    .def("Add", FunctionPointer([](PDE & self, shared_ptr<FESpace> space)
+    .def("Add", FunctionPointer([](PDE & self, PyWrapper<FESpace> space)
                                 {
-                                  self.AddFESpace (space->GetName(), space);
+                                  self.AddFESpace (space->GetName(), space.Get());
                                 }))
 
-    .def("Add", FunctionPointer([](PDE & self, shared_ptr<GridFunction> gf)
+    .def("Add", FunctionPointer([](PDE & self, PyWrapperDerived<GridFunction, CoefficientFunction> gf)
                                 {
-                                  self.AddGridFunction (gf->GetName(), gf);
+                                  self.AddGridFunction (gf->GetName(), gf.Get());
                                 }))
 
-    .def("Add", FunctionPointer([](PDE & self, shared_ptr<BilinearForm> bf)
+    .def("Add", FunctionPointer([](PDE & self, PyWrapper<BilinearForm> bf)
                                 {
-                                  self.AddBilinearForm (bf->GetName(), bf);
+                                  self.AddBilinearForm (bf->GetName(), bf.Get());
                                 }))
 
-    .def("Add", FunctionPointer([](PDE & self, shared_ptr<LinearForm> lf)
+    .def("Add", FunctionPointer([](PDE & self, PyWrapper<LinearForm> lf)
                                 {
-                                  self.AddLinearForm (lf->GetName(), lf);
+                                  self.AddLinearForm (lf->GetName(), lf.Get());
                                 }))
 
     .def("Add", FunctionPointer([](PDE & self, shared_ptr<Preconditioner> pre)
@@ -1907,24 +1904,48 @@ void NGS_DLL_HEADER ExportNgcomp()
                                 }))
 
     .def("SetCurveIntegrator", FunctionPointer
-         ([](PDE & self, const string & filename, shared_ptr<LinearFormIntegrator> lfi)
+         ([](PDE & self, const string & filename, PyWrapper<LinearFormIntegrator> lfi)
           {
-            self.SetLineIntegratorCurvePointInfo(filename, lfi.get());
+            self.SetLineIntegratorCurvePointInfo(filename, lfi.Get().get());
           }))
 
     .add_property ("constants", FunctionPointer([](PDE & self) { return bp::object(self.GetConstantTable()); }))
     .add_property ("variables", FunctionPointer([](PDE & self) { return bp::object(self.GetVariableTable()); }))
     .add_property ("coefficients", FunctionPointer([](PDE & self) { return bp::object(self.GetCoefficientTable()); }))
-    .add_property ("spaces", FunctionPointer([](PDE & self) { return bp::object(self.GetSpaceTable()); }))
-    .add_property ("gridfunctions", FunctionPointer([](PDE & self) { return bp::object(self.GetGridFunctionTable()); }))
-    .add_property ("bilinearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetBilinearFormTable()); }))
-    .add_property ("linearforms", FunctionPointer([](PDE & self) { return bp::object(self.GetLinearFormTable()); }))
+    .add_property ("spaces", FunctionPointer([](PDE & self) {
+          auto table = self.GetSpaceTable();
+          SymbolTable<PyFES> pytable;
+          for ( auto i : Range(table.Size() ))
+                pytable.Set(table.GetName(i), PyFES(table[i]));
+          return bp::object(pytable);
+          }))
+    .add_property ("gridfunctions", FunctionPointer([](PDE & self) {
+          auto table = self.GetGridFunctionTable();
+          SymbolTable<PyGF> pytable;
+          for ( auto i : Range(table.Size() ))
+                pytable.Set(table.GetName(i), PyGF(table[i]));
+          return bp::object(pytable);
+          }))
+    .add_property ("bilinearforms", FunctionPointer([](PDE & self) {
+          auto table = self.GetBilinearFormTable();
+          SymbolTable<PyBF> pytable;
+          for ( auto i : Range(table.Size() ))
+                pytable.Set(table.GetName(i), PyBF(table[i]));
+          return bp::object(pytable);
+          }))
+    .add_property ("linearforms", FunctionPointer([](PDE & self) {
+          auto table = self.GetLinearFormTable();
+          SymbolTable<PyLF> pytable;
+          for ( auto i : Range(table.Size() ))
+                pytable.Set(table.GetName(i), PyLF(table[i]));
+          return bp::object(pytable);
+          }))
     .add_property ("preconditioners", FunctionPointer([](PDE & self) { return bp::object(self.GetPreconditionerTable()); }))
     .add_property ("numprocs", FunctionPointer([](PDE & self) { return bp::object(self.GetNumProcTable()); }))
     ;
   
   bp::def("Integrate", 
-          FunctionPointer([](shared_ptr<CoefficientFunction> cf,
+          FunctionPointer([](PyCF cf,
                              shared_ptr<MeshAccess> ma, 
                              VorB vb, int order, 
                              bool region_wise, bool element_wise)
@@ -1956,7 +1977,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                              SIMD_IntegrationRule ir(trafo.GetElementType(), order);
                                              auto & mir = trafo(ir, lh);
                                              AFlatMatrix<> values(1, ir.GetNIP(), lh);
-                                             cf -> Evaluate (mir, values);
+                                             cf.Get() -> Evaluate (mir, values);
                                              SIMD<double> vsum = 0;
                                              for (int i = 0; i < values.VWidth(); i++)
                                                vsum += mir[i].GetWeight() * values.Get(0,i);
@@ -1974,7 +1995,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                          IntegrationRule ir(trafo.GetElementType(), order);
                                          BaseMappedIntegrationRule & mir = trafo(ir, lh);
                                          FlatMatrix<> values(ir.Size(), 1, lh);
-                                         cf -> Evaluate (mir, values);
+                                         cf.Get() -> Evaluate (mir, values);
                                          for (int i = 0; i < values.Height(); i++)
                                            hsum += mir[i].GetWeight() * values(i,0);
                                        }
@@ -2009,7 +2030,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      IntegrationRule ir(trafo.GetElementType(), order);
                                      BaseMappedIntegrationRule & mir = trafo(ir, lh);
                                      FlatMatrix<Complex> values(ir.Size(), 1, lh);
-                                     cf -> Evaluate (mir, values);
+                                     cf.Get() -> Evaluate (mir, values);
                                      Complex hsum = 0;
                                      for (int i = 0; i < values.Height(); i++)
                                        hsum += mir[i].GetWeight() * values(i,0);
@@ -2044,10 +2065,10 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
   bp::def("SymbolicLFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary,
+          ([](PyCF cf, VorB vb, bool element_boundary,
               bool skeleton,
               bp::object definedon) 
-           -> shared_ptr<LinearFormIntegrator>
+           -> PyWrapper<LinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2055,16 +2076,16 @@ void NGS_DLL_HEADER ExportNgcomp()
 
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)
-               lfi = make_shared<SymbolicLinearFormIntegrator> (cf, vb, element_boundary);
+               lfi = make_shared<SymbolicLinearFormIntegrator> (cf.Get(), vb, element_boundary);
              else
-               lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf, vb /* , element_boundary */);
+               lfi = make_shared<SymbolicFacetLinearFormIntegrator> (cf.Get(), vb /* , element_boundary */);
              
              if (bp::extract<bp::list> (definedon).check())
                lfi -> SetDefinedOn (makeCArray<int> (definedon));
              if (defon_region.check())
                lfi->SetDefinedOn(defon_region().Mask());
 
-             return lfi;
+             return PyWrapper<LinearFormIntegrator>(lfi);
            }),
           (bp::args("self"),
            bp::args("VOL_or_BND")=VOL,
@@ -2074,9 +2095,8 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicBFI", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bool element_boundary,
+          ([](PyCF cf, VorB vb, bool element_boundary,
               bool skeleton, bp::object definedon)
-           -> shared_ptr<BilinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2095,9 +2115,9 @@ void NGS_DLL_HEADER ExportNgcomp()
              
              shared_ptr<BilinearFormIntegrator> bfi;
              if (!has_other && !skeleton)
-               bfi = make_shared<SymbolicBilinearFormIntegrator> (cf, vb, element_boundary);
+               bfi = make_shared<SymbolicBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              else
-               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf, vb, element_boundary);
+               bfi = make_shared<SymbolicFacetBilinearFormIntegrator> (cf.Get(), vb, element_boundary);
              
              if (bp::extract<bp::list> (definedon).check())
                bfi -> SetDefinedOn (makeCArray<int> (definedon));
@@ -2108,7 +2128,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                  bfi->SetDefinedOn(defon_region().Mask());
                }
              
-             return bfi;
+             return PyWrapper<BilinearFormIntegrator>(bfi);
            }),
           (bp::args("self"), bp::args("VOL_or_BND")=VOL,
            bp::args("element_boundary")=false,
@@ -2117,13 +2137,13 @@ void NGS_DLL_HEADER ExportNgcomp()
           );
 
   bp::def("SymbolicEnergy", FunctionPointer
-          ([](shared_ptr<CoefficientFunction> cf, VorB vb, bp::object definedon) -> shared_ptr<BilinearFormIntegrator>
+          ([](PyCF cf, VorB vb, bp::object definedon) -> PyWrapper<BilinearFormIntegrator>
            {
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
 
-             auto bfi = make_shared<SymbolicEnergy> (cf, vb);
+             auto bfi = make_shared<SymbolicEnergy> (cf.Get(), vb);
              
              if (defon_region.check())
                {
@@ -2153,7 +2173,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                  cout << "allbool = " << all_booleans << endl;
                }
              */
-             return bfi;
+             return PyWrapper<BilinearFormIntegrator>(bfi);
            }),
           (bp::args("self"), bp::args("VOL_or_BND")=VOL, bp::args("definedon")=bp::object())
           );
@@ -2307,7 +2327,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                               bp::list names_list, string filename, int subdivision, int only_element)
                            {
                              Array<shared_ptr<CoefficientFunction> > coefs
-                               = makeCArray<shared_ptr<CoefficientFunction>> (coefs_list);
+                               = makeCArrayUnpackWrapper<PyCF> (coefs_list);
                              Array<string > names
                                = makeCArray<string> (names_list);
                              shared_ptr<BaseVTKOutput> ret;
