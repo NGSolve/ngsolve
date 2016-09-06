@@ -1556,7 +1556,12 @@ void NGS_DLL_HEADER ExportNgcomp()
             return InnerProduct (au, v.GetVector());
           }))
 
-    .def("Energy", &BilinearForm::Energy)
+    // .def("Energy", &BilinearForm::Energy)
+    .def("Energy",FunctionPointer
+         ([](PyBF & self, BaseVector & x)
+          {
+            self->Energy(x);
+          }))
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, BaseVector & x, BaseVector & y, int heapsize)
 	  {
