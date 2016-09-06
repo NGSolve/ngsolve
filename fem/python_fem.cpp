@@ -175,7 +175,7 @@ void ExportStdMathFunction(string name)
               if (bp::extract<PyCF>(x).check())
                 {
                   auto coef = bp::extract<PyCF>(x)();
-                  return bp::object(UnaryOpCF(coef.Get(), func, func, FUNC::Name()));
+                  return bp::object(PyCF(UnaryOpCF(coef.Get(), func, func, FUNC::Name())));
                 }
               bp::extract<double> ed(x);
               if (ed.check()) return bp::object(func(ed()));
