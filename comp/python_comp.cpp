@@ -651,22 +651,22 @@ void NGS_DLL_HEADER ExportNgcomp()
                          // bp::init<FESpace*,bool, shared_ptr<DifferentialOperator>, shared_ptr<DifferentialOperator>>()
                          bp::no_init)
     .def("Deriv", FunctionPointer
-         ([](const PyProxyFunction self) -> PyCF
-          { return PyCF(self->Deriv()); }),
+         ([](const PyProxyFunction self)
+          { return PyProxyFunction(self->Deriv()); }),
          "take canonical derivative (grad, curl, div)")
     .def("Trace", FunctionPointer
-         ([](const PyProxyFunction self) -> PyCF
-          { return PyCF(self->Trace()); }),
+         ([](const PyProxyFunction self)
+          { return PyProxyFunction(self->Trace()); }),
          "take canonical boundary trace")
     .def("Other", FunctionPointer
-         ([](const PyProxyFunction self, bp::object bnd) -> PyCF
+         ([](const PyProxyFunction self, bp::object bnd) 
           {
             if (bp::extract<double> (bnd).check())
-              return PyCF(self->Other(make_shared<ConstantCoefficientFunction>(bp::extract<double> (bnd)())));
+              return PyProxyFunction(self->Other(make_shared<ConstantCoefficientFunction>(bp::extract<double> (bnd)())));
             if (bp::extract<PyCF> (bnd).check())
-              return PyCF(self->Other(bp::extract<PyCF> (bnd)().Get()));
+              return PyProxyFunction(self->Other(bp::extract<PyCF> (bnd)().Get()));
             else
-              return PyCF(self->Other(nullptr));
+              return PyProxyFunction(self->Other(nullptr));
           }),
          "take value from neighbour element (DG)",
           (bp::arg("self"), bp::arg("bnd") = bp::object())
@@ -678,12 +678,12 @@ void NGS_DLL_HEADER ExportNgcomp()
                      return self->DerivEvaluator()->Name();
                    }))
     .def("Operator", FunctionPointer
-         ([] (const PyProxyFunction self, string name) -> bp::object // shared_ptr<CoefficientFunction>
+         ([] (const PyProxyFunction self, string name) -> bp::object 
           {
             auto op = self->GetAdditionalProxy(name);
             if (op)
-              return bp::object(op);
-            return bp::object(); //  shared_ptr<CoefficientFunction>();
+              return bp::object(PyProxyFunction(op));
+            return bp::object();
           }))
     ;
 
