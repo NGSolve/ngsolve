@@ -103,27 +103,29 @@ shared_ptr<CoefficientFunction> MakeCoefficient (bp::object py_coef)
     }
 }
 */
+typedef CoefficientFunction CF;
+typedef PyWrapper<CoefficientFunction> PyCF;
 
-shared_ptr<CoefficientFunction> MakeCoefficient (bp::object val)
+PyCF MakeCoefficient (bp::object val)
 {
-  bp::extract<shared_ptr<CoefficientFunction>> ecf(val);
+  bp::extract<PyCF> ecf(val);
   if (ecf.check()) return ecf();
 
   bp::extract<double> ed(val);
   if (ed.check()) 
-    return make_shared<ConstantCoefficientFunction> (ed());
+    return PyCF(make_shared<ConstantCoefficientFunction> (ed()));
 
   bp::extract<Complex> ec(val);
   if (ec.check()) 
-    return make_shared<ConstantCoefficientFunctionC> (ec());
+    return PyCF(make_shared<ConstantCoefficientFunctionC> (ec()));
 
   bp::extract<bp::list> el(val);
   if (el.check())
     {
       Array<shared_ptr<CoefficientFunction>> cflist(bp::len(el()));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(el()[i]);
-      return make_shared<DomainWiseCoefficientFunction>(move(cflist));
+        cflist[i] = MakeCoefficient(el()[i]).Get();
+      return PyCF(make_shared<DomainWiseCoefficientFunction>(move(cflist)));
     }
 
   bp::extract<bp::tuple> et(val);
@@ -131,8 +133,8 @@ shared_ptr<CoefficientFunction> MakeCoefficient (bp::object val)
     {
       Array<shared_ptr<CoefficientFunction>> cflist(bp::len(et()));
       for (int i : Range(cflist))
-        cflist[i] = MakeCoefficient(et()[i]);
-      return make_shared<VectorialCoefficientFunction>(move(cflist));
+        cflist[i] = MakeCoefficient(et()[i]).Get();
+      return PyCF(make_shared<VectorialCoefficientFunction>(move(cflist)));
     }
 
 
@@ -146,23 +148,21 @@ Array<shared_ptr<CoefficientFunction>> MakeCoefficients (bp::object py_coef)
     {
       auto l = bp::extract<bp::list>(py_coef)();
       for (int i = 0; i < bp::len(l); i++)
-        tmp += MakeCoefficient(l[i]);
+        tmp += MakeCoefficient(l[i]).Get();
     }
   else if (bp::extract<bp::tuple>(py_coef).check())
     {
       auto l = bp::extract<bp::tuple>(py_coef)();
       for (int i = 0; i < bp::len(l); i++)
-        tmp += MakeCoefficient(l[i]);
+        tmp += MakeCoefficient(l[i]).Get();
     }
   else
-    tmp += MakeCoefficient(py_coef);
+    tmp += MakeCoefficient(py_coef).Get();
 
   // return move(tmp);  // clang recommends not to move it ...
   return tmp;
 }
 
-typedef CoefficientFunction CF;
-typedef shared_ptr<CF> SPCF;
 
 
 template <typename FUNC>
@@ -172,10 +172,10 @@ void ExportStdMathFunction(string name)
            ([] (bp::object x) -> bp::object
             {
               FUNC func;
-              if (bp::extract<SPCF>(x).check())
+              if (bp::extract<PyCF>(x).check())
                 {
-                  auto coef = bp::extract<SPCF>(x)();
-                  return bp::object(UnaryOpCF(coef, func, func, FUNC::Name()));
+                  auto coef = bp::extract<PyCF>(x)();
+                  return bp::object(UnaryOpCF(coef.Get(), func, func, FUNC::Name()));
                 }
               bp::extract<double> ed(x);
               if (ed.check()) return bp::object(func(ed()));
@@ -311,22 +311,21 @@ struct GenericConj {
 
 void ExportCoefficientFunction()
 {
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CoefficientFunction>);
-  bp::class_<CoefficientFunction, shared_ptr<CoefficientFunction>, boost::noncopyable> 
+  bp::class_<PyWrapper<CoefficientFunction>>
     ("CoefficientFunction",
      "A CoefficientFunction (CF) is some function defined on a mesh.\n"
      "examples are coordinates x, y, z, domain-wise constants, solution-fields, ...\n"
-     "CFs can be combined by mathematical operations (+,-,sin(), ...) to form new CFs",
-     bp::no_init)
+     "CFs can be combined by mathematical operations (+,-,sin(), ...) to form new CFs"
+    )
 
-    .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::object val, bp::object dims) 
+    .def("__init__", bp::make_constructor(
+         FunctionPointer ([](bp::object val, bp::object dims) //-> PyCF*
                            {
-                             auto coef = MakeCoefficient(val);
+                             auto coef = new PyCF(MakeCoefficient(val));
                              if (dims)
                                {
                                  Array<int> cdims = makeCArray<int> (dims);
-                                 dynamic_pointer_cast<VectorialCoefficientFunction> (coef)->SetDimensions(cdims);
+                                 dynamic_pointer_cast<VectorialCoefficientFunction> (coef->Get())->SetDimensions(cdims);
                                }
                              return coef;
                            }),
@@ -338,11 +337,12 @@ void ExportCoefficientFunction()
          "     use dims=(h,w) to define matrix-valued CF\n"
          "  a list of scalars and or CFs to define a domain-wise CF"
          )
-    .def("__str__", &ToString<CoefficientFunction>)
+    .def("__str__", FunctionPointer( [](PyCF self) { return ToString<CoefficientFunction>(*self.Get());}))
 
     .def("__call__", FunctionPointer
-	 ([] (CoefficientFunction & self, BaseMappedIntegrationPoint & mip) -> bp::object
+	 ([] (PyCF self_wrapper, BaseMappedIntegrationPoint & mip) -> bp::object
 	  {
+            CF & self = *self_wrapper.Get();
 	    if (!self.IsComplex())
 	      {
                 if (self.Dimension() == 1)
@@ -361,21 +361,23 @@ void ExportCoefficientFunction()
 	  }),
          (bp::arg("coef"),bp::arg("mip")),
          "evaluate CF at a mapped integrationpoint mip. mip can be generated by calling mesh(x,y,z)")
-    .add_property("dim", &CoefficientFunction::Dimension,
+    .add_property("dim",
+        FunctionPointer( [] (PyCF self) { return self->Dimension(); } ),
                   "number of components of CF")
 
-    .add_property("dims", &CoefficientFunction::Dimensions,
+    .add_property("dims",
+        FunctionPointer( [] (PyCF self) { return self->Dimensions(); } ),
                   "shape of CF:  (dim) for vector, (h,w) for matrix")    
     
-    .def("__getitem__", FunctionPointer( [](SPCF self, int comp) -> SPCF
+    .def("__getitem__", FunctionPointer( [](PyCF self, int comp) -> PyCF
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
                                              bp::exec("raise IndexError()\n");
-                                           return make_shared<ComponentCoefficientFunction> (self, comp); 
+                                           return PyCF(make_shared<ComponentCoefficientFunction> (self.Get(), comp));
                                          }),
          (bp::arg("coef"),bp::arg("comp")),         
          "returns component comp of vectorial CF")
-    .def("__getitem__", FunctionPointer( [](SPCF self, bp::tuple comps) -> SPCF
+    .def("__getitem__", FunctionPointer( [](PyCF self, bp::tuple comps) -> PyCF
                                          {
                                            if (bp::len(comps) != 2)
                                              bp::exec("raise IndexError()\n");
@@ -389,102 +391,102 @@ void ExportCoefficientFunction()
                                              bp::exec("raise IndexError()\n");
 
                                            int comp = c1 * dims[1] + c2;
-                                           return make_shared<ComponentCoefficientFunction> (self, comp);
+                                           return PyCF(make_shared<ComponentCoefficientFunction> (self.Get(), comp));
                                          }))
 
     // coefficient expressions
     .def ("__add__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF { return c1+c2; } ))
+          ([] (PyCF c1, PyCF c2) -> PyCF { return c1.Get()+c2.Get(); } ))
     .def ("__add__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
+          ([] (PyCF coef, double val) -> PyCF
            {
-             return coef + make_shared<ConstantCoefficientFunction>(val);
+             return coef.Get() + make_shared<ConstantCoefficientFunction>(val);
            }))
     .def ("__radd__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return coef + make_shared<ConstantCoefficientFunction>(val); }))
+          ([] (PyCF coef, double val) -> PyCF
+           { return coef.Get() + make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__sub__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
-           { return c1-c2; }))
+          ([] (PyCF c1, PyCF c2) -> PyCF
+           { return c1.Get()-c2.Get(); }))
 
     .def ("__sub__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return coef - make_shared<ConstantCoefficientFunction>(val); }))
+          ([] (PyCF coef, double val) -> PyCF
+           { return coef.Get() - make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__rsub__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return make_shared<ConstantCoefficientFunction>(val) - coef; }))
+          ([] (PyCF coef, double val) -> PyCF
+           { return make_shared<ConstantCoefficientFunction>(val) - coef.Get(); }))
 
     .def ("__mul__", FunctionPointer 
-          ([] (SPCF c1, SPCF c2) -> SPCF
+          ([] (PyCF c1, PyCF c2) -> PyCF
            {
-             return c1*c2;
+             return c1.Get()*c2.Get();
            } ))
 
     .def ("InnerProduct", FunctionPointer
-          ([] (SPCF c1, SPCF c2) -> SPCF
+          ([] (PyCF c1, PyCF c2) -> PyCF
            { 
-             return InnerProduct (c1, c2);
+             return InnerProduct (c1.Get(), c2.Get());
            }))
           
-    .def("Norm", FunctionPointer ( [](SPCF x) { return NormCF(x); }))
+    .def("Norm", FunctionPointer ( [](PyCF x) { return NormCF(x.Get()); }))
 
     /*
       // it's using the complex functions anyway ...
     .def ("__mul__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
+          ([] (PyCF coef, double val) -> PyCF
            { 
              return make_shared<ScaleCoefficientFunction> (val, coef); 
            }))
     .def ("__rmul__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
+          ([] (PyCF coef, double val) -> PyCF
            { return make_shared<ScaleCoefficientFunction> (val, coef); }))
     */
     .def ("__mul__", FunctionPointer 
-          ([] (SPCF coef, Complex val) -> SPCF
+          ([] (PyCF coef, Complex val) -> PyCF
            { 
              if (val.imag() == 0)
-               return val.real() * coef;
+               return val.real() * coef.Get();
              else
-               return val * coef;
+               return val * coef.Get();
            }))
     .def ("__rmul__", FunctionPointer 
-          ([] (SPCF coef, Complex val) -> SPCF
+          ([] (PyCF coef, Complex val) -> PyCF
            { 
              if (val.imag() == 0)
-               return val.real() * coef; 
+               return val.real() * coef.Get();
              else
-               return val * coef;
+               return val * coef.Get();
            }))
 
     .def ("__truediv__", FunctionPointer 
-          ([] (SPCF coef, SPCF coef2) -> SPCF
-           { return coef/coef2;
+          ([] (PyCF coef, PyCF coef2) -> PyCF
+           { return coef.Get()/coef2.Get();
            }))
 
     .def ("__truediv__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return coef / make_shared<ConstantCoefficientFunction>(val); }))
+          ([] (PyCF coef, double val) -> PyCF
+           { return coef.Get() / make_shared<ConstantCoefficientFunction>(val); }))
 
     .def ("__rtruediv__", FunctionPointer 
-          ([] (SPCF coef, double val) -> SPCF
-           { return make_shared<ConstantCoefficientFunction>(val) / coef; }))
+          ([] (PyCF coef, double val) -> PyCF
+           { return make_shared<ConstantCoefficientFunction>(val) / coef.Get(); }))
 
     .def ("__neg__", FunctionPointer 
-          ([] (SPCF coef) -> SPCF
-           { return -1.0 * coef; }))
+          ([] (PyCF coef) -> PyCF
+           { return -1.0 * coef.Get(); }))
 
     .add_property ("trans", FunctionPointer
-                   ([] (SPCF coef) -> SPCF
+                   ([] (PyCF coef) -> PyCF
                     {
-                      return TransposeCF(coef);
+                      return TransposeCF(coef.Get());
                     }),
                    "transpose of matrix-valued CF")
 
     .def ("Compile", FunctionPointer
-          ([] (SPCF coef, bool realcompile) -> SPCF
-           { return Compile (coef, realcompile); }),
+          ([] (PyCF coef, bool realcompile) -> PyCF
+           { return Compile (coef.Get(), realcompile); }),
           (bp::args("self"), bp::args("realcompile")=false),
           "compile list of individual steps, experimental improvement for deep trees")
     ;
@@ -499,22 +501,23 @@ void ExportCoefficientFunction()
   ExportStdMathFunction<GenericConj>("Conj");
   
   bp::def ("IfPos", FunctionPointer 
-           ([] (SPCF c1, bp::object then_obj, bp::object else_obj) -> SPCF
+           ([] (PyCF c1, bp::object then_obj, bp::object else_obj) -> PyCF
             {
-              return IfPos(c1,
-                           MakeCoefficient(then_obj),
-                           MakeCoefficient(else_obj));
+              return IfPos(c1.Get(),
+                           MakeCoefficient(then_obj).Get(),
+                           MakeCoefficient(else_obj).Get());
             } ))
     ;
   
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ConstantCoefficientFunction>);
-  bp::class_<ConstantCoefficientFunction,bp::bases<CoefficientFunction>,
-    shared_ptr<ConstantCoefficientFunction>, boost::noncopyable>
-    ("ConstantCF", "same as CoefficientFunction(c), obsolete", bp::init<double>())
+  typedef PyWrapperDerived<ConstantCoefficientFunction, CoefficientFunction> PyConstCF;
+  bp::class_<PyConstCF,bp::bases<PyCF>>
+    ("ConstantCF", "same as CoefficientFunction(c), obsolete")
+     .def("__init__", bp::make_constructor
+          (FunctionPointer ([](double value) -> PyConstCF *
+                             {
+                               return new PyConstCF(make_shared<ConstantCoefficientFunction>(value));
+                             })))
     ;
-
-  bp::implicitly_convertible 
-    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
   class CoordCoefficientFunction : public CoefficientFunction
   {
@@ -556,13 +559,15 @@ void ExportCoefficientFunction()
     
   };
 
-  bp::class_<CoordCoefficientFunction,bp::bases<CoefficientFunction>,
-    shared_ptr<CoordCoefficientFunction>, boost::noncopyable>
-    ("CoordCF", "CoefficientFunction for x, y, z", bp::init<int>())
+  typedef PyWrapperDerived<CoordCoefficientFunction, CoefficientFunction> PyCoordCF;
+  bp::class_<PyCoordCF,bp::bases<PyCF>>
+    ("CoordCF", "CoefficientFunction for x, y, z")
+     .def("__init__", bp::make_constructor
+          (FunctionPointer ([](int direction) -> PyCoordCF *
+                             {
+                               return new PyCoordCF(make_shared<CoordCoefficientFunction>(direction));
+                             })))
     ;
-  bp::implicitly_convertible 
-    <shared_ptr<CoordCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
-
 
   class MeshSizeCF : public CoefficientFunction
   {
@@ -628,32 +633,32 @@ void ExportCoefficientFunction()
   class SpecialCoefficientFunctions
   {
   public:
-    shared_ptr<CoefficientFunction> GetMeshSizeCF ()
-    { return make_shared<MeshSizeCF>(); }
+    PyCF GetMeshSizeCF ()
+    { return PyCF(make_shared<MeshSizeCF>()); }
 
-    shared_ptr<CoefficientFunction> GetNormalVectorCF (int dim)
+    PyCF GetNormalVectorCF (int dim)
     { 
       switch(dim)
 	{
 	case 1:
-	  return make_shared<NormalVectorCF<1>>(); 
+	  return PyCF(make_shared<NormalVectorCF<1>>());
 	case 2:
-	  return make_shared<NormalVectorCF<2>>(); 
+	  return PyCF(make_shared<NormalVectorCF<2>>());
 	default:
-	  return make_shared<NormalVectorCF<3>>(); 
+	  return PyCF(make_shared<NormalVectorCF<3>>());
 	}
     }
 
-    shared_ptr<CoefficientFunction> GetTangentialVectorCF (int dim)
+    PyCF GetTangentialVectorCF (int dim)
     { 
       switch(dim)
 	{
 	case 1:
-	  return make_shared<TangentialVectorCF<1>>(); 
+	  return PyCF(make_shared<TangentialVectorCF<1>>());
 	case 2:
-	  return make_shared<TangentialVectorCF<2>>(); 
+	  return PyCF(make_shared<TangentialVectorCF<2>>());
 	default:
-	  return make_shared<TangentialVectorCF<3>>(); 
+	  return PyCF(make_shared<TangentialVectorCF<3>>());
 	}
     }
   };
@@ -684,9 +689,9 @@ void ExportCoefficientFunction()
     .def("__str__", &ToString<BSpline>)
     .def("__call__", &BSpline::Evaluate)
     .def("__call__", FunctionPointer
-         ([](shared_ptr<BSpline> sp, SPCF coef) -> SPCF
+         ([](shared_ptr<BSpline> sp, PyCF coef) -> PyCF
           {
-            return UnaryOpCF (coef, GenericBSpline(sp), GenericBSpline(sp));
+            return UnaryOpCF (coef.Get(), GenericBSpline(sp), GenericBSpline(sp));
           }))
     .def("Integrate", 
          FunctionPointer([](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }))
@@ -1001,8 +1006,8 @@ void NGS_DLL_HEADER ExportNgfem() {
     ;
 
   
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BilinearFormIntegrator>);
-  bp::class_<BilinearFormIntegrator, shared_ptr<BilinearFormIntegrator>, boost::noncopyable>
+  typedef PyWrapper<BilinearFormIntegrator> PyBFI;
+  bp::class_<PyBFI>
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, bp::object py_coef, bp::object definedon, bool imag,
@@ -1033,18 +1038,18 @@ void NGS_DLL_HEADER ExportNgfem() {
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
 
-                             return bfi;
+                             return new PyBFI(bfi);
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=-1,bp::arg("coef"),
            bp::arg("definedon")=bp::object(),bp::arg("imag")=false, bp::arg("filename")="")))
     
-    .def("__str__", &ToString<BilinearFormIntegrator>)
+    .def("__str__", FunctionPointer( [](PyBFI self) { return ToString<BilinearFormIntegrator>(*self.Get()); } ))
 
-    .def("Evaluator", &BilinearFormIntegrator::GetEvaluator)
+    .def("Evaluator", FunctionPointer( [](PyBFI self, string name ) { return self->GetEvaluator(name); } ))
     // .def("DefinedOn", &Integrator::DefinedOn)
     .def("GetDefinedOn", FunctionPointer
-         ( [] (const BilinearFormIntegrator &self) -> const BitArray &{ return self.GetDefinedOn(); } ),
+         ( [] (PyBFI self) -> const BitArray &{ return self->GetDefinedOn(); } ),
          bp::return_value_policy<bp::reference_existing_object>())
     
 
@@ -1069,7 +1074,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     */
 
     .def("CalcElementMatrix",
-         FunctionPointer([] (const BilinearFormIntegrator & self, 
+         FunctionPointer([] (PyBFI self,
                              const FiniteElement & fe, const ElementTransformation & trafo,
                              int heapsize)
                          {
@@ -1079,7 +1084,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self.CalcElementMatrix (fe, trafo, mat, lh);
+                                   self->CalcElementMatrix (fe, trafo, mat, lh);
                                    return mat;
                                  }
                                catch (LocalHeapOverflow ex)
@@ -1094,45 +1099,34 @@ void NGS_DLL_HEADER ExportNgfem() {
 
 
   bp::def("CompoundBFI", 
-          (FunctionPointer ([]( shared_ptr<BilinearFormIntegrator> bfi, int comp )
+          (FunctionPointer ([]( PyBFI bfi, int comp ) -> PyBFI
                             {
-                                return make_shared<CompoundBilinearFormIntegrator>(bfi, comp);
+                                return make_shared<CompoundBilinearFormIntegrator>(bfi.Get(), comp);
                             })),
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("bfi")=NULL, bp::arg("comp")=0)
       );
 
   bp::def("BlockBFI", 
-          (FunctionPointer ([]( shared_ptr<BilinearFormIntegrator> bfi, int dim, int comp )
+          (FunctionPointer ([]( PyBFI bfi, int dim, int comp ) -> PyBFI
                             {
-                                return make_shared<BlockBilinearFormIntegrator>(bfi, dim, comp);
+                                return make_shared<BlockBilinearFormIntegrator>(bfi.Get(), dim, comp);
                             })),
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("bfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
-      );
+      )
+      ;
 
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CompoundBilinearFormIntegrator>);
-  bp::class_<CompoundBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
-             shared_ptr<CompoundBilinearFormIntegrator>, boost::noncopyable>
+  bp::class_<PyWrapperDerived<CompoundBilinearFormIntegrator, BilinearFormIntegrator>,bp::bases<PyBFI>>
       ("CompoundBilinearFormIntegrator", bp::no_init);
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BlockBilinearFormIntegrator>);
-  bp::class_<BlockBilinearFormIntegrator,bp::bases<BilinearFormIntegrator>,
-             shared_ptr<BlockBilinearFormIntegrator>, boost::noncopyable>
+  bp::class_<PyWrapperDerived<BlockBilinearFormIntegrator, BilinearFormIntegrator>,bp::bases<PyBFI>>
       ("BlockBilinearFormIntegrator", bp::no_init);
 
-  bp::implicitly_convertible 
-    <shared_ptr<CompoundBilinearFormIntegrator>, 
-    shared_ptr<BilinearFormIntegrator> >(); 
 
-  bp::implicitly_convertible 
-    <shared_ptr<BlockBilinearFormIntegrator>, 
-    shared_ptr<BilinearFormIntegrator> >(); 
-
-
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<LinearFormIntegrator>);
-  bp::class_<LinearFormIntegrator, shared_ptr<LinearFormIntegrator>, boost::noncopyable>
+  typedef PyWrapper<LinearFormIntegrator> PyLFI;
+  bp::class_<PyLFI>
     ("LFI", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, 
@@ -1152,7 +1146,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                              if (imag)
                                lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
 
-                             return lfi;
+                             return new PyLFI(lfi);
                            }),
           bp::default_call_policies(),     // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=-1,
@@ -1187,18 +1181,18 @@ void NGS_DLL_HEADER ExportNgfem() {
         )
     */
 
-    .def("__str__", &ToString<LinearFormIntegrator>)
+    .def("__str__", FunctionPointer( [](PyLFI self) { return ToString<LinearFormIntegrator>(*self.Get()); } ))
     
     // .def("GetDefinedOn", &Integrator::GetDefinedOn)
     .def("GetDefinedOn", FunctionPointer
-         ( [] (const LinearFormIntegrator &self) -> const BitArray &{ return self.GetDefinedOn(); } ),
+         ( [] (PyLFI self) -> const BitArray &{ return self->GetDefinedOn(); } ),
          bp::return_value_policy<bp::reference_existing_object>())
 
     .def("CalcElementVector", 
          static_cast<void(LinearFormIntegrator::*)(const FiniteElement&, const ElementTransformation&, FlatVector<double>,LocalHeap&)const>
          (&LinearFormIntegrator::CalcElementVector))
     .def("CalcElementVector",
-         FunctionPointer([] (const LinearFormIntegrator & self, 
+         FunctionPointer([] (PyLFI  self,
                              const FiniteElement & fe, const ElementTransformation & trafo,
                              int heapsize)
                          {
@@ -1208,7 +1202,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                                try
                                  {
                                    LocalHeap lh(heapsize);
-                                   self.CalcElementVector (fe, trafo, vec, lh);
+                                   self->CalcElementVector (fe, trafo, vec, lh);
                                    return vec;
                                  }
                                catch (LocalHeapOverflow ex)
@@ -1224,95 +1218,71 @@ void NGS_DLL_HEADER ExportNgfem() {
 
 
   bp::def("CompoundLFI", 
-          (FunctionPointer ([]( shared_ptr<LinearFormIntegrator> lfi, int comp )
+          (FunctionPointer ([]( PyLFI lfi, int comp )
                             {
-                                return make_shared<CompoundLinearFormIntegrator>(lfi, comp);
+                                return PyLFI(make_shared<CompoundLinearFormIntegrator>(lfi.Get(), comp));
                             })),
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("lfi")=NULL, bp::arg("comp")=0)
       );
 
   bp::def("BlockLFI", 
-          (FunctionPointer ([]( shared_ptr<LinearFormIntegrator> lfi, int dim, int comp )
+          (FunctionPointer ([]( PyLFI lfi, int dim, int comp )
                             {
-                                return make_shared<BlockLinearFormIntegrator>(lfi, dim, comp);
+                                return PyLFI(make_shared<BlockLinearFormIntegrator>(lfi.Get(), dim, comp));
                             })),
            bp::default_call_policies(),     // need it to use named arguments
            (bp::arg("lfi")=NULL, bp::arg("dim")=2, bp::arg("comp")=0)
       );
 
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CompoundLinearFormIntegrator>);
-  bp::class_<CompoundLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
-             shared_ptr<CompoundLinearFormIntegrator>, boost::noncopyable>
+  bp::class_<PyWrapperDerived<CompoundLinearFormIntegrator, LinearFormIntegrator>,bp::bases<PyBFI>>
       ("CompoundLinearFormIntegrator", bp::no_init);
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<BlockLinearFormIntegrator>);
-  bp::class_<BlockLinearFormIntegrator,bp::bases<LinearFormIntegrator>,
-             shared_ptr<BlockLinearFormIntegrator>, boost::noncopyable>
+  bp::class_<PyWrapperDerived<BlockLinearFormIntegrator, LinearFormIntegrator>,bp::bases<PyBFI>>
       ("BlockLinearFormIntegrator", bp::no_init);
-
-  bp::implicitly_convertible 
-    <shared_ptr<CompoundLinearFormIntegrator>, 
-    shared_ptr<LinearFormIntegrator> >(); 
-
-  bp::implicitly_convertible 
-    <shared_ptr<BlockLinearFormIntegrator>, 
-    shared_ptr<LinearFormIntegrator> >(); 
-
 
 
   ExportCoefficientFunction ();
 
 
-  bp::class_<PythonCFWrap ,bp::bases<CoefficientFunction>, shared_ptr<PythonCFWrap>, boost::noncopyable>("PythonCF", bp::init<>())
+  typedef PyWrapperDerived<PythonCFWrap, CoefficientFunction> PythonCFWrapWrap;
+  bp::class_<PythonCFWrapWrap ,bp::bases<PyCF>>("PythonCF")
 //     .def("MyEvaluate", bp::pure_virtual(static_cast<double (PythonCoefficientFunction::*)(double,double) const>(&PythonCoefficientFunction::MyEvaluate))) 
-    .def("Evaluate", bp::pure_virtual(static_cast<double (CoefficientFunction::*)(const BaseMappedIntegrationPoint &) const>(&CoefficientFunction::Evaluate))) 
-    .def("GetCoordinates", &PythonCoefficientFunction::GetCoordinates)
+    .def("Evaluate",
+        bp::pure_virtual( FunctionPointer( [] ( PythonCFWrapWrap self, const BaseMappedIntegrationPoint & ip )
+        {
+          return static_cast<CoefficientFunction &>(*self.Get()).Evaluate(ip);
+        } )))
+    .def("GetCoordinates", FunctionPointer( [] ( PythonCFWrapWrap self, const BaseMappedIntegrationPoint & ip ) 
+        {
+          return self->GetCoordinates(ip);
+        }))
 //     .def("MyEvaluate", bp::pure_virtual(&PythonCoefficientFunction::MyEvaluate)) 
     ;
 
-  bp::implicitly_convertible 
-    <shared_ptr<PythonCFWrap>, 
-    shared_ptr<CoefficientFunction> >(); 
-
-  
-  bp::class_<DomainVariableCoefficientFunction,bp::bases<CoefficientFunction>, 
-    shared_ptr<DomainVariableCoefficientFunction>, boost::noncopyable>
+  typedef PyWrapperDerived<DomainVariableCoefficientFunction, CoefficientFunction> PyDomVarCF;
+  bp::class_<PyDomVarCF,bp::bases<PyCF>>
     ("VariableCF", bp::no_init)
     .def("__init__", bp::make_constructor 
          (FunctionPointer ([](string str)
                            {
                              auto ef = make_shared<EvalFunction> (str);
-                             return make_shared<DomainVariableCoefficientFunction> 
-                               (Array<shared_ptr<EvalFunction>> ({ ef }));
+                             return new PyDomVarCF(make_shared<DomainVariableCoefficientFunction>
+                               (Array<shared_ptr<EvalFunction>> ({ ef })));
                            })))
     ;
 
-  bp::implicitly_convertible
-    <shared_ptr<DomainVariableCoefficientFunction>, 
-    shared_ptr<CoefficientFunction> >(); 
-
-
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<DomainConstantCoefficientFunction>);
-  bp::class_<DomainConstantCoefficientFunction,bp::bases<CoefficientFunction>, 
-    shared_ptr<DomainConstantCoefficientFunction>, boost::noncopyable>
+  typedef PyWrapperDerived<DomainConstantCoefficientFunction, CoefficientFunction> PyDomConstCF;
+  bp::class_<PyDomConstCF,bp::bases<PyCF>, boost::noncopyable>
     ("DomainConstantCF", bp::no_init)
     .def("__init__", bp::make_constructor 
-         (FunctionPointer ([](bp::object coefs)->shared_ptr<DomainConstantCoefficientFunction>
+         (FunctionPointer ([](bp::object coefs)
                            {
                              Array<double> darray (makeCArray<double> (coefs));
-                             return make_shared<DomainConstantCoefficientFunction> (darray);
+                             return new PyDomConstCF(make_shared<DomainConstantCoefficientFunction> (darray));
                            })))
     ;
-
-  bp::implicitly_convertible
-    <shared_ptr<DomainConstantCoefficientFunction>, 
-    shared_ptr<CoefficientFunction> >(); 
-
-
-
-
 
   bp::def ("SetPMLParameters", 
            FunctionPointer([] (double rad, double alpha)
