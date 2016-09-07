@@ -551,21 +551,26 @@ namespace netgen
   }  
   */
   
-
-  INSOLID_TYPE RevolutionFace :: PointInFace (const Point<3> & p, const double eps) const
+  
+  /* INSOLID_TYPE */ bool RevolutionFace :: PointInFace (const Point<3> & p, const double eps) const
   {
     Point<2> p2d;
     CalcProj(p,p2d);
 
+    if (!spline -> InConvexHull(p2d, eps)) return false;
+    
     double val = spline_coefficient(0)*p2d(0)*p2d(0) + spline_coefficient(1)*p2d(1)*p2d(1) + spline_coefficient(2)*p2d(0)*p2d(1) +
       spline_coefficient(3)*p2d(0) + spline_coefficient(4)*p2d(1) + spline_coefficient(5);
 
+    return (fabs(val) < eps);
+      /*
     if(val > eps)
       return IS_OUTSIDE;
     if(val < -eps)
       return IS_INSIDE;
      
     return DOES_INTERSECT;
+      */
   }
 
   
@@ -748,6 +753,15 @@ namespace netgen
       return IS_INSIDE;
   }
 
+  void Revolution :: GetTangentialSurfaceIndices (const Point<3> & p, 
+                                                 Array<int> & surfind, double eps) const
+  {
+    for (int j = 0; j < faces.Size(); j++)
+      if (faces[j] -> PointInFace(p, eps))
+        if (!surfind.Contains (GetSurfaceId(j)))
+          surfind.Append (GetSurfaceId(j));
+  }
+
   INSOLID_TYPE Revolution :: VecInSolid (const Point<3> & p,
 					 const Vec<3> & v,
 					 double eps) const
@@ -763,7 +777,7 @@ namespace netgen
     Array<int> intersecting_faces;
 
     for(int i=0; i<faces.Size(); i++)
-      if(faces[i]->PointInFace(p,eps) == DOES_INTERSECT)
+      if(faces[i]->PointInFace(p,eps)) //  == DOES_INTERSECT)
 	intersecting_faces.Append(i);
 
      Vec<3> hv;
