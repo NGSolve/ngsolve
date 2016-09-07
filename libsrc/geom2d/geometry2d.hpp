@@ -109,7 +109,12 @@ namespace netgen
       double curv = fabs(first(0)*second(1)-first(1)*second(0)) / pow(first.Length(), 3);
       return curv;
     }
-    
+
+    virtual bool InConvexHull (Point<2> p, double eps) const
+    {
+      return seg.InConvexHull (p, eps);
+    }
+
   };
 
 
