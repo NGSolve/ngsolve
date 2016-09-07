@@ -2140,7 +2140,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              
              return PyWrapper<BilinearFormIntegrator>(bfi);
            }),
-          (bp::args("self"), bp::args("VOL_or_BND")=VOL,
+          (bp::args("coef"), bp::args("VOL_or_BND")=VOL,
            bp::args("element_boundary")=false,
            bp::args("skeleton")=false,
            bp::arg("definedon")=bp::object())
