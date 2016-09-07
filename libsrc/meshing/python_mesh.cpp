@@ -571,17 +571,21 @@ DLL_HEADER void ExportNetgenMeshing()
   typedef MeshingParameters MP;
   bp::class_<MP> ("MeshingParameters", bp::init<>())
     .def("__init__", bp::make_constructor
-         (FunctionPointer ([](double maxh, bool quad_dominated)
+         (FunctionPointer ([](double maxh, bool quad_dominated, int optsteps2d, int optsteps3d)
                            {
                              auto tmp = new MeshingParameters;
                              tmp->maxh = maxh;
                              tmp->quad = int(quad_dominated);
+                             tmp->optsteps2d = optsteps2d;
+                             tmp->optsteps3d = optsteps3d;
                              return tmp;
                            }),
           bp::default_call_policies(),        // need it to use arguments
           (
            bp::arg("maxh")=1000,
-           bp::arg("quad_dominated")=false
+           bp::arg("quad_dominated")=false,
+           bp::arg("optsteps2d") = 3,
+           bp::arg("optsteps3d") = 3
            )),
          "create meshing parameters"
           )
