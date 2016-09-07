@@ -197,11 +197,25 @@ namespace netgen
   {
     double t_old = -1;
 
+    /*
     if(proj_latest_t > 0. && proj_latest_t < 1.)
       t = proj_latest_t;
     else
       t = 0.5;
-	
+    */
+    double tmin = 1;
+    double dist_min2 = Dist2 (GetPoint(tmin), point);
+    for (double ti = 0; ti < 0.99; ti += 0.25)
+      {
+        double di = Dist2(GetPoint(ti), point);
+        if (di < dist_min2)
+          {
+            tmin = ti;
+            dist_min2 = di;
+          }
+      }
+    t = tmin;
+    
     Point<D> phi;
     Vec<D> phip,phipp,phimp;
     
