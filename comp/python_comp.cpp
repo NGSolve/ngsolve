@@ -1543,7 +1543,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.Get().get(), i, ncomp)));
+                       // bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.Get().get(), i, ncomp)));
+                       bfs.append(PyWrapper<BilinearForm> (make_shared<ComponentBilinearForm>(self.Get().get(), i, ncomp)));
                      return bfs;
                    }),
                   "list of components for bilinearforms on compound-space")
@@ -1668,7 +1669,8 @@ void NGS_DLL_HEADER ExportNgcomp()
                        
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
-                       lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(self.Get().get(), i, ncomp)));
+                       // lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(self.Get().get(), i, ncomp)));
+                       lfs.append(PyWrapper<LinearForm> (make_shared<ComponentLinearForm>(self.Get().get(), i, ncomp)));
                      return lfs;
                    }),
                   "list of components for linearforms on compound-space")
