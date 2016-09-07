@@ -513,7 +513,10 @@ void NGS_DLL_HEADER ExportNgcomp()
                                       }),
           bp::return_value_policy<bp::manage_new_object>())
 
-    .def("SetDeformation", &MeshAccess::SetDeformation)
+    // .def("SetDeformation", &MeshAccess::SetDeformation)
+    .def("SetDeformation", FunctionPointer
+	 ([](MeshAccess & ma, PyGF gf)
+          { ma.SetDeformation(gf.Get()); }))
     .def("SetRadialPML", &MeshAccess::SetRadialPML)
     .def("UnsetDeformation", FunctionPointer
 	 ([](MeshAccess & ma){ ma.SetDeformation(nullptr);}))
