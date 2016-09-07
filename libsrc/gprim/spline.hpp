@@ -95,6 +95,9 @@ namespace netgen
 				    Array < Point<D> > & points, const double eps) const
     {points.SetSize(0);}
 
+    // is the point in the convex hull (increased by eps) of the spline ?
+    virtual bool InConvexHull (Point<D> p, double eps) const = 0; 
+
     virtual double MaxCurvature(void) const = 0;
 
     virtual string GetType(void) const {return "splinebase";}
@@ -140,7 +143,12 @@ namespace netgen
 
     virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
-
+    
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return MinDistLP2 (p1, p2, p) < sqr(eps);
+    }
+    
     virtual double MaxCurvature(void) const {return 0;}
 
     virtual void Project (const Point<D> point, Point<D> & point_on_curve, double & t) const;
@@ -185,6 +193,11 @@ namespace netgen
 
     DLL_HEADER virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
+
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return MinDistTP2 (p1, p2, p3, p) < sqr(eps);
+    }
 
     DLL_HEADER virtual double MaxCurvature(void) const;
 
@@ -232,6 +245,11 @@ namespace netgen
     virtual void LineIntersections (const double a, const double b, const double c,
 				    Array < Point<D> > & points, const double eps) const;
 
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    {
+      return (Dist2 (p, pm) < sqr(radius+eps));
+    }
+
     virtual double MaxCurvature(void) const {return 1./radius;}
   };
 
@@ -261,6 +279,10 @@ namespace netgen
     virtual void GetCoeff (Vector & coeffs) const {;}
 
     virtual double MaxCurvature(void) const {return 1;}
+
+    // needs implementation ...
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    { return true; }
   };
 
 
@@ -597,6 +619,10 @@ namespace netgen
     virtual void GetCoeff (Vector & coeffs) const {;}
 
     virtual double MaxCurvature(void) const {return 1;}
+
+    // needs implementation ...
+    virtual bool InConvexHull (Point<D> p, double eps) const
+    { return true; }    
   };
 
   // Constructor
