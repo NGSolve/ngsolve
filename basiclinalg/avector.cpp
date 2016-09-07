@@ -2832,7 +2832,7 @@ namespace ngbla
     pc += dc;
     __m256d sum21 = _mm256_loadu_pd(pc);
     pc += dc;
-    __m256d sum32 = _mm256_loadu_pd(pc);
+    __m256d sum31 = _mm256_loadu_pd(pc);
     pc += dc;
     __m256d sum41 = _mm256_loadu_pd(pc);
     pc = hpc;
