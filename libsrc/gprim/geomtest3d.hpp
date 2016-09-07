@@ -78,6 +78,15 @@ extern double MinDistLP2 (const Point3d & lp1, const Point3d & lp2, const Point3
 extern double MinDistTP2 (const Point3d & tp1, const Point3d & tp2, 
 			  const Point3d & tp3, const Point3d & p);
 
+  inline double MinDistTP2 (const Point<2> & tp1, const Point<2> & tp2, 
+                            const Point<2> & tp3, const Point<2> & p)
+  {
+    return MinDistTP2 (Point<3> (tp1(0), tp1(1),0),
+                       Point<3> (tp2(0), tp2(1),0),
+                       Point<3> (tp3(0), tp3(1),0),
+                       Point<3> (p(0), p(1),0));
+  }
+
 /// Minimal distance of the 2 lines [l1p1,l1p2] and [l2p1,l2p2]
 extern double MinDistLL2 (const Point3d & l1p1, const Point3d & l1p2,
 			  const Point3d & l2p1, const Point3d & l2p2);
