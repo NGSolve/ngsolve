@@ -349,6 +349,7 @@ public:
 
   class SymbolicLinearFormIntegrator : public LinearFormIntegrator
   {
+  protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     VorB vb;
@@ -384,6 +385,7 @@ public:
 
   class SymbolicBilinearFormIntegrator : public BilinearFormIntegrator
   {
+  protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
@@ -486,6 +488,7 @@ public:
 
   class SymbolicFacetBilinearFormIntegrator : public FacetBilinearFormIntegrator
   {
+  protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
@@ -535,6 +538,7 @@ public:
 
   class SymbolicEnergy : public BilinearFormIntegrator
   {
+  protected:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
