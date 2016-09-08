@@ -1011,7 +1011,7 @@ void NGS_DLL_HEADER ExportNgfem() {
     ("BFI", bp::no_init)
     .def("__init__", bp::make_constructor
          (FunctionPointer ([](string name, int dim, bp::object py_coef, bp::object definedon, bool imag,
-                              string filename)
+                              string filename, Flags flags)
                            {
                              Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                              auto bfi = GetIntegrators().CreateBFI (name, dim, coef);
@@ -1035,6 +1035,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                                  cout << "set integrator filename: " << filename << endl;
                                  bfi -> SetFileName (filename);
                                }
+                             bfi -> SetFlags (flags);
                              if (imag)
                                bfi = make_shared<ComplexBilinearFormIntegrator> (bfi, Complex(0,1));
 
@@ -1042,7 +1043,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("name")=NULL,bp::arg("dim")=-1,bp::arg("coef"),
-           bp::arg("definedon")=bp::object(),bp::arg("imag")=false, bp::arg("filename")="")))
+           bp::arg("definedon")=bp::object(),bp::arg("imag")=false, bp::arg("filename")="", bp::arg("flags") = bp::dict())))
     
     .def("__str__", FunctionPointer( [](PyBFI self) { return ToString<BilinearFormIntegrator>(*self.Get()); } ))
 
