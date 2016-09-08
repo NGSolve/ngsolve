@@ -1011,10 +1011,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                                      return bp::tuple (tmp); 
                                    }))
 
-    .def("CouplingType", &FESpace::GetDofCouplingType,
-         (bp::arg("self"),bp::arg("dofnr"))
+    .def("CouplingType", FunctionPointer ([](PyFES & self, int dofnr) -> COUPLING_TYPE
+                                          { return self.Get()->GetDofCouplingType(dofnr); }),
+         // (bp::arg("self"),bp::arg("dofnr")),
+         "get coupling type of a degree of freedom"
          )
-    .def("SetCouplingType", &FESpace::SetDofCouplingType)
+    .def("SetCouplingType", FunctionPointer ([](PyFES & self, int dofnr, COUPLING_TYPE ct) 
+                                             { return self.Get()->SetDofCouplingType(dofnr,ct); }),
+         (bp::arg("self"),bp::arg("dofnr")),
+         "set coupling type of a degree of freedom"
+         )
 
     /*
     .def ("GetFE", 
