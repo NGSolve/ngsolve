@@ -2110,9 +2110,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   bp::def("SymbolicLFI", FunctionPointer
           ([](PyCF cf, VorB vb, bool element_boundary,
-              bool skeleton,
-              bp::object definedon) 
-           -> PyWrapper<LinearFormIntegrator>
+              bool skeleton, bp::object definedon) 
            {
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
@@ -2131,7 +2129,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
              return PyWrapper<LinearFormIntegrator>(lfi);
            }),
-          (bp::args("self"),
+          (bp::args("form"),
            bp::args("VOL_or_BND")=VOL,
            bp::args("element_boundary")=false,
            bp::args("skeleton")=false,           
@@ -2174,7 +2172,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              
              return PyWrapper<BilinearFormIntegrator>(bfi);
            }),
-          (bp::args("coef"), bp::args("VOL_or_BND")=VOL,
+          (bp::args("form"), bp::args("VOL_or_BND")=VOL,
            bp::args("element_boundary")=false,
            bp::args("skeleton")=false,
            bp::arg("definedon")=bp::object())
