@@ -85,6 +85,20 @@ public:
 };
 
 typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
+
+MSVC2015_UPDATE3_GET_PTR_FIX(NumProcWrap)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BaseVTKOutput)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BilinearForm)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::CompoundFESpace)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::FESpace)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::GridFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::HCurlHighOrderFESpace)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::LinearForm)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::MeshAccess)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::NGS_Object)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::NumProc)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::Preconditioner)
+
 bp::object MakeProxyFunction2 (const FESpace & fes,
                               bool testfunction,
                               const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock)
