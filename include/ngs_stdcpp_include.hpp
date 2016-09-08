@@ -151,6 +151,21 @@
 //#define INLINE inline
 
 
+#ifdef __clang__
+namespace std
+{
+  // avoid expensive call to complex mult by using the grammar school implementation
+  INLINE std::complex<double> operator* (std::complex<double> a, std::complex<double> b)
+  {
+    return std::complex<double> (a.real()*b.real()-a.imag()*b.imag(),
+                                 a.real()*b.imag()+a.imag()*b.real());
+  }
+}
+#endif
+
+
+
+
 #ifdef PARALLEL
 #include <unistd.h>  // for usleep (only for parallel)
 #endif
