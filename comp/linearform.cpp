@@ -835,7 +835,7 @@ namespace ngcomp
   
 
 
-  ComponentLinearForm :: ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp)
+  ComponentLinearForm :: ComponentLinearForm (shared_ptr<LinearForm> abase_lf, int acomp, int ancomp)
     : LinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_lf->GetFESpace()))[acomp], "comp-lf", Flags()), 
       base_lf(abase_lf), comp(acomp) // , ncomp(ancomp)
   { 

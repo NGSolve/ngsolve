@@ -1530,7 +1530,14 @@ void NGS_DLL_HEADER ExportNgcomp()
                   ([](PyBF self, PyWrapper<BilinearFormIntegrator> & other) { *self.Get()+=other.Get(); return self; } ))
 
     .add_property("integrators", FunctionPointer
-                  ([](PyBF & self) { return bp::object (self->Integrators());} ))
+                  ([](PyBF & self)
+                   {
+                     bp::list igts;
+                     for (auto igt : self->Integrators())
+                       igts.append (PyWrapper<BilinearFormIntegrator> (igt));
+                     return igts;
+                     // return bp::object (self->Integrators());
+                   } ))
     
     .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
@@ -1567,7 +1574,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
                        // bfs.append(shared_ptr<BilinearForm> (new ComponentBilinearForm(self.Get().get(), i, ncomp)));
-                       bfs.append(PyWrapper<BilinearForm> (make_shared<ComponentBilinearForm>(self.Get().get(), i, ncomp)));
+                       bfs.append(PyWrapper<BilinearForm> (make_shared<ComponentBilinearForm>(self.Get(), i, ncomp)));
                      return bfs;
                    }),
                   "list of components for bilinearforms on compound-space")
@@ -1672,7 +1679,14 @@ void NGS_DLL_HEADER ExportNgcomp()
 
 
     .add_property("integrators", FunctionPointer
-                  ([](PyLF self) { return bp::object (self->Integrators());} ))
+                  ([](PyLF self)
+                   {
+                     bp::list igts;
+                     for (auto igt : self->Integrators())
+                       igts.append (PyWrapper<LinearFormIntegrator> (igt));
+                     return igts;
+                     // return bp::object (self->Integrators());
+                   } ))
 
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
@@ -1693,7 +1707,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                      int ncomp = fes->GetNSpaces();
                      for (int i = 0; i < ncomp; i++)
                        // lfs.append(shared_ptr<LinearForm> (new ComponentLinearForm(self.Get().get(), i, ncomp)));
-                       lfs.append(PyWrapper<LinearForm> (make_shared<ComponentLinearForm>(self.Get().get(), i, ncomp)));
+                       lfs.append(PyWrapper<LinearForm> (make_shared<ComponentLinearForm>(self.Get(), i, ncomp)));
                      return lfs;
                    }),
                   "list of components for linearforms on compound-space")
