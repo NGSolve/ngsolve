@@ -6,7 +6,6 @@ namespace ngstd
 {
 
 #if defined(__AVX__)
-#if defined(__AVX2__)
 #if defined(WIN32)
   template<typename T>
   void Prefetch( T *p, int hint )
@@ -20,6 +19,8 @@ namespace ngstd
     _mm_prefetch (p,  _MM_HINT_T0);
   }
 #endif // defined(WIN32)
+
+#if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
     return _mm256_cmpgt_epi64 (a,b);
