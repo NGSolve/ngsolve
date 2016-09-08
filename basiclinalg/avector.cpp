@@ -6,20 +6,14 @@ namespace ngstd
 {
 
 #if defined(__AVX__)
-#if defined(WIN32)
+
+  // MSVC needs a char*
   template<typename T>
-  void Prefetch( T *p, int hint )
+  void Prefetch (T * p, int hint)
   {
     _mm_prefetch (reinterpret_cast<char*>(p),  _MM_HINT_T0);
   }
-#else // defined(WIN32)
-  template<typename T>
-  void Prefetch( T *p, int hint )
-  {
-    _mm_prefetch (p,  _MM_HINT_T0);
-  }
-#endif // defined(WIN32)
-
+  
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
   {
@@ -233,31 +227,17 @@ namespace ngbla
 
 
 
-
   void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
   {
-    // static Timer t1("avx - transpose big");
-    // static Timer t2("avx - transpose small");
-
     size_t h = a.Height();
-    size_t w = a.Width();
-
-    bool big = (h > 16) && (w > 16);
-    // if (big) t1.Start(); else t2.Start();
-
     size_t i = 0;
     constexpr size_t bs = 64;
+    
     for ( ; i+bs<=h; i+=bs)
       TransposeMatrix2(a.Rows(i,i+bs), b.Cols(i,i+bs));
     TransposeMatrix2(a.Rows(i,h), b.Cols(i,h));    
-
-    // if (big) t1.Stop(); else t2.Stop();    
   }
   
-
-
-
-
 
 
   
