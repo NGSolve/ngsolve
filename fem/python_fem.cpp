@@ -430,7 +430,7 @@ void ExportCoefficientFunction()
              return InnerProduct (c1.Get(), c2.Get());
            }))
           
-    .def("Norm", FunctionPointer ( [](PyCF x) { return NormCF(x.Get()); }))
+    .def("Norm", FunctionPointer ( [](PyCF x) -> PyCF { return NormCF(x.Get()); }))
 
     /*
       // it's using the complex functions anyway ...
