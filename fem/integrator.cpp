@@ -235,7 +235,7 @@ namespace ngfem
         lock_guard<mutex> guard(m);
         if (cnt < 3) 
           cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
-	if (cnt == 2) cout << "(further warnings supressed)" << endl;
+	if (cnt == 2) cout << "(further warnings suppressed)" << endl;
 	cnt++;
       }
     FlatMatrix<double> mat(elx.Size(), lh);
@@ -257,8 +257,8 @@ namespace ngfem
       {
         lock_guard<mutex> guard(m);
         if (cnt < 3)
-          cout << "WARNING: call baseclass ApplyElementMatrix, type = " << typeid(*this).name() << endl;
-        if (cnt == 2) cout << "(further warnings supressed)" << endl;
+          cout << "WARNING: call baseclass ApplyElementMatrix complex, type = " << typeid(*this).name() << endl;
+        if (cnt == 2) cout << "(further warnings suppressed)" << endl;
 	cnt++;
       }
 
