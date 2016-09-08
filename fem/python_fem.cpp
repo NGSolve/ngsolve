@@ -83,6 +83,7 @@ class PythonCFWrap : public PythonCoefficientFunction , public bp::wrapper<Pytho
 
 std::mutex PythonCFWrap::m;
 
+MSVC2015_UPDATE3_GET_PTR_FIX(PythonCFWrap)
 
 
 
@@ -306,6 +307,46 @@ struct GenericConj {
     }
   };
 
+
+  class CoordCoefficientFunction : public CoefficientFunction
+  {
+    int dir;
+  public:
+    CoordCoefficientFunction (int adir) : dir(adir) { ; }
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
+    {
+      return ip.GetPoint()(dir);
+    }
+    virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+                          FlatMatrix<> result) const
+    {
+      result.Col(0) = ir.GetPoints().Col(dir);
+      /*
+      for (int i = 0; i < ir.Size(); i++)
+        result(i,0) = ir[i].GetPoint()(dir);
+      */
+    }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const {
+        auto v = Var(index);
+        if(dir==0) code.body += v.Assign(CodeExpr("ip.GetPoint()(0)"));
+        if(dir==1) code.body += v.Assign(CodeExpr("ip.GetPoint()(1)"));
+        if(dir==2) code.body += v.Assign(CodeExpr("ip.GetPoint()(2)"));
+    }
+
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    {
+      auto points = ir.GetPoints();
+      for (int i = 0; i < ir.Size(); i++)
+        values.Get(i) = points.Get(i, dir);
+    }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    {
+      Evaluate (ir, values);
+    }
+    
+  };
 
 
 
@@ -702,6 +743,22 @@ void ExportCoefficientFunction()
 
 
 
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BaseScalarFiniteElement)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BilinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BlockBilinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::BlockLinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CoefficientFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundBilinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundLinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ConstantCoefficientFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DifferentialOperator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainConstantCoefficientFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainVariableCoefficientFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ElementTransformation)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::FiniteElement)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::LinearFormIntegrator)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ProxyFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(CoordCoefficientFunction)
 
 
 // *************************************** Export FEM ********************************
