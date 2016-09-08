@@ -735,10 +735,10 @@ namespace ngcomp
 
   class ComponentBilinearForm : public BilinearForm
   {
-    BilinearForm * base_blf;
+    shared_ptr<BilinearForm> base_blf;
     int comp; // , ncomp;
   public:
-    ComponentBilinearForm (BilinearForm * abase_blf, int acomp, int ancomp);
+    ComponentBilinearForm (shared_ptr<BilinearForm> abase_blf, int acomp, int ancomp);
     virtual BilinearForm & AddIntegrator (shared_ptr<BilinearFormIntegrator> bfi);
 
     virtual void Assemble (LocalHeap & lh) { cerr << "comp - assemble is illegal" << endl; }

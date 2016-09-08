@@ -4307,7 +4307,7 @@ namespace ngcomp
 
 
 
-  ComponentBilinearForm :: ComponentBilinearForm (BilinearForm * abase_blf, int acomp, int ancomp)
+  ComponentBilinearForm :: ComponentBilinearForm (shared_ptr<BilinearForm> abase_blf, int acomp, int ancomp)
     : BilinearForm( (*dynamic_pointer_cast<CompoundFESpace> (abase_blf->GetFESpace()))[acomp], "comp-lf", Flags()), 
       base_blf(abase_blf), comp(acomp) // , ncomp(ancomp)
   { 

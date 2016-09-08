@@ -208,10 +208,10 @@ namespace ngcomp
 
   class ComponentLinearForm : public LinearForm
   {
-    LinearForm * base_lf;
+    shared_ptr<LinearForm> base_lf;
     int comp;
   public:
-    ComponentLinearForm (LinearForm * abase_lf, int acomp, int ancomp);
+    ComponentLinearForm (shared_ptr<LinearForm> abase_lf, int acomp, int ancomp);
     virtual LinearForm & AddIntegrator (shared_ptr<LinearFormIntegrator> lfi);
 
     virtual void AllocateVector () { cerr << "comp - allocate is illegal" << endl; }
