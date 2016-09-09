@@ -2869,8 +2869,8 @@ namespace ngbla
         Prefetch (pb+4*db,  _MM_HINT_T0);
         Prefetch (pb+4*db+8,  _MM_HINT_T0);
         // Prefetch (pb+4*db+11,  _MM_HINT_T0);
-        // Prefetch (pb+15,  _MM_HINT_T0);
-        // Prefetch (pb+23,  _MM_HINT_T0);
+        // Prefetch (pb+15,  _MM_HINT_T1);
+        // Prefetch (pb+23,  _MM_HINT_T1);
 
         // Prefetch (pb,  _MM_HINT_T1);
         // Prefetch (pb+8,  _MM_HINT_T1);
@@ -3104,6 +3104,78 @@ namespace ngbla
     _mm256_maskstore_pd (pc, mask, sum11.Data());
   }
 
+  // INLINE
+  void KernelScalNx12Trans (
+                            double * pa, size_t da,
+                            double * pb, size_t db,
+                            double * pc, size_t dc,
+                            size_t ninner, size_t na
+                            )
+  {
+    size_t i = 0;
+    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4*da)    // v-trans
+      {
+        double * nextpc = pc+4*dc;
+        for (size_t j = 0; j < 4; j++, nextpc+=dc)
+          {
+            Prefetch (nextpc, _MM_HINT_T0);
+            Prefetch (nextpc+8, _MM_HINT_T0);
+          }
+        KernelScal4x12Trans (ninner, pa, da, pb, db, pc, dc);
+      }
+    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)         // v-trans
+      KernelScal1x12Trans (ninner, pa, da, pb, db, pc, dc);
+  }
+
+  void KernelScalNx4Trans (
+                            double * pa, size_t da,
+                            double * pb, size_t db,
+                            double * pc, size_t dc,
+                            size_t ninner, size_t na
+                            )
+  {
+    size_t i = 0;
+    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4*da)    // v-trans
+      KernelScal4x4Trans (ninner, pa, da, pb, db, pc, dc);
+    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)         // v-trans
+      KernelScal1x4Trans (ninner, pa, da, pb, db, pc, dc);
+  }
+  
+  void KernelScalNx4Trans (
+                            double * pa, size_t da,
+                            double * pb, size_t db,
+                            double * pc, size_t dc,
+                            size_t ninner, size_t na,
+                            __m256i mask)
+  {
+    size_t i = 0;
+    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4*da)    // v-trans
+      KernelScal4x4Trans (ninner, pa, da, pb, db, pc, dc, mask);
+    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)         // v-trans
+      KernelScal1x4Trans (ninner, pa, da, pb, db, pc, dc, mask);
+  }
+
+  void KernelScalNxMTrans (
+                           double * pa, size_t da,
+                           double * pb, size_t db,
+                           double * pc, size_t dc,
+                           size_t ninner, size_t na, size_t nb
+                           )
+  {
+    size_t j = 0;
+    for ( ; j+12 <= nb; j+=12, pb += 12, pc += 12)
+      KernelScalNx12Trans (pa, da, pb, db, pc, dc, ninner, na);
+    for ( ; j+4 <= nb; j+=4, pb += 4, pc += 4)
+      KernelScalNx4Trans (pa, da, pb, db, pc, dc, ninner, na);
+    if (j < nb)
+      {
+        __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nb-j),
+                                            _mm256_set_epi64x(3,2,1,0));
+        KernelScalNx4Trans (pa, da, pb, db, pc, dc, ninner, na, mask);
+      }
+  }
+
+  
   INLINE
   void KernelScal4x12TransN (
                                     double * pa, size_t da,
@@ -3286,13 +3358,17 @@ namespace ngbla
     CopyMatrixInVTrans (k, na, pa, da, &mema[0], NA);
     // SliceMatrix<> aloc(k,na, NA, &mema[0]);
     // aloc = a;
-  
+
+    KernelScalNxMTrans(mema, NA, pb, db, pc, dc,
+                       k, na, nb);
+    /*
     size_t i = 0;
     constexpr size_t bs = NB;
     for ( ; i+bs <= nb; i += bs, pb += bs, pc += bs)
       BlockScal4x12Trans_BB (mema, NA, pb, db, pc, dc, na, bs, k);
     if (i < nb)
       BlockScal4x12Trans_BB (mema, NA, pb, db, pc, dc, na, nb-i, k);  
+    */
   }
 
   template <size_t na, size_t k>
@@ -3401,13 +3477,19 @@ namespace ngbla
                                  &a(0,0), a.Dist(), &mema[0], NA+8,
                                  &diag(0), diag.Dist());
 
+    KernelScalNxMTrans(mema, NA+8, &b(0,0), b.Dist(), &c(0,0), c.Dist(),
+                       k, na, nb);
+
+    /*
     size_t i = 0;
     constexpr size_t bs = NB;
     for ( ; i+bs <= nb; i += bs)
       BlockScal4x12Trans_BB_inline (mema, NA+8, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
     if (i < nb)
       BlockScal4x12Trans_BB_inline (mema, NA+8, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+    */
   }
+
 #else
 
   void MySubAtDB_BP (SliceMatrix<double> a,
