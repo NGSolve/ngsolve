@@ -2638,6 +2638,154 @@ namespace ngbla
       }
   }
 
+  // transpose matrix of avx-vectors (i.e. don't shuffle)
+  void CopyMatrixInVTrans (size_t h, size_t w,
+                           double * ps, size_t dists,
+                           double * pd, size_t distd)
+  {
+    __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                        _mm256_set_epi64x(3,2,1,0));
+    size_t i = 0;
+
+    /*
+    for ( ; i+3 < h; i+=4, pd += 16)
+      {
+        double * psnext = ps+4*dists;
+        size_t j = 0;
+        double * pd2 = pd;
+        
+        for ( ; j +4 <= w; j+=4, pd2 += 4*distd)
+          {
+            // Prefetch (ps+4*dists+j, _MM_HINT_T1);
+            // Prefetch (ps+5*dists+j, _MM_HINT_T1);
+            // Prefetch (ps+6*dists+j, _MM_HINT_T1);
+            // Prefetch (ps+7*dists+j, _MM_HINT_T1);
+            _mm256_store_pd(pd2, _mm256_loadu_pd(ps+j));
+            _mm256_store_pd(pd2+4, _mm256_loadu_pd(ps+dists+j));
+            _mm256_store_pd(pd2+8, _mm256_loadu_pd(ps+2*dists+j));
+            _mm256_store_pd(pd2+12, _mm256_loadu_pd(ps+3*dists+j));
+          }
+
+        _mm256_maskstore_pd (pd2, mask, _mm256_maskload_pd(ps+j, mask));
+        _mm256_maskstore_pd (pd2+4, mask, _mm256_maskload_pd(ps+dists+j, mask));
+        ps = psnext;
+      }
+    */
+    
+    for ( ; i+1 < h; i+=2, pd += 8)
+      {
+        double * psnext = ps+2*dists;
+        size_t j = 0;
+        double * pd2 = pd;
+        
+        for ( ; j+4 <= w; j+=4, pd2 += 4*distd)
+          {
+            // Prefetch (psnext+j, _MM_HINT_T0);
+            // Prefetch (psnext+dists+j, _MM_HINT_T0);
+            _mm256_store_pd(pd2, _mm256_loadu_pd(ps+j));
+            _mm256_store_pd(pd2+4, _mm256_loadu_pd(ps+dists+j));
+          }
+
+        _mm256_maskstore_pd (pd2, mask, _mm256_maskload_pd(ps+j, mask));
+        _mm256_maskstore_pd (pd2+4, mask, _mm256_maskload_pd(ps+dists+j, mask));
+        ps = psnext;
+      }
+
+    for ( /* size_t i = 0 */; i < h; i++, pd += 4)
+      {
+        double * psnext = ps+dists;
+        size_t j = 0;
+        double * pd2 = pd;
+        /*
+        for ( ; j + 16 <= w; j+=16, pd2 += 16*distd)
+          {
+            // Prefetch (ps+j+32, _MM_HINT_T0);
+            // Prefetch (ps+j+40, _MM_HINT_T0);
+            Prefetch (psnext+j, _MM_HINT_T0);
+            Prefetch (psnext+j+8, _MM_HINT_T0);
+            auto val1 = _mm256_loadu_pd(ps+j);
+            auto val2 = _mm256_loadu_pd(ps+j+4);
+            auto val3 = _mm256_loadu_pd(ps+j+8);
+            auto val4 = _mm256_loadu_pd(ps+j+12);
+
+            _mm256_store_pd (pd2, val1);
+            _mm256_store_pd (pd2+4*distd, val2);
+            _mm256_store_pd (pd2+8*distd, val3);
+            _mm256_store_pd (pd2+12*distd, val4);
+          }
+        */
+        Prefetch (psnext+j, _MM_HINT_T0);
+        Prefetch (psnext+j+8, _MM_HINT_T0);            
+        for ( ; j +4 <= w; j+=4, pd2 += 4*distd)
+          _mm256_store_pd(pd2, _mm256_loadu_pd(ps+j));
+          // _mm256_stream_pd(pd2, _mm256_loadu_pd(ps+j));
+        _mm256_maskstore_pd (pd2, mask, _mm256_maskload_pd(ps+j, mask));
+        
+        ps = psnext;
+      }
+  }
+
+  
+  void CopyMatrixInVTransScaleRows (size_t h, size_t w,
+                                    double * ps, size_t dists,
+                                    double * pd, size_t distd,
+                                    double * pscale, size_t distscale)
+  {
+    __m256i mask = my_mm256_cmpgt_epi64(_mm256_set1_epi64x(w&3),
+                                        _mm256_set_epi64x(3,2,1,0));
+
+    size_t i = 0;
+    
+    for ( ; i < h; i+=2, pd += 8, pscale += 2*distscale)
+      {
+        double * psnext = ps+2*dists;
+        __m256d scale0 = _mm256_set1_pd(*pscale);
+        __m256d scale1 = _mm256_set1_pd(*(pscale+distscale));
+
+        size_t j = 0;
+        double * pd2 = pd;
+
+        for ( ; j+4 <= w; j+=4, pd2 += 4*distd)
+          {
+            _mm256_storeu_pd(pd2, scale0 * _mm256_loadu_pd(ps+j));
+            _mm256_storeu_pd(pd2+4, scale1 * _mm256_loadu_pd(ps+dists+j));
+          }
+        _mm256_maskstore_pd (pd2, mask, scale0 * _mm256_maskload_pd(ps+j, mask));
+        _mm256_maskstore_pd (pd2+4, mask, scale1 * _mm256_maskload_pd(ps+dists+j, mask));
+        ps = psnext;
+      }
+      
+    for ( ; i < h; i++, pd += 4, pscale += distscale)
+      {
+        double * psnext = ps+dists;
+        __m256d scale = _mm256_set1_pd(*pscale);
+
+        size_t j = 0;
+        double * pd2 = pd;
+        for ( ; j + 16 <= w; j+=16, pd2 += 16*distd)
+          {
+            Prefetch (psnext+j, _MM_HINT_T0);
+            Prefetch (psnext+j+8, _MM_HINT_T0);            
+            auto val1 = scale * _mm256_loadu_pd(ps+j);
+            auto val2 = scale * _mm256_loadu_pd(ps+j+4);
+            auto val3 = scale * _mm256_loadu_pd(ps+j+8);
+            auto val4 = scale * _mm256_loadu_pd(ps+j+12);
+
+            _mm256_store_pd (pd2, val1);
+            _mm256_store_pd (pd2+4*distd, val2);
+            _mm256_store_pd (pd2+8*distd, val3);
+            _mm256_store_pd (pd2+12*distd, val4);
+          }
+        Prefetch (psnext+j, _MM_HINT_T0);
+        Prefetch (psnext+j+8, _MM_HINT_T0);            
+        for ( ; j +4 <= w; j+=4, pd2 += 4*distd)
+          _mm256_storeu_pd(pd2, scale * _mm256_loadu_pd(ps+j));
+        _mm256_maskstore_pd (pd2, mask, scale * _mm256_maskload_pd(ps+j, mask));
+        
+        ps = psnext;
+      }
+  }
+  
 
 
   void CopyMatrix (SliceMatrix<> source,
@@ -2651,6 +2799,7 @@ namespace ngbla
 
   // micro-kernels for A^t B
   // pa+i * pb+j   ->  C 4x12
+  INLINE
   void KernelScal4x12Trans (size_t ninner,
                             double * pa, size_t da,
                             double * pb, size_t db,
@@ -2706,21 +2855,22 @@ namespace ngbla
 #endif
   
 #pragma nounroll
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    // #pragma unroll 2
+    for (size_t i = 0; i < ninner; i++, pa += 4, pb += db)
       {
         __m256d b1 = _mm256_loadu_pd(pb);
         __m256d b2 = _mm256_loadu_pd(pb+4);
         __m256d b3 = _mm256_loadu_pd(pb+8);
 
-        // Prefetch (pb+db,  _MM_HINT_T1);
-        // Prefetch (pb+db+8,  _MM_HINT_T1);
-        // Prefetch (pb+db+15,  _MM_HINT_T1);
-        // Prefetch (pa+8,  _MM_HINT_T0);
-        // Prefetch (pb+2*db,  _MM_HINT_T0);
-        // Prefetch (pb+2*db+8,  _MM_HINT_T0);
-        // Prefetch (pb+2*db+15,  _MM_HINT_T0);
-        Prefetch (pb+15,  _MM_HINT_T0);
-        Prefetch (pb+23,  _MM_HINT_T0);
+        // Prefetch (pb+db,  _MM_HINT_T0);
+        // Prefetch (pb+db+8,  _MM_HINT_T0);
+        // Prefetch (pb+db+15,  _MM_HINT_T0);
+        Prefetch (pa+32,  _MM_HINT_T0);
+        Prefetch (pb+4*db,  _MM_HINT_T0);
+        Prefetch (pb+4*db+8,  _MM_HINT_T0);
+        // Prefetch (pb+4*db+11,  _MM_HINT_T0);
+        // Prefetch (pb+15,  _MM_HINT_T0);
+        // Prefetch (pb+23,  _MM_HINT_T0);
 
         // Prefetch (pb,  _MM_HINT_T1);
         // Prefetch (pb+8,  _MM_HINT_T1);
@@ -2795,7 +2945,7 @@ namespace ngbla
 #endif
   
 #pragma nounroll
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    for (size_t i = 0; i < ninner; i++, pa += 4 /* da */, pb += db)
       {
         __m256d b1 = _mm256_loadu_pd(pb);
         __m256d b2 = _mm256_loadu_pd(pb+4);
@@ -2847,7 +2997,7 @@ namespace ngbla
 #endif
   
 #pragma nounroll
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    for (size_t i = 0; i < ninner; i++, pa += 4 /* da */, pb += db)  // v-trans
       {
         __m256d b1 = _mm256_loadu_pd(pb);
 
@@ -2890,7 +3040,7 @@ namespace ngbla
     pc = hpc;
     
 #pragma nounroll    
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    for (size_t i = 0; i < ninner; i++, pa += 4 /* da */, pb += db)   // v-trans
       {
         __m256d a1 = _mm256_set1_pd(*pa);
         __m256d a2 = _mm256_set1_pd(pa[1]);
@@ -2926,7 +3076,7 @@ namespace ngbla
     __m256d sum11 = _mm256_loadu_pd(pc);
   
 #pragma nounroll
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    for (size_t i = 0; i < ninner; i++, pa += 4 /* da */, pb += db)   // v-trans
       {
         __m256d b1 = _mm256_loadu_pd(pb);
         __m256d a1 = _mm256_set1_pd(*pa);
@@ -2945,7 +3095,7 @@ namespace ngbla
     SIMD<double> sum11 = _mm256_maskload_pd(pc, mask);
     __assume (ninner > 0);
 #pragma nounroll    
-    for (size_t i = 0; i < ninner; i++, pa += da, pb += db)
+    for (size_t i = 0; i < ninner; i++, pa += 4 /* da */, pb += db)    // v-trans
       {
         __m256d a1 = _mm256_set1_pd(*pa);
         __m256d b1 = _mm256_maskload_pd(pb, mask);
@@ -2954,9 +3104,8 @@ namespace ngbla
     _mm256_maskstore_pd (pc, mask, sum11.Data());
   }
 
-
-
-  INLINE void KernelScal4x12TransN (
+  INLINE
+  void KernelScal4x12TransN (
                                     double * pa, size_t da,
                                     double * pb, size_t db,
                                     double * pc, size_t dc,
@@ -3009,19 +3158,19 @@ namespace ngbla
 
 
   // ninner is now small (16) such that kernel runs at peek performance ...
-  INLINE void KernelScal4x12TransNM (
-                                     double * pa, size_t da,
-                                     double * pb, size_t db,
-                                     double * pc, size_t dc,
-                                     size_t ninner, size_t na, size_t nb
-                                     )
+  void KernelScal4x12TransNM (
+                              double * pa, size_t da,
+                              double * pb, size_t db,
+                              double * pc, size_t dc,
+                              size_t ninner, size_t na, size_t nb
+                              )
   {
     // PreFetchMatrix (ninner, na, da, pa);
     // PreFetchMatrix (ninner, nb, db, pb);
     size_t i = 0;
-    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4)
+    for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4*da)    // v-trans
       KernelScal4x12TransN (pa, da, pb, db, pc, dc, ninner, nb);
-    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)
+    for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)         // v-trans
       KernelScal1x12TransN (pa, da, pb, db, pc, dc, ninner, nb);
 
     /*
@@ -3056,16 +3205,18 @@ namespace ngbla
     if (i < k)
     KernelScal4x12TransNM (pa, da, pb, db, pc, dc, k-i, na, nb);
     */
-
+    KernelScal4x12TransNM (pa, da, pb, db, pc, dc, k, na, nb);
+    /*
     alignas(64) double tempc[NA*NB];
     CopyMatrixIn (na, nb, pc, dc, &tempc[0], NB);
-    constexpr size_t bs = 16;
+    constexpr size_t bs = 128;
     size_t i = 0;
-    for ( ; i+bs <= k; i+=bs, pa+=bs*da, pb+=bs*db)
+    for ( ; i+bs <= k; i+=bs, pa+=bs*4, pb+=bs*db)   // pa += bs*4*da
       KernelScal4x12TransNM (pa, da, pb, db, &tempc[0], NB, bs, na, nb);
     if (i < k)
       KernelScal4x12TransNM (pa, da, pb, db, &tempc[0], NB, k-i, na, nb);
     CopyMatrixOut (na, nb, &tempc[0], NB, pc, dc);
+    */
   }
 
   void BlockScal4x12Trans_BB (
@@ -3099,10 +3250,10 @@ namespace ngbla
                   double * pc, size_t dc
                   )
   {
-    constexpr size_t NA = 128;
-    constexpr size_t NB = 96;
-    constexpr size_t K = 128;
-    BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, NA, NB, K);
+    // BlockScal4x12Trans_BB_inline (pa, da, pb, db, pc, dc, NA, NB, NK);
+    alignas (64) double mema[NA*NK];
+    CopyMatrixInVTrans (NK, NA, pa, da, &mema[0], NA);
+    // BlockScal4x12Trans_BB_inline (&mema[0], NA, pb, db, pc, dc, NA, NB, NK);
   }
 
 
@@ -3132,7 +3283,7 @@ namespace ngbla
     */
   
     alignas (64) double mema[NA*NK];
-    CopyMatrixIn (k, na, pa, da, &mema[0], NA);
+    CopyMatrixInVTrans (k, na, pa, da, &mema[0], NA);
     // SliceMatrix<> aloc(k,na, NA, &mema[0]);
     // aloc = a;
   
@@ -3166,7 +3317,7 @@ namespace ngbla
       BlockScal4x12Trans_BB (pa, da, pb, db, pc, dc, na, nb-i, k);    
     */
     alignas (64) double mema[na*k];
-    CopyMatrixIn (k, na, pa, da, &mema[0], na);
+    CopyMatrixInVTrans (k, na, pa, da, &mema[0], na);
 
     size_t i = 0;
     constexpr size_t bs = NB;
@@ -3241,21 +3392,21 @@ namespace ngbla
                      SliceVector<double> diag,
                      SliceMatrix<double> b, SliceMatrix<double> c)
   {
-    alignas (64) double mema[NA*NK];
+    alignas (64) double mema[(NA+8)*NK];
     size_t na = a.Width();
     size_t nb = b.Width();
     size_t k = a.Height();
     
-    CopyMatrixInScaleRows (k, na,
-                           &a(0,0), a.Dist(), &mema[0], NA,
-                           &diag(0), diag.Dist());
+    CopyMatrixInVTransScaleRows (k, na,
+                                 &a(0,0), a.Dist(), &mema[0], NA+8,
+                                 &diag(0), diag.Dist());
 
     size_t i = 0;
     constexpr size_t bs = NB;
     for ( ; i+bs <= nb; i += bs)
-      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
+      BlockScal4x12Trans_BB_inline (mema, NA+8, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, bs,k);
     if (i < nb)
-      BlockScal4x12Trans_BB_inline (mema, NA, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
+      BlockScal4x12Trans_BB_inline (mema, NA+8, &b(size_t(0),i), b.Dist(), &c(size_t(0),i), c.Dist(), na, nb-i, k);    
   }
 #else
 
