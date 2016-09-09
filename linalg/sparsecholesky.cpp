@@ -378,7 +378,7 @@ namespace ngla
     
     blocks.Append(0);
     for (int i = 1; i < nused; i++)
-      if (blocknrs[i] == i || i >= blocknrs.Last()+256)
+      if (blocknrs[i] == i || i >= blocks.Last()+256)
         blocks.Append (i);
     blocks.Append(nused);
 
