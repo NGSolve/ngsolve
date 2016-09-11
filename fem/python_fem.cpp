@@ -520,7 +520,7 @@ void ExportCoefficientFunction()
 
   bp::class_<ParameterCoefficientFunction,bp::bases<CoefficientFunction>,
     shared_ptr<ParameterCoefficientFunction>, boost::noncopyable>
-    ("ParameterCF", "CoefficientFunction with a modifiable value", bp::init<double>())
+    ("Parameter", "CoefficientFunction with a modifiable value", bp::init<double>())
     .def ("SetValue", &ParameterCoefficientFunction::SetValue,
           "modify parameter value")
     
