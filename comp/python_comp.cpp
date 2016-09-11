@@ -89,7 +89,7 @@ typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 MSVC2015_UPDATE3_GET_PTR_FIX(NumProcWrap)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BaseVTKOutput)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BilinearForm)
-MSVC2015_UPDATE3_GET_PTR_FIX(ngstd::PyWrapper<ngcomp::BilinearForm>)
+MSVC2015_UPDATE3_GET_PTR_FIX(PyWrapper<ngcomp::BilinearForm>)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::CompoundFESpace)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::FESpace)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::GridFunction)
