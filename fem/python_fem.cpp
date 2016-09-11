@@ -560,6 +560,23 @@ void ExportCoefficientFunction()
                              })))
     ;
 
+  bp::implicitly_convertible 
+    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ParameterCoefficientFunction>);
+
+  bp::class_<ParameterCoefficientFunction,bp::bases<CoefficientFunction>,
+    shared_ptr<ParameterCoefficientFunction>, boost::noncopyable>
+    ("Parameter", "CoefficientFunction with a modifiable value", bp::init<double>())
+    .def ("SetValue", &ParameterCoefficientFunction::SetValue,
+          "modify parameter value")
+    
+    ;
+
+  bp::implicitly_convertible 
+    <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+
+  
   class CoordCoefficientFunction : public CoefficientFunction
   {
     int dir;
