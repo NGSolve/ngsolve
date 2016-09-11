@@ -560,21 +560,28 @@ void ExportCoefficientFunction()
                              })))
     ;
 
-  bp::implicitly_convertible 
-    <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+  // bp::implicitly_convertible 
+  // <shared_ptr<ConstantCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
-  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ParameterCoefficientFunction>);
-
-  bp::class_<ParameterCoefficientFunction,bp::bases<CoefficientFunction>,
-    shared_ptr<ParameterCoefficientFunction>, boost::noncopyable>
-    ("Parameter", "CoefficientFunction with a modifiable value", bp::init<double>())
-    .def ("SetValue", &ParameterCoefficientFunction::SetValue,
+  // REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<ParameterCoefficientFunction>);
+  typedef PyWrapperDerived<ParameterCoefficientFunction, CoefficientFunction> PyParameterCF;
+  bp::class_<PyParameterCF,bp::bases<PyCF>>
+    ("Parameter", "CoefficientFunction with a modifiable value", bp::no_init)
+    .def ("__init__", bp::make_constructor
+          (FunctionPointer ([] (double val) -> PyParameterCF*
+                            {
+                              return new PyParameterCF(make_shared<ParameterCoefficientFunction>(val));
+                            })))
+    .def ("Set",
+          FunctionPointer ([] (PyParameterCF cf, double val)
+                           {
+                             cf->SetValue (val);
+                           }),
           "modify parameter value")
-    
     ;
 
-  bp::implicitly_convertible 
-    <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
+  // bp::implicitly_convertible 
+  // <shared_ptr<ParameterCoefficientFunction>, shared_ptr<CoefficientFunction> >(); 
 
   
   class CoordCoefficientFunction : public CoefficientFunction
@@ -768,6 +775,7 @@ MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CoefficientFunction)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundBilinearFormIntegrator)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::CompoundLinearFormIntegrator)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ConstantCoefficientFunction)
+MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::ParameterCoefficientFunction)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DifferentialOperator)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainConstantCoefficientFunction)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngfem::DomainVariableCoefficientFunction)
