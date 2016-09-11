@@ -6,36 +6,52 @@
 namespace ngbla
 {
   
-  template <typename T> struct FooAMatrixType
-  {
-    typedef FlatMatrix<T> type;
-  };
-
   template <typename T> struct FooAVectorType
   {
-    typedef FlatVector<T> type;
+    typedef FlatVector<T> flattype;
+    typedef Vector<T> type;
   };
 
+  template <typename T, ORDERING ORD> struct FooAMatrixType
+  {
+    typedef FlatMatrix<T> flattype;
+    typedef Matrix<T,ORD> type;
+  };
 
   class AFlatVectorD;
   class AFlatMatrixD;
+  class AVectorD;
+  class AMatrixD;
+  class AMatrixDCol;
 
   template <> struct FooAVectorType<double>
   {
-    typedef AFlatVectorD type;
+    typedef AFlatVectorD flattype;
+    typedef AVectorD type;
   };
-  template <> struct FooAMatrixType<double>
+
+  template <> struct FooAMatrixType<double,RowMajor>
   {
-    typedef AFlatMatrixD type;
+    typedef AFlatMatrixD flattype;
+    typedef AMatrixD type;
+  };
+  
+  template <> struct FooAMatrixType<double,ColMajor>
+  {
+    // typedef AFlatMatrixD flattype;
+    typedef AMatrixDCol type;
   };
 
 
-
+  template <typename T = double> 
+  using AFlatVector = typename FooAVectorType<T>::flattype;
+  template <typename T = double, ORDERING ORD = RowMajor> 
+  using AFlatMatrix = typename FooAMatrixType<T,ORD>::flattype;
 
   template <typename T = double> 
-  using AFlatVector = typename FooAVectorType<T>::type;
-  template <typename T = double> 
-  using AFlatMatrix = typename FooAMatrixType<T>::type;
+  using AVector = typename FooAVectorType<T>::type;
+  template <typename T = double, ORDERING ORD = RowMajor> 
+  using AMatrix = typename FooAMatrixType<T,ORD>::type;
 
 
   template <typename T> class ABareVector;
@@ -156,50 +172,53 @@ namespace ngbla
 
   class AFlatVectorD : public SIMDExpr<AFlatVectorD>
   {
-    int size; 
-    // unsigned vsize() const { return (unsigned(size)+3) / 4; }
-    // __m256d * __restrict data;
-    unsigned vsize() const { return (unsigned(size)+SIMD<double>::Size()-1) / SIMD<double>::Size(); }
+  protected:
+    size_t size; 
+    size_t vsize() const { return (size+SIMD<double>::Size()-1) / SIMD<double>::Size(); }
     SIMD<double> * __restrict data;  
   public:
-    AFlatVectorD(int asize, LocalHeap & lh)
+    AFlatVectorD(size_t asize, LocalHeap & lh)
     {
       size = asize;
       data = lh.Alloc<SIMD<double>> (vsize());
     }
 
-    AFlatVectorD (int as, double * adata)
+    AFlatVectorD (size_t as, SIMD<double> * adata)
+      : size(as), data(adata)
+    { ; }
+
+    AFlatVectorD (size_t as, double * adata)
       : size(as), data((SIMD<double>*)(void*)adata)
     { ; }
 
     enum { IS_LINEAR = true };
-    int Size () const { return size; }
-    int VSize () const { return vsize(); }
-    int Height () const { return size; }
-    int Width () const { return 1; }
+    size_t Size () const { return size; }
+    size_t VSize () const { return vsize(); }
+    size_t Height () const { return size; }
+    size_t Width () const { return 1; }
   
-    double & operator() (int i) const
+    double & operator() (size_t i) const
     {
       return ((double*)data)[i]; 
     }
 
-    double & operator() (int i, int j) const
+    double & operator() (size_t i, size_t j) const
     {
       return ((double*)data)[i]; 
     }
 
-    SIMD<double> & Get(int i) const { return data[i]; }
+    SIMD<double> & Get(size_t i) const { return data[i]; }
 
     INLINE const AFlatVectorD & operator= (const AFlatVectorD & v2) const
     {
-      for (int i = 0; i < vsize(); i++)
+      for (size_t i = 0; i < vsize(); i++)
         data[i] = v2.data[i];
       return *this;
     }
   
     AFlatVectorD & operator= (double d)
     {
-      for (int i = 0; i < vsize(); i++)
+      for (size_t i = 0; i < vsize(); i++)
         data[i] = SIMD<double> (d);
       return *this;
     }
@@ -207,7 +226,7 @@ namespace ngbla
     template<typename TB>
     INLINE const AFlatVectorD & operator= (const Expr<TB> & v) const
     {
-      for (int i = 0; i < size; i++)
+      for (size_t i = 0; i < size; i++)
         ((double*)data)[i] = v.Spec()(i);
       return *this;
     }
@@ -215,7 +234,7 @@ namespace ngbla
     template<typename TB>
     INLINE const AFlatVectorD & operator= (const SIMDExpr<TB> & v) const
     {
-      for (int i = 0; i < vsize(); i++)
+      for (size_t i = 0; i < vsize(); i++)
         data[i] = v.Spec().Get(i);
       return *this;
     }
@@ -223,67 +242,82 @@ namespace ngbla
     template<typename TB>
     INLINE const AFlatVectorD & operator+= (const SIMDExpr<TB> & v) const
     {
-      for (auto i : Range(vsize()))
+      for (size_t i = 0; i < vsize(); i++)
         data[i] += v.Spec().Get(i);
       return *this;
     }
+
+    FlatVector<> Range (size_t begin, size_t end) const
+    {
+      return FlatVector<> (end-begin, ((double*)data)+begin);
+    }
   };
 
-
+  class AVectorD : public AFlatVectorD
+  {
+  public:
+    AVectorD (size_t as)
+      : AFlatVectorD (as, (double*) _mm_malloc(sizeof(SIMD<double>) * ((as+SIMD<double>::Size()-1) / SIMD<double>::Size()), 64)) { ; }
+    ~AVectorD()
+    {
+      _mm_free(data);
+    }
+    using AFlatVectorD::operator=;
+  };
 
   class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
   {
-    int h, w;
+  protected:
+    size_t h, w;
     SIMD<double> * __restrict data;
   public:
     AFlatMatrixD () = default;
     AFlatMatrixD (const AFlatMatrixD &) = default;
-    AFlatMatrixD(int ah, int aw, LocalHeap & lh)
+    AFlatMatrixD (size_t ah, size_t aw, LocalHeap & lh)
     {
       h = ah;
       w = aw;
-      // int rw = (w+SIMD<double>::Size()-1)&(-SIMD<double>::Size());
-      // data = (__m256d*)lh.Alloc<double> (h*rw);
-      data = lh.Alloc<SIMD<double>> (h* ((unsigned(w)+SIMD<double>::Size()-1)/SIMD<double>::Size()));
+      // data = lh.Alloc<SIMD<double>> (h* ((unsigned(w)+SIMD<double>::Size()-1)/SIMD<double>::Size()));
+      data = lh.Alloc<SIMD<double>> (h* ((w+SIMD<double>::Size()-1)/SIMD<double>::Size()));
     }
-
-    AFlatMatrixD(int ah, int aw, double * adata)
+    
+    AFlatMatrixD(size_t ah, size_t aw, double * adata)
       : h(ah), w(aw), data((SIMD<double>*)(void*)adata) { ; } 
-
-    AFlatMatrixD(int ah, int aw, SIMD<double> * mem)
+    
+    AFlatMatrixD(size_t ah, size_t aw, SIMD<double> * mem)
       : h(ah), w(aw), data(mem) { ; } 
-
-    void AssignMemory (int ah, int aw, SIMD<double> * mem)
+    
+    void AssignMemory (size_t ah, size_t aw, SIMD<double> * mem)
     {
       h = ah;
       w = aw;
       data = mem;
     }
-  
+    
     enum { IS_LINEAR = false };
-    int Size () const { return h*w; }
-    int Height () const { return h; }
-    int Width () const { return w; }
+    size_t Size () const { return h*w; }
+    size_t Height () const { return h; }
+    size_t Width () const { return w; }
     // unsigned int VWidth() const { return (unsigned(w)+3)/4; }
-    unsigned int VWidth() const { return (unsigned(w)+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
-    double & operator() (int i) const
+    size_t VWidth() const { return (w+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
+    double & operator() (size_t i) const
     {
       return ((double*)data)[i]; 
     }
 
-    double & operator() (int i, int j) const
+    double & operator() (size_t i, size_t j) const
     {
-      int vw = VWidth(); // (w+3)/4;
+      size_t vw = VWidth(); // (w+3)/4;
       return ((double*)data)[SIMD<double>::Size()*i*vw+j]; 
     }
 
-    SIMD<double> & Get(int i) const { return data[i]; }
-    SIMD<double> & Get(int i, int j) const { return data[i*VWidth()+j]; }
+    SIMD<double> & Get(size_t i) const { return data[i]; }
+    SIMD<double> & Get(size_t i, size_t j) const { return data[i*VWidth()+j]; }
 
     const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
     {
-      int vw = VWidth(); // (w+3)/4;
-      for (int i = 0; i < h*vw; i++)
+      size_t vw = VWidth();
+      for (size_t i = 0; i < h*vw; i++)
         data[i] = m2.data[i];
       return *this;
     }
@@ -291,68 +325,135 @@ namespace ngbla
     AFlatMatrixD & operator= (double d)
     {
       auto vw = VWidth(); //  (unsigned(w)+3)/4;
-      int els = unsigned(h)*unsigned(vw);
-      for (int i = 0; i < els; i++)
+      size_t els = h*vw; 
+      for (size_t i = 0; i < els; i++)
         data[i] = SIMD<double>(d);
       return *this;
     }
 
-
     template<typename TB>
     INLINE const AFlatMatrixD & operator= (const Expr<TB> & v) const
     {
-      for (int i = 0; i < h; i++)
-        for (int j = 0; j < w; j++)
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
           (*this)(i,j) = v.Spec()(i,j);
       return *this;
     }
 
     AFlatMatrixD & operator*= (double d)
     {
-      int vw = VWidth(); //  (w+3)/4;
-      for (int i = 0; i < h*vw; i++)
+      size_t vw = VWidth(); //  (w+3)/4;
+      for (size_t i = 0; i < h*vw; i++)
         data[i] *= SIMD<double>(d);
       return *this;
     }
   
     operator SliceMatrix<double> () const
     {
-      int vw = VWidth(); // (w+3)/4;
+      size_t vw = VWidth(); // (w+3)/4;
       return SliceMatrix<double> (h, w, SIMD<double>::Size()*vw, (double*)data);
     }
    
     SliceVector<> Col (int c) const
     {
-      int vw = VWidth(); // (w+3)/4;    
+      size_t vw = VWidth(); // (w+3)/4;    
       return SliceVector<> (h, SIMD<double>::Size()*vw, ((double*)data)+c);
     }
 
-    AFlatVector<double> Row (int r) const
+    AFlatVector<double> Row (size_t r) const
     {
       return AFlatVector<double> (w, (double*)&Get(r,0));
     }
   
-    AFlatMatrixD Rows(int begin, int end) const
+    AFlatMatrixD Rows(size_t begin, size_t end) const
     {
-      int vw = VWidth(); // (w+3)/4;
+      size_t vw = VWidth(); 
       return AFlatMatrixD(end-begin, w, data+begin*vw);
     }
     AFlatMatrixD Rows(IntRange r) const
     { return Rows(r.begin(), r.end()); }
 
-    SliceMatrix<> Cols(int begin, int end) const
+    SliceMatrix<> Cols(size_t begin, size_t end) const
     {
-      int vw = VWidth(); // (w+3)/4;
+      size_t vw = VWidth(); 
       return SliceMatrix<>(h, end-begin, SIMD<double>::Size()*vw, ((double*)data)+begin);
     }
     SliceMatrix<> Cols(IntRange r) const
     { return Cols(r.begin(), r.end()); }
+  };
 
-
+  class AMatrixD : public AFlatMatrixD
+  {
+  public:
+    AMatrixD (size_t ah, size_t aw)
+      : AFlatMatrixD (ah, aw, (double*)_mm_malloc(sizeof(SIMD<double>)*ah* ((aw+SIMD<double>::Size()-1)/SIMD<double>::Size()), 64)) { ; }
+    ~AMatrixD ()
+    {
+      _mm_free (data);
+    }
+    using AFlatMatrixD::operator=;
   };
 
 
+  class AFlatMatrixDCol
+  {
+  protected:
+    size_t h, w;
+    SIMD<double> * __restrict data;
+    
+  public:
+    AFlatMatrixDCol (size_t ah, size_t aw, SIMD<double> * adata)
+      : h(ah), w(aw), data(adata) { ; }
 
+    size_t VHeight() const { return (h+SIMD<double>::Size()-1)/SIMD<double>::Size(); }
+
+    double & operator() (size_t i, size_t j) const
+    {
+      size_t vh = VHeight();
+      return ((double*)data)[SIMD<double>::Size()*j*vh+i];
+    }
+      
+    AFlatVector<double> Col (size_t i) const
+    {
+      return AFlatVector<double> (h, data+i*VHeight());
+    }
+    
+    AFlatMatrixDCol Cols (size_t begin, size_t end) const
+    {
+      return AFlatMatrixDCol (h, end-begin, data+begin*VHeight());
+    }
+    AFlatMatrixDCol Cols (IntRange r) const
+    { return Cols(r.begin(), r.end()); }
+
+    SliceMatrix<double,ColMajor> Rows (size_t begin, size_t end) const
+    {
+      return SliceMatrix<double,ColMajor> (end-begin, w, VHeight()*SIMD<double>::Size(), ((double*)data)+begin);
+    }
+    
+    AFlatMatrixDCol & operator= (double scal)
+    {
+      for (size_t i = 0; i < w*VHeight(); i++)
+        data[i] = scal;
+      return *this;
+    }
+  };
+  
+  // col major
+  class AMatrixDCol : public AFlatMatrixDCol
+  {
+  public:
+    AMatrixDCol (size_t ah, size_t aw)
+      : AFlatMatrixDCol (ah, aw, (SIMD<double>*)_mm_malloc(sizeof(SIMD<double>)*aw* ((ah+SIMD<double>::Size()-1)/SIMD<double>::Size()), 64)) { ; }
+      
+    ~AMatrixDCol ()
+    {
+      _mm_free (data);
+    }
+
+    using AFlatMatrixDCol::operator=;
+  };
+  
+  
 
   /*
     template <typename T>
