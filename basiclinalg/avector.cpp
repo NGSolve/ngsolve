@@ -2501,7 +2501,7 @@ namespace ngbla
 #if defined (__AVX__)
 
   // prefetch a row-major matrix
-  void PreFetchMatrix (size_t h, size_t w, size_t dist, double * p)
+  void PreFetchMatrix (size_t h, size_t w, double * p, size_t dist)
   {
 #pragma nounroll  
     for (size_t i = 0; i < h; i++, p += dist)
@@ -2553,6 +2553,27 @@ namespace ngbla
       }
   }
 
+  // witdth is 12
+  void CopyMatrixIn12 (size_t h, 
+                       double * ps, size_t dists,
+                       double * pd, size_t distd)
+  {
+    for (size_t i = 0; i < h; i++, ps += dists, pd += distd)
+      {
+        __m256d val0 = _mm256_loadu_pd (ps);
+        __m256d val1 = _mm256_loadu_pd (ps+4);
+        __m256d val2 = _mm256_loadu_pd (ps+8);
+        _mm256_store_pd (pd, val0);
+        _mm256_store_pd (pd+4, val1);
+        _mm256_store_pd (pd+8, val2);
+        Prefetch (ps+2*dists, _MM_HINT_T1);
+        Prefetch (ps+2*dists+8, _MM_HINT_T1);
+        // Prefetch (ps+4*dists, _MM_HINT_T2);
+        // Prefetch (ps+4*dists+8, _MM_HINT_T2);
+      }
+  }
+
+  
   // copy matrix (width is multiple of 4)
   void CopyMatrixOut (size_t h, size_t w,
                       double * ps, size_t dists,
@@ -2862,8 +2883,8 @@ namespace ngbla
         __m256d b2 = _mm256_loadu_pd(pb+4);
         __m256d b3 = _mm256_loadu_pd(pb+8);
 
-        // Prefetch (pb+db,  _MM_HINT_T0);
-        // Prefetch (pb+db+8,  _MM_HINT_T0);
+        // Prefetch (pb+db,  _MM_HINT_T1);
+        // Prefetch (pb+db+8,  _MM_HINT_T1);
         // Prefetch (pb+db+15,  _MM_HINT_T0);
         Prefetch (pa+32,  _MM_HINT_T0);
         Prefetch (pb+4*db,  _MM_HINT_T0);
@@ -3113,6 +3134,11 @@ namespace ngbla
                             )
   {
     size_t i = 0;
+
+    alignas (64) double memb[NK*12];
+    CopyMatrixIn12 (ninner, pb, db, &memb[0], 12);
+    // PreFetchMatrix (ninner, 12, pb+12, db);
+    
     for ( ; i+4 <= na; i+=4, pc += 4*dc, pa += 4*da)    // v-trans
       {
         double * nextpc = pc+4*dc;
@@ -3121,10 +3147,12 @@ namespace ngbla
             Prefetch (nextpc, _MM_HINT_T0);
             Prefetch (nextpc+8, _MM_HINT_T0);
           }
-        KernelScal4x12Trans (ninner, pa, da, pb, db, pc, dc);
+        // KernelScal4x12Trans (ninner, pa, da, pb, db, pc, dc);
+        KernelScal4x12Trans (ninner, pa, da, memb, 12, pc, dc);
       }
     for ( ; i+1 <= na; i+=1, pc += dc, pa += 1)         // v-trans
-      KernelScal1x12Trans (ninner, pa, da, pb, db, pc, dc);
+      // KernelScal1x12Trans (ninner, pa, da, pb, db, pc, dc);
+      KernelScal1x12Trans (ninner, pa, da, memb, 12, pc, dc);
   }
 
   void KernelScalNx4Trans (
@@ -3163,7 +3191,7 @@ namespace ngbla
                            )
   {
     size_t j = 0;
-    for ( ; j+12 <= nb; j+=12, pb += 12, pc += 12)
+    for ( ; j+12 <= nb; j+=12 , pb += 12, pc += 12)
       KernelScalNx12Trans (pa, da, pb, db, pc, dc, ninner, na);
     for ( ; j+4 <= nb; j+=4, pb += 4, pc += 4)
       KernelScalNx4Trans (pa, da, pb, db, pc, dc, ninner, na);
