@@ -89,6 +89,7 @@ typedef PyWrapperDerived<ProxyFunction, CoefficientFunction> PyProxyFunction;
 MSVC2015_UPDATE3_GET_PTR_FIX(NumProcWrap)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BaseVTKOutput)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::BilinearForm)
+MSVC2015_UPDATE3_GET_PTR_FIX(PyWrapper<ngcomp::BilinearForm>)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::CompoundFESpace)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::FESpace)
 MSVC2015_UPDATE3_GET_PTR_FIX(ngcomp::GridFunction)
@@ -1488,7 +1489,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   PyExportArray<shared_ptr<BilinearFormIntegrator>> ();
 
-  typedef BilinearForm BF;
+  // typedef BilinearForm BF;
   typedef PyWrapper<BilinearForm> PyBF;
   bp::class_<PyBF>("BilinearForm", bp::no_init)
     .def("__init__", bp::make_constructor
@@ -1649,7 +1650,7 @@ void NGS_DLL_HEADER ExportNgcomp()
 
   PyExportArray<shared_ptr<LinearFormIntegrator>> ();
 
-  typedef LinearForm LF;
+  // typedef LinearForm LF;
   typedef PyWrapper<LinearForm> PyLF;
   bp::class_<PyLF>("LinearForm", bp::no_init)
     .def("__init__", bp::make_constructor

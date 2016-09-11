@@ -309,6 +309,34 @@ namespace ngfem
   };
 
 
+  /// The coefficient is constant everywhere
+  class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunction
+  {
+    ///
+    double val;
+  public:
+    ///
+    ParameterCoefficientFunction (double aval);
+    ///
+    virtual ~ParameterCoefficientFunction ();
+    ///
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const
+    {
+      return val;
+    }
+    
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<double> values) const;
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const
+    { values = val; }
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+                           AFlatMatrix<double> values) const
+    { values = val; }
+    virtual void SetValue (double in)
+    { val = in; }
+    virtual void PrintReport (ostream & ost) const;
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+  };
+
   
 
   /// The coefficient is constant in every sub-domain

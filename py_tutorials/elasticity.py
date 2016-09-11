@@ -48,11 +48,8 @@ def NeoHook (C):
 
 
 
-factorspace = FESpace("number", mesh)
-factor = GridFunction(factorspace)
-factor.vec[0] = 0.1
 
-  
+factor = Parameter(0.1)
 
 a = BilinearForm(fes, symmetric=False)
 a += SymbolicEnergy(  NeoHook (C).Compile() )
@@ -69,7 +66,7 @@ w = u.vec.CreateVector()
 for loadstep in range(50):
     
     print ("loadstep", loadstep)
-    factor.vec[:] = (loadstep+1)/10
+    factor.Set ((loadstep+1)/10)
     
     for it in range(5):
         print ("Newton iteration", it)
