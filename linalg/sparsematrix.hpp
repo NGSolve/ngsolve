@@ -205,7 +205,9 @@ public:
     size_t NZE() const { return nze; }
 
     FlatArray<int> GetRowIndices(int i) const
-    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+      // { return FlatArray<int> (int(firsti[i+1]-firsti[i]), &colnr[firsti[i]]); }
+    { return FlatArray<int> (int(firsti[i+1]-firsti[i]), colnr+firsti[i]); }
 
     size_t First (int i) const { return firsti[i]; }
 
@@ -395,7 +397,8 @@ public:
     }
 
     FlatVector<TM> GetRowValues(int i) const
-    { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+      // { return FlatVector<TM> (firsti[i+1]-firsti[i], &data[firsti[i]]); }
+    { return FlatVector<TM> (firsti[i+1]-firsti[i], data+firsti[i]); }
 
 
     virtual void AddElementMatrix(FlatArray<int> dnums1, 

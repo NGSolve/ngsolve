@@ -457,7 +457,7 @@ namespace ngstd
 
     // const CArray<T> operator+ (int pos)
     // { return CArray<T> (data+pos); }
-    INLINE T * operator+ (int pos) { return data+pos; }
+    INLINE T * operator+ (int pos) const { return data+pos; }
 
 
     /// access last element. check by macro CHECK_RANGE
