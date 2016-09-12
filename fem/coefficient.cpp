@@ -180,8 +180,10 @@ namespace ngfem
     if(code.is_simd) type = "SIMD<double>";
     if(code.deriv==1) type = "AutoDiff<1,"+type+">";
     if(code.deriv==2) type = "AutoDiffDiff<1,"+type+">";
+    stringstream s;
+    s << "*reinterpret_cast<double*>(" << &val << ")";
     code.body += Var(index).Declare(type);
-    code.body += Var(index).Assign(Var(val), false);
+    code.body += Var(index).Assign(s.str(), false);
   }
 
   
