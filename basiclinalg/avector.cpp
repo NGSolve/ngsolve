@@ -8,11 +8,10 @@ namespace ngstd
 #if defined(__AVX__)
 
   // MSVC needs a char*
-  template<typename T>
-  void Prefetch (T * p, decltype(_MM_HINT_T0) hint)
-  {
-    _mm_prefetch (reinterpret_cast<char*>(p), hint);
-  }
+  template<int HINT> void Prefetch (void * p) { _mm_prefetch (p, _MM_HINT_T2); }
+  template <> void Prefetch<0> (void * p) { _mm_prefetch (p, _MM_HINT_T0); }
+  template <> void Prefetch<1> (void * p) { _mm_prefetch (p, _MM_HINT_T1); }
+
   
 #if defined(__AVX2__)
   INLINE __m256i my_mm256_cmpgt_epi64 (__m256i a, __m256i b)
@@ -2347,18 +2346,18 @@ namespace ngbla
                               double * pc, size_t dc)
   {
     size_t i = 0;
-    constexpr auto hint = _MM_HINT_T1;
+    constexpr auto HINT = 1;
     for ( ; i+3 <= wa; i+= 3, pa += 3, pc += 3*dc)
       {
-        Prefetch (pc+3*dc, hint);
-        Prefetch (pc+3*dc+8, hint);
-        Prefetch (pc+3*dc+16, hint);
-        Prefetch (pc+4*dc, hint);
-        Prefetch (pc+4*dc+8, hint);
-        Prefetch (pc+4*dc+16, hint);
-        Prefetch (pc+5*dc, hint);
-        Prefetch (pc+5*dc+8, hint);
-        Prefetch (pc+5*dc+16, hint);
+        Prefetch<HINT> (pc+3*dc);
+        Prefetch<HINT> (pc+3*dc+8);
+        Prefetch<HINT> (pc+3*dc+16);
+        Prefetch<HINT> (pc+4*dc);
+        Prefetch<HINT> (pc+4*dc+8);
+        Prefetch<HINT> (pc+4*dc+16);
+        Prefetch<HINT> (pc+5*dc);
+        Prefetch<HINT> (pc+5*dc+8);
+        Prefetch<HINT> (pc+5*dc+16);
         MyScal3x16Trans (ninner, pa, da, pb, db, pc, dc);
       }
     for ( ; i < wa; i+= 1, pa += 1, pc += dc)
@@ -2506,7 +2505,7 @@ namespace ngbla
 #pragma nounroll  
     for (size_t i = 0; i < h; i++, p += dist)
       for (size_t j = 0; j < w+8; j+=8) // cache line of 64 B i.e. 8 doubles
-        Prefetch (p+j, _MM_HINT_T1);
+        Prefetch<1> (p+j);
   }
 
   // copy matrix (width is multiple of 4)
@@ -2538,8 +2537,8 @@ namespace ngbla
             _mm256_storeu_pd (pd+j+4, val2);
             _mm256_storeu_pd (pd+j+8, val3);
             _mm256_storeu_pd (pd+j+12, val4);
-            Prefetch (psnext+j,  _MM_HINT_T1);
-            Prefetch (psnext+j+8,  _MM_HINT_T1);
+            Prefetch<1> (psnext+j);
+            Prefetch<1> (psnext+j+8);
           }
         for ( ; j +4 <= w; j+=4)
           _mm256_storeu_pd(pd+j, _mm256_loadu_pd(ps+j));
@@ -2566,8 +2565,8 @@ namespace ngbla
         _mm256_store_pd (pd, val0);
         _mm256_store_pd (pd+4, val1);
         _mm256_store_pd (pd+8, val2);
-        Prefetch (ps+2*dists, _MM_HINT_T1);
-        Prefetch (ps+2*dists+8, _MM_HINT_T1);
+        Prefetch<1> (ps+2*dists);
+        Prefetch<1> (ps+2*dists+8);
         // Prefetch (ps+4*dists, _MM_HINT_T2);
         // Prefetch (ps+4*dists+8, _MM_HINT_T2);
       }
@@ -2644,8 +2643,8 @@ namespace ngbla
             _mm256_storeu_pd (pd+j+4, val2);
             _mm256_storeu_pd (pd+j+8, val3);
             _mm256_storeu_pd (pd+j+12, val4);
-            Prefetch (psnext+j,  _MM_HINT_T1);
-            Prefetch (psnext+j+8,  _MM_HINT_T1);
+            Prefetch<1> (psnext+j);
+            Prefetch<1> (psnext+j+8);
           }
         for ( ; j +4 <= w; j+=4)
           _mm256_storeu_pd(pd+j, scale * _mm256_loadu_pd(ps+j));
@@ -2735,8 +2734,8 @@ namespace ngbla
             _mm256_store_pd (pd2+12*distd, val4);
           }
         */
-        Prefetch (psnext+j, _MM_HINT_T0);
-        Prefetch (psnext+j+8, _MM_HINT_T0);            
+        Prefetch<0> (psnext+j);
+        Prefetch<0> (psnext+j+8);            
         for ( ; j +4 <= w; j+=4, pd2 += 4*distd)
           _mm256_store_pd(pd2, _mm256_loadu_pd(ps+j));
           // _mm256_stream_pd(pd2, _mm256_loadu_pd(ps+j));
@@ -2785,8 +2784,8 @@ namespace ngbla
         double * pd2 = pd;
         for ( ; j + 16 <= w; j+=16, pd2 += 16*distd)
           {
-            Prefetch (psnext+j, _MM_HINT_T0);
-            Prefetch (psnext+j+8, _MM_HINT_T0);            
+            Prefetch<0> (psnext+j);
+            Prefetch<0> (psnext+j+8);            
             auto val1 = scale * _mm256_loadu_pd(ps+j);
             auto val2 = scale * _mm256_loadu_pd(ps+j+4);
             auto val3 = scale * _mm256_loadu_pd(ps+j+8);
@@ -2797,8 +2796,8 @@ namespace ngbla
             _mm256_store_pd (pd2+8*distd, val3);
             _mm256_store_pd (pd2+12*distd, val4);
           }
-        Prefetch (psnext+j, _MM_HINT_T0);
-        Prefetch (psnext+j+8, _MM_HINT_T0);            
+        Prefetch<0> (psnext+j);
+        Prefetch<0> (psnext+j+8);            
         for ( ; j +4 <= w; j+=4, pd2 += 4*distd)
           _mm256_storeu_pd(pd2, scale * _mm256_loadu_pd(ps+j));
         _mm256_maskstore_pd (pd2, mask, scale * _mm256_maskload_pd(ps+j, mask));
@@ -2886,9 +2885,9 @@ namespace ngbla
         // Prefetch (pb+db,  _MM_HINT_T1);
         // Prefetch (pb+db+8,  _MM_HINT_T1);
         // Prefetch (pb+db+15,  _MM_HINT_T0);
-        Prefetch (pa+32,  _MM_HINT_T0);
-        Prefetch (pb+4*db,  _MM_HINT_T0);
-        Prefetch (pb+4*db+8,  _MM_HINT_T0);
+        Prefetch<0> (pa+32);
+        Prefetch<0> (pb+4*db);
+        Prefetch<0> (pb+4*db+8);
         // Prefetch (pb+4*db+11,  _MM_HINT_T0);
         // Prefetch (pb+15,  _MM_HINT_T1);
         // Prefetch (pb+23,  _MM_HINT_T1);
@@ -3144,8 +3143,8 @@ namespace ngbla
         double * nextpc = pc+4*dc;
         for (size_t j = 0; j < 4; j++, nextpc+=dc)
           {
-            Prefetch (nextpc, _MM_HINT_T0);
-            Prefetch (nextpc+8, _MM_HINT_T0);
+            Prefetch<0> (nextpc);
+            Prefetch<0> (nextpc+8);
           }
         // KernelScal4x12Trans (ninner, pa, da, pb, db, pc, dc);
         KernelScal4x12Trans (ninner, pa, da, memb, 12, pc, dc);
