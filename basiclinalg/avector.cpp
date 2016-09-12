@@ -9,9 +9,9 @@ namespace ngstd
 
   // MSVC needs a char*
   template<typename T>
-  void Prefetch (T * p, int hint)
+  void Prefetch (T * p, decltype(_MM_HINT_T0) hint)
   {
-    _mm_prefetch (reinterpret_cast<char*>(p),  _MM_HINT_T0);
+    _mm_prefetch (reinterpret_cast<char*>(p), hint);
   }
   
 #if defined(__AVX2__)
