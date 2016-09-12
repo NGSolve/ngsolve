@@ -8,9 +8,9 @@ namespace ngstd
 #if defined(__AVX__)
 
   // MSVC needs a char*
-  template<int HINT> void Prefetch (void * p) { _mm_prefetch (p, _MM_HINT_T2); }
-  template <> void Prefetch<0> (void * p) { _mm_prefetch (p, _MM_HINT_T0); }
-  template <> void Prefetch<1> (void * p) { _mm_prefetch (p, _MM_HINT_T1); }
+  template<int HINT> INLINE void Prefetch (void * p) { _mm_prefetch (p, _MM_HINT_T2); }
+  template <> INLINE void Prefetch<0> (void * p) { _mm_prefetch (p, _MM_HINT_T0); }
+  template <> INLINE void Prefetch<1> (void * p) { _mm_prefetch (p, _MM_HINT_T1); }
 
   
 #if defined(__AVX2__)
