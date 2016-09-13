@@ -426,7 +426,8 @@ namespace ngla
                      for (int j : dof2element[i].Range())
                        {
                          sizes[j] = colelements[dof2element[i][j]].Size();
-                         ptrs[j] = &colelements[dof2element[i][j]][0];
+                         // ptrs[j] = &colelements[dof2element[i][j]][0];
+                         ptrs[j] = colelements[dof2element[i][j]].Addr(0);
                        }
                      
                      int cnti = 0;
