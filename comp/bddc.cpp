@@ -296,32 +296,38 @@ namespace ngcomp
 #ifdef PARALLEL
       AllReduceDofData (weight, MPI_SUM, fes->GetParallelDofs());
 #endif
+      ParallelFor (weight.Size(),
+                   [&] (size_t i)
+                   {
+                     if (weight[i]) weight[i] = 1.0/weight[i];
+                   });
 
-      for (int i = 0; i < sparse_innersolve->Height(); i++)
-	{
-	  FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
-	  for (int j = 0; j < cols.Size(); j++)
-	    if (weight[i] && weight[cols[j]])
-	      sparse_innersolve->GetRowValues(i)(j) /= (weight[i] * weight[cols[j]]);
-	}
-      
-      
-      for (int i = 0; i < sparse_harmonicext->Height(); i++)
-	if (weight[i])
-	  sparse_harmonicext->GetRowValues(i) /= weight[i];
+      ParallelFor (sparse_innersolve->Height(),
+                   [&] (size_t i)
+                   {
+                     FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
+                     for (int j = 0; j < cols.Size(); j++)
+                       sparse_innersolve->GetRowValues(i)(j) *= weight[i] * weight[cols[j]];
+                   });
+
+      ParallelFor (sparse_harmonicext->Height(),
+                   [&] (size_t i)
+                   {
+                     sparse_harmonicext->GetRowValues(i) *= weight[i];                     
+                   });
       
       if (!bfa->SymmetricStorage())
         {
-          for (int i = 0; i < sparse_harmonicexttrans->Height(); i++)
-            {
-              FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
-              FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
-              for (int j = 0; j < rowind.Size(); j++)
-                if (weight[rowind[j]])
-                  values[j] /= weight[rowind[j]];
-            }
+          ParallelFor (sparse_harmonicexttrans->Height(),
+                       [&] (size_t i)
+                       {
+                         FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
+                         FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
+                         for (int j = 0; j < rowind.Size(); j++)
+                           values[j] *= weight[rowind[j]];
+                       });
         }
-
+      
       // now generate wire-basked solver
 
       if (block)
