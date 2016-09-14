@@ -126,7 +126,7 @@ PyCF MakeCoefficient (bp::object val)
       Array<shared_ptr<CoefficientFunction>> cflist(bp::len(el()));
       for (int i : Range(cflist))
         cflist[i] = MakeCoefficient(el()[i]).Get();
-      return PyCF(make_shared<DomainWiseCoefficientFunction>(move(cflist)));
+      return PyCF(MakeDomainWiseCoefficientFunction(move(cflist)));
     }
 
   bp::extract<bp::tuple> et(val);
@@ -135,7 +135,7 @@ PyCF MakeCoefficient (bp::object val)
       Array<shared_ptr<CoefficientFunction>> cflist(bp::len(et()));
       for (int i : Range(cflist))
         cflist[i] = MakeCoefficient(et()[i]).Get();
-      return PyCF(make_shared<VectorialCoefficientFunction>(move(cflist)));
+      return PyCF(MakeVectorialCoefficientFunction(move(cflist)));
     }
 
 
@@ -414,7 +414,7 @@ void ExportCoefficientFunction()
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
                                              bp::exec("raise IndexError()\n");
-                                           return PyCF(make_shared<ComponentCoefficientFunction> (self.Get(), comp));
+                                           return PyCF(MakeComponentCoefficientFunction (self.Get(), comp));
                                          }),
          (bp::arg("coef"),bp::arg("comp")),         
          "returns component comp of vectorial CF")
@@ -432,7 +432,7 @@ void ExportCoefficientFunction()
                                              bp::exec("raise IndexError()\n");
 
                                            int comp = c1 * dims[1] + c2;
-                                           return PyCF(make_shared<ComponentCoefficientFunction> (self.Get(), comp));
+                                           return PyCF(MakeComponentCoefficientFunction (self.Get(), comp));
                                          }))
 
     // coefficient expressions
