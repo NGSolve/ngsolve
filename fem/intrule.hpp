@@ -1573,8 +1573,12 @@ namespace ngfem
     }
     virtual ABareMatrix<double> GetPoints() const
     {
+      /*
       return ABareMatrix<double> (&mips[0].Point()(0),
                                   &mips[1].Point()(0)-&mips[0].Point()(0));
+      */
+      return ABareMatrix<double> (&mips[0].Point()(0),
+                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>));
     }
   };
 }
