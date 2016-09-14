@@ -1072,7 +1072,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Range", FunctionPointer
          ( [] (const PyFES & self, int comp) -> bp::slice
            {
-             auto compspace = dynamic_cast<const CompoundFESpace *> (&self);
+             auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
              if (!compspace)
                bp::exec("'Range' is available only for product spaces");
              IntRange r = compspace->GetRange(comp);
@@ -1082,12 +1082,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("components", FunctionPointer
                   ([](PyFES & self)-> bp::tuple
                    { 
-                     auto compspace = dynamic_cast<CompoundFESpace *> (&self);
+                     auto compspace = dynamic_pointer_cast<CompoundFESpace> (self.Get());
                      if (!compspace)
                        bp::exec("'components' is available only for product spaces");
                      bp::list vecs;
                      for (int i = 0; i < compspace -> GetNSpaces(); i++) 
-                       vecs.append( (*compspace)[i] );
+                       vecs.append( PyFES((*compspace)[i]) );
                      return bp::tuple(vecs);
                    }),
                   "list of gridfunctions for compound gridfunction")
@@ -1217,7 +1217,7 @@ void NGS_DLL_HEADER ExportNgcomp()
                                                return d.get("space");
 
                                              // if not, make a new python space object from C++ space
-                                             return bp::object(bp::extract<PyGF>(self)()->GetFESpace());
+                                             return bp::object(PyFES(bp::extract<PyGF>(self)()->GetFESpace()));
                                            }),
                   "the finite element space")
     // .add_property ("space", &GF::GetFESpace, "the finite element spaces")
