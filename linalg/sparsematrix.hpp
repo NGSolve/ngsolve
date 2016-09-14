@@ -407,7 +407,8 @@ public:
 
     virtual BaseVector & AsVector() 
     {
-      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
+      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)&data[0]);
+      asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       return asvec; 
     }
 
@@ -547,8 +548,10 @@ public:
       size_t first = firsti[row];
       size_t last = firsti[row+1];
       // TVX * vecp = vec.Addr(0);
-      const int * colpi = &colnr[0];
-      const TM * datap = &data[0];
+      // const int * colpi = &colnr[0];
+      // const TM * datap = &data[0];
+      const int * colpi = colnr.Addr(0);
+      const TM * datap = data.Addr(0);
 
       // int d = vec.Addr(1)-vec.Addr(0);
       // if (d == 1)
