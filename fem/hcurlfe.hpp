@@ -188,8 +188,8 @@ namespace ngfem
   }
 
   template <typename SCAL>
-  inline AutoDiff<1,SCAL> Cross (const AutoDiff<2,SCAL> & u,
-			    const AutoDiff<2,SCAL> & v)
+  INLINE AutoDiff<1,SCAL> Cross (const AutoDiff<2,SCAL> & u,
+                                 const AutoDiff<2,SCAL> & v)
   {
     AutoDiff<1,SCAL> hv;
     hv.Value() = 0.0;
@@ -198,8 +198,8 @@ namespace ngfem
   }
 
   template <typename SCAL>
-  inline AutoDiff<0,SCAL> Cross (const AutoDiff<1,SCAL> & u,
-			    const AutoDiff<1,SCAL> & v)
+  INLINE AutoDiff<0,SCAL> Cross (const AutoDiff<1,SCAL> & u,
+                                 const AutoDiff<1,SCAL> & v)
   {
     AutoDiff<0,SCAL> hv;
     hv.Value() = 0.0;
@@ -217,9 +217,9 @@ namespace ngfem
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM,SCAL> & u;
+    const AutoDiff<DIM,SCAL> u;
 
-    Class_Du (const AutoDiff<DIM,SCAL> & au)
+    Class_Du (const AutoDiff<DIM,SCAL> au)
       : u(au) { ; }
 
     Vec<DIM,SCAL> Value () const
@@ -249,12 +249,12 @@ namespace ngfem
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM,SCAL> & u, v;
-
-    Class_uDv (const AutoDiff<DIM,SCAL> & au, 
-         const AutoDiff<DIM,SCAL> & av)
+    const AutoDiff<DIM,SCAL> u, v;
+    
+    Class_uDv (const AutoDiff<DIM,SCAL> au, 
+               const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
-
+    
     Vec<DIM,SCAL> Value () const
     {
       Vec<DIM,SCAL> val;
@@ -284,10 +284,10 @@ namespace ngfem
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM, SCAL> & u, v;
+    const AutoDiff<DIM, SCAL> u, v;
 
-    Class_uDv_minus_vDu (const AutoDiff<DIM,SCAL> & au, 
-                   const AutoDiff<DIM,SCAL> & av)
+    Class_uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
+                         const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
 
     Vec<DIM,SCAL> Value () const
@@ -323,13 +323,13 @@ namespace ngfem
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
 
   public:
-    const AutoDiff<DIM,SCAL> & u, v, w;
+    const AutoDiff<DIM,SCAL> u, v, w;
 
-    Class_wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> & au, 
-                     const AutoDiff<DIM,SCAL> & av,
-                     const AutoDiff<DIM,SCAL> & aw)
+    Class_wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> au, 
+                           const AutoDiff<DIM,SCAL> av,
+                           const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
-
+    
     Vec<DIM,SCAL> Value () const
     {
       Vec<DIM,SCAL> val;
