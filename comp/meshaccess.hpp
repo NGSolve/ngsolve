@@ -682,7 +682,7 @@ namespace ngcomp
     {
       switch (dim)
         {
-        case 1: GetVertexElements (fnr, elnums); break;
+        case 1: elnums = GetVertexElements (fnr); break;
         case 2: GetEdgeElements (fnr, elnums); break;
         case 3: GetFaceElements (fnr, elnums); break;
         }
@@ -691,7 +691,7 @@ namespace ngcomp
     {
       switch (dim)
         {
-        case 1: GetVertexSurfaceElements (fnr, elnums); break;
+        case 1: elnums = GetVertexSurfaceElements (fnr); break;
         case 2: GetEdgeSurfaceElements (fnr, elnums); break;
         case 3: GetFaceSurfaceElements (fnr, elnums); break;
         }
