@@ -83,5 +83,6 @@ namespace ngfem
 // #include "pml.hpp" 
 
 // using ngfem::ELEMENT_TYPE;
-
+#include "tpdiffop.hpp"
+#include "tpintrule.hpp"
 #endif

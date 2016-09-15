@@ -1737,13 +1737,7 @@ namespace ngcomp
 ///// Added by Roman Stainko ....
 void MeshAccess::GetVertexSurfaceElements( int vnr, Array<int>& elems) const
 {
-  int nel = Ng_GetVertex_NSurfaceElements( vnr+1 );
-  elems.SetSize( nel );
-  
-  Ng_GetVertex_SurfaceElements( vnr+1, &elems[0] );
-
-  for( int i=0; i<nel; i++ )
-    elems[i]--;
+    elems = GetVertexSurfaceElements(vnr);
 }
 
 

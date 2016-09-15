@@ -166,6 +166,7 @@ namespace ngcomp
 
     int et_bonus_order[30]; // order increase for element-type
   public:
+    virtual int GetSpacialDimension() const { return ma->GetDimension();}
     string type;
 
     /**

@@ -450,6 +450,14 @@ public:
 			void * precomputed,
 			LocalHeap & lh) const;
 
+     virtual void 
+     ApplyElementMatrixTP (const FiniteElement & fel, 
+ 			const ElementTransformation & trafo, 
+ 			const FlatVector<double> elx, 
+ 			FlatVector<double> ely,
+ 			void * precomputed,
+ 			LocalHeap & lh) const;
+
     template <int D, typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
                                  const ElementTransformation & trafo, 
@@ -534,6 +542,21 @@ public:
                       const ElementTransformation & seltrans,  
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
+
+    virtual void
+     ApplyFacetMatrixTP (const FiniteElement & volumefel1, int LocalFacetNr1,
+                       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+                       const FiniteElement & volumefel2, int LocalFacetNr2,
+                       const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+                       FlatVector<double> elx, FlatVector<double> ely, int xfacet,
+                       LocalHeap & lh) const;
+
+     virtual void
+     ApplyFacetMatrixTP (const FiniteElement & volumefel, int LocalFacetNr,
+                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                       const ElementTransformation & seltrans,  
+                       FlatVector<double> elx, FlatVector<double> ely, int xfacet,
+                      LocalHeap & lh) const;                      
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator
