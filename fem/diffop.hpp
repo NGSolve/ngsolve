@@ -156,21 +156,31 @@ namespace ngfem
   */
   class DifferentialOperator
   {
+    int dim;
+    int blockdim;
+    bool boundary;
+    int difforder;
   public:
-    NGS_DLL_HEADER DifferentialOperator() { ; }
+    NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool aboundary, int adifforder)
+      : dim(adim), blockdim(ablockdim), boundary(aboundary), difforder(adifforder)
+    { ; }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
     ///
     virtual string Name() const { return typeid(*this).name(); }
     /// dimension of range
-    NGS_DLL_HEADER virtual int Dim() const = 0;
+    // NGS_DLL_HEADER virtual int Dim() const = 0;
+    int Dim() const { return dim; }
     /// number of copies of finite element by BlockDifferentialOperator
-    NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
+    // NGS_DLL_HEADER virtual int BlockDim() const { return 1; }
+    int BlockDim() const { return blockdim; }
     /// does it live on the boundary ?
-    virtual bool Boundary() const { return false; }
+    //virtual bool Boundary() const { return false; }
+    bool Boundary() const { return boundary; }
 
     /// total polynomial degree is reduced by this order (i.e. minimal difforder)
-    virtual int DiffOrder() const = 0;
+    // virtual int DiffOrder() const = 0;
+    int DiffOrder() const { return difforder; } 
 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return IntRange(0, fel.GetNDof()); }
 
@@ -282,16 +292,20 @@ namespace ngfem
   public:
     BlockDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
 			       int adim, int acomp = -1)
-      : diffop(adiffop), dim(adim), comp(acomp) { ; }
+      : DifferentialOperator(adim*adiffop->Dim(), adim*diffop->BlockDim(),
+                             adiffop->Boundary(), adiffop->DiffOrder()),
+        diffop(adiffop), dim(adim), comp(acomp) { ; }
 
     virtual ~BlockDifferentialOperator ();
     
     virtual string Name() const { return diffop->Name(); }
     /// dimension of range
+    /*
     virtual int Dim() const { return dim*diffop->Dim(); }
     virtual int BlockDim() const { return dim*diffop->BlockDim(); }
     virtual bool Boundary() const { return diffop->Boundary(); }
     virtual int DiffOrder() const { return diffop->DiffOrder(); }
+    */
     shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; } 
     virtual IntRange UsedDofs(const FiniteElement & fel) const { return dim*diffop->UsedDofs(fel); }
 
@@ -352,11 +366,15 @@ namespace ngfem
     enum { DIM         = DIFFOP::DIM };
 
   public:
-    T_DifferentialOperator() { ; }
+    T_DifferentialOperator()
+      : DifferentialOperator(DIFFOP::DIM_DMAT, 1, int(DIM_SPACE) > int(DIM_ELEMENT), DIFFOP::DIFFORDER)
+    { ; }
+    /*
     virtual int Dim() const { return DIFFOP::DIM_DMAT; }
     virtual bool Boundary() const { return int(DIM_SPACE) > int(DIM_ELEMENT); }
-    virtual string Name() const { return DIFFOP::Name(); }
     virtual int DiffOrder() const { return DIFFOP::DIFFORDER; }
+    */
+    virtual string Name() const { return DIFFOP::Name(); }
     
     virtual bool operator== (const DifferentialOperator & diffop2) const
     { return typeid(*this) == typeid(diffop2); }

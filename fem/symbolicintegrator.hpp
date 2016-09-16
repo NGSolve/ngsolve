@@ -212,15 +212,19 @@ class CompoundDifferentialOperator : public DifferentialOperator
 public:
   CompoundDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
                                 int acomp)
-    : diffop(adiffop), comp(acomp) { ; }
+    : DifferentialOperator(adiffop->Dim(), adiffop->BlockDim(),
+                           adiffop->Boundary(), adiffop->DiffOrder()),
+      diffop(adiffop), comp(acomp) { ; }
   
   virtual ~CompoundDifferentialOperator () = default;
   
   /// dimension of range
+  /*
   virtual int Dim() const { return diffop->Dim(); }
   virtual int BlockDim() const { return diffop->BlockDim(); }
   virtual bool Boundary() const { return diffop->Boundary(); }
   virtual int DiffOrder() const { return diffop->DiffOrder(); }
+  */
   virtual string Name() const { return diffop->Name(); }
 
   virtual IntRange UsedDofs(const FiniteElement & bfel) const
