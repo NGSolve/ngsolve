@@ -139,7 +139,7 @@ namespace ngfem
   */
 
   class GenericOrientation;
-  template <int V1, int V2, int V3> class FixedOrientation;
+  template <int V1, int V2, int V3, int V4=-1> class FixedOrientation;
   
   template <ELEMENT_TYPE ET, int ORDER, typename ORIENTATION = GenericOrientation>
   class L2HighOrderFEFO_Shapes;
@@ -262,6 +262,14 @@ namespace ngfem
 	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
           */
 	}
+      else if (ET == ET_TET)
+        {
+          int order = ORDER;
+          for (int ix = 0, ii = 0; ix <= order; ix++)
+            for (int iy = 0; iy <= order - ix; iy++)
+              for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
+                mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+        }
 #ifndef __CUDA_ARCH__
       else
 	{
@@ -369,17 +377,85 @@ namespace ngfem
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
-                     // JacobiPolynomialFix<1+2*i,0> jac;
                      jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
-                     /*
-                                   SBLambda([&](auto j, Tx v2) 
-                                            {
-                                              shape[ii++] = v2;
-                                            }));
-                     */
                      ii += IC<ORDER-i+1>();
                      jac.IncAlpha2();
                    }));
+    }
+  };
+
+  template <int ORDER, int V1, int V2, int V3, int V4>
+  class L2HighOrderFEFO_Shapes<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
+    : public L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>
+  {
+    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::ndof;
+    using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::vnums; 
+
+  public:
+    enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
+
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+
+      INT<4> hvnums(V1,V2,V3,V4);
+      // INT<4> f = this -> GetFaceSort (0, hvnums);
+      unsigned char sort[4] = { 0, 1, 2, 3 };
+      if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
+      if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);
+      if (hvnums[sort[0]] > hvnums[sort[2]]) Swap (sort[0], sort[2]);
+      if (hvnums[sort[1]] > hvnums[sort[3]]) Swap (sort[1], sort[3]);
+      if (hvnums[sort[1]] > hvnums[sort[2]]) Swap (sort[1], sort[2]);
+
+      // Tx x = lam[f[0]];
+      // Tx y = lam[f[1]];
+      Tx lamis[4];
+      for (int i = 0; i < 4; i++)
+        lamis[i] = lami[sort[i]];
+
+      /*
+      int ii = 0;
+      JacobiPolynomialAlpha jac(1);
+      LegendrePolynomial::EvalScaled 
+        (IC<ORDER>(), 
+         y-(1-x-y), 1-x,
+         SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
+                   {
+                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
+                     ii += IC<ORDER-i+1>();
+                     jac.IncAlpha2();
+                   }));
+      */
+      size_t ii = 0;
+      // int order = this->order;
+      LegendrePolynomial leg;
+      JacobiPolynomialAlpha jac1(1);    
+      leg.EvalScaled 
+        (IC<ORDER>(), lamis[2]-lamis[3], lamis[2]+lamis[3],
+         SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
+                   {
+                     JacobiPolynomialAlpha jac2(2*k+2);
+                     jac1.EvalScaledMult // 1Assign
+                       (IC<ORDER-k>(), lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
+                        SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
+                                  {
+                                    // JacobiPolynomialAlpha jac(2*(j+k)+2);
+                                    /*
+                                      jac2.EvalMult(IC<ORDER-k-j>(), 2 * lamis[0] - 1, polsy, 
+                                                  SBLambda([&](int j, Tx val) LAMBDA_INLINE
+                                                           {
+                                                             shape[ii] = val; 
+                                                             ii++;
+                                                           }));
+                                    */
+                                    jac2.EvalMult(IC<ORDER-k-j>(), 2 * lamis[0] - 1, polsy, shape+ii);
+                                    ii += IC<ORDER-k-j+1>();
+                                    jac2.IncAlpha2();
+                                  }));
+                     jac1.IncAlpha2();
+                   }));
+      
     }
   };
   

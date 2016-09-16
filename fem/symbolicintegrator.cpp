@@ -2045,7 +2045,7 @@ namespace ngfem
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", 2); 
             
             HeapReset hr(lh);
-            tstart.Start();
+            // tstart.Start();
             /*
               Matrix<> elmat(elx.Size());
               CalcFacetMatrix(fel1, LocalFacetNr1, trafo1, ElVertices1,
@@ -2083,7 +2083,7 @@ namespace ngfem
             ud.lh = &lh;
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
-            tstart.Stop();
+            // tstart.Stop();
             tapply.Start();
             for (ProxyFunction * proxy : trial_proxies)
               {
@@ -2094,14 +2094,14 @@ namespace ngfem
                   proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
                 else
                   proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
-                // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
+                tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
             tapply.Stop();
             
             for (auto proxy : test_proxies)
               {
                 HeapReset hr(lh);
-                tcoef.Start();
+                // tcoef.Start();
                 AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh);        
                 
                 for (int k = 0; k < proxy->Dimension(); k++)
@@ -2117,8 +2117,8 @@ namespace ngfem
                     for (int j = 0; j < row.VSize(); j++)
                       row.Get(j) *= simd_mir1[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
                   }
-                tcoef.Stop();
-                tapplyt.Start();
+                // tcoef.Stop();
+                // tapplyt.Start();
                 IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
                 int blockdim = proxy->Evaluator()->BlockDim();
                 test_range = blockdim * test_range;
@@ -2127,7 +2127,7 @@ namespace ngfem
                   proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range)); // , lh);
                 else
                   proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range)); // , lh);
-                tapplyt.Stop();
+                // tapplyt.Stop();
               }
           }
 

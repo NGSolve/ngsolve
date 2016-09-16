@@ -446,7 +446,7 @@ namespace ngfem
                                 {
                                   // JacobiPolynomialAlpha jac(2*(j+k)+2);
                                   jac2.EvalMult1Assign(order - k - j, 2 * lamis[0] - 1, polsy, 
-                                                       SBLambda([&](int j, Tx val)
+                                                       SBLambda([&](int j, Tx val) LAMBDA_INLINE
                                                                 {
                                                                   shape[ii] = val; 
                                                                   ii++;
