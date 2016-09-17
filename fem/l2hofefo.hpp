@@ -264,11 +264,29 @@ namespace ngfem
 	}
       else if (ET == ET_TET)
         {
+          /*
           int order = ORDER;
           for (int ix = 0, ii = 0; ix <= order; ix++)
             for (int iy = 0; iy <= order - ix; iy++)
               for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
                 mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+          */
+          int ii = 0;
+          Iterate<ORDER+1>
+            ([&] (auto ix)
+             {
+               Iterate<ORDER+1-ix>
+                 ([&] (auto iy)
+                  {
+                    Iterate<ORDER+1-ix-iy>
+                      ([&] (auto iz)
+                       {
+                         mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+                         ii++;
+                       });
+                  });
+             });
+          
         }
 #ifndef __CUDA_ARCH__
       else
