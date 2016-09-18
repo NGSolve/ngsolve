@@ -93,8 +93,10 @@ namespace ngcomp
 	flux_evaluator = make_shared<BlockDifferentialOperator> (flux_evaluator, dimension);
 	boundary_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_evaluator, dimension);
+        /*
 	boundary_flux_evaluator = 
 	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
+        */
       }
 
 
