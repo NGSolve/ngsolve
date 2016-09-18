@@ -292,7 +292,7 @@ namespace ngfem
   public:
     BlockDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
 			       int adim, int acomp = -1)
-      : DifferentialOperator(adim*adiffop->Dim(), adim*diffop->BlockDim(),
+      : DifferentialOperator(adim*adiffop->Dim(), adim*adiffop->BlockDim(),
                              adiffop->Boundary(), adiffop->DiffOrder()),
         diffop(adiffop), dim(adim), comp(acomp) { ; }
 
