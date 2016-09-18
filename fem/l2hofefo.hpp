@@ -429,6 +429,7 @@ namespace ngfem
       for (int i = 0; i < 4; i++)
         lamis[i] = lami[sort[i]];
 
+
       size_t ii = 0;
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);    
@@ -447,6 +448,28 @@ namespace ngfem
                                   }));
                      jac1.IncAlpha2();
                    }));
+      /*
+      size_t ii = 0;
+      LegendrePolynomial leg;
+      // JacobiPolynomialAlpha jac1(1);    
+      leg.EvalScaled 
+        (IC<ORDER>(), lami[0], lami[0]+lami[1],
+         SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
+                   {
+                     JacobiPolynomialFix<1+2*k,0> jac1;  
+                     // JacobiPolynomialAlpha jac2(2*k+2);
+                     jac1.EvalScaledMult 
+                       (IC<ORDER-k>(), lami[1], lami[0]+lami[1]+lami[2], polz, 
+                        SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
+                                  {
+                                    JacobiPolynomialFix<2+2*k+2*j,0> jac2;                                      
+                                    jac2.EvalMult(IC<ORDER-k-j>(), lami[2], polsy, shape+ii);
+                                    ii += IC<ORDER-k-j+1>();
+                                    // jac2.IncAlpha2();
+                                  }));
+                     // jac1.IncAlpha2();
+                   }));
+      */
     }
   };
   

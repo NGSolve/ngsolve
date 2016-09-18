@@ -543,6 +543,18 @@ namespace ngfem
 	}
       if (i == n)
         values[n] = p1;
+
+      /*
+        // needs checking, code looks the same
+      S p2(c * REC::P0(x));
+      S p1(c * REC::P1(x));
+      
+      Iterate<N+1> ([&] (auto i)
+                  {
+                    values[i] = p2;
+                    EvalNext2 (i+2, x, p1, p2);
+                  });
+      */
     }
 
 
@@ -1446,9 +1458,12 @@ namespace ngfem
     template <class S>
     static INLINE S P0(S x) { return S(1.0); }
     template <class S>
-    static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    // static INLINE S P1(S x) { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
+    static INLINE S P1(S x) { return 0.5*(2*(al+1)-(al+be+2)) + 0.5*(al+be+2)*x; }
+    
     template <class S>
-    static INLINE S P1(S x, S y) { return 0.5 * (2*(al+1)*y+(al+be+2)*(x-y)); }
+    // static INLINE S P1(S x, S y) { return 0.5 * (2*(al+1)*y+(al+be+2)*(x-y)); }
+    static INLINE S P1(S x, S y) { return 0.5*(al+be+2)*x+0.5*(al-be)*y; }
       
     static INLINE double CalcA (int i) 
     { i--; return (2.0*i+al+be)*(2*i+al+be+1)*(2*i+al+be+2) / ( 2 * (i+1) * (i+al+be+1) * (2*i+al+be)); }
