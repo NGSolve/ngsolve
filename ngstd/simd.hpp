@@ -238,6 +238,16 @@ namespace ngstd
     __m128d hv2 = _mm_add_pd (_mm256_extractf128_pd(hv,0), _mm256_extractf128_pd(hv,1));
     return make_tuple(_mm_cvtsd_f64 (hv2),  _mm_cvtsd_f64(_mm_shuffle_pd (hv2, hv2, 3)));
   }
+
+  INLINE SIMD<double> HSum (SIMD<double> v1, SIMD<double> v2, SIMD<double> v3, SIMD<double> v4)
+  {
+    __m256d hsum1 = _mm256_hadd_pd (v1.Data(), v2.Data());
+    __m256d hsum2 = _mm256_hadd_pd (v3.Data(), v4.Data());
+    __m256d hsum = _mm256_add_pd (_mm256_permute2f128_pd (hsum1, hsum2, 1+2*16),
+                                  _mm256_blend_pd (hsum1, hsum2, 12));
+    return hsum;
+  }
+  
 #endif  
   
 
