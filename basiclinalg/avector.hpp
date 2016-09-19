@@ -497,21 +497,21 @@ namespace ngbla
   class ABareMatrix<double>
   {
     SIMD<double> * __restrict data;
-    int dist;   // dist in simds
+    size_t dist;   // dist in simds
   public:
     ABareMatrix(SIMD<double> * _data, int _dist) : data(_data), dist(_dist) { ; }
     ABareMatrix(AFlatMatrix<double> mat) : data(&mat.Get(0,0)), dist(&mat.Get(1,0)-&mat.Get(0,0)) { ; }
     ABareMatrix(const ABareMatrix &) = default;
 
-    double & operator() (int i, int j) const
+    double & operator() (size_t i, size_t j) const
     {
       return ((double*)data)[SIMD<double>::Size()*i*dist+j]; 
     }
-    SIMD<double> & Get(int i, int j) const { return data[i*dist+j]; }
-    ABareVector<double> Row(int i) const { return ABareVector<double> (data+i*dist); }
-    ABareMatrix<double> Rows(int first, int /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
+    SIMD<double> & Get(size_t i, size_t j) const { return data[i*dist+j]; }
+    ABareVector<double> Row(size_t i) const { return ABareVector<double> (data+i*dist); }
+    ABareMatrix<double> Rows(size_t first, size_t /* next */) const { return ABareMatrix<double> (data+first*dist, dist); }
     ABareMatrix<double> Rows(IntRange r) const { return Rows(r.First(), r.Next()); } 
-    ABareMatrix<double> RowSlice(int first, int adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
+    ABareMatrix<double> RowSlice(size_t first, size_t adist) const { return ABareMatrix<double> (data+first*dist, dist*adist); } 
   };
 
 
