@@ -1921,7 +1921,8 @@ namespace ngfem
     IntegrationRule ir_facet(etfacet, 2*maxorder);
     Facet2ElementTrafo transform1(eltype1, ElVertices1); 
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
-    const BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);          
     
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
@@ -1937,6 +1938,7 @@ namespace ngfem
           if (proxy1->IsOther() || proxy2->IsOther()) continue;
 
           FlatTensor<3> proxyvalues(lh, mir1.Size(), proxy2->Dimension(), proxy1->Dimension());
+          /*
           FlatVector<> measure(mir1.Size(), lh);
           switch (trafo1.SpaceDim())
             {
@@ -1975,6 +1977,7 @@ namespace ngfem
             default:
               cout << "Symbolic DG in " << trafo1.SpaceDim() << " not available" << endl;
             }
+          */
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
@@ -1989,7 +1992,7 @@ namespace ngfem
               }
 
           for (int i = 0; i < mir1.Size(); i++)
-            proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
+            proxyvalues(i,STAR,STAR) *=  mir1[i].GetMeasure() * ir_facet[i].Weight();
 
           // IntRange trial_range = proxy1->IsOther() ? IntRange(fel1.GetNDof(), elmat.Width()) : IntRange(0, fel1.GetNDof());
           // IntRange test_range  = proxy2->IsOther() ? IntRange(fel1.GetNDof(), elmat.Height()) : IntRange(0, fel1.GetNDof());
