@@ -275,10 +275,10 @@ namespace ngfem
           Iterate<ORDER+1>
             ([&] (auto ix)
              {
-               Iterate<ORDER+1-ix>
+               Iterate<ORDER+1-ix.value>
                  ([&] (auto iy)
                   {
-                    Iterate<ORDER+1-ix-iy>
+                    Iterate<ORDER+1-ix.value-iy.value>
                       ([&] (auto iz)
                        {
                          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
@@ -356,7 +356,7 @@ namespace ngfem
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
                      // JacobiPolynomialFix<1+2*i,0> jac;
-                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, 
+                     jac.EvalMult (IC<ORDER-i.value>(), 2*x-1, val, 
                                    SBLambda([&](auto j, Tx v2) 
                                             {
                                               shape[ii++] = v2;
@@ -395,8 +395,8 @@ namespace ngfem
          y-(1-x-y), 1-x,
          SBLambda ([&] (auto i, Tx val) LAMBDA_INLINE 
                    {
-                     jac.EvalMult (IC<ORDER-i>(), 2*x-1, val, shape+ii);
-                     ii += IC<ORDER-i+1>();
+                     jac.EvalMult (IC<ORDER-i.value>(), 2*x-1, val, shape+ii);
+                     ii += IC<ORDER-i.value+1>();
                      jac.IncAlpha2();
                    }));
     }
@@ -439,11 +439,11 @@ namespace ngfem
                    {
                      JacobiPolynomialAlpha jac2(2*k+2);
                      jac1.EvalScaledMult 
-                       (IC<ORDER-k>(), lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
+                       (IC<ORDER-k.value>(), lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
                         SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
                                   {
-                                    jac2.EvalMult(IC<ORDER-k-j>(), 2 * lamis[0] - 1, polsy, shape+ii);
-                                    ii += IC<ORDER-k-j+1>();
+                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lamis[0] - 1, polsy, shape+ii);
+                                    ii += IC<ORDER-k.value-j.value+1>();
                                     jac2.IncAlpha2();
                                   }));
                      jac1.IncAlpha2();
