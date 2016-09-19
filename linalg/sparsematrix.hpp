@@ -802,8 +802,8 @@ public:
     virtual shared_ptr<BaseMatrix> InverseMatrix (const Array<int> * clusters) const;
   };
 
-  SparseMatrix<double,double> *
-  MatMult (const SparseMatrix<double, double> & mata, const SparseMatrix<double, double> & matb);
+  SparseMatrixTM<double> *
+  MatMult (const SparseMatrix<double, double, double> & mata, const SparseMatrix<double, double, double> & matb);
 
 #ifdef GOLD
 #include <sparsematrix_spec.hpp>
