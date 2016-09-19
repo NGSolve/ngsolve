@@ -286,6 +286,7 @@ namespace ngfem
 
   class BlockDifferentialOperator : public DifferentialOperator
   {
+  protected:
     shared_ptr<DifferentialOperator> diffop;
     int dim;
     int comp;

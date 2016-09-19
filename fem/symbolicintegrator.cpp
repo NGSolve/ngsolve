@@ -2038,13 +2038,15 @@ namespace ngfem
       {
         try
           {
-            static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+            static Timer tall("SymbolicFacetBFI::Apply - all", 2); // RegionTimer rall(tall);
             static Timer tstart("SymbolicFacetBFI::Apply - startup", 2);
             static Timer tapply("SymbolicFacetBFI::Apply - apply", 2);
             static Timer tcoef("SymbolicFacetBFI::Apply - coef", 2);
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", 2); 
             
             HeapReset hr(lh);
+            // tall.Start();
+            
             // tstart.Start();
             /*
               Matrix<> elmat(elx.Size());
@@ -2084,7 +2086,8 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
             // tstart.Stop();
-            tapply.Start();
+            // tapply.Start();
+            
             for (ProxyFunction * proxy : trial_proxies)
               {
                 IntRange trial_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
@@ -2094,9 +2097,9 @@ namespace ngfem
                   proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
                 else
                   proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
-                tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
+                // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
-            tapply.Stop();
+            // tapply.Stop();
             
             for (auto proxy : test_proxies)
               {
@@ -2124,13 +2127,14 @@ namespace ngfem
                 test_range = blockdim * test_range;
                 
                 if (proxy->IsOther())
-                  proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range)); // , lh);
+                  proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range));
                 else
-                  proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range)); // , lh);
+                  proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range));
+                // tapplyt.AddFlops (test_range.Size() * simd_ir_facet_vol1.GetNIP());                
                 // tapplyt.Stop();
               }
+            // tall.Stop();
           }
-
         catch (ExceptionNOSIMD e)
           {
             cout << "caught in SymbolicFacetInegtrator::Apply: " << endl
