@@ -31,8 +31,8 @@ namespace ngfem
               case 0: return new (lh)  L2HighOrderFEFO<ET_TET,0, FixedOrientation<0,1,2,3>> (); break;
               case 1: return new (lh)  L2HighOrderFEFO<ET_TET,1, FixedOrientation<0,1,2,3>> (); break;
               case 2: return new (lh)  L2HighOrderFEFO<ET_TET,2, FixedOrientation<0,1,2,3>> (); break;
-              case 3: return new (lh)  L2HighOrderFEFO<ET_TET,3, FixedOrientation<0,1,2,3>> (); break;
-              default: ; 
+                // case 3: return new (lh)  L2HighOrderFEFO<ET_TET,3, FixedOrientation<0,1,2,3>> (); break;
+              default: ; b
               }
           }
         else
@@ -42,7 +42,7 @@ namespace ngfem
               case 0: return new (lh)  L2HighOrderFEFO<ET_TET,0, FixedOrientation<0,1,3,2>> (); break;
               case 1: return new (lh)  L2HighOrderFEFO<ET_TET,1, FixedOrientation<0,1,3,2>> (); break;
               case 2: return new (lh)  L2HighOrderFEFO<ET_TET,2, FixedOrientation<0,1,3,2>> (); break;
-              case 3: return new (lh)  L2HighOrderFEFO<ET_TET,3, FixedOrientation<0,1,3,2>> (); break;                
+                // case 3: return new (lh)  L2HighOrderFEFO<ET_TET,3, FixedOrientation<0,1,3,2>> (); break;                
               default: ; 
               }
           }
