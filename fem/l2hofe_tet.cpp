@@ -32,7 +32,7 @@ namespace ngfem
               case 1: return new (lh)  L2HighOrderFEFO<ET_TET,1, FixedOrientation<0,1,2,3>> (); break;
               case 2: return new (lh)  L2HighOrderFEFO<ET_TET,2, FixedOrientation<0,1,2,3>> (); break;
                 // case 3: return new (lh)  L2HighOrderFEFO<ET_TET,3, FixedOrientation<0,1,2,3>> (); break;
-              default: ; b
+              default: ; 
               }
           }
         else

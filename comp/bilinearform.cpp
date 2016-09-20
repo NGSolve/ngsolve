@@ -2950,13 +2950,14 @@ namespace ngcomp
                       if (parts[j] -> SkeletonForm())
                         {
                           auto dgform = parts[j] -> GetDGFormulation();
-                          if (!dgform.element_boundary && !parts[j]->BoundaryForm())
+                          if (!dgform.element_boundary)   //  && !parts[j]->BoundaryForm())  // too much !!!!
                             needs_facet_loop = true;
                           if (dgform.element_boundary)
                             needs_element_boundary_loop = true;
                             // throw Exception ("No BilinearFormApplication-Implementation for Facet-Integrators yet");
                         }
 
+                    /*
                     // do we need locks for neighbor - testfunctions ?
                     bool neighbor_testfunction = false;
                     for (int j = 0; j < NumIntegrators(); j++)
@@ -2966,6 +2967,7 @@ namespace ngcomp
                           if (dgform.neighbor_testfunction)
                             neighbor_testfunction = true;
                         }
+                    */
 
                     if (needs_facet_loop && !fespace->UsesDGCoupling())
                       throw Exception ("skeleton-form needs \"dgjumps\" : True flag for FESpace");
@@ -3003,7 +3005,8 @@ namespace ngcomp
 
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
-                                     ma->GetElVertices (el1, vnums1);     
+                                     ma->GetElVertices (el1, vnums1);
+                                     ma->GetSElVertices (sel, vnums2);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
@@ -3017,13 +3020,14 @@ namespace ngcomp
                                          if (!bfi.BoundaryForm()) continue;  
                                          if (!bfi.SkeletonForm()) continue;
                                          if (bfi.GetDGFormulation().element_boundary) continue;
-
+                                         if (!bfi.DefinedOn (seltrans.GetElementIndex())) continue;
+                                         
                                          FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                            ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                          x.GetIndirect(dnums, elx);
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
                                          y.AddIndirect(dnums, ely);
                                        } //end for (numintegrators)
 
@@ -3099,7 +3103,7 @@ namespace ngcomp
 
                     // element-boundary formulation
 		    // LocalHeap clh (lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-                    mutex addelemfacbnd_mutex;
+                    // mutex addelemfacbnd_mutex;
 
                     if (needs_element_boundary_loop)
                       /*
@@ -3138,7 +3142,8 @@ namespace ngcomp
 
                                      const FiniteElement & fel = fespace->GetFE (el1, lh);
                                      Array<int> dnums(fel.GetNDof(), lh);
-                                     ma->GetElVertices (el1, vnums1);     
+                                     ma->GetElVertices (el1, vnums1);
+                                     ma->GetSElVertices (sel, vnums2);     
 
                                      ElementTransformation & eltrans = ma->GetTrafo (el1, VOL, lh);
                                      ElementTransformation & seltrans = ma->GetTrafo (sel, BND, lh);
@@ -3177,7 +3182,7 @@ namespace ngcomp
                                          x.GetIndirect(dnums, elx);
 
                                          dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
-                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, elx, ely, lh);
+                                           ApplyFacetMatrix (fel,facnr1,eltrans,vnums1, seltrans, vnums2, elx, ely, lh);
 
                                          /*
                                          if (neighbor_testfunction)
