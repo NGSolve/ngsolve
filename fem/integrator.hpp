@@ -685,7 +685,7 @@ namespace ngfem
     virtual void
       ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                         const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                        const ElementTransformation & seltrans,  
+                        const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                         FlatVector<double> elx, FlatVector<double> ely,
                         LocalHeap & lh) const
     { 
@@ -694,7 +694,7 @@ namespace ngfem
     virtual void
       ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                         const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
-                        const ElementTransformation & seltrans,  
+                        const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                         FlatVector<Complex> elx, FlatVector<Complex> ely,
                         LocalHeap & lh) const
     { 

@@ -2309,7 +2309,7 @@ namespace ngfem
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
-                    const ElementTransformation & strafo,  
+                    const ElementTransformation & strafo, FlatArray<int> & SElVertices,
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
@@ -2329,10 +2329,13 @@ namespace ngfem
             auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
             
             SIMD_IntegrationRule ir_facet(etfacet, 2*maxorder);
-            Facet2ElementTrafo transform1(eltype1, ElVertices); 
+            Facet2ElementTrafo transform1(eltype1, ElVertices);
+            Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices); 
             auto & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
+            auto & ir_facet_surf = stransform(ir_facet, lh);
             auto & mir1 = trafo1(ir_facet_vol1, lh);
-            auto & smir = strafo(ir_facet, lh);
+            auto & smir = strafo(ir_facet_surf, lh);
+
             mir1.ComputeNormalsAndMeasure(eltype1, LocalFacetNr);
             
             ProxyUserData ud(trial_proxies.Size(), lh);
@@ -2389,7 +2392,7 @@ namespace ngfem
                  << e.What() << endl;
             simd_evaluate = false;
             ApplyFacetMatrix (fel1, LocalFacetNr, trafo1, ElVertices,
-                              strafo,
+                              strafo, SElVertices, 
                               elx, ely, lh);
           }
         return;
@@ -2518,7 +2521,7 @@ namespace ngfem
                                     VorB avb)
     : cf(acf), vb(avb)
   {
-    simd_evaluate = false;
+    simd_evaluate = true;
     
     if (cf->Dimension() != 1)
       throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
