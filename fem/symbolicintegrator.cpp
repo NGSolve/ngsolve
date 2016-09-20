@@ -1697,8 +1697,8 @@ namespace ngfem
           {
             ud.testfunction = proxy;
             ud.test_comp = k;
-            // cf -> Evaluate (mir1, val);
-            cf -> Evaluate (smir, val);
+            cf -> Evaluate (mir1, val);  // needed for grad(u), mesh_size, but: index = material index
+            // cf -> Evaluate (smir, val);
             proxyvalues.Col(k) = val.Col(0);
           }
 
