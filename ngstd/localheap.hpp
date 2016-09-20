@@ -52,7 +52,7 @@ namespace ngstd
     bool owner;
     const char * name;
 
-#ifdef __MIC__
+#if defined(__MIC__) || defined (__AVX512F__)
     enum { ALIGN = 64 };
 #else
     enum { ALIGN = 32 };
