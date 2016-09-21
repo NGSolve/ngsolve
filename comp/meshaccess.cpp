@@ -1273,6 +1273,7 @@ namespace ngcomp
     // static Timer t("MeshAccess::GetTrafoDim"); RegionTimer reg(t);
     
     ElementTransformation * eltrans;
+    GridFunction * loc_deformation = deformation.get();
     
     Ngs_Element el (mesh.GetElement<DIM> (elnr), ElementId(VOL, elnr));
     
@@ -1284,14 +1285,14 @@ namespace ngcomp
            ElementId(VOL,elnr), el.GetIndex(), pml_alpha, pml_r);
       }
     
-    else if (deformation)
+    else if (loc_deformation)
       {
         if (el.is_curved)
           eltrans = new (lh)
             ALE_ElementTransformation<DIM, DIM, Ng_ElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             deformation.get(), 
+             loc_deformation, 
              dynamic_cast<LocalHeap&> (lh));
 
         else
@@ -1300,7 +1301,7 @@ namespace ngcomp
             ALE_ElementTransformation<DIM, DIM, Ng_ConstElementTransformation<DIM,DIM>>
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
-             deformation.get(), 
+             loc_deformation, 
              dynamic_cast<LocalHeap&> (lh));
       }
 
@@ -1337,13 +1338,14 @@ namespace ngcomp
     ElementTransformation * eltrans;
     
     Ngs_Element el(mesh.GetElement<DIM-1> (elnr), ElementId(BND, elnr));
-
-    if (deformation)
+    GridFunction * loc_deformation = deformation.get();
+    
+    if (loc_deformation)
 
       eltrans = new (lh) ALE_ElementTransformation<DIM-1,DIM, Ng_ElementTransformation<DIM-1,DIM>>
         (this, el.GetType(), 
          ElementId(BND,elnr), el.GetIndex(),
-         deformation.get(), 
+         loc_deformation, 
          dynamic_cast<LocalHeap&> (lh)); 
     
     else if ( el.is_curved )
