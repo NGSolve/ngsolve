@@ -313,7 +313,7 @@ namespace ngfem
           {
             TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
             SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0;
-            double * pcoefs = &coefs(0);
+            double * pcoefs = &coefs(j);
             size_t dist = coefs.Dist();
             T_CalcShape (pt, 
                          SBLambda ( [&](int j, SIMD<double> shape)
@@ -340,7 +340,7 @@ namespace ngfem
             {
               TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
               SIMD<double> sum1 = 0, sum2 = 0;
-              double * pcoefs = &coefs(0);
+              double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
               T_CalcShape (pt, 
                            SBLambda ( [&](int j, SIMD<double> shape)
@@ -359,7 +359,7 @@ namespace ngfem
               {
                 TIP<DIM,SIMD<double>> pt = hir[i].TIp<DIM>();
                 SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0;
-                double * pcoefs = &coefs(0);
+                double * pcoefs = &coefs(j);
                 size_t dist = coefs.Dist();
                 T_CalcShape (pt, 
                              SBLambda ( [&](int j, SIMD<double> shape)
@@ -538,13 +538,13 @@ namespace ngfem
             SIMD<double> val2 = values.Get(j+1,i);
             SIMD<double> val3 = values.Get(j+2,i);
             SIMD<double> val4 = values.Get(j+3,i);
-            double * pcoefs = &coefs(0);
+            double * pcoefs = &coefs(j);
             size_t dist = coefs.Dist();
             T_CalcShape (pt, 
                          SBLambda ( [&](int j, SIMD<double> shape)
                                     {
                                       auto val = HSum(shape*val1, shape*val2, shape*val3, shape*val4);
-                                      val += SIMD<double> (*pcoefs);
+                                      val += SIMD<double> (pcoefs);
                                       _mm256_storeu_pd (pcoefs, val.Data());
                                       pcoefs += dist;
                                     } ));
@@ -562,7 +562,7 @@ namespace ngfem
               SIMD<double> val1 = values.Get(j,i);
               SIMD<double> val2 = values.Get(j+1,i);
               __m256i mask = _mm256_set_epi64x(0, 0, -1, -1);
-              double * pcoefs = &coefs(0);
+              double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
               T_CalcShape (pt, 
                            SBLambda ( [&](int j, SIMD<double> shape)
@@ -584,7 +584,7 @@ namespace ngfem
               SIMD<double> val2 = values.Get(j+1,i);
               SIMD<double> val3 = values.Get(j+2,i);
               __m256i mask = _mm256_set_epi64x(0, -1, -1, -1);
-              double * pcoefs = &coefs(0);
+              double * pcoefs = &coefs(j);
               size_t dist = coefs.Dist();
               T_CalcShape (pt, 
                            SBLambda ( [&](int j, SIMD<double> shape)
