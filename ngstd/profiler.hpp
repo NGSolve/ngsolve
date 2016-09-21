@@ -361,6 +361,22 @@ namespace ngstd
     long int GetCounts () { return 0; }
     operator int () { return timer_id; }
   };
+
+  class RegionTracer
+    {
+    public:
+      static constexpr int ID_JOB = -1;
+
+      /// start trace
+      RegionTracer (int athread_id, int region_id, int id_type = -1, int additional_value = -1 ){}
+      /// start trace with timer
+      RegionTracer (int athread_id, Timer & timer, int additional_value = -1 ){}
+      /// set user defined value
+      void SetValue( int additional_value ){}
+      /// stop trace
+      ~RegionTracer (){}
+    };
+
 #else
 
   class Timer
