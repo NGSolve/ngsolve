@@ -2422,10 +2422,13 @@ namespace ngfem
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
 
     IntegrationRule ir_facet(etfacet, 2*maxorder);
-    Facet2ElementTrafo transform1(eltype1, ElVertices); 
+    Facet2ElementTrafo transform1(eltype1, ElVertices);
+    Facet2SurfaceElementTrafo stransform(strafo.GetElementType(), SElVertices); 
+    
     IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr, ir_facet, lh);
+    IntegrationRule & ir_facet_surf = stransform(ir_facet, lh);
     BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
-    auto & smir = strafo(ir_facet, lh);
+    auto & smir = strafo(ir_facet_surf, lh);
     
     // evaluate proxy-values
     ProxyUserData ud(trial_proxies.Size(), lh);
