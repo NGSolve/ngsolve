@@ -1593,7 +1593,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Energy",FunctionPointer
          ([](PyBF & self, BaseVector & x)
           {
-            self->Energy(x);
+            return self->Energy(x);
           }))
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, BaseVector & x, BaseVector & y, int heapsize)
