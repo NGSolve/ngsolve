@@ -33,6 +33,39 @@ namespace ngcomp
         fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
                                            mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
     }
+
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, ABareMatrix<double> y)
+    {
+      // Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element");
+      else
+        fel_facet.Facet(facetnr).Evaluate(mir.IR(),
+                                          x.Range(fel_facet.GetFacetDofs(facetnr)),
+                                          y.Row(0));
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                ABareMatrix<double> y, BareSliceVector<double> x)
+    {
+      // Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element");
+      else
+        fel_facet.Facet(facetnr).AddTrans(mir.IR(),
+                                          y.Row(0),
+                                          x.Range(fel_facet.GetFacetDofs(facetnr)));
+    }
+    
+    
   }; 
 
 

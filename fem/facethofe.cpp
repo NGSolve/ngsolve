@@ -139,7 +139,8 @@ namespace ngfem
   {
     Tx x = hx[0], y = hx[1], z = hx[2];
       
-    if (z == 1.) z -= 1e-10;
+    // if (z == 1.) z -= 1e-10;
+    z *= (1-1e-10);
     
     Tx xt = x / (1-z);
     Tx yt = y / (1-z);
