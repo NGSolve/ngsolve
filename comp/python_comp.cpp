@@ -118,7 +118,9 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            shared_ptr <CompoundDifferentialOperator> block_deriv_eval = nullptr;
                                            if (proxy->DerivEvaluator() != nullptr)
                                              block_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->DerivEvaluator(), i);
-                                           auto block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+                                           shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
+                                           if (proxy->TraceEvaluator() != nullptr)
+                                             block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
                                            shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
