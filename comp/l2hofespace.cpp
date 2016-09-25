@@ -390,6 +390,9 @@ namespace ngcomp
 	    return *CreateL2HighOrderFE<ET_TRIG> (order, vnums, lh);
 	  }
 
+        if (eltype == ET_TET)         
+          return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
+
         switch (eltype)
           {
           case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, lh);
