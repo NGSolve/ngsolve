@@ -1563,10 +1563,10 @@ namespace ngstd
 namespace ngfem
 {
   
-  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>>
+  class SIMD_IntegrationRule : public Array<SIMD<IntegrationPoint>,size_t>
   {
     int dimension = -1;
-    int nip = -47;
+    size_t nip = -47;
     const SIMD_IntegrationRule *irx = nullptr, *iry = nullptr, *irz = nullptr; // for tensor product IR
   public:
     SIMD_IntegrationRule () = default;
@@ -1576,11 +1576,11 @@ namespace ngfem
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ();
     
-    SIMD_IntegrationRule (int asize, SIMD<IntegrationPoint> * pip)
-      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
+    SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
+      : Array<SIMD<IntegrationPoint>,size_t> (asize, pip) { ; }
 
-    int GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
-    void SetNIP(int _nip) { nip = _nip; }
+    size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
+    void SetNIP(size_t _nip) { nip = _nip; }
 
     bool IsTP() const { return irx != nullptr; } 
     const SIMD_IntegrationRule & GetIRX() const { return *irx; }
@@ -1615,7 +1615,7 @@ namespace ngfem
     SIMD_IntegrationRule ir;
     const ElementTransformation & eltrans;
     char * baseip;
-    int incr;
+    size_t incr;
     int dim_element, dim_space;
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
@@ -1630,11 +1630,11 @@ namespace ngfem
     ~SIMD_BaseMappedIntegrationRule ()
       { ir.NothingToDelete(); }
 
-    INLINE int Size() const { return ir.Size(); }
+    INLINE size_t Size() const { return ir.Size(); }
     INLINE const SIMD_IntegrationRule & IR() const { return ir; }
     INLINE const ElementTransformation & GetTransformation () const { return eltrans; }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;    
-    INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (int i) const
+    INLINE const SIMD<BaseMappedIntegrationPoint> & operator[] (size_t i) const
     { return *static_cast<const SIMD<BaseMappedIntegrationPoint>*> ((void*)(baseip+i*incr)); }
     INLINE int DimElement() const { return dim_element; }
     INLINE int DimSpace() const { return dim_space; }

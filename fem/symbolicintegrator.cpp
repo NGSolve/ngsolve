@@ -2653,7 +2653,7 @@ namespace ngfem
                   for ( ; i < ir.GetNIP(); i+=BS)
                     {
                       HeapReset hr(lh);
-                      int bs = min2(int(BS), ir.GetNIP()-i);
+                      int bs = min2(size_t(BS), ir.GetNIP()-i);
 
                       AFlatMatrix<double> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);                      
                       AFlatMatrix<double> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
