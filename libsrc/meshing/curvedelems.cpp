@@ -4176,6 +4176,7 @@ namespace netgen
 				       T * dxdxi, size_t sdxdxi)
   {
     // multipointtrafovar++;
+    /*
     static int timer = NgProfiler::CreateTimer ("calcmultipointelementtrafo");
     static int timer1 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 1");
     static int timer2 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 2");
@@ -4183,6 +4184,7 @@ namespace netgen
     static int timer4 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 4");
     static int timer5 = NgProfiler::CreateTimer ("calcmultipointelementtrafo 5");
     NgProfiler::RegionTimer reg(timer);
+    */
     // NgProfiler::StartTimer (timer);
     // NgProfiler::StartTimer (timer1);
     if (mesh.coarsemesh)
