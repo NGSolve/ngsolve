@@ -14,6 +14,8 @@ namespace ngstd
 {
   using namespace ngstd;
 
+  std::chrono::time_point<std::chrono::system_clock> wall_time_start = std::chrono::system_clock::now();
+
   double NgProfiler::tottimes[SIZE];
   double NgProfiler::starttimes[SIZE];
   long int NgProfiler::counts[SIZE];

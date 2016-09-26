@@ -93,7 +93,7 @@ namespace ngstd
 
       double GetTime()
         {
-          return WallTime() - start_time;
+          return ngstd::WallTime() - start_time;
         }
 
     public:
