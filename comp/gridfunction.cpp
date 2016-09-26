@@ -335,7 +335,7 @@ namespace ngcomp
 	    for( int i = 0; i < nnodes; i++)
 	      {
 		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
-		Vector<SCAL> elvec(dnums.Size());
+		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		
 		for (int k = 0; k < elvec.Size(); k++)
 		  if (ist.good())
@@ -543,7 +543,7 @@ namespace ngcomp
 	    for( int i = 0; i < nnodes; i++)
 	      {
 		fes.GetNodeDofNrs (nt, compress[index[i]],  dnums); 
-		Vector<SCAL> elvec(dnums.Size());
+		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
 		GetElementVector (dnums, elvec);
 		
 		for (int j = 0; j < elvec.Size(); j++)
