@@ -30,13 +30,17 @@ inline void gettimeofday(struct timeval* t,void* timezone)
 #endif
 
 #include <chrono>
-inline double WallTime ()
-{
-  typedef std::chrono::time_point<std::chrono::system_clock> time_point;
-  static time_point start = std::chrono::system_clock::now();
-  time_point now = std::chrono::system_clock::now();
-  std::chrono::duration<double> elapsed_seconds = now-start;
-  return elapsed_seconds.count();
+
+namespace ngstd {
+  extern std::chrono::time_point<std::chrono::system_clock> wall_time_start;
+
+  // Time in seconds since program start
+  inline double WallTime ()
+    {
+      std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+      std::chrono::duration<double> elapsed_seconds = now-wall_time_start;
+      return elapsed_seconds.count();
+    }
 }
 
 #ifdef VTRACE
