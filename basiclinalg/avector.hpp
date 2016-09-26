@@ -266,11 +266,14 @@ namespace ngbla
   public:
     AVectorD (size_t as)
       : AFlatVectorD (as, (double*) _mm_malloc(sizeof(SIMD<double>) * ((as+SIMD<double>::Size()-1) / SIMD<double>::Size()), 64)) { ; }
+    AVectorD () : AFlatVectorD (0, (double*)nullptr) { ; }
+    AVectorD (AVectorD && av2) : AFlatVectorD (0, (double*)nullptr) { Swap(size, av2.size); Swap (data, av2.data); }
     ~AVectorD()
     {
       _mm_free(data);
     }
     using AFlatVectorD::operator=;
+    AVectorD & operator= (AVectorD && av2) { Swap(size, av2.size); Swap (data, av2.data); return *this; }
   };
 
   class AFlatMatrixD : public SIMDExpr<AFlatMatrixD>
