@@ -2685,8 +2685,8 @@ namespace ngfem
         
         catch (ExceptionNOSIMD e)
           {
-            cout << "caught in SymbolicEnergy::CalcLinearized: " << endl
-                 << e.What() << endl;
+            cout << e.What() << endl
+                 << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;
             simd_evaluate = false;
             CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
           }
