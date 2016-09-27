@@ -816,7 +816,8 @@ namespace ngcomp
 
     /// is element straight or curved ?
     bool IsElementCurved (int elnr) const
-    { return bool (Ng_IsElementCurved (elnr+1)); }
+    { return GetElement(elnr).is_curved; }
+      // { return bool (Ng_IsElementCurved (elnr+1)); }
     
     
     void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
