@@ -1526,16 +1526,16 @@ namespace ngfem
     static Array< Vec<4> > coefs;
     static int maxnp;
     */
-    static constexpr int maxnp = 128;
-    static constexpr int maxalpha = 128;
+    static constexpr size_t maxnp = 128;
+    static constexpr size_t maxalpha = 128;
     static Vec<4> coefs[maxnp*maxalpha];
 #else
-    int alpha;
+    size_t alpha;
 #endif
     size_t n2;
     Vec<4> * coefsal;
   public:
-    INLINE JacobiPolynomialAlpha (int a) 
+    INLINE JacobiPolynomialAlpha (size_t a) 
     { 
       // offset = alpha*maxnp;
 #ifndef __CUDA_ARCH__
