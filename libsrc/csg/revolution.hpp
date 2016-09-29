@@ -17,8 +17,10 @@ namespace netgen
     Vec<3> v_axis;
 
     int id;
-  
+
+    // coefficient for implicizt polynomial
     mutable Vector spline_coefficient;
+    mutable Vector spline_coefficient_shifted;
 
 
     Array < Vec<2>* > checklines_vec;

@@ -85,6 +85,7 @@ namespace netgen
     void PrintCoeff (ostream & ost) const;
 
     virtual void GetCoeff (Vector & coeffs) const = 0;
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const { ; } 
 
     virtual void GetPoints (int n, Array<Point<D> > & points) const;
 
@@ -138,7 +139,8 @@ namespace netgen
     virtual const GeomPoint<D> & EndPI () const { return p2; }
     ///
     virtual void GetCoeff (Vector & coeffs) const;
-
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const;
+    
     virtual string GetType(void) const {return "line";}
 
     virtual void LineIntersections (const double a, const double b, const double c,
@@ -186,7 +188,8 @@ namespace netgen
     virtual const GeomPoint<D> & EndPI () const { return p3; }
     ///
     virtual void GetCoeff (Vector & coeffs) const;
-
+    virtual void GetCoeff (Vector & coeffs, Point<D> p0) const;
+    
     virtual string GetType(void) const {return "spline3";}
 
     const GeomPoint<D> & TangentPoint (void) const { return p2; }
@@ -394,6 +397,19 @@ namespace netgen
     coeffs[5] = -dx * p1(1) + dy * p1(0);
   }
 
+  template<int D>
+  void LineSeg<D> :: GetCoeff (Vector & coeffs, Point<D> p) const
+  {
+    coeffs.SetSize(6);
+
+    double dx = p2(0) - p1(0);
+    double dy = p2(1) - p1(1);
+
+    coeffs[0] = coeffs[1] = coeffs[2] = 0;
+    coeffs[3] = -dy;
+    coeffs[4] = dx;
+    coeffs[5] = -dx * (p1(1)-p(1)) + dy * (p1(0)-p(0));
+  }
 
 
   template<int D>
