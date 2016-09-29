@@ -593,7 +593,13 @@ DLL_HEADER void ExportNetgenMeshing()
     .add_property("maxh", 
                   FunctionPointer ([](const MP & mp ) { return mp.maxh; }),
                   FunctionPointer ([](MP & mp, double maxh) { return mp.maxh = maxh; }))
-                  
+    .def("RestrictH", FunctionPointer
+         ([](MP & mp, double x, double y, double z, double h)
+          {
+            mp.meshsize_points.Append ( MeshingParameters::MeshSizePoint (Point<3> (x,y,z), h));
+          }),
+         (bp::arg("x"), bp::arg("y"), bp::arg("z"), bp::arg("h"))
+         )
     ;
 
   bp::def("SetTestoutFile", FunctionPointer ([] (const string & filename)

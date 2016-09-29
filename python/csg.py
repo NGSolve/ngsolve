@@ -14,7 +14,11 @@ def VS (obj):
 
 
 def csg_meshing_func (geom, **args):
-    return GenerateMesh (geom, MeshingParameters (**args))
+    if "mp" in args:
+        return GenerateMesh (geom, args["mp"])
+    else:
+        return GenerateMesh (geom, MeshingParameters (**args))
+#     return GenerateMesh (geom, MeshingParameters (**args))
 
 CSGeometry.GenerateMesh = csg_meshing_func
 
