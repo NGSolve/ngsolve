@@ -166,7 +166,7 @@ namespace ngcomp
 
       if (coarse)
       {
-        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (bfa, flags, "wirebasket"+coarsetype);
+        inv = GetPreconditionerClasses().GetPreconditioner(coarsetype)->creatorbf (nullptr, flags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
       }
     }
