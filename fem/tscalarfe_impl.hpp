@@ -649,20 +649,22 @@ namespace ngfem
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (int i = 0; i < mir.Size(); i++)
+        double *pcoefs = &coefs(0);
+        const size_t dist = coefs.Dist();
+        for (size_t i = 0; i < mir.Size(); i++)
           {
-//             Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
             Vec<DIM,SIMD<double>> sum(0.0);
-//             T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(mir[i]),
-            T_CalcShape (GetTIP(mir[i]),
-                         SBLambda ([&] (int j, AutoDiffRec<DIM,SIMD<double>> shape)
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
+            GetTIP(mir[i], adp);
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    { 
-//                                    Iterate<DIM> ( [&] (auto i) {
-                                       for (int i=0; i<DIM; i++)
-                                       sum(i) += coefs(j) * shape.DValue(i); 
-//                                        });
+                                   Iterate<DIM> ( [&] (auto ii) {
+                                       sum(ii.value) += *pcoefs * shape.DValue(ii.value); 
+                                       });
+                                     pcoefs += dist;
                                    }));
-            for (int k = 0; k < DIM; k++)
+            for (size_t k = 0; k < DIM; k++)
               values.Get(k,i) = sum(k).Data();
           }
       }
@@ -737,15 +739,16 @@ namespace ngfem
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
         for (size_t i = 0; i < mir.Size(); i++)
           {
-            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
+            GetTIP(mir[i], adp);
             double * pcoef = &coefs(0);
             size_t dist = coefs.Dist();            
-            T_CalcShape (TIP<DIM, AutoDiff<DIM,SIMD<double> >> (adp),
-                         SBLambda ([&] (size_t j, AD2Vec<DIM,SIMD<double>> shape)
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    {
                                      SIMD<double> sum = 0.0;
                                      for (size_t k = 0; k < DIM; k++)
-                                       sum += shape(k) * values.Get(k,i);
+                                       sum += shape.DValue(k) * values.Get(k,i);
                                      // coefs(j) += HSum(sum);
                                      *pcoef += HSum(sum);
                                      pcoef += dist;
