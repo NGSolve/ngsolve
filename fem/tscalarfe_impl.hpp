@@ -649,10 +649,11 @@ namespace ngfem
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        double *pcoefs = &coefs(0);
-        const size_t dist = coefs.Dist();
         for (size_t i = 0; i < mir.Size(); i++)
           {
+            double *pcoefs = &coefs(0);
+            const size_t dist = coefs.Dist();
+            
             Vec<DIM,SIMD<double>> sum(0.0);
             TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
             GetTIP(mir[i], adp);
