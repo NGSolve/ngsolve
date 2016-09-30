@@ -524,12 +524,12 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     AutoDiffRec & operator= (const AutoDiffRec &) = default;
 
     AutoDiffRec (SCAL aval) : rec(aval), last(0.0) { ; }
-    AutoDiffRec (SCAL aval, int diffindex) : rec(aval), last((diffindex==D) ? 1.0 : 0.0) { ; }
+    AutoDiffRec (SCAL aval, int diffindex) : rec(aval, diffindex), last((diffindex==D-1) ? 1.0 : 0.0) { ; }
     AutoDiffRec & operator= (SCAL aval) { rec = aval; last = 0.0; return *this; }
     SCAL Value() const { return rec.Value(); }
-    SCAL DValue(int i) const { return (i == D) ? last : rec.DValue(i); }
+    SCAL DValue(int i) const { return (i == D-1) ? last : rec.DValue(i); }
     SCAL & Value() { return rec.Value(); }
-    SCAL & DValue(int i) { return (i == D) ? last : rec.DValue(i); }
+    SCAL & DValue(int i) { return (i == D-1) ? last : rec.DValue(i); }
     auto Rec() const { return rec; }
     auto Last() const { return last; }
     auto & Rec() { return rec; }
@@ -568,6 +568,7 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     AutoDiffRec (const AutoDiffRec &) = default;
     AutoDiffRec (SCAL _val) : val(_val), last(0.0) { ; }
     AutoDiffRec (SCAL _val, SCAL _last) : val(_val), last(_last) { ; }
+    AutoDiffRec (SCAL aval, int diffindex) : val(aval), last((diffindex==0) ? 1.0 : 0.0) { ; }    
 
     AutoDiffRec & operator= (const AutoDiffRec &) = default;
     AutoDiffRec & operator= (SCAL aval) { val = aval; last = 0.0; return *this; }
