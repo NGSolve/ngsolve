@@ -12,7 +12,7 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
-		 const BitArray * ainner)
+		 const BitArray * ainner, bool use_par)
     : mat(amat), inner(ainner)
   { 
     SetParallelDofs (mat.GetParallelDofs());
@@ -24,9 +24,10 @@ namespace ngla
     for (int i = 0; i < height; i++)
       if (!inner || inner->Test(i))
 	invdiag[i] = mat(i,i);
-
-    AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
-
+    
+    if(paralleldofs!=nullptr && use_par)
+	AllReduceDofData (invdiag, MPI_SUM, *paralleldofs);  
+    
     for (int i = 0; i < height; i++)
       if (!inner || inner->Test(i))
 	CalcInverse (invdiag[i]);
@@ -128,8 +129,8 @@ namespace ngla
   template <class TM, class TV>
   JacobiPrecondSymmetric<TM,TV> ::
   JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
-			  const BitArray * ainner)
-    : JacobiPrecond<TM,TV,TV> (amat, ainner)
+			  const BitArray * ainner, bool use_par)
+    : JacobiPrecond<TM,TV,TV> (amat, ainner, use_par)
   { 
     ;
   }
@@ -175,7 +176,7 @@ namespace ngla
   {
     static Timer timer("JacobiPrecondSymmetric::GSSmooth-help");
     RegionTimer reg (timer);
-
+    
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
@@ -239,6 +240,35 @@ namespace ngla
       else
 	fx(i) = TVX(0);
   }
+
+  template <class TM, class TV>
+  void JacobiPrecondSymmetric<TM,TV> ::
+  GSSmoothBack (BaseVector & x, const BaseVector & b, BaseVector &y) const 
+  {
+    /*
+      const ParallelMatrix * parmat = dynamic_cast<const ParallelMatrix* >(m_system);
+      const BaseSparseMatrix * sysmat = dynamic_cast<const BaseSparseMatrix* >(&parmat->GetMatrix());
+    */
+    static Timer timer("JacobiPrecondSymmetric::GSSmoothBack-help");
+    RegionTimer reg (timer);
+  
+    const SparseMatrixSymmetric<TM,TV>& smat = dynamic_cast<const SparseMatrixSymmetric<TM,TV>&>(this->mat);
+  
+    FlatVector<TVX> fx = x.FV<TVX>();
+    FlatVector<TVX> fy = y.FV<TVX>();
+    FlatVector<TVX> fb = b.FV<TVX>();
+
+    for (int i = smat.Height()-1; i >=0; i--)
+      if (!this->inner || this->inner->Test(i))
+	{
+	  TVX d = fy(i) - smat.RowTimesVectorNoDiag (i, fx);
+	  TVX w = this->invdiag[i] * d;
+	  
+	  fx(i) += w;
+	  smat.AddRowTransToVector (i, -w, fy);
+	}
+  }
+
 
   ///
   template <class TM, class TV>
