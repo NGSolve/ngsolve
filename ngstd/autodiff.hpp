@@ -535,6 +535,26 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
   };
   
   template <typename SCAL>
+  class AutoDiffRec<0,SCAL>
+  {
+    SCAL val;
+  public:
+    AutoDiffRec () = default;
+    AutoDiffRec (const AutoDiffRec &) = default;
+    AutoDiffRec (SCAL _val) : val(_val) { ; }
+    AutoDiffRec (SCAL _val, SCAL _last) : val(_val) { ; }
+
+    AutoDiffRec & operator= (const AutoDiffRec &) = default;
+    AutoDiffRec & operator= (SCAL aval) { val = aval; return *this; }
+
+    SCAL Value() const { return val; }
+    SCAL DValue(int i) const { return val; }
+    auto Rec() const { return val; }
+    auto Last() const { return val; }
+    auto & Rec() { return val; }
+    auto & Last() { return val; }
+  };
+  template <typename SCAL>
   class AutoDiffRec<1,SCAL>
   {
     SCAL val;
@@ -544,6 +564,10 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     AutoDiffRec (const AutoDiffRec &) = default;
     AutoDiffRec (SCAL _val) : val(_val), last(0.0) { ; }
     AutoDiffRec (SCAL _val, SCAL _last) : val(_val), last(_last) { ; }
+
+    AutoDiffRec & operator= (const AutoDiffRec &) = default;
+    AutoDiffRec & operator= (SCAL aval) { val = aval; last = 0.0; return *this; }
+
     SCAL Value() const { return val; }
     SCAL DValue(int i) const { return last; }
     auto Rec() const { return val; }
@@ -552,12 +576,12 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     auto & Last() { return last; }
   };
   
-  template <int D, typename SCAL>  
-  AutoDiffRec<D,SCAL> operator+ (AutoDiffRec<D,SCAL> a, AutoDiffRec<D,SCAL> b)
+  template <int D, typename SCAL>
+  AutoDiffRec<D,SCAL> operator+ (double a, AutoDiffRec<D,SCAL> b)
   {
-    return AutoDiffRec<D,SCAL> (a.Rec()+b.Rec(), a.Last()+b.Last());
+    return AutoDiffRec<D,SCAL> (a+b.Rec(), b.Last());
   }
-
+  
   template <int D, typename SCAL>
   AutoDiffRec<D,SCAL> operator+ (AutoDiffRec<D,SCAL> a, double b)
   {
@@ -565,9 +589,39 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
   }
   
   template <int D, typename SCAL>  
+  AutoDiffRec<D,SCAL> operator+ (AutoDiffRec<D,SCAL> a, AutoDiffRec<D,SCAL> b)
+  {
+    return AutoDiffRec<D,SCAL> (a.Rec()+b.Rec(), a.Last()+b.Last());
+  }
+
+  template <int D, typename SCAL>
+  AutoDiffRec<D,SCAL> operator- (double b, AutoDiffRec<D,SCAL> a)
+  {
+    return AutoDiffRec<D,SCAL> (b-a.Rec(), -a.Last());
+  }
+  
+  template <int D, typename SCAL>
+  AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a, double b)
+  {
+    return AutoDiffRec<D,SCAL> (a.Rec()-b, a.Last());
+  }
+  
+  template <int D, typename SCAL>  
+  AutoDiffRec<D,SCAL> operator- (AutoDiffRec<D,SCAL> a, AutoDiffRec<D,SCAL> b)
+  {
+    return AutoDiffRec<D,SCAL> (a.Rec()-b.Rec(), a.Last()-b.Last());
+  }
+
+  template <int D, typename SCAL>  
   AutoDiffRec<D,SCAL> operator* (AutoDiffRec<D,SCAL> a, AutoDiffRec<D,SCAL> b)
   {
     return AutoDiffRec<D,SCAL> (a.Rec()*b.Rec(), a.Value()*b.Last()+b.Value()*a.Last());
+  }
+
+  template <int D, typename SCAL, typename SCAL1>  
+  AutoDiffRec<D,SCAL> operator* (AutoDiffRec<D,SCAL> b, SCAL1 a)
+  {
+    return AutoDiffRec<D,SCAL> (a*b.Rec(), a*b.Last());
   }
 
   template <int D, typename SCAL, typename SCAL1>  
@@ -584,6 +638,29 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     return a;
   }
 
+  template <int D, typename SCAL>
+  AutoDiffRec<D,SCAL> & operator-= (AutoDiffRec<D,SCAL> & a, double b)
+  {
+    a.Rec() -= b;
+    return a;
+  }
+
+  template <int D, typename SCAL>
+  AutoDiffRec<D,SCAL> & operator-= (AutoDiffRec<D,SCAL> & a, AutoDiffRec<D,SCAL> b)
+  {
+    a.Rec() -= b.Rec();
+    a.Last() -= b.Last();
+    return a;
+  }
+
+
+  template <int D, typename SCAL>  
+  AutoDiffRec<D,SCAL> & operator*= (AutoDiffRec<D,SCAL> & a, AutoDiffRec<D,SCAL> b)
+  {
+    a = a*b;
+    return a;
+  }
+
   
   template <int D, typename SCAL, typename SCAL2>  
   AutoDiffRec<D,SCAL> & operator*= (AutoDiffRec<D,SCAL> & b, SCAL2 a)
@@ -591,6 +668,24 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     b.Rec() *= a;
     b.Last() *= a;
     return b;
+  }
+
+  /// Inverse of AutoDiffRec
+  template<int D, typename SCAL>
+  INLINE AutoDiffRec<D,SCAL> Inv (const AutoDiffRec<D,SCAL> & x)
+  {
+    AutoDiffRec<D,SCAL> res(1.0 / x.Value());
+    for (int i = 0; i < D; i++)
+      res.DValue(i) = -x.DValue(i) / (x.Value() * x.Value());
+    return res;
+  }
+
+
+  /// AutoDiffRec div AutoDiffRec
+  template<int D, typename SCAL>
+  INLINE AutoDiffRec<D,SCAL> operator/ (const AutoDiffRec<D,SCAL> & x, const AutoDiffRec<D,SCAL> & y)
+  {
+    return x * Inv (y);
   }
 
   
