@@ -245,10 +245,6 @@ namespace ngla
   void JacobiPrecondSymmetric<TM,TV> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b, BaseVector &y) const 
   {
-    /*
-      const ParallelMatrix * parmat = dynamic_cast<const ParallelMatrix* >(m_system);
-      const BaseSparseMatrix * sysmat = dynamic_cast<const BaseSparseMatrix* >(&parmat->GetMatrix());
-    */
     static Timer timer("JacobiPrecondSymmetric::GSSmoothBack-help");
     RegionTimer reg (timer);
   
