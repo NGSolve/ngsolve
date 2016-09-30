@@ -729,16 +729,20 @@ namespace ngfem
     if ((DIM == 3) || (bmir.DimSpace() == DIM))
       {
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-        for (int i = 0; i < mir.Size(); i++)
+        for (size_t i = 0; i < mir.Size(); i++)
           {
             Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            double * pcoef = &coefs(0);
+            size_t dist = coefs.Dist();            
             T_CalcShape (TIP<DIM, AutoDiff<DIM,SIMD<double> >> (adp),
-                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
+                         SBLambda ([&] (size_t j, AD2Vec<DIM,SIMD<double>> shape)
                                    {
                                      SIMD<double> sum = 0.0;
-                                     for (int k = 0; k < DIM; k++)
+                                     for (size_t k = 0; k < DIM; k++)
                                        sum += shape(k) * values.Get(k,i);
-                                     coefs(j) += HSum(sum);
+                                     // coefs(j) += HSum(sum);
+                                     *pcoef += HSum(sum);
+                                     pcoef += dist;
                                    }));
           }
       }
