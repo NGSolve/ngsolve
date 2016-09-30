@@ -528,6 +528,8 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
     AutoDiffRec & operator= (SCAL aval) { rec = aval; last = 0.0; return *this; }
     SCAL Value() const { return rec.Value(); }
     SCAL DValue(int i) const { return (i == D) ? last : rec.DValue(i); }
+    SCAL & Value() { return rec.Value(); }
+    SCAL & DValue(int i) { return (i == D) ? last : rec.DValue(i); }
     auto Rec() const { return rec; }
     auto Last() const { return last; }
     auto & Rec() { return rec; }
@@ -549,6 +551,8 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 
     SCAL Value() const { return val; }
     SCAL DValue(int i) const { return val; }
+    SCAL & Value() { return val; }
+    SCAL & DValue(int i) { return val; }
     auto Rec() const { return val; }
     auto Last() const { return val; }
     auto & Rec() { return val; }
@@ -570,6 +574,8 @@ INLINE AutoDiff<D,SCAL> atan (AutoDiff<D,SCAL> x)
 
     SCAL Value() const { return val; }
     SCAL DValue(int i) const { return last; }
+    SCAL & Value() { return val; }
+    SCAL & DValue(int i) { return last; }
     auto Rec() const { return val; }
     auto Last() const { return last; }
     auto & Rec() { return val; }
