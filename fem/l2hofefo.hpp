@@ -415,34 +415,43 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
-      Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+//       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
+// 
+//       INT<4> hvnums(V1,V2,V3,V4);
+//       unsigned char sort[4] = { 0, 1, 2, 3 };
+//       if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
+//       if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);
+//       if (hvnums[sort[0]] > hvnums[sort[2]]) Swap (sort[0], sort[2]);
+//       if (hvnums[sort[1]] > hvnums[sort[3]]) Swap (sort[1], sort[3]);
+//       if (hvnums[sort[1]] > hvnums[sort[2]]) Swap (sort[1], sort[2]);
+// 
+//       Tx lamis[4];
+//       for (int i = 0; i < 4; i++)
+//         lamis[i] = lami[sort[i]];
 
-      INT<4> hvnums(V1,V2,V3,V4);
-      unsigned char sort[4] = { 0, 1, 2, 3 };
-      if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
-      if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);
-      if (hvnums[sort[0]] > hvnums[sort[2]]) Swap (sort[0], sort[2]);
-      if (hvnums[sort[1]] > hvnums[sort[3]]) Swap (sort[1], sort[3]);
-      if (hvnums[sort[1]] > hvnums[sort[2]]) Swap (sort[1], sort[2]);
-
-      Tx lamis[4];
-      for (int i = 0; i < 4; i++)
-        lamis[i] = lami[sort[i]];
-
+      // Hack: only working because there are currently only 2 possibilities for V1-V4:
+      // 0,1,2,3
+      // 0,1,3,2
+      const Tx l4 = 1-ip.x-ip.y-ip.z;
+      auto const lamis = make_tuple( ip.x, ip.y, V3<V4 ? ip.z : l4, V3<V4 ? l4 : ip.z );
+      const auto & lami0 = get<0>(lamis);
+      const auto & lami1 = get<1>(lamis);
+      const auto & lami2 = get<2>(lamis);
+      const auto & lami3 = get<3>(lamis);
 
       size_t ii = 0;
       LegendrePolynomial leg;
       JacobiPolynomialAlpha jac1(1);    
       leg.EvalScaled 
-        (IC<ORDER>(), lamis[2]-lamis[3], lamis[2]+lamis[3],
+        (IC<ORDER>(), lami2-lami3, lami2+lami3,
          SBLambda ([&](auto k, Tx polz) LAMBDA_INLINE
                    {
                      JacobiPolynomialAlpha jac2(2*k+2);
                      jac1.EvalScaledMult 
-                       (IC<ORDER-k.value>(), lamis[1]-lamis[2]-lamis[3], 1-lamis[0], polz, 
+                       (IC<ORDER-k.value>(), lami1-lami2-lami3, 1-lami0, polz, 
                         SBLambda ([&] (auto j, Tx polsy) LAMBDA_INLINE
                                   {
-                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lamis[0] - 1, polsy, shape+ii);
+                                    jac2.EvalMult(IC<ORDER-k.value-j.value>(), 2 * lami0 - 1, polsy, shape+ii);
                                     ii += IC<ORDER-k.value-j.value+1>();
                                     jac2.IncAlpha2();
                                   }));
