@@ -290,7 +290,7 @@ namespace ngfem
   void L2HighOrderFE_Shape<ET_POINT> ::
   T_CalcShape (TIP<0,Tx> ip, TFA & shape) const
   {
-    shape[0] = 1.0;
+    shape[0] = Tx(1.0);
   }
 
 
