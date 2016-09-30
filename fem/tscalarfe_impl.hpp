@@ -651,11 +651,17 @@ namespace ngfem
         auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
         for (int i = 0; i < mir.Size(); i++)
           {
-            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+//             Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
             Vec<DIM,SIMD<double>> sum(0.0);
-            T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(adp),
-                         SBLambda ([&] (int j, AD2Vec<DIM,SIMD<double>> shape)
-                                   { sum += coefs(j) * shape; }));
+//             T_CalcShape (TIP<DIM,AutoDiff<DIM,SIMD<double>>>(mir[i]),
+            T_CalcShape (GetTIP(mir[i]),
+                         SBLambda ([&] (int j, AutoDiffRec<DIM,SIMD<double>> shape)
+                                   { 
+//                                    Iterate<DIM> ( [&] (auto i) {
+                                       for (int i=0; i<DIM; i++)
+                                       sum(i) += coefs(j) * shape.DValue(i); 
+//                                        });
+                                   }));
             for (int k = 0; k < DIM; k++)
               values.Get(k,i) = sum(k).Data();
           }
