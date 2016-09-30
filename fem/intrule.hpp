@@ -19,6 +19,8 @@ namespace ngfem
   public:
     // T x; // dummy
     TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
     explicit TIP (Vec<0,T> v) { ; }
     // TIP (const IntegrationPoint & ip) { ; } 
     // TIP (const SIMD<IntegrationPoint> & ip) { ; }
@@ -32,6 +34,8 @@ namespace ngfem
   public:
     T x;
     TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
     TIP (T _x) : x(_x) { ; }
     explicit TIP (Vec<1,T> v) : x(v(0)) { ; }    
     // TIP (const IntegrationPoint & ip) : x(ip(0)) { ; } 
@@ -48,6 +52,8 @@ namespace ngfem
     T x, y;
     
     TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
     TIP (T _x, T _y) : x(_x), y(_y) { ; }
     explicit TIP (Vec<2,T> v) : x(v(0)), y(v(1)) { ; }        
     // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)) { ; } 
@@ -62,6 +68,8 @@ namespace ngfem
   public:
     T x, y, z;
     TIP () = default;
+    TIP (const TIP &) = default;
+    TIP (TIP &&) = default;
     TIP (T _x, T _y, T _z) : x(_x), y(_y), z(_z) { ; }
     explicit TIP (Vec<3,T> v) : x(v(0)), y(v(1)), z(v(2)) { ; }            
     // TIP (const IntegrationPoint & ip) : x(ip(0)), y(ip(1)), z(ip(2)) { ; }     
