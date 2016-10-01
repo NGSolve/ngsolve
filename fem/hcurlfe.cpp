@@ -4493,7 +4493,7 @@ namespace ngfem
   }
 
 
-
+#ifdef VERY_OLD_NEDELEC_ELS
   // Array<HCurlFiniteElement<3>::IPData> FE_NedelecPyramid3::ipdata;
   Mat<FE_NedelecPyramid3::NDOF> FE_NedelecPyramid3::trans;
   Mat<FE_NedelecPyramid3::NEDGEDOF> FE_NedelecPyramid3::trans2;
@@ -4949,6 +4949,7 @@ namespace ngfem
       (*testout) << "check = " << endl << (fiphij3 * trans3) << endl;
     */
   }
-
+#endif
+  
 
 }
