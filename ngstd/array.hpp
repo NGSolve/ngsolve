@@ -1324,12 +1324,12 @@ namespace ngstd
   };
 
   template<size_t S, typename T>
-  const T * operator+ (const HTArray<0,T> & ar, size_t i)
+  const T * operator+ (const HTArray<S,T> & ar, size_t i)
   {
     return ar.Ptr()+i;
   }
   template<size_t S, typename T>
-  T * operator+ (HTArray<0,T> & ar, size_t i)
+  T * operator+ (HTArray<S,T> & ar, size_t i)
   {
     return ar.Ptr()+i;
   }
