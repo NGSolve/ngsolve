@@ -819,7 +819,7 @@ namespace ngcomp
 	      {
 		quad    = new FE_TNedelecQuad<3,3>;
 		prism   = new FE_TNedelecPrism3<3>;
-		pyramid = new FE_NedelecPyramid3;
+		// pyramid = new FE_NedelecPyramid3;
 		curlprism   = new FE_TNedelecPrism3NoGrad<3>;
 		break;
 	      }

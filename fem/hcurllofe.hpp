@@ -1009,7 +1009,7 @@ static Matrix<> trans;
   }; 
 
 
-
+#ifdef VERY_OLD_NEDELECFE
   ///
   class FE_NedelecPyramid3 : public HCurlFiniteElement<3>
   {
@@ -1061,7 +1061,8 @@ static Matrix<> trans;
     ///
     void Orthogonalize();
   };
-
+#endif
+  
 
 
 
