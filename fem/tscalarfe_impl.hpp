@@ -655,8 +655,8 @@ namespace ngfem
             const size_t dist = coefs.Dist();
             
             Vec<DIM,SIMD<double>> sum(0.0);
-            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp;
-            GetTIP(mir[i], adp);
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>>adp = GetTIP(mir[i]);
+            // GetTIP(mir[i], adp);
             T_CalcShape (adp,
                          SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    { 
