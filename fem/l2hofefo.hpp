@@ -307,14 +307,15 @@ namespace ngfem
   class L2HighOrderFEFO_Shapes<ET_SEGM, ORDER> : public L2HighOrderFEFO<ET_SEGM, ORDER>
   {
     using L2HighOrderFEFO<ET_SEGM, ORDER>::ndof;
-    using L2HighOrderFEFO<ET_SEGM, ORDER>::vnums; 
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::vnums;
+    using L2HighOrderFEFO<ET_SEGM, ORDER>::DIM; 
 
   public:
 
     enum { NDOF = (ORDER+1) };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       Tx lam[2] = { ip.x, 1-ip.x };
       INT<2> e = this -> GetEdgeSort (0, vnums);
@@ -340,7 +341,7 @@ namespace ngfem
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<2,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
       INT<4> f = this -> GetFaceSort (0, vnums);
@@ -372,13 +373,14 @@ namespace ngfem
     : public L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>
   {
     using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::ndof;
-    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums; 
-
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::vnums;
+    using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::DIM;     
+    
   public:
     enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<2,Tx> ip, TFA & shape) const
+      INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
@@ -413,7 +415,7 @@ namespace ngfem
     enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
 
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<3,Tx> & ip, TFA & shape) const
     {
 //       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 // 
