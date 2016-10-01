@@ -1281,8 +1281,8 @@ namespace ngstd
     T head;
   public:
     HTArray () = default;
-    HTArray (HTArray &) = default;
-    HTArray & operator= (HTArray &) = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
 
     T * Ptr () { return tail.Ptr(); }
     T & operator[] (size_t i) { return Ptr()[i]; }
@@ -1297,8 +1297,8 @@ namespace ngstd
     T head;
   public:
     HTArray () = default;
-    HTArray (HTArray &) = default;
-    HTArray & operator= (HTArray &) = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
 
     T * Ptr () { return &head; }
     T & operator[] (size_t i) { return Ptr()[i]; }
@@ -1313,8 +1313,8 @@ namespace ngstd
     T head; // dummy variable
   public:
     HTArray () = default;
-    HTArray (HTArray &) = default;
-    HTArray & operator= (HTArray &) = default;
+    HTArray (const HTArray &) = default;
+    HTArray & operator= (const HTArray &) = default;
 
     T * Ptr () { return &head; }
     T & operator[] (size_t i) { return Ptr()[i]; }
