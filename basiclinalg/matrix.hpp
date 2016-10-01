@@ -573,15 +573,17 @@ namespace ngbla
     // enum { WIDTH  = W };
 
     /// do not initialize 
-    INLINE Mat () { ; }
+    Mat () = default;
+    Mat (const Mat &) = default;
 
+    /*
     /// copy matrix
     INLINE Mat (const Mat & m) 
       : MatExpr<Mat> ()
     {
       (*this) = m;
     }
-
+    */
     /// assign values
     template<typename TB>
     INLINE Mat (const Expr<TB> & m)
@@ -605,12 +607,15 @@ namespace ngbla
     }
 
     /// copy matrix
+    Mat & operator= (const Mat &) = default;
+    /*
     INLINE Mat & operator= (const Mat & m) 
     {
       for (int i = 0; i < H*W; i++)
         data[i] = m.data[i];
       return *this;
     }
+    */
  
     /// fill values
     INLINE Mat & operator= (TSCAL s) 

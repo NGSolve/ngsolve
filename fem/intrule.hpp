@@ -1530,7 +1530,7 @@ namespace ngstd
     // SIMD<double> GetJacobiDet() const { return det; }
     ///
     // const Mat<DIMS,DIMR,SCAL> & GetJacobianInverse() const { return dxidx; }
-    const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
+    INLINE const Mat<DIMS,DIMR,SIMD<double>> GetJacobianInverse() const 
     { 
       if (DIMS == DIMR)
         return 1.0/det * Trans (Cof (dxdxi));
