@@ -1838,13 +1838,28 @@ namespace ngbla
     -> Mat<W,H,decltype(Trans(mat(0,0)))>
   {
     Mat<W,H,decltype(Trans(mat(0,0)))> res;
+    /*
     for (int i = 0; i < H; i++)
       for (int j = 0; j < W; j++)
         res(j,i) = mat(i,j);
+    */
+    Iterate<H> ([&] (auto i) {
+        Iterate<W> ([&] (auto j) {
+            res(j.value,i.value) = mat(i.value, j.value);
+          });
+      });
     return res;
   }
   
-
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
+  {
+    Mat<H,W,T> res;
+    Iterate<H*W> ([&] (auto i) {
+        res(i.value) = scal * mat(i.value);
+      });
+    return res;
+  }
 
 
   template <int H, int W, int W2, typename T1, typename T2>
