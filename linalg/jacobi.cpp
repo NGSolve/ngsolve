@@ -252,7 +252,7 @@ namespace ngla
   
     FlatVector<TVX> fx = x.FV<TVX>();
     FlatVector<TVX> fy = y.FV<TVX>();
-    FlatVector<TVX> fb = b.FV<TVX>();
+    // FlatVector<TVX> fb = b.FV<TVX>();
 
     for (int i = smat.Height()-1; i >=0; i--)
       if (!this->inner || this->inner->Test(i))

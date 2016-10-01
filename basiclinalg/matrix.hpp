@@ -562,7 +562,8 @@ namespace ngbla
   template <int H, int W = H, typename T = double>
   class Mat : public MatExpr<Mat<H,W,T> >
   {
-    T data[(H*W>0) ? H*W : 1];
+    // T data[(H*W>0) ? H*W : 1];
+    HTArray<H*W,T> data;
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
