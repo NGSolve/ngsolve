@@ -464,9 +464,9 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
 
 
 
-  template <typename T>
+  template <typename T1, typename T2, typename T3>
   // a*b+c
-  T FMA(T a, T b, T c)
+  auto FMA(T1 a, T2 b, T3 c)
   {
     return a*b+c;
   }
@@ -476,11 +476,19 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   {
     return _mm512_fmadd_pd (a.Data(), b.Data(), c.Data());
   }
+  INLINE SIMD<double> FMA (const double & a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm512_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());    
+  }
 #else
 #ifdef __AVX2__
   INLINE SIMD<double> FMA (SIMD<double> a, SIMD<double> b, SIMD<double> c)
   {
     return _mm256_fmadd_pd (a.Data(), b.Data(), c.Data());
+  }
+  INLINE SIMD<double> FMA (const double & a, SIMD<double> b, SIMD<double> c)
+  {
+    return _mm256_fmadd_pd (_mm256_set1_pd(a), b.Data(), c.Data());
   }
 #endif
 #endif
@@ -489,6 +497,12 @@ INLINE ngstd::SIMD<double> pow (ngstd::SIMD<double> a, double x) {
   INLINE MultiSIMD<D,double> FMA(MultiSIMD<D,double> a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
   {
     return MultiSIMD<D,double> (FMA (a.Head(), b.Head(), c.Head()), FMA (a.Tail(), b.Tail(), c.Tail()));
+  }
+
+  template <int D>
+  INLINE MultiSIMD<D,double> FMA(const double & a, MultiSIMD<D,double> b, MultiSIMD<D,double> c)
+  {
+    return MultiSIMD<D,double> (FMA (a, b.Head(), c.Head()), FMA (a, b.Tail(), c.Tail()));
   }
 
 
