@@ -826,7 +826,9 @@ namespace netgen
     unsigned int seginfo:2;
 
     /// surface decoding index
-    int si;          
+    int si;
+    /// co dim 2 deconding index
+    int cd2i;
     /// domain number inner side
     int domin;
     /// domain number outer side

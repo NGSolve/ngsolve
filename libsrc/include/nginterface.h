@@ -125,6 +125,9 @@ extern "C" {
   DLL_HEADER char * Ng_GetBCNumBCName (int bcnr);
   //void Ng_GetBCNumBCName (int bcnr, char * name);
 
+  // Get BCName for bc-number of co dim 2
+  DLL_HEADER char * Ng_GetCD2NumCD2Name (int cd2nr);
+
   // Get normal vector of surface element node
   // DLL_HEADER void Ng_GetNormalVector (int sei, int locpi, double * nv);     
   

@@ -542,6 +542,11 @@ char * Ng_GetBCNumBCName (int bcnr)
   return const_cast<char *>(mesh->GetBCName(bcnr).c_str());
 }
 
+char * Ng_GetCD2NumCD2Name (int cd2nr)
+{
+  return const_cast<char *>(mesh->GetCD2Name(cd2nr).c_str());
+}
+
 
 // Inefficient (but maybe safer) version:
 //void Ng_GetBCNumBCName (int bcnr, char * name)

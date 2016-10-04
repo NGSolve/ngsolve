@@ -456,6 +456,22 @@ namespace netgen
         }
   }
 
+  template <> DLL_HEADER void Ngx_Mesh ::
+  ElementTransformation<1,3> (int elnr,
+			      const double * xi,
+			      double * x,
+			      double * dxdxi) const
+  {
+    Point<3> xg;
+    Vec<3> dx;
+    mesh->GetCurvedElements().CalcSegmentTransformation(xi[0],elnr,xg,dx);
+    if(x)
+      for(int i=0;i<3;i++) x[i] = xg(i);
+
+    if(dxdxi)
+      for(int i=0;i<3;i++) dxdxi[i] = dx(i);
+  }
+
 
   template <> DLL_HEADER void Ngx_Mesh ::
   ElementTransformation<2,2> (int elnr,

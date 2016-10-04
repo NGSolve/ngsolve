@@ -338,6 +338,20 @@ namespace netgen
 	FaceDescriptor & fd = mesh.GetFaceDescriptor(k);
 	fd.SetBCName ( mesh.GetBCNamePtr ( fd.BCProperty() - 1 ) );
       }
+
+    int bbccnt = 0;
+    for (int k = 0; k < geom.GetNSurf(); k++){
+      auto splinesurf =  dynamic_cast<const SplineSurface*> (geom.GetSurface(k));
+      if (splinesurf)
+	{
+	  for( int i=0;  i< splinesurf->GetNSplines(); i++)
+	    {
+	      string bcname = *splinesurf->GetBCName(i);
+	      if(bcname != "default"){
+		mesh.SetCD2Name(bbccnt,bcname); bbccnt++; }
+	    }
+	}
+    }
     
 
     //!!

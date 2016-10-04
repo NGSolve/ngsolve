@@ -233,6 +233,41 @@ DLL_HEADER void ExportCSG()
            }))
     ;
 
+  bp::class_<SplineGeometry<3>,shared_ptr<SplineGeometry<3>>> ("SplineCurve3d")
+    .def ("AddPoint", FunctionPointer
+          ([] (SplineGeometry<3> & self, double x, double y, double z)
+           {
+             self.geompoints.Append (GeomPoint<3> (Point<3> (x,y,z)));
+             return self.geompoints.Size()-1;
+           }))
+    .def ("AddSegment", FunctionPointer
+          ([] (SplineGeometry<3> & self, int i1, int i2)
+           {
+             self.splines.Append (new LineSeg<3> (self.geompoints[i1], self.geompoints[i2]));
+           }))
+    .def ("AddSegment", FunctionPointer
+          ([] (SplineGeometry<3> & self, int i1, int i2, int i3)
+           {
+             self.splines.Append (new SplineSeg3<3> (self.geompoints[i1], self.geompoints[i2], self.geompoints[i3]));
+           }))
+    ;
+
+  bp::class_<SplineSurface, shared_ptr<SplineSurface>,boost::noncopyable> ("SplineSurface")
+    .def("AddPoint", FunctionPointer
+	 ([] (SplineSurface & self, double x, double y, double z, bool hpref)
+	  {
+	    self.AppendPoint(Point<3>(x,y,z),hpref);
+	    return self.GetNP()-1;
+	  }),
+	 (bp::arg("self"),bp::arg("x"),bp::arg("y"),bp::arg("z"),bp::arg("hpref")=false))
+    .def("AddSegment", FunctionPointer
+	 ([] (SplineSurface & self, int i1, int i2, string bcname)
+	  {
+	    auto str = new string(bcname);
+	    self.AppendSegment(new LineSeg<3>(self.GetPoint(i1),self.GetPoint(i2)),str);
+	  }),
+	 (bp::arg("self"),bp::arg("pnt1"),bp::arg("pnt2"),bp::arg("bcname")="default"))
+    ;
   
 #if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
   bp::register_ptr_to_python<shared_ptr<SPSolid>>();
@@ -412,9 +447,19 @@ DLL_HEADER void ExportCSG()
           }),
          (bp::arg("self"), bp::arg("surface"), bp::arg("solid"))
          )
-         
+    .def("AddSplineSurface", FunctionPointer
+	 ([] (CSGeometry & self, shared_ptr<SplineSurface> surf)
+	  {
+	    auto planes = surf->CreatePlanes();
+	    auto spsol = make_shared<SPSolid>(new Solid(&*surf));
+	    for(auto plane : (*planes)){
+	      spsol = make_shared<SPSolid>(SPSolid::SECTION,spsol,make_shared<SPSolid>(new Solid(plane)));
+	    }
+	    spsol->AddSurfaces(self);
+	    int tlonr = self.SetTopLevelObject(spsol->GetSolid(), &*surf);
+	  }),
+	 (bp::arg("self"), bp::arg("SplineSurface")))
 
-    
     .def("CloseSurfaces", FunctionPointer
          ([] (CSGeometry & self, shared_ptr<SPSolid> s1, shared_ptr<SPSolid> s2, bp::list aslices )
           {
