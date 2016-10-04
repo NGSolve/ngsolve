@@ -595,6 +595,7 @@ namespace ngcomp
               }
           }
         else
+	  if (ei.IsBoundary())
           {
             switch (eltype)
               {
@@ -608,6 +609,16 @@ namespace ngcomp
                 throw Exception ("illegal element in H1HoFeSpace::GetSFE");
               }
           }
+	  else
+	    {
+	      switch (eltype)
+		{
+		case ET_POINT: return T_GetCD2FE<ET_POINT> (elnr, alloc);
+		case ET_SEGM: return T_GetCD2FE<ET_SEGM> (elnr, alloc);
+		default:
+		  throw Exception ("illegal element in H1HoFeSpace::GetCD2FE");
+		}
+	    }
       }
 
     catch (Exception & e)
@@ -806,6 +817,21 @@ namespace ngcomp
     hofe -> ComputeNDof();
     return *hofe;
   }
+
+  template <ELEMENT_TYPE ET>
+  FiniteElement & H1HighOrderFESpace :: T_GetCD2FE(int elnr, Allocator & lh) const
+  {
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (elnr);
+
+    H1HighOrderFE<ET> * hofe = new (lh) H1HighOrderFE<ET> ();
+    hofe -> SetVertexNumbers (ngel.vertices);
+    if(int(ET_trait<ET>::DIM)==1)
+      {
+	hofe->SetOrderEdge(order_edge[ngel.Edges()]);
+      }
+    hofe->ComputeNDof();
+    return *hofe;
+  }
  
 
   int H1HighOrderFESpace :: GetNDofLevel (int alevel) const
@@ -909,6 +935,20 @@ namespace ngcomp
 
     if (ma->GetDimension() == 3)
       dnums += GetFaceDofs (ngel.faces[0]);
+  }
+
+  void H1HighOrderFESpace ::
+  GetCD2DofNrs (int elnr, Array<int> & dnums) const
+  {
+    if(!DefinedOnCoDim2(ma->GetCD2ElIndex(elnr)))
+      {
+	dnums.SetSize0();
+	return;
+      }
+    Ngs_Element ngel = ma->GetCD2Element(elnr);
+    dnums = ngel.Vertices();
+    for (int i = 0; i< ngel.edges.Size(); i++)
+      dnums += GetEdgeDofs(ngel.edges[i]);
   }
   
   Table<int> * H1HighOrderFESpace :: 

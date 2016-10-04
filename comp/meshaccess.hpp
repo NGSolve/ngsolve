@@ -182,7 +182,7 @@ namespace ngcomp
     /// number of elements of co-dimension i
     int nelements_cd[4];
     ///
-    int ne_vb[2];  // index with VorB
+    int ne_vb[3];  // index with VorB
     /// number of multigrid levels 
     int nlevels;
 
@@ -191,6 +191,9 @@ namespace ngcomp
 
     /// max boundary index
     int nboundaries;
+
+    /// max boundary index for co dim 2
+    int nbboundaries;
 
     /// for ALE
     shared_ptr<GridFunction> deformation;  
@@ -242,7 +245,7 @@ namespace ngcomp
     int GetNE() const  { return nelements_cd[0]; }  
 
     /// number of boundary elements
-    int GetNSE() const { return nelements_cd[1]; }  
+    int GetNSE() const { return nelements_cd[1]; }
 
     /// number of volume or boundary elements
     int GetNE(VorB vb) const { return ne_vb[vb]; } 
@@ -260,9 +263,11 @@ namespace ngcomp
     /// maximal boundary condition index. range is [0, nboundaries)
     int GetNBoundaries () const { return nboundaries; }
 
+    int GetNBBoundaries() const { return nbboundaries; }
+
     int GetNRegions (VorB vb) const
     {
-      return (vb == VOL) ? ndomains : nboundaries;
+      return (vb == VOL) ? ndomains : ((vb==BND) ? nboundaries : nbboundaries);
     }
 
     /// returns point coordinate
@@ -394,6 +399,11 @@ namespace ngcomp
       */
     }
 
+    int GetCD2ElIndex(int elnr) const
+    {
+      return GetCD2Element(elnr).GetIndex();
+    }
+
     int GetElIndex (ElementId ei) const
     {
       return GetElement(ei).GetIndex();
@@ -422,6 +432,9 @@ namespace ngcomp
     /// the boundary condition name of boundary condition number
     string GetBCNumBCName (int bcnr) const
     { return Ng_GetBCNumBCName (bcnr); }
+
+    string GetCD2NumCD2Name (int cd2nr) const
+    { return Ng_GetCD2NumCD2Name (cd2nr); }
 
 
     /// not sure who needs that
@@ -491,6 +504,7 @@ namespace ngcomp
     {
       int hdim = dim;
       if (ei.IsBoundary()) hdim--;
+      if (ei.IsCoDim2()) hdim -= 2;
       switch (hdim)
 	{
         case 0:	return Ngs_Element (mesh.GetElement<0> (ei.Nr()), ei);
@@ -504,7 +518,7 @@ namespace ngcomp
     template <VorB VB, int DIM>
       INLINE Ngs_Element GetElement (T_ElementId<VB,DIM> ei) const
     {
-      constexpr int HDIM = DIM - ((VB == BND) ? 1 : 0);
+      constexpr int HDIM = DIM - ((VB == BND) ? 1 : ((VB==BBND) ? 2 : 0));
       return Ngs_Element (mesh.GetElement<HDIM> (ei.Nr()), ei);
     }
 
@@ -529,6 +543,17 @@ namespace ngcomp
 	case 2: return Ngs_Element (mesh.GetElement<1> (elnr), ElementId(BND,elnr));
 	case 3: 
         default: return Ngs_Element (mesh.GetElement<2> (elnr), ElementId(BND,elnr));
+	}
+    }
+
+    Ngs_Element GetCD2Element(int elnr) const
+    {
+      switch(dim)
+	{
+	case 1: throw Exception("No CoDim 2 Element for dimension 1");
+	case 2: return Ngs_Element(mesh.GetElement<0>(elnr),ElementId(BBND,elnr));
+	case 3:
+	default: return Ngs_Element(mesh.GetElement<1>(elnr),ElementId(BBND,elnr));
 	}
     }
 
@@ -930,6 +955,7 @@ namespace ngcomp
     explicit operator VorB () const { return vb; }
     bool IsVolume () const { return vb == VOL; }
     bool IsBoundary () const { return vb == BND; }
+    bool IsCoDim2() const { return vb == BBND; }
     const BitArray & Mask() const { return mask; }
     operator const BitArray & () const { return mask; }
     

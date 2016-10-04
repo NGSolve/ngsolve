@@ -107,38 +107,52 @@ namespace ngcomp
             }
         */
 
-
         for (auto lfi : parts)
-          if (lfi -> BoundaryForm())
-            {
-              for (Ngs_Element ej : ma->Elements(BND))
-                {
-                  HeapReset hr(clh);
-		  if (!lfi -> SkeletonForm()){
-		    if (lfi -> DefinedOn (ej.GetIndex()))
-		      lfi -> CheckElement (fespace->GetFE(ej, clh));
-		  }else{
-		    //TODO: get aligned volelement and check that
+	  if (lfi -> CoDim2Form())
+	    {
+	      for (Ngs_Element ej : ma->Elements(BBND))
+		{
+		  HeapReset hr(clh);
+		  if(!lfi -> SkeletonForm()){
+		    if(lfi->DefinedOn(ej.GetIndex()))
+		      lfi->CheckElement(fespace->GetFE(ej,clh));
 		  }
-                }
-            }
-          else
-            {
-              if (lfi -> SkeletonForm()) 
-                { 
-                  throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
-                }
-              else
-                {
-                  
-                  IterateElements
-                    (*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
-                     {
-                       if (lfi -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
-                         lfi -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
-                       ;
-                     });
-                }
+		  else{
+		  }
+		}
+	    }
+	  else
+	    {
+	      if (lfi -> BoundaryForm())
+		{
+		  for (Ngs_Element ej : ma->Elements(BND))
+		    {
+		      HeapReset hr(clh);
+		      if (!lfi -> SkeletonForm()){
+			if (lfi -> DefinedOn (ej.GetIndex()))
+			  lfi -> CheckElement (fespace->GetFE(ej, clh));
+		      }else{
+			//TODO: get aligned volelement and check that
+		      }
+		    }
+		}
+	      else
+		{
+		  if (lfi -> SkeletonForm())
+		    {
+		      throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
+		    }
+		  else
+		    {
+		      IterateElements
+			(*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
+			 {
+			   if (lfi -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
+			     lfi -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
+			   ;
+			 });
+		    }
+		}
             }
 
 
@@ -155,7 +169,9 @@ namespace ngcomp
 	int ne = ma->GetNE();
 	int nf = ma->GetNFacets();
 	int nse = ma->GetNSE();
+	int nbbe = ma->GetNE(BBND);
 
+	bool hasbbound = false;
 	bool hasbound = false;
 	bool hasinner = false;
 	bool hasskeletonbound = false;
@@ -163,18 +179,22 @@ namespace ngcomp
 	//check hasbound, hasinner, hasskeletonbound, hasskeletoninner
 	for (int j = 0; j < parts.Size(); j++)
 	  {
+	    (*testout) << "cd2form: " << parts[j]->CoDim2Form() << endl;
 	    if (!parts[j] -> SkeletonForm()){
 	      if (parts[j] -> BoundaryForm())
 		hasbound = true;
-	      else 
+	      else
+		if(parts[j]->CoDim2Form()){
+		  hasbbound = true;}
+		else{
 		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
-		  hasinner = true;
+		  hasinner = true; }
 	    }else{
 	      if (parts[j] -> BoundaryForm())
 		hasskeletonbound = true;
 	      else 
 		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
-		  hasskeletoninner = true;
+		  hasinner = true;
 	    }
 	  }
 
@@ -183,6 +203,7 @@ namespace ngcomp
 	    *testout << " LINEARFORM TEST:" << endl;
 	    *testout << " hasinner = " << hasinner << endl;
 	    *testout << " hasouter = " << hasbound << endl;
+	    *testout << " hasbbound = " << hasbbound << endl;
 	    *testout << " hasskeletoninner = " << hasskeletoninner << endl;
 	    *testout << " hasskeletonouter = " << hasskeletonbound << endl;
 	  }
@@ -191,6 +212,7 @@ namespace ngcomp
 	int loopsteps = 0;
 	if (hasinner) {nrcases++; loopsteps+=ne;}
 	if (hasbound) {nrcases++; loopsteps+=nse;}
+	if (hasbbound) {nrcases++; loopsteps += nbbe; }
 	if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
 	if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
 	if (fespace->specialelements.Size()>0) {nrcases++; loopsteps+=fespace->specialelements.Size();}
@@ -317,7 +339,42 @@ namespace ngcomp
 	  }//end of hasbound
 	
 
+	if (hasbbound)
+	  {
+	    ProgressOutput progress (ma, "assemble codim2  element", ma->GetNE(BBND));
+	    gcnt += nbbe;
 
+	    IterateElements
+	      (*fespace, BBND, clh, [&] (FESpace::Element el, LocalHeap &lh)
+		{
+		  progress.Update();
+		  const FiniteElement & fel = fespace->GetFE(el,lh);
+		  ElementTransformation & eltrans = ma -> GetTrafo(el, lh);
+		  for (int j=0; j< parts.Size(); j++)
+		    {
+		      if(!parts[j]->CoDim2Form()) continue;
+		      if(!parts[j]->DefinedOn(el.GetIndex())) continue;
+
+		      int elvec_size = fel.GetNDof() * fespace->GetDimension();
+		      FlatVector<TSCAL> elvec(elvec_size,lh);
+
+		      parts[j] -> CalcElementVector(fel, eltrans, elvec, lh);
+
+		      if (printelvec)
+			{
+			  testout->precision(8);
+			  *testout << "codim2 - elnr = " << el.Nr() << endl
+				   << "integrator " << parts[j]->Name() << endl
+				   << "dnums = " << endl << el.GetDofs() << endl
+                                  << "element-index = " << eltrans.GetElementIndex() << endl
+                                  << "elvec = " << endl << elvec << endl;
+			}
+
+		      fespace -> TransformVec(el,elvec,TRANSFORM_RHS);
+		      AddElementVector(el.GetDofs(),elvec,parts[j]->CacheComp()-1);
+		    }
+		});
+	  }
 
 
 
