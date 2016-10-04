@@ -364,6 +364,7 @@ public:
                                   bool aelement_boundary);
 
     virtual bool BoundaryForm() const { return vb==BND; }
+    virtual bool CoDim2Form() const { return vb==BBND; }
     virtual string Name () const { return string ("Symbolic LFI"); }
     
     virtual void 

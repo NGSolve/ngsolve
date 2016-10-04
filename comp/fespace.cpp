@@ -629,7 +629,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    const FiniteElement & el = ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh);
+    const FiniteElement & el = ei.IsCoDim2() ? GetCD2FE(ei.Nr(),lh) : (ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh));
     return const_cast<FiniteElement&> (el);
   }
   
@@ -893,6 +893,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
         ;
       }
     throw Exception ("GetSFE: unknown type");
+  }
+
+  const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
+  {
+    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
+      {
+      case ET_SEGM: return *segm;
+      case ET_POINT: return *point;
+      default: ;
+      }
+    throw Exception("GetCD2FE: unknown type");
   }
 
   const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const

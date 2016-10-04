@@ -64,6 +64,7 @@ namespace ngfem
 
     /// integrates on the boundary, or on the domain ?
     virtual bool BoundaryForm () const = 0;
+    virtual bool CoDim2Form() const { return false; }
 
     class DGFormulation
     {
@@ -80,7 +81,7 @@ namespace ngfem
 
     virtual bool VolumeForm () const
     {
-      if (BoundaryForm() || SkeletonForm() || IntegrationAlongCurve()) return false;
+      if (CoDim2Form() || BoundaryForm() || SkeletonForm() || IntegrationAlongCurve()) return false;
       return true;
     }
 

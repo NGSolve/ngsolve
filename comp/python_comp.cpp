@@ -219,6 +219,7 @@ void NGS_DLL_HEADER ExportNgcomp()
   bp::enum_<VorB>("VorB")
     .value("VOL", VOL)
     .value("BND", BND)
+    .value("BBND", BBND)
     .export_values()
     ;
 
@@ -246,6 +247,7 @@ void NGS_DLL_HEADER ExportNgcomp()
     .add_property("nr", &ElementId::Nr, "the element number")    
     .def("IsVolume", &ElementId::IsVolume, "is it a boundary element ?")
     .def("IsBoundary", &ElementId::IsBoundary, "is it a volume element ?")
+    .def("IsCoDim2", &ElementId::IsCoDim2, "is it a co dimension 2 element ?")
     .def(bp::self!=bp::self)
     .def("__eq__" , FunctionPointer( [](ElementId &self, ElementId &other)
                                     { return !(self!=other); }) )
@@ -581,6 +583,23 @@ void NGS_DLL_HEADER ExportNgcomp()
          "returns boundary mesh-region matching the given regex pattern",
          bp::return_value_policy<bp::manage_new_object>()
          )
+    .def("GetBBoundaries", FunctionPointer
+	 ([](const MeshAccess & ma)
+	  {
+
+	  }),
+	 (bp::arg("self")),
+	 "returns list of boundary conditions for co dimension 2"
+	 )
+    .def("BBoundaries", FunctionPointer
+	 ([](shared_ptr<MeshAccess> ma, string pattern)
+	  {
+	    return new Region (ma, BBND, pattern);
+	  }),
+	 (bp::arg("self"), bp::arg("pattern")),
+	 "returns co dim 2 boundary mesh-region matching the given regex pattern",
+	 bp::return_value_policy<bp::manage_new_object>()
+	 )
 
     .def("Refine", FunctionPointer
          ([](MeshAccess & ma)
@@ -2119,6 +2138,7 @@ void NGS_DLL_HEADER ExportNgcomp()
              bp::extract<Region> defon_region(definedon);
              if (defon_region.check())
                vb = VorB(defon_region());
+
 
              shared_ptr<LinearFormIntegrator> lfi;
              if (!skeleton)

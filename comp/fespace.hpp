@@ -82,6 +82,8 @@ namespace ngcomp
     Array<bool> definedon;
     /// on which boundaries is the space defined ?
     Array<bool> definedonbound;
+    /// on which codim 2 boundaries is the space defined?
+    Array<bool> definedoncodim2;
 
     /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;
@@ -300,16 +302,20 @@ namespace ngcomp
     public:
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
-          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
-                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          definedon( ((avb==VOL) ? fes.definedon.Size() :
+		      ((avb==BND) ? fes.definedonbound.Size() : fes.definedoncodim2.Size())),
+                     ((avb==VOL) ? fes.definedon.Addr(0) :
+		      ((avb==BND) ? fes.definedonbound.Addr(0) : fes.definedoncodim2.Addr(0)))),
           // FlatArray<bool>(fes.definedon) : FlatArray<bool>(fes.definedonbound)), 
           vb(avb), mylh(move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
-          definedon( (avb==VOL) ? fes.definedon.Size() : fes.definedonbound.Size(),
-                     (avb==VOL) ? fes.definedon.Addr(0) : fes.definedonbound.Addr(0)),
+          definedon( ((avb==VOL) ? fes.definedon.Size() :
+		      ((avb==BND) ? fes.definedonbound.Size() : fes.definedoncodim2.Size())),
+                     ((avb==VOL) ? fes.definedon.Addr(0) :
+		      ((avb==BND) ? fes.definedonbound.Addr(0) : fes.definedoncodim2.Addr(0)))),
           // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
@@ -370,6 +376,10 @@ namespace ngcomp
     /// get dof-nrs of domain or boundary element elnr
     void GetDofNrs (ElementId ei, Array<int> & dnums) const
     {
+      if(ei.IsCoDim2()){
+	GetCD2DofNrs(ei.Nr(),dnums);
+	return;
+      }
       if (ei.IsBoundary())
 	GetSDofNrs (ei.Nr(), dnums);
       else
@@ -413,8 +423,13 @@ namespace ngcomp
 
     /// returns surface element for boundary interals
     virtual const FiniteElement & GetSFE (int selnr, LocalHeap & lh) const;
+    /// returns Codim2 element for line integrals in 3d
+    virtual const FiniteElement & GetCD2FE(int cd2elnr, LocalHeap & lh) const;
     /// returns dofs of sourface element
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const = 0;
+
+    virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
+    { throw Exception("CoDimension 2 not implemented for FESpace!"); }
 
 
     /// is the FESpace defined for this sub-domain nr ?
@@ -423,6 +438,8 @@ namespace ngcomp
     /// is the FESpace defined for this boundary nr ?
     bool DefinedOnBoundary (int bnr) const
     {return !definedonbound.Size() || definedonbound[bnr]; }
+    bool DefinedOnCoDim2 (int cd2nr) const
+    { return !definedoncodim2.Size() || definedoncodim2[cd2nr]; }
 
     /// is the FESpace defined for this sub-domain / boundary nr ?
     bool DefinedOn (int index, bool bound) const
@@ -435,6 +452,11 @@ namespace ngcomp
 
     bool DefinedOn (ElementId id) const
     {
+      if(id.IsCoDim2())
+	{
+	  if(!definedoncodim2.Size()) return true;
+	  return definedoncodim2[ma->GetElement(id).GetIndex()];
+	}
       if (id.IsBoundary())
         {
           if (!definedonbound.Size()) return true;
@@ -449,6 +471,11 @@ namespace ngcomp
 
     bool DefinedOn (Ngs_Element el) const
     {
+      if(el.IsCoDim2())
+	{
+	  if(!definedoncodim2.Size()) return true;
+	  return definedoncodim2[el.GetIndex()];
+	}
       if (el.IsBoundary())
         {
           if (!definedonbound.Size()) return true;

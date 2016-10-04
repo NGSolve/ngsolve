@@ -44,7 +44,12 @@ namespace ngcomp
     
     virtual bool Boundary() const
     {
-      return DIMS < DIMR;
+      return DIMS+1 == DIMR;
+    }
+
+    virtual bool CoDim2() const
+    {
+      return DIMS+2 == DIMR;
     }
 
     virtual bool BelongsToMesh (const void * mesh2) const 
@@ -837,7 +842,7 @@ namespace ngcomp
             nelements_cd[i] = 0;
           }
         dim = -1;
-        ne_vb[VOL] = ne_vb[BND] = 0;
+        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
         return;
       }
 
@@ -853,7 +858,7 @@ namespace ngcomp
             nnodes_cd[i] = 0;
             nelements_cd[i] = 0;
           }
-        ne_vb[VOL] = ne_vb[BND] = 0;
+        ne_vb[VOL] = ne_vb[BND] = ne_vb[BBND] = 0;
       }
     else
       {
@@ -869,6 +874,7 @@ namespace ngcomp
 	  }
         ne_vb[VOL] = nelements_cd[0];
         ne_vb[BND] = nelements_cd[1];
+	ne_vb[BBND] = nelements_cd[2];
       }
 
     ndomains = -1;
@@ -894,6 +900,17 @@ namespace ngcomp
 
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
+
+    nbboundaries = -1;
+    int ncd2e = nelements_cd[2];
+    for (int i=0; i< ncd2e; i++)
+      {
+	int elindex = GetCD2ElIndex(i);
+	if (elindex < 0) throw Exception ("mesh with negative cd2 condition number");
+	nbboundaries = max2(nbboundaries, elindex);
+      }
+    nbboundaries++;
+    nbboundaries = MyMPI_AllReduce(nbboundaries, MPI_MAX);
   }
 
 
@@ -1426,6 +1443,7 @@ namespace ngcomp
             mask.Set(i);
       }
     else
+      if (vb==BND)
       {
         mask = BitArray(mesh->GetNBoundaries());
         mask.Clear();
@@ -1434,6 +1452,15 @@ namespace ngcomp
           if (regex_match(mesh->GetBCNumBCName(i), re_pattern))
             mask.Set(i);
       }
+      else
+	{
+	  mask = BitArray(mesh->GetNBBoundaries());
+	  mask.Clear();
+	  regex re_pattern(pattern);
+	  for (int i : Range(mask))
+	    if (regex_match(mesh->GetCD2NumCD2Name(i), re_pattern))
+	      mask.Set(i);
+	}
   }      
 
 

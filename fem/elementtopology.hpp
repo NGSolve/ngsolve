@@ -77,11 +77,11 @@ namespace ngfem
 
 
 
-  enum VorB { VOL, BND };
+  enum VorB { VOL, BND, BBND };
   inline void operator++(VorB & vb, int)  { vb = VorB(vb+1); } 
   inline ostream & operator<< (ostream & ost, VorB vb)
   {
-    if (vb == VOL) ost << "VOL"; else ost << "BND";
+    if (vb == VOL) ost << "VOL"; else if (vb==BND) ost << "BND"; else ost << "BBND";
     return ost;
   }
 
@@ -97,6 +97,7 @@ namespace ngfem
     explicit operator VorB () const { return vb; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
+    bool IsCoDim2() const { return vb == BBND; }
     // VorB VolumeOrBoundary() const { return vb; }
     bool operator< (int nr2) { return nr < nr2; }
     ElementId operator++ (int) { return ElementId(vb,nr++); }
@@ -107,7 +108,7 @@ namespace ngfem
 
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
-    return ost << (id.IsVolume() ? "VEl" : "BEl") << ' ' << id.Nr();
+    return ost << (id.IsVolume() ? "VEl" : (id.IsBoundary() ? "BEl" : "CD2El")) << ' ' << id.Nr();
   }
 
   template <VorB VB,int DIM>

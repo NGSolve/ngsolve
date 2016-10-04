@@ -87,6 +87,8 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
     FiniteElement & T_GetSFE (int elnr, Allocator & alloc) const;
     ///
+    template <ELEMENT_TYPE ET>
+      FiniteElement & T_GetCD2FE(int elnr, Allocator & alloc) const;
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
 
     virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
@@ -97,6 +99,7 @@ namespace ngcomp
     virtual void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
+    virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const override;
   
     virtual Table<int> * CreateSmoothingBlocks (const Flags & precflags) const override; 
     // virtual void CreateSmoothingBlocks2 (SmoothingBlocksCreator & sbc, const Flags & precflags) const; 
