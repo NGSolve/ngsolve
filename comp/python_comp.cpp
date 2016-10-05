@@ -16,6 +16,7 @@ using ngfem::ELEMENT_TYPE;
 
 typedef GridFunction GF;
 typedef PyWrapperDerived<GF, CoefficientFunction> PyGF;
+typedef PyWrapper<FESpace> PyFES;
 
 template <typename T>
 struct PythonTupleFromFlatArray {
@@ -413,11 +414,11 @@ void NGS_DLL_HEADER ExportNgcomp()
     static
     bp::tuple getinitargs(bp::object obj)
     {
-      auto & fes = bp::extract<FESpace const&>(obj)();
-      bp::object m (fes.GetMeshAccess());
+      auto fes = bp::extract<PyFES>(obj)().Get();
+      bp::object m (fes->GetMeshAccess());
       bp::object flags = obj.attr("__dict__")["flags"];
-      flags["dim"] = fes.GetDimension();
-      return bp::make_tuple(fes.type, m, flags, fes.GetOrder(), fes.IsComplex());
+      flags["dim"] = fes->GetDimension();
+      return bp::make_tuple(fes->type, m, flags, fes->GetOrder(), fes->IsComplex());
     }
 
     static
@@ -852,7 +853,6 @@ void NGS_DLL_HEADER ExportNgcomp()
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
-  typedef PyWrapper<FESpace> PyFES;
   bp::class_<PyFES>("FESpace",  "a finite element space", bp::no_init)
 
 
