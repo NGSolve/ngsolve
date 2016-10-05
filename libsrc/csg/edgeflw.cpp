@@ -485,7 +485,18 @@ namespace netgen
 		      layer,
 		      mesh);
 	  }
-	
+
+	(*testout) << "refedges size: " << refedges.Size() << endl;
+	for(int i=0; i<refedges.Size(); i++)
+	  {
+	    (*testout) << "edgenr:  " << refedges[i].edgenr << endl;
+	    auto splinesurface = dynamic_cast<const SplineSurface*>(geometry.GetSurface(refedges[i].surfnr1));
+	    if(splinesurface)
+	      {
+		auto name = splinesurface->GetBCNameOf(specpoints[startpoints.Get(refedges[i].edgenr)].p,specpoints[endpoints.Get(refedges[i].edgenr)].p);
+		mesh.SetCD2Name(refedges[i].edgenr-1,*name);
+	      }
+	  }
 
 	/*
 	  // not available ...

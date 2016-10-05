@@ -5773,6 +5773,7 @@ namespace netgen
 
   void Mesh :: SetCD2Name ( int cd2nr, const string & abcname )
   {
+    (*testout) << "setCD2Name on edge " << cd2nr << " to " << abcname << endl;
     if (cd2nr >= cd2names.Size())
       {
 	int oldsize = cd2names.Size();
@@ -5780,7 +5781,7 @@ namespace netgen
 	for(int i= oldsize; i<= cd2nr; i++)
 	  cd2names[i] = nullptr;
       }
-    if (cd2names[cd2nr]) delete cd2names[cd2nr];
+    //if (cd2names[cd2nr]) delete cd2names[cd2nr];
     if (abcname != "default")
       cd2names[cd2nr] = new string(abcname);
     else
@@ -5794,7 +5795,7 @@ namespace netgen
       return defaultstring;
 
     if (cd2nr < 0 || cd2nr >= cd2names.Size())
-      throw NgException ("illegal bc-number");
+      return defaultstring;
 
     if (cd2names[cd2nr])
       return *cd2names[cd2nr];

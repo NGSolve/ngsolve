@@ -19,6 +19,21 @@ void SplineSurface :: AppendPoint(const Point<3> & p, const double reffac, const
       splines.Append(spline);
       bcnames.Append(bcname);
   }
+
+  string* SplineSurface :: GetBCNameOf (Point<3> p1, Point<3> p2) const
+  {
+    (*testout) << "segment: " << p1 << ", " << p2 << endl;
+    for(int i=0; i<splines.Size(); i++)
+      {
+	(*testout) << "spline: " << splines[i]->GetPoint(0) << ", " << splines[i]->GetPoint(1) << endl;
+	if (((splines[i]->GetPoint(0)-p1).Length()<1e-12 && (splines[i]->GetPoint(1)-p2).Length() < 1e-12) || ((splines[i]->GetPoint(0)-p2).Length() < 1e-12 && (splines[i]->GetPoint(1)-p1).Length() < 1e-12))
+	  {
+	    (*testout) << "return bcname: " << *bcnames[i] << endl;
+	    return bcnames[i];
+	  }
+      }
+    return new string("default");
+  }
     
 double SplineSurface :: CalcFunctionValue (const Point<3> & point) const
 {

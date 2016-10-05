@@ -2418,6 +2418,14 @@ namespace netgen
     return s;
   }
 
+  string EdgeDescriptor :: default_bcname = "default";
+  void EdgeDescriptor :: SetBCName (string * bcn)
+  {
+    if(bcn)
+      bcname = bcn;
+    else
+      bcn = &default_bcname;
+  }
 
 
 

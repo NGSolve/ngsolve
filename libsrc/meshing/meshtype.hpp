@@ -1005,6 +1005,9 @@ namespace netgen
   {
     int tlosurf;
     int surfnr[2];
+    int bcprop;
+    static string default_bcname;
+    string* bcname = &default_bcname;
   public:
     EdgeDescriptor ()
       : tlosurf(-1)
@@ -1015,6 +1018,9 @@ namespace netgen
 
     int TLOSurface() const { return tlosurf; }
     void SetTLOSurface (int nr) { tlosurf = nr; }
+    int BCProperty() const { return bcprop; }
+    void SetBCProperty (int bc) { bcprop = bc; }
+    void SetBCName (string* bcn);
   };
 
 

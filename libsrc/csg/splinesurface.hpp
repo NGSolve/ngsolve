@@ -23,6 +23,7 @@ namespace netgen
     int GetNP() const { return geompoints.Size(); }
     const GeomPoint<3> & GetPoint(int i) const { return geompoints[i]; }
     string* GetBCName(int i) const { return bcnames[i]; }
+    string* GetBCNameOf(Point<3> p1, Point<3> p2) const;
     
     DLL_HEADER void AppendPoint(const Point<3> & p, const double reffac = 1., const bool hpref=false);
     void AppendSegment(SplineSeg<3>* spline, string* bcname);
