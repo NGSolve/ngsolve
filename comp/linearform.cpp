@@ -352,6 +352,9 @@ namespace ngcomp
 		  ElementTransformation & eltrans = ma -> GetTrafo(el, lh);
 		  for (int j=0; j< parts.Size(); j++)
 		    {
+		      (*testout) << "on element " << el.Nr() << ", index: " << el.GetIndex() << endl;
+		      (*testout) << "definedon: " << parts[j]->DefinedOn(el.GetIndex()) << endl;
+		      (*testout) << "element: " << el << endl;
 		      if(!parts[j]->CoDim2Form()) continue;
 		      if(!parts[j]->DefinedOn(el.GetIndex())) continue;
 
