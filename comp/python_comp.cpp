@@ -586,7 +586,10 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("GetBBoundaries", FunctionPointer
 	 ([](const MeshAccess & ma)
 	  {
-
+	    Array<string> bboundaries(ma.GetNBBoundaries());
+	    for (int i : bboundaries.Range())
+	      bboundaries[i] = ma.GetCD2NumCD2Name(i);
+	    return bp::list(bboundaries);
 	  }),
 	 (bp::arg("self")),
 	 "returns list of boundary conditions for co dimension 2"

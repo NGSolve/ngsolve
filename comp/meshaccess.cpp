@@ -1455,11 +1455,15 @@ namespace ngcomp
       else
 	{
 	  mask = BitArray(mesh->GetNBBoundaries());
+	  (*testout) << "nbboundaries: " << mesh->GetNBBoundaries() << endl;
 	  mask.Clear();
 	  regex re_pattern(pattern);
+	  for(int i : Range(mask))
+	    (*testout) << "boundary condition " << i << ": " << mesh->GetCD2NumCD2Name(i) << endl;
 	  for (int i : Range(mask))
 	    if (regex_match(mesh->GetCD2NumCD2Name(i), re_pattern))
 	      mask.Set(i);
+	  (*testout) << "mask: " << mask << endl;
 	}
   }      
 
