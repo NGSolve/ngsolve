@@ -58,7 +58,10 @@ namespace ngfem
     TraverseDimensions( dims, [&](int ind, int i, int j) {
         header += Var("comp", index,i,j).Declare("{scal_type}", 0.0);
         if(!testfunction && code.deriv==2)
-          header += "if(({ud}->trial_comp=="+ToString(ind)+") || ({ud}->test_comp=="+ToString(ind)+"))\n";
+        {
+          header += "if(( ({ud}->trialfunction == {this}) && ({ud}->trial_comp=="+ToString(ind)+"))\n"+
+          " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToString(ind)+")))\n";
+        }
         else
           header += "if({ud}->{comp_string}=="+ToString(ind)+")\n";
         header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0;\n";
@@ -90,7 +93,7 @@ namespace ngfem
         body += "} else ";
     }
     if(!testfunction && code.deriv==2)
-      body += "if( ({ud}->testfunction == {this}) || ({ud}->trialfunction == {this} )) {\n";
+      body += "{\n";
     else
       body += "if({ud}->{func_string} == {this}) {\n";
     TraverseDimensions( dims, [&](int ind, int i, int j) {
