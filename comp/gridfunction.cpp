@@ -981,7 +981,7 @@ namespace ngcomp
   {
     string mycode_simd = R"CODE_( 
       STACK_ARRAY(SIMD<double>, {hmem}, mir.Size()*{dim});
-      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0].Data());
+      AFlatMatrix<double>  {values}({dim}, mir.IR().GetNIP(), &{hmem}[0] /* .Data() */);
       {
       LocalHeapMem<100000> lh2("{values}");
       const GridFunction & gf = *reinterpret_cast<GridFunction*>({gf_ptr});
