@@ -12,7 +12,9 @@ namespace ngcomp
     shared_ptr<BilinearForm> bfa;
 
     BaseMatrix *harmonicext, *harmonicexttrans, 
-      *innersolve, *pwbmat;    
+      *innersolve;
+
+    shared_ptr<BaseMatrix> pwbmat;    
 
     SparseMatrix<SCAL,TV,TV> *sparse_innersolve, 
       *sparse_harmonicext, *sparse_harmonicexttrans;
@@ -54,7 +56,7 @@ namespace ngcomp
 
       hypre = ahypre;
 
-      pwbmat = NULL;
+      // pwbmat = NULL;
       inv = NULL;
 
       inv_coarse = NULL;
@@ -155,12 +157,13 @@ namespace ngcomp
       harmonicext = sparse_harmonicext =
 	new SparseMatrix<SCAL,TV,TV>(ndof, el2ifdofs, el2wbdofs, false);
       harmonicext->AsVector() = 0.0;
-      pwbmat = bfa->SymmetricStorage() && !hypre
-        ? new SparseMatrixSymmetric<SCAL,TV>(ndof, el2wbdofs)
-        : new SparseMatrix<SCAL,TV,TV>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
+      if (bfa->SymmetricStorage() && !hypre)
+        pwbmat = make_shared<SparseMatrixSymmetric<SCAL,TV>>(ndof, el2wbdofs);
+      else
+        pwbmat = make_shared<SparseMatrix<SCAL,TV,TV>>(ndof, el2wbdofs, el2wbdofs, false); // bfa.IsSymmetric() && !hypre);
       pwbmat -> AsVector() = 0.0;
       pwbmat -> SetInverseType (inversetype);
-      dynamic_cast<BaseSparseMatrix*>(pwbmat) -> SetSPD ( bfa->IsSPD() );
+      dynamic_pointer_cast<BaseSparseMatrix>(pwbmat) -> SetSPD ( bfa->IsSPD() );
       weight.SetSize (fes->GetNDof());
       weight = 0;
 
@@ -276,7 +279,7 @@ namespace ngcomp
       
       sparse_innersolve -> AddElementMatrix(intdofs,intdofs,d);
 	
-      dynamic_cast<SparseMatrix<SCAL,TV,TV>*>(pwbmat)
+      dynamic_pointer_cast<SparseMatrix<SCAL,TV,TV>>(pwbmat)
         ->AddElementMatrix(wbdofs,wbdofs,a);
       if (coarse)
         dynamic_pointer_cast<Preconditioner>(inv)->AddElementMatrix(wbdofs,a,id,lh);
@@ -346,7 +349,7 @@ namespace ngcomp
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << "call block-jacobi inverse" << endl;
 
-	  inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
+	  inv = dynamic_pointer_cast<BaseSparseMatrix> (pwbmat)->CreateBlockJacobiPrecond(blocks, 0, 0, 0);
 	  // inv = dynamic_cast<BaseSparseMatrix*> (pwbmat)->CreateJacobiPrecond(wb_free_dofs);
 
 	  cout << "has inverse" << endl << endl;
@@ -371,7 +374,7 @@ namespace ngcomp
 	    {
 	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
 
-	      pwbmat = new ParallelMatrix (shared_ptr<BaseMatrix> (pwbmat, NOOP_Deleter), pardofs);
+	      pwbmat = make_shared<ParallelMatrix> (pwbmat), pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
 #ifdef HYPRE
@@ -381,7 +384,7 @@ namespace ngcomp
 #endif
                 if (coarse)
                 {
-                  dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat);
+                  dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat.get());
                 }
                 else
                   inv = pwbmat -> InverseMatrix (wb_free_dofs);
@@ -405,7 +408,7 @@ namespace ngcomp
                 cout << "call wirebasket preconditioner finalize ( with " << cntfreedofs 
                      << " free dofs out of " << pwbmat->Height() << " )" << endl;
                 // throw Exception("combination of coarse and block not implemented! ");
-                dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat);
+                dynamic_pointer_cast<Preconditioner>(inv) -> FinalizeLevel(pwbmat.get());
               }
               else
               {
@@ -422,7 +425,7 @@ namespace ngcomp
     ~BDDCMatrix()
     {
       // delete inv;
-      delete pwbmat;
+      // delete pwbmat;
       // delete inv_coarse;
       delete harmonicext;
       delete harmonicexttrans;
