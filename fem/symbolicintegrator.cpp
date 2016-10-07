@@ -2617,7 +2617,7 @@ namespace ngfem
                   auto proxy2 = trial_proxies[l1];
                   td.Start();
 
-                  FlatTensor<3> proxyvalues(lh, ir.GetNIP(), proxy2->Dimension(), proxy1->Dimension());
+                  FlatTensor<3> proxyvalues(lh, ir.GetNIP(), proxy1->Dimension(), proxy2->Dimension());
                   
                   for (int k = 0; k < proxy1->Dimension(); k++)
                     for (int l = 0; l < proxy2->Dimension(); l++)
@@ -2628,13 +2628,13 @@ namespace ngfem
                         ud.test_comp = l;
                         
                         cf -> EvaluateDDeriv (mir, val, deriv, dderiv);
-                        proxyvalues(STAR,l,k) = dderiv.Row(0);
+                        proxyvalues(STAR,k,l) = dderiv.Row(0);
                         
                         if (proxy1 != proxy2 || k != l)  // computed mixed second derivatives
                           {
-                            proxyvalues(STAR,l,k) -= diags[k1].Row(k);
-                            proxyvalues(STAR,l,k) -= diags[l1].Row(l);
-                            proxyvalues(STAR,l,k) *= 0.5;
+                            proxyvalues(STAR,k,l) -= diags[k1].Row(k);
+                            proxyvalues(STAR,k,l) -= diags[l1].Row(l);
+                            proxyvalues(STAR,k,l) *= 0.5;
                           }
                       }
                   td.Stop();
@@ -2671,17 +2671,17 @@ namespace ngfem
                       tbd.Start();
                       for (int j = 0; j < bs; j++)
                         {
-                          int ii = i+j;
-                          IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                          IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
-                          bdbmat1.Cols(r2) = bbmat1.Cols(r1) * Trans (proxyvalues(ii,STAR,STAR));
+                          IntRange rj2 = proxy2->Dimension() * IntRange(j,j+1);
+                          IntRange rj1 = proxy1->Dimension() * IntRange(j,j+1);
+                          // bdbmat1.Rows(r1).Cols(rj2) = bbmat1.Rows(r1).Cols(rj1) * Trans (proxyvalues(i+j,STAR,STAR));
+                          MultMatMat (bbmat1.Rows(r1).Cols(rj1), proxyvalues(i+j,STAR,STAR), bdbmat1.Rows(r1).Cols(rj2));
                         }
                       tbd.Stop();
                       
                       tmult.Start();
                       AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
                       tmult.Stop();
-                      tmult.AddFlops (double(elmat.Height())*elmat.Width()*bbmat2.Width());
+                      tmult.AddFlops (double(r1.Size())*r2.Size()*bbmat2.Width());
                     }
                 }
           }
@@ -2956,8 +2956,8 @@ namespace ngfem
           }
         catch (ExceptionNOSIMD e)
           {
-            cout << "caught in SymbolicEnergy::Apply" << endl
-                 << e.What() << endl;
+            cout << e.What() << endl
+                 << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;              
             simd_evaluate = false;
             ApplyElementMatrix (fel, trafo, elx, ely, precomputed, lh);
           }
