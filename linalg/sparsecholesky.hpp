@@ -17,7 +17,7 @@ namespace ngla
   class SparseFactorization : public BaseMatrix
   { 
   protected:
-    const BaseSparseMatrix & matrix;
+    weak_ptr<BaseSparseMatrix> matrix;
     const BitArray * inner;
     const Array<int> * cluster;
     bool smooth_is_projection;
@@ -27,12 +27,12 @@ namespace ngla
 			 const BitArray * ainner,
 			 const Array<int> * acluster);
 
-    virtual bool IsComplex() const { return matrix.IsComplex(); }
+    virtual bool IsComplex() const { return matrix.lock()->IsComplex(); }
 
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
-    int VHeight() const { return matrix.VWidth();}
-    int VWidth() const { return matrix.VHeight();}
+    int VHeight() const { return matrix.lock()->VWidth();}
+    int VWidth() const { return matrix.lock()->VHeight();}
 
     bool SmoothIsProjection () const { return smooth_is_projection; }
   };
@@ -220,6 +220,10 @@ public:
     template <typename T>
     void FactorSPD1 (T dummy); 
 #endif
+    virtual void Update()
+    {
+      FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
+    }
     ///
     void FactorNew (const SparseMatrix<TM> & a);
 
