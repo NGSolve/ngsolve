@@ -361,6 +361,7 @@ void NGS_DLL_HEADER ExportNgla() {
                                      { return m.InverseMatrix(); }))
     .def("Transpose", FunctionPointer( [](BM &m)->shared_ptr<BaseMatrix>
                                        { return make_shared<Transpose> (m); }))
+    .def("Update", FunctionPointer( [](BM &m) { m.Update(); }));
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
