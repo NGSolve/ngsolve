@@ -19,7 +19,7 @@ namespace ngla
   /**
      The base for all matrices in the linalg.
   */
-  class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this<BaseMatrix>
+  class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this_virtual<BaseMatrix>
   {
   protected:
     const ParallelDofs * paralleldofs;
