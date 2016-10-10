@@ -503,8 +503,10 @@ namespace ngla
 	    {
 	      if ( col <= i ) SetOrig (i, col, a.GetRowValues(i)[j]);
 	    }
+          /*
 	  else if (i == col)
 	    SetOrig (i, i, id);
+          */
 	}
     
     Factor(); 
