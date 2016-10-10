@@ -365,7 +365,9 @@ void NGS_DLL_HEADER ExportNgla() {
     // bp::return_value_policy<bp::manage_new_object>())
     ;
 
-
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<Projector>);
+  bp::class_<Projector, shared_ptr<Projector>,bp::bases<BaseMatrix>,boost::noncopyable> ("Projector", bp::init<const BitArray&,bool>())
+    ;
 
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<CGSolver<double>>);
   bp::class_<CGSolver<double>, shared_ptr<CGSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("CGSolverD", bp::no_init)
