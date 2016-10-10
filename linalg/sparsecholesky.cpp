@@ -509,7 +509,7 @@ namespace ngla
           */
 	}
     
-    Factor(); 
+    FactorSPD(); 
   }
  
 
