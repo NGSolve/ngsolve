@@ -1388,20 +1388,49 @@ namespace ngcomp
     return *eltrans;
   }
 
+  template <int DIM>
+  ElementTransformation & MeshAccess ::
+  GetCD2TrafoDim(int elnr, Allocator & lh) const
+  {
+    ElementTransformation * eltrans;
+    Ngs_Element el(mesh.GetElement<DIM-2>(elnr), ElementId(BBND,elnr));
+    GridFunction * loc_deformation = deformation.get();
+    if(loc_deformation)
+      eltrans = new (lh) ALE_ElementTransformation<DIM-2,DIM, Ng_ElementTransformation<DIM-2,DIM>>
+	(this,el.GetType(),
+	 ElementId(BBND,elnr), el.GetIndex(),
+	 loc_deformation,
+	 dynamic_cast<LocalHeap&>(lh));
+    else if( el.is_curved )
+      eltrans = new (lh) Ng_ElementTransformation<DIM-2,DIM> (this, el.GetType(),
+							      ElementId(BBND,elnr), el.GetIndex());
+
+    else
+      eltrans = new (lh) Ng_ConstElementTransformation<DIM-2,DIM> (this, el.GetType(),
+								   ElementId(BBND,elnr), el.GetIndex());
+
+    if(higher_integration_order.Size() == GetNCD2E() && higher_integration_order[elnr])
+      eltrans->SetHigherIntegrationOrder();
+    else
+      eltrans->UnSetHigherIntegrationOrder();
+
+    return *eltrans;
+  }
+
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,1> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<VOL,3> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,1> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BND,3> ei, Allocator & lh) const;
-  
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,2> ei, Allocator & lh) const;
+  template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,3> ei, Allocator & lh) const;
 
-  ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, bool boundary, Allocator & lh) const
+  ngfem::ElementTransformation & MeshAccess :: GetTrafo (int elnr, VorB vb, Allocator & lh) const
   {
-    ElementTransformation * eltrans;
-
-    if (!boundary)
+    switch(vb)
       {
+      case VOL:
         switch (dim)
           {
           case 1: return GetTrafoDim<1> (elnr, lh);
@@ -1411,9 +1440,8 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetTrafo, illegal dimension");
           }
-      }
-    else
-      {
+
+      case BND:
         switch (dim)
           {
           case 1: return GetSTrafoDim<1> (elnr, lh);
@@ -1423,9 +1451,17 @@ namespace ngcomp
           default:
             throw Exception ("MeshAccess::GetSTrafo, illegal dimension");
           }
-      }
 
-    return *eltrans;
+      case BBND:
+	switch(dim)
+	  {
+	  case 2: return GetCD2TrafoDim<2>(elnr,lh);
+	  case 3: return GetCD2TrafoDim<3>(elnr,lh);
+
+	  default:
+	    throw Exception ("MeshAccess::GetCD2Trafo, illegal dimension");
+	  }
+      }
   }
 
 

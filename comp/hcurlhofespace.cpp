@@ -630,7 +630,7 @@ namespace ngcomp
 
 	if (eltype == ET_PRISM) 
 	  {
-	    ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
 	    IntegrationPoint ip(0.3333, 0.3333, 0.5);
 	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 
@@ -695,7 +695,7 @@ namespace ngcomp
 
 	if (eltype == ET_TET)
 	  {
-	    ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
 	    IntegrationPoint ip(0.25, 0.25, 0.25);
 	    MappedIntegrationPoint<3,3> mip(ip, eltrans);
 

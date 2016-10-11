@@ -1132,8 +1132,8 @@ namespace ngcomp
     const ElementTransformation & trafo = ip.GetTransformation();
     
     int elnr = trafo.GetElementNr();
-    bool boundary = trafo.Boundary();
-    ElementId ei(boundary ? BND : VOL, elnr);
+    VorB vb  = trafo.VB();
+    ElementId ei(vb, elnr);
 
     auto fes = gf->GetFESpace();
     shared_ptr<MeshAccess>  ma = fes->GetMeshAccess();
@@ -1195,8 +1195,8 @@ namespace ngcomp
 
     
     const int elnr = ip.GetTransformation().GetElementNr();
-    bool boundary = ip.GetTransformation().Boundary();
-    ElementId ei(boundary ? BND : VOL, elnr);
+    VorB vb = ip.GetTransformation().VB();
+    ElementId ei(vb, elnr);
 
     const FESpace & fes = *gf->GetFESpace();
     shared_ptr<MeshAccess>  ma = fes.GetMeshAccess();
@@ -1253,8 +1253,8 @@ namespace ngcomp
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
-    bool boundary = trafo.Boundary();
-    ElementId ei(boundary ? BND : VOL, elnr);
+    VorB vb = trafo.VB();
+    ElementId ei(vb, elnr);
 
     const FESpace & fes = *gf->GetFESpace();
 
@@ -1308,8 +1308,8 @@ namespace ngcomp
     const ElementTransformation & trafo = ir.GetTransformation();
     
     int elnr = trafo.GetElementNr();
-    bool boundary = trafo.Boundary();
-    ElementId ei(boundary ? BND : VOL, elnr);
+    VorB vb = trafo.VB();
+    ElementId ei(vb, elnr);
 
     const FESpace & fes = *gf->GetFESpace();
 

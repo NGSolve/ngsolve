@@ -1493,7 +1493,7 @@ namespace ngsolve
 	for (int i : r)
 	  {
 	    HeapReset hr(lh);
-	    ElementTransformation & eltrans = ma->GetTrafo (i, 0, lh);
+	    ElementTransformation & eltrans = ma->GetTrafo (i, VOL, lh);
 	    IntegrationRule ir (eltrans.GetElementType(), order);
 	    const BaseMappedIntegrationRule & mir = eltrans(ir, lh);
 	      

@@ -96,8 +96,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.NumFlagDefined("definedon") ||
         flags.StringListFlagDefined("definedon"))
       {
-	definedon.SetSize (ma->GetNDomains());
-	definedon = false;
+	definedon[VOL].SetSize (ma->GetNDomains());
+	definedon[VOL] = false;
 	Array<double> defon;
 	if (flags.NumListFlagDefined("definedon")) 
 	  defon = flags.GetNumListFlag("definedon");
@@ -113,7 +113,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         */
         for (int di : defon)
           if (di > 0 && di <= ma->GetNDomains())
-            definedon[di-1] = true;
+            definedon[VOL][di-1] = true;
           
 	if(flags.StringListFlagDefined("definedon"))
 	  {
@@ -125,7 +125,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 		for(int j = 0; j < dmaterials.Size(); j++)
 		  if(StringFitsPattern(ma->GetDomainMaterial(i),dmaterials[j]))
 		    {
-		      definedon[i] = true;
+		      definedon[VOL][i] = true;
 		      break;
 		    }
 	      }
@@ -133,8 +133,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	// default:
 	// fespace only defined on boundaries matching definedon-domains
-	definedonbound.SetSize (ma->GetNBoundaries());
-	definedonbound = false;
+	definedon[BND].SetSize (ma->GetNBoundaries());
+	definedon[BND] = false;
 	for (int sel = 0; sel < ma->GetNSE(); sel++)
 	  {
 	    int index = ma->GetSElIndex(sel);
@@ -142,22 +142,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    ma->GetSElNeighbouringDomains(sel, dom1, dom2);
 	    dom1--; dom2--;
 	    if ( dom1 >= 0 )
-	      if ( definedon[dom1] )
-		definedonbound[index] = true;
+	      if ( definedon[VOL][dom1] )
+		definedon[BND][index] = true;
 
 	    if ( dom2 >= 0 )
-	      if ( definedon[dom2] )
-		definedonbound[index] = true;
+	      if ( definedon[VOL][dom2] )
+		definedon[BND][index] = true;
 	  }
       }
 
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
       {
-	if ( definedonbound.Size() == 0 )
+	if ( definedon[BND].Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = false;
+	    definedon[BND].SetSize (ma->GetNBoundaries());
+	    definedon[BND] = false;
 	  }
 	Array<double> defon;
 	if ( flags.NumListFlagDefined("definedonbound") )
@@ -170,16 +170,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 	for(int i=0; i< defon.Size(); i++) 
 	  if(defon[i] <= ma->GetNBoundaries() && defon[i] > 0)
-	    definedonbound[int(defon[i])-1] = true;
+	    definedon[BND][int(defon[i])-1] = true;
       }
     
 
     else if(flags.StringListFlagDefined("definedonbound") || flags.StringFlagDefined("definedonbound"))
       {
-	if ( definedonbound.Size() == 0 )
+	if ( definedon[BND].Size() == 0 )
 	  {
-	    definedonbound.SetSize (ma->GetNBoundaries());
-	    definedonbound = false;
+	    definedon[BND].SetSize (ma->GetNBoundaries());
+	    definedon[BND] = false;
 	  }
 
 	Array<string*> defon;
@@ -192,13 +192,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	
 	for(int selnum = 0; selnum < ma->GetNSE(); selnum++)
 	  {
-	    if(definedonbound[ma->GetSElIndex(selnum)] == false)
+	    if(definedon[BND][ma->GetSElIndex(selnum)] == false)
 	      {
 		for(int i=0; i<defon.Size(); i++)
 		  {
 		    if(StringFitsPattern(ma->GetSElBCName(selnum),*(defon[i])))	
 		      {		
-		 	definedonbound[ma->GetSElIndex(selnum)] = true;
+		 	definedon[BND][ma->GetSElIndex(selnum)] = true;
 			continue;
 		      }
 		  }
@@ -413,10 +413,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         element_coloring = Table<int> (low_order_space->element_coloring);
         selement_coloring = Table<int> (low_order_space->selement_coloring);
+	bbelement_coloring = Table<int> (low_order_space->bbelement_coloring);
       }
     else
       // for (auto vb = VOL; vb <= BND; vb++)
-      for (auto vb : { VOL, BND })
+      for (auto vb : { VOL, BND, BBND })
       {
         tcol.Start();
         Array<int> col(ma->GetNE(vb));
@@ -523,7 +524,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (ElementId el : Elements(vb))
           cntcol[col[el.Nr()]]++;
         
-        Table<int> & coloring = (vb == VOL) ? element_coloring : selement_coloring;
+        Table<int> & coloring = (vb == VOL) ? element_coloring : ((vb==BND) ? selement_coloring : bbelement_coloring);
         coloring = Table<int> (cntcol);
 
 	cntcol = 0;
@@ -629,7 +630,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    const FiniteElement & el = ei.IsCoDim2() ? GetCD2FE(ei.Nr(),lh) : (ei.IsBoundary() ? GetSFE(ei.Nr(), lh) : GetFE(ei.Nr(), lh));
+    const FiniteElement & el;
+    switch(ei.VB())
+      {
+      case VOL:
+	el = GetFE(ei.Nr(),lh);
+	break;
+      case BND:
+	el = GetSFE(ei.Nr(),lh);
+	break;
+      case BBND:
+	el = GetCD2FE(ei.Nr(),lh);
+      }
     return const_cast<FiniteElement&> (el);
   }
   
@@ -930,8 +942,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "dim   = " << dimension << endl
 	<< "dgjmps= " << dgjumps << endl
 	<< "complex = " << iscomplex << endl;
-    ost << "definedon = " << definedon << endl;
-    ost << "definedon boundary = " << definedonbound << endl;
+    ost << "definedon = " << definedon[VOL] << endl;
+    ost << "definedon boundary = " << definedon[BND] << endl;
+    ost << "definedon codim 2 = " << definedon[BBND] << endl;
     if (!free_dofs.Size()) return;
 
     ost << "ndof = " << GetNDof() << endl;
@@ -951,7 +964,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void FESpace :: DoArchive (Archive & archive)
   {
     archive & order & dimension & iscomplex & dgjumps & print & level_updated;
-    archive & definedon & definedonbound;
+    archive & definedon[VOL] & definedon[BND] & definedon[BBND];
     archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
@@ -1209,24 +1222,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
     
-  void FESpace :: SetDefinedOn (const BitArray & defon)
+  void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
-    definedon.SetSize(defon.Size());
+    definedon[vb].SetSize(defon.Size());
     for (int i = 0; i < defon.Size(); i++)
-      definedon[i] = defon.Test(i);
+      definedon[vb][i] = defon.Test(i);
 
     if (low_order_space)
-      low_order_space -> SetDefinedOn (defon);
-  }
-
-  void FESpace :: SetDefinedOnBoundary (const BitArray & defon)
-  {
-    definedonbound.SetSize(defon.Size());
-    for (int i = 0; i < defon.Size(); i++)
-      definedonbound[i] = defon.Test(i);
-
-    if (low_order_space)
-      low_order_space -> SetDefinedOnBoundary (defon);
+      low_order_space -> SetDefinedOn (vb, defon);
   }
 
   void FESpace :: SetDirichletBoundaries (const BitArray & dirbnds)
@@ -1323,7 +1326,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   // Aendern, Bremse!!!
   template < int S, class T >
-  void FESpace :: TransformVec (int elnr, bool boundary,
+  void FESpace :: TransformVec (int elnr, VorB vb,
 				const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const
   {
     //cout << "Achtung, Bremse" << endl;
@@ -1335,69 +1338,69 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	for(int j=0;j<vec.Size(); j++)
 	  partvec(j) = vec[j](i);
 
-	TransformVec(elnr,boundary,partvec,type);
+	TransformVec(elnr,vb,partvec,type);
 
 	for(int j=0;j<vec.Size(); j++)
 	  vec[j](i) = partvec(j);
       }
   }
 
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<2,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<3,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<4,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<5,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<6,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 				      const FlatVector< Vec<7,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<8,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<9,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<10,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<11,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<12,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<13,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<14,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,double> >& vec, TRANSFORM_TYPE type) const;
 
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<2,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<3,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<4,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<5,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<6,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<7,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<8,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<9,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<10,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<11,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<12,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<13,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, bool boundary,
+  template void FESpace::TransformVec(int elnr, VorB vb,
 					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
 
 
@@ -1681,10 +1684,27 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	if (dnums.Size() > np) dnums.SetSize (np);
       }
 
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
+    if (!DefinedOn(BND,ma->GetSElIndex (selnr)))
       dnums = -1;
   }
   
+  void NodalFESpace :: GetCD2DofNrs(int elnr, Array<int> & dnums) const
+  {
+    Ngs_Element ngel = ma->GetCD2Element(elnr);
+    dnums = ngel.Vertices();
+    if(order == 1)
+      {
+	int np = dnums.Size();
+	if(ma->GetCD2Element(elnr).GetType() == ET_SEGM)
+	  np = 2;
+	else
+	  np = 1;
+	if (dnums.Size()>np) dnums.SetSize(np);
+      }
+
+    if(!DefinedOn(BBND,ma->GetCD2ElIndex(elnr)))
+      dnums = -1;
+  }
 
   void NodalFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
@@ -1851,7 +1871,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void NonconformingFESpace :: GetDofNrs (int elnr, Array<int> & dnums) const
   {
     ma->GetElEdges (elnr, dnums);
-    if (!DefinedOn (ma->GetElIndex (elnr)))
+    if (!DefinedOn (VOL,ma->GetElIndex (elnr)))
       dnums = -1;
   }
 
@@ -1859,7 +1879,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void NonconformingFESpace :: GetSDofNrs (int selnr, Array<int> & dnums) const
   {
     ma->GetSElEdges (selnr, dnums);
-    if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
+    if (!DefinedOn (BND,ma->GetSElIndex (selnr)))
       dnums = -1;
   }
   
@@ -2472,7 +2492,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
   template <class MAT>
-  void CompoundFESpace::TransformMat (int elnr, bool boundary,
+  void CompoundFESpace::TransformMat (int elnr, VorB vb,
 				      MAT & mat, TRANSFORM_TYPE tt) const
   {
     int base = 0;
@@ -2485,17 +2505,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  : spaces[i]->GetFE(elnr, lh).GetNDof();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
 
-	spaces[i]->TransformMat (elnr, boundary, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
-	spaces[i]->TransformMat (elnr, boundary, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
+	spaces[i]->TransformMat (elnr, vb, mat.Rows(base, base+nd), TRANSFORM_MAT_LEFT);
+	spaces[i]->TransformMat (elnr, vb, mat.Cols(base, base+nd), TRANSFORM_MAT_RIGHT);
 
 	base += nd;
       }
   }
 
   template <class VEC>
-  void CompoundFESpace::TransformVec (int elnr, bool boundary,
+  void CompoundFESpace::TransformVec (int elnr, VorB vb,
 				      VEC & vec, TRANSFORM_TYPE tt) const
   {
     LocalHeapMem<100006> lh("CompoundFESpace - transformvec");
@@ -2509,11 +2529,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	lh.CleanUp();
         */
         HeapReset hr(lh);
-        int nd = spaces[i]->GetFE(ElementId(boundary?BND:VOL, elnr), lh).GetNDof();
+        int nd = spaces[i]->GetFE(ElementId(vb, elnr), lh).GetNDof();
 
 
 	// VEC svec (nd, &vec(base));
-	spaces[i]->TransformVec (elnr, boundary, vec.Range(base, base+nd), tt);
+	spaces[i]->TransformVec (elnr, vb, vec.Range(base, base+nd), tt);
 	base += nd;
       }
   }
@@ -2522,49 +2542,49 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   template NGS_DLL_HEADER
   void CompoundFESpace::TransformVec<FlatVector<double> >
-  (int elnr, bool boundary, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatVector<double> & vec, TRANSFORM_TYPE tt) const;
   template NGS_DLL_HEADER
   void CompoundFESpace::TransformVec<FlatVector<Complex> >
-  (int elnr, bool boundary, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const;
   
   template
   void CompoundFESpace::TransformMat<FlatMatrix<double> > 
-  (int elnr, bool boundary, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void CompoundFESpace::TransformMat<FlatMatrix<Complex> > 
-  (int elnr, bool boundary, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
   
   template
   void CompoundFESpace::TransformMat<SliceMatrix<double> > 
-  (int elnr, bool boundary, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const;
   template
   void CompoundFESpace::TransformMat<SliceMatrix<Complex> > 
-  (int elnr, bool boundary, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
+  (int elnr, VorB vb, SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const;
   
   
-  void CompoundFESpace::VTransformMR (int elnr, bool boundary,
+  void CompoundFESpace::VTransformMR (int elnr, VorB vb,
 				      const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
   
-  void CompoundFESpace::VTransformMC (int elnr, bool boundary,
+  void CompoundFESpace::VTransformMC (int elnr, VorB vb,
 				      const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
   
 
-  void CompoundFESpace::VTransformVR (int elnr, bool boundary,
+  void CompoundFESpace::VTransformVR (int elnr, VorB vb,
 				      const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
   
-  void CompoundFESpace::VTransformVC (int elnr, bool boundary,
+  void CompoundFESpace::VTransformVC (int elnr, VorB vb,
 				      const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
 
 

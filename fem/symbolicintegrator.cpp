@@ -1206,8 +1206,9 @@ namespace ngfem
           for (int i = 0; i < mir.Size(); i++)
             {
               double len;
-              if (!trafo.Boundary())
-                {
+	      switch(trafo.VB())
+		{
+		case VOL:
                   FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
                   Vec<D> normal_ref = normals[k];
                   auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
@@ -1218,9 +1219,8 @@ namespace ngfem
                   normal /= len;                   // normal vector on physical element
                   
                   const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
-                }
-              else
-                {
+
+		case BND:
                   if (D != 3)
                     throw Exception ("element boundary for surface elements is only possible in 3D");
                   FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
@@ -1234,7 +1234,11 @@ namespace ngfem
                   normal /= len;                   // normal vector on physical element
                   Vec<3> tang = Cross(normal, mip.GetNV());
                   const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
-                }
+
+		case BBND:
+		  throw Exception ("CalcLinearizedEB not implemented for BBND elements")
+		  
+		}
               measure(i) = len;
             }
 

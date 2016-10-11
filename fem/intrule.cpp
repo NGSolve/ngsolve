@@ -49,21 +49,29 @@ namespace ngfem
   
   FlatMatrix<> BaseMappedIntegrationPoint :: GetJacobian() const
   {
-    if (!eltrans->Boundary())
-      switch (eltrans->SpaceDim())
-        {
-        case 1: return static_cast<const MappedIntegrationPoint<1,1>&> (*this).GetJacobian();
-        case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
-        case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
-        }
-    else
-      switch (eltrans->SpaceDim())
-        {
-        case 1: return static_cast<const MappedIntegrationPoint<0,1>&> (*this).GetJacobian();
-        case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
-        case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
-        }
-
+    switch(eltrans->VB())
+      {
+      case VOL:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 1: return static_cast<const MappedIntegrationPoint<1,1>&> (*this).GetJacobian();
+	  case 2: return static_cast<const MappedIntegrationPoint<2,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<3,3>&> (*this).GetJacobian();
+	  }
+      case BND:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 1: return static_cast<const MappedIntegrationPoint<0,1>&> (*this).GetJacobian();
+	  case 2: return static_cast<const MappedIntegrationPoint<1,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<2,3>&> (*this).GetJacobian();
+	  }
+      case BBND:
+	switch (eltrans->SpaceDim())
+	  {
+	  case 2: return static_cast<const MappedIntegrationPoint<0,2>&> (*this).GetJacobian();
+	  case 3: return static_cast<const MappedIntegrationPoint<1,3>&> (*this).GetJacobian();
+	  }
+      }
     throw Exception("BaseMappedIntegrationPoint::GetJacobian, illegal dimension");
   }
 

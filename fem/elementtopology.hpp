@@ -95,9 +95,9 @@ namespace ngfem
     int Nr() const { return nr; }
     explicit operator int () const { return nr; }
     explicit operator VorB () const { return vb; }
+    VorB VB() const { return vb; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
-    bool IsCoDim2() const { return vb == BBND; }
     // VorB VolumeOrBoundary() const { return vb; }
     bool operator< (int nr2) { return nr < nr2; }
     ElementId operator++ (int) { return ElementId(vb,nr++); }
@@ -108,7 +108,7 @@ namespace ngfem
 
   inline ostream & operator<< (ostream & ost, ElementId id)
   {
-    return ost << (id.IsVolume() ? "VEl" : (id.IsBoundary() ? "BEl" : "CD2El")) << ' ' << id.Nr();
+    return ost << (id.VB()==VOL ? "VEl " : (id.VB()==BND ? "BEl " : "CD2El ")) << ' ' << id.Nr();
   }
 
   template <VorB VB,int DIM>
