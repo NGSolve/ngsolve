@@ -5773,6 +5773,7 @@ namespace netgen
 
   void Mesh :: SetCD2Name ( int cd2nr, const string & abcname )
   {
+    cd2nr++;
     (*testout) << "setCD2Name on edge " << cd2nr << " to " << abcname << endl;
     if (cd2nr >= cd2names.Size())
       {

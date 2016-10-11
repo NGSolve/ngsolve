@@ -86,7 +86,7 @@ namespace netgen
 	   {
 	     const Element2d & el = mesh3d[sei];
 	     if (el.IsDeleted() ) continue;
-	     
+
 	     if (mesh3d.GetFaceDescriptor(el.GetIndex()).DomainIn() == k ||
 		 mesh3d.GetFaceDescriptor(el.GetIndex()).DomainOut() == k)
 	       

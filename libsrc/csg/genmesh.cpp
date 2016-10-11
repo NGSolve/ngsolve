@@ -98,6 +98,12 @@ namespace netgen
 	//(*testout) << " to " << mesh.LineSegment(i).si << endl;
       }
 
+    for(int k = 1; k<=mesh.GetNFD(); k++)
+      {
+	*testout << "face: " << k << endl
+		 << "FD: " << mesh.GetFaceDescriptor(k) << endl;
+      }
+
     if (geom.identifications.Size())
       {
 	PrintMessage (3, "Find Identifications");

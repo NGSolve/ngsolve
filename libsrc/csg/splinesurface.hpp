@@ -4,7 +4,7 @@
 
 namespace netgen
 {
-  class SplineSurface : public OneSurfacePrimitive
+  class SplineSurface : public  OneSurfacePrimitive
   {
   protected:
     Array<GeomPoint<3>> geompoints;
@@ -28,7 +28,8 @@ namespace netgen
     DLL_HEADER void AppendPoint(const Point<3> & p, const double reffac = 1., const bool hpref=false);
     void AppendSegment(SplineSeg<3>* spline, string* bcname);
     Array<Plane*>* CreatePlanes() const;
-    
+
+    virtual void Project (Point<3> & p3d) const;
     virtual double CalcFunctionValue (const Point<3> & point) const;
     virtual void CalcGradient (const Point<3> & point, Vec<3> & grad) const;
     virtual double HesseNorm () const;
@@ -36,6 +37,7 @@ namespace netgen
     virtual void CalcSpecialPoints(Array<Point<3>> & pts) const;
 
     virtual INSOLID_TYPE BoxInSolid(const BoxSphere<3> & box) const;
+
     
     
     virtual void Print (ostream & str) const;

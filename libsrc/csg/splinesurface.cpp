@@ -3,7 +3,7 @@
 
 namespace netgen
 {
-SplineSurface :: SplineSurface() : OneSurfacePrimitive()
+  SplineSurface :: SplineSurface() : OneSurfacePrimitive()
 { ; }
 
 SplineSurface :: ~SplineSurface() { ; }
@@ -34,7 +34,30 @@ void SplineSurface :: AppendPoint(const Point<3> & p, const double reffac, const
       }
     return new string("default");
   }
-    
+
+  Array<Plane*>* SplineSurface :: CreatePlanes() const
+  {
+    auto planes = new Array<Plane*>();
+    auto sol = new Solid(new Plane(splines[0]->GetPoint(0),Cross(splines[0]->GetTangent(0),GetNormalVector(splines[0]->GetPoint(0)))));
+    for(auto spline : splines)
+      {
+	planes->Append(new Plane(spline->GetPoint(0),-spline->GetTangent(0)));
+      }
+    return planes;
+  }
+  
+  void SplineSurface :: Print(ostream & str) const
+{
+  str << "SplineSurface " << endl;
+}
+
+  void SplineSurface :: Project(Point<3> & p3d) const
+  {
+    double val = CalcFunctionValue(p3d);
+    p3d -= val * GetNormalVector(p3d);
+  }
+
+  
 double SplineSurface :: CalcFunctionValue (const Point<3> & point) const
 {
   auto v1 = splines[0]->GetTangent(0);
@@ -73,22 +96,7 @@ void SplineSurface :: CalcGradient (const Point<3> & point, Vec<3> & grad) const
       }
   }
 
-  Array<Plane*>* SplineSurface :: CreatePlanes() const
-  {
-    auto planes = new Array<Plane*>();
-    auto sol = new Solid(new Plane(splines[0]->GetPoint(0),-(splines[0]->GetTangent(0))));
-    for(auto spline : splines)
-      {
-	planes->Append(new Plane(spline->GetPoint(0),-spline->GetTangent(0)));
-      }
-    return planes;
-  }
 
-
-  void SplineSurface :: Print(ostream & str) const
-{
-  str << "SplineSurface " << endl;
-}
 
 INSOLID_TYPE SplineSurface :: BoxInSolid(const BoxSphere<3> & box) const
 {
@@ -127,4 +135,5 @@ INSOLID_TYPE SplineSurface :: BoxInSolid(const BoxSphere<3> & box) const
       return IS_INSIDE;
     }
 }
+  
 }

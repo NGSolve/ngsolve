@@ -14,7 +14,7 @@ template <>
 NGX_INLINE DLL_HEADER int Ngx_Mesh :: GetElementIndex<1> (int nr) const
 {
   if(mesh->GetDimension()==3)
-    return (*mesh)[SegmentIndex(nr)].cd2i;
+    return (*mesh)[SegmentIndex(nr)].edgenr;
   else
     return (*mesh)[SegmentIndex(nr)].si;
 }
