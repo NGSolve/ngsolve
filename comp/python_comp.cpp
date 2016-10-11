@@ -1618,8 +1618,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Apply", FunctionPointer
 	 ([](PyBF & self, BaseVector & x, BaseVector & y, int heapsize)
 	  {
-	    static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
-	    self->ApplyMatrix (x, y, lh );
+	    // static LocalHeap lh (heapsize, "BilinearForm::Apply", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->ApplyMatrix (x, y, glh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("x"),bp::arg("y"),bp::arg("heapsize")=1000000))
     .def("ComputeInternal", FunctionPointer
@@ -1633,8 +1638,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("AssembleLinearization", FunctionPointer
 	 ([](PyBF & self, BaseVector & ulin, int heapsize)
 	  {
-	    LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-	    self->AssembleLinearization (ulin, lh);
+	    // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+	    self->AssembleLinearization (ulin, glh);
 	  }),
          (bp::arg("self")=NULL,bp::arg("ulin"),bp::arg("heapsize")=1000000))
 
@@ -1713,8 +1723,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Assemble", FunctionPointer
          ([](PyLF self, int heapsize)
           { 
-            LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
-            self->Assemble(lh);
+            // LocalHeap lh(heapsize, "LinearForm::Assemble-heap", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            self->Assemble(glh);
           }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000))
 
