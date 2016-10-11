@@ -413,7 +413,7 @@ namespace ngfem
 		SliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const;
 
-    NGS_DLL_HEADER virtual void
+    virtual void
     CalcMatrix (const FiniteElement & fel,
 		const SIMD_BaseMappedIntegrationRule & mir,
 		ABareMatrix<double> mat) const;
