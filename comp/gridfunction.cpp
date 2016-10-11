@@ -1315,7 +1315,7 @@ namespace ngcomp
 
     if (!trafo.BelongsToMesh ((void*)(fes.GetMeshAccess().get())))
       {
-        throw Exception ("SIMD - evaluation not available for different meshes");
+        throw ExceptionNOSIMD ("SIMD - evaluation not available for different meshes");
         // for (int i = 0; i < ir.Size(); i++)
         // Evaluate (ir[i], values.Row(i));
         return;
