@@ -852,6 +852,19 @@ void NGS_DLL_HEADER ExportNgcomp()
     */
     ;
 
+
+  static size_t global_heapsize = 1000000;
+  static LocalHeap glh(global_heapsize, "python-comp lh", true);
+  bp::def("SetHeapSize", FunctionPointer([](size_t heapsize)
+                                         {
+                                           if (heapsize > global_heapsize)
+                                             {
+                                               global_heapsize = heapsize;
+                                               glh = LocalHeap (heapsize, "python-comp lh", true);
+                                             }
+                                         }));
+
+  
   //////////////////////////////////////////////////////////////////////////////////////////
   bp::class_<PyFES>("FESpace",  "a finite element space", bp::no_init)
 
@@ -1545,8 +1558,13 @@ void NGS_DLL_HEADER ExportNgcomp()
     
     .def("Assemble", FunctionPointer([](PyBF & self, int heapsize, bool reallocate)
                                      {
-                                       LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
-                                       self->ReAssemble(lh,reallocate);
+                                       // LocalHeap lh (heapsize, "BilinearForm::Assemble-heap", true);
+                                       if (heapsize > global_heapsize)
+                                         {
+                                           global_heapsize = heapsize;
+                                           glh = LocalHeap(heapsize, "python-comp lh", true);
+                                         }
+                                       self->ReAssemble(glh,reallocate);
                                      }),
          (bp::arg("self")=NULL,bp::arg("heapsize")=1000000,bp::arg("reallocate")=false))
 
