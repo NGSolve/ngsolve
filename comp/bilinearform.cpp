@@ -188,20 +188,10 @@ namespace ngcomp
 
     parts.Append (bfi);
 
-    if (bfi -> BoundaryForm())
-      {
-        if (bfi -> SkeletonForm())
-          boundary_skeleton_parts.Append(bfi);
-        else
-          boundary_parts.Append(bfi);
-      }
+    if(bfi->SkeletonForm())
+      VB_skeleton_parts[bfi->VB()].Append(bfi);
     else
-      {
-        if (bfi -> SkeletonForm())
-          volume_skeleton_parts.Append(bfi);
-        else
-          volume_parts.Append(bfi);
-      }
+      VB_parts[bfi->VB()].Append(bfi);
     
     if (low_order_bilinear_form)
       low_order_bilinear_form -> AddIntegrator (parts.Last());
@@ -261,8 +251,9 @@ namespace ngcomp
     RegionTimer reg (timer);
 
     int ndof = fespace->GetNDof();
-    int ne = ma->GetNE();
-    int nse = ma->GetNSE();
+    int ne = ma->GetNE(VOL);
+    int nse = ma->GetNE(BND);
+    int ncd2e = ma->GetNE(BBND);
     int nf = ma->GetNFacets();
     const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
     int nspe = specialelements.Size();
@@ -313,43 +304,35 @@ namespace ngcomp
                }
            });
         */
-        ParallelForRange (Range(ne), [&](IntRange r)
-                          {
-                            Array<int> dnums;
-                            for (auto i : r)
-                              {
-                                if (!fespace->DefinedOn (ma->GetElIndex(i))) continue;
-                                
-                                if (eliminate_internal)
-                                  fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
-                                else
-                                  fespace->GetDofNrs (i, dnums);
-                                
-                                for (int d : dnums)
-                                  if (d != -1) creator.Add (i, d);
+
+	for(vb : {VOL, BND, BBND})
+	  {
+	    int nre = ma->GetNE(vb);
+	    ParallelForRange (Range(ne), [&](IntRange r)
+			      {
+				Array<int> dnums;
+				for (auto i : r)
+				  {
+				    auto eid = ElementId(vb,i);
+				    if (!fespace->DefinedOn (vb,ma->GetElIndex(eid))) continue;
+				    
+				    if (vb == VOL && eliminate_internal)
+				      fespace->GetDofNrs (i, dnums, EXTERNAL_DOF);
+				    else
+				      fespace->GetDofNrs (eid, dnums);
+				    int shift = (vb==VOL) ? 0 : ((vb==BND) ? ne : ne + nse);
+				    for (int d : dnums)
+				      if (d != -1) creator.Add (shift+i, d);
                               }
-                          });
+			      });
+	  }
 
         
-        ParallelForRange (Range(nse), [&](IntRange r)
-                          {
-                            Array<int> dnums;
-                            for (auto i : r)
-                              {
-                                if (!fespace->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
-                                
-                                fespace->GetSDofNrs (i, dnums);
-                                for (int d : dnums)
-                                  if (d != -1) creator.Add (ne+i, d);
-                              }
-                          });
-
-
         for (int i = 0; i < specialelements.Size(); i++)
           {
             specialelements[i]->GetDofNrs (dnums);
             for (int d : dnums)
-              if (d != -1) creator.Add (ne+nse+i, d);
+              if (d != -1) creator.Add (ne+nse+ncd2e+i, d);
           }
 
         if (fespace->UsesDGCoupling())
@@ -367,14 +350,14 @@ namespace ngcomp
               dnums_dg.SetSize(0);
               for (int k=0;k<nbelems.Size();k++){
                 int elnr=nbelems[k];
-                if (!fespace->DefinedOn (ma->GetElIndex(elnr))) continue;
+                if (!fespace->DefinedOn (VOL,ma->GetElIndex(elnr))) continue;
                 fespace->GetDofNrs (elnr, dnums);
                 dnums_dg.Append(dnums);
               }
               QuickSort (dnums_dg);
               for (int j = 0; j < dnums_dg.Size(); j++)
                 if (dnums_dg[j] != -1 && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
-                  creator.Add (ne+nse+nspe+i, dnums_dg[j]);
+                  creator.Add (ne+nse+ncd2e+nspe+i, dnums_dg[j]);
             }
         }
 
@@ -392,30 +375,24 @@ namespace ngcomp
         TableCreator<int> creator2(maxind);
         for ( ; !creator2.Done(); creator2++)
           {
-            for (int i = 0; i < ne; i++)
+	    for(VorB vb  : {VOL, BND, BBND})
+	      {
+		int nre = ma->GetNE(vb);
+            for (int i = 0; i < nre; i++)
               {
-                if (!fespace2->DefinedOn (ma->GetElIndex(i))) continue;
+		auto eid = ElementId(vb,i);
+                if (!fespace2->DefinedOn (vb,ma->GetElIndex(eid))) continue;
                 
-                if (eliminate_internal)
+                if (vb == VOL && eliminate_internal)
                   fespace2->GetDofNrs (i, dnums, EXTERNAL_DOF);
                 else
-                  fespace2->GetDofNrs (i, dnums);
-                
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    creator2.Add (i, dnums[j]);
+                  fespace2->GetDofNrs (eid, dnums);
+
+		int shift = (vb==VOL) ? 0 : ((vb==BND) ? ne : ne + nse);
+                for (int d : dnums)
+                  if (d != -1) creator2.Add (shift+i, d);
               }
         
-            for (int i = 0; i < nse; i++)
-              {
-                if (!fespace2->DefinedOnBoundary (ma->GetSElIndex(i))) continue;
-            
-                fespace2->GetSDofNrs (i, dnums);
-                for (int j = 0; j < dnums.Size(); j++)
-                  if (dnums[j] != -1)
-                    creator2.Add (ne+i, dnums[j]);
-              }
-
             /*
               // just not tested ...
             for (int i = 0; i < specialelements.Size(); i++)
@@ -475,8 +452,6 @@ namespace ngcomp
         if (precompute)
           {
             Array<int> dnums;
-            int ne = ma->GetNE();
-            int nse = ma->GetNSE();
 
             precomputed_data.SetSize( max2(ne, nse)*NumIntegrators() );
             precomputed_data = nullptr;
@@ -485,63 +460,28 @@ namespace ngcomp
             
             int hasbound = 0;
             int hasinner = 0;
+            for (VorB vb : {VOL, BND, BBND})
+	      {
+		int ne = ma->GetNE(vb);
+		if(VB_parts[vb].Size() || VB_skeleton_parts[vb].Size())
+		  {
+		    for (int i=0; i < ne; i++)
+		      {
+			auto fel = fespace->GetFE(ElementId(vb,i),lh);
+			auto eltrans = ma->GetTrafo(i,vb,lh);
+			fespace->GetDofNrs(ElementId(vb,i),dnums);
+			for(int j=0; j<NumIntegrators(); j++)
+			  {
+			    if(!bfi.VB()==vb) continue;
+			    if(!bfi.DefinedOn (ma->GetElIndex(i))) continue;
+
+			    precomputed_data[i*NumIntegrators()+j] =
+			      bfi.PrecomputeData(fel,eltrans,lh);
+			  }
+		      }
+		  }
+	      }
             
-            for (int j = 0; j < NumIntegrators(); j++)
-              {
-                const BilinearFormIntegrator & bfi = *GetIntegrator(j);
-                if (bfi.BoundaryForm())
-                  hasbound = 1;
-                else
-                  hasinner = 1;
-              }
-            
-            
-            if (hasinner)
-              for (int i = 0; i < ne; i++)
-                {
-                  lh.CleanUp();
-                  
-                  if (!fespace->DefinedOn (ma->GetElIndex (i))) continue;
-          
-                  const FiniteElement & fel = fespace->GetFE (i, lh);
-                  ElementTransformation & eltrans = ma->GetTrafo (i, 0, lh);
-                  fespace->GetDofNrs (i, dnums);
-          
-                  for (int j = 0; j < NumIntegrators(); j++)
-                    {
-                      const BilinearFormIntegrator & bfi = *parts[j];
-                      
-                      if (bfi.BoundaryForm()) continue;
-                      if (!bfi.DefinedOn (ma->GetElIndex (i))) continue;
-                      
-                      precomputed_data[i*NumIntegrators()+j] = 
-                        bfi.PrecomputeData (fel, eltrans, lh);
-                    }
-                }
-
-
-            if (hasbound)
-              for (int i = 0; i < nse; i++)
-                {
-                  lh.CleanUp();
-                  
-                  const FiniteElement & fel = fespace->GetSFE (i, lh);
-                  ElementTransformation & eltrans = ma->GetTrafo (i, 1, lh);
-
-                  fespace->GetSDofNrs (i, dnums);
-          
-                  for (int j = 0; j < NumIntegrators(); j++)
-                    {
-                      const BilinearFormIntegrator & bfi = *parts[j];
-                      
-                      if (!bfi.BoundaryForm()) continue;
-                      precomputed_data[i*NumIntegrators()+j] = 
-                        bfi.PrecomputeData (fel, eltrans, lh);
-                    }
-                }
-          }
-
-
         
         if (timing)
           {
@@ -1550,8 +1490,8 @@ namespace ngcomp
                       const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                       const FiniteElement & fel2 = fespace->GetFE (el2, lh);
 
-                      ElementTransformation & eltrans1 = ma->GetTrafo (el1, false, lh);
-                      ElementTransformation & eltrans2 = ma->GetTrafo (el2, false, lh);
+                      ElementTransformation & eltrans1 = ma->GetTrafo (el1, VOL, lh);
+                      ElementTransformation & eltrans2 = ma->GetTrafo (el2, VOL, lh);
 
 
                       fespace->GetDofNrs (el1, dnums1);
@@ -1816,8 +1756,8 @@ namespace ngcomp
                                  const FiniteElement & fel1 = fespace->GetFE (el1, lh);
                                  const FiniteElement & fel2 = fespace->GetFE (el2, lh);
                                  
-                                 ElementTransformation & eltrans1 = ma->GetTrafo (el1, false, lh);
-                                 ElementTransformation & eltrans2 = ma->GetTrafo (el2, false, lh);
+                                 ElementTransformation & eltrans1 = ma->GetTrafo (el1, VOL, lh);
+                                 ElementTransformation & eltrans2 = ma->GetTrafo (el2, VOL, lh);
                                  
                                  
                                  fespace->GetDofNrs (el1, dnums1);
@@ -3406,7 +3346,7 @@ namespace ngcomp
               HeapReset hr(lh);
           
               const FiniteElement & fel = fespace->GetFE (i, lh);
-              ElementTransformation & eltrans = ma->GetTrafo (i, false, lh);
+              ElementTransformation & eltrans = ma->GetTrafo (i, VOL, lh);
               fespace->GetDofNrs (i, dnums);
           
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
@@ -3443,7 +3383,7 @@ namespace ngcomp
             {
               HeapReset hr(lh);
               const FiniteElement & fel = fespace->GetSFE (i, lh);
-              ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
+              ElementTransformation & eltrans = ma->GetTrafo (i, BND, lh);
               fespace->GetSDofNrs (i, dnums);
             
               FlatVector<SCAL> elveclin (dnums.Size() * dim, lh);
@@ -3555,7 +3495,7 @@ namespace ngcomp
               HeapReset hr(lh);
 
               const FiniteElement & fel = fespace->GetSFE (i, lh);
-              ElementTransformation & eltrans = ma->GetTrafo (i, true, lh);
+              ElementTransformation & eltrans = ma->GetTrafo (i, BND, lh);
               fespace->GetSDofNrs (i, dnums);
             
               FlatVector<SCAL> elvecx (dnums.Size() * GetFESpace()->GetDimension(), lh);

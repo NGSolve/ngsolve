@@ -63,8 +63,11 @@ namespace ngfem
     virtual ~Integrator();
 
     /// integrates on the boundary, or on the domain ?
-    virtual bool BoundaryForm () const = 0;
-    virtual bool CoDim2Form() const { return false; }
+    [[deprecated("Use VB() instead")]]
+    virtual bool BoundaryForm () const
+      { return VB() == BND; }
+
+    virtual VorB VB() const = 0;
 
     class DGFormulation
     {
@@ -81,7 +84,7 @@ namespace ngfem
 
     virtual bool VolumeForm () const
     {
-      if (CoDim2Form() || BoundaryForm() || SkeletonForm() || IntegrationAlongCurve()) return false;
+      if ( VB() != VOL || SkeletonForm() || IntegrationAlongCurve()) return false;
       return true;
     }
 
@@ -610,8 +613,8 @@ namespace ngfem
       
       
       
-    virtual bool BoundaryForm () const 
-    { return 0; }
+    virtual VorB VB () const 
+    { return BND; }
 
     virtual bool SkeletonForm () const 
     { return 1; }
@@ -718,8 +721,8 @@ namespace ngfem
     BlockBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi, int adim);
     virtual ~BlockBilinearFormIntegrator ();
 
-    virtual bool BoundaryForm () const
-    { return bfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return bfi->VB(); }
     virtual bool IsSymmetric () const { return bfi->IsSymmetric(); }
     virtual int DimFlux () const 
     { return (comp == -1) ? dim * bfi->DimFlux() : bfi->DimFlux(); }
@@ -860,8 +863,8 @@ namespace ngfem
     ComplexBilinearFormIntegrator (shared_ptr<BilinearFormIntegrator> abfi,
 				   Complex afactor);
 
-    virtual bool BoundaryForm () const
-    { return bfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return bfi->VB(); }
 
     virtual int DimFlux () const
     { return bfi->DimFlux(); }
@@ -989,8 +992,8 @@ namespace ngfem
   
     shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
 
-    virtual bool BoundaryForm () const
-    { return bfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return bfi->VB(); }
 
     virtual int DimFlux () const 
     { return bfi->DimFlux(); }
@@ -1037,8 +1040,8 @@ namespace ngfem
       return bfi[dim];
     }
 
-    virtual bool BoundaryForm () const
-    { return any_dim->BoundaryForm(); }
+    virtual VorB VB () const
+    { return any_dim->VB(); }
 
     virtual int DimFlux () const 
     { throw Exception("BFI AnyDim - DimFlux not available"); }
@@ -1076,8 +1079,8 @@ namespace ngfem
   
     shared_ptr<BilinearFormIntegrator> GetBFI(void) const {return bfi;}
     int GetComponent() const {return comp;}
-    virtual bool BoundaryForm () const
-    { return bfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return bfi->VB(); }
 
     virtual int DimFlux () const 
     { return bfi->DimFlux(); }
@@ -1295,8 +1298,8 @@ namespace ngfem
 
     ~FacetLinearFormIntegrator() { ; }
 
-    virtual bool BoundaryForm () const 
-    { return 1; }
+    virtual VorB VB () const 
+    { return BND; }
 
     virtual bool SkeletonForm () const 
     { return 1; }
@@ -1342,8 +1345,8 @@ namespace ngfem
   public:
     BlockLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int adim, int acomp);
 
-    virtual bool BoundaryForm () const
-    { return lfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return lfi->VB(); }
 
 
     virtual void 
@@ -1367,7 +1370,7 @@ namespace ngfem
       : lfi(alfi), factor(afactor)
     { ; }
 
-    virtual bool BoundaryForm () const { return lfi->BoundaryForm(); } 
+    virtual VorB VB () const { return lfi->VB(); } 
     virtual void CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
 
 
@@ -1441,8 +1444,8 @@ namespace ngfem
     CompoundLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int acomp)
       : lfi(alfi), comp(acomp) { ; }
 
-    virtual bool BoundaryForm () const
-    { return lfi->BoundaryForm(); }
+    virtual VorB VB () const
+    { return lfi->VB(); }
 
 
     virtual void 
@@ -1505,8 +1508,8 @@ namespace ngfem
       return lfi[dim];
     }
 
-    virtual bool BoundaryForm () const
-    { return any_dim->BoundaryForm(); }
+    virtual VorB VB () const
+    { return any_dim->VB(); }
     virtual int DimElement () const
     { throw Exception("BFI AnyDim - DimElement not available"); }
     virtual int DimSpace () const

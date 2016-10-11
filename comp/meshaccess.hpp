@@ -247,6 +247,9 @@ namespace ngcomp
     /// number of boundary elements
     int GetNSE() const { return nelements_cd[1]; }
 
+    /// number of elements of co dimension 2
+    int GetNCD2E() const { return nelements_cd[2]; }
+
     /// number of volume or boundary elements
     int GetNE(VorB vb) const { return ne_vb[vb]; } 
 
@@ -795,25 +798,34 @@ namespace ngcomp
     /// returns the transformation from the reference element to physical element.
     /// Given a point in the refrence element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
-    ngfem::ElementTransformation & GetTrafo (int elnr, bool boundary, Allocator & lh) const;
+    ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const;
 
     ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const    
     {
-      return GetTrafo (ei.Nr(), ei.IsBoundary(), lh);
+      return GetTrafo(ei.Nr(),ei.IsBoundary() ? BND : (ei.IsCoDim2() ? BBND : VOL),lh);
     }
 
     template <int DIM>
     ngfem::ElementTransformation & GetTrafoDim (int elnr, Allocator & lh) const;
     template <int DIM>
     ngfem::ElementTransformation & GetSTrafoDim (int elnr, Allocator & lh) const;
+    template <int DIM>
+      ngfem::ElementTransformation & GetCD2TrafoDim (int elnr, Allocator & lh) const;
 
     template <VorB VB,int DIM>
       ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const
     {
-      if (VB == VOL)
-        return GetTrafoDim<DIM> (ei.Nr(), lh);
-      else
-        return GetSTrafoDim<DIM> (ei.Nr(), lh);
+      switch(VB)
+	{
+	case VOL:
+	  return GetTrafoDim<DIM> (ei.Nr(), lh);
+	case BND:
+	  return GetSTrafoDim<DIM> (ei.Nr(), lh);
+	case BBND:
+	  return GetCD2TrafoDim<DIM> (ei.Nr(),lh);
+	default:
+	  __assume(false);
+	}
     }
     
 

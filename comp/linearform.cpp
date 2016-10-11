@@ -350,6 +350,10 @@ namespace ngcomp
 		  progress.Update();
 		  const FiniteElement & fel = fespace->GetFE(el,lh);
 		  ElementTransformation & eltrans = ma -> GetTrafo(el, lh);
+		  Vec<3> point1, point2;
+		  eltrans.CalcPoint(IntegrationPoint(0),point1);
+		  eltrans.CalcPoint(IntegrationPoint(1),point2);
+		  (*testout) << "segment: " << point1 << " -> " << point2 << endl;
 		  for (int j=0; j< parts.Size(); j++)
 		    {
 		      (*testout) << "on element " << el.Nr() << ", index: " << el.GetIndex() << endl;
