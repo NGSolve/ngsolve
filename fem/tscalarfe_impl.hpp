@@ -55,17 +55,20 @@ namespace ngfem
   CalcShape (const IntegrationRule & ir, SliceMatrix<> shape) const
   {
     for (int i = 0; i < ir.Size(); i++)
-      {
-        /*
-	Vec<DIM> pt = ir[i].Point();
-	T_CalcShape (TIP<DIM,double> (pt), shape.Col(i));
-        */
-        // TIP<DIM,double> pt = ir[i];
-	T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
-      }
+      T_CalcShape (TIP<DIM,double> (ir[i]), shape.Col(i));        
   }
 
-
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcShape (const SIMD_IntegrationRule & ir, ABareMatrix<> shapes) const
+  {
+    for (size_t i = 0; i < ir.Size(); i++)
+      T_CalcShape (ir[i].TIp<DIM>(),
+                   SBLambda([&](size_t j, SIMD<double> shape)
+                            { shapes.Get(j,i) = shape; } ));
+  }
+  
+  
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   double T_ScalarFiniteElement<FEL,ET,BASE> :: 
   Evaluate (const IntegrationPoint & ip, SliceVector<double> x) const
@@ -829,6 +832,37 @@ namespace ngfem
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
   }
 
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> :: 
+  CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                    ABareMatrix<> dshapes) const
+  {
+   if (bmir.DimSpace() == DIM)
+      {
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            SIMD<double> * pdshapes = &dshapes.Get(0,i);
+            const size_t dist = dshapes.Dist();
+            
+            TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
+            T_CalcShape (adp,
+                         SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
+                                   { 
+                                     Iterate<DIM> ( [&] (auto ii) {
+                                         *pdshapes = shape.DValue(ii.value);
+                                         pdshapes += dist;
+                                       });
+                                   }));
+          }
+      }
+   else
+     {
+       cout << "EvaluateGrad(simd) called for boudnary (not implemented)" << endl;        
+     }
+  }
+  
 
   /*
     ... not yet working

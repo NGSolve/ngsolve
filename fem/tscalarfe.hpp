@@ -43,6 +43,10 @@ namespace ngfem
 #ifndef FASTCOMPILE
     HD NGS_DLL_HEADER virtual void CalcShape (const IntegrationRule & ir, 
                                               SliceMatrix<> shape) const;
+    /// compute shape, row is shape nr, col is ip nr
+    HD NGS_DLL_HEADER 
+    virtual void CalcShape (const SIMD_IntegrationRule & ir, 
+                            ABareMatrix<> shape) const;
     
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, 
 					       SliceVector<double> x) const;
@@ -111,6 +115,10 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void CalcMappedDShape (const MappedIntegrationRule<DIM,DIM> & mip, 
 				   SliceMatrix<> dshape) const;
 
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                   ABareMatrix<> dshapes) const;
+    
 #endif
 
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;

@@ -63,6 +63,11 @@ namespace ngfem
       Cast(fel).CalcMappedDShape (mir, Trans(mat));
     }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    {
+      Cast(fel).CalcMappedDShape (mir, mat);      
+    }
+    
     ///
     template <typename MIP, class TVX, class TVY>
     static void Apply (const FiniteElement & fel, const MIP & mip,
@@ -241,6 +246,13 @@ namespace ngfem
       Cast(fel).CalcShape (mir.IR(), Trans(mat));
     }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      ABareMatrix<> mat)
+    {
+      Cast(fel).CalcShape (mir.IR(), mat);      
+    }
+   
     template <typename MIP, class TVX, class TVY>
     static void Apply (const FiniteElement & fel, const MIP & mip,
 		       const TVX & x, TVY & y,
