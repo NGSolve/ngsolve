@@ -3322,11 +3322,11 @@ namespace ngfem
                                         void * precomputed,
                                         LocalHeap & lh) const
   {
-    static Timer t("SymbolicEnergy::ApplyElementMatrix"); 
-    static Timer ts("SymbolicEnergy::ApplyElementMatrix start");
-    static Timer ta("SymbolicEnergy::ApplyElementMatrix apply");
-    static Timer tc("SymbolicEnergy::ApplyElementMatrix coef");
-    static Timer tt("SymbolicEnergy::ApplyElementMatrix applyT"); 
+    static Timer t("SymbolicEnergy::ApplyElementMatrix", 2); 
+    static Timer ts("SymbolicEnergy::ApplyElementMatrix start", 2);
+    static Timer ta("SymbolicEnergy::ApplyElementMatrix apply", 2);
+    static Timer tc("SymbolicEnergy::ApplyElementMatrix coef", 2);
+    static Timer tt("SymbolicEnergy::ApplyElementMatrix applyT", 2); 
     
     ProxyUserData ud(trial_proxies.Size(), lh);        
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
