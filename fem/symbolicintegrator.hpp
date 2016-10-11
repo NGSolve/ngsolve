@@ -281,7 +281,17 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
   }
-  
+
+  NGS_DLL_HEADER virtual void
+  CalcMatrix (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              ABareMatrix<double> mat) const
+  {
+    // mat = 0;   // take care: unused elements not zerod !!!!
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = Dim() * fel.GetRange(comp);
+    diffop->CalcMatrix (fel[comp], mir, mat.Rows(r));
+  }
   
   NGS_DLL_HEADER virtual void
   Apply (const FiniteElement & bfel,

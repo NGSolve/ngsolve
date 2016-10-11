@@ -82,6 +82,16 @@ namespace ngfem
     DIFFOP::GenerateMatrixIR (bfel, mir, mat, lh);
   }
 
+  template <typename DIFFOP>
+  void T_DifferentialOperator<DIFFOP> ::
+  CalcMatrix (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              ABareMatrix<double> mat) const
+  {
+    DIFFOP::GenerateMatrixSIMDIR (bfel, bmir, mat);
+  }
+
+  
   
 #ifndef FASTCOMPILE
   template <typename DIFFOP>

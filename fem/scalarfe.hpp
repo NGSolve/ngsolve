@@ -51,6 +51,10 @@ namespace ngfem
     virtual void CalcShape (const IntegrationRule & ir, 
                             SliceMatrix<> shape) const;
   
+    /// compute shape, row is shape nr, col is ip nr
+    HD NGS_DLL_HEADER 
+    virtual void CalcShape (const SIMD_IntegrationRule & ir, 
+                            ABareMatrix<> shape) const;
     
     /**
        Evaluates function in integration point ip.
@@ -129,6 +133,11 @@ namespace ngfem
     virtual void CalcMappedDShape (const MappedIntegrationRule<D,D> & mir, 
                                    SliceMatrix<> dshapes) const;
 
+    // rows dim*ndof, cols .. nip
+    // rows:  phi0/dx, phi0/dy, phi0/dz, phi1/dx ... 
+    HD NGS_DLL_HEADER 
+    virtual void CalcMappedDShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                   ABareMatrix<> dshapes) const;
 
 
     /*
