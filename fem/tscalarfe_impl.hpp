@@ -844,14 +844,14 @@ namespace ngfem
         for (size_t i = 0; i < mir.Size(); i++)
           {
             SIMD<double> * pdshapes = &dshapes.Get(0,i);
-            const size_t dist = dshapes.Dist();
+            size_t dist = dshapes.Dist();
             
             TIP<DIM,AutoDiffRec<DIM,SIMD<double>>> adp = GetTIP(mir[i]);
             T_CalcShape (adp,
                          SBLambda ([&] (size_t j, AutoDiffRec<DIM,SIMD<double>> shape)
                                    { 
-                                     Iterate<DIM> ( [&] (auto ii) {
-                                         *pdshapes = shape.DValue(ii.value);
+                                     Iterate<DIM> ( [&] (size_t ii) {
+                                         *pdshapes = shape.DValue(ii);
                                          pdshapes += dist;
                                        });
                                    }));
