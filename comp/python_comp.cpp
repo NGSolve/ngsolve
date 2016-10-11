@@ -1268,11 +1268,16 @@ void NGS_DLL_HEADER ExportNgcomp()
                 return;
               }
 
-            LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            // LocalHeap lh(heapsize, "GridFunction::Set-lh", true);
             if (reg)
-              SetValues (cf.Get(), *self.Get(), *reg, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), *reg, NULL, glh);
             else
-              SetValues (cf.Get(), *self.Get(), boundary, NULL, lh);
+              SetValues (cf.Get(), *self.Get(), boundary, NULL, glh);
           }),
           bp::default_call_policies(),        // need it to use arguments
          (bp::arg("self"),bp::arg("coefficient"),
