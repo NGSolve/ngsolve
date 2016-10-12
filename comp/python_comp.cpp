@@ -864,6 +864,10 @@ void NGS_DLL_HEADER ExportNgcomp()
                                              }
                                          }));
 
+  bp::def("SetTestoutFile", FunctionPointer([](string filename)
+                                            {
+                                              testout = new ofstream (filename);
+                                            }));
   
   //////////////////////////////////////////////////////////////////////////////////////////
   bp::class_<PyFES>("FESpace",  "a finite element space", bp::no_init)
