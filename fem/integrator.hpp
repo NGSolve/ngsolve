@@ -701,6 +701,42 @@ namespace ngfem
       throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
     }
 
+
+    // calculate traces in integration points
+    virtual FlatVector<double> 
+      CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                       FlatVector<double> elx, LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
+    }
+    virtual FlatVector<Complex> 
+      CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                       FlatVector<Complex> elx, LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
+    }
+    virtual void
+      AppplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+                             const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                             FlatVector<double> trace_me, FlatVector<double> trace_you,
+                             FlatVector<double> ely, LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
+    }
+    
+    virtual void
+      AppplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+                             const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+                             FlatVector<Complex> trace_me, FlatVector<Complex> trace_you,
+                             FlatVector<Complex> ely, LocalHeap & lh) const
+    { 
+      throw Exception ("FacetBilinearFormIntegrator::ApplyFromTraceValues not implemented!");
+    }
+
+
+    
   };
 
 
