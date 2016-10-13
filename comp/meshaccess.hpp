@@ -436,11 +436,7 @@ namespace ngcomp
 
     /// the sub-domain indices next to boundary element. 
     /// returns -1 for void
-    void GetSElNeighbouringDomains(const int elnr, int & in, int & out) const
-    { 
-      Ng_GetSurfaceElementNeighbouringDomains(elnr+1,in,out);
-      //in--; out--;
-    }
+    void GetSElNeighbouringDomains(const int elnr, int & in, int & out) const;
   
 
     /// update buffered global quantities.
