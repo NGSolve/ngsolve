@@ -2986,7 +2986,11 @@ namespace ngcomp
                                  timerDG1.Stop();
                                  
                                  if (elnums.Size()<2)
-                                   {
+                                   {   
+#ifdef PARALLEL                                     
+                                     if (ma->GetDistantProcs (Node(NT_FACET, i)).Size() > 0)
+                                       continue;      // TODO ... checking
+#endif
                                      RegionTimer reg(timerDGfacet);
                                      
                                      ma->GetFacetSurfaceElements (facet, elnums);
@@ -3084,7 +3088,72 @@ namespace ngcomp
 
 
 
+#ifdef PARALLEL
+                    // loop over interfaces
+                    // loop 1 ... allocate
+                    // loop 2 ... compute send-data
+                    // loop 3 ... compute DG
+                    Table<SCAL> send_table;
+                    Array<int> cnt( ma->GetCommunicator()   -> Rank);
+                    for (int loop = 1; loop <= 3; loop++)
+                      {
+                        cnt = 0;
+                        for (size_t i : Range(0, ma->GetNFacets()))
+                          {
+                            FlatArray<int> dist = ma->GetDistantProcs (Node(NT_FACET, i));
+                            int d = dist[0];
+                            if (dist.Size() == 0) continue;
+                            
+                            int facet = colfacets[i];
+                            ma->GetFacetElements (facet, elnums); // must be one element
+                            ElementId el(VOL, elnums[0]);
+                            
+                            const FiniteElement & fel = fespace->GetFE (el, lh);
+                            Array<int> dnums(fel.GetNDof(), lh);
+                            ma->GetElVertices (el, vnums);
 
+                            ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+                            fespace->GetDofNrs (el, dnums);
+
+                            for (auto igt : volume_skeleton_parts)
+                              {
+                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh);
+                                x.GetIndirect(dnums, elx);
+
+                                FlatVector<SCAL> trace_values = 
+                                  dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
+                                  CalcTraceValues(fel,facetnr,eltrans,vnums, elx, lh);
+                                
+                                if (loop == 1)
+                                  cnt[d] += trace_values.Size();
+                                else if (loop == 2)
+                                  {
+                                    FlatVector<SCAL> tmp(trace_values.Size(), send_table[d][cnt[d]]);
+                                    tmp = trace_values;
+                                    cnt[d] += trace_values.Size();
+                                  }
+                                else
+                                  {
+                                    FlatVector<SCAL> ely(dnums.Size()*this->fespace->GetDimension(), lh);
+                                    FlatVector<SCAL> other(trace_values.Size(), recv_table[d][cnt[d]]);
+
+                                    dynamic_cast<const FacetBilinearFormIntegrator&>(bfi).  
+                                      ApplyFromFromTraceValues(fel,facetnr,eltrans,vnums, trace_values, other, ely, lh);
+                                     y.AddIndirect(dnums, ely);
+                                  }
+                              } //end for (numintegrators)
+
+                            if (loop == 1)
+                              send_table = Table<SCAL> (cnt);
+                            else if (loop == 2)
+                              {
+                                mpi - exchange ..
+                              }
+                          }
+                        ...
+                      }
+                    
+#endif
 
                     
 
