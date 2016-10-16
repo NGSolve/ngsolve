@@ -505,9 +505,7 @@ namespace ngcomp
     
     INLINE Ngs_Element GetElement (ElementId ei) const
     {
-      int hdim = dim;
-      if (ei.IsBoundary()) hdim--;
-      if (ei.IsCoDim2()) hdim -= 2;
+      int hdim = dim - int(ei.VB());
       switch (hdim)
 	{
         case 0:	return Ngs_Element (mesh.GetElement<0> (ei.Nr()), ei);
@@ -802,7 +800,7 @@ namespace ngcomp
 
     ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const    
     {
-      return GetTrafo(ei.Nr(),ei.IsBoundary() ? BND : (ei.IsCoDim2() ? BBND : VOL),lh);
+      return GetTrafo(ei.Nr(),ei.VB(),lh);
     }
 
     template <int DIM>

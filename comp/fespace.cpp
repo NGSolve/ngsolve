@@ -630,19 +630,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FiniteElement & FESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     LocalHeap & lh = dynamic_cast<LocalHeap&> (alloc);
-    const FiniteElement & el;
     switch(ei.VB())
       {
       case VOL:
-	el = GetFE(ei.Nr(),lh);
-	break;
+	return const_cast<FiniteElement&>(GetFE(ei.Nr(),lh));
       case BND:
-	el = GetSFE(ei.Nr(),lh);
-	break;
+	return const_cast<FiniteElement&>(GetSFE(ei.Nr(),lh));
       case BBND:
-	el = GetCD2FE(ei.Nr(),lh);
+	return const_cast<FiniteElement&>(GetCD2FE(ei.Nr(),lh));
+      default:
+	__assume(false);
       }
-    return const_cast<FiniteElement&> (el);
   }
   
 

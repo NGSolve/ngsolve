@@ -1061,7 +1061,7 @@ void NGS_DLL_HEADER ExportNgfem() {
                            }),
           bp::default_call_policies(),        // need it to use named arguments
           (bp::arg("et")=ET_TRIG,bp::arg("vertices"))))
-    .add_property("is_boundary", &ElementTransformation::Boundary)
+    .add_property("VB", &ElementTransformation::VB)
     .add_property("spacedim", &ElementTransformation::SpaceDim)
     .add_property("elementid", &ElementTransformation::GetElementId)
     .def ("__call__", FunctionPointer

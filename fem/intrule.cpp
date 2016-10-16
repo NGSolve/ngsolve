@@ -326,6 +326,7 @@ namespace ngfem
   template class MappedIntegrationRule<2,2>;
   template class MappedIntegrationRule<3,3>;
   template class MappedIntegrationRule<1,2>;
+  template class MappedIntegrationRule<1,3>;
   template class MappedIntegrationRule<2,3>;
 
   template class MappedIntegrationRule<1,1, Complex>;
@@ -3040,6 +3041,7 @@ namespace ngfem
   template class SIMD_MappedIntegrationRule<2,2>;
   template class SIMD_MappedIntegrationRule<3,3>;
   template class SIMD_MappedIntegrationRule<1,2>;
+  template class SIMD_MappedIntegrationRule<1,3>;
   template class SIMD_MappedIntegrationRule<2,3>;
 
   template class SIMD_MappedIntegrationRule<0,2>;
