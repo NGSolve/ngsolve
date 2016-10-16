@@ -1128,8 +1128,13 @@ void NGS_DLL_HEADER ExportNgcomp()
         ( [] (const PyFES & self,
               PyCF rho, shared_ptr<BaseVector> vec, int heapsize)
           {
-            LocalHeap lh(heapsize, "solveM - lh", true);
-            self->SolveM(*rho.Get(), *vec, lh);
+            // LocalHeap lh(heapsize, "solveM - lh", true);
+            if (heapsize > global_heapsize)
+              {
+                global_heapsize = heapsize;
+                glh = LocalHeap(heapsize, "python-comp lh", true);
+              }
+            self->SolveM(*rho.Get(), *vec, glh);
           }),
         (bp::args("self"), 
          bp::args("rho"), bp::args("vec"), bp::args("heapsize")=1000000))
@@ -1333,9 +1338,12 @@ void NGS_DLL_HEADER ExportNgcomp()
     .def("Deriv", FunctionPointer
          ([](PyGF self) -> PyCF
           {
-            return PyCF(make_shared<GridFunctionCoefficientFunction> (self.Get(),
-                                                                 self->GetFESpace()->GetFluxEvaluator(),
-                                                                 self->GetFESpace()->GetFluxEvaluator(BND)));
+            auto sp = make_shared<GridFunctionCoefficientFunction> (self.Get(),
+                                                                    self->GetFESpace()->GetFluxEvaluator(),
+                                                                    self->GetFESpace()->GetFluxEvaluator(BND));
+            // sp->SetComplex(self->GetFESpace()->IsComplex()); 
+            sp->SetDimensions(sp->Dimensions());
+            return PyCF (sp);
           }))
 
     .def("Operator", FunctionPointer

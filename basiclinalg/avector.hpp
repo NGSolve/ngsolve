@@ -308,7 +308,7 @@ namespace ngbla
     enum { IS_LINEAR = false };
     enum { IS_LINEAR_VEC = true };
     
-    size_t Size () const { return h*w; }
+    // size_t Size () const { return h*w; }
     size_t Height () const { return h; }
     size_t Width () const { return w; }
     // unsigned int VWidth() const { return (unsigned(w)+3)/4; }
@@ -329,9 +329,11 @@ namespace ngbla
 
     const AFlatMatrixD & operator= (const AFlatMatrixD & m2) const
     {
-      size_t vw = VWidth();
-      for (size_t i = 0; i < h*vw; i++)
-        data[i] = m2.data[i];
+      size_t els = h*VWidth();
+      SIMD<double> * hdata = data;
+      SIMD<double> * hdata2 = m2.data;
+      for (size_t i = 0; i < els; i++)
+        hdata[i] = hdata2[i];
       return *this;
     }
   
