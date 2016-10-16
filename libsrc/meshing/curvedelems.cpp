@@ -3686,6 +3686,7 @@ namespace netgen
       }
   }
 
+
   template void CurvedElements :: 
   CalcMultiPointSegmentTransformation<2> (SegmentIndex elnr, int npts,
 					  const double * xi, size_t sxi,
