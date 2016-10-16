@@ -16,7 +16,7 @@ namespace ngfem
 
 
 struct PythonCoefficientFunction : public CoefficientFunction {
-    PythonCoefficientFunction() { }
+  PythonCoefficientFunction() : CoefficientFunction(1,false) { ; }
 
     virtual double EvaluateXYZ (double x, double y, double z) const = 0;
 
@@ -237,8 +237,8 @@ struct GenericConj {
   class NormalVectorCF : public CoefficientFunction
   {
   public:
-    NormalVectorCF () { ; }
-    virtual int Dimension() const { return D; }
+    NormalVectorCF () : CoefficientFunction(D,false) { ; }
+    // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
@@ -292,8 +292,8 @@ struct GenericConj {
   class TangentialVectorCF : public CoefficientFunction
   {
   public:
-    TangentialVectorCF () { ; }
-    virtual int Dimension() const { return D; }
+    TangentialVectorCF () : CoefficientFunction(D,false) { ; }
+    // virtual int Dimension() const { return D; }
 
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
@@ -312,7 +312,7 @@ struct GenericConj {
   {
     int dir;
   public:
-    CoordCoefficientFunction (int adir) : dir(adir) { ; }
+    CoordCoefficientFunction (int adir) : CoefficientFunction(1, false), dir(adir) { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       return ip.GetPoint()(dir);
@@ -366,7 +366,8 @@ void ExportCoefficientFunction()
                              if (dims)
                                {
                                  Array<int> cdims = makeCArray<int> (dims);
-                                 dynamic_pointer_cast<VectorialCoefficientFunction> (coef->Get())->SetDimensions(cdims);
+                                 // dynamic_pointer_cast<VectorialCoefficientFunction> (coef->Get())->SetDimensions(cdims);
+                                 coef->Get()->SetDimensions(cdims);
                                }
                              return coef;
                            }),
@@ -422,7 +423,7 @@ void ExportCoefficientFunction()
                                          {
                                            if (bp::len(comps) != 2)
                                              bp::exec("raise IndexError()\n");
-                                           Array<int> dims = self->Dimensions();
+                                           FlatArray<int> dims = self->Dimensions();
                                            if (dims.Size() != 2)
                                              bp::exec("raise IndexError()\n");
                                            
@@ -588,7 +589,7 @@ void ExportCoefficientFunction()
   {
     int dir;
   public:
-    CoordCoefficientFunction (int adir) : dir(adir) { ; }
+    CoordCoefficientFunction (int adir) : CoefficientFunction(1, false), dir(adir) { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       return ip.GetPoint()(dir);
@@ -637,7 +638,7 @@ void ExportCoefficientFunction()
   class MeshSizeCF : public CoefficientFunction
   {
   public:
-    MeshSizeCF () { ; }
+    MeshSizeCF () : CoefficientFunction(1, false) { ; }
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const 
     {
       if (ip.IP().FacetNr() != -1) // on a boundary facet of the element

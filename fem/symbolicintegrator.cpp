@@ -11,7 +11,8 @@
 
 namespace ngfem
 {
-  
+
+  /*
   Array<int> ProxyFunction ::
   Dimensions() const
   {
@@ -22,6 +23,7 @@ namespace ngfem
     else
       return Array<int> ({dim/blockdim, blockdim});
   }
+  */
 
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -141,6 +143,10 @@ namespace ngfem
 
     if (!testfunction && ud->fel)
       {
+        static bool first = true;
+        if (first) cerr << "ProxyFunction::Evaluate ... should not be here" << endl;
+        first = false;
+        
         evaluator->Apply (*ud->fel, mip, *ud->elx, result, *ud->lh);
         return;
       }
@@ -180,6 +186,7 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationRule & ir,
             FlatMatrix<Complex> result) const
   {
+    size_t dim = Dimension();
     STACK_ARRAY(double, hmem, ir.Size()*dim);
     FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
     Evaluate (ir, temp);
@@ -200,7 +207,12 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetAMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::Evaluate(simd_mir) ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result); // , *ud->lh);
+          }
         return;
       }
 
@@ -216,7 +228,7 @@ namespace ngfem
             FlatArray<AFlatMatrix<double>*> input,
             AFlatMatrix<double> result) const
   {
-    Evaluate (mir, result);
+    ProxyFunction::Evaluate (mir, result);
   }
 
   
@@ -226,7 +238,6 @@ namespace ngfem
   {
     STACK_ARRAY(double, hmem, result.Size());
     FlatVector<> result_double(result.Size(), &hmem[0]);
-    // Vector<> result_double(result.Size());
     Evaluate (ip, result_double);
     result = result_double;
   }
@@ -250,7 +261,12 @@ namespace ngfem
         if (ud->HasMemory(this))
           result = ud->GetMemory (this);          
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
       }
     t.Stop();
     
@@ -280,14 +296,79 @@ namespace ngfem
         if (ud->HasMemory (this))
           result = ud->GetMemory (this);
         else
-          evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result, *ud->lh);
+          }
       }
     if (ud->testfunction == this)
       deriv.Col(ud->test_comp) = 1;
     if (ud->trialfunction == this)
       deriv.Col(ud->trial_comp) = 1;
   }
+  
+  void ProxyFunction ::
+  EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                 AFlatMatrix<double> result, AFlatMatrix<double> deriv) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
 
+    result = 0;
+    deriv = 0;
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          result = ud->GetAMemory (this);
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+          }
+      }
+    if (ud->testfunction == this)
+      deriv.Row(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv.Row(ud->trial_comp) = 1;
+  }
+  
+  void ProxyFunction ::
+  EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & mir, 
+                  AFlatMatrix<double> result, AFlatMatrix<double> deriv,
+                  AFlatMatrix<double> dderiv) const
+  {
+    ProxyUserData * ud = (ProxyUserData*)mir.GetTransformation().userdata;
+    if (!ud) 
+      throw Exception ("cannot evaluate ProxyFunction");
+
+    result = 0;
+    deriv = 0;
+    dderiv = 0;
+
+    if (!testfunction && ud->fel)
+      {
+        if (ud->HasMemory (this))
+          result = ud->GetAMemory (this);
+        else
+          {
+            static bool first = true;
+            if (first) cerr << "ProxyFunction::EvaluateDDeriv ... should not be here" << endl;
+            first = false;
+            evaluator->Apply (*ud->fel, mir, *ud->elx, result);
+          }
+      }
+    if (ud->testfunction == this)
+      deriv.Row(ud->test_comp) = 1;
+    if (ud->trialfunction == this)
+      deriv.Row(ud->trial_comp) = 1;
+  }
+  
   void ProxyFunction ::  
   NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
   {
@@ -1514,16 +1595,12 @@ namespace ngfem
     ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
       {
-        // ud.remember[proxy] = Matrix<> (ir.Size(), proxy->Dimension());
-        // proxy->Evaluator()->Apply(fel, mir, elveclin, ud.remember[proxy], lh);
         ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
         proxy->Evaluator()->Apply(fel, mir, elveclin, ud.GetMemory(proxy), lh);
       }
     
-    FlatMatrix<> val(mir.Size(), 1,lh), deriv(mir.Size(), 1,lh);
-    
+    FlatMatrix<> val(mir.Size(), 1, lh), deriv(mir.Size(), 1, lh);
     elmat = 0;
-               
     
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
@@ -1580,11 +1657,6 @@ namespace ngfem
               IntRange r2 = proxy2->Evaluator()->UsedDofs(fel);
               elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1) | Lapack;
             }
-
-
-
-
-          
         }
   }
 
@@ -1612,8 +1684,6 @@ namespace ngfem
     ud.lh = &lh;
     */
     elmat = 0;
-
-
 
       auto eltype = trafo.GetElementType();
       int nfacet = ElementTopology::GetNFacets(eltype);

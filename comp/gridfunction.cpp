@@ -64,7 +64,10 @@ namespace ngcomp
                                        shared_ptr<DifferentialOperator>(),
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       fespace(afespace)
-  { 
+  {
+    is_complex = fespace->IsComplex();
+    if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
+      SetDimensions (GridFunctionCoefficientFunction::Dimensions());
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
@@ -926,8 +929,9 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp)
-    : gf(agf), diffop (NULL), comp (acomp) 
+    : CoefficientFunction(1, agf->GetFESpace()->IsComplex()), gf(agf), diffop (NULL), comp (acomp) 
   {
+    SetDimensions (gf->Dimensions());
     diffop = gf->GetFESpace()->GetEvaluator();
   }
 
@@ -936,17 +940,19 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
                                    int acomp)
-    : gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
+    : CoefficientFunction(1, false),
+      gf(agf), diffop (adiffop), trace_diffop(atrace_diffop), comp (acomp) 
   {
-    ;
+    ; // SetDimensions (gf->Dimensions());    
   }
 
   GridFunctionCoefficientFunction :: 
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
 				   shared_ptr<BilinearFormIntegrator> abfi, int acomp)
-    : gf(agf), bfi (abfi), comp (acomp) 
+    : CoefficientFunction(1, agf->IsComplex()),
+      gf(agf), bfi (abfi), comp (acomp) 
   {
-    ;
+    SetDimensions (gf->Dimensions());    
   }
 
 
@@ -970,10 +976,15 @@ namespace ngcomp
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
+    cout << "ask for Dimensions" << endl;
     int d = Dimension();
-    int spacedim = gf->GetFESpace()->GetDimension();
-    if (diffop && spacedim > 1)
-      return Array<int> ( { spacedim, d/spacedim } );
+    cout << "d = " << d << endl;
+    if (diffop)
+      {
+        int spacedim = gf->GetFESpace()->GetDimension();
+        if (spacedim > 1)
+          return Array<int> ( { spacedim, d/spacedim } );
+      }
     return Array<int>( { d } );
   }
 
@@ -1100,7 +1111,8 @@ namespace ngcomp
   }
   
   bool GridFunctionCoefficientFunction::IsComplex() const
-  { 
+  {
+    cout << "check for complex" << endl;
     return gf->GetFESpace()->IsComplex(); 
   }
 
