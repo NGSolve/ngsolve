@@ -23,7 +23,7 @@ namespace ngcomp
   public:
     Ng_ElementTransformation (const MeshAccess * amesh,
                               ELEMENT_TYPE aet, ElementId ei, int elindex) 
-      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+      : ElementTransformation(aet, ei, elindex), 
         mesh(amesh) 
     {
       iscurved = true;
@@ -41,15 +41,10 @@ namespace ngcomp
     {
       return DIMR;
     }
-    
-    virtual bool Boundary() const
-    {
-      return DIMS+1 == DIMR;
-    }
 
-    virtual bool CoDim2() const
+    virtual VorB VB() const
     {
-      return DIMS+2 == DIMR;
+      return VorB(int(DIMR)-int(DIMS));
     }
 
     virtual bool BelongsToMesh (const void * mesh2) const 
@@ -500,7 +495,7 @@ namespace ngcomp
   public:
     INLINE Ng_ConstElementTransformation (const MeshAccess * amesh,
                                           ELEMENT_TYPE aet, ElementId ei, int elindex) 
-      : ElementTransformation(aet, ei.IsBoundary(), ei.Nr(), elindex), 
+      : ElementTransformation(aet, ei, elindex), 
         mesh(amesh) 
     { 
       iscurved = false;
@@ -615,12 +610,12 @@ namespace ngcomp
     {
       return DIMR;
     }
-    
-    virtual bool Boundary() const
-    {
-      return DIMS < DIMR;
-    }
 
+    virtual VorB VB() const
+    {
+      return VorB(int(DIMR)-int(DIMS));
+    }
+    
     virtual bool BelongsToMesh (const void * mesh2) const 
     {
       // return mesh == &(static_cast<const MeshAccess*> (mesh2) -> mesh);
@@ -1534,7 +1529,7 @@ namespace ngcomp
   
     LocalHeapMem<10000> lh("MeshAccess - elementvolume");
 
-    ElementTransformation & trans = GetTrafo (elnr, false, lh);
+    ElementTransformation & trans = GetTrafo (elnr, VOL, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 1)
@@ -1581,7 +1576,7 @@ namespace ngcomp
 
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
-    ElementTransformation & trans = GetTrafo (selnr, true, lh);
+    ElementTransformation & trans = GetTrafo (selnr, BND, lh);
     ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)

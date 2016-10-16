@@ -363,8 +363,7 @@ public:
     SymbolicLinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                   bool aelement_boundary);
 
-    virtual bool BoundaryForm() const { return vb==BND; }
-    virtual bool CoDim2Form() const { return vb==BBND; }
+    virtual VorB VB() const { return vb; }
     virtual string Name () const { return string ("Symbolic LFI"); }
     
     virtual void 
@@ -405,7 +404,7 @@ public:
     SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                     bool aelement_boundary);
 
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; }  // correct would be: don't know
     virtual string Name () const { return string ("Symbolic BFI"); }
 
@@ -552,7 +551,7 @@ public:
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb);
 
-    virtual bool BoundaryForm() const { return vb == BND; }
+    virtual VorB VB() const { return vb; }
     virtual bool IsSymmetric() const { return true; } 
     virtual string Name () const { return string ("Symbolic Energy"); }
     

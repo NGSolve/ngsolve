@@ -160,18 +160,11 @@ namespace ngfem
     int blockdim;
     VorB vb;
     int difforder;
-    static bool firsttime = true;
   public:
-    [[deprecated("Use DifferentialOperator(int,int,VorB,int) instead"]]
+    //[[deprecated("Use DifferentialOperator(int,int,VorB,int) instead")]]
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, bool boundary, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(boundary ? BND : VOL),  difforder(adifforder)
-    {
-      if(firsttime)
-	{
-	  cout << "WARNING: Usage of DifferentialOperator(int,int,bool,int) is deprecated, use DifferentialOperator(int,int,VorB,int) instead!" << endl;
-	  firsttime = false;
-	}
-    }
+     { ; }
     NGS_DLL_HEADER DifferentialOperator(int adim, int ablockdim, VorB avb, int adifforder)
       : dim(adim), blockdim(ablockdim), vb(avb), difforder(adifforder)
     { ; }
@@ -187,7 +180,7 @@ namespace ngfem
     int BlockDim() const { return blockdim; }
     /// does it live on the boundary ?
     //virtual bool Boundary() const { return false; }
-     [[deprecated("use VB() instead")]]
+    //[[deprecated("use VB() instead")]]
     bool Boundary() const { return vb == BND; }
     VorB VB() const { return vb; }
 

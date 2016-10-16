@@ -1206,38 +1206,36 @@ namespace ngfem
           for (int i = 0; i < mir.Size(); i++)
             {
               double len;
-	      switch(trafo.VB())
+	      if(trafo.VB()==BND && D != 3)
+		throw Exception("element boundary for surface elements is only possible in 3d");
+	      if(trafo.VB()==BBND)
+		throw Exception("CalcLinearizedEB not implemented for BBND elements");
+	      if(trafo.VB()==VOL)
 		{
-		case VOL:
-                  FlatVector< Vec<D> > normals = ElementTopology::GetNormals<D>(eltype);
-                  Vec<D> normal_ref = normals[k];
-                  auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (mir[i]);
-                  Mat<D> inv_jac = mip.GetJacobianInverse();
-                  double det = mip.GetMeasure();
-                  Vec<D> normal = det * Trans (inv_jac) * normal_ref;       
-                  len = L2Norm (normal);    // that's the surface measure 
-                  normal /= len;                   // normal vector on physical element
-                  
-                  const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
-
-		case BND:
-                  if (D != 3)
-                    throw Exception ("element boundary for surface elements is only possible in 3D");
-                  FlatVector< Vec<D-1> > normals = ElementTopology::GetNormals<D-1>(eltype);
-                  Vec<D-1> normal_ref = normals[k];
-
-                  auto & mip = static_cast<const MappedIntegrationPoint<2,3>&> (mir[i]);
-                  Mat<2,3> inv_jac = mip.GetJacobianInverse();
-                  double det = mip.GetMeasure();
-                  Vec<3> normal = det * Trans (inv_jac) * normal_ref;       
-                  len = L2Norm (normal);    // that's the surface measure
-                  normal /= len;                   // normal vector on physical element
-                  Vec<3> tang = Cross(normal, mip.GetNV());
-                  const_cast<MappedIntegrationPoint<2,3>&> (mip).SetTV(tang);
-
-		case BBND:
-		  throw Exception ("CalcLinearizedEB not implemented for BBND elements")
+		  FlatVector<Vec<D>> normals =  ElementTopology::GetNormals<D>(eltype);
+		  Vec<D> normal_ref = normals[k];
+		  auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(mir[i]);
+		  Mat<D> inv_jac = mip.GetJacobianInverse();
+		  double det = mip.GetMeasure();
+		  Vec<D> normal = det * Trans(inv_jac) * normal_ref;
+		  len = L2Norm(normal);
+		  normal /= len;
+		  const_cast<MappedIntegrationPoint<D,D>&> (mip).SetNV(normal);
 		  
+		}
+	      else
+		{
+		  FlatVector<Vec<2>> normals =  ElementTopology::GetNormals<2>(eltype);
+		  Vec<2> normal_ref = normals[k];
+		  auto & mip = static_cast<const MappedIntegrationPoint<2,3>&>(mir[i]);
+		  Mat<2,3> inv_jac = mip.GetJacobianInverse();
+		  double det = mip.GetMeasure();
+		  Vec<3> normal = det * Trans(inv_jac) * normal_ref;
+		  len = L2Norm(normal);
+		  normal /= len;
+		  const_cast<MappedIntegrationPoint<2,3>&> (mip).SetNV(normal);
+		  Vec<3> tang = Cross(normal,mip.GetNV());
+		  const_cast<MappedIntegrationPoint<2,3>&>(mip).SetTV(tang);
 		}
               measure(i) = len;
             }

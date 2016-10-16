@@ -63,7 +63,7 @@ namespace ngfem
     virtual ~Integrator();
 
     /// integrates on the boundary, or on the domain ?
-    [[deprecated("Use VB() instead")]]
+    //[[deprecated("Use VB() instead")]]
     virtual bool BoundaryForm () const
       { return VB() == BND; }
 

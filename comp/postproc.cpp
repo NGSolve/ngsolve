@@ -515,15 +515,17 @@ namespace ngcomp
     const FESpace & fes = *u.GetFESpace();
     const FESpace & fesflux = *flux.GetFESpace();
 
-    bool bound = bli->BoundaryForm();
+    VorB vb = bli->VB();
 
-    int ne      = bound ? ma->GetNSE() : ma->GetNE();
+    if(vb==BBND)
+      throw Exception("CalcError not implemented for co dim 2");
+
+    int ne      = ma->GetNE(vb);
     int dim     = fes.GetDimension();
     int dimflux = fesflux.GetDimension();
     int dimfluxvec = bli->DimFlux(); // fesflux.GetDimension();
 
-    shared_ptr<BilinearFormIntegrator> fluxbli =
-      bound ? fesflux.GetBoundaryIntegrator() : fesflux.GetIntegrator();
+    shared_ptr<BilinearFormIntegrator> fluxbli = vb==BND ? fesflux.GetBoundaryIntegrator() : fesflux.GetIntegrator();
 
     Array<int> dnums;
     Array<int> dnumsflux;
@@ -531,7 +533,7 @@ namespace ngcomp
     double sum = 0;
     for (int i = 0; i < ne; i++)
       {
-        ElementId ei(VorB(bound),i);
+        ElementId ei(vb,i);
 
 	HeapReset hr(lh);
 	ma->SetThreadPercentage ( 100.0*i / ne );
@@ -542,20 +544,11 @@ namespace ngcomp
 	if (!domains[eldom]) continue;
 
 	const FiniteElement & fel = fes.GetFE(ei, lh);
-	const FiniteElement & felflux = 
-	  (bound ? fesflux.GetSFE(i, lh) : fesflux.GetFE (i, lh));
+	const FiniteElement & felflux = fesflux.GetFE(ei, lh);
 
-	ElementTransformation & eltrans = ma->GetTrafo (i, bound, lh);
-	if (bound)
-	  {
-	    fes.GetSDofNrs (i, dnums);
-	    fesflux.GetSDofNrs (i, dnumsflux);
-	  }
-	else
-	  {
-	    fes.GetDofNrs (i, dnums);
-	    fesflux.GetDofNrs (i, dnumsflux);
-	  }
+	ElementTransformation & eltrans = ma->GetTrafo (i, vb, lh);
+	fes.GetDofNrs(ei,dnums);
+	fesflux.GetDofNrs(ei,dnumsflux);
 
 	FlatVector<SCAL> elu(dnums.Size() * dim, lh);
 	FlatVector<SCAL> elflux(dnumsflux.Size() * dimflux, lh);
@@ -564,9 +557,9 @@ namespace ngcomp
 
 
 	u.GetElementVector (dnums, elu);
-	fes.TransformVec (i, bound, elu, TRANSFORM_SOL);
+	fes.TransformVec (i, vb, elu, TRANSFORM_SOL);
 	flux.GetElementVector (dnumsflux, elflux);
-	fesflux.TransformVec (i, bound, elflux, TRANSFORM_SOL);
+	fesflux.TransformVec (i, vb, elflux, TRANSFORM_SOL);
 
 	IntegrationRule ir(felflux.ElementType(), 2*felflux.Order());
 

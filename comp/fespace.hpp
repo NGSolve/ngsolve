@@ -79,7 +79,7 @@ namespace ngcomp
     int level_updated;
 
     /// on which subdomains is the space defined ?
-    Array<bool>[] definedon = Array<bool>[3];
+    Array<bool> definedon[3];
 
     /// prototype: what are the Dirichlet boundaries ?
     BitArray dirichlet_boundaries;
@@ -306,7 +306,7 @@ namespace ngcomp
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
         : IntRange(ar), fes(afes), 
-          definedon(fes.definedon[avb].Size,fes.definedon[avb].Addr(0)),
+          definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
           // definedon( (avb==VOL) ? FlatArray<bool> (fes.definedon) : FlatArray<bool> (fes.definedonbound)), 
           vb(avb), mylh(), lh(lh2)
       { ; }
@@ -430,19 +430,19 @@ namespace ngcomp
     { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
     /// is the FESpace defined for this sub-domain nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
+    //[[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOn (int domnr) const
     { return !definedon[VOL].Size() || definedon[VOL][domnr]; }
     /// is the FESpace defined for this boundary nr ?
-    [[deprecated("Use Definedon(VorB,int) instead")]]
+    //[[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOnBoundary (int bnr) const
     {return !definedon[BND].Size() || definedon[BND][bnr]; }
-    [[deprecated("Use Definedon(VorB,int) instead")]]
+    //[[deprecated("Use Definedon(VorB,int) instead")]]
     bool DefinedOnCoDim2 (int cd2nr) const
     { return !definedon[BBND].Size() || definedon[BBND][cd2nr]; }
 
     /// is the FESpace defined for this sub-domain / boundary nr ?
-    [[deprecated("Use DefinedOn(VorB, int) instead")]]
+    //[[deprecated("Use DefinedOn(VorB, int) instead")]]
     bool DefinedOn (int index, bool bound) const
     {
       if (bound)
@@ -453,8 +453,8 @@ namespace ngcomp
 
     bool DefinedOn (ElementId id) const
     {
-      if(!definedon[ei.VB()].Size()) return true;
-      return definedon[ei.VB()][ma->GetElement(id).GetIndex()];
+      if(!definedon[id.VB()].Size()) return true;
+      return definedon[id.VB()][ma->GetElement(id).GetIndex()];
     }
 
     bool DefinedOn (Ngs_Element el) const
@@ -466,11 +466,11 @@ namespace ngcomp
 
     void SetDefinedOn (VorB vb, const BitArray& defon);
     ///
-    [[deprecated("Use SetDefinedOn(VorB, const Bitarray&)"]]
+    //[[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
      void SetDefinedOn (const BitArray & defon)
      { SetDefinedOn(VOL,defon); }
     ///
-    [[deprecated("Use SetDefinedOn(VorB, const Bitarray&)"]]
+    // [[deprecated("Use SetDefinedOn(VorB, const Bitarray&)")]]
     void SetDefinedOnBoundary (const BitArray & defon)
      { SetDefinedOn(BND,defon); }
 
@@ -525,28 +525,28 @@ namespace ngcomp
     { return directelementclusters; }
 
      
-     [[deprecated("(Use TransformMat(int, VorB,const SliceMatrix<double>&,TRANSFORM_TYPE) instead")]]
+    //[[deprecated("(Use TransformMat(int, VorB,const SliceMatrix<double>&,TRANSFORM_TYPE) instead")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<double> & mat, TRANSFORM_TYPE type) const
     {
-      TranformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
-     [[deprecated("(Use TransformMat(int, VorB,const SliceMatrix<Complex>&,TRANSFORM_TYPE) instead")]]
+    // [[deprecated("(Use TransformMat(int, VorB,const SliceMatrix<Complex>&,TRANSFORM_TYPE) instead")]]
     void TransformMat (int elnr, bool boundary,
 		       const SliceMatrix<Complex> & mat, TRANSFORM_TYPE type) const
     {
-      TranformMat(elnr,boundary ? BND : VOL, mat, type);
+      TransformMat(elnr,boundary ? BND : VOL, mat, type);
     }
   
-     [[deprecated("(Use TransformVec(int, VorB,const FlatVector<double> &,TRANSFORM_TYPE) instead")]]
+    // [[deprecated("(Use TransformVec(int, VorB,const FlatVector<double> &,TRANSFORM_TYPE) instead")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<double> & vec, TRANSFORM_TYPE type) const
     {
       VTransformVR (elnr, boundary ? BND : VOL, vec, type);
     }
   
-     [[deprecated("(Use TransformVec(int, VorB,const FlatVector<Complex> &,TRANSFORM_TYPE) instead")]]
+    //  [[deprecated("(Use TransformVec(int, VorB,const FlatVector<Complex> &,TRANSFORM_TYPE) instead")]]
     void TransformVec (int elnr, bool boundary,
 		       const FlatVector<Complex> & vec, TRANSFORM_TYPE type) const
     {

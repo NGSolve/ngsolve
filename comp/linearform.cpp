@@ -107,54 +107,24 @@ namespace ngcomp
             }
         */
 
-        for (auto lfi : parts)
-	  if (lfi -> CoDim2Form())
-	    {
-	      for (Ngs_Element ej : ma->Elements(BBND))
-		{
-		  HeapReset hr(clh);
-		  if(!lfi -> SkeletonForm()){
-		    if(lfi->DefinedOn(ej.GetIndex()))
-		      lfi->CheckElement(fespace->GetFE(ej,clh));
-		  }
-		  else{
-		  }
-		}
-	    }
-	  else
-	    {
-	      if (lfi -> BoundaryForm())
-		{
-		  for (Ngs_Element ej : ma->Elements(BND))
-		    {
-		      HeapReset hr(clh);
-		      if (!lfi -> SkeletonForm()){
-			if (lfi -> DefinedOn (ej.GetIndex()))
-			  lfi -> CheckElement (fespace->GetFE(ej, clh));
-		      }else{
-			//TODO: get aligned volelement and check that
-		      }
-		    }
-		}
-	      else
-		{
-		  if (lfi -> SkeletonForm())
-		    {
+	for (VorB vb : {VOL,BND,BBND})
+	  {
+	    for (auto lfi : parts)
+	      {
+		if(lfi->VB()==vb)
+		  {
+		    if(lfi->SkeletonForm())
 		      throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
-		    }
-		  else
-		    {
-		      IterateElements
-			(*fespace, VOL, clh,  [&] (FESpace::Element el, LocalHeap & lh)
-			 {
-			   if (lfi -> DefinedOn (el.GetIndex()))  // ma->GetElIndex(el)))
-			     lfi -> CheckElement (el.GetFE());    // fespace->GetFE(el, lh));
-			   ;
-			 });
-		    }
-		}
-            }
-
+		    IterateElements
+		      (*fespace,vb,clh, [&](FESpace::Element el, LocalHeap & lh)
+		       {
+			 if (lfi->DefinedOn(el.GetIndex()))
+			   lfi->CheckElement(el.GetFE());
+		       });
+		    
+		  }
+	      }
+	  }
 
 	if(!allocated || ( this->GetVector().Size() != this->fespace->GetNDof()))
 	  {
@@ -166,233 +136,110 @@ namespace ngcomp
 	    this->GetVector() = TSCAL(0);
 	  }
 
-	int ne = ma->GetNE();
-	int nf = ma->GetNFacets();
-	int nse = ma->GetNSE();
-	int nbbe = ma->GetNE(BBND);
 
-	bool hasbbound = false;
-	bool hasbound = false;
-	bool hasinner = false;
-	bool hasskeletonbound = false;
-	bool hasskeletoninner = false;
-	//check hasbound, hasinner, hasskeletonbound, hasskeletoninner
-	for (int j = 0; j < parts.Size(); j++)
+	bool hasparts[] = {false,false,false};
+	bool hasskeletonparts[] = {false,false};
+
+	for(int j = 0; j < parts.Size(); j++)
 	  {
-	    (*testout) << "cd2form: " << parts[j]->CoDim2Form() << endl;
-	    if (!parts[j] -> SkeletonForm()){
-	      if (parts[j] -> BoundaryForm())
-		hasbound = true;
-	      else
-		if(parts[j]->CoDim2Form()){
-		  hasbbound = true;}
-		else{
-		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
-		  hasinner = true; }
-	    }else{
-	      if (parts[j] -> BoundaryForm())
-		hasskeletonbound = true;
-	      else 
-		if (!parts[j] -> IntegrationAlongCurve()) //CL: ist das richtig? 
-		  hasinner = true;
-	    }
+	    if(!parts[j]->SkeletonForm())
+	      {
+		hasparts[parts[j]->VB()] = true;
+	      }
+	    else
+	      {
+		if(parts[j]->VB()==BBND)
+		  throw Exception("Skeleton not implemented for co dim 2!");
+		hasskeletonparts[parts[j]->VB()] = true;
+	      }
 	  }
 
+	// ended here...
+        
 	if (print)
 	  {
 	    *testout << " LINEARFORM TEST:" << endl;
-	    *testout << " hasinner = " << hasinner << endl;
-	    *testout << " hasouter = " << hasbound << endl;
-	    *testout << " hasbbound = " << hasbbound << endl;
-	    *testout << " hasskeletoninner = " << hasskeletoninner << endl;
-	    *testout << " hasskeletonouter = " << hasskeletonbound << endl;
+	    *testout << " hasinner = " << hasparts[VOL] << endl;
+	    *testout << " hasouter = " << hasparts[BND] << endl;
+	    *testout << " hasbbound = " << hasparts[BBND] << endl;
+	    *testout << " hasskeletoninner = " << hasskeletonparts[VOL] << endl;
+	    *testout << " hasskeletonouter = " << hasskeletonparts[BND] << endl;
 	  }
 
-	int nrcases = 0;
 	int loopsteps = 0;
-	if (hasinner) {nrcases++; loopsteps+=ne;}
-	if (hasbound) {nrcases++; loopsteps+=nse;}
-	if (hasbbound) {nrcases++; loopsteps += nbbe; }
-	if (hasskeletoninner) {nrcases++; loopsteps+=nf;}
-	if (hasskeletonbound) {nrcases++; loopsteps+=nse;}
-	if (fespace->specialelements.Size()>0) {nrcases++; loopsteps+=fespace->specialelements.Size();}
+	for(VorB vb : {VOL,BND,BBND})
+	  {
+	    if(hasparts[vb]){
+	      int ne = ma->GetNE(vb);
+	      loopsteps += ne;
+	    }
+	  }
+	if(hasskeletonparts[VOL])
+	  loopsteps += ma->GetNFacets();
+	if(hasskeletonparts[BND])
+	  loopsteps += ma->GetNSE();
+	if(fespace->specialelements.Size())
+	  loopsteps += fespace->specialelements.Size();
+        
 	// int actcase = 0;
 	int gcnt = 0; //global count (for all cases)
 	
 	timer1.Stop();
 
-	if (hasinner)
+	for(VorB vb : {VOL,BND,BBND})
 	  {
-	    ProgressOutput progress (ma, "assemble element", ma->GetNE());
-	    gcnt += ne;
+	    if(hasparts[vb])
+	      {
+		int ne = ma->GetNE(vb);
+		string vb_str = vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND");
+		ProgressOutput progress (ma, string("assemble ") + vb_str + string(" element"),ne);
+		gcnt += ne;
+		IterateElements
+		  (*fespace,vb,clh,[&] (FESpace::Element el, LocalHeap &lh)
+		   {
+		     RegionTimer reg2(timer2);
+		     progress.Update();
 
+		     auto & fel = el.GetFE();
+		     auto & eltrans = el.GetTrafo();
 
-            /*
-            // no costs ...
-            SharedLoop sl (ma->GetNE());
-            task_manager -> CreateJob
-              ( [this, &clh, &sl] (const TaskInfo & ti) 
-                {
-                  LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
-                  ArrayMem<int,100> temp_dnums;
+		     for(int j = 0; j<parts.Size(); j++)
+		       {
+			 if(!parts[j]->VB() == vb) continue;
+			 if(!parts[j]->DefinedOn(el.GetIndex())) continue;
 
-                  for (int i : sl)
-                    {
-                      HeapReset hr(lh);
-                      FESpace::Element el(*fespace, 
-                                          ElementId (VOL, i),
-                                          temp_dnums);
-                      fespace->GetFE(el, lh);                  
-                    }
-                } );            
-            
-
-                // 1ms costs at first call ???
-	    IterateElements 
-              (*fespace, VOL, clh, 
-               [&] (FESpace::Element el, LocalHeap & lh)
-               {
-                 const FiniteElement & fel = fespace->GetFE(el, lh);
-               });
-            */
-            
-	    IterateElements 
-              (*fespace, VOL, clh, 
-               [&] (FESpace::Element el, LocalHeap & lh)
-               {
-                 // RegionTimer reg2 (timer2);
-                 progress.Update ();
-
-                 const FiniteElement & fel = el.GetFE(); // fespace->GetFE(el, lh);
-                 const ElementTransformation & eltrans = el.GetTrafo(); // ma->GetTrafo (el, lh);
-
-                 for (int j = 0; j < parts.Size(); j++)
-                   {
-                     if (!parts[j] -> VolumeForm()) continue;
-                     if (!parts[j] -> DefinedOn (el.GetIndex())) continue;
-
-                     int elvec_size = fel.GetNDof()*fespace->GetDimension();
-                     FlatVector<TSCAL> elvec(elvec_size, lh);
-
-                     parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
-                     
-                     if (printelvec)
-                       {
-                         testout->precision(8);
-                         *testout << "elnum = " << el.Nr() << endl
-                                  << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << el.GetDofs() << endl
-                                  << "element-index = " << eltrans.GetElementIndex() << endl
-                                  << "elvec = " << endl << elvec << endl;
-                       }
-
-                     fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-                     AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
-                   }
-               });
-          }
-            
-
-	RegionTimer reg3(timer3);
-
-	if (hasbound)
-	  {
-	    ProgressOutput progress (ma, "assemble surface element", ma->GetNSE());
-	    gcnt += nse;
-
-
-	    IterateElements 
-              (*fespace, BND, clh, 
-               [&] (FESpace::Element el, LocalHeap & lh)
-               {
-                 RegionTimer reg2 (timer2);
-                 progress.Update ();
-
-                 const FiniteElement & fel = fespace->GetFE(el, lh);
-                 ElementTransformation & eltrans = ma->GetTrafo (el, lh);
-
-                 for (int j = 0; j < parts.Size(); j++)
-                   {
-                     if (!parts[j] -> BoundaryForm()) continue;
-                     if (!parts[j] -> DefinedOn (el.GetIndex())) continue;
-		     
-                     int elvec_size = fel.GetNDof()*fespace->GetDimension();
-                     FlatVector<TSCAL> elvec(elvec_size, lh);
-                     
-                     parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
-                     
-                     if (printelvec)
-                       {
-                         testout->precision(8);
-                         *testout << "surface-elnum = " << el.Nr() << endl
-                                  << "integrator " << parts[j]->Name() << endl
-                                  << "dnums = " << endl << el.GetDofs() << endl
-                                  << "element-index = " << eltrans.GetElementIndex() << endl
-                                  << "elvec = " << endl << elvec << endl;
-                       }
-                     
-                     fespace->TransformVec (el, elvec, TRANSFORM_RHS);
-                     AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
-                   }
-               });
-
-	  }//end of hasbound
-	
-
-	if (hasbbound)
-	  {
-	    ProgressOutput progress (ma, "assemble codim2  element", ma->GetNE(BBND));
-	    gcnt += nbbe;
-
-	    IterateElements
-	      (*fespace, BBND, clh, [&] (FESpace::Element el, LocalHeap &lh)
-		{
-		  progress.Update();
-		  const FiniteElement & fel = fespace->GetFE(el,lh);
-		  ElementTransformation & eltrans = ma -> GetTrafo(el, lh);
-		  Vec<3> point1, point2;
-		  eltrans.CalcPoint(IntegrationPoint(0),point1);
-		  eltrans.CalcPoint(IntegrationPoint(1),point2);
-		  (*testout) << "segment: " << point1 << " -> " << point2 << endl;
-		  for (int j=0; j< parts.Size(); j++)
-		    {
-		      (*testout) << "on element " << el.Nr() << ", index: " << el.GetIndex() << endl;
-		      (*testout) << "definedon: " << parts[j]->DefinedOn(el.GetIndex()) << endl;
-		      (*testout) << "element: " << el << endl;
-		      if(!parts[j]->CoDim2Form()) continue;
-		      if(!parts[j]->DefinedOn(el.GetIndex())) continue;
-
-		      int elvec_size = fel.GetNDof() * fespace->GetDimension();
-		      FlatVector<TSCAL> elvec(elvec_size,lh);
-
-		      parts[j] -> CalcElementVector(fel, eltrans, elvec, lh);
-
-		      if (printelvec)
-			{
-			  testout->precision(8);
-			  *testout << "codim2 - elnr = " << el.Nr() << endl
-				   << "integrator " << parts[j]->Name() << endl
-				   << "dnums = " << endl << el.GetDofs() << endl
-                                  << "element-index = " << eltrans.GetElementIndex() << endl
-                                  << "elvec = " << endl << elvec << endl;
-			}
-
-		      fespace -> TransformVec(el,elvec,TRANSFORM_RHS);
-		      AddElementVector(el.GetDofs(),elvec,parts[j]->CacheComp()-1);
-		    }
-		});
+			 int elvec_size = fel.GetNDof()*fespace->GetDimension();
+			 FlatVector<TSCAL> elvec(elvec_size, lh);
+			 
+			 parts[j] -> CalcElementVector (fel, eltrans, elvec, lh);
+			 
+			 if (printelvec)
+			   {
+			     testout->precision(8);
+			     *testout << "elnum = " << el.Nr() << endl
+				      << "integrator " << parts[j]->Name() << endl
+				      << "dnums = " << endl << el.GetDofs() << endl
+				      << "element-index = " << eltrans.GetElementIndex() << endl
+				      << "elvec = " << endl << elvec << endl;
+			   }
+			 
+			 fespace->TransformVec (el, elvec, TRANSFORM_RHS);
+			 AddElementVector (el.GetDofs(), elvec, parts[j]->CacheComp()-1);
+		       }
+		   });
+	      }
 	  }
+		
 
 
-
-
-	if(hasskeletoninner)
+	if(hasskeletonparts[VOL])
 	{
 	  cout << "\rInnerFacetIntegrators not known - cannot handle it yet" << endl;	  
 	}
-	if(hasskeletonbound)
+	if(hasskeletonparts[BND])
 	{
-          ParallelForRange( IntRange(nse), [&] ( IntRange r )
+		int nse = ma->GetNE(BND);
+	  ParallelForRange( IntRange(nse), [&] ( IntRange r )
 	  {
 	    LocalHeap lh = clh.Split();
 	    Array<int> dnums;
@@ -422,8 +269,8 @@ namespace ngcomp
 		  
 		  const FiniteElement & fel = fespace->GetFE (el, lh);
 		
-		  ElementTransformation & eltrans = ma->GetTrafo (el, false, lh);
-		  ElementTransformation & seltrans = ma->GetTrafo (i, true, lh);
+		  ElementTransformation & eltrans = ma->GetTrafo (el, VOL, lh);
+		  ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
 
 		  fespace->GetDofNrs (el, dnums);
 		  ma->GetElVertices (el, vnums);		
@@ -431,7 +278,7 @@ namespace ngcomp
 		  for (int j = 0; j < parts.Size(); j++)
 		    {
 		      if (!parts[j] -> SkeletonForm()) continue;
-		      if (!parts[j] -> BoundaryForm()) continue;
+		      if (!parts[j] -> VB()==BND) continue;
 		      if (!parts[j] -> DefinedOn (ma->GetSElIndex (i))) continue;
 		      if (parts[j] -> IntegrationAlongCurve()) continue;		    
 		  
@@ -451,7 +298,7 @@ namespace ngcomp
 			}
 
 
-		      fespace->TransformVec (i, false, elvec, TRANSFORM_RHS);
+		      fespace->TransformVec (i, VOL, elvec, TRANSFORM_RHS);
 		    
 		      {
                         lock_guard<mutex> guard(addelvec3_mutex);
@@ -516,7 +363,7 @@ namespace ngcomp
 			fel = &fespace->GetFE(element,clh);
 			fespace->GetDofNrs(element,dnums);
 		      }
-		    ElementTransformation & eltrans = ma->GetTrafo (element, false, clh);
+		    ElementTransformation & eltrans = ma->GetTrafo (element, VOL, clh);
 
 		    
 		    void * heapp = clh.GetPointer();
@@ -693,7 +540,7 @@ namespace ngcomp
 	    
 	    const FiniteElement & sfel = fespace->GetSFE (i, lh);
 	    // ma->GetSurfaceElementTransformation (i, seltrans);
-	    ElementTransformation & seltrans = ma->GetTrafo (i, true, lh);
+	    ElementTransformation & seltrans = ma->GetTrafo (i, BND, lh);
 
 	      	
 	    // (*testout) << "el = " << i << ", ind = " << ma->GetSElIndex(i) << endl;
@@ -719,7 +566,7 @@ namespace ngcomp
 		
 		const FiniteElement & gfel = fespace->GetFE (elnr, lh);
 		// ma->GetElementTransformation (elnr, geltrans);
-		ElementTransformation & geltrans = ma->GetTrafo (elnr, false, lh);
+		ElementTransformation & geltrans = ma->GetTrafo (elnr, VOL, lh);
 
 		MappedIntegrationPoint<3,3> gsip(gip, geltrans);
 		

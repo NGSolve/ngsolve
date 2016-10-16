@@ -2621,24 +2621,24 @@ namespace ngcomp
     auto fesh1 = make_shared<H1HighOrderFESpace>(ma, flags2);
 
     BitArray h1def(ma->GetNDomains());
-    if(definedon.Size() == 0)
+    if(definedon[VOL].Size() == 0)
       h1def.Set();
     else
       h1def.Clear();
-    for(int i=0; i<definedon.Size(); i++)
-      if(definedon[i] > 0)
+    for(int i=0; i<definedon[VOL].Size(); i++)
+      if(definedon[VOL][i] > 0)
 	h1def.Set(i);
-    fesh1->SetDefinedOn(h1def);
+    fesh1->SetDefinedOn(VOL,h1def);
 
     BitArray h1defb(ma->GetNBoundaries());
-    if(definedonbound.Size() == 0)
+    if(definedon[BND].Size() == 0)
       h1defb.Set();
     else
       h1defb.Clear();
-    for(int i=0; i<definedonbound.Size(); i++)
-      if(definedonbound[i] > 0)
+    for(int i=0; i<definedon[BND].Size(); i++)
+      if(definedon[BND][i] > 0)
 	h1defb.Set(i);
-    fesh1->SetDefinedOnBoundary(h1defb);
+    fesh1->SetDefinedOn(BND,h1defb);
 
     int ne = ma -> GetNE();
     // int ned = ma->GetNEdges();
