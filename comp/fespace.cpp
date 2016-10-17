@@ -232,9 +232,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     evaluator = NULL; 
     boundary_evaluator = NULL;
     flux_evaluator = NULL;
+    boundary_flux_evaluator = NULL;
+    bboundary_evaluator = NULL;
+    bboundary_flux_evaluator = NULL;
+    
 
     integrator = NULL;
     boundary_integrator = NULL;
+    bboundary_integrator = NULL;
     low_order_space = NULL;
     prol = NULL;
 

@@ -519,7 +519,7 @@ namespace ngcomp
     template <VorB VB, int DIM>
       INLINE Ngs_Element GetElement (T_ElementId<VB,DIM> ei) const
     {
-      constexpr int HDIM = DIM - ((VB == BND) ? 1 : ((VB==BBND) ? 2 : 0));
+      constexpr int HDIM = DIM - int(VB);
       return Ngs_Element (mesh.GetElement<HDIM> (ei.Nr()), ei);
     }
 

@@ -61,6 +61,8 @@ public:
   virtual void GetDofNrs (int elnr, Array<int> & dnums) const;
   ///
   virtual void GetSDofNrs (int selnr, Array<int> & dnums) const;
+  ///
+  virtual void GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const;
 
   ///
   int EdgePoint1 (int ednr) const { return edgepoints[ednr][0]; }
@@ -83,52 +85,48 @@ public:
   SparseMatrix<double> * CreateGradient() const;
 
   template <class MAT>
-  NGS_DLL_HEADER void TransformMat (int elnr, bool boundary,
+  NGS_DLL_HEADER void TransformMat (int elnr, VorB vb,
 		     MAT & mat, TRANSFORM_TYPE tt) const;
 
   template <class VEC>
-  NGS_DLL_HEADER void TransformVec (int elnr, bool boundary,
+  NGS_DLL_HEADER void TransformVec (int elnr, VorB vb,
 		     VEC & vec, TRANSFORM_TYPE tt) const;
 
-
-  virtual void VTransformMR (int elnr, bool boundary,
+  
+  virtual void VTransformMR (int elnr, VorB vb,
 			     const FlatMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, bool boundary,
+  virtual void VTransformMC (int elnr, VorB vb,
 			     const FlatMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
 
-  virtual void VTransformMR (int elnr, bool boundary,
+  virtual void VTransformMR (int elnr, VorB vb,
 			     const SliceMatrix<double> & mat, TRANSFORM_TYPE tt) const 
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
 
-  virtual void VTransformMC (int elnr, bool boundary,
+  virtual void VTransformMC (int elnr, VorB vb,
 			     const SliceMatrix<Complex> & mat, TRANSFORM_TYPE tt) const
   {
-    TransformMat (elnr, boundary, mat, tt);
+    TransformMat (elnr, vb, mat, tt);
   }
 
-
-
-
-
-  virtual void VTransformVR (int elnr, bool boundary,
+  virtual void VTransformVR (int elnr, VorB vb,
 			     const FlatVector<double> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
 
-  virtual void VTransformVC (int elnr, bool boundary,
+  virtual void VTransformVC (int elnr, VorB vb,
 			     const FlatVector<Complex> & vec, TRANSFORM_TYPE tt) const 
   {
-    TransformVec (elnr, boundary, vec, tt);
+    TransformVec (elnr, vb, vec, tt);
   }
 
 

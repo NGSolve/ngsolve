@@ -945,7 +945,7 @@ namespace ngcomp
 	dnums.SetSize0();
 	return;
       }
-    Ngs_Element ngel = ma->GetCD2Element(elnr);
+    const Ngs_Element & ngel = ma->GetCD2Element(elnr);
     dnums = ngel.Vertices();
     for (int i = 0; i< ngel.edges.Size(); i++)
       dnums += GetEdgeDofs(ngel.edges[i]);

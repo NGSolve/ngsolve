@@ -101,10 +101,15 @@ namespace ngcomp
     template <ELEMENT_TYPE ET>
     const FiniteElement & T_GetSFE (int elnr, LocalHeap & lh) const;
 
+    virtual const FiniteElement & GetCD2FE(int cd2elnr, LocalHeap & lh) const override;
+    template <ELEMENT_TYPE ET>
+      const FiniteElement & T_GetCD2FE(int cd2elnr, LocalHeap & lh) const;
+    
     virtual void GetDofNrs (int elnr, Array<int> & dnums) const override;
     ///
     virtual void GetSDofNrs (int selnr, Array<int> & dnums) const override;
     ///
+    virtual void GetCD2DofNrs(int cd2elnr, Array<int> & dnums) const override;
 
 
     ///

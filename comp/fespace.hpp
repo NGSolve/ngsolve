@@ -126,15 +126,22 @@ namespace ngcomp
     shared_ptr<DifferentialOperator> evaluator;
     /// Evaluator for visualization of boundary data
     shared_ptr<DifferentialOperator> boundary_evaluator; 
+    /// Evaluator for visualization of co dim 2 data
+    shared_ptr<DifferentialOperator> bboundary_evaluator; 
     /// Evaluator for flux
     shared_ptr<DifferentialOperator> flux_evaluator; 
     /// Evaluator for boundary flux
-    shared_ptr<DifferentialOperator> boundary_flux_evaluator; 
+    shared_ptr<DifferentialOperator> boundary_flux_evaluator;
+    /// Evaluator for co dim 2 flux
+    shared_ptr<DifferentialOperator> bboundary_flux_evaluator;
+    /// 
 
     /// Evaluator for visualization (old style)
     shared_ptr<BilinearFormIntegrator> integrator; 
     /// Evaluator for visualization of boundary data
     shared_ptr<BilinearFormIntegrator> boundary_integrator; 
+    /// Evaluator for visualization of co dim 2 data
+    shared_ptr<BilinearFormIntegrator> bboundary_integrator; 
 
 
 
@@ -610,22 +617,40 @@ void TransformVec (int elnr, VorB vb,
 
 
     /// returns function-evaluator
-    shared_ptr<DifferentialOperator> GetEvaluator (bool vb = VOL) const
-    { 
+    shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const
+    {
+      *testout << "in get evaluator vb = " << vb << endl;
       if (vb == BND)
 	return boundary_evaluator; 
-      else
-	return evaluator; 
+      if (vb == BBND)
+	return bboundary_evaluator;
+      return evaluator; 
     }
 
-    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool vb = VOL) const
+    shared_ptr<DifferentialOperator> GetEvaluator (bool boundary) const
+    {
+      if(boundary)
+	return boundary_evaluator;
+      else
+	return evaluator;
+    }
+
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (VorB vb=VOL) const
     {
       if (vb == BND)
 	return boundary_flux_evaluator; 
-      else
-        return flux_evaluator;
+      if (vb == BBND)
+	return bboundary_flux_evaluator;
+      return flux_evaluator;
     }
 
+    shared_ptr<DifferentialOperator> GetFluxEvaluator (bool boundary) const
+    {
+      if(boundary)
+	return boundary_flux_evaluator;
+      else
+	return flux_evaluator;
+    }
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
     { return SymbolTable<shared_ptr<DifferentialOperator>>(); } 
 
@@ -634,8 +659,9 @@ void TransformVec (int elnr, VorB vb,
     { 
       if (vb == BND)
 	return boundary_integrator; 
-      else
-	return integrator; 
+      if (vb == BBND)
+	return bboundary_integrator;
+      return integrator; 
     }
 
 

@@ -213,6 +213,7 @@ namespace ngfem
   template class FE_ElementTransformation<3,3>;
   template class FE_ElementTransformation<1,2>;
   template class FE_ElementTransformation<2,3>;
+  template class FE_ElementTransformation<1,3>;
   
   template class FE_ElementTransformation<0,2>;
   template class FE_ElementTransformation<0,3>;
