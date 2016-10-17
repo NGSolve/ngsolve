@@ -669,6 +669,18 @@ namespace ngcomp
   template class BDDCPreconditioner<double>;
   template class BDDCPreconditioner<double, Complex>;
 
+
+  template <>
+  shared_ptr<Preconditioner> RegisterPreconditioner<BDDCPreconditioner<double>>::
+  CreateBF(shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
+  {
+    // cout << "complex bddc ? " << bfa->GetFESpace()->IsComplex() << endl;
+    if (bfa->GetFESpace()->IsComplex())
+      return make_shared<BDDCPreconditioner<Complex>> (bfa, flags, name);
+    else
+      return make_shared<BDDCPreconditioner<double>> (bfa, flags, name);
+  }
+
   static RegisterPreconditioner<BDDCPreconditioner<double> > initpre ("bddc");
   static RegisterPreconditioner<BDDCPreconditioner<Complex> > initpre2 ("bddcc");
   static RegisterPreconditioner<BDDCPreconditioner<double,Complex> > initpre3 ("bddcrc");
