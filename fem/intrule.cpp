@@ -334,6 +334,14 @@ namespace ngfem
   template class MappedIntegrationRule<3,3, Complex>;
 
 
+  template class MappedIntegrationRule<0,1, Complex>;
+  template class MappedIntegrationRule<0,2, Complex>;
+  template class MappedIntegrationRule<0,3, Complex>;
+  template class MappedIntegrationRule<1,2, Complex>;
+  template class MappedIntegrationRule<1,3, Complex>;
+  template class MappedIntegrationRule<2,3, Complex>;
+
+
   
   // computes Gaussean integration formula on (0,1) with n points
   // in: Numerical algs in C (or, was it the Fortran book ?)
@@ -3043,7 +3051,6 @@ namespace ngfem
   template class SIMD_MappedIntegrationRule<1,2>;
   template class SIMD_MappedIntegrationRule<1,3>;
   template class SIMD_MappedIntegrationRule<2,3>;
-
   template class SIMD_MappedIntegrationRule<0,2>;
   template class SIMD_MappedIntegrationRule<0,3>;
 

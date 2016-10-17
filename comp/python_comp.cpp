@@ -121,10 +121,17 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                            shared_ptr <CompoundDifferentialOperator> block_trace_eval = nullptr;
                                            if (proxy->TraceEvaluator() != nullptr)
                                              block_trace_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceEvaluator(), i);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_eval = nullptr;
+					   if (proxy->TTraceEvaluator() != nullptr)
+					     block_ttrace_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceEvaluator(),i);
                                            shared_ptr <CompoundDifferentialOperator> block_trace_deriv_eval = nullptr;
                                            if (proxy->TraceDerivEvaluator() != nullptr)
                                              block_trace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TraceDerivEvaluator(), i);
-                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval);
+					   shared_ptr <CompoundDifferentialOperator> block_ttrace_deriv_eval = nullptr;
+					   if (proxy->TTraceDerivEvaluator() != nullptr)
+					     block_ttrace_deriv_eval = make_shared<CompoundDifferentialOperator> (proxy->TTraceDerivEvaluator(),i);
+                                           auto block_proxy = make_shared<ProxyFunction> (/* &fes, */ testfunction, fes.IsComplex(),                                                                                          block_eval, block_deriv_eval, block_trace_eval, block_trace_deriv_eval,
+					  block_ttrace_eval, block_ttrace_deriv_eval);
 
                                            SymbolTable<shared_ptr<DifferentialOperator>> add = proxy->GetAdditionalEvaluators();
                                            for (int j = 0; j < add.Size(); j++)
@@ -147,11 +154,14 @@ bp::object MakeProxyFunction2 (const FESpace & fes,
                                          fes.GetFluxEvaluator(BND)
                                          ));
   */
+
   auto proxy = make_shared<ProxyFunction>  (testfunction, fes.IsComplex(),
                                             fes.GetEvaluator(),
                                             fes.GetFluxEvaluator(),
                                             fes.GetEvaluator(BND),
-                                            fes.GetFluxEvaluator(BND));
+                                            fes.GetFluxEvaluator(BND),
+					    fes.GetEvaluator(BBND),
+					    fes.GetFluxEvaluator(BBND));
   auto add_diffops = fes.GetAdditionalEvaluators();
   for (int i = 0; i < add_diffops.Size(); i++)
     proxy->SetAdditionalEvaluator (add_diffops.GetName(i), add_diffops[i]);

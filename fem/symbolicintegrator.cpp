@@ -354,9 +354,10 @@ namespace ngfem
             for (int i = 0; i < mir.Size(); i++)
               proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
           }
+	   
         // td.Stop();
         // tb.Start();
-        proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
+	proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
         // tb.Stop();
         elvec += elvec1;
       }
@@ -370,6 +371,7 @@ namespace ngfem
                        FlatVector<double> elvec,
                        LocalHeap & lh) const
   {
+    
     if (element_boundary)
       { // not yet simded
         elvec = 0;
@@ -406,6 +408,7 @@ namespace ngfem
                     cf -> Evaluate (mir, val);
                     proxyvalues.Col(k) = val.Col(0);
                   }
+
                 
                 for (int i = 0; i < mir.Size(); i++)
                   // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
@@ -442,7 +445,7 @@ namespace ngfem
                     for (int i = 0; i < mir.Size(); i++)
                       proxyvalues.Get(k,i) *= mir[i].GetWeight().Data();
                   }
-                
+
                 proxy->Evaluator()->AddTrans(fel, mir, proxyvalues, elvec); // , lh);
               }
           }
@@ -479,9 +482,11 @@ namespace ngfem
                 ud.test_comp = k;
                 
                 cf -> Evaluate (mir, values);
+		*testout << "evaluate cf: " << values << endl;
                 for (int i = 0; i < mir.Size(); i++)
                   proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
               }
+
             // td.Stop();
             // tb.Start();
             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);

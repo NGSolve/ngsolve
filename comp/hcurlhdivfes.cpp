@@ -371,14 +371,23 @@ namespace ngcomp
       dnums = -1;
   }
 
+  
+  void NedelecFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
+  {
+    dnums.SetSize(0);
+    const auto & ngel = ma->GetCD2Element(cd2elnr);
+    if(!DefinedOn(BBND,ngel.GetIndex())) return;
+    dnums.Append(ngel.edges[0]);
+  }
+
 
 
 
   template <class MAT>
-  void NedelecFESpace::TransformMat (int elnr, bool boundary,
+  void NedelecFESpace::TransformMat (int elnr, VorB vb,
 				     MAT & mat, TRANSFORM_TYPE tt) const
   {
-    Ngs_Element ngel = ma->GetElement(elnr, boundary);
+    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);
@@ -402,7 +411,7 @@ namespace ngcomp
 
 
   template <class VEC>
-  void NedelecFESpace::TransformVec (int elnr, bool boundary,
+  void NedelecFESpace::TransformVec (int elnr, VorB vb,
 				     VEC & vec, TRANSFORM_TYPE tt) const
   {
     /*
@@ -423,7 +432,7 @@ namespace ngcomp
     */
 
 
-    Ngs_Element ngel = boundary ? ma->GetSElement (elnr) : ma->GetElement(elnr);
+    Ngs_Element ngel = ma->GetElement(ElementId(vb,elnr));
     ELEMENT_TYPE eltype = ngel.GetType();
     
     int ned = ElementTopology::GetNEdges (eltype);

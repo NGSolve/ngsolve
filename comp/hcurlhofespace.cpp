@@ -137,6 +137,7 @@ namespace ngcomp
         evaluator = make_shared<T_DifferentialOperator<DiffOpIdEdge<3>>>();
         flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlEdge<3>>>();
         boundary_flux_evaluator = make_shared<T_DifferentialOperator<DiffOpCurlBoundaryEdgeVec<>>>();
+	bboundary_evaluator = make_shared<T_DifferentialOperator<DiffOpIdBBoundaryEdge<3>>>();
       }
   }
   
@@ -1024,7 +1025,7 @@ namespace ngcomp
 
 
 
-    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (selnr);
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BND> (selnr);
 
     HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
     hofe -> SetVertexNumbers (ngel.vertices);
@@ -1057,6 +1058,49 @@ namespace ngcomp
   }
 
 
+  const FiniteElement & HCurlHighOrderFESpace :: GetCD2FE(int cd2elnr, LocalHeap & lh) const
+  {
+    switch (ma->GetElement(ElementId(BBND,cd2elnr)).GetType())
+      {
+      case ET_SEGM: return T_GetCD2FE<ET_SEGM> (cd2elnr, lh);
+
+      default:
+        throw Exception ("illegal element in HCurlHoFeSpace::GetCD2FE");
+      }
+  }
+
+  template <ELEMENT_TYPE ET>
+  const FiniteElement & HCurlHighOrderFESpace :: T_GetCD2FE(int cd2elnr, LocalHeap & lh) const
+  {
+    if (!DefinedOn (BBND,ma->GetElement (ElementId(BBND,cd2elnr)).GetIndex()))
+      return * new (lh) DummyFE<ET_SEGM>; 
+
+    Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,BBND> (cd2elnr);
+
+    HCurlHighOrderFE<ET> * hofe =  new (lh) HCurlHighOrderFE<ET> ();
+    hofe -> SetVertexNumbers (ngel.vertices);
+
+    hofe -> SetOrderEdge (order_edge[ngel.Edges()]);
+    hofe -> SetUseGradEdge (usegrad_edge[ngel.Edges()]);
+    
+
+    if(ma->GetElement(ElementId(BBND,cd2elnr)).GetType() == ET_SEGM)
+      {
+	hofe -> SetOrderCell (order_edge[ngel.edges[0]]);  // old style
+        FlatArray<TORDER> aoe(1, &order_edge[ngel.edges[0]]);
+        hofe -> SetOrderEdge (aoe);
+	hofe -> SetUseGradCell (usegrad_edge[ngel.edges[0]]);  // old style
+      } 
+    else 
+      {
+	throw Exception("Only SEGM possible for codim 2 element of hcurlhofe space");
+      }
+    hofe -> SetType1 (type1);              
+    hofe -> ComputeNDof();
+    return *hofe;
+    
+  }
+    
 
 
   int HCurlHighOrderFESpace :: GetNDof () const throw()
@@ -1116,6 +1160,19 @@ namespace ngcomp
 
     if(first_face_dof.Size()>1)		       
       dnums += GetFaceDofs (fnum);
+  }
+
+  void HCurlHighOrderFESpace :: GetCD2DofNrs (int cd2elnr, Array<int> & dnums) const
+  {
+    dnums.SetSize(0);
+    if (!DefinedOn(BBND,ma->GetElIndex(ElementId(BBND,cd2elnr)))) return;
+
+    const Ngs_Element & ngel = ma->GetCD2Element(cd2elnr);
+    if(!ngel.edges.Size()==1)
+      throw Exception("CoDim2 elment must be edge!");
+    if(!discontinuous)
+      dnums.Append(ngel.edges[0]);
+    dnums += GetEdgeDofs(ngel.edges[0]);
   }
 
 
