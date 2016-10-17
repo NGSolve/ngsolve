@@ -152,6 +152,14 @@ namespace ngfem
       mass(ix) = 1.0 / (2 * ix + 1);
   }
   
+  template <> inline void L2HighOrderFE<ET_TRIG> ::
+  GetDiagMassMatrix(FlatVector<> mass) const
+  {
+    for (int ix = 0, ii = 0; ix <= order; ix++)
+      for (int iy = 0; iy <= order - ix; iy++, ii++)
+	mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
+  }
+
   template <> inline void L2HighOrderFE<ET_TET> ::
   GetDiagMassMatrix(FlatVector<> mass) const
   {
