@@ -1711,6 +1711,8 @@ namespace ngfem
     SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
     SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ();
+    SIMD_IntegrationRule & operator= (const SIMD_IntegrationRule &) = delete;
+    SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
     SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
       : Array<SIMD<IntegrationPoint>,size_t> (asize, pip) { ; }
