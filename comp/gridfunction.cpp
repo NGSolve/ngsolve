@@ -976,7 +976,7 @@ namespace ngcomp
 
   Array<int> GridFunctionCoefficientFunction::Dimensions() const
   {
-    cout << "ask for Dimensions" << endl;
+    // cout << "ask for Dimensions" << endl;
     int d = Dimension();
     cout << "d = " << d << endl;
     if (diffop)
