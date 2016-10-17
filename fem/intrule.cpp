@@ -2074,9 +2074,9 @@ namespace ngfem
     // ************************************
 
     pointrule.Append (IntegrationPoint (0, 0, 0, 1));
-    cout << "simd_pointrule: " << simd_pointrule << endl;
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
     simd_pointrule = SIMD_IntegrationRule (pointrule);
-    cout << "simd_pointrule: " << simd_pointrule << endl;
+    // cout << "simd_pointrule: " << simd_pointrule << endl;
     
     // ************************************
     // ** Segment integration rules
