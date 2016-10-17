@@ -1901,7 +1901,7 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          static Timer tall("SymbolicBFI::Apply - all", 2); RegionTimer rall(tall);
+          static Timer tall("SymbolicBFI::Apply - all", 4); RegionTimer rall(tall);
           // static Timer tstart("SymbolicBFI::Apply - startup", 2);
           // static Timer tir("SymbolicBFI::Apply - integration rule", 2);
           // static Timer tmir("SymbolicBFI::Apply - mapped ir", 2);
