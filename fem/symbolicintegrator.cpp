@@ -1697,12 +1697,13 @@ namespace ngfem
         
           IntegrationRule ir_facet(etfacet, 2*fel.Order());
           IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
-          const BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+          BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+          mir.ComputeNormalsAndMeasure(eltype, k);
           
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          /*
           FlatVector<> measure(mir.Size(), lh);
-          
           for (int i = 0; i < mir.Size(); i++)
             {
               double len;
@@ -1737,7 +1738,7 @@ namespace ngfem
                 }
               measure(i) = len;
             }
-
+          */
 
           for (ProxyFunction * proxy : trial_proxies)
             {
@@ -1774,7 +1775,7 @@ namespace ngfem
                 td.Stop();
 
                 for (int i = 0; i < mir.Size(); i++)
-                  proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * measure(i);
+                  proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
                 
                 t.AddFlops (double (mir.Size()) * proxy1->Dimension()*elmat.Width()*elmat.Height());
                 
