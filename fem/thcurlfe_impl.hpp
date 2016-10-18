@@ -14,13 +14,13 @@ namespace ngfem
     HCurl_Shape (T shape) : Vec<DIM,SCAL>(shape.Value()) { ; }
   };
 
-  template <int DIM>
-  class HCurl_CurlShape : public Vec<DIM_CURL_TRAIT<DIM>::DIM>
+  template <int DIM, typename SCAL = double>
+  class HCurl_CurlShape : public Vec<DIM_CURL_TRAIT<DIM>::DIM,SCAL>
   {
   public:
     template <typename T>
     HCurl_CurlShape (T shape) 
-      : Vec<DIM_CURL_TRAIT<DIM>::DIM> (shape.CurlValue()) { ; }
+      : Vec<DIM_CURL_TRAIT<DIM>::DIM,SCAL> (shape.CurlValue()) { ; }
   };
 
 
@@ -71,6 +71,40 @@ namespace ngfem
       CalcMappedShape (mir[i], shape.Cols(i*DIM,(i+1)*DIM));
   }
 
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                   ABareMatrix<> shapes) const
+  {
+    if ((DIM == 3) || (bmir.DimSpace() == DIM))
+      {
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_Shape<DIM,SIMD<double>> shape)
+                                            {
+                                              for (size_t k = 0; k < DIM; k++)
+                                                shapes.Get(j*DIM+k, i) = shape(k);
+                                            }));
+          }
+      }
+    else
+      {
+        constexpr int DIM1 = DIM==3 ? DIM : DIM+1;
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM1>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM1,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_Shape<DIM1,SIMD<double>> shape)
+                                            {
+                                              for (size_t k = 0; k < DIM1; k++)
+                                                shapes.Get(j*DIM1+k,i) = shape(k);
+                                            }));
+          }
+      }
+  }
+
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
@@ -104,6 +138,44 @@ namespace ngfem
                            curlshape.Cols(DIM_CURL_(DIM)*i, DIM_CURL_(DIM)*(i+1)));
   }    
 
+
+  template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
+  void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
+  CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                       ABareMatrix<> shapes) const
+  {
+    if ((DIM == 3) || (bmir.DimSpace() == DIM))
+      {
+        constexpr int DIM_CURL = DIM_CURL_(DIM);
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_CurlShape<DIM,SIMD<double>> cshape)
+                                            {
+                                              for (size_t k = 0; k < DIM_CURL; k++)
+                                                shapes.Get(j*DIM_CURL+k, i) = cshape(k);
+                                            }));
+          }
+      }
+    else
+      {
+        constexpr int DIM1 = DIM==3 ? DIM : DIM+1;
+        constexpr int DIM_CURL = DIM_CURL_(DIM1);        
+        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM1>&> (bmir);
+        for (size_t i = 0; i < mir.Size(); i++)
+          {
+            Vec<DIM, AutoDiff<DIM1,SIMD<double>>> adp = mir[i];
+            T_CalcShape (&adp(0), SBLambda ([&] (size_t j, HCurl_CurlShape<DIM1,SIMD<double>> cshape)
+                                            {
+                                              for (size_t k = 0; k < DIM_CURL; k++)
+                                                shapes.Get(j*DIM_CURL+k,i) = cshape(k);
+                                            }));
+          }
+      }
+  }
+
+  
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   auto T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
