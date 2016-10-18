@@ -152,6 +152,11 @@ namespace ngstd
       SIMD_function(val, has_call_operator<T>::value);
       return *this;
     }
+
+    void * operator new (size_t s) { return  _mm_malloc(s, 64); }
+    void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
+    void operator delete (void * p) { _mm_free(p); }
+    void operator delete[] (void * p) { _mm_free(p); }
     
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
