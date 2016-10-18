@@ -50,12 +50,18 @@ namespace ngfem
     virtual void CalcMappedShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                   SliceMatrix<> shape) const;
 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                  ABareMatrix<> shapes) const;
+
     virtual void CalcMappedCurlShape (const MappedIntegrationPoint<DIM,DIM> & mip,
                                       SliceMatrix<> curlshape) const;
 
     virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
                                       SliceMatrix<> curlshape) const;
 
+    virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                      ABareMatrix<> curlshapes) const;
+    
     virtual Vec <DIM_CURL_(DIM)>
     EvaluateCurlShape (const IntegrationPoint & ip, 
                        FlatVector<double> x,

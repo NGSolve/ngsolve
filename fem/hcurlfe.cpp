@@ -145,7 +145,14 @@ namespace ngfem
       CalcMappedShape (mir[i], shape.Cols(i*D, (i+1)*D));
   }
   
-
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                   ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcShape not overloaded");
+  }
+  
 
   /// compute curl of shape
   template <int D>
@@ -177,6 +184,15 @@ namespace ngfem
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedCurlShape (mir[i], curlshape.Cols(i*DIM_CURL_(D), (i+1)*DIM_CURL_(D)));
   }
+  
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                       ABareMatrix<> dshapes) const
+  {
+    throw ExceptionNOSIMD("SIMD - HCurlFE::CalcMappedCurlShape not overloaded");
+  }
+  
   
 
   template <int D>

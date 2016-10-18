@@ -72,6 +72,10 @@ namespace ngfem
       static_cast<const FEL&> (fel).CalcMappedShape (mir, Trans(mat));
     }
 
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedShape (mir, mat);      
+    }
 
 
     template <typename FEL1, typename MIP, class TVX, class TVY>
@@ -226,6 +230,11 @@ namespace ngfem
                                   SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mir, Trans(mat));
+    }
+    
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+    {
+      static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);      
     }
 
 
