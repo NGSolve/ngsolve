@@ -405,12 +405,18 @@ void NGS_DLL_HEADER ExportNgla() {
   REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<double>>);
   bp::class_<QMRSolver<double>, shared_ptr<QMRSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverD", bp::no_init)
     ;
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<QMRSolver<Complex>>);
+  bp::class_<QMRSolver<Complex>, shared_ptr<QMRSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("QMRSolverC", bp::no_init)
+    ;
   bp::def("QMRSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
                                            bool printrates, 
                                            double precision, int maxsteps) -> BaseMatrix *
                                         {
                                           KrylovSpaceSolver * solver;
-                                          solver = new QMRSolver<double> (mat, pre);
+                                          if (!mat.IsComplex())
+                                            solver = new QMRSolver<double> (mat, pre);
+                                          else
+                                            solver = new QMRSolver<Complex> (mat, pre);                                            
                                           solver->SetPrecision(precision);
                                           solver->SetMaxSteps(maxsteps);
                                           solver->SetPrintRates (printrates);
@@ -421,6 +427,35 @@ void NGS_DLL_HEADER ExportNgla() {
           bp::return_value_policy<bp::manage_new_object>()
           )
     ;
+
+
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<double>>);
+  bp::class_<GMRESSolver<double>, shared_ptr<GMRESSolver<double>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverD", bp::no_init)
+    ;
+  REGISTER_PTR_TO_PYTHON_BOOST_1_60_FIX(shared_ptr<GMRESSolver<Complex>>);
+  bp::class_<GMRESSolver<Complex>, shared_ptr<GMRESSolver<Complex>>,bp::bases<BaseMatrix>,boost::noncopyable> ("GMRESSolverC", bp::no_init)
+    ;
+  bp::def("GMRESSolver", FunctionPointer ([](const BaseMatrix & mat, const BaseMatrix & pre,
+                                           bool printrates, 
+                                           double precision, int maxsteps) -> BaseMatrix *
+                                        {
+                                          KrylovSpaceSolver * solver;
+                                          if (!mat.IsComplex())
+                                            solver = new GMRESSolver<double> (mat, pre);
+                                          else
+                                            solver = new GMRESSolver<Complex> (mat, pre);                                            
+                                          solver->SetPrecision(precision);
+                                          solver->SetMaxSteps(maxsteps);
+                                          solver->SetPrintRates (printrates);
+                                          return solver;
+                                        }),
+          (bp::arg("mat"), bp::arg("pre"), bp::arg("printrates")=true,
+           bp::arg("precision")=1e-8, bp::arg("maxsteps")=200),
+          bp::return_value_policy<bp::manage_new_object>()
+          )
+    ;
+  
+
   
   bp::def("ArnoldiSolver", FunctionPointer ([](BaseMatrix & mata, BaseMatrix & matm, const BitArray & freedofs,
                                                bp::list vecs, bp::object bpshift)
