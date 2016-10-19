@@ -374,7 +374,7 @@ namespace ngcomp
 	    {
 	      ParallelDofs * pardofs = &bfa->GetFESpace()->GetParallelDofs();
 
-	      pwbmat = make_shared<ParallelMatrix> (pwbmat), pardofs);
+	      pwbmat = make_shared<ParallelMatrix> (pwbmat, pardofs);
 	      pwbmat -> SetInverseType (inversetype);
 
 #ifdef HYPRE
