@@ -56,7 +56,7 @@ namespace ngstd
 
 #ifdef __AVX512F__
   template<>
-  class alignas(64) SIMD<double>
+  class alignas(64) SIMD<double> 
   {
     __m512d data;
     
@@ -121,9 +121,21 @@ namespace ngstd
   };
  
 #else
+
+  template <size_t ALIGN>
+  class AlignedAlloc
+  {
+  public:
+    void * operator new (size_t s) { return  _mm_malloc(s, ALIGN); }
+    void * operator new[] (size_t s) { return  _mm_malloc(s, ALIGN); }
+    void operator delete (void * p) { _mm_free(p); }
+    void operator delete[] (void * p) { _mm_free(p); }
+  };
+  
+
   
   template<>
-  class alignas(32) SIMD<double>
+  class alignas(32) SIMD<double> : public AlignedAlloc<64>
   {
     __m256d data;
     
@@ -153,10 +165,12 @@ namespace ngstd
       return *this;
     }
 
+    /*
     void * operator new (size_t s) { return  _mm_malloc(s, 64); }
     void * operator new[] (size_t s) { return  _mm_malloc(s, 64); }
     void operator delete (void * p) { _mm_free(p); }
     void operator delete[] (void * p) { _mm_free(p); }
+    */
     
     template <typename Function>
     void SIMD_function (const Function & func, std::true_type)
@@ -259,6 +273,7 @@ namespace ngstd
 
 #else
 
+  
   template<>
   class SIMD<double>
   {
