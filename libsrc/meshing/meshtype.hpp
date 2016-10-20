@@ -1020,13 +1020,6 @@ namespace netgen
   class DLL_HEADER MeshingParameters
   {
   public:
-
-
-    
-
-
-
-
     /**
        3d optimization strategy:
        // m .. move nodes
@@ -1131,6 +1124,8 @@ namespace netgen
     ///
     MeshingParameters (const MeshingParameters & mp2) = default;
     MeshingParameters (MeshingParameters && mp2) = default;
+    MeshingParameters & operator= (const MeshingParameters & mp2) = default;
+    MeshingParameters & operator= (MeshingParameters && mp2) = default;
     ///
     void Print (ostream & ost) const;
     /// 
