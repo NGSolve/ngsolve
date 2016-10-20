@@ -122,7 +122,7 @@ namespace ngstd
  
 #else
 
-  template <size_t ALIGN>
+  template <size_t ALIGN = 64>
   class AlignedAlloc
   {
   public:
@@ -135,7 +135,7 @@ namespace ngstd
 
   
   template<>
-  class alignas(32) SIMD<double> : public AlignedAlloc<64>
+  class alignas(32) SIMD<double> : public AlignedAlloc<>
   {
     __m256d data;
     

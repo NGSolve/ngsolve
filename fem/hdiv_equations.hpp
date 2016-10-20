@@ -63,6 +63,13 @@ public:
       (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
   }
 
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+  {
+    Cast(fel).CalcMappedShape (mir, mat);      
+  }
+
+  
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
                      const TVX & x, TVY & y,
@@ -160,6 +167,12 @@ public:
     HeapReset hr(lh);
     mat = 1.0/mip.GetJacobiDet() * 
       (static_cast<const FEL&>(fel).GetDivShape(mip.IP(), lh));
+  }
+
+  static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                    const SIMD_BaseMappedIntegrationRule & mir, ABareMatrix<> mat)
+  {
+    Cast(fel).CalcMappedDivShape (mir, mat);      
   }
 
 
