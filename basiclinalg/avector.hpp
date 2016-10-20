@@ -103,10 +103,46 @@ namespace ngbla
     return AVXSumExpr<TA, TB> (a.Spec(), b.Spec());
   }
 
- /* *************************** SubExpr **************************** */
+
+  /* *************************** SubExpr **************************** */
 
   template <class TA, class TB> 
-  class AVXNegExpr : public SIMDExpr<AVXNegExpr<TA,TB> >
+  class AVXSubExpr : public SIMDExpr<AVXSubExpr<TA,TB> >
+  {
+    const TA & a;
+    const TB & b;
+  public:
+
+    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    enum { IS_LINEAR_VEC = TA::IS_LINEAR_VEC && TB::IS_LINEAR_VEC };
+    
+    INLINE AVXSubExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+
+    INLINE auto operator() (size_t i) const { return a(i)-b(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
+    INLINE auto Get(size_t i) const { return a.Get(i)-b.Get(i); }
+    INLINE auto Get(size_t i, size_t j) const { return a.Get(i,j)-b.Get(i,j); } 
+
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+
+    void Dump (ostream & ost) const
+    { ost << "("; a.Dump(ost); ost << ") - ("; b.Dump(ost); ost << ")"; }
+  };
+
+  template <typename TA, typename TB>
+  INLINE AVXSubExpr<TA, TB>
+  operator- (const SIMDExpr<TA> & a, const SIMDExpr<TB> & b)
+  {
+    return AVXSubExpr<TA, TB> (a.Spec(), b.Spec());
+  }
+
+
+  
+ /* *************************** NegExpr **************************** */
+
+  template <class TA> 
+  class AVXNegExpr : public SIMDExpr<AVXNegExpr<TA> >
   {
     const TA & a;
   public:
@@ -128,11 +164,11 @@ namespace ngbla
     { ost << "-("; a.Dump(ost); ost << ")"; }
   };
 
-  template <typename TA, typename TB>
-  INLINE AVXNegExpr<TA, TB>
+  template <typename TA>
+  INLINE AVXNegExpr<TA>
   operator- (const SIMDExpr<TA> & a)
   {
-    return AVXNegExpr<TA, TB> (a.Spec());
+    return AVXNegExpr<TA> (a.Spec());
   }
 
 
