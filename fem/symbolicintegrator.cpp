@@ -1701,6 +1701,10 @@ namespace ngfem
           
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
+          ud.fel = &fel;
+          ud.elx = &elveclin;
+          ud.lh = &lh;
+          
           /*
           FlatVector<> measure(mir.Size(), lh);
           for (int i = 0; i < mir.Size(); i++)
