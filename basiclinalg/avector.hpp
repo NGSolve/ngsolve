@@ -103,6 +103,38 @@ namespace ngbla
     return AVXSumExpr<TA, TB> (a.Spec(), b.Spec());
   }
 
+ /* *************************** SubExpr **************************** */
+
+  template <class TA, class TB> 
+  class AVXNegExpr : public SIMDExpr<AVXNegExpr<TA,TB> >
+  {
+    const TA & a;
+  public:
+
+    enum { IS_LINEAR = TA::IS_LINEAR };
+    enum { IS_LINEAR_VEC = TA::IS_LINEAR_VEC };
+    
+    INLINE AVXNegExpr (const TA & aa) : a(aa) { ; }
+
+    INLINE auto operator() (size_t i) const { return -a(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return -a(i,j); }
+    INLINE auto Get(size_t i) const { return -a.Get(i); }
+    INLINE auto Get(size_t i, size_t j) const { return -a.Get(i,j); } 
+
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+
+    void Dump (ostream & ost) const
+    { ost << "-("; a.Dump(ost); ost << ")"; }
+  };
+
+  template <typename TA, typename TB>
+  INLINE AVXNegExpr<TA, TB>
+  operator- (const SIMDExpr<TA> & a)
+  {
+    return AVXNegExpr<TA, TB> (a.Spec());
+  }
+
 
 
   /* *************************** PW_Mult_Expr **************************** */
@@ -265,12 +297,14 @@ namespace ngbla
   {
   public:
     AVectorD (size_t as)
-      : AFlatVectorD (as, (double*) _mm_malloc(sizeof(SIMD<double>) * ((as+SIMD<double>::Size()-1) / SIMD<double>::Size()), 64)) { ; }
+    // : AFlatVectorD (as, (double*) _mm_malloc(sizeof(SIMD<double>) * ((as+SIMD<double>::Size()-1) / SIMD<double>::Size()), 64)) { ; }
+      : AFlatVectorD (as, new SIMD<double>[(as+SIMD<double>::Size()-1) / SIMD<double>::Size()]) { ; }
     AVectorD () : AFlatVectorD (0, (double*)nullptr) { ; }
     AVectorD (AVectorD && av2) : AFlatVectorD (0, (double*)nullptr) { Swap(size, av2.size); Swap (data, av2.data); }
     ~AVectorD()
     {
-      _mm_free(data);
+      // _mm_free(data);
+      delete data;
     }
     using AFlatVectorD::operator=;
     AVectorD & operator= (AVectorD && av2) { Swap(size, av2.size); Swap (data, av2.data); return *this; }
@@ -414,10 +448,12 @@ namespace ngbla
   {
   public:
     AMatrixD (size_t ah, size_t aw)
-      : AFlatMatrixD (ah, aw, (double*)_mm_malloc(sizeof(SIMD<double>)*ah* ((aw+SIMD<double>::Size()-1)/SIMD<double>::Size()), 64)) { ; }
+    // : AFlatMatrixD (ah, aw, (double*)_mm_malloc(sizeof(SIMD<double>)*ah* ((aw+SIMD<double>::Size()-1)/SIMD<double>::Size()), 64)) { ; }
+      : AFlatMatrixD (ah, aw, new SIMD<double>[ah* ((aw+SIMD<double>::Size()-1)/SIMD<double>::Size())]) { ; }
     ~AMatrixD ()
     {
-      _mm_free (data);
+      // _mm_free (data);
+      delete data;
     }
     using AFlatMatrixD::operator=;
   };
