@@ -981,7 +981,6 @@ namespace ngfem
     if (et == ET_TRIG || et == ET_TET)
       intorder -= test_difforder+trial_difforder;
     elmat = 0;
-    // simd_evaluate = false;
     if (simd_evaluate)
       try
         {
@@ -1036,7 +1035,6 @@ namespace ngfem
                                   cf -> Evaluate (mir, proxyvalues.Rows(kk,kk+1));
                                 }
                               else
-                                // proxyvalues(STAR,k,l) = 0.0;
                                 proxyvalues.Row(kk) = 0.0;
                             }
                       else
@@ -1613,7 +1611,8 @@ namespace ngfem
           
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
-              if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+              // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+              if (true)
                 {
                   ud.trialfunction = proxy1;
                   ud.trial_comp = k;
@@ -1759,7 +1758,8 @@ namespace ngfem
                 
                 for (int k = 0; k < proxy1->Dimension(); k++)
                   for (int l = 0; l < proxy2->Dimension(); l++)
-                    if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+                    // if (nonzeros(test_cum[l1]+l, trial_cum[k1]+k))
+                    if (true)
                       {
                         ud.trialfunction = proxy1;
                         ud.trial_comp = k;
