@@ -718,7 +718,7 @@ namespace ngfem
       throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
     }
     virtual void
-      AppplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+      ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
                              const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                              FlatVector<double> trace_me, FlatVector<double> trace_you,
                              FlatVector<double> ely, LocalHeap & lh) const
@@ -727,7 +727,7 @@ namespace ngfem
     }
     
     virtual void
-      AppplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+      ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
                              const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                              FlatVector<Complex> trace_me, FlatVector<Complex> trace_you,
                              FlatVector<Complex> ely, LocalHeap & lh) const

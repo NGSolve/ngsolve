@@ -483,13 +483,13 @@ void NGS_DLL_HEADER ExportNgcomp()
          (FunctionPointer ([](const string & filename,
                               bp::object py_mpicomm)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
+                             // PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
+                             // if (py_mpicomm_ptr != Py_None)
+                             //   {
+                             //     MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
+                             //     ngs_comm = *comm;
+                             //   }
+                             // else
                                ngs_comm = MPI_COMM_WORLD;
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
@@ -1849,17 +1849,17 @@ void NGS_DLL_HEADER ExportNgcomp()
          (FunctionPointer ([](const string & filename,
                               bp::object py_mpicomm)
                            { 
-                             PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
-                             if (py_mpicomm_ptr != Py_None)
-                               {
-                                 MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
-                                 ngs_comm = *comm;
-                               }
-                             else
+                             // PyObject * py_mpicomm_ptr = py_mpicomm.ptr();
+                             // if (py_mpicomm_ptr != Py_None)
+                             //   {
+                             //     MPI_Comm * comm = PyMPIComm_Get (py_mpicomm_ptr);
+                             //     ngs_comm = *comm;
+                             //   }
+                             // else
                                ngs_comm = MPI_COMM_WORLD;
 
-                             cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
-                                  << MyMPI_GetNTasks(ngs_comm) << endl;
+                             // cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
+                             //      << MyMPI_GetNTasks(ngs_comm) << endl;
 
                              NGSOStream::SetGlobalActive (MyMPI_GetId()==0);
                              return LoadPDE (filename);

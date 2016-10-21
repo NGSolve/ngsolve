@@ -542,12 +542,23 @@ public:
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
 
+    virtual FlatVector<double> 
+    CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+		     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+		     FlatVector<double> elx, LocalHeap & lh) const;
+
+    virtual void
+    ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+			  const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			   FlatVector<double> trace_me, FlatVector<double> trace_you,
+			   FlatVector<double> ely, LocalHeap & lh) const;
     virtual void
     ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                       const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                       const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                       FlatVector<double> elx, FlatVector<double> ely,
                       LocalHeap & lh) const;
+
   };
 
   class SymbolicEnergy : public BilinearFormIntegrator

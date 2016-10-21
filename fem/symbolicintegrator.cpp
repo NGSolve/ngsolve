@@ -2735,7 +2735,276 @@ namespace ngfem
   }
 
 
+  FlatVector<double> SymbolicFacetBilinearFormIntegrator :: 
+  CalcTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+		   const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+		   FlatVector<double> elx, LocalHeap & lh) const
+  {
+    if (simd_evaluate)
+      {
+        try
+          {
+            static Timer tall("SymbolicFacetBFI::CalcTraceValues - all", 2);
+            static Timer tstart("SymbolicFacetBFI::CalcTraceValues - startup", 2);
+            static Timer tapply("SymbolicFacetBFI::CalcTraceValues - apply", 2);
+            static Timer tcoef("SymbolicFacetBFI::CalcTraceValues - coef", 2);
+            static Timer tapplyt("SymbolicFacetBFI::CalcTraceValues - apply-trans", 2); 
+            
+            HeapReset hr(lh);
+            
+	    //cout << "elx in: "<< elx.Size() << endl << elx << endl;
 
+            int maxorder = volumefel.Order();
+            
+            auto eltype = eltrans.GetElementType();
+            auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+            
+            Facet2ElementTrafo transform(eltype, ElVertices); 
+            
+            SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+            
+            auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
+            auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
+            simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
+            
+            // evaluate proxy-values
+            ProxyUserData ud(trial_proxies.Size(), lh);
+            const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+            ud.fel = &volumefel;   // necessary to check remember-map
+            // ud.elx = &elx;
+            ud.lh = &lh;
+            for (ProxyFunction * proxy : trial_proxies)
+              ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+            // tstart.Stop();
+            // tapply.Start();
+	    
+	    
+	    int notrial, notest;
+	    notrial = notest = 0;
+	    for (ProxyFunction * proxy : trial_proxies)
+              if(proxy->IsOther())
+		notrial++;
+	    for (ProxyFunction * proxy : test_proxies)
+              if(proxy->IsOther())
+		notest++;
+
+	    //cout << "there are " << trial_proxies.Size() << " trial proxies, " << notrial << " are other " << endl;
+	    //cout << "there are " << test_proxies.Size()  << " test proxies "  << notest  << " are other " << endl;
+            
+            for (ProxyFunction * proxy : trial_proxies)
+              if(!proxy->IsOther())
+		{
+		  IntRange trial_range  = IntRange(0, volumefel.GetNDof());
+		  trial_range = proxy->Evaluator()->BlockDim() * trial_range;
+
+		  //cout << "blockdim is " << proxy->Evaluator()->BlockDim() << endl;
+		  //cout << "trial_range: " << endl << trial_range << endl;
+		  
+		  proxy->Evaluator()->Apply(volumefel, simd_mir, elx.Range(trial_range), ud.GetAMemory(proxy)); // , lh);
+		  
+		  //cout << "mem: " << endl << ud.GetAMemory(proxy) << endl;
+		}
+
+	    int sely = 0;
+	    for (ProxyFunction * proxy : trial_proxies)
+              if(!proxy->IsOther())
+		sely += ud.GetAMemory(proxy).AllocSize();
+	    FlatVector<double> ely(sely, lh); 
+	    ely = -1;
+	    sely = 0;
+	    for (ProxyFunction * proxy : trial_proxies)
+              if(!proxy->IsOther())
+		for(auto k:Range(ud.GetAMemory(proxy).AllocSize()))
+		  ely[sely++] = ud.GetAMemory(proxy)(k);
+	    
+	    //cout << "return trace ely: " << endl << ely << endl;
+	    
+	    return ely;
+	  }
+        catch (ExceptionNOSIMD e)
+          {
+            cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
+                 << e.What() << endl;
+            simd_evaluate = false;
+            return CalcTraceValues (volumefel, LocalFacetNr, eltrans, ElVertices, elx, lh);
+          }
+      }
+        
+    
+    static Timer tall("SymbolicFacetBFI::Apply - all", 2); RegionTimer rall(tall);
+    /*
+      static Timer t("SymbolicFacetBFI::Apply", 2);
+      static Timer ts1("SymbolicFacetBFI::Apply start 1", 2);
+      static Timer ts2("SymbolicFacetBFI::Apply start 2", 2);
+      static Timer t1("SymbolicFacetBFI::Apply 1", 2);
+      static Timer t2("SymbolicFacetBFI::Apply 2", 2);
+      static Timer t3("SymbolicFacetBFI::Apply 3", 2);
+    */
+    
+    HeapReset hr(lh);
+    // ts1.Start();
+    
+
+    int maxorder = volumefel.Order();
+
+    auto eltype = eltrans.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    
+    Facet2ElementTrafo transform(eltype, ElVertices); 
+    IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
+    BaseMappedIntegrationRule & mir = eltrans(ir_facet_vol, lh);
+    
+    // ts1.Stop();
+    // ts2.Start();
+    
+    // evaluate proxy-values
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+    ud.fel = &volumefel;   // necessary to check remember-map
+    // ud.elx = &elx;
+    ud.lh = &lh;
+    for (ProxyFunction * proxy : trial_proxies)
+      ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
+
+    for (ProxyFunction * proxy : trial_proxies)
+      if(!proxy->IsOther())
+	{
+	  IntRange trial_range  = IntRange(0, proxy->Evaluator()->BlockDim()*volumefel.GetNDof());
+	  proxy->Evaluator()->Apply(volumefel, mir, elx.Range(trial_range), ud.GetMemory(proxy), lh);
+	}
+    
+    int sely = 0;
+    for (ProxyFunction * proxy : trial_proxies)
+      if(!proxy->IsOther())
+	sely += ud.GetMemory(proxy).AsVector().Size();
+    FlatVector<double> ely(sely, lh); 
+    sely = 0;
+    for (ProxyFunction * proxy : trial_proxies)
+      if(!proxy->IsOther())
+	for(auto k:Range(ud.GetMemory(proxy).AsVector().Size()))
+	  ely[sely++] = ud.GetMemory(proxy).AsVector()[k];
+	    
+    return ely;
+    // t.Stop();
+  }//end CalcTraceValues (double)
+
+  void SymbolicFacetBilinearFormIntegrator ::
+  ApplyFromTraceValues (const FiniteElement & volumefel, int LocalFacetNr,
+			const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
+			FlatVector<double> trace_me, FlatVector<double> trace_you,
+			FlatVector<double> ely, 
+			LocalHeap & lh) const
+  {
+    
+    if (simd_evaluate)
+      {
+        try
+          {
+            ely = 0.0;
+
+	    int maxorder = volumefel.Order();
+	    auto eltype = eltrans.GetElementType();
+            auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+
+            Facet2ElementTrafo transform(eltype, ElVertices); 
+            SIMD_IntegrationRule simd_ir_facet(etfacet, 2*maxorder);
+
+            auto & simd_ir_facet_vol = transform(LocalFacetNr, simd_ir_facet, lh);
+            auto & simd_mir = eltrans(simd_ir_facet_vol, lh);
+            simd_mir.ComputeNormalsAndMeasure(eltype, LocalFacetNr);
+
+            ProxyUserData ud(trial_proxies.Size(), lh);
+            const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+            ud.fel = &volumefel;   // necessary to check remember-map
+            // ud.elx = &elx;
+            ud.lh = &lh;
+
+	    size_t ctrace_me = 0, ctrace_you = 0;
+	    //copy traces to user memory
+	    for (ProxyFunction * proxy : trial_proxies)
+	      {
+		ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
+		auto mem = ud.GetAMemory(proxy);
+		//cout << "proxy is other? " << proxy->IsOther() << endl;
+		if(proxy->IsOther())
+		  for(auto k:Range(mem.AllocSize()))
+		    mem(k) = trace_you[ctrace_you++];
+		else
+		  for(auto k:Range(mem.AllocSize()))
+		    mem(k) = trace_me[ctrace_me++];
+	      }
+
+	    for (auto proxy : test_proxies)
+              if(!proxy->IsOther())
+		{
+		  HeapReset hr(lh);
+		  AFlatMatrix<double> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.GetNIP(), lh); 
+                
+		  for (int k = 0; k < proxy->Dimension(); k++)
+		    {
+		      ud.testfunction = proxy;
+		      ud.test_comp = k;
+		      cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
+		    }
+                
+		  for (int i = 0; i < simd_proxyvalues.Height(); i++)
+		    {
+		      auto row = simd_proxyvalues.Row(i);
+		      for (int j = 0; j < row.VSize(); j++)
+			row.Get(j) *= simd_mir[j].GetMeasure().Data() * simd_ir_facet[j].Weight().Data();
+		    }
+		  // tapplyt.Start();
+		  IntRange test_range  = IntRange(0, volumefel.GetNDof());
+		  int blockdim = proxy->Evaluator()->BlockDim();
+		  test_range = blockdim * test_range;
+                
+		  proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
+		}
+	    
+	  }
+        catch (ExceptionNOSIMD e)
+          {
+            cout << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
+                 << e.What() << endl;
+            simd_evaluate = false;
+	    ApplyFromTraceValues(volumefel, LocalFacetNr, eltrans, ElVertices,
+				 trace_me, trace_you, ely, lh);
+          }
+
+      }
+
+    int maxorder = volumefel.Order();
+    auto eltype = eltrans.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype, LocalFacetNr);
+    IntegrationRule ir_facet(etfacet, 2*maxorder);
+    
+    Facet2ElementTrafo transform(eltype, ElVertices); 
+    IntegrationRule & ir_facet_vol = transform(LocalFacetNr, ir_facet, lh);
+    BaseMappedIntegrationRule & mir = eltrans(ir_facet_vol, lh);
+
+    ProxyUserData ud(trial_proxies.Size(), lh);
+    const_cast<ElementTransformation&>(eltrans).userdata = &ud;
+    ud.fel = &volumefel;   // necessary to check remember-map
+    ud.lh = &lh;
+
+    size_t ctrace_me = 0, ctrace_you = 0;
+    //copy traces to user memory
+    for (ProxyFunction * proxy : trial_proxies)
+      {
+	ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
+	auto mem = ud.GetMemory(proxy).AsVector();
+	if(proxy->IsOther())
+	  for(auto k:Range(mem.Size()))
+	    mem(k) = trace_you[ctrace_you++];
+	else
+	  for(auto k:Range(mem.Size()))
+	    mem(k) = trace_me[ctrace_me++];
+      }
+
+    
+  }//end ApplyFromTraceValues
 
   void SymbolicFacetBilinearFormIntegrator ::
   ApplyFacetMatrix (const FiniteElement & fel1, int LocalFacetNr,
