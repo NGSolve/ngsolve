@@ -466,6 +466,20 @@ DLL_HEADER void ExportNetgenMeshing()
     .def ("GetMaterial", FunctionPointer([](Mesh & self, int domnr)
                                          { return string(self.GetMaterial(domnr)); }))
 
+    .def ("AddPointIdentification", FunctionPointer ([](Mesh & self, bp::object pindex1, bp::object pindex2, int identnr, int type)
+                           {
+			     if(bp::extract<PointIndex>(pindex1).check() && bp::extract<PointIndex>(pindex2).check())
+			       {
+				 self.GetIdentifications().Add (bp::extract<PointIndex>(pindex1), bp::extract<PointIndex>(pindex2), identnr);
+				 self.GetIdentifications().SetType(identnr, Identifications::ID_TYPE(type)); // type = 2 ... periodic
+			       }
+                           }),
+          bp::default_call_policies(),
+          (bp::arg("pid1"),
+           bp::arg("pid2"),
+           bp::arg("identnr"),
+           bp::arg("type")
+           ))
     .def ("GenerateVolumeMesh", FunctionPointer
           ([](Mesh & self, bp::object pymp)
            {
