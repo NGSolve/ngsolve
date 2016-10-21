@@ -2981,13 +2981,14 @@ namespace ngcomp
                            {
                              RegionTimer reg(timerDGpar);
                              LocalHeap lh = clh.Split();
-                             Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
+                             Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
 
                              for (int i : r)
                                {
                                  timerDG1.Start();
                                  HeapReset hr(lh);
                                  int facet = colfacets[i];
+				 int facet2 = colfacets[i];
                                  ma->GetFacetElements (facet, elnums);
                                  if (elnums.Size() == 0) continue; // coarse facets
                                  int el1 = elnums[0];
@@ -2996,7 +2997,17 @@ namespace ngcomp
                                  
                                  ElementId ei1(VOL, el1);
                                  timerDG1.Stop();
-                                 
+                                 if(elnums.Size() < 2)
+				   {
+				     facet2 = ma->GetPeriodicFacet(facet);
+				     if(facet2 > facet)
+				       {
+					 ma->GetFacetElements (facet2, elnums_per);
+					 elnums.Append(elnums_per[0]);
+				       }
+				     else if(facet2 < facet)
+				       continue;
+				   }
                                  if (elnums.Size()<2)
                                    {
                                      RegionTimer reg(timerDGfacet);
@@ -3041,7 +3052,7 @@ namespace ngcomp
                                  ElementId ei2(VOL, el2);
                                  
                                  ma->GetElFacets(el2,fnums2);
-                                 int facnr2 = fnums2.Pos(facet);
+                                 int facnr2 = fnums2.Pos(facet2);
                                  
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
@@ -3123,7 +3134,7 @@ namespace ngcomp
                        {
                          {
                            int el1 = ei1.Nr();
-                           Array<int> elnums(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);                         
+                           Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh), vnums1(8, lh), vnums2(8, lh);
                              // RegionTimer reg1(timerDG1);
 
                            ma->GetElFacets(el1,fnums1);
@@ -3135,7 +3146,12 @@ namespace ngcomp
                                  HeapReset hr(lh);
 
                                  ma->GetFacetElements(fnums1[facnr1],elnums);
-
+				 if (elnums.Size()<2)
+				   if(ma->GetPeriodicFacet(fnums1[facnr1])!=fnums1[facnr1])
+				     {
+				       ma->GetFacetElements (ma->GetPeriodicFacet(fnums1[facnr1]), elnums_per);
+				       elnums.Append(elnums_per[0]);
+				     }
                                  if (elnums.Size()<2)
                                    {
                                      ma->GetFacetSurfaceElements (fnums1[facnr1], elnums);
@@ -3207,8 +3223,8 @@ namespace ngcomp
                                  ElementId ei2(VOL, el2);
                                  
                                  ma->GetElFacets(el2,fnums2);
-                                 int facnr2 = fnums2.Pos(fnums1[facnr1]);
-                                 
+                                 int facnr2 = fnums2.Pos(ma->GetPeriodicFacet(fnums1[facnr1]));
+
                                  ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
                                  ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
 
