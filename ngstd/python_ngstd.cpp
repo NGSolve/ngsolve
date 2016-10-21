@@ -99,6 +99,67 @@ void TranslateException (const Exception & ex)
   PyErr_SetString(PyExc_RuntimeError, err.c_str());
 }
 
+#ifdef PARALLEL
+  class MPIManager
+  {
+  public:
+    static bool initialized_by_me;
+    MPIManager(){}
+    static void InitMPI(int argc = 0, char*** argv = NULL)
+    {
+      int is_init = -1;
+      MPI_Initialized(&is_init);
+      if(!is_init)
+	{
+	  if(argc==0)
+	    {
+	      const char * progname = "ngslib";
+	      typedef const char * pchar;
+	      pchar ptrs[2] = { progname, nullptr };
+	      pchar * pptr = &ptrs[0];
+	      int argc2 = 1;
+	      MPI_Init (&argc2, (char***)&pptr);
+	    }
+	  else
+	    {
+	      int argc2 = argc;
+	      MPI_Init(&argc2, argv);
+	    }
+	  initialized_by_me = true;
+	}
+      else
+	cout << "MPI already initialized by someone else??" << endl;
+      ngs_comm = MPI_COMM_WORLD;
+      NGSOStream::SetGlobalActive (MyMPI_GetId() == 0);
+      if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
+	TaskManager::SetNumThreads (1);
+    }
+    static void InitMPIB(){ InitMPI(); }
+    ~MPIManager()
+    { 
+      if(initialized_by_me)
+	MPI_Finalize(); 
+    }
+    static void Barrier() { MPI_Barrier(MPI_COMM_WORLD); }
+    static double GetWT() { return MPI_Wtime(); }
+    static int GetRank() { return MyMPI_GetId(); }
+    static int GetNP() { return MyMPI_GetNTasks(); }
+  };
+bool MPIManager::initialized_by_me = false;
+#else
+  class MPIManager 
+  {
+  public:
+    MPIManager(){};
+    ~MPIManager(){};
+    static void InitMPIB(){}; 
+    static void Barrier(){};
+    static double GetWT(){ return -1.0; }
+    static int GetRank() { return 0; }
+    static int GetNP() { return 1; }
+  };  
+#endif
+static MPIManager mpiman;
 
 void NGS_DLL_HEADER  ExportNgstd() {
   std::string nested_name = "ngstd";
@@ -378,6 +439,17 @@ void NGS_DLL_HEADER  ExportNgstd() {
     .def("__enter__", &ParallelContextManager::Enter)
     .def("__exit__", &ParallelContextManager::Exit)
     ;
+
+
+
+  bp::class_<MPIManager>("MPIManager", bp::no_init)
+    .def("InitMPI", &MPIManager::InitMPIB)
+    .def("Barrier", &MPIManager::Barrier)
+    .def("GetWT", &MPIManager::GetWT)
+    .def("GetRank", &MPIManager::GetRank)
+    .def("GetNP", &MPIManager::GetNP)
+    ;
+
 }
 
 

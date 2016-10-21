@@ -308,6 +308,9 @@ namespace ngbla
     enum { IS_LINEAR = false };
     enum { IS_LINEAR_VEC = true };
     
+    //total size of data (in doubles)
+    size_t AllocSize() const { return h*VWidth()*SIMD<double>::Size(); }
+
     size_t Size () const { return h*w; }
     size_t Height () const { return h; }
     size_t Width () const { return w; }

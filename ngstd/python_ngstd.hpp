@@ -13,7 +13,6 @@
 #include <thread>
 #include <iostream>
 
-namespace bp = boost::python;
 
 #if (BOOST_VERSION >= 106000) && (BOOST_VERSION < 106100)
   // Boost Python 1.60 does not automatically register shared_ptr<T> with T
@@ -27,6 +26,7 @@ namespace bp = boost::python;
 #else
 #define MSVC2015_UPDATE3_GET_PTR_FIX(type)
 #endif
+namespace bp = boost::python;
 
 using std::string;
 using std::cout;
