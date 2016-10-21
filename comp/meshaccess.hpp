@@ -211,6 +211,7 @@ namespace ngcomp
     int rect_pml = -1;
     int pml_domain = -1;
     
+    Array<std::tuple<int,int>> identified_facets;
     
     ///
     MPI_Comm mesh_comm;
@@ -691,6 +692,14 @@ namespace ngcomp
         case 2: GetEdgeSurfaceElements (fnr, elnums); break;
         case 3: GetFaceSurfaceElements (fnr, elnums); break;
         }
+    }
+    void CalcIdentifiedFacets();
+    int GetPeriodicFacet(int fnr) const
+    {
+      if(get<1>(identified_facets[fnr]) == 2) // check if identification type is periodic
+	return get<0>(identified_facets[fnr]);
+      else
+	return fnr;
     }
 
     // void GetVertexElements (int vnr, Array<int> & elnrs) const;

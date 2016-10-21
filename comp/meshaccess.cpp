@@ -912,6 +912,8 @@ namespace ngcomp
 
     nboundaries++;
     nboundaries = MyMPI_AllReduce (nboundaries, MPI_MAX);
+
+    CalcIdentifiedFacets();
   }
 
 
@@ -1230,6 +1232,32 @@ namespace ngcomp
 	ArrayMem<int, 4> pnums;
 	GetFacePNums(fnr, pnums);
 	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
+      }
+  }
+
+  void MeshAccess::CalcIdentifiedFacets()
+  {
+    identified_facets.SetSize(nnodes_cd[1]);
+    for(auto i : Range(identified_facets.Size()))
+      identified_facets[i] = std::tuple<int,int>(i,1);
+
+    auto & idents = mesh.GetMesh()->GetIdentifications();
+    int nid = idents.GetMaxNr();
+    
+    for(auto id : Range(1,nid+1))
+      {
+	// for periodic identification by now
+	if (idents.GetType(id) != 2) continue;
+	Array<INT<2>> pairs;
+	switch(mesh.GetDimension())
+	  {
+	  case 1: GetPeriodicVertices(id,pairs); break;
+	  case 2: GetPeriodicEdges(id,pairs); break;
+	    // default: // here should be a 3D version
+	  }
+	for(auto pair : pairs)
+	  for(auto l : Range(2))
+	    identified_facets[pair[l]] = std::tuple<int,int>(pair[1-l],2);
       }
   }
 
