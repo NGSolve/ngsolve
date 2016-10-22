@@ -145,9 +145,14 @@ namespace ngbla
 
     INLINE const FlatVector & operator= (initializer_list<T> list) const
     {
+      /*
       int cnt = 0;
       for (auto i = list.begin(); cnt < size; i++, cnt++)
         data[cnt] = *i;
+      */
+      size_t cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
       return *this;
     }
 
@@ -518,9 +523,14 @@ namespace ngbla
     Vector (initializer_list<T> list) 
       : FlatVector<T> (list.size(), new T[list.size()])
     {
+      /*
       int cnt = 0;
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
+      */
+      size_t cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
     }
 
 
