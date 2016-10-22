@@ -667,8 +667,12 @@ namespace ngstd
       allocsize = size;
       mem_to_delete = data;
       TSIZE cnt = 0;
+      for (auto val : list)
+        data[cnt++] = val;
+      /*
       for (auto i = list.begin(); i < list.end(); i++, cnt++)
         data[cnt] = *i;
+      */
     }
 
     /// array merge-copy
