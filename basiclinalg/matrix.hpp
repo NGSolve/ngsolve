@@ -1294,11 +1294,11 @@ namespace ngbla
   {
   protected:
     /// the height
-    int h;
+    size_t h;
     /// the width
-    int w;
+    size_t w;
     /// the distance
-    int dist;
+    size_t dist;
     /// the data
     T * __restrict data;
   public:
@@ -1315,7 +1315,7 @@ namespace ngbla
     // INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
 
     /// set height, width, and mem
-    INLINE SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
+    INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
     /*
@@ -1380,17 +1380,14 @@ namespace ngbla
     /// assign constant
     INLINE const SliceMatrix & operator= (TSCAL s) const
     {
-      for (int i = 0; i < h; i++)
-        for (int j = 0; j < w; j++)
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
           data[i*dist+j] = s;
       return *this;
     }
 
     /// access operator
-    template<typename TI1, typename TI2,
-             typename std::enable_if<std::is_convertible<TI1,int>::value, int>::type = 0,
-             typename std::enable_if<std::is_convertible<TI2,int>::value, int>::type = 0>
-    INLINE TELEM & operator() (TI1 i, TI2 j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i,j);
@@ -1399,9 +1396,7 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    template<typename IND,
-             typename std::enable_if<std::is_convertible<IND,int>::value, int>::type = 0>
-    INLINE TELEM & operator() (IND i) const
+    INLINE TELEM & operator() (size_t i) const
     {
 #ifdef CHECK_RANGE
       CheckMatRange(h,w,i);
@@ -1410,35 +1405,35 @@ namespace ngbla
     }
 
     /// the height
-    INLINE int Height () const throw() { return h; }
+    INLINE size_t Height () const throw() { return h; }
 
     /// the width
-    INLINE int Width () const throw() { return w; }
+    INLINE size_t Width () const throw() { return w; }
 
     /// 
-    INLINE int Dist () const throw() { return dist; }
+    INLINE size_t Dist () const throw() { return dist; }
 
-    INLINE const SliceMatrix Rows (int first, int next) const
+    INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first*dist);
     }
 
-    INLINE const FlatVector<T> Row (int i) const
+    INLINE const FlatVector<T> Row (size_t i) const
     {
-      return FlatVector<T> (w, &data[i*size_t(dist)]);
+      return FlatVector<T> (w, &data[i*dist]);
     }
 
-    INLINE const FlatVector<T> Diag (int i) const
+    INLINE const FlatVector<T> Diag (size_t i) const
     {
       return SliceVector<T> (h, dist+1, data);
     }
 
-    INLINE const SliceVector<T> Col (int i) const
+    INLINE const SliceVector<T> Col (size_t i) const
     {
       return SliceVector<T> (h, dist, &data[i]);
     }
 
-    INLINE const SliceMatrix<T> Cols (int first, int next) const
+    INLINE const SliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return SliceMatrix<T> (h, next-first, dist, data+first);
     }
@@ -1468,11 +1463,11 @@ namespace ngbla
   {
   protected:
     /// the height
-    int h;
+    size_t h;
     /// the width
-    int w;
+    size_t w;
     /// the distance
-    int dist;
+    size_t dist;
     /// the data
     T * __restrict data;
   public:
@@ -1486,9 +1481,9 @@ namespace ngbla
 
 
     /// set height, width, and mem
-    SliceMatrix (int ah, int aw, int adist, T * adata) throw ()
+    SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
-
+    
     /// assign contents
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
@@ -1499,40 +1494,40 @@ namespace ngbla
     /// assign constant
     const SliceMatrix & operator= (TSCAL s) const throw()
     {
-      for (int i = 0; i < w; i++)
-        for (int j = 0; j < h; j++)
+      for (size_t i = 0; i < w; i++)
+        for (size_t j = 0; j < h; j++)
           data[i*dist+j] = s;
       return *this;
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    TELEM & operator() (size_t i, size_t j) const
     {
       return data[j*dist+i]; 
     }
 
     /// access operator, linear access
-    TELEM & operator() (int i) const
+    TELEM & operator() (size_t i) const
     {
       return data[i]; 
     }
 
     /// the height
-    int Height () const throw() { return h; }
+    size_t Height () const throw() { return h; }
 
     /// the width
-    int Width () const throw() { return w; }
+    size_t Width () const throw() { return w; }
 
     /// 
-    int Dist () const throw() { return dist; }
+    size_t Dist () const throw() { return dist; }
 
 
-    const FlatVector<T> Col (int i) const
+    const FlatVector<T> Col (size_t i) const
     {
-      return FlatVector<T> (h, &data[i*size_t(dist)]);
+      return FlatVector<T> (h, &data[i*dist]);
     }
 
-    const SliceVector<T> Row (int i) const
+    const SliceVector<T> Row (size_t i) const
     {
       return SliceVector<T> (w, dist, &data[i]);
     }
@@ -1543,7 +1538,7 @@ namespace ngbla
     }
 
 
-    const SliceMatrix Rows (int first, int next) const
+    const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first);
     }
@@ -1553,7 +1548,7 @@ namespace ngbla
     }
 
 
-    const SliceMatrix Cols (int first, int next) const
+    const SliceMatrix Cols (size_t first, size_t next) const
     {
       return SliceMatrix (h, next-first, dist, data+first*dist);
     }

@@ -18,7 +18,7 @@ class FlatTable
 {
 protected:
   /// number of rows
-  int size;
+  size_t size;
   /// pointer to first in row
   size_t * index;
   /// array of data 
@@ -27,23 +27,23 @@ protected:
 public:
   INLINE FlatTable() { ; }
 
-  INLINE FlatTable(int as, size_t * aindex, T * adata)
+  INLINE FlatTable(size_t as, size_t * aindex, T * adata)
     : size(as), index(aindex), data(adata) { ; }
 
   /// Size of table
-  INLINE int Size() const { return size; }
+  INLINE size_t Size() const { return size; }
 
   /// Access entry
-  INLINE const FlatArray<T> operator[] (int i) const 
+  INLINE const FlatArray<T> operator[] (size_t i) const 
   { 
     return FlatArray<T> (index[i+1]-index[i], data+index[i]); 
   }
 
   INLINE T * Data() const { return data; }
 
-  INLINE FlatArray<T,size_t> AsArray() const
+  INLINE FlatArray<T> AsArray() const
   {
-    return FlatArray<T,size_t> (index[size], data);
+    return FlatArray<T> (index[size], data);
   }
 
   INLINE FlatArray<size_t> IndexArray() const
@@ -55,9 +55,9 @@ public:
   class Iterator
   {
     const FlatTable & tab;
-    int row;
+    size_t row;
   public:
-    Iterator (const FlatTable & _tab, int _row) : tab(_tab), row(_row) { ; }
+    Iterator (const FlatTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
     Iterator & operator++ () { ++row; return *this; }
     FlatArray<T> operator* () const { return tab[row]; }
     bool operator!= (const Iterator & it2) { return row != it2.row; }
@@ -65,9 +65,7 @@ public:
   
   Iterator begin() const { return Iterator(*this, 0); }
   Iterator end() const { return Iterator(*this, size); }
-  // IntRange Range () const { return IntRange(0, size); }
 };
-
 
 
 /** 
@@ -84,20 +82,15 @@ protected:
   using FlatTable<T>::index;
   using FlatTable<T>::data;
 
-  /*
-  INLINE Table ()
-    : data(NULL) { ; }
-  */
-
 public:
   ///
   INLINE Table () : FlatTable<T> (0,NULL,NULL) { ; }
   /// Construct table of uniform entrysize
-  INLINE Table (int asize, int entrysize)
+  INLINE Table (size_t asize, size_t entrysize)
   { 
     size = asize;
     index = new size_t[size+1];
-    for (int i = 0; i <= size; i++)
+    for (size_t i = 0; i <= size; i++)
       index[i] = i*entrysize;
     data = new T [size*entrysize]; 
   }
@@ -110,7 +103,7 @@ public:
     size  = entrysize.Size();
     
     index = new size_t[size+1];
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
       {
 	index[i] = cnt;
 	cnt += entrysize[i];
@@ -124,7 +117,7 @@ public:
     size = tab2.Size();
     
     index = new size_t[size+1];
-    for (int i = 0; i <= size; i++)
+    for (size_t i = 0; i <= size; i++)
       index[i] = tab2.index[i];
 
     size_t cnt = index[size];
@@ -162,7 +155,6 @@ public:
   }
 
   /// Size of table
-  // INLINE int Size() const { return size; }
   using FlatTable<T>::Size;
   
   /// number of elements in all rows

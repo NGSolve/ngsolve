@@ -437,10 +437,10 @@ void NGS_DLL_HEADER ExportNgbla() {
         ;
 
     ExportVector< SVD, VD, double>("SliceVectorD")
-        .def("Range",    static_cast<const SVD (SVD::*)(int,int) const> (&SVD::Range ) )
+        .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
         ;
     ExportVector< SVC, VC, Complex>("SliceVectorC")
-        .def("Range",    static_cast<const SVC (SVC::*)(int,int) const> (&SVC::Range ) )
+        .def("Range",    static_cast<const SVC (SVC::*)(size_t,size_t) const> (&SVC::Range ) )
         .def(bp::self*=double())
         ;
 

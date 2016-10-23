@@ -207,8 +207,8 @@ namespace ngla
     // DynamicMem<int> blockstart, blocksize, blockbw;
     // DynamicMem<TM> data[NBLOCKS];
 
-    Array<int, size_t> blockstart, blocksize, blockbw;
-    Array<TM, size_t> data[NBLOCKS];
+    Array<int> blockstart, blocksize, blockbw;
+    Array<TM> data[NBLOCKS];
 
 
     bool lowmem;
