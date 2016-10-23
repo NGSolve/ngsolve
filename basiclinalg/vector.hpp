@@ -14,22 +14,18 @@ namespace ngbla
   template <int S, class T> class Vec;
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
-  template <class T, class TIND = int> class FlatVector;
+  template <class T, class TIND = size_t> class FlatVector;
   template <class T> class Vector;
-  template <class T> class SliceVector;
+  template <class T = double, class TIND = size_t> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
 
 
-  extern void CheckVecRange(int s, int i);
-  extern void CheckVecRange(int s, int i, int j);
+  extern void CheckVecRange(size_t s, size_t i);
+  extern void CheckVecRange(size_t s, size_t i, size_t j);
 
 
 
   /**
-     new option: 
-     A FlatVector becomes the old SliceVector ! 
-     overhead can be neglected, but needs more testing, results are welcome ...
-
      A simple vector.
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
@@ -40,7 +36,6 @@ namespace ngbla
   protected:
     /// vector size
     TIND size;
-    // enum { dist = 1 };
     /// the data
     T * __restrict data;
   public:
@@ -49,13 +44,13 @@ namespace ngbla
     // typedef T& TREF;
     /// scalar of element type
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
+    enum { IS_LINEAR = 1 };
 
     /// default constructor does nothing
     FlatVector () = default;
     ~FlatVector () = default;
     /// set size and mem
-    INLINE FlatVector (unsigned int as, T * adata) : size(as), data(adata)
+    INLINE FlatVector (TIND as, T * adata) : size(as), data(adata)
     { ; }
 
     ///
@@ -64,7 +59,7 @@ namespace ngbla
     FlatVector (const FlatVector &) = default;
     
     /// set size and mem
-    INLINE FlatVector (unsigned int as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
+    INLINE FlatVector (TIND as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
     {  ; }
 
     /// put FlatVector over fixed size vector
@@ -103,18 +98,18 @@ namespace ngbla
       // does not copy FlatVectors and don't know why
       // CMCPMatExpr<FlatVector<T> >::operator= (m2.A()); 
 
-      for (int j = 0; j < size; j++) data[j] = m2.A()(j);
+      for (TIND j = 0; j < size; j++) data[j] = m2.A()(j);
     }
 
     /// assign memory for vector on local heap
-    INLINE void AssignMemory (int as, LocalHeap & lh) 
+    INLINE void AssignMemory (TIND as, LocalHeap & lh) 
     {
       size = as;
       data = lh.Alloc<T>(size);
     }
 
     /// assign memory for vector
-    void AssignMemory (int as, T * mem) 
+    void AssignMemory (TIND as, T * mem) 
     {
       size = as;
       data = mem;
@@ -145,11 +140,6 @@ namespace ngbla
 
     INLINE const FlatVector & operator= (initializer_list<T> list) const
     {
-      /*
-      int cnt = 0;
-      for (auto i = list.begin(); cnt < size; i++, cnt++)
-        data[cnt] = *i;
-      */
       size_t cnt = 0;
       for (auto val : list)
         data[cnt++] = val;
@@ -160,11 +150,11 @@ namespace ngbla
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < size; i++)
-	  data[i] += v.Spec()(i);
+        for (auto i : Range())
+          data[i] += v.Spec()(i);
       else
-	for (int i = 0; i < size; i++)
-	  data[i] += v.Spec()(i,0);
+        for (auto i : Range())        
+          data[i] += v.Spec()(i,0);
       return *this;
     }
 
@@ -178,29 +168,14 @@ namespace ngbla
 #endif
       return data[i]; 
     }
-
-    /*
-    INLINE TELEM & operator() (int i) const
-    {
-#ifdef CHECK_RANGE
-      CheckVecRange(size,i);
-#endif
-      return data[i]; 
-    }
-    /// 
-    INLINE TELEM & operator() (size_t i) const { return data[i]; }
-    INLINE TELEM & operator() (unsigned int i) const { return data[i]; }
-    INLINE TELEM & operator() (long int i) const { return data[i]; }
-    */
-
+ 
     INLINE RowsArrayExpr<FlatVector> operator() (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<FlatVector> (*this, rows);
     }
     
-    
     /// element access. index j is ignored
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (TIND i, TIND j) const
     {
 #ifdef CHECK_RANGE 
       CheckVecRange(size,i);
@@ -220,20 +195,20 @@ namespace ngbla
 
     // shape functions had a problem with icc v9.1
     // const CArray<T> Addr(int i) const { return CArray<T> (data+i*dist); }
-    INLINE T * Addr(int i) const { return data+i; }
+    INLINE T * Addr(TIND i) const { return data+i; }
     /*
     const CArray<T> operator+(int i) const
     { return CArray<T> (data+i*dist); }
     */
 
-    T * operator+(int i) const { return data+i; }
+    T * operator+(TIND i) const { return data+i; }
 
     /// sub-vector of size next-first, starting at first
-    INLINE FlatVector<T> Range (int first, int next) const
+    INLINE FlatVector<T,TIND> Range (TIND first, TIND next) const
     { return FlatVector<T> (next-first, data+first); }
 
     /// sub-vector given by range
-    INLINE FlatVector<T> Range (IntRange range) const
+    INLINE FlatVector<T,TIND> Range (T_Range<TIND> range) const
     { return Range (range.First(), range.Next()); }
     
 
@@ -244,18 +219,18 @@ namespace ngbla
     INLINE TIND Height () const { return size; }
 
     /// vector is matrix of with 1
-    INLINE int Width () const { return 1; }
+    INLINE TIND Width () const { return 1; }
     
-    INLINE IntRange Range () const
-    { return IntRange (0, size); }
+    INLINE T_Range<TIND> Range () const
+    { return T_Range<TIND> (0, size); }
 
     /// take a slice of the vector. Take elements first+i * dist. 
-    INLINE const SliceVector<T> Slice (int first, int dist2) const
+    INLINE const SliceVector<T> Slice (TIND first, TIND dist2) const
     {
       return SliceVector<T> (size/dist2, dist2, data+first);
     }
 
-    INLINE FlatMatrix<T> AsMatrix (int h, int w)
+    INLINE FlatMatrix<T> AsMatrix (TIND h, TIND w)
     {
       return FlatMatrix<T> (h,w, data);
     }
@@ -381,8 +356,8 @@ namespace ngbla
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < size; i++)
-	  (*this)(i) += v.Spec()(i);
+        for (auto i : ::Range(size))
+          (*this)(i) += v.Spec()(i);
       else
 	for (int i = 0; i < size; i++)
 	  (*this)(i) += v.Spec()(i,0);
@@ -1208,14 +1183,14 @@ namespace ngbla
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T = double>
+  template <typename T, typename TIND>
   class SliceVector : public CMCPMatExpr<SliceVector<T> > 
   {
   protected:
     /// vector size
-    int s;
+    TIND s;
     /// distance between entries
-    int dist;
+    TIND dist;
     /// the data
     T *  __restrict data;
   public:
@@ -1228,11 +1203,12 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// set size, distance and memory
-    INLINE SliceVector (unsigned int as, unsigned int ad, T * adata) 
+    INLINE SliceVector (TIND as, TIND ad, T * adata) 
       : s(as), dist(ad), data(adata) { ; }
     
     /// SV from FlatVector
-    INLINE SliceVector (FlatVector<T> fv)
+    template <typename TIND2>
+    INLINE SliceVector (FlatVector<T,TIND2> fv)
       : s(fv.Size()), dist(&fv(1)-&fv(0)), data((T*)fv.Data()) { ; }
 
     /// SV from FlatVector
@@ -1256,15 +1232,15 @@ namespace ngbla
     /// assignes constant value
     INLINE const SliceVector & operator= (TSCAL scal) const
     {
-      for (int i = 0; i < s; i++)
-	data[i*dist] = scal; 
+      for (TIND i = 0; i < s; i++)
+        data[i*dist] = scal; 
       return *this;
     }
 
     /// copies contents of vector
     INLINE const SliceVector & operator= (const SliceVector & v2) const
     {
-      for (int i = 0; i < s; i++)
+      for (TIND i = 0; i < s; i++)
 	data[i*dist] = v2(i);
       return *this;
     }
@@ -1274,10 +1250,10 @@ namespace ngbla
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-	for (int i = 0; i < s; i++)
+	for (TIND i = 0; i < s; i++)
 	  data[i*dist] += v.Spec()(i);
       else
-	for (int i = 0; i < s; i++)
+	for (TIND i = 0; i < s; i++)
 	  data[i*dist] += v.Spec()(i,0);
       return *this;
     }
@@ -1296,7 +1272,7 @@ namespace ngbla
     }
 
     /// access element
-    INLINE TELEM & operator() (int i) const
+    INLINE TELEM & operator() (TIND i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1305,7 +1281,7 @@ namespace ngbla
     }
 
     /// access element, index j is unused
-    INLINE TELEM & operator() (int i, int j) const
+    INLINE TELEM & operator() (TIND i, TIND j) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1314,7 +1290,7 @@ namespace ngbla
     }
 
     /// access element, index j is unused
-    INLINE TELEM & operator() (int i, int j) 
+    INLINE TELEM & operator() (TIND i, TIND j) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1323,7 +1299,7 @@ namespace ngbla
     }
 
     /// access element
-    INLINE TELEM & operator[] (int i) 
+    INLINE TELEM & operator[] (TIND i) 
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1332,7 +1308,7 @@ namespace ngbla
     }
 
     /// access element
-    INLINE TELEM & operator[] (int i) const
+    INLINE TELEM & operator[] (TIND i) const
     {
 #ifdef CHECK_RANGE
       CheckVecRange(s,i);
@@ -1380,13 +1356,13 @@ namespace ngbla
 
 
   
-  template <class T = double>
+  template <class T = double, typename TIND = size_t>
   class BareSliceVector
   {
     T * __restrict data;
-    int dist;
+    TIND dist;
   public:
-    BareSliceVector(T * _data, int _dist) : data(_data), dist(_dist) { ; }
+    BareSliceVector(T * _data, TIND _dist) : data(_data), dist(_dist) { ; }
     BareSliceVector(SliceVector<T> vec) : data(&vec(0)), dist(vec.Dist()) { ; }
     template <int D>
     BareSliceVector(FixSliceVector<D,T> vec) : data(&vec(0)), dist(D) { ; }
@@ -1396,17 +1372,17 @@ namespace ngbla
     int Dist () const { return dist; }
     template<typename TIND2, typename std::enable_if<std::is_integral<TIND2>::value, int>::type = 0>
     double & operator() (TIND2 i) const { return data[i*dist];  }
-    BareSliceVector<> Range (int first, int next) const
+    BareSliceVector Range (TIND first, TIND next) const
     {
-      return BareSliceVector<T> (data+first*dist, dist);
+      return BareSliceVector (data+first*dist, dist);
     }
-    BareSliceVector<> Range (IntRange range) const
+    BareSliceVector Range (T_Range<TIND> range) const
     {
       return Range(range.First(), range.Next());
     }    
-    BareSliceVector<T> Slice (int first, int adist) const
+    BareSliceVector Slice (TIND first, TIND adist) const
     {
-      return BareSliceVector<T> (data+first*dist, dist*adist);
+      return BareSliceVector (data+first*dist, dist*adist);
     }
 
   };
